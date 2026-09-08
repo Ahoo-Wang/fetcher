@@ -37,7 +37,7 @@ export const identifier: Schema = {
 
 ## 文档
 
-- [生成客户端](https://fetcher.ahoo.me/zh/recipes/openapi-client)
+- [生成客户端](https://fetcher.ahoo.me/zh/guides/services/generated-client)
 - [OpenAPI 参考](https://fetcher.ahoo.me/zh/reference/openapi)
 
 [English](./README.md) · [许可证](../../LICENSE)

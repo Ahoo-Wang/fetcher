@@ -12,9 +12,15 @@
  */
 
 import type { TokenStorage } from './tokenStorage';
-import type { TokenRefresher } from './tokenRefresher';
-import type { JwtCompositeToken, RefreshTokenStatusCapable } from './jwtToken';
-import { FetcherError } from '@ahoo-wang/fetcher';
+import { CoSecTokenRefresher, type TokenRefresher } from './tokenRefresher';
+import { JwtCompositeToken, type RefreshTokenStatusCapable } from './jwtToken';
+import { FetcherError, type FetchExchange } from '@ahoo-wang/fetcher';
+import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './unauthorizedErrorInterceptor';
+import {
+  assertTokenSession,
+  isSameTokenSession,
+  TOKEN_SESSION_ATTRIBUTE,
+} from './refreshSession';
 
 export class RefreshTokenError extends FetcherError {
   constructor(
@@ -27,11 +33,24 @@ export class RefreshTokenError extends FetcherError {
   }
 }
 
+/** The session changed while refreshing; the original request must stop. */
+export class RefreshSessionChangedError extends FetcherError {
+  constructor(cause?: unknown) {
+    super('The token session changed during refresh.', cause);
+    this.name = 'RefreshSessionChangedError';
+    Object.setPrototypeOf(this, RefreshSessionChangedError.prototype);
+  }
+}
+
 /**
  * Manages JWT token refreshing operations and provides status information
  */
 export class JwtTokenManager implements RefreshTokenStatusCapable {
-  private refreshInProgress?: Promise<void>;
+  private refreshInProgress?: {
+    token: JwtCompositeToken;
+    promise: Promise<JwtCompositeToken>;
+    notification: { hasHandler: boolean; handled: boolean };
+  };
 
   /**
    * Creates a new JwtTokenManager instance
@@ -53,32 +72,128 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
 
   /**
    * Refreshes the JWT token
+   * @param exchange Optional originating request used to select the unauthorized notification owner
    * @returns Promise that resolves when refresh is complete
    * @throws Error if no token is found or refresh fails
+   * @throws RefreshSessionChangedError if the session changes while refreshing
    */
-  async refresh(): Promise<void> {
+  async refresh(exchange?: FetchExchange): Promise<void> {
     const jwtToken = this.currentToken;
     if (!jwtToken) {
       throw new Error('No token found');
     }
-    if (this.refreshInProgress) {
-      return this.refreshInProgress;
+    if (exchange) {
+      const previousToken = exchange.attributes.get(TOKEN_SESSION_ATTRIBUTE);
+      assertTokenSession(exchange, jwtToken);
+      exchange.attributes.set(TOKEN_SESSION_ATTRIBUTE, jwtToken);
+      if (
+        exchange.attributes.get(UNAUTHORIZED_ERROR_INTERCEPTOR_NAME) !== true
+      ) {
+        exchange.attributes.set(
+          UNAUTHORIZED_ERROR_INTERCEPTOR_NAME,
+          () =>
+            this.currentToken ===
+            exchange.attributes.get(TOKEN_SESSION_ATTRIBUTE),
+        );
+      }
+      if (previousToken && previousToken !== jwtToken) {
+        return;
+      }
     }
+    const inProgress =
+      this.refreshInProgress?.token === jwtToken
+        ? this.refreshInProgress
+        : undefined;
+    const notification = inProgress?.notification ?? {
+      hasHandler: false,
+      handled: false,
+    };
+    notification.hasHandler ||=
+      this.tokenRefresher instanceof CoSecTokenRefresher &&
+      (exchange?.fetcher.interceptors.error.interceptors.some(
+        interceptor => interceptor.name === UNAUTHORIZED_ERROR_INTERCEPTOR_NAME,
+      ) ??
+        false);
+    let promise = inProgress?.promise;
+    if (!promise) {
+      const refresh =
+        this.tokenRefresher instanceof CoSecTokenRefresher
+          ? this.tokenRefresher.refresh(jwtToken.token, () => {
+              if (this.currentToken !== jwtToken || notification.hasHandler)
+                return false;
+              notification.handled = true;
+              return true;
+            })
+          : this.tokenRefresher.refresh(jwtToken.token);
+      promise = refresh
+        .then(newToken => {
+          const currentToken = this.currentToken;
+          if (!currentToken || !isSameTokenSession(jwtToken, currentToken)) {
+            throw new RefreshSessionChangedError();
+          }
+          if (currentToken !== jwtToken) return currentToken;
+          const refreshedToken = new JwtCompositeToken(
+            newToken,
+            this.tokenStorage.earlyPeriod,
+            jwtToken.sessionId,
+          );
+          this.tokenStorage.set(refreshedToken);
+          return refreshedToken;
+        })
+        .catch(error => {
+          if (error instanceof RefreshSessionChangedError) {
+            throw error;
+          }
+          const currentToken = this.currentToken;
+          if (
+            currentToken &&
+            currentToken !== jwtToken &&
+            isSameTokenSession(jwtToken, currentToken)
+          ) {
+            return currentToken;
+          }
+          // The refresh client's own notification may have signed out this session.
+          if (
+            currentToken !== jwtToken &&
+            (currentToken !== null || !notification.handled)
+          ) {
+            throw new RefreshSessionChangedError(error);
+          }
+          if (currentToken === jwtToken) {
+            this.tokenStorage.remove();
+          }
+          throw new RefreshTokenError(jwtToken, error);
+        })
+        .finally(() => {
+          if (this.refreshInProgress?.promise === promise) {
+            this.refreshInProgress = undefined;
+          }
+        });
 
-    this.refreshInProgress = this.tokenRefresher
-      .refresh(jwtToken.token)
-      .then(newToken => {
-        this.tokenStorage.setCompositeToken(newToken);
-      })
-      .catch(error => {
-        this.tokenStorage.remove();
-        throw new RefreshTokenError(jwtToken, error);
-      })
-      .finally(() => {
-        this.refreshInProgress = undefined;
-      });
-
-    return this.refreshInProgress;
+      this.refreshInProgress = { token: jwtToken, promise, notification };
+    }
+    try {
+      const refreshedToken = await promise;
+      exchange?.attributes.set(TOKEN_SESSION_ATTRIBUTE, refreshedToken);
+      if (!isSameTokenSession(refreshedToken, this.currentToken)) {
+        throw new RefreshSessionChangedError();
+      }
+    } catch (error) {
+      if (error instanceof RefreshTokenError && exchange) {
+        exchange.attributes.set(TOKEN_SESSION_ATTRIBUTE, null);
+        if (
+          exchange.attributes.get(UNAUTHORIZED_ERROR_INTERCEPTOR_NAME) !== true
+        ) {
+          exchange.attributes.set(UNAUTHORIZED_ERROR_INTERCEPTOR_NAME, () => {
+            if (this.currentToken !== null || notification.handled)
+              return false;
+            notification.handled = true;
+            return true;
+          });
+        }
+      }
+      throw error;
+    }
   }
 
   /**

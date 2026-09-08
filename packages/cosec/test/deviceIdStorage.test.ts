@@ -44,13 +44,13 @@ const { serialBusChannels } = vi.hoisted(() => ({
 // Mock BroadcastTypedEventBus and SerialTypedEventBus
 vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
   BroadcastTypedEventBus: class BroadcastTypedEventBus {
-    emit = vi.fn();
+    emit = vi.fn().mockResolvedValue(undefined);
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
   },
   SerialTypedEventBus: class SerialTypedEventBus {
-    emit = vi.fn();
+    emit = vi.fn().mockResolvedValue(undefined);
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
@@ -111,7 +111,7 @@ describe('DeviceIdStorage', () => {
     it('should initialize with custom eventBus only', () => {
       // Test partial customization: new DeviceIdStorage({ eventBus: custom })
       const mockEventBus = {
-        emit: vi.fn(),
+        emit: vi.fn().mockResolvedValue(undefined),
         on: vi.fn(),
         off: vi.fn(),
         destroy: vi.fn(),
@@ -124,7 +124,7 @@ describe('DeviceIdStorage', () => {
     it('should initialize with all custom options', () => {
       // Test full customization
       const mockEventBus = {
-        emit: vi.fn(),
+        emit: vi.fn().mockResolvedValue(undefined),
         on: vi.fn(),
         off: vi.fn(),
         destroy: vi.fn(),

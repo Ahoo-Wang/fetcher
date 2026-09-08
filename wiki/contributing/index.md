@@ -1,31 +1,20 @@
 ---
-title: Contributing
-description: Set up Fetcher locally and choose the right development, testing, or documentation workflow.
+prev: false
+title: Contribute a focused change
+description: Contribute a focused change — Fetcher
 ---
 
-# Contributing
+# Contribute a focused change
 
-Fetcher is a version-locked monorepo. Keep changes focused, update affected
-packages and documentation together, and prove behavior with the smallest
-relevant gate before running the repository gate.
+## Start at the affected boundary
 
-## Choose a workflow
+Read root AGENTS.md and the rules under the package or wiki directory you will change. Follow the existing implementation and test layout before introducing a different pattern.
 
-- [Development](./development.md): install, build, package layout, code style,
-  and versioning.
-- [Testing](./testing.md): unit, integration, browser, Wiki, and Storybook gates.
-- [Documentation](./documentation.md): bilingual Wiki, README, Mermaid, and
-  source-verification rules.
+1. [Set up the workspace](./development.md).
+2. Reproduce or define the behavior at the real public boundary.
+3. Implement the scoped change and update its bilingual documentation.
+4. [Run the relevant checks](./testing.md), then the required repository gate before committing.
 
-## Pull request baseline
+Use conventional commit titles. New work branches from main; pull requests merge with squash. A library API change must include the matching Skill reference and an appropriate version decision. Publishing is separate from local validation.
 
-```bash
-pnpm install --frozen-lockfile
-pnpm build
-pnpm lint
-pnpm test:unit
-```
-
-Add focused integration, Wiki, or Storybook checks when the changed surface
-requires them. Pull requests merge squash-only; use a conventional commit title
-such as `feat:`, `fix:`, `test:`, or `docs:`.
+For documentation-only work, follow [Documentation maintenance](./documentation.md); a successful site build verifies links and rendering, not the truth of every API example.

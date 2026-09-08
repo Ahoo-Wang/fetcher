@@ -26,6 +26,21 @@ import {
  */
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
+const SHARED_TOKEN_SERIALIZERS = Symbol.for(
+  '@ahoo-wang/fetcher-cosec/shared-token-serializers',
+);
+const sharedState = globalThis as typeof globalThis & {
+  [SHARED_TOKEN_SERIALIZERS]?: WeakMap<object, JwtCompositeTokenSerializer>;
+};
+const sharedTokenSerializers =
+  sharedState[SHARED_TOKEN_SERIALIZERS] ??
+  new WeakMap<object, JwtCompositeTokenSerializer>();
+if (!sharedState[SHARED_TOKEN_SERIALIZERS]) {
+  Object.defineProperty(sharedState, SHARED_TOKEN_SERIALIZERS, {
+    value: sharedTokenSerializers,
+  });
+}
+
 /**
  * Options for configuring TokenStorage.
  * Extends KeyStorageOptions excluding 'serializer' and includes EarlyPeriodCapable properties.
@@ -54,7 +69,7 @@ export class TokenStorage
    * @param options - Configuration options for the token storage.
    * @param options.key - The storage key for tokens. Defaults to DEFAULT_COSEC_TOKEN_KEY.
    * @param options.eventBus - Event bus for token change notifications. Defaults to a BroadcastTypedEventBus whose channel name is derived from the storage key.
-   * @param options.earlyPeriod - Early period for token refresh in seconds. Defaults to 0.
+   * @param options.earlyPeriod - Early period for token refresh in seconds. Defaults to 0. Instances sharing an eventBus must use the same period; separate buses on the same channel can use different periods.
    * @param reset - Additional options passed to KeyStorage.
    */
   constructor({
@@ -63,6 +78,15 @@ export class TokenStorage
     earlyPeriod = 0,
     ...reset
   }: TokenStorageOptions = {}) {
+    let serializer = eventBus
+      ? sharedTokenSerializers.get(eventBus)
+      : undefined;
+    if (serializer && serializer.earlyPeriod !== earlyPeriod) {
+      throw new Error(
+        'TokenStorage instances sharing an event bus require the same earlyPeriod; use separate buses for different periods.',
+      );
+    }
+    serializer ??= new JwtCompositeTokenSerializer(earlyPeriod);
     super({
       key,
       // The default bus channel must be derived from the actual key so that
@@ -73,8 +97,9 @@ export class TokenStorage
           delegate: new SerialTypedEventBus(key),
         }),
       ...reset,
-      serializer: new JwtCompositeTokenSerializer(earlyPeriod),
+      serializer,
     });
+    sharedTokenSerializers.set(this.eventBus, serializer);
     this.earlyPeriod = earlyPeriod;
   }
 

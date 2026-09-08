@@ -26,7 +26,7 @@ import type {
   FunctionReturnType,
   OnBeforeExecuteCallback,
 } from './apiHooks';
-import { collectMethods, methodNameToHookName } from './apiHooks';
+import { mapApiHooks } from './mapApiHooks';
 
 /**
  * Configuration options for createExecuteApiHooks.
@@ -76,9 +76,9 @@ export interface UseApiMethodExecuteOptions<
  * @template E - The error type for all hooks (defaults to FetcherError).
  */
 export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
-  [K in keyof API as API[K] extends ApiMethod
-    ? HookName<string & K>
-    : never]: API[K] extends ApiMethod
+  [
+    K in keyof API as API[K] extends ApiMethod ? HookName<string & K> : never
+  ]: API[K] extends ApiMethod
     ? (
         options?: UseApiMethodExecuteOptions<
           FunctionParameters<API[K]>,
@@ -202,16 +202,5 @@ export function createExecuteApiHooks<
   API extends Record<string, any>,
   E = FetcherError,
 >(options: CreateExecuteApiHooksOptions<API>): APIHooks<API, E> {
-  const { api } = options;
-
-  const result = {} as any;
-  const methods = collectMethods<(...args: any[]) => Promise<any>>(api);
-
-  // Create hooks for each collected method
-  methods.forEach((boundMethod, methodName) => {
-    const hookName = methodNameToHookName(methodName);
-    result[hookName] = createHookForMethod<E>(boundMethod);
-  });
-
-  return result;
+  return mapApiHooks(options.api, createHookForMethod<E>) as APIHooks<API, E>;
 }

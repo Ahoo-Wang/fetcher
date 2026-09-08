@@ -38,10 +38,16 @@ export function methodNameToHookName(methodName: string): string {
 /**
  * Collects all function methods from an object and its prototype chain.
  * @param obj - The object to collect methods from.
+ * @param onAccessor - Receives accessors lazily and the methods collected before them; otherwise getters are evaluated to collect their returned methods.
  * @returns A map of method names to bound methods.
  */
 export function collectMethods<T extends (...args: any[]) => Promise<any>>(
   obj: Record<string, any>,
+  onAccessor?: (
+    name: string,
+    get: () => unknown,
+    methods: ReadonlyMap<string, T>,
+  ) => void,
 ): Map<string, T> {
   const methods = new Map<string, T>();
   const processedKeys = new Set<string>();
@@ -51,7 +57,12 @@ export function collectMethods<T extends (...args: any[]) => Promise<any>>(
     Object.getOwnPropertyNames(target).forEach(key => {
       if (!processedKeys.has(key) && key !== 'constructor') {
         processedKeys.add(key);
-        const value = target[key];
+        const descriptor = Object.getOwnPropertyDescriptor(target, key);
+        if (descriptor?.get && onAccessor) {
+          onAccessor(key, () => obj[key], methods);
+          return;
+        }
+        const value = obj[key];
         if (typeof value === 'function') {
           // Bind method to the original object to preserve 'this' context
           methods.set(key, value.bind(obj) as T);
@@ -161,7 +172,7 @@ export type ApiHooksMapping<
   MethodType extends (...args: any[]) => Promise<any>,
   HookType,
 > = {
-  [K in keyof API as API[K] extends MethodType
-    ? HookName<string & K>
-    : never]: API[K] extends MethodType ? HookType : never;
+  [
+    K in keyof API as API[K] extends MethodType ? HookName<string & K> : never
+  ]: API[K] extends MethodType ? HookType : never;
 };

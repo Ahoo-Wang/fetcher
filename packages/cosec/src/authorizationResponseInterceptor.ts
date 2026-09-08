@@ -13,8 +13,17 @@
 
 import { CoSecHeaders, ResponseCodes } from './types';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
-import { type ResponseInterceptor } from '@ahoo-wang/fetcher';
-import type { AuthorizationInterceptorOptions } from './authorizationRequestInterceptor';
+import {
+  deleteHeader,
+  getHeader,
+  type ResponseInterceptor,
+} from '@ahoo-wang/fetcher';
+import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor';
+import { assertTokenSession, TOKEN_SESSION_ATTRIBUTE } from './refreshSession';
+import {
+  AUTHORIZATION_REQUEST_INTERCEPTOR_NAME,
+  type AuthorizationInterceptorOptions,
+} from './authorizationRequestInterceptor';
 
 /**
  * The name of the AuthorizationResponseInterceptor.
@@ -41,8 +50,7 @@ export const AUTHORIZATION_RESPONSE_MAX_RETRY = 1;
  * Attribute key storing how many times an exchange has been refreshed and
  * retried, used to bound the refresh-retry loop.
  */
-const AUTHORIZATION_RETRY_COUNT_ATTRIBUTE =
-  'AuthorizationResponseRetryCount';
+const AUTHORIZATION_RETRY_COUNT_ATTRIBUTE = 'AuthorizationResponseRetryCount';
 
 /**
  * CoSecResponseInterceptor is responsible for handling unauthorized responses (401)
@@ -77,11 +85,31 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     }
 
     // Only handle unauthorized responses (401)
-    if (response.status !== ResponseCodes.UNAUTHORIZED) {
+    if (
+      response.status !== ResponseCodes.UNAUTHORIZED ||
+      exchange.attributes?.has(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY)
+    ) {
       return;
     }
 
-    if (!this.options.tokenManager.isRefreshable) {
+    const authorization = getHeader(
+      exchange.request?.headers,
+      CoSecHeaders.AUTHORIZATION,
+    );
+    if (
+      exchange.attributes?.get(AUTHORIZATION_REQUEST_INTERCEPTOR_NAME) !==
+      authorization
+    ) {
+      return;
+    }
+
+    const currentToken = this.options.tokenManager.currentToken;
+    assertTokenSession(exchange, currentToken);
+    if (
+      !this.options.tokenManager.isRefreshable &&
+      (!exchange.attributes?.has(TOKEN_SESSION_ATTRIBUTE) ||
+        exchange.attributes.get(TOKEN_SESSION_ATTRIBUTE) === currentToken)
+    ) {
       return;
     }
 
@@ -92,24 +120,21 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     const attributes = (exchange.attributes ??= new Map<string, unknown>());
     const retryCount =
       (attributes.get(AUTHORIZATION_RETRY_COUNT_ATTRIBUTE) as
-        | number
-        | undefined) ?? 0;
+        number | undefined) ?? 0;
     if (retryCount >= AUTHORIZATION_RESPONSE_MAX_RETRY) {
       return;
     }
     attributes.set(AUTHORIZATION_RETRY_COUNT_ATTRIBUTE, retryCount + 1);
 
-    try {
-      await this.options.tokenManager.refresh();
-    } catch (error) {
-      // If token refresh fails, clear stored tokens and re-throw the error
-      this.options.tokenManager.tokenStorage.remove();
-      throw error;
-    }
+    // The manager owns cleanup for the session that started the refresh.
+    await this.options.tokenManager.refresh(exchange);
+    assertTokenSession(exchange, this.options.tokenManager.currentToken);
     // Retrying re-runs the whole request interceptor chain. Drop the stale
     // Authorization header so AuthorizationRequestInterceptor re-adds it
     // with the refreshed token — it skips requests that already carry one.
-    delete exchange.request?.headers?.[CoSecHeaders.AUTHORIZATION];
+    if (exchange.request?.headers) {
+      deleteHeader(exchange.request.headers, CoSecHeaders.AUTHORIZATION);
+    }
     // Retry the original request with the new token. A failure of the retry
     // itself (network error, another 401, ...) propagates unchanged: it must
     // not clear the freshly refreshed and still valid token.

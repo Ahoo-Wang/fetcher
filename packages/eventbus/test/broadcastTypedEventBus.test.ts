@@ -151,6 +151,55 @@ describe('BroadcastTypedEventBus', () => {
     expect(mockMessenger.close).toHaveBeenCalled();
   });
 
+  it('transforms wire messages while preserving local events and decoded delivery', async () => {
+    const delegate = new SerialTypedEventBus<{ count: bigint }>('transformed');
+    const events: { count: bigint }[] = [];
+    delegate.on({
+      name: 'existing',
+      handle: event => {
+        events.push(event);
+      },
+    });
+    const bus = new BroadcastTypedEventBus({
+      delegate,
+      messenger: mockMessenger,
+      messageTransformer: {
+        serialize: event => ({ count: String(event.count) }),
+        deserialize: message => ({
+          count: BigInt((message as { count: string }).count),
+        }),
+      },
+    });
+    const value = { count: 2n };
+    await bus.emit(value);
+    expect(events[0]).toBe(value);
+    expect(mockMessenger.postMessage).toHaveBeenCalledWith({ count: '2' });
+    await mockMessenger._onmessage({ count: '3' });
+    expect(events[1]).toEqual({ count: 3n });
+    expect(Object.keys(events[1])).toEqual(['count']);
+  });
+
+  it('retains the starting transformer while local delivery is pending', async () => {
+    let finishLocal!: () => void;
+    const local = new Promise<void>(resolve => {
+      finishLocal = resolve;
+    });
+    delegate.on({ name: 'pending', handle: () => local });
+    const bus = new BroadcastTypedEventBus({
+      delegate,
+      messenger: mockMessenger,
+      messageTransformer: {
+        serialize: event => `encoded:${event}`,
+        deserialize: String,
+      },
+    });
+    const emitted = bus.emit('value');
+    bus.messageTransformer = undefined;
+    finishLocal();
+    await emitted;
+    expect(mockMessenger.postMessage).toHaveBeenCalledWith('encoded:value');
+  });
+
   describe('options constructor', () => {
     it('should use custom messenger from options', () => {
       const customMessenger = {

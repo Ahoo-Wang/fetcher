@@ -22,12 +22,12 @@ vi.mock('../../../src/fetcher/useFetcherQuery', () => ({
   useFetcherQuery: vi.fn(),
 }));
 
-vi.mock('../../../src/core', () => ({
-  useDebouncedCallback: vi.fn(),
+vi.mock('../../../src/core/debounced/useDebouncedCallback', () => ({
+  useDebouncedCallbackInternal: vi.fn(),
 }));
 
 import { useFetcherQuery } from '../../../src/fetcher/useFetcherQuery';
-import { useDebouncedCallback } from '../../../src/core';
+import { useDebouncedCallbackInternal as useDebouncedCallback } from '../../../src/core/debounced/useDebouncedCallback';
 
 const mockUseFetcherQuery = vi.mocked(useFetcherQuery);
 const mockUseDebouncedCallback = vi.mocked(useDebouncedCallback);
@@ -88,15 +88,14 @@ describe('useDebouncedFetcherQuery', () => {
       expect(result.current).toHaveProperty('abort', mockAbort);
       expect(result.current).toHaveProperty('getQuery', mockGetQuery);
       expect(result.current).toHaveProperty('setQuery', expect.any(Function)); // setQuery function from useQueryState
-      expect(result.current).toHaveProperty('run', mockDebouncedReturn.run);
-      expect(result.current).toHaveProperty(
-        'cancel',
-        mockDebouncedReturn.cancel,
-      );
+      expect(result.current).toHaveProperty('run', expect.any(Function));
+      expect(result.current).toHaveProperty('cancel', expect.any(Function));
       expect(result.current).toHaveProperty(
         'isPending',
         mockDebouncedReturn.isPending,
       );
+      act(() => result.current.cancel());
+      expect(mockDebouncedReturn.cancel).toHaveBeenCalledExactlyOnceWith();
       expect(result.current).not.toHaveProperty('execute'); // execute should be omitted
     });
 
@@ -118,9 +117,11 @@ describe('useDebouncedFetcherQuery', () => {
         }),
       );
       expect(mockUseDebouncedCallback).toHaveBeenCalledWith(
-        mockExecute,
+        expect.any(Function),
         options.debounce,
       );
+      mockUseDebouncedCallback.mock.lastCall![0]();
+      expect(mockExecute).toHaveBeenCalledExactlyOnceWith();
     });
 
     it('should memoize the return object correctly', () => {
@@ -234,9 +235,11 @@ describe('useDebouncedFetcherQuery', () => {
         renderHook(() => useDebouncedFetcherQuery(options));
 
         expect(mockUseDebouncedCallback).toHaveBeenCalledWith(
-          mockExecute,
+          expect.any(Function),
           debounceConfig,
         );
+        mockUseDebouncedCallback.mock.lastCall![0]();
+        expect(mockExecute).toHaveBeenLastCalledWith();
       });
     });
   });
@@ -382,9 +385,11 @@ describe('useDebouncedFetcherQuery', () => {
         renderHook(() => useDebouncedFetcherQuery(options));
 
         expect(mockUseDebouncedCallback).toHaveBeenCalledWith(
-          mockExecute,
+          expect.any(Function),
           debounce,
         );
+        mockUseDebouncedCallback.mock.lastCall![0]();
+        expect(mockExecute).toHaveBeenLastCalledWith();
       });
     });
 
@@ -523,8 +528,10 @@ describe('useDebouncedFetcherQuery', () => {
       rerender();
 
       // The return object should be different due to memoization dependencies
-      expect(result.current.run).toBe(newRun);
-      expect(result.current.cancel).toBe(newCancel);
+      act(() => result.current.run());
+      expect(newRun).toHaveBeenCalledTimes(1);
+      act(() => result.current.cancel());
+      expect(newCancel).toHaveBeenCalledExactlyOnceWith();
       expect(result.current.isPending).toBe(newIsPending);
     });
   });
@@ -662,9 +669,14 @@ describe('useDebouncedFetcherQuery', () => {
         { initialProps: { delay: 300 } },
       );
 
-      expect(mockUseDebouncedCallback).toHaveBeenCalledWith(mockExecute, {
-        delay: 300,
-      });
+      expect(mockUseDebouncedCallback).toHaveBeenCalledWith(
+        expect.any(Function),
+        {
+          delay: 300,
+        },
+      );
+      mockUseDebouncedCallback.mock.lastCall![0]();
+      expect(mockExecute).toHaveBeenCalledExactlyOnceWith();
 
       mockUseDebouncedCallback.mockClear();
 
@@ -672,9 +684,14 @@ describe('useDebouncedFetcherQuery', () => {
       rerender({ delay: 500 });
 
       // useDebouncedCallback should be called again with new config
-      expect(mockUseDebouncedCallback).toHaveBeenCalledWith(mockExecute, {
-        delay: 500,
-      });
+      expect(mockUseDebouncedCallback).toHaveBeenCalledWith(
+        expect.any(Function),
+        {
+          delay: 500,
+        },
+      );
+      mockUseDebouncedCallback.mock.lastCall![0]();
+      expect(mockExecute).toHaveBeenCalledTimes(2);
     });
   });
 });

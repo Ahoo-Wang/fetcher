@@ -152,3 +152,105 @@ describe('BrowserNotificationChannel', () => {
     });
   });
 });
+
+describe('received notification click behavior', () => {
+  let instance: Notification;
+  let originalUrl: string;
+  beforeEach(() => {
+    originalUrl = window.location.href;
+    vi.spyOn(window, 'focus').mockImplementation(() => {});
+    class TestNotification extends EventTarget {
+      static permission = 'granted';
+      constructor() {
+        super();
+        instance = this as unknown as Notification;
+      }
+    }
+    vi.stubGlobal('Notification', TestNotification);
+  });
+  afterEach(() => {
+    window.history.replaceState(null, '', originalUrl);
+  });
+
+  it('focuses and navigates from serialized notification data', async () => {
+    await BrowserNotificationChannel.send({
+      title: 'Changed',
+      payload: { data: { navigationUrl: '#changed' } },
+    });
+    instance.dispatchEvent(new Event('click'));
+    expect(window.focus).toHaveBeenCalledOnce();
+    expect(window.location.hash).toBe('#changed');
+  });
+
+  it('still focuses when there is no navigationUrl', async () => {
+    await BrowserNotificationChannel.send({ title: 'Changed', payload: {} });
+    instance.dispatchEvent(new Event('click'));
+    expect(window.focus).toHaveBeenCalledOnce();
+    expect(window.location.href).toBe(originalUrl);
+  });
+
+  it('uses an explicit local callback instead of the navigation fallback', async () => {
+    const onClick = vi.fn();
+    await BrowserNotificationChannel.send({
+      title: 'Changed',
+      payload: { data: { navigationUrl: '#changed' } },
+      onClick,
+    });
+    instance.dispatchEvent(new Event('click'));
+    instance.dispatchEvent(new Event('click'));
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(window.focus).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(originalUrl);
+  });
+});
+
+describe('notification navigation URL validation', () => {
+  it.each([
+    ['javascript:alert(1)', 'https://app.example/views/current'],
+    [' \tJaVaScRiPt:\nalert(1)', 'https://app.example/views/current'],
+    [
+      'data:text/html,<script>alert(1)</script>',
+      'https://app.example/views/current',
+    ],
+    ['vbscript:msgbox(1)', 'https://app.example/views/current'],
+    ['http://[', 'https://app.example/views/current'],
+    [
+      '/orders?status=open#latest',
+      'https://app.example/orders?status=open#latest',
+    ],
+    ['../orders', 'https://app.example/orders'],
+    ['#latest', 'https://app.example/views/current#latest'],
+    ['https://other.example/orders', 'https://other.example/orders'],
+    ['http://other.example/orders', 'http://other.example/orders'],
+  ])('safely handles navigation URL %s', async (navigationUrl, expected) => {
+    let notification: EventTarget;
+    class TestNotification extends EventTarget {
+      static permission = 'granted';
+      constructor() {
+        super();
+        notification = this;
+      }
+    }
+    // jsdom cannot navigate documents; record the browser navigation boundary.
+    const location = {
+      href: 'https://app.example/views/current',
+      assign(url: string) {
+        this.href = url;
+      },
+    };
+    vi.stubGlobal('Notification', TestNotification);
+    vi.stubGlobal('window', {
+      Notification: TestNotification,
+      focus() {},
+      location,
+    });
+
+    await BrowserNotificationChannel.send({
+      title: 'Changed',
+      payload: { data: { navigationUrl } },
+    });
+    notification!.dispatchEvent(new Event('click'));
+
+    expect(location.href).toBe(expected);
+  });
+});

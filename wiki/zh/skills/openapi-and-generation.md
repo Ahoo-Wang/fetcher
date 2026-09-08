@@ -1,49 +1,24 @@
 ---
-title: OpenAPI 与生成 Skills
-description: 为 OpenAPI TypeScript 类型和生成式客户端选择 Fetcher Skill。
+title: OpenAPI 与生成
+description: OpenAPI 与生成 — Fetcher agent workflows
 pageClass: skills-page
 ---
 
-# OpenAPI 与生成 Skills
+# OpenAPI 与生成
 
-类型包描述 OpenAPI 文档；Generator 消费文档并写出 Fetcher 模型和客户端。二者
-解决不同问题。
+从任务的输入和输出选择 Skill；同一应用可以组合多个包，但每次修改保持明确的职责边界。
 
-## `$fetcher-openapi-types`
+| 任务         | Skill                                                                                                                    | API 参考                                     |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| OpenAPI 类型 | [`$fetcher-openapi-types`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/SKILL.md)         | [openapi](../reference/openapi/index.md)     |
+| 客户端生成   | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-generator/SKILL.md) | [generator](../reference/generator/index.md) |
 
-**适用于：** 类型化 OpenAPI 3 文档、Schema、Path、Operation、Parameter、
-Response、Component、Security、Reference 和扩展字段。
+## 提供这些上下文
 
-```text
-$fetcher-openapi-types 为用户端点创建类型安全的 OpenAPI 文档。
-把可复用 Schema 和 Response 放进 components，并使用 Reference。
-```
+输入文档、输出目录、tsconfig 与预期客户端操作。区分静态 OpenAPI 建模和生成任务。要求真实生成并检查输出，猜测客户端名称不构成验证。
 
-这个包没有运行时行为。不要用它的类型替代对不可信 JSON 的运行时校验。
+## 验收结果
 
-继续阅读 [OpenAPI 参考](../reference/openapi.md)。
+检查实际公开导入、完整示例、失败与清理路径。根据变更运行包测试或真实生成验证；涉及组件交互时在浏览器检查。不要将类型检查成功当作服务端协议兼容的证明。
 
-## `$fetcher-openapi-generator`
-
-**适用于：** Generator CLI 选项、配置、输出结构、安全再生成、程序化
-`CodeGenerator`，以及 Wow 客户端发现规则。
-
-```text
-$fetcher-openapi-generator 根据 ./openapi.yaml 生成 TypeScript 模型和客户端，
-输出到 ./src/generated 并使用 ./tsconfig.json。验证输出可以构建，
-并说明所有被跳过的 Operation。
-```
-
-Skill 会检查真实输入文档和生成结果，而不是从约定猜测路由。对于 Wow Fixture，
-它还理解命令、快照、计数和聚合的发现形状。
-
-继续阅读 [Generator 参考](../reference/generator.md)或
-[生成客户端场景](../recipes/openapi-client.md)。
-
-## 选择规则
-
-| 结果                            | Skill                        |
-| ------------------------------- | ---------------------------- |
-| 编写或转换内存中的 OpenAPI 文档 | `$fetcher-openapi-types`     |
-| 根据 YAML、JSON 或 URL 生成源码 | `$fetcher-openapi-generator` |
-| 不生成代码，直接调用 API        | `$fetcher-integration`       |
+[安装与完整目录](./index.md)

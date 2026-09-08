@@ -48,7 +48,7 @@ const user = await api.get<User>(
 ## 文档
 
 - [第一个请求](https://fetcher.ahoo.me/zh/start/first-request)
-- [请求生命周期](https://fetcher.ahoo.me/zh/learn/request-lifecycle)
+- [请求生命周期](https://fetcher.ahoo.me/zh/architecture/request-lifecycle)
 - [Fetcher 参考](https://fetcher.ahoo.me/zh/reference/fetcher)
 
 [English](./README.md) · [许可证](../../LICENSE)

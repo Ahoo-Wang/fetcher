@@ -66,14 +66,14 @@ try {
 | Wow commands and queries     | `@ahoo-wang/fetcher-wow`         |
 | Filterable data viewers      | `@ahoo-wang/fetcher-viewer`      |
 
-[Choose packages](https://fetcher.ahoo.me/start/choose-packages) explains peer
+[Choose packages](https://fetcher.ahoo.me/architecture/package-boundaries) explains peer
 dependencies and the smallest useful combination.
 
 ## Learn and build
 
 - [Start in five minutes](https://fetcher.ahoo.me/start/first-request)
-- [Understand the request lifecycle](https://fetcher.ahoo.me/learn/request-lifecycle)
-- [Follow developer recipes](https://fetcher.ahoo.me/recipes/declarative-services)
+- [Understand the request lifecycle](https://fetcher.ahoo.me/architecture/request-lifecycle)
+- [Follow developer recipes](https://fetcher.ahoo.me/guides/services/declarative-client)
 - [Use package-aware agent Skills](https://fetcher.ahoo.me/skills/)
 - [Look up package APIs](https://fetcher.ahoo.me/reference/)
 - [Try interactive workflows](https://fetcher.ahoo.me/storybook/)

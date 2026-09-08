@@ -1,70 +1,38 @@
 ---
-title: Installation
-description: Install Fetcher packages with the required runtime and peer dependencies.
+title: Install Fetcher
+description: Create an independent ESM project and install the core HTTP client.
 ---
 
-# Installation
+# Install Fetcher
 
-## Runtime requirements
-
-- Node.js `>=18.20.8`, or a modern browser with the Fetch, Streams, and AbortController APIs required by the feature you use.
-- TypeScript is recommended; packages ship type declarations and ES modules.
-- React and Ant Design are peer dependencies only for packages that expose React components or hooks.
-
-## Install the core client
+The core package supports Node `>=18.20.8`. Create an independent directory so the example does not rely on this repository's workspace links:
 
 ```bash
-pnpm add @ahoo-wang/fetcher
+mkdir fetcher-first-request
+cd fetcher-first-request
 ```
 
-Equivalent npm command:
-
-```bash
-npm install @ahoo-wang/fetcher
-```
-
-## Install an optional package
-
-Install only the package and peers required by your code. For example, React request state needs the core and React packages:
-
-```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-react react react-dom
-```
-
-Viewer applications also provide Ant Design and the Fetcher packages listed as peer dependencies:
-
-```bash
-pnpm add @ahoo-wang/fetcher-viewer antd @ant-design/icons dayjs react react-dom
-```
-
-Your package manager reports any additional Fetcher peer packages required by the selected version.
-
-## Side-effect modules
-
-`@ahoo-wang/fetcher-eventstream` extends `Response` with event-stream helpers when the module is imported. Import it once before calling those helpers:
-
-```ts
-import '@ahoo-wang/fetcher-eventstream';
-```
-
-Decorator-based services require metadata support and the TypeScript decorator options used by this repository:
+Create `package.json` with ESM enabled:
 
 ```json
 {
-  "compilerOptions": {
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  }
+  "name": "fetcher-first-request",
+  "private": true,
+  "type": "module"
 }
 ```
 
-## Verify the installation
+Install the published client and TypeScript:
 
-```ts
-import { Fetcher } from '@ahoo-wang/fetcher';
-
-const api = new Fetcher();
-console.log(api.urlBuilder.build('/health'));
+```bash
+pnpm add @ahoo-wang/fetcher
+pnpm add -D typescript
 ```
 
-This prints `/health`. Continue with [First Request](./first-request.md).
+This is a consumer setup. Contributors to this repository instead need Node `>=20.20.2`, pnpm `10.34.5`, and the commands in [Development](../contributing/development.md).
+
+Continue with [Your first request](./first-request.md).
+
+## React and Viewer starting points
+
+For an existing React application, follow the [React example peer installation and mounting steps](../examples/react.md). For a table, use [your first data view](./first-view.md). These UI paths require additional peers beyond the core HTTP installation; [choose your starting point](./index.md) first.

@@ -224,10 +224,14 @@ describe('useFetcher', () => {
       extractResult: vi.fn().mockResolvedValue(mockResult3),
     };
 
-    mockFetcher.exchange
-      .mockResolvedValueOnce(mockExchange1)
-      .mockResolvedValueOnce(mockExchange2)
-      .mockResolvedValueOnce(mockExchange3);
+    const exchanges: Record<string, unknown> = {
+      '/test1': mockExchange1,
+      '/test2': mockExchange2,
+      '/test3': mockExchange3,
+    };
+    mockFetcher.exchange.mockImplementation(
+      async ({ url }: { url: string }) => exchanges[url],
+    );
 
     const { result } = renderHook(() => useFetcher<string>());
 
@@ -242,6 +246,43 @@ describe('useFetcher', () => {
     expect(result.current.result).toBe(mockResult3);
     expect(result.current.exchange).toBe(mockExchange3);
   });
+
+  it.each(['success', 'failure'] as const)(
+    'keeps the latest exchange after a cancelled request finishes with %s',
+    async outcome => {
+      const staleExchange = { extractResult: async () => 'stale' };
+      const latestExchange = { extractResult: async () => 'latest' };
+      let resolve!: (value: unknown) => void;
+      let reject!: (error: Error) => void;
+      mockFetcher.exchange.mockImplementation(({ url }: { url: string }) =>
+        url === '/stale'
+          ? new Promise((yes, no) => {
+              resolve = yes;
+              reject = no;
+            })
+          : Promise.resolve(latestExchange),
+      );
+      const { result } = renderHook(() =>
+        useFetcher<string>({ propagateError: true }),
+      );
+      let stale!: Promise<void>;
+      act(() => {
+        stale = result.current
+          .execute({ url: '/stale' })
+          .catch(() => undefined);
+      });
+      await act(async () => {
+        await result.current.execute({ url: '/latest' });
+      });
+      await act(async () => {
+        if (outcome === 'success') resolve(staleExchange);
+        else reject(new Error('stale failure'));
+        await stale;
+      });
+      expect(result.current.result).toBe('latest');
+      expect(result.current.exchange).toBe(latestExchange);
+    },
+  );
 
   it('should maintain correct state during loading', async () => {
     const mockResult = 'success data';

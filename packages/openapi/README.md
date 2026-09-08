@@ -37,7 +37,7 @@ Validate untrusted documents before treating them as typed OpenAPI data.
 
 ## Documentation
 
-- [Generate a client](https://fetcher.ahoo.me/recipes/openapi-client)
+- [Generate a client](https://fetcher.ahoo.me/guides/services/generated-client)
 - [OpenAPI reference](https://fetcher.ahoo.me/reference/openapi)
 
 [中文](./README.zh-CN.md) · [License](../../LICENSE)

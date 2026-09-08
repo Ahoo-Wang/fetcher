@@ -1,91 +1,49 @@
 ---
-title: First Request
-description: Install Fetcher and make a typed HTTP request in five minutes.
+title: Your first request
+description: Run a typed JSON request and verify the HTTP 404 failure path.
 ---
 
-# First Request
+# Your first request
 
-## Prerequisites
+Complete [installation](./installation.md), then create these files in the `fetcher-first-request` directory.
 
-Use Node.js `>=18.20.8` or a browser project with native Fetch support.
+## Create `server.mjs`
 
-## Install
+<<< @/examples/http/server.mjs
+
+## Create `client.ts`
+
+<<< @/examples/http/client.ts
+
+The generic describes the expected TypeScript shape; it does not validate server data. The explicit id and name check provides this example's runtime boundary. `ResultExtractors.Json` is passed in the third argument to `get`, where request options belong.
+
+The 404 is exposed as an `ExchangeError`. Its `cause` is `HttpStatusValidationError`, and `exchange.response.status` retains `404`. Transport and parsing failures do not match that branch and are rethrown.
+
+## Create `tsconfig.json`
+
+<<< @/examples/http/tsconfig.json
+
+## Compile and run
+
+Start the deterministic local fixture:
 
 ```bash
-pnpm add @ahoo-wang/fetcher
+pnpm exec tsc -p tsconfig.json
+node server.mjs
 ```
 
-## Create a client
+In another terminal in the same directory, run:
 
-```ts
-import { Fetcher } from '@ahoo-wang/fetcher';
-
-const api = new Fetcher({
-  baseURL: 'https://api.example.com',
-  timeout: 5_000,
-});
+```bash
+node dist/client.js
 ```
 
-Client options become defaults for every request. Request options override them.
-
-## Send a request
-
-```ts
-const response = await api.get('/users/{id}', {
-  urlParams: {
-    path: { id: '42' },
-    query: { include: 'profile' },
-  },
-});
-```
-
-Fetcher resolves this URL:
+The client verifies both the fixed user and the 404 branch, then prints:
 
 ```text
-https://api.example.com/users/42?include=profile
+Ada
 ```
 
-## Read the result
+Press `Ctrl+C` in the server terminal to stop it. Running the client without the server exits non-zero because the transport error is rethrown.
 
-HTTP helpers return the native `Response` by default:
-
-```ts
-interface User {
-  id: string;
-  name: string;
-}
-
-const user = (await response.json()) as User;
-console.log(user.name);
-```
-
-Keep validation at the trust boundary: a TypeScript assertion does not validate server data.
-
-## Handle a failed response
-
-The default status validator accepts `200` through `299`. A rejected status or request failure reaches the Fetcher error hierarchy:
-
-```ts
-import { ExchangeError, FetcherError } from '@ahoo-wang/fetcher';
-
-try {
-  await api.get('/users/missing');
-} catch (error) {
-  if (error instanceof ExchangeError) {
-    console.error(error.exchange.response?.status, error.message);
-  } else if (error instanceof FetcherError) {
-    console.error(error.message);
-  } else {
-    throw error;
-  }
-}
-```
-
-`ExchangeError.exchange` keeps the request, response, attributes, and underlying error together for diagnosis.
-
-## Next steps
-
-- [Choose Packages](./choose-packages.md) for optional capabilities.
-- [Fetcher reference](../reference/fetcher.md) for client and request options.
-- [Request lifecycle](../learn/request-lifecycle.md) for the interceptor pipeline.
-- [Storybook](https://fetcher.ahoo.me/storybook/) for interactive request behavior.
+See the [repository HTTP example](../examples/http.md) for repository-specific verification commands.

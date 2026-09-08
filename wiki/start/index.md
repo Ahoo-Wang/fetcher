@@ -1,47 +1,21 @@
 ---
-title: Start with Fetcher
-description: Choose the shortest path from the core Fetch client to the Fetcher package you need.
+prev: false
+title: Choose your starting point
+description: Start with HTTP, a React request, or a local data table according to your existing application.
 ---
 
-# Start with Fetcher
+# Choose your starting point
 
-Fetcher is a set of TypeScript packages for HTTP requests and the workflows built around them. You can use `@ahoo-wang/fetcher` by itself; every other package is optional.
+Fetcher adds reusable request configuration and result handling to native Fetch. Choose the first result you need; a plain HTTP application does not need a UI framework or platform backend.
 
-## Pick a path
+| Your starting point                        | Prerequisites                                      | First result                                                                                                 |
+| ------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package          | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
+| Existing React application                 | Compatible React and Fetcher peers, a bundler      | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
+| Existing React application needing a table | Viewer peers, CSS-capable bundling, local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering                                |
 
-| Goal                                     | Start here                                         |
-| ---------------------------------------- | -------------------------------------------------- |
-| Send a typed HTTP request                | [First Request](./first-request.md)                |
-| Check runtime and peer dependencies      | [Installation](./installation.md)                  |
-| Decide which package belongs in your app | [Choose Packages](./choose-packages.md)            |
-| Understand the request pipeline          | [Request lifecycle](../learn/request-lifecycle.md) |
-| Try React and Viewer behavior            | [Storybook](https://fetcher.ahoo.me/storybook/)    |
+The runnable HTTP and Storybook examples have deterministic fixtures. When you move them into your application, supply the routes and response JSON documented in each example. Installing a client does not create a server.
 
-## The shortest useful setup
+Already have an API contract? [Declare service methods](../guides/services/declarative-client.md) or [generate from OpenAPI](../guides/services/generated-client.md). Before adopting Wow, CoSec, or remote Viewer, check their [integration requirements](../guides/integrations/index.md).
 
-```bash
-pnpm add @ahoo-wang/fetcher
-```
-
-```ts
-import { Fetcher } from '@ahoo-wang/fetcher';
-
-const api = new Fetcher({ baseURL: 'https://api.example.com' });
-const response = await api.get('/users/{id}', {
-  urlParams: { path: { id: '42' } },
-});
-
-const user = await response.json();
-```
-
-Fetcher adds URL templates, query serialization, JSON bodies, timeouts, status validation, interceptors, and result extraction without hiding the native request/response model.
-
-## Add packages only when the job appears
-
-- Add `fetcher-eventstream` when you consume SSE or LLM token streams.
-- Add `fetcher-decorator` when a service interface is clearer than ad hoc calls.
-- Add `fetcher-generator` when OpenAPI is already your contract.
-- Add `fetcher-react` when request state belongs in React.
-- Add `fetcher-wow`, `fetcher-cosec`, or `fetcher-viewer` only for those integrations.
-
-See [Choose Packages](./choose-packages.md) for the complete map.
+Continue with [next tasks](./next-steps.md), or [evaluate the architecture](../architecture/index.md) before choosing components.

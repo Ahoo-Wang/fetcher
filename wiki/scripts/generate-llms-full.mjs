@@ -21,6 +21,8 @@
  * - Keeps the compact index and inlined corpus on the same canonical routes
  */
 
+import { pageSections as PAGE_SECTIONS } from '../.vitepress/config/pages.mjs';
+import { expandCodeReferences } from './code-references.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,78 +31,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const wikiDir = join(__dirname, '..');
 
 const TODAY = new Date().toISOString().slice(0, 10);
-
-// Page collection order — mirrors the public sidebar.
-const PAGE_SECTIONS = [
-  {
-    heading: 'Start',
-    pages: [
-      'start/index.md',
-      'start/installation.md',
-      'start/first-request.md',
-      'start/choose-packages.md',
-    ],
-  },
-  {
-    heading: 'Learn',
-    pages: [
-      'learn/request-lifecycle.md',
-      'learn/requests-and-results.md',
-      'learn/interceptors-errors-timeouts.md',
-      'learn/streaming.md',
-      'learn/react-data-flow.md',
-    ],
-  },
-  {
-    heading: 'Recipes',
-    pages: [
-      'recipes/declarative-services.md',
-      'recipes/openapi-client.md',
-      'recipes/openai-streaming.md',
-      'recipes/wow-cqrs.md',
-      'recipes/cosec-authentication.md',
-      'recipes/state-and-events.md',
-      'recipes/data-viewer.md',
-    ],
-  },
-  {
-    heading: 'Skills',
-    pages: [
-      'skills/index.md',
-      'skills/http-and-services.md',
-      'skills/streaming-and-openai.md',
-      'skills/openapi-and-generation.md',
-      'skills/react-and-integrations.md',
-    ],
-  },
-  {
-    heading: 'Reference',
-    pages: [
-      'reference/index.md',
-      'reference/fetcher.md',
-      'reference/decorator.md',
-      'reference/eventbus.md',
-      'reference/eventstream.md',
-      'reference/storage.md',
-      'reference/react.md',
-      'reference/openapi.md',
-      'reference/generator.md',
-      'reference/openai.md',
-      'reference/wow.md',
-      'reference/cosec.md',
-      'reference/viewer.md',
-    ],
-  },
-  {
-    heading: 'Contributing',
-    pages: [
-      'contributing/index.md',
-      'contributing/development.md',
-      'contributing/testing.md',
-      'contributing/documentation.md',
-    ],
-  },
-];
 
 /** Strip YAML frontmatter (--- ... ---) from markdown content */
 function stripFrontmatter(content) {
@@ -119,7 +49,12 @@ function extractTitle(content, fallbackPath) {
 }
 
 function extractDescription(content) {
-  return content.match(/^description:\s*(.+)$/m)?.[1]?.trim() ?? '';
+  return (
+    content
+      .match(/^description:\s*(.+)$/m)?.[1]
+      ?.trim()
+      .replace(/^(['"])(.*)\1$/, '$2') ?? ''
+  );
 }
 
 function toRoute(pagePath) {
@@ -130,13 +65,18 @@ function toRoute(pagePath) {
 function readPage(relPath) {
   const absPath = join(wikiDir, relPath);
   if (!existsSync(absPath)) {
-    return null;
+    throw new Error(`Missing documentation page: ${relPath}`);
   }
   const raw = readFileSync(absPath, 'utf8');
-  const body = stripFrontmatter(raw).trim();
+  const body = expandCodeReferences(
+    stripFrontmatter(raw),
+    relPath,
+    wikiDir,
+  ).trim();
   const title = extractTitle(body, relPath);
   return {
-    title,
+    title:
+      raw.match(/^title:\s*(.+)$/m)?.[1]?.replace(/^['"]|['"]$/g, '') ?? title,
     description: extractDescription(raw),
     path: relPath,
     route: toRoute(relPath),
@@ -145,6 +85,13 @@ function readPage(relPath) {
 }
 
 function generate() {
+  // Validate both locales before writing either generated artifact.
+  for (const { pages } of PAGE_SECTIONS) {
+    for (const path of pages) {
+      readPage(path);
+      readPage(`zh/${path}`);
+    }
+  }
   const indexParts = [
     '# Fetcher',
     '',
@@ -161,7 +108,6 @@ function generate() {
   parts.push('');
 
   let total = 0;
-  let missing = 0;
 
   for (const section of PAGE_SECTIONS) {
     indexParts.push(`## ${section.heading}`, '');
@@ -170,11 +116,6 @@ function generate() {
 
     for (const pagePath of section.pages) {
       const page = readPage(pagePath);
-      if (!page) {
-        console.warn(`⚠  Missing: ${pagePath}`);
-        missing++;
-        continue;
-      }
       const suffix = page.description ? ` — ${page.description}` : '';
       indexParts.push(`- [${page.title}](${page.route})${suffix}`);
       parts.push(`<doc title="${page.title}" path="${page.path}">`);
@@ -203,9 +144,6 @@ function generate() {
     for (const pagePath of section.pages) {
       const zhPath = `zh/${pagePath}`;
       const page = readPage(zhPath);
-      if (!page) {
-        continue;
-      }
       parts.push(`<doc title="${page.title}" path="${page.path}">`);
       parts.push('');
       parts.push(page.body);
@@ -222,7 +160,7 @@ function generate() {
   writeFileSync(join(wikiDir, 'llms-full.txt'), fullOutput, 'utf8');
 
   console.log(
-    `✓ Generated llms.txt and llms-full.txt: ${total} pages, ${missing} missing, ${(fullOutput.length / 1024).toFixed(1)} KB`,
+    `✓ Generated llms.txt and llms-full.txt: ${total} pages, ${(fullOutput.length / 1024).toFixed(1)} KB`,
   );
 }
 

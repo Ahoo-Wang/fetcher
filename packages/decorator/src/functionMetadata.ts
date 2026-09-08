@@ -24,6 +24,8 @@ import {
   JsonResultExtractor,
   mergeRecordToMap,
   mergeRequest,
+  mergeHeaders,
+  setHeader,
   resolveTimeout,
   type RequestHeaders,
   type UrlParams,
@@ -287,10 +289,7 @@ export class FunctionMetadata implements NamedCapable {
       ...this.api.urlParams?.query,
       ...this.endpoint.urlParams?.query,
     };
-    const headers: RequestHeaders = {
-      ...this.api.headers,
-      ...this.endpoint.headers,
-    };
+    const headers = mergeHeaders(this.api.headers, this.endpoint.headers);
     let body: any = undefined;
     let signal: AbortSignal | null | undefined = undefined;
     let abortController: AbortController | null | undefined = undefined;
@@ -402,7 +401,14 @@ export class FunctionMetadata implements NamedCapable {
     value: any,
     headers: RequestHeaders,
   ) {
-    this.processHttpParam(param, value, headers);
+    if (value === undefined || value === null) return;
+    const values =
+      typeof value === 'object'
+        ? value
+        : { [param.name || `param${param.index}`]: value };
+    for (const [name, headerValue] of Object.entries(values)) {
+      setHeader(headers, name, headerValue as string | undefined);
+    }
   }
 
   /**

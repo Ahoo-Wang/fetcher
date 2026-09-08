@@ -21,7 +21,7 @@ import { useExecutePromise, useLatest, isValidateQuery } from './index';
 import { useCallback, useMemo } from 'react';
 import type { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryStateReturn } from './useQueryState';
-import { useQueryState } from './useQueryState';
+import { useCancellableQueryState } from './useQueryState';
 import type { AutoExecuteCapable } from '../types';
 
 /**
@@ -132,7 +132,7 @@ export function useQuery<Q, R, E = FetcherError>(
     [promiseExecutor, latestOptionsRef],
   );
 
-  const { getQuery, setQuery } = useQueryState({
+  const { getQuery, setQuery } = useCancellableQueryState({
     initialQuery: options.initialQuery,
     query: options.query,
     autoExecute: options.autoExecute,

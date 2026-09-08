@@ -8,6 +8,7 @@ import type {
   GetRecordCountActionCapable,
 } from './';
 import { ViewPanel, useViewerState } from './';
+import { EmptyViewer } from './EmptyViewer';
 import styles from './Viewer.module.css';
 import type {
   ViewTableSettingCapable,
@@ -27,13 +28,14 @@ import {
   useState,
 } from 'react';
 import type { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
+import { all } from '@ahoo-wang/fetcher-wow';
 import type * as React from 'react';
 
 const { Header, Sider, Content } = Layout;
 
 export interface ViewerRef extends FilterPanelConditionCapableRef {
   clearSelectedRowKeys: () => void;
-  getActiveView: () => ViewState;
+  getActiveView: () => ViewState | undefined;
 }
 
 export interface ViewerProps<RecordType>
@@ -50,8 +52,7 @@ export interface ViewerProps<RecordType>
   // for view
   dataSource: PagedList<RecordType>;
   pagination:
-    | false
-    | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
+    false | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
   actionColumn?: ViewTableActionColumn<RecordType>;
   onClickPrimaryKey?: (id: any, record: RecordType) => void;
   enableRowSelection?: boolean;
@@ -109,7 +110,7 @@ export function Viewer<RecordType = any>({
     setCondition,
     sorter,
     setSorter,
-    onSwitchView: switchView,
+    onSwitchView: updateActiveView,
     views,
     setViews,
     reset,
@@ -120,15 +121,26 @@ export function Viewer<RecordType = any>({
   });
 
   const [tableSelectedData, setTableSelectedData] = useState<RecordType[]>([]);
+  const [resetVersion, setResetVersion] = useState(0);
 
   const viewRef = useRef<ViewRef | null>(null);
   const viewerRef = useRef<HTMLElement | null>(null);
+
+  const clearSelection = () => {
+    viewRef.current?.clearSelectedRowKeys();
+    setTableSelectedData([]);
+  };
+
+  const switchView = (view: ViewState) => {
+    clearSelection();
+    updateActiveView(view);
+    onSwitchView?.(view);
+  };
 
   const handleCreateView = (view: ViewState, onSuccess?: () => void) => {
     onCreateView?.(view, (newView: ViewState) => {
       setViews([...views, newView]);
       switchView(newView);
-      onSwitchView?.(newView);
       onSuccess?.();
     });
   };
@@ -150,10 +162,14 @@ export function Viewer<RecordType = any>({
 
   const handleDeleteView = (view: ViewState, onSuccess?: () => void) => {
     onDeleteView?.(view, (deletedView: ViewState) => {
-      setViews(views.filter(it => it.id !== deletedView.id));
+      const remainingViews = views.filter(it => it.id !== deletedView.id);
+      setViews(remainingViews);
       if (activeView.id === deletedView.id) {
-        switchView(views[0]);
-        onSwitchView?.(views[0]);
+        if (remainingViews.length) {
+          switchView(remainingViews[0]);
+        } else {
+          clearSelection();
+        }
       }
       onSuccess?.();
     });
@@ -165,14 +181,19 @@ export function Viewer<RecordType = any>({
 
   const handleSwitchView = (view: ViewState) => {
     switchView(view);
-    onSwitchView?.(view);
   };
 
   const handleReset = () => {
     const resetView = reset();
-    viewRef.current?.reset();
-    onLoadData?.(resetView.condition, 1, resetView.pageSize, resetView.sorter);
-    // Reset logic handled by View component internally
+    clearSelection();
+    // Recreate uncontrolled filter inputs from the restored saved defaults.
+    setResetVersion(version => version + 1);
+    onLoadData?.(
+      resetView.condition || all(),
+      1,
+      resetView.pageSize,
+      resetView.sorter,
+    );
   };
 
   const handleChange = useCallback(
@@ -194,13 +215,29 @@ export function Viewer<RecordType = any>({
         viewRef.current?.clearSelectedRowKeys();
       },
       getCondition: () => viewRef.current?.getCondition(),
-      getActiveView: () => activeView,
+      getActiveView: () => (views.length ? activeView : undefined),
     };
   });
 
   useEffect(() => {
     dataMonitorService.initialize();
   }, []);
+
+  if (views.length === 0) {
+    return (
+      <EmptyViewer
+        onCreateView={
+          onCreateView &&
+          ((name, type, onSuccess) => {
+            handleCreateView(
+              { ...activeView, name, type, source: 'CUSTOM', isDefault: false },
+              onSuccess,
+            );
+          })
+        }
+      />
+    );
+  }
 
   return (
     <Layout ref={viewerRef}>
@@ -263,7 +300,7 @@ export function Viewer<RecordType = any>({
             </Header>
             <View<RecordType>
               ref={viewRef}
-              key={activeView.id}
+              key={`${activeView.id}:${resetVersion}`}
               fields={definition.fields}
               availableFilters={definition.availableFilters}
               dataSource={otherProps.dataSource}

@@ -45,7 +45,8 @@ vi.mock('../../src/hooks/useRefreshDataEventBus', () => ({
   })),
 }));
 
-vi.mock('@ahoo-wang/fetcher-react', () => ({
+vi.mock('@ahoo-wang/fetcher-react', async original => ({
+  ...(await original<typeof import('@ahoo-wang/fetcher-react')>()),
   useKeyStorage: vi.fn(() => [undefined, vi.fn()]),
 }));
 

@@ -16,6 +16,7 @@ import {
   DEFAULT_FETCHER_NAME,
   Fetcher,
   fetcherRegistrar,
+  URL_RESOLVE_INTERCEPTOR_ORDER,
 } from '@ahoo-wang/fetcher';
 import { FullscreenProvider } from '@ahoo-wang/fetcher-react';
 import type { FetcherViewerRef } from '@ahoo-wang/fetcher-viewer';
@@ -75,6 +76,7 @@ function FetcherViewerDemo({
         <FetcherViewer<FixtureViewerUser>
           ref={viewerRef}
           viewerDefinitionId="users"
+          defaultViewId="all-users"
           pagination={{ showSizeChanger: false }}
           enableRowSelection
           viewTableSetting={false}
@@ -128,6 +130,14 @@ const meta = {
     fetcherRegistrar.default = new Fetcher({
       baseURL: 'https://api.example.test',
     });
+    fetcherRegistrar.default.interceptors.request.use({
+      name: 'storybook-viewer-tenant',
+      order: URL_RESOLVE_INTERCEPTOR_ORDER - 1,
+      intercept(exchange) {
+        const { path } = exchange.ensureRequestUrlParams();
+        path.tenantId ??= '(0)';
+      },
+    });
     localStorage.removeItem(storageKey);
 
     return () => {
@@ -162,6 +172,10 @@ export const DefinitionRequestError: Story = {
 
 export const NoSavedViews: Story = {
   args: { scenario: 'empty-views' },
+};
+
+export const SaveViewChanges: Story = {
+  args: { scenario: 'success' },
 };
 
 export const EnhanceDataSource: Story = {

@@ -15,8 +15,9 @@ import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { UseQueryOptions, UseQueryReturn } from '../index';
 import { useQuery } from '../index';
 import type { DebounceCapable, UseDebouncedCallbackReturn } from '../index';
-import { useDebouncedCallback } from '../index';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useDebouncedCallbackInternal } from './useDebouncedCallback';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { dequal } from 'dequal';
 
 /**
  * Configuration options for the useDebouncedQuery hook
@@ -140,6 +141,8 @@ export function useDebouncedQuery<Q, R, E = FetcherError>(
   options: UseDebouncedQueryOptions<Q, R, E>,
 ): UseDebouncedQueryReturn<Q, R, E> {
   const originalAutoExecute = options.autoExecute;
+  const hasQuery = 'query' in options;
+  const hasQueryToExecute = options.query !== undefined || !hasQuery;
   const debouncedExecuteOptions = {
     ...options,
     autoExecute: false,
@@ -155,24 +158,111 @@ export function useDebouncedQuery<Q, R, E = FetcherError>(
     getQuery,
     setQuery,
   } = useQuery(debouncedExecuteOptions);
-  const { run, cancel, isPending } = useDebouncedCallback(
-    execute,
-    options.debounce,
+  type AutomaticQuery = { query: Q | undefined; invoked: boolean };
+  const automaticallyScheduled = useRef<AutomaticQuery | undefined>(undefined);
+  const invokeScheduled = useCallback(
+    (automatic?: AutomaticQuery) => {
+      if (automatic) automatic.invoked = true;
+      return execute();
+    },
+    [execute],
   );
+  const {
+    run: schedule,
+    cancel: cancelScheduled,
+    isPending,
+  } = useDebouncedCallbackInternal(invokeScheduled, options.debounce);
+  const cancel = useCallback(() => {
+    automaticallyScheduled.current = undefined;
+    cancelScheduled();
+  }, [cancelScheduled]);
+  const cancelAutomatic = useCallback(() => {
+    automaticallyScheduled.current = undefined;
+    cancelScheduled(true);
+  }, [cancelScheduled]);
+  const scheduleAutomatically = useCallback(
+    (query: Q | undefined) => {
+      const previous = automaticallyScheduled.current;
+      const automatic = { query, invoked: false };
+      automaticallyScheduled.current = automatic;
+      schedule(automatic);
+      if (
+        automaticallyScheduled.current === automatic &&
+        !automatic.invoked &&
+        !isPending()
+      ) {
+        // A suppressed call owns no timer; retain only an already invoked automatic call.
+        automaticallyScheduled.current = previous?.invoked
+          ? previous
+          : undefined;
+      }
+    },
+    [schedule, isPending],
+  );
+  const run = useCallback(() => {
+    automaticallyScheduled.current = undefined;
+    schedule();
+  }, [schedule]);
   const setQueryFn = useCallback(
     (query: Q) => {
       setQuery(query);
       if (originalAutoExecute) {
-        run();
+        scheduleAutomatically(query);
       }
     },
-    [setQuery, run, originalAutoExecute],
+    [setQuery, scheduleAutomatically, originalAutoExecute],
+  );
+  const lastExecution = useRef({
+    autoExecute: false,
+    hasQuery,
+    query: options.query,
+  });
+  useEffect(
+    () => () => {
+      // The debounce cleanup cancels pending work, including StrictMode replay.
+      lastExecution.current.autoExecute = false;
+      automaticallyScheduled.current = undefined;
+    },
+    [],
   );
   useEffect(() => {
-    if (originalAutoExecute) {
-      run();
+    const previous = lastExecution.current;
+    lastExecution.current = {
+      autoExecute: !!originalAutoExecute,
+      hasQuery,
+      query: options.query,
+    };
+    if (
+      (!originalAutoExecute && previous.autoExecute) ||
+      (originalAutoExecute && !hasQueryToExecute)
+    ) {
+      if (automaticallyScheduled.current) cancelAutomatic();
+    } else if (
+      originalAutoExecute &&
+      hasQueryToExecute &&
+      (!previous.autoExecute ||
+        previous.hasQuery !== hasQuery ||
+        !dequal(previous.query, options.query))
+    ) {
+      if (
+        previous.autoExecute &&
+        previous.hasQuery === hasQuery &&
+        automaticallyScheduled.current &&
+        dequal(automaticallyScheduled.current.query, options.query)
+      ) {
+        return;
+      }
+      scheduleAutomatically(getQuery());
     }
-  }, [run, originalAutoExecute]);
+  }, [
+    scheduleAutomatically,
+    cancelAutomatic,
+    originalAutoExecute,
+    hasQuery,
+    hasQueryToExecute,
+    options.query,
+    getQuery,
+  ]);
   return useMemo(
     () => ({
       loading,

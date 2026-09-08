@@ -49,13 +49,14 @@ interface EventHandler<EVENT> extends NamedCapable, OrderedCapable {
   name: string; // Unique identifier (prevents duplicates)
   order?: number; // Execution priority (lower = earlier; default 0)
   handle(event: EVENT): void | Promise<void>;
-  once?: boolean; // If true, auto-removes after first execution
+  once?: boolean; // If true, removed before dispatch and invoked at most once
 }
 ```
 
 #### Once Handlers
 
-Handlers with `once: true` automatically unregister after their first execution:
+Handlers with `once: true` are claimed before dispatch, so overlapping or
+recursive emissions cannot deliver them twice:
 
 ```typescript
 bus.on({
@@ -158,6 +159,35 @@ await bus.emit('broadcast-message'); // Local + cross-tab
 
 Default messenger channel: `_broadcast_:{type}`. Pass a custom `messenger` option to override.
 
+`BroadcastTypedEventBusOptions<EVENT>` also accepts an optional message conversion:
+
+```typescript
+messageTransformer?: {
+  serialize(event: EVENT): unknown;
+  deserialize(message: unknown): EVENT;
+  serializeBeforeDispatch?: boolean;
+  fallbackSerialize?(message: unknown, error: unknown): unknown;
+};
+```
+
+It can also be assigned to `bus.messageTransformer` after construction. Local
+handlers receive the original event. By default, serialization runs after local
+handlers, before posting to the messenger. With `serializeBeforeDispatch: true`,
+`serialize` runs at the start of each emission and its result belongs to that
+emission, so nested or overlapping emissions cannot overwrite its prepared message.
+The messenger post still occurs after local handlers. An early conversion error
+rejects before local dispatch. Each `emit()` captures its starting transformer and
+this option before awaiting local handlers, so changing or clearing them does not
+change an in-flight message's encoding. Incoming messages are deserialized before any delegate handlers
+run, including handlers registered before the transformer was configured. Without
+a transformer, messages pass through unchanged. Outgoing conversion errors propagate
+from `emit()`. When a messenger post throws, `fallbackSerialize`, if provided,
+receives that already serialized message and error; its replacement is posted once.
+Conversion errors do not invoke the fallback, and fallback errors or a second post
+failure still reject `emit()`. Incoming conversion or delegate errors are reported with `console.warn`
+and the bus type; an undecodable message is not dispatched, and later messages can
+still be received. Messenger callbacks do not leave rejected promises unhandled.
+
 ### Generic EventBus<Events>
 
 Manages multiple named event types with lazy-loaded TypedEventBus instances:
@@ -209,7 +239,7 @@ messenger.close();
 
 ### StorageMessenger
 
-Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. Supports TTL and cleanup. Throws outside a browser environment (no `localStorage`); probe `isStorageEventSupported()` first if that matters. Options also include `storage` (defaults to `localStorage`).
+Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. It retains the legacy raw channel key format and validates the full timestamp/random suffix to isolate channels, including arbitrary UTF-16 names. Supports TTL and cleanup. Throws outside a browser environment (no `localStorage`); probe `isStorageEventSupported()` first if that matters. Options also include `storage` (defaults to `localStorage`).
 
 ```typescript
 import { StorageMessenger } from '@ahoo-wang/fetcher-eventbus';

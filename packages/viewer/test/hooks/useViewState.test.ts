@@ -13,7 +13,8 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useViewState } from '../../src';
+import { useViewerState, useViewState } from '../../src';
+import type { ViewState } from '../../src';
 import { ViewColumn } from '../../src';
 import { Operator, SortDirection } from '@ahoo-wang/fetcher-wow';
 import { SizeType } from 'antd/es/config-provider/SizeContext';
@@ -202,6 +203,92 @@ describe('useViewState', () => {
   });
 
   describe('controlled mode', () => {
+    it('restores saved filters when only the condition is controlled by useViewerState', () => {
+      const savedView: ViewState = {
+        id: 'saved',
+        name: 'Saved',
+        definitionId: 'definition',
+        type: 'PERSONAL',
+        source: 'CUSTOM',
+        isDefault: false,
+        columns: defaultColumns,
+        pageSize: 10,
+        tableSize: 'middle',
+        sorter: [],
+        condition: { field: 'status', operator: Operator.EQ, value: 'saved' },
+        filters: [
+          {
+            key: 'status',
+            type: 'text',
+            field: { name: 'status', label: 'Status' },
+            operator: { defaultValue: Operator.EQ },
+            value: { defaultValue: 'saved' },
+          },
+          {
+            key: 'optional',
+            type: 'text',
+            field: { name: 'optional', label: 'Optional' },
+          },
+        ],
+      };
+      const onChange = vi.fn();
+      const { result } = renderHook(() => {
+        const viewer = useViewerState({
+          views: [savedView],
+          defaultView: savedView,
+          definition: {
+            id: 'definition',
+            name: 'Definition',
+            fields: [],
+            availableFilters: [],
+            dataUrl: '/data',
+            countUrl: '/count',
+          },
+        });
+        const view = useViewState({
+          defaultColumns,
+          defaultPageSize: 10,
+          defaultTableSize: 'middle',
+          defaultCondition: savedView.condition,
+          defaultActiveFilters: savedView.filters,
+          externalCondition: viewer.condition,
+          externalUpdateCondition: viewer.setCondition,
+          onChange,
+        });
+        return { view, viewer };
+      });
+      act(() => {
+        result.current.view.setCondition(
+          { field: 'status', operator: Operator.EQ, value: 'changed' },
+          new Map([
+            [
+              'status',
+              { field: 'status', operator: Operator.EQ, value: 'changed' },
+            ],
+          ]),
+          new Map([['status', { operator: Operator.EQ, value: 'changed' }]]),
+        );
+      });
+      expect(result.current.viewer.viewChanged).toBe(true);
+      onChange.mockClear();
+
+      act(() => result.current.view.reset());
+
+      expect(result.current.view.activeFilters).toEqual(savedView.filters);
+      expect(result.current.viewer.activeView.filters).toEqual(
+        savedView.filters,
+      );
+      expect(result.current.view.condition).toEqual(savedView.condition);
+      expect(result.current.viewer.condition).toEqual(savedView.condition);
+      expect(result.current.viewer.viewChanged).toBe(false);
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(
+        savedView.condition,
+        1,
+        10,
+        undefined,
+      );
+    });
+
     it('should use external columns when provided', () => {
       const externalColumns: ViewColumn[] = [
         { key: 'external', name: 'external', fixed: false, hidden: true },

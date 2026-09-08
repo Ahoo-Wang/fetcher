@@ -1,40 +1,58 @@
 ---
 layout: home
-title: Fetcher
-description: A TypeScript-first HTTP client ecosystem built on the native Fetch API.
-
+title: TypeScript HTTP clients on native Fetch
+description: Use Fetcher for HTTP, service clients, streaming, and React data interactions.
 hero:
   name: Fetcher
-  text: Typed HTTP workflows, from request to UI
-  tagline: Start with a small Fetch-based client, then add decorators, streaming, generated clients, React hooks, authentication, or data viewers when your application needs them.
+  text: From one request to application data
+  tagline: Shared configuration and explicit results, built on native Fetch.
   image:
     src: /fetcher-logo.png
     alt: Fetcher request and response logo
   actions:
     - theme: brand
-      text: Send your first request
-      link: /start/first-request
+      text: Start building
+      link: ./start/
     - theme: alt
-      text: Choose packages
-      link: /start/choose-packages
-    - theme: alt
-      text: Open Storybook
-      link: /storybook/
-
+      text: Evaluate architecture
+      link: ./architecture/
 features:
-  - title: Typed requests
-    details: Build URLs, path and query parameters, headers, bodies, timeouts, and result extraction on top of the native Fetch API.
-  - title: Ordered interceptors
-    details: Keep authentication, status validation, request shaping, and error handling in a visible request lifecycle.
+  - title: HTTP requests
+    details: Share configuration, send data, and handle results and failures on native Fetch.
+    link: /guides/http/
+    linkText: Learn more
+  - title: Service clients
+    details: Declare service methods or generate TypeScript clients from an OpenAPI document.
+    link: /guides/services/
+    linkText: Learn more
   - title: Streaming
-    details: Parse Server-Sent Events and consume token streams with async iteration and explicit cancellation.
-  - title: Declarative and generated clients
-    details: Define services with TypeScript decorators or generate models and clients from OpenAPI documents.
-  - title: React integration
-    details: Connect requests, storage, events, and Wow queries to observable loading, result, and error state.
-  - title: Wow and Viewer
-    details: Build CQRS clients and reusable data views with filters, tables, saved views, and remote data loading.
-  - title: Agent-ready Skills
-    details: Give Codex precise, package-aware workflows for requests, streaming, generation, React, CoSec, Wow, and Viewer work.
-    link: /skills/
+    details: Consume SSE events and manage cancellation, connection lifetimes, and cleanup.
+    link: /guides/streaming/
+    linkText: Learn more
+  - title: React data flow
+    details: Connect request execution, loading, errors, and cancellation to React components.
+    link: /guides/react/
+    linkText: Learn more
+  - title: Data views
+    details: Compose tables, filtering, sorting, and saved views with explicit application ownership.
+    link: /guides/viewer/
+    linkText: Learn more
+  - title: Architecture and choices
+    details: Evaluate package boundaries, runtime requirements, and integration responsibilities.
+    link: /architecture/
+    linkText: Learn more
 ---
+
+## Make requests and results explicit
+
+```ts
+const user = await client.get<User>(
+  '/users/1',
+  {},
+  {
+    resultExtractor: ResultExtractors.Json,
+  },
+);
+```
+
+`client` is a configured `Fetcher` instance; import `ResultExtractors` from the core package. Run [your first request](./start/first-request.md) for the complete setup, local server, and failure branch.

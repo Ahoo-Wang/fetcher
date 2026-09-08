@@ -114,7 +114,7 @@ export class ServerSentEventTransformer extends SafeTransformer<
     const currentEvent = this.currentEventState;
 
     // Skip empty lines (event separator)
-    if (chunk.trim() === '') {
+    if (chunk === '') {
       if (currentEvent.data.length > 0) {
         this.enqueue(controller, {
           event: currentEvent.event || DEFAULT_EVENT_TYPE,
@@ -122,10 +122,9 @@ export class ServerSentEventTransformer extends SafeTransformer<
           id: currentEvent.id || '',
           retry: currentEvent.retry,
         } as ServerSentEvent);
-
-        currentEvent.event = DEFAULT_EVENT_TYPE;
-        currentEvent.data = [];
       }
+      currentEvent.event = DEFAULT_EVENT_TYPE;
+      currentEvent.data = [];
       return;
     }
 
@@ -140,16 +139,15 @@ export class ServerSentEventTransformer extends SafeTransformer<
     let value: string;
 
     if (colonIndex === -1) {
-      field = chunk.toLowerCase();
+      field = chunk;
       value = '';
     } else {
-      field = chunk.substring(0, colonIndex).toLowerCase();
+      field = chunk.substring(0, colonIndex);
       value = chunk.substring(colonIndex + 1);
       if (value.startsWith(' ')) {
         value = value.substring(1);
       }
     }
-
 
     processFieldInternal(field, value, currentEvent);
   }

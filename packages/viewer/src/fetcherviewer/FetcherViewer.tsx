@@ -1,4 +1,17 @@
-import { Spin } from 'antd';
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { Button, Spin } from 'antd';
 import type { PaginationProps } from 'antd';
 import type {
   ViewTableSettingCapable,
@@ -9,6 +22,7 @@ import type {
   ViewerRef,
 } from '../';
 import { Viewer, useRefreshDataEventBus } from '../';
+import { EmptyViewer } from '../viewer/EmptyViewer';
 import type { CreateView, EditView } from './';
 import {
   useViewerDefinition,
@@ -27,14 +41,22 @@ import {
 } from 'react';
 import type {
   CommandResult,
+  AggregateId,
+  ErrorInfo,
   Condition,
   FieldSort,
   PagedList,
   PagedQuery,
+  MaterializedSnapshot,
 } from '@ahoo-wang/fetcher-wow';
-import type { UrlParams } from '@ahoo-wang/fetcher';
+import {
+  all,
+  CommandHeaders,
+  CommandStage,
+  ErrorCodes,
+} from '@ahoo-wang/fetcher-wow';
 import { fetcherRegistrar, TextResultExtractor } from '@ahoo-wang/fetcher';
-import { useKeyStorage } from '@ahoo-wang/fetcher-react';
+import { useKeyStorage, useLatest } from '@ahoo-wang/fetcher-react';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 
 export interface FetcherViewerRef {
@@ -78,7 +100,22 @@ const localDefaultViewIdStorage = new KeyStorage<string | undefined>({
   defaultValue: undefined,
 });
 
-export function FetcherViewer<RecordType = any>({
+export function FetcherViewer<RecordType = any>(
+  props: FetcherViewerProps<RecordType>,
+) {
+  return (
+    <FetcherViewerContent<RecordType>
+      key={JSON.stringify([
+        props.viewerDefinitionId,
+        props.tenantId ?? '(0)',
+        props.ownerId ?? '(0)',
+      ])}
+      {...props}
+    />
+  );
+}
+
+function FetcherViewerContent<RecordType>({
   ownerId = '(0)',
   tenantId = '(0)',
   ...props
@@ -103,21 +140,132 @@ export function FetcherViewer<RecordType = any>({
   >(localDefaultViewIdStorage);
 
   const {
-    viewerDefinition,
+    viewerDefinition: loadedDefinition,
     loading: definitionLoading,
     error: definitionError,
   } = useViewerDefinition(viewerDefinitionId);
 
+  const [pendingView, setPendingView] = useState<{
+    aggregate?: AggregateId;
+    ownerId: string;
+    aggregateVersion: number | undefined;
+    previousViews: ViewState[] | undefined;
+    action: '创建' | '更新';
+    commandError?: ErrorInfo;
+  }>();
   const {
-    views,
+    views: loadedViews,
+    snapshots: viewSnapshots,
     loading: viewsLoading,
+    error: viewsError,
     execute: loadViews,
-  } = useViewerViews(viewerDefinitionId, tenantId, ownerId);
+  } = useViewerViews(
+    viewerDefinitionId,
+    tenantId,
+    ownerId,
+    pendingView?.aggregate && {
+      ...pendingView.aggregate,
+      ownerId: pendingView.ownerId,
+    },
+  );
+
+  const viewerDefinition =
+    loadedDefinition?.id === viewerDefinitionId ? loadedDefinition : undefined;
+  const views = useMemo(
+    () => loadedViews?.filter(view => view.definitionId === viewerDefinitionId),
+    [loadedViews, viewerDefinitionId],
+  );
 
   const defaultView = useMemo(
     () => getDefaultView(views, localDefaultViewId, defaultViewId),
     [views, defaultViewId, localDefaultViewId],
   );
+  const [selection, setSelection] = useState({
+    view: defaultView,
+    snapshot: viewSnapshots?.find(snapshot => snapshot.state === defaultView),
+  });
+  const selectedView = selection.view;
+  const mutationId = useRef(0);
+  const [recovery, setRecovery] = useState<{
+    previousViews: ViewState[] | undefined;
+  }>();
+  useEffect(
+    () => () => {
+      mutationId.current++;
+    },
+    [],
+  );
+  const latestViewsRef = useLatest(loadedViews);
+  const mutationSuccess = useRef<((view: ViewState) => void) | undefined>(
+    undefined,
+  );
+  const targetVersion = pendingView?.aggregateVersion;
+  const hasTargetVersion =
+    typeof targetVersion === 'number' && Number.isFinite(targetVersion);
+  const confirmedView =
+    pendingView?.aggregate &&
+    !pendingView.commandError &&
+    hasTargetVersion &&
+    loadedViews !== pendingView.previousViews
+      ? viewSnapshots?.find(
+          snapshot =>
+            sameViewIdentity(snapshot, {
+              ...pendingView.aggregate!,
+              ownerId: pendingView.ownerId,
+            }) &&
+            snapshot.state.definitionId === viewerDefinitionId &&
+            Number.isFinite(snapshot.version) &&
+            snapshot.version >= targetVersion,
+        )?.state
+      : undefined;
+  const [previousViews, setPreviousViews] = useState(views);
+  if (previousViews !== views) {
+    setPreviousViews(views);
+    const snapshot = selection.snapshot
+      ? viewSnapshots?.find(snapshot =>
+          sameViewIdentity(snapshot, selection.snapshot!),
+        )
+      : undefined;
+    const view =
+      snapshot?.state ??
+      (selection.snapshot
+        ? selectedView
+        : (views?.find(view => view.id === selectedView?.id) ?? defaultView));
+    setSelection({
+      view,
+      snapshot:
+        snapshot ??
+        selection.snapshot ??
+        viewSnapshots?.find(snapshot => snapshot.state === view),
+    });
+  }
+  const commandError = pendingView?.commandError;
+  const activeView =
+    pendingView && !commandError
+      ? confirmedView
+      : (selectedView ?? defaultView);
+
+  if (
+    recovery &&
+    !viewsLoading &&
+    !viewsError &&
+    loadedViews !== recovery.previousViews
+  ) {
+    const snapshot =
+      pendingView?.aggregate &&
+      viewSnapshots?.find(
+        snapshot =>
+          sameViewIdentity(snapshot, {
+            ...pendingView.aggregate!,
+            ownerId: pendingView.ownerId,
+          }) && snapshot.state.definitionId === viewerDefinitionId,
+      );
+    if (commandError || snapshot) {
+      if (snapshot) setSelection({ view: snapshot.state, snapshot });
+      setPendingView(undefined);
+      setRecovery(undefined);
+    }
+  }
 
   const {
     dataSource,
@@ -127,28 +275,52 @@ export function FetcherViewer<RecordType = any>({
     getPageQuery,
   } = useFetchData<RecordType>({
     viewerDefinition,
-    defaultView,
+    defaultView: activeView,
   });
 
-  const [enhancedDataSource, setEnhancedDataSource] = useState<
-    PagedList<RecordType>
-  >({
-    list: [],
-    total: 0,
-  });
+  const [enhancement, setEnhancement] = useState<{
+    view: ViewState | undefined;
+    source: PagedList<RecordType> | undefined;
+    data?: PagedList<RecordType>;
+    error?: Error;
+  }>();
+  const currentEnhancement =
+    enhancement?.view === activeView && enhancement?.source === dataSource
+      ? enhancement
+      : undefined;
+  const enhancedDataSource = currentEnhancement?.data ?? { list: [], total: 0 };
+  const enhancementError = currentEnhancement?.error;
 
   useEffect(() => {
+    let current = true;
     const asyncFn = async () => {
       const result =
         (await enhanceDataSource?.(dataSource?.list || [])) || dataSource?.list;
 
-      setEnhancedDataSource({
-        list: result || [],
-        total: dataSource?.total || 0,
-      });
+      if (current) {
+        setEnhancement({
+          view: activeView,
+          source: dataSource,
+          data: {
+            list: result || [],
+            total: dataSource?.total || 0,
+          },
+        });
+      }
     };
-    asyncFn();
-  }, [dataSource, enhanceDataSource, setEnhancedDataSource]);
+    asyncFn().catch((error: unknown) => {
+      if (current) {
+        setEnhancement({
+          view: activeView,
+          source: dataSource,
+          error: error instanceof Error ? error : new Error(String(error)),
+        });
+      }
+    });
+    return () => {
+      current = false;
+    };
+  }, [activeView, dataSource, enhanceDataSource]);
 
   const viewerRef = useRef<ViewerRef | null>(null);
 
@@ -166,11 +338,27 @@ export function FetcherViewer<RecordType = any>({
 
   const handleSwitchView = useCallback(
     (view: ViewState) => {
+      mutationId.current++;
+      mutationSuccess.current = undefined;
+      setRecovery(undefined);
+      setSelection({
+        view,
+        snapshot: viewSnapshots?.find(snapshot => snapshot.state === view),
+      });
+      setPendingView(undefined);
       onSwitchView?.(view);
       setLocalDefaultViewId(view.id);
     },
-    [onSwitchView, setLocalDefaultViewId],
+    [onSwitchView, setLocalDefaultViewId, viewSnapshots],
   );
+
+  useEffect(() => {
+    if (!confirmedView) return;
+    const onSuccess = mutationSuccess.current;
+    mutationSuccess.current = undefined;
+    if (onSuccess) onSuccess(confirmedView);
+    else handleSwitchView(confirmedView);
+  }, [confirmedView, handleSwitchView]);
 
   const onGetRecordCount = useCallback(
     (countUrl: string, condition: Condition): Promise<number> => {
@@ -189,51 +377,85 @@ export function FetcherViewer<RecordType = any>({
     [],
   );
 
-  const handleCreateView = useCallback(
-    (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
-      const command: CreateView = {
-        ...view,
-      };
-
-      const requestOptions =
-        view.type === 'SHARED'
-          ? {
-              urlParams: { path: { ownerId: '(shared)' } as UrlParams['path'] },
-            }
-          : {};
-
-      viewCommandClient
-        .createView(view.type, {
-          body: command,
-          ...requestOptions,
-        })
-        .then((result: CommandResult) => {
-          const newView = {
-            ...view,
-            id: result.aggregateId,
-          };
-          onSuccess?.(newView);
-          loadViews();
+  const runViewMutation = useCallback(
+    async (
+      action: '创建' | '更新',
+      commandOwnerId: string,
+      send: () => Promise<CommandResult>,
+      onSuccess?: (newView: ViewState) => void,
+    ) => {
+      const currentMutation = ++mutationId.current;
+      mutationSuccess.current = undefined;
+      setPendingView(undefined);
+      setRecovery(undefined);
+      try {
+        const result = await send();
+        if (currentMutation !== mutationId.current) return;
+        const succeeded = ErrorCodes.isSucceeded(result.errorCode);
+        mutationSuccess.current = succeeded ? onSuccess : undefined;
+        setPendingView({
+          aggregate: result,
+          ownerId: commandOwnerId,
+          aggregateVersion: result.aggregateVersion,
+          previousViews: latestViewsRef.current,
+          action,
+          commandError: succeeded ? undefined : result,
         });
+        if (succeeded) loadViews({ ...result, ownerId: commandOwnerId });
+      } catch (error) {
+        if (currentMutation !== mutationId.current) return;
+        setPendingView({
+          ownerId: commandOwnerId,
+          aggregateVersion: undefined,
+          previousViews: latestViewsRef.current,
+          action,
+          commandError: {
+            errorCode: 'TransportError',
+            errorMsg: error instanceof Error ? error.message : String(error),
+          },
+        });
+      }
     },
-    [loadViews],
+    [loadViews, latestViewsRef],
+  );
+
+  const handleCreateView = useCallback(
+    (view: Omit<ViewState, 'id'>, onSuccess?: (newView: ViewState) => void) => {
+      const command: CreateView = { ...view };
+      Reflect.deleteProperty(command, 'id');
+      const commandOwnerId = view.type === 'SHARED' ? '(shared)' : ownerId;
+      void runViewMutation(
+        '创建',
+        commandOwnerId,
+        () =>
+          viewCommandClient.createView(view.type, {
+            body: command,
+            headers: { [CommandHeaders.WAIT_STAGE]: CommandStage.PROCESSED },
+            urlParams: { path: { tenantId, ownerId: commandOwnerId } },
+          }),
+        onSuccess,
+      );
+    },
+    [runViewMutation, ownerId, tenantId],
   );
 
   const handleUpdateView = useCallback(
     (view: ViewState, onSuccess?: (newView: ViewState) => void) => {
-      const command: EditView = {
-        ...view,
-      };
-      viewCommandClient
-        .editView(view.type, view.id, {
-          body: command,
-        })
-        .then(() => {
-          loadViews();
-          onSuccess?.(view);
-        });
+      const command: EditView = { ...view };
+      const commandOwnerId = view.type === 'SHARED' ? '(shared)' : ownerId;
+      void runViewMutation(
+        '更新',
+        commandOwnerId,
+        () =>
+          viewCommandClient.editView(view.type, view.id, {
+            body: command,
+            headers: { [CommandHeaders.WAIT_STAGE]: CommandStage.PROCESSED },
+            urlParams: { path: { tenantId, ownerId: commandOwnerId } },
+          }),
+        onSuccess,
+      );
     },
-    [loadViews],
+    [runViewMutation, ownerId, tenantId],
   );
 
   const handleDeleteView = useCallback(
@@ -241,13 +463,19 @@ export function FetcherViewer<RecordType = any>({
       viewCommandClient
         .defaultDeleteAggregate(view.id, {
           body: {},
+          urlParams: {
+            path: {
+              tenantId,
+              ownerId: view.type === 'SHARED' ? '(shared)' : ownerId,
+            },
+          },
         })
         .then(() => {
           loadViews();
           onSuccess?.(view);
         });
     },
-    [loadViews],
+    [loadViews, tenantId, ownerId],
   );
 
   const { publish, subscribe } = useRefreshDataEventBus(viewerDefinitionId);
@@ -283,7 +511,56 @@ export function FetcherViewer<RecordType = any>({
     );
   }, [subscribe, viewerDefinitionId]);
 
-  if (definitionLoading || viewsLoading) {
+  if (pendingView && !confirmedView && !(commandError && activeView)) {
+    return (
+      <div
+        role={
+          pendingView.commandError || viewsError || !hasTargetVersion
+            ? 'alert'
+            : 'status'
+        }
+        style={{ padding: 24 }}
+      >
+        <p>
+          {pendingView.commandError ? (
+            <>
+              {pendingView.action}失败：
+              {pendingView.commandError.errorMsg ||
+                pendingView.commandError.errorCode}
+            </>
+          ) : !hasTargetVersion ? (
+            '命令未返回有效版本，无法确认保存结果。'
+          ) : (
+            <>
+              视图已{pendingView.action}，
+              {viewsLoading
+                ? '正在加载…'
+                : viewsError
+                  ? '加载失败，请重试。'
+                  : '尚未确认，请重试。'}
+            </>
+          )}
+        </p>
+        <Button
+          loading={viewsLoading}
+          onClick={() => {
+            if (pendingView.commandError || !hasTargetVersion) {
+              mutationId.current++;
+              mutationSuccess.current = undefined;
+              setRecovery({ previousViews: loadedViews });
+            }
+            loadViews();
+          }}
+        >
+          {hasTargetVersion && !pendingView.commandError
+            ? '重试'
+            : '重新加载视图'}
+        </Button>
+      </div>
+    );
+  }
+
+  if ((definitionLoading && !viewerDefinition) || (viewsLoading && !views)) {
     return (
       <div
         style={{
@@ -311,33 +588,70 @@ export function FetcherViewer<RecordType = any>({
   }
 
   if (views && views.length === 0) {
-    return <div style={{ padding: 24 }}>未找到视图</div>;
+    return (
+      <EmptyViewer
+        onCreateView={(name, type, onSuccess) => {
+          handleCreateView(
+            {
+              name,
+              type,
+              definitionId: viewerDefinition.id,
+              source: 'CUSTOM',
+              isDefault: false,
+              columns: [],
+              filters: [],
+              condition: all(),
+              pageSize: 10,
+              tableSize: 'middle',
+              sorter: [],
+            },
+            newView => {
+              handleSwitchView(newView);
+              onSuccess();
+            },
+          );
+        }}
+      />
+    );
   }
 
-  if (views && views.length > 0 && defaultView) {
+  if (views && views.length > 0 && activeView) {
     return (
-      <Viewer<RecordType>
-        ref={viewerRef}
-        defaultViews={views}
-        defaultView={defaultView}
-        definition={viewerDefinition}
-        loading={fetchLoading}
-        dataSource={enhancedDataSource}
-        pagination={pagination}
-        actionColumn={actionColumn}
-        onClickPrimaryKey={onClickPrimaryKey}
-        enableRowSelection={enableRowSelection}
-        primaryAction={primaryAction}
-        secondaryActions={secondaryActions}
-        batchActions={batchActions}
-        onGetRecordCount={onGetRecordCount}
-        onSwitchView={handleSwitchView}
-        onLoadData={handleLoadData}
-        viewTableSetting={viewTableSetting}
-        onCreateView={handleCreateView}
-        onUpdateView={handleUpdateView}
-        onDeleteView={handleDeleteView}
-      />
+      <>
+        {commandError && (
+          <div role="alert" style={{ padding: 24, color: '#a8071a' }}>
+            {pendingView.action}失败：
+            {commandError.errorMsg || commandError.errorCode}
+          </div>
+        )}
+        {enhancementError && (
+          <div role="alert" style={{ padding: 24, color: '#a8071a' }}>
+            处理视图数据失败: {enhancementError.message}
+          </div>
+        )}
+        <Viewer<RecordType>
+          ref={viewerRef}
+          defaultViews={views}
+          defaultView={activeView}
+          definition={viewerDefinition}
+          loading={fetchLoading}
+          dataSource={enhancedDataSource}
+          pagination={pagination}
+          actionColumn={actionColumn}
+          onClickPrimaryKey={onClickPrimaryKey}
+          enableRowSelection={enableRowSelection}
+          primaryAction={primaryAction}
+          secondaryActions={secondaryActions}
+          batchActions={batchActions}
+          onGetRecordCount={onGetRecordCount}
+          onSwitchView={handleSwitchView}
+          onLoadData={handleLoadData}
+          viewTableSetting={viewTableSetting}
+          onCreateView={handleCreateView}
+          onUpdateView={handleUpdateView}
+          onDeleteView={handleDeleteView}
+        />
+      </>
     );
   }
 
@@ -383,4 +697,17 @@ function getDefaultView(
   }
 
   return views[0];
+}
+
+function sameViewIdentity(
+  snapshot: MaterializedSnapshot<ViewState>,
+  identity: AggregateId & { ownerId: string },
+): boolean {
+  return (
+    snapshot.aggregateId === identity.aggregateId &&
+    snapshot.tenantId === identity.tenantId &&
+    snapshot.contextName === identity.contextName &&
+    snapshot.aggregateName === identity.aggregateName &&
+    snapshot.ownerId === identity.ownerId
+  );
 }

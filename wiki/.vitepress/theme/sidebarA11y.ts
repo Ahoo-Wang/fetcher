@@ -53,8 +53,40 @@ export function observeSidebarAria(root: ParentNode = document) {
   const target = root === document ? document.body : (root as Node);
   if (!target) return () => {};
 
-  syncSidebarAria(root);
-  const observer = new MutationObserver(() => syncSidebarAria(root));
+  let revealedPath = '';
+  let wasOpen = false;
+  let frame = 0;
+  const sync = () => {
+    syncSidebarAria(root);
+    const sidebar = root.querySelector<HTMLElement>('.VPSidebar');
+    if (!sidebar) return;
+    const path = window.location.pathname;
+    const open = sidebar.classList.contains('open');
+    const shouldReveal = path !== revealedPath || (open && !wasOpen);
+    wasOpen = open;
+    if (!shouldReveal) return;
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      const link = sidebar.querySelector<HTMLElement>('a[aria-current="page"]');
+      if (!link || !link.getClientRects().length) return;
+      const bounds = sidebar.getBoundingClientRect();
+      if (!open && bounds.right <= 0) return;
+      const item = link.getBoundingClientRect();
+      // Keep the active row below the native sticky curtain, inside this scroller.
+      const curtain = sidebar.querySelector<HTMLElement>('.curtain');
+      const top = Math.max(
+        bounds.top,
+        curtain?.getBoundingClientRect().bottom ?? bounds.top,
+      );
+      if (item.top < top || item.bottom > bounds.bottom) {
+        sidebar.scrollTop +=
+          item.top - top - (bounds.bottom - top - item.height) / 2;
+      }
+      revealedPath = path;
+    });
+  };
+  sync();
+  const observer = new MutationObserver(sync);
   observer.observe(target, {
     attributes: true,
     attributeFilter: ['class'],
@@ -62,5 +94,8 @@ export function observeSidebarAria(root: ParentNode = document) {
     subtree: true,
   });
 
-  return () => observer.disconnect();
+  return () => {
+    observer.disconnect();
+    cancelAnimationFrame(frame);
+  };
 }

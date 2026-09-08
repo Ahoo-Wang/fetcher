@@ -21,11 +21,11 @@ vi.mock('../../../src/core/useQuery', () => ({
 }));
 
 vi.mock('../../../src/core/debounced/useDebouncedCallback', () => ({
-  useDebouncedCallback: vi.fn(),
+  useDebouncedCallbackInternal: vi.fn(),
 }));
 
 import { useQuery } from '../../../src/core/useQuery';
-import { useDebouncedCallback } from '../../../src/core/debounced/useDebouncedCallback';
+import { useDebouncedCallbackInternal as useDebouncedCallback } from '../../../src/core/debounced/useDebouncedCallback';
 
 describe('useDebouncedQuery', () => {
   const mockResult = { id: 1, name: 'Test Item' };
@@ -81,8 +81,10 @@ describe('useDebouncedQuery', () => {
     expect(result.current).toHaveProperty('abort', expect.any(Function)); // abort function from useExecutePromise
     expect(result.current).toHaveProperty('getQuery', mockGetQuery);
     expect(result.current).toHaveProperty('setQuery', expect.any(Function)); // setQuery function from useQueryState
-    expect(result.current).toHaveProperty('run', mockDebouncedReturn.run);
-    expect(result.current).toHaveProperty('cancel', mockDebouncedReturn.cancel);
+    expect(result.current).toHaveProperty('run', expect.any(Function));
+    expect(result.current).toHaveProperty('cancel', expect.any(Function));
+    act(() => result.current.cancel());
+    expect(mockDebouncedReturn.cancel).toHaveBeenCalledExactlyOnceWith();
     expect(result.current).toHaveProperty(
       'isPending',
       mockDebouncedReturn.isPending,
@@ -107,9 +109,11 @@ describe('useDebouncedQuery', () => {
       }),
     );
     expect(useDebouncedCallback).toHaveBeenCalledWith(
-      mockExecute,
+      expect.any(Function),
       options.debounce,
     );
+    vi.mocked(useDebouncedCallback).mock.lastCall![0]();
+    expect(mockExecute).toHaveBeenCalledExactlyOnceWith();
   });
 
   it('should expose debounced run method for executing queries', () => {

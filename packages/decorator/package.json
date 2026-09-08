@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-decorator",
-  "version": "4.0.1",
+  "version": "5.0.0",
   "description": "TypeScript decorators for clean, declarative API service definitions with Fetcher HTTP client. Enables automatic parameter binding, method mapping, and type-safe API interactions.",
   "keywords": [
     "fetch",
@@ -28,14 +28,14 @@
   "engines": {
     "node": ">=18.20.8"
   },
-  "main": "./dist/index.umd.js",
+  "main": "./dist/index.umd.cjs",
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.es.js",
-      "require": "./dist/index.umd.js"
+      "require": "./dist/index.umd.cjs"
     }
   },
   "files": [
@@ -51,7 +51,7 @@
     "analyze": "npx vite-bundle-analyzer -p auto"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^4.0.0"
+    "@ahoo-wang/fetcher": "workspace:^5.0.0"
   },
   "dependencies": {
     "reflect-metadata": "catalog:"

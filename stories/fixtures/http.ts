@@ -11,6 +11,12 @@
  * limitations under the License.
  */
 
+import type {
+  CommandResult,
+  MaterializedSnapshot,
+} from '@ahoo-wang/fetcher-wow';
+import { CommandStage, ErrorCodes, FunctionKind } from '@ahoo-wang/fetcher-wow';
+import type { ViewState, ViewType } from '@ahoo-wang/fetcher-viewer';
 import {
   fixturePagedUsers,
   fixtureViewerDefinition,
@@ -64,7 +70,7 @@ function eventStreamResponse(
   );
 }
 
-function delayedResponse(signal: AbortSignal): Promise<Response> {
+function delayedResponse(signal: AbortSignal, delay = 80): Promise<Response> {
   signal.throwIfAborted();
   return new Promise((resolve, reject) => {
     const abort = () => {
@@ -74,7 +80,7 @@ function delayedResponse(signal: AbortSignal): Promise<Response> {
     const timer = window.setTimeout(() => {
       signal.removeEventListener('abort', abort);
       resolve(jsonResponse({ status: 'completed' }));
-    }, 80);
+    }, delay);
     signal.addEventListener('abort', abort, { once: true });
   });
 }
@@ -85,9 +91,68 @@ function toRequest(input: RequestInfo | URL, init?: RequestInit): Request {
   return new Request(url, init);
 }
 
-function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
+function viewSnapshot(
+  view: ViewState,
+  tenantId = '(0)',
+  ownerId = view.type === 'SHARED' ? '(shared)' : '(0)',
+): MaterializedSnapshot<ViewState> {
+  return {
+    contextName: 'viewer',
+    aggregateName: 'view',
+    aggregateId: view.id,
+    tenantId,
+    ownerId,
+    spaceId: '(0)',
+    version: 1,
+    eventId: `event-${view.id}-1`,
+    firstOperator: 'fixture',
+    operator: 'fixture',
+    firstEventTime: 0,
+    eventTime: 0,
+    snapshotTime: 0,
+    tags: {},
+    deleted: false,
+    state: view,
+  };
+}
+
+function installFixture(
+  viewerScenario: ViewerFixtureScenario,
+  slowResponseDelay = 80,
+): () => void {
   const originalFetch = globalThis.fetch;
   let pagedRequestCount = 0;
+  let commandCount = 0;
+  const views = viewerScenario === 'empty-views' ? [] : fixtureViews;
+  const snapshots = views.map(view => viewSnapshot(view));
+
+  const commandResult = (
+    snapshot: MaterializedSnapshot<ViewState>,
+  ): CommandResult => {
+    const commandId = `story-command-${++commandCount}`;
+    return {
+      id: `result-${commandId}`,
+      commandId,
+      waitCommandId: commandId,
+      requestId: `request-${commandId}`,
+      contextName: snapshot.contextName,
+      aggregateName: snapshot.aggregateName,
+      tenantId: snapshot.tenantId,
+      aggregateId: snapshot.aggregateId,
+      aggregateVersion: snapshot.version,
+      stage: CommandStage.PROCESSED,
+      signalTime: 0,
+      errorCode: ErrorCodes.SUCCEEDED,
+      errorMsg: ErrorCodes.SUCCEEDED_MESSAGE,
+      result: {},
+      function: {
+        contextName: 'viewer',
+        name: 'view',
+        processorName: 'view',
+        functionKind: FunctionKind.COMMAND,
+      },
+    };
+  };
 
   globalThis.fetch = async (input, init) => {
     const request = toRequest(input, init);
@@ -129,7 +194,9 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
         : jsonResponse({ message: 'User not found' }, 404);
     }
 
-    if (pathname === '/slow') return delayedResponse(request.signal);
+    if (pathname === '/slow') {
+      return delayedResponse(request.signal, slowResponseDelay);
+    }
     if (pathname === '/error') {
       return jsonResponse({ message: 'Fixture server error' }, 500);
     }
@@ -177,7 +244,10 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
       return jsonResponse(fixtureViewerDefinition);
     }
     if (pathname === '/viewer/view/snapshot/list/state') {
-      return jsonResponse(viewerScenario === 'empty-views' ? [] : fixtureViews);
+      return jsonResponse(snapshots.map(snapshot => snapshot.state));
+    }
+    if (pathname === '/viewer/view/snapshot/list') {
+      return jsonResponse(snapshots);
     }
     if (pathname === '/users/snapshot/single/state') {
       return jsonResponse(fixturePagedUsers.list[0]);
@@ -211,12 +281,45 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
         headers: { 'Content-Type': 'text/plain' },
       });
     }
-    if (request.method === 'POST' && pathname.includes('/viewer/view/')) {
-      return jsonResponse({
-        aggregateId: 'view-created',
-        requestId: 'request-1',
-        stage: 'SNAPSHOT',
-      });
+    const createView = pathname.match(
+      /^\/viewer\/tenant\/([^/]+)\/owner\/([^/]+)\/view\/type\/(PERSONAL|SHARED)$/,
+    );
+    if (request.method === 'POST' && createView) {
+      const [, tenantId, ownerId, type] = createView;
+      const view: ViewState = {
+        ...(await request.json()),
+        id: `view-created-${commandCount + 1}`,
+        type: type as ViewType,
+      };
+      const snapshot = viewSnapshot(
+        view,
+        decodeURIComponent(tenantId),
+        decodeURIComponent(ownerId),
+      );
+      snapshots.push(snapshot);
+      return jsonResponse(commandResult(snapshot));
+    }
+    const updateView = pathname.match(
+      /^\/viewer\/tenant\/([^/]+)\/owner\/([^/]+)\/view\/([^/]+)\/type\/(PERSONAL|SHARED)$/,
+    );
+    if (request.method === 'PUT' && updateView) {
+      const [, tenantId, ownerId, id, type] = updateView;
+      const snapshot = snapshots.find(
+        view =>
+          view.tenantId === decodeURIComponent(tenantId) &&
+          view.ownerId === decodeURIComponent(ownerId) &&
+          view.aggregateId === decodeURIComponent(id),
+      );
+      if (!snapshot) return jsonResponse({ message: 'View not found' }, 404);
+      snapshot.state = {
+        ...snapshot.state,
+        ...(await request.json()),
+        id: snapshot.aggregateId,
+        type: type as ViewType,
+      };
+      snapshot.version += 1;
+      snapshot.eventId = `event-${snapshot.aggregateId}-${snapshot.version}`;
+      return jsonResponse(commandResult(snapshot));
     }
 
     throw new Error(
@@ -231,6 +334,10 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
 
 export function installFetchFixture(): () => void {
   return installFixture('success');
+}
+
+export function installDocumentationFetchFixture(): () => void {
+  return installFixture('success', 2000);
 }
 
 export function installViewerFetchFixture(

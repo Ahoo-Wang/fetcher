@@ -21,4 +21,9 @@ export * from './useMounted';
 export * from './useRefs';
 export * from './useForceUpdate';
 export * from './useQuery';
-export * from './useQueryState';
+export { useQueryState, isValidateQuery } from './useQueryState';
+export type {
+  QueryOptions,
+  UseQueryStateOptions,
+  UseQueryStateReturn,
+} from './useQueryState';

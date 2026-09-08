@@ -1,91 +1,49 @@
 ---
 title: 第一个请求
-description: 在五分钟内安装 Fetcher 并发送一个类型安全的 HTTP 请求。
+description: 运行类型化 JSON 请求，并验证 HTTP 404 失败分支。
 ---
 
 # 第一个请求
 
-## 前置条件
+先完成[安装](./installation.md)，再在 `fetcher-first-request` 目录中创建以下文件。
 
-使用 Node.js `>=18.20.8`，或具备原生 Fetch 支持的浏览器项目。
+## 创建 `server.mjs`
 
-## 安装
+<<< @/examples/http/server.mjs
+
+## 创建 `client.ts`
+
+<<< @/examples/http/client.ts
+
+泛型描述预期的 TypeScript 结构，但不校验服务端数据。本例通过明确检查 id 与 name 建立运行时边界。`ResultExtractors.Json` 放在 `get` 的第三个参数中，这里才是请求选项的位置。
+
+404 对外表现为 `ExchangeError`，其 `cause` 是 `HttpStatusValidationError`，`exchange.response.status` 保留 `404`。传输和解析失败不会命中该分支，因此会继续抛出。
+
+## 创建 `tsconfig.json`
+
+<<< @/examples/http/tsconfig.json
+
+## 编译并运行
+
+启动确定性的本地 fixture：
 
 ```bash
-pnpm add @ahoo-wang/fetcher
+pnpm exec tsc -p tsconfig.json
+node server.mjs
 ```
 
-## 创建客户端
+在同一目录的另一个终端执行：
 
-```ts
-import { Fetcher } from '@ahoo-wang/fetcher';
-
-const api = new Fetcher({
-  baseURL: 'https://api.example.com',
-  timeout: 5_000,
-});
+```bash
+node dist/client.js
 ```
 
-客户端选项会成为每个请求的默认值，请求级选项可以覆盖它们。
-
-## 发送请求
-
-```ts
-const response = await api.get('/users/{id}', {
-  urlParams: {
-    path: { id: '42' },
-    query: { include: 'profile' },
-  },
-});
-```
-
-Fetcher 会解析出以下 URL：
+客户端会验证固定用户与 404 分支，然后输出：
 
 ```text
-https://api.example.com/users/42?include=profile
+Ada
 ```
 
-## 读取结果
+在服务端终端按 `Ctrl+C` 停止服务。若服务未启动，客户端会因为传输错误继续抛出而非零退出。
 
-HTTP 辅助方法默认返回原生 `Response`：
-
-```ts
-interface User {
-  id: string;
-  name: string;
-}
-
-const user = (await response.json()) as User;
-console.log(user.name);
-```
-
-请在信任边界执行数据校验：TypeScript 类型断言不会验证服务端数据。
-
-## 处理失败响应
-
-默认状态校验器接受 `200` 到 `299`。被拒绝的状态或请求失败会进入 Fetcher 错误层次：
-
-```ts
-import { ExchangeError, FetcherError } from '@ahoo-wang/fetcher';
-
-try {
-  await api.get('/users/missing');
-} catch (error) {
-  if (error instanceof ExchangeError) {
-    console.error(error.exchange.response?.status, error.message);
-  } else if (error instanceof FetcherError) {
-    console.error(error.message);
-  } else {
-    throw error;
-  }
-}
-```
-
-`ExchangeError.exchange` 将请求、响应、属性和底层错误保留在一起，便于定位问题。
-
-## 下一步
-
-- [选择包](./choose-packages.md)：查看可选能力。
-- [Fetcher 参考](../reference/fetcher.md)：查看客户端和请求选项。
-- [请求生命周期](../learn/request-lifecycle.md)：理解拦截器管线。
-- [Storybook](https://fetcher.ahoo.me/storybook/)：体验可交互请求行为。
+仓库维护者可参阅[仓库 HTTP 样例](../examples/http.md)中的专用验证命令。

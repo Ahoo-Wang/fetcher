@@ -17,6 +17,7 @@ import {
 } from './interceptor';
 import type { FetchExchange } from './fetchExchange';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest';
+import { deleteHeader, getHeader, setHeader } from './requestHeaders';
 
 /**
  * The name of the RequestBodyInterceptor.
@@ -160,9 +161,7 @@ export class RequestBodyInterceptor implements RequestInterceptor {
     }
     const headers = exchange.ensureRequestHeaders();
     if (this.isAutoAppendContentType(request.body)) {
-      if (headers[CONTENT_TYPE_HEADER]) {
-        delete headers[CONTENT_TYPE_HEADER];
-      }
+      deleteHeader(headers, CONTENT_TYPE_HEADER);
       return;
     }
     // Check if it's a supported type
@@ -174,8 +173,12 @@ export class RequestBodyInterceptor implements RequestInterceptor {
     // Also ensure Content-Type header is set to application/json
     exchange.request.body = JSON.stringify(request.body);
 
-    if (!headers[CONTENT_TYPE_HEADER]) {
-      headers[CONTENT_TYPE_HEADER] = ContentTypeValues.APPLICATION_JSON;
+    if (!getHeader(headers, CONTENT_TYPE_HEADER)) {
+      setHeader(
+        headers,
+        CONTENT_TYPE_HEADER,
+        ContentTypeValues.APPLICATION_JSON,
+      );
     }
   }
 }

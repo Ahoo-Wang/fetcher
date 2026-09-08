@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import displayMeta, {
   DefinitionRequestError as DisplayDefinitionRequestError,
   EnhanceDataSource as DisplayEnhanceDataSource,
@@ -19,6 +19,7 @@ import displayMeta, {
   MissingDefinition as DisplayMissingDefinition,
   NoSavedViews as DisplayNoSavedViews,
   RemoteSuccess as DisplayRemoteSuccess,
+  SaveViewChanges as DisplaySaveViewChanges,
 } from './FetcherViewer.stories.js';
 import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
 
@@ -76,9 +77,45 @@ export const NoSavedViews: Story = {
   ...DisplayNoSavedViews,
   tags: ['!dev', '!autodocs', 'test'],
   play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await expect(await canvas.findByText('未找到视图')).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: '创建视图' }));
+    await userEvent.type(
+      page.getByLabelText('视图名称'),
+      'Created in Storybook',
+    );
+    await userEvent.click(page.getByRole('button', { name: /^确\s*认$/ }));
     await expect(
-      await within(canvasElement).findByText('未找到视图'),
+      (await canvas.findAllByText('Created in Storybook'))[0],
     ).toBeVisible();
+    await expect(await canvas.findByText('Ada')).toBeVisible();
+    expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
+  },
+};
+
+export const SaveViewChanges: Story = {
+  ...DisplaySaveViewChanges,
+  tags: ['!dev', '!autodocs', 'test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await canvas.findByText('Admins'));
+    await userEvent.click(
+      await canvas.findByRole('columnheader', { name: 'Name' }),
+    );
+    await userEvent.click(canvas.getByRole('button', { name: /保\s*存/ }));
+    await userEvent.click(await page.findByText('覆盖当前视图'));
+    await userEvent.click(page.getByRole('button', { name: /^确\s*认$/ }));
+    await waitFor(async () => {
+      await expect(
+        canvas.getByRole('columnheader', { name: 'Name' }),
+      ).toHaveAttribute('aria-sort', 'ascending');
+      await expect(
+        canvas.queryByRole('button', { name: /保\s*存/ }),
+      ).not.toBeInTheDocument();
+    });
+    expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
   },
 };
 

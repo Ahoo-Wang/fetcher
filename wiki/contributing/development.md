@@ -1,62 +1,33 @@
 ---
-title: Development
-description: Install the Fetcher monorepo, understand package boundaries, and follow its TypeScript workflow.
+title: Set up the monorepo
+description: Set up the monorepo — Fetcher
 ---
 
-# Development
+# Set up the monorepo
 
-## Requirements
+## Match the toolchain
 
-- Node.js 20.19.0 or newer for this repository's Vite 8 and Vitest 4 toolchain
-- pnpm 10.34.5 through Corepack
-- Git
-
-Published Fetcher runtime packages keep their separate Node.js 18.20.8 floor;
-the higher version here is the monorepo development requirement.
-
-## Set up the repository
+Use Node `>=20.20.2` and pnpm `10.34.5`, as declared by the root package.json. Package consumers have their own engine and peer requirements; see [Installation](../start/installation.md).
 
 ```bash
-corepack enable
 pnpm install --frozen-lockfile
 pnpm build
 ```
 
-Build before tests when generated declarations or package outputs may be
-consumed by another workspace package.
+The workspace includes packages, integration-test, and wiki. Build dependencies before checking a package that imports their outputs.
 
-## Work by package
-
-```bash
-pnpm --filter @ahoo-wang/fetcher build
-pnpm --filter @ahoo-wang/fetcher test
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
-```
-
-The core package has no internal dependency. Decorator, event bus, streaming,
-OpenAI, OpenAPI, generator, React, storage, CoSec, Wow, and Viewer build on it in
-layers. Keep shared behavior in the lowest existing package that owns it.
-
-## Code style
-
-- Strict TypeScript and ES modules.
-- Single quotes, semicolons, trailing commas, and 80-column Prettier output.
-- Prefer type-only imports where ESLint requires them.
-- Put `*.test.ts` / `*.test.tsx` beside the source.
-- Preserve the Apache 2.0 header in source files.
-- Add dependencies through the root catalog in `pnpm-workspace.yaml`.
-
-Run `pnpm lint` and `pnpm format` only for intentional repository-wide cleanup;
-format focused files during normal changes.
-
-## Versions and releases
-
-All packages share one version. Update them together with:
+## Work on one package
 
 ```bash
-pnpm update-version 3.19.0
+pnpm --filter @ahoo-wang/fetcher-react... build
+pnpm --filter @ahoo-wang/fetcher-react test
+pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 ```
 
-Changing a public API requires an intentional version decision and synchronized
-Wiki, README, and package skill references. Publishing is handled by the release
-workflow, not a local development step.
+The trailing `...` includes workspace dependencies. Read each package.json for its scripts and each Vitest config for its environment. Do not assume tests live under src.
+
+## Keep the diff reviewable
+
+Use strict TypeScript, ES modules, type-only imports, and Apache headers. Root `pnpm lint` applies fixes and `pnpm format` rewrites the repository; prefer checks limited to changed files and inspect their diff.
+
+Get approval before adding packages or changing root TypeScript/build configuration unless the task already authorizes it. External dependency versions belong in the workspace catalog; internal dependencies use workspace protocol. Align package versions using `pnpm update-version <version>` when a version change is authorized.

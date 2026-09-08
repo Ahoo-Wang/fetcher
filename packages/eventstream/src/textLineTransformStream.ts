@@ -16,38 +16,43 @@ import { SafeTransformer } from './safeTransformer';
 /**
  * Transformer that splits text into lines.
  *
- * Accumulates chunks of text and splits them by newline characters ('\n'),
+ * Accumulates chunks of text and splits them by CR, LF, or CRLF,
  * emitting each complete line as a separate chunk. Handles partial lines
  * that span multiple input chunks by maintaining an internal buffer.
  */
 export class TextLineTransformer extends SafeTransformer<string, string> {
   private buffer = '';
 
-  private normalizeLine(line: string): string {
-    return line.endsWith('\r') ? line.slice(0, -1) : line;
-  }
+  private discardLeadingLF = false;
 
   protected onTransform(
     chunk: string,
     controller: TransformStreamDefaultController<string>,
   ): void {
-    this.buffer += chunk;
-    const lines = this.buffer.split('\n');
+    chunk = String(chunk);
+    if (chunk === '') return;
+    if (this.discardLeadingLF && chunk.startsWith('\n')) {
+      chunk = chunk.slice(1);
+    }
+    // A CR ends its line immediately; consume a following LF only once,
+    // even when the pair is separated by chunks.
+    this.discardLeadingLF = chunk.endsWith('\r');
+    const lines = (this.buffer + chunk).split(/\r\n|\r|\n/);
     this.buffer = lines.pop() || '';
 
     for (const line of lines) {
-      this.enqueue(controller, this.normalizeLine(line));
+      this.enqueue(controller, line);
     }
   }
 
   protected onFlush(
     controller: TransformStreamDefaultController<string>,
   ): void {
-    const line = this.normalizeLine(this.buffer);
-    // Only send when normalized buffer is not empty.
-    if (line) {
-      this.enqueue(controller, line);
+    if (this.buffer) {
+      this.enqueue(controller, this.buffer);
     }
+    this.buffer = '';
+    this.discardLeadingLF = false;
   }
 }
 

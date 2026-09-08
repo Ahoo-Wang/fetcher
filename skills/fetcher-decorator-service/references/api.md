@@ -4,6 +4,7 @@
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [CommonJS](#commonjs)
 - [Core Concepts](#core-concepts)
   - [1. Service Definition with `@api()`](#1-service-definition-with-api)
   - [2. HTTP Method Decorators](#2-http-method-decorators)
@@ -34,6 +35,23 @@ import 'reflect-metadata';
 ```bash
 pnpm add @ahoo-wang/fetcher-decorator
 ```
+
+## CommonJS
+
+The package supports ESM and CommonJS. `require('@ahoo-wang/fetcher-decorator')`
+uses `dist/index.umd.cjs`; ESM imports use `dist/index.es.js`. Save this example
+as a `.cjs` file and run it with Node:
+
+```javascript
+const { api, EndpointReturnType } = require('@ahoo-wang/fetcher-decorator');
+
+class UserService {}
+api('/users', { returnType: EndpointReturnType.RESULT })(UserService);
+console.log(new UserService() instanceof UserService); // true
+```
+
+`api` and `EndpointReturnType` are runtime exports. Interfaces such as
+`ApiMetadata` remain TypeScript-only and use `import type`.
 
 ## Core Concepts
 
@@ -79,7 +97,7 @@ export class UserService {
 **Method decorator options** (`@get(path, options)` — `path` is the first positional argument, not an option field):
 
 - `timeout` (number) - Per-method timeout override (ms)
-- `headers` (RequestHeaders) - Method-specific headers
+- `headers` (RequestHeaders) - Method-specific headers; header names are matched case-insensitively across API, method and parameter layers (later values win).
 - `fetcher` (string | Fetcher) - Override the fetcher for this method
 - `basePath` (string) - Per-method base path override (falls back to the class-level `@api()` basePath)
 - `resultExtractor` - Override result extractor for this method

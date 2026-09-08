@@ -1,40 +1,58 @@
 ---
 layout: home
-title: Fetcher
-description: 基于原生 Fetch API 的 TypeScript 优先 HTTP 客户端生态。
-
+title: 基于原生 Fetch 的 TypeScript HTTP 客户端
+description: 使用 Fetcher 完成 HTTP、服务客户端、流和 React 数据交互。
 hero:
   name: Fetcher
-  text: 从请求到界面的类型安全 HTTP 工作流
-  tagline: 从轻量的 Fetch 客户端开始，在应用需要时再加入装饰器、流式处理、代码生成、React Hooks、认证或数据查看器。
+  text: 从一次请求到应用数据交互
+  tagline: 在原生 Fetch 之上共享配置，明确处理结果与错误。
   image:
     src: /fetcher-logo.png
     alt: Fetcher 请求与响应标志
   actions:
     - theme: brand
-      text: 发送第一个请求
-      link: /zh/start/first-request
+      text: 开始接入
+      link: ./start/
     - theme: alt
-      text: 选择包
-      link: /zh/start/choose-packages
-    - theme: alt
-      text: 打开 Storybook
-      link: /storybook/
-
+      text: 评估架构
+      link: ./architecture/
 features:
-  - title: 类型安全请求
-    details: 在原生 Fetch API 之上构建 URL、路径和查询参数、请求头、请求体、超时与结果提取。
-  - title: 有序拦截器
-    details: 将认证、状态校验、请求整形和错误处理放进清晰可见的请求生命周期。
-  - title: 流式处理
-    details: 解析 Server-Sent Events，通过异步迭代消费 Token 流，并显式处理取消。
-  - title: 声明式与生成式客户端
-    details: 使用 TypeScript 装饰器定义服务，或根据 OpenAPI 文档生成模型和客户端。
-  - title: React 集成
-    details: 将请求、存储、事件与 Wow 查询连接到可观察的加载、结果和错误状态。
-  - title: Wow 与 Viewer
-    details: 构建 CQRS 客户端，以及包含筛选、表格、保存视图和远程数据加载的数据界面。
-  - title: Agent-ready Skills
-    details: 为 Codex 提供理解包边界的工作流，覆盖请求、流式、代码生成、React、CoSec、Wow 与 Viewer。
-    link: /zh/skills/
+  - title: HTTP 请求
+    details: 在原生 Fetch 之上共享配置、发送数据，明确处理结果与失败。
+    link: /zh/guides/http/
+    linkText: 了解更多
+  - title: 服务客户端
+    details: 声明服务方法，或从 OpenAPI 文档生成 TypeScript 客户端。
+    link: /zh/guides/services/
+    linkText: 了解更多
+  - title: 流式消费
+    details: 消费 SSE 事件，管理取消、连接生命周期与资源清理。
+    link: /zh/guides/streaming/
+    linkText: 了解更多
+  - title: React 数据流
+    details: 将请求执行、加载、错误与取消接入 React 组件。
+    link: /zh/guides/react/
+    linkText: 了解更多
+  - title: 数据视图
+    details: 组合表格、过滤、排序与已保存视图，明确应用的数据和持久化责任。
+    link: /zh/guides/viewer/
+    linkText: 了解更多
+  - title: 架构与选型
+    details: 评估包边界、运行环境要求与集成责任，选择适合应用的能力。
+    link: /zh/architecture/
+    linkText: 了解更多
 ---
+
+## 明确请求与返回值
+
+```ts
+const user = await client.get<User>(
+  '/users/1',
+  {},
+  {
+    resultExtractor: ResultExtractors.Json,
+  },
+);
+```
+
+`client` 是配置好的 `Fetcher` 实例，`ResultExtractors` 从核心包导入。通过[第一个请求](./start/first-request.md)运行完整配置、本地服务和失败分支。

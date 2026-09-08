@@ -56,7 +56,7 @@ export function UserProfile({ id }: { id: string }) {
 
 ## Documentation
 
-- [React data flow](https://fetcher.ahoo.me/learn/react-data-flow)
+- [React data flow](https://fetcher.ahoo.me/guides/react/)
 - [React reference](https://fetcher.ahoo.me/reference/react)
 - [Interactive hook stories](https://fetcher.ahoo.me/storybook/)
 

@@ -581,3 +581,18 @@ describe('FunctionMetadata', () => {
     warnSpy.mockRestore();
   });
 });
+
+it('overrides differently cased headers across API, endpoint and parameters', () => {
+  const metadata = new FunctionMetadata(
+    'headers',
+    { headers: { Authorization: 'api', 'X-Mode': 'api' } },
+    { headers: { authorization: 'endpoint', 'x-mode': 'endpoint' } },
+    new Map([
+      [0, { type: ParameterType.HEADER, name: 'AUTHORIZATION', index: 0 }],
+    ]),
+  );
+  const { request } = metadata.resolveExchangeInit(['argument']);
+  const headers = new Headers(request.headers as Record<string, string>);
+  expect(headers.get('authorization')).toBe('argument');
+  expect(headers.get('x-mode')).toBe('endpoint');
+});

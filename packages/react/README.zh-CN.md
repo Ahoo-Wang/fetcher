@@ -54,7 +54,7 @@ export function UserProfile({ id }: { id: string }) {
 
 ## 文档
 
-- [React 数据流](https://fetcher.ahoo.me/zh/learn/react-data-flow)
+- [React 数据流](https://fetcher.ahoo.me/zh/guides/react/)
 - [React 参考](https://fetcher.ahoo.me/zh/reference/react)
 - [交互式 Hook Story](https://fetcher.ahoo.me/storybook/)
 

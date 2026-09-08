@@ -1,29 +1,38 @@
-import { defineConfig } from 'vitepress'
-import { en } from './en'
-import { zh } from './zh'
+import { defineConfig } from 'vitepress';
+import { en } from './en';
+import { zh } from './zh';
 
 export default defineConfig({
   title: 'Fetcher',
-  description: 'Modern HTTP Client Ecosystem with Native LLM Streaming Support',
+  description:
+    'Typed HTTP requests, streams, services, and React data workflows',
   lastUpdated: true,
   cleanUrls: true,
   srcExclude: ['AGENTS.md', 'CLAUDE.md'],
   sitemap: {
     hostname: 'https://fetcher.ahoo.me',
   },
-  ignoreDeadLinks: [
-    /localhost/,
-  ],
+  ignoreDeadLinks: [/localhost/],
   head: [
     ['link', { rel: 'icon', type: 'image/png', href: '/fetcher-logo.png' }],
-    ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-D1JQFY3LP2' }],
-    ['script', {}, 'window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-D1JQFY3LP2");'],
+    [
+      'script',
+      {
+        async: '',
+        src: 'https://www.googletagmanager.com/gtag/js?id=G-D1JQFY3LP2',
+      },
+    ],
+    [
+      'script',
+      {},
+      'window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-D1JQFY3LP2");',
+    ],
   ],
   themeConfig: {
     search: {
       provider: 'local',
       options: {
-        detailedView: true,
+        detailedView: false,
         translations: {
           button: {
             buttonText: 'Search',
@@ -55,7 +64,7 @@ export default defineConfig({
         search: {
           provider: 'local',
           options: {
-            detailedView: true,
+            detailedView: false,
             translations: {
               button: {
                 buttonText: '搜索',
@@ -78,10 +87,19 @@ export default defineConfig({
       },
     },
   },
+  transformPageData(pageData) {
+    if (
+      pageData.relativePath.replace(/^zh\//, '').startsWith('reference/') &&
+      pageData.frontmatter.outline === undefined
+    ) {
+      pageData.frontmatter.outline = 2;
+    }
+  },
   markdown: {
+    languageAlias: { mjs: 'javascript' },
     lineNumbers: true,
   },
   vite: {
     plugins: [],
   },
-})
+});

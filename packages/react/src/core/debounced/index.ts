@@ -11,6 +11,10 @@
  * limitations under the License.
  */
 
-export * from './useDebouncedCallback';
+export { useDebouncedCallback } from './useDebouncedCallback';
+export type {
+  UseDebouncedCallbackOptions,
+  UseDebouncedCallbackReturn,
+} from './useDebouncedCallback';
 export * from './useDebouncedExecutePromise';
 export * from './useDebouncedQuery';

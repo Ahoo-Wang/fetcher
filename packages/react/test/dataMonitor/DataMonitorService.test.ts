@@ -1,9 +1,25 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type * as FetcherModule from '@ahoo-wang/fetcher';
+import { Operator } from '@ahoo-wang/fetcher-wow';
 
 // Use vi.hoisted to ensure mocks are properly set up
 const { notificationCenterMock } = vi.hoisted(() => ({
   notificationCenterMock: {
     publish: vi.fn().mockResolvedValue(undefined),
+    publishLocal: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -41,7 +57,7 @@ vi.mock('@ahoo-wang/fetcher-storage', () => {
 const fetcherPostMock = vi.hoisted(() => vi.fn(() => Promise.resolve(0)));
 
 vi.mock('@ahoo-wang/fetcher', async importOriginal => {
-  const actual = await importOriginal<typeof import('@ahoo-wang/fetcher')>();
+  const actual = await importOriginal<typeof FetcherModule>();
   return {
     ...actual,
     fetcher: {
@@ -50,11 +66,6 @@ vi.mock('@ahoo-wang/fetcher', async importOriginal => {
     },
   };
 });
-
-// Mock fetcher-wow
-vi.mock('@ahoo-wang/fetcher-wow', () => ({
-  all: vi.fn().mockReturnValue({}),
-}));
 
 import { DataMonitorService } from '../../src/dataMonitor/DataMonitorService';
 import { fetcher } from '@ahoo-wang/fetcher';
@@ -115,14 +126,14 @@ describe('DataMonitorService', () => {
         'view-1',
         '/api/count/v2',
         'Updated View',
-        { status: 'active' },
+        { field: 'status', operator: Operator.EQ, value: 'active' },
         { title: 'Updated' },
       );
 
       expect(service.isEnabled('view-1')).toBe(true);
       expect(fetcher.post).toHaveBeenLastCalledWith(
         '/api/count/v2',
-        { body: { status: 'active' } },
+        { body: { field: 'status', operator: Operator.EQ, value: 'active' } },
         expect.objectContaining({ resultExtractor: expect.any(Function) }),
       );
     });
@@ -159,7 +170,7 @@ describe('DataMonitorService', () => {
         'view-1',
         '/api/count',
         'Test View',
-        { status: 'active' },
+        { field: 'status', operator: Operator.EQ, value: 'active' },
         { title: 'Test', navigationUrl: '/test' },
       );
 
@@ -168,7 +179,11 @@ describe('DataMonitorService', () => {
       expect(savedView.enabled).toBe(true);
       expect(savedView.countUrl).toBe('/api/count');
       expect(savedView.viewName).toBe('Test View');
-      expect(savedView.condition).toEqual({ status: 'active' });
+      expect(savedView.condition).toEqual({
+        field: 'status',
+        operator: Operator.EQ,
+        value: 'active',
+      });
       expect(savedView.notification).toEqual({
         title: 'Test',
         navigationUrl: '/test',
@@ -329,7 +344,11 @@ describe('DataMonitorService', () => {
           enabled: true,
           countUrl: '/api/view2/count',
           viewName: 'View 2',
-          condition: { status: 'active' },
+          condition: {
+            field: 'status',
+            operator: Operator.EQ,
+            value: 'active',
+          },
           notification: { title: 'Notification 2' },
         },
         'view-3': {
@@ -374,7 +393,7 @@ describe('DataMonitorService', () => {
         currentTotal: 10,
       });
 
-      expect(notificationCenterMock.publish).toHaveBeenCalledWith(
+      expect(notificationCenterMock.publishLocal).toHaveBeenCalledWith(
         'browser',
         expect.objectContaining({
           title: 'Test Notification',
@@ -401,7 +420,7 @@ describe('DataMonitorService', () => {
       expect(fetcher.post).toHaveBeenCalledTimes(2);
 
       expect(dataMonitorEventBusMock.emit).not.toHaveBeenCalled();
-      expect(notificationCenterMock.publish).not.toHaveBeenCalled();
+      expect(notificationCenterMock.publishLocal).not.toHaveBeenCalled();
     });
 
     it('should not notify on first fetch (previousTotal is null)', async () => {
@@ -414,7 +433,7 @@ describe('DataMonitorService', () => {
       );
 
       expect(dataMonitorEventBusMock.emit).not.toHaveBeenCalled();
-      expect(notificationCenterMock.publish).not.toHaveBeenCalled();
+      expect(notificationCenterMock.publishLocal).not.toHaveBeenCalled();
     });
 
     it('should handle fetch errors gracefully without crashing', async () => {
@@ -435,7 +454,7 @@ describe('DataMonitorService', () => {
       await vi.advanceTimersByTimeAsync(30000);
 
       expect(service.isEnabled('view-1')).toBe(true);
-      expect(notificationCenterMock.publish).not.toHaveBeenCalled();
+      expect(notificationCenterMock.publishLocal).not.toHaveBeenCalled();
     });
 
     it('should not notify if view is disabled during fetch', async () => {
@@ -459,12 +478,11 @@ describe('DataMonitorService', () => {
 
       await vi.advanceTimersByTimeAsync(0);
 
-      expect(notificationCenterMock.publish).not.toHaveBeenCalled();
+      expect(notificationCenterMock.publishLocal).not.toHaveBeenCalled();
     });
 
-    it('should include onClick with navigationUrl in notification', async () => {
+    it('publishes cloneable navigation data instead of a click closure', async () => {
       setupFetchResponses(0, 10);
-
       service.enable(
         'view-1',
         '/api/count',
@@ -472,60 +490,18 @@ describe('DataMonitorService', () => {
         {},
         { title: 'Test', navigationUrl: '/test' },
       );
-
       await vi.advanceTimersByTimeAsync(30000);
-
-      expect(notificationCenterMock.publish).toHaveBeenCalledWith(
-        'browser',
-        expect.objectContaining({
-          title: 'Test',
-          onClick: expect.any(Function),
-        }),
-      );
+      const message = notificationCenterMock.publishLocal.mock.calls[0][1];
+      expect(message.payload.data).toEqual({ navigationUrl: '/test' });
+      expect(message.onClick).toBeUndefined();
+      expect(structuredClone(message)).toEqual(message);
     });
 
-    it('should navigate to navigationUrl when notification onClick is called', async () => {
+    it('handles notification rejection without blocking DATA_CHANGED', async () => {
+      const error = new Error('Broadcast failed');
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      notificationCenterMock.publishLocal.mockRejectedValueOnce(error);
       setupFetchResponses(0, 10);
-
-      const originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-        value: { href: '' },
-        writable: true,
-        configurable: true,
-      });
-
-      service.enable(
-        'view-1',
-        '/api/count',
-        'Test View',
-        {},
-        { title: 'Test', navigationUrl: '/navigate-here' },
-      );
-
-      await vi.advanceTimersByTimeAsync(30000);
-
-      const publishedMessage = notificationCenterMock.publish.mock.calls[0][1];
-      publishedMessage.onClick();
-
-      expect(window.location.href).toBe('/navigate-here');
-
-      Object.defineProperty(window, 'location', {
-        value: originalLocation,
-        writable: true,
-        configurable: true,
-      });
-    });
-
-    it('should not navigate when navigationUrl is not set', async () => {
-      setupFetchResponses(0, 10);
-
-      const originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-        value: { href: '' },
-        writable: true,
-        configurable: true,
-      });
-
       service.enable(
         'view-1',
         '/api/count',
@@ -533,19 +509,108 @@ describe('DataMonitorService', () => {
         {},
         { title: 'Test' },
       );
-
       await vi.advanceTimersByTimeAsync(30000);
+      expect(errorLog).toHaveBeenCalledWith(
+        'DataMonitor: failed to notify for view-1',
+        error,
+      );
+      expect(dataMonitorEventBusMock.emit).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'DATA_CHANGED', currentTotal: 10 }),
+      );
+    });
 
-      const publishedMessage = notificationCenterMock.publish.mock.calls[0][1];
-      publishedMessage.onClick();
+    it.each(['getter', 'proxy'] as const)(
+      'still emits DATA_CHANGED when navigationUrl access throws through a %s',
+      async kind => {
+        const error = new Error('navigation unavailable');
+        const errorLog = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {});
+        const notification =
+          kind === 'getter'
+            ? Object.defineProperty({ title: 'Test' }, 'navigationUrl', {
+                get() {
+                  throw error;
+                },
+              })
+            : new Proxy(
+                { title: 'Test' },
+                {
+                  get(target, key, receiver) {
+                    if (key === 'navigationUrl') throw error;
+                    return Reflect.get(target, key, receiver);
+                  },
+                },
+              );
+        try {
+          setupFetchResponses(0, 10);
+          service.enable('view-1', '/api/count', 'Test View', {}, notification);
+          await vi.advanceTimersByTimeAsync(30000);
+          expect(dataMonitorEventBusMock.emit).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'DATA_CHANGED', currentTotal: 10 }),
+          );
+          expect(errorLog).toHaveBeenCalledWith(
+            'DataMonitor: failed to notify for view-1',
+            error,
+          );
+        } finally {
+          errorLog.mockRestore();
+        }
+      },
+    );
 
-      expect(window.location.href).toBe('');
+    it('still emits DATA_CHANGED when the notification publisher throws synchronously', async () => {
+      const error = new Error('publisher failed');
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const fail = () => {
+        throw error;
+      };
+      notificationCenterMock.publishLocal.mockImplementationOnce(fail);
+      try {
+        setupFetchResponses(0, 10);
+        service.enable(
+          'view-1',
+          '/api/count',
+          'Test View',
+          {},
+          { title: 'Test' },
+        );
+        await vi.advanceTimersByTimeAsync(30000);
+        expect(dataMonitorEventBusMock.emit).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'DATA_CHANGED', currentTotal: 10 }),
+        );
+        expect(errorLog).toHaveBeenCalledWith(
+          'DataMonitor: failed to notify for view-1',
+          error,
+        );
+      } finally {
+        errorLog.mockRestore();
+      }
+    });
 
-      Object.defineProperty(window, 'location', {
-        value: originalLocation,
-        writable: true,
-        configurable: true,
-      });
+    it('uses local notifications for each independently initialized monitor', async () => {
+      storageData = {
+        'view-1': {
+          enabled: true,
+          countUrl: '/api/count',
+          viewName: 'Shared View',
+          condition: {},
+          notification: { title: 'Test' },
+        },
+      };
+      setupFetchResponses(0, 0, 10, 10);
+      const peerService = new DataMonitorService();
+      service.initialize();
+      peerService.initialize();
+      try {
+        await vi.advanceTimersByTimeAsync(30000);
+        expect(notificationCenterMock.publishLocal).toHaveBeenCalledTimes(2);
+        expect(notificationCenterMock.publish).not.toHaveBeenCalled();
+        expect(dataMonitorEventBusMock.emit).toHaveBeenCalledTimes(2);
+      } finally {
+        service.disable('view-1');
+        peerService.disable('view-1');
+      }
     });
   });
 
@@ -555,15 +620,24 @@ describe('DataMonitorService', () => {
         'view-1',
         '/api/count',
         'Test View',
-        { status: 'old' },
+        { field: 'status', operator: Operator.EQ, value: 'old' },
         { title: 'Test' },
       );
 
-      service.updateCondition('view-1', { status: 'new', priority: 'high' });
+      service.updateCondition('view-1', {
+        operator: Operator.AND,
+        children: [
+          { field: 'status', operator: Operator.EQ, value: 'new' },
+          { field: 'priority', operator: Operator.EQ, value: 'high' },
+        ],
+      });
 
       expect(storageData['view-1']?.condition).toEqual({
-        status: 'new',
-        priority: 'high',
+        operator: Operator.AND,
+        children: [
+          { field: 'status', operator: Operator.EQ, value: 'new' },
+          { field: 'priority', operator: Operator.EQ, value: 'high' },
+        ],
       });
     });
 
@@ -575,7 +649,11 @@ describe('DataMonitorService', () => {
 
     it('should not persist when view does not exist', () => {
       const initialStorage = { ...storageData };
-      service.updateCondition('non-existent', { status: 'new' });
+      service.updateCondition('non-existent', {
+        field: 'status',
+        operator: Operator.EQ,
+        value: 'new',
+      });
       expect(storageData).toEqual(initialStorage);
     });
   });
@@ -654,25 +732,25 @@ describe('DataMonitorService', () => {
         'view-1',
         '/api/v1/count',
         'View 1',
-        { type: 'a' },
+        { field: 'type', operator: Operator.EQ, value: 'a' },
         { title: 'Test 1' },
       );
       service.enable(
         'view-2',
         '/api/v2/count',
         'View 2',
-        { type: 'b' },
+        { field: 'type', operator: Operator.EQ, value: 'b' },
         { title: 'Test 2' },
       );
 
       expect(fetcher.post).toHaveBeenCalledWith(
         '/api/v1/count',
-        { body: { type: 'a' } },
+        { body: { field: 'type', operator: Operator.EQ, value: 'a' } },
         expect.objectContaining({ resultExtractor: expect.any(Function) }),
       );
       expect(fetcher.post).toHaveBeenCalledWith(
         '/api/v2/count',
-        { body: { type: 'b' } },
+        { body: { field: 'type', operator: Operator.EQ, value: 'b' } },
         expect.objectContaining({ resultExtractor: expect.any(Function) }),
       );
     });

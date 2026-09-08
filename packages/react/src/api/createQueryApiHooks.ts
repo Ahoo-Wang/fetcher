@@ -21,7 +21,7 @@ import type {
   QueryMethod,
   OnBeforeExecuteCallback,
 } from './apiHooks';
-import { collectMethods, methodNameToHookName } from './apiHooks';
+import { mapApiHooks } from './mapApiHooks';
 
 /**
  * Configuration options for createQueryApiHooks.
@@ -68,9 +68,9 @@ export interface UseApiMethodQueryOptions<
  * @template E - The error type for all hooks (defaults to FetcherError).
  */
 export type QueryAPIHooks<API extends Record<string, any>, E = FetcherError> = {
-  [K in keyof API as API[K] extends QueryMethod
-    ? HookName<string & K>
-    : never]: API[K] extends QueryMethod<infer Q, infer R>
+  [
+    K in keyof API as API[K] extends QueryMethod ? HookName<string & K> : never
+  ]: API[K] extends QueryMethod<infer Q, infer R>
     ? (options?: UseApiMethodQueryOptions<Q, R, E>) => UseQueryReturn<Q, R, E>
     : never;
 };
@@ -175,23 +175,8 @@ export function createQueryApiHooks<
   API extends Record<string, any>,
   E = FetcherError,
 >(options: CreateQueryApiHooksOptions<API>): QueryAPIHooks<API, E> {
-  const { api } = options;
-
-  const result = {} as any;
-  const methods =
-    collectMethods<
-      (
-        query: any,
-        attributes?: Record<string, any>,
-        abortController?: AbortController,
-      ) => Promise<any>
-    >(api);
-
-  // Create hooks for each collected method
-  methods.forEach((boundMethod, methodName) => {
-    const hookName = methodNameToHookName(methodName);
-    result[hookName] = createQueryHookForMethod<E>(boundMethod);
-  });
-
-  return result;
+  return mapApiHooks(options.api, createQueryHookForMethod<E>) as QueryAPIHooks<
+    API,
+    E
+  >;
 }

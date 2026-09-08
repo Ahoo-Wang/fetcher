@@ -53,13 +53,13 @@ const { serialBusChannels } = vi.hoisted(() => ({
 
 vi.mock('@ahoo-wang/fetcher-eventbus', () => ({
   BroadcastTypedEventBus: class BroadcastTypedEventBus {
-    emit = vi.fn();
+    emit = vi.fn().mockResolvedValue(undefined);
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
   },
   SerialTypedEventBus: class SerialTypedEventBus {
-    emit = vi.fn();
+    emit = vi.fn().mockResolvedValue(undefined);
     on = vi.fn();
     off = vi.fn();
     destroy = vi.fn();
@@ -220,7 +220,7 @@ describe('SpaceIdStorage', () => {
 
     it('should initialize with custom eventBus', () => {
       const mockEventBus = {
-        emit: vi.fn(),
+        emit: vi.fn().mockResolvedValue(undefined),
         on: vi.fn(),
         off: vi.fn(),
         destroy: vi.fn(),
@@ -246,7 +246,7 @@ describe('SpaceIdStorage', () => {
     it('should initialize with all custom options', () => {
       const customKey = 'custom-key';
       const mockEventBus = {
-        emit: vi.fn(),
+        emit: vi.fn().mockResolvedValue(undefined),
         on: vi.fn(),
         off: vi.fn(),
         destroy: vi.fn(),
@@ -413,7 +413,7 @@ describe('SpaceIdStorage', () => {
 
     it('should remove handler from custom eventBus on destroy', () => {
       const mockEventBus = {
-        emit: vi.fn(),
+        emit: vi.fn().mockResolvedValue(undefined),
         on: vi.fn(),
         off: vi.fn().mockReturnValue(true),
         destroy: vi.fn(),
@@ -730,7 +730,7 @@ describe('SpaceIdProvider interface compliance', () => {
 
   it('DefaultSpaceIdProvider instance should satisfy SpaceIdProvider interface', () => {
     const mockEventBus = {
-      emit: vi.fn(),
+      emit: vi.fn().mockResolvedValue(undefined),
       on: vi.fn(),
       off: vi.fn(),
       destroy: vi.fn(),

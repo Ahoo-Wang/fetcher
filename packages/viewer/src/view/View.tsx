@@ -25,7 +25,7 @@ import type * as React from 'react';
 import type { Condition, FieldSort, PagedList } from '@ahoo-wang/fetcher-wow';
 import type { FilterState } from '../filter/types';
 import type { Key, RefAttributes } from 'react';
-import { useCallback, useImperativeHandle, useRef } from 'react';
+import { useCallback, useImperativeHandle, useRef, useState } from 'react';
 import type { FieldDefinition, ViewColumn } from '../viewer';
 import type { ViewTableActionColumn, ViewTableRef } from '../table';
 import { ViewTable } from '../table';
@@ -160,11 +160,12 @@ export interface ViewProps<RecordType>
   defaultCondition?: Condition;
   /** Current filter condition (controlled mode) */
   externalCondition?: Condition;
-  /** Callback to update condition (controlled mode) */
+  /** Callback to update condition; reset also supplies the complete default filters. */
   externalUpdateCondition?: (
     finalCondition: Condition,
     activeFilterValues: Map<Key, Condition>,
     filterStates: Map<Key, FilterState>,
+    resetFilters?: ActiveFilter[],
   ) => void;
 
   /** Optional action column configuration for row-level operations */
@@ -176,8 +177,7 @@ export interface ViewProps<RecordType>
    * - Object: Antd Pagination props excluding 'onChange', 'onShowSizeChange', and 'total'.
    */
   pagination:
-    | false
-    | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
+    false | Omit<PaginationProps, 'onChange' | 'onShowSizeChange' | 'total'>;
 
   /** Whether to enable row selection for batch operations */
   enableRowSelection: boolean;
@@ -232,19 +232,19 @@ export function View<RecordType>({
    */
   const {
     page,
-    setPage,
     activeFilters,
     setActiveFilters,
     columns,
     setColumns,
     pageSize,
-    setPageSize,
+    setPagination,
     tableSize,
     setTableSize,
     setCondition,
     setSorter,
     selectedCount,
     updateSelectedCount,
+    reset,
   } = useViewState(viewState);
 
   const { locale } = useLocale();
@@ -274,11 +274,8 @@ export function View<RecordType>({
     currentPage: number,
     currentPageSize: number,
   ) => {
-    if (page !== currentPage) {
-      setPage(currentPage);
-    }
-    if (pageSize !== currentPageSize) {
-      setPageSize(currentPageSize);
+    if (page !== currentPage || pageSize !== currentPageSize) {
+      setPagination(currentPage, currentPageSize);
     }
   };
 
@@ -333,6 +330,7 @@ export function View<RecordType>({
 
   /** Ref for accessing EditableFilterPanel imperative methods (reset) */
   const editableFilterPanelRef = useRef<FilterPanelRef | null>(null);
+  const [resetVersion, setResetVersion] = useState(0);
   /** Ref for accessing ViewTable imperative methods (reset, clearSelectedRowKeys) */
   const viewTableRef = useRef<ViewTableRef | null>(null);
 
@@ -348,8 +346,8 @@ export function View<RecordType>({
    * Called via ref imperatively from parent components.
    */
   const resetFn = () => {
-    // reset();
-    editableFilterPanelRef.current?.reset();
+    reset();
+    setResetVersion(version => version + 1);
     clearSelectedRowKeysFn();
   };
 
@@ -381,6 +379,7 @@ export function View<RecordType>({
           style={{ display: showFilter ? 'block' : 'none' }}
         >
           <EditableFilterPanel
+            key={resetVersion}
             row={{ gutter: [24, 16], wrap: true }}
             col={{
               xxl: 12,
@@ -406,6 +405,7 @@ export function View<RecordType>({
           style={{ display: showFilter ? 'block' : 'none' }}
         >
           <FilterPanel
+            key={resetVersion}
             ref={editableFilterPanelRef}
             filters={activeFilters}
             resetButton={false}
@@ -415,6 +415,7 @@ export function View<RecordType>({
       )}
       {/* Data table with columns, sorting, row selection, and actions */}
       <ViewTable<RecordType>
+        key={resetVersion}
         ref={viewTableRef}
         loading={loading}
         dataSource={dataSource.list}
@@ -448,16 +449,18 @@ export function View<RecordType>({
               : ''}
           </span>
           {/* Antd Pagination component */}
-          <Pagination
-            showTotal={total => `共 ${total} 条数据`}
-            defaultCurrent={page}
-            current={page}
-            pageSize={pageSize || 10}
-            total={dataSource.total}
-            pageSizeOptions={['10', '20', '50', '100']}
-            {...pagination}
-            onChange={handlePaginationChange}
-          />
+          {pagination !== false && (
+            <Pagination
+              showTotal={total => `共 ${total} 条数据`}
+              defaultCurrent={page}
+              current={page}
+              pageSize={pageSize || 10}
+              total={dataSource.total}
+              pageSizeOptions={['10', '20', '50', '100']}
+              {...pagination}
+              onChange={handlePaginationChange}
+            />
+          )}
         </div>
       )}
     </Space>

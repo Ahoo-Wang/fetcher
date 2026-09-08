@@ -1,81 +1,26 @@
 ---
-title: HTTP and service skills
-description: Choose Fetcher skills for direct requests, declarative services, typed events, and storage.
+title: HTTP and services
+description: HTTP and services — Fetcher agent workflows
 pageClass: skills-page
 ---
 
-# HTTP and service skills
+# HTTP and services
 
-These four skills cover the foundation packages. Start with direct Fetcher
-requests; add a higher-level skill only when the application owns that
-responsibility.
+Choose a skill from the task’s inputs and outputs. An application can compose packages while keeping each change focused on one responsibility.
 
-## `$fetcher-integration`
+| Task                 | Skill                                                                                                                    | API reference                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| HTTP clients         | [`$fetcher-integration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/SKILL.md)             | [fetcher](../reference/fetcher/index.md)     |
+| Declarative services | [`$fetcher-decorator-service`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-decorator-service/SKILL.md) | [decorator](../reference/decorator/index.md) |
+| Event delivery       | [`$fetcher-eventbus`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-eventbus/SKILL.md)                   | [eventbus](../reference/eventbus/index.md)   |
+| Stored values        | [`$fetcher-storage`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-storage/SKILL.md)                     | [storage](../reference/storage/index.md)     |
 
-**Use for:** `Fetcher`, `NamedFetcher`, request options, URL parameters,
-interceptors, result extraction, cancellation, timeout, and status validation.
+## Provide this context
 
-**Do not use for:** decorator metadata, React state, generated clients, or an
-authentication protocol that already has its own skill.
+Base URL, existing named/direct Fetcher, request and response shapes, header ownership, timeout and cancellation requirements. For events or storage, specify lifetime and whether other tabs must participate.
 
-```text
-$fetcher-integration add a reusable NamedFetcher for the billing API.
-Return typed JSON, time out after 8 seconds, and preserve response context
-when status validation fails.
-```
+## Review the result
 
-The skill keeps the request lifecycle explicit and directs exact signature
-questions to
-[`skills/fetcher-integration/references/api.md`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/references/api.md).
+Check public imports, complete examples, failures and cleanup. Run package tests or actual generation for the affected behavior; inspect component interactions in a browser. Type-checking does not prove server protocol compatibility.
 
-Continue with the [Fetcher reference](../reference/fetcher.md).
-
-## `$fetcher-decorator-service`
-
-**Use for:** class-based services built with `@api`, HTTP method decorators,
-parameter decorators, lifecycle hooks, and generated decorator metadata.
-
-`reflect-metadata` ships with the package and is imported automatically. Add an
-explicit application entry-point import only when another decorator library
-must initialize it before Fetcher services load.
-
-```text
-$fetcher-decorator-service define a UserService with typed get, create,
-and delete endpoints. Use an existing NamedFetcher and support AbortSignal.
-```
-
-Use `$fetcher-integration` first when the real task is configuring the shared
-client rather than declaring service methods.
-
-Continue with the [Decorator reference](../reference/decorator.md).
-
-## `$fetcher-eventbus`
-
-**Use for:** serial, parallel, and broadcast delivery; handler lifecycle; named
-events; and cross-tab messenger selection.
-
-```text
-$fetcher-eventbus publish a typed SessionExpired event across tabs.
-Use the built-in fallback chain and return a cleanup function.
-```
-
-Choose delivery semantics from observable behavior: serial preserves handler
-order, parallel minimizes total wait, and broadcast crosses browser contexts.
-
-Continue with the [Event bus reference](../reference/eventbus.md).
-
-## `$fetcher-storage`
-
-**Use for:** typed values backed by browser storage or `InMemoryStorage`,
-serialization, default values, listeners, and cross-tab synchronization.
-
-```text
-$fetcher-storage persist the selected workspace as typed JSON.
-Use an in-memory fallback for non-browser rendering and clean up listeners.
-```
-
-The skill distinguishes storage persistence from event delivery. Use
-`$fetcher-eventbus` when the message itself—not the stored value—is the domain
-event.
-
-Continue with the [Storage reference](../reference/storage.md).
+[Installation and full catalog](./index.md)

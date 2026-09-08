@@ -397,6 +397,8 @@ it('ignores late success and failure after manual abort', async () => {
     expect(success).not.toHaveBeenCalled();
     expect(error).not.toHaveBeenCalled();
     expect(result.current.status).toBe(PromiseStatus.IDLE);
+    expect(result.current.result).toBeUndefined();
+    expect(result.current.error).toBeUndefined();
     unmount();
   }
 });
@@ -461,6 +463,30 @@ it('keeps a request started synchronously by an abort listener cancellable', asy
   });
   expect(replacementSignal.aborted).toBe(true);
   expect(result.current.status).toBe(PromiseStatus.IDLE);
+});
+
+it('does not start a reentrant cancellation request after unmount', async () => {
+  const first = pendingPromise<string>();
+  const replacement = vi.fn().mockResolvedValue('replacement');
+  let start!: ReturnType<typeof useExecutePromise<string>>['execute'];
+  let restarted!: Promise<void>;
+  const { result, unmount } = renderHook(() =>
+    useExecutePromise<string>({
+      onAbort: () => {
+        restarted = start(replacement);
+      },
+    }),
+  );
+  start = result.current.execute;
+  let execution!: Promise<void>;
+  act(() => {
+    execution = start(() => first.promise);
+  });
+  unmount();
+  await restarted;
+  first.resolve('obsolete');
+  await execution;
+  expect(replacement).not.toHaveBeenCalled();
 });
 
 function pendingPromise<T>() {
