@@ -21,7 +21,7 @@
     "init": "sh ./scripts/init.sh",
     "update-version": "sh ./scripts/update-all-versions.sh",
     "storybook": "storybook dev --docs -p 6006",
-    "build-storybook": "storybook build --docs",
+    "build-storybook": "storybook build --docs && node scripts/verify-storybook.mjs",
     "test:storybook": "vitest run --project=storybook"
   },
   "keywords": [

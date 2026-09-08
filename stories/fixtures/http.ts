@@ -65,19 +65,17 @@ function eventStreamResponse(
 }
 
 function delayedResponse(signal: AbortSignal): Promise<Response> {
+  signal.throwIfAborted();
   return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(
-      () => resolve(jsonResponse({ status: 'completed' })),
-      80,
-    );
-    signal.addEventListener(
-      'abort',
-      () => {
-        window.clearTimeout(timer);
-        reject(new DOMException('The operation was aborted.', 'AbortError'));
-      },
-      { once: true },
-    );
+    const abort = () => {
+      window.clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener('abort', abort);
+      resolve(jsonResponse({ status: 'completed' }));
+    }, 80);
+    signal.addEventListener('abort', abort, { once: true });
   });
 }
 
@@ -94,6 +92,9 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
   globalThis.fetch = async (input, init) => {
     const request = toRequest(input, init);
     const url = new URL(request.url);
+    if (url.origin !== 'https://api.example.test')
+      return originalFetch(input, init);
+    request.signal.throwIfAborted();
     const { pathname } = url;
 
     if (pathname === '/users' && request.method === 'GET') {
@@ -161,7 +162,13 @@ function installFixture(viewerScenario: ViewerFixtureScenario): () => void {
 
     if (pathname === '/viewer/viewer_definition/snapshot/single/state') {
       if (viewerScenario === 'loading') {
-        return new Promise<Response>(() => {});
+        return new Promise<Response>((_resolve, reject) => {
+          request.signal.addEventListener(
+            'abort',
+            () => reject(request.signal.reason),
+            { once: true },
+          );
+        });
       }
       if (viewerScenario === 'missing-definition') return jsonResponse(null);
       if (viewerScenario === 'definition-error') {

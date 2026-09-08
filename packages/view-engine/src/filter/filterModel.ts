@@ -55,7 +55,7 @@ export interface FilterFieldDefinition extends FilterField {
 export interface FilterDateTimeValue {
   date?: string;
   time?: string;
-  /** Date.getTimezoneOffset() integer minutes; retained only when valid for the edited local time. */
+  /** Date.getTimezoneOffset() integer minutes; retained when valid. Otherwise repeated local times choose the earlier occurrence. */
   offsetMinutes?: number;
 }
 /** Keeps an item's intended type while its raw text is temporarily incomplete. */

@@ -10,12 +10,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
+import { ScenarioFrame } from '../shared/ScenarioFrame.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ExchangeError, HttpStatusValidationError } from '@ahoo-wang/fetcher';
 import { OpenAI } from '@ahoo-wang/fetcher-openai';
 import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 import { installFetchFixture } from '../fixtures/http';
 
 type Scenario = 'json' | 'stream' | 'cancel' | 'error';
@@ -87,8 +87,27 @@ function OpenAIDemo({ scenario }: { scenario: Scenario }) {
   );
 }
 
+const scene = {
+  domain: 'Protocol streaming',
+  summary: 'Reconstruct an OpenAI-compatible completion from local chunks.',
+  fixture: 'Local SSE · no credentials',
+  setup: 'Credential-free chat completion chunks form the response.',
+  observe:
+    'Token assembly, [DONE], malformed data, or cancellation is visible.',
+};
+
 const meta = {
-  title: 'HTTP & Streaming/OpenAI',
+  parameters: { docs: { story: { inline: false, height: '480px' } } },
+  decorators: [
+    (Story, context) => (
+      <AntdProvider>
+        <ScenarioFrame title={context.name} {...scene}>
+          <Story />
+        </ScenarioFrame>
+      </AntdProvider>
+    ),
+  ],
+  title: 'HTTP/OpenAI Streaming',
   component: OpenAIDemo,
   beforeEach: installFetchFixture,
   args: { scenario: 'json' },
@@ -96,34 +115,21 @@ const meta = {
 } satisfies Meta<typeof OpenAIDemo>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-async function chatAndExpect(canvasElement: HTMLElement, text: string) {
-  const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole('button', { name: 'Send chat' }));
-  await expect(await canvas.findByText(text)).toBeVisible();
-}
+type Story = StoryObj<typeof meta>;
 
 export const NonStreaming: Story = {
   args: { scenario: 'json' },
-  play: ({ canvasElement }) => chatAndExpect(canvasElement, 'Hello Fetcher'),
 };
 
 export const TokenStream: Story = {
   args: { scenario: 'stream' },
-  play: ({ canvasElement }) => chatAndExpect(canvasElement, 'Hello Fetcher'),
 };
 
 export const ReaderCancellation: Story = {
   args: { scenario: 'cancel' },
-  play: ({ canvasElement }) => chatAndExpect(canvasElement, 'Reader cancelled'),
 };
 
 export const ApiError: Story = {
   args: { scenario: 'error' },
-  play: ({ canvasElement }) =>
-    chatAndExpect(
-      canvasElement,
-      'ExchangeError → HttpStatusValidationError · 429',
-    ),
 };

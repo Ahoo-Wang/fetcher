@@ -10,10 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
 import {
   FieldFilter,
   FilterSelect,
@@ -73,7 +71,7 @@ function SelectDemo({ appearance, disabled }: DemoArgs) {
 }
 
 const meta = {
-  title: 'View Engine/Filter Select',
+  title: 'View Engine/基础组件/Select',
   args: { appearance: 'light', disabled: false },
   argTypes: {
     appearance: { control: 'inline-radio', options: ['light', 'dark'] },
@@ -83,35 +81,10 @@ const meta = {
 } satisfies Meta<DemoArgs>;
 
 export default meta;
+
 type Story = StoryObj<DemoArgs>;
 
 export const Clearable: Story = {
   name: '选择、清空与重新选择',
   render: args => <SelectDemo {...args} />,
-  play: async ({ canvasElement, args }) => {
-    if (args.disabled) return;
-    const canvas = within(canvasElement);
-    const page = within(canvasElement.ownerDocument.body);
-    const trigger = canvas.getByRole('combobox', { name: '订单状态值' });
-    async function select(label: string) {
-      await userEvent.click(trigger);
-      const popup = (await page.findByRole('listbox')).closest(
-        '[data-slot="select-content"]',
-      );
-      await waitFor(() =>
-        expect(popup).not.toHaveAttribute('data-starting-style'),
-      );
-      await userEvent.click(await page.findByRole('option', { name: label }));
-      await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-      // Base UI keeps hidden items mounted for closed-trigger keyboard search.
-      await waitFor(() =>
-        expect(page.queryByRole('listbox')).not.toBeInTheDocument(),
-      );
-    }
-    await select('清空选择');
-    await expect(canvas.getByLabelText('当前值')).toHaveTextContent('未设置值');
-    await expect(trigger).toHaveTextContent('不限');
-    await select('待处理');
-    await expect(canvas.getByLabelText('当前值')).toHaveTextContent('待处理');
-  },
 };

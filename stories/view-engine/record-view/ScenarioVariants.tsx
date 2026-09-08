@@ -66,7 +66,6 @@ export const renderLoadingSummaries: Story['render'] = args => {
       data-theme={args.appearance}
       style={{
         padding: 16,
-        minHeight: '100vh',
         background: 'var(--fve-background)',
       }}
     >

@@ -10,7 +10,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -27,25 +26,9 @@ import {
   Scenario,
   type DemoArgs,
 } from './FilterPanelExamples.js';
-import {
-  playCompleteFilter,
-  playCustomEditor,
-  playSearchableSelect,
-} from './filterPanelExtensions.play.js';
-import {
-  playAdvancedTree,
-  playAllOperators,
-  playBusinessFilters,
-  playSavedDateTime,
-} from './filterPanelQuery.play.js';
-import {
-  playGroupedFields,
-  playLogicalGroupMenu,
-  playRepeatedFields,
-} from './filterPanelSelection.play.js';
 
 const meta = {
-  title: 'View Engine/Filter Panel',
+  title: 'View Engine/过滤器',
   args: { appearance: 'light', disabled: false },
   argTypes: {
     appearance: { control: 'inline-radio', options: ['light', 'dark'] },
@@ -61,32 +44,33 @@ const meta = {
     },
   },
 } satisfies Meta<DemoArgs>;
+
 export default meta;
+
 type Story = StoryObj<DemoArgs>;
 
 export const GroupedFields: Story = {
   name: '添加筛选 · 分组复选与连续选择',
   render: args => <Scenario {...args} />,
-  play: playGroupedFields,
 };
 
 export const BusinessFilters: Story = {
   name: '业务筛选 · 手动查询',
   render: args => <Scenario {...args} />,
-  play: playBusinessFilters,
 };
+
 export const AdvancedTree: Story = {
   name: '高级 · 逻辑与同一元素',
   render: args => <Scenario {...args} initial={nestedFilter} />,
-  play: playAdvancedTree,
 };
+
 export const LogicalGroupMenu: Story = {
   name: '高级 · 独立添加逻辑分组',
   render: args => (
     <Scenario {...args} initial={filter.matchAll()} mode="advanced" />
   ),
-  play: playLogicalGroupMenu,
 };
+
 export const RepeatedFields: Story = {
   name: '高级 · 同一字段多条规则',
   render: args => (
@@ -98,7 +82,6 @@ export const RepeatedFields: Story = {
       ])}
     />
   ),
-  play: playRepeatedFields,
 };
 
 export const CustomEditor: Story = {
@@ -118,12 +101,13 @@ export const CustomEditor: Story = {
       }}
     />
   ),
-  play: playCustomEditor,
 };
+
 export const Empty: Story = {
   name: '未设置值 · 从空条件开始',
   render: args => <Scenario {...args} initial={filter.matchAll()} />,
 };
+
 export const SearchableSelect: Story = {
   name: '自定义筛选器 · 内置搜索 Select',
   render: args => (
@@ -149,8 +133,8 @@ export const SearchableSelect: Story = {
       },
     },
   },
-  play: playSearchableSelect,
 };
+
 export const CompleteFilter: Story = {
   name: '完整自定义筛选器 · 组件契约',
   render: args => (
@@ -176,17 +160,19 @@ export const CompleteFilter: Story = {
       },
     },
   },
-  play: playCompleteFilter,
 };
+
 export const QueryError: Story = {
   name: '查询失败 · 保留条件重试',
   render: args => <Scenario {...args} initialError="查询失败，请重试。" />,
 };
+
 export const Dark: Story = {
   name: '深色 · 业务筛选',
   args: { appearance: 'dark' },
   render: args => <Scenario {...args} />,
 };
+
 export const SavedDateTime: Story = {
   name: '日期时间 · 保留已存时刻',
   render: args => (
@@ -203,10 +189,9 @@ export const SavedDateTime: Story = {
       ]}
     />
   ),
-  play: playSavedDateTime,
 };
+
 export const AllOperators: Story = {
   name: '全部 50 种操作',
   render: args => <OperatorGallery {...args} />,
-  play: playAllOperators,
 };

@@ -22,7 +22,7 @@ const { chromium } = createRequire(
 )('playwright');
 const url =
   process.env.VIEW_HOST_E2E_URL ??
-  'http://127.0.0.1:6006/iframe.html?id=view-engine-library-delivery--local-storage-views&viewMode=story';
+  'http://127.0.0.1:6006/iframe.html?id=development-local-storage--local-storage-views&viewMode=story';
 const key = 'fve:views:["demo-view-service","demo-orders"]';
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 try {

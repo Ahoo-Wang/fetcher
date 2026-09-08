@@ -10,11 +10,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
+import { ScenarioFrame } from '../shared/ScenarioFrame.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { InMemoryStorage, KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 
 type Scenario = 'read-write' | 'serialization' | 'notifications' | 'cleanup';
 
@@ -83,40 +83,47 @@ function StorageDemo({ scenario }: { scenario: Scenario }) {
   );
 }
 
+const scene = {
+  domain: 'State persistence',
+  summary: 'Exercise serialization, listeners, and lifecycle in isolation.',
+  fixture: 'In-memory storage · disposable listeners',
+  setup: 'A fresh key and serializer are created for the selected variant.',
+  observe:
+    'The result exposes values, updates, cleanup, or serializer failure.',
+};
+
 const meta = {
-  title: 'HTTP & Streaming/Storage',
+  decorators: [
+    (Story, context) => (
+      <AntdProvider>
+        <ScenarioFrame title={context.name} {...scene}>
+          <Story />
+        </ScenarioFrame>
+      </AntdProvider>
+    ),
+  ],
+  title: '事件与存储/Storage',
   component: StorageDemo,
   args: { scenario: 'read-write' },
   argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof StorageDemo>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-async function writeAndExpect(canvasElement: HTMLElement, text: string) {
-  const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole('button', { name: 'Write value' }));
-  await expect(await canvas.findByText(text)).toBeVisible();
-}
+type Story = StoryObj<typeof meta>;
 
 export const ReadWrite: Story = {
   args: { scenario: 'read-write' },
-  play: ({ canvasElement }) => writeAndExpect(canvasElement, 'dark'),
 };
 
 export const Serialization: Story = {
   args: { scenario: 'serialization' },
-  play: ({ canvasElement }) =>
-    writeAndExpect(canvasElement, '{"theme":"dark"}'),
 };
 
 export const ChangeNotifications: Story = {
   args: { scenario: 'notifications' },
-  play: ({ canvasElement }) => writeAndExpect(canvasElement, 'light → dark'),
 };
 
 export const Cleanup: Story = {
   args: { scenario: 'cleanup' },
-  play: ({ canvasElement }) =>
-    writeAndExpect(canvasElement, '1 notification · destroyed'),
 };

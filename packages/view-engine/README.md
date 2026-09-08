@@ -31,9 +31,9 @@ node packages/view-engine/scripts/verify-package.mjs
 pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 ```
 
-`examples/core.mjs` runs the headless public API, including JSON save and restoration by a new engine for unset controls and opaque component props. The standalone `examples/react/OrderExample.tsx` composes a page and all five extension types using public imports only. Open `http://127.0.0.1:4175`, or **View Engine → Library Delivery** in Storybook, for actions, custom filtering/cells, error recovery and a narrow dark view.
+`examples/core.mjs` runs the headless public API, including JSON save and restoration by a new engine for unset controls and opaque component props. The standalone `examples/react/OrderExample.tsx` composes a page and all five extension types using public imports only. Open `http://127.0.0.1:4175`, or **View Engine → 快速开始 / 扩展接入** in Storybook, for actions, custom filtering/cells, error recovery and a narrow dark view.
 
-`examples/react/FilterPersistenceExample.tsx` saves the selected status ID and an independently edited display name. Open `http://127.0.0.1:4175/?example=persistence`, or **View Engine → Library Delivery → 公共包 · 组件配置 JSON 保存与重新打开**, to add an unset control, save it without querying, and reopen the JSON in a new engine. Changing the display name can also be saved directly; changing the status requires Query before Save.
+`examples/react/FilterPersistenceExample.tsx` saves the selected status ID and an independently edited display name. Open `http://127.0.0.1:4175/?example=persistence`, or **View Engine → 扩展接入 → 公共包 → 公共包 · 组件配置 JSON 保存与重新打开**, to add an unset control, save it without querying, and reopen the JSON in a new engine. Changing the display name can also be saved directly; changing the status requires Query before Save.
 
 `verify-package.mjs` creates a temporary archive, checks its exports/CSS and exact distribution content, then runs and type-checks consumers against the extracted package. It performs no installation or publication. These are library integration examples backed by a strict local simulated service; production authentication, authorization, persistence and backend query behavior still require host-system verification.
 
@@ -421,7 +421,7 @@ Add filter opens an anchored Popover with grouped checkboxes, keeping the table 
 
 Fully unset values keep their controls but produce no predicate; partial values, invalid data and missing extensions block Query. Fields bind when added and remain in their original group and scope. `extensions.filters` supplies local custom editors. `draft` / `onDraftChange` lets the host retain edit buffers per instance. Custom components publish serializable `props` through `onChange(props)`; saveable UI state such as selected IDs and display labels belongs there. Keep only unsaved temporary buffers in local React state.
 
-Simple mode has no condition action menu or ordering controls. Advanced mode supports adding, deleting and editing groups without moving conditions between groups. Built-in scalar rows omit Clear and Special value buttons; deleting input text leaves an unset value. Use null/empty-string operators for those predicates. Existing datetime edits retain their original offset in repeated DST hours, while dates in other seasons use their actual offset.
+Simple mode has no condition action menu or ordering controls. Advanced mode supports adding, deleting and editing groups without moving conditions between groups. Built-in scalar rows omit Clear and Special value buttons; deleting input text leaves an unset value. Use null/empty-string operators for those predicates. Existing datetime edits retain their original offset in repeated DST hours, while dates in other seasons use their actual offset. Without an applicable offset hint, repeated local times choose the earlier occurrence independently of the system timezone; nonexistent DST times remain invalid.
 
 For composition, `FilterPanel.renderToolbar` replaces the default heading and receives
 `FilterPanelToolbarProps`: `panelId`, `mode`, `options`, `pending`, `disabled` and
@@ -495,7 +495,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine test:compiled
 pnpm storybook
 ```
 
-Start at **View Engine → Filter Panel** in Storybook for business filters, nested element scopes, custom-editor validation, query retry, dark mode and the 50-operator gallery. **View Engine → Date and Time** covers individual date/time controls. The examples cover a combined field with manual query, a calendar, a precise time value, incomplete input, unset values and the dark theme. The **View Engine → Filter Select** example covers selecting, clearing and selecting again. Controls expose appearance and disabled states. The combined example uses the browser's local timezone and an epoch-millisecond Wow expression without contacting a service. Rebuild the package after changing its source; these stories consume its public built exports.
+Start at **View Engine → 过滤器** in Storybook for business filters, nested element scopes, custom-editor validation, query retry, dark mode and the 50-operator gallery. **View Engine → 基础组件 → 日期时间** covers individual date/time controls. The examples cover a combined field with manual query, a calendar, a precise time value, incomplete input, unset values and the dark theme. The **View Engine → 基础组件 → Select** example covers selecting, clearing and selecting again. Controls expose appearance and disabled states. The combined example uses the browser's local timezone and an epoch-millisecond Wow expression without contacting a service. Rebuild the package after changing its source; these stories consume its public built exports.
 
 See [the API reference](../../skills/fetcher-view-engine/references/api.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 

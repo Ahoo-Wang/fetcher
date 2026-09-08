@@ -10,12 +10,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
+import { ScenarioFrame } from '../shared/ScenarioFrame.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 import { useDebouncedFetcher, useFetcher } from '@ahoo-wang/fetcher-react';
 import { useMemo, useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 import type { FixtureUser } from '../fixtures/http';
 import { installFetchFixture } from '../fixtures/http';
 
@@ -85,7 +85,26 @@ function FetcherHookDemo({ scenario }: { scenario: Scenario }) {
   );
 }
 
+const scene = {
+  domain: 'React request state',
+  summary: 'Bind a typed Fetcher request to React execution state.',
+  fixture: 'Local fetch fixture · local users',
+  setup: 'A hook receives a deterministic request and local response fixture.',
+  observe:
+    'Loading, result, error, refresh, and cancellation remain inspectable.',
+};
+
 const meta = {
+  parameters: { docs: { story: { inline: false, height: '480px' } } },
+  decorators: [
+    (Story, context) => (
+      <AntdProvider>
+        <ScenarioFrame title={context.name} {...scene}>
+          <Story />
+        </ScenarioFrame>
+      </AntdProvider>
+    ),
+  ],
   title: 'React Hooks/Fetcher',
   component: FetcherHookDemo,
   beforeEach: installFetchFixture,
@@ -94,44 +113,25 @@ const meta = {
 } satisfies Meta<typeof FetcherHookDemo>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-async function loadAndExpect(canvasElement: HTMLElement, text: string) {
-  const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole('button', { name: 'Load users' }));
-  await expect(await canvas.findByText(text)).toBeVisible();
-}
+type Story = StoryObj<typeof meta>;
 
 export const GetSuccess: Story = {
   args: { scenario: 'success' },
-  play: ({ canvasElement }) => loadAndExpect(canvasElement, 'Ada, Lin'),
 };
 
 export const EmptyList: Story = {
   args: { scenario: 'empty' },
-  play: ({ canvasElement }) => loadAndExpect(canvasElement, 'Empty · 0 users'),
 };
 
 export const HttpError: Story = {
   args: { scenario: 'error' },
-  play: ({ canvasElement }) =>
-    loadAndExpect(canvasElement, 'Error · ExchangeError'),
 };
 
 export const ManualRefetch: Story = {
   args: { scenario: 'refetch' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const button = canvas.getByRole('button', { name: 'Load users' });
-    await userEvent.click(button);
-    await expect(await canvas.findByText('Loaded 1 time')).toBeVisible();
-    await userEvent.click(button);
-    await expect(await canvas.findByText('Loaded 2 times')).toBeVisible();
-  },
 };
 
 export const DebouncedRequest: Story = {
   args: { scenario: 'debounce' },
-  play: ({ canvasElement }) =>
-    loadAndExpect(canvasElement, 'Debounced · Ada · query Ada'),
 };

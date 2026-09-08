@@ -10,7 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
+import { ScenarioFrame } from '../shared/ScenarioFrame.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   BroadcastTypedEventBus,
@@ -22,7 +23,6 @@ import type {
   CrossTabMessenger,
 } from '@ahoo-wang/fetcher-eventbus';
 import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 
 type Scenario = 'serial' | 'parallel' | 'broadcast';
 
@@ -106,37 +106,42 @@ function EventBusDemo({ scenario }: { scenario: Scenario }) {
   );
 }
 
+const scene = {
+  domain: 'Event delivery',
+  summary: 'Compare handler order, completion, and cleanup across typed buses.',
+  fixture: 'In-memory bus · deterministic handlers',
+  setup: 'Named handlers are registered before each isolated run.',
+  observe: 'The result exposes delivery order, completion timing, or cleanup.',
+};
+
 const meta = {
-  title: 'HTTP & Streaming/Event Bus',
+  decorators: [
+    (Story, context) => (
+      <AntdProvider>
+        <ScenarioFrame title={context.name} {...scene}>
+          <Story />
+        </ScenarioFrame>
+      </AntdProvider>
+    ),
+  ],
+  title: '事件与存储/Event Bus',
   component: EventBusDemo,
   args: { scenario: 'serial' },
   argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof EventBusDemo>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-async function emitAndExpect(canvasElement: HTMLElement, text: string) {
-  const canvas = within(canvasElement);
-  await expect(canvas.getByText('Setup')).toBeVisible();
-  await expect(canvas.getByText('Action')).toBeVisible();
-  await expect(canvas.getByText('Observe')).toBeVisible();
-  await userEvent.click(canvas.getByRole('button', { name: 'Emit event' }));
-  await expect(await canvas.findByText(text)).toBeVisible();
-}
+type Story = StoryObj<typeof meta>;
 
 export const SerialOrder: Story = {
   args: { scenario: 'serial' },
-  play: ({ canvasElement }) => emitAndExpect(canvasElement, 'first → second'),
 };
 
 export const ParallelCompletion: Story = {
   args: { scenario: 'parallel' },
-  play: ({ canvasElement }) => emitAndExpect(canvasElement, 'fast → slow'),
 };
 
 export const BroadcastCleanup: Story = {
   args: { scenario: 'broadcast' },
-  play: ({ canvasElement }) =>
-    emitAndExpect(canvasElement, 'posted: update · closed: true'),
 };

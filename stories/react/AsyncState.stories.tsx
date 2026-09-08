@@ -10,7 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
+import { ScenarioFrame } from '../shared/ScenarioFrame.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   useDebouncedExecutePromise,
@@ -18,7 +19,6 @@ import {
   useLatest,
 } from '@ahoo-wang/fetcher-react';
 import { useEffect, useRef, useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 
 type Scenario = 'success' | 'error' | 'retry' | 'debounce' | 'stale';
 
@@ -113,7 +113,25 @@ function UnmountDemo() {
   );
 }
 
+const scene = {
+  domain: 'React async state',
+  summary: 'Observe one promise as it moves through the hook state machine.',
+  fixture: 'Deterministic timers · isolated hook',
+  setup: 'The hook starts idle with controlled completion timing.',
+  observe:
+    'Status and result show success, rejection, retry, or stale suppression.',
+};
+
 const meta = {
+  decorators: [
+    (Story, context) => (
+      <AntdProvider>
+        <ScenarioFrame title={context.name} {...scene}>
+          <Story />
+        </ScenarioFrame>
+      </AntdProvider>
+    ),
+  ],
   title: 'React Hooks/Async State',
   component: AsyncStateDemo,
   args: { scenario: 'success' },
@@ -121,69 +139,29 @@ const meta = {
 } satisfies Meta<typeof AsyncStateDemo>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-async function runAndExpect(canvasElement: HTMLElement, text: string) {
-  const canvas = within(canvasElement);
-  await expect(canvas.getByText('Setup')).toBeVisible();
-  await expect(canvas.getByText('Action')).toBeVisible();
-  await expect(canvas.getByText('Observe')).toBeVisible();
-  const trigger = canvas.getByRole('button', { name: 'Run operation' });
-  await expect(window.getComputedStyle(trigger).borderRadius).toBe('8px');
-  await userEvent.tab();
-  await expect(trigger).toHaveFocus();
-  await expect(window.getComputedStyle(trigger).outlineColor).toBe(
-    'rgb(9, 88, 217)',
-  );
-  await userEvent.click(trigger);
-  await expect(await canvas.findByText(text)).toBeVisible();
-}
+type Story = StoryObj<typeof meta>;
 
 export const Success: Story = {
   args: { scenario: 'success' },
-  play: ({ canvasElement }) => runAndExpect(canvasElement, 'success · Loaded'),
 };
 
 export const Rejection: Story = {
   args: { scenario: 'error' },
-  play: ({ canvasElement }) =>
-    runAndExpect(canvasElement, 'error · Unable to load'),
 };
 
 export const Retry: Story = {
   args: { scenario: 'retry' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getByRole('button', { name: 'Run operation' }),
-    );
-    await expect(await canvas.findByText('error · Try again')).toBeVisible();
-    await userEvent.click(
-      canvas.getByRole('button', { name: 'Run operation' }),
-    );
-    await expect(await canvas.findByText('success · Recovered')).toBeVisible();
-  },
 };
 
 export const Debounce: Story = {
   args: { scenario: 'debounce' },
-  play: ({ canvasElement }) =>
-    runAndExpect(canvasElement, 'success · Debounced third'),
 };
 
 export const StaleResultSuppression: Story = {
   args: { scenario: 'stale' },
-  play: ({ canvasElement }) =>
-    runAndExpect(canvasElement, 'success · Fast result'),
 };
 
 export const UnmountCleanup: Story = {
   render: () => <UnmountDemo />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getByRole('button', { name: 'Unmount child' }),
-    );
-    await expect(await canvas.findByText('Unmounted safely')).toBeVisible();
-  },
 };

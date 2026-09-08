@@ -100,7 +100,7 @@ Field uniqueness is a simple-mode editing rule, not a compiler restriction. Adva
 
 Fully unset scalar predicates and cleared collections are omitted. An explicitly empty new group is incomplete; a nonempty group whose children are all inactive is omitted. Empty output at the query root becomes MATCH_ALL. Inactive children never become MATCH_ALL inside OR/NOR. A missing part of a bound, collection item or date/time pair blocks compilation. False, zero, explicit null and valid empty strings retain their meaning. ELEMENT_MATCH only accepts element-relative fields and excludes root-only metadata/search/deletion nodes.
 
-`date` fields use YYYY-MM-DD strings; `datetime` fields use epoch milliseconds and validate their `timeZone` (local runtime zone when absent). Nonexistent local DST times and sub-millisecond precision that cannot be represented by the timestamp are rejected; new ambiguous local DST times use TZDate's default interpretation. Editing an existing timestamp retains its `offsetMinutes` hint (integer minutes, the sign used by `Date.getTimezoneOffset()`) when that offset still describes the edited local date/time. A date change across DST seasons uses the new date's actual offset; the hint cannot make a nonexistent local time valid. Relative-time predicates separately preserve their Wow `zoneId`, `datePattern` and `timeUnit` parameters.
+`date` fields use YYYY-MM-DD strings; `datetime` fields use epoch milliseconds and validate their `timeZone` (local runtime zone when absent). Nonexistent local DST times and sub-millisecond precision that cannot be represented by the timestamp are rejected; new ambiguous local DST times choose the earlier occurrence consistently across system timezones. Editing an existing timestamp retains its `offsetMinutes` hint (integer minutes, the sign used by `Date.getTimezoneOffset()`) when that offset still describes the edited local date/time. A date change across DST seasons uses the new date's actual offset; the hint cannot make a nonexistent local time valid. Relative-time predicates separately preserve their Wow `zoneId`, `datePattern` and `timeUnit` parameters.
 
 ```ts
 const draft = newFilterDraft(FilterOperator.GTE, 'amount');
@@ -213,7 +213,7 @@ const extensions: FilterExtensions = {
 };
 ```
 
-The corresponding field uses `editor: {name: 'customer-picker', options: {...}}`; remote definitions contain this JSON reference, never React components or callbacks. The complete example is `View Engine/Filter Panel` → `完整自定义筛选器 · 组件契约`. See the [component persistence plan](../../../docs/superpowers/plans/2026-09-08-filter-component-persistence.md) for responsibilities and lifecycle rules.
+The corresponding field uses `editor: {name: 'customer-picker', options: {...}}`; remote definitions contain this JSON reference, never React components or callbacks. The complete example is `View Engine/过滤器` → `完整自定义筛选器 · 组件契约`. See the [component persistence plan](../../../docs/superpowers/plans/2026-09-08-filter-component-persistence.md) for responsibilities and lifecycle rules.
 
 ### FilterSelect
 
@@ -254,7 +254,7 @@ function CustomerFilter({ props, disabled, onChange }: FilterEditorProps) {
 }
 ```
 
-Register this component with `compile: compileBuiltinFilter` and `clear: clearBuiltinFilterProps` in `extensions.filters['customer-search']`, reference it with the field's `editor.name`, and restrict that field to `operators: [FilterOperator.EQ]`. `View Engine/Filter Panel` → `自定义筛选器 · 内置搜索 Select` provides the complete registration, compatible-node fallback and manual-apply example. Candidate search here is local; remote candidate loading remains the host editor's responsibility.
+Register this component with `compile: compileBuiltinFilter` and `clear: clearBuiltinFilterProps` in `extensions.filters['customer-search']`, reference it with the field's `editor.name`, and restrict that field to `operators: [FilterOperator.EQ]`. `View Engine/过滤器` → `自定义筛选器 · 内置搜索 Select` provides the complete registration, compatible-node fallback and manual-apply example. Candidate search here is local; remote candidate loading remains the host editor's responsibility.
 
 ### FieldFilter
 
@@ -310,7 +310,7 @@ Popover also inherits its trigger's theme in the body portal. Calendar forwards 
 
 ## Storybook
 
-Build the package, then run `pnpm storybook` from the repository root. `View Engine/Filter Panel` consumes the public package exports and demonstrates business filters, nested logic/element scopes, custom editors, query errors, dark mode and a 50-operator gallery. `View Engine/Date and Time` covers individual controls. Its combined example retains edits until Query, then creates a Wow filter using browser-local time and epoch milliseconds. It makes no service requests. Focused browser checks: `pnpm exec vitest run --project=storybook stories/view-engine/`.
+Build the package, then run `pnpm storybook` from the repository root. `View Engine/过滤器` consumes the public package exports and demonstrates business filters, nested logic/element scopes, custom editors, query errors, dark mode and a 50-operator gallery. `View Engine/基础组件/日期时间` covers individual controls. Its combined example retains edits until Query, then creates a Wow filter using browser-local time and epoch milliseconds. It makes no service requests. Focused browser checks: `pnpm exec vitest run --project=storybook stories/view-engine/`.
 
 ## Record views and host contract
 
@@ -857,7 +857,7 @@ demonstrates this contract with a local simulated service, not a live backend.
 
 From the repository root, build with
 `pnpm --filter @ahoo-wang/fetcher-view-engine build`, then run
-`examples/react/FilterPersistenceExample.tsx` and the matching Library Delivery story demonstrate JSON-backed save/new-engine reload of unset controls and opaque selected ID/display label props. Only changed query values require Query before Save. Run `node packages/view-engine/examples/core.mjs` and
+`examples/react/FilterPersistenceExample.tsx` and the matching View Engine / 扩展接入 / 公共包 story demonstrate JSON-backed save/new-engine reload of unset controls and opaque selected ID/display label props. Only changed query values require Query before Save. Run `node packages/view-engine/examples/core.mjs` and
 `node packages/view-engine/scripts/verify-package.mjs`.
 The latter packs to a temporary directory, checks entry points and scoped CSS,
 compares archive contents with dist, runs public imports/core behavior, and
@@ -868,7 +868,7 @@ It does not install, publish or modify dependency/build configuration.
 filter and cell extensions. It uses public package imports, readonly inputs,
 instance-bound refresh and explicit operation failure/retry handling. Run it with
 `pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175`
-or open **View Engine / Library Delivery** in Storybook. Its strict local order
+or open **View Engine / 快速开始 and View Engine / 扩展接入** in Storybook. Its strict local order
 service rejects unsupported queries; replace that service with the host's real
 authenticated client rather than interpreting the demonstration as backend admission.
 

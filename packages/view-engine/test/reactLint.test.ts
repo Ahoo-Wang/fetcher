@@ -118,7 +118,7 @@ it('keeps the React policy scoped and also covers actual CSF files', async () =>
   );
   expect(core.rules['react-hooks/rules-of-hooks']).toBeUndefined();
   const story = await repository.calculateConfigForFile(
-    resolve(root, 'stories/view-engine/LibraryDelivery.stories.tsx'),
+    resolve(root, 'stories/view-engine/QuickStart.stories.tsx'),
   );
   expect(story.rules['react-hooks/exhaustive-deps'][0]).toBe(2);
 });

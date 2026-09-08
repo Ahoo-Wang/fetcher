@@ -193,7 +193,6 @@ export function Scenario({
       className="fve-root"
       data-theme={appearance}
       style={{
-        minHeight: '100vh',
         background: 'var(--fve-background)',
         padding: 16,
       }}

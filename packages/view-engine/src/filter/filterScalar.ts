@@ -110,6 +110,17 @@ function datetime(value: unknown, timeZone?: string): number | undefined {
     );
     if (matchesParts(preferred)) return preferred.getTime();
   }
+  // Resolve a repeated wall time to its earlier occurrence, including half-hour rollbacks.
+  const previousOffset = new TZDate(
+    zoned.getTime() - 86_400_000,
+    timeZone,
+  ).getTimezoneOffset();
+  const earlier = new TZDate(
+    zoned.getTime() + (previousOffset - zoned.getTimezoneOffset()) * 60_000,
+    timeZone,
+  );
+  if (earlier.getTime() < zoned.getTime() && matchesParts(earlier))
+    return earlier.getTime();
   return zoned.getTime();
 }
 

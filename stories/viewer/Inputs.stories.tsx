@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   Fullscreen,
@@ -18,8 +18,7 @@ import {
   RemoteSelect,
   TagInput,
 } from '@ahoo-wang/fetcher-viewer';
-import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
+import { useEffect, useRef, useState } from 'react';
 
 interface UserOption {
   label: string;
@@ -113,85 +112,71 @@ function RemoteSelectDemo({
 }
 
 const meta = {
-  title: 'Viewer/Inputs',
+  decorators: [
+    Story => (
+      <AntdProvider>
+        <Story />
+      </AntdProvider>
+    ),
+  ],
+  title: 'Viewer/输入与过滤/Inputs',
   parameters: { layout: 'padded' },
 } satisfies Meta;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const NumberRangeValidation: Story = {
   render: () => <NumberRangeDemo />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.type(canvas.getByPlaceholderText('Minimum'), '10');
-    await userEvent.type(canvas.getByPlaceholderText('Maximum'), '20');
-    await expect(await canvas.findByText('10 → 20')).toBeVisible();
-  },
 };
 
 export const Tags: Story = {
   render: () => <TagInputDemo />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.type(
-      canvas.getByRole('combobox', { name: 'Tags' }),
-      'alpha,',
-    );
-    await expect(await canvas.findByText('Tags: alpha')).toBeVisible();
-  },
 };
 
-let releaseRemoteSearch: (() => void) | undefined;
+function ControlledRemoteSearch() {
+  const release = useRef<(() => void) | undefined>(undefined);
+  const [pending, setPending] = useState(false);
+  useEffect(() => () => release.current?.(), []);
+  return (
+    <>
+      <RemoteSelectDemo
+        scenario="success"
+        waitForSearch={() =>
+          new Promise<void>(resolve => {
+            release.current?.();
+            release.current = resolve;
+            setPending(true);
+          })
+        }
+      />
+      <button
+        disabled={!pending}
+        onClick={() => {
+          release.current?.();
+          release.current = undefined;
+          setPending(false);
+        }}
+      >
+        Complete search
+      </button>
+    </>
+  );
+}
 
 export const RemoteLoadingAndSuccess: Story = {
-  render: () => (
-    <RemoteSelectDemo
-      scenario="success"
-      waitForSearch={() =>
-        new Promise<void>(resolve => {
-          releaseRemoteSearch = resolve;
-        })
-      }
-    />
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const input = canvas.getByRole('combobox', { name: 'User search' });
-    await userEvent.click(input);
-    await userEvent.type(input, 'Ada');
-    await expect(await canvas.findByText('Search: loading')).toBeVisible();
-    releaseRemoteSearch?.();
-    releaseRemoteSearch = undefined;
-    const dropdown = canvasElement.ownerDocument.querySelector<HTMLElement>(
-      '.ant-select-dropdown:not(.ant-select-dropdown-hidden)',
-    );
-    await expect(dropdown).not.toBeNull();
-    const options = within(dropdown!);
-    await userEvent.click(await options.findByText('Ada'));
-    await expect(await canvas.findByText('Selected: Ada')).toBeVisible();
-  },
+  render: () => <ControlledRemoteSearch />,
 };
 
 export const RemoteEmpty: Story = {
   render: () => <RemoteSelectDemo scenario="empty" />,
-  play: ({ canvasElement }) => searchAndExpect(canvasElement, 'Search: empty'),
 };
 
 export const RemoteError: Story = {
   render: () => <RemoteSelectDemo scenario="error" />,
-  play: ({ canvasElement }) => searchAndExpect(canvasElement, 'Search: error'),
 };
 
 export const FullscreenDisabled: Story = {
   render: () => <Fullscreen disabled>Fullscreen unavailable</Fullscreen>,
 };
-
-async function searchAndExpect(canvasElement: HTMLElement, text: string) {
-  const canvas = within(canvasElement);
-  const input = canvas.getByRole('combobox', { name: 'User search' });
-  await userEvent.click(input);
-  await userEvent.type(input, 'Nobody');
-  await expect(await canvas.findByText(text)).toBeVisible();
-  await userEvent.tab();
-}

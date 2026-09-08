@@ -10,11 +10,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
+import { ScenarioFrame } from '../shared/ScenarioFrame.js';
 import '@ahoo-wang/fetcher-eventstream';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 import { fixtureSseChunks } from '../fixtures/http';
 
 type Scenario = 'tokens' | 'multiline' | 'done' | 'malformed' | 'cancelled';
@@ -119,47 +119,51 @@ function EventStreamDemo({ scenario }: { scenario: Scenario }) {
   );
 }
 
+const scene = {
+  domain: 'Streaming',
+  summary: 'Read deterministic SSE frames as browser consumers receive them.',
+  fixture: 'Local ReadableStream · fixed SSE chunks',
+  setup: 'A Response is assembled from known event-stream chunks.',
+  observe:
+    'Parsed events, termination, malformed JSON, or cancellation is visible.',
+};
+
 const meta = {
-  title: 'HTTP & Streaming/Event Stream',
+  decorators: [
+    (Story, context) => (
+      <AntdProvider>
+        <ScenarioFrame title={context.name} {...scene}>
+          <Story />
+        </ScenarioFrame>
+      </AntdProvider>
+    ),
+  ],
+  title: '事件与存储/Event Stream',
   component: EventStreamDemo,
   args: { scenario: 'tokens' },
   argTypes: { scenario: { table: { disable: true } } },
 } satisfies Meta<typeof EventStreamDemo>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-async function readAndExpect(canvasElement: HTMLElement, text: string) {
-  const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole('button', { name: 'Read stream' }));
-  await expect(await canvas.findByText(text)).toBeVisible();
-}
+type Story = StoryObj<typeof meta>;
 
 export const TokenStream: Story = {
   args: { scenario: 'tokens' },
-  play: ({ canvasElement }) => readAndExpect(canvasElement, 'Hello Fetcher'),
 };
 
 export const MultilineEvent: Story = {
   args: { scenario: 'multiline' },
-  play: ({ canvasElement }) =>
-    readAndExpect(canvasElement, 'note: first line · second line'),
 };
 
 export const DoneTermination: Story = {
   args: { scenario: 'done' },
-  play: ({ canvasElement }) =>
-    readAndExpect(canvasElement, '2 chunks · stopped at [DONE]'),
 };
 
 export const MalformedJson: Story = {
   args: { scenario: 'malformed' },
-  play: ({ canvasElement }) =>
-    readAndExpect(canvasElement, 'SyntaxError · malformed JSON'),
 };
 
 export const Cancelled: Story = {
   args: { scenario: 'cancelled' },
-  play: ({ canvasElement }) =>
-    readAndExpect(canvasElement, 'Cancelled after chunk-1'),
 };

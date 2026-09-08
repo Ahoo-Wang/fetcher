@@ -58,7 +58,7 @@ if (serveOnly) {
     page.on('pageerror', error => errors.push(error.message));
     bobPage.on('pageerror', error => errors.push(error.message));
     const origin = 'http://127.0.0.1:6006';
-    const url = `${origin}/iframe.html?id=view-engine-library-delivery--http-view-service&viewMode=story&viewService=${encodeURIComponent(server.baseUrl)}`;
+    const url = `${origin}/iframe.html?id=development-http-service--http-view-service&viewMode=story&viewService=${encodeURIComponent(server.baseUrl)}`;
     const alice = new HttpViewHost({
       baseUrl: server.baseUrl,
       definitionId: fixture.definition.id,

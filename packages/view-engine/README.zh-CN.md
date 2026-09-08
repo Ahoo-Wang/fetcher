@@ -31,9 +31,9 @@ node packages/view-engine/scripts/verify-package.mjs
 pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 ```
 
-`examples/core.mjs` 演示无 React 的公开 API，包括未设置控件和自定义原始属性的 JSON 保存及新引擎恢复；`examples/react/OrderExample.tsx` 仅通过公开导入组合页面和五类扩展。打开 `http://127.0.0.1:4175`，或 Storybook 的 **View Engine → Library Delivery**，体验操作、自定义过滤器/单元格、异常恢复与深色窄容器。
+`examples/core.mjs` 演示无 React 的公开 API，包括未设置控件和自定义原始属性的 JSON 保存及新引擎恢复；`examples/react/OrderExample.tsx` 仅通过公开导入组合页面和五类扩展。打开 `http://127.0.0.1:4175`，或 Storybook 的 **View Engine → 快速开始 / 扩展接入**，体验操作、自定义过滤器/单元格、异常恢复与深色窄容器。
 
-`examples/react/FilterPersistenceExample.tsx` 保存选中状态 ID 和独立编辑的显示名称。打开 `http://127.0.0.1:4175/?example=persistence`，或 **View Engine → Library Delivery → 公共包 · 组件配置 JSON 保存与重新打开**：新增未设置控件后无需查询即可保存，并在新引擎中恢复；只改显示名称也能直接保存，状态值改变后则需先查询。
+`examples/react/FilterPersistenceExample.tsx` 保存选中状态 ID 和独立编辑的显示名称。打开 `http://127.0.0.1:4175/?example=persistence`，或 **View Engine → 扩展接入 → 公共包 → 公共包 · 组件配置 JSON 保存与重新打开**：新增未设置控件后无需查询即可保存，并在新引擎中恢复；只改显示名称也能直接保存，状态值改变后则需先查询。
 
 `verify-package.mjs` 创建临时归档，检查 exports、CSS 与构建内容一致性，再针对解包后的产物运行并类型校验使用方代码，不执行安装或发布。示例使用严格的本地模拟服务；库级验证不替代宿主的真实鉴权、权限、持久化和后端查询验证。
 
@@ -257,7 +257,7 @@ export function OrderFilters({
 
 完全未设置的值保留控件但不产生谓词；部分填写、无效数据和未注册扩展阻止查询。所有字段在添加时绑定，保留所属分组及作用域。`extensions.filters` 提供本地自定义编辑器；`draft` / `onDraftChange` 可将编辑缓冲交由宿主按实例保留。自定义组件通过 `onChange(props)` 发布可序列化属性；选中 ID、显示名称等需要保存的 UI 状态放在 props，仅未提交的临时缓冲保留在 React 局部状态中。
 
-简单模式没有条件操作菜单或前后排序。高级模式支持新增、删除和编辑分组，不提供条件或分组的移动功能；内置标量筛选项移除“清空”和“特殊值”按钮；删除输入内容可保留未设置值，空值和空字符串使用对应操作符。编辑已有日期时间会保留夏令时重复小时的原偏移，跨季节日期仍使用目标日期的实际偏移。
+简单模式没有条件操作菜单或前后排序。高级模式支持新增、删除和编辑分组，不提供条件或分组的移动功能；内置标量筛选项移除“清空”和“特殊值”按钮；删除输入内容可保留未设置值，空值和空字符串使用对应操作符。编辑已有日期时间会保留夏令时重复小时的原偏移，跨季节日期仍使用目标日期的实际偏移。没有适用的偏移提示时，重复时刻统一选择较早的一次，不受系统时区影响；跳时期间不存在的本地时间仍判为无效。
 
 过滤器组件定义将 `component`、纯函数 `compile(props, context)` 和可选的 `clear(props, context)` 一起注册到 `extensions.filters`。这是 `ViewPage` 唯一的筛选器注册入口；页面从同一份定义提供引擎所需能力，保持作用域内渲染与编译一致。`FilterCompiler` 是不依赖 React 的最小能力契约，仅在直接构造 `ViewEngine` 时通过 `filterCompilers` 使用，React 接入无需另行注册。兼容内置属性的编辑器可复用 `compileBuiltinFilter` 和 `clearBuiltinFilterProps`；完整组件仅在提供清空语义时获得 `onClear`。
 
@@ -326,7 +326,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine test:compiled
 pnpm storybook
 ```
 
-在 Storybook 中打开 **View Engine → Filter Panel**，体验业务筛选、嵌套元素条件、自定义编辑器校验、查询重试、深色主题与 50 种操作。**View Engine → Date and Time** 提供单独日期时间控件。示例包括手动查询的字段组合、日期选择、精确时间、未完成输入、未设置值和深色主题；**View Engine → Filter Select** 演示选择、清空和重新选择；Controls 支持切换外观与禁用状态。组合示例使用浏览器本地时区生成毫秒时间戳的 Wow 表达式，不请求业务服务。这些示例消费包的公开构建产物，修改包源码后需重新构建。
+在 Storybook 中打开 **View Engine → 过滤器**，体验业务筛选、嵌套元素条件、自定义编辑器校验、查询重试、深色主题与 50 种操作。**View Engine → 基础组件 → 日期时间** 提供单独日期时间控件。示例包括手动查询的字段组合、日期选择、精确时间、未完成输入、未设置值和深色主题；**View Engine → 基础组件 → Select** 演示选择、清空和重新选择；Controls 支持切换外观与禁用状态。组合示例使用浏览器本地时区生成毫秒时间戳的 Wow 表达式，不请求业务服务。这些示例消费包的公开构建产物，修改包源码后需重新构建。
 
 详见 [API 参考](../../skills/fetcher-view-engine/references/api.md) 与 [第三方许可说明](THIRD_PARTY_NOTICES.md)。
 

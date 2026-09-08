@@ -15,7 +15,7 @@ import {
   FilterOperator as Op,
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { createFilterDraft } from '../src/filter/filterCore';
 import { compile, fields, node } from './fixtures/filterCore.js';
 
@@ -185,3 +185,62 @@ it('keeps local datetime behavior when no field timezone is specified', () => {
     ).expression,
   ).toEqual(filter.eq('created', expected));
 });
+
+it.each(['UTC', 'Asia/Shanghai', 'America/Los_Angeles'])(
+  'resolves overlaps independently of system timezone %s',
+  systemZone => {
+    vi.stubEnv('TZ', systemZone);
+    try {
+      expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(systemZone);
+      for (const [timeZone, date, time, offsetMinutes, timestamp] of [
+        [
+          'America/New_York',
+          '2026-11-01',
+          '01:30',
+          undefined,
+          Date.UTC(2026, 10, 1, 5, 30),
+        ],
+        [
+          'America/New_York',
+          '2026-11-01',
+          '01:30',
+          300,
+          Date.UTC(2026, 10, 1, 6, 30),
+        ],
+        [
+          'America/New_York',
+          '2026-11-01',
+          '01:30',
+          0,
+          Date.UTC(2026, 10, 1, 5, 30),
+        ],
+        [
+          'Australia/Lord_Howe',
+          '2026-04-05',
+          '01:45',
+          undefined,
+          Date.UTC(2026, 3, 4, 14, 45),
+        ],
+        [
+          'Australia/Lord_Howe',
+          '2026-04-05',
+          '01:45',
+          -630,
+          Date.UTC(2026, 3, 4, 15, 15),
+        ],
+      ] as const) {
+        expect(
+          compile(
+            node(Op.EQ, 'created', { value: { date, time, offsetMinutes } }),
+            [{ ...fields[4], timeZone }],
+          ),
+        ).toEqual({
+          expression: { op: Op.EQ, field: 'created', value: timestamp },
+          errors: [],
+        });
+      }
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  },
+);
