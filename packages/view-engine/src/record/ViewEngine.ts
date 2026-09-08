@@ -125,6 +125,7 @@ export class ViewEngine {
   }
 
   getSnapshot = (): ViewEngineState => this.store.getSnapshot();
+  /** Observer errors are reported to console.error without interrupting commands or other observers. */
   subscribe = (listener: () => void): (() => void) =>
     this.store.subscribe(listener);
 

@@ -34,6 +34,7 @@ export type FilterJsonValue =
   | readonly FilterJsonValue[]
   | { readonly [key: string]: FilterJsonValue };
 export interface FilterEditorReference {
+  /** Persisted protocol identity; incompatible property/compile semantics require a new name. */
   name: string;
   options?: Readonly<Record<string, FilterJsonValue>>;
 }

@@ -33,9 +33,12 @@ export function RecordActions({
   const querying = session.queryStatus === 'loading';
   const reference = definition.recordActions?.[kind];
   if (!reference) return null;
-  const Actions = (
-    kind === 'global' ? extensions?.globalActions : extensions?.tableActions
-  )?.[reference.name];
+  const registry =
+    kind === 'global' ? extensions?.globalActions : extensions?.tableActions;
+  const Actions =
+    registry && Object.prototype.hasOwnProperty.call(registry, reference.name)
+      ? registry[reference.name]
+      : undefined;
   const label = kind === 'global' ? '全局操作' : '表格操作';
   return (
     <div

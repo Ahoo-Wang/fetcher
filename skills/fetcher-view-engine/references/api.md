@@ -407,7 +407,7 @@ To override one operation without dropping its siblings, merge the service:
 | `definition.load(id, signal?)`                                       | Async complete definition. Optional when local definition is supplied.                                                                                                                           |
 | `instance.list(definitionId, signal?)`                               | Async `ViewInstanceList`; complete instances and a nullable default ID, no duplicate per-item load. Optional with local list.                                                                    |
 | `instance.load(id, signal?)`                                         | Async full instance, used for an unknown selection or explicit reload.                                                                                                                           |
-| `resolveSource(sourceId)`                                            | Required configured `RecordQuerySource`, or Promise of source; requires Wow `paged` and `cursor`, with optional `aggregate` for all-record summaries.                                            |
+| `resolveSource(sourceId)`                                            | Required configured `RecordQuerySource`, or Promise of source; requires at least one of Wow `paged` or `cursor`, with optional `aggregate` for all-record summaries.                             |
 | `permission.getInstance(instance)`                                   | `{save, saveAsPersonal, saveAsShared, delete?, rename?}`; absent means false. Missing write callbacks also disable the corresponding capability.                                                 |
 | `instance.save(instance)`                                            | Async full same instance and submitted content, with a new revision if used.                                                                                                                     |
 | `instance.delete(id, revision?)`                                     | Optional `Promise<void>`; resolve only after deletion, treat already absent as success. Enforce caller access, system-view protection and optimistic revision checks in the host service.        |
@@ -928,3 +928,33 @@ with Storybook running. The HTTP script loads development TypeScript through the
 existing Vite runtime; no HTTP implementation is added to dist. Its --serve mode
 starts the manual fixture on 6010. These checks cover recovery and isolation, not
 production protocol or authentication readiness.
+
+### Contract convergence
+
+engine.load() awaits permission.load(definitionId, signal) alongside definition/instance
+reads, falling back to permission.refresh(signal). Providers initialize their synchronous
+getters before resolving; the engine does not duplicate their permission store. Failure
+blocks ready state and record queries; retry uses load(), and disposal/reload cancels the
+signal. Synchronous-only providers remain supported. updateHost is a synchronous,
+same-scope replacement of prepared services; later changes notify permission.subscribe.
+
+RecordQuerySource requires paged or cursor (both also allowed), with optional aggregate.
+The selected pagination mode is checked before record/aggregate I/O. Packed public-type
+verification covers both single-mode sources and rejects sources without any query mode.
+
+All five registries resolve own properties only. Subscriber errors are reported with
+console.error and isolated from command completion and other observers. Immutable
+filter input references control recompilation; unrelated state patches retain derived
+filter state. Incompatible component property/compile changes use a new persisted name
+(e.g. order-status/v2); keep old registrations while corresponding saved data exists.
+
+### React lint verification
+
+`pnpm lint:view-engine` performs read-only package and `stories/view-engine` checks.
+`pnpm --filter @ahoo-wang/fetcher-view-engine lint:check` checks the package without
+fixing files. Root CI `pnpm lint` includes the Storybook React checks. The package
+and root configuration reuse stable official react-hooks recommended rules; all
+current Hooks/Compiler diagnostics and unused disable directives are errors.
+Parser tsconfigRootDir is explicit. Do not add a second legacy compiler plugin or
+ban all manual memoization; effect-dependency identity may require it. Executable
+lint regressions cover package/root/Storybook paths and valid memoization.

@@ -50,10 +50,12 @@ export interface ViewPreferenceService {
 export interface ViewPermissionService {
   getInstance?(instance: ViewInstance): ViewInstancePermissions;
   getDefinition?(): Pick<ViewPermissionSnapshot, 'reorder'>;
+  /** Initialize this service's synchronous getters before resolving; awaited by engine.load(). */
   load?(
     definitionId: string,
     signal?: AbortSignal,
   ): Promise<ViewPermissionSnapshot>;
+  /** Also used for initialization when load is absent. Publish subsequent changes via subscribe. */
   refresh?(signal?: AbortSignal): Promise<void>;
   subscribe?(listener: () => void): () => void;
 }

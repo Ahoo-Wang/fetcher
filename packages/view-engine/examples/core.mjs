@@ -95,9 +95,6 @@ const source = {
       list: structuredClone(matched.slice((index - 1) * size, index * size)),
     };
   },
-  async cursor() {
-    throw new Error('This example uses paged records.');
-  },
 };
 const host = {
   resolveSource(id) {

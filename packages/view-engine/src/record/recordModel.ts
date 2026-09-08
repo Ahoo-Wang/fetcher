@@ -152,8 +152,11 @@ export interface ViewCapabilities {
     >
   >;
 }
-export type RecordQuerySource = Pick<QueryApi<RecordData>, 'paged' | 'cursor'> &
-  Partial<Pick<QueryApi<RecordData>, 'aggregate'>>;
+/** Advertise only implemented query modes; at least one record query is required. */
+export type RecordQuerySource = (
+  Pick<QueryApi<RecordData>, 'paged'> | Pick<QueryApi<RecordData>, 'cursor'>
+) &
+  Partial<Pick<QueryApi<RecordData>, 'paged' | 'cursor' | 'aggregate'>>;
 export interface ViewEngineOptions {
   /** Headless filter capabilities fixed for this engine lifetime; ViewPage uses extensions.filters. */
   filterCompilers?: FilterCompilerRegistry;

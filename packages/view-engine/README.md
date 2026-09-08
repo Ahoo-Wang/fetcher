@@ -97,6 +97,27 @@ references does not reload them. Change the React key to explicitly reinitialize
 `ViewPage` owns the engine lifecycle; use
 `ViewPageContent` or `RecordView` with an existing engine when the host owns it.
 
+Each `engine.load()` initializes permissions alongside metadata: it awaits
+`permission.load(definitionId, signal)` when available, otherwise `permission.refresh(signal)`.
+The provider owns the permission projection and must initialize its synchronous getters
+before resolving. Initialization failure prevents ready state and record queries; retry
+uses `load()`, and disposal/reload aborts the initialization signal. Providers with only
+synchronous getters need no initialization. Same-scope `updateHost` expects a prepared
+projection; subsequent asynchronous changes notify `permission.subscribe`.
+
+A `RecordQuerySource` supplies `paged`, `cursor`, or both. `aggregate` remains optional.
+Unsupported saved pagination modes fail explicitly before record/aggregate dispatch;
+paged-only adapters do not need a throwing cursor stub.
+
+Engine subscriber exceptions are reported through `console.error` and do not interrupt
+writes or other subscribers. Filter compilation depends on draft/applied-filter/validity
+changes; selection, query status, summaries and title-only edits do not recompile it.
+All five extension registries resolve only explicitly registered own properties.
+Persisted component names identify stable property/compile semantics. Use a new name
+such as `order-status/v2` for an incompatible change and keep the old registration while
+old configurations exist. Unknown registrations remain blocked; no automatic migration
+framework is implied.
+
 Instances persist `config.filters: {mode, root}`. Each component stores a stable
 configuration ID, `{name, options?}` reference, operator, field binding, raw JSON
 `props`, and any child components. The compiled query lives only in
@@ -477,3 +498,20 @@ pnpm storybook
 Start at **View Engine → Filter Panel** in Storybook for business filters, nested element scopes, custom-editor validation, query retry, dark mode and the 50-operator gallery. **View Engine → Date and Time** covers individual date/time controls. The examples cover a combined field with manual query, a calendar, a precise time value, incomplete input, unset values and the dark theme. The **View Engine → Filter Select** example covers selecting, clearing and selecting again. Controls expose appearance and disabled states. The combined example uses the browser's local timezone and an epoch-millisecond Wow expression without contacting a service. Rebuild the package after changing its source; these stories consume its public built exports.
 
 See [the API reference](../../skills/fetcher-view-engine/references/api.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+### React and Compiler lint
+
+Run `pnpm lint:view-engine` from the repository root for read-only package and
+Storybook checks, or `pnpm --filter @ahoo-wang/fetcher-view-engine lint:check` for
+this package. The existing package `lint` command applies ESLint fixes.
+
+Both entry points share the stable official `eslint-plugin-react-hooks` recommended
+rules, including Compiler diagnostics. Exhaustive dependencies, incompatible
+libraries and unsupported syntax are errors; unused disable directives are errors
+as well. No separate legacy compiler plugin is required. The root CI `pnpm lint`
+also checks `stories/view-engine`. Explicit parser roots avoid workspace-root inference errors when invoking ESLint
+from the repository, package or a worktree.
+
+Regression tests lint invalid Hooks/Compiler examples through all three entry paths
+and retain a valid manual-memoization example. See the
+[official rule reference](https://react.dev/reference/eslint-plugin-react-hooks).

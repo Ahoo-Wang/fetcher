@@ -86,12 +86,16 @@ export class RecordQueries {
         throw new Error('筛选组件配置无法编译，请先修正筛选');
       const source = await this.host.resolveSource(definition.sourceId);
       if (!current()) return;
-      if (!background) this.summaries.sync(id, source);
       const { sort, pagination } = session.instance.config;
+      if (!source || typeof source[pagination.mode] !== 'function')
+        throw new Error(`数据源不支持 ${pagination.mode} 分页查询`);
+      if (!background) this.summaries.sync(id, source);
       const result =
         pagination.mode === 'paged'
-          ? await source.paged(
-              cloneSnapshot<Parameters<RecordQuerySource['paged']>[0]>({
+          ? await source.paged!(
+              cloneSnapshot<
+                Parameters<NonNullable<RecordQuerySource['paged']>>[0]
+              >({
                 filter,
                 sort,
                 pagination: { index: session.page, size: pagination.size },
@@ -99,8 +103,10 @@ export class RecordQueries {
               undefined,
               controller,
             )
-          : await source.cursor(
-              cloneSnapshot<Parameters<RecordQuerySource['cursor']>[0]>({
+          : await source.cursor!(
+              cloneSnapshot<
+                Parameters<NonNullable<RecordQuerySource['cursor']>>[0]
+              >({
                 filter,
                 sort,
                 size: pagination.size,

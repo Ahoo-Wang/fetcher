@@ -113,9 +113,15 @@ function verifyTypes(directory) {
   writeFileSync(
     probe,
     `
-    import { ViewEngine, restoreFilterConfiguration, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance } from '${manifest.name}';
+    import { ViewEngine, restoreFilterConfiguration, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance, type RecordQuerySource } from '${manifest.name}';
     import { ViewPage, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
     import { OrderExample } from './examples/react/OrderExample.js';
+    declare const paged: NonNullable<RecordQuerySource['paged']>;
+    declare const cursor: NonNullable<RecordQuerySource['cursor']>;
+    export const pagedOnly: RecordQuerySource = {paged};
+    export const cursorOnly: RecordQuerySource = {cursor};
+    // @ts-expect-error A record source must provide at least one query mode.
+    export const noQuery: RecordQuerySource = {};
     declare const engine: ViewEngine;
     declare const host: ViewHost;
     declare const instance: DeepReadonly<ViewInstance>;

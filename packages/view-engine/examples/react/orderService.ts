@@ -121,9 +121,6 @@ export function createOrderService(options: OrderServiceOptions = {}) {
         total: matched.length,
       };
     },
-    async cursor() {
-      throw new Error('本地订单服务未实现游标查询。');
-    },
   };
   const host: ViewHost = {
     resolveSource(sourceId) {

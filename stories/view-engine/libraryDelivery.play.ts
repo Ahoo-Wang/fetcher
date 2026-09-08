@@ -112,9 +112,7 @@ export const playExtensions: Play = async ({ canvasElement, args }) => {
   await expect(
     service.source.paged({ filter: filter.matchAll(), sort: [asc('amount')] }),
   ).rejects.toThrow('排序');
-  await expect(
-    service.source.cursor({ filter: filter.matchAll() }),
-  ).rejects.toThrow('游标');
+  expect(service.source.cursor).toBeUndefined();
   const snapshot = await service.source.paged({ filter: filter.matchAll() });
   snapshot.list[0].amount = 999;
   await expect(

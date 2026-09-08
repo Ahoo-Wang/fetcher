@@ -60,9 +60,9 @@ export class ViewManagement {
     const current = () =>
       this.scope.current(lifecycle) && this.work.writes.get(id) === token;
     let received = false;
-    this.work.writes.set(id, token);
-    this.store.patch(id, { writeStatus: 'renaming', writeError: null });
     try {
+      this.work.writes.set(id, token);
+      this.store.patch(id, { writeStatus: 'renaming', writeError: null });
       if (!current()) return;
       const result = await this.host.instance!.rename!(
         id,
@@ -171,9 +171,9 @@ export class ViewManagement {
     const token = Symbol();
     const current = () =>
       this.scope.current(lifecycle) && this.work.writes.get(id) === token;
-    this.work.writes.set(id, token);
-    this.store.patch(id, { writeStatus: 'deleting', writeError: null });
     try {
+      this.work.writes.set(id, token);
+      this.store.patch(id, { writeStatus: 'deleting', writeError: null });
       if (!current()) return;
       await this.host.instance!.delete!(id, session.baseline.revision);
       if (!current()) return;

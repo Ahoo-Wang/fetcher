@@ -77,24 +77,39 @@ export function deriveSession(
   session: RecordSession,
   definition: DeepReadonly<ViewDefinition>,
   compilers: FilterCompilerRegistry,
+  previous?: RecordSession,
 ): RecordSession {
-  const compiled = compileFilterDraft(
-    session.filterDraft,
-    definition.fields,
-    definition.allowedOperators,
-    compilers,
-    definition.filterEditors,
-  );
-  return {
-    ...session,
-    filterPending:
+  let filterPending = previous?.filterPending;
+  if (
+    !previous ||
+    previous.filterDraft !== session.filterDraft ||
+    previous.filterValid !== session.filterValid ||
+    previous.appliedFilter !== session.appliedFilter
+  ) {
+    const compiled = compileFilterDraft(
+      session.filterDraft,
+      definition.fields,
+      definition.allowedOperators,
+      compilers,
+      definition.filterEditors,
+    );
+    filterPending =
       !session.filterValid ||
       compiled.errors.length > 0 ||
-      !sameFilterQuery(compiled.expression, session.appliedFilter),
-    dirty: !sameFilterState(
-      instanceContent(session.instance),
-      instanceContent(session.baseline),
-    ),
+      !sameFilterQuery(compiled.expression, session.appliedFilter);
+  }
+  return {
+    ...session,
+    filterPending: filterPending!,
+    dirty:
+      previous &&
+      previous.instance === session.instance &&
+      previous.baseline === session.baseline
+        ? previous.dirty
+        : !sameFilterState(
+            instanceContent(session.instance),
+            instanceContent(session.baseline),
+          ),
   };
 }
 

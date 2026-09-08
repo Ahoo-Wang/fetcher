@@ -50,7 +50,13 @@ export class SessionStore {
   publish(patch: Partial<ViewEngineState>): void {
     if (this.scope.disposed) return;
     this.state = freeze({ ...this.state, ...patch });
-    this.listeners.forEach(listener => listener());
+    this.listeners.forEach(listener => {
+      try {
+        listener();
+      } catch (error) {
+        console.error('视图状态订阅回调失败', error);
+      }
+    });
   }
 
   patch(id: string, patch: Partial<RecordSession>): void {
@@ -63,6 +69,7 @@ export class SessionStore {
           { ...session, ...patch },
           this.definition(),
           this.filterCompilers,
+          session,
         ),
       },
     });

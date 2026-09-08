@@ -84,7 +84,13 @@ export function RecordCell({
 }) {
   if (column.kind === 'actions') {
     const reference = column.renderer ?? definition.recordActions?.row;
-    const Renderer = reference && extensions?.rowActions?.[reference.name];
+    const registry = extensions?.rowActions;
+    const Renderer =
+      reference &&
+      registry &&
+      Object.prototype.hasOwnProperty.call(registry, reference.name)
+        ? registry[reference.name]
+        : undefined;
     if (!Renderer)
       return (
         <span role="alert">
@@ -129,7 +135,11 @@ export function RecordCell({
   const value = readRecordValue(record, column.field);
   const reference = column.renderer ?? field.cellRenderer;
   if (reference) {
-    const Renderer = extensions?.cells?.[reference.name];
+    const registry = extensions?.cells;
+    const Renderer =
+      registry && Object.prototype.hasOwnProperty.call(registry, reference.name)
+        ? registry[reference.name]
+        : undefined;
     if (!Renderer)
       return <span role="alert">未注册单元格渲染器：{reference.name}</span>;
     return (

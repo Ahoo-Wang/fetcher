@@ -95,6 +95,12 @@ export class ViewLoader {
             throw new Error('缺少实例列表或 instance.list');
           return this.host.instance?.list(this.definitionId, controller.signal);
         }),
+        Promise.resolve().then(async () => {
+          const permission = this.host.permission;
+          if (permission?.load)
+            await permission.load(this.definitionId, controller.signal);
+          else await permission?.refresh?.(controller.signal);
+        }),
       ]);
       if (!this.scope.current(lifecycle)) return;
       validateViewDefinition(definition);

@@ -78,6 +78,12 @@ const host: ViewHost = {
 
 `ViewHost` 加载定义及完整实例列表、解析已配置的 Wow 查询客户端、提供权限，并按需实现保存与创建接口。本地数据可直接传入 `definition` 与 `instances: {instances, defaultInstanceId}`。必填 `scopeKey` 标识用户、租户与访问范围，范围变化时更换此值；引擎按 `[scopeKey, definitionId]` 管理生命周期。同一作用域下替换宿主对象会更新回调与能力，保留草稿。本地定义和列表作为该生命周期的初始值，引用变化不触发重载；需要重新初始化时显式改变 React key。宿主自行管理引擎时，使用 `ViewPageContent` 或 `RecordView`。
 
+每次 `engine.load()` 都会与元数据并行初始化权限：优先等待 `permission.load(definitionId, signal)`，未提供时等待 `permission.refresh(signal)`。权限服务负责维护快照，并须在完成前准备好同步 getter。初始化失败时不进入 ready、不查询记录；通过 `load()` 重试，释放或重新加载会取消初始化信号。只有同步 getter 的服务无需初始化。同作用域 `updateHost` 接收已准备好的权限投影；后续异步变化通过 `permission.subscribe` 通知。
+
+`RecordQuerySource` 可以只提供 `paged`、只提供 `cursor` 或同时提供两者；`aggregate` 仍为可选能力。保存的分页模式不受支持时，在发出记录及汇总请求前明确报错，页码分页适配器无需编写会抛错的游标方法。
+
+引擎订阅回调异常通过 `console.error` 报告，不中断写入和其他订阅者。筛选编译只在草稿、已应用条件或有效性变化时重新执行；行选择、查询状态、汇总和仅改标题不触发重新编译。五类扩展均只读取注册表自身明确注册的属性。持久化组件名称代表稳定的属性与编译语义；不兼容变化应使用新名称（例如 `order-status/v2`），旧配置仍存在时保留旧注册。未知注册继续阻止相关能力运行，当前不引入自动迁移框架。
+
 实例保存 `config.filters: {mode, root}`。每个组件保存稳定配置 ID、`{name, options?}` 引用、操作符、字段绑定、原始 JSON `props` 和子组件。编译结果只在运行时的 `session.appliedFilter` 中；null 表示尚未编译成功，阻止记录及汇总查询。恢复直接读取组件配置，不从查询表达式反推 UI。对象属性中的 undefined 保存时省略；null、false、零和空字符串保留，拒绝非 JSON 值。
 
 `setFilterDraft(draft, id?, valid?)` 通过已注册的纯函数编译。有效修改若未改变已应用查询，会立即更新接受的配置与编辑基线，无需请求即可保存，例如新增未设置控件或修改显示名称。查询值改变或输入无效时产生 `filterPending`，需先查询接受草稿或撤销修改，才能保存。同步状态下 `setFilterMode` 保存支持的模式变化；`dirty` 比较接受的配置与已存 JSON。`sameFilterQuery` 忽略对象键顺序和仅含一个条件的冗余 AND/OR 包装，其余表达式变化仍需查询。
@@ -323,3 +329,11 @@ pnpm storybook
 在 Storybook 中打开 **View Engine → Filter Panel**，体验业务筛选、嵌套元素条件、自定义编辑器校验、查询重试、深色主题与 50 种操作。**View Engine → Date and Time** 提供单独日期时间控件。示例包括手动查询的字段组合、日期选择、精确时间、未完成输入、未设置值和深色主题；**View Engine → Filter Select** 演示选择、清空和重新选择；Controls 支持切换外观与禁用状态。组合示例使用浏览器本地时区生成毫秒时间戳的 Wow 表达式，不请求业务服务。这些示例消费包的公开构建产物，修改包源码后需重新构建。
 
 详见 [API 参考](../../skills/fetcher-view-engine/references/api.md) 与 [第三方许可说明](THIRD_PARTY_NOTICES.md)。
+
+### React 与编译器 lint
+
+在仓库根目录运行 `pnpm lint:view-engine`，只读检查包内代码及 Storybook；仅检查本包可运行 `pnpm --filter @ahoo-wang/fetcher-view-engine lint:check`。原有包内 `lint` 命令会应用 ESLint 修复。
+
+两处入口共享官方 `eslint-plugin-react-hooks` 稳定 recommended 规则，包含 Compiler 诊断。依赖数组、不兼容库、不支持的语法均按 error 处理，无效的禁用注释也会报错；无需另加旧的编译器 lint 插件。根目录 CI 的 `pnpm lint` 同时检查 `stories/view-engine`。显式解析器根目录避免从仓库、包目录或 worktree 执行时出现根目录推断歧义。
+
+回归测试通过三种入口检查错误 Hook 和编译器用法，并确认合法的手动 memoization 可以通过。参见[官方规则说明](https://react.dev/reference/eslint-plugin-react-hooks)。
