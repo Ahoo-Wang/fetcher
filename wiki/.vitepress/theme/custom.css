@@ -43,23 +43,29 @@
   border: 1px solid var(--vp-c-divider);
   border-radius: 12px;
 }
+
 .mermaid-container .mermaid {
   background: #161b22;
   border-radius: 8px;
 }
+
 .mermaid-container .controls {
   width: auto;
 }
+
 .mermaid-container button:focus-visible {
   outline: 2px solid var(--vp-c-brand-1);
   outline-offset: 3px;
 }
+
 .mermaid-container.dialog-fullscreen-active {
   z-index: 1000;
 }
+
 .mermaid-dialog-backdrop {
   z-index: 999;
 }
+
 @media (hover: none) {
   .mermaid-container .controls {
     opacity: 1;
@@ -199,27 +205,36 @@
   line-height: 1.85;
   overflow-wrap: anywhere;
 }
+
 .vp-doc h1 {
   letter-spacing: -0.035em;
   line-height: 1.25;
 }
+
 .vp-doc h2 {
   scroll-margin-top: 88px;
 }
+
 .vp-doc pre {
   overflow-wrap: normal;
 }
+
 .VPDoc .content {
   min-width: 0;
 }
+
+/* stylelint-disable-next-line selector-class-pattern -- VitePress owns this class name. */
 .VPHero .text {
   max-width: 780px;
 }
+
+/* stylelint-disable-next-line selector-class-pattern -- VitePress owns this class name. */
 .VPHome .vp-doc {
   max-width: 920px;
   margin: 0 auto;
   padding: 24px;
 }
+
 @media (prefers-reduced-motion: reduce) {
   .mermaid-container * {
     transition: none !important;
@@ -232,9 +247,11 @@
   max-height: none;
   aspect-ratio: var(--fetcher-mermaid-ratio, 2);
 }
+
 .vp-doc td code {
   white-space: nowrap;
 }
+
 .vp-doc .mermaid-source pre {
   white-space: pre-wrap;
   padding: 16px;
@@ -250,11 +267,13 @@
   border-radius: 0;
   transform: none;
 }
+
 @media (hover: hover) {
   .vp-doc .mermaid-container:not(.dialog-fullscreen-active) .desktop-controls {
     opacity: 0 !important;
     pointer-events: none !important;
   }
+
   .vp-doc .mermaid-container:hover .desktop-controls,
   .vp-doc .mermaid-container:focus-within .desktop-controls {
     opacity: 1 !important;

@@ -19,85 +19,96 @@ const { chromium } = createRequire(
   require.resolve('@vitest/browser-playwright'),
 )('playwright');
 
-test('Mermaid expanded view supports keyboard exit and restores focus', async () => {
+async function openChart(context) {
   const browser = await chromium.launch({ headless: true, channel: 'chrome' });
-  try {
-    const page = await browser.newPage();
-    await page.goto(
-      `${process.env.WIKI_TEST_URL ?? 'http://127.0.0.1:5173'}/learn/request-lifecycle`,
-    );
-    const chart = page.locator('.mermaid-container').first();
-    await chart.locator('.mermaid > svg').waitFor();
-    await page.waitForTimeout(300);
-    const bounds = await chart.evaluate(el => ({
-      chart: el.clientWidth,
-      svg: el.querySelector('.mermaid > svg').getBoundingClientRect().width,
-    }));
-    assert.ok(
-      bounds.svg >= bounds.chart * 0.8,
-      'inline sequence should use the reading width',
-    );
-    const expand = chart
-      .getByRole('button', { name: /Expand diagram|Toggle Fullscreen/ })
-      .first();
-    await chart.hover();
-    await expand.click();
-    await page.waitForTimeout(200);
-    assert.equal(
-      await page
-        .locator('.dialog-fullscreen-active[role="dialog"][aria-modal="true"]')
-        .count(),
-      1,
-    );
-    assert.equal(
-      await page.evaluate(() => document.body.style.overflow),
-      'hidden',
-    );
-    const first = chart.locator('[data-mermaid-control="zoomIn"]').first();
-    const close = chart.getByRole('button', { name: 'Close diagram' }).first();
-    await first.focus();
-    await page.keyboard.press('Shift+Tab');
-    assert.equal(
-      await close.evaluate(el => el === document.activeElement),
-      true,
-    );
-    await page.keyboard.press('Tab');
-    assert.equal(
-      await first.evaluate(el => el === document.activeElement),
-      true,
-    );
-    const viewport = chart.locator('.mermaid-viewport');
-    const before = await viewport.getAttribute('style');
-    await viewport.dispatchEvent('wheel', { deltaY: -100, bubbles: true });
-    await page.waitForTimeout(100);
-    assert.equal(
-      await viewport.getAttribute('style'),
-      before,
-      'ordinary wheel must not zoom',
-    );
-    await viewport.dispatchEvent('wheel', {
-      deltaY: -100,
-      metaKey: true,
-      bubbles: true,
-    });
-    await page.waitForTimeout(150);
-    assert.notEqual(
-      await viewport.getAttribute('style'),
-      before,
-      'Command-wheel zooms',
-    );
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
-    assert.equal(await page.locator('.dialog-fullscreen-active').count(), 0);
-    assert.equal(
-      await expand.evaluate(el => el === document.activeElement),
-      true,
-    );
-    assert.notEqual(
-      await page.evaluate(() => document.body.style.overflow),
-      'hidden',
-    );
-  } finally {
-    await browser.close();
-  }
+  context.after(() => browser.close());
+  const page = await browser.newPage();
+  await page.goto(
+    `${process.env.WIKI_TEST_URL ?? 'http://127.0.0.1:5173'}/learn/request-lifecycle`,
+  );
+  const chart = page.locator('.mermaid-container').first();
+  await chart.locator('.mermaid > svg').waitFor();
+  await page.waitForTimeout(300);
+  return { page, chart };
+}
+
+async function expandChart(chart) {
+  const expand = chart
+    .getByRole('button', { name: /Expand diagram|Toggle Fullscreen/ })
+    .first();
+  await chart.hover();
+  await expand.click();
+  return expand;
+}
+
+test('Mermaid inline sequence uses the reading width', async context => {
+  const { chart } = await openChart(context);
+  const bounds = await chart.evaluate(el => ({
+    chart: el.clientWidth,
+    svg: el.querySelector('.mermaid > svg').getBoundingClientRect().width,
+  }));
+  assert.ok(
+    bounds.svg >= bounds.chart * 0.8,
+    'inline sequence should use the reading width',
+  );
+});
+
+test('Mermaid expanded view supports keyboard exit and restores focus', async context => {
+  const { page, chart } = await openChart(context);
+  const expand = await expandChart(chart);
+  await page.waitForTimeout(200);
+  assert.equal(
+    await page
+      .locator('.dialog-fullscreen-active[role="dialog"][aria-modal="true"]')
+      .count(),
+    1,
+  );
+  assert.equal(
+    await page.evaluate(() => document.body.style.overflow),
+    'hidden',
+  );
+  const first = chart.locator('[data-mermaid-control="zoomIn"]').first();
+  const close = chart.getByRole('button', { name: 'Close diagram' }).first();
+  await first.focus();
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await close.evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Tab');
+  assert.equal(await first.evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+  assert.equal(await page.locator('.dialog-fullscreen-active').count(), 0);
+  assert.equal(
+    await expand.evaluate(el => el === document.activeElement),
+    true,
+  );
+  assert.notEqual(
+    await page.evaluate(() => document.body.style.overflow),
+    'hidden',
+  );
+});
+
+test('Mermaid expanded view only zooms on a modified wheel', async context => {
+  const { page, chart } = await openChart(context);
+  await expandChart(chart);
+  await page.waitForTimeout(200);
+  const viewport = chart.locator('.mermaid-viewport');
+  const before = await viewport.getAttribute('style');
+  await viewport.dispatchEvent('wheel', { deltaY: -100, bubbles: true });
+  await page.waitForTimeout(100);
+  assert.equal(
+    await viewport.getAttribute('style'),
+    before,
+    'ordinary wheel must not zoom',
+  );
+  await viewport.dispatchEvent('wheel', {
+    deltaY: -100,
+    metaKey: true,
+    bubbles: true,
+  });
+  await page.waitForTimeout(150);
+  assert.notEqual(
+    await viewport.getAttribute('style'),
+    before,
+    'Command-wheel zooms',
+  );
 });
