@@ -19,65 +19,123 @@ import {
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
 import { FILTER_OPERATORS } from '../filter/filterCore.js';
-import type { FilterFieldDefinition } from '../filter/filterModel.js';
+import {
+  dateTimeValue,
+  dateTimeToSeconds,
+} from '../filter/filterDateTimeValue.js';
+import type {
+  FilterDraftNode,
+  FilterFieldDefinition,
+} from '../filter/filterModel.js';
+import {
+  readFilterOptions,
+  type FilterOptionItem,
+} from '../filter/filterOptionSource.js';
 import type { DeepReadonly } from '../lib/types.js';
 
-/** Describes the applied expression; draft values and display rounding must not change its meaning. */
+type FilterSummary = { count: number; text: string };
+interface FilterSummaryContext {
+  node?: DeepReadonly<FilterDraftNode>;
+  timeZone?: string;
+  showTime?: boolean;
+  operands?: FilterSummary[];
+  predicate?: FilterSummary;
+}
+
+/** Component context must come from the applied baseline, never pending edits. */
 export function describeRecordFilter(
   expression: DeepReadonly<FilterExpression>,
   fields: readonly FilterFieldDefinition[],
+  context: FilterSummaryContext = {},
   root = true,
-): { count: number; text: string } {
-  const operator = FILTER_OPERATORS[expression.op];
-  if ('operands' in expression) {
-    const children = expression.operands.map(child =>
-      describeRecordFilter(child, fields, false),
-    );
+): FilterSummary {
+  const node = context.node;
+  const field = fields.find(
+    field =>
+      field.field === ('field' in expression ? expression.field : node?.field),
+  );
+  const dateOnly =
+    !!node &&
+    context.showTime === false &&
+    (field?.type === 'date' || field?.type === 'datetime') &&
+    ['value', 'values', 'between'].includes(FILTER_OPERATORS[node.op].input);
+  // Whole-day queries may expand EQ/NE/IN into groups; keep the selected operation and dates.
+  const display: DeepReadonly<FilterExpression | FilterDraftNode> = dateOnly
+    ? ({
+        ...(node.props ?? node),
+        id: node.id,
+        op: node.op,
+        field: node.field,
+      } as FilterDraftNode)
+    : expression;
+  const operator = FILTER_OPERATORS[display.op];
+  if ('operands' in display && display.operands) {
+    const children =
+      context.operands ??
+      display.operands.map(child =>
+        describeRecordFilter(
+          child as DeepReadonly<FilterExpression>,
+          fields,
+          context,
+          false,
+        ),
+      );
     return {
       count: children.reduce((sum, child) => sum + child.count, 0),
       text: `${operator.label}（${children.map(child => child.text).join('；')}）`,
     };
   }
-  const field =
-    'field' in expression
-      ? fields.find(field => field.field === expression.field)
-      : undefined;
   const label =
-    'field' in expression
-      ? `${field?.label ?? expression.field} ${operator.label}`
+    'field' in display
+      ? `${field?.label ?? display.field} ${operator.label}`
       : operator.label;
-  if ('predicate' in expression) {
-    const child = describeRecordFilter(
-      expression.predicate,
-      field?.fields ?? [],
-      false,
-    );
+  if ('predicate' in display && display.predicate) {
+    const child =
+      context.predicate ??
+      describeRecordFilter(
+        display.predicate as DeepReadonly<FilterExpression>,
+        field?.fields ?? [],
+        context,
+        false,
+      );
     return { count: child.count, text: `${label}（${child.text}）` };
   }
+  let selectedOptions: FilterOptionItem[] = [];
+  try {
+    selectedOptions = readFilterOptions(node?.props?.selectedOptions ?? []);
+  } catch {
+    // Extensions own their property schemas; an unrelated property is not a label snapshot.
+  }
   function literal(value: unknown): string {
-    const option = field?.options?.find(option =>
-      Object.is(option.value, value),
-    );
+    const option =
+      selectedOptions.find(option => Object.is(option.value, value)) ??
+      field?.options?.find(option => Object.is(option.value, value));
     if (option) return option.label;
     if (value === null) return '空值';
     if (value === '') return '空字符串';
     if (typeof value === 'boolean') return value ? '是' : '否';
     if (
-      typeof value === 'number' &&
+      (dateOnly || typeof value === 'number') &&
       (field?.type === 'date' || field?.type === 'datetime')
     ) {
-      const date = new Date(value);
-      if (Number.isFinite(date.getTime())) return date.toISOString();
+      const date = dateTimeValue(
+        context.showTime === true ? dateTimeToSeconds(value) : value,
+        context.timeZone,
+      );
+      if (date.date)
+        return dateOnly
+          ? date.date
+          : [date.date, date.time].filter(Boolean).join(' ');
     }
     return typeof value === 'object' ? JSON.stringify(value) : String(value);
   }
   const values: string[] = [];
-  if ('value' in expression) values.push(literal(expression.value));
-  if ('values' in expression)
-    values.push(`[${expression.values.map(literal).join('、')}]`);
-  if ('lowerBound' in expression)
+  if ('value' in display) values.push(literal(display.value));
+  if ('values' in display && display.values)
+    values.push(`[${display.values.map(literal).join('、')}]`);
+  if ('lowerBound' in display)
     values.push(
-      `${literal(expression.lowerBound)} 至 ${literal(expression.upperBound)}`,
+      `${literal(display.lowerBound)} 至 ${literal(display.upperBound)}`,
     );
   if ('query' in expression) {
     values.push(expression.query);

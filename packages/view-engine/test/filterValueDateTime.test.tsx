@@ -37,8 +37,12 @@ it('round-trips date text and keeps an invalid or partial date raw', () => {
   expect(state.current().value).toBeUndefined();
 });
 
-it('shows timestamp zero in the field timezone and preserves partial datetime input', () => {
-  const state = mount({ id: 'dt', op: Op.EQ, field: 'createdAt', value: 0 });
+it('shows timestamp zero in the global timezone and preserves partial datetime input', () => {
+  const state = mount(
+    { id: 'dt', op: Op.EQ, field: 'createdAt', value: 0 },
+    undefined,
+    { showTime: true, timeZone: 'Asia/Shanghai' },
+  );
   expect(
     (
       screen.getByRole('textbox', {
@@ -74,7 +78,10 @@ it('shows timestamp zero in the field timezone and preserves partial datetime in
 });
 
 it('starts an unset datetime without injecting a date or midnight', () => {
-  const state = mount({ id: 'dt', op: Op.EQ, field: 'createdAt' });
+  const state = mount({ id: 'dt', op: Op.EQ, field: 'createdAt' }, undefined, {
+    showTime: true,
+    timeZone: 'Asia/Shanghai',
+  });
   expect(
     (
       screen.getByRole('textbox', {
@@ -93,16 +100,17 @@ it('starts an unset datetime without injecting a date or midnight', () => {
   expect(state.current().value).toEqual({ date: '2026-09-06' });
 });
 
-it('preserves milliseconds and the calendar day on the other side of UTC', () => {
+it('normalizes seconds while retaining the calendar day on the other side of UTC', () => {
   const field: FilterFieldDefinition = {
     field: 'createdAt',
     label: '创建时间',
     type: 'datetime',
-    timeZone: 'America/Los_Angeles',
+    editor: { name: 'builtin', options: { showTime: true } },
   };
   const state = mount(
     { id: 'west', op: Op.EQ, field: 'createdAt', value: 123 },
     field,
+    { showTime: true, timeZone: 'America/Los_Angeles' },
   );
   expect(
     (
@@ -117,10 +125,19 @@ it('preserves milliseconds and the calendar day on the other side of UTC', () =>
         name: '创建时间时间',
       }) as HTMLInputElement
     ).value,
-  ).toBe('16:00:00.123');
+  ).toBe('16:00:00');
   change('创建时间时间', '17:00:00.123');
-  expect(compileFilterDraft(state.current(), [field])).toEqual({
-    expression: { op: Op.EQ, field: 'createdAt', value: 3600123 },
+  expect(
+    compileFilterDraft(
+      state.current(),
+      [field],
+      undefined,
+      undefined,
+      undefined,
+      'America/Los_Angeles',
+    ),
+  ).toEqual({
+    expression: { op: Op.EQ, field: 'createdAt', value: 3600000 },
     errors: [],
   });
 });
@@ -130,21 +147,40 @@ it('preserves a loaded instant when editing within a repeated DST hour', () => {
     field: 'createdAt',
     label: '创建时间',
     type: 'datetime',
-    timeZone: 'America/New_York',
+    editor: { name: 'builtin', options: { showTime: true } },
   };
   const value = Date.parse('2026-11-01T06:30:00.000Z');
   const state = mount(
     { id: 'dst', op: Op.EQ, field: 'createdAt', value },
     field,
+    { showTime: true, timeZone: 'America/New_York' },
   );
   change('创建时间时间', '01:30:00.000');
-  expect(compileFilterDraft(state.current(), [field]).expression).toEqual({
+  expect(
+    compileFilterDraft(
+      state.current(),
+      [field],
+      undefined,
+      undefined,
+      undefined,
+      'America/New_York',
+    ).expression,
+  ).toEqual({
     op: Op.EQ,
     field: 'createdAt',
     value,
   });
   change('创建时间时间', '01:31:00');
-  expect(compileFilterDraft(state.current(), [field]).expression).toEqual({
+  expect(
+    compileFilterDraft(
+      state.current(),
+      [field],
+      undefined,
+      undefined,
+      undefined,
+      'America/New_York',
+    ).expression,
+  ).toEqual({
     op: Op.EQ,
     field: 'createdAt',
     value: value + 60_000,

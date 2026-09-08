@@ -54,7 +54,8 @@ export function formatRecordDateTime(
         : new Date(
             scalar(
               { date: calendarDate, time },
-              { field: 'datetime', label: '时间', type: 'datetime', timeZone },
+              { field: 'datetime', label: '时间', type: 'datetime' },
+              timeZone,
             ) as number,
           );
     } else date = value instanceof Date ? value : new Date(value);
@@ -70,16 +71,14 @@ export function recordValueText(value: unknown): string {
 }
 export function formatRecordValue(
   value: unknown,
-  field: Pick<
-    ViewFieldDefinition,
-    'options' | 'type' | 'timeZone' | 'numberFormat'
-  > = {},
+  field: Pick<ViewFieldDefinition, 'options' | 'type' | 'numberFormat'> = {},
+  timeZone?: string,
 ): string {
   if (value === null || value === undefined || value === '') return '—';
   const option = field.options?.find(option => Object.is(option.value, value));
   if (option) return option.label;
   if (field.type === 'date' || field.type === 'datetime')
-    return formatRecordDateTime(value, field.type, field.timeZone);
+    return formatRecordDateTime(value, field.type, timeZone);
   if (typeof value === 'boolean') return value ? '是' : '否';
   if (typeof value === 'number')
     return Number.isFinite(value) ? formatRecordNumber(value, field) : '—';

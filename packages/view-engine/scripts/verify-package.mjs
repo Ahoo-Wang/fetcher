@@ -116,8 +116,8 @@ function verifyTypes(directory) {
     import { ViewEngine, restoreFilterConfiguration, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance, type RecordQuerySource } from '${manifest.name}';
     import { ViewPage, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
     import { OrderExample } from './examples/react/OrderExample.js';
-    import type { FilterOptionSource } from '${manifest.name}';
-    import { FilterRemoteSelect, FilterMultiSelect } from '${manifest.name}/react';
+    import type { FilterOptionSource, FilterFieldDefinition, ViewDefinition } from '${manifest.name}';
+    import { FilterRemoteSelect, FilterMultiSelect, FilterDateTimeRange } from '${manifest.name}/react';
     import { TextCell, TagsCell, StatusCell, LinkCell, DateTimeCell, NumberCell } from '${manifest.name}/react';
     export const standaloneCells = <><TextCell value="001" ellipsis copyable/><TagsCell value={[1,'1',false]}/><StatusCell value={1} tones={[{value:1,tone:'success'}]}/><LinkCell value="详情" href="/orders/1"/><DateTimeCell value={0} timeZone="UTC"/><NumberCell value={0.125} format={{style:'percent'}}/></>;
     // @ts-expect-error Numeric cells do not parse currency strings.
@@ -126,6 +126,10 @@ function verifyTypes(directory) {
     export const multi = <FilterRemoteSelect label="users" source={optionSource} multiple values={[1,'1']} onValueChange={values => { const ids: (string|number)[] = values; void ids; }} />;
     export const single = <FilterRemoteSelect label="user" source={optionSource} value={1} onValueChange={value => { const id: string|number|null = value; void id; }} />;
     export const localMulti = <FilterMultiSelect label="ids" options={[{value: 1,label:'one'}]} value={[1]} onValueChange={values => { const id: number = values[0]; void id; }} />;
+    export const datedDefinition: ViewDefinition = { id: 'dates', sourceId: 'dates', title: 'Dates', rowKey: 'id', timeZone: 'Asia/Shanghai', fields: [{field: 'created',label:'Created',type:'datetime',editor:{name:'builtin',options:{showTime:true}}}] };
+    export const dateRange = <FilterDateTimeRange field={datedDefinition.fields[0]} timeZone={datedDefinition.timeZone} showTime value={{lowerBound:{date:'2026-09-06',time:'09:00'},upperBound:{date:'2026-09-06',time:'10:00'}}} onValueChange={() => {}} />;
+    // @ts-expect-error Fields use the view or panel timezone instead of individual overrides.
+    export const fieldTimeZone: FilterFieldDefinition = {field:'created',label:'Created',type:'datetime',timeZone:'UTC'};
     // @ts-expect-error A multiple remote picker cannot accept scalar value.
     export const wrongSelection = <FilterRemoteSelect label="users" source={optionSource} multiple value={1} onValueChange={() => {}} />;
     declare const paged: NonNullable<RecordQuerySource['paged']>;
@@ -317,8 +321,10 @@ try {
     assert.deepEqual(Object.keys(core).filter(name => name.startsWith('HttpView') || name === 'VIEW_SERVICE_STATUS'), [], 'Experimental HTTP API leaked into the package');
     assert.equal(typeof react.ViewPage, 'function');
     for (const name of ['FilterMultiSelect','FilterRemoteSelect','FilterTextValues','FilterDateTimeRange','TextCell','TagsCell','StatusCell','LinkCell','DateTimeCell','NumberCell']) assert.equal(typeof react[name], 'function', name);
-    const configured = core.createFilterConfiguration({id:'selected',op:'IN',field:'id',editor:{name:'fve/multi-select'},props:{values:[1],selectedOptions:[{value:1,label:'One'}]}});
+    const configured = core.createFilterConfiguration({id:'selected',op:'IN',field:'id',editor:{name:'multi-select'},props:{values:[1],selectedOptions:[{value:1,label:'One'}]}});
     assert.deepEqual(core.compileFilterConfiguration(configured,[{field:'id',label:'ID',type:'number'}]).expression,{op:'IN',field:'id',values:[1]});
+    const dates = core.createFilterConfiguration({id:'date',op:'EQ',field:'created',value:{date:'2026-09-06'}});
+    assert.deepEqual(core.compileFilterConfiguration(dates,[{field:'created',label:'Created',type:'datetime'}],undefined,undefined,'Asia/Shanghai').expression,{op:'BETWEEN',field:'created',lowerBound:Date.parse('2026-09-05T16:00:00Z'),upperBound:Date.parse('2026-09-06T15:59:59.999Z')});
   `;
   run(process.execPath, ['--input-type=module', '-e', runtimeProbe], packed);
   cpSync(join(root, 'examples/core.mjs'), join(packed, 'core-example.mjs'));

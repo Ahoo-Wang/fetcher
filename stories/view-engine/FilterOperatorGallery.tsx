@@ -84,7 +84,14 @@ function example(op: FilterOperator): FilterExpression {
       ...newFilterDraft(FilterOperator.GTE, 'quantity'),
       value: 1,
     };
-  const result = compileFilterDraft(draft, galleryFields);
+  const result = compileFilterDraft(
+    draft,
+    galleryFields,
+    undefined,
+    undefined,
+    undefined,
+    'Asia/Shanghai',
+  );
   if (!result.expression)
     throw new Error(result.errors.map(error => error.message).join('；'));
   return result.expression;

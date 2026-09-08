@@ -13,7 +13,10 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { FilterValueEditor } from '../../src/filter/FilterValueEditor';
+import {
+  FilterValueEditor,
+  type FilterValueEditorProps,
+} from '../../src/filter/FilterValueEditor';
 import type {
   FilterDraftNode,
   FilterFieldDefinition,
@@ -27,7 +30,6 @@ export const fields: FilterFieldDefinition[] = [
     field: 'createdAt',
     label: '创建时间',
     type: 'datetime',
-    timeZone: 'Asia/Shanghai',
   },
   { field: 'birthday', label: '生日', type: 'date' },
   {
@@ -44,6 +46,7 @@ export const fields: FilterFieldDefinition[] = [
 export function mount(
   initial: FilterDraftNode,
   field = fields.find(item => item.field === initial.field),
+  options: Pick<FilterValueEditorProps, 'showTime' | 'timeZone'> = {},
 ) {
   const changes: FilterDraftNode[] = [];
   let current = initial;
@@ -54,6 +57,7 @@ export function mount(
         node={node}
         field={field}
         fields={fields}
+        {...options}
         onChange={next => {
           current = next;
           changes.push(next);

@@ -73,11 +73,15 @@ export function FilterValueParameters({
   node,
   label,
   disabled,
+  invalid,
+  errorId,
   onChange,
 }: {
   node: FilterDraftNode;
   label: string;
   disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
   onChange(node: FilterDraftNode): void;
 }) {
   const descriptor = FILTER_OPERATORS[node.op];
@@ -90,6 +94,8 @@ export function FilterValueParameters({
         <Parameters label={label} disabled={disabled}>
           {stringOperation && (
             <FilterSelect
+              invalid={invalid}
+              errorId={errorId}
               label="大小写比较"
               placeholder="默认比较方式"
               value={node.stringComparison}
@@ -103,17 +109,8 @@ export function FilterValueParameters({
             <>
               <InputGroup>
                 <InputGroupInput
-                  aria-label="时区"
-                  placeholder="时区（未指定）"
-                  value={node.zoneId ?? ''}
-                  disabled={disabled}
-                  onChange={event =>
-                    update({ zoneId: event.target.value || undefined })
-                  }
-                />
-              </InputGroup>
-              <InputGroup>
-                <InputGroupInput
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={invalid ? errorId : undefined}
                   aria-label="日期格式"
                   placeholder="日期格式（未指定）"
                   value={node.datePattern ?? ''}
@@ -124,6 +121,8 @@ export function FilterValueParameters({
                 />
               </InputGroup>
               <FilterSelect
+                invalid={invalid}
+                errorId={errorId}
                 label="时间单位"
                 placeholder="默认时间单位"
                 value={node.timeUnit}

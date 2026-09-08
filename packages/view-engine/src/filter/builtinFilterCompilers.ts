@@ -102,12 +102,12 @@ function remote(compiler: FilterCompiler): FilterCompiler {
   };
 }
 const compilers: Readonly<Record<string, FilterCompiler>> = {
-  'fve/select': single,
-  'fve/multi-select': multi,
-  'fve/remote-select': remote(single),
-  'fve/remote-multi-select': remote(multi),
-  'fve/text-values': selection(true, true),
-  'fve/datetime-range': range,
+  select: single,
+  'multi-select': multi,
+  'remote-select': remote(single),
+  'remote-multi-select': remote(multi),
+  'text-values': selection(true, true),
+  'datetime-range': range,
 };
 export function getBuiltinFilterCompiler(
   name: string,

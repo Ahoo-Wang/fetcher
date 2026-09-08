@@ -28,8 +28,14 @@ import {
 import { afterEach, expect, it } from 'vitest';
 import { createFilterDraft, newFilterDraft } from '../src/filter/filterCore.js';
 import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
+import type {
+  FilterCompilerRegistry,
+  FilterDraftNode,
+} from '../src/filter/filterModel.js';
 import { ViewEngine } from '../src/record/ViewEngine.js';
 import { ViewPageContent } from '../src/record/ViewPage.js';
+import { RecordAppliedFilters } from '../src/record/page/RecordAppliedFilters.js';
+import type { ViewDefinition } from '../src/record/recordModel.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 const engines: ViewEngine[] = [];
@@ -68,6 +74,46 @@ async function openView(expression: FilterExpression) {
   render(<ViewPageContent engine={engine} />);
   await screen.findByRole('cell', { name: '42' });
   return { engine, paged };
+}
+
+async function openApplied(
+  draft: FilterDraftNode,
+  viewDefinition: ViewDefinition,
+  filterCompilers?: FilterCompilerRegistry,
+) {
+  const { host } = setup();
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: viewDefinition,
+    instances: {
+      instances: [
+        {
+          ...instance,
+          config: {
+            ...instance.config,
+            filters: createFilterConfiguration(draft),
+          },
+        },
+      ],
+      defaultInstanceId: instance.id,
+    },
+    host,
+    filterCompilers,
+  });
+  engines.push(engine);
+  await engine.load();
+  const applied = () => (
+    <RecordAppliedFilters
+      engine={engine}
+      definition={viewDefinition}
+      session={engine.getSnapshot().sessions.mine}
+      run={action => {
+        void action();
+      }}
+    />
+  );
+  const rendered = render(applied());
+  return { engine, rerender: () => rendered.rerender(applied()) };
 }
 
 it('unsets one applied AND value while keeping every filter and editor', async () => {
@@ -189,4 +235,117 @@ it('does not offer value clearing for a value-free condition', async () => {
   expect(within(summary).queryByRole('button')).toBeNull();
   act(() => engine.setFilterDraft(createFilterDraft(filter.gt('amount', 1))));
   expect(summary.textContent).not.toContain('先查询或撤销筛选修改');
+});
+
+it('keeps applied remote labels scoped to their nodes while skipping unset nodes and pending edits', async () => {
+  const viewDefinition: ViewDefinition = {
+    ...definition,
+    fields: [
+      ...definition.fields,
+      { field: 'customer', label: '客户', type: 'string' },
+      {
+        field: 'items',
+        label: '明细',
+        type: 'array',
+        fields: [{ field: 'customer', label: '明细客户', type: 'string' }],
+      },
+    ],
+  };
+  const customer = (
+    id: string,
+    label: string,
+    value = 'u1',
+  ): FilterDraftNode => ({
+    id,
+    op: FilterOperator.IN,
+    field: 'customer',
+    editor: { name: 'remote-multi-select', options: { source: 'users' } },
+    props: { values: [value], selectedOptions: [{ value, label }] },
+  });
+  const unset = customer('unset', '未设置标签');
+  delete unset.props!.values;
+  const draft: FilterDraftNode = {
+    id: 'root',
+    op: FilterOperator.OR,
+    operands: [
+      unset,
+      customer('first', '用户甲'),
+      customer('second', '用户乙'),
+      {
+        id: 'items',
+        op: FilterOperator.ELEMENT_MATCH,
+        field: 'items',
+        predicate: customer('item-customer', '明细用户'),
+      },
+    ],
+  };
+  const { engine, rerender } = await openApplied(draft, viewDefinition);
+  const summary = screen.getByRole('region', { name: '已应用筛选' });
+  expect(summary.textContent).toContain(
+    '满足任一条件（客户 属于 [用户甲]；客户 属于 [用户乙]；明细 同一元素满足（明细客户 属于 [明细用户]））',
+  );
+  draft.operands![1] = customer('first', '草稿标签', 'u2');
+  engine.setFilterDraft(draft);
+  expect(engine.getSnapshot().sessions.mine.filterPending).toBe(true);
+  rerender();
+  expect(summary.textContent).toContain('客户 属于 [用户甲]');
+  expect(summary.textContent).not.toContain('草稿标签');
+  expect(summary.textContent).not.toContain('未设置标签');
+});
+
+it('uses the view timezone and each builtin display mode while preserving custom compiler meaning', async () => {
+  const viewDefinition: ViewDefinition = {
+    ...definition,
+    timeZone: 'Asia/Shanghai',
+    fields: [
+      ...definition.fields,
+      { field: 'createdAt', label: '创建时间', type: 'datetime' },
+    ],
+  };
+  await openApplied(
+    {
+      id: 'root',
+      op: FilterOperator.AND,
+      operands: [
+        {
+          id: 'date',
+          op: FilterOperator.NE,
+          field: 'createdAt',
+          value: { date: '2026-09-08', time: '09:00:00.123' },
+        },
+        {
+          id: 'time',
+          op: FilterOperator.BETWEEN,
+          field: 'createdAt',
+          editor: { name: 'datetime-range', options: { showTime: true } },
+          props: {
+            lowerBound: Date.parse('2026-09-08T01:00:00.123Z'),
+            upperBound: Date.parse('2026-09-08T02:00:00Z'),
+          },
+        },
+        {
+          id: 'custom',
+          op: FilterOperator.EQ,
+          field: 'createdAt',
+          editor: { name: 'custom-date' },
+          props: { value: 1 },
+        },
+      ],
+    },
+    viewDefinition,
+    {
+      'custom-date': {
+        compile: () =>
+          filter.gte('createdAt', Date.parse('2026-09-08T01:00:00.123Z')),
+      },
+    },
+  );
+  const summary = screen.getByRole('region', { name: '已应用筛选' });
+  expect(summary.textContent).toContain('创建时间 不等于 2026-09-08');
+  expect(summary.textContent).toContain(
+    '创建时间 介于 2026-09-08 09:00:00 至 2026-09-08 10:00:00',
+  );
+  expect(summary.textContent).toContain(
+    '创建时间 大于等于 2026-09-08 09:00:00.123',
+  );
 });

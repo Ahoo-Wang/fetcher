@@ -33,7 +33,7 @@ export const fields: FilterFieldDefinition[] = [
     field: 'created',
     label: '时间',
     type: 'datetime',
-    timeZone: 'Asia/Shanghai',
+    editor: { name: 'builtin', options: { showTime: true } },
   },
   {
     field: 'items',
@@ -106,20 +106,31 @@ export const expressions: FilterExpression[] = [
   filter.deletion(DeletionState.ALL),
   filter.elementMatch('items', filter.and([filter.gt('quantity', 0)])),
   { op: Op.SEARCH, query: '订单' },
-  ...calendar.map(op => ({ op, field: 'created' })),
+  ...calendar.map(op => ({ op, field: 'created', zoneId: 'Asia/Shanghai' })),
   {
     op: Op.BEFORE_TODAY,
     field: 'created',
-    time: '12:30:59.123456789',
+    time: '12:30:59',
     zoneId: 'Asia/Shanghai',
     datePattern: 'yyyy-MM-dd',
     timeUnit: TimeUnit.SECONDS,
   },
-  { op: Op.RECENT_DAYS, field: 'created', days: 7 },
-  { op: Op.EARLIER_DAYS, field: 'created', days: 1 },
+  { op: Op.RECENT_DAYS, field: 'created', days: 7, zoneId: 'Asia/Shanghai' },
+  { op: Op.EARLIER_DAYS, field: 'created', days: 1, zoneId: 'Asia/Shanghai' },
 ];
-export const compile = (node: FilterDraftNode, definitions = fields) =>
-  compileFilterDraft(node, definitions);
+export const compile = (
+  node: FilterDraftNode,
+  definitions = fields,
+  timeZone = 'Asia/Shanghai',
+) =>
+  compileFilterDraft(
+    node,
+    definitions,
+    undefined,
+    undefined,
+    undefined,
+    timeZone,
+  );
 export function node(
   op: Op,
   field?: string,

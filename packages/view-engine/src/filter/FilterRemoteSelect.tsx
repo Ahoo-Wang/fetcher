@@ -27,6 +27,8 @@ interface FilterRemoteSelectCommonProps {
   selectedOptions?: readonly FilterOptionItem[];
   label: string;
   disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
   inline?: boolean;
   debounceMs?: number;
   pageSize?: number;
@@ -107,6 +109,8 @@ function RemoteSession(props: FilterRemoteSelectProps) {
   });
   return (
     <FilterChoiceSelect
+      invalid={props.invalid}
+      errorId={props.errorId}
       options={remote.options}
       selectedOptions={snapshots}
       values={selected}

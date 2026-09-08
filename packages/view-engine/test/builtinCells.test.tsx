@@ -21,6 +21,7 @@ import {
 } from '@testing-library/react';
 import * as api from '../src/react.js';
 import { RecordCell } from '../src/record/table/RecordCell.js';
+import { formatRecordValue } from '../src/record/recordValueFormat.js';
 import type {
   RendererReference,
   ViewFieldDefinition,
@@ -37,6 +38,7 @@ function cell(
   renderer: RendererReference,
   field: Partial<ViewFieldDefinition> = {},
   extensions?: ViewExtensions,
+  timeZone?: string,
 ) {
   return (
     <RecordCell
@@ -46,6 +48,7 @@ function cell(
       index={0}
       definition={{
         ...definition,
+        timeZone,
         fields: [{ field: 'value', label: '字段', ...field }],
       }}
       instance={instance}
@@ -70,7 +73,7 @@ it('renders typed enum labels and expands the remaining tags', async () => {
   render(
     cell(
       [1, '1', 1, false],
-      { name: 'fve/tags', options: { maxVisible: 1 } },
+      { name: 'tags', options: { maxVisible: 1 } },
       {
         options: [
           { value: 1, label: '数字一' },
@@ -92,14 +95,14 @@ it('uses semantic status tones and keeps unknown values readable', () => {
   const view = render(
     cell(
       1,
-      { name: 'fve/status', options },
+      { name: 'status', options },
       { options: [{ value: 1, label: '已付款' }] },
     ),
   );
   expect(
     screen.getByText('已付款').closest('[data-tone="success"]'),
   ).toBeTruthy();
-  view.rerender(cell('1', { name: 'fve/status', options }));
+  view.rerender(cell('1', { name: 'status', options }));
   expect(screen.getByText('1').closest('[data-tone="neutral"]')).toBeTruthy();
 });
 it('copies raw values while retaining enum display labels', async () => {
@@ -108,7 +111,7 @@ it('copies raw values while retaining enum display labels', async () => {
   render(
     cell(
       '001',
-      { name: 'fve/text', options: { copyable: true } },
+      { name: 'text', options: { copyable: true } },
       { options: [{ value: '001', label: '订单一' }] },
     ),
   );
@@ -130,10 +133,10 @@ it('shows a local clipboard failure and does not attach old feedback to a change
   );
   vi.stubGlobal('navigator', { clipboard: { writeText } });
   const view = render(
-    cell('old', { name: 'fve/text', options: { copyable: true } }),
+    cell('old', { name: 'text', options: { copyable: true } }),
   );
   fireEvent.click(screen.getByRole('button', { name: '复制文本' }));
-  view.rerender(cell('new', { name: 'fve/text', options: { copyable: true } }));
+  view.rerender(cell('new', { name: 'text', options: { copyable: true } }));
   reject(new Error('denied'));
   await waitFor(() =>
     expect(screen.queryByText('复制失败，请重试')).toBeNull(),
@@ -150,7 +153,7 @@ it('shows a local clipboard failure and does not attach old feedback to a change
 it('allows relative URLs and forces safe new-tab attributes', () => {
   render(
     cell('订单详情', {
-      name: 'fve/link',
+      name: 'link',
       options: { hrefField: 'url', newTab: true },
     }),
   );
@@ -168,7 +171,7 @@ it.each([
   'vbscript:run',
   'file:///tmp/file',
 ])('does not turn unsafe URL %j into a link', value => {
-  render(cell(value, { name: 'fve/link' }));
+  render(cell(value, { name: 'link' }));
   expect(screen.queryByRole('link')).toBeNull();
   expect(screen.queryByRole('alert')).toBeNull();
   expect(
@@ -179,7 +182,7 @@ it('shares currency and percent precision with numeric summaries', () => {
   const view = render(
     cell(
       0.125,
-      { name: 'fve/number' },
+      { name: 'number' },
       {
         type: 'number',
         numberFormat: { style: 'percent', maximumFractionDigits: 1 },
@@ -190,20 +193,22 @@ it('shares currency and percent precision with numeric summaries', () => {
   view.rerender(
     cell(
       1234.5,
-      { name: 'fve/number' },
+      { name: 'number' },
       { type: 'number', numberFormat: { style: 'currency', currency: 'CNY' } },
     ),
   );
   expect(screen.getByText('¥1,234.50')).toBeTruthy();
-  view.rerender(cell('¥1,234.50', { name: 'fve/number' }));
+  view.rerender(cell('¥1,234.50', { name: 'number' }));
   expect(screen.getByText('—')).toBeTruthy();
 });
 it('preserves calendar dates, handles epoch zero and rejects invalid dates', () => {
   const view = render(
     cell(
       '2026-09-08',
-      { name: 'fve/date-time' },
-      { type: 'date', timeZone: 'America/Los_Angeles' },
+      { name: 'date-time' },
+      { type: 'date' },
+      undefined,
+      'America/Los_Angeles',
     ),
   );
   expect(screen.getByText('2026-09-08')).toBeTruthy();
@@ -211,36 +216,36 @@ it('preserves calendar dates, handles epoch zero and rejects invalid dates', () 
     cell(
       0,
       {
-        name: 'fve/date-time',
+        name: 'date-time',
         options: { locale: 'en-GB', dateStyle: 'short', timeStyle: 'short' },
       },
-      { type: 'datetime', timeZone: 'UTC' },
+      { type: 'datetime' },
+      undefined,
+      'UTC',
     ),
   );
   expect(screen.getByText('01/01/1970, 00:00')).toBeTruthy();
-  view.rerender(
-    cell('2026-02-30', { name: 'fve/date-time' }, { type: 'date' }),
-  );
+  view.rerender(cell('2026-02-30', { name: 'date-time' }, { type: 'date' }));
   expect(screen.getByText('—')).toBeTruthy();
 });
 it('keeps explicit registry precedence and rejects invalid builtin options', () => {
   render(
     cell(
       1,
-      { name: 'fve/status', options: { tones: 'bad' } },
+      { name: 'status', options: { tones: 'bad' } },
       {},
-      { cells: { 'fve/status': () => <span>自定义覆盖</span> } },
+      { cells: { status: () => <span>自定义覆盖</span> } },
     ),
   );
   expect(screen.getByText('自定义覆盖')).toBeTruthy();
   expect(() =>
-    render(cell(['a'], { name: 'fve/tags', options: { maxVisible: 0 } })),
+    render(cell(['a'], { name: 'tags', options: { maxVisible: 0 } })),
   ).toThrow(/maxVisible/);
 });
 it('restores builtin renderer options through JSON without runtime registrations', () => {
   const renderer: RendererReference = JSON.parse(
     JSON.stringify({
-      name: 'fve/text',
+      name: 'text',
       options: { copyable: true, ellipsis: true },
     }),
   );
@@ -249,12 +254,14 @@ it('restores builtin renderer options through JSON without runtime registrations
   expect(screen.getByRole('button', { name: '复制文本' })).toBeTruthy();
 });
 
-it('uses the field timezone for local date/time strings and rejects DST gaps', () => {
+it('uses the definition timezone for local date/time strings and rejects DST gaps', () => {
   const view = render(
     cell(
       '2026-03-08T02:30',
-      { name: 'fve/date-time' },
-      { type: 'datetime', timeZone: 'America/New_York' },
+      { name: 'date-time' },
+      { type: 'datetime' },
+      undefined,
+      'America/New_York',
     ),
   );
   expect(screen.getByText('—')).toBeTruthy();
@@ -262,10 +269,12 @@ it('uses the field timezone for local date/time strings and rejects DST gaps', (
     cell(
       '2026-09-08T10:30',
       {
-        name: 'fve/date-time',
+        name: 'date-time',
         options: { locale: 'en-GB', dateStyle: 'short', timeStyle: 'short' },
       },
-      { type: 'datetime', timeZone: 'Asia/Shanghai' },
+      { type: 'datetime' },
+      undefined,
+      'Asia/Shanghai',
     ),
   );
   expect(screen.getByText('08/09/2026, 10:30')).toBeTruthy();
@@ -291,8 +300,10 @@ it.each(['2026-09-08T10:30:00.1234', '2026-03-08T02:30:00.1234'])(
     render(
       cell(
         value,
-        { name: 'fve/date-time' },
-        { type: 'datetime', timeZone: 'Asia/Shanghai' },
+        { name: 'date-time' },
+        { type: 'datetime' },
+        undefined,
+        'Asia/Shanghai',
       ),
     );
     expect(screen.getByText('—')).toBeTruthy();
@@ -303,10 +314,12 @@ it('normalizes surrounding whitespace before interpreting a local date and time'
     cell(
       ' 2026-09-08 10:30 ',
       {
-        name: 'fve/date-time',
+        name: 'date-time',
         options: { locale: 'en-GB', dateStyle: 'short', timeStyle: 'short' },
       },
-      { type: 'datetime', timeZone: 'Asia/Shanghai' },
+      { type: 'datetime' },
+      undefined,
+      'Asia/Shanghai',
     ),
   );
   expect(screen.getByText('08/09/2026, 10:30')).toBeTruthy();
@@ -319,10 +332,12 @@ it.each(['2026-09-08t10:30', '2026-09-08  10:30', '2026/09/08 10:30'])(
       cell(
         value,
         {
-          name: 'fve/date-time',
+          name: 'date-time',
           options: { locale: 'en-GB', dateStyle: 'short', timeStyle: 'short' },
         },
-        { type: 'datetime', timeZone: 'Etc/GMT+12' },
+        { type: 'datetime' },
+        undefined,
+        'Etc/GMT+12',
       ),
     );
     if (value.includes('/')) expect(screen.getByText('—')).toBeTruthy();
@@ -334,11 +349,44 @@ it('normalizes explicit timezone text without a host-local fallback', () => {
     cell(
       '2026-09-08  10:30z',
       {
-        name: 'fve/date-time',
+        name: 'date-time',
         options: { locale: 'en-GB', dateStyle: 'short', timeStyle: 'short' },
       },
-      { type: 'datetime', timeZone: 'Asia/Shanghai' },
+      { type: 'datetime' },
+      undefined,
+      'Asia/Shanghai',
     ),
   );
   expect(screen.getByText('08/09/2026, 18:30')).toBeTruthy();
+});
+
+it.each(['text', 'link', 'date-time'])(
+  'formats %s cells in the definition timezone',
+  name => {
+    const value = '2026-09-08T12:30:00Z';
+    const view = render(
+      cell(value, { name }, { type: 'datetime' }, undefined, 'UTC'),
+    );
+    expect(screen.getByText(/12:30:00/)).toBeTruthy();
+    view.rerender(
+      cell(
+        value,
+        { name },
+        { type: 'datetime' },
+        undefined,
+        'America/Los_Angeles',
+      ),
+    );
+    expect(screen.getByText(/05:30:00/)).toBeTruthy();
+  },
+);
+
+it('accepts a timezone separately from field formatting metadata', () => {
+  const value = '2026-09-08T12:30:00Z';
+  expect(formatRecordValue(value, { type: 'datetime' }, 'UTC')).toContain(
+    '12:30:00',
+  );
+  expect(
+    formatRecordValue(value, { type: 'datetime' }, 'America/Los_Angeles'),
+  ).toContain('05:30:00');
 });

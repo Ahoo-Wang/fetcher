@@ -26,6 +26,7 @@ import type {
   RecordData,
   RecordKey,
   RecordQuerySource,
+  FilterOptionSource,
 } from '@ahoo-wang/fetcher-view-engine';
 import type { DemoQuery, ScenarioOptions } from './demoTypes.js';
 import { orders, pause } from './fixtures.js';
@@ -42,6 +43,24 @@ function matches(record: RecordData, expression: FilterExpression): boolean {
       return record[expression.field] === expression.value;
     case FilterOperator.NE:
       return record[expression.field] !== expression.value;
+    case FilterOperator.IN:
+      return expression.values.some(
+        value => value === record[expression.field],
+      );
+    case FilterOperator.NOT_IN:
+      return !expression.values.some(
+        value => value === record[expression.field],
+      );
+    case FilterOperator.BETWEEN: {
+      const actual = record[expression.field];
+      if (
+        typeof actual !== 'number' ||
+        typeof expression.lowerBound !== 'number' ||
+        typeof expression.upperBound !== 'number'
+      )
+        throw new Error('演示服务的范围比较仅支持数值或时间戳。');
+      return actual >= expression.lowerBound && actual <= expression.upperBound;
+    }
     case FilterOperator.GT:
     case FilterOperator.GTE:
     case FilterOperator.LT:
@@ -190,6 +209,39 @@ export function createOrderSource(
   };
   return {
     source,
+    customerOptions: {
+      async search({ search, cursor, size = 3 }, signal) {
+        signal.throwIfAborted();
+        await pause();
+        signal.throwIfAborted();
+        const values = [
+          ...new Set(records.map(record => String(record.customer))),
+        ];
+        const filtered = values.filter(value => value.includes(search));
+        const offset = cursor ? Number(cursor) : 0;
+        if (!Number.isSafeInteger(offset) || offset < 0)
+          throw new Error('无效的客户游标。');
+        return {
+          list: filtered
+            .slice(offset, offset + size)
+            .map(value => ({ value, label: value })),
+          nextCursor:
+            offset + size < filtered.length ? String(offset + size) : null,
+        };
+      },
+      async resolve(values, signal) {
+        signal.throwIfAborted();
+        await pause();
+        signal.throwIfAborted();
+        const available = new Set(records.map(record => record.customer));
+        return {
+          list: values
+            .filter(value => available.has(value))
+            .map(value => ({ value, label: String(value) })),
+          missing: values.filter(value => !available.has(value)),
+        };
+      },
+    } satisfies FilterOptionSource,
     createOrder() {
       const order = {
         ...structuredClone(orders[0]),
@@ -197,7 +249,7 @@ export function createOrderSource(
         customer: '新叶商贸',
         amount: 3200,
         status: 'pending',
-        createdAt: '2026-09-06 12:30',
+        createdAt: Date.parse('2026-09-06T12:30:00+08:00'),
       };
       records.push(order);
       return order;

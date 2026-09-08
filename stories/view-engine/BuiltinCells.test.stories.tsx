@@ -61,7 +61,7 @@ export const Workbench: Story = {
     );
     await waitFor(() =>
       expect(canvas.getByTestId('builtin-cells-saved')).toHaveTextContent(
-        'fve/text',
+        'text',
       ),
     );
     const persisted = JSON.parse(

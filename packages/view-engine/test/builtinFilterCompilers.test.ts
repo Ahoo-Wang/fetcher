@@ -22,7 +22,7 @@ import {
 const fields = [{ field: 'id', label: 'ID' }];
 const context = { operator: Op.IN, field: fields[0], fields };
 it('compiles typed IDs while labels remain presentation-only', () => {
-  const compiler = getBuiltinFilterCompiler('fve/multi-select')!;
+  const compiler = getBuiltinFilterCompiler('multi-select')!;
   const props = {
     values: [1, '1', 1],
     selectedOptions: [
@@ -63,7 +63,7 @@ it('validates remote pages and distinguishes missing IDs from incomplete respons
   });
 });
 it('rejects partial, reversed and nonexistent date ranges', () => {
-  const compiler = getBuiltinFilterCompiler('fve/datetime-range')!;
+  const compiler = getBuiltinFilterCompiler('datetime-range')!;
   const fields = [{ field: 'date', label: '日期', type: 'date' as const }];
   const context = { operator: Op.BETWEEN, field: fields[0], fields };
   expect(compiler.compile({}, context)).toBeUndefined();
@@ -98,7 +98,7 @@ it.each([
         id: 'created',
         field: 'created',
         operator: Op.BETWEEN,
-        component: { name: 'fve/datetime-range' },
+        component: { name: 'datetime-range', options: { showTime: true } },
         props: { lowerBound, upperBound: {} },
       },
     },
@@ -111,11 +111,17 @@ it.each([
 });
 
 it('accepts cleared datetime range endpoints and preserves zero timestamps', () => {
-  const compiler = getBuiltinFilterCompiler('fve/datetime-range')!;
+  const compiler = getBuiltinFilterCompiler('datetime-range')!;
   const fields = [
     { field: 'created', label: '创建', type: 'datetime' as const },
   ];
-  const context = { operator: Op.BETWEEN, field: fields[0], fields };
+  const context = {
+    operator: Op.BETWEEN,
+    field: fields[0],
+    fields,
+    timeZone: 'Asia/Shanghai',
+    options: { showTime: true },
+  };
   expect(compiler.compile({}, context)).toBeUndefined();
   expect(
     compiler.compile({ lowerBound: '', upperBound: {} }, context),
@@ -144,7 +150,7 @@ it('uses useful default operators for named built-in editors', async () => {
       field: 'id',
       label: 'ID',
       type: 'string',
-      editor: { name: 'fve/multi-select' },
+      editor: { name: 'multi-select' },
     }),
   ).toEqual([Op.IN, Op.NOT_IN]);
   expect(
@@ -152,7 +158,7 @@ it('uses useful default operators for named built-in editors', async () => {
       field: 'created',
       label: '创建',
       type: 'datetime',
-      editor: { name: 'fve/datetime-range' },
+      editor: { name: 'datetime-range' },
     }),
   ).toEqual([Op.BETWEEN]);
   expect(
@@ -160,7 +166,7 @@ it('uses useful default operators for named built-in editors', async () => {
       field: 'id',
       label: 'ID',
       type: 'string',
-      editor: { name: 'fve/multi-select' },
+      editor: { name: 'multi-select' },
       operators: [Op.EQ],
     }),
   ).toEqual([Op.EQ]);

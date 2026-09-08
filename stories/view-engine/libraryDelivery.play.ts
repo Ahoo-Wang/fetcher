@@ -75,10 +75,8 @@ export const playExtensions: Play = async ({ canvasElement, args }) => {
   await expect(
     canvas.getByRole('status', { name: '订单操作状态' }),
   ).toHaveTextContent('已处理 2 笔订单');
-  await userEvent.selectOptions(
-    canvas.getByRole('combobox', { name: '订单状态' }),
-    'processed',
-  );
+  await userEvent.click(canvas.getByRole('combobox', { name: '订单状态' }));
+  await userEvent.click(await page.findByRole('option', { name: '已处理' }));
   await expect(
     canvas.getByRole('img', { name: '暂无记录' }),
   ).toBeInTheDocument();
@@ -194,7 +192,8 @@ export const playNarrowDark: Play = async ({ canvasElement, args }) => {
   await expect(host.scrollWidth).toBeLessThanOrEqual(host.clientWidth + 1);
   await expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth);
   const status = canvas.getByRole('combobox', { name: '订单状态' });
-  await userEvent.selectOptions(status, 'processed');
+  await userEvent.click(status);
+  await userEvent.click(await page.findByRole('option', { name: '已处理' }));
   await userEvent.click(canvas.getByRole('button', { name: '展开视图' }));
   await expect(canvas.getByRole('combobox', { name: '订单状态' })).toBe(status);
   await userEvent.click(canvas.getByRole('button', { name: '列设置' }));
@@ -211,8 +210,8 @@ export const playNarrowDark: Play = async ({ canvasElement, args }) => {
   await waitFor(() =>
     expect(canvas.getByRole('button', { name: '展开视图' })).toHaveFocus(),
   );
-  await expect(canvas.getByRole('combobox', { name: '订单状态' })).toHaveValue(
-    'processed',
-  );
+  await expect(
+    canvas.getByRole('combobox', { name: '订单状态' }),
+  ).toHaveTextContent('已处理');
   await expect(args.onEvent).toHaveBeenCalledTimes(1);
 };

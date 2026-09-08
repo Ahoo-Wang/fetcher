@@ -33,7 +33,7 @@ render(
       kind: 'field',
       id: 'status',
       field: 'status',
-      renderer: { name: 'fve/status' },
+      renderer: { name: 'status' },
     }}
   />,
 );

@@ -23,7 +23,7 @@ const meta = {
       source: { code: source, language: 'tsx' },
       description: {
         component:
-          '本地多选、远程单选/多选、多值文本和日期时间区间。候选经 Fetcher 读取，分页复用 CursorPage，保存只包含组件属性。',
+          '本地多选、远程单选/多选、多值文本和日期范围。日期默认覆盖完整自然日；候选经 Fetcher 读取，分页复用 CursorPage，保存只包含组件属性。',
       },
     },
   },

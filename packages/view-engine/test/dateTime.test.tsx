@@ -29,7 +29,7 @@ afterEach(cleanup);
 it.each([
   ['12:', '分钟', '30', '12:30'],
   ['07:45:', '秒', '30', '07:45:30'],
-  ['07:45:12.123456789', '秒', '30', '07:45:30.123456789'],
+  ['07:45:12.123456789', '秒', '30', '07:45:30'],
 ])(
   'preserves existing parts of %s when selecting %s',
   async (value, part, next, expected) => {
@@ -146,7 +146,7 @@ it('retains incomplete time input so callers cannot silently reuse an old value'
   expect(input.getAttribute('aria-invalid')).toBe('false');
 });
 
-it('changes the chosen time part without dropping seconds or fractional precision', async () => {
+it('changes the chosen time part at second precision', async () => {
   const changes: string[] = [];
   render(
     <FilterTimeInput
@@ -162,5 +162,5 @@ it('changes the chosen time part without dropping seconds or fractional precisio
   const hour = await screen.findByRole('option', { name: '10', exact: true });
   fireEvent.pointerDown(hour, { pointerType: 'mouse' });
   fireEvent.click(hour);
-  expect(changes).toEqual(['10:30:45.123456789']);
+  expect(changes).toEqual(['10:30:45']);
 });

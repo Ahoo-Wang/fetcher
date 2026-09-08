@@ -127,6 +127,7 @@ function datetime(value: unknown, timeZone?: string): number | undefined {
 export function scalar(
   value: unknown,
   field?: FilterFieldDefinition,
+  timeZone?: string,
 ): FilterLiteral | undefined {
   if (value === undefined || value === null) return value;
   if (typeof value === 'object' && !Array.isArray(value) && 'type' in value) {
@@ -165,7 +166,7 @@ export function scalar(
         dateParts(value);
         break;
       case 'datetime':
-        return datetime(value, field.timeZone);
+        return datetime(value, timeZone);
     }
   }
   if (

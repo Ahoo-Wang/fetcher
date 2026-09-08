@@ -29,11 +29,15 @@ export function FilterSearchEditor({
   node,
   fields,
   disabled,
+  invalid,
+  errorId,
   onChange,
 }: {
   node: FilterDraftNode;
   fields: readonly FilterFieldDefinition[];
   disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
   onChange(node: FilterDraftNode): void;
 }) {
   const update = (patch: Partial<FilterDraftNode>) =>
@@ -41,6 +45,8 @@ export function FilterSearchEditor({
   return (
     <>
       <InputGroupInput
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? errorId : undefined}
         aria-label="搜索内容"
         value={node.query ?? ''}
         placeholder="搜索内容"
@@ -50,6 +56,8 @@ export function FilterSearchEditor({
       />
       <Parameters label="搜索" disabled={disabled}>
         <FilterSelect
+          invalid={invalid}
+          errorId={errorId}
           label="搜索模式"
           placeholder="默认模式"
           value={node.mode}
@@ -71,6 +79,8 @@ export function FilterSearchEditor({
         {(node.fields ?? []).map((path, index) => (
           <InputGroup key={index}>
             <InputGroupInput
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? errorId : undefined}
               aria-label={`搜索字段${index + 1}`}
               value={path}
               disabled={disabled}
@@ -101,6 +111,8 @@ export function FilterSearchEditor({
           </InputGroup>
         ))}
         <FilterSelect
+          invalid={invalid}
+          errorId={errorId}
           label="添加搜索字段"
           placeholder="添加搜索字段"
           disabled={disabled}

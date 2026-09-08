@@ -21,13 +21,66 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { compileBuiltinFilter } from '../src/filter/filterCore.js';
+import {
+  compileBuiltinFilter,
+  createFilterConfiguration,
+  createFilterDraft,
+} from '../src/filter/filterCore.js';
 import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
 import { ViewEngine } from '../src/record/ViewEngine.js';
 import { ViewPage, ViewPageContent } from '../src/record/ViewPage.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
+
+it('edits record datetime filters in the definition timezone', async () => {
+  const { host, paged } = setup();
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: {
+      ...definition,
+      timeZone: 'America/New_York',
+      fields: [
+        ...definition.fields,
+        { field: 'created', label: '创建时间', type: 'datetime' },
+      ],
+    },
+    instances: {
+      instances: [
+        {
+          ...instance,
+          config: {
+            ...instance.config,
+            filters: createFilterConfiguration({
+              ...createFilterDraft(
+                filter.gte('created', Date.UTC(2026, 0, 15, 15, 30)),
+              ),
+              editor: { name: 'builtin', options: { showTime: true } },
+            }),
+          },
+        },
+      ],
+      defaultInstanceId: instance.id,
+    },
+    host,
+  });
+  try {
+    await engine.load();
+    render(<ViewPageContent engine={engine} />);
+    const time = screen.getByRole('textbox', { name: '创建时间时间' });
+    expect(time).toHaveProperty('value', '10:30:00');
+    fireEvent.change(time, { target: { value: '11:30' } });
+    expect(paged).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
+    await waitFor(() =>
+      expect(paged.mock.lastCall?.[0].filter).toEqual(
+        filter.gte('created', Date.UTC(2026, 0, 15, 16, 30)),
+      ),
+    );
+  } finally {
+    engine.dispose();
+  }
+});
 
 it('preserves results until Query and avoids cell rerenders in compiled builds', async () => {
   const { host, paged } = setup();

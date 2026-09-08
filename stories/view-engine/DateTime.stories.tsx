@@ -14,6 +14,7 @@ import '@ahoo-wang/fetcher-view-engine/styles.css';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   DatePickerDemo,
+  DateRangeDemo,
   DateTimeFilterDemo,
   TimeInputDemo,
   type DemoArgs,
@@ -31,7 +32,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '使用独立 view-engine 包的实际组件。组合演示由宿主在点击查询后应用 Wow 表达式，不连接业务服务；示例按浏览器本地时区组合日期与时间。',
+          '使用独立 view-engine 包的实际组件。字段组合演示按浏览器本地时区，在点击查询后应用 Wow 表达式；区间演示使用 Asia/Shanghai。日期区间使用双月日历，日期时间区间在弹层内编辑到秒并确认回填。',
       },
     },
   },
@@ -51,8 +52,24 @@ export const DatePicker: Story = {
   render: args => <DatePickerDemo {...args} />,
 };
 
+export const DateRange: Story = {
+  name: '日期区间 · 双月日历',
+  render: args => <DateRangeDemo {...args} />,
+};
+
+export const DateTimeRange: Story = {
+  name: '日期时间区间 · 弹层确认',
+  render: args => <DateRangeDemo {...args} datetime />,
+};
+
+export const DarkDateTimeRange: Story = {
+  ...DateTimeRange,
+  name: '深色 · 日期时间区间',
+  args: { appearance: 'dark' },
+};
+
 export const TimeInput: Story = {
-  name: '时间输入 · 保留精度',
+  name: '时间输入 · 秒精度',
   render: args => <TimeInputDemo {...args} />,
 };
 

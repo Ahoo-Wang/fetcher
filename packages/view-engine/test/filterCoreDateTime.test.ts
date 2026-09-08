@@ -16,7 +16,10 @@ import {
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import { createFilterDraft } from '../src/filter/filterCore';
+import {
+  compileFilterDraft,
+  createFilterDraft,
+} from '../src/filter/filterCore';
 import { compile, fields, node } from './fixtures/filterCore.js';
 
 it('outputs real date strings and rejects calendar normalization', () => {
@@ -33,7 +36,7 @@ it('outputs real date strings and rejects calendar normalization', () => {
     expect(compile(node(Op.EQ, 'day', { value })).errors).not.toEqual([]);
 });
 
-it('keeps epoch zero and converts datetime parts using field timezone', () => {
+it('keeps epoch zero and converts precise datetime parts using the global timezone', () => {
   expect(compile(node(Op.EQ, 'created', { value: 0 })).expression).toEqual(
     filter.eq('created', 0),
   );
@@ -61,20 +64,14 @@ it('keeps epoch zero and converts datetime parts using field timezone', () => {
 });
 
 it('rejects DST gaps and invalid zones while handling real zoned dates', () => {
-  const zoned = [
-    {
-      field: 'created',
-      label: '时间',
-      type: 'datetime' as const,
-      timeZone: 'America/New_York',
-    },
-  ];
+  const zoned = [fields[4]];
   expect(
     compile(
       node(Op.EQ, 'created', {
         value: { date: '2024-03-10', time: '02:30' },
       }),
       zoned,
+      'America/New_York',
     ).errors,
   ).not.toEqual([]);
   expect(
@@ -83,6 +80,7 @@ it('rejects DST gaps and invalid zones while handling real zoned dates', () => {
         value: { date: '2024-03-10', time: '03:30' },
       }),
       zoned,
+      'America/New_York',
     ).expression,
   ).toEqual(filter.eq('created', 1710055800000));
   expect(
@@ -90,7 +88,8 @@ it('rejects DST gaps and invalid zones while handling real zoned dates', () => {
       node(Op.EQ, 'created', {
         value: { date: '2024-01-01', time: '12:00' },
       }),
-      [{ ...zoned[0], timeZone: 'Bad/Zone' }],
+      zoned,
+      'Bad/Zone',
     ).errors,
   ).not.toEqual([]);
 });
@@ -98,8 +97,8 @@ it('rejects DST gaps and invalid zones while handling real zoned dates', () => {
 it.each([
   ['2026-11-01', '01:30', 240, 1793511000000],
   ['2026-11-01', '01:30', 300, 1793514600000],
-  ['2026-11-01', '01:45:12.345', 240, 1793511912345],
-  ['2026-11-01', '01:45:12.345', 300, 1793515512345],
+  ['2026-11-01', '01:45:12.345', 240, 1793511912000],
+  ['2026-11-01', '01:45:12.345', 300, 1793515512000],
   ['2026-11-01', '01:30', undefined, 1793511000000],
   ['2026-07-01', '01:30', 300, 1782883800000],
   ['2026-12-01', '01:30', 240, 1796106600000],
@@ -111,7 +110,8 @@ it.each([
         node(Op.EQ, 'created', {
           value: { date, time, offsetMinutes },
         }),
-        [{ ...fields[4], timeZone: 'America/New_York' }],
+        [fields[4]],
+        'America/New_York',
       ),
     ).toEqual({
       expression: { op: Op.EQ, field: 'created', value: timestamp },
@@ -121,7 +121,7 @@ it.each([
 );
 
 it('rejects DST gaps and malformed datetime offset hints', () => {
-  const zoned = [{ ...fields[4], timeZone: 'America/New_York' }];
+  const zoned = [fields[4]];
   for (const value of [
     { date: '2026-03-08', time: '02:30', offsetMinutes: 240 },
     { date: '2026-03-08', time: '02:30', offsetMinutes: 300 },
@@ -135,7 +135,7 @@ it('rejects DST gaps and malformed datetime offset hints', () => {
     { offsetMinutes: NaN },
   ]) {
     const draft = node(Op.EQ, 'created', { value });
-    const result = compile(draft, zoned);
+    const result = compile(draft, zoned, 'America/New_York');
     expect(result.expression).toBeUndefined();
     expect(result.errors).toEqual([
       { id: draft.id, message: expect.any(String) },
@@ -146,42 +146,42 @@ it('rejects DST gaps and malformed datetime offset hints', () => {
 it.each([
   { op: Op.EQ, field: 'created', value: 0 },
   { op: Op.IN, field: 'created', values: [0] },
-  { op: Op.BETWEEN, field: 'created', lowerBound: 0, upperBound: 1 },
+  { op: Op.BETWEEN, field: 'created', lowerBound: 0, upperBound: 1000 },
 ] as FilterExpression[])(
   'validates the timezone of loaded numeric datetime values for $op',
   expression => {
     const draft = createFilterDraft(expression);
-    const invalid = compile(draft, [
-      {
-        field: 'created',
-        label: '时间',
-        type: 'datetime',
-        timeZone: 'Bad/Zone',
-      },
-    ]);
+    const invalid = compile(draft, [fields[4]], 'Bad/Zone');
     expect(invalid.errors).not.toEqual([]);
     expect(invalid.expression).toBeUndefined();
     for (const timeZone of ['Asia/Shanghai', '+08:00', undefined]) {
       expect(
-        compile(draft, [
-          { field: 'created', label: '时间', type: 'datetime', timeZone },
-        ]),
+        compileFilterDraft(
+          draft,
+          [fields[4]],
+          undefined,
+          undefined,
+          undefined,
+          timeZone,
+        ),
       ).toEqual({ expression, errors: [] });
     }
   },
 );
 
-it('keeps local datetime behavior when no field timezone is specified', () => {
-  const local = [
-    { field: 'created', label: '时间', type: 'datetime' as const },
-  ];
-  const expected = new Date(2024, 0, 15, 12, 30, 59, 123).getTime();
+it('keeps local datetime behavior when the global timezone is unspecified', () => {
+  const local = [fields[4]];
+  const expected = new Date(2024, 0, 15, 12, 30, 59, 0).getTime();
   expect(
-    compile(
+    compileFilterDraft(
       node(Op.EQ, 'created', {
         value: { date: '2024-01-15', time: '12:30:59.123' },
       }),
       local,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
     ).expression,
   ).toEqual(filter.eq('created', expected));
 });
@@ -232,7 +232,8 @@ it.each(['UTC', 'Asia/Shanghai', 'America/Los_Angeles'])(
         expect(
           compile(
             node(Op.EQ, 'created', { value: { date, time, offsetMinutes } }),
-            [{ ...fields[4], timeZone }],
+            [fields[4]],
+            timeZone,
           ),
         ).toEqual({
           expression: { op: Op.EQ, field: 'created', value: timestamp },

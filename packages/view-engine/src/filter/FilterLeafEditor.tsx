@@ -16,6 +16,7 @@ import { compileFilterDraft, newFilterDraft } from './filterCore.js';
 import { copy } from '../lib/snapshot.js';
 import {
   filterComponentProps,
+  filterComponentReference,
   restoreFilterConfiguration,
 } from './filterConfiguration.js';
 import type { FilterNodeLocation } from './filterTree.js';
@@ -23,7 +24,7 @@ import type { FilterOption } from './filterTypes.js';
 import type { FilterPanelState } from './useFilterPanelState.js';
 import { FilterValueEditor } from './FilterValueEditor.js';
 import { EditorBoundary, EditorSession } from './FilterEditorSession.js';
-import { message, without } from './filterPanelUtils.js';
+import { message, ownValue, without } from './filterPanelUtils.js';
 
 export function FilterLeafEditor({
   location,
@@ -62,6 +63,13 @@ export function FilterLeafEditor({
       node={node}
       field={field}
       fields={scopeFields}
+      timeZone={props.timeZone}
+      showTime={
+        filterComponentReference(node, field, props.editors).options
+          ?.showTime === true
+      }
+      errors={errors}
+      errorId={errorId}
       disabled={disabled}
       onChange={next =>
         update(node.id, { ...next, id: node.id, field: node.field })
@@ -77,9 +85,19 @@ export function FilterLeafEditor({
   let reportedOperator = node.op;
   return (
     <EditorBoundary
-      key={`${epoch}:${node.id}:${editorEpochs[node.id] ?? 0}`}
+      key={`${epoch}:${node.id}:${ownValue(editorEpochs, node.id) ?? 0}`}
+      editor={Custom}
+      operator={node.op}
+      mode={mode}
       onError={error =>
         setEditorOutputErrors(previous => ({ ...previous, [node.id]: error }))
+      }
+      onRecover={error =>
+        setEditorOutputErrors(previous =>
+          ownValue(previous, node.id) === error
+            ? without(previous, node.id)
+            : previous,
+        )
       }
       onFallback={() => {
         const properties = filterComponentProps(node);
@@ -91,8 +109,14 @@ export function FilterLeafEditor({
           editor: { name: 'builtin' },
         };
         const valid =
-          compileFilterDraft(candidate, scopeFields, props.allowedOperators)
-            .errors.length === 0;
+          compileFilterDraft(
+            candidate,
+            scopeFields,
+            props.allowedOperators,
+            undefined,
+            undefined,
+            props.timeZone,
+          ).errors.length === 0;
         update(
           node.id,
           valid
@@ -118,6 +142,7 @@ export function FilterLeafEditor({
         operator={node.op}
         field={field ? copy(field) : undefined}
         fields={copy(scopeFields)}
+        timeZone={props.timeZone}
         mode={mode}
         context={props.context}
         optionSources={props.extensions?.optionSources}
@@ -162,7 +187,8 @@ export function FilterLeafEditor({
           setEditorValidity(previous =>
             valid
               ? without(previous, node.id)
-              : previous[node.id] === (error ?? '输入尚未完成或格式无效。')
+              : ownValue(previous, node.id) ===
+                  (error ?? '输入尚未完成或格式无效。')
                 ? previous
                 : {
                     ...previous,
@@ -190,7 +216,7 @@ export function FilterLeafEditor({
             update(node.id, nextDraft, true);
           } catch (error) {
             setEditorOutputErrors(previous =>
-              previous[node.id] === message(error)
+              ownValue(previous, node.id) === message(error)
                 ? previous
                 : { ...previous, [node.id]: message(error) },
             );

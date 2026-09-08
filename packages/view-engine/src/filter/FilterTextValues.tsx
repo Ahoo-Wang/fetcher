@@ -23,6 +23,8 @@ export interface FilterTextValuesProps {
   onValidityChange?(valid: boolean, message?: string): void;
   label: string;
   disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
 }
 export function FilterTextValues({
   value = [],
@@ -30,6 +32,8 @@ export function FilterTextValues({
   onValidityChange,
   label,
   disabled,
+  invalid,
+  errorId,
 }: FilterTextValuesProps) {
   const [text, setText] = useState('');
   const [composing, setComposing] = useState(false);
@@ -68,6 +72,8 @@ export function FilterTextValues({
       ))}
       <InputGroupInput
         aria-label={label}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? errorId : undefined}
         value={text}
         disabled={disabled}
         className="fve:w-36"

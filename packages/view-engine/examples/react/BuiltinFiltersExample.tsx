@@ -43,6 +43,7 @@ const definition: ViewDefinition = {
   title: '内置筛选器',
   sourceId: 'query-echo',
   rowKey: 'id',
+  timeZone: 'Asia/Shanghai',
   fields: [
     { field: 'id', label: '编号', type: 'string' },
     {
@@ -54,7 +55,7 @@ const definition: ViewDefinition = {
         { value: 'pending', label: '待处理', group: '进行中' },
         { value: 'done', label: '已完成', group: '已结束' },
       ],
-      editor: { name: 'fve/multi-select' },
+      editor: { name: 'multi-select' },
     },
     {
       field: 'owner',
@@ -62,7 +63,7 @@ const definition: ViewDefinition = {
       type: 'string',
       operators: [Op.EQ, Op.NE],
       editor: {
-        name: 'fve/remote-select',
+        name: 'remote-select',
         options: { source: 'users', pageSize: 2, debounceMs: 0 },
       },
     },
@@ -72,7 +73,7 @@ const definition: ViewDefinition = {
       type: 'string',
       operators: [Op.IN, Op.NOT_IN],
       editor: {
-        name: 'fve/remote-multi-select',
+        name: 'remote-multi-select',
         options: { source: 'users', pageSize: 2, debounceMs: 0 },
       },
     },
@@ -81,15 +82,14 @@ const definition: ViewDefinition = {
       label: '批量编号',
       type: 'string',
       operators: [Op.IN, Op.NOT_IN],
-      editor: { name: 'fve/text-values' },
+      editor: { name: 'text-values' },
     },
     {
       field: 'created',
       label: '创建时间',
       type: 'datetime',
-      timeZone: 'Asia/Shanghai',
       operators: [Op.BETWEEN],
-      editor: { name: 'fve/datetime-range' },
+      editor: { name: 'datetime-range' },
     },
   ],
 };
@@ -102,7 +102,7 @@ const draft: FilterDraftNode = {
       op: Op.IN,
       field: 'status',
       props: {},
-      editor: { name: 'fve/multi-select' },
+      editor: { name: 'multi-select' },
     },
     {
       id: 'owner',
@@ -110,7 +110,7 @@ const draft: FilterDraftNode = {
       field: 'owner',
       props: {},
       editor: {
-        name: 'fve/remote-select',
+        name: 'remote-select',
         options: { source: 'users', pageSize: 2, debounceMs: 0 },
       },
     },
@@ -123,7 +123,7 @@ const draft: FilterDraftNode = {
         selectedOptions: [{ value: 'u1', label: '保存的用户甲' }],
       },
       editor: {
-        name: 'fve/remote-multi-select',
+        name: 'remote-multi-select',
         options: { source: 'users', pageSize: 2, debounceMs: 0 },
       },
     },
@@ -132,14 +132,14 @@ const draft: FilterDraftNode = {
       op: Op.IN,
       field: 'refs',
       props: {},
-      editor: { name: 'fve/text-values' },
+      editor: { name: 'text-values' },
     },
     {
       id: 'created',
       op: Op.BETWEEN,
       field: 'created',
       props: {},
-      editor: { name: 'fve/datetime-range' },
+      editor: { name: 'datetime-range' },
     },
   ],
 };

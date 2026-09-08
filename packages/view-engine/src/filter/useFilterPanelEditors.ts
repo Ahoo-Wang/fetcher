@@ -18,6 +18,9 @@ import type { FilterPanelProps } from './filterReactTypes.js';
 import { compileFilterDraft, FILTER_OPERATORS } from './filterCore.js';
 import { locateFilterNodes, sameFilterQuery } from './filterTree.js';
 import { resolveFilterEditor } from './resolveFilterEditor.js';
+import { ownValue } from './filterPanelUtils.js';
+import { filterComponentReference } from './filterConfiguration.js';
+import { filterClearCompiler } from './filterConfigurationClear.js';
 
 /** Resolve extension support and combine local input validity with protocol validation. */
 export function useFilterPanelEditors(
@@ -44,6 +47,7 @@ export function useFilterPanelEditors(
     props.allowedOperators,
     props.extensions?.filters,
     props.editors,
+    props.timeZone,
   );
   const resolutions = new Map(
     locations
@@ -56,13 +60,28 @@ export function useFilterPanelEditors(
         resolveFilterEditor(location, props, mode, builtIn),
       ]),
   );
+  const clearable = locations.every(({ node, fields: scope }) => {
+    if (['logical', 'element'].includes(FILTER_OPERATORS[node.op]?.category))
+      return true;
+    try {
+      const reference = filterComponentReference(
+        node,
+        scope.find(field => field.field === node.field),
+        props.editors,
+      );
+      return !!filterClearCompiler(reference.name, props.extensions?.filters)
+        .clear;
+    } catch {
+      return false;
+    }
+  });
   const issues = locations.flatMap(({ node }) =>
     [
       ...compiled.errors
         .filter(error => error.id === node.id)
         .map(error => error.message),
-      editorValidity[node.id],
-      editorOutputErrors[node.id],
+      ownValue(editorValidity, node.id),
+      ownValue(editorOutputErrors, node.id),
       resolutions.get(node.id)?.error,
     ]
       .filter((item): item is string => item !== undefined)
@@ -78,6 +97,7 @@ export function useFilterPanelEditors(
     props.allowedOperators,
     props.extensions?.filters,
     props.editors,
+    props.timeZone,
   );
   const pending =
     !valid ||
@@ -103,6 +123,7 @@ export function useFilterPanelEditors(
     locations,
     compiled,
     resolutions,
+    clearable,
     issues,
     valid,
     pending,

@@ -30,6 +30,8 @@ export interface FilterDatePickerProps {
   label: string;
   inline?: boolean;
   disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
 }
 
 export function FilterDatePicker({
@@ -38,6 +40,8 @@ export function FilterDatePicker({
   label,
   inline = false,
   disabled = false,
+  invalid,
+  errorId,
 }: FilterDatePickerProps) {
   const [open, setOpen] = useState(false);
   const selected =
@@ -58,7 +62,8 @@ export function FilterDatePicker({
           inline ? <InputGroupButton size="sm" /> : <Button variant="outline" />
         }
         aria-label={`${label}：${display}`}
-        aria-invalid={!!value && !selected}
+        aria-invalid={invalid || (!!value && !selected)}
+        aria-describedby={invalid ? errorId : undefined}
         disabled={disabled}
       >
         <CalendarIcon data-icon="inline-start" aria-hidden="true" />

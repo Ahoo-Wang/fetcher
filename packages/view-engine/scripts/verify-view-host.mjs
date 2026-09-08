@@ -76,7 +76,8 @@ try {
   await page.goto(url);
   await page.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
   await editor().fill('只能从组件属性恢复的标签');
-  await status().selectOption('processed');
+  await status().click();
+  await page.getByRole('option', { name: '已处理', exact: true }).click();
   await query();
   await page.getByRole('cell', { name: 'DEMO-3', exact: true }).waitFor();
   await save();
@@ -97,11 +98,12 @@ try {
   );
   await reload();
   await page.getByRole('cell', { name: 'DEMO-3', exact: true }).waitFor();
-  assert.equal(await status().inputValue(), 'processed');
+  assert.equal((await status().textContent()).trim(), '已处理');
   assert.equal(await editor().inputValue(), '只能从组件属性恢复的标签');
 
   // The same restored runtime resolves all five extension types; record writes do not rewrite view JSON.
-  await status().selectOption('pending');
+  await status().click();
+  await page.getByRole('option', { name: '待处理', exact: true }).click();
   await query();
   await page.getByLabel('金额 120.00 元', { exact: true }).waitFor();
   const beforeActions = await read();
@@ -126,7 +128,7 @@ try {
     .getByRole('button', { name: '重新打开已保存视图', exact: true })
     .click();
   await page.getByRole('cell', { name: 'DEMO-3', exact: true }).waitFor();
-  assert.equal(await status().inputValue(), 'processed');
+  assert.equal((await status().textContent()).trim(), '已处理');
   await reload();
   await page.getByRole('cell', { name: 'DEMO-3', exact: true }).waitFor();
   assert.equal(
@@ -152,7 +154,7 @@ try {
   );
   await reload();
   await page.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
-  assert.equal(await status().inputValue(), '');
+  assert.equal((await status().textContent()).trim(), '不限');
   assert.equal(await editor().inputValue(), '只能从组件属性恢复的标签');
 
   let manager = await openManager();

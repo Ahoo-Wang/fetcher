@@ -58,7 +58,8 @@ function validateFields(value: unknown) {
       for (const option of field.options) {
         assertObject(option, '枚举选项');
         assertText(option.label, '枚举选项名称');
-        if (option.group !== undefined) assertText(option.group, '枚举选项分组');
+        if (option.group !== undefined)
+          assertText(option.group, '枚举选项分组');
         if (
           !['string', 'number', 'boolean'].includes(typeof option.value) ||
           (typeof option.value === 'number' && !Number.isFinite(option.value))
@@ -73,10 +74,6 @@ function validateFields(value: unknown) {
         )
           throw new Error('枚举 disabled 必须是布尔值');
       }
-    }
-    if (field.timeZone !== undefined) {
-      assertText(field.timeZone, '时区');
-      new Intl.DateTimeFormat('en', { timeZone: field.timeZone });
     }
     if (field.numberFormat !== undefined) {
       assertObject(field.numberFormat, '数值格式');
@@ -114,6 +111,10 @@ export function validateViewDefinition(
   assertText(value.title, '定义名称');
   assertText(value.sourceId, '数据源 ID');
   assertPath(value.rowKey, '记录主键');
+  if (value.timeZone !== undefined) {
+    assertText(value.timeZone, '时区');
+    new Intl.DateTimeFormat('en', { timeZone: value.timeZone });
+  }
   validateFields(value.fields);
   if (
     value.allowedOperators !== undefined &&

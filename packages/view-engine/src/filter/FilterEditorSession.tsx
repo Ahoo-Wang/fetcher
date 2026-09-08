@@ -84,15 +84,49 @@ export class EditorSession extends Component<
   }
 }
 export class EditorBoundary extends Component<
-  { children: ReactNode; onError(message: string): void; onFallback(): void },
-  { error?: string }
+  Pick<FilterComponentProps, 'operator' | 'mode'> & {
+    children: ReactNode;
+    editor: FilterRegistration['component'];
+    onError(message: string): void;
+    onRecover(message: string): void;
+    onFallback(): void;
+  }
 > {
-  state: { error?: string } = {};
+  state = {
+    editor: this.props.editor,
+    operator: this.props.operator,
+    mode: this.props.mode,
+    error: undefined as string | undefined,
+  };
+  static getDerivedStateFromProps(
+    props: EditorBoundary['props'],
+    state: EditorBoundary['state'],
+  ) {
+    if (
+      props.editor === state.editor &&
+      props.operator === state.operator &&
+      props.mode === state.mode
+    )
+      return null;
+    return {
+      editor: props.editor,
+      operator: props.operator,
+      mode: props.mode,
+      error: undefined,
+    };
+  }
   static getDerivedStateFromError(error: unknown) {
     return { error: message(error) };
   }
   componentDidCatch(error: unknown) {
     this.props.onError(message(error));
+  }
+  componentDidUpdate(
+    _previousProps: EditorBoundary['props'],
+    previousState: EditorBoundary['state'],
+  ) {
+    if (previousState.error && !this.state.error)
+      this.props.onRecover(previousState.error);
   }
   render() {
     return this.state.error ? (

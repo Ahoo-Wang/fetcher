@@ -12,7 +12,7 @@
  */
 
 import { expect, it } from 'vitest';
-import { filter } from '@ahoo-wang/fetcher-wow';
+import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { describeRecordFilter } from '../src/record/recordFilterSummary.js';
 import type { ViewFieldDefinition } from '../src/record/recordModel.js';
 
@@ -75,4 +75,63 @@ it('resolves enum labels and element-relative fields without losing the containe
     count: 3,
     text: '满足全部条件（状态 属于 [待处理]；金额 介于 0 至 1000；明细 同一元素满足（数量 大于等于 2））',
   });
+});
+
+it('uses applied option labels with static labels and raw values as fallbacks', () => {
+  expect(
+    describeRecordFilter(
+      filter.isIn('status', ['pending', 'ready', 'unknown']),
+      fields,
+      {
+        node: {
+          id: 'status',
+          op: FilterOperator.IN,
+          field: 'status',
+          props: {
+            values: ['pending', 'ready', 'unknown'],
+            selectedOptions: [{ value: 'ready', label: '已就绪' }],
+          },
+        },
+      },
+    ).text,
+  ).toBe('状态 属于 [待处理、已就绪、unknown]');
+});
+
+it('shows built-in applied datetimes in the view timezone at second precision', () => {
+  expect(
+    describeRecordFilter(
+      filter.between(
+        'createdAt',
+        Date.parse('2026-09-08T01:00:00.123Z'),
+        Date.parse('2026-09-08T02:00:00Z'),
+      ),
+      [{ field: 'createdAt', label: '创建时间', type: 'datetime' }],
+      { timeZone: 'Asia/Shanghai', showTime: true },
+    ).text,
+  ).toBe('创建时间 介于 2026-09-08 09:00:00 至 2026-09-08 10:00:00');
+});
+
+it('describes date-only component intent instead of its expanded query', () => {
+  expect(
+    describeRecordFilter(
+      filter.nor([
+        filter.between(
+          'createdAt',
+          Date.parse('2026-09-07T16:00:00Z'),
+          Date.parse('2026-09-08T15:59:59.999Z'),
+        ),
+      ]),
+      [{ field: 'createdAt', label: '创建时间', type: 'datetime' }],
+      {
+        node: {
+          id: 'date',
+          op: FilterOperator.NE,
+          field: 'createdAt',
+          props: { value: { date: '2026-09-08', time: '09:00:00.123' } },
+        },
+        timeZone: 'Asia/Shanghai',
+        showTime: false,
+      },
+    ).text,
+  ).toBe('创建时间 不等于 2026-09-08');
 });

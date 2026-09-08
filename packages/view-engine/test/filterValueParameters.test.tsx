@@ -96,15 +96,16 @@ it('edits relative options without injecting unset defaults and retains invalid 
     timeUnit: TimeUnit.SECONDS,
   });
   fireEvent.click(screen.getByRole('button', { name: '创建时间参数' }));
-  change('时区', 'Asia/Shanghai');
+  expect(screen.queryByRole('textbox', { name: '时区' })).toBeNull();
   change('日期格式', 'yyyy-MM');
   await select('时间单位', '毫秒');
   expect(state.current()).toMatchObject({
     days: '1.5',
-    zoneId: 'Asia/Shanghai',
+    zoneId: 'UTC',
     datePattern: 'yyyy-MM',
     timeUnit: TimeUnit.MILLISECONDS,
   });
+  expect(compileFilterDraft(state.current(), fields).errors).toHaveLength(1);
 });
 
 it('edits BEFORE_TODAY time as raw text', () => {
@@ -117,6 +118,22 @@ it('edits BEFORE_TODAY time as raw text', () => {
   });
   change('创建时间时间', '12:');
   expect(state.current()).toMatchObject({ time: '12:', zoneId: 'UTC' });
+  change('创建时间时间', '12:30:59.123456789');
+  expect(
+    compileFilterDraft(
+      state.current(),
+      fields,
+      undefined,
+      undefined,
+      undefined,
+      'UTC',
+    ).expression,
+  ).toEqual({
+    op: Op.BEFORE_TODAY,
+    field: 'createdAt',
+    time: '12:30:59',
+    zoneId: 'UTC',
+  });
 });
 
 it('edits root metadata as strings and deletion with typed state', async () => {
@@ -145,15 +162,16 @@ it('renders no value control for presence operators but exposes relative options
   const today = mount({ id: 'today', op: Op.TODAY, field: 'createdAt' });
   fireEvent.click(screen.getByRole('button', { name: '创建时间参数' }));
   expect(
-    (screen.getByRole('textbox', { name: '时区' }) as HTMLInputElement).value,
+    (screen.getByRole('textbox', { name: '日期格式' }) as HTMLInputElement)
+      .value,
   ).toBe('');
   expect(today.changes).toEqual([]);
-  change('时区', 'UTC');
+  change('日期格式', 'yyyy-MM');
   expect(today.current()).toEqual({
     id: 'today',
     op: Op.TODAY,
     field: 'createdAt',
-    zoneId: 'UTC',
+    datePattern: 'yyyy-MM',
   });
 });
 

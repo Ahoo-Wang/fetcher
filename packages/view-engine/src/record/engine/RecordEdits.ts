@@ -53,6 +53,7 @@ export class RecordEdits {
       definition.allowedOperators,
       this.store.filterCompilers,
       definition.filterEditors,
+      definition.timeZone,
     );
     if (compiled.errors.length || !compiled.expression)
       throw new Error(
@@ -118,6 +119,7 @@ export class RecordEdits {
       definition.allowedOperators,
       this.store.filterCompilers,
       definition.filterEditors,
+      definition.timeZone,
     );
     if (
       nextValid &&
@@ -272,6 +274,7 @@ export class RecordEdits {
       definition.fields,
       definition.allowedOperators,
       this.store.filterCompilers,
+      definition.timeZone,
     );
     this.store.patch(session.instance.id, {
       instance: session.baseline,

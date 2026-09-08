@@ -126,6 +126,7 @@ export function RecordView({
         key={`filter:${id}`}
         value={session.appliedFilter}
         fields={definition.fields}
+        timeZone={definition.timeZone}
         onApply={filter => run(() => engine.applyFilter(filter, id))}
         draft={session.filterDraft}
         appliedDraft={session.filterBaseline}

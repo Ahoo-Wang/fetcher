@@ -96,48 +96,16 @@ const customers = [
   { value: 'customer-4', label: '海川物流' },
   { value: 'customer-5', label: '云海商贸（停用）', disabled: true },
 ];
-function SearchableCustomerEditor({
-  props,
-  disabled,
-  onChange,
-}: FilterEditorProps) {
-  return (
-    <FilterSearchSelect
-      label="客户选择"
-      placeholder="选择客户"
-      searchPlaceholder="输入客户名称"
-      options={customers}
-      value={typeof props.value === 'string' ? props.value : null}
-      onValueChange={id => onChange({ ...props, value: id })}
-      onClear={() => onChange(clearBuiltinFilterProps(props))}
-      disabled={disabled}
-      inline
-    />
-  );
-}
 export const searchableFields: FilterFieldDefinition[] = [
   {
     field: 'customer',
     label: '客户',
     type: 'string',
     operators: [FilterOperator.EQ],
-    editor: { name: 'customer-search' },
+    editor: { name: 'select' },
+    options: customers,
   },
 ];
-export const searchableExtensions: FilterExtensions = {
-  filters: {
-    'customer-search': {
-      component: SearchableCustomerEditor,
-      modes: ['simple', 'advanced'],
-      compile: compileBuiltinFilter,
-      clear: clearBuiltinFilterProps,
-      supports: (props, context) =>
-        context.operator === FilterOperator.EQ &&
-        (props.value === undefined ||
-          customers.some(customer => customer.value === props.value)),
-    },
-  },
-};
 function CompleteCustomerFilter({
   props,
   disabled,
@@ -173,7 +141,9 @@ function CompleteCustomerFilter({
 export const completeExtensions: FilterExtensions = {
   filters: {
     'customer-search': {
-      ...searchableExtensions.filters!['customer-search'],
+      modes: ['simple', 'advanced'],
+      compile: compileBuiltinFilter,
+      clear: clearBuiltinFilterProps,
       render: 'filter',
       component: CompleteCustomerFilter,
     },

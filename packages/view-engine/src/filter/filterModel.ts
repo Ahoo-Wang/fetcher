@@ -51,7 +51,6 @@ export interface FilterFieldDefinition extends FilterField {
   fields?: readonly FilterFieldDefinition[];
   operators?: readonly FilterOperator[];
   editor?: FilterEditorReference;
-  timeZone?: string;
 }
 export interface FilterDateTimeValue {
   date?: string;
@@ -130,6 +129,8 @@ export interface FilterConfiguration {
   root: FilterComponentConfig;
 }
 export interface FilterCompilerContext {
+  /** Global view/panel timezone; omitted uses the local runtime timezone. */
+  timeZone?: string;
   operator: FilterOperator;
   field?: DeepReadonly<FilterFieldDefinition>;
   fields: DeepReadonly<readonly FilterFieldDefinition[]>;

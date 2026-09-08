@@ -161,7 +161,14 @@ export function FilterPanel(props: FilterPanelProps) {
             >
               撤销筛选修改
             </Button>
-            <Button variant="ghost" disabled={disabled} onClick={panel.clear}>
+            <Button
+              variant="ghost"
+              disabled={disabled || !!panel.clearReason}
+              aria-describedby={
+                panel.clearReason ? `${panelId}-clear-help` : undefined
+              }
+              onClick={panel.clear}
+            >
               清空条件
             </Button>
             <Button
@@ -175,6 +182,14 @@ export function FilterPanel(props: FilterPanelProps) {
             </Button>
           </div>
         </div>
+        {panel.clearReason && (
+          <p
+            id={`${panelId}-clear-help`}
+            className="fve:m-0 fve:text-sm fve:text-muted-foreground"
+          >
+            {panel.clearReason}
+          </p>
+        )}
         {applyError && <div role="alert">{applyError}</div>}
         {props.queryError && <div role="alert">{props.queryError}</div>}
       </section>

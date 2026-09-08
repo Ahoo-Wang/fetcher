@@ -34,6 +34,7 @@ export const fields: FilterFieldDefinition[] = [
     label: '订单状态',
     group: '订单信息',
     type: 'string',
+    editor: { name: 'select' },
     options: [
       { value: 'pending', label: '待处理' },
       { value: 'paid', label: '已支付' },
@@ -48,7 +49,6 @@ export const fields: FilterFieldDefinition[] = [
     label: '创建时间',
     group: '时间',
     type: 'datetime',
-    timeZone: 'Asia/Shanghai',
   },
   {
     field: 'items',
@@ -82,6 +82,7 @@ export function Scenario({
   extensions,
   mode,
   initialError,
+  timeZone = 'Asia/Shanghai',
 }: DemoArgs & {
   initial?: FilterExpression;
   initialDraft?: FilterDraftNode;
@@ -89,6 +90,7 @@ export function Scenario({
   extensions?: FilterExtensions;
   mode?: FilterMode;
   initialError?: string;
+  timeZone?: string;
 }) {
   const [value, setValue] = useState(initial);
   const [draft, setDraft] = useState(
@@ -116,6 +118,7 @@ export function Scenario({
         draft={draft}
         onDraftChange={setDraft}
         fields={definitions}
+        timeZone={timeZone}
         mode={mode}
         extensions={extensions}
         disabled={disabled}

@@ -16,11 +16,18 @@ import { XIcon } from 'lucide-react';
 import { useId, useRef } from 'react';
 import { Badge } from '../../components/ui/badge.js';
 import { Button } from '../../components/ui/button.js';
+import { getBuiltinFilterCompiler } from '../../filter/builtinFilterCompilers.js';
 import { compileFilterDraft } from '../../filter/filterCore.js';
-import { clearFilterDraftValues } from '../../filter/filterConfiguration.js';
-import type { FilterDraftNode } from '../../filter/filterModel.js';
+import {
+  clearFilterDraftValues,
+  filterComponentReference,
+} from '../../filter/filterConfiguration.js';
+import type {
+  FilterDraftNode,
+  FilterFieldDefinition,
+} from '../../filter/filterModel.js';
 import { replaceFilterNode, sameFilterDraft } from '../../filter/filterTree.js';
-import { cloneSnapshot } from '../../lib/types.js';
+import { cloneSnapshot, type DeepReadonly } from '../../lib/types.js';
 import { describeRecordFilter } from '../recordFilterSummary.js';
 import type { RecordSession, ViewDefinition } from '../recordModel.js';
 import type { ViewEngine } from '../ViewEngine.js';
@@ -46,16 +53,57 @@ export function RecordAppliedFilters({
       : baseline.op === FilterOperator.AND
         ? (baseline.operands ?? [])
         : [baseline];
-  const items = nodes.flatMap(node => {
+  function describe(
+    node: DeepReadonly<FilterDraftNode>,
+    fields: readonly FilterFieldDefinition[],
+  ): ReturnType<typeof describeRecordFilter> | undefined {
     const result = compileFilterDraft(
       node,
-      definition.fields,
+      fields,
       definition.allowedOperators,
       engine.filterCompilers,
       definition.filterEditors,
+      definition.timeZone,
     );
-    if (!result.expression || result.expression.op === FilterOperator.MATCH_ALL)
-      return [];
+    if (
+      !result.expression ||
+      (result.expression.op === FilterOperator.MATCH_ALL &&
+        node.op !== FilterOperator.MATCH_ALL)
+    )
+      return undefined;
+    const field = fields.find(field => field.field === node.field);
+    const editor = filterComponentReference(
+      node,
+      field,
+      definition.filterEditors,
+    );
+    const builtin =
+      editor.name === 'builtin' ||
+      (!Object.prototype.hasOwnProperty.call(
+        engine.filterCompilers,
+        editor.name,
+      ) &&
+        getBuiltinFilterCompiler(editor.name) !== undefined);
+    return describeRecordFilter(
+      result.expression,
+      fields,
+      {
+        node,
+        timeZone: definition.timeZone,
+        showTime: builtin ? editor.options?.showTime === true : undefined,
+        operands: node.operands?.flatMap(
+          child => describe(child, fields) ?? [],
+        ),
+        predicate: node.predicate
+          ? describe(node.predicate, field?.fields ?? [])
+          : undefined,
+      },
+      false,
+    );
+  }
+  const items = nodes.flatMap(node => {
+    const summary = describe(node, definition.fields);
+    if (!summary || node.op === FilterOperator.MATCH_ALL) return [];
     let clearable = false;
     try {
       clearable = !sameFilterDraft(
@@ -65,6 +113,7 @@ export function RecordAppliedFilters({
           definition.fields,
           engine.filterCompilers,
           definition.filterEditors,
+          definition.timeZone,
         ),
       );
     } catch {
@@ -73,7 +122,7 @@ export function RecordAppliedFilters({
     return [
       {
         id: node.id,
-        text: describeRecordFilter(result.expression, definition.fields).text,
+        text: summary.text,
         clearable,
       },
     ];
@@ -104,6 +153,7 @@ export function RecordAppliedFilters({
         state.definition.fields,
         engine.filterCompilers,
         state.definition.filterEditors,
+        state.definition.timeZone,
       );
       if (sameFilterDraft(node, cleared)) return;
       const draft = replaceFilterNode(root, nodeId, cleared);
@@ -114,6 +164,7 @@ export function RecordAppliedFilters({
         state.definition.allowedOperators,
         engine.filterCompilers,
         state.definition.filterEditors,
+        state.definition.timeZone,
       );
       if (!result.expression)
         throw new Error(result.errors[0]?.message ?? '无法清空此筛选条件值');

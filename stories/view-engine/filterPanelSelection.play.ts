@@ -114,7 +114,7 @@ export const playLogicalGroupMenu: NonNullable<Story['play']> = async ({
   await userEvent.click(picker.getByRole('checkbox', { name: '订单金额' }));
   await userEvent.click(picker.getByRole('button', { name: '完成' }));
   await waitFor(() => expect(page.queryByRole('dialog')).toBeNull());
-  await userEvent.click(canvas.getByRole('combobox', { name: '订单状态值' }));
+  await userEvent.click(canvas.getByRole('combobox', { name: '订单状态' }));
   await userEvent.click(await page.findByRole('option', { name: '待处理' }));
   await userEvent.type(
     canvas.getByRole('textbox', { name: '订单金额值' }),

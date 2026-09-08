@@ -11,10 +11,13 @@
  * limitations under the License.
  */
 import '@ahoo-wang/fetcher-view-engine/styles.css';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import displayMeta, {
   DarkDateTimeFilter as DisplayDarkDateTimeFilter,
   DateTimeFilter as DisplayDateTimeFilter,
+  DateRange as DisplayDateRange,
+  DateTimeRange as DisplayDateTimeRange,
+  DarkDateTimeRange as DisplayDarkDateTimeRange,
   UnsetValue as DisplayUnsetValue,
 } from './DateTime.stories.js';
 import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
@@ -28,6 +31,149 @@ const meta = {
 export default meta;
 
 type Story = RegressionStoryObj<typeof displayMeta>;
+
+export const DateRange: Story = {
+  ...DisplayDateRange,
+  tags: ['!dev', '!autodocs', 'test'],
+  play: async ({ canvasElement, args }) => {
+    if (args.disabled) return;
+    const canvas = within(canvasElement),
+      page = within(canvasElement.ownerDocument.body);
+    await expect(canvas.queryAllByRole('textbox')).toHaveLength(0);
+    await userEvent.click(
+      canvas.getByRole('button', { name: /创建日期日期范围/ }),
+    );
+    await userEvent.click(
+      await page.findByRole('button', { name: /^2026年9月29日 星期二/ }),
+    );
+    await expect(canvas.getByRole('alert')).toBeVisible();
+    await expect(
+      page.getByRole('dialog', { name: '创建日期日期范围' }),
+    ).toBeVisible();
+    await userEvent.click(
+      within(page.getByRole('grid', { name: '2026年10月' })).getByRole(
+        'button',
+        {
+          name: /^2026年10月2日 星期五/,
+        },
+      ),
+    );
+    await expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
+    await expect(canvas.getByLabelText('区间输入值')).toHaveTextContent(
+      '"lowerBound":"2026-09-29","upperBound":"2026-10-02"',
+    );
+    await userEvent.click(
+      canvas.getByRole('button', { name: /创建日期日期范围/ }),
+    );
+    await userEvent.click(
+      await page.findByRole('button', { name: '清空区间' }),
+    );
+    await expect(canvas.getByLabelText('区间输入值')).toHaveTextContent('{}');
+  },
+};
+
+export const DateTimeRange: Story = {
+  ...DisplayDateTimeRange,
+  tags: ['!dev', '!autodocs', 'test'],
+  play: async ({ canvasElement, args }) => {
+    if (args.disabled) return;
+    const canvas = within(canvasElement),
+      page = within(canvasElement.ownerDocument.body);
+    const output = canvas.getByLabelText('区间输入值');
+    const initial = output.textContent!;
+    await expect(canvas.queryAllByRole('textbox')).toHaveLength(0);
+    await userEvent.click(
+      canvas.getByRole('button', { name: /创建时间日期范围/ }),
+    );
+    const dialog = await page.findByRole('dialog', {
+      name: '创建时间日期范围',
+    });
+    const popup = within(dialog);
+    await expect(popup.getAllByRole('grid')).toHaveLength(1);
+    await expect(
+      popup.getByRole('textbox', { name: '创建时间开始时间' }),
+    ).toHaveValue('09:30:45');
+    await expect(
+      popup.getByRole('textbox', { name: '创建时间结束时间' }),
+    ).toHaveValue('10:40:50');
+    await userEvent.click(
+      await page.findByRole('button', { name: /^2026年9月5日 星期六/ }),
+    );
+    await userEvent.click(
+      page.getByRole('button', { name: /^2026年9月5日 星期六/ }),
+    );
+    await userEvent.clear(
+      popup.getByRole('textbox', { name: '创建时间结束时间' }),
+    );
+    await userEvent.type(
+      popup.getByRole('textbox', { name: '创建时间结束时间' }),
+      '12:40:50',
+    );
+    await expect(output).toHaveTextContent(initial);
+    await userEvent.click(
+      popup.getByRole('button', { name: '确定', exact: true }),
+    );
+    await waitFor(() =>
+      expect(page.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await expect(output).toHaveTextContent('"date":"2026-09-05"');
+    await expect(output).toHaveTextContent('"offsetMinutes":-480');
+    await expect(output).toHaveTextContent('"time":"12:40:50"');
+    await expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
+    const confirmed = output.textContent!;
+    await userEvent.click(
+      canvas.getByRole('button', { name: /创建时间日期范围/ }),
+    );
+    await page.findByRole('dialog', { name: '创建时间日期范围' });
+    await userEvent.clear(
+      page.getByRole('textbox', { name: '创建时间结束时间' }),
+    );
+    await userEvent.type(
+      page.getByRole('textbox', { name: '创建时间结束时间' }),
+      '12:',
+    );
+    await userEvent.click(
+      page.getByRole('button', { name: '确定', exact: true }),
+    );
+    const error = page.getByRole('alert');
+    await expect(error).toBeVisible();
+    await expect(
+      page.getByRole('textbox', { name: '创建时间结束时间' }),
+    ).toHaveValue('12:');
+    await expect(
+      page.getByRole('textbox', { name: '创建时间结束时间' }),
+    ).toHaveAttribute('aria-describedby', error.id);
+    await expect(
+      page.getByRole('textbox', { name: '创建时间结束日期' }),
+    ).toHaveAttribute('aria-describedby', error.id);
+    await expect(output).toHaveTextContent(confirmed);
+    await userEvent.click(
+      page.getByRole('button', { name: '取消', exact: true }),
+    );
+    await waitFor(() =>
+      expect(page.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await userEvent.click(
+      canvas.getByRole('button', { name: /创建时间日期范围/ }),
+    );
+    await page.findByRole('dialog', { name: '创建时间日期范围' });
+    const time = page.getByRole('textbox', { name: '创建时间结束时间' });
+    await expect(time).toHaveValue('12:40:50');
+    await userEvent.clear(time);
+    await userEvent.type(time, '13:10');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(page.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await expect(output).toHaveTextContent(confirmed);
+  },
+};
+
+export const DarkDateTimeRange: Story = {
+  ...DisplayDarkDateTimeRange,
+  tags: ['!dev', '!autodocs', 'test'],
+  play: DateTimeRange.play,
+};
 
 export const DateTimeFilter: Story = {
   ...DisplayDateTimeFilter,

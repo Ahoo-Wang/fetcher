@@ -168,7 +168,7 @@ const origin = process.argv[2] ?? 'http://127.0.0.1:6006';
       await page.getByTestId('builtin-saved').textContent(),
     );
     const multi = persisted.config.filters.root.operands.find(
-      node => node.component.name === 'fve/remote-multi-select',
+      node => node.component.name === 'remote-multi-select',
     );
     assert.deepEqual(multi.props.values, ['u1', 'u3']);
     assert.deepEqual(
@@ -217,7 +217,7 @@ const origin = process.argv[2] ?? 'http://127.0.0.1:6006';
       await page.getByTestId('builtin-cells-saved').textContent(),
     ).config.presentation.table.columns;
     assert.deepEqual(cellConfig.find(column => column.id === 'id').renderer, {
-      name: 'fve/text',
+      name: 'text',
       options: { ellipsis: true, copyable: true },
     });
     assert.equal(

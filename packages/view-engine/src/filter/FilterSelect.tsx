@@ -33,6 +33,8 @@ export interface FilterSelectProps<Value extends string = string> {
   placeholder?: string;
   inline?: boolean;
   disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
 }
 
 export function FilterSelect<Value extends string>({
@@ -44,6 +46,8 @@ export function FilterSelect<Value extends string>({
   placeholder,
   inline = false,
   disabled = false,
+  invalid,
+  errorId,
 }: FilterSelectProps<Value>) {
   const content = <SelectValue placeholder={placeholder} />;
 
@@ -64,6 +68,8 @@ export function FilterSelect<Value extends string>({
       {inline ? (
         <SelectPrimitive.Trigger
           aria-label={label}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? errorId : undefined}
           data-slot="input-group-control"
           render={<InputGroupButton size="sm" />}
         >
@@ -73,7 +79,13 @@ export function FilterSelect<Value extends string>({
           </SelectPrimitive.Icon>
         </SelectPrimitive.Trigger>
       ) : (
-        <SelectTrigger aria-label={label}>{content}</SelectTrigger>
+        <SelectTrigger
+          aria-label={label}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? errorId : undefined}
+        >
+          {content}
+        </SelectTrigger>
       )}
       <SelectContent alignItemWithTrigger={false} align="start">
         <SelectGroup>

@@ -11,12 +11,16 @@
  * limitations under the License.
  */
 
-import { TZDate } from '@date-fns/tz';
 import type {
-  FilterDateTimeValue,
   FilterFieldDefinition,
   FilterScalarDraftValue,
 } from './filterModel.js';
+import {
+  calendarDate,
+  dateText,
+  dateTimeValue,
+  dateTimeToSeconds,
+} from './filterDateTimeValue.js';
 import { FilterDatePicker } from './FilterDatePicker.js';
 import { FilterSelect } from './FilterSelect.js';
 import { FilterTimeInput } from './FilterTimeInput.js';
@@ -47,51 +51,6 @@ function typedValue(value: unknown): value is FilterScalarDraftValue {
   );
 }
 
-function dateText(date: Date): string {
-  return [
-    String(date.getFullYear()).padStart(4, '0'),
-    String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0'),
-  ].join('-');
-}
-
-function calendarDate(value: string | undefined): Date | undefined {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
-  const [year, month, day] = value.split('-').map(Number);
-  const date = new Date(0);
-  date.setFullYear(year, month - 1, day);
-  date.setHours(0, 0, 0, 0);
-  return dateText(date) === value ? date : undefined;
-}
-
-function dateTimeValue(value: unknown, timeZone?: string): FilterDateTimeValue {
-  if (value === undefined || value === null) return {};
-  if (typeof value === 'object' && !Array.isArray(value))
-    return value as FilterDateTimeValue;
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    try {
-      const date = timeZone ? new TZDate(value, timeZone) : new Date(value);
-      if (Number.isFinite(date.getTime())) {
-        const time = [date.getHours(), date.getMinutes(), date.getSeconds()]
-          .map(part => String(part).padStart(2, '0'))
-          .join(':');
-        return {
-          date: dateText(date),
-          offsetMinutes: date.getTimezoneOffset(),
-          time:
-            time +
-            (date.getMilliseconds()
-              ? `.${String(date.getMilliseconds()).padStart(3, '0')}`
-              : ''),
-        };
-      }
-    } catch {
-      /* The compiler reports invalid field timezone metadata. */
-    }
-  }
-  return { date: textValue(value) };
-}
-
 export function ScalarEditor({
   value,
   label,
@@ -99,6 +58,10 @@ export function ScalarEditor({
   field,
   nullable = false,
   disabled,
+  showTime = false,
+  timeZone,
+  invalid,
+  errorId,
   onChange,
 }: {
   value: unknown;
@@ -107,6 +70,10 @@ export function ScalarEditor({
   field?: FilterFieldDefinition;
   nullable?: boolean;
   disabled?: boolean;
+  showTime?: boolean;
+  timeZone?: string;
+  invalid?: boolean;
+  errorId?: string;
   onChange(value: unknown): void;
 }) {
   const wrapped = typedValue(value);
@@ -141,6 +108,8 @@ export function ScalarEditor({
       <span className="fve:inline-flex fve:max-w-full fve:flex-wrap fve:items-center">
         {freeType && !field?.options && (
           <FilterSelect
+            invalid={invalid}
+            errorId={errorId}
             label={`${label}类型`}
             value={kind}
             options={scalarTypes}
@@ -150,6 +119,8 @@ export function ScalarEditor({
           />
         )}
         <FilterSelect
+          invalid={invalid}
+          errorId={errorId}
           label={label}
           placeholder={incompatible ? `已有值：${textValue(raw)}` : '未设置'}
           value={
@@ -176,7 +147,7 @@ export function ScalarEditor({
   if (kind === 'date' || kind === 'datetime') {
     const parts =
       kind === 'datetime'
-        ? dateTimeValue(raw, field?.timeZone)
+        ? dateTimeValue(showTime ? dateTimeToSeconds(raw) : raw, timeZone)
         : { date: textValue(raw) || undefined };
     const updateDate = (date: string | undefined) =>
       onChange(kind === 'datetime' ? { ...parts, date } : date);
@@ -184,6 +155,8 @@ export function ScalarEditor({
       <span className="fve:inline-flex fve:max-w-full fve:flex-wrap fve:items-center">
         <InputGroupInput
           aria-label={`${dateLabel}日期`}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? errorId : undefined}
           placeholder={raw === null ? '空值' : 'YYYY-MM-DD'}
           value={parts.date ?? ''}
           disabled={disabled}
@@ -191,14 +164,18 @@ export function ScalarEditor({
           onChange={event => updateDate(event.target.value || undefined)}
         />
         <FilterDatePicker
+          invalid={invalid}
+          errorId={errorId}
           label={`${dateLabel}日历`}
           value={calendarDate(parts.date)}
           disabled={disabled}
           inline
           onValueChange={date => updateDate(date ? dateText(date) : undefined)}
         />
-        {kind === 'datetime' && (
+        {kind === 'datetime' && showTime && (
           <FilterTimeInput
+            invalid={invalid}
+            errorId={errorId}
             label={`${dateLabel}时间`}
             value={parts.time}
             disabled={disabled}
@@ -219,6 +196,8 @@ export function ScalarEditor({
     <span className="fve:inline-flex fve:max-w-full fve:flex-wrap fve:items-center">
       {freeType && (
         <FilterSelect
+          invalid={invalid}
+          errorId={errorId}
           label={`${label}类型`}
           value={kind}
           options={scalarTypes}
@@ -233,7 +212,8 @@ export function ScalarEditor({
         disabled={disabled}
         inputMode={kind === 'number' ? 'decimal' : undefined}
         placeholder={raw === null ? '空值' : raw === '' ? '空字符串' : '未设置'}
-        aria-invalid={incompatible || undefined}
+        aria-invalid={invalid || incompatible || undefined}
+        aria-describedby={invalid ? errorId : undefined}
         className="fve:w-32 fve:flex-none"
         onChange={event => {
           const next = event.target.value || undefined;

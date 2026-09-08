@@ -42,11 +42,13 @@ import { build } from './filterProtocol.js';
 export function filterCompilerContext(
   node: DeepReadonly<FilterComponentConfig>,
   fields: readonly FilterFieldDefinition[],
+  timeZone?: string,
 ): FilterCompilerContext {
   const field = fields.find(field => field.field === node.field);
   return copy({
     operator: node.operator,
     fields,
+    timeZone,
     ...(field ? { field } : {}),
     ...(node.component.options ? { options: node.component.options } : {}),
   });
@@ -56,6 +58,8 @@ function validateOutput(
   node: DeepReadonly<FilterComponentConfig>,
   fields: readonly FilterFieldDefinition[],
   allowedOperators?: readonly Op[],
+  timeZone?: string,
+  builtin = false,
 ): FilterExpression {
   validateFilterJson(expression);
   const draft = createFilterDraft(expression);
@@ -71,7 +75,20 @@ function validateOutput(
       throw new TypeError('自定义筛选器不能改变绑定字段或条件容器。');
   }
   binding(draft);
-  const result = compileBuiltinDraft(draft, fields, allowedOperators);
+  // The chosen built-in operator was checked before lowering calendar days.
+  // Generated range/group operators express that same authorized condition.
+  const result = compileBuiltinDraft(
+    draft,
+    builtin
+      ? fields.map(field => ({
+          ...field,
+          operators: undefined,
+          editor: undefined,
+        }))
+      : fields,
+    builtin ? undefined : allowedOperators,
+    timeZone,
+  );
   if (result.errors.length)
     throw new TypeError(result.errors.map(error => error.message).join('；'));
   return result.expression!;
@@ -82,10 +99,12 @@ export function compileFilterConfiguration(
   fields: readonly FilterFieldDefinition[],
   allowedOperators?: readonly Op[],
   compilers?: FilterCompilerRegistry,
+  timeZone?: string,
 ): FilterCompileResult {
   const errors: FilterValidationError[] = [];
   try {
     validateFilterConfiguration(config);
+    new Intl.DateTimeFormat('en', { timeZone });
   } catch (error) {
     return {
       errors: [
@@ -160,10 +179,18 @@ export function compileFilterConfiguration(
         throw new TypeError(`未注册筛选编译器：${node.component.name}`);
       const expression = compiler.compile(
         copy(node.props),
-        filterCompilerContext(node, scope),
+        filterCompilerContext(node, scope, timeZone),
       );
       if (expression === undefined) return undefined;
-      return validateOutput(expression, node, scope, allowedOperators);
+      return validateOutput(
+        expression,
+        node,
+        scope,
+        allowedOperators,
+        timeZone,
+        node.component.name === 'builtin' ||
+          compiler === getBuiltinFilterCompiler(node.component.name),
+      );
     } catch (error) {
       errors.push({
         id: node.id,

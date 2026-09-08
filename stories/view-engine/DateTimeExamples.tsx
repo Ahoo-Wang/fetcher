@@ -14,12 +14,14 @@
 import {
   FieldFilter,
   FilterDatePicker,
+  FilterDateTimeRange,
   FilterTimeInput,
   InputGroupButton,
+  type FilterDateTimeRangeProps,
 } from '@ahoo-wang/fetcher-view-engine/react';
 import type { FilterExpression } from '@ahoo-wang/fetcher-wow';
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
 export interface DemoArgs {
   appearance: 'light' | 'dark';
@@ -72,8 +74,63 @@ export function DatePickerDemo(args: DemoArgs) {
   );
 }
 
+export function DateRangeDemo(args: DemoArgs & { datetime?: boolean }) {
+  const field = {
+    field: 'created',
+    label: args.datetime ? '创建时间' : '创建日期',
+    type: args.datetime ? ('datetime' as const) : ('date' as const),
+  };
+  const [value, setValue] = useState<FilterDateTimeRangeProps['value']>(
+    args.datetime
+      ? {
+          lowerBound: Date.parse('2026-09-01T01:30:45Z'),
+          upperBound: Date.parse('2026-09-03T02:40:50Z'),
+        }
+      : { lowerBound: '2026-09-01', upperBound: '2026-09-03' },
+  );
+  const [error, setError] = useState<string>();
+  const errorId = useId();
+  return (
+    <Frame appearance={args.appearance}>
+      <FieldFilter
+        field={field}
+        operator={FilterOperator.BETWEEN}
+        operators={[{ value: FilterOperator.BETWEEN, label: '区间' }]}
+        onOperatorChange={() => {}}
+        disabled={args.disabled}
+      >
+        <FilterDateTimeRange
+          field={field}
+          showTime={args.datetime}
+          timeZone="Asia/Shanghai"
+          value={value}
+          invalid={!!error}
+          errorId={errorId}
+          onValueChange={setValue}
+          onValidityChange={(valid, message) =>
+            setError(valid ? undefined : message)
+          }
+          disabled={args.disabled}
+        />
+      </FieldFilter>
+      {error && (
+        <p id={errorId} role="alert">
+          {error}
+        </p>
+      )}
+      <output
+        aria-label="区间输入值"
+        aria-live="polite"
+        style={{ overflowWrap: 'anywhere' }}
+      >
+        {JSON.stringify(value)}
+      </output>
+    </Frame>
+  );
+}
+
 export function TimeInputDemo(args: DemoArgs & { initial?: string }) {
-  const [value, setValue] = useState(args.initial ?? '09:30:45.123456789');
+  const [value, setValue] = useState(args.initial ?? '09:30:45');
   return (
     <Frame appearance={args.appearance}>
       <FilterTimeInput
@@ -97,14 +154,8 @@ function queryValue(
   time: string,
 ): number | undefined | null {
   if (date === undefined && time === '') return undefined;
-  const match =
-    /^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,9}))?)?$/.exec(time);
-  if (
-    date === undefined ||
-    !Number.isFinite(date.getTime()) ||
-    !match ||
-    /[1-9]/.test((match?.[4] ?? '').slice(3))
-  )
+  const match = /^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/.exec(time);
+  if (date === undefined || !Number.isFinite(date.getTime()) || !match)
     return null;
   const result = new Date(date);
   const [hour, minute, second] = [
@@ -112,12 +163,7 @@ function queryValue(
     Number(match[2]),
     Number(match[3] ?? 0),
   ];
-  result.setHours(
-    hour,
-    minute,
-    second,
-    Number((match[4] ?? '').padEnd(3, '0').slice(0, 3)),
-  );
+  result.setHours(hour, minute, second, 0);
   if (
     result.getDate() !== date.getDate() ||
     result.getHours() !== hour ||
@@ -192,7 +238,7 @@ export function DateTimeFilterDemo(args: DemoArgs & { unset?: boolean }) {
         <p role="alert" style={{ margin: 0, color: 'var(--fve-destructive)' }}>
           {date === undefined || time === ''
             ? '请补全日期和时间，或清空两项以取消此筛选。'
-            : '已填写的日期或时间格式无效（此示例字段精确到毫秒）。'}
+            : '已填写的日期或时间格式无效（时间精确到秒）。'}
         </p>
       )}
       {value === undefined && <span>未设置值，查询时不限制创建时间。</span>}

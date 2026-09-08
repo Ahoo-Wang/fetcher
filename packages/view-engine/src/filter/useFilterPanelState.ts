@@ -38,6 +38,7 @@ import {
 } from './filterDraftTransitions.js';
 import {
   message,
+  ownValue,
   without,
   readValue,
   readInitialFilterPanelState,
@@ -82,6 +83,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
     locations,
     compiled,
     resolutions,
+    clearable,
     issues,
     valid,
     pending,
@@ -128,6 +130,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
         props.allowedOperators,
         props.extensions?.filters,
         props.editors,
+        props.timeZone,
       );
       if (applied.expression && sameFilterQuery(applied.expression, value)) {
         // The owner supplied the editing baseline for this value; keep its draft and editor IDs.
@@ -153,6 +156,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
     props.allowedOperators,
     props.extensions?.filters,
     props.editors,
+    props.timeZone,
     fields,
     loadError,
     onDraftChange,
@@ -209,11 +213,12 @@ export function useFilterPanelState(props: FilterPanelProps) {
           scope,
           props.extensions?.filters,
           props.editors,
+          props.timeZone,
         ),
       );
       setEditorEpochs(previous => ({
         ...previous,
-        [node.id]: (previous[node.id] ?? 0) + 1,
+        [node.id]: (ownValue(previous, node.id) ?? 0) + 1,
       }));
     } catch (error) {
       setEditorOutputErrors(previous => ({
@@ -241,7 +246,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
       ].some(key => node[key as keyof FilterDraftNode] !== undefined)
     ) {
       setEditorOutputErrors(previous =>
-        previous[node.id] !== undefined
+        ownValue(previous, node.id) !== undefined
           ? previous
           : {
               ...previous,
@@ -313,6 +318,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
     setEpoch(count => count + 1);
   }
   function clear() {
+    if (disabled || !clearable) return;
     try {
       change(
         clearFilterDraftValues(
@@ -320,6 +326,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
           fields,
           props.extensions?.filters,
           props.editors,
+          props.timeZone,
         ),
       );
     } catch (error) {
@@ -344,6 +351,9 @@ export function useFilterPanelState(props: FilterPanelProps) {
     pending,
     loadError,
     applyError,
+    clearReason: clearable
+      ? undefined
+      : '当前包含不支持清空值的筛选器，请修改或删除对应条件。',
     epoch,
     editorEpochs,
     builtIn,

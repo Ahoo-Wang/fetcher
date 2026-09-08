@@ -43,10 +43,14 @@ export const definition: ViewDefinition = {
   title: '订单管理',
   sourceId: 'orders',
   rowKey: 'id',
+  timeZone: 'Asia/Shanghai',
   allowedOperators: [
     FilterOperator.MATCH_ALL,
     FilterOperator.AND,
     FilterOperator.OR,
+    FilterOperator.IN,
+    FilterOperator.NOT_IN,
+    FilterOperator.BETWEEN,
     ...numberOperators,
   ],
   fields: [
@@ -55,7 +59,9 @@ export const definition: ViewDefinition = {
       label: '订单编号',
       type: 'string',
       sortable: true,
-      operators: equalityOperators,
+      operators: [FilterOperator.IN, FilterOperator.NOT_IN],
+      editor: { name: 'text-values' },
+      cellRenderer: { name: 'text', options: { ellipsis: true } },
     },
     {
       field: 'customer',
@@ -64,6 +70,11 @@ export const definition: ViewDefinition = {
       type: 'string',
       sortable: true,
       operators: equalityOperators,
+      editor: {
+        name: 'remote-select',
+        options: { source: 'customers', pageSize: 3 },
+      },
+      cellRenderer: { name: 'text', options: { ellipsis: true } },
     },
     {
       field: 'amount',
@@ -73,7 +84,7 @@ export const definition: ViewDefinition = {
       sortable: true,
       operators: numberOperators,
       numberFormat: { style: 'currency', currency: 'CNY' },
-      cellRenderer: { name: 'order-amount' },
+      cellRenderer: { name: 'number' },
     },
     {
       field: 'status',
@@ -81,16 +92,31 @@ export const definition: ViewDefinition = {
       label: '订单状态',
       type: 'string',
       options: statuses,
-      operators: equalityOperators,
-      cellRenderer: { name: 'order-status' },
+      operators: [FilterOperator.IN, FilterOperator.NOT_IN],
+      editor: { name: 'multi-select' },
+      cellRenderer: {
+        name: 'status',
+        options: {
+          tones: [
+            { value: 'pending', tone: 'warning' },
+            { value: 'processing', tone: 'info' },
+            { value: 'completed', tone: 'success' },
+          ],
+        },
+      },
     },
     {
       field: 'createdAt',
       group: '时间',
       label: '下单时间',
-      type: 'string',
+      type: 'datetime',
       sortable: true,
-      operators: equalityOperators,
+      operators: [FilterOperator.BETWEEN],
+      editor: { name: 'datetime-range' },
+      cellRenderer: {
+        name: 'date-time',
+        options: { dateStyle: 'short', timeStyle: 'short' },
+      },
     },
   ],
   recordActions: {
@@ -119,7 +145,7 @@ export const orders: RecordData[] = amounts.map((amount, index) => ({
   customer: customers[index % customers.length],
   amount,
   status: statuses[index % statuses.length].value,
-  createdAt: `2026-09-06 ${String(9 + Math.floor(index / 6)).padStart(2, '0')}:${String((index % 6) * 10).padStart(2, '0')}`,
+  createdAt: Date.UTC(2026, 8, 6, 1 + Math.floor(index / 6), (index % 6) * 10),
   owner: ['林晨', '顾嘉', '陈宁'][index % 3],
   region: ['上海', '杭州', '深圳'][index % 3],
 }));
@@ -188,13 +214,12 @@ export function makeInstances(
       filters: createFilterConfiguration(
         createFilterDraft(
           filter.and([
-            filter.or([
-              filter.eq('status', 'pending'),
-              filter.eq('status', 'processing'),
-            ]),
+            filter.isIn('status', ['pending', 'processing']),
             filter.gte('amount', 1000),
           ]),
         ),
+        'simple',
+        definition.fields,
       ),
     },
   };

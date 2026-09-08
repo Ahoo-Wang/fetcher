@@ -231,14 +231,13 @@ it('honors configured numeric precision and shows date-only, zoned datetime and 
       field: 'datetime',
       label: '时间',
       type: 'datetime' as const,
-      timeZone: 'Asia/Shanghai',
     },
     { field: 'absent', label: '空值' },
   ];
   render(
     <RecordTable
       {...props({
-        definition: { ...definition, fields },
+        definition: { ...definition, fields, timeZone: 'America/Los_Angeles' },
         instance: {
           ...instance,
           config: {
@@ -269,6 +268,6 @@ it('honors configured numeric precision and shows date-only, zoned datetime and 
   );
   expect(screen.getByText('1.2345678')).toBeTruthy();
   expect(screen.getByText('2026-09-06')).toBeTruthy();
-  expect(screen.getByText(/20:30:45/)).toBeTruthy();
+  expect(screen.getByText(/05:30:45/)).toBeTruthy();
   expect(screen.getByText('—')).toBeTruthy();
 });

@@ -40,8 +40,16 @@ export function message(error: unknown) {
     '筛选器处理失败。'
   );
 }
+export function ownValue<T>(
+  values: Record<string, T>,
+  id: string,
+): T | undefined {
+  return Object.prototype.hasOwnProperty.call(values, id)
+    ? values[id]
+    : undefined;
+}
 export function without(values: Record<string, string>, id: string) {
-  if (!(id in values)) return values;
+  if (ownValue(values, id) === undefined) return values;
   return Object.fromEntries(
     Object.entries(values).filter(([key]) => key !== id),
   );
@@ -70,6 +78,7 @@ export function readInitialFilterPanelState(props: FilterPanelProps) {
           props.allowedOperators,
           props.extensions?.filters,
           props.editors,
+          props.timeZone,
         )
       : undefined;
   return {

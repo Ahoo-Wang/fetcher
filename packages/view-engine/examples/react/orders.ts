@@ -47,6 +47,7 @@ export const orderDefinition: ViewDefinition = {
       field: 'amount',
       label: '金额',
       type: 'number',
+      numberFormat: { style: 'currency', currency: 'CNY' },
       operators: [],
       summaryFunctions: [],
       cellRenderer: { name: 'money' },
@@ -57,6 +58,15 @@ export const orderDefinition: ViewDefinition = {
       type: 'string',
       operators: [FilterOperator.EQ],
       editor: { name: 'order-status' },
+      cellRenderer: {
+        name: 'status',
+        options: {
+          tones: [
+            { value: 'pending', tone: 'warning' },
+            { value: 'processed', tone: 'success' },
+          ],
+        },
+      },
       options: [
         { value: 'pending', label: '待处理' },
         { value: 'processed', label: '已处理' },

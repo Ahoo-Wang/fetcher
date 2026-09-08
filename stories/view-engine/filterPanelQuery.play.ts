@@ -77,7 +77,7 @@ export const playSavedDateTime: NonNullable<Story['play']> = async ({
   const time = canvas.getByRole('textbox', { name: '创建时间时间' });
   await expect(time).toHaveValue('01:30:00');
   await userEvent.clear(time);
-  await userEvent.type(time, '01:30:00.000');
+  await userEvent.type(time, '01:30:00');
   await userEvent.click(canvas.getByRole('button', { name: '查询' }));
   await expect(canvas.getByTestId('applied-filter')).toHaveTextContent(
     '1793514600000',

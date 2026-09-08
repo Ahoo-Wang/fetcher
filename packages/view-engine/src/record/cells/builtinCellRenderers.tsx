@@ -53,7 +53,11 @@ function TextRenderer(props: CellRendererProps) {
   return (
     <TextCell
       value={props.value}
-      text={formatRecordValue(props.value, props.field)}
+      text={formatRecordValue(
+        props.value,
+        props.field,
+        props.definition.timeZone,
+      )}
       ellipsis={booleanOption(config.ellipsis, 'ellipsis')}
       copyable={booleanOption(config.copyable, 'copyable')}
     />
@@ -123,7 +127,11 @@ function LinkRenderer(props: CellRendererProps) {
   return (
     <LinkCell
       value={props.value}
-      text={formatRecordValue(props.value, props.field)}
+      text={formatRecordValue(
+        props.value,
+        props.field,
+        props.definition.timeZone,
+      )}
       href={href}
       newTab={booleanOption(config.newTab, 'newTab')}
     />
@@ -148,7 +156,7 @@ function DateTimeRenderer(props: CellRendererProps) {
     <DateTimeCell
       value={value}
       type={props.field.type === 'date' ? 'date' : 'datetime'}
-      timeZone={props.field.timeZone}
+      timeZone={props.definition.timeZone}
       locale={config.locale as string | undefined}
       dateStyle={config.dateStyle as Intl.DateTimeFormatOptions['dateStyle']}
       timeStyle={config.timeStyle as Intl.DateTimeFormatOptions['timeStyle']}
@@ -167,10 +175,10 @@ function NumberRenderer(props: CellRendererProps) {
 export const BUILTIN_CELL_RENDERERS: Readonly<
   Record<string, ComponentType<CellRendererProps>>
 > = {
-  'fve/text': TextRenderer,
-  'fve/tags': TagsRenderer,
-  'fve/status': StatusRenderer,
-  'fve/link': LinkRenderer,
-  'fve/date-time': DateTimeRenderer,
-  'fve/number': NumberRenderer,
+  text: TextRenderer,
+  tags: TagsRenderer,
+  status: StatusRenderer,
+  link: LinkRenderer,
+  'date-time': DateTimeRenderer,
+  number: NumberRenderer,
 };

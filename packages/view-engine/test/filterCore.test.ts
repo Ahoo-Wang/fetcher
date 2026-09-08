@@ -26,9 +26,15 @@ import {
   FILTER_OPERATORS,
 } from '../src/filter/filterCore';
 import type { FilterFieldDefinition } from '../src/filter/filterModel';
-import { calendar, compile, expressions, node } from './fixtures/filterCore.js';
+import {
+  calendar,
+  compile,
+  expressions,
+  fields,
+  node,
+} from './fixtures/filterCore.js';
 
-it('covers all 50 Wow operators without inserting optional defaults', () => {
+it('covers all 50 Wow operators with a global timezone and preserves other optional parameters', () => {
   expect(new Set(expressions.map(value => value.op)).size).toBe(50);
   expect(Object.keys(FILTER_OPERATORS).sort()).toEqual(
     Object.values(Op).sort(),
@@ -56,7 +62,9 @@ it('keeps nested order, single-child wrappers, explicit options and independent 
   const draft = createFilterDraft(expression);
   expect(draft.id).not.toBe(createFilterDraft(expression).id);
   expect(draft.operands![0].id).not.toBe(draft.id);
-  expect(compile(draft).expression).toStrictEqual(expression);
+  expect(compile(draft, undefined, '+08:00').expression).toStrictEqual(
+    expression,
+  );
   draft.operands![0].operands![0].fields!.push('amount');
   expect(expression.operands[0]).toEqual(
     filter.or([
@@ -101,7 +109,6 @@ it('does not silently ignore invalid optional parameters or invalid special valu
     node(Op.DELETION, undefined, { state: 'BAD' as DeletionState }),
     node(Op.ID, undefined, { value: 0 }),
     node(Op.TODAY, 'created', { timeUnit: 'BAD' as TimeUnit }),
-    node(Op.TODAY, 'created', { zoneId: '' }),
     node(Op.BEFORE_TODAY, 'created', { time: '25:00' }),
     node(Op.RECENT_DAYS, 'created', { days: '1.5' }),
     node(Op.CONTAINS, 'name', {
@@ -110,6 +117,10 @@ it('does not silently ignore invalid optional parameters or invalid special valu
     }),
   ])
     expect(compile(draft).errors).not.toEqual([]);
+  for (const timeZone of ['', 'Bad/Zone'])
+    expect(
+      compile(node(Op.TODAY, 'created'), undefined, timeZone).errors,
+    ).not.toEqual([]);
 });
 
 it('rejects sparse collection entries, search fields and logical operands', () => {
@@ -179,7 +190,7 @@ it('validates malformed operands, search scope and extraneous operator parameter
     expect(compile(draft).errors).not.toEqual([]);
 });
 
-it('retains every explicit relative-time and string/search option combination', () => {
+it('retains relative-time and string/search options when compiled in the requested global timezone', () => {
   for (const expression of [
     filter.contains('name', '', StringComparison.CASE_SENSITIVE),
     { op: Op.SEARCH, query: 'x', fields: [] },
@@ -192,7 +203,36 @@ it('retains every explicit relative-time and string/search option combination', 
       timeUnit: TimeUnit.SECONDS,
     })),
   ] as FilterExpression[])
-    expect(compile(createFilterDraft(expression)).expression).toStrictEqual(
-      expression,
-    );
+    expect(
+      compile(createFilterDraft(expression), undefined, 'Europe/London')
+        .expression,
+    ).toStrictEqual(expression);
+});
+
+it('uses the global or local timezone for relative filters instead of retained node parameters', () => {
+  const draft = node(Op.BEFORE_TODAY, 'created', {
+    time: '12:30:59.123456789',
+    zoneId: 'UTC',
+    datePattern: 'yyyy-MM-dd',
+    timeUnit: TimeUnit.SECONDS,
+  });
+  for (const timeZone of ['America/New_York', undefined])
+    expect(
+      compileFilterDraft(
+        draft,
+        fields,
+        undefined,
+        undefined,
+        undefined,
+        timeZone,
+      ).expression,
+    ).toEqual({
+      op: Op.BEFORE_TODAY,
+      field: 'created',
+      time: '12:30:59',
+      zoneId: timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      datePattern: 'yyyy-MM-dd',
+      timeUnit: TimeUnit.SECONDS,
+    });
+  expect(draft.zoneId).toBe('UTC');
 });

@@ -17,7 +17,6 @@ import {
   completeExtensions,
   customExtensions,
   customFields,
-  searchableExtensions,
   searchableFields,
 } from './FilterCustomEditors.js';
 import { OperatorGallery } from './FilterOperatorGallery.js';
@@ -109,27 +108,19 @@ export const Empty: Story = {
 };
 
 export const SearchableSelect: Story = {
-  name: '自定义筛选器 · 内置搜索 Select',
+  name: '内置筛选器 · 搜索 Select',
   render: args => (
     <Scenario
       {...args}
       definitions={searchableFields}
-      extensions={searchableExtensions}
       initial={filter.eq('customer', 'customer-1')}
-      initialDraft={{
-        id: 'customer-search',
-        op: FilterOperator.EQ,
-        field: 'customer',
-        editor: { name: 'customer-search' },
-        props: { value: 'customer-1' },
-      }}
     />
   ),
   parameters: {
     docs: {
       description: {
         story:
-          '通过 extensions.filters 注册客户选择器。下拉内使用 Base UI Combobox 的内置搜索，搜索词只过滤候选，选中后更新组件属性，由注册中的 compile 生成 EQ；点击查询才应用条件。',
+          '字段直接配置 editor.name: select 和 options，无需注册组件。内置搜索只过滤候选，选中后保存组件属性，点击查询才应用条件。',
       },
     },
   },
@@ -179,12 +170,13 @@ export const SavedDateTime: Story = {
     <Scenario
       {...args}
       initial={filter.eq('createdAt', Date.parse('2026-11-01T06:30:00Z'))}
+      timeZone="America/New_York"
       definitions={[
         {
           field: 'createdAt',
           label: '创建时间',
           type: 'datetime',
-          timeZone: 'America/New_York',
+          editor: { name: 'builtin', options: { showTime: true } },
         },
       ]}
     />

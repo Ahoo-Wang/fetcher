@@ -54,6 +54,16 @@ const instance: ViewInstance = {
   },
 };
 describe('record boundaries', () => {
+  it('validates one definition timezone for all fields', () => {
+    for (const timeZone of [undefined, 'UTC', 'Asia/Shanghai', '+08:00'])
+      expect(() =>
+        validateViewDefinition({ ...definition, timeZone }),
+      ).not.toThrow();
+    for (const timeZone of ['', 'Bad/Zone', 8, null])
+      expect(() =>
+        validateViewDefinition({ ...definition, timeZone }),
+      ).toThrow();
+  });
   it('validates numeric display options when loading field definitions', () => {
     for (const numberFormat of [
       null,

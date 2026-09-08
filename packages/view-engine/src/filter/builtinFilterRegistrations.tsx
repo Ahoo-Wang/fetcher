@@ -54,6 +54,8 @@ function LocalSingle(props: FilterEditorProps) {
       values={value === null ? [] : [value]}
       inline
       disabled={props.disabled}
+      invalid={!!props.errors?.length}
+      errorId={props.errorId}
       onValuesChange={(values, items) =>
         props.onChange({
           ...props.props,
@@ -74,6 +76,8 @@ function LocalMulti(props: FilterEditorProps) {
       multiple
       inline
       disabled={props.disabled}
+      invalid={!!props.errors?.length}
+      errorId={props.errorId}
       onValuesChange={(values, items) =>
         props.onChange({
           ...props.props,
@@ -109,6 +113,8 @@ function Remote({
     selectedOptions: selected(props),
     label: props.field?.label ?? '选择',
     disabled: props.disabled,
+    invalid: !!props.errors?.length,
+    errorId: props.errorId,
     inline: true,
     pageSize,
     debounceMs,
@@ -156,6 +162,8 @@ function TextValues(props: FilterEditorProps) {
       label={props.field?.label ?? '文本'}
       value={list}
       disabled={props.disabled}
+      invalid={!!props.errors?.length}
+      errorId={props.errorId}
       onValidityChange={props.onValidityChange}
       onValueChange={values => props.onChange({ ...props.props, values })}
     />
@@ -166,45 +174,49 @@ function Range(props: FilterEditorProps) {
   return (
     <FilterDateTimeRange
       field={props.field}
+      showTime={props.options?.showTime === true}
+      timeZone={props.timeZone}
       value={props.props}
       disabled={props.disabled}
+      invalid={!!props.errors?.length}
+      errorId={props.errorId}
       onValueChange={value => props.onChange({ ...props.props, ...value })}
     />
   );
 }
 const registrations: Readonly<Record<string, FilterRegistration>> = {
-  'fve/select': {
-    ...getBuiltinFilterCompiler('fve/select')!,
+  select: {
+    ...getBuiltinFilterCompiler('select')!,
     component: LocalSingle,
     modes: ['simple', 'advanced'],
     supports: (_, c) => [Op.EQ, Op.NE].includes(c.operator),
   },
-  'fve/multi-select': {
-    ...getBuiltinFilterCompiler('fve/multi-select')!,
+  'multi-select': {
+    ...getBuiltinFilterCompiler('multi-select')!,
     component: LocalMulti,
     modes: ['simple', 'advanced'],
     supports: (_, c) => [Op.IN, Op.NOT_IN].includes(c.operator),
   },
-  'fve/remote-select': {
-    ...getBuiltinFilterCompiler('fve/remote-select')!,
+  'remote-select': {
+    ...getBuiltinFilterCompiler('remote-select')!,
     component: RemoteSingle,
     modes: ['simple', 'advanced'],
     supports: (_, c) => [Op.EQ, Op.NE].includes(c.operator),
   },
-  'fve/remote-multi-select': {
-    ...getBuiltinFilterCompiler('fve/remote-multi-select')!,
+  'remote-multi-select': {
+    ...getBuiltinFilterCompiler('remote-multi-select')!,
     component: RemoteMulti,
     modes: ['simple', 'advanced'],
     supports: (_, c) => [Op.IN, Op.NOT_IN].includes(c.operator),
   },
-  'fve/text-values': {
-    ...getBuiltinFilterCompiler('fve/text-values')!,
+  'text-values': {
+    ...getBuiltinFilterCompiler('text-values')!,
     component: TextValues,
     modes: ['simple', 'advanced'],
     supports: (_, c) => [Op.IN, Op.NOT_IN].includes(c.operator),
   },
-  'fve/datetime-range': {
-    ...getBuiltinFilterCompiler('fve/datetime-range')!,
+  'datetime-range': {
+    ...getBuiltinFilterCompiler('datetime-range')!,
     component: Range,
     modes: ['simple', 'advanced'],
     supports: (_, c) =>

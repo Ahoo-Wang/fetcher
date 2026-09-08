@@ -29,6 +29,9 @@ import type {
 
 /** UI-library-independent value editor. Inputs are read-only snapshots, not applied query state. */
 export interface FilterEditorProps {
+  timeZone?: string;
+  errors?: readonly string[];
+  errorId?: string;
   optionSources?: Readonly<Record<string, FilterOptionSource>>;
   props: DeepReadonly<FilterComponentProperties>;
   operator: FilterOperator;
@@ -94,6 +97,8 @@ export interface FilterPanelToolbarProps {
   onModeChange(mode: FilterMode): void;
 }
 export interface FilterPanelProps {
+  /** Shared by all date/time controls and compilation; defaults to local. */
+  timeZone?: string;
   value: DeepReadonly<FilterExpression> | null;
   fields: readonly FilterFieldDefinition[];
   onApply(expression: FilterExpression): void;

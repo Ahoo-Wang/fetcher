@@ -59,7 +59,7 @@ export function resolveFilterEditor(
     if (!registration) return { error: `未注册筛选器：${reference.name}` };
     if (
       registration === getBuiltinFilterRegistration(reference.name) &&
-      ['fve/remote-select', 'fve/remote-multi-select'].includes(reference.name)
+      ['remote-select', 'remote-multi-select'].includes(reference.name)
     ) {
       const name = reference.options?.source;
       const source =
@@ -88,6 +88,7 @@ export function resolveFilterEditor(
             field,
             fields,
             options: reference.options,
+            timeZone: props.timeZone,
           }),
         ));
     if (!supported)

@@ -20,7 +20,61 @@ import {
 } from '../../src/filter/filterCore.js';
 import type { FilterCompilerRegistry } from '../../src/filter/filterModel.js';
 import type { ViewInstance } from '../../src/record/recordModel.js';
-import { instance, selected, setup } from './fixtures.js';
+import { definition, instance, selected, setup } from './fixtures.js';
+
+it('uses the definition timezone when loading, editing, applying and restoring local datetime filters', async () => {
+  const saved = instance();
+  saved.config.filters = createFilterConfiguration({
+    id: 'created-filter',
+    op: FilterOperator.GTE,
+    field: 'state.created',
+    editor: { name: 'builtin', options: { showTime: true } },
+    value: { date: '2026-01-15', time: '10:30' },
+  });
+  const { engine, paged } = setup({
+    definition: {
+      ...definition,
+      timeZone: 'America/New_York',
+      fields: [
+        ...definition.fields,
+        { field: 'state.created', label: 'Created', type: 'datetime' },
+      ],
+    },
+    instances: { instances: [saved], defaultInstanceId: saved.id },
+  });
+  try {
+    await engine.load();
+    const initial = filter.gte('state.created', Date.UTC(2026, 0, 15, 15, 30));
+    expect(paged.mock.lastCall?.[0].filter).toEqual(initial);
+    expect(selected(engine).filterPending).toBe(false);
+    engine.setFilterDraft({
+      ...selected(engine).filterDraft,
+      id: 'renamed-created-filter',
+    });
+    expect(selected(engine)).toMatchObject({
+      filterPending: false,
+      dirty: true,
+    });
+    engine.setFilterDraft({
+      ...selected(engine).filterDraft,
+      value: { date: '2026-01-15', time: '11:30' },
+    });
+    expect(selected(engine).filterPending).toBe(true);
+    await engine.applyFilter();
+    expect(paged.mock.lastCall?.[0].filter).toEqual(
+      filter.gte('state.created', Date.UTC(2026, 0, 15, 16, 30)),
+    );
+    expect(selected(engine).filterPending).toBe(false);
+    await engine.restore();
+    expect(paged.mock.lastCall?.[0].filter).toEqual(initial);
+    expect(selected(engine)).toMatchObject({
+      filterPending: false,
+      dirty: false,
+    });
+  } finally {
+    engine.dispose();
+  }
+});
 
 it('saves an added unset control without a query and restores its identity through JSON', async () => {
   const { engine, host, paged } = setup();

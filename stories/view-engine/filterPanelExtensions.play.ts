@@ -36,8 +36,8 @@ export const playSearchableSelect: NonNullable<Story['play']> = async ({
   if (args.disabled) return;
   const canvas = within(canvasElement),
     page = within(canvasElement.ownerDocument.body);
-  await userEvent.click(canvas.getByRole('combobox', { name: '客户选择' }));
-  const search = await page.findByRole('combobox', { name: '客户选择搜索' });
+  await userEvent.click(canvas.getByRole('combobox', { name: '客户' }));
+  const search = await page.findByRole('combobox', { name: '客户搜索' });
   await userEvent.type(search, '云杉');
   await expect(
     page.getByRole('option', { name: '云杉制造' }),
@@ -58,7 +58,7 @@ export const playSearchableSelect: NonNullable<Story['play']> = async ({
   await userEvent.type(search, '云杉');
   await userEvent.keyboard('{ArrowDown}{Enter}');
   await expect(
-    canvas.getByRole('combobox', { name: '客户选择' }),
+    canvas.getByRole('combobox', { name: '客户' }),
   ).toHaveTextContent('云杉制造');
   await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
     '已应用 0 次',
@@ -67,10 +67,13 @@ export const playSearchableSelect: NonNullable<Story['play']> = async ({
   await expect(canvas.getByTestId('applied-filter')).toHaveTextContent(
     'customer-3',
   );
-  await userEvent.click(canvas.getByRole('button', { name: '清空客户选择' }));
+  await userEvent.click(canvas.getByRole('combobox', { name: '客户' }));
+  await userEvent.click(await page.findByText('已选 1 项'));
+  await userEvent.click(page.getByRole('button', { name: '移除云杉制造' }));
+  await userEvent.keyboard('{Escape}');
   await expect(
-    canvas.getByRole('combobox', { name: '客户选择' }),
-  ).toHaveTextContent('选择客户');
+    canvas.getByRole('combobox', { name: '客户' }),
+  ).toHaveTextContent('未设置');
   await expect(canvas.getByLabelText('宿主状态')).toHaveTextContent(
     '已应用 1 次',
   );

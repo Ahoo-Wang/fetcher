@@ -14,7 +14,9 @@
 import { compileBuiltinFilter } from '@ahoo-wang/fetcher-view-engine';
 import {
   Button,
+  FilterSelect,
   InputGroupInput,
+  NumberCell,
   type CellRendererProps,
   type FilterEditorProps,
   type GlobalActionsRendererProps,
@@ -90,27 +92,25 @@ function OrderStatus({
   onChange,
   onValidityChange,
 }: FilterEditorProps) {
-  const value = typeof props.selectedId === 'string' ? props.selectedId : '';
+  const value = typeof props.selectedId === 'string' ? props.selectedId : null;
   return (
     <>
-      <select
-        aria-label="订单状态"
+      <FilterSelect
+        label="订单状态"
+        placeholder="不限"
         value={value}
         disabled={disabled}
-        style={{
-          border: '1px solid var(--fve-input)',
-          borderRadius: 6,
-          padding: '4px 8px',
-        }}
-        onChange={event => {
+        options={[
+          { value: 'pending', label: '待处理' },
+          { value: 'processed', label: '已处理' },
+        ]}
+        onClear={() => onChange({ ...props, selectedId: undefined })}
+        onValueChange={selectedId => {
           onValidityChange(true);
-          onChange({ ...props, selectedId: event.target.value || undefined });
+          onChange({ ...props, selectedId });
         }}
-      >
-        <option value="">不限</option>
-        <option value="pending">待处理</option>
-        <option value="processed">已处理</option>
-      </select>
+        inline
+      />
       <InputGroupInput
         aria-label="状态显示名称"
         placeholder="显示名称（不影响查询）"
@@ -123,17 +123,10 @@ function OrderStatus({
     </>
   );
 }
-const currency = new Intl.NumberFormat('zh-CN', {
-  style: 'currency',
-  currency: 'CNY',
-});
-function Money({ value }: CellRendererProps) {
+function Money({ value, field }: CellRendererProps) {
   return typeof value === 'number' ? (
-    <span
-      aria-label={`金额 ${value.toFixed(2)} 元`}
-      style={{ fontVariantNumeric: 'tabular-nums' }}
-    >
-      {currency.format(value)}
+    <span aria-label={`金额 ${value.toFixed(2)} 元`}>
+      <NumberCell value={value} format={field.numberFormat} />
     </span>
   ) : (
     <span>—</span>

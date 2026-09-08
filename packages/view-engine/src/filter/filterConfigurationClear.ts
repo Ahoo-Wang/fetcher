@@ -29,11 +29,25 @@ import { filterCompilerContext } from './filterConfigurationCompiler.js';
 import { clearBuiltinFilterProps } from './filterBuiltinCompiler.js';
 import { validateFilterConfiguration } from './filterConfigurationValidation.js';
 
+export function filterClearCompiler(
+  name: string,
+  compilers?: FilterCompilerRegistry,
+) {
+  if (name === 'builtin') return { clear: clearBuiltinFilterProps };
+  const compiler =
+    compilers && Object.prototype.hasOwnProperty.call(compilers, name)
+      ? compilers[name]
+      : getBuiltinFilterCompiler(name);
+  if (!compiler) throw new TypeError(`未注册筛选编译器：${name}`);
+  return compiler;
+}
+
 export function clearFilterDraftValues(
   node: DeepReadonly<FilterDraftNode>,
   fields: readonly FilterFieldDefinition[],
   compilers?: FilterCompilerRegistry,
   editors?: Readonly<Partial<Record<FilterOperator, FilterEditorReference>>>,
+  timeZone?: string,
 ): FilterDraftNode {
   const config = createFilterConfiguration(node, undefined, fields, editors);
   function clear(
@@ -47,22 +61,11 @@ export function clearFilterDraftValues(
         scope.find(field => field.field === node.field)?.fields ?? [],
       );
     else {
-      const compiler =
-        node.component.name === 'builtin'
-          ? { clear: clearBuiltinFilterProps }
-          : compilers &&
-              Object.prototype.hasOwnProperty.call(
-                compilers,
-                node.component.name,
-              )
-            ? compilers[node.component.name]
-            : getBuiltinFilterCompiler(node.component.name);
-      if (!compiler)
-        throw new TypeError(`未注册筛选编译器：${node.component.name}`);
+      const compiler = filterClearCompiler(node.component.name, compilers);
       if (compiler.clear)
         node.props = compiler.clear(
           copy(node.props),
-          filterCompilerContext(node, scope),
+          filterCompilerContext(node, scope, timeZone),
         );
     }
   }

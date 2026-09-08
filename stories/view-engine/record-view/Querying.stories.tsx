@@ -23,7 +23,7 @@ const meta = {
       ...recordViewMeta.parameters.docs,
       description: {
         component:
-          '查询与分页：比较页码、游标、空态和失败重试。普通演示只进行初始读取，查询与保存由用户触发。',
+          '订单工作台使用内置批量编号、远程客户、多选状态和日期范围筛选，以及内置金额、状态和日期时间单元格。数据源执行对应条件；普通演示只进行初始读取，查询与保存由用户触发。',
       },
     },
   },
@@ -37,6 +37,12 @@ export const BusinessRecords: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(await canvas.findByText('ORD-202609-1001')).toBeVisible();
+    const row = canvas.getByRole('row', { name: /ORD-202609-1001/ });
+    await expect(within(row).getByText('¥680.00')).toBeVisible();
+    await expect(row.querySelector('[data-tone="warning"]')).toHaveTextContent(
+      '待处理',
+    );
+    await expect(row).toHaveTextContent(/2026.*9.*6.*09:00/);
     for (const operation of ['save', 'create', 'rename', 'delete']) {
       await expect(
         canvas.getByTestId(`record-${operation}-count`),

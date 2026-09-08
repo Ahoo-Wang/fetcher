@@ -30,6 +30,8 @@ export interface FilterChoiceSelectProps<V extends string | number> {
   label: string;
   multiple?: boolean;
   disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
   inline?: boolean;
   placeholder?: string;
   searchPlaceholder?: string;
@@ -51,6 +53,8 @@ export function FilterChoiceSelect<V extends string | number>({
   label,
   multiple = false,
   disabled = false,
+  invalid,
+  errorId,
   inline = false,
   placeholder = '未设置',
   searchPlaceholder = '搜索选项…',
@@ -127,6 +131,8 @@ export function FilterChoiceSelect<V extends string | number>({
       >
         <Combobox.Trigger
           aria-label={label}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? errorId : undefined}
           title={selected.map(item => item.label).join('、')}
           render={
             inline ? (
@@ -221,7 +227,7 @@ export function FilterChoiceSelect<V extends string | number>({
                           aria-hidden="true"
                           className={
                             multiple
-                              ? 'fve:flex fve:size-4 fve:shrink-0 fve:items-center fve:justify-center fve:rounded-sm fve:border fve:border-input'
+                              ? 'fve:flex fve:size-4 fve:shrink-0 fve:items-center fve:justify-center fve:rounded-sm fve:border fve:border-muted-foreground'
                               : 'fve:flex fve:size-4 fve:shrink-0'
                           }
                         >

@@ -13,6 +13,7 @@
 
 import { ClockIcon } from 'lucide-react';
 import { FilterSelect } from './FilterSelect.js';
+import { timeToSeconds } from './filterDateTimeValue.js';
 import {
   InputGroup,
   InputGroupAddon,
@@ -27,8 +28,7 @@ import {
   PopoverTrigger,
 } from '../components/ui/popover.js';
 
-const timePattern =
-  /^([01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9](?:\.[0-9]{1,9})?)?$/;
+const timePattern = /^([01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$/;
 const hours = Array.from({ length: 24 }, (_, value) => ({
   value: String(value).padStart(2, '0'),
   label: String(value).padStart(2, '0'),
@@ -43,6 +43,8 @@ export interface FilterTimeInputProps {
   onValueChange: (value: string) => void;
   label: string;
   disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
   inline?: boolean;
 }
 
@@ -51,23 +53,26 @@ export function FilterTimeInput({
   onValueChange,
   label,
   disabled = false,
+  invalid,
+  errorId,
   inline = false,
 }: FilterTimeInputProps) {
-  const parts = value === '' ? ['00', '00'] : value.split(':');
+  const time = timeToSeconds(value);
+  const parts = time === '' ? ['00', '00'] : time.split(':');
   const second = (parts[2] ?? '00').split('.')[0];
   function changePart(index: number, next: string) {
     const result = [...parts];
-    const fraction = parts[2]?.match(/\..*$/)?.[0] ?? '';
-    result[index] = index === 2 ? next + fraction : next;
+    result[index] = next;
     onValueChange(result.join(':'));
   }
   const controls = (
     <>
       <InputGroupInput
-        value={value}
-        onChange={event => onValueChange(event.target.value)}
+        value={time}
+        onChange={event => onValueChange(timeToSeconds(event.target.value))}
         aria-label={label}
-        aria-invalid={value !== '' && !timePattern.test(value)}
+        aria-invalid={invalid || (time !== '' && !timePattern.test(time))}
+        aria-describedby={invalid ? errorId : undefined}
         placeholder="HH:mm:ss"
         disabled={disabled}
         className="fve:w-24 fve:tabular-nums"

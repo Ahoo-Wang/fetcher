@@ -183,6 +183,7 @@ it('clears only values while preserving parameters and really clears deletion st
   const view = render(
     <FilterPanel
       fields={[{ field: 'createdAt', label: '创建时间', type: 'datetime' }]}
+      timeZone="Asia/Shanghai"
       value={filter.beforeToday('createdAt', '09:00', {
         zoneId: 'Asia/Shanghai',
       })}

@@ -40,6 +40,7 @@ export function compileFilterDraft(
   allowedOperators?: readonly FilterOperator[],
   compilers?: FilterCompilerRegistry,
   editors?: Readonly<Partial<Record<FilterOperator, FilterEditorReference>>>,
+  timeZone?: string,
 ): FilterCompileResult {
   try {
     return compileFilterConfiguration(
@@ -47,6 +48,7 @@ export function compileFilterDraft(
       fields,
       allowedOperators,
       compilers,
+      timeZone,
     );
   } catch (error) {
     return {

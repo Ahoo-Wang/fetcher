@@ -39,7 +39,7 @@
 | `stories/view-engine/BuiltinFilters*.stories.tsx`                | 独立展示与回归入口                                        |
 | `packages/view-engine/examples/react/BuiltinFiltersExample.tsx`  | 公共包接入与 LocalStorage 恢复示例                        |
 
-命名使用 `fve/select`、`fve/multi-select`、`fve/remote-select`、`fve/remote-multi-select`、`fve/text-values`、`fve/datetime-range`。现有 `builtin` 默认编译行为不变。业务方显式注册同名能力时，渲染、编译与清空必须统一采用该注册；未注册时才使用内置项。未知名称仍报错。
+命名使用 `select`、`multi-select`、`remote-select`、`remote-multi-select`、`text-values`、`datetime-range`。现有 `builtin` 默认编译行为不变。业务方显式注册同名能力时，渲染、编译与清空必须统一采用该注册；未注册时才使用内置项。未知名称仍报错。
 
 候选接口复用现有分页结构：
 
@@ -231,7 +231,7 @@ Task 1 中 deferred 可以直接使用项目已有测试辅助函数；若没有
 - 筛选器阶段完成；单元格组件仍是下一阶段，本记录不表示单元格已实现。修改尚未提交。
 - 复用 fetcher-react 的异步执行和防抖，修复主动取消后的迟到响应及异步取消回调重排两处共享问题；没有增加第二套请求序号或通用异步框架。
 - 打包检查发现 React 总入口会加载无关集成并阻止 Node 正常退出，因此新增公开 ESM `/core` 子路径。原根入口 ESM/UMD 不变，view-engine 使用 `/core`。同步补齐了 Storybook 子路径别名。
-- 新控件共用 FilterChoiceSelect；旧 FilterSelect/FilterSearchSelect API 保留。通过 fve/select 配置的单选和新多选/远程选择支持分组；字段未显式限制 operators 时使用适用默认值。
+- 新控件共用 FilterChoiceSelect；旧 FilterSelect/FilterSearchSelect API 保留。通过 select 配置的单选和新多选/远程选择支持分组；字段未显式限制 operators 时使用适用默认值。
 - 远程组件使用 CursorPage，单选和多选通过判别联合区分。回填失败不删除选择，缺失状态文字不写回标签快照，搜索变化重置分页历史。
 - 示例通过 Fetcher 的公开拦截器能力读取确定性 data URL，避免全局 fetch 替换。只有该夹具移除 URL 模板解析；真实 HTTP 接入保留原配置。
 - 真实浏览器验证跨页选择、保存和刷新后的 ID/标签恢复；原 LocalStorage 与 HTTP 端到端验证也通过。

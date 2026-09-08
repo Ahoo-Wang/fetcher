@@ -311,7 +311,7 @@ export function AmountFilter() {
 
 Select、下拉菜单与 Popover 面板默认 Portal 到 body，避免被有裁剪或滚动的祖先容器遮住。每次打开（包括受控 `open` 变化）时，将所属范围当前的主题变量、颜色模式和字体传到弹层。宿主需要其他 Select 挂载位置时可显式指定 `SelectContent.container`。
 
-`FilterDatePicker` 使用中文 shadcn Calendar，受控值为 `Date | undefined`。`FilterTimeInput` 组合文本输入与时、分、秒 Select，保留未完成输入及最多九位小数秒。两者均支持 `inline`，可放入 `FieldFilter`。时区转换、存储精度和查询生效时机由宿主管理。未设置值合法：保留编辑器，点击查询时不生成需要值的对应谓词；没有剩余条件时使用 `filter.matchAll()`。日期和时间均为空才算未设置，只填一项时提示补全；时间下拉保留其他已填写片段。已填写但格式错误时仍提示错误；无需值的操作与显式 null / 零 / false 保留 Wow 语义。
+`FilterDatePicker` 使用中文 shadcn Calendar，受控值为 `Date | undefined`。`FilterTimeInput` 组合文本输入与时、分、秒 Select，保留未完成输入，接受 `HH:mm` 或 `HH:mm:ss`，最多精确到秒；已有小数秒时间在显示或编辑时截到秒。两者均支持 `inline`，可放入 `FieldFilter`。时区转换和查询生效时机由宿主管理。未设置值合法：保留编辑器，点击查询时不生成需要值的对应谓词；没有剩余条件时使用 `filter.matchAll()`。日期和时间均为空才算未设置，只填一项时提示补全；时间下拉保留其他已填写片段。已填写但格式错误时仍提示错误；无需值的操作与显式 null / 零 / false 保留 Wow 语义。
 
 ## 开发
 
@@ -326,7 +326,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine test:compiled
 pnpm storybook
 ```
 
-在 Storybook 中打开 **View Engine → 过滤器**，体验业务筛选、嵌套元素条件、自定义编辑器校验、查询重试、深色主题与 50 种操作。**View Engine → 基础组件 → 日期时间** 提供单独日期时间控件。示例包括手动查询的字段组合、日期选择、精确时间、未完成输入、未设置值和深色主题；**View Engine → 基础组件 → Select** 演示选择、清空和重新选择；Controls 支持切换外观与禁用状态。组合示例使用浏览器本地时区生成毫秒时间戳的 Wow 表达式，不请求业务服务。这些示例消费包的公开构建产物，修改包源码后需重新构建。
+在 Storybook 中打开 **View Engine → 过滤器**，体验业务筛选、嵌套元素条件、自定义编辑器校验、查询重试、深色主题与 50 种操作。**View Engine → 基础组件 → 日期时间** 提供单独日期时间控件。示例包括手动查询的字段组合、日期选择、秒精度时间、未完成输入、未设置值和深色主题；**View Engine → 基础组件 → Select** 演示选择、清空和重新选择；Controls 支持切换外观与禁用状态。组合示例使用浏览器本地时区生成毫秒时间戳的 Wow 表达式，不请求业务服务。这些示例消费包的公开构建产物，修改包源码后需重新构建。
 
 详见 [API 参考](../../skills/fetcher-view-engine/references/api.md) 与 [第三方许可说明](THIRD_PARTY_NOTICES.md)。
 
@@ -340,9 +340,24 @@ pnpm storybook
 
 ### 常用内置筛选组件
 
-React 入口导出 `FilterMultiSelect`、`FilterRemoteSelect`、`FilterTextValues` 和 `FilterDateTimeRange`。字段可直接引用 `fve/select`、`fve/multi-select`、`fve/remote-select`、`fve/remote-multi-select`、`fve/text-values`、`fve/datetime-range`，无需重复注册组件。显式业务注册在渲染、编译和清空三处具有一致优先级；未知名称仍报错。
+React 入口导出 `FilterMultiSelect`、`FilterRemoteSelect`、`FilterTextValues` 和 `FilterDateTimeRange`。字段可直接引用 `select`、`multi-select`、`remote-select`、`remote-multi-select`、`text-values`、`datetime-range`，无需重复注册组件。显式业务注册在渲染、编译和清空三处具有一致优先级；未知名称仍报错。
 
-选择值支持字符串与有限数字，`1` 和 `'1'` 不混淆；候选可用 `group` 分组。单选对应 EQ/NE，多选及多值文本对应 IN/NOT_IN，日期/日期时间区间对应 BETWEEN。空选择不生成条件；不完整或逆序区间无效，时间戳继续遵循字段时区与 DST 规则。
+选择值支持字符串与有限数字，`1` 和 `'1'` 不混淆；候选可用 `group` 分组。单选对应 EQ/NE，多选及多值文本对应 IN/NOT_IN，日期/日期时间区间对应 BETWEEN。空选择不生成条件；不完整或逆序区间无效，时间戳遵循全局视图时区与 DST 规则。
+
+`FilterDateTimeRange` 与默认日期/日期时间 BETWEEN 编辑器使用 Date Range Picker，默认只显示日期。双月日历在宽屏并排显示，窄屏上下排列并在浮层内滚动。datetime 字段按完整自然日查询，包含结束日期当天，并遵循夏令时的实际日长；组件属性保留选择的日期，查询边界只在编译时生成。
+
+配置 `editor: { name: 'datetime-range', options: { showTime: true } }` 开启精确到秒的时间编辑。起止值合并在一个紧凑触发器中，弹层内一起编辑日期和时间，点击“确定”才回填，取消或 Escape 保留原条件。单值 datetime 编辑器同样支持 `editor: { name: 'builtin', options: { showTime: true } }`。时间模式接受 `HH:mm` 和 `HH:mm:ss`，保留有效偏移提示。已有小数秒字符串和数值时间戳在筛选时向下取整到所在秒，选择或确认后写入秒精度值；查询仍使用 epoch 毫秒单位。纯日期区间的上界仍为次日开始前 1 毫秒，包含最后一整秒。表格单元格数据和底层 Wow 协议值保留原有精度。
+
+时区统一配置在 `ViewDefinition.timeZone`，所有筛选器、已应用摘要和日期时间单元格共用；未配置时使用本地运行时区。独立 `FilterPanel` 和直接使用的日期组件接受 `timeZone`。字段不再单独配置时区，相对时间筛选也使用全局设置。
+
+```ts
+// 全局视图设置；省略时使用本地时区。
+const definition = { ...orderDefinition, timeZone: 'Asia/Shanghai' };
+// 默认日期粒度：
+const dateEditor = { name: 'datetime-range' };
+// 显式开启日期 + 秒精度时间：
+const dateTimeEditor = { name: 'datetime-range', options: { showTime: true } };
+```
 
 远程候选通过 `extensions.optionSources` 注入，不加入 ViewHost。数据源对象在会话内应保持稳定，范围变化时替换对象。ViewPage 使用 `scopeKey` 隔离访问范围，独立 FilterPanel 在用户/租户变化时使用 React `key` 重挂载。
 
@@ -361,14 +376,14 @@ const sources: Record<string, FilterOptionSource> = { users: userOptionSource };
   host={host}
   extensions={{ optionSources: sources }}
 />;
-// 字段：editor: { name: 'fve/remote-multi-select', options: { source: 'users', pageSize: 20, debounceMs: 300 } }
+// 字段：editor: { name: 'remote-multi-select', options: { source: 'users', pageSize: 20, debounceMs: 300 } }
 ```
 
 远程组件复用 `@ahoo-wang/fetcher-react/core` 的异步执行与防抖，分页复用 `CursorPage`。支持加载更多、取消、过期响应丢弃、分页去重，以及候选和标签的独立重试。输入法组合期间不搜索，搜索框 Enter 确认候选而不触发记录查询。
 
 持久化属性为 `value` 或 `values` 加 `selectedOptions` 标签快照。自动标签回填只更新运行时显示，不修改属性、dirty 或记录查询。明确缺失的 ID 仍保留原标识；回填失败不代表选项已删除。清空移除选择值和标签快照，保留配置好的筛选节点。
 
-多值文本按换行、中英文逗号和分号拆分、去除两端空白并去重，保留名称内部空格、大小写和前导零；Enter 先提交未完成条目，不承担 CSV 引号解析。区间保留 `lowerBound`、`upperBound`，不自动将结束值补到日末。
+多值文本按换行、中英文逗号和分号拆分、去除两端空白并去重，保留名称内部空格、大小写和前导零；Enter 先提交未完成条目，不承担 CSV 引号解析。区间保留 `lowerBound`、`upperBound` 组件属性；日期模式编译时包含最后一天全天，显式时间模式按精确时刻查询。
 
 在 Storybook 的 **View Engine → 过滤器 → 内置组件** 或独立示例 `?example=builtin-filters` 查看。`BuiltinFiltersExample.tsx` 通过 Fetcher 读取确定性 data URL 夹具，并以 LocalStorageViewHost 验证标签恢复与 JSON 持久化。只有该 data URL 夹具移除 URL 模板解析，真实 HTTP 客户端保留原有 URL 和鉴权拦截器。
 
@@ -378,14 +393,14 @@ const sources: Record<string, FilterOptionSource> = { users: userOptionSource };
 
 `/react` 导出 `TextCell`、`TagsCell`、`StatusCell`、`LinkCell`、`DateTimeCell` 和 `NumberCell`。可以独立使用，也可以在 `field.cellRenderer` / `column.renderer` 中引用内置名称，无需配置 `extensions.cells`。显式注册的自有业务组件优先；列配置优先于字段配置。
 
-| 渲染器          | JSON options                           | 行为                                                     |
-| --------------- | -------------------------------------- | -------------------------------------------------------- |
-| `fve/text`      | `ellipsis`、`copyable`，默认均为 false | 枚举名称、可聚焦完整内容提示、复制原始值                 |
-| `fve/tags`      | `maxVisible`，正整数，默认 2           | 标量/数组标签、按类型去重、键盘展开全部标签              |
-| `fve/status`    | `tones: [{ value, tone }]`             | 枚举名称与 neutral/success/warning/danger/info 语义色    |
-| `fve/link`      | `hrefField`、`newTab`，默认 false      | 地址来自当前值或记录的其他字段；文字仍来自绑定字段       |
-| `fve/date-time` | `locale`、`dateStyle`、`timeStyle`     | 沿用字段类型/时区；样式为 full/long/medium（默认）/short |
-| `fve/number`    | 无；使用 `field.numberFormat`          | 与汇总共用数字、金额、百分比格式                         |
+| 渲染器      | JSON options                           | 行为                                                     |
+| ----------- | -------------------------------------- | -------------------------------------------------------- |
+| `text`      | `ellipsis`、`copyable`，默认均为 false | 枚举名称、可聚焦完整内容提示、复制原始值                 |
+| `tags`      | `maxVisible`，正整数，默认 2           | 标量/数组标签、按类型去重、键盘展开全部标签              |
+| `status`    | `tones: [{ value, tone }]`             | 枚举名称与 neutral/success/warning/danger/info 语义色    |
+| `link`      | `hrefField`、`newTab`，默认 false      | 地址来自当前值或记录的其他字段；文字仍来自绑定字段       |
+| `date-time` | `locale`、`dateStyle`、`timeStyle`     | 沿用字段类型/时区；样式为 full/long/medium（默认）/short |
+| `number`    | 无；使用 `field.numberFormat`          | 与汇总共用数字、金额、百分比格式                         |
 
 ```tsx
 import { NumberCell, TextCell } from '@ahoo-wang/fetcher-view-engine/react';
@@ -397,10 +412,10 @@ import { NumberCell, TextCell } from '@ahoo-wang/fetcher-view-engine/react';
 />; // 12.5%
 // 字段：{ field: 'amount', label: '金额', type: 'number',
 //   numberFormat: { style: 'currency', currency: 'CNY' },
-//   cellRenderer: { name: 'fve/number' } }
+//   cellRenderer: { name: 'number' } }
 ```
 
-空值显示 `—`，0 和 false 保留为有效值。NumberCell 接收有限数值，不解析已格式化的金额字符串。纯日期 `YYYY-MM-DD` 不发生时区平移，时间戳 0 有效；日期时间文本支持 YYYY-MM-DD，后接可选的 T/t 或空白分隔符和 HH:mm[:ss[.fraction]]，末尾可带 Z/z 或数字偏移；其他格式明确拒绝。不带偏移的本地日期时间使用字段时区与现有 DST 校验；小数秒超过三位时拒绝显示，避免回退到电脑时区。无效日期/数值显示占位。无效组件选项属于配置错误，由表格现有渲染边界隔离。
+空值显示 `—`，0 和 false 保留为有效值。NumberCell 接收有限数值，不解析已格式化的金额字符串。纯日期 `YYYY-MM-DD` 不发生时区平移，时间戳 0 有效；日期时间文本支持 YYYY-MM-DD，后接可选的 T/t 或空白分隔符和 HH:mm[:ss[.fraction]]，末尾可带 Z/z 或数字偏移；其他格式明确拒绝。不带偏移的本地日期时间使用全局视图时区与现有 DST 校验；小数秒超过三位时拒绝显示，避免回退到电脑时区。无效日期/数值显示占位。无效组件选项属于配置错误，由表格现有渲染边界隔离。
 
 LinkCell 在 URL 解析后允许 HTTP(S)、mailto、tel 和相对地址，危险地址呈现为普通文本；新页链接固定带 `noopener noreferrer`。业务路由继续通过自定义组件处理。复制使用原始值，不能复制枚举名称或截断文字；剪贴板拒绝/不可用在按钮旁提示重试。TextCell 的 `text` 只改变展示。这些交互不会修改视图或触发查询。
 

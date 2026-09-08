@@ -39,11 +39,8 @@ export function createHost(
     pageSize = 5,
     local,
   } = options;
-  const { source, createOrder, processOrders } = createOrderSource(
-    options,
-    onQuery,
-    onSummary,
-  );
+  const { source, customerOptions, createOrder, processOrders } =
+    createOrderSource(options, onQuery, onSummary);
   const initialInstances = makeInstances(mode, summaries, pageSize);
   const saved = new Map(
     initialInstances.instances.map(instance => [
@@ -210,6 +207,7 @@ export function createHost(
   return {
     host,
     initialInstances,
+    customerOptions,
     createOrder,
     processOrders,
   };

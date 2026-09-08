@@ -40,6 +40,7 @@ import displayMeta, {
   SearchableSelect as DisplaySearchableSelect,
 } from './FilterPanel.stories.js';
 import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
+import type { DemoArgs } from './FilterPanelExamples.js';
 
 const meta = {
   ...displayMeta,
@@ -49,7 +50,7 @@ const meta = {
 
 export default meta;
 
-type Story = RegressionStoryObj<typeof displayMeta>;
+type Story = RegressionStoryObj<DemoArgs>;
 
 export const GroupedFields: Story = {
   ...DisplayGroupedFields,

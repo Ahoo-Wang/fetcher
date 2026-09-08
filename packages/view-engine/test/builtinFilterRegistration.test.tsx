@@ -31,7 +31,7 @@ const fields: FilterFieldDefinition[] = [
     field: 'customer',
     label: '客户',
     operators: [Op.IN, Op.NOT_IN],
-    editor: { name: 'fve/multi-select' },
+    editor: { name: 'multi-select' },
     options: [
       { value: 'a', label: '客户甲', group: '客户' },
       { value: 'b', label: '客户乙', group: '客户' },
@@ -43,7 +43,7 @@ it('restores and clears built-in component props through the public configuratio
     id: 'customer-filter',
     op: Op.IN,
     field: 'customer',
-    editor: { name: 'fve/multi-select' },
+    editor: { name: 'multi-select' },
     props: {
       values: ['a'],
       selectedOptions: [{ value: 'a', label: '保存名称' }],
@@ -93,7 +93,7 @@ it('reports an unregistered remote source as a configuration error', async () =>
       field: 'id',
       label: '客户',
       operators: [Op.EQ],
-      editor: { name: 'fve/remote-select', options: { source: 'missing' } },
+      editor: { name: 'remote-select', options: { source: 'missing' } },
     },
   ];
   render(

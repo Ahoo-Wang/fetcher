@@ -46,6 +46,8 @@ export interface ViewDefinition {
   title: string;
   sourceId: string;
   rowKey: string;
+  /** Shared datetime timezone for filters and cells; omitted uses the local runtime timezone. */
+  timeZone?: string;
   fields: readonly ViewFieldDefinition[];
   allowedOperators?: readonly FilterOperator[];
   filterEditors?: Partial<Record<FilterOperator, FilterEditorReference>>;

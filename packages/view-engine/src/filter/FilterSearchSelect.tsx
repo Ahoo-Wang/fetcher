@@ -41,6 +41,8 @@ export function FilterSearchSelect<Value extends string>({
   emptyText = '没有匹配选项',
   inline = false,
   disabled = false,
+  invalid,
+  errorId,
 }: FilterSearchSelectProps<Value>) {
   const { scope, theme, captureTheme } = usePortalTheme();
   const selected =
@@ -70,6 +72,8 @@ export function FilterSearchSelect<Value extends string>({
       >
         <Combobox.Trigger
           aria-label={label}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? errorId : undefined}
           data-slot={inline ? 'input-group-control' : undefined}
           render={
             inline ? (

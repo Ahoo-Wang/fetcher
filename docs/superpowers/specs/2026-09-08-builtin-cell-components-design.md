@@ -4,7 +4,7 @@
 
 ## 接入边界
 
-独立导出 TextCell、TagsCell、StatusCell、LinkCell、DateTimeCell、NumberCell 及对应 props；内置名称分别为 fve/text、fve/tags、fve/status、fve/link、fve/date-time、fve/number。独立组件接收 value 和展示属性，不要求传入整个 ViewHost/引擎。内部适配器将已有 CellRendererProps 转交组件。
+独立导出 TextCell、TagsCell、StatusCell、LinkCell、DateTimeCell、NumberCell 及对应 props；内置名称分别为 text、tags、status、link、date-time、number。独立组件接收 value 和展示属性，不要求传入整个 ViewHost/引擎。内部适配器将已有 CellRendererProps 转交组件。
 
 继续优先 column.renderer，其次 field.cellRenderer。显式 cells 自有注册项优先于内置注册，未知名称仍报告错误，原型属性不属于注册项。JSON 只保存 name/options，不保存函数、组件、路由器或请求服务。单元格展示与复制不触发查询、选择或 dirty 变化；现有渲染错误边界隔离单格错误。
 

@@ -13,11 +13,9 @@
 
 import { useMemo, useState } from 'react';
 import type { AggregationQuery } from '@ahoo-wang/fetcher-wow';
-import { formatRecordNumber } from '@ahoo-wang/fetcher-view-engine';
 import {
   Button,
   ViewPage,
-  type CellRendererProps,
   type GlobalActionsRendererProps,
   type RowActionsRendererProps,
   type ViewExtensions,
@@ -28,24 +26,8 @@ import type {
   QueryDiagnostic,
   WriteDiagnostic,
 } from './demoTypes.js';
-import { definition, statuses } from './fixtures.js';
+import { definition } from './fixtures.js';
 import { createHost } from './createHost.js';
-
-function AmountCell({ value, field }: CellRendererProps) {
-  return (
-    <span className="fve:font-medium fve:tabular-nums">
-      {formatRecordNumber(Number(value), field)}
-    </span>
-  );
-}
-
-function StatusCell({ value }: CellRendererProps) {
-  return (
-    <span className="fve:whitespace-nowrap">
-      {statuses.find(status => status.value === value)?.label ?? String(value)}
-    </span>
-  );
-}
 
 function OrderActions({
   selectedRowKeys,
@@ -144,7 +126,7 @@ export function Scenario({
   );
   const extensions = useMemo<ViewExtensions>(
     () => ({
-      cells: { 'order-amount': AmountCell, 'order-status': StatusCell },
+      optionSources: { customers: runtime.customerOptions },
       globalActions: {
         'order-actions': props => (
           <OrderActions

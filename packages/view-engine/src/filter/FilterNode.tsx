@@ -192,7 +192,7 @@ export function FilterNode({
       key={`${epoch}:${node.id}`}
       data-filter-id={node.id}
       data-slot="filter-cell"
-      className="fve:min-w-0 fve:max-w-full"
+      className="fve:min-w-0 fve:max-w-full fve:has-[[data-slot=filter-date-range]]:col-span-full"
       aria-describedby={nodeIssues.length ? errorId : undefined}
     >
       {complete ? (

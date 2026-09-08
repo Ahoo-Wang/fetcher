@@ -37,6 +37,7 @@ const definition: ViewDefinition = {
   title: '内置单元格',
   sourceId: 'cell-examples',
   rowKey: 'id',
+  timeZone: 'Asia/Shanghai',
   allowedOperators: [FilterOperator.MATCH_ALL],
   fields: [
     { field: 'id', label: '编号', type: 'string' },
@@ -63,7 +64,6 @@ const definition: ViewDefinition = {
       field: 'createdAt',
       label: '创建时间',
       type: 'datetime',
-      timeZone: 'Asia/Shanghai',
     },
     {
       field: 'amount',
@@ -106,7 +106,7 @@ const instances: ViewInstanceList = {
                 field: 'id',
                 width: 220,
                 renderer: {
-                  name: 'fve/text',
+                  name: 'text',
                   options: { ellipsis: true, copyable: true },
                 },
               },
@@ -116,7 +116,7 @@ const instances: ViewInstanceList = {
                 field: 'status',
                 width: 120,
                 renderer: {
-                  name: 'fve/status',
+                  name: 'status',
                   options: {
                     tones: [
                       { value: 'done', tone: 'success' },
@@ -130,7 +130,7 @@ const instances: ViewInstanceList = {
                 kind: 'field',
                 field: 'tags',
                 width: 220,
-                renderer: { name: 'fve/tags', options: { maxVisible: 2 } },
+                renderer: { name: 'tags', options: { maxVisible: 2 } },
               },
               {
                 id: 'link',
@@ -138,7 +138,7 @@ const instances: ViewInstanceList = {
                 field: 'link',
                 width: 130,
                 renderer: {
-                  name: 'fve/link',
+                  name: 'link',
                   options: { hrefField: 'url', newTab: true },
                 },
               },
@@ -148,7 +148,7 @@ const instances: ViewInstanceList = {
                 field: 'createdAt',
                 width: 220,
                 renderer: {
-                  name: 'fve/date-time',
+                  name: 'date-time',
                   options: { dateStyle: 'short', timeStyle: 'short' },
                 },
               },
@@ -157,14 +157,14 @@ const instances: ViewInstanceList = {
                 kind: 'field',
                 field: 'amount',
                 width: 150,
-                renderer: { name: 'fve/number' },
+                renderer: { name: 'number' },
               },
               {
                 id: 'ratio',
                 kind: 'field',
                 field: 'ratio',
                 width: 100,
-                renderer: { name: 'fve/number' },
+                renderer: { name: 'number' },
               },
             ],
           },

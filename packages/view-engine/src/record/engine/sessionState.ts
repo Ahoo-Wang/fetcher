@@ -37,6 +37,7 @@ export function createSession(
     definition.fields,
     definition.allowedOperators,
     compilers,
+    definition.timeZone,
   );
   return {
     baseline: instance,
@@ -92,6 +93,7 @@ export function deriveSession(
       definition.allowedOperators,
       compilers,
       definition.filterEditors,
+      definition.timeZone,
     );
     filterPending =
       !session.filterValid ||

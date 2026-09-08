@@ -480,7 +480,7 @@ Styles reuse the shadcn base-nova Neutral theme. Utilities use the `fve:` prefix
 
 Select menus, dropdown menus and Popover panels use a body portal so clipping ancestors do not hide them. Each opening, including a controlled `open` change, copies the control's current theme tokens, color scheme and typography to the portal. `SelectContent.container` is available for hosts that explicitly choose another Select portal target.
 
-`FilterDatePicker` uses the shadcn Calendar with a Chinese locale and a controlled `Date | undefined`. `FilterTimeInput` combines a text input with hour/minute/second Select controls; it preserves incomplete input and up to nine fractional-second digits. Both accept `inline` for composition inside `FieldFilter`. The host owns timezone conversion, storage precision and applying the query. Unset values are valid: keep the editor visible and omit its value-dependent predicate on Query. If no predicates remain, apply `filter.matchAll()`. A date/time pair is unset only when both parts are empty; partial values require completion. Clock selectors preserve the other typed segments during partial input. Malformed nonempty input remains invalid; value-free operators and explicit null/zero/false literals retain their Wow semantics.
+`FilterDatePicker` uses the shadcn Calendar with a Chinese locale and a controlled `Date | undefined`. `FilterTimeInput` combines a text input with hour/minute/second Select controls; it preserves incomplete input and accepts `HH:mm` or `HH:mm:ss`, with whole-second precision at most. Restored fractional clock values are truncated to seconds when displayed or edited. Both accept `inline` for composition inside `FieldFilter`. The host owns timezone conversion and applying the query. Unset values are valid: keep the editor visible and omit its value-dependent predicate on Query. If no predicates remain, apply `filter.matchAll()`. A date/time pair is unset only when both parts are empty; partial values require completion. Clock selectors preserve the other typed segments during partial input. Malformed nonempty input remains invalid; value-free operators and explicit null/zero/false literals retain their Wow semantics.
 
 ## Development
 
@@ -495,7 +495,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine test:compiled
 pnpm storybook
 ```
 
-Start at **View Engine → 过滤器** in Storybook for business filters, nested element scopes, custom-editor validation, query retry, dark mode and the 50-operator gallery. **View Engine → 基础组件 → 日期时间** covers individual date/time controls. The examples cover a combined field with manual query, a calendar, a precise time value, incomplete input, unset values and the dark theme. The **View Engine → 基础组件 → Select** example covers selecting, clearing and selecting again. Controls expose appearance and disabled states. The combined example uses the browser's local timezone and an epoch-millisecond Wow expression without contacting a service. Rebuild the package after changing its source; these stories consume its public built exports.
+Start at **View Engine → 过滤器** in Storybook for business filters, nested element scopes, custom-editor validation, query retry, dark mode and the 50-operator gallery. **View Engine → 基础组件 → 日期时间** covers individual date/time controls. The examples cover a combined field with manual query, a calendar, a time value at second precision, incomplete input, unset values and the dark theme. The **View Engine → 基础组件 → Select** example covers selecting, clearing and selecting again. Controls expose appearance and disabled states. The combined example uses the browser's local timezone and an epoch-millisecond Wow expression without contacting a service. Rebuild the package after changing its source; these stories consume its public built exports.
 
 See [the API reference](../../skills/fetcher-view-engine/references/api.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
@@ -518,9 +518,24 @@ and retain a valid manual-memoization example. See the
 
 ### Built-in filter components
 
-The React entry exports `FilterMultiSelect`, `FilterRemoteSelect`, `FilterTextValues`, and `FilterDateTimeRange`. Configured fields can use `fve/select`, `fve/multi-select`, `fve/remote-select`, `fve/remote-multi-select`, `fve/text-values`, or `fve/datetime-range` without registering their own components. Explicit custom registrations take precedence consistently for render, compile and clear; unknown names still fail.
+The React entry exports `FilterMultiSelect`, `FilterRemoteSelect`, `FilterTextValues`, and `FilterDateTimeRange`. Configured fields can use `select`, `multi-select`, `remote-select`, `remote-multi-select`, `text-values`, or `datetime-range` without registering their own components. Explicit custom registrations take precedence consistently for render, compile and clear; unknown names still fail.
 
-Selection IDs are strings or finite numbers; `1` and `'1'` remain distinct. Grouped options use `group`. Single selection uses EQ/NE, multiple selection and text collections use IN/NOT_IN, and date/datetime ranges use BETWEEN. Empty selection contributes no predicate. An incomplete or reversed range is invalid; timestamps follow the field timezone and existing DST rules.
+Selection IDs are strings or finite numbers; `1` and `'1'` remain distinct. Grouped options use `group`. Single selection uses EQ/NE, multiple selection and text collections use IN/NOT_IN, and date/datetime ranges use BETWEEN. Empty selection contributes no predicate. An incomplete or reversed range is invalid; timestamps follow the global view timezone and existing DST rules.
+
+`FilterDateTimeRange` and the default date/datetime BETWEEN editor use a Date Range Picker. Date-only mode is the default, displaying two adjacent months (stacked with internal scrolling on narrow screens). Datetime fields query complete natural days, including the final selected day and actual DST boundaries. Component properties retain the selected dates; query compilation derives timestamp bounds without replacing those properties.
+
+Set `editor: { name: 'datetime-range', options: { showTime: true } }` to enable time editing through seconds. Start and end values share one compact trigger; dates and times are edited together in the popup. Confirm publishes the draft; Cancel/Escape preserve the existing condition. The default scalar datetime editor also accepts `editor: { name: 'builtin', options: { showTime: true } }`. Time mode accepts `HH:mm` and `HH:mm:ss` and retains valid offset hints. Restored fractional-second strings and numeric timestamps are floored to the start of their second for filtering; selecting or confirming publishes values at second precision. Queries still use epoch milliseconds. Date-only ranges still end one millisecond before the next day, including the entire final second. Table cell data and lower-level Wow protocol values retain their original precision.
+
+Configure timezone once with `ViewDefinition.timeZone`; filters, applied summaries and date/time cells share it. Omit it to use the local runtime timezone. Standalone panels and direct date controls accept `timeZone`; fields have no timezone override. Relative-time predicates also use this global setting.
+
+```ts
+// Global view setting; omission uses the local runtime timezone.
+const definition = { ...orderDefinition, timeZone: 'Asia/Shanghai' };
+// Default date precision:
+const dateEditor = { name: 'datetime-range' };
+// Explicit date + time through seconds:
+const dateTimeEditor = { name: 'datetime-range', options: { showTime: true } };
+```
 
 Remote candidates are supplied through `extensions.optionSources`, outside ViewHost. The source object should remain stable during a session; replace it when its data scope changes. `ViewPage.scopeKey` isolates access scopes; standalone panels should use a React `key` when the user/tenant changes.
 
@@ -539,7 +554,7 @@ const sources: Record<string, FilterOptionSource> = { users: userOptionSource };
   host={host}
   extensions={{ optionSources: sources }}
 />;
-// Field: editor: { name: 'fve/remote-multi-select', options: { source: 'users', pageSize: 20, debounceMs: 300 } }
+// Field: editor: { name: 'remote-multi-select', options: { source: 'users', pageSize: 20, debounceMs: 300 } }
 ```
 
 The remote component reuses `@ahoo-wang/fetcher-react/core` for asynchronous execution and debounce; candidate responses reuse `CursorPage`. It supports manual load-more, cancellation, stale-response suppression, page deduplication, and independent candidate/label retries. IME composition does not start a search. Search Enter confirms a candidate without submitting the record query.
@@ -556,14 +571,14 @@ Named built-in editors choose their applicable operators automatically when `fie
 
 `TextCell`, `TagsCell`, `StatusCell`, `LinkCell`, `DateTimeCell`, and `NumberCell` are exported from `/react`. Use them independently or reference their built-in names from `field.cellRenderer` / `column.renderer`; no `extensions.cells` registration is required. Explicit own-property custom registrations override the built-ins. Column references take precedence over field references.
 
-| Renderer        | JSON options                                   | Behavior                                                                          |
-| --------------- | ---------------------------------------------- | --------------------------------------------------------------------------------- |
-| `fve/text`      | `ellipsis`, `copyable` (both false by default) | Enum display labels, accessible full-text tooltip, copy the original value        |
-| `fve/tags`      | `maxVisible` (positive integer, default 2)     | Scalar/array enum labels, typed deduplication, keyboard-accessible overflow popup |
-| `fve/status`    | `tones: [{ value, tone }]`                     | Enum label plus `neutral`, `success`, `warning`, `danger` or `info` tone          |
-| `fve/link`      | `hrefField`, `newTab` (default false)          | Address from the value or another record field; text remains the bound field      |
-| `fve/date-time` | `locale`, `dateStyle`, `timeStyle`             | Field type/timezone; styles are `full`, `long`, `medium` (default), `short`       |
-| `fve/number`    | None; use `field.numberFormat`                 | The same numeric/currency/percent format as summaries                             |
+| Renderer    | JSON options                                   | Behavior                                                                          |
+| ----------- | ---------------------------------------------- | --------------------------------------------------------------------------------- |
+| `text`      | `ellipsis`, `copyable` (both false by default) | Enum display labels, accessible full-text tooltip, copy the original value        |
+| `tags`      | `maxVisible` (positive integer, default 2)     | Scalar/array enum labels, typed deduplication, keyboard-accessible overflow popup |
+| `status`    | `tones: [{ value, tone }]`                     | Enum label plus `neutral`, `success`, `warning`, `danger` or `info` tone          |
+| `link`      | `hrefField`, `newTab` (default false)          | Address from the value or another record field; text remains the bound field      |
+| `date-time` | `locale`, `dateStyle`, `timeStyle`             | Field type/timezone; styles are `full`, `long`, `medium` (default), `short`       |
+| `number`    | None; use `field.numberFormat`                 | The same numeric/currency/percent format as summaries                             |
 
 ```tsx
 import { NumberCell, TextCell } from '@ahoo-wang/fetcher-view-engine/react';
@@ -575,10 +590,10 @@ import { NumberCell, TextCell } from '@ahoo-wang/fetcher-view-engine/react';
 />; // 12.5%
 // Field: { field: 'amount', label: 'Amount', type: 'number',
 //   numberFormat: { style: 'currency', currency: 'CNY' },
-//   cellRenderer: { name: 'fve/number' } }
+//   cellRenderer: { name: 'number' } }
 ```
 
-Empty values render `—`; zero and false remain values. NumberCell accepts finite numbers, not formatted strings. Date-only `YYYY-MM-DD` stays a calendar date without timezone shifting; epoch zero is valid. Date/time text accepts YYYY-MM-DD with an optional T/t or whitespace separator and HH:mm[:ss[.fraction]], followed optionally by Z/z or a numeric offset. Other formats are rejected. Timestamp-less local date/time strings use the field timezone and the existing DST validation; fractional seconds beyond three digits are rejected instead of falling back to the machine timezone. Invalid dates/numbers render a placeholder. Invalid component options are configuration errors, isolated by the table's existing renderer boundary.
+Empty values render `—`; zero and false remain values. NumberCell accepts finite numbers, not formatted strings. Date-only `YYYY-MM-DD` stays a calendar date without timezone shifting; epoch zero is valid. Date/time text accepts YYYY-MM-DD with an optional T/t or whitespace separator and HH:mm[:ss[.fraction]], followed optionally by Z/z or a numeric offset. Other formats are rejected. Timestamp-less local date/time strings use the global view timezone and the existing DST validation; fractional seconds beyond three digits are rejected instead of falling back to the machine timezone. Invalid dates/numbers render a placeholder. Invalid component options are configuration errors, isolated by the table's existing renderer boundary.
 
 LinkCell allows HTTP(S), mailto, tel and relative URLs after URL parsing; unsafe addresses render as text. New tabs always include `noopener noreferrer`. Application routing remains a custom component. Copy uses the raw value, not the enum label or ellipsis; clipboard rejection/unavailability shows a local retry message. TextCell's optional `text` only changes display. Nothing in these interactions mutates the view or triggers a query.
 

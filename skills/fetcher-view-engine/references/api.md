@@ -22,7 +22,7 @@ Core imports do not load React, DOM or CSS. Field descriptors define editor capa
 
 ### Fields, drafts and compilation
 
-`FilterFieldDefinition` extends `FilterField` with optional `type` (`string`, `number`, `boolean`, `date`, `datetime`, `array`), typed enum `options`, optional display `group`, element-relative child `fields`, allowed `operators`, an `editor: {name, options?}` reference, and `timeZone`. Unspecified type keeps protocol scalar types; explicit types restrict supported operators and values. The optional global operator allowlist further restricts them.
+`FilterFieldDefinition` extends `FilterField` with optional `type` (`string`, `number`, `boolean`, `date`, `datetime`, `array`), typed enum `options`, optional display `group`, element-relative child `fields`, allowed `operators`, an `editor: {name, options?}` reference. Unspecified type keeps protocol scalar types; explicit types restrict supported operators and values. The optional global operator allowlist further restricts them.
 
 `FilterDraftNode` is editor state with a stable configuration `id`, optional explicit `editor` and opaque custom `props`, plus the existing built-in Wow property names. Raw numeric text uses `FilterScalarDraftValue = {type: 'number', value: raw}`; never interpret an already-loaded protocol string as numeric input. Mixed scalar collection items can similarly use string/boolean wrappers. `FilterDateTimeValue = {date?: string, time?: string, offsetMinutes?: number}` keeps both parts while editing. Use `createFilterConfiguration` to persist these attributes; never reconstruct them from a compiled query.
 
@@ -31,14 +31,14 @@ draft. `compileFilterDraft` and `isSimpleFilter` accept `DeepReadonly<FilterDraf
 `FilterPanel.value` accepts a readonly expression or null; `draft` and `appliedDraft` accept readonly component editor trees;
 its editing buffer and emitted drafts remain independent editable values.
 
-| Export                                                                       | Contract                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FILTER_OPERATORS`                                                           | Complete readonly record of all 50 Wow operators: business label, category, input kind, and relative-time flag.                                                                                                                                           |
-| `createFilterDraft(expression)`                                              | Strictly validates a real Wow expression, clones it and assigns IDs for new built-in editor state. It does not restore custom component props. Throws on invalid protocol input; preserves value types, nesting, ordering and absent optional parameters. |
-| `newFilterDraft(op, field?)`                                                 | Creates a new draft. Value-dependent leaves start unset; logical groups and element predicates start incomplete; DELETION initially uses ACTIVE.                                                                                                          |
-| `compileFilterDraft(draft, fields, allowedOperators?, compilers?, editors?)` | Returns `{expression, errors: []}` or `{errors}` with no executable expression. Each error has `{id, message}`. Validates fields, capability, type, scope and protocol through Wow constructors.                                                          |
-| `getFieldOperators(field)`                                                   | Returns the field's compatible operators, restricted by its explicit allowlist.                                                                                                                                                                           |
-| `isSimpleFilter(draft)`                                                      | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Panel also checks editor validity before switching modes.                                                                                              |
+| Export                                                                                  | Contract                                                                                                                                                                                                                                                  |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FILTER_OPERATORS`                                                                      | Complete readonly record of all 50 Wow operators: business label, category, input kind, and relative-time flag.                                                                                                                                           |
+| `createFilterDraft(expression)`                                                         | Strictly validates a real Wow expression, clones it and assigns IDs for new built-in editor state. It does not restore custom component props. Throws on invalid protocol input; preserves value types, nesting, ordering and absent optional parameters. |
+| `newFilterDraft(op, field?)`                                                            | Creates a new draft. Value-dependent leaves start unset; logical groups and element predicates start incomplete; DELETION initially uses ACTIVE.                                                                                                          |
+| `compileFilterDraft(draft, fields, allowedOperators?, compilers?, editors?, timeZone?)` | Returns `{expression, errors: []}` or `{errors}` with no executable expression. Each error has `{id, message}`. Validates fields, capability, type, scope and protocol through Wow constructors.                                                          |
+| `getFieldOperators(field)`                                                              | Returns the field's compatible operators, restricted by its explicit allowlist.                                                                                                                                                                           |
+| `isSimpleFilter(draft)`                                                                 | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Panel also checks editor validity before switching modes.                                                                                              |
 
 The persisted contract is:
 
@@ -63,6 +63,7 @@ React applications register the complete component definition once through `exte
 
 ```ts
 interface FilterCompilerContext {
+  timeZone?: string; // global view/panel zone; defaults to local
   operator: FilterOperator;
   field?: DeepReadonly<FilterFieldDefinition>;
   fields: DeepReadonly<readonly FilterFieldDefinition[]>;
@@ -81,26 +82,26 @@ interface FilterCompiler {
 type FilterCompilerRegistry = Readonly<Record<string, FilterCompiler>>;
 ```
 
-| Export                                                                      | Contract                                                                                                                                                                                                                               |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createFilterConfiguration(draft, mode?, fields?, editors?)`                | Copies editor attributes into JSON configuration, preserving IDs, unset controls, custom props and date/time attributes. Resolves explicit editor first, then field/operator defaults, then `builtin`, and saves the chosen reference. |
-| `restoreFilterConfiguration(config)`                                        | Restores an editable draft directly from saved component attributes, preserving IDs. Does not compile or reverse a query.                                                                                                              |
-| `validateFilterConfiguration(value, fields?)`                               | Asserts the JSON component structure and optional field bindings. Throws on invalid configuration.                                                                                                                                     |
-| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?)` | Invokes component-owned pure compilers and returns `FilterCompileResult`. Requires no React mounting. Unknown components, invalid output and cross-field output return errors without an executable query.                             |
-| `compileBuiltinFilter(props, context)`                                      | Compiles built-in payload attributes, reusable by builtin-compatible custom renderers. Returns undefined for unset values.                                                                                                             |
-| `clearBuiltinFilterProps(props)`                                            | Clears built-in values while retaining other component attributes.                                                                                                                                                                     |
-| `clearFilterDraftValues(draft, fields, compilers?, editors?)`               | Applies registered clear semantics while preserving component IDs and structure.                                                                                                                                                       |
-| `sameFilterQuery(a, b)`                                                     | Compares readonly expressions (also accepts null/undefined), ignoring object key order and redundant singleton AND/OR wrappers. Preserves predicate order and does not perform general Boolean equivalence.                            |
+| Export                                                                                 | Contract                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createFilterConfiguration(draft, mode?, fields?, editors?)`                           | Copies editor attributes into JSON configuration, preserving IDs, unset controls, custom props and date/time attributes. Resolves explicit editor first, then field/operator defaults, then `builtin`, and saves the chosen reference. |
+| `restoreFilterConfiguration(config)`                                                   | Restores an editable draft directly from saved component attributes, preserving IDs. Does not compile or reverse a query.                                                                                                              |
+| `validateFilterConfiguration(value, fields?)`                                          | Asserts the JSON component structure and optional field bindings. Throws on invalid configuration.                                                                                                                                     |
+| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?, timeZone?)` | Invokes component-owned pure compilers and returns `FilterCompileResult`. Requires no React mounting. Unknown components, invalid output and cross-field output return errors without an executable query.                             |
+| `compileBuiltinFilter(props, context)`                                                 | Compiles built-in payload attributes, reusable by builtin-compatible custom renderers. Returns undefined for unset values.                                                                                                             |
+| `clearBuiltinFilterProps(props)`                                                       | Clears built-in values while retaining other component attributes.                                                                                                                                                                     |
+| `clearFilterDraftValues(draft, fields, compilers?, editors?, timeZone?)`               | Applies registered clear semantics while preserving component IDs and structure.                                                                                                                                                       |
+| `sameFilterQuery(a, b)`                                                                | Compares readonly expressions (also accepts null/undefined), ignoring object key order and redundant singleton AND/OR wrappers. Preserves predicate order and does not perform general Boolean equivalence.                            |
 
 Configuration is JSON data. An object property with undefined represents an unset input and is omitted on save; null, false, zero and empty strings retain their meaning. Arrays cannot contain undefined or other non-JSON values. Functions, DOM objects, non-finite numbers and cycles are rejected. Configuration IDs are stable persisted identities; mounted renderer DOM IDs are separate.
 
-A custom compiler may combine predicates for its bound field, but cannot escape that field or its scope. Logical/element containers remain structural component nodes. Compiled outputs must satisfy the declared field capabilities and global operator allowlist.
+A custom compiler may combine predicates for its bound field, but cannot escape that field or its scope. Logical/element containers remain structural component nodes. Custom compiled outputs must satisfy the declared field capabilities and global operator allowlist. The selected built-in operation is also checked before date-only lowering; its generated range/group operators implement that already-authorized calendar-day condition.
 
 Field uniqueness is a simple-mode editing rule, not a compiler restriction. Advanced AND/OR/NOR groups accept repeated direct field bindings, including within element predicates. Compilation and view-instance validation preserve these conditions. `isSimpleFilter` returns false for repeated-field AND drafts, including unset conditions; a requested simple mode is rendered as advanced until the draft can be represented without losing rules.
 
 Fully unset scalar predicates and cleared collections are omitted. An explicitly empty new group is incomplete; a nonempty group whose children are all inactive is omitted. Empty output at the query root becomes MATCH_ALL. Inactive children never become MATCH_ALL inside OR/NOR. A missing part of a bound, collection item or date/time pair blocks compilation. False, zero, explicit null and valid empty strings retain their meaning. ELEMENT_MATCH only accepts element-relative fields and excludes root-only metadata/search/deletion nodes.
 
-`date` fields use YYYY-MM-DD strings; `datetime` fields use epoch milliseconds and validate their `timeZone` (local runtime zone when absent). Nonexistent local DST times and sub-millisecond precision that cannot be represented by the timestamp are rejected; new ambiguous local DST times choose the earlier occurrence consistently across system timezones. Editing an existing timestamp retains its `offsetMinutes` hint (integer minutes, the sign used by `Date.getTimezoneOffset()`) when that offset still describes the edited local date/time. A date change across DST seasons uses the new date's actual offset; the hint cannot make a nonexistent local time valid. Relative-time predicates separately preserve their Wow `zoneId`, `datePattern` and `timeUnit` parameters.
+`ViewDefinition.timeZone` is the global timezone shared by all filters, applied summaries and date/time cells; standalone `FilterPanel.timeZone`, compiler context/last parameters and direct date controls use the same setting. Omission means the local runtime timezone. Fields do not configure individual timezones. `date` fields use YYYY-MM-DD strings; `datetime` queries use epoch milliseconds. Built-in time-enabled filters floor restored fractional seconds and numeric timestamps to the start of their second. Nonexistent local DST times are rejected; new ambiguous local DST times choose the earlier occurrence consistently across system timezones. Editing an existing timestamp retains its `offsetMinutes` hint (integer minutes, the sign used by `Date.getTimezoneOffset()`) when that offset still describes the edited local date/time. A date change across DST seasons uses the new date's actual offset; the hint cannot make a nonexistent local time valid. Relative-time predicates receive Wow `zoneId` from the global timezone (resolved local zone when omitted); the UI has no node-level timezone input. Their `datePattern` and `timeUnit` remain component properties.
 
 ```ts
 const draft = newFilterDraft(FilterOperator.GTE, 'amount');
@@ -120,6 +121,7 @@ Import components from `@ahoo-wang/fetcher-view-engine/react` and compiled style
 | Prop                            | Contract                                                                                                                                                                                                                                                                            |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`                         | Required applied Wow FilterExpression or null when uncompiled. Invalid/uncompiled input never falls back to all records.                                                                                                                                                            |
+| `timeZone`                      | Global timezone shared by all filters; omission uses the local runtime zone.                                                                                                                                                                                                        |
 | `fields`                        | Required field definitions for this root scope; array fields carry their element-relative definitions.                                                                                                                                                                              |
 | `onApply(expression)`           | Called exactly when Query applies a complete valid expression. The host synchronously updates `value`, then owns asynchronous requests and cancellation.                                                                                                                            |
 | `mode`, `onModeChange(mode)`    | Optional controlled simple/advanced mode. Otherwise initialized from the expression. Complex loaded trees safely display advanced mode; incompatible or incomplete trees cannot switch to simple.                                                                                   |
@@ -182,9 +184,9 @@ const fields: FilterFieldDefinition[] = [
 
 `FilterRegistration` is a union of `FilterEditorRegistration` (`render?: 'value'`, the default) and `FilterComponentRegistration` (`render: 'filter'`). Each is one complete filter definition containing its React `component`, pure `compile`, optional `clear`, supported `modes`, and optional `supports(props, context)`. Register it once in `extensions.filters`; React applications do not register a separate compiler. The former composes inside the default frame; the latter owns the complete non-container body, including labels, values and controls. Registration always includes a pure `compile`; optional `clear` defines clearing behavior.
 
-`FilterEditorProps` supplies cloned readonly component `props`, `operator`, readonly `field`, current-scope `fields`, `mode`, host `context`, JSON `options`, `disabled`, `onChange(props)` and `onValidityChange(valid, message?)`. Publish raw serializable component properties, including selected IDs and display labels. Compilation belongs to the registration and runs independently of mounting. Builtin-compatible renderers can use `compileBuiltinFilter` and `clearBuiltinFilterProps`. Invalid local buffers must report `onValidityChange(false)`; a later true notification does not make invalid compiled output valid.
+`FilterEditorProps` supplies cloned readonly component `props`, `operator`, readonly `field`, current-scope `fields`, `mode`, host `context`, JSON `options`, global `timeZone`, optional `errors`/`errorId`, `disabled`, `onChange(props)` and `onValidityChange(valid, message?)`. Publish raw serializable component properties, including selected IDs and display labels. Compilation belongs to the registration and runs independently of mounting. Builtin-compatible renderers can use `compileBuiltinFilter` and `clearBuiltinFilterProps`. Invalid local buffers must report `onValidityChange(false)`; a later true notification does not make invalid compiled output valid.
 
-Explicit saved references remain attached to their components. Missing registrations and invalid outputs block Query; rendering failures are contained per editor and offer explicit built-in fallback. Logical and element containers use built-in tree controls. Compiler output cannot change the bound field, escape scope or make the component into a container, though it may combine predicates for its bound field. Callbacks from cleared, replaced or unmounted editors are ignored. `FilterValueEditor` remains available with `{node, field?, fields, disabled?, onChange(node)}` for raw built-in draft editing.
+Explicit saved references remain attached to their components. Missing registrations and invalid outputs block Query; rendering failures are contained per editor and offer explicit built-in fallback. Logical and element containers use built-in tree controls. Compiler output cannot change the bound field, escape scope or make the component into a container, though it may combine predicates for its bound field. Callbacks from cleared, replaced or unmounted editors are ignored. `FilterValueEditor` remains available with `{node, field?, fields, timeZone?, showTime?, errors?, errorId?, disabled?, onChange(node)}` for raw built-in draft editing.
 
 `FilterComponentProps extends FilterEditorProps` adds:
 
@@ -284,19 +286,19 @@ Composes shadcn Calendar and Base UI Popover. The calendar uses the Chinese loca
 
 ### FilterTimeInput
 
-| Prop                   | Contract                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `value`                | Optional controlled raw string; omitted/undefined values default to an empty string.  |
-| `onValueChange(value)` | Receives the raw text or updated clock value; does not query or save.                 |
-| `label`                | Required accessible name for the input and clock controls.                            |
-| `inline`               | Defaults to false; true omits the outer InputGroup border for use inside FieldFilter. |
-| `disabled`             | Defaults to false; disables text input and clock selectors.                           |
+| Prop                   | Contract                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| `value`                | Optional controlled raw string; omitted/undefined values default to an empty string.       |
+| `onValueChange(value)` | Receives edited text or a clock value at second precision at most; does not query or save. |
+| `label`                | Required accessible name for the input and clock controls.                                 |
+| `inline`               | Defaults to false; true omits the outer InputGroup border for use inside FieldFilter.      |
+| `disabled`             | Defaults to false; disables text input and clock selectors.                                |
 
-Uses shadcn InputGroup, Popover and Select for a 24-hour clock. Nonempty values outside `HH:mm`, `HH:mm:ss` or `HH:mm:ss.fraction` (one to nine digits) receive `aria-invalid`. Unset or empty input is valid and never receives a required-field error. Editing hours or minutes preserves existing seconds and fractional precision; selecting seconds adds the seconds segment when absent. Malformed text is never silently converted to a query value. The host decides timezone, precision conversion and when to apply it.
+Uses shadcn InputGroup, Popover and Select for a 24-hour clock. Clock values use `HH:mm` or `HH:mm:ss`; legacy fractional seconds are truncated before display or editing. Other nonempty formats receive `aria-invalid`. Unset or empty input is valid and never receives a required-field error. Editing hours or minutes preserves existing seconds; selecting seconds adds the seconds segment when absent. Malformed text is never silently converted to a query value. The host decides timezone and when to apply the query.
 
 For operators requiring a value, a fully unset editor remains visible but contributes no query predicate. If no predicates remain, the host applies `filter.matchAll()`. A composite date/time value is unset only when both parts are empty: one filled part requires completion and cannot silently remove the predicate. Clearing a value does not change the applied expression until Query. Operators that require no value remain active; explicit null, zero, false and valid empty-string literals retain their Wow semantics.
 
-Clock selectors change only the selected segment of the raw text, including during partial input: `12:` plus minute `30` becomes `12:30`; `07:45:` plus second `30` becomes `07:45:30`. Editing seconds preserves the fractional suffix. Unedited missing or malformed segments remain available for correction instead of resetting to zero.
+Clock selectors change only the selected segment of the raw text, including during partial input: `12:` plus minute `30` becomes `12:30`; `07:45:` plus second `30` becomes `07:45:30`. Published clock values have at most whole-second precision. Unedited missing or malformed segments remain available for correction instead of resetting to zero.
 
 ### Composition primitives
 
@@ -334,7 +336,7 @@ engine.dispose();
 ```
 
 `ViewDefinition` contains `id`, `title`, `sourceId`, `rowKey`, `fields` and optional
-`allowedOperators`, `filterEditors`, `recordActions: {global?, table?, row?}`. A
+`timeZone`, `allowedOperators`, `filterEditors`, `recordActions: {global?, table?, row?}`. A
 `ViewFieldDefinition` extends `FilterFieldDefinition` with `sortable?: boolean`,
 `cellRenderer?: RendererReference`, `summaryFunctions?: readonly RecordSummaryFunction[]`,
 and `numberFormat?: Intl.NumberFormatOptions & { locale?: string }`.
@@ -961,9 +963,35 @@ lint regressions cover package/root/Storybook paths and valid memoization.
 
 ## Named built-in filter components
 
-Configured `editor.name` values: `fve/select` and `fve/remote-select` (EQ/NE); `fve/multi-select`, `fve/remote-multi-select`, `fve/text-values` (IN/NOT_IN); `fve/datetime-range` (BETWEEN on date/datetime fields). Core compilation and clearing resolve these names automatically; React resolves the matching registrations. Explicit own-property custom registrations override all three capabilities consistently. No remote I/O occurs during compilation.
+Configured `editor.name` values: `select` and `remote-select` (EQ/NE); `multi-select`, `remote-multi-select`, `text-values` (IN/NOT_IN); `datetime-range` (BETWEEN on date/datetime fields). Core compilation and clearing resolve these names automatically; React resolves the matching registrations. Explicit own-property custom registrations override all three capabilities consistently. No remote I/O occurs during compilation.
 
 React exports: `FilterMultiSelect`/`FilterMultiSelectProps`, `FilterRemoteSelect`/`FilterRemoteSelectProps`, `FilterTextValues`/`FilterTextValuesProps`, `FilterDateTimeRange`/`FilterDateTimeRangeProps`. Remote single uses `value` and a scalar/null callback; `multiple: true` uses `values` and an array callback. DateTimeRange takes a field and `{lowerBound?, upperBound?}`. TextValues takes a string array and can report an uncommitted input buffer through onValidityChange.
+
+`FilterDateTimeRange` and the default date/datetime BETWEEN editor share a Date Range Picker. Date mode is the default: two adjacent months appear side by side on wide screens and vertically in a scrollable popup on narrow screens. The first date click publishes an incomplete range; the second completes it, including a same-day range. Clear removes both bounds. For datetime fields, set the persisted `component.options.showTime: true` (or direct component `showTime`) to enable date/time editing through seconds. This mode keeps the start/end values on one trigger, edits dates and both times together in a popup, and only publishes on Confirm; Cancel/Escape discard popup edits. Restored fractional-second strings and numeric timestamps are floored to their second; selection or confirmation publishes second-precision values and retains valid offset hints. Query timestamps still use epoch milliseconds. Table cell data and lower-level Wow protocol values retain their original precision. `timeZone` is supplied globally, not in field metadata.
+
+For datetime date mode, component props retain calendar dates and any inactive clock text; clock parts do not affect the query. Compilation includes the complete selected natural days in the global zone: BETWEEN starts at the first day's beginning and ends one millisecond before the following day, including 23/25-hour DST days. This inclusive whole-day bound is not truncated to seconds. EQ becomes the single-day range, NE its NOR, IN/NOT_IN combine single-day ranges, and GT/GTE/LT/LTE use the corresponding day boundary. `showTime: true` uses timestamp comparisons at whole-second precision and requires complete date/time pairs. The configuration stores `showTime` with the component reference, never generated wire bounds in place of component props. `date` string fields retain calendar string queries.
+
+The direct select, multi-select, remote-select, text-values, date and time controls accept optional `invalid` and `errorId` to associate displayed errors with their actual focusable input/trigger; FilterPanel forwards its current errors. Registered value editors receive optional `errors`, `errorId` and global `timeZone` alongside existing props. Missing custom `clear` leaves core props unchanged; FilterPanel disables its clear action and displays the reason instead of silently succeeding.
+
+```ts
+const definition: ViewDefinition = {
+  id: 'orders',
+  title: 'Orders',
+  sourceId: 'orders',
+  rowKey: 'id',
+  timeZone: 'Asia/Shanghai', // omit to use the local runtime zone
+  fields: [
+    {
+      field: 'createdAt',
+      label: 'Created',
+      type: 'datetime',
+      operators: [FilterOperator.BETWEEN],
+      editor: { name: 'datetime-range', options: { showTime: true } },
+    },
+  ],
+};
+// Omit showTime (or set false) for the default whole-day date range.
+```
 
 Core exports `FilterOptionValue = string | number`, `FilterOptionItem = FilterOption<FilterOptionValue>` and `FilterOptionSource`. `FilterOption` and field options support an optional group label. IDs preserve their types and numeric IDs must be finite. `FilterExtensions.optionSources` and `FilterEditorProps.optionSources` are optional readonly named source registries.
 
@@ -994,14 +1022,14 @@ When `field.operators` is absent, named built-in editors supply their applicable
 
 The `/react` entry exports six components and their corresponding `*Props` types:
 
-| Component    | Standalone props beyond className                                                                                                             | Built-in name and JSON options                                        |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| TextCell     | `value?: unknown`, `text?: string`, `ellipsis?: boolean`, `copyable?: boolean`                                                                | `fve/text`: ellipsis/copyable, default false                          |
-| TagsCell     | `value?: CellValue \| readonly CellValue[] \| null`, `options?: readonly CellOption[]`, `maxVisible?: number`                                 | `fve/tags`: maxVisible, positive integer, default 2                   |
-| StatusCell   | `value?: CellValue \| null`, `options?: readonly CellOption[]`, `tones?: readonly CellStatusTone[]`                                           | `fve/status`: tones array                                             |
-| LinkCell     | `value?: unknown`, `text?: string`, `href?: string \| null`, `newTab?: boolean`                                                               | `fve/link`: hrefField/newTab; newTab defaults false                   |
-| DateTimeCell | `value?: string \| number \| Date \| null`, `type?: 'date' \| 'datetime'`, `timeZone?: string`, `locale?: string`, `dateStyle?`, `timeStyle?` | `fve/date-time`: locale/dateStyle/timeStyle; type/timeZone from field |
-| NumberCell   | `value?: number \| null`, `format?: ViewFieldDefinition['numberFormat']`                                                                      | `fve/number`: no options; format from field.numberFormat              |
+| Component    | Standalone props beyond className                                                                                                             | Built-in name and JSON options                                                     |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| TextCell     | `value?: unknown`, `text?: string`, `ellipsis?: boolean`, `copyable?: boolean`                                                                | `text`: ellipsis/copyable, default false                                           |
+| TagsCell     | `value?: CellValue \| readonly CellValue[] \| null`, `options?: readonly CellOption[]`, `maxVisible?: number`                                 | `tags`: maxVisible, positive integer, default 2                                    |
+| StatusCell   | `value?: CellValue \| null`, `options?: readonly CellOption[]`, `tones?: readonly CellStatusTone[]`                                           | `status`: tones array                                                              |
+| LinkCell     | `value?: unknown`, `text?: string`, `href?: string \| null`, `newTab?: boolean`                                                               | `link`: hrefField/newTab; newTab defaults false                                    |
+| DateTimeCell | `value?: string \| number \| Date \| null`, `type?: 'date' \| 'datetime'`, `timeZone?: string`, `locale?: string`, `dateStyle?`, `timeStyle?` | `date-time`: locale/dateStyle/timeStyle; type from field; timeZone from definition |
+| NumberCell   | `value?: number \| null`, `format?: ViewFieldDefinition['numberFormat']`                                                                      | `number`: no options; format from field.numberFormat                               |
 
 `CellValue = string | number | boolean`; numbers must be finite. `CellOption` has value/label. `CellTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'`; `CellStatusTone` has value/tone. These types are exported from `/react`. Date/time styles use Intl full/long/medium/short; default date and time styles are medium, standalone type is datetime. Calendar dates do not shift with timezone. Local date/time strings use existing scalar timezone/DST validation and reject fractional seconds beyond three digits. Invalid row dates/numbers become placeholders; invalid builtin options are configuration errors.
 

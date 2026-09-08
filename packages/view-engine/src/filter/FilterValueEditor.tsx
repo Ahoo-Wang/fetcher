@@ -17,6 +17,10 @@ import { PlusIcon, XIcon } from 'lucide-react';
 import type { FilterDraftNode, FilterFieldDefinition } from './filterModel.js';
 import { FILTER_OPERATORS, stringOperators } from './filterOperators.js';
 import { ScalarEditor } from './FilterScalarEditor.js';
+import {
+  FilterDateTimeRange,
+  type FilterDateTimeRangeProps,
+} from './FilterDateTimeRange.js';
 import { FilterSearchEditor } from './FilterSearchEditor.js';
 import { FilterValueParameters } from './FilterValueParameters.js';
 import { FilterSelect } from './FilterSelect.js';
@@ -32,6 +36,10 @@ export interface FilterValueEditorProps {
   field?: FilterFieldDefinition;
   fields: readonly FilterFieldDefinition[];
   disabled?: boolean;
+  showTime?: boolean;
+  timeZone?: string;
+  errors?: readonly string[];
+  errorId?: string;
   onChange(node: FilterDraftNode): void;
 }
 
@@ -40,8 +48,13 @@ export function FilterValueEditor({
   field,
   fields,
   disabled,
+  showTime = false,
+  timeZone,
+  errors = [],
+  errorId,
   onChange,
 }: FilterValueEditorProps) {
+  const invalid = errors.length > 0;
   const descriptor = FILTER_OPERATORS[node.op];
   if (!descriptor)
     return <InputGroupText role="alert">未知操作</InputGroupText>;
@@ -58,6 +71,10 @@ export function FilterValueEditor({
     case 'value':
       input = (
         <ScalarEditor
+          showTime={showTime}
+          timeZone={timeZone}
+          invalid={invalid}
+          errorId={errorId}
           label={`${label}值`}
           dateLabel={label}
           value={node.value}
@@ -79,6 +96,10 @@ export function FilterValueEditor({
               className="fve:inline-flex fve:max-w-full fve:flex-wrap fve:items-center"
             >
               <ScalarEditor
+                showTime={showTime}
+                timeZone={timeZone}
+                invalid={invalid}
+                errorId={errorId}
                 label={`${label}值${index + 1}`}
                 value={value}
                 field={valueField}
@@ -121,9 +142,33 @@ export function FilterValueEditor({
       );
       break;
     case 'between':
+      if (field?.type === 'date' || field?.type === 'datetime') {
+        input = (
+          <FilterDateTimeRange
+            showTime={showTime}
+            timeZone={timeZone}
+            invalid={invalid}
+            errorId={errorId}
+            field={field}
+            value={
+              {
+                lowerBound: node.lowerBound,
+                upperBound: node.upperBound,
+              } as FilterDateTimeRangeProps['value']
+            }
+            disabled={disabled}
+            onValueChange={update}
+          />
+        );
+        break;
+      }
       input = (
         <>
           <ScalarEditor
+            showTime={showTime}
+            timeZone={timeZone}
+            invalid={invalid}
+            errorId={errorId}
             label={`${label}下限`}
             value={node.lowerBound}
             field={field}
@@ -132,6 +177,10 @@ export function FilterValueEditor({
           />
           <InputGroupText>至</InputGroupText>
           <ScalarEditor
+            showTime={showTime}
+            timeZone={timeZone}
+            invalid={invalid}
+            errorId={errorId}
             label={`${label}上限`}
             value={node.upperBound}
             field={field}
@@ -144,6 +193,8 @@ export function FilterValueEditor({
     case 'search':
       input = (
         <FilterSearchEditor
+          invalid={invalid}
+          errorId={errorId}
           node={node}
           fields={fields}
           disabled={disabled}
@@ -154,6 +205,8 @@ export function FilterValueEditor({
     case 'deletion':
       input = (
         <FilterSelect
+          invalid={invalid}
+          errorId={errorId}
           label="删除状态"
           placeholder="未设置"
           value={node.state}
@@ -172,6 +225,8 @@ export function FilterValueEditor({
     case 'time':
       input = (
         <FilterTimeInput
+          invalid={invalid}
+          errorId={errorId}
           label={`${label}时间`}
           value={node.time}
           disabled={disabled}
@@ -185,6 +240,8 @@ export function FilterValueEditor({
         <>
           <InputGroupInput
             aria-label={`${label}天数`}
+            aria-invalid={invalid || undefined}
+            aria-describedby={invalid ? errorId : undefined}
             value={node.days ?? ''}
             placeholder="天数"
             inputMode="numeric"
@@ -203,6 +260,8 @@ export function FilterValueEditor({
     <>
       {input}
       <FilterValueParameters
+        invalid={invalid}
+        errorId={errorId}
         node={node}
         label={label}
         disabled={disabled}

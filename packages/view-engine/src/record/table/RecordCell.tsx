@@ -135,7 +135,7 @@ export function RecordCell({
       />
     );
   }
-  const text = formatRecordValue(value, field);
+  const text = formatRecordValue(value, field, definition.timeZone);
   if (compact && column.field === definition.rowKey) {
     return (
       <TooltipProvider>
