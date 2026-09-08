@@ -90,6 +90,7 @@ export class RecordQueries {
       if (!source || typeof source[pagination.mode] !== 'function')
         throw new Error(`数据源不支持 ${pagination.mode} 分页查询`);
       if (!background) this.summaries.sync(id, source);
+      if (!current()) return;
       const result =
         pagination.mode === 'paged'
           ? await source.paged!(

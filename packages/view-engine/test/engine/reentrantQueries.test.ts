@@ -77,3 +77,33 @@ it.each(['state', 'abort'] as const)(
     }
   },
 );
+
+it.each(['paged', 'cursor'] as const)(
+  'does not call the %s source after a summary notification disposes the engine',
+  async mode => {
+    const saved = instance('mine', mode);
+    saved.config.presentation.table.columns[0].summary = ['SUM'];
+    const { engine, paged, cursor } = setup({
+      instances: { instances: [saved], defaultInstanceId: saved.id },
+    });
+    const request = mode === 'paged' ? paged : cursor;
+    let disposed = false;
+    const unsubscribe = engine.subscribe(() => {
+      if (
+        !disposed &&
+        engine.getSnapshot().sessions.mine?.allSummary.status === 'loading'
+      ) {
+        disposed = true;
+        engine.dispose();
+      }
+    });
+    try {
+      await engine.load();
+      expect(disposed).toBe(true);
+      expect(request).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+      engine.dispose();
+    }
+  },
+);

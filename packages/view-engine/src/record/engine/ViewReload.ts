@@ -65,10 +65,17 @@ export class ViewReload {
         throw new Error('宿主未提供 instance.load，无法重新加载');
       if (this.work.writes.has(id))
         throw new Error('实例正在写入，请等待操作完成');
-      this.work.reloads.get(id)?.abort();
+      const previous = this.work.reloads.get(id);
       this.work.reloads.set(id, controller);
       started = true;
+      previous?.abort();
+      if (this.work.reloads.get(id) !== controller) return;
       this.queries.cancel(id);
+      if (
+        !this.scope.current(lifecycle) ||
+        this.work.reloads.get(id) !== controller
+      )
+        return;
       let result: ViewInstance;
       if (
         unverified?.id &&

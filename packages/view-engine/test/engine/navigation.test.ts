@@ -147,3 +147,42 @@ it('ignores an older reload rejection after a newer reload has completed', async
     writeError: null,
   });
 });
+
+it('keeps the reload started synchronously by abort as the current owner', async () => {
+  const first = deferred<ViewInstance>();
+  const newest = deferred<ViewInstance>();
+  const stale = deferred<ViewInstance>();
+  let nested: Promise<void> | undefined;
+  const loadInstance = vi.fn((_id: string, signal: AbortSignal) => {
+    if (loadInstance.mock.calls.length === 1) {
+      signal.addEventListener(
+        'abort',
+        () => {
+          nested = engine.reloadInstance();
+        },
+        { once: true },
+      );
+      return first.promise;
+    }
+    return loadInstance.mock.calls.length === 2
+      ? newest.promise
+      : stale.promise;
+  });
+  const { engine } = setup({
+    host: { instance: { load: loadInstance } } as unknown as ViewHost,
+  });
+  await engine.load();
+  const initial = engine.reloadInstance();
+  const outer = engine.reloadInstance();
+  newest.resolve({ ...instance(), title: 'Newest', revision: 'r3' });
+  await nested;
+  stale.resolve({ ...instance(), title: 'Stale', revision: 'r2' });
+  await outer;
+  expect(selected(engine)).toMatchObject({
+    baseline: { title: 'Newest', revision: 'r3' },
+    instance: { title: 'Newest', revision: 'r3' },
+  });
+  engine.dispose();
+  first.resolve(instance());
+  await initial;
+});
