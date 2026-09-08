@@ -1,47 +1,27 @@
 ---
 title: Start with Fetcher
-description: Choose the shortest path from the core Fetch client to the Fetcher package you need.
+description: Start with one HTTP request, then compose services, streams, and React.
 ---
 
 # Start with Fetcher
 
-Fetcher is a set of TypeScript packages for HTTP requests and the workflows built around them. You can use `@ahoo-wang/fetcher` by itself; every other package is optional.
+Fetcher is a TypeScript HTTP client built on the native Fetch API. The core package owns URLs, request bodies, status validation, interceptors, and result extraction. Add other packages as your workflow needs them.
 
-## Pick a path
+## Complete one request first
 
-| Goal                                     | Start here                                         |
-| ---------------------------------------- | -------------------------------------------------- |
-| Send a typed HTTP request                | [First Request](./first-request.md)                |
-| Check runtime and peer dependencies      | [Installation](./installation.md)                  |
-| Decide which package belongs in your app | [Choose Packages](./choose-packages.md)            |
-| Understand the request pipeline          | [Request lifecycle](../learn/request-lifecycle.md) |
-| Try React and Viewer behavior            | [Storybook](https://fetcher.ahoo.me/storybook/)    |
+1. [Install](./installation.md): check your runtime and add the core package.
+2. [First request](./first-request.md): create a client, read JSON, and handle failure.
+3. [Requests and results](../learn/requests-and-results.md): use parameters, bodies, and result types.
+4. [Errors and timeouts](../learn/interceptors-errors-timeouts.md): understand failure and cancellation ownership.
 
-## The shortest useful setup
+## Continue from what you already have
 
-```bash
-pnpm add @ahoo-wang/fetcher
-```
+| Your input          | Next step                                          |
+| ------------------- | -------------------------------------------------- |
+| An HTTP address     | [Fetcher reference](../reference/fetcher/index.md) |
+| An OpenAPI document | [Generate a client](../recipes/openapi-client.md)  |
+| An SSE endpoint     | [Consume a stream](../learn/streaming.md)          |
+| A React page        | [React data flow](../learn/react-data-flow.md)     |
+| A Wow service       | [CQRS recipe](../recipes/wow-cqrs.md)              |
 
-```ts
-import { Fetcher } from '@ahoo-wang/fetcher';
-
-const api = new Fetcher({ baseURL: 'https://api.example.com' });
-const response = await api.get('/users/{id}', {
-  urlParams: { path: { id: '42' } },
-});
-
-const user = await response.json();
-```
-
-Fetcher adds URL templates, query serialization, JSON bodies, timeouts, status validation, interceptors, and result extraction without hiding the native request/response model.
-
-## Add packages only when the job appears
-
-- Add `fetcher-eventstream` when you consume SSE or LLM token streams.
-- Add `fetcher-decorator` when a service interface is clearer than ad hoc calls.
-- Add `fetcher-generator` when OpenAPI is already your contract.
-- Add `fetcher-react` when request state belongs in React.
-- Add `fetcher-wow`, `fetcher-cosec`, or `fetcher-viewer` only for those integrations.
-
-See [Choose Packages](./choose-packages.md) for the complete map.
+Use [Choose packages](./choose-packages.md) to understand the ecosystem. Your first integration does not require every package.

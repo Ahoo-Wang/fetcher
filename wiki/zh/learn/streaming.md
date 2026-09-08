@@ -1,77 +1,49 @@
 ---
-title: 流式处理
-description: 解析 Server-Sent Events、转换 JSON 事件、识别终止标记并安全取消。
+title: 读取并关闭事件流
+description: 读取并关闭事件流 — Fetcher
 ---
 
-# 流式处理
+# 读取并关闭事件流
 
-`@ahoo-wang/fetcher-eventstream` 将响应体转换为类型化的流处理阶段。导入该包还会安装文档中列出的 `Response` 辅助方法。
+SSE 响应在事件到达期间保持打开。HTTP 获取、帧解析、JSON 转换和消费者清理是不同职责。
 
-## 解析 SSE
+## 一个响应只消费一次
 
 ```ts
 import '@ahoo-wang/fetcher-eventstream';
-
-const response = await fetch('/events');
-const stream = response.eventStream();
-
-for await (const event of stream) {
-  console.log(event.event, event.id, event.data);
-}
-```
-
-解析器使用换行符拼接连续的 `data:` 行，公开 `event`、`id`、`retry`，忽略注释行，并在空行结束一个 SSE 事件时发出结果。
-
-## 转换 JSON 数据
-
-```ts
 import { toJsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
-
 interface Token {
   value: string;
 }
-
-const jsonStream = toJsonServerSentEventStream<Token>(
-  response.eventStream(),
-  event => event.data === '[DONE]',
-);
-
-for await (const event of jsonStream) {
-  console.log(event.data.value);
-}
-```
-
-终止检测器读取原始 `ServerSentEvent`。终止事件会关闭 JSON 流，不会再作为 JSON 解析。
-
-## 处理无效数据
-
-无效 JSON 会通过 `EventStreamConvertError` 报告。协议错误应该可见，而不是静默丢弃：
-
-```ts
+const controller = new AbortController();
 try {
-  for await (const event of jsonStream) {
-    consume(event.data);
-  }
-} catch (error) {
-  console.error('Invalid event stream', error);
+  const response = await fetch('/events', { signal: controller.signal });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const raw = response.eventStream();
+  if (!raw) throw new Error('Missing response body');
+  const events = toJsonServerSentEventStream<Token>(
+    raw,
+    event => event.data === '[DONE]',
+  );
+  for await (const event of events) console.log(event.data.value);
+} finally {
+  controller.abort();
 }
 ```
 
-## 取消
+导入会注册 Response 助手。示例要求你的服务发送包含 JSON `{ "value": "..." }` 的 SSE data，并以原始数据 `[DONE]` 结束。这是集成模板，不是可直接调用的公开接口。
 
-消费者不再需要数据时，应取消 HTTP 请求。退出异步循环会停止消费，但如果不希望继续下载，请求所有者仍应取消网络操作。
+## 理解各层边界
 
-```ts
-const abortController = new AbortController();
-const response = await fetch('/events', { signal: abortController.signal });
+| 阶段      | 职责                                     |
+| --------- | ---------------------------------------- |
+| HTTP      | 校验状态并持有 AbortController           |
+| SSE 解析  | 解码文本行，合并 data 字段并发出完整事件 |
+| JSON 转换 | 在解析前检查原始终止标记                 |
+| 消费者    | 处理类型化事件，退出时释放资源           |
 
-for await (const event of response.eventStream()) {
-  if (event.data === '[DONE]') break;
-}
+终止事件不参与 JSON 解析。无效 JSON 会产生转换失败，因此捕获范围应覆盖流消费，而不只是首次 fetch。Token 静态类型不验证事件数据。
 
-abortController.abort();
-```
+流停滞可能是帧未结束：确认服务端在每个事件后发送空行。不要对同一个已消费 body 再次调用 eventStream。finally 保证处理逻辑抛错时也取消网络请求。
 
-## 定位停滞的流
-
-检查 `Content-Type`，确认服务端在每个事件后发送空行，确认提供的 Transform 能处理 UTF-8 Chunk 边界，并确保终止标记与原始数据完全一致。
+详见 [SSE 管线](../reference/eventstream/sse-pipeline.md)、[JSON 结果](../reference/eventstream/json-and-results.md)和[取消](../reference/eventstream/consumption-and-cancellation.md)。

@@ -1,72 +1,109 @@
 ---
-title: Stream an OpenAI Response
-description: Configure ChatClient for typed non-streaming and streaming Chat Completions responses.
+title: Stream a Chat Completion
+description: Consume Chat Completions SSE through an application gateway with cancellation and reader cleanup.
 ---
 
-# Stream an OpenAI Response
+# Stream a Chat Completion
 
-`ChatClient` targets the Chat Completions endpoint and selects JSON or SSE result extraction from the request's `stream` flag.
+Build a cancellable text stream using the package's Chat Completions contract. This recipe documents the installed client behavior; it does not select a provider model or add other OpenAI endpoints.
 
-## Keep credentials on a trusted server
+## 1. Prepare the gateway
 
-Do not embed an API key in a browser bundle or Storybook. The following Node.js example reads it from the process environment; browser applications should call a trusted backend or gateway.
+Install `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-openai` and `@ahoo-wang/fetcher-eventstream`. Your application gateway must accept `POST /chat/completions`, forward an authorized model request, and return `text/event-stream` with JSON data events followed by `[DONE]`. Use the gateway base URL and a model ID enabled by that gateway. Keep provider credentials on the trusted server; browser authentication belongs to your application.
+
+## 2. Consume and release the stream
+
+```ts
+import { Fetcher, ExchangeError } from '@ahoo-wang/fetcher';
+import {
+  CompletionStreamResultExtractor,
+  type ChatResponse,
+} from '@ahoo-wang/fetcher-openai';
+import type { JsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+
+export async function streamAnswer(
+  baseURL: string,
+  model: string,
+  signal: AbortSignal,
+  onText: (text: string) => void,
+) {
+  const api = new Fetcher({ baseURL });
+  try {
+    const stream = await api.post<JsonServerSentEventStream<ChatResponse>>(
+      '/chat/completions',
+      {
+        signal,
+        body: {
+          model,
+          messages: [{ role: 'user', content: 'Say hello.' }],
+          stream: true,
+        },
+      },
+      { resultExtractor: CompletionStreamResultExtractor },
+    );
+    const reader = stream.getReader();
+    let finished = false;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          finished = true;
+          break;
+        }
+        const text = value.data.choices[0]?.delta?.content;
+        if (text) onText(text);
+      }
+    } finally {
+      try {
+        if (!finished) await reader.cancel();
+      } finally {
+        reader.releaseLock();
+      }
+    }
+  } catch (error) {
+    if (signal.aborted) return;
+    if (error instanceof ExchangeError) {
+      console.error('HTTP status:', error.exchange.response?.status);
+    }
+    throw error;
+  }
+}
+```
+
+The extractor stops at `[DONE]` before attempting JSON parsing. The text is under `event.data.choices`, not directly under the SSE event. A chunk can contain role/finish information without text, so the loop skips missing content.
+
+## 3. Connect start and stop actions
+
+At the owning UI or server boundary, create an `AbortController`, call `streamAnswer(gatewayOrigin, modelId, controller.signal, appendText)`, and catch its rejection to display a recoverable error. Wire the stop button and owner cleanup to `controller.abort()`. Create a new controller for each attempt. `appendText` is your application's render callback; the function above treats an explicitly aborted signal as normal cancellation.
+
+The reader lock is released after success or failure. If the consumer fails before normal completion, it cancels the reader first. An HTTP timeout is not a whole-stream deadline after response extraction; use your own abort timer if you need one and clear it during cleanup.
+
+## 4. Check the protocol locally
+
+Mock fetch with a `Response` whose content type is `text/event-stream` and body is `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`. Assert that `onText` receives `Hello`. Also test malformed JSON and an aborted request. Restore fetch after the isolated test. This checks the client without spending provider quota.
+
+Network/status errors reject the initial request; malformed SSE/JSON or transport failure can reject a later read. Handle both. Avoid automatically replaying a partially displayed answer: retry starts a new completion.
+
+## When you do not need caller-owned cancellation
+
+The higher-level `ChatClient` chooses JSON or SSE from `stream`. This complete non-streaming function uses the same gateway:
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { ChatClient } from '@ahoo-wang/fetcher-openai';
 
-const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) throw new Error('OPENAI_API_KEY is required');
-
-const openaiFetcher = new Fetcher({
-  baseURL: 'https://api.openai.com/v1',
-  headers: { Authorization: `Bearer ${apiKey}` },
-  timeout: 60_000,
-});
-
-const chat = new ChatClient({ fetcher: openaiFetcher });
-```
-
-`ChatClient` contributes the `chat/completions` path; the Fetcher supplies the service base URL and authentication header.
-
-## Non-streaming response
-
-```ts
-const response = await chat.completions({
-  model: 'your-model-id',
-  messages: [{ role: 'user', content: 'Explain typed HTTP clients.' }],
-});
-
-console.log(response.choices[0]?.message?.content);
-```
-
-The return type is `ChatResponse` when `stream` is omitted or `false`.
-
-## Streaming response
-
-```ts
-const stream = await chat.completions({
-  model: 'your-model-id',
-  messages: [{ role: 'user', content: 'Write one short paragraph.' }],
-  stream: true,
-});
-
-for await (const event of stream) {
-  const token = event.data.choices[0]?.delta?.content;
-  if (token) process.stdout.write(token);
+export async function complete(baseURL: string, model: string) {
+  const chat = new ChatClient({ fetcher: new Fetcher({ baseURL }) });
+  const result = await chat.completions({
+    model,
+    messages: [{ role: 'user', content: 'Say hello.' }],
+  });
+  return result.choices[0]?.message?.content ?? '';
 }
 ```
 
-The return type is `JsonServerSentEventStream<ChatResponse>`. `CompletionStreamResultExtractor` parses each SSE data field and closes when the raw event data is `[DONE]`.
+Pass `stream: true` for a `JsonServerSentEventStream<ChatResponse>`. The public `completions` method has no per-call signal argument, which is why the cancellable recipe uses Fetcher directly.
 
-## Abort a request
+See [streaming contracts](../reference/openai/streaming), [ChatClient and request types](../reference/openai/client-and-completions), and [stream consumption](../reference/eventstream/consumption-and-cancellation).
 
-`ChatClient` accepts request lifecycle metadata through Fetcher decorators, but its public `completions` method does not expose an AbortController parameter. For caller-owned cancellation, use a dedicated Fetcher request with `CompletionStreamResultExtractor`, or terminate the upstream request in your trusted gateway.
-
-## Handle failures
-
-Catch `ExchangeError` and inspect `exchange.response?.status` for API errors. Treat `401` as credential/configuration failure and `429` as server throttling; retry only according to server guidance. Streaming JSON/protocol failures surface as event-stream conversion errors.
-
-## Expected boundaries
-
-This package models the fields present in its `ChatRequest` and `ChatResponse` types. It does not automatically track newer OpenAI endpoints or guarantee that every model accepts every request property.
+[completionStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88) connects response extraction to the done detector.

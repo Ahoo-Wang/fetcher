@@ -1,49 +1,24 @@
 ---
-title: 流式与 OpenAI Skills
-description: 为 Server-Sent Events 与 OpenAI Chat 流式请求选择 Fetcher Skill。
+title: 流式与 OpenAI
+description: 流式与 OpenAI — Fetcher agent workflows
 pageClass: skills-page
 ---
 
-# 流式与 OpenAI Skills
+# 流式与 OpenAI
 
-处理传输协议时使用流式 Skill；请求和响应遵循 OpenAI Chat 契约时使用 OpenAI
-Skill。
+从任务的输入和输出选择 Skill；同一应用可以组合多个包，但每次修改保持明确的职责边界。
 
-## `$fetcher-llm-streaming`
+| 任务     | Skill                                                                                                            | API 参考                                         |
+| -------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| SSE 消费 | [`$fetcher-llm-streaming`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/SKILL.md) | [eventstream](../reference/eventstream/index.md) |
+| 对话补全 | [`$fetcher-openai-client`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openai-client/SKILL.md) | [openai](../reference/openai/index.md)           |
 
-**适用于：** SSE 解析、`Response` 流式扩展、JSON 转换、终止检测、异步迭代、
-取消和格式错误处理。
+## 提供这些上下文
 
-```text
-$fetcher-llm-streaming 把 SSE 端点作为类型化 JSON 事件消费。
-遇到 [DONE] 时停止，暴露 AbortSignal，并明确呈现转换错误。
-```
+响应内容类型、SSE 帧样例、原始终止标记、预期 JSON 结构、取消所有者和服务端/浏览器边界。对话任务还需明确应用提供的兼容接口与模型。
 
-Skill 会提醒 Agent：使用 `Response` 原型扩展前必须导入 eventstream 副作用。
-不希望扩展原型时，使用独立转换函数。
+## 验收结果
 
-继续阅读 [事件流参考](../reference/eventstream.md)。
+检查实际公开导入、完整示例、失败与清理路径。根据变更运行包测试或真实生成验证；涉及组件交互时在浏览器检查。不要将类型检查成功当作服务端协议兼容的证明。
 
-## `$fetcher-openai-client`
-
-**适用于：** `OpenAI`、`ChatClient`、Chat Completion 输入输出类型、流式选择、
-结果提取器和客户端拦截器。
-
-```text
-$fetcher-openai-client 构建注入 API Key 的流式 Chat 服务。
-增量渲染文本，在协议终止符处停止，并向调用方呈现部分数据与流错误。
-```
-
-Skill 不会把浏览器 Bundle 中的 Secret 视为安全。凭据必须放在可信服务端边界，
-或只在受控服务端运行时注入。
-
-继续阅读 [OpenAI 参考](../reference/openai.md)或
-[OpenAI 流式场景](../recipes/openai-streaming.md)。
-
-## 选择规则
-
-| 任务提到                                       | 优先使用                                                                       |
-| ---------------------------------------------- | ------------------------------------------------------------------------------ |
-| SSE 帧、事件字段、`[DONE]`、`ReadableStream`   | `$fetcher-llm-streaming`                                                       |
-| Chat Completions、Messages、OpenAI 模型、Delta | `$fetcher-openai-client`                                                       |
-| 同时涉及两层协议                               | 先用 `$fetcher-openai-client`，只有修改传输层时再加载 `$fetcher-llm-streaming` |
+[安装与完整目录](./index.md)

@@ -1,66 +1,132 @@
 ---
-title: 生成 OpenAPI 客户端
-description: 根据本地或远程 OpenAPI 文档生成 Fetcher TypeScript 模型与客户端。
+title: 生成并使用 OpenAPI 客户端
+description: 从完整最小 Schema 生成真实 ItemsApiClient 并检查调用方类型。
 ---
 
-# 生成 OpenAPI 客户端
+# 生成并使用 OpenAPI 客户端
 
-OpenAPI 已经是源契约时使用生成器。生成代码应该可重复生成，不应手工编辑。
+从纳入版本管理的文档开始，生成到独立目录，再编译调用方。本例产出确定的类和方法，不猜测生成名称。
 
-## 安装
+## 1. 准备使用方项目
 
 ```bash
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator
-pnpm add -D @ahoo-wang/fetcher-generator
+pnpm add -D @ahoo-wang/fetcher-generator typescript
 ```
 
-## 生成
+保存以下内容为 `tsconfig.json`：
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "experimentalDecorators": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
+```
+
+## 2. 保存接口契约
+
+将下列完整文档保存为 `openapi.json`。根标签、操作标签、operationId 和 200 响应 Schema 为生成普通类型化 API 客户端提供了必要信息。
+
+```json
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Items",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Items"
+    }
+  ],
+  "paths": {
+    "/items/{id}": {
+      "get": {
+        "operationId": "getItem",
+        "tags": ["Items"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## 3. 生成并编译
 
 ```bash
-pnpm exec fetcher-generator generate \
-  -i ./openapi.yaml \
-  -o ./src/generated \
-  -t ./tsconfig.json
+pnpm exec fetcher-generator generate -i ./openapi.json -o ./src/generated -t ./tsconfig.json
+pnpm exec tsc --noEmit -p ./tsconfig.json
 ```
 
-输入可以是本地 JSON/YAML 文件，也可以是 HTTP/HTTPS URL。默认输出为 `src/generated`；显式提供路径能让 CI 与本地执行保持一致。
+对于这份文档，输出包含 `ItemsApiClient.ts`、`types.ts` 和 `index.ts`。客户端公开 `getItem(id: string, httpRequest?: ParameterRequest, attributes?: Record<string, any>): Promise<Item>`，`Item` 包含必填字符串 id。生成器还会写入 `.fetcher-generator.json`，记录输出文件所有权。
 
-## 配置
+缺少可选的 `fetcher-generator.config.json` 时，CLI 会记录配置读取错误并继续执行。只有需要覆盖默认行为时再添加配置，参见[配置优先级](../reference/generator/configuration)。
 
-可选配置参数为：
+## 4. 在生成目录外编写调用方
 
-```bash
--c ./fetcher-generator.config.json
-```
-
-不提供 `-c` 时，生成器查找 `./fetcher-generator.config.json`。`Configuration file parsing failed: ENOENT` 表示缺少可选配置，生成器会使用空配置继续执行。
-
-## 使用生成代码
-
-生成目录包含根据文档生成的模型、客户端和 Index 文件。通过生成的 Index 导入，不要依赖生成器内部路径：
+保存为 `src/loadItem.ts`，然后再次执行 TypeScript 检查：
 
 ```ts
-import { UserApiClient, type User } from './generated';
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { ItemsApiClient, type Item } from './generated';
 
-const client = new UserApiClient();
-const user: User = await client.getUser('42');
+export async function loadItem(baseURL: string): Promise<Item> {
+  const client = new ItemsApiClient({ fetcher: new Fetcher({ baseURL }) });
+  return client.getItem('42');
+}
 ```
 
-具体名称由 OpenAPI operationId 和 Schema 决定。首次生成后先检查 Index，再编写应用导入。
+调用 `loadItem(yourApiOrigin)` 需要应用服务实现 `GET /items/42`、返回 JSON `{"id":"42"}`，并满足认证/CORS 配置。生成和类型检查不会发起这次远端请求。在应用入口捕获返回的 Promise。
 
-## 安全地重新生成
+本地运行验证可以模拟 fetch 返回 `Response.json({ id: '42' })`，调用函数后断言最终 URL 和返回 ID，并在 `finally` 中恢复 fetch。
 
-1. 将 OpenAPI 文档或稳定的源 URL 放进版本控制/配置。
-2. 始终生成到同一个目录。
-3. 格式化并类型检查结果。
-4. 审查 Operation/Schema 重命名产生的 Diff。
-5. 不要在生成目录编写自定义应用代码。
+## 5. 重新生成并审阅
 
-## 定位失败
+修改源文档后重跑同一命令，检查模型、方法签名和所有权清单的变化后再接受差异。不要把应用代码放入 `src/generated`：在相同路径再次生成的文件会被覆盖。未修改的过时受管文件可能被删除，已经修改的过时文件会保留。生成不是目录级原子事务，失败后应检查部分输出。
 
-- 输入文档错误：检查 `-i`，远程输入还要检查网络访问。
-- TypeScript Project 初始化错误：检查 `-t` 是否指向现有 tsconfig。
-- 缺少预期客户端：检查 operationId、Tag、响应 Schema 和生成器发现规则。
-- 生成成功不等于远程服务实现了文档，仍需单独做生成客户端集成测试。
+缺少方法时通常应检查标签和 operationId；缺少返回类型时检查 200 响应。Schema 编译器不是服务端验证器。此调用方在执行前不分配运行时资源，成功时会完整消费 JSON 响应。
 
-运行 `pnpm exec fetcher-generator generate --help` 查看当前 CLI 契约。
+参见 [CLI 选项](../reference/generator/cli)、[输出与重新生成](../reference/generator/generated-output)、[OpenAPI 文档](../reference/openapi/documents-and-operations)，以及独立的 [Wow 识别规则](../reference/generator/wow-discovery)。
+
+[apiClientGenerator.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/client/apiClientGenerator.ts#L73) 实现普通客户端生成。

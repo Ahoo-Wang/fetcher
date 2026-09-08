@@ -1,40 +1,66 @@
 ---
 layout: home
 title: Fetcher
-description: 基于原生 Fetch API 的 TypeScript 优先 HTTP 客户端生态。
-
+description: 从一个 HTTP 请求开始，按需组合服务、流和 React。
 hero:
   name: Fetcher
-  text: 从请求到界面的类型安全 HTTP 工作流
-  tagline: 从轻量的 Fetch 客户端开始，在应用需要时再加入装饰器、流式处理、代码生成、React Hooks、认证或数据查看器。
-  image:
-    src: /fetcher-logo.png
-    alt: Fetcher 请求与响应标志
+  text: 从 HTTP 请求，到应用数据流
+  tagline: 从一个 HTTP 请求开始，按需组合服务、流和 React。
   actions:
     - theme: brand
       text: 发送第一个请求
       link: /zh/start/first-request
     - theme: alt
-      text: 选择包
-      link: /zh/start/choose-packages
-    - theme: alt
-      text: 打开 Storybook
-      link: /storybook/
-
+      text: 查阅 API
+      link: /zh/reference/
 features:
-  - title: 类型安全请求
-    details: 在原生 Fetch API 之上构建 URL、路径和查询参数、请求头、请求体、超时与结果提取。
-  - title: 有序拦截器
-    details: 将认证、状态校验、请求整形和错误处理放进清晰可见的请求生命周期。
-  - title: 流式处理
-    details: 解析 Server-Sent Events，通过异步迭代消费 Token 流，并显式处理取消。
-  - title: 声明式与生成式客户端
-    details: 使用 TypeScript 装饰器定义服务，或根据 OpenAPI 文档生成模型和客户端。
-  - title: React 集成
-    details: 将请求、存储、事件与 Wow 查询连接到可观察的加载、结果和错误状态。
-  - title: Wow 与 Viewer
-    details: 构建 CQRS 客户端，以及包含筛选、表格、保存视图和远程数据加载的数据界面。
-  - title: Agent-ready Skills
-    details: 为 Codex 提供理解包边界的工作流，覆盖请求、流式、代码生成、React、CoSec、Wow 与 Viewer。
-    link: /zh/skills/
+  - title: 请求与结果
+    details: 组合 URL、参数与请求体，明确选择 Response 或 JSON。
+    link: /zh/learn/requests-and-results
+  - title: 流与服务
+    details: 读取 SSE，定义声明式服务，或从 OpenAPI 生成客户端。
+    link: /zh/start/choose-packages
+  - title: React 与数据视图
+    details: 让加载、结果、错误和取消融入页面，再按需加入 Viewer。
+    link: /zh/learn/react-data-flow
 ---
+
+## 一个客户端，一个明确的结果
+
+```ts
+import {
+  ExchangeError,
+  Fetcher,
+  JsonResultExtractor,
+} from '@ahoo-wang/fetcher';
+
+interface User {
+  id: number;
+  name: string;
+}
+const api = new Fetcher({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 5_000,
+});
+
+try {
+  const user = await api.get<User>(
+    '/users/{id}',
+    {
+      urlParams: { path: { id: 1 } },
+    },
+    { resultExtractor: JsonResultExtractor },
+  );
+  console.log(user.name);
+} catch (error) {
+  if (error instanceof ExchangeError) {
+    console.error(error.exchange.response?.status, error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+泛型描述预期结构，不替代运行时校验。示例使用公开演示接口，执行需要网络。
+
+[阅读完整入门](./start/index.md) · [选择适合的包](./start/choose-packages.md) · [Storybook](https://fetcher.ahoo.me/storybook/)

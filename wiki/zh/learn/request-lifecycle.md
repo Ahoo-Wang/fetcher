@@ -1,80 +1,49 @@
 ---
-title: 请求生命周期
-description: 跟踪 Fetcher 请求如何创建 Exchange、执行拦截器、调用原生 Fetch、处理错误并提取结果。
+title: 理解请求生命周期
+description: 理解请求生命周期 — Fetcher
 ---
 
-# 请求生命周期
+# 理解请求生命周期
 
-一次 Fetcher 调用会创建一个可变的 `FetchExchange`。请求、响应和错误拦截器读取或更新该 Exchange，最后由选定的结果提取器返回值。
+一次调用创建一个可变的 FetchExchange，包含请求、响应、属性与错误。拦截器共享该上下文，结果提取器将它转换成调用者需要的返回值。
 
 ```mermaid
 sequenceDiagram
-autonumber
-    participant App as 应用
+    autonumber
+    participant App
     participant Fetcher
-    participant Request as 请求拦截器
-    participant Native as 原生 fetch
-    participant Response as 响应拦截器
-    participant Error as 错误拦截器
-
-    App->>Fetcher: get(url, request)
-    Fetcher->>Fetcher: resolveExchange()
-    Fetcher->>Request: intercept(exchange)
-    Request->>Request: 序列化普通对象请求体
-    Request->>Request: 解析 URL 并消费 urlParams
-    Request->>Native: fetch(url, init)
-    Native-->>Request: Response
-    Request-->>Response: exchange
-    Response->>Response: 校验状态码
-    alt 没有未处理错误
-        Response-->>Fetcher: exchange
-        Fetcher-->>App: extractResult(exchange)
-    else 拦截器抛出异常
-        Response-->>Error: exchange.error
-        Error-->>Fetcher: 恢复后的 exchange 或 ExchangeError
+    participant Pipeline
+    participant Server
+    App->>Fetcher: get(url, request, options)
+    Fetcher->>Pipeline: merged FetchExchange
+    Pipeline->>Pipeline: body and URL interceptors
+    Pipeline->>Server: native fetch
+    Server-->>Pipeline: Response
+    Pipeline->>Pipeline: response interceptors
+    alt request or response phase failed
+        Pipeline->>Pipeline: error interceptors
+    end
+    Pipeline-->>Fetcher: exchange or error
+    alt unhandled error
+        Fetcher-->>App: ExchangeError
+    else success or recovered
+        Fetcher->>Fetcher: result extraction
+        Fetcher-->>App: result or extraction error
     end
 ```
 
-## 1. 构建 Exchange
+## 按阶段理解
 
-`get`、`post` 等 HTTP 辅助方法最终调用 `request()`。客户端请求头和超时会与请求级值合并，请求级值优先。HTTP 辅助方法默认返回原生 `Response`。
+1. Fetcher 合并客户端与请求选项。HTTP 方法默认选择 Response，request 默认选择 exchange。
+2. 请求拦截器按 order 升序执行。默认管线依次序列化请求体、解析 URL 参数，再调用原生 fetch。
+3. 响应拦截器执行策略，包括默认状态校验。
+4. 请求或响应阶段失败时，错误拦截器接收失败的 exchange；清除错误可以恢复，但不会重新执行响应拦截器。
+5. 未处理错误成为 ExchangeError；否则执行结果提取。提取失败在这条拦截器恢复路径之外传播。
 
-## 2. 执行请求拦截器
+## 一次扩展一个职责
 
-拦截器按 `order` 升序执行。内置请求顺序为：
+请求拦截器修改出站数据，响应拦截器检查策略，错误拦截器执行明确的恢复动作。根据导出的顺序常量选择位置。每个注册表内名称唯一，重复注册返回 false。多个响应体读取器必须协调，因为 body 是流。
 
-1. `RequestBodyInterceptor` 将普通对象请求体序列化为 JSON。
-2. `UrlResolveInterceptor` 合并 `baseURL`、路径模板、路径值和查询值，然后清除 `urlParams`，避免重试同一 Exchange 时重复追加参数。
-3. `FetchInterceptor` 通过超时处理调用原生 `fetch`。
+URL 解析构建地址后会消费 urlParams。复用 exchange 与重新发起调用并不相同；重试还要考虑已消费的请求/响应体和操作的服务端语义。
 
-自定义拦截器应根据导出的内置顺序常量选择位置。同一个 Registry 中拦截器名称必须唯一；名称重复时 `use()` 返回 `false`。
-
-## 3. 校验响应
-
-`ValidateStatusInterceptor` 默认接受 `200 <= status < 300`。被拒绝的状态会抛出保留 Exchange 的 `HttpStatusValidationError`。
-
-## 4. 处理错误
-
-请求或响应拦截器抛出异常后，错误拦截器按升序执行。错误拦截器通过清除 `exchange.error` 恢复 Exchange；恢复后不会重复执行响应拦截器。如果仍有错误，Fetcher 抛出 `ExchangeError`。
-
-## 5. 提取结果
-
-管线成功后，`Fetcher.request()` 调用配置的 `ResultExtractor`。HTTP 方法选择 `ResponseResultExtractor`；底层 `request()` 默认选择完整 Exchange。
-
-## 定位管线问题
-
-```ts
-try {
-  await api.get('/users/{id}', { urlParams: { path: { id: '42' } } });
-} catch (error) {
-  if (error instanceof ExchangeError) {
-    console.error({
-      request: error.exchange.request,
-      response: error.exchange.response,
-      cause: error.cause,
-    });
-  }
-}
-```
-
-源码：[`InterceptorManager`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts)、[`Fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts)。
+详见[拦截器契约](../reference/fetcher/interceptors.md)与[结果提取器](../reference/fetcher/results.md)。图表工具栏可展开查看完整时序。

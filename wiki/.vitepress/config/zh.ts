@@ -1,3 +1,4 @@
+import { referenceSidebar } from './reference';
 import type { DefaultTheme } from 'vitepress';
 
 const sidebarSections = [
@@ -88,14 +89,21 @@ export const zh: DefaultTheme.Config = {
   title: 'Fetcher',
   description: '类型化 HTTP 客户端、流式响应、React Hooks 与数据 Viewer',
   themeConfig: {
+    sidebarMenuLabel: '目录',
+    returnToTopLabel: '返回顶部',
     logo: { src: '/fetcher-logo.png', alt: 'Fetcher 标志' },
     nav: [
       { text: '开始', link: '/zh/start/' },
-      { text: '学习', link: '/zh/learn/request-lifecycle' },
+      { text: '学习', link: '/zh/learn/requests-and-results' },
       { text: '场景', link: '/zh/recipes/declarative-services' },
-      { text: 'Skills', link: '/zh/skills/' },
       { text: '参考', link: '/zh/reference/' },
-      { text: '贡献', link: '/zh/contributing/' },
+      {
+        text: '资源',
+        items: [
+          { text: 'Skills', link: '/zh/skills/' },
+          { text: '贡献', link: '/zh/contributing/' },
+        ],
+      },
       { text: 'Storybook', link: '/storybook/', target: '_blank' },
     ],
     sidebar: {
@@ -103,7 +111,7 @@ export const zh: DefaultTheme.Config = {
       '/zh/learn/': sidebar('学习'),
       '/zh/recipes/': sidebar('场景'),
       '/zh/skills/': sidebar('Skills'),
-      '/zh/reference/': sidebar('参考'),
+      ...referenceSidebar(true),
       '/zh/contributing/': sidebar('贡献'),
     },
     socialLinks: [

@@ -1,15 +1,13 @@
 ---
-title: React Data Flow
-description: Model asynchronous work as explicit React loading, result, error, cancellation, and query state.
+title: React data flow
+description: Connect execution, results, and cancellation to component lifetime.
 ---
 
-# React Data Flow
+# React data flow
 
-Fetcher React hooks keep asynchronous state explicit. They do not add a cache or global request policy.
+A page needs to know whether work started, whether it is loading, what it returned, what failed, and who cancels it. Fetcher React expresses those responsibilities as component state.
 
-## Promise state
-
-`PromiseStatus` has four values: `idle`, `loading`, `success`, and `error`. `usePromiseState` owns the state transitions; `useExecutePromise` adds execution and cancellation.
+## Start with explicit execution
 
 ```tsx
 import { useExecutePromise } from '@ahoo-wang/fetcher-react';
@@ -41,20 +39,24 @@ function UserButton() {
 }
 ```
 
-Starting a new execution aborts the previous controller. Request IDs prevent a stale result from replacing the newest state. Unmount cleanup prevents later state updates.
+## Connect request and component lifetimes
 
-## Error behavior
+States are idle, loading, success, and error. A new execution aborts the previous controller; request IDs prevent old results from replacing current state. Unmount performs cleanup. Cancellation reaches the actual network request only when you pass controller.signal to it.
 
-By default, a rejected promise updates `error` and `status` without rethrowing. Set `propagateError: true` only when the event handler must also catch the rejection. `onSuccess`, `onError`, and `onAbort` callback failures are logged without replacing the operation state.
+By default, rejection updates error/status without rethrowing. With propagateError enabled, the caller must also handle the rejected Promise. Callback failures do not replace the operation state. See [Promise and query state](../reference/react/promise-and-query-state.md).
 
-## Query state
+## Choose from the page input
 
-`useQuery` adds `getQuery`, `setQuery`, optional validation, and `autoExecute`. `useFetcherQuery` binds that query to a Fetcher request. Use the Wow-specific hooks for Wow response and endpoint contracts rather than rebuilding those requests by hand.
+| Page requirement                   | Entry                       |
+| ---------------------------------- | --------------------------- |
+| Execute async work after a click   | useExecutePromise           |
+| Send a Fetcher request             | useFetcher                  |
+| Execute from changing query inputs | useQuery / useFetcherQuery  |
+| Debounce input                     | Corresponding debounce Hook |
+| Consume Wow query results          | Wow query Hooks             |
 
-## Debounce
+See [Fetcher Hooks](../reference/react/fetcher-hooks.md), [Debounce](../reference/react/debounce.md), and [Wow integration](../reference/react/wow.md). Avoid rebuilding stale-result protection in each page.
 
-`useDebouncedCallback` exposes `run`, `cancel`, and `isPending`. At least one of `leading` or `trailing` must be enabled. `useDebouncedExecutePromise` and `useDebouncedQuery` compose the same behavior with async state.
+## Set the shared-state boundary
 
-## When not to use these hooks
-
-Use direct Fetcher calls in non-React modules. Use a dedicated server-state cache when you need normalized cache keys, background revalidation, mutation invalidation, or shared request deduplication; these hooks intentionally do not provide those policies.
+These Hooks do not provide a global server-state cache, invalidation, or cross-component deduplication. Compose those policies explicitly when the application needs them; component-local results are not a cache consistency guarantee.

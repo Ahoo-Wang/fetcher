@@ -1,82 +1,52 @@
 ---
-title: URLs, Bodies, and Results
-description: Build Fetcher URLs and request bodies, then choose the result shape your application needs.
+title: Build a request and choose its result
+description: Build a request and choose its result — Fetcher
 ---
 
-# URLs, Bodies, and Results
+# Build a request and choose its result
 
-## Resolve a URL
+A request has three decisions: the address, the data sent to it, and the value returned to your caller. Keep them explicit so a service function has a predictable contract.
 
-`baseURL` and the request URL are combined before path and query values are applied.
+## Address a resource
 
 ```ts
-const api = new Fetcher({ baseURL: 'https://api.example.com/v1' });
+import { Fetcher, JsonResultExtractor } from '@ahoo-wang/fetcher';
 
-await api.get('/users/{id}', {
-  urlParams: {
-    path: { id: 'a/b' },
-    query: { active: true, page: 2 },
+const api = new Fetcher({ baseURL: 'https://api.example.com', timeout: 5_000 });
+interface User {
+  id: string;
+  name: string;
+}
+const user = await api.get<User>(
+  '/users/{id}',
+  {
+    urlParams: { path: { id: '42' }, query: { include: 'profile' } },
   },
-});
-```
-
-The default URI-template resolver percent-encodes the path value. `UrlTemplateStyle.Express` supports `/users/:id` instead. Missing required path values throw before the network request.
-
-Query values are passed to `URLSearchParams`. Prefer strings, numbers, and booleans whose string representation is part of your server contract; serialize nested values explicitly.
-
-## Merge headers and timeout
-
-Client defaults are copied and request values override matching keys:
-
-```ts
-const api = new Fetcher({
-  headers: { Accept: 'application/json', 'X-App': 'console' },
-  timeout: 5_000,
-});
-
-await api.get('/health', {
-  headers: { 'X-App': 'worker' },
-  timeout: 1_000,
-});
-```
-
-The request uses `X-App: worker` and a one-second timeout.
-
-## Send a body
-
-Plain objects are encoded with `JSON.stringify`. Native body types such as `FormData`, `Blob`, `URLSearchParams`, typed arrays, and `ReadableStream` pass through.
-
-```ts
-await api.post('/users', {
-  body: { name: 'Ada', role: 'admin' },
-});
-```
-
-GET and HEAD helpers exclude `body` at the TypeScript boundary.
-
-## Choose a result
-
-HTTP helpers return `Response`:
-
-```ts
-const response = await api.get('/users/42');
-const user = await response.json();
-```
-
-Use a result extractor when a shared client should return another shape:
-
-```ts
-import { JsonResultExtractor } from '@ahoo-wang/fetcher';
-
-const user = await api.get<{ id: string; name: string }>(
-  '/users/42',
-  {},
   { resultExtractor: JsonResultExtractor },
 );
+console.log(user.name);
 ```
 
-Built-in extractors cover the exchange, response, JSON, text, blob, array buffer, and bytes. A response body can generally be consumed only once; clone it before multiple consumers read it.
+`urlParams.path` fills the URI template; `urlParams.query` is encoded as URL query parameters. The example addresses `/users/42?include=profile`. Encode nested application values explicitly rather than relying on an object’s string representation. See [URL rules](../reference/fetcher/urls.md).
 
-## Validate server data
+## Send data
 
-Generic result types describe compile-time expectations. They do not validate JSON. Validate untrusted response data before using it in security, money, or persistence paths.
+```ts
+import { Fetcher } from '@ahoo-wang/fetcher';
+const api = new Fetcher({ baseURL: 'https://api.example.com' });
+await api.post('/users', { body: { name: 'Ada' } });
+```
+
+The body interceptor serializes plain objects. FormData, Blob and other native bodies follow their own transport rules. Headers merge with request values taking precedence; use the supported Headers forms rather than spreading a Headers instance into a plain object. See [Requests](../reference/fetcher/requests.md).
+
+## Choose the return contract
+
+| Entry                             | Default result  | When to use                                            |
+| --------------------------------- | --------------- | ------------------------------------------------------ |
+| `get`, `post`, other HTTP helpers | `Response`      | You need status, headers or a native body reader       |
+| `request`                         | `FetchExchange` | You need the complete pipeline context                 |
+| An explicit result extractor      | Extracted value | Your caller needs JSON, text or another selected shape |
+
+Consume a response body once, or clone it before separate readers. A JSON generic supplies static expectations, not validation. A parsing failure occurs after transport and can throw even when the HTTP response was successful.
+
+Next: [Errors and timeouts](./interceptors-errors-timeouts.md), then [the lifecycle](./request-lifecycle.md).

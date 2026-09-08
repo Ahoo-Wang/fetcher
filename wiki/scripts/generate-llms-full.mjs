@@ -21,6 +21,7 @@
  * - Keeps the compact index and inlined corpus on the same canonical routes
  */
 
+import { referencePackages } from '../.vitepress/config/reference.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,6 +33,7 @@ const TODAY = new Date().toISOString().slice(0, 10);
 
 // Page collection order — mirrors the public sidebar.
 const PAGE_SECTIONS = [
+  { heading: 'Overview', pages: ['index.md'] },
   {
     heading: 'Start',
     pages: [
@@ -77,18 +79,9 @@ const PAGE_SECTIONS = [
     heading: 'Reference',
     pages: [
       'reference/index.md',
-      'reference/fetcher.md',
-      'reference/decorator.md',
-      'reference/eventbus.md',
-      'reference/eventstream.md',
-      'reference/storage.md',
-      'reference/react.md',
-      'reference/openapi.md',
-      'reference/generator.md',
-      'reference/openai.md',
-      'reference/wow.md',
-      'reference/cosec.md',
-      'reference/viewer.md',
+      ...referencePackages.flatMap(({ name, topics }) =>
+        topics.map(topic => `reference/${name}/${topic}.md`),
+      ),
     ],
   },
   {
@@ -130,13 +123,14 @@ function toRoute(pagePath) {
 function readPage(relPath) {
   const absPath = join(wikiDir, relPath);
   if (!existsSync(absPath)) {
-    return null;
+    throw new Error(`Missing documentation page: ${relPath}`);
   }
   const raw = readFileSync(absPath, 'utf8');
   const body = stripFrontmatter(raw).trim();
   const title = extractTitle(body, relPath);
   return {
-    title,
+    title:
+      raw.match(/^title:\s*(.+)$/m)?.[1]?.replace(/^['"]|['"]$/g, '') ?? title,
     description: extractDescription(raw),
     path: relPath,
     route: toRoute(relPath),
@@ -145,6 +139,13 @@ function readPage(relPath) {
 }
 
 function generate() {
+  // Validate both locales before writing either generated artifact.
+  for (const { pages } of PAGE_SECTIONS) {
+    for (const path of pages) {
+      readPage(path);
+      readPage(`zh/${path}`);
+    }
+  }
   const indexParts = [
     '# Fetcher',
     '',
@@ -161,7 +162,6 @@ function generate() {
   parts.push('');
 
   let total = 0;
-  let missing = 0;
 
   for (const section of PAGE_SECTIONS) {
     indexParts.push(`## ${section.heading}`, '');
@@ -170,11 +170,6 @@ function generate() {
 
     for (const pagePath of section.pages) {
       const page = readPage(pagePath);
-      if (!page) {
-        console.warn(`⚠  Missing: ${pagePath}`);
-        missing++;
-        continue;
-      }
       const suffix = page.description ? ` — ${page.description}` : '';
       indexParts.push(`- [${page.title}](${page.route})${suffix}`);
       parts.push(`<doc title="${page.title}" path="${page.path}">`);
@@ -203,9 +198,6 @@ function generate() {
     for (const pagePath of section.pages) {
       const zhPath = `zh/${pagePath}`;
       const page = readPage(zhPath);
-      if (!page) {
-        continue;
-      }
       parts.push(`<doc title="${page.title}" path="${page.path}">`);
       parts.push('');
       parts.push(page.body);
@@ -222,7 +214,7 @@ function generate() {
   writeFileSync(join(wikiDir, 'llms-full.txt'), fullOutput, 'utf8');
 
   console.log(
-    `✓ Generated llms.txt and llms-full.txt: ${total} pages, ${missing} missing, ${(fullOutput.length / 1024).toFixed(1)} KB`,
+    `✓ Generated llms.txt and llms-full.txt: ${total} pages, ${(fullOutput.length / 1024).toFixed(1)} KB`,
   );
 }
 

@@ -1,69 +1,26 @@
 ---
-title: React 与集成 Skills
-description: 为 React 状态、数据 Viewer、CoSec 认证与 Wow CQRS 选择 Fetcher Skill。
+title: React 与集成
+description: React 与集成 — Fetcher agent workflows
 pageClass: skills-page
 ---
 
-# React 与集成 Skills
+# React 与集成
 
-这些 Skill 把 Fetcher 组合为应用级行为。先调用最具体的 Skill，让 Agent 只加载
-当前任务需要的契约。
+从任务的输入和输出选择 Skill；同一应用可以组合多个包，但每次修改保持明确的职责边界。
 
-## `$fetcher-react-hooks`
+| 任务           | Skill                                                                                                                    | API 参考                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| React 请求状态 | [`$fetcher-react-hooks`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/SKILL.md)             | [react](../reference/react/index.md)   |
+| 数据视图       | [`$fetcher-viewer-components`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-viewer-components/SKILL.md) | [viewer](../reference/viewer/index.md) |
+| CoSec 认证     | [`$fetcher-cosec-auth`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-cosec-auth/SKILL.md)               | [cosec](../reference/cosec/index.md)   |
+| Wow 命令与查询 | [`$fetcher-wow-cqrs`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-wow-cqrs/SKILL.md)                   | [wow](../reference/wow/index.md)       |
 
-**适用于：** Promise 与请求状态、Query Hooks、取消、防抖、Storage Hooks、
-事件订阅、安全上下文和 Wow Hooks。
+## 提供这些上下文
 
-```text
-$fetcher-react-hooks 构建防抖搜索 Hook，明确展示加载、空、错误、成功和重置状态，
-并忽略过期响应。
-```
+组件拥有的状态、查询触发条件、API 客户端、认证/租户上下文、持久化回调和失败界面。后端支持 Viewer 契约时才使用对应集成，不把普通 REST 地址猜测成 Wow 接口。
 
-继续阅读 [React 参考](../reference/react.md)。
+## 验收结果
 
-## `$fetcher-viewer-components`
+检查实际公开导入、完整示例、失败与清理路径。根据变更运行包测试或真实生成验证；涉及组件交互时在浏览器检查。不要将类型检查成功当作服务端协议兼容的证明。
 
-**适用于：** `Viewer`、`FetcherViewer`、Filter、Registry、Table、Cell、保存视图、
-远程选择、Locale 和端到端数据探索流程。
-
-```text
-$fetcher-viewer-components 构建订单 Viewer，包含状态筛选、服务端分页、保存视图，
-以及可见的加载、空和错误状态。
-```
-
-先在 Storybook 审查交互状态，再用 [Viewer 参考](../reference/viewer.md)核对组件契约。
-
-## `$fetcher-cosec-auth`
-
-**适用于：** `CoSecConfigurer`、JWT 存储、设备与空间归属、授权拦截器、刷新、
-401/403 行为和登出清理。
-
-```text
-$fetcher-cosec-auth 为服务端 Fetcher 配置 Token 刷新、空间归属，
-并显式处理未认证与禁止访问。不要在浏览器 Bundle 中暴露凭据。
-```
-
-继续阅读 [CoSec 参考](../reference/cosec.md)。
-
-## `$fetcher-wow-cqrs`
-
-**适用于：** 命令投递、命令等待流、快照与事件查询、Query DSL、聚合、
-归属路径、生成式 Wow 客户端和对应 React Hooks。
-
-```text
-$fetcher-wow-cqrs 为购物车增加类型化命令，以及分页和聚合快照查询。
-根据当前 Wow 契约核对路径与字段语义。
-```
-
-继续阅读 [Wow 参考](../reference/wow.md)或
-[Wow CQRS 场景](../recipes/wow-cqrs.md)。
-
-## 组合顺序
-
-一个任务跨多个包时，从基础设施到界面依次加载：
-
-```text
-Fetcher 请求 → 认证或 Wow 客户端 → React Hook → Viewer
-```
-
-每层保留自己的错误和清理边界。不要把 CoSec 刷新失败隐藏成通用的 Viewer 空状态。
+[安装与完整目录](./index.md)

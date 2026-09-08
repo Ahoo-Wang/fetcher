@@ -1,15 +1,13 @@
 ---
 title: React 数据流
-description: 将异步工作建模为明确的 React 加载、结果、错误、取消与查询状态。
+description: 让执行、结果和取消跟随组件生命周期。
 ---
 
 # React 数据流
 
-Fetcher React Hooks 让异步状态保持显式。它们不会附加缓存或全局请求策略。
+页面需要回答：是否开始、是否加载、得到什么、哪里失败，以及谁负责取消。Fetcher React 将这些问题表达为组件状态。
 
-## Promise 状态
-
-`PromiseStatus` 包含 `idle`、`loading`、`success`、`error` 四个值。`usePromiseState` 管理状态转换，`useExecutePromise` 增加执行与取消。
+## 从显式执行开始
 
 ```tsx
 import { useExecutePromise } from '@ahoo-wang/fetcher-react';
@@ -41,20 +39,24 @@ function UserButton() {
 }
 ```
 
-开始新执行时会取消上一个 Controller。Request ID 防止旧结果覆盖最新状态，卸载清理会阻止后续状态更新。
+## 请求与组件的生命周期
 
-## 错误行为
+状态包含 idle、loading、success、error。新的执行会取消前一个控制器，请求 ID 防止旧结果覆盖新状态；卸载时执行清理。只有把 controller.signal 传给真实网络操作，取消才会作用到该网络请求。
 
-默认情况下，Promise 被拒绝后只更新 `error` 和 `status`，不会再次抛出。只有事件处理器也必须捕获异常时，才设置 `propagateError: true`。`onSuccess`、`onError`、`onAbort` 回调自身失败时会记录日志，但不会替换操作状态。
+默认拒绝更新 error/status，不再次抛出；propagateError 打开后，调用者也必须处理 Promise 拒绝。回调失败不会替换原操作的状态。详情见 [Promise 与 Query 状态](../reference/react/promise-and-query-state.md)。
 
-## 查询状态
+## 根据页面输入选择 Hook
 
-`useQuery` 增加 `getQuery`、`setQuery`、可选校验和 `autoExecute`。`useFetcherQuery` 将查询绑定到 Fetcher 请求。Wow 契约应使用对应 Wow Hooks，不要手工重建响应与端点协议。
+| 页面需求           | 入口                       |
+| ------------------ | -------------------------- |
+| 点击后执行异步函数 | useExecutePromise          |
+| 用 Fetcher 发请求  | useFetcher                 |
+| 查询条件变化后执行 | useQuery / useFetcherQuery |
+| 输入防抖           | debounce 专题中的对应 Hook |
+| Wow 查询结果       | Wow 专用查询 Hooks         |
 
-## 防抖
+详见 [Fetcher Hooks](../reference/react/fetcher-hooks.md)、[防抖](../reference/react/debounce.md)与 [Wow 集成](../reference/react/wow.md)。不要在每个页面另写一套过期结果保护。
 
-`useDebouncedCallback` 返回 `run`、`cancel`、`isPending`。`leading` 与 `trailing` 至少启用一个。`useDebouncedExecutePromise` 和 `useDebouncedQuery` 将相同行为与异步状态组合。
+## 确定共享状态边界
 
-## 何时不应使用这些 Hooks
-
-非 React 模块直接调用 Fetcher。需要标准化缓存键、后台刷新、Mutation 失效或共享请求去重时，应使用专门的服务端状态缓存；这些 Hooks 有意不提供上述策略。
+这些 Hooks 不提供全局服务端缓存、缓存失效或跨组件请求去重。需要这些策略时由应用明确选择并组合；不要把组件局部结果当作缓存一致性保证。

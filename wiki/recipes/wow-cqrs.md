@@ -1,114 +1,133 @@
 ---
-title: Build a Wow CQRS Client
-description: Send Wow commands and query materialized snapshots with typed filters, pagination, streaming, and aggregation.
+title: Send a Wow Command and Read State
+description: Configure application aggregate routes, inspect command results, and query or stream snapshot state.
 ---
 
-# Build a Wow CQRS Client
+# Send a Wow Command and Read State
 
-Use `@ahoo-wang/fetcher-wow` when the server exposes Wow command and query contracts. Keep aggregate base paths in client metadata rather than repeating them.
+Use this recipe with a server that implements Wow commands and snapshot queries. Command completion and a query result are separate contracts; keep both visible to your application.
 
-## Configure clients
+## 1. Confirm aggregate endpoints
+
+Install `@ahoo-wang/fetcher` and `@ahoo-wang/fetcher-wow`. This example assumes the application exposes an owner-scoped cart at `owner/{ownerId}/cart`, an `add_cart_item` POST command, and Wow snapshot endpoints below that path. Confirm these paths in the server's OpenAPI document and configure authentication separately. The route names and state model are application examples.
+
+## 2. Create the command and query clients
 
 ```ts
 import { Fetcher, HttpMethod } from '@ahoo-wang/fetcher';
-import type { ApiMetadata } from '@ahoo-wang/fetcher-decorator';
 import {
   CommandClient,
   CommandHeaders,
   CommandStage,
   SnapshotQueryClient,
+  filter,
+  pagedQuery,
+  listQuery,
 } from '@ahoo-wang/fetcher-wow';
 
 interface AddCartItem {
   productId: string;
   quantity: number;
 }
-
 interface CartState {
   status: 'ACTIVE' | 'CHECKED_OUT';
   items: Array<{ productId: string; quantity: number }>;
 }
 
-const wowFetcher = new Fetcher({ baseURL: 'https://wow.example.com' });
-const clientMetadata: ApiMetadata = {
-  fetcher: wowFetcher,
-  basePath: 'owner/{ownerId}/cart',
-  urlParams: { path: { ownerId: 'user-42' } },
-};
-
-const commands = new CommandClient<AddCartItem>(clientMetadata);
-const snapshots = new SnapshotQueryClient<CartState>(clientMetadata);
-```
-
-## Send a command
-
-```ts
-const result = await commands.send({
-  path: 'add_cart_item',
-  method: HttpMethod.POST,
-  headers: {
-    [CommandHeaders.WAIT_STAGE]: CommandStage.SNAPSHOT,
-  },
-  body: { productId: 'book-1', quantity: 2 },
-});
-
-console.log(result.aggregateId, result.stage, result.errorCode);
-```
-
-`sendAndWaitStream()` accepts the same request and returns command-result SSE events.
-
-## Query with FilterExpression
-
-```ts
-import { filter, listQuery, pagedQuery } from '@ahoo-wang/fetcher-wow';
-
-const active = filter.and([
-  filter.ownerId('user-42'),
-  filter.eq('state.status', 'ACTIVE'),
-]);
-
-const list = await snapshots.list(listQuery({ filter: active, limit: 50 }));
-
-const page = await snapshots.pagedState(
-  pagedQuery({
-    filter: active,
-    pagination: { index: 1, size: 20 },
-  }),
-);
-```
-
-Array-first builders such as `and`, `or`, `ids`, `aggregateIds`, `isIn`, `notIn`, and `containsAll` require one non-empty readonly array. An empty array throws `TypeError` before the request.
-
-## Stream query results
-
-```ts
-for await (const event of await snapshots.listStateStream(
-  listQuery({ filter: active, limit: 0 }),
-)) {
-  console.log(event.data.items);
+export function createCartClients(baseURL: string, ownerId: string) {
+  const metadata = {
+    fetcher: new Fetcher({ baseURL }),
+    basePath: 'owner/{ownerId}/cart',
+    urlParams: { path: { ownerId } },
+  };
+  const commands = new CommandClient<AddCartItem>(metadata);
+  const snapshots = new SnapshotQueryClient<CartState>(metadata);
+  const active = filter.and([
+    filter.ownerId(ownerId),
+    filter.eq('state.status', 'ACTIVE'),
+  ]);
+  return {
+    addItem: (body: AddCartItem) =>
+      commands.send({
+        path: 'add_cart_item',
+        method: HttpMethod.POST,
+        body,
+        headers: { [CommandHeaders.WAIT_STAGE]: CommandStage.SNAPSHOT },
+      }),
+    loadPage: (controller: AbortController) =>
+      snapshots.pagedState(
+        pagedQuery({ filter: active, pagination: { index: 1, size: 20 } }),
+        undefined,
+        controller,
+      ),
+    streamStates: (controller: AbortController) =>
+      snapshots.listStateStream(
+        listQuery({ filter: active, limit: 50 }),
+        undefined,
+        controller,
+      ),
+  };
 }
 ```
 
-Use an AbortController parameter on query-client methods when the owner must cancel the stream.
+`createCartClients(apiOrigin, ownerId)` returns functions for adding an item, reading a first page, and streaming up to 50 states. `pagedState` returns `PagedList<CartState>` with list and total; state methods unwrap snapshot envelopes but filter field names still address the stored snapshot, hence `state.status`.
 
-## Aggregate nested state
+## 3. Send once and inspect the result
+
+Await `clients.addItem({ productId: 'book-1', quantity: 2 })` and inspect the returned stage, errorCode and errorMsg according to your server's command contract. An HTTP success does not itself establish business success. `WAIT_STAGE: SNAPSHOT` requests that stage; it does not guarantee every projection is already queryable or that failures disappear. Use the server's request-ID policy when retrying a command whose outcome is uncertain.
+
+Only after deciding how to handle the command result, load the page with `clients.loadPage(controller)`. Catch transport failures separately from returned command failures. Pass a newly created AbortController to each independently owned query; call abort when its UI/task ends.
+
+## 4. Consume a bounded query stream
+
+This standalone variant assumes a non-owner-scoped `cart` query path. Change it to your actual aggregate path:
 
 ```ts
-import { aggregation } from '@ahoo-wang/fetcher-wow';
+import { Fetcher } from '@ahoo-wang/fetcher';
+import { SnapshotQueryClient, filter, listQuery } from '@ahoo-wang/fetcher-wow';
 
-const rows = await snapshots.aggregate({
-  filter: active,
-  elements: [aggregation.element('state.items')],
-  groupBy: [aggregation.terms('productId', 'productId')],
-  metrics: [
-    aggregation.count('cartCount'),
-    aggregation.sum(aggregation.field('quantity'), 'quantity'),
-  ],
-});
+export async function printActiveStates(
+  baseURL: string,
+  controller: AbortController,
+) {
+  const snapshots = new SnapshotQueryClient<{ status: string }>({
+    fetcher: new Fetcher({ baseURL }),
+    basePath: 'cart',
+  });
+  const stream = await snapshots.listStateStream(
+    listQuery({ filter: filter.eq('state.status', 'ACTIVE'), limit: 50 }),
+    undefined,
+    controller,
+  );
+  const reader = stream.getReader();
+  let finished = false;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) {
+        finished = true;
+        break;
+      }
+      console.log(value.data.status);
+    }
+  } finally {
+    try {
+      if (!finished) await reader.cancel();
+    } finally {
+      reader.releaseLock();
+    }
+  }
+}
 ```
 
-After `state.items` becomes the active element, `productId` and `quantity` are relative to that element. Metrics must be non-empty. Aliases contain one segment and cannot start with the reserved `__wow` prefix.
+The third method argument is the AbortController; the second is optional attributes. Stop a pending request or active stream by aborting the supplied controller. Both request creation and subsequent reads may reject, so catch the function's promise at the owner. Reader cleanup also runs when rendering/processing a row throws.
 
-## React
+## 5. Verify the boundary
 
-`@ahoo-wang/fetcher-react` exposes single, list, paged, count, and list-stream hooks that wrap the same query clients. Keep filters and pagination in shared domain code; let the hook manage loading, result, error, reload, and cancellation.
+Mock fetch and assert command path/body/WAIT_STAGE, query JSON, one-based pagination and Accept for the SSE call. Return a documented command result fixture and a `{list: [], total: 0}` page fixture separately. Do not infer consistency from a mock: confirm command stages and snapshot visibility against your real service in an integration test.
+
+Array-first filter builders require one nonempty array; empty input throws before execution. Use `filter.matchAll()` intentionally for an unfiltered query. For larger result sets choose [cursor queries](../reference/wow/cursor-queries); for server calculations use [aggregations](../reference/wow/aggregations). Neither is required to fetch this first page.
+
+See [commands](../reference/wow/commands), [snapshot queries](../reference/wow/snapshot-queries), [filters](../reference/wow/filters), and [pagination/projection/sort](../reference/wow/query-options).
+
+[snapshotQueryClient.ts:326](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L326) defines the stream arguments.

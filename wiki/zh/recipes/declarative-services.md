@@ -1,34 +1,40 @@
 ---
-title: 声明式 API 服务
-description: 将 TypeScript 装饰器元数据转换为可执行的 Fetcher 服务方法。
+title: 创建声明式服务
+description: 定义、调用并验证带显式请求绑定的装饰器服务。
 ---
 
-# 声明式 API 服务
+# 创建声明式服务
 
-当稳定的服务类比重复请求调用更能表达 HTTP 契约时，使用装饰器。
+适用于具有稳定 HTTP 契约和具名操作的服务。本流程创建读取、创建两个方法，再检查它们真正产生的 HTTP 请求。
 
-## 安装并配置 TypeScript
+## 1. 准备编译器和服务端
 
 ```bash
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator reflect-metadata
 ```
 
+使用 TypeScript 旧式装饰器编译；仅剥离类型的工具链不能执行参数装饰器。在定义服务前导入 `reflect-metadata`，并将这些选项合并到应用 tsconfig：
+
 ```json
 {
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "strict": true
   }
 }
 ```
 
-在应用入口导入一次 `reflect-metadata`。
+示例要求应用提供 `GET /users/{id}?include=profile` 和 `POST /users`，两者均返回 JSON `{ id, name }`。请替换示例域名；这些是应用接口，不是 Fetcher 自带端点。
 
-## 定义服务
+## 2. 定义并调用两个操作
 
 ```ts
 import 'reflect-metadata';
-import { Fetcher } from '@ahoo-wang/fetcher';
+import { Fetcher, ExchangeError } from '@ahoo-wang/fetcher';
 import {
   api,
   body,
@@ -42,15 +48,14 @@ interface User {
   id: string;
   name: string;
 }
+const transport = new Fetcher({ baseURL: 'https://api.example.com' });
 
-const apiClient = new Fetcher({ baseURL: 'https://api.example.com' });
-
-@api('/users', { fetcher: apiClient })
+@api('/users', { fetcher: transport })
 class UserService {
   @get('/{id}')
   getUser(
     @path('id') id: string,
-    @query('include') include = 'profile',
+    @query('include') include: string,
   ): Promise<User> {
     throw new Error('Replaced by @api');
   }
@@ -60,35 +65,34 @@ class UserService {
     throw new Error('Replaced by @api');
   }
 }
+
+export async function runUsers() {
+  const users = new UserService();
+  try {
+    const ada = await users.getUser('42', 'profile');
+    const lin = await users.createUser({ name: 'Lin' });
+    return { ada, lin };
+  } catch (error) {
+    if (error instanceof ExchangeError) {
+      console.error('HTTP status:', error.exchange.response?.status);
+    }
+    throw error;
+  }
+}
 ```
 
-`@api` 会用请求执行器替换带端点装饰器的方法。装饰完成后方法体不会被调用；保留抛错方法体，可以让意外的未装饰调用立即失败。
+在应用中调用 `runUsers()`，并在 UI 或服务入口处理其拒绝的 Promise。第一个请求为 `GET https://api.example.com/users/42?include=profile`；第二个向 `/users` 发送 JSON `{"name":"Lin"}`。端点装饰器默认使用 JSON 提取器。
 
-## 调用服务
+`@api` 会替换端点方法，原方法体和参数默认值初始化器都不会执行。因此写 `include = 'profile'` 不能补上查询参数。像上例一样显式传值，或另外定义普通包装方法。
 
-```ts
-const users = new UserService();
+## 3. 连接真实接口前验证
 
-const ada = await users.getUser('42');
-const lin = await users.createUser({ name: 'Lin' });
-```
+在隔离测试中将 `globalThis.fetch` 替换为返回 `Response.json({ id: '42', name: 'Ada' })` 的桩，调用 `runUsers()`，断言两个 URL、HTTP 方法和第二个请求体。用 `finally` 恢复原 fetch。这样可以一起验证装饰器和请求管线。
 
-第一次调用发送：
+## 失败与生命周期
 
-```text
-GET https://api.example.com/users/42?include=profile
-```
+缺少元数据时检查编译选项和导入顺序；绑定为 undefined 时检查参数顺序与参数装饰器。非 2xx 响应默认以 exchange 错误拒绝，JSON 解析也可能失败。返回类型 `User` 不会验证服务端 JSON。本例完整消费两个响应，没有需要销毁的监听器或流。
 
-第二次调用向 `/users` 发送 JSON 请求体。
+继续查阅[服务与端点元数据](../reference/decorator/services-and-endpoints)、[参数绑定](../reference/decorator/parameters)及[执行与取消](../reference/decorator/execution)。
 
-## 有意覆盖默认值
-
-类元数据提供默认值，端点元数据覆盖类，实例 `apiMetadata` 可在支持的字段上覆盖类级值。优先为每个后端配置一个命名或直接 Fetcher，而不是在每个方法重复请求头与超时。
-
-## 常见故障：缺少元数据
-
-如果 TypeScript 没有生成装饰器元数据，或 `reflect-metadata` 未初始化，参数类型与绑定无法正确解析。检查 TypeScript 选项、导入顺序，以及方法是否同时具备端点装饰器和明确的 `@path`、`@query`、`@body` 绑定。
-
-## 在网络边界测试
-
-Mock `fetch`，构造真实服务并调用方法，然后断言最终方法、URL、请求头和请求体。不要 Mock 正在验证的 RequestExecutor。
+[apiDecorator.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L140) 实现了方法替换。

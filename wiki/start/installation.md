@@ -1,70 +1,35 @@
 ---
-title: Installation
-description: Install Fetcher packages with the required runtime and peer dependencies.
+title: Installation and runtime
+description: Separate application runtime, optional peers, and repository tooling.
 ---
 
-# Installation
+# Installation and runtime
 
-## Runtime requirements
-
-- Node.js `>=18.20.8`, or a modern browser with the Fetch, Streams, and AbortController APIs required by the feature you use.
-- TypeScript is recommended; packages ship type declarations and ES modules.
-- React and Ant Design are peer dependencies only for packages that expose React components or hooks.
-
-## Install the core client
+## Install the core package
 
 ```bash
 pnpm add @ahoo-wang/fetcher
+# npm install @ahoo-wang/fetcher
 ```
 
-Equivalent npm command:
+## Check the packages you use
 
-```bash
-npm install @ahoo-wang/fetcher
-```
+The table follows current package.json declarations. Browsers must provide the Fetch, AbortController, and Streams APIs needed by your features; version declarations do not polyfill runtime APIs.
 
-## Install an optional package
+| Package                                          | Declared Node range | Peer dependencies                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [fetcher](../reference/fetcher/index.md)         | `>=18.20.8`         | None                                                                                                                                                                                                                                                                                                |
+| [decorator](../reference/decorator/index.md)     | `>=18.20.8`         | `@ahoo-wang/fetcher`                                                                                                                                                                                                                                                                                |
+| [eventstream](../reference/eventstream/index.md) | `>=18.20.8`         | `@ahoo-wang/fetcher`                                                                                                                                                                                                                                                                                |
+| [react](../reference/react/index.md)             | `>=18.20.8`         | `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventstream`, `@ahoo-wang/fetcher-eventbus`, `@ahoo-wang/fetcher-storage`, `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-cosec`, `react`, `react-dom`                                                                                                     |
+| [viewer](../reference/viewer/index.md)           | `>=18.20.8`         | `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-decorator`, `@ahoo-wang/fetcher-eventbus`, `@ahoo-wang/fetcher-eventstream`, `@ahoo-wang/fetcher-openapi`, `@ahoo-wang/fetcher-react`, `@ahoo-wang/fetcher-storage`, `@ahoo-wang/fetcher-wow`, `@ant-design/icons`, `antd`, `dayjs`, `react`, `react-dom` |
 
-Install only the package and peers required by your code. For example, React request state needs the core and React packages:
+## Feature-specific setup
 
-```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-react react react-dom
-```
+Declarative services need `experimentalDecorators` and `emitDecoratorMetadata`; see [Decorator setup](../reference/decorator/index.md). Import `@ahoo-wang/fetcher-eventstream` to register Response stream helpers; see [Stream results](../reference/eventstream/json-and-results.md). Install the peer dependencies of your selected React or Viewer version rather than treating the core-only command as a complete UI setup.
 
-Viewer applications also provide Ant Design and the Fetcher packages listed as peer dependencies:
+## If you contribute to this repository
 
-```bash
-pnpm add @ahoo-wang/fetcher-viewer antd @ant-design/icons dayjs react react-dom
-```
+The repository uses Node `>=20.20.2` and pnpm `10.34.5`. These contributor requirements differ from the consumer declarations above. Follow [Development](../contributing/development.md) to install the workspace and run checks.
 
-Your package manager reports any additional Fetcher peer packages required by the selected version.
-
-## Side-effect modules
-
-`@ahoo-wang/fetcher-eventstream` extends `Response` with event-stream helpers when the module is imported. Import it once before calling those helpers:
-
-```ts
-import '@ahoo-wang/fetcher-eventstream';
-```
-
-Decorator-based services require metadata support and the TypeScript decorator options used by this repository:
-
-```json
-{
-  "compilerOptions": {
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  }
-}
-```
-
-## Verify the installation
-
-```ts
-import { Fetcher } from '@ahoo-wang/fetcher';
-
-const api = new Fetcher();
-console.log(api.urlBuilder.build('/health'));
-```
-
-This prints `/health`. Continue with [First Request](./first-request.md).
+Continue with [Your first request](./first-request.md).

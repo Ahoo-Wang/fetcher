@@ -1,13 +1,9 @@
 ---
-title: First Request
-description: Install Fetcher and make a typed HTTP request in five minutes.
+title: Your first request
+description: Install, request, extract JSON, and handle failure.
 ---
 
-# First Request
-
-## Prerequisites
-
-Use Node.js `>=18.20.8` or a browser project with native Fetch support.
+# Your first request
 
 ## Install
 
@@ -15,77 +11,52 @@ Use Node.js `>=18.20.8` or a browser project with native Fetch support.
 pnpm add @ahoo-wang/fetcher
 ```
 
-## Create a client
+Run the example in a Fetch-capable browser project or Node.js environment. It uses an external demonstration service and needs network access; replace it with your application endpoint for integration.
+
+## Create a client and read a user
 
 ```ts
-import { Fetcher } from '@ahoo-wang/fetcher';
+import {
+  ExchangeError,
+  Fetcher,
+  JsonResultExtractor,
+} from '@ahoo-wang/fetcher';
 
-const api = new Fetcher({
-  baseURL: 'https://api.example.com',
-  timeout: 5_000,
-});
-```
-
-Client options become defaults for every request. Request options override them.
-
-## Send a request
-
-```ts
-const response = await api.get('/users/{id}', {
-  urlParams: {
-    path: { id: '42' },
-    query: { include: 'profile' },
-  },
-});
-```
-
-Fetcher resolves this URL:
-
-```text
-https://api.example.com/users/42?include=profile
-```
-
-## Read the result
-
-HTTP helpers return the native `Response` by default:
-
-```ts
 interface User {
-  id: string;
+  id: number;
   name: string;
 }
-
-const user = (await response.json()) as User;
-console.log(user.name);
-```
-
-Keep validation at the trust boundary: a TypeScript assertion does not validate server data.
-
-## Handle a failed response
-
-The default status validator accepts `200` through `299`. A rejected status or request failure reaches the Fetcher error hierarchy:
-
-```ts
-import { ExchangeError, FetcherError } from '@ahoo-wang/fetcher';
+const api = new Fetcher({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  timeout: 5_000,
+});
 
 try {
-  await api.get('/users/missing');
+  const user = await api.get<User>(
+    '/users/{id}',
+    {
+      urlParams: { path: { id: 1 } },
+    },
+    { resultExtractor: JsonResultExtractor },
+  );
+  console.log(user.name);
 } catch (error) {
   if (error instanceof ExchangeError) {
     console.error(error.exchange.response?.status, error.message);
-  } else if (error instanceof FetcherError) {
-    console.error(error.message);
   } else {
     throw error;
   }
 }
 ```
 
-`ExchangeError.exchange` keeps the request, response, attributes, and underlying error together for diagnosis.
+## What happened
 
-## Next steps
+`baseURL` combines with `/users/{id}` and `urlParams.path` substitutes `1`. The `get` helper returns `Response` by default; its third argument selects `JsonResultExtractor` to read JSON directly.
 
-- [Choose Packages](./choose-packages.md) for optional capabilities.
-- [Fetcher reference](../reference/fetcher.md) for client and request options.
-- [Request lifecycle](../learn/request-lifecycle.md) for the interceptor pipeline.
-- [Storybook](https://fetcher.ahoo.me/storybook/) for interactive request behavior.
+Default status validation accepts 200–299. Rejected HTTP status or transport failure can expose request context through `ExchangeError`. JSON parsing can fail during result extraction, so handling one error class is not exhaustive. The `User` generic does not validate server JSON; validate data at your application boundary.
+
+## Connect your own endpoint
+
+Replace baseURL, path, and User. Add `query: { active: true }` under urlParams when you need query parameters. Keep private service credentials out of browser code.
+
+Continue with [Requests and results](../learn/requests-and-results.md), or look up [Client configuration](../reference/fetcher/client.md) and [Errors and cancellation](../reference/fetcher/errors-and-cancellation.md).
