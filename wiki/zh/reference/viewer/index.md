@@ -1,6 +1,6 @@
 ---
-title: 'Viewer Reference'
-description: '@ahoo-wang/fetcher-viewer 5.0.0 API reference'
+title: 'Viewer 参考'
+description: 'Viewer 数据视图、过滤、表格、保存视图与远端集成 API 参考。'
 ---
 
 # Viewer

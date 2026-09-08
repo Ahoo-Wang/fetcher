@@ -1,6 +1,6 @@
 ---
-title: 'Wow Reference'
-description: '@ahoo-wang/fetcher-wow 5.0.0 API reference'
+title: 'Wow 参考'
+description: 'Wow 命令、快照查询、过滤、游标与聚合 API 参考。'
 ---
 
 # Wow

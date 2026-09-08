@@ -1,6 +1,6 @@
 ---
-title: 'React Reference'
-description: '@ahoo-wang/fetcher-react 5.0.0 API reference'
+title: 'React 参考'
+description: 'Fetcher React Hooks 的请求状态、查询、取消与集成 API 参考。'
 ---
 
 # React

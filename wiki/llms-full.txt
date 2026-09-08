@@ -21906,7 +21906,7 @@ cosec.deviceIdStorage.destroy();
 
 </doc>
 
-<doc title="React Reference" path="zh/reference/react/index.md">
+<doc title="React 参考" path="zh/reference/react/index.md">
 
 # React
 
@@ -24457,7 +24457,7 @@ declare const dataMonitorEventBus: {
 
 </doc>
 
-<doc title="Wow Reference" path="zh/reference/wow/index.md">
+<doc title="Wow 参考" path="zh/reference/wow/index.md">
 
 # Wow
 
@@ -28595,7 +28595,7 @@ export function getPropertyValue<T = any>(
 
 </doc>
 
-<doc title="Viewer Reference" path="zh/reference/viewer/index.md">
+<doc title="Viewer 参考" path="zh/reference/viewer/index.md">
 
 # Viewer
 
