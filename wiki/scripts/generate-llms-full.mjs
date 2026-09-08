@@ -112,7 +112,12 @@ function extractTitle(content, fallbackPath) {
 }
 
 function extractDescription(content) {
-  return content.match(/^description:\s*(.+)$/m)?.[1]?.trim() ?? '';
+  return (
+    content
+      .match(/^description:\s*(.+)$/m)?.[1]
+      ?.trim()
+      .replace(/^(['"])(.*)\1$/, '$2') ?? ''
+  );
 }
 
 function toRoute(pagePath) {

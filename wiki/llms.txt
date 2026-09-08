@@ -42,72 +42,72 @@
 ## Reference
 
 - [Find the API for your task](/reference/) — Find the API for your task
-- [Fetcher reference](/reference/fetcher/) — 'HTTP requests with explicit result extraction, ordered interceptors, and native Fetch cancellation.'
-- [Client and registration](/reference/fetcher/client) — 'Client and registration — @ahoo-wang/fetcher 5.0.0'
-- [Requests, headers, and bodies](/reference/fetcher/requests) — 'Requests, headers, and bodies — @ahoo-wang/fetcher 5.0.0'
-- [URL construction and templates](/reference/fetcher/urls) — 'URL construction and templates — @ahoo-wang/fetcher 5.0.0'
-- [Exchanges and result extraction](/reference/fetcher/results) — 'Exchanges and result extraction — @ahoo-wang/fetcher 5.0.0'
-- [Interceptor pipeline](/reference/fetcher/interceptors) — 'Interceptor pipeline — @ahoo-wang/fetcher 5.0.0'
-- [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation) — 'Errors, timeouts, and cancellation — @ahoo-wang/fetcher 5.0.0'
-- [Decorator reference](/reference/decorator/) — 'Legacy TypeScript class, method, and parameter decorators for declarative Fetcher services.'
-- [Services and endpoints](/reference/decorator/services-and-endpoints) — 'Services and endpoints — @ahoo-wang/fetcher-decorator 5.0.0'
-- [Parameter binding](/reference/decorator/parameters) — 'Parameter binding — @ahoo-wang/fetcher-decorator 5.0.0'
-- [Metadata and execution lifecycle](/reference/decorator/execution) — 'Metadata and execution lifecycle — @ahoo-wang/fetcher-decorator 5.0.0'
-- [Eventbus reference](/reference/eventbus/) — 'Local serial/parallel delivery and optional cross-context broadcasting.'
-- [Events and local delivery](/reference/eventbus/events-and-delivery) — 'Events and local delivery — @ahoo-wang/fetcher-eventbus 5.0.0'
-- [Broadcast buses and messengers](/reference/eventbus/broadcast-and-messengers) — 'Broadcast buses and messengers — @ahoo-wang/fetcher-eventbus 5.0.0'
-- [Eventstream reference](/reference/eventstream/) — 'Web Streams transforms for UTF-8 text, SSE frames, JSON data, and cancellable consumption.'
-- [The SSE parsing pipeline](/reference/eventstream/sse-pipeline) — 'The SSE parsing pipeline — @ahoo-wang/fetcher-eventstream 5.0.0'
-- [JSON events, Response helpers, and extractors](/reference/eventstream/json-and-results) — 'JSON events, Response helpers, and extractors — @ahoo-wang/fetcher-eventstream 5.0.0'
-- [Consumption, cancellation, and safe transforms](/reference/eventstream/consumption-and-cancellation) — 'Consumption, cancellation, and safe transforms — @ahoo-wang/fetcher-eventstream 5.0.0'
-- [Storage reference](/reference/storage/) — 'Typed values backed by browser Storage or memory, with explicit notification ownership.'
-- [KeyStorage and change listeners](/reference/storage/key-storage) — 'KeyStorage and change listeners — @ahoo-wang/fetcher-storage 5.0.0'
-- [Serialization and runtime storage](/reference/storage/serialization-and-runtime) — 'Serialization and runtime storage — @ahoo-wang/fetcher-storage 5.0.0'
-- [Openapi reference](/reference/openapi/) — 'Openapi reference — Fetcher 5.0.0'
-- [Documents and operations](/reference/openapi/documents-and-operations) — 'Documents and operations — Fetcher 5.0.0'
-- [Schemas and references](/reference/openapi/schemas-and-references) — 'Schemas and references — Fetcher 5.0.0'
-- [Security and extensions](/reference/openapi/security-and-extensions) — 'Security and extensions — Fetcher 5.0.0'
-- [Generator reference](/reference/generator/) — 'Generator reference — Fetcher 5.0.0'
-- [Generator CLI](/reference/generator/cli) — 'Generator CLI — Fetcher 5.0.0'
-- [Generator configuration](/reference/generator/configuration) — 'Generator configuration — Fetcher 5.0.0'
-- [Generated output and regeneration](/reference/generator/generated-output) — 'Generated output and regeneration — Fetcher 5.0.0'
-- [Programmatic API](/reference/generator/programmatic-api) — 'Programmatic API — Fetcher 5.0.0'
-- [Wow aggregate discovery](/reference/generator/wow-discovery) — 'Wow aggregate discovery — Fetcher 5.0.0'
-- [Openai reference](/reference/openai/) — 'Openai reference — Fetcher 5.0.0'
-- [Client and chat completions](/reference/openai/client-and-completions) — 'Client and chat completions — Fetcher 5.0.0'
-- [Streaming chat completions](/reference/openai/streaming) — 'Streaming chat completions — Fetcher 5.0.0'
-- [Cosec reference](/reference/cosec/) — 'Cosec reference — Fetcher 5.0.0'
-- [CoSec configuration](/reference/cosec/configuration) — 'CoSec configuration — Fetcher 5.0.0'
-- [Tokens and refresh](/reference/cosec/tokens-and-refresh) — 'Tokens and refresh — Fetcher 5.0.0'
-- [Interceptors and attribution](/reference/cosec/interceptors-and-attribution) — 'Interceptors and attribution — Fetcher 5.0.0'
-- [React Reference](/reference/react/) — '@ahoo-wang/fetcher-react 5.0.0 API reference'
-- [Fetcher hooks](/reference/react/fetcher-hooks) — 'Fetcher hooks — @ahoo-wang/fetcher-react 5.0.0'
-- [Promise and query state](/reference/react/promise-and-query-state) — 'Promise and query state — @ahoo-wang/fetcher-react 5.0.0'
-- [API hook factories](/reference/react/api-hooks) — 'API hook factories — @ahoo-wang/fetcher-react 5.0.0'
-- [Debounced execution](/reference/react/debounce) — 'Debounced execution — @ahoo-wang/fetcher-react 5.0.0'
-- [Storage and event subscriptions](/reference/react/storage-and-events) — 'Storage and event subscriptions — @ahoo-wang/fetcher-react 5.0.0'
-- [Security hooks and route guards](/reference/react/cosec) — 'Security hooks and route guards — @ahoo-wang/fetcher-react 5.0.0'
-- [Wow query hooks](/reference/react/wow) — 'Wow query hooks — @ahoo-wang/fetcher-react 5.0.0'
-- [Monitoring, refs and fullscreen](/reference/react/monitoring-and-utilities) — 'Monitoring, refs and fullscreen — @ahoo-wang/fetcher-react 5.0.0'
-- [Wow Reference](/reference/wow/) — '@ahoo-wang/fetcher-wow 5.0.0 API reference'
-- [Client configuration and metadata](/reference/wow/configuration) — 'Client configuration and metadata — @ahoo-wang/fetcher-wow 5.0.0'
-- [Commands and wait results](/reference/wow/commands) — 'Commands and wait results — @ahoo-wang/fetcher-wow 5.0.0'
-- [Snapshot queries](/reference/wow/snapshot-queries) — 'Snapshot queries — @ahoo-wang/fetcher-wow 5.0.0'
-- [Filter expressions and legacy conditions](/reference/wow/filters) — 'Filter expressions and legacy conditions — @ahoo-wang/fetcher-wow 5.0.0'
-- [Projection, sorting and pagination](/reference/wow/query-options) — 'Projection, sorting and pagination — @ahoo-wang/fetcher-wow 5.0.0'
-- [Cursor queries](/reference/wow/cursor-queries) — 'Cursor queries — @ahoo-wang/fetcher-wow 5.0.0'
-- [Aggregation builders](/reference/wow/aggregations) — 'Aggregation builders — @ahoo-wang/fetcher-wow 5.0.0'
-- [Events and historical state](/reference/wow/events-and-history) — 'Events and historical state — @ahoo-wang/fetcher-wow 5.0.0'
-- [Shared domain types and utilities](/reference/wow/shared-types) — 'Shared domain types and utilities — @ahoo-wang/fetcher-wow 5.0.0'
-- [Viewer Reference](/reference/viewer/) — '@ahoo-wang/fetcher-viewer 5.0.0 API reference'
-- [Models and state ownership](/reference/viewer/models-and-state) — 'Models and state ownership — @ahoo-wang/fetcher-viewer 5.0.0'
-- [View and Viewer composition](/reference/viewer/view-and-viewer) — 'View and Viewer composition — @ahoo-wang/fetcher-viewer 5.0.0'
-- [Saved-view panels and persistence callbacks](/reference/viewer/saved-views) — 'Saved-view panels and persistence callbacks — @ahoo-wang/fetcher-viewer 5.0.0'
-- [FetcherViewer remote integration](/reference/viewer/fetcher-viewer) — 'FetcherViewer remote integration — @ahoo-wang/fetcher-viewer 5.0.0'
-- [Filters and editable panels](/reference/viewer/filters) — 'Filters and editable panels — @ahoo-wang/fetcher-viewer 5.0.0'
-- [Tables, columns and cells](/reference/viewer/tables-and-cells) — 'Tables, columns and cells — @ahoo-wang/fetcher-viewer 5.0.0'
-- [Registries, inputs and fullscreen button](/reference/viewer/registries-and-inputs) — 'Registries, inputs and fullscreen button — @ahoo-wang/fetcher-viewer 5.0.0'
-- [Toolbar, refresh and locale](/reference/viewer/toolbar-and-locale) — 'Toolbar, refresh and locale — @ahoo-wang/fetcher-viewer 5.0.0'
+- [Fetcher reference](/reference/fetcher/) — HTTP requests with explicit result extraction, ordered interceptors, and native Fetch cancellation.
+- [Client and registration](/reference/fetcher/client) — Client and registration — @ahoo-wang/fetcher 5.0.0
+- [Requests, headers, and bodies](/reference/fetcher/requests) — Requests, headers, and bodies — @ahoo-wang/fetcher 5.0.0
+- [URL construction and templates](/reference/fetcher/urls) — URL construction and templates — @ahoo-wang/fetcher 5.0.0
+- [Exchanges and result extraction](/reference/fetcher/results) — Exchanges and result extraction — @ahoo-wang/fetcher 5.0.0
+- [Interceptor pipeline](/reference/fetcher/interceptors) — Interceptor pipeline — @ahoo-wang/fetcher 5.0.0
+- [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation) — Errors, timeouts, and cancellation — @ahoo-wang/fetcher 5.0.0
+- [Decorator reference](/reference/decorator/) — Legacy TypeScript class, method, and parameter decorators for declarative Fetcher services.
+- [Services and endpoints](/reference/decorator/services-and-endpoints) — Services and endpoints — @ahoo-wang/fetcher-decorator 5.0.0
+- [Parameter binding](/reference/decorator/parameters) — Parameter binding — @ahoo-wang/fetcher-decorator 5.0.0
+- [Metadata and execution lifecycle](/reference/decorator/execution) — Metadata and execution lifecycle — @ahoo-wang/fetcher-decorator 5.0.0
+- [Eventbus reference](/reference/eventbus/) — Local serial/parallel delivery and optional cross-context broadcasting.
+- [Events and local delivery](/reference/eventbus/events-and-delivery) — Events and local delivery — @ahoo-wang/fetcher-eventbus 5.0.0
+- [Broadcast buses and messengers](/reference/eventbus/broadcast-and-messengers) — Broadcast buses and messengers — @ahoo-wang/fetcher-eventbus 5.0.0
+- [Eventstream reference](/reference/eventstream/) — Web Streams transforms for UTF-8 text, SSE frames, JSON data, and cancellable consumption.
+- [The SSE parsing pipeline](/reference/eventstream/sse-pipeline) — The SSE parsing pipeline — @ahoo-wang/fetcher-eventstream 5.0.0
+- [JSON events, Response helpers, and extractors](/reference/eventstream/json-and-results) — JSON events, Response helpers, and extractors — @ahoo-wang/fetcher-eventstream 5.0.0
+- [Consumption, cancellation, and safe transforms](/reference/eventstream/consumption-and-cancellation) — Consumption, cancellation, and safe transforms — @ahoo-wang/fetcher-eventstream 5.0.0
+- [Storage reference](/reference/storage/) — Typed values backed by browser Storage or memory, with explicit notification ownership.
+- [KeyStorage and change listeners](/reference/storage/key-storage) — KeyStorage and change listeners — @ahoo-wang/fetcher-storage 5.0.0
+- [Serialization and runtime storage](/reference/storage/serialization-and-runtime) — Serialization and runtime storage — @ahoo-wang/fetcher-storage 5.0.0
+- [Openapi reference](/reference/openapi/) — Openapi reference — Fetcher 5.0.0
+- [Documents and operations](/reference/openapi/documents-and-operations) — Documents and operations — Fetcher 5.0.0
+- [Schemas and references](/reference/openapi/schemas-and-references) — Schemas and references — Fetcher 5.0.0
+- [Security and extensions](/reference/openapi/security-and-extensions) — Security and extensions — Fetcher 5.0.0
+- [Generator reference](/reference/generator/) — Generator reference — Fetcher 5.0.0
+- [Generator CLI](/reference/generator/cli) — Generator CLI — Fetcher 5.0.0
+- [Generator configuration](/reference/generator/configuration) — Generator configuration — Fetcher 5.0.0
+- [Generated output and regeneration](/reference/generator/generated-output) — Generated output and regeneration — Fetcher 5.0.0
+- [Programmatic API](/reference/generator/programmatic-api) — Programmatic API — Fetcher 5.0.0
+- [Wow aggregate discovery](/reference/generator/wow-discovery) — Wow aggregate discovery — Fetcher 5.0.0
+- [Openai reference](/reference/openai/) — Openai reference — Fetcher 5.0.0
+- [Client and chat completions](/reference/openai/client-and-completions) — Client and chat completions — Fetcher 5.0.0
+- [Streaming chat completions](/reference/openai/streaming) — Streaming chat completions — Fetcher 5.0.0
+- [Cosec reference](/reference/cosec/) — Cosec reference — Fetcher 5.0.0
+- [CoSec configuration](/reference/cosec/configuration) — CoSec configuration — Fetcher 5.0.0
+- [Tokens and refresh](/reference/cosec/tokens-and-refresh) — Tokens and refresh — Fetcher 5.0.0
+- [Interceptors and attribution](/reference/cosec/interceptors-and-attribution) — Interceptors and attribution — Fetcher 5.0.0
+- [React Reference](/reference/react/) — @ahoo-wang/fetcher-react 5.0.0 API reference
+- [Fetcher hooks](/reference/react/fetcher-hooks) — Fetcher hooks — @ahoo-wang/fetcher-react 5.0.0
+- [Promise and query state](/reference/react/promise-and-query-state) — Promise and query state — @ahoo-wang/fetcher-react 5.0.0
+- [API hook factories](/reference/react/api-hooks) — API hook factories — @ahoo-wang/fetcher-react 5.0.0
+- [Debounced execution](/reference/react/debounce) — Debounced execution — @ahoo-wang/fetcher-react 5.0.0
+- [Storage and event subscriptions](/reference/react/storage-and-events) — Storage and event subscriptions — @ahoo-wang/fetcher-react 5.0.0
+- [Security hooks and route guards](/reference/react/cosec) — Security hooks and route guards — @ahoo-wang/fetcher-react 5.0.0
+- [Wow query hooks](/reference/react/wow) — Wow query hooks — @ahoo-wang/fetcher-react 5.0.0
+- [Monitoring, refs and fullscreen](/reference/react/monitoring-and-utilities) — Monitoring, refs and fullscreen — @ahoo-wang/fetcher-react 5.0.0
+- [Wow Reference](/reference/wow/) — @ahoo-wang/fetcher-wow 5.0.0 API reference
+- [Client configuration and metadata](/reference/wow/configuration) — Client configuration and metadata — @ahoo-wang/fetcher-wow 5.0.0
+- [Commands and wait results](/reference/wow/commands) — Commands and wait results — @ahoo-wang/fetcher-wow 5.0.0
+- [Snapshot queries](/reference/wow/snapshot-queries) — Snapshot queries — @ahoo-wang/fetcher-wow 5.0.0
+- [Filter expressions and legacy conditions](/reference/wow/filters) — Filter expressions and legacy conditions — @ahoo-wang/fetcher-wow 5.0.0
+- [Projection, sorting and pagination](/reference/wow/query-options) — Projection, sorting and pagination — @ahoo-wang/fetcher-wow 5.0.0
+- [Cursor queries](/reference/wow/cursor-queries) — Cursor queries — @ahoo-wang/fetcher-wow 5.0.0
+- [Aggregation builders](/reference/wow/aggregations) — Aggregation builders — @ahoo-wang/fetcher-wow 5.0.0
+- [Events and historical state](/reference/wow/events-and-history) — Events and historical state — @ahoo-wang/fetcher-wow 5.0.0
+- [Shared domain types and utilities](/reference/wow/shared-types) — Shared domain types and utilities — @ahoo-wang/fetcher-wow 5.0.0
+- [Viewer Reference](/reference/viewer/) — @ahoo-wang/fetcher-viewer 5.0.0 API reference
+- [Models and state ownership](/reference/viewer/models-and-state) — Models and state ownership — @ahoo-wang/fetcher-viewer 5.0.0
+- [View and Viewer composition](/reference/viewer/view-and-viewer) — View and Viewer composition — @ahoo-wang/fetcher-viewer 5.0.0
+- [Saved-view panels and persistence callbacks](/reference/viewer/saved-views) — Saved-view panels and persistence callbacks — @ahoo-wang/fetcher-viewer 5.0.0
+- [FetcherViewer remote integration](/reference/viewer/fetcher-viewer) — FetcherViewer remote integration — @ahoo-wang/fetcher-viewer 5.0.0
+- [Filters and editable panels](/reference/viewer/filters) — Filters and editable panels — @ahoo-wang/fetcher-viewer 5.0.0
+- [Tables, columns and cells](/reference/viewer/tables-and-cells) — Tables, columns and cells — @ahoo-wang/fetcher-viewer 5.0.0
+- [Registries, inputs and fullscreen button](/reference/viewer/registries-and-inputs) — Registries, inputs and fullscreen button — @ahoo-wang/fetcher-viewer 5.0.0
+- [Toolbar, refresh and locale](/reference/viewer/toolbar-and-locale) — Toolbar, refresh and locale — @ahoo-wang/fetcher-viewer 5.0.0
 
 ## Contributing
 

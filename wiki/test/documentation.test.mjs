@@ -131,3 +131,12 @@ test('reference tables preserve complete union type code spans in both languages
     }
   }
 });
+
+test('LLM index emits description text without YAML delimiters', () => {
+  const index = readFileSync(new URL('../llms.txt', import.meta.url), 'utf8');
+  assert.ok(
+    index.includes(
+      '- [Fetcher reference](/reference/fetcher/) — HTTP requests with explicit result extraction, ordered interceptors, and native Fetch cancellation.',
+    ),
+  );
+});
