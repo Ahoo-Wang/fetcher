@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import type { ViewHost, ViewInstancePermissions } from '../recordModel.js';
+import type { ViewInstancePermissions } from '../recordModel.js';
+import type { ViewHost } from '../ViewHost.js';
 import { validateViewInstance } from '../recordValidation.js';
 import { sameFilterState } from '../../filter/filterTree.js';
 import type { EngineScope } from './EngineScope.js';
@@ -63,7 +64,7 @@ export class ViewManagement {
     this.store.patch(id, { writeStatus: 'renaming', writeError: null });
     try {
       if (!current()) return;
-      const result = await this.host.renameInstance!(
+      const result = await this.host.instance!.rename!(
         id,
         title,
         session.baseline.revision,
@@ -109,12 +110,12 @@ export class ViewManagement {
   canReorderInstances(): boolean {
     if (
       this.scope.disposed ||
-      typeof this.host.saveInstanceOrder !== 'function'
+      typeof this.host.preference?.saveOrder !== 'function'
     )
       return false;
     try {
-      return this.host.getDefinitionPermissions
-        ? this.host.getDefinitionPermissions().reorder === true
+      return this.host.permission?.getDefinition
+        ? this.host.permission?.getDefinition().reorder === true
         : true;
     } catch {
       return false;
@@ -144,7 +145,7 @@ export class ViewManagement {
     const token = Symbol();
     this.ordering = token;
     try {
-      await this.host.saveInstanceOrder!(this.definitionId, [...order]);
+      await this.host.preference!.saveOrder!(this.definitionId, [...order]);
       if (!this.scope.current(lifecycle) || this.ordering !== token) return;
       const latest = new Set(this.store.getSnapshot().instanceIds);
       const remaining = order.filter(id => latest.has(id));
@@ -174,7 +175,7 @@ export class ViewManagement {
     this.store.patch(id, { writeStatus: 'deleting', writeError: null });
     try {
       if (!current()) return;
-      await this.host.deleteInstance!(id, session.baseline.revision);
+      await this.host.instance!.delete!(id, session.baseline.revision);
       if (!current()) return;
       this.queries.cancel(id);
       this.summaries.invalidate(id);

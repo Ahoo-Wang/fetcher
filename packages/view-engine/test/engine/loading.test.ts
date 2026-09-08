@@ -14,9 +14,9 @@
 import { expect, it, vi } from 'vitest';
 import type {
   ViewDefinition,
-  ViewHost,
   ViewInstance,
 } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, definition, instance, selected, setup } from './fixtures.js';
 
 it('keeps absent and invalid defaults unselected without querying', async () => {
@@ -71,9 +71,8 @@ it('loads the definition and list concurrently and never rereads a complete sele
     definition: undefined,
     instances: undefined,
     host: {
-      loadDefinition,
-      listInstances,
-      loadInstance,
+      definition: { load: loadDefinition },
+      instance: { list: listInstances, load: loadInstance },
     } as unknown as ViewHost,
   });
   const loading = engine.load();
@@ -100,7 +99,7 @@ it('ignores obsolete loads and prevents query dispatch or snapshot commits after
     .mockResolvedValue(definition);
   const { engine, paged } = setup({
     definition: undefined,
-    host: { loadDefinition } as unknown as ViewHost,
+    host: { definition: { load: loadDefinition } } as unknown as ViewHost,
   });
   const first = engine.load();
   await vi.waitFor(() => expect(loadDefinition).toHaveBeenCalledOnce());

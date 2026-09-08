@@ -15,8 +15,8 @@ import type {
   RecordQuerySource,
   RecordSession,
   RecordSummaryResult,
-  ViewHost,
 } from '../recordModel.js';
+import type { ViewHost } from '../ViewHost.js';
 import {
   calculateRecordSummary,
   createRecordSummaryQuery,

@@ -27,10 +27,7 @@ import type {
 } from '../filter/filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 
-import type {
-  ViewCreateContext,
-  ViewPermissionSnapshot,
-} from './viewServiceContract.js';
+import type { ViewHost } from './ViewHost.js';
 
 export type RecordData = Record<string, unknown>;
 export type RecordKey = string | number;
@@ -157,48 +154,6 @@ export interface ViewCapabilities {
 }
 export type RecordQuerySource = Pick<QueryApi<RecordData>, 'paged' | 'cursor'> &
   Partial<Pick<QueryApi<RecordData>, 'aggregate'>>;
-/** Bridges view-service persistence and local runtime capabilities within one fixed access scope. */
-export interface ViewHost {
-  loadDefinition?(
-    definitionId: string,
-    signal?: AbortSignal,
-  ): Promise<ViewDefinition>;
-  listInstances?(
-    definitionId: string,
-    signal?: AbortSignal,
-  ): Promise<ViewInstanceList>;
-  loadInstance?(
-    instanceId: string,
-    signal?: AbortSignal,
-  ): Promise<ViewInstance>;
-  createInstance?(
-    instance: Omit<ViewInstance, 'id' | 'revision'>,
-    context: ViewCreateContext,
-  ): Promise<ViewInstance>;
-  saveInstance?(instance: ViewInstance): Promise<ViewInstance>;
-  /** Resolves after deletion. The host enforces access and revision checks. */
-  deleteInstance?(instanceId: string, revision?: string): Promise<void>;
-  /** Changes only the persisted title; returns the complete instance with its new revision. */
-  renameInstance?(
-    instanceId: string,
-    title: string,
-    revision?: string,
-  ): Promise<ViewInstance>;
-  /** Saves this fixed user's display preference, never the public view's shared order. */
-  saveInstanceOrder?(
-    definitionId: string,
-    instanceIds: string[],
-  ): Promise<void>;
-  /** Client-side source lookup. Business record queries are separate from view persistence. */
-  resolveSource(
-    sourceId: string,
-  ): RecordQuerySource | Promise<RecordQuerySource>;
-  /** Synchronous policy projection, not a per-render HTTP request. Replace the host when policy inputs change. */
-  getInstancePermissions?(instance: ViewInstance): ViewInstancePermissions;
-  getDefinitionPermissions?(): Pick<ViewPermissionSnapshot, 'reorder'>;
-  /** Notify only permission changes, not record-query updates. */
-  subscribePermissions?(listener: () => void): () => void;
-}
 export interface ViewEngineOptions {
   /** Headless filter capabilities fixed for this engine lifetime; ViewPage uses extensions.filters. */
   filterCompilers?: FilterCompilerRegistry;

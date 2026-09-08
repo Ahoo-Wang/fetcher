@@ -12,14 +12,15 @@
  */
 
 import { expect, it, vi } from 'vitest';
-import type { ViewHost, ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 
 it('selects a saved copy using the latest source config, leaving the source draft untouched', async () => {
   const response = deferred<ViewInstance>();
   const createInstance = vi.fn(() => response.promise);
   const { engine } = setup({
-    host: { createInstance } as unknown as ViewHost,
+    host: { instance: { create: createInstance } } as unknown as ViewHost,
   });
   await engine.load();
   engine.setTitle('Source draft');
@@ -53,7 +54,9 @@ it('selects a saved copy using the latest source config, leaving the source draf
 it('adds a saved copy without stealing selection after navigation', async () => {
   const response = deferred<ViewInstance>();
   const { engine } = setup({
-    host: { createInstance: () => response.promise } as unknown as ViewHost,
+    host: {
+      instance: { create: () => response.promise },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const saving = engine.saveAs({
@@ -76,8 +79,7 @@ it('does not let save-as completion cancel a newer pending navigation', async ()
   const read = deferred<ViewInstance>();
   const { engine } = setup({
     host: {
-      createInstance: () => write.promise,
-      loadInstance: () => read.promise,
+      instance: { create: () => write.promise, load: () => read.promise },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -104,13 +106,13 @@ it('rejects system-copy scopes, duplicate new IDs and mismatched copy content', 
       scope: { type: 'public', source: 'system' } as never,
     }),
   ).rejects.toThrow();
-  expect(host.createInstance).not.toHaveBeenCalled();
+  expect(host.instance!.create).not.toHaveBeenCalled();
   for (const result of [
     { ...instance(), title: 'Copy' },
     { ...instance('created'), title: 'Changed' },
   ]) {
     const invalid = setup({
-      host: { createInstance: async () => result } as unknown as ViewHost,
+      host: { instance: { create: async () => result } } as unknown as ViewHost,
     });
     await invalid.engine.load();
     await expect(
@@ -127,7 +129,9 @@ it('rejects system-copy scopes, duplicate new IDs and mismatched copy content', 
 it('ignores write completion after disposal without adding or selecting the created instance', async () => {
   const response = deferred<ViewInstance>();
   const { engine } = setup({
-    host: { createInstance: () => response.promise } as unknown as ViewHost,
+    host: {
+      instance: { create: () => response.promise },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const saving = engine.saveAs({

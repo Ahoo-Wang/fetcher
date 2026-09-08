@@ -131,11 +131,13 @@ export function createOrderService(options: OrderServiceOptions = {}) {
         throw new Error('未知订单数据源。');
       return source;
     },
-    getInstancePermissions: () => ({
-      save: false,
-      saveAsPersonal: false,
-      saveAsShared: false,
-    }),
+    permission: {
+      getInstance: () => ({
+        save: false,
+        saveAsPersonal: false,
+        saveAsShared: false,
+      }),
+    },
   };
   async function beforeWrite() {
     await delay(350);

@@ -32,6 +32,7 @@ export {
 } from './filter/filterCore.js';
 
 export type * from './record/recordModel.js';
+export type * from './record/ViewHost.js';
 export { ViewEngine } from './record/ViewEngine.js';
 export { getRecordSummaryMetrics } from './record/recordPresentation.js';
 export {
@@ -65,18 +66,10 @@ export {
   type LocalStorageViewHostOptions,
 } from './record/LocalStorageViewHost.js';
 
-export {
-  ViewServiceError,
-  VIEW_SERVICE_STATUS,
-} from './record/viewServiceContract.js';
+export { ViewServiceError } from './record/viewServiceContract.js';
 export type {
   ViewServiceErrorCode,
   ViewCreateContext,
   ViewPermissionSnapshot,
   ViewStorageLock,
 } from './record/viewServiceContract.js';
-
-export {
-  HttpViewHost,
-  type HttpViewHostOptions,
-} from './record/HttpViewHost.js';

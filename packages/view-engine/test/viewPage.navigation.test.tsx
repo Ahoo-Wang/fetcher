@@ -106,7 +106,7 @@ it.each([false, true])(
     expect(paged).toHaveBeenCalledTimes(4);
     for (const [query] of paged.mock.calls)
       expect(query.filter).toEqual(filter.gte('amount', 10));
-    expect(host.saveInstance).not.toHaveBeenCalled();
+    expect(host.instance!.save).not.toHaveBeenCalled();
   },
 );
 it.each([false, true])(
@@ -114,7 +114,7 @@ it.each([false, true])(
   async empty => {
     const { host, paged } = setup();
     if (empty)
-      host.listInstances = vi
+      host.instance!.list = vi
         .fn()
         .mockResolvedValue({ instances: [], defaultInstanceId: null });
     render(

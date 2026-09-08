@@ -97,11 +97,11 @@ function customInstance(): ViewInstance {
 it('renders and clears opaque component props without losing them through JSON save and reload', async () => {
   const { host, paged } = setup();
   let saved = customInstance();
-  host.listInstances = vi.fn(async () => ({
+  host.instance!.list = vi.fn(async () => ({
     instances: [saved],
     defaultInstanceId: saved.id,
   }));
-  host.saveInstance = vi.fn(async submitted => {
+  host.instance!.save = vi.fn(async submitted => {
     saved = JSON.parse(JSON.stringify(submitted)) as ViewInstance;
     return saved;
   });
@@ -140,7 +140,7 @@ it('renders and clears opaque component props without losing them through JSON s
   expect(input.value).toBe('');
   expect(document.activeElement).toBe(summary);
   fireEvent.click(screen.getByRole('button', { name: '保存', exact: true }));
-  await waitFor(() => expect(host.saveInstance).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(host.instance!.save).toHaveBeenCalledTimes(1));
   expect(saved.config.filters.root).toEqual({
     ...customInstance().config.filters.root,
     props: { caption: '重点预算', presentation: { emphasis: false } },

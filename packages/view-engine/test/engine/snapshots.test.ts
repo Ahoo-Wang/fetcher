@@ -34,7 +34,7 @@ it('derives pending from core draft changes and only accepts the queried editing
   engine.setFilterDraft(createFilterDraft(filter.gte('state.amount', 500)));
   expect(selected(engine).filterPending).toBe(true);
   await expect(engine.save()).rejects.toThrow(/先查询/);
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   engine.setFilterDraft(createFilterDraft(filter.gte('state.amount', 10)));
   expect(selected(engine).filterPending).toBe(false);
   engine.setFilterValidity(false);

@@ -12,7 +12,7 @@
  */
 
 import { expect, it, vi } from 'vitest';
-import type { ViewHost } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 
 it('retains the current records until a successful refresh replaces them', async () => {

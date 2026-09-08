@@ -256,3 +256,19 @@ it('rejects the former persisted query shape instead of accepting two filter sou
   };
   expect(() => validateViewInstance(legacy, definition)).toThrow(/组件配置/);
 });
+
+it('rejects unaddressable resource IDs while retaining ordinary Unicode and reserved characters', () => {
+  for (const id of ['', ' ', '.', '..', '\ud800']) {
+    expect(() => validateViewDefinition({ ...definition, id })).toThrow();
+    expect(() =>
+      validateViewInstance({ ...instance, id }, definition),
+    ).toThrow();
+  }
+  for (const id of ['订单 /%?#', '%2e%2e', 'orders.v1']) {
+    const named = { ...definition, id };
+    expect(() => validateViewDefinition(named)).not.toThrow();
+    expect(() =>
+      validateViewInstance({ ...instance, id, definitionId: id }, named),
+    ).not.toThrow();
+  }
+});

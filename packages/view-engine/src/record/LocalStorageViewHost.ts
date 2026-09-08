@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import type { ViewHost } from './ViewHost.js';
 import { copy, message } from '../lib/snapshot.js';
 import { sameFilterState } from '../filter/filterTree.js';
 import {
@@ -20,13 +21,13 @@ import {
 import { readInstanceList } from './validation/instanceValidation.js';
 import {
   ViewServiceError,
+  encodeViewResourceId,
   type ViewCreateContext,
   type ViewPermissionSnapshot,
   type ViewStorageLock,
 } from './viewServiceContract.js';
 import type {
   ViewDefinition,
-  ViewHost,
   ViewInstance,
   ViewInstanceList,
   ViewInstancePermissions,
@@ -43,7 +44,7 @@ export interface LocalStorageViewHostOptions {
   storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
   /** All clients for the same storage key must use the same exclusive lock domain. */
   lock: ViewStorageLock;
-  getInstancePermissions?: ViewHost['getInstancePermissions'];
+  instancePermissions?: NonNullable<ViewHost['permission']>['getInstance'];
   canReorder?: () => boolean;
   permissionsRevision?: () => number;
 }
@@ -59,8 +60,254 @@ interface ServiceState {
 
 /** Executable view-service fixture: shared content, private views/order, atomic CAS and create receipts. */
 export class LocalStorageViewHost implements ViewHost {
+  readonly definition = {
+    load: async (id: string, signal?: AbortSignal): Promise<ViewDefinition> => {
+      signal?.throwIfAborted();
+      this.assertDefinition(id);
+      return structuredClone(this.storedDefinition);
+    },
+  };
+  readonly instance = {
+    list: async (
+      id: string,
+      signal?: AbortSignal,
+    ): Promise<ViewInstanceList> => {
+      this.assertDefinition(id);
+      return this.transaction(
+        state => {
+          const visible = this.visible(state);
+          const user = state.users[this.options.scopeKey];
+          const ids = [
+            ...user.order.filter(id => visible.some(item => item.id === id)),
+            ...visible
+              .map(item => item.id)
+              .filter(id => !user.order.includes(id)),
+          ];
+          return {
+            instances: ids.map(id =>
+              this.dto(visible.find(item => item.id === id)!),
+            ),
+            defaultInstanceId: visible.some(
+              item => item.id === user.defaultInstanceId,
+            )
+              ? user.defaultInstanceId
+              : (ids[0] ?? null),
+          };
+        },
+        false,
+        signal,
+      );
+    },
+    load: async (id: string, signal?: AbortSignal): Promise<ViewInstance> => {
+      return this.transaction(
+        state => this.dto(this.find(state, id)),
+        false,
+        signal,
+      );
+    },
+    save: async (instance: ViewInstance): Promise<ViewInstance> => {
+      return this.transaction(state => {
+        this.validate(instance);
+        const previous = this.writable(
+          state,
+          instance.id,
+          instance.revision,
+          'save',
+        );
+        if (!sameFilterState(previous.scope, instance.scope))
+          throw new ViewServiceError(
+            'INVALID_ARGUMENT',
+            '保存不能改变视图可见范围，请另存为',
+          );
+        const saved = {
+          ...copy(this.dto(instance)),
+          ownerKey: previous.ownerKey,
+          revision: crypto.randomUUID(),
+        };
+        state.instances[state.instances.indexOf(previous)] = saved;
+        return this.dto(saved);
+      }, true);
+    },
+    create: async (
+      input: Omit<ViewInstance, 'id' | 'revision'>,
+      context: ViewCreateContext,
+    ): Promise<ViewInstance> => {
+      if (typeof context?.requestId !== 'string' || !context.requestId.trim())
+        throw new ViewServiceError(
+          'INVALID_ARGUMENT',
+          '创建必须提供 requestId',
+        );
+      if (!input || typeof input !== 'object' || Array.isArray(input))
+        throw new ViewServiceError(
+          'INVALID_ARGUMENT',
+          '创建正文必须为视图对象',
+        );
+      return this.transaction(
+        state => {
+          const body = this.createInput(input);
+          const candidate = {
+            ...copy(body),
+            id: crypto.randomUUID(),
+            revision: crypto.randomUUID(),
+          };
+          this.validate(candidate);
+          if (
+            candidate.scope.type === 'public' &&
+            candidate.scope.source === 'system'
+          )
+            throw new ViewServiceError(
+              'FORBIDDEN',
+              '系统视图只能通过初始配置提供',
+            );
+          const allowed = this.permission!.getInstance(candidate);
+          if (
+            !(candidate.scope.type === 'personal'
+              ? allowed.saveAsPersonal
+              : allowed.saveAsShared)
+          )
+            throw new ViewServiceError('FORBIDDEN', '没有创建视图权限');
+          const receiptKey = JSON.stringify([
+            this.options.scopeKey,
+            context.requestId,
+          ]);
+          if (Object.prototype.hasOwnProperty.call(state.creates, receiptKey)) {
+            const receipt = state.creates[receiptKey];
+            if (!sameFilterState(receipt.input, body))
+              throw new ViewServiceError(
+                'CONFLICT',
+                'requestId 已用于不同的创建内容',
+              );
+            return receipt.result;
+          }
+          state.instances.push({
+            ...candidate,
+            ownerKey:
+              candidate.scope.type === 'personal'
+                ? this.options.scopeKey
+                : null,
+          });
+          state.creates = {
+            ...state.creates,
+            [receiptKey]: { input: copy(body), result: candidate },
+          };
+          state.users[this.options.scopeKey].defaultInstanceId ??= candidate.id;
+          return candidate;
+        },
+        true,
+        context.signal,
+      );
+    },
+    rename: async (
+      id: string,
+      title: string,
+      revision?: string,
+    ): Promise<ViewInstance> => {
+      return this.transaction(state => {
+        const previous = this.writable(state, id, revision, 'rename');
+        const next = {
+          ...previous,
+          title: typeof title === 'string' ? title.trim() : title,
+          revision: crypto.randomUUID(),
+        };
+        this.validate(next);
+        state.instances[state.instances.indexOf(previous)] = next;
+        return this.dto(next);
+      }, true);
+    },
+    delete: async (id: string, revision?: string): Promise<void> => {
+      await this.transaction(state => {
+        const previous = this.writable(state, id, revision, 'delete');
+        state.instances.splice(state.instances.indexOf(previous), 1);
+      }, true);
+    },
+  };
+  readonly permission = {
+    getInstance: (
+      instance: ViewInstance,
+    ): Required<ViewInstancePermissions> => {
+      const system =
+        instance.scope.type === 'public' && instance.scope.source === 'system';
+      const policy = this.options.instancePermissions?.(
+        structuredClone(instance),
+      ) ?? {
+        save: true,
+        rename: true,
+        delete: true,
+        saveAsPersonal: true,
+        saveAsShared: true,
+      };
+      return {
+        save: !system && policy.save === true,
+        rename: !system && policy.rename === true,
+        delete: !system && policy.delete === true,
+        saveAsPersonal: policy.saveAsPersonal === true,
+        saveAsShared: policy.saveAsShared === true,
+      };
+    },
+    getDefinition: () => {
+      return { reorder: this.options.canReorder?.() ?? true };
+    },
+    subscribe: (listener: () => void): (() => void) => {
+      this.permissionListeners.add(listener);
+      return () => {
+        this.permissionListeners.delete(listener);
+      };
+    },
+    load: async (
+      id: string,
+      signal?: AbortSignal,
+    ): Promise<ViewPermissionSnapshot> => {
+      this.assertDefinition(id);
+      return this.transaction(
+        state => ({
+          revision: this.options.permissionsRevision?.() ?? 0,
+          instances: Object.fromEntries(
+            this.visible(state).map(item => [
+              item.id,
+              this.permission!.getInstance(this.dto(item)),
+            ]),
+          ),
+          reorder: this.permission!.getDefinition().reorder,
+        }),
+        false,
+        signal,
+      );
+    },
+    refresh: async (): Promise<void> => {
+      await this.permission!.load(this.storedDefinition.id);
+      this.permissionListeners.forEach(listener => listener());
+    },
+  };
+  readonly preference = {
+    saveOrder: async (id: string, instanceIds: string[]): Promise<void> => {
+      this.assertDefinition(id);
+      await this.transaction(state => {
+        if (!this.permission!.getDefinition().reorder)
+          throw new ViewServiceError('FORBIDDEN', '没有视图排序权限');
+        const visible = this.visible(state);
+        if (
+          !Array.isArray(instanceIds) ||
+          instanceIds.some(id => typeof id !== 'string') ||
+          new Set(instanceIds).size !== instanceIds.length
+        )
+          throw new ViewServiceError(
+            'INVALID_ARGUMENT',
+            '排序必须是不重复的实例 ID 数组',
+          );
+        if (
+          instanceIds.length !== visible.length ||
+          instanceIds.some(id => !visible.some(item => item.id === id))
+        )
+          throw new ViewServiceError(
+            'CONFLICT',
+            '排序必须包含所有当前可见视图，请重新加载',
+          );
+        state.users[this.options.scopeKey].order = [...instanceIds];
+      }, true);
+    },
+  };
   readonly storageKey: string;
-  private readonly definition: ViewDefinition;
+  private readonly storedDefinition: ViewDefinition;
   private readonly initial: ViewInstanceList;
   private readonly options: LocalStorageViewHostOptions;
   private readonly permissionListeners = new Set<() => void>();
@@ -75,10 +322,10 @@ export class LocalStorageViewHost implements ViewHost {
         'INVALID_ARGUMENT',
         'serviceKey 和 scopeKey 不能为空',
       );
-    this.definition = copy(options.definition);
-    validateViewDefinition(this.definition);
+    this.storedDefinition = copy(options.definition);
+    validateViewDefinition(this.storedDefinition);
     this.initial = copy(options.instances);
-    readInstanceList(this.initial, this.definition);
+    readInstanceList(this.initial, this.storedDefinition);
     if (
       this.initial.defaultInstanceId !== null &&
       !this.initial.instances.some(
@@ -90,247 +337,15 @@ export class LocalStorageViewHost implements ViewHost {
         '默认视图必须为有效实例或 null',
       );
     this.options = { ...options };
-    this.storageKey = `fve:views:${JSON.stringify([options.serviceKey, this.definition.id])}`;
+    this.storageKey = `fve:views:${JSON.stringify([options.serviceKey, this.storedDefinition.id])}`;
   }
 
-  async loadDefinition(
-    id: string,
-    signal?: AbortSignal,
-  ): Promise<ViewDefinition> {
-    signal?.throwIfAborted();
-    this.assertDefinition(id);
-    return structuredClone(this.definition);
-  }
-  async listInstances(
-    id: string,
-    signal?: AbortSignal,
-  ): Promise<ViewInstanceList> {
-    this.assertDefinition(id);
-    return this.transaction(
-      state => {
-        const visible = this.visible(state);
-        const user = state.users[this.options.scopeKey];
-        const ids = [
-          ...user.order.filter(id => visible.some(item => item.id === id)),
-          ...visible
-            .map(item => item.id)
-            .filter(id => !user.order.includes(id)),
-        ];
-        return {
-          instances: ids.map(id =>
-            this.dto(visible.find(item => item.id === id)!),
-          ),
-          defaultInstanceId: visible.some(
-            item => item.id === user.defaultInstanceId,
-          )
-            ? user.defaultInstanceId
-            : (ids[0] ?? null),
-        };
-      },
-      false,
-      signal,
-    );
-  }
-  async loadInstance(id: string, signal?: AbortSignal): Promise<ViewInstance> {
-    return this.transaction(
-      state => this.dto(this.find(state, id)),
-      false,
-      signal,
-    );
-  }
   resolveSource(id: string) {
-    if (id !== this.definition.sourceId)
+    if (id !== this.storedDefinition.sourceId)
       throw new ViewServiceError('NOT_FOUND', '视图数据源不存在');
     return this.options.resolveSource(id);
   }
-  getInstancePermissions(
-    instance: ViewInstance,
-  ): Required<ViewInstancePermissions> {
-    const system =
-      instance.scope.type === 'public' && instance.scope.source === 'system';
-    const policy = this.options.getInstancePermissions?.(
-      structuredClone(instance),
-    ) ?? {
-      save: true,
-      rename: true,
-      delete: true,
-      saveAsPersonal: true,
-      saveAsShared: true,
-    };
-    return {
-      save: !system && policy.save === true,
-      rename: !system && policy.rename === true,
-      delete: !system && policy.delete === true,
-      saveAsPersonal: policy.saveAsPersonal === true,
-      saveAsShared: policy.saveAsShared === true,
-    };
-  }
-  getDefinitionPermissions() {
-    return { reorder: this.options.canReorder?.() ?? true };
-  }
-  subscribePermissions = (listener: () => void): (() => void) => {
-    this.permissionListeners.add(listener);
-    return () => {
-      this.permissionListeners.delete(listener);
-    };
-  };
-  async loadPermissions(
-    id: string,
-    signal?: AbortSignal,
-  ): Promise<ViewPermissionSnapshot> {
-    this.assertDefinition(id);
-    return this.transaction(
-      state => ({
-        revision: this.options.permissionsRevision?.() ?? 0,
-        instances: Object.fromEntries(
-          this.visible(state).map(item => [
-            item.id,
-            this.getInstancePermissions(this.dto(item)),
-          ]),
-        ),
-        reorder: this.getDefinitionPermissions().reorder,
-      }),
-      false,
-      signal,
-    );
-  }
-  async refreshPermissions(): Promise<void> {
-    await this.loadPermissions(this.definition.id);
-    this.permissionListeners.forEach(listener => listener());
-  }
-  async saveInstance(instance: ViewInstance): Promise<ViewInstance> {
-    return this.transaction(state => {
-      this.validate(instance);
-      const previous = this.writable(
-        state,
-        instance.id,
-        instance.revision,
-        'save',
-      );
-      if (!sameFilterState(previous.scope, instance.scope))
-        throw new ViewServiceError(
-          'INVALID_ARGUMENT',
-          '保存不能改变视图可见范围，请另存为',
-        );
-      const saved = {
-        ...copy(this.dto(instance)),
-        ownerKey: previous.ownerKey,
-        revision: crypto.randomUUID(),
-      };
-      state.instances[state.instances.indexOf(previous)] = saved;
-      return this.dto(saved);
-    }, true);
-  }
-  async createInstance(
-    input: Omit<ViewInstance, 'id' | 'revision'>,
-    context: ViewCreateContext,
-  ): Promise<ViewInstance> {
-    if (typeof context?.requestId !== 'string' || !context.requestId.trim())
-      throw new ViewServiceError('INVALID_ARGUMENT', '创建必须提供 requestId');
-    if (!input || typeof input !== 'object' || Array.isArray(input))
-      throw new ViewServiceError('INVALID_ARGUMENT', '创建正文必须为视图对象');
-    return this.transaction(
-      state => {
-        const body = this.createInput(input);
-        const candidate = {
-          ...copy(body),
-          id: crypto.randomUUID(),
-          revision: crypto.randomUUID(),
-        };
-        this.validate(candidate);
-        if (
-          candidate.scope.type === 'public' &&
-          candidate.scope.source === 'system'
-        )
-          throw new ViewServiceError(
-            'FORBIDDEN',
-            '系统视图只能通过初始配置提供',
-          );
-        const allowed = this.getInstancePermissions(candidate);
-        if (
-          !(candidate.scope.type === 'personal'
-            ? allowed.saveAsPersonal
-            : allowed.saveAsShared)
-        )
-          throw new ViewServiceError('FORBIDDEN', '没有创建视图权限');
-        const receiptKey = JSON.stringify([
-          this.options.scopeKey,
-          context.requestId,
-        ]);
-        if (Object.prototype.hasOwnProperty.call(state.creates, receiptKey)) {
-          const receipt = state.creates[receiptKey];
-          if (!sameFilterState(receipt.input, body))
-            throw new ViewServiceError(
-              'CONFLICT',
-              'requestId 已用于不同的创建内容',
-            );
-          return receipt.result;
-        }
-        state.instances.push({
-          ...candidate,
-          ownerKey:
-            candidate.scope.type === 'personal' ? this.options.scopeKey : null,
-        });
-        state.creates = {
-          ...state.creates,
-          [receiptKey]: { input: copy(body), result: candidate },
-        };
-        state.users[this.options.scopeKey].defaultInstanceId ??= candidate.id;
-        return candidate;
-      },
-      true,
-      context.signal,
-    );
-  }
-  async renameInstance(
-    id: string,
-    title: string,
-    revision?: string,
-  ): Promise<ViewInstance> {
-    return this.transaction(state => {
-      const previous = this.writable(state, id, revision, 'rename');
-      const next = {
-        ...previous,
-        title: typeof title === 'string' ? title.trim() : title,
-        revision: crypto.randomUUID(),
-      };
-      this.validate(next);
-      state.instances[state.instances.indexOf(previous)] = next;
-      return this.dto(next);
-    }, true);
-  }
-  async deleteInstance(id: string, revision?: string): Promise<void> {
-    await this.transaction(state => {
-      const previous = this.writable(state, id, revision, 'delete');
-      state.instances.splice(state.instances.indexOf(previous), 1);
-    }, true);
-  }
-  async saveInstanceOrder(id: string, instanceIds: string[]): Promise<void> {
-    this.assertDefinition(id);
-    await this.transaction(state => {
-      if (!this.getDefinitionPermissions().reorder)
-        throw new ViewServiceError('FORBIDDEN', '没有视图排序权限');
-      const visible = this.visible(state);
-      if (
-        !Array.isArray(instanceIds) ||
-        instanceIds.some(id => typeof id !== 'string') ||
-        new Set(instanceIds).size !== instanceIds.length
-      )
-        throw new ViewServiceError(
-          'INVALID_ARGUMENT',
-          '排序必须是不重复的实例 ID 数组',
-        );
-      if (
-        instanceIds.length !== visible.length ||
-        instanceIds.some(id => !visible.some(item => item.id === id))
-      )
-        throw new ViewServiceError(
-          'CONFLICT',
-          '排序必须包含所有当前可见视图，请重新加载',
-        );
-      state.users[this.options.scopeKey].order = [...instanceIds];
-    }, true);
-  }
+
   /** Administrative fixture reset for this service/definition, across its users. Not a REST operation. */
   async reset(): Promise<void> {
     await this.options.lock(this.storageKey, () =>
@@ -339,7 +354,8 @@ export class LocalStorageViewHost implements ViewHost {
   }
 
   private assertDefinition(id: string): void {
-    if (id !== this.definition.id)
+    encodeViewResourceId(id);
+    if (id !== this.storedDefinition.id)
       throw new ViewServiceError('NOT_FOUND', '视图定义不存在');
   }
   private dto({
@@ -359,6 +375,7 @@ export class LocalStorageViewHost implements ViewHost {
     );
   }
   private find(state: ServiceState, id: string): StoredInstance {
+    encodeViewResourceId(id);
     const instance = this.visible(state).find(item => item.id === id);
     if (!instance) throw new ViewServiceError('NOT_FOUND', `视图 ${id} 不存在`);
     return instance;
@@ -370,7 +387,7 @@ export class LocalStorageViewHost implements ViewHost {
     action: 'save' | 'rename' | 'delete',
   ): StoredInstance {
     const instance = this.find(state, id);
-    if (!this.getInstancePermissions(this.dto(instance))[action])
+    if (!this.permission!.getInstance(this.dto(instance))[action])
       throw new ViewServiceError(
         'FORBIDDEN',
         '系统视图或未授权视图不能修改或删除',
@@ -389,7 +406,7 @@ export class LocalStorageViewHost implements ViewHost {
   }
   private validate(value: unknown): void {
     try {
-      validateViewInstance(value, this.definition);
+      validateViewInstance(value, this.storedDefinition);
     } catch (error) {
       throw new ViewServiceError('INVALID_ARGUMENT', message(error));
     }
@@ -437,7 +454,7 @@ export class LocalStorageViewHost implements ViewHost {
             throw new Error('服务存储格式无效');
           const known = new Set<string>();
           for (const item of state.instances) {
-            validateViewInstance(item, this.definition);
+            validateViewInstance(item, this.storedDefinition);
             if (
               !item.revision ||
               (item.scope.type === 'personal'
@@ -462,7 +479,7 @@ export class LocalStorageViewHost implements ViewHost {
             )
               throw new Error('用户顺序无效');
           for (const receipt of Object.values(state.creates)) {
-            validateViewInstance(receipt.result, this.definition);
+            validateViewInstance(receipt.result, this.storedDefinition);
             if (
               !sameFilterState(receipt.input, this.createInput(receipt.result))
             )

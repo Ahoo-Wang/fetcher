@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import type { RecordSession, ViewHost, ViewInstance } from '../recordModel.js';
+import type { RecordSession, ViewInstance } from '../recordModel.js';
+import type { ViewHost } from '../ViewHost.js';
 import { validateViewInstance } from '../recordValidation.js';
 import { readInstanceList } from '../validation/instanceValidation.js';
 import { sameFilterState } from '../../filter/filterTree.js';
@@ -41,9 +42,9 @@ export class ViewReload {
     const pending = this.work.unverifiedCreates.get(id);
     return pending
       ? Boolean(
-          (pending.id && this.host.loadInstance) || this.host.listInstances,
+          (pending.id && this.host.instance?.load) || this.host.instance?.list,
         )
-      : Boolean(this.host.loadInstance);
+      : Boolean(this.host.instance?.load);
   }
 
   async reloadInstance(id?: string): Promise<void> {
@@ -58,7 +59,7 @@ export class ViewReload {
     try {
       const unverified = this.work.unverifiedCreates.get(id);
       if (!this.canReloadInstance(id))
-        throw new Error('宿主未提供 loadInstance，无法重新加载');
+        throw new Error('宿主未提供 instance.load，无法重新加载');
       if (this.work.writes.has(id))
         throw new Error('实例正在写入，请等待操作完成');
       this.work.reloads.get(id)?.abort();
@@ -67,8 +68,8 @@ export class ViewReload {
       this.queries.cancel(id);
       let result: ViewInstance;
       const additions: Record<string, RecordSession> = Object.create(null);
-      if (unverified && (!unverified.id || !this.host.loadInstance)) {
-        const list = await this.host.listInstances!(
+      if (unverified && (!unverified.id || !this.host.instance?.load)) {
+        const list = await this.host.instance!.list!(
           definition.id,
           controller.signal,
         );
@@ -109,7 +110,7 @@ export class ViewReload {
         }
         result = candidates[0];
       } else
-        result = await this.host.loadInstance!(
+        result = await this.host.instance!.load!(
           unverified?.id ?? id,
           controller.signal,
         );

@@ -14,13 +14,18 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { setTimeout as delay } from 'node:timers/promises';
-import { LocalStorageViewHost } from '../src/record/LocalStorageViewHost.js';
-import { HttpViewHost } from '../src/record/HttpViewHost.js';
-import { ViewEngine } from '../src/record/ViewEngine.js';
 import {
+  LocalStorageViewHost,
+  ViewEngine,
   ViewServiceError,
+} from '@ahoo-wang/fetcher-view-engine';
+import {
+  HttpViewHost,
+  HttpViewTransport,
+  HttpViewInstanceService,
   VIEW_SERVICE_STATUS,
-} from '../src/record/viewServiceContract.js';
+} from '../dev/http/index.js';
+
 import { startViewService } from '../scripts/fixtures/view-service-server.mjs';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
@@ -50,66 +55,66 @@ function client(token = 'alice-token', timeoutMs = 1000) {
 it('executes JSON writes over HTTP with shared visibility, private isolation and typed errors', async () => {
   const alice = client(),
     bob = client('bob-token');
-  const shared = await alice.createInstance(
+  const shared = await alice.instance!.create(
     { ...instance, title: '公共', scope: { type: 'public', source: 'shared' } },
     { requestId: 'shared' },
   );
-  expect((await bob.loadInstance(shared.id)).title).toBe('公共');
+  expect((await bob.instance!.load(shared.id)).title).toBe('公共');
   await expect(
-    bob.renameInstance(shared.id, '越权', shared.revision),
+    bob.instance!.rename(shared.id, '越权', shared.revision),
   ).rejects.toMatchObject({ code: 'FORBIDDEN' });
-  const privateView = await alice.createInstance(
+  const privateView = await alice.instance!.create(
     { ...instance, title: '私人' },
     { requestId: 'private' },
   );
-  await expect(bob.loadInstance(privateView.id)).rejects.toMatchObject({
+  await expect(bob.instance!.load(privateView.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
   await expect(
-    client('outsider-token').loadInstance(shared.id),
+    client('outsider-token').instance!.load(shared.id),
   ).rejects.toMatchObject({ code: 'NOT_FOUND' });
   await expect(
-    client('invalid-token').listInstances(definition.id),
+    client('invalid-token').instance!.list(definition.id),
   ).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
-  const renamed = await alice.renameInstance(
+  const renamed = await alice.instance!.rename(
     shared.id,
     '新名称',
     shared.revision,
   );
-  await expect(alice.saveInstance(shared)).rejects.toMatchObject({
+  await expect(alice.instance!.save(shared)).rejects.toMatchObject({
     code: 'REVISION_CONFLICT',
   });
-  await alice.deleteInstance(renamed.id, renamed.revision);
-  await expect(bob.loadInstance(renamed.id)).rejects.toMatchObject({
+  await alice.instance!.delete(renamed.id, renamed.revision);
+  await expect(bob.instance!.load(renamed.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
 });
 it('does not trust posted ownership, and stores each users order independently', async () => {
   const alice = client(),
     bob = client('bob-token');
-  const privateView = await alice.createInstance(
+  const privateView = await alice.instance!.create(
     { ...instance, ownerKey: 'bob' } as typeof instance,
     { requestId: 'owner-forgery' },
   );
-  await expect(bob.loadInstance(privateView.id)).rejects.toMatchObject({
+  await expect(bob.instance!.load(privateView.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
-  const shared = await alice.createInstance(
+  const shared = await alice.instance!.create(
     { ...instance, scope: { type: 'public', source: 'shared' } },
     { requestId: 'public' },
   );
-  const before = (await alice.listInstances(definition.id)).instances.map(
+  const before = (await alice.instance!.list(definition.id)).instances.map(
     item => item.id,
   );
-  const order = (await bob.listInstances(definition.id)).instances
+  const order = (await bob.instance!.list(definition.id)).instances
     .map(item => item.id)
     .reverse();
-  await bob.saveInstanceOrder(definition.id, order);
+  await bob.preference!.saveOrder(definition.id, order);
   expect(
-    (await bob.listInstances(definition.id)).instances.map(item => item.id),
+    (await bob.instance!.list(definition.id)).instances.map(item => item.id),
   ).toEqual(order);
   expect(
-    (await alice.listInstances(definition.id)).instances.map(item => item.id),
+    (await alice.instance!.list(definition.id)).instances.map(item => item.id),
   ).toEqual(before);
   expect(order).toContain(shared.id);
 });
@@ -123,7 +128,7 @@ it('retries a response-lost create through the real engine with the same idempot
     code: 'UNKNOWN_OUTCOME',
   });
   expect(
-    (await host.listInstances(definition.id)).instances.filter(
+    (await host.instance!.list(definition.id)).instances.filter(
       item => item.title === request.title,
     ),
   ).toHaveLength(1);
@@ -132,7 +137,7 @@ it('retries a response-lost create through the real engine with the same idempot
   ).rejects.toMatchObject({ code: 'UNKNOWN_OUTCOME' });
   await engine.saveAs(request);
   expect(
-    (await host.listInstances(definition.id)).instances.filter(
+    (await host.instance!.list(definition.id)).instances.filter(
       item => item.title === request.title,
     ),
   ).toHaveLength(1);
@@ -156,20 +161,20 @@ it('reconciles an unknown create by reload and then allows a distinct create', a
     '待核对副本',
   );
   await engine.saveAs({ title: '下一次创建', scope: { type: 'personal' } });
-  expect((await host.listInstances(definition.id)).instances).toHaveLength(3);
+  expect((await host.instance!.list(definition.id)).instances).toHaveLength(3);
   engine.dispose();
 });
 it('forwards cancellation and distinguishes read timeout from an unknown write outcome', async () => {
   const host = client('alice-token', 50);
   server.control.delayNextRead = 200;
-  await expect(host.listInstances(definition.id)).rejects.toMatchObject({
+  await expect(host.instance!.list(definition.id)).rejects.toMatchObject({
     code: 'UNAVAILABLE',
   });
   await delay(30);
   expect(server.control.abortedReads).toBe(1);
   server.control.delayNextRead = 200;
   const controller = new AbortController();
-  const pending = host.listInstances(definition.id, controller.signal);
+  const pending = host.instance!.list(definition.id, controller.signal);
   const assertion = expect(pending).rejects.toMatchObject({
     name: 'AbortError',
   });
@@ -181,7 +186,7 @@ it('forwards cancellation and distinguishes read timeout from an unknown write o
 });
 it('updates permission subscribers and prevents a delayed old snapshot from restoring revoked grants', async () => {
   const host = client();
-  const shared = await host.createInstance(
+  const shared = await host.instance!.create(
     { ...instance, scope: { type: 'public', source: 'shared' } },
     { requestId: 'shared' },
   );
@@ -192,18 +197,18 @@ it('updates permission subscribers and prevents a delayed old snapshot from rest
   ).toBe(true);
   const sessions = engine.getSnapshot().sessions;
   server.control.delayNextPermissionResponse = 300;
-  const oldPermissions = host.refreshPermissions();
+  const oldPermissions = host.permission!.refresh();
   await vi.waitFor(() =>
     expect(server.control.delayedPermissionResponses).toBe(1),
   );
   server.setWriter('alice-token', false);
-  await host.refreshPermissions();
+  await host.permission!.refresh();
   await oldPermissions;
   expect(
     engine.getCapabilitiesSnapshot().instances[shared.id].permissions.save,
   ).toBe(false);
   expect(engine.getSnapshot().sessions).toBe(sessions);
-  await expect(host.saveInstance(shared)).rejects.toMatchObject({
+  await expect(host.instance!.save(shared)).rejects.toMatchObject({
     code: 'FORBIDDEN',
   });
   engine.dispose();
@@ -214,18 +219,18 @@ it('keeps one create after timeout or cancellation after the server commit', asy
   server.control.delayNextCreateResponse = 300;
   const input = { ...instance, title: '超时创建' };
   await expect(
-    host.createInstance(input, { requestId: 'timeout' }),
+    host.instance!.create(input, { requestId: 'timeout' }),
   ).rejects.toMatchObject({ code: 'UNKNOWN_OUTCOME' });
-  const result = await host.createInstance(input, { requestId: 'timeout' });
+  const result = await host.instance!.create(input, { requestId: 'timeout' });
   expect(
-    (await host.listInstances(definition.id)).instances.filter(
+    (await host.instance!.list(definition.id)).instances.filter(
       item => item.id === result.id,
     ),
   ).toHaveLength(1);
   const normal = client();
   const controller = new AbortController();
   server.control.delayNextCreateResponse = 300;
-  const pending = normal.createInstance(
+  const pending = normal.instance!.create(
     { ...input, title: '取消响应' },
     { requestId: 'canceled', signal: controller.signal },
   );
@@ -235,12 +240,12 @@ it('keeps one create after timeout or cancellation after the server commit', asy
   await vi.waitFor(() => expect(server.control.delayedCreateResponses).toBe(2));
   controller.abort();
   await assertion;
-  await normal.createInstance(
+  await normal.instance!.create(
     { ...input, title: '取消响应' },
     { requestId: 'canceled' },
   );
   expect(
-    (await normal.listInstances(definition.id)).instances.filter(
+    (await normal.instance!.list(definition.id)).instances.filter(
       item => item.title === '取消响应',
     ),
   ).toHaveLength(1);
@@ -248,10 +253,10 @@ it('keeps one create after timeout or cancellation after the server commit', asy
 it('performs competing HTTP writes with one authoritative winner', async () => {
   const left = client(),
     right = client();
-  const old = await left.loadInstance(instance.id);
+  const old = await left.instance!.load(instance.id);
   const results = await Promise.allSettled([
-    left.saveInstance({ ...old, title: 'first' }),
-    right.saveInstance({ ...old, title: 'second' }),
+    left.instance!.save({ ...old, title: 'first' }),
+    right.instance!.save({ ...old, title: 'second' }),
   ]);
   expect(results.filter(item => item.status === 'fulfilled')).toHaveLength(1);
   expect(results.find(item => item.status === 'rejected')).toMatchObject({
@@ -259,31 +264,43 @@ it('performs competing HTTP writes with one authoritative winner', async () => {
   });
 });
 
-it('clears grants on session rejection and ignores an older successful permission response', async () => {
-  let token = 'alice-token';
-  const host = new HttpViewHost({
-    baseUrl: server.baseUrl,
-    definitionId: definition.id,
-    headers: () => ({ Authorization: `Bearer ${token}` }),
-    resolveSource: setup().host.resolveSource,
-  });
-  const current = await host.loadInstance(instance.id);
-  expect(host.getInstancePermissions(current).save).toBe(true);
-  server.control.delayNextPermissionResponse = 300;
-  const old = host.refreshPermissions();
-  await vi.waitFor(() =>
-    expect(server.control.delayedPermissionResponses).toBe(1),
-  );
-  token = 'expired';
-  await expect(host.refreshPermissions()).rejects.toMatchObject({
-    code: 'UNAUTHENTICATED',
-  });
-  await old;
-  expect(host.getInstancePermissions(current).save).toBe(false);
-  token = 'alice-token';
-  await host.refreshPermissions();
-  expect(host.getInstancePermissions(current).save).toBe(true);
-});
+it.each(['json', 'text', 'null'] as const)(
+  'clears grants on %s session rejection and ignores older permission replies',
+  async format => {
+    let token = 'alice-token';
+    const host = new HttpViewHost({
+      baseUrl: server.baseUrl,
+      definitionId: definition.id,
+      headers: () => ({ Authorization: `Bearer ${token}` }),
+      resolveSource: setup().host.resolveSource,
+      fetch: async (input, init) => {
+        const response = await fetch(input, init);
+        if (response.status !== 401 || format === 'json') return response;
+        await response.body?.cancel();
+        return new Response(format === 'text' ? 'Session expired' : 'null', {
+          status: 401,
+        });
+      },
+    });
+    const current = await host.instance!.load(instance.id);
+    expect(host.permission!.getInstance(current).save).toBe(true);
+    server.control.delayNextPermissionResponse = 300;
+    const old = host.permission!.refresh();
+    await vi.waitFor(() =>
+      expect(server.control.delayedPermissionResponses).toBe(1),
+    );
+    token = 'expired';
+    const rejected = await host.permission!.refresh().catch(error => error);
+    const revoked = host.permission!.getInstance(current).save;
+    await old;
+    expect(revoked).toBe(false);
+    expect(host.permission!.getInstance(current).save).toBe(false);
+    expect(rejected).toMatchObject({ code: 'UNAUTHENTICATED' });
+    token = 'alice-token';
+    await host.permission!.refresh();
+    expect(host.permission!.getInstance(current).save).toBe(true);
+  },
+);
 
 it('returns stable protocol errors for malformed inputs and missing preconditions', async () => {
   const headers = {
@@ -303,4 +320,184 @@ it('returns stable protocol errors for malformed inputs and missing precondition
   );
   expect(missing.status).toBe(428);
   expect((await missing.json()).error.code).toBe('PRECONDITION_REQUIRED');
+});
+
+it('composes independently supplied definition, instance and policy services', async () => {
+  const remote = client();
+  const loadDefinition = vi.fn(async () => structuredClone(definition));
+  const localSource = setup().host.resolveSource;
+  const host = {
+    definition: { load: loadDefinition },
+    instance: remote.instance,
+    preference: remote.preference,
+    permission: remote.permission,
+    resolveSource: localSource,
+  };
+  const engine = new ViewEngine({ definitionId: definition.id, host });
+  await engine.load();
+  expect(loadDefinition).toHaveBeenCalledOnce();
+  expect(engine.getSnapshot().status).toBe('ready');
+  engine.setTitle('组合服务保存');
+  await engine.save();
+  expect((await remote.instance.load(instance.id)).title).toBe('组合服务保存');
+  expect(remote).not.toHaveProperty('loadDefinition');
+  expect(remote).not.toHaveProperty('saveInstance');
+  engine.dispose();
+});
+
+it('uses the instance REST client without a ViewHost or runtime source resolver', async () => {
+  const transport = new HttpViewTransport({
+    baseUrl: server.baseUrl,
+    definitionId: definition.id,
+    headers: () => ({ Authorization: 'Bearer alice-token' }),
+  });
+  const instances = new HttpViewInstanceService(transport);
+  const list = await instances.list(definition.id);
+  expect(list.instances[0].id).toBe(instance.id);
+  expect(transport.permission.getInstance(list.instances[0]).save).toBe(true);
+  const saved = await instances.save({
+    ...list.instances[0],
+    title: '独立客户端',
+  });
+  expect((await instances.load(saved.id)).title).toBe('独立客户端');
+});
+
+it('loads the permission resource directly and shares its projection with instance clients', async () => {
+  const host = client();
+  const snapshot = await host.permission.load(definition.id);
+  expect(snapshot.instances[instance.id].save).toBe(true);
+  expect(host.permission.getInstance(instance).save).toBe(true);
+  await expect(host.permission.load('wrong-definition')).rejects.toMatchObject({
+    code: 'NOT_FOUND',
+  });
+});
+
+it('rejects permission payloads that bypass the accepted snapshot', async () => {
+  const host = new HttpViewHost({
+    baseUrl: server.baseUrl,
+    definitionId: definition.id,
+    headers: () => ({ Authorization: 'Bearer alice-token' }),
+    resolveSource: setup().host.resolveSource,
+    fetch: async (input, init) => {
+      const response = await fetch(input, init);
+      const envelope = await response.json();
+      return Response.json({ ...envelope, data: null });
+    },
+  });
+  await expect(host.permission.load(definition.id)).rejects.toMatchObject({
+    code: 'UNAVAILABLE',
+  });
+});
+
+it.each(['revocation', 'session'] as const)(
+  'rejects a stale permission return value after %s',
+  async reason => {
+    let token = 'alice-token';
+    const host = new HttpViewHost({
+      baseUrl: server.baseUrl,
+      definitionId: definition.id,
+      headers: () => ({ Authorization: `Bearer ${token}` }),
+      resolveSource: setup().host.resolveSource,
+    });
+    const shared = await host.instance.create(
+      { ...instance, scope: { type: 'public', source: 'shared' } },
+      { requestId: 'permission-race' },
+    );
+    server.control.delayNextPermissionResponse = 150;
+    const old = host.permission.load(definition.id).catch(error => error);
+    await vi.waitFor(() =>
+      expect(server.control.delayedPermissionResponses).toBe(1),
+    );
+    if (reason === 'revocation') {
+      server.setWriter('alice-token', false);
+      await host.permission.load(definition.id);
+    } else {
+      token = 'expired';
+      await expect(host.permission.load(definition.id)).rejects.toMatchObject({
+        code: 'UNAUTHENTICATED',
+      });
+    }
+    expect(await old).toMatchObject({ code: 'UNAVAILABLE' });
+    expect(host.permission.getInstance(shared).save).toBe(false);
+  },
+);
+
+it('preserves the configured source resolver receiver after facade composition', () => {
+  const source = setup().host.resolveSource('orders');
+  const options = {
+    baseUrl: server.baseUrl,
+    definitionId: definition.id,
+    resolveSource(id: string) {
+      expect(id).toBe('orders');
+      expect(this.definitionId).toBe(definition.id);
+      return source;
+    },
+  };
+  const host = new HttpViewHost(options);
+  expect(host.resolveSource('orders')).toBe(source);
+  const resolve = host.resolveSource;
+  options.definitionId = 'changed-after-construction';
+  expect(resolve('orders')).toBe(source);
+});
+
+it.each(['', ' ', '.', '..', '\ud800', null, 1])(
+  'rejects invalid resource ID %j before dispatching any request',
+  async input => {
+    const id = input as string;
+    const request = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        data: instance,
+        permissions: { revision: 1, instances: {}, reorder: false },
+      }),
+    );
+    const options = {
+      baseUrl: server.baseUrl,
+      definitionId: definition.id,
+      fetch: request,
+      resolveSource: setup().host.resolveSource,
+    };
+    const host = new HttpViewHost(options);
+    const results = await Promise.allSettled([
+      host.instance.load(id),
+      host.instance.save({ ...instance, id, revision: 'r1' }),
+      host.instance.rename(id, 'title', 'r1'),
+      host.instance.delete(id, 'r1'),
+      host.instance.list(id),
+      host.definition.load(id),
+      host.preference.saveOrder(id, []),
+      host.permission.load(id),
+    ]);
+    expect(
+      results.every(
+        result =>
+          result.status === 'rejected' &&
+          result.reason.code === 'INVALID_ARGUMENT',
+      ),
+    ).toBe(true);
+    expect(request).not.toHaveBeenCalled();
+    expect(() => new HttpViewHost({ ...options, definitionId: id })).toThrow(
+      expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
+    );
+  },
+);
+
+it('encodes valid resource IDs exactly once without changing the requested resource', async () => {
+  for (const id of ['订单 /%?#', '%2e%2e', 'orders.v1']) {
+    const request = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        data: { ...instance, id, definitionId: id },
+        permissions: { revision: 1, instances: {}, reorder: false },
+      }),
+    );
+    const host = new HttpViewHost({
+      baseUrl: server.baseUrl,
+      definitionId: id,
+      fetch: request,
+      resolveSource: setup().host.resolveSource,
+    });
+    expect((await host.instance.load(id)).id).toBe(id);
+    const url = request.mock.calls[0][0] as string;
+    const expected = `/view-service/definitions/${encodeURIComponent(id)}/instances/${encodeURIComponent(id)}`;
+    expect(new URL(url).pathname).toBe(expected);
+  }
 });

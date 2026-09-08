@@ -256,6 +256,10 @@ try {
     for (const version of Object.values(dependencies ?? {}))
       assert.doesNotMatch(version, /^(catalog|workspace):/);
   const distribution = filesIn(join(root, 'dist'));
+  assert.ok(
+    !distribution.some(file => /(?:^|\/)(?:http\/|HttpView)/.test(file)),
+    'Development HTTP files leaked into dist',
+  );
   for (const file of distribution) {
     const path = relative(root, file);
     assert.ok(
@@ -292,6 +296,7 @@ try {
     assert.equal(fileURLToPath(import.meta.resolve(${JSON.stringify(manifest.name)})), ${JSON.stringify(resolve(packed, manifest.exports['.'].import))});
     assert.equal(fileURLToPath(import.meta.resolve(${JSON.stringify(manifest.name + '/react')})), ${JSON.stringify(resolve(packed, manifest.exports['./react'].import))});
     assert.equal(typeof core.ViewEngine, 'function');
+    assert.deepEqual(Object.keys(core).filter(name => name.startsWith('HttpView') || name === 'VIEW_SERVICE_STATUS'), [], 'Experimental HTTP API leaked into the package');
     assert.equal(typeof react.ViewPage, 'function');
   `;
   run(process.execPath, ['--input-type=module', '-e', runtimeProbe], packed);

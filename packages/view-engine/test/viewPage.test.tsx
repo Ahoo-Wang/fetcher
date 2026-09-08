@@ -29,7 +29,7 @@ it('does not load data without an explicit access scope', () => {
   const { host, paged } = setup();
   render(<ViewPage scopeKey="" definitionId="orders" host={host} />);
   expect(screen.getByRole('alert').textContent).toContain('scopeKey');
-  expect(host.loadDefinition).not.toHaveBeenCalled();
+  expect(host.definition!.load).not.toHaveBeenCalled();
   expect(paged).not.toHaveBeenCalled();
 });
 it('keeps same-scope drafts across host reference changes and resets on an explicit scope change', async () => {
@@ -65,11 +65,13 @@ it('keeps same-scope drafts across host reference changes and resets on an expli
       definitionId="orders"
       host={{
         ...nextHost,
-        getInstancePermissions: () => ({
-          save: false,
-          saveAsPersonal: true,
-          saveAsShared: false,
-        }),
+        permission: {
+          getInstance: () => ({
+            save: false,
+            saveAsPersonal: true,
+            saveAsShared: false,
+          }),
+        },
       }}
     />,
   );
@@ -97,7 +99,7 @@ it('owns a working engine across StrictMode replay and stops on unmount', async 
   );
   expect(await screen.findByRole('cell', { name: '42' })).toBeTruthy();
   view.unmount();
-  expect(host.loadDefinition).toHaveBeenCalledTimes(2);
+  expect(host.definition!.load).toHaveBeenCalledTimes(2);
 });
 it('shows invalid local JSON as a load error instead of crashing the page', async () => {
   const { host } = setup();
@@ -114,5 +116,5 @@ it('shows invalid local JSON as a load error instead of crashing the page', asyn
     />,
   );
   expect((await screen.findByRole('alert')).textContent).toContain('JSON');
-  expect(host.loadDefinition).not.toHaveBeenCalled();
+  expect(host.definition!.load).not.toHaveBeenCalled();
 });

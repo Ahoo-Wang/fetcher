@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import type { RecordQuerySource, ViewHost } from '../recordModel.js';
+import type { RecordQuerySource } from '../recordModel.js';
+import type { ViewHost } from '../ViewHost.js';
 import { validateRecordRows } from '../recordValidation.js';
 import { getRecordRefreshBlockReason } from '../recordRefreshPolicy.js';
 import { cloneSnapshot } from '../../lib/types.js';

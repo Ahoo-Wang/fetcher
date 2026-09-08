@@ -14,10 +14,10 @@
 import { cloneSnapshot } from '../../lib/types.js';
 import type {
   RecordSession,
-  ViewHost,
   ViewInstance,
   ViewInstancePermissions,
 } from '../recordModel.js';
+import type { ViewHost } from '../ViewHost.js';
 import { isSystemSession } from './sessionState.js';
 
 export const deniedPermissions = Object.freeze({
@@ -32,28 +32,28 @@ export function permissionsFor(
   host: ViewHost,
   session?: RecordSession,
 ): ViewInstancePermissions {
-  if (!session || !host.getInstancePermissions) return deniedPermissions;
+  if (!session || !host.permission?.getInstance) return deniedPermissions;
   try {
-    const permissions = host.getInstancePermissions(
+    const permissions = host.permission?.getInstance(
       cloneSnapshot<ViewInstance>(session.instance),
     );
     const system = isSystemSession(session);
     return {
       delete:
         !system &&
-        typeof host.deleteInstance === 'function' &&
+        typeof host.instance?.delete === 'function' &&
         permissions?.delete === true,
       rename:
         !system &&
-        typeof host.renameInstance === 'function' &&
+        typeof host.instance?.rename === 'function' &&
         permissions?.rename === true,
       save:
-        typeof host.saveInstance === 'function' && permissions?.save === true,
+        typeof host.instance?.save === 'function' && permissions?.save === true,
       saveAsPersonal:
-        typeof host.createInstance === 'function' &&
+        typeof host.instance?.create === 'function' &&
         permissions?.saveAsPersonal === true,
       saveAsShared:
-        typeof host.createInstance === 'function' &&
+        typeof host.instance?.create === 'function' &&
         permissions?.saveAsShared === true,
     };
   } catch {

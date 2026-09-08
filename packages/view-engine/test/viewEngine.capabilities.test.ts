@@ -28,9 +28,11 @@ it('publishes immutable same-scope capabilities without losing sessions or query
   const unsubscribe = engine.subscribe(notified);
   const nextHost = {
     ...host,
-    saveInstance: undefined,
-    loadInstance: vi.fn(async () => structuredClone(instance)),
-    saveInstanceOrder: vi.fn(async () => {}),
+    instance: {
+      save: undefined,
+      load: vi.fn(async () => structuredClone(instance)),
+    },
+    preference: { saveOrder: vi.fn(async () => {}) },
   };
   engine.updateHost(nextHost);
   const after = engine.getCapabilitiesSnapshot();
@@ -47,9 +49,9 @@ it('publishes immutable same-scope capabilities without losing sessions or query
   expect(engine.getCapabilitiesSnapshot()).toBe(after);
   expect(notified).toHaveBeenCalledTimes(1);
   await expect(engine.save()).rejects.toThrow();
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   await engine.reorderInstances(['system', 'mine']);
-  expect(nextHost.saveInstanceOrder).toHaveBeenCalledWith('orders', [
+  expect(nextHost.preference!.saveOrder).toHaveBeenCalledWith('orders', [
     'system',
     'mine',
   ]);
@@ -60,7 +62,7 @@ it('publishes immutable same-scope capabilities without losing sessions or query
 
 it('derives reload capability from uncertain creation receipts as well as host methods', async () => {
   const { host } = setup();
-  host.createInstance = vi.fn(async submitted => ({
+  host.instance!.create = vi.fn(async submitted => ({
     ...submitted,
     id: 'copy',
     definitionId: 'invalid',
@@ -73,7 +75,7 @@ it('derives reload capability from uncertain creation receipts as well as host m
   ).rejects.toThrow();
   // listInstances can reconcile a received but invalid create result without loadInstance.
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
-  engine.updateHost({ ...host, listInstances: undefined });
+  engine.updateHost({ ...host, instance: { list: undefined } });
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(false);
   engine.dispose();
 });

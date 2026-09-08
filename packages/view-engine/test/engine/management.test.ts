@@ -18,7 +18,8 @@ import {
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import { newFilterDraft } from '../../src/filter/filterCore.js';
-import type { ViewHost, ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import {
   deferred,
   instance,
@@ -32,8 +33,8 @@ it('renames persisted metadata without saving draft filters, columns or newer ed
   const renameInstance = vi.fn(() => response.promise);
   const { engine, paged } = setup({
     host: {
-      renameInstance,
-      getInstancePermissions: permissions,
+      instance: { rename: renameInstance },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -75,8 +76,8 @@ it('protects system names even when the host grants every permission', async () 
       defaultInstanceId: 'mine',
     },
     host: {
-      renameInstance,
-      getInstancePermissions: permissions,
+      instance: { rename: renameInstance },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -91,17 +92,19 @@ it('protects system names even when the host grants every permission', async () 
 it('rejects changed content from a rename response and requires reconciliation', async () => {
   const { engine } = setup({
     host: {
-      renameInstance: async () => ({
-        ...instance(),
-        title: 'New',
-        config: {
-          ...instance().config,
-          filters: createFilterConfiguration(
-            createFilterDraft(filter.gte('state.amount', 99)),
-          ),
-        },
-      }),
-      getInstancePermissions: permissions,
+      instance: {
+        rename: async () => ({
+          ...instance(),
+          title: 'New',
+          config: {
+            ...instance().config,
+            filters: createFilterConfiguration(
+              createFilterDraft(filter.gte('state.amount', 99)),
+            ),
+          },
+        }),
+      },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -121,7 +124,9 @@ it('persists personal ordering without changing selection or querying', async ()
     .mockReturnValueOnce(response.promise)
     .mockResolvedValue(undefined);
   const { engine, paged } = setup({
-    host: { saveInstanceOrder } as unknown as ViewHost,
+    host: {
+      preference: { saveOrder: saveInstanceOrder },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const ordering = engine.reorderInstances(['shared', 'mine']);
@@ -148,9 +153,9 @@ it('does not resurrect a deleted view or drop a new one when order persistence f
   const response = deferred<void>();
   const { engine } = setup({
     host: {
-      saveInstanceOrder: () => response.promise,
-      deleteInstance: async () => {},
-      getInstancePermissions: permissions,
+      preference: { saveOrder: () => response.promise },
+      instance: { delete: async () => {} },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();

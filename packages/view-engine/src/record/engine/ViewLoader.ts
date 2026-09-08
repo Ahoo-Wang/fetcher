@@ -13,11 +13,11 @@
 
 import type {
   RecordSession,
-  ViewHost,
   ViewDefinition,
   ViewInstanceList,
   ViewEngineOptions,
 } from '../recordModel.js';
+import type { ViewHost } from '../ViewHost.js';
 import {
   validateViewDefinition,
   validateViewInstance,
@@ -82,15 +82,18 @@ export class ViewLoader {
       const [definition, list] = await Promise.all([
         Promise.resolve().then(() => {
           if (this.localDefinition !== undefined) return this.localDefinition;
-          if (!this.host.loadDefinition)
-            throw new Error('缺少视图定义或 loadDefinition');
-          return this.host.loadDefinition(this.definitionId, controller.signal);
+          if (!this.host.definition?.load)
+            throw new Error('缺少视图定义或 definition.load');
+          return this.host.definition?.load(
+            this.definitionId,
+            controller.signal,
+          );
         }),
         Promise.resolve().then(() => {
           if (this.localInstances !== undefined) return this.localInstances;
-          if (!this.host.listInstances)
-            throw new Error('缺少实例列表或 listInstances');
-          return this.host.listInstances(this.definitionId, controller.signal);
+          if (!this.host.instance?.list)
+            throw new Error('缺少实例列表或 instance.list');
+          return this.host.instance?.list(this.definitionId, controller.signal);
         }),
       ]);
       if (!this.scope.current(lifecycle)) return;
@@ -147,8 +150,8 @@ export class ViewLoader {
       this.scope.current(lifecycle) && this.scope.selection === selection;
     if (!this.store.find(id)) {
       try {
-        if (!this.host.loadInstance) throw new Error(`无法加载实例：${id}`);
-        const instance = await this.host.loadInstance(id, controller.signal);
+        if (!this.host.instance?.load) throw new Error(`无法加载实例：${id}`);
+        const instance = await this.host.instance?.load(id, controller.signal);
         if (!current()) return;
         validateViewInstance(instance, definition, id);
         this.store.publish({

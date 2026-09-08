@@ -14,12 +14,13 @@
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import { newFilterDraft } from '../../src/filter/filterCore.js';
-import type { ViewHost, ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 
 it('denies unavailable writes and pending filter drafts', async () => {
   const { engine, host } = setup({
-    host: { getInstancePermissions: undefined } as unknown as ViewHost,
+    host: { permission: { getInstance: undefined } } as unknown as ViewHost,
   });
   await engine.load();
   expect(engine.getPermissions()).toEqual({
@@ -30,7 +31,7 @@ it('denies unavailable writes and pending filter drafts', async () => {
     rename: false,
   });
   await expect(engine.save()).rejects.toThrow();
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   const pending = setup();
   await pending.engine.load();
   pending.engine.setFilterValidity(false);
@@ -38,15 +39,17 @@ it('denies unavailable writes and pending filter drafts', async () => {
   await expect(
     pending.engine.saveAs({ title: 'New', scope: { type: 'personal' } }),
   ).rejects.toThrow();
-  expect(pending.host.saveInstance).not.toHaveBeenCalled();
-  expect(pending.host.createInstance).not.toHaveBeenCalled();
+  expect(pending.host.instance!.save).not.toHaveBeenCalled();
+  expect(pending.host.instance!.create).not.toHaveBeenCalled();
   expect(selected(pending.engine).writeError).toBeTruthy();
 });
 
 it('captures the submitted snapshot and revision while retaining subsequent edits', async () => {
   const response = deferred<ViewInstance>();
   const saveInstance = vi.fn(() => response.promise);
-  const { engine } = setup({ host: { saveInstance } as unknown as ViewHost });
+  const { engine } = setup({
+    host: { instance: { save: saveInstance } } as unknown as ViewHost,
+  });
   await engine.load();
   engine.setTitle('Submitted');
   const saving = engine.save();
@@ -70,16 +73,18 @@ it('captures the submitted snapshot and revision while retaining subsequent edit
 it('accepts host metadata changes while requiring exact persisted title, scope and config', async () => {
   const { engine } = setup({
     host: {
-      saveInstance: async value => ({
-        ...value,
-        revision: 'r2',
-        updatedAt: 'today',
-      }),
-      createInstance: async value => ({
-        ...value,
-        id: 'created',
-        createdAt: 'today',
-      }),
+      instance: {
+        save: async value => ({
+          ...value,
+          revision: 'r2',
+          updatedAt: 'today',
+        }),
+        create: async value => ({
+          ...value,
+          id: 'created',
+          createdAt: 'today',
+        }),
+      },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -104,7 +109,7 @@ it('blocks same-instance concurrent writes and keeps ordinary failures visible w
   const response = deferred<ViewInstance>();
   const saveInstance = vi.fn(() => response.promise);
   const { engine, host } = setup({
-    host: { saveInstance } as unknown as ViewHost,
+    host: { instance: { save: saveInstance } } as unknown as ViewHost,
   });
   await engine.load();
   engine.setTitle('Keep draft');
@@ -112,7 +117,7 @@ it('blocks same-instance concurrent writes and keeps ordinary failures visible w
   await expect(
     engine.saveAs({ title: 'Duplicate', scope: { type: 'personal' } }),
   ).rejects.toThrow();
-  expect(host.createInstance).not.toHaveBeenCalled();
+  expect(host.instance!.create).not.toHaveBeenCalled();
   response.reject(new Error('conflict'));
   await expect(saving).rejects.toThrow('conflict');
   expect(selected(engine)).toMatchObject({
@@ -140,7 +145,9 @@ it('requires explicit reload after a malformed or changed echo, preserving local
       revision: 'r9',
     }));
     const { engine } = setup({
-      host: { saveInstance, loadInstance } as unknown as ViewHost,
+      host: {
+        instance: { save: saveInstance, load: loadInstance },
+      } as unknown as ViewHost,
     });
     await engine.load();
     engine.setTitle('My draft');
@@ -170,9 +177,11 @@ it('requires explicit reload after a malformed or changed echo, preserving local
 it('does not let a host mutate the write request to validate a changed echo', async () => {
   const { engine } = setup({
     host: {
-      saveInstance: async value => {
-        value.title = 'Mutated';
-        return value;
+      instance: {
+        save: async value => {
+          value.title = 'Mutated';
+          return value;
+        },
       },
     } as unknown as ViewHost,
   });
@@ -193,12 +202,14 @@ it('reload preserves the local scope against a changed server baseline', async (
   }));
   const { engine } = setup({
     host: {
-      loadInstance: async () => ({
-        ...instance(),
-        scope: { type: 'public', source: 'shared' },
-        revision: 'r9',
-      }),
-      saveInstance,
+      instance: {
+        load: async () => ({
+          ...instance(),
+          scope: { type: 'public', source: 'shared' },
+          revision: 'r9',
+        }),
+        save: saveInstance,
+      },
     } as unknown as ViewHost,
   });
   await engine.load();

@@ -17,9 +17,9 @@ import { createFilterDraft } from '../../src/filter/filterCore.js';
 import { createFilterConfiguration } from '../../src/filter/filterConfiguration.js';
 import type {
   ViewDefinition,
-  ViewHost,
   ViewInstance,
 } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 
 export const definition: ViewDefinition = {
   id: 'orders',
@@ -57,29 +57,34 @@ export function setup() {
     scope: { type: 'public', source: 'system' } as const,
   };
   const host: ViewHost = {
-    loadDefinition: vi.fn().mockResolvedValue(definition),
-    listInstances: vi.fn().mockResolvedValue({
-      instances: [instance, other],
-      defaultInstanceId: instance.id,
-    }),
+    preference: {},
     resolveSource: () => ({
       paged,
       cursor: vi.fn().mockResolvedValue({ list: [], nextCursor: null }),
     }),
-    saveInstance: vi.fn(async submitted => ({
-      ...submitted,
-      revision: 'next',
-    })),
-    getInstancePermissions: () => ({
-      save: true,
-      saveAsPersonal: true,
-      saveAsShared: false,
-    }),
-    createInstance: vi.fn(async submitted => ({
-      ...submitted,
-      id: 'copy',
-      revision: '1',
-    })),
+    definition: { load: vi.fn().mockResolvedValue(definition) },
+    instance: {
+      list: vi.fn().mockResolvedValue({
+        instances: [instance, other],
+        defaultInstanceId: instance.id,
+      }),
+      save: vi.fn(async submitted => ({
+        ...submitted,
+        revision: 'next',
+      })),
+      create: vi.fn(async submitted => ({
+        ...submitted,
+        id: 'copy',
+        revision: '1',
+      })),
+    },
+    permission: {
+      getInstance: () => ({
+        save: true,
+        saveAsPersonal: true,
+        saveAsShared: false,
+      }),
+    },
   };
   return { host, paged };
 }

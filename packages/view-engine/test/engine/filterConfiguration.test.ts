@@ -89,7 +89,7 @@ it('saves non-query custom props without querying and requires Query for changed
     instances: { instances: [saved], defaultInstanceId: saved.id },
     filterCompilers: compilers,
   });
-  active.host.saveInstance = saveInstance;
+  active.host.instance!.save = saveInstance;
   await active.engine.load();
   expect(active.paged.mock.calls[0][0].filter).toEqual(
     filter.gte('state.amount', 10),

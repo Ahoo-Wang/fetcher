@@ -13,6 +13,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from 'storybook/test';
+import { HttpOrderExample } from '../../packages/view-engine/dev/HttpOrderExample.js';
 import { OrderExample } from '../../packages/view-engine/examples/react/OrderExample.js';
 import { FilterPersistenceExample } from '../../packages/view-engine/examples/react/FilterPersistenceExample.js';
 import type { OrderEvent } from '../../packages/view-engine/examples/react/orderService.js';
@@ -95,8 +96,8 @@ export const LocalStorageViews: Story = {
   },
 };
 
-export const HttpViewService: Story = {
-  name: '契约验证 · HTTP 视图服务',
+export const HttpViewService: StoryObj<typeof HttpOrderExample> = {
+  name: '开发实验 · HTTP 视图服务',
   tags: ['!test'],
   args: {
     scopeKey: 'tenant:alice',
@@ -105,7 +106,7 @@ export const HttpViewService: Story = {
     initialSidebarCollapsed: false,
   },
   render: args => (
-    <OrderExample
+    <HttpOrderExample
       {...args}
       viewServiceUrl={
         new URLSearchParams(location.search).get('viewService') ??

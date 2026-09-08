@@ -23,7 +23,19 @@ export default defineConfig(({ mode }) => ({
       ? [babel({ presets: [reactCompilerPreset()] })]
       : []),
   ],
-  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  resolve: {
+    alias: [
+      {
+        find: '@',
+        replacement: fileURLToPath(new URL('./src', import.meta.url)),
+      },
+      // Development adapters use the public contract; unit tests exercise its current source.
+      {
+        find: /^@ahoo-wang\/fetcher-view-engine$/,
+        replacement: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
+      },
+    ],
+  },
   test: {
     environment: 'jsdom',
     clearMocks: true,

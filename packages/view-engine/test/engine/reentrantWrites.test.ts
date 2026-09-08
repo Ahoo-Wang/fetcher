@@ -13,7 +13,8 @@
 
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import type { ViewHost, ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, instance, setup } from './fixtures.js';
 
 it.each(['loaded', 'pending'] as const)(
@@ -30,8 +31,10 @@ it.each(['loaded', 'pending'] as const)(
         defaultInstanceId: 'mine',
       },
       host: {
-        createInstance: () => response.promise,
-        loadInstance: () => destination.promise,
+        instance: {
+          create: () => response.promise,
+          load: () => destination.promise,
+        },
       } as unknown as ViewHost,
     });
     await engine.load();
@@ -89,7 +92,9 @@ it('carries edits published while canceling the source read into the selected co
           filter.gte(context.field!.field, Number(props.threshold)),
       },
     },
-    host: { createInstance: () => response.promise } as unknown as ViewHost,
+    host: {
+      instance: { create: () => response.promise },
+    } as unknown as ViewHost,
   });
   await engine.load();
   paged.mockReturnValueOnce(stalled.promise);

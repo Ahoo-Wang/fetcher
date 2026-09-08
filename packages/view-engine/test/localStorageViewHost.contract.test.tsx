@@ -138,7 +138,7 @@ it('reconstructs custom components from server JSON with a new host, engine and 
 it('blocks a missing runtime extension without deleting service configuration, then recovers when registered', async () => {
   const { options, paged } = fixture();
   const host = new LocalStorageViewHost(options);
-  await host.saveInstance(await host.loadInstance(instance.id));
+  await host.instance!.save(await host.instance!.load(instance.id));
   const payload = localStorage.getItem(host.storageKey);
   const mounted = render(
     <ViewPage scopeKey="contract" definitionId={definition.id} host={host} />,
@@ -177,16 +177,16 @@ it('surfaces a real host revision conflict, preserves the draft, and saves after
   });
   const remoteActor = new LocalStorageViewHost(options);
   await act(async () =>
-    remoteActor.renameInstance(
+    remoteActor.instance!.rename(
       instance.id,
       '服务器更新',
-      (await remoteActor.loadInstance(instance.id)).revision,
+      (await remoteActor.instance!.load(instance.id)).revision,
     ),
   );
   fireEvent.click(screen.getByRole('button', { name: '保存', exact: true }));
   await screen.findByText('视图已被更新，请重新加载');
   expect(
-    (await remoteActor.loadInstance(instance.id)).config.filters.root.props
+    (await remoteActor.instance!.load(instance.id)).config.filters.root.props
       .displayLabel,
   ).toBe('人工标签');
   expect(
@@ -200,7 +200,7 @@ it('surfaces a real host revision conflict, preserves the draft, and saves after
   fireEvent.click(screen.getByRole('button', { name: '保存', exact: true }));
   await waitFor(async () =>
     expect(
-      (await remoteActor.loadInstance(instance.id)).config.filters.root.props
+      (await remoteActor.instance!.load(instance.id)).config.filters.root.props
         .displayLabel,
     ).toBe('保留的本地草稿'),
   );

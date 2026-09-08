@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { encodeViewResourceId } from '../viewServiceContract.js';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
 import { validateFilterConfiguration } from '../../filter/filterConfiguration.js';
 import {
@@ -35,6 +36,7 @@ export function validateViewInstance(
 ): asserts value is ViewInstance {
   assertObject(value, '视图实例');
   assertText(value.id, '实例 ID');
+  encodeViewResourceId(value.id);
   if (expectedId !== undefined && value.id !== expectedId)
     throw new Error('返回的实例 ID 不匹配');
   if (value.definitionId !== definition.id)

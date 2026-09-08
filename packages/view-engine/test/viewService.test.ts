@@ -42,48 +42,48 @@ function options(scopeKey = 'alice') {
 it('shares public content while isolating personal views, user ordering and tenants', async () => {
   const alice = new LocalStorageViewHost(options());
   const bob = new LocalStorageViewHost(options('bob'));
-  const shared = await alice.createInstance(
+  const shared = await alice.instance!.create(
     { ...instance, title: '共享', scope: { type: 'public', source: 'shared' } },
     { requestId: 'shared' },
   );
-  const privateView = await alice.createInstance(
+  const privateView = await alice.instance!.create(
     { ...instance, title: '私人' },
     { requestId: 'personal' },
   );
-  expect((await bob.loadInstance(shared.id)).title).toBe('共享');
-  await expect(bob.loadInstance(privateView.id)).rejects.toMatchObject({
+  expect((await bob.instance!.load(shared.id)).title).toBe('共享');
+  await expect(bob.instance!.load(privateView.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
-  await bob.renameInstance(shared.id, '共同更新', shared.revision);
-  expect((await alice.loadInstance(shared.id)).title).toBe('共同更新');
-  const bobIds = (await bob.listInstances(definition.id)).instances
+  await bob.instance!.rename(shared.id, '共同更新', shared.revision);
+  expect((await alice.instance!.load(shared.id)).title).toBe('共同更新');
+  const bobIds = (await bob.instance!.list(definition.id)).instances
     .map(item => item.id)
     .reverse();
-  const aliceIds = (await alice.listInstances(definition.id)).instances.map(
+  const aliceIds = (await alice.instance!.list(definition.id)).instances.map(
     item => item.id,
   );
-  await bob.saveInstanceOrder(definition.id, bobIds);
+  await bob.preference!.saveOrder(definition.id, bobIds);
   expect(
-    (await bob.listInstances(definition.id)).instances.map(item => item.id),
+    (await bob.instance!.list(definition.id)).instances.map(item => item.id),
   ).toEqual(bobIds);
   expect(
-    (await alice.listInstances(definition.id)).instances.map(item => item.id),
+    (await alice.instance!.list(definition.id)).instances.map(item => item.id),
   ).toEqual(aliceIds);
   const isolated = new LocalStorageViewHost({
     ...options(),
     serviceKey: 'other-tenant',
   });
-  await expect(isolated.loadInstance(shared.id)).rejects.toMatchObject({
+  await expect(isolated.instance!.load(shared.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
 });
 it('serializes competing writes and rejects the stale revision inside the lock', async () => {
   const left = new LocalStorageViewHost(options()),
     right = new LocalStorageViewHost(options());
-  const old = await left.loadInstance(instance.id);
+  const old = await left.instance!.load(instance.id);
   const results = await Promise.allSettled([
-    left.saveInstance({ ...old, title: 'A' }),
-    right.saveInstance({ ...old, title: 'B' }),
+    left.instance!.save({ ...old, title: 'A' }),
+    right.instance!.save({ ...old, title: 'B' }),
   ]);
   expect(results.filter(item => item.status === 'fulfilled')).toHaveLength(1);
   expect(results.find(item => item.status === 'rejected')).toMatchObject({
@@ -93,26 +93,26 @@ it('serializes competing writes and rejects the stale revision inside the lock',
 it('replays a create receipt across host reconstruction and refuses request ID payload reuse', async () => {
   const host = new LocalStorageViewHost(options());
   const input = { ...instance, title: '幂等创建' };
-  const first = await host.createInstance(input, {
+  const first = await host.instance!.create(input, {
     requestId: 'stable-request',
   });
-  const replay = await new LocalStorageViewHost(options()).createInstance(
+  const replay = await new LocalStorageViewHost(options()).instance!.create(
     input,
     { requestId: 'stable-request' },
   );
   expect(replay).toEqual(first);
   expect(
-    (await host.listInstances(definition.id)).instances.filter(
+    (await host.instance!.list(definition.id)).instances.filter(
       item => item.title === input.title,
     ),
   ).toHaveLength(1);
   await expect(
-    host.createInstance(
+    host.instance!.create(
       { ...input, title: '不同内容' },
       { requestId: 'stable-request' },
     ),
   ).rejects.toMatchObject({ code: 'CONFLICT' });
-  const bob = await new LocalStorageViewHost(options('bob')).createInstance(
+  const bob = await new LocalStorageViewHost(options('bob')).instance!.create(
     input,
     { requestId: 'stable-request' },
   );
@@ -124,7 +124,7 @@ it('publishes revoked permissions without replacing the engine and enforces them
   const host = new LocalStorageViewHost({
     ...options(),
     resolveSource: source.resolveSource,
-    getInstancePermissions: () => ({
+    instancePermissions: () => ({
       save: allowed,
       rename: allowed,
       delete: allowed,
@@ -143,7 +143,7 @@ it('publishes revoked permissions without replacing the engine and enforces them
   const listener = vi.fn();
   engine.subscribe(listener);
   allowed = false;
-  await host.refreshPermissions();
+  await host.permission!.refresh();
   expect(listener).toHaveBeenCalled();
   expect(engine.getCapabilitiesSnapshot().instances.mine.permissions.save).toBe(
     false,
@@ -151,21 +151,21 @@ it('publishes revoked permissions without replacing the engine and enforces them
   expect(engine.canReorderInstances()).toBe(false);
   expect(engine.getSnapshot().sessions).toBe(sessions);
   expect(paged).toHaveBeenCalledTimes(1);
-  const current = await host.loadInstance(instance.id);
-  await expect(host.saveInstance(current)).rejects.toMatchObject({
+  const current = await host.instance!.load(instance.id);
+  await expect(host.instance!.save(current)).rejects.toMatchObject({
     code: 'FORBIDDEN',
   });
   await expect(
-    host.saveInstanceOrder(definition.id, ['mine', 'system']),
+    host.preference!.saveOrder(definition.id, ['mine', 'system']),
   ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   engine.dispose();
   listener.mockClear();
-  await host.refreshPermissions();
+  await host.permission!.refresh();
   expect(listener).not.toHaveBeenCalled();
 });
 it('cancels a queued create before it enters the storage transaction', async () => {
   const host = new LocalStorageViewHost(options());
-  await host.listInstances(definition.id);
+  await host.instance!.list(definition.id);
   let release!: () => void;
   const held = storageLock(
     host.storageKey,
@@ -176,7 +176,7 @@ it('cancels a queued create before it enters the storage transaction', async () 
   );
   await Promise.resolve();
   const controller = new AbortController();
-  const pending = host.createInstance(
+  const pending = host.instance!.create(
     { ...instance, title: '不能创建' },
     { requestId: 'aborted', signal: controller.signal },
   );
@@ -187,5 +187,5 @@ it('cancels a queued create before it enters the storage transaction', async () 
   release();
   await held;
   await assertion;
-  expect((await host.listInstances(definition.id)).instances).toHaveLength(2);
+  expect((await host.instance!.list(definition.id)).instances).toHaveLength(2);
 });

@@ -7,14 +7,11 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import {
-  LocalStorageViewHost,
-  HttpViewHost,
-  ViewServiceError,
-  VIEW_SERVICE_STATUS,
-} from '../dist/index.js';
+import { LocalStorageViewHost, ViewServiceError } from '../dist/index.js';
 import { startViewService } from './fixtures/view-service-server.mjs';
 import { loadOrderFixture } from './fixtures/order-fixture.mjs';
+import { loadHttpHost } from './fixtures/load-http-host.mjs';
+const { HttpViewHost, VIEW_SERVICE_STATUS } = await loadHttpHost();
 const fixture = await loadOrderFixture();
 const source = {
   paged: async () => {
@@ -68,7 +65,7 @@ if (serveOnly) {
       headers: () => ({ Authorization: 'Bearer alice-token' }),
       resolveSource: () => source,
     });
-    const list = () => alice.listInstances(fixture.definition.id);
+    const list = () => alice.instance.list(fixture.definition.id);
     const waitUntil = async predicate => {
       for (let n = 0; n < 100; n++) {
         if (await predicate()) return;
@@ -95,7 +92,7 @@ if (serveOnly) {
     );
     // All five runtime extension categories work with a restored HTTP-backed view.
     await page.getByLabel('金额 120.00 元', { exact: true }).waitFor();
-    const beforeBusiness = await alice.loadInstance('pending');
+    const beforeBusiness = await alice.instance.load('pending');
     await page.getByRole('button', { name: '创建订单', exact: true }).click();
     await page.getByRole('cell', { name: 'DEMO-4', exact: true }).waitFor();
     await page
@@ -112,7 +109,7 @@ if (serveOnly) {
       .click();
     await page.getByRole('button', { name: '批量处理', exact: true }).click();
     await page.getByRole('img', { name: '暂无记录', exact: true }).waitFor();
-    assert.deepEqual(await alice.loadInstance('pending'), beforeBusiness);
+    assert.deepEqual(await alice.instance.load('pending'), beforeBusiness);
     await page.reload();
     await page.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
     await page.getByRole('button', { name: '视图选项', exact: true }).click();
@@ -182,7 +179,7 @@ if (serveOnly) {
     await waitUntil(
       async () =>
         (
-          await server.hostFor('bob-token').listInstances(fixture.definition.id)
+          await server.hostFor('bob-token').instance.list(fixture.definition.id)
         ).instances
           .map(item => item.id)
           .indexOf(shared.id) === 1,
@@ -207,7 +204,7 @@ if (serveOnly) {
       '撤权仍保留草稿',
     );
     await assert.rejects(
-      alice.saveInstance(shared),
+      alice.instance.save(shared),
       error => error.code === 'FORBIDDEN',
     );
     server.setWriter('alice-token', true);
@@ -217,7 +214,7 @@ if (serveOnly) {
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await waitUntil(
       async () =>
-        (await alice.loadInstance(shared.id)).config.filters.root.props
+        (await alice.instance.load(shared.id)).config.filters.root.props
           .displayLabel === '撤权仍保留草稿',
     );
 
@@ -267,14 +264,14 @@ if (serveOnly) {
         { coreUrl, fixture },
       );
     const old = await page.evaluate(() =>
-      window.storageHost.loadInstance('pending'),
+      window.storageHost.instance.load('pending'),
     );
     const race = await Promise.all(
       [page, bobPage].map((tab, index) =>
         tab.evaluate(
           async ({ old, index }) => {
             try {
-              await window.storageHost.saveInstance({
+              await window.storageHost.instance.save({
                 ...old,
                 title: `writer-${index}`,
               });
@@ -301,8 +298,8 @@ if (serveOnly) {
     await bobPage.evaluate(input => {
       window.cancelCreate = new AbortController();
       window.createOutcome = undefined;
-      window.storageHost
-        .createInstance(input, {
+      window.storageHost.instance
+        .create(input, {
           requestId: 'native-abort',
           signal: window.cancelCreate.signal,
         })
@@ -323,7 +320,7 @@ if (serveOnly) {
     assert.equal(
       (
         await page.evaluate(() =>
-          window.storageHost.listInstances('demo-orders'),
+          window.storageHost.instance.list('demo-orders'),
         )
       ).instances.length,
       2,

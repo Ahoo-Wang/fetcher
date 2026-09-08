@@ -100,52 +100,58 @@ const source = {
   },
 };
 const host = {
-  async loadDefinition(id) {
-    assert.equal(id, definition.id);
-    return structuredClone(definition);
-  },
-  async listInstances(id) {
-    assert.equal(id, definition.id);
-    return {
-      instances: [...saved.values()].map(value => JSON.parse(value)),
-      defaultInstanceId: initial.id,
-    };
-  },
-  async loadInstance(id) {
-    assert.ok(saved.has(id));
-    return JSON.parse(saved.get(id));
-  },
   resolveSource(id) {
     assert.equal(id, definition.sourceId);
     return source;
   },
-  getInstancePermissions() {
-    return { save: true, saveAsPersonal: true, saveAsShared: true };
+  definition: {
+    async load(id) {
+      assert.equal(id, definition.id);
+      return structuredClone(definition);
+    },
   },
-  async saveInstance(instance) {
-    assert.equal(
-      instance.revision,
-      JSON.parse(saved.get(instance.id)).revision,
-    );
-    const next = {
-      ...structuredClone(instance),
-      revision: String(Number(instance.revision) + 1),
-    };
-    saved.set(next.id, JSON.stringify(next));
-    writes.push('save');
-    return JSON.parse(saved.get(next.id));
+  instance: {
+    async list(id) {
+      assert.equal(id, definition.id);
+      return {
+        instances: [...saved.values()].map(value => JSON.parse(value)),
+        defaultInstanceId: initial.id,
+      };
+    },
+    async load(id) {
+      assert.ok(saved.has(id));
+      return JSON.parse(saved.get(id));
+    },
+    async save(instance) {
+      assert.equal(
+        instance.revision,
+        JSON.parse(saved.get(instance.id)).revision,
+      );
+      const next = {
+        ...structuredClone(instance),
+        revision: String(Number(instance.revision) + 1),
+      };
+      saved.set(next.id, JSON.stringify(next));
+      writes.push('save');
+      return JSON.parse(saved.get(next.id));
+    },
+    async create(instance) {
+      assert.equal('id' in instance, false);
+      assert.equal('revision' in instance, false);
+      const created = {
+        ...structuredClone(instance),
+        id: 'shared-copy',
+        revision: '1',
+      };
+      saved.set(created.id, JSON.stringify(created));
+      writes.push('create');
+      return JSON.parse(saved.get(created.id));
+    },
   },
-  async createInstance(instance) {
-    assert.equal('id' in instance, false);
-    assert.equal('revision' in instance, false);
-    const created = {
-      ...structuredClone(instance),
-      id: 'shared-copy',
-      revision: '1',
-    };
-    saved.set(created.id, JSON.stringify(created));
-    writes.push('create');
-    return JSON.parse(saved.get(created.id));
+  permission: {
+    getInstance() {
+      return { save: true, saveAsPersonal: true, saveAsShared: true };
+    },
   },
 };
 const filterCompilers = {

@@ -83,7 +83,7 @@ export async function startViewService({
         return operation();
       },
       resolveSource: () => source,
-      getInstancePermissions: instance => ({
+      instancePermissions: instance => ({
         save: account.writer || instance.scope.type === 'personal',
         rename: account.writer || instance.scope.type === 'personal',
         delete: account.writer || instance.scope.type === 'personal',
@@ -119,7 +119,7 @@ export async function startViewService({
       let permissions;
       if (host) {
         try {
-          permissions = await host.loadPermissions(definition.id);
+          permissions = await host.permission.load(definition.id);
         } catch (permissionError) {
           if (status < 400) throw permissionError;
         }
@@ -194,31 +194,31 @@ export async function startViewService({
       };
       let result;
       if (request.method === 'GET' && path.length === 3)
-        result = await host.loadDefinition(definition.id, controller.signal);
+        result = await host.definition.load(definition.id, controller.signal);
       else if (
         request.method === 'GET' &&
         path[3] === 'permissions' &&
         path.length === 4
       )
-        result = await host.loadPermissions(definition.id, controller.signal);
+        result = await host.permission.load(definition.id, controller.signal);
       else if (
         request.method === 'GET' &&
         path[3] === 'instances' &&
         path.length === 4
       )
-        result = await host.listInstances(definition.id, controller.signal);
+        result = await host.instance.list(definition.id, controller.signal);
       else if (
         request.method === 'GET' &&
         path[3] === 'instances' &&
         path.length === 5
       )
-        result = await host.loadInstance(path[4], controller.signal);
+        result = await host.instance.load(path[4], controller.signal);
       else if (
         request.method === 'POST' &&
         path[3] === 'instances' &&
         path.length === 4
       ) {
-        result = await host.createInstance(body, {
+        result = await host.instance.create(body, {
           requestId: request.headers['idempotency-key'],
           signal: controller.signal,
         });
@@ -241,7 +241,7 @@ export async function startViewService({
       ) {
         if (!body || body.id !== path[4] || body.revision !== revision())
           throw new ServiceError('INVALID_ARGUMENT', '路径、正文和版本不一致');
-        result = await host.saveInstance(body);
+        result = await host.instance.save(body);
         control.mutations++;
       } else if (
         request.method === 'PATCH' &&
@@ -249,21 +249,24 @@ export async function startViewService({
         path[5] === 'name' &&
         path.length === 6
       ) {
-        result = await host.renameInstance(path[4], body?.title, revision());
+        result = await host.instance.rename(path[4], body?.title, revision());
         control.mutations++;
       } else if (
         request.method === 'DELETE' &&
         path[3] === 'instances' &&
         path.length === 5
       ) {
-        result = await host.deleteInstance(path[4], revision());
+        result = await host.instance.delete(path[4], revision());
         control.mutations++;
       } else if (
         request.method === 'PUT' &&
         path[3] === 'order' &&
         path.length === 4
       ) {
-        result = await host.saveInstanceOrder(definition.id, body?.instanceIds);
+        result = await host.preference.saveOrder(
+          definition.id,
+          body?.instanceIds,
+        );
         control.mutations++;
       } else throw new ServiceError('NOT_FOUND', '接口不存在');
       await send(200, result);

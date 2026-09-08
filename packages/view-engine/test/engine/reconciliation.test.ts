@@ -14,7 +14,8 @@
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import { newFilterDraft } from '../../src/filter/filterCore.js';
-import type { ViewHost, ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 
 it('reconciles a changed create echo by reading the created ID and preserving both drafts', async () => {
@@ -29,8 +30,7 @@ it('reconciles a changed create echo by reading the created ID and preserving bo
     .mockResolvedValue(persisted);
   const { engine, host } = setup({
     host: {
-      createInstance: async () => persisted,
-      loadInstance,
+      instance: { create: async () => persisted, load: loadInstance },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -60,7 +60,7 @@ it('reconciles a changed create echo by reading the created ID and preserving bo
   expect(selected(engine, 'mine').baseline).toEqual(source.baseline);
   expect(selected(engine, 'mine').instance.title).toBe(source.instance.title);
   expect(selected(engine, 'mine').filterDraft).toEqual(draft);
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   engine.dispose();
 });
 
@@ -76,8 +76,10 @@ it('uses a complete list for an unknown create outcome, and keeps ambiguous outc
     }));
     const { engine } = setup({
       host: {
-        createInstance: vi.fn().mockResolvedValue(null),
-        listInstances,
+        instance: {
+          create: vi.fn().mockResolvedValue(null),
+          list: listInstances,
+        },
       } as unknown as ViewHost,
     });
     await engine.load();
@@ -110,8 +112,7 @@ it('does not roll back an opened copy when its save finishes before an older rec
     .mockReturnValueOnce(oldRead.promise);
   const { engine } = setup({
     host: {
-      createInstance: async () => persisted,
-      loadInstance,
+      instance: { create: async () => persisted, load: loadInstance },
     } as unknown as ViewHost,
   });
   await engine.load();

@@ -14,8 +14,7 @@
 import { useState } from 'react';
 import {
   LocalStorageViewHost,
-  HttpViewHost,
-  type HttpViewHostOptions,
+  type ViewHost,
   type LocalStorageViewHostOptions,
 } from '@ahoo-wang/fetcher-view-engine';
 import { Button, ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
@@ -34,24 +33,22 @@ export interface OrderExampleProps extends OrderServiceOptions {
   initialSidebarCollapsed?: boolean;
   /** Development-only persistence of view configuration in this browser. */
   persistViews?: boolean;
-  /** HTTP contract fixture; authentication belongs to the embedding application. */
-  viewServiceUrl?: string;
-  viewServiceTimeoutMs?: number;
-  accessToken?: string;
+  /** Optional development adapter; the example stays independent of its transport. */
+  createViewHost?: (resolveSource: ViewHost['resolveSource']) => ViewHost;
 }
 /** Copy this directory into a React app and render <OrderExample scopeKey="user:tenant:access" />. */
 export function OrderExample({
   scopeKey = 'local-user:demo-orders',
   persistViews = false,
-  viewServiceUrl,
+  createViewHost,
   ...props
 }: OrderExampleProps) {
   return (
     <ScopedOrders
-      key={JSON.stringify([scopeKey, persistViews, viewServiceUrl])}
+      key={JSON.stringify([scopeKey, persistViews])}
       scopeKey={scopeKey}
       persistViews={persistViews}
-      viewServiceUrl={viewServiceUrl}
+      createViewHost={createViewHost}
       {...props}
     />
   );
@@ -61,9 +58,7 @@ function ScopedOrders({
   appearance = 'light',
   initialSidebarCollapsed = true,
   persistViews = false,
-  viewServiceUrl,
-  viewServiceTimeoutMs,
-  accessToken,
+  createViewHost,
   ...options
 }: OrderExampleProps & { scopeKey: string }) {
   // One local service per access scope; production hosts should enforce the same scope server-side.
@@ -80,19 +75,9 @@ function ScopedOrders({
         resolveSource: (id: string) => service.host.resolveSource(id),
       }
     : null;
-  const remoteOptions: HttpViewHostOptions | null = viewServiceUrl
-    ? {
-        baseUrl: viewServiceUrl,
-        timeoutMs: viewServiceTimeoutMs,
-        definitionId: orderDefinition.id,
-        headers: (): HeadersInit =>
-          accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-        resolveSource: id => service.host.resolveSource(id),
-      }
-    : null;
   const [host, setHost] = useState(() =>
-    remoteOptions
-      ? new HttpViewHost(remoteOptions)
+    createViewHost
+      ? createViewHost(id => service.host.resolveSource(id))
       : localOptions
         ? new LocalStorageViewHost(localOptions)
         : service.host,
@@ -100,7 +85,8 @@ function ScopedOrders({
   const [generation, setGeneration] = useState(0);
   const [storageError, setStorageError] = useState<string>();
   function reopen() {
-    if (remoteOptions) setHost(new HttpViewHost(remoteOptions));
+    if (createViewHost)
+      setHost(createViewHost(id => service.host.resolveSource(id)));
     else if (localOptions) setHost(new LocalStorageViewHost(localOptions));
     setGeneration(value => value + 1);
   }
@@ -111,14 +97,13 @@ function ScopedOrders({
       style={{ padding: 12, minWidth: 0, background: 'var(--fve-background)' }}
     >
       <p style={{ marginTop: 0 }}>
-        {viewServiceUrl
-          ? 'HTTP 视图服务契约验证；业务记录由独立订单服务提供。'
+        {createViewHost
+          ? '开发适配器验证；业务记录由独立订单服务提供。'
           : persistViews
             ? '浏览器保存视图配置；刷新页面后订单数据恢复初始值。'
             : '本地订单演示，修改仅保留在当前页面。'}
       </p>
-      {(host instanceof LocalStorageViewHost ||
-        host instanceof HttpViewHost) && (
+      {(host instanceof LocalStorageViewHost || createViewHost) && (
         <div className="fve:mb-3 fve:flex fve:gap-2">
           <Button variant="outline" onClick={reopen}>
             重新打开已保存视图
@@ -140,12 +125,12 @@ function ScopedOrders({
             >
               重置测试服务
             </Button>
-          ) : (
+          ) : host.permission?.refresh ? (
             <Button
               variant="outline"
               onClick={async () => {
                 try {
-                  await host.refreshPermissions();
+                  await host.permission!.refresh!();
                   setStorageError(undefined);
                 } catch (error) {
                   setStorageError(
@@ -156,7 +141,7 @@ function ScopedOrders({
             >
               同步服务权限
             </Button>
-          )}
+          ) : null}
         </div>
       )}
       {storageError && <p role="alert">{storageError}</p>}
@@ -167,7 +152,7 @@ function ScopedOrders({
             scopeKey={scopeKey}
             definitionId={orderDefinition.id}
             {...(!persistViews &&
-              !viewServiceUrl && {
+              !createViewHost && {
                 definition: orderDefinition,
                 instances: orderViews,
               })}

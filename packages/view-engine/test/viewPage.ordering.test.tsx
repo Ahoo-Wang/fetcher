@@ -36,7 +36,7 @@ async function openOrderedViews() {
     title: '系统视图',
     scope: { type: 'public', source: 'system' } as const,
   };
-  host.saveInstanceOrder = vi.fn().mockResolvedValue(undefined);
+  host.preference!.saveOrder = vi.fn().mockResolvedValue(undefined);
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
@@ -60,7 +60,7 @@ it('retries group-local keyboard ordering while preserving drafts, selection and
   const { engine, host, paged, dialog, manager, personal, publicList } =
     await openOrderedViews();
   await act(() => engine.setTitle('未保存的标题'));
-  const saveOrder = vi.mocked(host.saveInstanceOrder!);
+  const saveOrder = vi.mocked(host.preference!.saveOrder!);
   saveOrder.mockRejectedValueOnce(new Error('顺序保存失败'));
   const handle = manager.getByRole('button', { name: '拖动调整我的订单顺序' });
   act(() => handle.focus());
@@ -103,7 +103,7 @@ it('retries group-local keyboard ordering while preserving drafts, selection and
     dirty: true,
     instance: { title: '未保存的标题' },
   });
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   expect(paged).toHaveBeenCalledTimes(1);
   engine.dispose();
 });
@@ -117,7 +117,7 @@ it('only accepts drops within the dragged view group and clears its insertion ma
   fireEvent.dragOver(publicList, { dataTransfer, clientY: 1 });
   expect(dataTransfer.dropEffect).toBe('none');
   fireEvent.drop(publicList, { dataTransfer, clientY: 1 });
-  expect(host.saveInstanceOrder).not.toHaveBeenCalled();
+  expect(host.preference!.saveOrder).not.toHaveBeenCalled();
   fireEvent.dragEnd(handle);
   fireEvent.dragStart(handle, { dataTransfer });
   fireEvent.dragOver(personal, { dataTransfer, clientY: 1 });
@@ -127,7 +127,7 @@ it('only accepts drops within the dragged view group and clears its insertion ma
   ).toBeTruthy();
   fireEvent.drop(personal, { dataTransfer, clientY: 1 });
   await manager.findByText('已移至个人视图第 2 项');
-  expect(host.saveInstanceOrder).toHaveBeenCalledTimes(1);
+  expect(host.preference!.saveOrder).toHaveBeenCalledTimes(1);
   expect(
     personal.querySelector('[data-slot="view-drop-indicator"]'),
   ).toBeNull();

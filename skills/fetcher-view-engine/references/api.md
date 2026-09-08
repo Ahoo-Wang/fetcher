@@ -392,20 +392,30 @@ records, invalidate aggregation or clear selection. Sticky cells retain the
 table's light/dark, hover and selected backgrounds without showing scrolled text
 through them.
 
-| Host member                                    | Contract                                                                                                                                                                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `loadDefinition(id, signal?)`                  | Async complete definition. Optional when local definition is supplied.                                                                                                                           |
-| `listInstances(definitionId, signal?)`         | Async `ViewInstanceList`; complete instances and a nullable default ID, no duplicate per-item load. Optional with local list.                                                                    |
-| `loadInstance(id, signal?)`                    | Async full instance, used for an unknown selection or explicit reload.                                                                                                                           |
-| `resolveSource(sourceId)`                      | Required configured `RecordQuerySource`, or Promise of source; requires Wow `paged` and `cursor`, with optional `aggregate` for all-record summaries.                                            |
-| `getInstancePermissions(instance)`             | `{save, saveAsPersonal, saveAsShared, delete?, rename?}`; absent means false. Missing write callbacks also disable the corresponding capability.                                                 |
-| `saveInstance(instance)`                       | Async full same instance and submitted content, with a new revision if used.                                                                                                                     |
-| `deleteInstance(id, revision?)`                | Optional `Promise<void>`; resolve only after deletion, treat already absent as success. Enforce caller access, system-view protection and optimistic revision checks in the host service.        |
-| `renameInstance(id, title, revision?)`         | Optional `Promise<ViewInstance>`; changes only title and returns the complete persisted instance with its revision. Must preserve config, scope, ID and definition.                              |
-| `saveInstanceOrder(definitionId, instanceIds)` | Optional `Promise<void>`; saves the fixed current user's complete display order. `listInstances` should subsequently return that order. It does not change shared/public metadata or visibility. |
-| `createInstance(instanceWithoutIdOrRevision, {requestId, signal?})`  | Async full newly identified instance with exactly the submitted content.                                                                                                                         |
+`ViewHost` is a composition facade. Core exports `ViewDefinitionService`,
+`ViewInstanceService`, `ViewPreferenceService` and `ViewPermissionService`.
+The optional `definition`, `instance`, `preference`, and `permission` properties
+hold independently replaceable services. Missing methods disable their capability.
+`resolveSource` is the required local runtime bridge, not a REST operation.
+The development-only HttpViewHost composes experimental resource clients;
+LocalStorageViewHost implements the same contracts with a shared storage transaction.
+To override one operation without dropping its siblings, merge the service:
+`{...host, instance: {...host.instance, save: customSave}}`.
 
-Deletion requires both `delete: true` and `host.deleteInstance`; omission disables
+| Host member                                                          | Contract                                                                                                                                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `definition.load(id, signal?)`                                       | Async complete definition. Optional when local definition is supplied.                                                                                                                           |
+| `instance.list(definitionId, signal?)`                               | Async `ViewInstanceList`; complete instances and a nullable default ID, no duplicate per-item load. Optional with local list.                                                                    |
+| `instance.load(id, signal?)`                                         | Async full instance, used for an unknown selection or explicit reload.                                                                                                                           |
+| `resolveSource(sourceId)`                                            | Required configured `RecordQuerySource`, or Promise of source; requires Wow `paged` and `cursor`, with optional `aggregate` for all-record summaries.                                            |
+| `permission.getInstance(instance)`                                   | `{save, saveAsPersonal, saveAsShared, delete?, rename?}`; absent means false. Missing write callbacks also disable the corresponding capability.                                                 |
+| `instance.save(instance)`                                            | Async full same instance and submitted content, with a new revision if used.                                                                                                                     |
+| `instance.delete(id, revision?)`                                     | Optional `Promise<void>`; resolve only after deletion, treat already absent as success. Enforce caller access, system-view protection and optimistic revision checks in the host service.        |
+| `instance.rename(id, title, revision?)`                              | Optional `Promise<ViewInstance>`; changes only title and returns the complete persisted instance with its revision. Must preserve config, scope, ID and definition.                              |
+| `preference.saveOrder(definitionId, instanceIds)`                    | Optional `Promise<void>`; saves the fixed current user's complete display order. `instance.list` should subsequently return that order. It does not change shared/public metadata or visibility. |
+| `instance.create(instanceWithoutIdOrRevision, {requestId, signal?})` | Async full newly identified instance with exactly the submitted content.                                                                                                                         |
+
+Deletion requires both `delete: true` and `host.instance.delete`; omission disables
 it. System instances (`public/system`) are never deletable or renamable, even if the host
 permission callback grants those operations. `setTitle` also rejects system names. The engine passes the persisted ID and
 baseline revision, accepts draft/pending filters after UI confirmation, and
@@ -438,7 +448,7 @@ for retry. Deleting an instance keeps management open and returns focus to its
 heading. Writes cannot be dismissed or submitted twice. Closing management discards
 unsubmitted name edits without touching record-view drafts.
 
-Rename requires both `rename: true` and `host.renameInstance`. The engine passes
+Rename requires both `rename: true` and `host.instance.rename`. The engine passes
 the persisted revision, trims and rejects empty names, and serializes rename with
 other writes/reload for that instance (`writeStatus: 'renaming'`). A successful
 response updates the baseline title/revision while retaining draft filters and
@@ -457,7 +467,7 @@ these preferences under that user's identity, including for public/system views.
 Local input uses `new ViewEngine({definitionId,host,definition,instances,filterCompilers})`. Optional `filterCompilers` supplies the React-independent capabilities for this directly owned engine; keep them consistent throughout the engine scope. `ViewPage` does not accept this option and derives the same capabilities solely from `extensions.filters`. Unknown saved components remain in configuration and block queries until their compiler is available.
 An empty list or absent/unknown default leaves selection empty without a query.
 A foreign instance is rejected. Explicit selection loads an unknown instance
-through `loadInstance` and validates its definition before querying.
+through `instance.load` and validates its definition before querying.
 
 The host belongs to one fixed user, tenant and access scope for the engine's
 lifetime. Dispose and recreate on scope change (key the React page accordingly).
@@ -570,7 +580,7 @@ without discarding the draft.
 
 For a mismatched create echo, reload verifies the actual created ID; it never
 unlocks the source merely by reading that source again. If the ID is unknown,
-`listInstances` must return one new instance matching the submission. No match or
+`instance.list` must return one new instance matching the submission. No match or
 multiple matches leaves writes blocked and exposes the refreshed list for
 reconciliation. A newly discovered copy uses the remote baseline while keeping
 the submitted title/scope and latest source config/filter buffer for comparison.
@@ -877,23 +887,44 @@ default `--fve-border` token; it never resets unrelated host elements.
 
 The published `/react` entry is built with React Compiler using the repository Vite `reactCompilerPreset`. Compiler packages are development dependencies; React 19 supplies `react/compiler-runtime`. Consumers do not configure the compiler. Core runtime imports remain React-free and packed verification enforces both entry boundaries.
 
-`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with `reorder` and `instances[id].{permissions,reload}`; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host or notify subscribePermissions when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit memoization remains only for the controlled draft clone and theme capture, which are Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.
+`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with `reorder` and `instances[id].{permissions,reload}`; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host or notify permission.subscribe when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit memoization remains only for the controlled draft clone and theme capture, which are Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.
 
+### View service contracts and development adapters
 
-### View service contracts and adapters
+`src/record/ViewHost.ts` independently defines ViewHost and its definition,
+instance, preference and permission service interfaces. They remain type exports
+from the public package. `recordModel.ts` contains record metadata and engine state.
 
-`ViewHost.createInstance(input, context: ViewCreateContext)` now requires `{requestId: string, signal?: AbortSignal}`. One logical creation retains its ID through unknown outcomes and retries. Same-key different canonical content is a CONFLICT. Engine pending create IDs survive retries within its lifetime, and unknown creates can be reconciled through reload/list. Direct clients must preserve their ID across client reconstruction.
+Core exports LocalStorageViewHost, LocalStorageViewHostOptions, ViewCreateContext,
+ViewPermissionSnapshot, ViewStorageLock, ViewServiceError and ViewServiceErrorCode.
+HttpViewHost, all HTTP resource clients/transport and VIEW_SERVICE_STATUS are **not**
+public exports. They live under `packages/view-engine/dev/http` and are excluded from
+the published package. Routes, envelopes, status mapping and fake sessions are an
+internal experiment; see the bilingual `packages/view-engine/dev/README*.md`.
 
-Core exports `LocalStorageViewHost`, `HttpViewHost`, their options, `ViewCreateContext`, `ViewPermissionSnapshot`, `ViewStorageLock`, `ViewServiceError`, `ViewServiceErrorCode`, `VIEW_SERVICE_STATUS`.
+LocalStorageViewHostOptions requires serviceKey, scopeKey, definition, instances,
+resolveSource, storage and lock. Optional instancePermissions, canReorder and
+permissionsRevision provide trusted policy. Public content is shared; private views
+and ordering are per-user. Each transaction covers read, authorization, revision
+check and write. reset() clears the entire fixture service/definition.
 
-LocalStorageViewHostOptions requires serviceKey (trusted tenant namespace), scopeKey (trusted user), definition, instances, resolveSource, storage (`getItem/setItem/removeItem`) and lock (`<T>(name, operation:()=>T, signal?)=>Promise<T>`). Optional getInstancePermissions, canReorder, permissionsRevision provide a trusted policy. Public content is shared, private instances and complete display order are per-user. Storage is one document per service/definition at `fve:views:${JSON.stringify([serviceKey, definition.id])}`. Every transaction locks read/authorize/CAS/write; browser callers inject navigator.locks.request. Initialize revisions and commit create receipts with records atomically. `reset(): Promise<void>` administratively resets the whole service/definition, not just one user, and is not a REST method.
+ViewHost.instance.create(input, {requestId, signal?}) retains one request ID through
+unknown outcomes and retries; the service commits the instance and its receipt
+atomically. Same-key different content is CONFLICT. Revision-controlled writes,
+private order replacement, permission changes and component JSON restoration are
+transport-independent contracts. No HTTP status values are assigned by the core.
 
-HttpViewHostOptions requires absolute HTTP(S) baseUrl, definitionId and resolveSource; optional headers callback, fetch and timeoutMs (default 10000). Credentials never belong in baseUrl. Routes under `baseUrl/definitions/{definitionId}` are GET root, GET /instances, GET /instances/{id}, GET /permissions, POST /instances (Idempotency-Key), PUT /instances/{id}, PATCH /instances/{id}/name, DELETE /instances/{id} (the last three require quoted revision in If-Match), PUT /order with {instanceIds}. Writes return full authoritative instances or data:null for completion. Success envelope is {data,permissions}; failure is {data:null,error:{code,message},permissions?}. Fetches/responses use no-store.
+Permission snapshots carry revision, explicit boolean grants and reorder capability.
+permission.subscribe notifies ViewEngine; synchronous getters never fetch.
+Applications keep one fixed access scope and replace scopeKey when identity changes.
+Definition/instance IDs are nonblank valid Unicode strings and cannot equal . or .. .
 
-ViewPermissionSnapshot is {revision:number, reorder:boolean, instances:Record<string,Required<ViewInstancePermissions>>}. All grants are booleans, revision is a nonnegative monotonic authority version. Old responses cannot undo revocation; 401 clears grants and fences earlier in-flight replies. `subscribePermissions(listener)` notifies ViewEngine; `getDefinitionPermissions()` supplies reorder permission. `refreshPermissions(signal?)` on HttpViewHost refreshes from the service; LocalStorageViewHost has refreshPermissions() and loadPermissions(id,signal?). Render-time getters never fetch. The embedding app invokes refresh on its authority-change event and still changes ViewPage.scopeKey for identity/access-scope changes.
+OrderExample accepts persistViews and optional createViewHost(resolveSource).
+HTTP options belong only to dev/HttpOrderExample.tsx. Copying examples/react into an
+application requires no development adapter files or private package source imports.
 
-Error/status mapping: INVALID_ARGUMENT 400; UNAUTHENTICATED 401; FORBIDDEN 403; NOT_FOUND 404; CONFLICT 409 (idempotency/order); REVISION_CONFLICT 412; PRECONDITION_REQUIRED 428; CORRUPT_STATE 500; UNAVAILABLE and UNKNOWN_OUTCOME 503. Write timeout/cancel after dispatch, invalid/lost receipt yields UNKNOWN_OUTCOME; read cancellation preserves caller AbortError and read timeout yields UNAVAILABLE. Personal order intentionally uses last-successful complete replacement; instance writes use CAS.
-
-Verification commands (build package and start Storybook first): `node packages/view-engine/scripts/verify-view-host.mjs` and `node packages/view-engine/scripts/verify-http-view-host.mjs`. The latter starts a real HTTP fixture, drives UI with HttpViewHost, tests faults/auth/shared semantics, and also tests native cross-tab localStorage/Web Locks. `--serve` leaves the development server on 6010 for the HTTP story. Fake bearer sessions are fixture data, not a production authentication provider. The browser story is excluded from the generic Storybook run because this dedicated command owns its server lifecycle.
-
-OrderExample optionally accepts persistViews, viewServiceUrl, viewServiceTimeoutMs and accessToken (fixture authentication); reopen recreates host and engine. See the bilingual package READMEs for the normative operation/DTO and error matrix. Components, functions, filter compilers and business clients remain frontend-owned; only JSON configuration and reference names go through view persistence.
+Build first, then run scripts/verify-view-host.mjs or scripts/verify-http-view-host.mjs
+with Storybook running. The HTTP script loads development TypeScript through the
+existing Vite runtime; no HTTP implementation is added to dist. Its --serve mode
+starts the manual fixture on 6010. These checks cover recovery and isolation, not
+production protocol or authentication readiness.

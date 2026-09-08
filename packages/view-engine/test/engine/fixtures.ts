@@ -21,9 +21,9 @@ import { ViewEngine } from '../../src/record/ViewEngine.js';
 import type {
   ViewDefinition,
   ViewEngineOptions,
-  ViewHost,
   ViewInstance,
 } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 
 export const definition: ViewDefinition = {
   id: 'orders',
@@ -74,18 +74,24 @@ export function setup(options: Partial<ViewEngineOptions> = {}) {
     .mockResolvedValue({ list: [{ state: { id: 'a' } }], nextCursor: 'next' });
   const host: ViewHost = {
     resolveSource: vi.fn(() => ({ paged, cursor })),
-    getInstancePermissions: () => ({
-      save: true,
-      saveAsPersonal: true,
-      saveAsShared: true,
-    }),
-    saveInstance: vi.fn(async value => ({ ...value, revision: 'r2' })),
-    createInstance: vi.fn(async value => ({
-      ...value,
-      id: 'created',
-      revision: 'r1',
-    })),
     ...options.host,
+    permission: {
+      getInstance: () => ({
+        save: true,
+        saveAsPersonal: true,
+        saveAsShared: true,
+      }),
+      ...options.host?.permission,
+    },
+    instance: {
+      save: vi.fn(async value => ({ ...value, revision: 'r2' })),
+      create: vi.fn(async value => ({
+        ...value,
+        id: 'created',
+        revision: 'r1',
+      })),
+      ...options.host?.instance,
+    },
   };
   const engine = new ViewEngine({
     definitionId: 'orders',

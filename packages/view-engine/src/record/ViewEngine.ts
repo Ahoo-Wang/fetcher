@@ -23,11 +23,11 @@ import type {
   RecordKey,
   SaveAsScope,
   ViewCapabilities,
-  ViewHost,
   ViewEngineOptions,
   ViewEngineState,
   ViewInstancePermissions,
 } from './recordModel.js';
+import type { ViewHost } from './ViewHost.js';
 import { freeze } from './engine/recordSnapshot.js';
 import { EngineScope } from './engine/EngineScope.js';
 import { SessionStore } from './engine/SessionStore.js';
@@ -140,7 +140,7 @@ export class ViewEngine {
 
   private observePermissions(): void {
     const host = this.host;
-    this.unsubscribePermissions = host.subscribePermissions?.(() => {
+    this.unsubscribePermissions = host.permission?.subscribe?.(() => {
       if (this.host === host && !this.scope.disposed) this.store.publish({});
     });
   }

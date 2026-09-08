@@ -14,7 +14,8 @@
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import { newFilterDraft } from '../../src/filter/filterCore.js';
-import type { ViewHost, ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 
 it('keeps a subscriber navigation newer than the selection canceling a query', async () => {
@@ -104,7 +105,7 @@ it('ignores a switched-away read and obsolete unknown-instance selections', asyn
     .mockImplementationOnce(() => first.promise)
     .mockImplementationOnce(() => second.promise);
   const { engine, paged } = setup({
-    host: { loadInstance } as unknown as ViewHost,
+    host: { instance: { load: loadInstance } } as unknown as ViewHost,
   });
   await engine.load();
   const old = deferred<unknown>();
@@ -132,7 +133,9 @@ it('ignores an older reload rejection after a newer reload has completed', async
     .fn()
     .mockImplementationOnce(() => old.promise)
     .mockResolvedValue({ ...instance(), title: 'Fresh', revision: 'r5' });
-  const { engine } = setup({ host: { loadInstance } as unknown as ViewHost });
+  const { engine } = setup({
+    host: { instance: { load: loadInstance } } as unknown as ViewHost,
+  });
   await engine.load();
   const first = engine.reloadInstance();
   await engine.reloadInstance();

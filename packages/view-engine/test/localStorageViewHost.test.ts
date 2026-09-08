@@ -45,44 +45,52 @@ function options(scopeKey = 'developer') {
 
 it('persists component configuration, names, creation, deletion and ordering across new hosts', async () => {
   const host = new LocalStorageViewHost(options());
-  const edited = await host.loadInstance(instance.id);
+  const edited = await host.instance!.load(instance.id);
   edited.config.filters.root.props = {
     ...edited.config.filters.root.props,
     value: 77,
   };
-  const saved = await host.saveInstance(edited);
+  const saved = await host.instance!.save(edited);
   expect(saved.revision).not.toBe(edited.revision);
-  const copy = await host.createInstance(
+  const copy = await host.instance!.create(
     { ...saved, title: '副本' },
     { requestId: 'copy' },
   );
-  const renamed = await host.renameInstance(copy.id, '本地副本', copy.revision);
-  await host.saveInstanceOrder(definition.id, [copy.id, 'system', instance.id]);
+  const renamed = await host.instance!.rename(
+    copy.id,
+    '本地副本',
+    copy.revision,
+  );
+  await host.preference!.saveOrder(definition.id, [
+    copy.id,
+    'system',
+    instance.id,
+  ]);
   const restored = new LocalStorageViewHost(options());
   expect(
-    (await restored.listInstances(definition.id)).instances.map(
+    (await restored.instance!.list(definition.id)).instances.map(
       item => item.id,
     ),
   ).toEqual([copy.id, 'system', instance.id]);
-  expect(await restored.loadInstance(instance.id)).toEqual(saved);
-  expect((await restored.loadInstance(copy.id)).title).toBe('本地副本');
+  expect(await restored.instance!.load(instance.id)).toEqual(saved);
+  expect((await restored.instance!.load(copy.id)).title).toBe('本地副本');
   expect(
     JSON.parse(localStorage.getItem(host.storageKey)!).instances[2].config,
   ).not.toHaveProperty('filter');
-  await restored.deleteInstance(copy.id, renamed.revision);
-  expect((await host.listInstances(definition.id)).instances).toHaveLength(2);
+  await restored.instance!.delete(copy.id, renamed.revision);
+  expect((await host.instance!.list(definition.id)).instances).toHaveLength(2);
 });
 
 it('isolates scope and definition, preserves seeds, and resets only its own key', async () => {
   const input = options();
   const host = new LocalStorageViewHost(input);
   input.instances.instances[0] = { ...instance, title: '外部修改' };
-  const loaded = await host.loadInstance(instance.id);
+  const loaded = await host.instance!.load(instance.id);
   expect(loaded.title).toBe(instance.title);
   loaded.title = '保存的标题';
-  await host.saveInstance(loaded);
+  await host.instance!.save(loaded);
   const other = new LocalStorageViewHost(options('another-user'));
-  expect((await other.loadInstance(instance.id)).title).toBe(instance.title);
+  expect((await other.instance!.load(instance.id)).title).toBe(instance.title);
   const differentDefinition = new LocalStorageViewHost({
     ...options(),
     definition: { ...definition, id: 'other' },
@@ -91,75 +99,77 @@ it('isolates scope and definition, preserves seeds, and resets only its own key'
   expect(differentDefinition.storageKey).not.toBe(host.storageKey);
   localStorage.setItem('unrelated', 'keep');
   await host.reset();
-  expect((await host.loadInstance(instance.id)).title).toBe(instance.title);
+  expect((await host.instance!.load(instance.id)).title).toBe(instance.title);
   expect(localStorage.getItem('unrelated')).toBe('keep');
 });
 
 it('rejects stale writes and protects system views even when callers bypass UI permissions', async () => {
   const host = new LocalStorageViewHost(options());
-  const stale = await host.loadInstance(instance.id);
-  await host.saveInstance({ ...stale, title: '最新版本' });
-  await expect(host.saveInstance(stale)).rejects.toThrow(/重新加载/);
+  const stale = await host.instance!.load(instance.id);
+  await host.instance!.save({ ...stale, title: '最新版本' });
+  await expect(host.instance!.save(stale)).rejects.toThrow(/重新加载/);
   await expect(
-    host.renameInstance(stale.id, '旧版本', stale.revision),
+    host.instance!.rename(stale.id, '旧版本', stale.revision),
   ).rejects.toThrow(/重新加载/);
-  await expect(host.deleteInstance(stale.id, stale.revision)).rejects.toThrow(
+  await expect(host.instance!.delete(stale.id, stale.revision)).rejects.toThrow(
     /重新加载/,
   );
-  const system = await host.loadInstance('system');
-  expect(host.getInstancePermissions(system)).toMatchObject({
+  const system = await host.instance!.load('system');
+  expect(host.permission!.getInstance(system)).toMatchObject({
     save: false,
     rename: false,
     delete: false,
   });
-  await expect(host.saveInstance(system)).rejects.toThrow(/系统/);
+  await expect(host.instance!.save(system)).rejects.toThrow(/系统/);
   await expect(
-    host.renameInstance('system', '改名', system.revision),
-  ).rejects.toThrow(/系统/);
-  await expect(host.deleteInstance('system', system.revision)).rejects.toThrow(
-    /系统/,
-  );
-  await expect(
-    host.createInstance(system, { requestId: 'system' }),
+    host.instance!.rename('system', '改名', system.revision),
   ).rejects.toThrow(/系统/);
   await expect(
-    host.saveInstanceOrder(definition.id, [stale.id, stale.id]),
+    host.instance!.delete('system', system.revision),
+  ).rejects.toThrow(/系统/);
+  await expect(
+    host.instance!.create(system, { requestId: 'system' }),
+  ).rejects.toThrow(/系统/);
+  await expect(
+    host.preference!.saveOrder(definition.id, [stale.id, stale.id]),
   ).rejects.toThrow();
 });
 
 it('reports corrupted data and storage failures without overwriting existing records', async () => {
   const host = new LocalStorageViewHost(options());
   localStorage.setItem(host.storageKey, '{broken');
-  await expect(host.listInstances(definition.id)).rejects.toThrow();
+  await expect(host.instance!.list(definition.id)).rejects.toThrow();
   expect(localStorage.getItem(host.storageKey)).toBe('{broken');
   await host.reset();
-  const saved = await host.saveInstance(await host.loadInstance(instance.id));
+  const saved = await host.instance!.save(
+    await host.instance!.load(instance.id),
+  );
   const before = localStorage.getItem(host.storageKey);
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
     throw new DOMException('full', 'QuotaExceededError');
   });
   await expect(
-    host.saveInstance({ ...saved, title: '不会保存' }),
+    host.instance!.save({ ...saved, title: '不会保存' }),
   ).rejects.toThrow('full');
   expect(localStorage.getItem(host.storageKey)).toBe(before);
 });
 
 it('keeps the default selection valid after deletion and honors aborted reads', async () => {
   const host = new LocalStorageViewHost(options());
-  await host.deleteInstance(
+  await host.instance!.delete(
     instance.id,
-    (await host.loadInstance(instance.id)).revision,
+    (await host.instance!.load(instance.id)).revision,
   );
-  expect((await host.listInstances(definition.id)).defaultInstanceId).toBe(
+  expect((await host.instance!.list(definition.id)).defaultInstanceId).toBe(
     'system',
   );
   const controller = new AbortController();
   controller.abort();
   await expect(
-    host.loadDefinition(definition.id, controller.signal),
+    host.definition!.load(definition.id, controller.signal),
   ).rejects.toThrow();
-  await expect(host.listInstances('unknown')).rejects.toThrow();
-  await expect(host.loadInstance('unknown')).rejects.toThrow();
+  await expect(host.instance!.list('unknown')).rejects.toThrow();
+  await expect(host.instance!.load('unknown')).rejects.toThrow();
 });
 
 it('restores a saved view through a fresh engine while delegating record queries', async () => {

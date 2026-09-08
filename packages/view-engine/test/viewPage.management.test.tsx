@@ -28,20 +28,20 @@ afterEach(cleanup);
 
 it('manages names and deletion together while protecting system views and pending filters', async () => {
   const { host } = setup();
-  host.getInstancePermissions = () => ({
+  host.permission!.getInstance = () => ({
     save: true,
     saveAsPersonal: true,
     saveAsShared: false,
     rename: true,
     delete: true,
   });
-  host.renameInstance = vi.fn(async (id, title) => ({
+  host.instance!.rename = vi.fn(async (id, title) => ({
     ...instance,
     id,
     title,
     revision: 'renamed',
   }));
-  host.deleteInstance = vi
+  host.instance!.delete = vi
     .fn()
     .mockRejectedValueOnce(new Error('删除失败，请重试'))
     .mockResolvedValue(undefined);
@@ -73,7 +73,7 @@ it('manages names and deletion together while protecting system views and pendin
   fireEvent.change(nameInput, { target: { value: '取消的名称' } });
   fireEvent.keyDown(nameInput, { key: 'Escape' });
   expect(manager.queryByRole('textbox')).toBeNull();
-  expect(host.renameInstance).not.toHaveBeenCalled();
+  expect(host.instance!.rename).not.toHaveBeenCalled();
   await waitFor(() =>
     expect(document.activeElement).toBe(
       manager.getByRole('button', { name: '编辑我的订单名称' }),
@@ -87,7 +87,7 @@ it('manages names and deletion together while protecting system views and pendin
   fireEvent.click(manager.getByRole('button', { name: '保存我的订单名称' }));
   await manager.findByRole('button', { name: '编辑我的工作台名称' });
   expect(manager.queryByRole('textbox')).toBeNull();
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   expect(
     (
       screen.getByRole('textbox', {
@@ -99,7 +99,7 @@ it('manages names and deletion together while protecting system views and pendin
   fireEvent.click(manager.getByRole('button', { name: '删除我的工作台' }));
   let confirm = within(await screen.findByRole('dialog', { name: '删除视图' }));
   fireEvent.click(confirm.getByRole('button', { name: '取消' }));
-  expect(host.deleteInstance).not.toHaveBeenCalled();
+  expect(host.instance!.delete).not.toHaveBeenCalled();
   fireEvent.click(manager.getByRole('button', { name: '删除我的工作台' }));
   confirm = within(await screen.findByRole('dialog', { name: '删除视图' }));
   fireEvent.click(confirm.getByRole('button', { name: '删除视图' }));
@@ -118,14 +118,14 @@ it('manages names and deletion together while protecting system views and pendin
 
 it('retains a rejected name for retry and discards the editor buffer on closing management', async () => {
   const { host } = setup();
-  host.getInstancePermissions = () => ({
+  host.permission!.getInstance = () => ({
     save: true,
     saveAsPersonal: false,
     saveAsShared: false,
     rename: true,
   });
   let rejectRename!: (error: Error) => void;
-  host.renameInstance = vi
+  host.instance!.rename = vi
     .fn()
     .mockImplementationOnce(
       () =>
@@ -161,7 +161,7 @@ it('retains a rejected name for retry and discards the editor buffer on closing 
     name: '编辑待重试名称名称',
   });
   await waitFor(() => expect(document.activeElement).toBe(renamed));
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   fireEvent.click(renamed);
   fireEvent.change(manager.getByRole('textbox', { name: '待重试名称名称' }), {
     target: { value: '未提交名称' },
@@ -178,21 +178,21 @@ it('retains a rejected name for retry and discards the editor buffer on closing 
   expect(
     reopened.getByRole('button', { name: '编辑待重试名称名称' }),
   ).toBeTruthy();
-  expect(host.renameInstance).toHaveBeenCalledTimes(2);
+  expect(host.instance!.rename).toHaveBeenCalledTimes(2);
 });
 it('manages names for prototype-like instance IDs', async () => {
   const { host } = setup();
   const value = { ...instance, id: 'constructor' };
-  host.listInstances = vi
+  host.instance!.list = vi
     .fn()
     .mockResolvedValue({ instances: [value], defaultInstanceId: value.id });
-  host.getInstancePermissions = () => ({
+  host.permission!.getInstance = () => ({
     save: false,
     saveAsPersonal: false,
     saveAsShared: false,
     rename: true,
   });
-  host.renameInstance = vi.fn(async (id, title) => ({ ...value, id, title }));
+  host.instance!.rename = vi.fn(async (id, title) => ({ ...value, id, title }));
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.click(screen.getAllByRole('button', { name: '管理视图' })[0]);

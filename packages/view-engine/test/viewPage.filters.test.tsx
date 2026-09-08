@@ -243,7 +243,7 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
     ).disabled,
   ).toBe(true);
   expect(paged).toHaveBeenCalledTimes(1);
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '修正金额' }));
   await act(() => engine.applyFilter(filter.gte('amount', 10)));
   await act(() => engine.save());
@@ -252,6 +252,6 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
     filterPending: false,
   });
   expect(paged).toHaveBeenCalledTimes(2);
-  expect(host.saveInstance).toHaveBeenCalledTimes(1);
+  expect(host.instance!.save).toHaveBeenCalledTimes(1);
   engine.dispose();
 });

@@ -62,6 +62,20 @@ export function OrderPage({
 }
 ```
 
+`ViewHost` 是组合门面，接口按职责组织：`definition`（`ViewDefinitionService`）读取定义；`instance`（`ViewInstanceService`）负责实例列表、读取、创建、保存、改名与删除；`preference`（`ViewPreferenceService`）保存当前用户的排序偏好；`permission`（`ViewPermissionService`）提供权限快照、刷新与订阅。各服务可以独立注入，未提供的服务或方法会禁用对应能力。`resolveSource` 保留为本地运行时的数据源桥接。
+
+```ts
+const host: ViewHost = {
+  definition: definitionService,
+  instance: instanceService,
+  preference: preferenceService,
+  permission: permissionService,
+  resolveSource: id => businessSources[id],
+};
+```
+
+服务契约位于独立的 `src/record/ViewHost.ts`。`LocalStorageViewHost` 实现相同职责边界，存储操作共用事务以保持完整性；HTTP 保留为包外的开发实验。只替换某个方法时显式合并该服务，例如 `instance: {...host.instance, save: customSave}`。
+
 `ViewHost` 加载定义及完整实例列表、解析已配置的 Wow 查询客户端、提供权限，并按需实现保存与创建接口。本地数据可直接传入 `definition` 与 `instances: {instances, defaultInstanceId}`。必填 `scopeKey` 标识用户、租户与访问范围，范围变化时更换此值；引擎按 `[scopeKey, definitionId]` 管理生命周期。同一作用域下替换宿主对象会更新回调与能力，保留草稿。本地定义和列表作为该生命周期的初始值，引用变化不触发重载；需要重新初始化时显式改变 React key。宿主自行管理引擎时，使用 `ViewPageContent` 或 `RecordView`。
 
 实例保存 `config.filters: {mode, root}`。每个组件保存稳定配置 ID、`{name, options?}` 引用、操作符、字段绑定、原始 JSON `props` 和子组件。编译结果只在运行时的 `session.appliedFilter` 中；null 表示尚未编译成功，阻止记录及汇总查询。恢复直接读取组件配置，不从查询表达式反推 UI。对象属性中的 undefined 保存时省略；null、false、零和空字符串保留，拒绝非 JSON 值。
@@ -84,10 +98,10 @@ export function OrderPage({
 列表旁及视图切换下拉面板底部的**管理视图**统一提供行内改名、确认删除和组内拖动排序。
 名称默认显示为文本，点击编辑图标才显示输入框；保存或取消后恢复文本，Escape 取消当前名称编辑，保存失败保留输入以便重试。
 系统视图不能改名或删除，但可调整其个人展示顺序。改名由
-`host.renameInstance(id, title, revision?)` 执行，删除由 `deleteInstance(id, revision?)`
-执行，宿主通过 `getInstancePermissions` 的 `rename` / `delete` 授权。
+`host.instance.rename(id, title, revision?)` 执行，删除由 `instance.delete(id, revision?)`
+执行，宿主通过 `permission.getInstance` 的 `rename` / `delete` 授权。
 改名只保存名称，保留待查询筛选和未保存的列配置，不触发查询。
-`saveInstanceOrder(definitionId, ids)` 保存当前用户的展示顺序，包括公共视图；不影响其他用户。
+`preference.saveOrder(definitionId, ids)` 保存当前用户的展示顺序，包括公共视图；不影响其他用户。
 写入成功后更新列表，失败保留编辑并可重试。原保存菜单移除独立删除入口，保留另存为和还原。
 无 React 时可调用 `renameInstance(title, id?)`、`deleteInstance(id?)`、
 `canReorderInstances()` 和 `reorderInstances(ids)`。
@@ -114,7 +128,7 @@ Storybook 的 **View Engine → Record View** 使用内存服务演示完整请�
 
 ## 视图服务契约与运行时边界
 
-验收链路为 **服务 JSON → ViewHost → 新建 ViewEngine → 前端注册表 → 组件和操作恢复**。`LocalStorageViewHost` 是可执行的服务替身，`HttpViewHost` 是真实 REST 适配器。服务负责定义、实例、可见性、版本、创建回执和用户排序；前端负责组件实现、回调、过滤器编译和业务查询客户端。业务数据写入不应改变视图配置。
+验收链路为 **服务 JSON → ViewHost → 新建 ViewEngine → 前端注册表 → 组件和操作恢复**。`LocalStorageViewHost` 是可执行的服务替身，包外 HTTP 适配器用于验证暂定协议。服务负责定义、实例、可见性、版本、创建回执和用户排序；前端负责组件实现、回调、过滤器编译和业务查询客户端。业务数据写入不应改变视图配置。
 
 ### 本地服务替身
 
@@ -135,59 +149,15 @@ const host = new LocalStorageViewHost({
 
 `serviceKey` 标识服务／租户，`scopeKey` 标识其中的可信用户。存储键为 `fve:views:${JSON.stringify([serviceKey, definition.id])}`。公共视图在同一服务内共享，个人视图与展示顺序按用户隔离；归属由服务决定，不能通过写入正文伪造。ViewPage 的 scopeKey 应包含租户与用户；不传本地 definition/instances，让加载完整经过宿主。
 
-必填 `lock` 覆盖读取、授权、版本检查和写入的整个事务。示例使用 Web Locks 串行化同源标签页；同一存储键的所有写入者必须使用同一个锁域。初始实例在初始化时取得服务端版本。系统视图只读。可选 `getInstancePermissions`、`canReorder`、`permissionsRevision` 提供可信权限策略，权限变化时必须递增策略版本；写入在事务内重新检查最新权限。
+必填 `lock` 覆盖读取、授权、版本检查和写入的整个事务。示例使用 Web Locks 串行化同源标签页；同一存储键的所有写入者必须使用同一个锁域。初始实例在初始化时取得服务端版本。系统视图只读。可选 `instancePermissions`、`canReorder`、`permissionsRevision` 提供可信权限策略，权限变化时必须递增策略版本；写入在事务内重新检查最新权限。
 
-`loadPermissions(definitionId, signal?)` 读取权限快照，`refreshPermissions()` 通过 `subscribePermissions` 通知引擎。引擎随宿主生命周期订阅和解绑，权限更新不会丢弃草稿，渲染时仍只进行同步权限读取。`await reset()` 是清除此服务／定义下全部用户及幂等回执的测试管理操作，不映射为 REST 端点。损坏存储会报错，不自动覆盖。原始存储文档是内部服务状态，不是 ViewInstanceList DTO。
+`permission.load(definitionId, signal?)` 读取权限快照，`permission.refresh()` 通过 `permission.subscribe` 通知引擎。引擎随宿主生命周期订阅和解绑，权限更新不会丢弃草稿，渲染时仍只进行同步权限读取。`await reset()` 是清除此服务／定义下全部用户及幂等回执的测试管理操作，不映射为 REST 端点。损坏存储会报错，不自动覆盖。原始存储文档是内部服务状态，不是 ViewInstanceList DTO。
 
-### HTTP 适配器与协议
+### 仅用于开发的 HTTP 实验
 
-```tsx
-import { HttpViewHost } from '@ahoo-wang/fetcher-view-engine';
+HTTP 类和状态码映射位于 `dev/http`，没有公共导出，也不进入发布包。详见[开发实验](dev/README.zh-CN.md)。可复制的订单示例通过 `createViewHost` 回调注入宿主；HTTP 接线仅存在于 `dev/HttpOrderExample.tsx`。
 
-const host = new HttpViewHost({
-  baseUrl: 'https://example.test/view-service/',
-  definitionId: orderDefinition.id,
-  headers: () => applicationAuthHeaders(),
-  resolveSource: id => businessSources[id],
-  timeoutMs: 10000,
-});
-// ViewPage: host + definitionId + an access-scoped scopeKey; no local definition/instances props.
-```
-
-以下路径相对于 `/view-service/definitions/{definitionId}`：
-
-| 方法 | 路径 | 输入／条件 |
-| --- | --- | --- |
-| GET | 定义根路径 | 返回 ViewDefinition |
-| GET | `/instances` | 返回 ViewInstanceList |
-| GET | `/instances/{id}` | 返回完整实例 |
-| GET | `/permissions` | 返回权限快照 |
-| POST | `/instances` | 不含 id/revision 的实例；必须提供 Idempotency-Key |
-| PUT | `/instances/{id}` | 完整实例；If-Match 提供带引号的 revision |
-| PATCH | `/instances/{id}/name` | `{title}` 与 If-Match |
-| DELETE | `/instances/{id}` | If-Match |
-| PUT | `/order` | `{instanceIds}`，必须完整且不重复 |
-
-成功响应为 `{data, permissions}`，无返回内容的写入使用 `data: null`。读取实例、创建、保存和改名均返回完整权威实例及版本。错误响应为 `{data: null, error: {code, message}, permissions?}`；可识别身份的失败同时返回最新权限。响应和客户端请求均禁止缓存。
-
-权限快照为 `{revision, reorder, instances: {[id]: {save, rename, delete, saveAsPersonal, saveAsShared}}}`，所有授权字段均为显式 boolean。旧策略版本不能恢复已撤销权限；401 会清空缓存授权，并阻止此前在途响应恢复旧授权。应用在权限变化事件中调用 `refreshPermissions(signal?)`；这里不内置轮询或推送传输。用户或访问范围改变仍必须切换 ViewPage.scopeKey。
-
-| 错误码 | HTTP | 含义 |
-| --- | ---: | --- |
-| INVALID_ARGUMENT | 400 | 输入不合法 |
-| UNAUTHENTICATED | 401 | 会话缺失或无效 |
-| FORBIDDEN | 403 | 身份有效但不允许该操作 |
-| NOT_FOUND | 404 | 资源不存在或不可见 |
-| CONFLICT | 409 | 幂等键复用于不同内容，或排序的可见 ID 集合已变化 |
-| REVISION_CONFLICT | 412 | revision 不匹配 |
-| PRECONDITION_REQUIRED | 428 | 写入缺少版本前提 |
-| CORRUPT_STATE | 500 | 服务存储文档损坏 |
-| UNAVAILABLE | 503 | 服务／存储不可用；客户端也用于读取失败或超时 |
-| UNKNOWN_OUTCOME | 503 | 写入回执不明；客户端在发送后的超时、取消、响应丢失／无效时抛出 |
-
-If-Match 版本不匹配使用 412，依据 [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#name-if-match)。身份从服务端会话解析，不从正文 scopeKey 或 owner 字段取得。测试服务器使用明确的假 bearer 会话；生产实现应替换身份提供方与存储实现，不应部署这些测试会话。
-
-`ViewHost.createInstance(input, {requestId, signal?})` 要求每个逻辑创建保留同一个请求 ID。同一用户、同一键和同一规范化正文重放已存回执；正文变化返回 CONFLICT。实例与回执在同一个事务内提交。引擎在结果不明时保留 ID，阻止修改尚未确认请求的内容；原请求重试或显式重载可以核对已创建实例，不会把传输失败当成“肯定未写入”。直接使用客户端的调用者在重试、重建客户端后也必须保留原 ID。测试服务回执保留到管理重置为止。
+`ViewHost.instance.create(input, {requestId, signal?})` 要求每个逻辑创建保留同一个请求 ID。同一用户、同一键和同一规范化正文重放已存回执；正文变化返回 CONFLICT。实例与回执在同一个事务内提交。引擎在结果不明时保留 ID，阻止修改尚未确认请求的内容；原请求重试或显式重载可以核对已创建实例，不会把传输失败当成“肯定未写入”。直接使用客户端的调用者在重试、重建客户端后也必须保留原 ID。测试服务回执保留到管理重置为止。
 
 个人排序采用完整替换，同一用户最后一次成功替换生效；可见 ID 集合必须仍然匹配，不修改其他用户顺序。实例写入使用 revision CAS，两者是明确不同的并发语义。
 
@@ -339,7 +309,7 @@ Select、下拉菜单与 Popover 面板默认 Portal 到 body，避免被有裁�
 
 ## 开发
 
-库构建通过 Vite 的 `reactCompilerPreset` 启用 React Compiler，使用 React 19 提供的 `react/compiler-runtime`，使用者无需安装编译插件。纯计算、表格 JSX 和操作回调交由编译器缓存；仅保留受控筛选草稿副本及弹层主题捕获两处缓存，以稳定 Effect 依赖。错误边界按渲染输入恢复，不依赖事件回调引用。权限与宿主能力通过 `getCapabilitiesSnapshot` 和 `subscribe` 订阅，无需组件使用 `use no memo`。自行管理引擎时，同一作用域下用 `updateHost(nextHost)` 更新回调或权限策略；用户、租户、访问范围改变时更换引擎。权限策略必须纯粹，修改闭包后需替换宿主或通过 subscribePermissions 通知引擎。操作执行时仍会重新检查权限。
+库构建通过 Vite 的 `reactCompilerPreset` 启用 React Compiler，使用 React 19 提供的 `react/compiler-runtime`，使用者无需安装编译插件。纯计算、表格 JSX 和操作回调交由编译器缓存；仅保留受控筛选草稿副本及弹层主题捕获两处缓存，以稳定 Effect 依赖。错误边界按渲染输入恢复，不依赖事件回调引用。权限与宿主能力通过 `getCapabilitiesSnapshot` 和 `subscribe` 订阅，无需组件使用 `use no memo`。自行管理引擎时，同一作用域下用 `updateHost(nextHost)` 更新回调或权限策略；用户、租户、访问范围改变时更换引擎。权限策略必须纯粹，修改闭包后需替换宿主或通过 permission.subscribe 通知引擎。操作执行时仍会重新检查权限。
 
 `test` 在不启用编译器和启用编译器两种模式下运行同一套测试，再检查类型。Storybook 验证编译后的公开产物。打包检查要求 `/react` 包含编译器运行时导入，并禁止核心入口引入 React。单元格回归检查保证编译模式下输入待查询筛选不增加单元格渲染次数，这是回归约束，不代表所有场景都会变快。
 

@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { encodeViewResourceId } from '../viewServiceContract.js';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
   RECORD_SUMMARY_LABELS,
@@ -108,6 +109,7 @@ export function validateViewDefinition(
 ): asserts value is ViewDefinition {
   assertObject(value, '视图定义');
   assertText(value.id, '定义 ID');
+  encodeViewResourceId(value.id);
   assertText(value.title, '定义名称');
   assertText(value.sourceId, '数据源 ID');
   assertPath(value.rowKey, '记录主键');

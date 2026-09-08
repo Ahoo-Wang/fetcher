@@ -12,7 +12,8 @@
  */
 
 import { expect, it, vi } from 'vitest';
-import type { ViewHost, ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewInstance } from '../../src/record/recordModel.js';
+import type { ViewHost } from '../../src/record/ViewHost.js';
 import {
   deferred,
   instance,
@@ -26,8 +27,8 @@ it('removes only after host success, then selects a remaining instance or leaves
   const deleteInstance = vi.fn(() => response.promise);
   const { engine } = setup({
     host: {
-      deleteInstance,
-      getInstancePermissions: permissions,
+      instance: { delete: deleteInstance },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -60,10 +61,14 @@ it.each(['missing-permission', 'missing-callback', 'system'] as const)(
     const { engine } = setup({
       instances: { instances: [value], defaultInstanceId: 'mine' },
       host: {
-        deleteInstance:
-          restriction === 'missing-callback' ? undefined : deleteInstance,
-        getInstancePermissions:
-          restriction === 'missing-permission' ? undefined : permissions,
+        instance: {
+          delete:
+            restriction === 'missing-callback' ? undefined : deleteInstance,
+        },
+        permission: {
+          getInstance:
+            restriction === 'missing-permission' ? undefined : permissions,
+        },
       } as unknown as ViewHost,
     });
     await engine.load();
@@ -83,8 +88,8 @@ it('retains drafts on failure and blocks concurrent saves or repeated deletion',
     .mockResolvedValue(undefined);
   const { engine } = setup({
     host: {
-      deleteInstance,
-      getInstancePermissions: permissions,
+      instance: { delete: deleteInstance },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -112,9 +117,8 @@ it('keeps a pending navigation when deleting its previously selected instance', 
   const loading = deferred<ViewInstance>();
   const { engine } = setup({
     host: {
-      deleteInstance: () => response.promise,
-      getInstancePermissions: permissions,
-      loadInstance: () => loading.promise,
+      instance: { delete: () => response.promise, load: () => loading.promise },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -132,8 +136,8 @@ it('keeps a pending navigation when deleting its previously selected instance', 
 it('does not report deletion as failed when the next view query fails', async () => {
   const { engine, paged } = setup({
     host: {
-      deleteInstance: async () => {},
-      getInstancePermissions: permissions,
+      instance: { delete: async () => {} },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -152,8 +156,8 @@ it('ignores a late query response after its view is deleted', async () => {
   }>();
   const { engine, paged } = setup({
     host: {
-      deleteInstance: async () => {},
-      getInstancePermissions: permissions,
+      instance: { delete: async () => {} },
+      permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -180,8 +184,8 @@ it.each(['load', 'dispose'] as const)(
     const response = deferred<void>();
     const { engine } = setup({
       host: {
-        deleteInstance: () => response.promise,
-        getInstancePermissions: permissions,
+        instance: { delete: () => response.promise },
+        permission: { getInstance: permissions },
       } as unknown as ViewHost,
     });
     await engine.load();

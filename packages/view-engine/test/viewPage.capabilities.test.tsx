@@ -45,11 +45,13 @@ it('updates save-as permissions while preserving an open form and its name', asy
       definitionId="orders"
       host={{
         ...host,
-        getInstancePermissions: () => ({
-          save: true,
-          saveAsPersonal: false,
-          saveAsShared: true,
-        }),
+        permission: {
+          getInstance: () => ({
+            save: true,
+            saveAsPersonal: false,
+            saveAsShared: true,
+          }),
+        },
       }}
     />,
   );
@@ -78,20 +80,20 @@ it('refreshes open management and delete controls when host capabilities change'
     instances: [instance, { ...instance, id: 'other', title: '其他视图' }],
     defaultInstanceId: instance.id,
   };
-  host.getInstancePermissions = () => ({
+  host.permission!.getInstance = () => ({
     save: true,
     saveAsPersonal: true,
     saveAsShared: false,
     rename: true,
     delete: true,
   });
-  host.renameInstance = vi.fn(async (id, title) => ({
+  host.instance!.rename = vi.fn(async (id, title) => ({
     ...instance,
     id,
     title,
   }));
-  host.deleteInstance = vi.fn(async () => {});
-  host.saveInstanceOrder = vi.fn(async () => {});
+  host.instance!.delete = vi.fn(async () => {});
+  host.preference!.saveOrder = vi.fn(async () => {});
   const view = render(
     <ViewPage
       scopeKey="user"
@@ -120,14 +122,16 @@ it('refreshes open management and delete controls when host capabilities change'
       instances={local}
       host={{
         ...host,
-        saveInstanceOrder: undefined,
-        getInstancePermissions: () => ({
-          save: true,
-          saveAsPersonal: true,
-          saveAsShared: false,
-          rename: false,
-          delete: false,
-        }),
+        preference: { saveOrder: undefined },
+        permission: {
+          getInstance: () => ({
+            save: true,
+            saveAsPersonal: true,
+            saveAsShared: false,
+            rename: false,
+            delete: false,
+          }),
+        },
       }}
     />,
   );
@@ -145,5 +149,5 @@ it('refreshes open management and delete controls when host capabilities change'
     manager.queryByRole('button', { name: '删除我的订单', hidden: true }),
   ).toBeNull();
   expect(paged).toHaveBeenCalledTimes(1);
-  expect(host.deleteInstance).not.toHaveBeenCalled();
+  expect(host.instance!.delete).not.toHaveBeenCalled();
 });

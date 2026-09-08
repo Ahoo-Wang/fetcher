@@ -60,8 +60,8 @@ it('saves an added unset control without querying and requires Query after enter
   expect(screen.queryByText('筛选未生效')).toBeNull();
   expect(paged).toHaveBeenCalledTimes(1);
   fireEvent.click(save);
-  await waitFor(() => expect(host.saveInstance).toHaveBeenCalledTimes(1));
-  const saved = vi.mocked(host.saveInstance!).mock.calls[0][0];
+  await waitFor(() => expect(host.instance!.save).toHaveBeenCalledTimes(1));
+  const saved = vi.mocked(host.instance!.save!).mock.calls[0][0];
   const customer = saved.config.filters.root.operands?.find(
     node => node.field === 'customer',
   );
@@ -94,7 +94,7 @@ it('keeps filter edits manual, blocks saves while pending, then saves applied co
   await waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
   expect(paged.mock.calls[1][0].filter).toEqual(filter.gte('amount', 20));
   fireEvent.click(screen.getByRole('button', { name: '保存', exact: true }));
-  await waitFor(() => expect(host.saveInstance).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(host.instance!.save).toHaveBeenCalledTimes(1));
   await waitFor(() =>
     expect(
       (
@@ -113,7 +113,7 @@ it.each(['personal', 'shared'])(
   'save-as radios explain visibility and respect %s-only permission',
   async allowed => {
     const { host } = setup();
-    host.getInstancePermissions = () => ({
+    host.permission!.getInstance = () => ({
       save: true,
       saveAsPersonal: allowed === 'personal',
       saveAsShared: allowed === 'shared',
@@ -139,8 +139,8 @@ it.each(['personal', 'shared'])(
     fireEvent.click(unavailable);
     expect(selected.getAttribute('aria-checked')).toBe('true');
     fireEvent.click(dialog.getByRole('button', { name: '创建视图' }));
-    await waitFor(() => expect(host.createInstance).toHaveBeenCalledTimes(1));
-    expect(vi.mocked(host.createInstance!).mock.calls[0][0].scope).toEqual(
+    await waitFor(() => expect(host.instance!.create).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(host.instance!.create!).mock.calls[0][0].scope).toEqual(
       allowed === 'personal'
         ? { type: 'personal' }
         : { type: 'public', source: 'shared' },
@@ -160,8 +160,8 @@ it('opens Save As from the save menu and preserves the host create contract', as
     target: { value: '工作副本' },
   });
   fireEvent.click(dialog.getByRole('button', { name: '创建视图' }));
-  await waitFor(() => expect(host.createInstance).toHaveBeenCalledTimes(1));
-  expect(vi.mocked(host.createInstance!).mock.calls[0][0]).toMatchObject({
+  await waitFor(() => expect(host.instance!.create).toHaveBeenCalledTimes(1));
+  expect(vi.mocked(host.instance!.create!).mock.calls[0][0]).toMatchObject({
     title: '工作副本',
     scope: { type: 'personal' },
     config: instance.config,
@@ -169,7 +169,7 @@ it('opens Save As from the save menu and preserves the host create contract', as
 });
 it('returns focus to view actions after restoring without Save As permission', async () => {
   const { host } = setup();
-  host.getInstancePermissions = () => ({
+  host.permission!.getInstance = () => ({
     save: true,
     saveAsPersonal: false,
     saveAsShared: false,
@@ -195,13 +195,13 @@ it('returns focus to view actions after restoring without Save As permission', a
   }) as HTMLButtonElement;
   expect(save.disabled).toBe(true);
   fireEvent.click(save);
-  expect(host.saveInstance).not.toHaveBeenCalled();
+  expect(host.instance!.save).not.toHaveBeenCalled();
   engine.dispose();
 });
 it('keeps a late save failure on its source instance after navigation', async () => {
   const { host } = setup();
   let rejectSave: (error: Error) => void = () => {};
-  host.saveInstance = vi.fn(
+  host.instance!.save = vi.fn(
     () =>
       new Promise<ViewInstance>((_, reject) => {
         rejectSave = reject;
@@ -230,8 +230,8 @@ it('offers reload after a revision conflict and saves the retained draft with th
       ...value,
       revision: 'r3',
     }));
-  host.saveInstance = saveInstance;
-  host.loadInstance = vi.fn(async () => ({ ...instance, revision: 'r2' }));
+  host.instance!.save = saveInstance;
+  host.instance!.load = vi.fn(async () => ({ ...instance, revision: 'r2' }));
   const engine = new ViewEngine({ definitionId: definition.id, host });
   await engine.load();
   engine.setTitle('我的新名称');

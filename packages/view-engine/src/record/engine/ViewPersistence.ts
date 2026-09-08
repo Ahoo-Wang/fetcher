@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import type { ViewHost, ViewInstance, SaveAsScope } from '../recordModel.js';
+import type { ViewInstance, SaveAsScope } from '../recordModel.js';
+import type { ViewHost } from '../ViewHost.js';
 import { validateViewInstance } from '../recordValidation.js';
 import { sameFilterState } from '../../filter/filterTree.js';
 import type { EngineScope } from './EngineScope.js';
@@ -118,7 +119,7 @@ export class ViewPersistence {
         };
         this.work.createRequests.set(id, request);
         try {
-          result = await this.host.createInstance!(
+          result = await this.host.instance!.create!(
             structuredClone({ definitionId, kind, title, scope, config }),
             { requestId: request.requestId },
           );
@@ -139,7 +140,8 @@ export class ViewPersistence {
           }
           throw error;
         }
-      } else result = await this.host.saveInstance!(structuredClone(submitted));
+      } else
+        result = await this.host.instance!.save!(structuredClone(submitted));
       if (!current()) return;
       received = true;
       if (options)

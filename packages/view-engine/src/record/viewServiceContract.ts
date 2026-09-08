@@ -13,19 +13,17 @@
 
 import type { ViewInstancePermissions } from './recordModel.js';
 
-export const VIEW_SERVICE_STATUS = {
-  INVALID_ARGUMENT: 400,
-  UNAUTHENTICATED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  REVISION_CONFLICT: 412,
-  PRECONDITION_REQUIRED: 428,
-  CORRUPT_STATE: 500,
-  UNAVAILABLE: 503,
-  UNKNOWN_OUTCOME: 503,
-} as const;
-export type ViewServiceErrorCode = keyof typeof VIEW_SERVICE_STATUS;
+export type ViewServiceErrorCode =
+  | 'INVALID_ARGUMENT'
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'REVISION_CONFLICT'
+  | 'PRECONDITION_REQUIRED'
+  | 'CORRUPT_STATE'
+  | 'UNAVAILABLE'
+  | 'UNKNOWN_OUTCOME';
 export class ViewServiceError extends Error {
   readonly name = 'ViewServiceError';
   constructor(
@@ -41,7 +39,7 @@ export interface ViewCreateContext {
   signal?: AbortSignal;
 }
 export interface ViewPermissionSnapshot {
-  /** Monotonic authority revision; stale HTTP responses cannot restore revoked grants. */
+  /** Monotonic authority revision; stale responses cannot restore revoked grants. */
   revision: number;
   instances: Record<string, Required<ViewInstancePermissions>>;
   reorder: boolean;
@@ -52,3 +50,25 @@ export type ViewStorageLock = <T>(
   operation: () => T,
   signal?: AbortSignal,
 ) => Promise<T>;
+
+/** Encode one resource ID without allowing URL normalization to change its resource. */
+export function encodeViewResourceId(value: unknown): string {
+  if (
+    typeof value !== 'string' ||
+    !value.trim() ||
+    value === '.' ||
+    value === '..'
+  )
+    throw new ViewServiceError(
+      'INVALID_ARGUMENT',
+      '视图资源 ID 不能为空或点路径段',
+    );
+  try {
+    return encodeURIComponent(value);
+  } catch {
+    throw new ViewServiceError(
+      'INVALID_ARGUMENT',
+      '视图资源 ID 包含无效 Unicode',
+    );
+  }
+}

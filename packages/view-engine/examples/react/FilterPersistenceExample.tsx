@@ -75,34 +75,38 @@ export function FilterPersistenceExample({
     });
     return {
       resolveSource: service.host.resolveSource,
-      loadDefinition: async () => structuredClone(definition),
-      listInstances: async () => ({
-        instances: [JSON.parse(stored)],
-        defaultInstanceId: initial.id,
-      }),
-      loadInstance: async id => {
-        if (id !== initial.id) throw new Error('未知视图。');
-        return JSON.parse(stored);
+      definition: { load: async () => structuredClone(definition) },
+      instance: {
+        list: async () => ({
+          instances: [JSON.parse(stored)],
+          defaultInstanceId: initial.id,
+        }),
+        load: async id => {
+          if (id !== initial.id) throw new Error('未知视图。');
+          return JSON.parse(stored);
+        },
+        save: async instance => {
+          const previous: ViewInstance = JSON.parse(stored);
+          if (
+            instance.id !== previous.id ||
+            instance.revision !== previous.revision
+          )
+            throw new Error('视图版本已变化，请重新打开。');
+          stored = JSON.stringify({
+            ...instance,
+            revision: String(Number(previous.revision) + 1),
+          });
+          setSavedJson(stored);
+          setWrites(value => value + 1);
+          return JSON.parse(stored);
+        },
       },
-      getInstancePermissions: () => ({
-        save: true,
-        saveAsPersonal: false,
-        saveAsShared: false,
-      }),
-      saveInstance: async instance => {
-        const previous: ViewInstance = JSON.parse(stored);
-        if (
-          instance.id !== previous.id ||
-          instance.revision !== previous.revision
-        )
-          throw new Error('视图版本已变化，请重新打开。');
-        stored = JSON.stringify({
-          ...instance,
-          revision: String(Number(previous.revision) + 1),
-        });
-        setSavedJson(stored);
-        setWrites(value => value + 1);
-        return JSON.parse(stored);
+      permission: {
+        getInstance: () => ({
+          save: true,
+          saveAsPersonal: false,
+          saveAsShared: false,
+        }),
       },
     };
   });
