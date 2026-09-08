@@ -137,6 +137,19 @@ export interface ViewInstancePermissions {
   /** Defaults to false; system instance names are immutable. */
   rename?: boolean;
 }
+/** Immutable UI capabilities; subscribe through ViewEngine.subscribe. */
+export interface ViewCapabilities {
+  readonly reorder: boolean;
+  readonly instances: Readonly<
+    Record<
+      string,
+      {
+        readonly permissions: Readonly<ViewInstancePermissions>;
+        readonly reload: boolean;
+      }
+    >
+  >;
+}
 export type RecordQuerySource = Pick<QueryApi<RecordData>, 'paged' | 'cursor'> &
   Partial<Pick<QueryApi<RecordData>, 'aggregate'>>;
 /** One host/engine belongs to one fixed user, tenant and access scope. */
@@ -173,6 +186,7 @@ export interface ViewHost {
   resolveSource(
     sourceId: string,
   ): RecordQuerySource | Promise<RecordQuerySource>;
+  /** Pure synchronous policy. Replace the host when external policy inputs change. */
   getInstancePermissions?(instance: ViewInstance): ViewInstancePermissions;
 }
 export interface ViewEngineOptions {

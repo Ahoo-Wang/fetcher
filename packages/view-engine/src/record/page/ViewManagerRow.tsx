@@ -33,6 +33,8 @@ import type { RecordSession } from '../recordModel.js';
 import type { ExecuteViewManagerAction } from './useViewManagerAction.js';
 
 /** A row owns its transient name buffer and returns focus after rename or cancellation. */
+import { useViewPermissions } from './useViewCapabilities.js';
+
 export function ViewManagerRow({
   engine,
   session,
@@ -64,7 +66,7 @@ export function ViewManagerRow({
 }) {
   const { id, scope } = session.instance;
   const title = session.baseline.title;
-  const permissions = engine.getPermissions(id);
+  const permissions = useViewPermissions(engine, id);
   const system = scope.type === 'public' && scope.source === 'system';
   const writing =
     busy || session.writeStatus !== 'idle' || session.requiresReload;

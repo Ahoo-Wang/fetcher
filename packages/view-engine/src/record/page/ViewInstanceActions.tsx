@@ -34,6 +34,8 @@ import type { ViewEngine } from '../ViewEngine.js';
 import type { RecordSession } from '../recordModel.js';
 import { SaveAsForm } from './SaveAsForm.js';
 
+import { useViewPermissions } from './useViewCapabilities.js';
+
 export function ViewInstanceActions({
   engine,
   session,
@@ -55,7 +57,7 @@ export function ViewInstanceActions({
   const dialogFocus = useRef<HTMLButtonElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef(false);
-  const permissions = engine.getPermissions(session.instance.id);
+  const permissions = useViewPermissions(engine, session.instance.id);
   const canSaveAs = permissions.saveAsPersonal || permissions.saveAsShared;
   const canRestore = session.dirty || session.filterPending;
   const writing = session.writeStatus !== 'idle';

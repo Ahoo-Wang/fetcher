@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import type { RecordViewProps } from './RecordView.js';
 import { ViewEngine } from './ViewEngine.js';
 import { ViewPageContent } from './page/ViewPageContent.js';
@@ -44,14 +44,6 @@ export function ViewPage(props: ViewPageProps) {
   );
 }
 function OwnedViewPage(props: ViewPageProps) {
-  const hostRef = useRef(props.host);
-  const [, reflectHost] = useState(0);
-  useLayoutEffect(() => {
-    if (hostRef.current === props.host) return;
-    hostRef.current = props.host;
-    // Reflect committed capabilities without replacing the engine or its sessions.
-    reflectHost(version => version + 1);
-  }, [props.host]);
   const [initial] = useState(() => {
     // Compiler and renderer definitions share the engine scope's lifetime.
     const filters = props.extensions?.filters
@@ -65,6 +57,7 @@ function OwnedViewPage(props: ViewPageProps) {
         )
       : undefined;
     return {
+      host: props.host,
       options: {
         definitionId: props.definitionId,
         definition: props.definition,
@@ -74,10 +67,7 @@ function OwnedViewPage(props: ViewPageProps) {
       filters,
     };
   });
-  const extensions = useMemo(
-    () => ({ ...props.extensions, filters: initial.filters }),
-    [props.extensions, initial.filters],
-  );
+  const extensions = { ...props.extensions, filters: initial.filters };
   const [owned, setOwned] = useState<{
     engine: ViewEngine | null;
     error?: string;
@@ -85,14 +75,7 @@ function OwnedViewPage(props: ViewPageProps) {
   useEffect(() => {
     const options: ViewEngineOptions = {
       ...initial.options,
-      // Resolve optional methods at call time; each scope owns a separate adapter.
-      host: new Proxy({} as ViewEngineOptions['host'], {
-        get(_target, property) {
-          const host = hostRef.current;
-          const value = Reflect.get(host, property, host);
-          return typeof value === 'function' ? value.bind(host) : value;
-        },
-      }),
+      host: initial.host,
     };
     let engine: ViewEngine;
     try {
@@ -110,6 +93,9 @@ function OwnedViewPage(props: ViewPageProps) {
     void engine.load().catch(() => {});
     return () => engine.dispose();
   }, [initial]);
+  useLayoutEffect(() => {
+    owned?.engine?.updateHost(props.host);
+  }, [owned, props.host]);
   if (!owned)
     return (
       <div className="fve-root fve:p-4" role="status">

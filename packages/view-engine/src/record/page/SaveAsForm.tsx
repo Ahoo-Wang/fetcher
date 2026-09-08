@@ -26,6 +26,8 @@ import { cn } from '../../lib/utils.js';
 import type { ViewEngine } from '../ViewEngine.js';
 import type { RecordSession, SaveAsScope } from '../recordModel.js';
 
+import { useViewPermissions } from './useViewCapabilities.js';
+
 export function SaveAsForm({
   engine,
   session,
@@ -35,7 +37,7 @@ export function SaveAsForm({
   session: RecordSession;
   onSaved(): void;
 }) {
-  const permissions = engine.getPermissions(session.instance.id);
+  const permissions = useViewPermissions(engine, session.instance.id);
   const [title, setTitle] = useState(`${session.instance.title} 副本`);
   const [scope, setScope] = useState('personal');
   const scopeId = useId();

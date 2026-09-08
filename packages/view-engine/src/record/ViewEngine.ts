@@ -22,10 +22,13 @@ import type {
   RecordColumn,
   RecordKey,
   SaveAsScope,
+  ViewCapabilities,
+  ViewHost,
   ViewEngineOptions,
   ViewEngineState,
   ViewInstancePermissions,
 } from './recordModel.js';
+import { freeze } from './engine/recordSnapshot.js';
 import { EngineScope } from './engine/EngineScope.js';
 import { SessionStore } from './engine/SessionStore.js';
 import { InstanceWork } from './engine/InstanceWork.js';
@@ -39,6 +42,8 @@ import { ViewManagement } from './engine/ViewManagement.js';
 
 /** Fixed-scope public facade. Internal services own state, reads and durable writes. */
 export class ViewEngine {
+  private host: ViewHost;
+  private capabilities?: { state: ViewEngineState; value: ViewCapabilities };
   private readonly scope = new EngineScope();
   private readonly store: SessionStore;
   readonly filterCompilers: FilterCompilerRegistry;
@@ -52,7 +57,15 @@ export class ViewEngine {
   private readonly management: ViewManagement;
 
   constructor(options: ViewEngineOptions) {
-    const { host } = options;
+    this.host = options.host;
+    // Commands resolve the current host at invocation; UI consumes immutable snapshots.
+    const host = new Proxy({} as ViewHost, {
+      get: (_target, property) => {
+        const current = this.host;
+        const value = Reflect.get(current, property, current);
+        return typeof value === 'function' ? value.bind(current) : value;
+      },
+    });
     this.filterCompilers = Object.freeze(
       Object.fromEntries(
         Object.entries(options.filterCompilers ?? {}).map(
@@ -112,6 +125,34 @@ export class ViewEngine {
   getSnapshot = (): ViewEngineState => this.store.getSnapshot();
   subscribe = (listener: () => void): (() => void) =>
     this.store.subscribe(listener);
+
+  /** Replace callbacks/policy within the same user/tenant/access scope, preserving sessions. */
+  updateHost(host: ViewHost): void {
+    this.scope.assertActive();
+    if (this.host === host) return;
+    this.host = host;
+    this.store.publish({});
+  }
+
+  /** Cached immutable projection for render-time reads; commands still recheck live policy. */
+  getCapabilitiesSnapshot = (): ViewCapabilities => {
+    const state = this.store.getSnapshot();
+    if (this.capabilities?.state === state) return this.capabilities.value;
+    const value: ViewCapabilities = freeze({
+      reorder: this.canReorderInstances(),
+      instances: Object.fromEntries(
+        state.instanceIds.map(id => [
+          id,
+          {
+            permissions: this.getPermissions(id),
+            reload: this.canReloadInstance(id),
+          },
+        ]),
+      ),
+    });
+    this.capabilities = { state, value };
+    return value;
+  };
 
   refreshSummary(id?: string): Promise<void> {
     return this.summaries.refresh(id);
@@ -226,6 +267,7 @@ export class ViewEngine {
   dispose(): void {
     if (this.scope.disposed) return;
     this.scope.dispose();
+    this.capabilities = undefined;
     this.loader.dispose();
     this.queries.reset();
     this.work.dispose();

@@ -37,7 +37,8 @@
   ],
   "scripts": {
     "build": "vite build",
-    "test": "vitest run --coverage && pnpm test:type",
+    "test": "vitest run --coverage && pnpm test:compiled && pnpm test:type",
+    "test:compiled": "vitest run --mode compiled",
     "test:type": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint . --fix",
     "clean": "rm -rf dist"
@@ -67,6 +68,7 @@
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@rolldown/plugin-babel": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
@@ -74,6 +76,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "globals": "catalog:",

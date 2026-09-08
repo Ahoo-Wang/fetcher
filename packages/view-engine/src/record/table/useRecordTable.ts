@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useMemo, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
 import {
   functionalUpdate,
@@ -55,40 +55,31 @@ export function useRecordTable({
   | 'onColumnsChange'
   | 'onSortChange'
 > & { availableWidth: number }): RecordTableModel {
-  const columns = useMemo(
-    () =>
-      orderRecordColumns(
-        instance.config.presentation.table.columns,
-        definition.rowKey,
-      ),
-    [instance.config.presentation.table.columns, definition.rowKey],
+  const columns = orderRecordColumns(
+    instance.config.presentation.table.columns,
+    definition.rowKey,
   );
   const byId = new Map(
     columns.map(column => [JSON.stringify(column.id), column]),
   );
-  const columnDefs = useMemo<
-    ColumnDef<typeof recordTableFeatures, RecordData>[]
-  >(
-    () =>
-      columns.map(column => ({
-        id: JSON.stringify(column.id),
-        ...(column.kind === 'field'
-          ? {
-              accessorFn: (record: RecordData) =>
-                readRecordValue(record, column.field),
-            }
-          : {}),
-        enableSorting:
-          column.kind === 'field' &&
-          definition.fields.some(
-            field => field.field === column.field && field.sortable === true,
-          ),
-        minSize: RECORD_COLUMN_MIN_WIDTH,
-        maxSize: RECORD_COLUMN_MAX_WIDTH,
-        size: column.width ?? RECORD_COLUMN_DEFAULT_WIDTH,
-      })),
-    [columns, definition.fields],
-  );
+  const columnDefs: ColumnDef<typeof recordTableFeatures, RecordData>[] =
+    columns.map(column => ({
+      id: JSON.stringify(column.id),
+      ...(column.kind === 'field'
+        ? {
+            accessorFn: (record: RecordData) =>
+              readRecordValue(record, column.field),
+          }
+        : {}),
+      enableSorting:
+        column.kind === 'field' &&
+        definition.fields.some(
+          field => field.field === column.field && field.sortable === true,
+        ),
+      minSize: RECORD_COLUMN_MIN_WIDTH,
+      maxSize: RECORD_COLUMN_MAX_WIDTH,
+      size: column.width ?? RECORD_COLUMN_DEFAULT_WIDTH,
+    }));
   const sortColumnIds = new Map<string, string>();
   for (const column of columns)
     if (column.kind === 'field' && !sortColumnIds.has(column.field))
@@ -103,17 +94,13 @@ export function useRecordTable({
   for (const column of columns)
     if (column.kind === 'field')
       sortFields.set(JSON.stringify(column.id), column.field);
-  const layout = useMemo(
-    () =>
-      getRecordTableLayout({
-        columns,
-        fields: definition.fields,
-        rowKey: definition.rowKey,
-        selectable,
-        availableWidth,
-      }),
-    [columns, definition.fields, definition.rowKey, selectable, availableWidth],
-  );
+  const layout = getRecordTableLayout({
+    columns,
+    fields: definition.fields,
+    rowKey: definition.rowKey,
+    selectable,
+    availableWidth,
+  });
   const { columnSizing, columnPinning, fillerWidth } = layout;
   const rowSelection = Object.fromEntries(
     selectedRowKeys.map(key => [JSON.stringify(key), true as const]),

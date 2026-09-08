@@ -49,6 +49,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
   const { fields, value, onDraftChange, disabled = false } = props;
   const [initial] = useState(() => readInitialFilterPanelState(props));
   const [localDraft, setLocalDraft] = useState(initial.draft);
+  // Keep the cloned draft stable for the synchronization effects below.
   const controlledDraft = useMemo(
     () =>
       props.draft ? cloneSnapshot<FilterDraftNode>(props.draft) : undefined,

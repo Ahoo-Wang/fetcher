@@ -11,25 +11,20 @@
  * limitations under the License.
  */
 
-import { defineConfig } from 'vitest/config';
-import react, { reactCompilerPreset } from '@vitejs/plugin-react';
-import babel from '@rolldown/plugin-babel';
-import { fileURLToPath, URL } from 'node:url';
+import { useSyncExternalStore } from 'react';
+import { deniedPermissions } from '../engine/instancePermissions.js';
+import type { ViewEngine } from '../ViewEngine.js';
 
-export default defineConfig(({ mode }) => ({
-  plugins: [
-    react(),
-    ...(mode === 'compiled'
-      ? [babel({ presets: [reactCompilerPreset()] })]
-      : []),
-  ],
-  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  test: {
-    environment: 'jsdom',
-    clearMocks: true,
-    restoreMocks: true,
-    coverage: {
-      include: ['src/filter/**/*.{ts,tsx}', 'src/record/**/*.{ts,tsx}'],
-    },
-  },
-}));
+export function useViewCapabilities(engine: ViewEngine) {
+  return useSyncExternalStore(
+    engine.subscribe,
+    engine.getCapabilitiesSnapshot,
+    engine.getCapabilitiesSnapshot,
+  );
+}
+
+export function useViewPermissions(engine: ViewEngine, id: string) {
+  return (
+    useViewCapabilities(engine).instances[id]?.permissions ?? deniedPermissions
+  );
+}

@@ -728,8 +728,7 @@ operations, FilterPanel, column controls, table and pagination. The lower-level
 the common metadata, record query and implemented presentation boundaries.
 `RecordViewConfig` combines query settings and presentation, replacing the compiled `filter` with persisted component `filters`; `ViewInstance` currently remains the
 record kind. These named boundaries do not claim additional view renderers.
-The record table is a memoized result boundary; RecordView supplies stable
-callbacks so unsubmitted draft edits do not rerender record cells. Its widths,
+The published record table relies on React Compiler to cache derived values, callbacks and JSX; unsubmitted draft edits do not rerender record cells in the compiled build. Uncompiled source tests verify the same functional behavior without promising identical render counts. Its widths,
 effective pinning, filler and summary-label region are computed in a pure internal
 layout module. The engine and auto-refresh control share one domain block policy;
 document visibility and focus remain React concerns.
@@ -873,3 +872,9 @@ Portal theme snapshots copy public `--fve-*` tokens and typography but exclude
 private `--fve-tw-*` utility state. Each overlay keeps its own transforms/shadows.
 The scoped base reset includes `.fve-root` itself, uses border-box sizing and the
 default `--fve-border` token; it never resets unrelated host elements.
+
+### React Compiler build boundary
+
+The published `/react` entry is built with React Compiler using the repository Vite `reactCompilerPreset`. Compiler packages are development dependencies; React 19 supplies `react/compiler-runtime`. Consumers do not configure the compiler. Core runtime imports remain React-free and packed verification enforces both entry boundaries.
+
+`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with `reorder` and `instances[id].{permissions,reload}`; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit memoization remains only for the controlled draft clone and theme capture, which are Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.

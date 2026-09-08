@@ -25,6 +25,8 @@ import { ViewManagerRow } from './ViewManagerRow.js';
 import type { InstanceGroup } from './ViewNavigation.js';
 
 /** Group-local drag and keyboard ordering share the same persistence operation. */
+import { useViewCapabilities } from './useViewCapabilities.js';
+
 export function ViewManagerGroup({
   engine,
   group,
@@ -42,14 +44,14 @@ export function ViewManagerGroup({
   fallbackFocus: RefObject<HTMLElement | null>;
   onDelete(id: string, trigger: HTMLButtonElement): void;
 }) {
+  const capabilities = useViewCapabilities(engine);
   const [dragged, setDragged] = useState<string | null>(null);
   const [drop, setDrop] = useState<number | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const instructions = useId();
   const dragFocus = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef<HTMLButtonElement | null>(null);
-  const movable =
-    !busy && engine.canReorderInstances() && group.sessions.length > 1;
+  const movable = !busy && capabilities.reorder && group.sessions.length > 1;
   useLayoutEffect(() => {
     if (busy || !restoreFocus.current) return;
     (restoreFocus.current.isConnected

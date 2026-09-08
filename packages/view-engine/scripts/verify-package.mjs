@@ -273,6 +273,11 @@ try {
       contents.includes('package/' + file),
       `Missing package document: ${file}`,
     );
+  assert.match(
+    readFileSync(resolve(packed, manifest.exports['./react'].import), 'utf8'),
+    /from ["']react\/compiler-runtime["']/,
+    'React entry was built without React Compiler',
+  );
   const coreModules = verifyCoreImports(
     resolve(packed, manifest.exports['.'].import),
     packed,

@@ -12,9 +12,7 @@
  */
 
 import {
-  useCallback,
   useContext,
-  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -72,55 +70,44 @@ export function RecordView({
     Boolean(session && definition && !inheritedExpansion),
   );
   const expansion = inheritedExpansion ?? localExpansion;
-  const run = useCallback(
-    (action: () => void | Promise<void>) => {
-      if (!id) return;
-      setLocalError(null);
-      try {
-        void Promise.resolve(action()).catch(error =>
-          setLocalError({
-            id,
-            message: error instanceof Error ? error.message : '操作失败',
-          }),
-        );
-      } catch (error) {
+  function run(action: () => void | Promise<void>) {
+    if (!id) return;
+    setLocalError(null);
+    try {
+      void Promise.resolve(action()).catch(error =>
         setLocalError({
           id,
           message: error instanceof Error ? error.message : '操作失败',
-        });
-      }
-    },
-    [id],
-  );
-  const refresh = useCallback(
-    () => engine.refresh(id ?? undefined),
-    [engine, id],
-  );
-  const tableHandlers = useMemo<
-    Required<
-      Pick<
-        RecordTableProps,
-        | 'onQueryRetry'
-        | 'onSummaryRetry'
-        | 'onSelectionChange'
-        | 'onColumnsChange'
-        | 'onSortChange'
-      >
+        }),
+      );
+    } catch (error) {
+      setLocalError({
+        id,
+        message: error instanceof Error ? error.message : '操作失败',
+      });
+    }
+  }
+  const refresh = () => engine.refresh(id ?? undefined);
+  const tableHandlers: Required<
+    Pick<
+      RecordTableProps,
+      | 'onQueryRetry'
+      | 'onSummaryRetry'
+      | 'onSelectionChange'
+      | 'onColumnsChange'
+      | 'onSortChange'
     >
-  >(
-    () => ({
-      onQueryRetry: () => run(refresh),
-      onSummaryRetry: () => {
-        void engine.refreshSummary(id ?? undefined).catch(() => {});
-      },
-      onSelectionChange: keys =>
-        run(() => engine.setSelection(keys, id ?? undefined)),
-      onColumnsChange: columns =>
-        run(() => engine.setColumns(columns, id ?? undefined)),
-      onSortChange: sort => run(() => engine.setSort(sort, id ?? undefined)),
-    }),
-    [engine, id, refresh, run],
-  );
+  > = {
+    onQueryRetry: () => run(refresh),
+    onSummaryRetry: () => {
+      void engine.refreshSummary(id ?? undefined).catch(() => {});
+    },
+    onSelectionChange: keys =>
+      run(() => engine.setSelection(keys, id ?? undefined)),
+    onColumnsChange: columns =>
+      run(() => engine.setColumns(columns, id ?? undefined)),
+    onSortChange: sort => run(() => engine.setSort(sort, id ?? undefined)),
+  };
   if (!id || !session || !definition) return null;
   const { instance } = session;
   const querying = session.queryStatus === 'loading';

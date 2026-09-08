@@ -1,0 +1,79 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { expect, it, vi } from 'vitest';
+import { ViewEngine } from '../src/record/ViewEngine.js';
+import { instance, setup } from './fixtures/viewPage.js';
+
+it('publishes immutable same-scope capabilities without losing sessions or querying', async () => {
+  const { host, paged } = setup();
+  const engine = new ViewEngine({ definitionId: 'orders', host });
+  await engine.load();
+  engine.setTitle('保留草稿');
+  const state = engine.getSnapshot();
+  const before = engine.getCapabilitiesSnapshot();
+  expect(engine.getCapabilitiesSnapshot()).toBe(before);
+  expect(Object.isFrozen(before.instances.mine.permissions)).toBe(true);
+  const notified = vi.fn();
+  const unsubscribe = engine.subscribe(notified);
+  const nextHost = {
+    ...host,
+    saveInstance: undefined,
+    loadInstance: vi.fn(async () => structuredClone(instance)),
+    saveInstanceOrder: vi.fn(async () => {}),
+  };
+  engine.updateHost(nextHost);
+  const after = engine.getCapabilitiesSnapshot();
+  expect(notified).toHaveBeenCalledTimes(1);
+  expect(after).not.toBe(before);
+  expect(after.instances.mine.permissions.save).toBe(false);
+  expect(before.instances.mine.permissions.save).toBe(true);
+  expect(after.instances.mine.reload).toBe(true);
+  expect(after.reorder).toBe(true);
+  expect(engine.getSnapshot().sessions).toBe(state.sessions);
+  expect(engine.getSnapshot().sessions.mine.instance.title).toBe('保留草稿');
+  expect(paged).toHaveBeenCalledTimes(1);
+  engine.updateHost(nextHost);
+  expect(engine.getCapabilitiesSnapshot()).toBe(after);
+  expect(notified).toHaveBeenCalledTimes(1);
+  await expect(engine.save()).rejects.toThrow();
+  expect(host.saveInstance).not.toHaveBeenCalled();
+  await engine.reorderInstances(['system', 'mine']);
+  expect(nextHost.saveInstanceOrder).toHaveBeenCalledWith('orders', [
+    'system',
+    'mine',
+  ]);
+  unsubscribe();
+  engine.dispose();
+  expect(engine.getCapabilitiesSnapshot().reorder).toBe(false);
+});
+
+it('derives reload capability from uncertain creation receipts as well as host methods', async () => {
+  const { host } = setup();
+  host.createInstance = vi.fn(async submitted => ({
+    ...submitted,
+    id: 'copy',
+    definitionId: 'invalid',
+  }));
+  const engine = new ViewEngine({ definitionId: 'orders', host });
+  await engine.load();
+  expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(false);
+  await expect(
+    engine.saveAs({ title: '副本', scope: { type: 'personal' } }),
+  ).rejects.toThrow();
+  // listInstances can reconcile a received but invalid create result without loadInstance.
+  expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
+  engine.updateHost({ ...host, listInstances: undefined });
+  expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(false);
+  engine.dispose();
+});

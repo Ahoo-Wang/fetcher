@@ -20,18 +20,19 @@ import type {
 } from '../recordModel.js';
 import { isSystemSession } from './sessionState.js';
 
+export const deniedPermissions = Object.freeze({
+  save: false,
+  saveAsPersonal: false,
+  saveAsShared: false,
+  delete: false,
+  rename: false,
+});
+
 export function permissionsFor(
   host: ViewHost,
   session?: RecordSession,
 ): ViewInstancePermissions {
-  const denied = {
-    save: false,
-    saveAsPersonal: false,
-    saveAsShared: false,
-    delete: false,
-    rename: false,
-  };
-  if (!session || !host.getInstancePermissions) return denied;
+  if (!session || !host.getInstancePermissions) return deniedPermissions;
   try {
     const permissions = host.getInstancePermissions(
       cloneSnapshot<ViewInstance>(session.instance),
@@ -56,6 +57,6 @@ export function permissionsFor(
         permissions?.saveAsShared === true,
     };
   } catch {
-    return denied;
+    return deniedPermissions;
   }
 }

@@ -47,6 +47,7 @@ export function RecordActions({
       {Actions ? (
         <RecordRendererBoundary
           label={label}
+          // Recovery follows render inputs, not event-handler identity.
           resetKey={[
             Actions,
             definition,
@@ -55,7 +56,6 @@ export function RecordActions({
             reference.options,
             session.selectedRowKeys,
             querying,
-            refresh,
           ]}
         >
           <Actions

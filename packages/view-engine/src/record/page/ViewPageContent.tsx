@@ -25,6 +25,8 @@ import {
   ViewSidebar,
 } from './ViewNavigation.js';
 
+import { useViewCapabilities } from './useViewCapabilities.js';
+
 export interface ViewPageContentProps extends Omit<
   RecordViewProps,
   'toolbarStart'
@@ -43,6 +45,7 @@ export function ViewPageContent({
     engine.getSnapshot,
     engine.getSnapshot,
   );
+  const capabilities = useViewCapabilities(engine);
   const pageRef = useRef<HTMLDivElement>(null);
   const expansion = useViewExpansion(pageRef, state.status === 'ready');
   const [collapsed, setCollapsed] = useState(initialSidebarCollapsed);
@@ -190,7 +193,7 @@ export function ViewPageContent({
                 {session?.writeError || state.error || currentActionError}
               </span>
               {session?.writeError &&
-                engine.canReloadInstance(session.instance.id) && (
+                capabilities.instances[session.instance.id]?.reload && (
                   <Button
                     variant="outline"
                     onClick={() =>

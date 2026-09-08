@@ -246,9 +246,14 @@ Select、下拉菜单与 Popover 面板默认 Portal 到 body，避免被有裁�
 
 ## 开发
 
+库构建通过 Vite 的 `reactCompilerPreset` 启用 React Compiler，使用 React 19 提供的 `react/compiler-runtime`，使用者无需安装编译插件。纯计算、表格 JSX 和操作回调交由编译器缓存；仅保留受控筛选草稿副本及弹层主题捕获两处缓存，以稳定 Effect 依赖。错误边界按渲染输入恢复，不依赖事件回调引用。权限与宿主能力通过 `getCapabilitiesSnapshot` 和 `subscribe` 订阅，无需组件使用 `use no memo`。自行管理引擎时，同一作用域下用 `updateHost(nextHost)` 更新回调或权限策略；用户、租户、访问范围改变时更换引擎。权限策略必须纯粹，修改闭包但不替换宿主不会通知订阅者。操作执行时仍会重新检查权限。
+
+`test` 在不启用编译器和启用编译器两种模式下运行同一套测试，再检查类型。Storybook 验证编译后的公开产物。打包检查要求 `/react` 包含编译器运行时导入，并禁止核心入口引入 React。单元格回归检查保证编译模式下输入待查询筛选不增加单元格渲染次数，这是回归约束，不代表所有场景都会变快。
+
 ```bash
 pnpm --filter @ahoo-wang/fetcher-view-engine build
 pnpm --filter @ahoo-wang/fetcher-view-engine test
+pnpm --filter @ahoo-wang/fetcher-view-engine test:compiled
 pnpm storybook
 ```
 

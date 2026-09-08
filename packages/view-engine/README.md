@@ -387,9 +387,14 @@ Select menus, dropdown menus and Popover panels use a body portal so clipping an
 
 ## Development
 
+React Compiler is enabled for the library build through the existing Vite `reactCompilerPreset`. It targets the React 19 runtime exposed as `react/compiler-runtime`; consumers do not install the compiler. Pure derived values, table JSX and action callbacks rely on compiler memoization. Two explicit caches remain for Effect dependency stability: the controlled filter draft clone and portal theme capture. Permissions and host capabilities are observed through `getCapabilitiesSnapshot` and `subscribe`; no component needs a `use no memo` escape hatch. For caller-owned engines, call `updateHost(nextHost)` when callbacks or policy change within the same scope. Replace the engine when the user/tenant/access scope changes. Host policies must be pure; mutating a closure without replacing the host does not notify subscribers. Commands recheck permissions at execution time.
+
+`test` runs the same suite without compilation and in compiler mode, then checks types. Storybook runs against compiled public exports. Packed verification checks the compiler runtime import in `/react` and rejects React imports in the core entry. The record-cell regression verifies that typing an unapplied filter adds no cell renders in the compiled mode; this is a regression bound, not a claim that every screen becomes faster.
+
 ```bash
 pnpm --filter @ahoo-wang/fetcher-view-engine build
 pnpm --filter @ahoo-wang/fetcher-view-engine test
+pnpm --filter @ahoo-wang/fetcher-view-engine test:compiled
 pnpm storybook
 ```
 

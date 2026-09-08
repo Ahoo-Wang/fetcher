@@ -22,6 +22,7 @@ import {
 export function usePortalTheme(open?: boolean) {
   const scope = useRef<HTMLSpanElement>(null);
   const [theme, setTheme] = useState<CSSProperties>({});
+  // Shared by open events and the layout effect; identity controls theme recapture.
   const captureTheme = useCallback(() => {
     if (!scope.current) return;
     const computed = getComputedStyle(scope.current);

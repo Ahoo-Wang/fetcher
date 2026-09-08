@@ -13,7 +13,8 @@
 
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import dts from 'unplugin-dts/vite';
 
@@ -21,6 +22,7 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   plugins: [
     react(),
+    babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
     dts({ tsconfigPath: './tsconfig.json' }),
     {

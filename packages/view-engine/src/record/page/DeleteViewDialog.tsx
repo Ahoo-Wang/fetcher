@@ -26,6 +26,8 @@ import type { RecordSession } from '../recordModel.js';
 import type { ViewEngine } from '../ViewEngine.js';
 import type { ExecuteViewManagerAction } from './useViewManagerAction.js';
 
+import { useViewCapabilities } from './useViewCapabilities.js';
+
 export function DeleteViewDialog({
   engine,
   target,
@@ -47,6 +49,7 @@ export function DeleteViewDialog({
   titleRef: RefObject<HTMLHeadingElement | null>;
   onClose(): void;
 }) {
+  const capabilities = useViewCapabilities(engine);
   const cancelRef = useRef<HTMLButtonElement>(null);
   return (
     <Dialog
@@ -95,7 +98,7 @@ export function DeleteViewDialog({
             disabled={
               busy ||
               !target ||
-              !engine.getPermissions(target.instance.id).delete
+              !capabilities.instances[target.instance.id]?.permissions.delete
             }
             onClick={() => {
               if (target)

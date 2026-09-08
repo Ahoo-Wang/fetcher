@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { memo, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Table } from '../components/ui/table.js';
 import { cn } from '../lib/utils.js';
 import type { RecordTableProps } from './recordReactTypes.js';
@@ -20,7 +20,7 @@ import { RecordTableBody } from './table/RecordTableBody.js';
 import { RecordTableSummary } from './table/RecordTableSummary.js';
 import { useRecordTable } from './table/useRecordTable.js';
 
-export const RecordTable = memo(function RecordTable(props: RecordTableProps) {
+export function RecordTable(props: RecordTableProps) {
   const {
     definition,
     instance,
@@ -114,4 +114,4 @@ export const RecordTable = memo(function RecordTable(props: RecordTableProps) {
       </Table>
     </div>
   );
-});
+}
