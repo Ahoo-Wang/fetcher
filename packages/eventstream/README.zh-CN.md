@@ -40,7 +40,7 @@ for await (const event of events) {
 
 ## 文档
 
-- [流式响应概念](https://fetcher.ahoo.me/zh/learn/streaming)
+- [流式响应概念](https://fetcher.ahoo.me/zh/guides/streaming/)
 - [事件流参考](https://fetcher.ahoo.me/zh/reference/eventstream)
 - [交互 Story](https://fetcher.ahoo.me/storybook/)
 

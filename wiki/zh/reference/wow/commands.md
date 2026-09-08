@@ -24,6 +24,21 @@ CommandRequest 扩展 ParameterRequest；body 为命令可写字段 `CommandBody
 
 传输或提取失败拒绝 Promise；流错误也可能在初始 Promise 完成后的 reader.read 才出现，提前退出必须取消并释放 reader。DeleteAggregate/RecoverAggregate 是空命令体契约，资源标签命令带 tags；它们在服务端执行端点前不产生删除/恢复效果。
 
+## 读取命令结果 {#result-fields}
+
+| 字段                                                      | 解释                                                                 |
+| --------------------------------------------------------- | -------------------------------------------------------------------- |
+| `id`、`commandId`、`requestId`、`waitCommandId`           | 不同的信号/命令/请求/等待关联 ID，不应互相替代服务端幂等键。         |
+| `contextName`、`aggregateName`、`tenantId`、`aggregateId` | CommandResult 中是平铺聚合身份；WaitSignal 则嵌套 AggregateId 对象。 |
+| `stage`                                                   | 当前信号的等待阶段，不是覆盖所有投影的布尔成功标记。                 |
+| `aggregateVersion?`                                       | 服务端报告的可选版本；缺失时不能建立可见性屏障。                     |
+| `signalTime`                                              | 数字信号时间戳，不是客户端超时时长。                                 |
+| `function`                                                | 处理器/函数元数据，参见[消息元数据](./messages-and-state)。          |
+| `result`                                                  | 服务端提供的结果映射，不是泛型命令体 C。                             |
+| `errorCode`、`errorMsg`、`bindingErrors?`                 | 业务结果与可选字段错误，参见[错误分类](./errors-and-utilities)。     |
+
+嵌套/平铺身份细节参见[身份与归属](./identity-and-attribution)。结果接口不赋默认值、不验证 JSON。流通过 `event.data` 携带连续 CommandResult 载荷；初始 HTTP 成功不表示所有事件或阶段均已完成。
+
 ## 完整示例
 
 ```ts
@@ -46,7 +61,7 @@ export async function rename() {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### CommandClient {#api-CommandClient}
 
@@ -61,6 +76,8 @@ export class CommandClient<C extends object = object> implements ApiMetadataCapa
 [packages/wow/src/command/commandClient.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandClient.ts#L76)
 
 ### CommandHeaders {#api-CommandHeaders}
+
+::: details 展开完整字段与成员
 
 ```ts
 export class CommandHeaders {
@@ -90,9 +107,13 @@ export class CommandHeaders {
 }
 ```
 
+:::
+
 [packages/wow/src/command/commandHeaders.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandHeaders.ts#L33)
 
 ### CommandRequestHeaders {#api-CommandRequestHeaders}
+
+::: details 展开完整字段与成员
 
 ```ts
 export interface CommandRequestHeaders extends RequestHeaders {
@@ -117,6 +138,8 @@ export interface CommandRequestHeaders extends RequestHeaders {
   [CommandHeaders.COMMAND_TYPE]: string;
 }
 ```
+
+:::
 
 [packages/wow/src/command/commandRequest.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandRequest.ts#L36)
 
@@ -366,4 +389,4 @@ export interface BatchResult extends ErrorInfo {
 
 ## 相关专题
 
-[客户端配置与元数据](./configuration) · [快照查询](./snapshot-queries) · [过滤表达式与旧条件](./filters) · [投影、排序与分页](./query-options) · [游标查询](./cursor-queries) · [聚合构造器](./aggregations) · [事件与历史状态](./events-and-history) · [共享领域类型与工具](./shared-types)
+[客户端配置与元数据](./configuration) · [快照查询](./snapshot-queries) · [过滤表达式与旧条件](./filters) · [投影、排序与分页](./query-options) · [游标查询](./cursor-queries) · [聚合构造器](./aggregations) · [事件与历史状态](./events-and-history) · [身份与资源归属](./identity-and-attribution)

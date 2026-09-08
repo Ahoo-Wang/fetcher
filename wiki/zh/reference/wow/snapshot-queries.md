@@ -54,9 +54,11 @@ export async function firstPage(controller = new AbortController()) {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### QueryApi {#api-QueryApi}
+
+::: details 展开完整字段与成员
 
 ```ts
 export interface QueryApi<R, FIELDS extends string = string> {
@@ -103,6 +105,8 @@ export interface QueryApi<R, FIELDS extends string = string> {
   ): Promise<number>;
 }
 ```
+
+:::
 
 [packages/wow/src/query/queryApi.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryApi.ts#L36)
 
@@ -183,6 +187,8 @@ export class SnapshotMetadataFields {
 
 ### SnapshotQueryApi {#api-SnapshotQueryApi}
 
+::: details 展开完整字段与成员
+
 ```ts
 export interface SnapshotQueryApi<
   S,
@@ -216,6 +222,8 @@ export interface SnapshotQueryApi<
 }
 ```
 
+:::
+
 [packages/wow/src/query/snapshot/snapshotQueryApi.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryApi.ts#L31)
 
 ### SnapshotQueryEndpointPaths {#api-SnapshotQueryEndpointPaths}
@@ -240,6 +248,8 @@ export class SnapshotQueryEndpointPaths {
 
 ### SnapshotQueryClient {#api-SnapshotQueryClient}
 
+::: details 展开完整字段与成员
+
 ```ts
 export class SnapshotQueryClient<S, FIELDS extends string = string> implements SnapshotQueryApi<S, FIELDS>, ApiMetadataCapable {
     constructor(public readonly apiMetadata?: ApiMetadata);
@@ -263,8 +273,10 @@ export class SnapshotQueryClient<S, FIELDS extends string = string> implements S
 }
 ```
 
+:::
+
 [packages/wow/src/query/snapshot/snapshotQueryClient.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L121)
 
 ## 相关专题
 
-[客户端配置与元数据](./configuration) · [命令与等待结果](./commands) · [过滤表达式与旧条件](./filters) · [投影、排序与分页](./query-options) · [游标查询](./cursor-queries) · [聚合构造器](./aggregations) · [事件与历史状态](./events-and-history) · [共享领域类型与工具](./shared-types)
+[客户端配置与元数据](./configuration) · [命令与等待结果](./commands) · [过滤表达式与旧条件](./filters) · [投影、排序与分页](./query-options) · [游标查询](./cursor-queries) · [聚合构造器](./aggregations) · [事件与历史状态](./events-and-history) · [身份与资源归属](./identity-and-attribution)

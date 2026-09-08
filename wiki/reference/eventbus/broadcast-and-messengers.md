@@ -7,6 +7,8 @@ description: 'Broadcast buses and messengers — @ahoo-wang/fetcher-eventbus 5.0
 
 `BroadcastTypedEventBus<EVENT>` decorates a local `TypedEventBus<EVENT>` with cross-context delivery. The transport is notification-only: there is no acknowledgment, remote completion wait, replay, or delivery guarantee.
 
+Keep the delegate when constructing a broadcast bus so its handlers can be cleaned up separately. A supplied messenger is closed by `destroy()` too; sharing that messenger with an unrelated bus transfers overlapping ownership and can terminate the other consumer. Use a separate messenger per independently owned broadcast bus.
+
 ## Broadcast options and flow {#broadcast}
 
 `new BroadcastTypedEventBus(options: BroadcastTypedEventBusOptions<EVENT>)` requires `delegate`. Its `type` and `handlers` come from the delegate; `on`/`off` forward to it. Default messenger is `createCrossTabMessenger('_broadcast_:' + delegate.type)`; construction throws `Error('Messenger setup failed')` if none is available.

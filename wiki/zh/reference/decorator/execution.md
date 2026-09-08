@@ -7,6 +7,8 @@ description: '元数据与执行生命周期 — @ahoo-wang/fetcher-decorator 5.
 
 每次装饰方法调用解析新的 exchange，同时复用实例级、方法级执行器。钩子运行在服务实例上；并发调用可能重叠时，不要把请求专属可变状态存在该实例上。
 
+逐次添加 exchange 属性或选择提取器时使用 `beforeExecute`；检查已通过校验的响应而不消费响应体时使用 `afterExecute`。两者都可省略，没有默认动作。只有构建运行时扩展才直接调用 `RequestExecutor` 或操作 `FunctionMetadata`，普通服务无需使用它们。
+
 ## RequestExecutor 生命周期 {#lifecycle}
 
 `new RequestExecutor(target: any, metadata: FunctionMetadata)` 与 `execute(args: any[]): Promise<any>` 按下列顺序执行：

@@ -7,6 +7,8 @@ description: '错误、超时与取消 — @ahoo-wang/fetcher 5.0.0'
 
 Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身会正常返回这些响应，因此处理 Fetcher 请求失败时应检查 exchange。
 
+复用 HTTP 状态接受策略时选择 `validateStatus`，明确只跳过一次校验时才使用请求属性，由调用方取消时使用 AbortSignal。这些入口都不会安排重试。即使装有错误拦截器，成功响应后的 JSON 解析失败仍需调用方捕获。
+
 ## 错误类型与状态策略 {#errors}
 
 | API                                   | 契约                                                                                            |

@@ -7,6 +7,8 @@ description: 'CoSec 配置 — Fetcher 5.0.0'
 
 `CoSecConfigurer` 为 Fetcher 接入 CoSec 元数据、资源归属及可选鉴权。它不提供登录端点或服务端 token 验证。
 
+每个客户端应只应用一次配置。拦截器注册会拒绝重复名称：再次调用 `applyTo` 不会用新 configurer 的依赖替换原拦截器。需要改变认证所有权时，应新建独立配置的 Fetcher，或在停止原请求后显式移除旧的具名拦截器。
+
 ## CoSecConfig 与构造
 
 | 字段                            | 默认值                | 契约                                                              |

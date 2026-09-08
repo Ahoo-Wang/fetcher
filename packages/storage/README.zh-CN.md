@@ -47,7 +47,7 @@ preferences.destroy();
 
 ## 文档
 
-- [状态与事件实战](https://fetcher.ahoo.me/zh/recipes/state-and-events)
+- [状态与事件实战](https://fetcher.ahoo.me/zh/guides/integrations/storage-and-events)
 - [Storage 参考](https://fetcher.ahoo.me/zh/reference/storage)
 
 [English](./README.md) · [许可证](../../LICENSE)

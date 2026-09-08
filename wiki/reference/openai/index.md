@@ -1,4 +1,5 @@
 ---
+prev: false
 title: 'Openai reference'
 description: 'Openai reference — Fetcher 5.0.0'
 ---
@@ -10,40 +11,38 @@ Chat Completions client with JSON and SSE results built on Fetcher and decorator
 ## Install
 
 ```bash
-pnpm add @ahoo-wang/fetcher-openai
+pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-decorator
 ```
 
-Version baseline: **5.0.0**. This package declares Node **>=18.20.8**; the repository contributor toolchain is separate. Install peer packages required by your selected runtime integration.
+The command includes OpenAI → Decorator/EventStream → Fetcher. Prebuilt clients do not require decorator syntax in your application; custom decorated classes do. Streaming additionally needs the [EventStream runtime APIs](../eventstream/index.md).
+
+Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=20.20.2** and pnpm **10.34.5**.
 
 ## Minimal example
 
 ```ts
-import { OpenAI } from '@ahoo-wang/fetcher-openai';
-export const createChat = (baseURL: string, apiKey: string) =>
-  new OpenAI({ baseURL, apiKey }).chat;
+import { OpenAI, type OpenAIOptions } from '@ahoo-wang/fetcher-openai';
+
+export async function answer(options: OpenAIOptions, model: string) {
+  const client = new OpenAI(options);
+  const result = await client.chat.completions({
+    model,
+    messages: [{ role: 'user', content: 'Say hello.' }],
+    stream: false,
+  });
+  return result.choices[0]?.message?.content ?? '';
+}
 ```
+
+## Choose an entry point
+
+Use `OpenAI` when the SDK should create a Bearer-authenticated Fetcher; use `ChatClient({ fetcher })` to reuse an application proxy or an existing transport policy. Use `stream: false` (or omit it) for one JSON response and literal `stream: true` for SSE events. Use the underlying Fetcher plus `CompletionStreamResultExtractor` when per-call cancellation is required.
 
 ## Topics
 
-- [Client and chat completions](/reference/openai/client-and-completions)
-- [Streaming chat completions](/reference/openai/streaming)
+- [Client and chat completions](client-and-completions)
+- [Streaming chat completions](streaming)
 
-## Public symbol index
+[Complete public symbol index](./symbols.md)
 
-| Symbol                            | Reference                                                                 |
-| --------------------------------- | ------------------------------------------------------------------------- |
-| `ChatClient`                      | [Client and chat completions](/reference/openai/client-and-completions#chatclient)        |
-| `ChatRequest`                     | [Client and chat completions](/reference/openai/client-and-completions#chatrequest)       |
-| `ChatResponse`                    | [Client and chat completions](/reference/openai/client-and-completions#chatresponse)      |
-| `ChatTool`                        | [Client and chat completions](/reference/openai/client-and-completions#chattool)          |
-| `ChatToolChoice`                  | [Client and chat completions](/reference/openai/client-and-completions#chattoolchoice)    |
-| `ChatToolFunction`                | [Client and chat completions](/reference/openai/client-and-completions#chattoolfunction)  |
-| `Choice`                          | [Client and chat completions](/reference/openai/client-and-completions#choice)            |
-| `CompletionStreamResultExtractor` | [Streaming chat completions](/reference/openai/streaming#completionstreamresultextractor) |
-| `DoneDetector`                    | [Streaming chat completions](/reference/openai/streaming#donedetector)                    |
-| `Message`                         | [Client and chat completions](/reference/openai/client-and-completions#message)           |
-| `OpenAI`                          | [Client and chat completions](/reference/openai/client-and-completions#openai)            |
-| `OpenAIOptions`                   | [Client and chat completions](/reference/openai/client-and-completions#openaioptions)     |
-| `Usage`                           | [Client and chat completions](/reference/openai/client-and-completions#usage)             |
-
-[packages/openai/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/index.ts#L14)
+Supply a server-side credential and a compatible base URL ending at the API prefix (for example `/v1`). The request targets `/v1/chat/completions`; caller code handles rejection. A complete streaming flow is in the [Chat guide](../../guides/streaming/chat.md).

@@ -46,7 +46,7 @@ const user = await new UserService().getUser('u-42');
 
 ## Documentation
 
-- [Declarative service recipe](https://fetcher.ahoo.me/recipes/declarative-services)
+- [Declarative service recipe](https://fetcher.ahoo.me/guides/services/declarative-client)
 - [Decorator reference](https://fetcher.ahoo.me/reference/decorator)
 
 [中文](./README.zh-CN.md) · [License](../../LICENSE)

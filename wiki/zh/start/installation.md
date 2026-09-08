@@ -1,35 +1,38 @@
 ---
-title: 安装与环境
-description: 区分应用运行条件、可选包依赖与仓库开发工具。
+title: 安装 Fetcher
+description: 创建独立 ESM 项目并安装核心 HTTP 客户端。
 ---
 
-# 安装与环境
+# 安装 Fetcher
 
-## 安装核心包
+核心包支持 Node `>=18.20.8`。先创建独立目录，使样例不依赖本仓库的 workspace 链接：
+
+```bash
+mkdir fetcher-first-request
+cd fetcher-first-request
+```
+
+创建启用 ESM 的 `package.json`：
+
+```json
+{
+  "name": "fetcher-first-request",
+  "private": true,
+  "type": "module"
+}
+```
+
+安装已发布的客户端与 TypeScript：
 
 ```bash
 pnpm add @ahoo-wang/fetcher
-# npm install @ahoo-wang/fetcher
+pnpm add -D typescript
 ```
 
-## 检查你实际使用的包
+以上是消费者项目的设置。参与本仓库开发则需要 Node `>=20.20.2`、pnpm `10.34.5`，并使用[开发指南](../contributing/development.md)中的命令。
 
-下表来自当前包的 package.json。浏览器需提供所用功能对应的 Fetch、AbortController 与 Streams API；版本声明不会为运行环境补齐 API。
+安装后继续[第一个请求](./first-request.md)。
 
-| 包                                               | Node 声明   | Peer dependencies                                                                                                                                                                                                                                                                                   |
-| ------------------------------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [fetcher](../reference/fetcher/index.md)         | `>=18.20.8` | 无                                                                                                                                                                                                                                                                                                  |
-| [decorator](../reference/decorator/index.md)     | `>=18.20.8` | `@ahoo-wang/fetcher`                                                                                                                                                                                                                                                                                |
-| [eventstream](../reference/eventstream/index.md) | `>=18.20.8` | `@ahoo-wang/fetcher`                                                                                                                                                                                                                                                                                |
-| [react](../reference/react/index.md)             | `>=18.20.8` | `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventstream`, `@ahoo-wang/fetcher-eventbus`, `@ahoo-wang/fetcher-storage`, `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-cosec`, `react`, `react-dom`                                                                                                     |
-| [viewer](../reference/viewer/index.md)           | `>=18.20.8` | `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-decorator`, `@ahoo-wang/fetcher-eventbus`, `@ahoo-wang/fetcher-eventstream`, `@ahoo-wang/fetcher-openapi`, `@ahoo-wang/fetcher-react`, `@ahoo-wang/fetcher-storage`, `@ahoo-wang/fetcher-wow`, `@ant-design/icons`, `antd`, `dayjs`, `react`, `react-dom` |
+## React 与 Viewer 起点
 
-## 功能相关设置
-
-声明式服务需要 `experimentalDecorators`、`emitDecoratorMetadata`；参考[装饰器安装](../reference/decorator/index.md)。Response 流助手通过导入 `@ahoo-wang/fetcher-eventstream` 注册，参考[流结果](../reference/eventstream/json-and-results.md)。React 与 Viewer 的 peer dependencies 按所选版本安装，不能用仅安装核心包的示例代替 UI 项目依赖。
-
-## 如果你贡献仓库代码
-
-本仓库使用 Node `>=20.20.2`、pnpm `10.34.5`。这与上表中的应用消费者要求不同。按照[开发指南](../contributing/development.md)安装 workspace，随后运行对应检查。
-
-安装完成后继续[第一个请求](./first-request.md)。
+已有 React 应用请使用 [React 示例的完整 peer 安装与挂载步骤](../examples/react.md)。需要表格时使用[第一张数据表](./first-view.md)。这两条路径的 UI 依赖与核心 HTTP 安装不同；先按[起点选择](./index.md)确定任务。

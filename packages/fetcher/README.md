@@ -49,7 +49,7 @@ const user = await api.get<User>(
 ## Documentation
 
 - [First request](https://fetcher.ahoo.me/start/first-request)
-- [Request lifecycle](https://fetcher.ahoo.me/learn/request-lifecycle)
+- [Request lifecycle](https://fetcher.ahoo.me/architecture/request-lifecycle)
 - [Fetcher reference](https://fetcher.ahoo.me/reference/fetcher)
 
 [中文](./README.zh-CN.md) · [License](../../LICENSE)

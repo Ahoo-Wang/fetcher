@@ -46,7 +46,7 @@ for await (const event of stream) {
 
 ## 文档
 
-- [OpenAI 流式实战](https://fetcher.ahoo.me/zh/recipes/openai-streaming)
+- [OpenAI 流式实战](https://fetcher.ahoo.me/zh/guides/streaming/chat)
 - [OpenAI 参考](https://fetcher.ahoo.me/zh/reference/openai)
 - [交互式流 Story](https://fetcher.ahoo.me/storybook/)
 

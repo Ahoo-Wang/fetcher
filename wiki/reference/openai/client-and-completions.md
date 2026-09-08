@@ -7,6 +7,8 @@ description: 'Client and chat completions — Fetcher 5.0.0'
 
 This package implements Chat Completions. It does not expose Responses, embeddings, images, files, audio, or realtime clients. The following contract describes this SDK's implementation, not a guarantee of a provider's current model availability or limits.
 
+`OpenAI` always creates its own Fetcher and Authorization header. To use an existing authenticated proxy, construct `ChatClient({ fetcher })` instead; this also preserves that Fetcher's headers, timeout and interceptors. Configure ApiMetadata before the first call because the decorator executor caches per-method metadata.
+
 ## Client contract
 
 | API                                      | Input/default                                                        | Return/effect                                                                     |

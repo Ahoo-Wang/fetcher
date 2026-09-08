@@ -23,6 +23,19 @@ FilterPanel 收集子 ref，用旧 and(...) 组合有效条件，无有效子项
 
 datetime 分发器对普通日期使用毫秒，before-today 使用本地 HH:mm:ss 文本，相对天数使用整数。范围末端恰为零点时扩展为当天结束。无效/禁用值会省略，不作为错误条件发送。FallbackFilter 显示不支持类型提示。组件本身不请求数据；定制见 [注册表](./registries-and-inputs)。
 
+## 定义、输入状态与输出查询 {#filter-values}
+
+| 值                                             | 使用者与含义                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------------ |
+| AvailableFilter / ActiveFilter                 | 可选目录项与选中实例；实例 key 让面板保留/移除正确过滤器。               |
+| `field.name` / `field.label`                   | 查询数据路径 / 展示标题；不会把 label 当作查询路径。                     |
+| `operator.defaultValue` / `value.defaultValue` | 初始 UI 选项，不是持续受控输入；改变默认值时有意识地使用 reset/remount。 |
+| `FilterState`                                  | 恢复编辑所需的原始 operator/value，即使尚未完整。                        |
+| `FilterValue.condition`                        | 有效旧 Condition 或无输出值；下游数据加载消费该查询值。                  |
+| 面板 `conditionMap` / `stateMap`               | 合并条件之外的逐过滤器查询 / UI 快照；只保存其中之一可能丢失另一种职责。 |
+
+面板搜索产出查询，不产出已过滤行。应用 onLoadData 或 FetcherViewer 加载器负责执行。输入验证面向 UI，远端字段授权与查询准入仍由服务端负责。
+
 ## 完整示例
 
 ```tsx
@@ -50,7 +63,7 @@ export function SearchPanel() {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### OPERATOR_zh_CN {#api-OPERATOR_zh_CN}
 
@@ -280,10 +293,9 @@ export interface RemovableTypedFilterProps extends TypedFilterProps {
 ### AssemblyFilter {#api-AssemblyFilter}
 
 ```ts
-export function AssemblyFilter({
-  ref,
-  ...props
-}: AssemblyFilterProps): import('react').JSX.Element;
+export function AssemblyFilter(
+  options: AssemblyFilterProps,
+): import('react').JSX.Element;
 ```
 
 [packages/viewer/src/filter/AssemblyFilter.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/AssemblyFilter.tsx#L45)
@@ -340,10 +352,7 @@ declare const BOOL_FILTER: 'bool';
 ### FallbackFilter {#api-FallbackFilter}
 
 ```ts
-export function FallbackFilter({
-  type,
-  ref,
-}: TypedFilterProps): React.JSX.Element;
+export function FallbackFilter(options: TypedFilterProps): React.JSX.Element;
 ```
 
 [packages/viewer/src/filter/FallbackFilter.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/FallbackFilter.tsx#L20)

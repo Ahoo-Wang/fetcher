@@ -44,7 +44,7 @@ events.destroy();
 
 ## Documentation
 
-- [State and events recipe](https://fetcher.ahoo.me/recipes/state-and-events)
+- [State and events recipe](https://fetcher.ahoo.me/guides/integrations/storage-and-events)
 - [Event bus reference](https://fetcher.ahoo.me/reference/eventbus)
 
 [中文](./README.zh-CN.md) · [License](../../LICENSE)

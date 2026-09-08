@@ -1,4 +1,6 @@
 ---
+prev: false
+next: false
 title: 按任务查阅 API
 description: 按任务查阅 API
 pageClass: reference-index-page
@@ -25,6 +27,6 @@ pageClass: reference-index-page
 
 ## 如何使用参考
 
-入口页给出安装、最小示例及符号索引。专题页说明参数、默认值、返回值、失败与生命周期。完整业务流程见 [Recipes](../recipes/declarative-services.md)，首次接入从[入门](../start/index.md)开始。
+入口页说明用途、前提与专题选择；每个包末尾提供完整符号索引。专题页说明参数、默认值、返回值、失败与生命周期。完整业务流程见 [Guides](../guides/index.md)，首次接入从[入门](../start/index.md)开始。
 
 参考以当前包公开导出和实现为依据；内部源码存在并不意味着可以从包入口导入。

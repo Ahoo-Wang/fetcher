@@ -22,9 +22,19 @@ FetcherViewer connects three remote resources: a viewer definition, its visible 
 
 `useFetchData({viewerDefinition,defaultView})` posts a legacy PagedQuery, combines internalCondition with the selected condition using AND, defaults first page and view.pageSize || 10, and exposes dataSource/loading/error/setQuery/reload/getPageQuery. Stale results from a different view/request are hidden. reload runs only when a current valid query exists. Errors are available from this hook; the composite currently does not expose every data-fetch error as a dedicated prop/callback.
 
-Create/update sends a PROCESSED command, checks errorCode and requires finite aggregateVersion. Success is acknowledged only after a newly loaded snapshot matches contextName/aggregateName/aggregateId/tenantId/ownerId/definitionId and version &gt;= command version. Until then the component shows pending/retry UI. Transport/domain errors do not falsely confirm save; switching/unmount invalidates pending callbacks. Deletion follows a different path: resolved transport triggers reload and success callback without the same version-confirmation flow; do not infer identical guarantees.
+Create/update sends a PROCESSED command, checks errorCode and requires finite aggregateVersion. Success is acknowledged only after a newly loaded snapshot matches contextName/aggregateName/aggregateId/tenantId/ownerId/definitionId and version &gt;= command version. Until then the component shows pending/retry UI. Transport/domain errors do not falsely confirm save; identity switching/unmount invalidates pending create/update callbacks via mutationId; deletion has no equivalent guard. Deletion follows a different path: resolved transport triggers reload and success callback without the same version-confirmation flow; do not infer identical guarantees.
 
 The local default view ID uses KeyStorage key `fetcher-viewer-local-default-view-id`. Refresh publishes to a shared definition-scoped bus; it does not automatically clear selected rows. Remote clients exported here include ViewCommandClient/ViewStreamCommandClient, endpoint constants, query factories, CreateView/EditView and event/field models. Streaming command clients return JSON SSE and leave reader cleanup to the caller. The exported Viewer SecurityContext is a data Record, distinct from React's security context.
+
+## Create/update, deletion and row reads are different {#persistence-boundaries}
+
+| Operation                  | Confirmation                                                                                                                                   | Lifetime boundary                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Create/update a saved view | PROCESSED result must succeed and carry finite aggregateVersion; refreshed snapshot must match full identity/definition and reach that version | Unmount invalidates mutationId so old create/update completions cannot confirm the new component's save |
+| Delete a saved view        | Resolved transport starts a view reload and immediately calls completion, without awaiting that reload or checking the returned errorCode      | No equivalent mutationId check or create/update snapshot-version confirmation                           |
+| Query rows                 | Current request's PagedList after optional enhancement                                                                                         | Request/source matching hides stale data; it is not the saved-view command version barrier              |
+
+The create/update check has no projection-lag upper bound. Retrying confirmation reloads the expected view; it is not proof that the original write can safely be sent again. Tenant/owner remount isolates UI state, while the server still has to authorize every request. The shared default-ID storage key is not automatic tenant-scoped persistence.
 
 ## Complete example
 
@@ -64,7 +74,7 @@ Service URLs in examples require application endpoints; type checking does not i
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### VIEWER_BOUNDED_CONTEXT_ALIAS {#api-VIEWER_BOUNDED_CONTEXT_ALIAS}
 
@@ -248,6 +258,8 @@ export interface ViewEdited {
 
 ### ViewAggregatedFields {#api-ViewAggregatedFields}
 
+::: details Expand all fields and members
+
 ```ts
 export enum ViewAggregatedFields {
   AGGREGATE_ID = `aggregateId`,
@@ -345,6 +357,8 @@ export enum ViewAggregatedFields {
 }
 ```
 
+:::
+
 [packages/viewer/src/fetcherviewer/client/view/types.ts:421](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/types.ts#L421)
 
 ### ViewerDefinitionDomainEventTypeMapTitle {#api-ViewerDefinitionDomainEventTypeMapTitle}
@@ -378,6 +392,8 @@ declare const viewerDefinitionQueryClientFactory: QueryClientFactory<
 [packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts#L22)
 
 ### ViewerDefinitionAggregatedFields {#api-ViewerDefinitionAggregatedFields}
+
+::: details Expand all fields and members
 
 ```ts
 export enum ViewerDefinitionAggregatedFields {
@@ -424,6 +440,8 @@ export enum ViewerDefinitionAggregatedFields {
   STATE_NAME = `state.name`,
 }
 ```
+
+:::
 
 [packages/viewer/src/fetcherviewer/client/viewer_definition/types.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/viewer_definition/types.ts#L54)
 
@@ -548,6 +566,8 @@ export interface FetcherViewerRef {
 
 ### FetcherViewerProps {#api-FetcherViewerProps}
 
+::: details Expand all fields and members
+
 ```ts
 export interface FetcherViewerProps<RecordType>
   extends
@@ -569,6 +589,8 @@ export interface FetcherViewerProps<RecordType>
   onSwitchView?: (view: ViewState) => void;
 }
 ```
+
+:::
 
 [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L70)
 

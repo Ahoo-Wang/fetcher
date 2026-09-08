@@ -43,7 +43,7 @@ events.destroy();
 
 ## 文档
 
-- [状态与事件实战](https://fetcher.ahoo.me/zh/recipes/state-and-events)
+- [状态与事件实战](https://fetcher.ahoo.me/zh/guides/integrations/storage-and-events)
 - [事件总线参考](https://fetcher.ahoo.me/zh/reference/eventbus)
 
 [English](./README.md) · [许可证](../../LICENSE)

@@ -72,7 +72,7 @@ export function Users() {
 
 ## 文档
 
-- [构建数据 Viewer](https://fetcher.ahoo.me/zh/recipes/data-viewer)
+- [构建数据 Viewer](https://fetcher.ahoo.me/zh/guides/viewer/)
 - [Viewer 参考](https://fetcher.ahoo.me/zh/reference/viewer)
 - [交互式 Viewer 工作流](https://fetcher.ahoo.me/storybook/)
 

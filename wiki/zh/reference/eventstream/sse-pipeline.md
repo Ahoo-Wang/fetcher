@@ -7,6 +7,8 @@ description: 'SSE 解析管线 — @ahoo-wang/fetcher-eventstream 5.0.0'
 
 把流式 HTTP 响应转换为 `ReadableStream<ServerSentEvent>`。此包解析已有 fetch 响应，不是 EventSource，不会自动重连或重新发送 Last-Event-ID。
 
+调用方明确要将响应体按 SSE 解释（即使没有 SSE Content-Type）时使用直接转换器。需要检查响应协议时，优先使用 [Response 辅助方法](./json-and-results.md#response)中的 `requiredEventStream()`。这两条路径都不自行检查状态码；Fetcher 会在结果提取前执行状态校验。
+
 ## 转换阶段 {#pipeline}
 
 `toServerSentEventStream(response: Response): ServerSentEventStream` 要求正文非 null，否则抛 `EventStreamConvertError(response, 'Response body is null')`。管线为 `response.body → TextDecoderStream('utf-8') → TextLineTransformStream → ServerSentEventTransformStream`。直接转换器不检查状态和 Content-Type；管线会锁定正文，不能同时独立读取。

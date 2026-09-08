@@ -7,6 +7,8 @@ description: 'KeyStorage and change listeners — @ahoo-wang/fetcher-storage 5.0
 
 `KeyStorage<T>` binds one typed value to one string key. Operations are synchronous; notifications are dispatched asynchronously through an event bus. It does not automatically watch native browser storage events.
 
+Choose the backend and event bus independently: sharing a backend does not share the cached value or subscriptions. Two instances using the same key and backend but different default buses can retain different cached values. Share a bus as well when both instances must observe writes made through KeyStorage.
+
 ## Options {#options}
 
 `new KeyStorage<T>(options: KeyStorageOptions<T>)`:

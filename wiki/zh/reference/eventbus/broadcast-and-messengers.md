@@ -7,6 +7,8 @@ description: '广播总线与消息传输 — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 `BroadcastTypedEventBus<EVENT>` 在本地 `TypedEventBus<EVENT>` 上增加跨上下文投递。传输仅提供通知，没有确认、远端完成等待、重放或送达保证。
 
+构造广播总线时保留 delegate，以便单独清理它的处理器。注入的 messenger 也会被 `destroy()` 关闭；与无关总线共享该 messenger 会形成重叠所有权，并可能中断另一个消费者。独立管理生命周期的广播总线应各自使用 messenger。
+
 ## 广播选项与流程 {#broadcast}
 
 `new BroadcastTypedEventBus(options: BroadcastTypedEventBusOptions<EVENT>)` 必填 `delegate`。`type`、`handlers` 来自 delegate，`on`/`off` 直接转发。默认消息器为 `createCrossTabMessenger('_broadcast_:' + delegate.type)`；没有可用实现时构造抛 `Error('Messenger setup failed')`。

@@ -1,4 +1,5 @@
 ---
+next: false
 title: React and integrations
 description: React and integrations — Fetcher agent workflows
 pageClass: skills-page

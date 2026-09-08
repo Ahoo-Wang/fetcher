@@ -46,16 +46,15 @@ console.log(page);
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### pagination {#api-pagination}
 
 ```ts
-export function pagination({
-  index = DEFAULT_PAGINATION.index,
-  size = DEFAULT_PAGINATION.size,
-}: Partial<Pagination> = DEFAULT_PAGINATION): Pagination;
+export function pagination(options?: Partial<Pagination>): Pagination;
 ```
+
+Implementation defaults: `index = DEFAULT_PAGINATION.index`; `size = DEFAULT_PAGINATION.size`; `options = DEFAULT_PAGINATION`.
 
 [packages/wow/src/query/pagination.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/pagination.ts#L46)
 
@@ -92,9 +91,11 @@ export function defaultProjection<
 
 ```ts
 export function projection<FIELDS extends string = string>(
-  { include, exclude }: Projection<FIELDS> = defaultProjection(),
+  options?: Projection<FIELDS>,
 ): Projection<FIELDS>;
 ```
+
+Implementation defaults: `options = defaultProjection()`.
 
 [packages/wow/src/query/projection.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts#L46)
 
@@ -184,11 +185,10 @@ export function pagedQuery<FIELDS extends string = string>(
 ### pagedList {#api-pagedList}
 
 ```ts
-export function pagedList<T>({
-  total,
-  list = [],
-}: Partial<PagedList<T>> = EMPTY_PAGED_LIST): PagedList<T>;
+export function pagedList<T>(options?: Partial<PagedList<T>>): PagedList<T>;
 ```
+
+Implementation defaults: `list = []`; `options = EMPTY_PAGED_LIST`.
 
 [packages/wow/src/query/queryable.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L257)
 
@@ -384,4 +384,4 @@ export interface SortCapable<FIELDS extends string = string> {
 
 ## Related topics
 
-[Client configuration and metadata](./configuration) · [Commands and wait results](./commands) · [Snapshot queries](./snapshot-queries) · [Filter expressions and legacy conditions](./filters) · [Cursor queries](./cursor-queries) · [Aggregation builders](./aggregations) · [Events and historical state](./events-and-history) · [Shared domain types and utilities](./shared-types)
+[Client configuration and metadata](./configuration) · [Commands and wait results](./commands) · [Snapshot queries](./snapshot-queries) · [Filter expressions and legacy conditions](./filters) · [Cursor queries](./cursor-queries) · [Aggregation builders](./aggregations) · [Events and historical state](./events-and-history) · [Identity and resource attribution](./identity-and-attribution)

@@ -46,16 +46,15 @@ console.log(page);
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### pagination {#api-pagination}
 
 ```ts
-export function pagination({
-  index = DEFAULT_PAGINATION.index,
-  size = DEFAULT_PAGINATION.size,
-}: Partial<Pagination> = DEFAULT_PAGINATION): Pagination;
+export function pagination(options?: Partial<Pagination>): Pagination;
 ```
+
+实现默认值: `index = DEFAULT_PAGINATION.index`; `size = DEFAULT_PAGINATION.size`; `options = DEFAULT_PAGINATION`.
 
 [packages/wow/src/query/pagination.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/pagination.ts#L46)
 
@@ -92,9 +91,11 @@ export function defaultProjection<
 
 ```ts
 export function projection<FIELDS extends string = string>(
-  { include, exclude }: Projection<FIELDS> = defaultProjection(),
+  options?: Projection<FIELDS>,
 ): Projection<FIELDS>;
 ```
+
+实现默认值: `options = defaultProjection()`.
 
 [packages/wow/src/query/projection.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts#L46)
 
@@ -184,11 +185,10 @@ export function pagedQuery<FIELDS extends string = string>(
 ### pagedList {#api-pagedList}
 
 ```ts
-export function pagedList<T>({
-  total,
-  list = [],
-}: Partial<PagedList<T>> = EMPTY_PAGED_LIST): PagedList<T>;
+export function pagedList<T>(options?: Partial<PagedList<T>>): PagedList<T>;
 ```
+
+实现默认值: `list = []`; `options = EMPTY_PAGED_LIST`.
 
 [packages/wow/src/query/queryable.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L257)
 
@@ -384,4 +384,4 @@ export interface SortCapable<FIELDS extends string = string> {
 
 ## 相关专题
 
-[客户端配置与元数据](./configuration) · [命令与等待结果](./commands) · [快照查询](./snapshot-queries) · [过滤表达式与旧条件](./filters) · [游标查询](./cursor-queries) · [聚合构造器](./aggregations) · [事件与历史状态](./events-and-history) · [共享领域类型与工具](./shared-types)
+[客户端配置与元数据](./configuration) · [命令与等待结果](./commands) · [快照查询](./snapshot-queries) · [过滤表达式与旧条件](./filters) · [游标查询](./cursor-queries) · [聚合构造器](./aggregations) · [事件与历史状态](./events-and-history) · [身份与资源归属](./identity-and-attribution)

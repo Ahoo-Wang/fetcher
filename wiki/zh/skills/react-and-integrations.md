@@ -1,4 +1,5 @@
 ---
+next: false
 title: React 与集成
 description: React 与集成 — Fetcher agent workflows
 pageClass: skills-page

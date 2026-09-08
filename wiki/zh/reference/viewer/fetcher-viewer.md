@@ -22,9 +22,19 @@ FetcherViewer 连接三个远端资源：视图定义、可见保存视图，以
 
 `useFetchData({viewerDefinition,defaultView})` POST 旧 PagedQuery，将 internalCondition 与当前 condition 做 AND，默认首个页码及 view.pageSize || 10，暴露 dataSource/loading/error/setQuery/reload/getPageQuery。其他视图/请求的旧结果被隐藏；当前有效查询存在时 reload 才执行。错误从该 Hook 可读，但组合组件目前不为每种数据请求错误暴露专门 prop/回调。
 
-创建/更新发送 PROCESSED 命令，检查 errorCode 并要求有限 aggregateVersion。只有新加载快照的 contextName/aggregateName/aggregateId/tenantId/ownerId/definitionId 全匹配且 version &gt;= 命令版本才确认成功；此前显示等待/重试 UI。传输/领域失败不会错误确认保存，切换/卸载作废待执行回调。删除走另一条路径：传输 Promise 完成即重载并调用成功回调，没有相同版本确认流程，不能推断同等保证。
+创建/更新发送 PROCESSED 命令，检查 errorCode 并要求有限 aggregateVersion。只有新加载快照的 contextName/aggregateName/aggregateId/tenantId/ownerId/definitionId 全匹配且 version &gt;= 命令版本才确认成功；此前显示等待/重试 UI。传输/领域失败不会错误确认保存，身份切换/卸载通过 mutationId 作废创建/更新的待执行回调；删除没有同等标记检查。删除走另一条路径：传输 Promise 完成即重载并调用成功回调，没有相同版本确认流程，不能推断同等保证。
 
 本地默认视图 ID 存于 `fetcher-viewer-local-default-view-id` KeyStorage。刷新向共享定义作用域总线发布，不自动清除选中行。该专题还覆盖 ViewCommandClient/ViewStreamCommandClient、端点常量、查询工厂、CreateView/EditView 和事件/字段模型。流命令客户端返回 JSON SSE，由调用者清理 reader。Viewer 导出的 SecurityContext 是数据 Record，与 React 安全上下文不同。
+
+## 创建/更新、删除与行读取是不同流程 {#persistence-boundaries}
+
+| 操作              | 确认条件                                                                             | 生命周期边界                                                |
+| ----------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| 创建/更新保存视图 | PROCESSED 结果成功且具有有限 aggregateVersion；刷新快照匹配完整身份/定义并达到该版本 | 卸载使 mutationId 失效，旧创建/更新完成不能确认新组件的保存 |
+| 删除保存视图      | 传输 resolve 后启动重载并立即调用完成回调，不等待重载或检查返回的 errorCode          | 没有同等 mutationId 检查或创建/更新的快照版本确认           |
+| 查询行            | 当前请求的 PagedList，可经过增强处理                                                 | 请求/来源匹配隐藏旧数据；不是保存视图命令的版本屏障         |
+
+创建/更新检查不限定投影延迟上界。重试确认是重新加载目标视图，不证明可安全重发原写入。租户/所有者变化 remount 隔离 UI 状态，服务端仍须授权每个请求。共享默认 ID 存储键不自动提供按租户隔离的持久化。
 
 ## 完整示例
 
@@ -64,7 +74,7 @@ export function RemoteUsers() {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### VIEWER_BOUNDED_CONTEXT_ALIAS {#api-VIEWER_BOUNDED_CONTEXT_ALIAS}
 
@@ -248,6 +258,8 @@ export interface ViewEdited {
 
 ### ViewAggregatedFields {#api-ViewAggregatedFields}
 
+::: details 展开完整字段与成员
+
 ```ts
 export enum ViewAggregatedFields {
   AGGREGATE_ID = `aggregateId`,
@@ -345,6 +357,8 @@ export enum ViewAggregatedFields {
 }
 ```
 
+:::
+
 [packages/viewer/src/fetcherviewer/client/view/types.ts:421](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/types.ts#L421)
 
 ### ViewerDefinitionDomainEventTypeMapTitle {#api-ViewerDefinitionDomainEventTypeMapTitle}
@@ -378,6 +392,8 @@ declare const viewerDefinitionQueryClientFactory: QueryClientFactory<
 [packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts#L22)
 
 ### ViewerDefinitionAggregatedFields {#api-ViewerDefinitionAggregatedFields}
+
+::: details 展开完整字段与成员
 
 ```ts
 export enum ViewerDefinitionAggregatedFields {
@@ -424,6 +440,8 @@ export enum ViewerDefinitionAggregatedFields {
   STATE_NAME = `state.name`,
 }
 ```
+
+:::
 
 [packages/viewer/src/fetcherviewer/client/viewer_definition/types.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/viewer_definition/types.ts#L54)
 
@@ -548,6 +566,8 @@ export interface FetcherViewerRef {
 
 ### FetcherViewerProps {#api-FetcherViewerProps}
 
+::: details 展开完整字段与成员
+
 ```ts
 export interface FetcherViewerProps<RecordType>
   extends
@@ -569,6 +589,8 @@ export interface FetcherViewerProps<RecordType>
   onSwitchView?: (view: ViewState) => void;
 }
 ```
+
+:::
 
 [packages/viewer/src/fetcherviewer/FetcherViewer.tsx:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L70)
 

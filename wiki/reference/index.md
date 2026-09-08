@@ -1,4 +1,6 @@
 ---
+prev: false
+next: false
 title: Find the API for your task
 description: Find the API for your task
 pageClass: reference-index-page
@@ -25,6 +27,6 @@ Each package has an entry page and focused reference topics. Choose the responsi
 
 ## Use the right depth
 
-Entry pages provide installation, a minimal example, and a symbol index. Topic pages explain parameters, defaults, results, failures, and lifecycle. Use [Recipes](../recipes/declarative-services.md) for end-to-end work and [Start](../start/index.md) for your first integration.
+Entry pages explain purpose, prerequisites, and topic choices; each package ends with a complete symbol index. Topic pages explain parameters, defaults, results, failures, and lifecycle. Use [Guides](../guides/index.md) for end-to-end work and [Start](../start/index.md) for your first integration.
 
 Reference follows current public exports and implementations. A source file inside a package does not imply a public package import.

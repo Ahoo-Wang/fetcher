@@ -65,7 +65,7 @@ export function Prices() {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### isActionCellProps {#api-isActionCellProps}
 
@@ -254,9 +254,11 @@ declare const cellRegistry: TypedComponentRegistry<
 ```ts
 export function formatCurrency(
   amount: number | string | null,
-  options: CurrencyFormatOptions = DEFAULT_CURRENCY_FORMAT_OPTIONS,
+  options?: CurrencyFormatOptions,
 ): string;
 ```
+
+实现默认值: `options = DEFAULT_CURRENCY_FORMAT_OPTIONS`.
 
 [packages/viewer/src/table/cell/currencyFormatter.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/table/cell/currencyFormatter.ts#L200)
 

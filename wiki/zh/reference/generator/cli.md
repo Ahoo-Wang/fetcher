@@ -101,7 +101,7 @@ description: '生成器 CLI — Fetcher 5.0.0'
 ```
 
 ```bash
-pnpm add -D @ahoo-wang/fetcher-generator typescript
+pnpm add -D @ahoo-wang/fetcher-generator @ahoo-wang/fetcher-openapi typescript
 pnpm exec fetcher-generator generate -i ./openapi.json -o ./src/generated -t ./tsconfig.json
 pnpm exec tsc --noEmit -p ./tsconfig.json
 ```

@@ -7,6 +7,8 @@ description: 'The SSE parsing pipeline — @ahoo-wang/fetcher-eventstream 5.0.0'
 
 Convert a streamed HTTP response into `ReadableStream<ServerSentEvent>`. This package parses an existing fetch response; it is not EventSource and does not reconnect or resend Last-Event-ID automatically.
 
+Use the direct converter when the caller deliberately accepts the body as SSE even without an SSE Content-Type. For a protocol-checked response, prefer `requiredEventStream()` from the [Response helpers](./json-and-results.md#response). Neither route checks status on its own; Fetcher supplies status validation before result extraction.
+
 ## Conversion stages {#pipeline}
 
 `toServerSentEventStream(response: Response): ServerSentEventStream` requires a non-null body, otherwise throws `EventStreamConvertError(response, 'Response body is null')`. It connects `response.body → TextDecoderStream('utf-8') → TextLineTransformStream → ServerSentEventTransformStream`. This direct converter does not validate status or content type. The body becomes locked by the pipeline and cannot be independently read at the same time.

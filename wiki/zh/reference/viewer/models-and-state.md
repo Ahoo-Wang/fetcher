@@ -26,6 +26,25 @@ ViewDefinition 描述数据端点的字段和可用过滤器，ViewState 描述�
 
 `mapToTableRecord` 克隆行并设置 key，优先显式主键路径、已有 key、行索引；空输入返回 []。刷新场景应提供稳定真实主键。`deepEqual` 处理基本值、数组、日期、正则和可枚举对象键，不是支持循环的任意对象比较器。`format` 顺序替换 `%@`，缺参数用空文本。工具不请求或持久化数据。
 
+## 定义字段与保存布局 {#definition-fields}
+
+定义是一个 viewer 的可用结构，保存视图选择并排列其中内容。应让保存视图的 `definitionId` 匹配 `definition.id`；本地模型不在运行时强制校验此关系。远端创建/更新的身份检查是 FetcherViewer 的特定职责。
+
+| 字段                                      | 含义与约束                                                                                    |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `definition.fields`                       | 声明列元数据；`name` 是点分数据路径，`type` 选择单元格渲染器，`primaryKey` 指定行键。         |
+| `definition.availableFilters`             | 分组的可选过滤器目录；保存视图的 `filters` 包含选中的 ActiveFilter 实例与初始 UI 值。         |
+| `definition.dataUrl` / `countUrl`         | 模型要求的字符串。View 不请求它们；FetcherViewer 使用 dataUrl，监控/计数控件可使用 countUrl。 |
+| `view.columns`                            | 有序名称/键及必填 fixed/hidden 标记；可选 width 为字符串，sortOrder 使用 Ant Design 值。      |
+| `view.condition` / `sorter`               | 当前旧式 Wow 查询值；`filters` 还保存 UI 配置，有效条件生成前原始值就可以存在。               |
+| `view.internalCondition?`                 | 远端加载器通过 AND 合并的额外条件，不是客户端权限边界。                                       |
+| `view.pageSize` / `tableSize`             | 保存的分页大小 / 视觉密度；ViewState 本身无运行时默认值，状态 Hook 默认值见下文。             |
+| `view.type` / `source` / `isDefault`      | PERSONAL/SHARED、SYSTEM/CUSTOM 和默认选择标记；用于视图分类，不是认证声明。                   |
+| `FieldDefinition.sorter?`                 | 布尔值、多重排序优先级对象或 null；表格报告排序变化，数据所有者执行排序。                     |
+| `FieldDefinition.attributes?` / `render?` | 透传列属性 / 自定义渲染器；可以覆盖生成的渲染设置，回调属于应用代码。                         |
+
+[完整本地示例](./index)把定义、ViewState、查询回调与持久化确认串联起来。
+
 ## 完整示例
 
 ```tsx
@@ -48,162 +67,9 @@ export function PageControls() {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
-### useActiveViewState {#api-useActiveViewState}
-
-```ts
-export function useActiveViewState({
-  defaultPage = 1,
-  defaultPageSize = 10,
-  defaultTableSize = 'middle',
-  defaultCondition = DEFAULT_CONDITION,
-  defaultSorter = [],
-  ...options
-}: UseActiveViewStateOptions): UseActiveViewStateReturn;
-```
-
-[packages/viewer/src/hooks/useActiveViewState.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L43)
-
-### DEFAULT_CONDITION {#api-DEFAULT_CONDITION}
-
-```ts
-declare const DEFAULT_CONDITION: Condition<string>;
-```
-
-[packages/viewer/src/hooks/useActiveViewState.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L8)
-
-### UseActiveViewStateOptions {#api-UseActiveViewStateOptions}
-
-```ts
-export interface UseActiveViewStateOptions {
-  defaultColumns: ViewColumn[];
-  defaultActiveFilters: ActiveFilter[];
-  defaultCondition?: Condition;
-  defaultPage?: number;
-  defaultPageSize?: number;
-  defaultSorter?: FieldSort[];
-  defaultTableSize?: SizeType;
-}
-```
-
-[packages/viewer/src/hooks/useActiveViewState.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L10)
-
-### UseActiveViewStateReturn {#api-UseActiveViewStateReturn}
-
-```ts
-export interface UseActiveViewStateReturn {
-  columns: ViewColumn[];
-  setColumns: (columns: ViewColumn[]) => void;
-  activeFilters: ActiveFilter[];
-  setActiveFilters: (filters: ActiveFilter[]) => void;
-  condition: Condition;
-  setCondition: (condition: Condition) => void;
-  page: number;
-  setPage: (page: number) => void;
-  pageSize: number;
-  setPageSize: (size: number) => void;
-  sorter: FieldSort[];
-  setSorter: (sorter: FieldSort[]) => void;
-  tableSize: SizeType;
-  setTableSize: (size: SizeType) => void;
-  reset: () => void;
-}
-```
-
-[packages/viewer/src/hooks/useActiveViewState.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L22)
-
-### useViewState {#api-useViewState}
-
-```ts
-export function useViewState({
-  defaultPage = DEFAULT_PAGE,
-  defaultPageSize = DEFAULT_PAGE_SIZE,
-  ...options
-}: UseViewStateOptions): UseViewStateReturn;
-```
-
-[packages/viewer/src/view/hooks/useViewState.ts:219](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L219)
-
-### ViewChangeAction {#api-ViewChangeAction}
-
-```ts
-export type ViewChangeAction = (
-  condition: Condition,
-  index: number,
-  size: number,
-  sorter?: FieldSort[],
-) => void;
-```
-
-[packages/viewer/src/view/hooks/useViewState.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L32)
-
-### UseViewStateOptions {#api-UseViewStateOptions}
-
-```ts
-export interface UseViewStateOptions {
-  defaultColumns: ViewColumn[];
-  externalColumns?: ViewColumn[];
-  externalUpdateColumns?: (columns: ViewColumn[]) => void;
-  defaultActiveFilters?: ActiveFilter[];
-  externalActiveFilters?: ActiveFilter[];
-  externalUpdateActiveFilters?: (filters: ActiveFilter[]) => void;
-  defaultPage?: number;
-  externalPage?: number;
-  externalUpdatePage?: (page: number) => void;
-  defaultPageSize: number;
-  externalPageSize?: number;
-  externalUpdatePageSize?: (pageSize: number) => void;
-  defaultCondition?: Condition;
-  externalCondition?: Condition;
-  externalUpdateCondition?: (
-    finalCondition: Condition,
-    activeFilterValues: Map<Key, Condition>,
-    filterStates: Map<Key, FilterState>,
-    resetFilters?: ActiveFilter[],
-  ) => void;
-  defaultSorter?: FieldSort[];
-  externalSorter?: FieldSort[];
-  externalUpdateSorter?: (sorter: FieldSort[]) => void;
-  defaultTableSize: SizeType;
-  externalTableSize?: SizeType;
-  externalUpdateTableSize?: (size: SizeType) => void;
-  onChange?: ViewChangeAction;
-}
-```
-
-[packages/viewer/src/view/hooks/useViewState.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L65)
-
-### UseViewStateReturn {#api-UseViewStateReturn}
-
-```ts
-export interface UseViewStateReturn {
-  columns: ViewColumn[];
-  setColumns: (columns: ViewColumn[]) => void;
-  activeFilters: ActiveFilter[];
-  setActiveFilters: (filters: ActiveFilter[]) => void;
-  page: number;
-  setPage: (page: number) => void;
-  pageSize: number;
-  setPageSize: (pageSize: number) => void;
-  setPagination: (page: number, pageSize: number) => void;
-  condition: Condition;
-  setCondition: (
-    finalCondition: Condition,
-    activeFilterValues: Map<Key, Condition>,
-    filterStates: Map<Key, FilterState>,
-  ) => void;
-  sorter: FieldSort[];
-  setSorter: (sorter: FieldSort[]) => void;
-  tableSize: SizeType;
-  setTableSize: (size: SizeType) => void;
-  selectedCount: number;
-  updateSelectedCount: (count: number) => void;
-  reset: () => void;
-}
-```
-
-[packages/viewer/src/view/hooks/useViewState.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L127)
+## 定义与保存视图契约 {#model-contracts}
 
 ### ViewDefinition {#api-ViewDefinition}
 
@@ -290,13 +156,30 @@ export interface ViewColumn extends NamedCapable, KeyCapable {
 
 [packages/viewer/src/viewer/types.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L51)
 
-### TopBarActionItem {#api-TopBarActionItem}
+## 应用操作与持久化 {#action-contracts}
+
+### ViewMutationAction {#api-ViewMutationAction}
 
 ```ts
-export interface TopBarActionItem<RecordType> extends ActionItem<RecordType> {}
+export type ViewMutationAction = (
+  view: ViewState,
+  onSuccess?: (newView: ViewState) => void,
+) => void;
 ```
 
-[packages/viewer/src/viewer/types.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L58)
+[packages/viewer/src/viewer/types.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L65)
+
+### ViewMutationActionsCapable {#api-ViewMutationActionsCapable}
+
+```ts
+export interface ViewMutationActionsCapable {
+  onCreateView?: ViewMutationAction;
+  onUpdateView?: ViewMutationAction;
+  onDeleteView?: ViewMutationAction;
+}
+```
+
+[packages/viewer/src/viewer/types.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L86)
 
 ### GetRecordCountAction {#api-GetRecordCountAction}
 
@@ -309,16 +192,23 @@ export type GetRecordCountAction = (
 
 [packages/viewer/src/viewer/types.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L60)
 
-### ViewMutationAction {#api-ViewMutationAction}
+### GetRecordCountActionCapable {#api-GetRecordCountActionCapable}
 
 ```ts
-export type ViewMutationAction = (
-  view: ViewState,
-  onSuccess?: (newView: ViewState) => void,
-) => void;
+export interface GetRecordCountActionCapable {
+  onGetRecordCount?: GetRecordCountAction;
+}
 ```
 
-[packages/viewer/src/viewer/types.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L65)
+[packages/viewer/src/viewer/types.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L82)
+
+### TopBarActionItem {#api-TopBarActionItem}
+
+```ts
+export interface TopBarActionItem<RecordType> extends ActionItem<RecordType> {}
+```
+
+[packages/viewer/src/viewer/types.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L58)
 
 ### BatchActionsConfig {#api-BatchActionsConfig}
 
@@ -344,37 +234,175 @@ export interface TopbarActionsCapable<RecordType> {
 
 [packages/viewer/src/viewer/types.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L76)
 
-### GetRecordCountActionCapable {#api-GetRecordCountActionCapable}
+## 状态 Hook 与受控维度 {#state-contracts}
+
+### useActiveViewState {#api-useActiveViewState}
 
 ```ts
-export interface GetRecordCountActionCapable {
-  onGetRecordCount?: GetRecordCountAction;
+export function useActiveViewState(
+  options: UseActiveViewStateOptions,
+): UseActiveViewStateReturn;
+```
+
+实现默认值: `defaultPage = 1`; `defaultPageSize = 10`; `defaultTableSize = 'middle'`; `defaultCondition = DEFAULT_CONDITION`; `defaultSorter = []`.
+
+[packages/viewer/src/hooks/useActiveViewState.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L43)
+
+### DEFAULT_CONDITION {#api-DEFAULT_CONDITION}
+
+```ts
+declare const DEFAULT_CONDITION: Condition<string>;
+```
+
+[packages/viewer/src/hooks/useActiveViewState.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L8)
+
+### UseActiveViewStateOptions {#api-UseActiveViewStateOptions}
+
+```ts
+export interface UseActiveViewStateOptions {
+  defaultColumns: ViewColumn[];
+  defaultActiveFilters: ActiveFilter[];
+  defaultCondition?: Condition;
+  defaultPage?: number;
+  defaultPageSize?: number;
+  defaultSorter?: FieldSort[];
+  defaultTableSize?: SizeType;
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L82)
+[packages/viewer/src/hooks/useActiveViewState.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L10)
 
-### ViewMutationActionsCapable {#api-ViewMutationActionsCapable}
+### UseActiveViewStateReturn {#api-UseActiveViewStateReturn}
 
 ```ts
-export interface ViewMutationActionsCapable {
-  onCreateView?: ViewMutationAction;
-  onUpdateView?: ViewMutationAction;
-  onDeleteView?: ViewMutationAction;
+export interface UseActiveViewStateReturn {
+  columns: ViewColumn[];
+  setColumns: (columns: ViewColumn[]) => void;
+  activeFilters: ActiveFilter[];
+  setActiveFilters: (filters: ActiveFilter[]) => void;
+  condition: Condition;
+  setCondition: (condition: Condition) => void;
+  page: number;
+  setPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (size: number) => void;
+  sorter: FieldSort[];
+  setSorter: (sorter: FieldSort[]) => void;
+  tableSize: SizeType;
+  setTableSize: (size: SizeType) => void;
+  reset: () => void;
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L86)
+[packages/viewer/src/hooks/useActiveViewState.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L22)
+
+### useViewState {#api-useViewState}
+
+```ts
+export function useViewState(options: UseViewStateOptions): UseViewStateReturn;
+```
+
+实现默认值: `defaultPage = DEFAULT_PAGE`; `defaultPageSize = DEFAULT_PAGE_SIZE`.
+
+[packages/viewer/src/view/hooks/useViewState.ts:219](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L219)
+
+### ViewChangeAction {#api-ViewChangeAction}
+
+```ts
+export type ViewChangeAction = (
+  condition: Condition,
+  index: number,
+  size: number,
+  sorter?: FieldSort[],
+) => void;
+```
+
+[packages/viewer/src/view/hooks/useViewState.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L32)
+
+### UseViewStateOptions {#api-UseViewStateOptions}
+
+::: details 展开完整字段与成员
+
+```ts
+export interface UseViewStateOptions {
+  defaultColumns: ViewColumn[];
+  externalColumns?: ViewColumn[];
+  externalUpdateColumns?: (columns: ViewColumn[]) => void;
+  defaultActiveFilters?: ActiveFilter[];
+  externalActiveFilters?: ActiveFilter[];
+  externalUpdateActiveFilters?: (filters: ActiveFilter[]) => void;
+  defaultPage?: number;
+  externalPage?: number;
+  externalUpdatePage?: (page: number) => void;
+  defaultPageSize: number;
+  externalPageSize?: number;
+  externalUpdatePageSize?: (pageSize: number) => void;
+  defaultCondition?: Condition;
+  externalCondition?: Condition;
+  externalUpdateCondition?: (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
+    resetFilters?: ActiveFilter[],
+  ) => void;
+  defaultSorter?: FieldSort[];
+  externalSorter?: FieldSort[];
+  externalUpdateSorter?: (sorter: FieldSort[]) => void;
+  defaultTableSize: SizeType;
+  externalTableSize?: SizeType;
+  externalUpdateTableSize?: (size: SizeType) => void;
+  onChange?: ViewChangeAction;
+}
+```
+
+:::
+
+[packages/viewer/src/view/hooks/useViewState.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L65)
+
+### UseViewStateReturn {#api-UseViewStateReturn}
+
+::: details 展开完整字段与成员
+
+```ts
+export interface UseViewStateReturn {
+  columns: ViewColumn[];
+  setColumns: (columns: ViewColumn[]) => void;
+  activeFilters: ActiveFilter[];
+  setActiveFilters: (filters: ActiveFilter[]) => void;
+  page: number;
+  setPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (pageSize: number) => void;
+  setPagination: (page: number, pageSize: number) => void;
+  condition: Condition;
+  setCondition: (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
+  ) => void;
+  sorter: FieldSort[];
+  setSorter: (sorter: FieldSort[]) => void;
+  tableSize: SizeType;
+  setTableSize: (size: SizeType) => void;
+  selectedCount: number;
+  updateSelectedCount: (count: number) => void;
+  reset: () => void;
+}
+```
+
+:::
+
+[packages/viewer/src/view/hooks/useViewState.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L127)
 
 ### useViewerState {#api-useViewerState}
 
 ```ts
-export function useViewerState({
-  defaultShowFilter = true,
-  defaultShowViewPanel = true,
-  ...options
-}: UseViewerStateOptions): UseViewerStateReturn;
+export function useViewerState(
+  options: UseViewerStateOptions,
+): UseViewerStateReturn;
 ```
+
+实现默认值: `defaultShowFilter = true`; `defaultShowViewPanel = true`.
 
 [packages/viewer/src/viewer/hooks/useViewerState.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L77)
 
@@ -393,6 +421,8 @@ export interface UseViewerStateOptions {
 [packages/viewer/src/viewer/hooks/useViewerState.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L33)
 
 ### UseViewerStateReturn {#api-UseViewerStateReturn}
+
+::: details 展开完整字段与成员
 
 ```ts
 export interface UseViewerStateReturn {
@@ -428,7 +458,11 @@ export interface UseViewerStateReturn {
 }
 ```
 
+:::
+
 [packages/viewer/src/viewer/hooks/useViewerState.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L41)
+
+## 展示类型与工具 {#utility-contracts}
 
 ### Optional {#api-Optional}
 

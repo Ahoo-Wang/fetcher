@@ -7,6 +7,8 @@ description: 'Requests, headers, and bodies — @ahoo-wang/fetcher 5.0.0'
 
 `FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, and `abortController`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through.
 
+For ordinary calls, pass a request object to the client method; call `mergeRequest` directly only when composing two configurations yourself. Use `urlParams.path` for template values and `urlParams.query` for the query string. `body` selects payload content, while `resultExtractor` belongs in the separate third method argument, not inside the request.
+
 ## Request fields {#fields}
 
 | Field/type                                 | Contract                                                                                                                      |

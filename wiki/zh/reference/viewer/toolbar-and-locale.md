@@ -46,7 +46,7 @@ export function Refresh({ reload }: { reload: () => Promise<void> }) {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### useRefreshDataEventBus {#api-useRefreshDataEventBus}
 
@@ -87,12 +87,12 @@ export interface RefreshDataEventBusReturn {
 ### AutoRefreshBarItem {#api-AutoRefreshBarItem}
 
 ```ts
-export function AutoRefreshBarItem({
-  items = DefaultAutoRefreshItems,
-  viewId,
-  viewerDefinitionId,
-}: AutoRefreshBarItemProps): import('react').JSX.Element;
+export function AutoRefreshBarItem(
+  options: AutoRefreshBarItemProps,
+): import('react').JSX.Element;
 ```
+
+实现默认值: `items = DefaultAutoRefreshItems`.
 
 [packages/viewer/src/topbar/AutoRefreshBarItem.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/AutoRefreshBarItem.tsx#L52)
 
@@ -283,6 +283,8 @@ export function TopBar<RecordType>(
 
 ### TopBarProps {#api-TopBarProps}
 
+::: details 展开完整字段与成员
+
 ```ts
 export interface TopBarProps<
   RecordType,
@@ -314,6 +316,8 @@ export interface TopBarProps<
 }
 ```
 
+:::
+
 [packages/viewer/src/topbar/TopBar.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/TopBar.tsx#L35)
 
 ### TopBarItemProps {#api-TopBarItemProps}
@@ -325,6 +329,8 @@ export interface TopBarItemProps extends StyleCapable {}
 [packages/viewer/src/topbar/types.ts:3](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/types.ts#L3)
 
 ### Locale {#api-Locale}
+
+::: details 展开完整字段与成员
 
 ```ts
 export interface Locale {
@@ -362,6 +368,8 @@ export interface Locale {
   };
 }
 ```
+
+:::
 
 [packages/viewer/src/locale/Locale.ts:1](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/locale/Locale.ts#L1)
 

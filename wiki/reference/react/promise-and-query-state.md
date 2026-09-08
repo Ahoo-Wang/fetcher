@@ -23,9 +23,24 @@ The supplier must pass the signal to its I/O to stop the actual work. The hook c
 
 ## Query ownership
 
-`useQuery<Q,R,E>` adds `initialQuery`, `query`, `attributes`, `autoExecute`, `getQuery()` and `setQuery(Q)`. The executor receives `(query, attributes, abortController)`. `autoExecute` defaults to true. With no defined query there is no request; `isValidateQuery` checks only `query !== undefined`, not a schema. `query` overrides initialization; deep-equal changes to its object identity alone do not refetch. Changing execution configuration can trigger another execution. `initialQuery` is initialization, not a reactive replacement prop.
+`useQuery<Q,R,E>` adds `initialQuery`, `query`, `attributes`, `autoExecute`, `getQuery()` and `setQuery(Q)`. The executor receives `(query, attributes, abortController)`. `autoExecute` defaults to true. If both `query` and `initialQuery` are undefined at initialization, there is no request; `isValidateQuery` checks only `query !== undefined`, not a schema. `query` overrides initialization; deep-equal changes to its object identity alone do not refetch. Changing execution configuration can trigger another execution. `initialQuery` is initialization, not a reactive replacement prop.
+
+Changing a previously defined `query` prop to `undefined` does not clear the stored query and can automatically execute that previous value again. To pause automatic execution, set `autoExecute: false`; this does not cancel work already running. Call `abort()` separately to invalidate and cancel the current execution.
 
 `setQuery` updates a ref and executes immediately when automatic execution is enabled; it is not an independent React state notification and does not deduplicate explicit setter calls. With `autoExecute: false`, call `setQuery` then `execute()` to run the latest value. Automatic execution does not await a consumer's catch handler, so use error state/onError instead of `propagateError: true` for unattended requests. `useQueryState` exposes the query-ref behavior without cancellation ownership; keep its `execute` callback stable.
+
+## Choosing state, execution and query ownership {#ownership}
+
+| Decision                             | State-only hook                     | Executor                                       | Query hook                                             |
+| ------------------------------------ | ----------------------------------- | ---------------------------------------------- | ------------------------------------------------------ |
+| Who starts work?                     | Your code outside `usePromiseState` | You call `execute(supplier)`                   | Mount/query change by default, or explicit `execute()` |
+| Who stores the input?                | Your code                           | The current supplier/call                      | Query ref, read with `getQuery()`                      |
+| Who cancels and rejects old results? | Your code                           | `useExecutePromise`                            | Its underlying executor                                |
+| What does reset do?                  | Set idle and clear result/error     | Same; a running supplier can later set success | Same; query is retained                                |
+
+For a search box, keep the editable text in React state when it must render independently of request state: `setQuery` alone is a ref update. `initialQuery` seeds the ref; a defined reactive `query` takes precedence. Query validation only excludes undefined. Do not use it as a form/schema validator. The query ref and the asynchronous result are separate values; changing one does not immediately produce the other.
+
+See [debounce cancellation](./debounce#cancellation-controls) before adding a timer, and [the HTTP example](./index) for an operation that forwards cancellation to Fetcher.
 
 ## Complete example
 
@@ -63,107 +78,9 @@ Service URLs in examples require application endpoints; type checking does not i
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
-### useQueryState {#api-useQueryState}
-
-```ts
-export function useQueryState<Q>(
-  options: UseQueryStateOptions<Q>,
-): UseQueryStateReturn<Q>;
-```
-
-[packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113)
-
-### isValidateQuery {#api-isValidateQuery}
-
-```ts
-export function isValidateQuery<Q>(query: Q | undefined): query is Q;
-```
-
-[packages/react/src/core/useQueryState.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L195)
-
-### QueryOptions {#api-QueryOptions}
-
-```ts
-export interface QueryOptions<Q> {
-  initialQuery?: Q;
-  query?: Q;
-}
-```
-
-[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18)
-
-### UseQueryStateOptions {#api-UseQueryStateOptions}
-
-```ts
-export interface UseQueryStateOptions<Q>
-  extends QueryOptions<Q>, AutoExecuteCapable {
-  execute: (query: Q) => Promise<void>;
-}
-```
-
-[packages/react/src/core/useQueryState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L29)
-
-### UseQueryStateReturn {#api-UseQueryStateReturn}
-
-```ts
-export interface UseQueryStateReturn<Q> {
-  getQuery: () => Q | undefined;
-  setQuery: (query: Q) => void;
-}
-```
-
-[packages/react/src/core/useQueryState.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L39)
-
-### useExecutePromise {#api-useExecutePromise}
-
-```ts
-export function useExecutePromise<R = unknown, E = FetcherError>(
-  options?: UseExecutePromiseOptions<R, E>,
-): UseExecutePromiseReturn<R, E>;
-```
-
-[packages/react/src/core/useExecutePromise.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L210)
-
-### UseExecutePromiseOptions {#api-UseExecutePromiseOptions}
-
-```ts
-export interface UseExecutePromiseOptions<
-  R,
-  E = FetcherError,
-> extends UsePromiseStateOptions<R, E> {
-  propagateError?: boolean;
-  onAbort?: () => void | Promise<void>;
-}
-```
-
-[packages/react/src/core/useExecutePromise.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L27)
-
-### PromiseSupplier {#api-PromiseSupplier}
-
-```ts
-export type PromiseSupplier<R> = (
-  abortController: AbortController,
-) => Promise<R>;
-```
-
-[packages/react/src/core/useExecutePromise.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L51)
-
-### UseExecutePromiseReturn {#api-UseExecutePromiseReturn}
-
-```ts
-export interface UseExecutePromiseReturn<
-  R,
-  E = FetcherError,
-> extends PromiseState<R, E> {
-  execute: (input: PromiseSupplier<R>) => Promise<void>;
-  reset: () => void;
-  abort: () => void;
-}
-```
-
-[packages/react/src/core/useExecutePromise.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L61)
+## State without execution {#state-contracts}
 
 ### usePromiseState {#api-usePromiseState}
 
@@ -241,6 +158,59 @@ export interface UsePromiseStateReturn<
 
 [packages/react/src/core/usePromiseState.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/usePromiseState.ts#L75)
 
+## Explicit execution {#execution-contracts}
+
+### useExecutePromise {#api-useExecutePromise}
+
+```ts
+export function useExecutePromise<R = unknown, E = FetcherError>(
+  options?: UseExecutePromiseOptions<R, E>,
+): UseExecutePromiseReturn<R, E>;
+```
+
+[packages/react/src/core/useExecutePromise.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L210)
+
+### UseExecutePromiseOptions {#api-UseExecutePromiseOptions}
+
+```ts
+export interface UseExecutePromiseOptions<
+  R,
+  E = FetcherError,
+> extends UsePromiseStateOptions<R, E> {
+  propagateError?: boolean;
+  onAbort?: () => void | Promise<void>;
+}
+```
+
+[packages/react/src/core/useExecutePromise.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L27)
+
+### PromiseSupplier {#api-PromiseSupplier}
+
+```ts
+export type PromiseSupplier<R> = (
+  abortController: AbortController,
+) => Promise<R>;
+```
+
+[packages/react/src/core/useExecutePromise.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L51)
+
+### UseExecutePromiseReturn {#api-UseExecutePromiseReturn}
+
+```ts
+export interface UseExecutePromiseReturn<
+  R,
+  E = FetcherError,
+> extends PromiseState<R, E> {
+  execute: (input: PromiseSupplier<R>) => Promise<void>;
+  reset: () => void;
+  abort: () => void;
+}
+```
+
+[packages/react/src/core/useExecutePromise.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L61)
+
+## Query-driven execution {#query-contracts}
+
 ### useQuery {#api-useQuery}
 
 ```ts
@@ -250,6 +220,17 @@ export function useQuery<Q, R, E = FetcherError>(
 ```
 
 [packages/react/src/core/useQuery.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQuery.ts#L105)
+
+### QueryOptions {#api-QueryOptions}
+
+```ts
+export interface QueryOptions<Q> {
+  initialQuery?: Q;
+  query?: Q;
+}
+```
+
+[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18)
 
 ### UseQueryOptions {#api-UseQueryOptions}
 
@@ -280,6 +261,48 @@ export interface UseQueryReturn<Q, R, E = FetcherError>
 ```
 
 [packages/react/src/core/useQuery.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQuery.ts#L53)
+
+## Query ref without cancellation ownership {#query-ref-contracts}
+
+### useQueryState {#api-useQueryState}
+
+```ts
+export function useQueryState<Q>(
+  options: UseQueryStateOptions<Q>,
+): UseQueryStateReturn<Q>;
+```
+
+[packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113)
+
+### isValidateQuery {#api-isValidateQuery}
+
+```ts
+export function isValidateQuery<Q>(query: Q | undefined): query is Q;
+```
+
+[packages/react/src/core/useQueryState.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L195)
+
+### UseQueryStateOptions {#api-UseQueryStateOptions}
+
+```ts
+export interface UseQueryStateOptions<Q>
+  extends QueryOptions<Q>, AutoExecuteCapable {
+  execute: (query: Q) => Promise<void>;
+}
+```
+
+[packages/react/src/core/useQueryState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L29)
+
+### UseQueryStateReturn {#api-UseQueryStateReturn}
+
+```ts
+export interface UseQueryStateReturn<Q> {
+  getQuery: () => Q | undefined;
+  setQuery: (query: Q) => void;
+}
+```
+
+[packages/react/src/core/useQueryState.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L39)
 
 ## Related topics
 

@@ -46,7 +46,7 @@ Never log, embed, or commit real tokens.
 
 ## Documentation
 
-- [CoSec authentication recipe](https://fetcher.ahoo.me/recipes/cosec-authentication)
+- [CoSec authentication recipe](https://fetcher.ahoo.me/guides/integrations/cosec)
 - [CoSec reference](https://fetcher.ahoo.me/reference/cosec)
 
 [中文](./README.zh-CN.md) · [License](../../LICENSE)

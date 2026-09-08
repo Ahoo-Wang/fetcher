@@ -1,62 +1,49 @@
 ---
 title: 第一个请求
-description: 安装、请求、JSON 结果与失败处理。
+description: 运行类型化 JSON 请求，并验证 HTTP 404 失败分支。
 ---
 
 # 第一个请求
 
-## 安装
+先完成[安装](./installation.md)，再在 `fetcher-first-request` 目录中创建以下文件。
+
+## 创建 `server.mjs`
+
+<<< @/examples/http/server.mjs
+
+## 创建 `client.ts`
+
+<<< @/examples/http/client.ts
+
+泛型描述预期的 TypeScript 结构，但不校验服务端数据。本例通过明确检查 id 与 name 建立运行时边界。`ResultExtractors.Json` 放在 `get` 的第三个参数中，这里才是请求选项的位置。
+
+404 对外表现为 `ExchangeError`，其 `cause` 是 `HttpStatusValidationError`，`exchange.response.status` 保留 `404`。传输和解析失败不会命中该分支，因此会继续抛出。
+
+## 创建 `tsconfig.json`
+
+<<< @/examples/http/tsconfig.json
+
+## 编译并运行
+
+启动确定性的本地 fixture：
 
 ```bash
-pnpm add @ahoo-wang/fetcher
+pnpm exec tsc -p tsconfig.json
+node server.mjs
 ```
 
-在支持 Fetch 的浏览器项目或 Node.js 环境运行下例。示例使用外部演示服务，执行需要网络；它不是你的生产 API。
+在同一目录的另一个终端执行：
 
-## 创建客户端并读取用户
-
-```ts
-import {
-  ExchangeError,
-  Fetcher,
-  JsonResultExtractor,
-} from '@ahoo-wang/fetcher';
-
-interface User {
-  id: number;
-  name: string;
-}
-const api = new Fetcher({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 5_000,
-});
-
-try {
-  const user = await api.get<User>(
-    '/users/{id}',
-    {
-      urlParams: { path: { id: 1 } },
-    },
-    { resultExtractor: JsonResultExtractor },
-  );
-  console.log(user.name);
-} catch (error) {
-  if (error instanceof ExchangeError) {
-    console.error(error.exchange.response?.status, error.message);
-  } else {
-    throw error;
-  }
-}
+```bash
+node dist/client.js
 ```
 
-## 请求经过了什么
+客户端会验证固定用户与 404 分支，然后输出：
 
-`baseURL` 与 `/users/{id}` 组合，`urlParams.path` 将 id 替换为 `1`。`get` 默认返回 `Response`；这里通过第三个参数选择 `JsonResultExtractor`，直接读取 JSON。
+```text
+Ada
+```
 
-默认状态校验接受 200–299。HTTP 状态拒绝或传输失败可通过 `ExchangeError` 获取请求上下文；JSON 解析错误可能在结果提取阶段抛出，因此不能只处理一种错误。泛型 `User` 不校验服务端 JSON；生产边界需要实际校验。
+在服务端终端按 `Ctrl+C` 停止服务。若服务未启动，客户端会因为传输错误继续抛出而非零退出。
 
-## 改成你自己的接口
-
-替换 baseURL、路径和 User 类型；需要查询参数时，在 urlParams 中加入 `query: { active: true }`。不要将私密服务凭据写入浏览器代码。
-
-继续阅读[请求与结果](../learn/requests-and-results.md)，或查阅[客户端配置](../reference/fetcher/client.md)与[错误及取消](../reference/fetcher/errors-and-cancellation.md)。
+仓库维护者可参阅[仓库 HTTP 样例](../examples/http.md)中的专用验证命令。

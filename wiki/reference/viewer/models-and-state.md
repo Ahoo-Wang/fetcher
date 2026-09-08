@@ -26,6 +26,25 @@ A ViewDefinition describes the fields and available filters for a data endpoint;
 
 `mapToTableRecord` returns cloned rows with key chosen from explicit primary-key path, existing key, then row index; empty input returns []. Prefer a real stable primary key across refreshes. `deepEqual` handles primitives, arrays, dates, regexps and enumerable object keys; it is not a cycle-safe arbitrary-object comparator. `format` substitutes each `%@` sequentially, using empty text for missing arguments. These utilities neither fetch nor persist data.
 
+## Definition fields versus a saved arrangement {#definition-fields}
+
+A definition is the available schema for one viewer. A saved view selects and arranges it. Give the saved view `definitionId` matching `definition.id`; this local model does not enforce that relationship at runtime. Identity validation during remote create/update belongs specifically to FetcherViewer.
+
+| Field                                     | Meaning and constraints                                                                                                                |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `definition.fields`                       | Declares column metadata. `name` is a dotted data path, `type` selects a cell renderer, `primaryKey` identifies row keys.              |
+| `definition.availableFilters`             | Catalog grouped for filter selection; the saved view's `filters` contains the chosen ActiveFilter instances and initial UI values.     |
+| `definition.dataUrl` / `countUrl`         | Required strings in the model. View never calls them; FetcherViewer uses dataUrl, monitoring/count controls can use countUrl.          |
+| `view.columns`                            | Ordered names/keys with required fixed/hidden flags; optional width is a string and sortOrder uses Ant Design values.                  |
+| `view.condition` / `sorter`               | Current legacy Wow query values. `filters` stores UI configuration as well; a raw value can exist before a valid condition does.       |
+| `view.internalCondition?`                 | Additional constraint ANDed by the remote loader. It is not a client-enforced permission boundary.                                     |
+| `view.pageSize` / `tableSize`             | Saved page size / visual density; no runtime defaults in ViewState itself. State-hook defaults are documented separately below.        |
+| `view.type` / `source` / `isDefault`      | PERSONAL/SHARED, SYSTEM/CUSTOM and default-selection flag. These classify views; they are not authentication claims.                   |
+| `FieldDefinition.sorter?`                 | Boolean, multiple-sort priority object or null; the table reports sort changes and the data owner applies sorting.                     |
+| `FieldDefinition.attributes?` / `render?` | Pass-through column attributes / custom renderer. They can override generated rendering settings; treat callbacks as application code. |
+
+Use the complete [local example](./index) to see a definition, ViewState, query callback and persistence acknowledgement together.
+
 ## Complete example
 
 ```tsx
@@ -48,162 +67,9 @@ export function PageControls() {
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
-### useActiveViewState {#api-useActiveViewState}
-
-```ts
-export function useActiveViewState({
-  defaultPage = 1,
-  defaultPageSize = 10,
-  defaultTableSize = 'middle',
-  defaultCondition = DEFAULT_CONDITION,
-  defaultSorter = [],
-  ...options
-}: UseActiveViewStateOptions): UseActiveViewStateReturn;
-```
-
-[packages/viewer/src/hooks/useActiveViewState.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L43)
-
-### DEFAULT_CONDITION {#api-DEFAULT_CONDITION}
-
-```ts
-declare const DEFAULT_CONDITION: Condition<string>;
-```
-
-[packages/viewer/src/hooks/useActiveViewState.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L8)
-
-### UseActiveViewStateOptions {#api-UseActiveViewStateOptions}
-
-```ts
-export interface UseActiveViewStateOptions {
-  defaultColumns: ViewColumn[];
-  defaultActiveFilters: ActiveFilter[];
-  defaultCondition?: Condition;
-  defaultPage?: number;
-  defaultPageSize?: number;
-  defaultSorter?: FieldSort[];
-  defaultTableSize?: SizeType;
-}
-```
-
-[packages/viewer/src/hooks/useActiveViewState.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L10)
-
-### UseActiveViewStateReturn {#api-UseActiveViewStateReturn}
-
-```ts
-export interface UseActiveViewStateReturn {
-  columns: ViewColumn[];
-  setColumns: (columns: ViewColumn[]) => void;
-  activeFilters: ActiveFilter[];
-  setActiveFilters: (filters: ActiveFilter[]) => void;
-  condition: Condition;
-  setCondition: (condition: Condition) => void;
-  page: number;
-  setPage: (page: number) => void;
-  pageSize: number;
-  setPageSize: (size: number) => void;
-  sorter: FieldSort[];
-  setSorter: (sorter: FieldSort[]) => void;
-  tableSize: SizeType;
-  setTableSize: (size: SizeType) => void;
-  reset: () => void;
-}
-```
-
-[packages/viewer/src/hooks/useActiveViewState.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L22)
-
-### useViewState {#api-useViewState}
-
-```ts
-export function useViewState({
-  defaultPage = DEFAULT_PAGE,
-  defaultPageSize = DEFAULT_PAGE_SIZE,
-  ...options
-}: UseViewStateOptions): UseViewStateReturn;
-```
-
-[packages/viewer/src/view/hooks/useViewState.ts:219](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L219)
-
-### ViewChangeAction {#api-ViewChangeAction}
-
-```ts
-export type ViewChangeAction = (
-  condition: Condition,
-  index: number,
-  size: number,
-  sorter?: FieldSort[],
-) => void;
-```
-
-[packages/viewer/src/view/hooks/useViewState.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L32)
-
-### UseViewStateOptions {#api-UseViewStateOptions}
-
-```ts
-export interface UseViewStateOptions {
-  defaultColumns: ViewColumn[];
-  externalColumns?: ViewColumn[];
-  externalUpdateColumns?: (columns: ViewColumn[]) => void;
-  defaultActiveFilters?: ActiveFilter[];
-  externalActiveFilters?: ActiveFilter[];
-  externalUpdateActiveFilters?: (filters: ActiveFilter[]) => void;
-  defaultPage?: number;
-  externalPage?: number;
-  externalUpdatePage?: (page: number) => void;
-  defaultPageSize: number;
-  externalPageSize?: number;
-  externalUpdatePageSize?: (pageSize: number) => void;
-  defaultCondition?: Condition;
-  externalCondition?: Condition;
-  externalUpdateCondition?: (
-    finalCondition: Condition,
-    activeFilterValues: Map<Key, Condition>,
-    filterStates: Map<Key, FilterState>,
-    resetFilters?: ActiveFilter[],
-  ) => void;
-  defaultSorter?: FieldSort[];
-  externalSorter?: FieldSort[];
-  externalUpdateSorter?: (sorter: FieldSort[]) => void;
-  defaultTableSize: SizeType;
-  externalTableSize?: SizeType;
-  externalUpdateTableSize?: (size: SizeType) => void;
-  onChange?: ViewChangeAction;
-}
-```
-
-[packages/viewer/src/view/hooks/useViewState.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L65)
-
-### UseViewStateReturn {#api-UseViewStateReturn}
-
-```ts
-export interface UseViewStateReturn {
-  columns: ViewColumn[];
-  setColumns: (columns: ViewColumn[]) => void;
-  activeFilters: ActiveFilter[];
-  setActiveFilters: (filters: ActiveFilter[]) => void;
-  page: number;
-  setPage: (page: number) => void;
-  pageSize: number;
-  setPageSize: (pageSize: number) => void;
-  setPagination: (page: number, pageSize: number) => void;
-  condition: Condition;
-  setCondition: (
-    finalCondition: Condition,
-    activeFilterValues: Map<Key, Condition>,
-    filterStates: Map<Key, FilterState>,
-  ) => void;
-  sorter: FieldSort[];
-  setSorter: (sorter: FieldSort[]) => void;
-  tableSize: SizeType;
-  setTableSize: (size: SizeType) => void;
-  selectedCount: number;
-  updateSelectedCount: (count: number) => void;
-  reset: () => void;
-}
-```
-
-[packages/viewer/src/view/hooks/useViewState.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L127)
+## Definition and saved-view contracts {#model-contracts}
 
 ### ViewDefinition {#api-ViewDefinition}
 
@@ -290,13 +156,30 @@ export interface ViewColumn extends NamedCapable, KeyCapable {
 
 [packages/viewer/src/viewer/types.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L51)
 
-### TopBarActionItem {#api-TopBarActionItem}
+## Application actions and persistence {#action-contracts}
+
+### ViewMutationAction {#api-ViewMutationAction}
 
 ```ts
-export interface TopBarActionItem<RecordType> extends ActionItem<RecordType> {}
+export type ViewMutationAction = (
+  view: ViewState,
+  onSuccess?: (newView: ViewState) => void,
+) => void;
 ```
 
-[packages/viewer/src/viewer/types.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L58)
+[packages/viewer/src/viewer/types.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L65)
+
+### ViewMutationActionsCapable {#api-ViewMutationActionsCapable}
+
+```ts
+export interface ViewMutationActionsCapable {
+  onCreateView?: ViewMutationAction;
+  onUpdateView?: ViewMutationAction;
+  onDeleteView?: ViewMutationAction;
+}
+```
+
+[packages/viewer/src/viewer/types.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L86)
 
 ### GetRecordCountAction {#api-GetRecordCountAction}
 
@@ -309,16 +192,23 @@ export type GetRecordCountAction = (
 
 [packages/viewer/src/viewer/types.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L60)
 
-### ViewMutationAction {#api-ViewMutationAction}
+### GetRecordCountActionCapable {#api-GetRecordCountActionCapable}
 
 ```ts
-export type ViewMutationAction = (
-  view: ViewState,
-  onSuccess?: (newView: ViewState) => void,
-) => void;
+export interface GetRecordCountActionCapable {
+  onGetRecordCount?: GetRecordCountAction;
+}
 ```
 
-[packages/viewer/src/viewer/types.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L65)
+[packages/viewer/src/viewer/types.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L82)
+
+### TopBarActionItem {#api-TopBarActionItem}
+
+```ts
+export interface TopBarActionItem<RecordType> extends ActionItem<RecordType> {}
+```
+
+[packages/viewer/src/viewer/types.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L58)
 
 ### BatchActionsConfig {#api-BatchActionsConfig}
 
@@ -344,37 +234,175 @@ export interface TopbarActionsCapable<RecordType> {
 
 [packages/viewer/src/viewer/types.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L76)
 
-### GetRecordCountActionCapable {#api-GetRecordCountActionCapable}
+## State hooks and controlled dimensions {#state-contracts}
+
+### useActiveViewState {#api-useActiveViewState}
 
 ```ts
-export interface GetRecordCountActionCapable {
-  onGetRecordCount?: GetRecordCountAction;
+export function useActiveViewState(
+  options: UseActiveViewStateOptions,
+): UseActiveViewStateReturn;
+```
+
+Implementation defaults: `defaultPage = 1`; `defaultPageSize = 10`; `defaultTableSize = 'middle'`; `defaultCondition = DEFAULT_CONDITION`; `defaultSorter = []`.
+
+[packages/viewer/src/hooks/useActiveViewState.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L43)
+
+### DEFAULT_CONDITION {#api-DEFAULT_CONDITION}
+
+```ts
+declare const DEFAULT_CONDITION: Condition<string>;
+```
+
+[packages/viewer/src/hooks/useActiveViewState.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L8)
+
+### UseActiveViewStateOptions {#api-UseActiveViewStateOptions}
+
+```ts
+export interface UseActiveViewStateOptions {
+  defaultColumns: ViewColumn[];
+  defaultActiveFilters: ActiveFilter[];
+  defaultCondition?: Condition;
+  defaultPage?: number;
+  defaultPageSize?: number;
+  defaultSorter?: FieldSort[];
+  defaultTableSize?: SizeType;
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L82)
+[packages/viewer/src/hooks/useActiveViewState.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L10)
 
-### ViewMutationActionsCapable {#api-ViewMutationActionsCapable}
+### UseActiveViewStateReturn {#api-UseActiveViewStateReturn}
 
 ```ts
-export interface ViewMutationActionsCapable {
-  onCreateView?: ViewMutationAction;
-  onUpdateView?: ViewMutationAction;
-  onDeleteView?: ViewMutationAction;
+export interface UseActiveViewStateReturn {
+  columns: ViewColumn[];
+  setColumns: (columns: ViewColumn[]) => void;
+  activeFilters: ActiveFilter[];
+  setActiveFilters: (filters: ActiveFilter[]) => void;
+  condition: Condition;
+  setCondition: (condition: Condition) => void;
+  page: number;
+  setPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (size: number) => void;
+  sorter: FieldSort[];
+  setSorter: (sorter: FieldSort[]) => void;
+  tableSize: SizeType;
+  setTableSize: (size: SizeType) => void;
+  reset: () => void;
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L86)
+[packages/viewer/src/hooks/useActiveViewState.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L22)
+
+### useViewState {#api-useViewState}
+
+```ts
+export function useViewState(options: UseViewStateOptions): UseViewStateReturn;
+```
+
+Implementation defaults: `defaultPage = DEFAULT_PAGE`; `defaultPageSize = DEFAULT_PAGE_SIZE`.
+
+[packages/viewer/src/view/hooks/useViewState.ts:219](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L219)
+
+### ViewChangeAction {#api-ViewChangeAction}
+
+```ts
+export type ViewChangeAction = (
+  condition: Condition,
+  index: number,
+  size: number,
+  sorter?: FieldSort[],
+) => void;
+```
+
+[packages/viewer/src/view/hooks/useViewState.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L32)
+
+### UseViewStateOptions {#api-UseViewStateOptions}
+
+::: details Expand all fields and members
+
+```ts
+export interface UseViewStateOptions {
+  defaultColumns: ViewColumn[];
+  externalColumns?: ViewColumn[];
+  externalUpdateColumns?: (columns: ViewColumn[]) => void;
+  defaultActiveFilters?: ActiveFilter[];
+  externalActiveFilters?: ActiveFilter[];
+  externalUpdateActiveFilters?: (filters: ActiveFilter[]) => void;
+  defaultPage?: number;
+  externalPage?: number;
+  externalUpdatePage?: (page: number) => void;
+  defaultPageSize: number;
+  externalPageSize?: number;
+  externalUpdatePageSize?: (pageSize: number) => void;
+  defaultCondition?: Condition;
+  externalCondition?: Condition;
+  externalUpdateCondition?: (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
+    resetFilters?: ActiveFilter[],
+  ) => void;
+  defaultSorter?: FieldSort[];
+  externalSorter?: FieldSort[];
+  externalUpdateSorter?: (sorter: FieldSort[]) => void;
+  defaultTableSize: SizeType;
+  externalTableSize?: SizeType;
+  externalUpdateTableSize?: (size: SizeType) => void;
+  onChange?: ViewChangeAction;
+}
+```
+
+:::
+
+[packages/viewer/src/view/hooks/useViewState.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L65)
+
+### UseViewStateReturn {#api-UseViewStateReturn}
+
+::: details Expand all fields and members
+
+```ts
+export interface UseViewStateReturn {
+  columns: ViewColumn[];
+  setColumns: (columns: ViewColumn[]) => void;
+  activeFilters: ActiveFilter[];
+  setActiveFilters: (filters: ActiveFilter[]) => void;
+  page: number;
+  setPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (pageSize: number) => void;
+  setPagination: (page: number, pageSize: number) => void;
+  condition: Condition;
+  setCondition: (
+    finalCondition: Condition,
+    activeFilterValues: Map<Key, Condition>,
+    filterStates: Map<Key, FilterState>,
+  ) => void;
+  sorter: FieldSort[];
+  setSorter: (sorter: FieldSort[]) => void;
+  tableSize: SizeType;
+  setTableSize: (size: SizeType) => void;
+  selectedCount: number;
+  updateSelectedCount: (count: number) => void;
+  reset: () => void;
+}
+```
+
+:::
+
+[packages/viewer/src/view/hooks/useViewState.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L127)
 
 ### useViewerState {#api-useViewerState}
 
 ```ts
-export function useViewerState({
-  defaultShowFilter = true,
-  defaultShowViewPanel = true,
-  ...options
-}: UseViewerStateOptions): UseViewerStateReturn;
+export function useViewerState(
+  options: UseViewerStateOptions,
+): UseViewerStateReturn;
 ```
+
+Implementation defaults: `defaultShowFilter = true`; `defaultShowViewPanel = true`.
 
 [packages/viewer/src/viewer/hooks/useViewerState.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L77)
 
@@ -393,6 +421,8 @@ export interface UseViewerStateOptions {
 [packages/viewer/src/viewer/hooks/useViewerState.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L33)
 
 ### UseViewerStateReturn {#api-UseViewerStateReturn}
+
+::: details Expand all fields and members
 
 ```ts
 export interface UseViewerStateReturn {
@@ -428,7 +458,11 @@ export interface UseViewerStateReturn {
 }
 ```
 
+:::
+
 [packages/viewer/src/viewer/hooks/useViewerState.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L41)
+
+## Presentation types and utilities {#utility-contracts}
 
 ### Optional {#api-Optional}
 

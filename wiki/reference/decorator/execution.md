@@ -7,6 +7,8 @@ description: 'Metadata and execution lifecycle — @ahoo-wang/fetcher-decorator 
 
 Decorated methods resolve a fresh exchange for each call while reusing a per-instance, per-method executor. Hooks run on the service instance, so avoid storing mutable per-request state on that instance when calls can overlap.
 
+Choose `beforeExecute` to add per-call exchange attributes or select an extractor; choose `afterExecute` to inspect a validated response without consuming its body. Both are optional and have no default action. Call `RequestExecutor` or manipulate `FunctionMetadata` only when building a runtime extension; regular services need neither.
+
 ## RequestExecutor lifecycle {#lifecycle}
 
 `new RequestExecutor(target: any, metadata: FunctionMetadata)` and `execute(args: any[]): Promise<any>` implement this sequence:

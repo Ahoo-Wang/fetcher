@@ -44,16 +44,14 @@ export function SecureApp({ storage }: { storage: TokenStorage }) {
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
 
 ### SecurityProvider {#api-SecurityProvider}
 
 ```ts
-export function SecurityProvider({
-  tokenStorage,
-  children,
-  ...useSecurityOptions
-}: SecurityContextOptions): import('react').JSX.Element;
+export function SecurityProvider(
+  options: SecurityContextOptions,
+): import('react').JSX.Element;
 ```
 
 [packages/react/src/cosec/SecurityContext.tsx:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/SecurityContext.tsx#L107)
@@ -100,9 +98,11 @@ export interface SecurityContextOptions extends UseSecurityOptions {
 ```ts
 export function useSecurity(
   tokenStorage: TokenStorage,
-  options: UseSecurityOptions = {},
+  options?: UseSecurityOptions,
 ): UseSecurityReturn;
 ```
+
+实现默认值: `options = {}`.
 
 [packages/react/src/cosec/useSecurity.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L150)
 
@@ -140,12 +140,12 @@ export interface UseSecurityReturn {
 
 ### RouteGuard {#api-RouteGuard}
 
+::: details 展开完整字段与成员
+
 ```ts
-export function RouteGuard({
-  children,
-  fallback,
-  onUnauthorized,
-}: RouteGuardProps):
+export function RouteGuard(
+  options: RouteGuardProps,
+):
   | string
   | number
   | bigint
@@ -170,6 +170,8 @@ export function RouteGuard({
   | undefined;
 ```
 
+:::
+
 [packages/react/src/cosec/RouteGuard.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L66)
 
 ### RouteGuardProps {#api-RouteGuardProps}
@@ -187,12 +189,9 @@ export interface RouteGuardProps {
 ### RefreshableRouteGuard {#api-RefreshableRouteGuard}
 
 ```ts
-export function RefreshableRouteGuard({
-  children,
-  fallback,
-  refreshing,
-  tokenManager,
-}: RefreshableRouteGuardProps): import('react').JSX.Element;
+export function RefreshableRouteGuard(
+  options: RefreshableRouteGuardProps,
+): import('react').JSX.Element;
 ```
 
 [packages/react/src/cosec/RefreshableRouteGuard.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RefreshableRouteGuard.tsx#L28)

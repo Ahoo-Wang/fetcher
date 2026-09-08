@@ -61,19 +61,17 @@ Service URLs in examples require application endpoints; type checking does not i
 
 ## Public signatures and types
 
-These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./index#public-symbols). Runtime defaults and failure behavior are described above.
+These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
 
 ### cursorQuery {#api-cursorQuery}
 
 ```ts
-export function cursorQuery<FIELDS extends string = string>({
-  filter,
-  projection = {},
-  sort = [],
-  size = DEFAULT_CURSOR_SIZE,
-  cursor = null,
-}: CursorQuery<FIELDS>): CursorQuery<FIELDS>;
+export function cursorQuery<FIELDS extends string = string>(
+  options: CursorQuery<FIELDS>,
+): CursorQuery<FIELDS>;
 ```
+
+Implementation defaults: `projection = {}`; `sort = []`; `size = DEFAULT_CURSOR_SIZE`; `cursor = null`.
 
 [packages/wow/src/query/cursorQuery.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L37)
 
@@ -128,4 +126,4 @@ export interface CursorPage<T> {
 
 ## Related topics
 
-[Client configuration and metadata](./configuration) · [Commands and wait results](./commands) · [Snapshot queries](./snapshot-queries) · [Filter expressions and legacy conditions](./filters) · [Projection, sorting and pagination](./query-options) · [Aggregation builders](./aggregations) · [Events and historical state](./events-and-history) · [Shared domain types and utilities](./shared-types)
+[Client configuration and metadata](./configuration) · [Commands and wait results](./commands) · [Snapshot queries](./snapshot-queries) · [Filter expressions and legacy conditions](./filters) · [Projection, sorting and pagination](./query-options) · [Aggregation builders](./aggregations) · [Events and historical state](./events-and-history) · [Identity and resource attribution](./identity-and-attribution)

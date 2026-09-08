@@ -46,7 +46,7 @@ Never embed an API key in a browser bundle or Storybook.
 
 ## Documentation
 
-- [OpenAI streaming recipe](https://fetcher.ahoo.me/recipes/openai-streaming)
+- [OpenAI streaming recipe](https://fetcher.ahoo.me/guides/streaming/chat)
 - [OpenAI reference](https://fetcher.ahoo.me/reference/openai)
 - [Interactive stream stories](https://fetcher.ahoo.me/storybook/)
 

@@ -7,6 +7,8 @@ description: 'Errors, timeouts, and cancellation — @ahoo-wang/fetcher 5.0.0'
 
 Fetcher's default pipeline rejects HTTP statuses outside 200–299. Native fetch alone would resolve those responses, so inspect the exchange when handling a failed Fetcher request.
 
+Choose `validateStatus` for a reusable HTTP acceptance policy, a request attribute only for an intentional one-call bypass, and an AbortSignal for caller-owned cancellation. None of these schedules retries. A JSON parse failure after a successful response needs a caller catch even when error interceptors are installed.
+
 ## Error types and status policy {#errors}
 
 | API                                   | Contract                                                                                                                               |

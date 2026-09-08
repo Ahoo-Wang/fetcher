@@ -24,7 +24,7 @@ async function openChart(context) {
   context.after(() => browser.close());
   const page = await browser.newPage();
   await page.goto(
-    `${process.env.WIKI_TEST_URL ?? 'http://127.0.0.1:5173'}/learn/request-lifecycle`,
+    `${process.env.WIKI_TEST_URL ?? 'http://127.0.0.1:5173'}/architecture/request-lifecycle`,
   );
   const chart = page.locator('.mermaid-container').first();
   await chart.locator('.mermaid > svg').waitFor();

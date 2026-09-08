@@ -57,7 +57,668 @@ console.assert(rejected);
 
 ## 公开签名与类型
 
-以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./index#public-symbols) 定位。运行时默认值和失败行为以本页上文为准。
+以下签名按当前根入口可达声明核对。`?` 表示可省略；泛型/接口只约束编译期，继承项与关联类型可从 [符号索引](./symbols) 定位。运行时默认值和失败行为以本页上文为准。
+
+## FilterExpression 构建器与类型 {#filter-contracts}
+
+### filter {#api-filter}
+
+::: details 展开完整字段与成员
+
+```ts
+declare const filter: {
+  matchAll(): MatchFilter;
+  matchNone(): MatchFilter;
+  id(value: string): MetadataValueFilter;
+  ids(values: readonly string[]): MetadataValuesFilter;
+  aggregateId(value: string): MetadataValueFilter;
+  aggregateIds(values: readonly string[]): MetadataValuesFilter;
+  tenantId(value: string): MetadataValueFilter;
+  ownerId(value: string): MetadataValueFilter;
+  spaceId(value: string): MetadataValueFilter;
+  and: {
+    <FIELDS extends string>(
+      operands: readonly ElementFilterExpression<FIELDS>[],
+    ): ElementLogicalFilter<FIELDS>;
+    <FIELDS extends string>(
+      operands: readonly FilterExpression<FIELDS>[],
+    ): LogicalFilter<FIELDS>;
+  };
+  or: {
+    <FIELDS extends string>(
+      operands: readonly ElementFilterExpression<FIELDS>[],
+    ): ElementLogicalFilter<FIELDS>;
+    <FIELDS extends string>(
+      operands: readonly FilterExpression<FIELDS>[],
+    ): LogicalFilter<FIELDS>;
+  };
+  nor: {
+    <FIELDS extends string>(
+      operands: readonly ElementFilterExpression<FIELDS>[],
+    ): ElementLogicalFilter<FIELDS>;
+    <FIELDS extends string>(
+      operands: readonly FilterExpression<FIELDS>[],
+    ): LogicalFilter<FIELDS>;
+  };
+  eq<FIELDS extends string>(
+    field: FIELDS,
+    value: EqualityFilterValue,
+  ): EqualityFilter<FIELDS>;
+  ne<FIELDS extends string>(
+    field: FIELDS,
+    value: EqualityFilterValue,
+  ): EqualityFilter<FIELDS>;
+  gt<FIELDS extends string>(
+    field: FIELDS,
+    value: ComparableFilterLiteral,
+  ): ComparisonFilter<FIELDS>;
+  gte<FIELDS extends string>(
+    field: FIELDS,
+    value: ComparableFilterLiteral,
+  ): ComparisonFilter<FIELDS>;
+  lt<FIELDS extends string>(
+    field: FIELDS,
+    value: ComparableFilterLiteral,
+  ): ComparisonFilter<FIELDS>;
+  lte<FIELDS extends string>(
+    field: FIELDS,
+    value: ComparableFilterLiteral,
+  ): ComparisonFilter<FIELDS>;
+  contains<FIELDS extends string>(
+    field: FIELDS,
+    value: string,
+    stringComparison?: StringComparison,
+  ): StringFilter<FIELDS>;
+  startsWith<FIELDS extends string>(
+    field: FIELDS,
+    value: string,
+    stringComparison?: StringComparison,
+  ): StringFilter<FIELDS>;
+  endsWith<FIELDS extends string>(
+    field: FIELDS,
+    value: string,
+    stringComparison?: StringComparison,
+  ): StringFilter<FIELDS>;
+  isIn<FIELDS extends string>(
+    field: FIELDS,
+    values: readonly ComparableFilterLiteral[],
+  ): CollectionFilter<FIELDS>;
+  notIn<FIELDS extends string>(
+    field: FIELDS,
+    values: readonly ComparableFilterLiteral[],
+  ): CollectionFilter<FIELDS>;
+  containsAll<FIELDS extends string>(
+    field: FIELDS,
+    values: readonly ComparableFilterLiteral[],
+  ): CollectionFilter<FIELDS>;
+  between<FIELDS extends string>(
+    field: FIELDS,
+    lowerBound: ComparableFilterLiteral,
+    upperBound: ComparableFilterLiteral,
+  ): BetweenFilter<FIELDS>;
+  isEmpty<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
+  isEmptyString<FIELDS extends string>(
+    field: FIELDS,
+  ): FieldPresenceFilter<FIELDS>;
+  isNotEmptyString<FIELDS extends string>(
+    field: FIELDS,
+  ): FieldPresenceFilter<FIELDS>;
+  isNull<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
+  isNotNull<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
+  exists<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
+  notExists<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
+  deletion(state: DeletionState): DeletionFilter;
+  elementMatch<FIELDS extends string, ELEMENT_FIELDS extends string>(
+    field: FIELDS,
+    predicate: ElementFilterExpression<ELEMENT_FIELDS>,
+  ): ElementMatchFilter<FIELDS, ELEMENT_FIELDS>;
+  search<FIELDS extends string>(
+    query: string,
+    options?: SearchFilterOptions<FIELDS>,
+  ): SearchFilter<FIELDS>;
+  today<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  beforeToday<FIELDS extends string>(
+    field: FIELDS,
+    time: string,
+    options?: RelativeTimeFilterOptions,
+  ): BeforeTodayFilter<FIELDS>;
+  tomorrow<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  thisWeek<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  nextWeek<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  lastWeek<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  thisMonth<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  lastMonth<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  yesterday<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  nextMonth<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  lastYear<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  thisYear<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  nextYear<FIELDS extends string>(
+    field: FIELDS,
+    options?: RelativeTimeFilterOptions,
+  ): CalendarFilter<FIELDS>;
+  recentDays<FIELDS extends string>(
+    field: FIELDS,
+    days: number,
+    options?: RelativeTimeFilterOptions,
+  ): DaysFilter<FIELDS>;
+  earlierDays<FIELDS extends string>(
+    field: FIELDS,
+    days: number,
+    options?: RelativeTimeFilterOptions,
+  ): DaysFilter<FIELDS>;
+};
+```
+
+:::
+
+[packages/wow/src/query/filter.ts:580](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L580)
+
+### FilterExpression {#api-FilterExpression}
+
+```ts
+export type FilterExpression<FIELDS extends string = string> =
+  | MatchFilter
+  | MetadataFilter
+  | LogicalFilter<FIELDS>
+  | EqualityFilter<FIELDS>
+  | ComparisonFilter<FIELDS>
+  | StringFilter<FIELDS>
+  | CollectionFilter<FIELDS>
+  | BetweenFilter<FIELDS>
+  | FieldPresenceFilter<FIELDS>
+  | DeletionFilter
+  | ElementMatchFilter<FIELDS>
+  | SearchFilter<FIELDS>
+  | CalendarFilter<FIELDS>
+  | BeforeTodayFilter<FIELDS>
+  | DaysFilter<FIELDS>;
+```
+
+[packages/wow/src/query/filter.ts:494](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L494)
+
+### DeletionState {#api-DeletionState}
+
+```ts
+export enum DeletionState {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
+  ALL = 'ALL',
+}
+```
+
+[packages/wow/src/query/condition.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/condition.ts#L169)
+
+### QueryField {#api-QueryField}
+
+```ts
+export type QueryField<FIELDS extends string = string> = FIELDS;
+```
+
+[packages/wow/src/query/filter.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L16)
+
+### LogicalField {#api-LogicalField}
+
+```ts
+export type LogicalField<FIELDS extends string = string> = QueryField<FIELDS>;
+```
+
+[packages/wow/src/query/filter.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L18)
+
+### FilterLiteral {#api-FilterLiteral}
+
+```ts
+export type FilterLiteral = null | string | number | boolean;
+```
+
+[packages/wow/src/query/filter.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L19)
+
+### EqualityFilterValue {#api-EqualityFilterValue}
+
+```ts
+export type EqualityFilterValue = FilterLiteral;
+```
+
+[packages/wow/src/query/filter.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L20)
+
+### ComparableFilterLiteral {#api-ComparableFilterLiteral}
+
+```ts
+export type ComparableFilterLiteral = Exclude<FilterLiteral, null>;
+```
+
+[packages/wow/src/query/filter.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L21)
+
+### FilterOperator {#api-FilterOperator}
+
+::: details 展开完整字段与成员
+
+```ts
+export enum FilterOperator {
+  MATCH_ALL = 'MATCH_ALL',
+  MATCH_NONE = 'MATCH_NONE',
+  ID = 'ID',
+  IDS = 'IDS',
+  AGGREGATE_ID = 'AGGREGATE_ID',
+  AGGREGATE_IDS = 'AGGREGATE_IDS',
+  TENANT_ID = 'TENANT_ID',
+  OWNER_ID = 'OWNER_ID',
+  SPACE_ID = 'SPACE_ID',
+  AND = 'AND',
+  OR = 'OR',
+  NOR = 'NOR',
+  EQ = 'EQ',
+  NE = 'NE',
+  GT = 'GT',
+  GTE = 'GTE',
+  LT = 'LT',
+  LTE = 'LTE',
+  CONTAINS = 'CONTAINS',
+  STARTS_WITH = 'STARTS_WITH',
+  ENDS_WITH = 'ENDS_WITH',
+  IN = 'IN',
+  NOT_IN = 'NOT_IN',
+  BETWEEN = 'BETWEEN',
+  CONTAINS_ALL = 'CONTAINS_ALL',
+  IS_EMPTY = 'IS_EMPTY',
+  IS_EMPTY_STRING = 'IS_EMPTY_STRING',
+  IS_NOT_EMPTY_STRING = 'IS_NOT_EMPTY_STRING',
+  IS_NULL = 'IS_NULL',
+  IS_NOT_NULL = 'IS_NOT_NULL',
+  EXISTS = 'EXISTS',
+  NOT_EXISTS = 'NOT_EXISTS',
+  DELETION = 'DELETION',
+  ELEMENT_MATCH = 'ELEMENT_MATCH',
+  SEARCH = 'SEARCH',
+  TODAY = 'TODAY',
+  BEFORE_TODAY = 'BEFORE_TODAY',
+  TOMORROW = 'TOMORROW',
+  THIS_WEEK = 'THIS_WEEK',
+  NEXT_WEEK = 'NEXT_WEEK',
+  LAST_WEEK = 'LAST_WEEK',
+  THIS_MONTH = 'THIS_MONTH',
+  LAST_MONTH = 'LAST_MONTH',
+  YESTERDAY = 'YESTERDAY',
+  NEXT_MONTH = 'NEXT_MONTH',
+  LAST_YEAR = 'LAST_YEAR',
+  THIS_YEAR = 'THIS_YEAR',
+  NEXT_YEAR = 'NEXT_YEAR',
+  RECENT_DAYS = 'RECENT_DAYS',
+  EARLIER_DAYS = 'EARLIER_DAYS',
+}
+```
+
+:::
+
+[packages/wow/src/query/filter.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L23)
+
+### StringComparison {#api-StringComparison}
+
+```ts
+export enum StringComparison {
+  CASE_SENSITIVE = 'CASE_SENSITIVE',
+  CASE_INSENSITIVE = 'CASE_INSENSITIVE',
+}
+```
+
+[packages/wow/src/query/filter.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L76)
+
+### SearchMode {#api-SearchMode}
+
+```ts
+export enum SearchMode {
+  TERMS = 'TERMS',
+  PHRASE = 'PHRASE',
+}
+```
+
+[packages/wow/src/query/filter.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L81)
+
+### TimeUnit {#api-TimeUnit}
+
+```ts
+export enum TimeUnit {
+  NANOSECONDS = 'NANOSECONDS',
+  MICROSECONDS = 'MICROSECONDS',
+  MILLISECONDS = 'MILLISECONDS',
+  SECONDS = 'SECONDS',
+  MINUTES = 'MINUTES',
+  HOURS = 'HOURS',
+  DAYS = 'DAYS',
+}
+```
+
+[packages/wow/src/query/filter.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L86)
+
+### MatchFilter {#api-MatchFilter}
+
+```ts
+export type MatchFilter = {
+  op: FilterOperator.MATCH_ALL | FilterOperator.MATCH_NONE;
+};
+```
+
+[packages/wow/src/query/filter.ts:334](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L334)
+
+### MetadataValueFilter {#api-MetadataValueFilter}
+
+```ts
+export type MetadataValueFilter = {
+  op:
+    | FilterOperator.ID
+    | FilterOperator.AGGREGATE_ID
+    | FilterOperator.TENANT_ID
+    | FilterOperator.OWNER_ID
+    | FilterOperator.SPACE_ID;
+  value: string;
+};
+```
+
+[packages/wow/src/query/filter.ts:338](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L338)
+
+### MetadataValuesFilter {#api-MetadataValuesFilter}
+
+```ts
+export type MetadataValuesFilter = {
+  op: FilterOperator.IDS | FilterOperator.AGGREGATE_IDS;
+  values: string[];
+};
+```
+
+[packages/wow/src/query/filter.ts:348](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L348)
+
+### MetadataFilter {#api-MetadataFilter}
+
+```ts
+export type MetadataFilter = MetadataValueFilter | MetadataValuesFilter;
+```
+
+[packages/wow/src/query/filter.ts:353](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L353)
+
+### LogicalFilter {#api-LogicalFilter}
+
+```ts
+export type LogicalFilter<FIELDS extends string = string> = {
+  op: FilterOperator.AND | FilterOperator.OR | FilterOperator.NOR;
+  operands: FilterExpression<FIELDS>[];
+};
+```
+
+[packages/wow/src/query/filter.ts:355](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L355)
+
+### ElementLogicalFilter {#api-ElementLogicalFilter}
+
+```ts
+export type ElementLogicalFilter<FIELDS extends string = string> = {
+  op: FilterOperator.AND | FilterOperator.OR | FilterOperator.NOR;
+  operands: ElementFilterExpression<FIELDS>[];
+};
+```
+
+[packages/wow/src/query/filter.ts:360](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L360)
+
+### EqualityFilter {#api-EqualityFilter}
+
+```ts
+export type EqualityFilter<FIELDS extends string = string> = {
+  op: FilterOperator.EQ | FilterOperator.NE;
+  field: QueryField<FIELDS>;
+  value: EqualityFilterValue;
+};
+```
+
+[packages/wow/src/query/filter.ts:365](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L365)
+
+### ComparisonFilter {#api-ComparisonFilter}
+
+```ts
+export type ComparisonFilter<FIELDS extends string = string> = {
+  op:
+    | FilterOperator.GT
+    | FilterOperator.GTE
+    | FilterOperator.LT
+    | FilterOperator.LTE;
+  field: QueryField<FIELDS>;
+  value: ComparableFilterLiteral;
+};
+```
+
+[packages/wow/src/query/filter.ts:371](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L371)
+
+### StringFilter {#api-StringFilter}
+
+```ts
+export type StringFilter<FIELDS extends string = string> = {
+  op:
+    | FilterOperator.CONTAINS
+    | FilterOperator.STARTS_WITH
+    | FilterOperator.ENDS_WITH;
+  field: QueryField<FIELDS>;
+  value: string;
+  stringComparison?: StringComparison;
+};
+```
+
+[packages/wow/src/query/filter.ts:381](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L381)
+
+### CollectionFilter {#api-CollectionFilter}
+
+```ts
+export type CollectionFilter<FIELDS extends string = string> = {
+  op: FilterOperator.IN | FilterOperator.NOT_IN | FilterOperator.CONTAINS_ALL;
+  field: QueryField<FIELDS>;
+  values: ComparableFilterLiteral[];
+};
+```
+
+[packages/wow/src/query/filter.ts:391](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L391)
+
+### BetweenFilter {#api-BetweenFilter}
+
+```ts
+export type BetweenFilter<FIELDS extends string = string> = {
+  op: FilterOperator.BETWEEN;
+  field: QueryField<FIELDS>;
+  lowerBound: ComparableFilterLiteral;
+  upperBound: ComparableFilterLiteral;
+};
+```
+
+[packages/wow/src/query/filter.ts:397](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L397)
+
+### FieldPresenceFilter {#api-FieldPresenceFilter}
+
+```ts
+export type FieldPresenceFilter<FIELDS extends string = string> = {
+  op:
+    | FilterOperator.IS_EMPTY
+    | FilterOperator.IS_EMPTY_STRING
+    | FilterOperator.IS_NOT_EMPTY_STRING
+    | FilterOperator.IS_NULL
+    | FilterOperator.IS_NOT_NULL
+    | FilterOperator.EXISTS
+    | FilterOperator.NOT_EXISTS;
+  field: QueryField<FIELDS>;
+};
+```
+
+[packages/wow/src/query/filter.ts:404](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L404)
+
+### DeletionFilter {#api-DeletionFilter}
+
+```ts
+export type DeletionFilter = {
+  op: FilterOperator.DELETION;
+  state: DeletionState;
+};
+```
+
+[packages/wow/src/query/filter.ts:416](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L416)
+
+### ElementMatchFilter {#api-ElementMatchFilter}
+
+```ts
+export type ElementMatchFilter<
+  FIELDS extends string = string,
+  ELEMENT_FIELDS extends string = string,
+> = {
+  op: FilterOperator.ELEMENT_MATCH;
+  field: QueryField<FIELDS>;
+  predicate: ElementFilterExpression<ELEMENT_FIELDS>;
+};
+```
+
+[packages/wow/src/query/filter.ts:421](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L421)
+
+### SearchFilter {#api-SearchFilter}
+
+```ts
+export type SearchFilter<FIELDS extends string = string> = {
+  op: FilterOperator.SEARCH;
+  query: string;
+  fields?: QueryField<FIELDS>[];
+  mode?: SearchMode;
+};
+```
+
+[packages/wow/src/query/filter.ts:430](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L430)
+
+### SearchFilterOptions {#api-SearchFilterOptions}
+
+```ts
+export interface SearchFilterOptions<FIELDS extends string = string> {
+  fields?: readonly QueryField<FIELDS>[];
+  mode?: SearchMode;
+}
+```
+
+[packages/wow/src/query/filter.ts:437](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L437)
+
+### RelativeTimeFilterOptions {#api-RelativeTimeFilterOptions}
+
+```ts
+export interface RelativeTimeFilterOptions {
+  zoneId?: string;
+  datePattern?: string;
+  timeUnit?: TimeUnit;
+}
+```
+
+[packages/wow/src/query/filter.ts:442](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L442)
+
+### CalendarFilter {#api-CalendarFilter}
+
+```ts
+export type CalendarFilter<FIELDS extends string = string> =
+  RelativeTimeFilterOptions & {
+    op:
+      | FilterOperator.TODAY
+      | FilterOperator.TOMORROW
+      | FilterOperator.THIS_WEEK
+      | FilterOperator.NEXT_WEEK
+      | FilterOperator.LAST_WEEK
+      | FilterOperator.THIS_MONTH
+      | FilterOperator.LAST_MONTH
+      | FilterOperator.YESTERDAY
+      | FilterOperator.NEXT_MONTH
+      | FilterOperator.LAST_YEAR
+      | FilterOperator.THIS_YEAR
+      | FilterOperator.NEXT_YEAR;
+    field: QueryField<FIELDS>;
+  };
+```
+
+[packages/wow/src/query/filter.ts:448](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L448)
+
+### BeforeTodayFilter {#api-BeforeTodayFilter}
+
+```ts
+export type BeforeTodayFilter<FIELDS extends string = string> =
+  RelativeTimeFilterOptions & {
+    op: FilterOperator.BEFORE_TODAY;
+    field: QueryField<FIELDS>;
+    time: string;
+  };
+```
+
+[packages/wow/src/query/filter.ts:466](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L466)
+
+### DaysFilter {#api-DaysFilter}
+
+```ts
+export type DaysFilter<FIELDS extends string = string> =
+  RelativeTimeFilterOptions & {
+    op: FilterOperator.RECENT_DAYS | FilterOperator.EARLIER_DAYS;
+    field: QueryField<FIELDS>;
+    days: number;
+  };
+```
+
+[packages/wow/src/query/filter.ts:473](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L473)
+
+### ElementFilterExpression {#api-ElementFilterExpression}
+
+```ts
+export type ElementFilterExpression<FIELDS extends string = string> =
+  | MatchFilter
+  | ElementLogicalFilter<FIELDS>
+  | EqualityFilter<FIELDS>
+  | ComparisonFilter<FIELDS>
+  | StringFilter<FIELDS>
+  | CollectionFilter<FIELDS>
+  | BetweenFilter<FIELDS>
+  | FieldPresenceFilter<FIELDS>
+  | ElementMatchFilter<FIELDS>
+  | CalendarFilter<FIELDS>
+  | BeforeTodayFilter<FIELDS>
+  | DaysFilter<FIELDS>;
+```
+
+[packages/wow/src/query/filter.ts:480](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L480)
+
+### FilterCapable {#api-FilterCapable}
+
+```ts
+export interface FilterCapable<FIELDS extends string = string> {
+  filter: FilterExpression<FIELDS>;
+}
+```
+
+[packages/wow/src/query/filter.ts:511](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L511)
+
+## 旧 Condition 构建器与类型 {#condition-contracts}
 
 ### isValidateCondition {#api-isValidateCondition}
 
@@ -430,9 +1091,11 @@ export function isFalse<FIELDS extends string = string>(
 ```ts
 export function exists<FIELDS extends string = string>(
   field: FIELDS,
-  exists: boolean = true,
+  exists?: boolean,
 ): Condition<FIELDS>;
 ```
+
+实现默认值: `exists = true`.
 
 [packages/wow/src/query/condition.ts:682](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/condition.ts#L682)
 
@@ -618,656 +1281,9 @@ export interface ConditionCapable<FIELDS extends string = string> {
 
 [packages/wow/src/query/condition.ts:159](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/condition.ts#L159)
 
-### DeletionState {#api-DeletionState}
-
-```ts
-export enum DeletionState {
-  ACTIVE = 'ACTIVE',
-  DELETED = 'DELETED',
-  ALL = 'ALL',
-}
-```
-
-[packages/wow/src/query/condition.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/condition.ts#L169)
-
-### QueryField {#api-QueryField}
-
-```ts
-export type QueryField<FIELDS extends string = string> = FIELDS;
-```
-
-[packages/wow/src/query/filter.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L16)
-
-### LogicalField {#api-LogicalField}
-
-```ts
-export type LogicalField<FIELDS extends string = string> = QueryField<FIELDS>;
-```
-
-[packages/wow/src/query/filter.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L18)
-
-### FilterLiteral {#api-FilterLiteral}
-
-```ts
-export type FilterLiteral = null | string | number | boolean;
-```
-
-[packages/wow/src/query/filter.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L19)
-
-### EqualityFilterValue {#api-EqualityFilterValue}
-
-```ts
-export type EqualityFilterValue = FilterLiteral;
-```
-
-[packages/wow/src/query/filter.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L20)
-
-### ComparableFilterLiteral {#api-ComparableFilterLiteral}
-
-```ts
-export type ComparableFilterLiteral = Exclude<FilterLiteral, null>;
-```
-
-[packages/wow/src/query/filter.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L21)
-
-### FilterOperator {#api-FilterOperator}
-
-```ts
-export enum FilterOperator {
-  MATCH_ALL = 'MATCH_ALL',
-  MATCH_NONE = 'MATCH_NONE',
-  ID = 'ID',
-  IDS = 'IDS',
-  AGGREGATE_ID = 'AGGREGATE_ID',
-  AGGREGATE_IDS = 'AGGREGATE_IDS',
-  TENANT_ID = 'TENANT_ID',
-  OWNER_ID = 'OWNER_ID',
-  SPACE_ID = 'SPACE_ID',
-  AND = 'AND',
-  OR = 'OR',
-  NOR = 'NOR',
-  EQ = 'EQ',
-  NE = 'NE',
-  GT = 'GT',
-  GTE = 'GTE',
-  LT = 'LT',
-  LTE = 'LTE',
-  CONTAINS = 'CONTAINS',
-  STARTS_WITH = 'STARTS_WITH',
-  ENDS_WITH = 'ENDS_WITH',
-  IN = 'IN',
-  NOT_IN = 'NOT_IN',
-  BETWEEN = 'BETWEEN',
-  CONTAINS_ALL = 'CONTAINS_ALL',
-  IS_EMPTY = 'IS_EMPTY',
-  IS_EMPTY_STRING = 'IS_EMPTY_STRING',
-  IS_NOT_EMPTY_STRING = 'IS_NOT_EMPTY_STRING',
-  IS_NULL = 'IS_NULL',
-  IS_NOT_NULL = 'IS_NOT_NULL',
-  EXISTS = 'EXISTS',
-  NOT_EXISTS = 'NOT_EXISTS',
-  DELETION = 'DELETION',
-  ELEMENT_MATCH = 'ELEMENT_MATCH',
-  SEARCH = 'SEARCH',
-  TODAY = 'TODAY',
-  BEFORE_TODAY = 'BEFORE_TODAY',
-  TOMORROW = 'TOMORROW',
-  THIS_WEEK = 'THIS_WEEK',
-  NEXT_WEEK = 'NEXT_WEEK',
-  LAST_WEEK = 'LAST_WEEK',
-  THIS_MONTH = 'THIS_MONTH',
-  LAST_MONTH = 'LAST_MONTH',
-  YESTERDAY = 'YESTERDAY',
-  NEXT_MONTH = 'NEXT_MONTH',
-  LAST_YEAR = 'LAST_YEAR',
-  THIS_YEAR = 'THIS_YEAR',
-  NEXT_YEAR = 'NEXT_YEAR',
-  RECENT_DAYS = 'RECENT_DAYS',
-  EARLIER_DAYS = 'EARLIER_DAYS',
-}
-```
-
-[packages/wow/src/query/filter.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L23)
-
-### StringComparison {#api-StringComparison}
-
-```ts
-export enum StringComparison {
-  CASE_SENSITIVE = 'CASE_SENSITIVE',
-  CASE_INSENSITIVE = 'CASE_INSENSITIVE',
-}
-```
-
-[packages/wow/src/query/filter.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L76)
-
-### SearchMode {#api-SearchMode}
-
-```ts
-export enum SearchMode {
-  TERMS = 'TERMS',
-  PHRASE = 'PHRASE',
-}
-```
-
-[packages/wow/src/query/filter.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L81)
-
-### TimeUnit {#api-TimeUnit}
-
-```ts
-export enum TimeUnit {
-  NANOSECONDS = 'NANOSECONDS',
-  MICROSECONDS = 'MICROSECONDS',
-  MILLISECONDS = 'MILLISECONDS',
-  SECONDS = 'SECONDS',
-  MINUTES = 'MINUTES',
-  HOURS = 'HOURS',
-  DAYS = 'DAYS',
-}
-```
-
-[packages/wow/src/query/filter.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L86)
-
-### MatchFilter {#api-MatchFilter}
-
-```ts
-export type MatchFilter = {
-  op: FilterOperator.MATCH_ALL | FilterOperator.MATCH_NONE;
-};
-```
-
-[packages/wow/src/query/filter.ts:334](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L334)
-
-### MetadataValueFilter {#api-MetadataValueFilter}
-
-```ts
-export type MetadataValueFilter = {
-  op:
-    | FilterOperator.ID
-    | FilterOperator.AGGREGATE_ID
-    | FilterOperator.TENANT_ID
-    | FilterOperator.OWNER_ID
-    | FilterOperator.SPACE_ID;
-  value: string;
-};
-```
-
-[packages/wow/src/query/filter.ts:338](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L338)
-
-### MetadataValuesFilter {#api-MetadataValuesFilter}
-
-```ts
-export type MetadataValuesFilter = {
-  op: FilterOperator.IDS | FilterOperator.AGGREGATE_IDS;
-  values: string[];
-};
-```
-
-[packages/wow/src/query/filter.ts:348](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L348)
-
-### MetadataFilter {#api-MetadataFilter}
-
-```ts
-export type MetadataFilter = MetadataValueFilter | MetadataValuesFilter;
-```
-
-[packages/wow/src/query/filter.ts:353](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L353)
-
-### LogicalFilter {#api-LogicalFilter}
-
-```ts
-export type LogicalFilter<FIELDS extends string = string> = {
-  op: FilterOperator.AND | FilterOperator.OR | FilterOperator.NOR;
-  operands: FilterExpression<FIELDS>[];
-};
-```
-
-[packages/wow/src/query/filter.ts:355](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L355)
-
-### ElementLogicalFilter {#api-ElementLogicalFilter}
-
-```ts
-export type ElementLogicalFilter<FIELDS extends string = string> = {
-  op: FilterOperator.AND | FilterOperator.OR | FilterOperator.NOR;
-  operands: ElementFilterExpression<FIELDS>[];
-};
-```
-
-[packages/wow/src/query/filter.ts:360](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L360)
-
-### EqualityFilter {#api-EqualityFilter}
-
-```ts
-export type EqualityFilter<FIELDS extends string = string> = {
-  op: FilterOperator.EQ | FilterOperator.NE;
-  field: QueryField<FIELDS>;
-  value: EqualityFilterValue;
-};
-```
-
-[packages/wow/src/query/filter.ts:365](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L365)
-
-### ComparisonFilter {#api-ComparisonFilter}
-
-```ts
-export type ComparisonFilter<FIELDS extends string = string> = {
-  op:
-    | FilterOperator.GT
-    | FilterOperator.GTE
-    | FilterOperator.LT
-    | FilterOperator.LTE;
-  field: QueryField<FIELDS>;
-  value: ComparableFilterLiteral;
-};
-```
-
-[packages/wow/src/query/filter.ts:371](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L371)
-
-### StringFilter {#api-StringFilter}
-
-```ts
-export type StringFilter<FIELDS extends string = string> = {
-  op:
-    | FilterOperator.CONTAINS
-    | FilterOperator.STARTS_WITH
-    | FilterOperator.ENDS_WITH;
-  field: QueryField<FIELDS>;
-  value: string;
-  stringComparison?: StringComparison;
-};
-```
-
-[packages/wow/src/query/filter.ts:381](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L381)
-
-### CollectionFilter {#api-CollectionFilter}
-
-```ts
-export type CollectionFilter<FIELDS extends string = string> = {
-  op: FilterOperator.IN | FilterOperator.NOT_IN | FilterOperator.CONTAINS_ALL;
-  field: QueryField<FIELDS>;
-  values: ComparableFilterLiteral[];
-};
-```
-
-[packages/wow/src/query/filter.ts:391](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L391)
-
-### BetweenFilter {#api-BetweenFilter}
-
-```ts
-export type BetweenFilter<FIELDS extends string = string> = {
-  op: FilterOperator.BETWEEN;
-  field: QueryField<FIELDS>;
-  lowerBound: ComparableFilterLiteral;
-  upperBound: ComparableFilterLiteral;
-};
-```
-
-[packages/wow/src/query/filter.ts:397](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L397)
-
-### FieldPresenceFilter {#api-FieldPresenceFilter}
-
-```ts
-export type FieldPresenceFilter<FIELDS extends string = string> = {
-  op:
-    | FilterOperator.IS_EMPTY
-    | FilterOperator.IS_EMPTY_STRING
-    | FilterOperator.IS_NOT_EMPTY_STRING
-    | FilterOperator.IS_NULL
-    | FilterOperator.IS_NOT_NULL
-    | FilterOperator.EXISTS
-    | FilterOperator.NOT_EXISTS;
-  field: QueryField<FIELDS>;
-};
-```
-
-[packages/wow/src/query/filter.ts:404](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L404)
-
-### DeletionFilter {#api-DeletionFilter}
-
-```ts
-export type DeletionFilter = {
-  op: FilterOperator.DELETION;
-  state: DeletionState;
-};
-```
-
-[packages/wow/src/query/filter.ts:416](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L416)
-
-### ElementMatchFilter {#api-ElementMatchFilter}
-
-```ts
-export type ElementMatchFilter<
-  FIELDS extends string = string,
-  ELEMENT_FIELDS extends string = string,
-> = {
-  op: FilterOperator.ELEMENT_MATCH;
-  field: QueryField<FIELDS>;
-  predicate: ElementFilterExpression<ELEMENT_FIELDS>;
-};
-```
-
-[packages/wow/src/query/filter.ts:421](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L421)
-
-### SearchFilter {#api-SearchFilter}
-
-```ts
-export type SearchFilter<FIELDS extends string = string> = {
-  op: FilterOperator.SEARCH;
-  query: string;
-  fields?: QueryField<FIELDS>[];
-  mode?: SearchMode;
-};
-```
-
-[packages/wow/src/query/filter.ts:430](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L430)
-
-### SearchFilterOptions {#api-SearchFilterOptions}
-
-```ts
-export interface SearchFilterOptions<FIELDS extends string = string> {
-  fields?: readonly QueryField<FIELDS>[];
-  mode?: SearchMode;
-}
-```
-
-[packages/wow/src/query/filter.ts:437](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L437)
-
-### RelativeTimeFilterOptions {#api-RelativeTimeFilterOptions}
-
-```ts
-export interface RelativeTimeFilterOptions {
-  zoneId?: string;
-  datePattern?: string;
-  timeUnit?: TimeUnit;
-}
-```
-
-[packages/wow/src/query/filter.ts:442](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L442)
-
-### CalendarFilter {#api-CalendarFilter}
-
-```ts
-export type CalendarFilter<FIELDS extends string = string> =
-  RelativeTimeFilterOptions & {
-    op:
-      | FilterOperator.TODAY
-      | FilterOperator.TOMORROW
-      | FilterOperator.THIS_WEEK
-      | FilterOperator.NEXT_WEEK
-      | FilterOperator.LAST_WEEK
-      | FilterOperator.THIS_MONTH
-      | FilterOperator.LAST_MONTH
-      | FilterOperator.YESTERDAY
-      | FilterOperator.NEXT_MONTH
-      | FilterOperator.LAST_YEAR
-      | FilterOperator.THIS_YEAR
-      | FilterOperator.NEXT_YEAR;
-    field: QueryField<FIELDS>;
-  };
-```
-
-[packages/wow/src/query/filter.ts:448](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L448)
-
-### BeforeTodayFilter {#api-BeforeTodayFilter}
-
-```ts
-export type BeforeTodayFilter<FIELDS extends string = string> =
-  RelativeTimeFilterOptions & {
-    op: FilterOperator.BEFORE_TODAY;
-    field: QueryField<FIELDS>;
-    time: string;
-  };
-```
-
-[packages/wow/src/query/filter.ts:466](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L466)
-
-### DaysFilter {#api-DaysFilter}
-
-```ts
-export type DaysFilter<FIELDS extends string = string> =
-  RelativeTimeFilterOptions & {
-    op: FilterOperator.RECENT_DAYS | FilterOperator.EARLIER_DAYS;
-    field: QueryField<FIELDS>;
-    days: number;
-  };
-```
-
-[packages/wow/src/query/filter.ts:473](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L473)
-
-### ElementFilterExpression {#api-ElementFilterExpression}
-
-```ts
-export type ElementFilterExpression<FIELDS extends string = string> =
-  | MatchFilter
-  | ElementLogicalFilter<FIELDS>
-  | EqualityFilter<FIELDS>
-  | ComparisonFilter<FIELDS>
-  | StringFilter<FIELDS>
-  | CollectionFilter<FIELDS>
-  | BetweenFilter<FIELDS>
-  | FieldPresenceFilter<FIELDS>
-  | ElementMatchFilter<FIELDS>
-  | CalendarFilter<FIELDS>
-  | BeforeTodayFilter<FIELDS>
-  | DaysFilter<FIELDS>;
-```
-
-[packages/wow/src/query/filter.ts:480](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L480)
-
-### FilterExpression {#api-FilterExpression}
-
-```ts
-export type FilterExpression<FIELDS extends string = string> =
-  | MatchFilter
-  | MetadataFilter
-  | LogicalFilter<FIELDS>
-  | EqualityFilter<FIELDS>
-  | ComparisonFilter<FIELDS>
-  | StringFilter<FIELDS>
-  | CollectionFilter<FIELDS>
-  | BetweenFilter<FIELDS>
-  | FieldPresenceFilter<FIELDS>
-  | DeletionFilter
-  | ElementMatchFilter<FIELDS>
-  | SearchFilter<FIELDS>
-  | CalendarFilter<FIELDS>
-  | BeforeTodayFilter<FIELDS>
-  | DaysFilter<FIELDS>;
-```
-
-[packages/wow/src/query/filter.ts:494](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L494)
-
-### FilterCapable {#api-FilterCapable}
-
-```ts
-export interface FilterCapable<FIELDS extends string = string> {
-  filter: FilterExpression<FIELDS>;
-}
-```
-
-[packages/wow/src/query/filter.ts:511](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L511)
-
-### filter {#api-filter}
-
-```ts
-declare const filter: {
-  matchAll(): MatchFilter;
-  matchNone(): MatchFilter;
-  id(value: string): MetadataValueFilter;
-  ids(values: readonly string[]): MetadataValuesFilter;
-  aggregateId(value: string): MetadataValueFilter;
-  aggregateIds(values: readonly string[]): MetadataValuesFilter;
-  tenantId(value: string): MetadataValueFilter;
-  ownerId(value: string): MetadataValueFilter;
-  spaceId(value: string): MetadataValueFilter;
-  and: {
-    <FIELDS extends string>(
-      operands: readonly ElementFilterExpression<FIELDS>[],
-    ): ElementLogicalFilter<FIELDS>;
-    <FIELDS extends string>(
-      operands: readonly FilterExpression<FIELDS>[],
-    ): LogicalFilter<FIELDS>;
-  };
-  or: {
-    <FIELDS extends string>(
-      operands: readonly ElementFilterExpression<FIELDS>[],
-    ): ElementLogicalFilter<FIELDS>;
-    <FIELDS extends string>(
-      operands: readonly FilterExpression<FIELDS>[],
-    ): LogicalFilter<FIELDS>;
-  };
-  nor: {
-    <FIELDS extends string>(
-      operands: readonly ElementFilterExpression<FIELDS>[],
-    ): ElementLogicalFilter<FIELDS>;
-    <FIELDS extends string>(
-      operands: readonly FilterExpression<FIELDS>[],
-    ): LogicalFilter<FIELDS>;
-  };
-  eq<FIELDS extends string>(
-    field: FIELDS,
-    value: EqualityFilterValue,
-  ): EqualityFilter<FIELDS>;
-  ne<FIELDS extends string>(
-    field: FIELDS,
-    value: EqualityFilterValue,
-  ): EqualityFilter<FIELDS>;
-  gt<FIELDS extends string>(
-    field: FIELDS,
-    value: ComparableFilterLiteral,
-  ): ComparisonFilter<FIELDS>;
-  gte<FIELDS extends string>(
-    field: FIELDS,
-    value: ComparableFilterLiteral,
-  ): ComparisonFilter<FIELDS>;
-  lt<FIELDS extends string>(
-    field: FIELDS,
-    value: ComparableFilterLiteral,
-  ): ComparisonFilter<FIELDS>;
-  lte<FIELDS extends string>(
-    field: FIELDS,
-    value: ComparableFilterLiteral,
-  ): ComparisonFilter<FIELDS>;
-  contains<FIELDS extends string>(
-    field: FIELDS,
-    value: string,
-    stringComparison?: StringComparison,
-  ): StringFilter<FIELDS>;
-  startsWith<FIELDS extends string>(
-    field: FIELDS,
-    value: string,
-    stringComparison?: StringComparison,
-  ): StringFilter<FIELDS>;
-  endsWith<FIELDS extends string>(
-    field: FIELDS,
-    value: string,
-    stringComparison?: StringComparison,
-  ): StringFilter<FIELDS>;
-  isIn<FIELDS extends string>(
-    field: FIELDS,
-    values: readonly ComparableFilterLiteral[],
-  ): CollectionFilter<FIELDS>;
-  notIn<FIELDS extends string>(
-    field: FIELDS,
-    values: readonly ComparableFilterLiteral[],
-  ): CollectionFilter<FIELDS>;
-  containsAll<FIELDS extends string>(
-    field: FIELDS,
-    values: readonly ComparableFilterLiteral[],
-  ): CollectionFilter<FIELDS>;
-  between<FIELDS extends string>(
-    field: FIELDS,
-    lowerBound: ComparableFilterLiteral,
-    upperBound: ComparableFilterLiteral,
-  ): BetweenFilter<FIELDS>;
-  isEmpty<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
-  isEmptyString<FIELDS extends string>(
-    field: FIELDS,
-  ): FieldPresenceFilter<FIELDS>;
-  isNotEmptyString<FIELDS extends string>(
-    field: FIELDS,
-  ): FieldPresenceFilter<FIELDS>;
-  isNull<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
-  isNotNull<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
-  exists<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
-  notExists<FIELDS extends string>(field: FIELDS): FieldPresenceFilter<FIELDS>;
-  deletion(state: DeletionState): DeletionFilter;
-  elementMatch<FIELDS extends string, ELEMENT_FIELDS extends string>(
-    field: FIELDS,
-    predicate: ElementFilterExpression<ELEMENT_FIELDS>,
-  ): ElementMatchFilter<FIELDS, ELEMENT_FIELDS>;
-  search<FIELDS extends string>(
-    query: string,
-    options?: SearchFilterOptions<FIELDS>,
-  ): SearchFilter<FIELDS>;
-  today<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  beforeToday<FIELDS extends string>(
-    field: FIELDS,
-    time: string,
-    options?: RelativeTimeFilterOptions,
-  ): BeforeTodayFilter<FIELDS>;
-  tomorrow<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  thisWeek<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  nextWeek<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  lastWeek<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  thisMonth<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  lastMonth<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  yesterday<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  nextMonth<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  lastYear<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  thisYear<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  nextYear<FIELDS extends string>(
-    field: FIELDS,
-    options?: RelativeTimeFilterOptions,
-  ): CalendarFilter<FIELDS>;
-  recentDays<FIELDS extends string>(
-    field: FIELDS,
-    days: number,
-    options?: RelativeTimeFilterOptions,
-  ): DaysFilter<FIELDS>;
-  earlierDays<FIELDS extends string>(
-    field: FIELDS,
-    days: number,
-    options?: RelativeTimeFilterOptions,
-  ): DaysFilter<FIELDS>;
-};
-```
-
-[packages/wow/src/query/filter.ts:580](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/filter.ts#L580)
-
 ### Operator {#api-Operator}
+
+::: details 展开完整字段与成员
 
 ```ts
 export enum Operator {
@@ -1317,6 +1333,8 @@ export enum Operator {
 }
 ```
 
+:::
+
 [packages/wow/src/query/operator.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/operator.ts#L15)
 
 ### LOGICAL_OPERATORS {#api-LOGICAL_OPERATORS}
@@ -1347,4 +1365,4 @@ export type OperatorLocale = {
 
 ## 相关专题
 
-[客户端配置与元数据](./configuration) · [命令与等待结果](./commands) · [快照查询](./snapshot-queries) · [投影、排序与分页](./query-options) · [游标查询](./cursor-queries) · [聚合构造器](./aggregations) · [事件与历史状态](./events-and-history) · [共享领域类型与工具](./shared-types)
+[客户端配置与元数据](./configuration) · [命令与等待结果](./commands) · [快照查询](./snapshot-queries) · [投影、排序与分页](./query-options) · [游标查询](./cursor-queries) · [聚合构造器](./aggregations) · [事件与历史状态](./events-and-history) · [身份与资源归属](./identity-and-attribution)

@@ -46,7 +46,7 @@ const user = await new UserService().getUser('u-42');
 
 ## 文档
 
-- [声明式服务实战](https://fetcher.ahoo.me/zh/recipes/declarative-services)
+- [声明式服务实战](https://fetcher.ahoo.me/zh/guides/services/declarative-client)
 - [Decorator 参考](https://fetcher.ahoo.me/zh/reference/decorator)
 
 [English](./README.md) · [许可证](../../LICENSE)

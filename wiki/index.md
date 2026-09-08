@@ -1,66 +1,58 @@
 ---
 layout: home
-title: Fetcher
-description: Start with one HTTP request, then compose services, streams, and React.
+title: TypeScript HTTP clients on native Fetch
+description: Use Fetcher for HTTP, service clients, streaming, and React data interactions.
 hero:
   name: Fetcher
-  text: From HTTP requests to application data
-  tagline: Start with one HTTP request, then compose services, streams, and React.
+  text: From one request to application data
+  tagline: Shared configuration and explicit results, built on native Fetch.
+  image:
+    src: /fetcher-logo.png
+    alt: Fetcher request and response logo
   actions:
     - theme: brand
-      text: Send your first request
-      link: /start/first-request
+      text: Start building
+      link: ./start/
     - theme: alt
-      text: Explore the API
-      link: /reference/
+      text: Evaluate architecture
+      link: ./architecture/
 features:
-  - title: Requests and results
-    details: Compose URLs, parameters, and bodies; choose Response or JSON explicitly.
-    link: /learn/requests-and-results
-  - title: Streams and services
-    details: Consume SSE, declare services, or generate clients from OpenAPI.
-    link: /start/choose-packages
-  - title: React and data views
-    details: Connect loading, results, errors, and cancellation to your UI; add Viewer when needed.
-    link: /learn/react-data-flow
+  - title: HTTP requests
+    details: Share configuration, send data, and handle results and failures on native Fetch.
+    link: /guides/http/
+    linkText: Learn more
+  - title: Service clients
+    details: Declare service methods or generate TypeScript clients from an OpenAPI document.
+    link: /guides/services/
+    linkText: Learn more
+  - title: Streaming
+    details: Consume SSE events and manage cancellation, connection lifetimes, and cleanup.
+    link: /guides/streaming/
+    linkText: Learn more
+  - title: React data flow
+    details: Connect request execution, loading, errors, and cancellation to React components.
+    link: /guides/react/
+    linkText: Learn more
+  - title: Data views
+    details: Compose tables, filtering, sorting, and saved views with explicit application ownership.
+    link: /guides/viewer/
+    linkText: Learn more
+  - title: Architecture and choices
+    details: Evaluate package boundaries, runtime requirements, and integration responsibilities.
+    link: /architecture/
+    linkText: Learn more
 ---
 
-## One client. An explicit result.
+## Make requests and results explicit
 
 ```ts
-import {
-  ExchangeError,
-  Fetcher,
-  JsonResultExtractor,
-} from '@ahoo-wang/fetcher';
-
-interface User {
-  id: number;
-  name: string;
-}
-const api = new Fetcher({
-  baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 5_000,
-});
-
-try {
-  const user = await api.get<User>(
-    '/users/{id}',
-    {
-      urlParams: { path: { id: 1 } },
-    },
-    { resultExtractor: JsonResultExtractor },
-  );
-  console.log(user.name);
-} catch (error) {
-  if (error instanceof ExchangeError) {
-    console.error(error.exchange.response?.status, error.message);
-  } else {
-    throw error;
-  }
-}
+const user = await client.get<User>(
+  '/users/1',
+  {},
+  {
+    resultExtractor: ResultExtractors.Json,
+  },
+);
 ```
 
-Generics describe the expected shape; they do not validate runtime data. This example calls a public demonstration endpoint and needs network access.
-
-[Read the complete introduction](./start/index.md) · [Choose your packages](./start/choose-packages.md) · [Storybook](https://fetcher.ahoo.me/storybook/)
+`client` is a configured `Fetcher` instance; import `ResultExtractors` from the core package. Run [your first request](./start/first-request.md) for the complete setup, local server, and failure branch.

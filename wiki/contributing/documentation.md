@@ -1,4 +1,5 @@
 ---
+next: false
 title: Maintain accurate documentation
 description: Maintain accurate documentation — Fetcher
 ---
@@ -14,12 +15,12 @@ Resolve public exports through package.json and src/index.ts, then read implemen
 | Content                      | Location                |
 | ---------------------------- | ----------------------- |
 | First successful integration | Start                   |
-| Mental model and lifecycle   | Learn                   |
-| Complete application task    | Recipes                 |
+| Mental model and lifecycle   | Architecture            |
+| Complete application task    | Guides                  |
 | Precise API contract         | Reference package/topic |
 | Agent workflow               | Skills                  |
 
-Reference package indexes map public symbols to topic anchors. Split topics by independent concepts, not one file per symbol. Keep English and Chinese complete at matching paths, with title and description frontmatter on every page.
+Reference symbols pages map public symbols to topic anchors. Split topics by independent concepts, not one file per symbol. Keep English and Chinese complete at matching paths, with title and description frontmatter on every page.
 
 ## Keep navigation complete
 
@@ -32,9 +33,12 @@ Examples must include imports and necessary context. Label application endpoints
 Mermaid uses node fill `#2d333b`, border `#6d5dfc`, text `#e6edf3`. Use autonumber in sequenceDiagram and `<br>` in labels. After diagram edits run:
 
 ```bash
+pnpm --dir wiki generate:llms
 pnpm --dir wiki fix:mermaid
 pnpm --dir wiki build
 node --test wiki/test/documentation.test.mjs
 ```
 
 Do not hand-edit llms.txt, llms-full.txt or .vitepress/dist. Public SDK API changes must update the matching skills/*/references/api.md in the same change.
+
+Reading groups are listed in `.vitepress/config/pages.mjs`; stop pagination at the first and last page with `prev: false` and `next: false`. Shared runnable sources use full-file `<<< @/examples/http/client.ts` or `<<< @/../stories/docs/Filename.tsx` references; do not use regions or line ranges. The LLM generator expands these files and rejects missing or out-of-repository targets.

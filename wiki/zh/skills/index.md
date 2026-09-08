@@ -1,4 +1,5 @@
 ---
+prev: false
 title: 使用 Fetcher Skills
 description: 使用 Fetcher Skills — Fetcher agent workflows
 pageClass: skills-page
@@ -46,3 +47,5 @@ $fetcher-openapi-generator 从 ./openapi.yaml 生成客户端到 src/generated�
 给出输入、目标目录、已有客户端、运行环境和验收标准。Skill 的 references/api.md 是 Agent 可按需加载的详细材料；人类参考页同样提供准确 API 契约，不要求读者转去 Skill 才能完成开发。
 
 源文件在本仓库 skills/；分发副本由 Ahoo Skills 生成。修改源文件并通过对应验证，不直接修改生成副本。
+
+先用[可运行示例](../examples/index.md)与[任务指南](../guides/index.md)提供明确输入和预期结果，再通过[架构说明](../architecture/index.md)审查边界。
