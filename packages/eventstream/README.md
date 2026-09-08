@@ -41,7 +41,7 @@ for await (const event of events) {
 
 ## Documentation
 
-- [Streaming concepts](https://fetcher.ahoo.me/learn/streaming)
+- [Streaming concepts](https://fetcher.ahoo.me/guides/streaming/)
 - [Event stream reference](https://fetcher.ahoo.me/reference/eventstream)
 - [Interactive stories](https://fetcher.ahoo.me/storybook/)
 

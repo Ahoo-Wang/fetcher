@@ -17,6 +17,7 @@ import { test } from 'node:test';
 import { createMarkdownRenderer, resolveConfig } from 'vitepress';
 import { fileURLToPath } from 'node:url';
 import { referencePackages } from '../.vitepress/config/reference.mjs';
+import { pageSections } from '../.vitepress/config/pages.mjs';
 
 test('every reference topic has complete bilingual page metadata', () => {
   for (const { name, topics } of referencePackages) {
@@ -300,6 +301,44 @@ test('every sidebar connects all sections with the current context expanded', as
             referencePackages.map(pkg => `${prefix}/reference/${pkg.name}/`),
             `Package order must stay stable at ${route}`,
           );
+      }
+    }
+  }
+});
+
+test('repository and package README links target current documentation routes', () => {
+  const root = new URL('../../', import.meta.url);
+  const normalize = path => path.replace(/\/$/, '') || '/';
+  const routes = new Set(
+    pageSections.flatMap(section =>
+      section.pages.flatMap(page => {
+        const route = page.replace(/index\.md$/, '').replace(/\.md$/, '');
+        return [normalize(`/${route}`), normalize(`/zh/${route}`)];
+      }),
+    ),
+  );
+  const directories = [
+    root,
+    ...readdirSync(new URL('packages/', root), { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => new URL(`packages/${entry.name}/`, root)),
+  ];
+  for (const directory of directories) {
+    for (const name of readdirSync(directory).filter(name =>
+      /^README.*\.md$/.test(name),
+    )) {
+      const file = new URL(name, directory);
+      const source = readFileSync(file, 'utf8');
+      for (const [link] of source.matchAll(
+        /https:\/\/fetcher\.ahoo\.me[^\s)<>"']*/g,
+      )) {
+        const path = new URL(link).pathname;
+        // Storybook is deployed separately from the wiki page manifest.
+        if (path === '/storybook' || path.startsWith('/storybook/')) continue;
+        assert.ok(
+          routes.has(normalize(path)),
+          `${fileURLToPath(file)}: ${link}`,
+        );
       }
     }
   }

@@ -72,7 +72,7 @@ export function Users() {
 
 ## Documentation
 
-- [Build a data viewer](https://fetcher.ahoo.me/recipes/data-viewer)
+- [Build a data viewer](https://fetcher.ahoo.me/guides/viewer/)
 - [Viewer reference](https://fetcher.ahoo.me/reference/viewer)
 - [Interactive Viewer workflows](https://fetcher.ahoo.me/storybook/)
 

@@ -65,13 +65,13 @@ try {
 | Wow 命令与查询          | `@ahoo-wang/fetcher-wow`         |
 | 可过滤数据 Viewer       | `@ahoo-wang/fetcher-viewer`      |
 
-[选择包](https://fetcher.ahoo.me/zh/start/choose-packages)说明 peer 依赖和最小可用组合。
+[选择包](https://fetcher.ahoo.me/zh/architecture/package-boundaries)说明 peer 依赖和最小可用组合。
 
 ## 学习与构建
 
 - [五分钟开始](https://fetcher.ahoo.me/zh/start/first-request)
-- [理解请求生命周期](https://fetcher.ahoo.me/zh/learn/request-lifecycle)
-- [使用开发者实战指南](https://fetcher.ahoo.me/zh/recipes/declarative-services)
+- [理解请求生命周期](https://fetcher.ahoo.me/zh/architecture/request-lifecycle)
+- [使用开发者实战指南](https://fetcher.ahoo.me/zh/guides/services/declarative-client)
 - [使用理解包边界的 Agent Skills](https://fetcher.ahoo.me/zh/skills/)
 - [查询包 API](https://fetcher.ahoo.me/zh/reference/)
 - [体验交互工作流](https://fetcher.ahoo.me/storybook/)

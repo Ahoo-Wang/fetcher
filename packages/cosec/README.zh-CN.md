@@ -44,7 +44,7 @@ Bearer 注入与自动刷新。刷新请求使用独立、未配置 CoSec 的 Fe
 
 ## 文档
 
-- [CoSec 认证实战](https://fetcher.ahoo.me/zh/recipes/cosec-authentication)
+- [CoSec 认证实战](https://fetcher.ahoo.me/zh/guides/integrations/cosec)
 - [CoSec 参考](https://fetcher.ahoo.me/zh/reference/cosec)
 
 [English](./README.md) · [许可证](../../LICENSE)
