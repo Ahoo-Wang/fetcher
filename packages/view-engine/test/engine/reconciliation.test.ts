@@ -64,43 +64,31 @@ it('reconciles a changed create echo by reading the created ID and preserving bo
   engine.dispose();
 });
 
-it('uses a complete list for an unknown create outcome, and keeps ambiguous outcomes blocked', async () => {
-  for (const count of [0, 1, 2]) {
-    const candidates = Array.from({ length: count }, (_, index) => ({
-      ...instance(`created-${index}`),
-      title: 'My copy',
-    }));
-    const listInstances = vi.fn(async () => ({
-      instances: [instance(), ...candidates],
-      defaultInstanceId: 'mine',
-    }));
-    const { engine } = setup({
-      host: {
-        instance: {
-          create: vi.fn().mockResolvedValue(null),
-          list: listInstances,
-        },
-      } as unknown as ViewHost,
-    });
-    await engine.load();
-    await expect(
-      engine.saveAs({ title: 'My copy', scope: { type: 'personal' } }),
-    ).rejects.toThrow();
-    expect(engine.canReloadInstance()).toBe(true);
-    if (count === 1) {
-      await engine.reloadInstance();
-      expect(engine.getSnapshot().selectedInstanceId).toBe('created-0');
-      expect(selected(engine, 'mine').requiresReload).toBe(false);
-    } else {
-      await expect(engine.reloadInstance()).rejects.toThrow('无法确定另存结果');
-      expect(selected(engine).requiresReload).toBe(true);
-      await expect(
-        engine.saveAs({ title: 'Again', scope: { type: 'personal' } }),
-      ).rejects.toThrow();
-    }
-    expect(listInstances).toHaveBeenCalledOnce();
-    engine.dispose();
-  }
+it('never treats matching list content as confirmation of a malformed creation', async () => {
+  const listInstances = vi.fn(async () => ({
+    instances: [instance(), { ...instance('other-request'), title: 'My copy' }],
+    defaultInstanceId: 'mine',
+  }));
+  const create = vi.fn().mockResolvedValue(null);
+  const { engine } = setup({
+    host: { instance: { create, list: listInstances } } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(
+    engine.saveAs({ title: 'My copy', scope: { type: 'personal' } }),
+  ).rejects.toThrow();
+  await expect(engine.reloadInstance()).rejects.toThrow('视图实例必须是对象');
+  expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+  expect(selected(engine).requiresReload).toBe(true);
+  expect(listInstances).not.toHaveBeenCalled();
+  expect(create).toHaveBeenCalledTimes(2);
+  expect(create.mock.calls[0][1].requestId).toBe(
+    create.mock.calls[1][1].requestId,
+  );
+  await expect(
+    engine.saveAs({ title: 'Changed copy', scope: { type: 'personal' } }),
+  ).rejects.toThrow('原配置重试');
+  engine.dispose();
 });
 
 it('does not roll back an opened copy when its save finishes before an older reconciliation read', async () => {
@@ -130,5 +118,28 @@ it('does not roll back an opened copy when its save finishes before an older rec
   expect(selected(engine).baseline).toEqual(saved.baseline);
   expect(selected(engine).baseline.revision).toBe('r2');
   expect(selected(engine, 'mine').requiresReload).toBe(false);
+  engine.dispose();
+});
+
+it('can inspect a returned created ID using a list-only host without matching content', async () => {
+  const persisted = { ...instance('created-known'), title: 'Normalized' };
+  const list = vi.fn(async () => ({
+    instances: [instance(), persisted],
+    defaultInstanceId: 'mine',
+  }));
+  const create = vi.fn(async () => persisted);
+  const { engine } = setup({
+    host: { instance: { create, list } } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(
+    engine.saveAs({ title: 'My copy', scope: { type: 'personal' } }),
+  ).rejects.toThrow();
+  await engine.reloadInstance();
+  expect(engine.getSnapshot().selectedInstanceId).toBe(persisted.id);
+  expect(selected(engine).baseline).toEqual(persisted);
+  expect(selected(engine).instance.title).toBe('My copy');
+  expect(create).toHaveBeenCalledOnce();
+  expect(list).toHaveBeenCalledOnce();
   engine.dispose();
 });

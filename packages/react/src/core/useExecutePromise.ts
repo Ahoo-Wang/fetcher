@@ -243,15 +243,17 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    */
   const execute = useCallback(
     async (input: PromiseSupplier<R>): Promise<void> => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        await handleOnAbort();
-      }
+      const previous = abortControllerRef.current;
+      const currentRequestId = requestId.generate();
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
-      const currentRequestId = requestId.generate();
       setLoading();
       try {
+        if (previous) {
+          previous.abort();
+          if (onAbortRef.current) await handleOnAbort();
+        }
+        if (!isMounted() || !requestId.isLatest(currentRequestId)) return;
         const data = await input(abortController);
 
         if (isMounted() && requestId.isLatest(currentRequestId)) {
@@ -285,6 +287,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       requestId,
       propagateError,
       handleOnAbort,
+      onAbortRef,
     ],
   );
 
@@ -305,14 +308,16 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    * Safe to call even when no operation is currently running.
    */
   const abort = useCallback(async () => {
+    requestId.invalidate();
     reset();
-    if (!abortControllerRef.current) {
+    const abortController = abortControllerRef.current;
+    abortControllerRef.current = undefined;
+    if (!abortController) {
       return;
     }
-    abortControllerRef.current.abort();
-    abortControllerRef.current = undefined;
+    abortController.abort();
     await handleOnAbort();
-  }, [reset, handleOnAbort]);
+  }, [reset, handleOnAbort, requestId]);
 
   useEffect(() => {
     return () => {

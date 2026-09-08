@@ -17,7 +17,11 @@ import type { RecordSession, ViewInstance } from '../recordModel.js';
 export class InstanceWork {
   readonly createRequests = new Map<
     string,
-    { requestId: string; submitted: ViewInstance }
+    {
+      requestId: string;
+      submitted: ViewInstance;
+      knownIds: ReadonlySet<string>;
+    }
   >();
   readonly writes = new Map<string, symbol>();
   readonly reloads = new Map<string, AbortController>();
@@ -30,12 +34,28 @@ export class InstanceWork {
     }
   >();
 
-  assertWritable(session: RecordSession): void {
+  finishCreate(id: string): void {
+    this.unverifiedCreates.delete(id);
+    this.createRequests.delete(id);
+  }
+
+  preserveCreates(): void {
+    for (const [id, request] of this.createRequests) {
+      if (!this.unverifiedCreates.has(id))
+        this.unverifiedCreates.set(id, {
+          id: null,
+          submitted: request.submitted,
+          knownIds: request.knownIds,
+        });
+    }
+  }
+
+  assertWritable(session: RecordSession, replayingCreate = false): void {
     const id = session.instance.id;
     if (this.writes.has(id)) throw new Error('实例正在写入，请等待操作完成');
     if (this.reloads.has(id))
       throw new Error('实例正在重新加载，请等待加载完成');
-    if (session.requiresReload)
+    if (session.requiresReload && !replayingCreate)
       throw new Error('保存结果需要核对，请先重新加载实例');
   }
 

@@ -571,18 +571,18 @@ Only personal/shared targets are allowed, never system.
 
 Write responses must match submitted identity, kind, title, scope and config;
 create must return a new ID. A mismatched or malformed echo marks `requiresReload`
-and prohibits more writes. Reload obtains a new baseline/revision and preserves
+and prohibits unrelated writes; replaying the retained original create request is still allowed. Reload obtains a new baseline/revision and preserves
 local edits for comparison. Ordinary request failure retains edits and does not
 automatically retry. `canReloadInstance(id?)` reports whether the host supplies
-the read interface required for recovery. The page offers reload after ordinary
+the load/list interface for a known ID or the create replay interface for an unknown result. The page offers reload after ordinary
 write failures as well as mismatched echoes, so revision conflicts can be resolved
 without discarding the draft.
 
-For a mismatched create echo, reload verifies the actual created ID; it never
-unlocks the source merely by reading that source again. If the ID is unknown,
-`instance.list` must return one new instance matching the submission. No match or
-multiple matches leaves writes blocked and exposes the refreshed list for
-reconciliation. A newly discovered copy uses the remote baseline while keeping
+For a mismatched create echo, reload verifies the explicitly returned created ID
+through instance.load, or exact ID lookup in instance.list when load is absent.
+It never unlocks the source by reading that source or matching list content.
+If the created ID is unknown, reload replays the original instance.create request
+and validates the authoritative receipt. A newly discovered copy uses the remote baseline while keeping
 the submitted title/scope and latest source config/filter buffer for comparison.
 An already opened copy retains its own session, including completed or in-flight
 saves. The source baseline and draft remain unchanged. Writes and query results received after disposal cannot
@@ -958,3 +958,65 @@ current Hooks/Compiler diagnostics and unused disable directives are errors.
 Parser tsconfigRootDir is explicit. Do not add a second legacy compiler plugin or
 ban all manual memoization; effect-dependency identity may require it. Executable
 lint regressions cover package/root/Storybook paths and valid memoization.
+
+## Named built-in filter components
+
+Configured `editor.name` values: `fve/select` and `fve/remote-select` (EQ/NE); `fve/multi-select`, `fve/remote-multi-select`, `fve/text-values` (IN/NOT_IN); `fve/datetime-range` (BETWEEN on date/datetime fields). Core compilation and clearing resolve these names automatically; React resolves the matching registrations. Explicit own-property custom registrations override all three capabilities consistently. No remote I/O occurs during compilation.
+
+React exports: `FilterMultiSelect`/`FilterMultiSelectProps`, `FilterRemoteSelect`/`FilterRemoteSelectProps`, `FilterTextValues`/`FilterTextValuesProps`, `FilterDateTimeRange`/`FilterDateTimeRangeProps`. Remote single uses `value` and a scalar/null callback; `multiple: true` uses `values` and an array callback. DateTimeRange takes a field and `{lowerBound?, upperBound?}`. TextValues takes a string array and can report an uncommitted input buffer through onValidityChange.
+
+Core exports `FilterOptionValue = string | number`, `FilterOptionItem = FilterOption<FilterOptionValue>` and `FilterOptionSource`. `FilterOption` and field options support an optional group label. IDs preserve their types and numeric IDs must be finite. `FilterExtensions.optionSources` and `FilterEditorProps.optionSources` are optional readonly named source registries.
+
+```ts
+interface FilterOptionSource {
+  search(
+    query: Pick<CursorQuery, 'cursor' | 'size'> & { search: string },
+    signal: AbortSignal,
+  ): Promise<CursorPage<FilterOptionItem>>;
+  resolve(
+    values: readonly FilterOptionValue[],
+    signal: AbortSignal,
+  ): Promise<{ list: FilterOptionItem[]; missing: FilterOptionValue[] }>;
+}
+```
+
+Remote `options.source` selects a runtime source; optional `pageSize` defaults to Wow DEFAULT_CURSOR_SIZE and `debounceMs` defaults to 300. Search and label resolution have independent cancellation and retries. Every resolution request must be accounted for exactly once in list/missing. Search results deduplicate by typed ID; a repeated pagination cursor fails rather than looping. A new keyword resets the cursor history.
+
+Selection props use `value` or `values` and an optional `selectedOptions` label snapshot. Labels do not compile into filters; hydration does not publish onChange or mark dirty. Empty values contribute no predicate. Clear preserves the node and configuration. Missing IDs remain selected until explicitly removed. No function, credential or endpoint is persisted. Changing the source object isolates its session; standalone panels need a React key for access-scope changes.
+
+`FilterTextValues` splits newline/comma/semicolon input and deduplicates without numeric coercion or CSV interpretation. A pending token consumes Enter before Query. Ranges require two complete ordered endpoints and reuse scalar timezone/DST validation; they do not expand a date to the end of the day.
+
+`examples/react/BuiltinFiltersExample.tsx` and **View Engine / 过滤器 / 内置组件** demonstrate Fetcher candidate loading and LocalStorageViewHost JSON recovery. The implementation reuses `@ahoo-wang/fetcher-react/core`; it does not import Ant Design or add candidate operations to ViewHost.
+
+When `field.operators` is absent, named built-in editors supply their applicable defaults (EQ/NE, IN/NOT_IN, or BETWEEN). Explicit field operator restrictions take precedence.
+
+## Built-in table cells
+
+The `/react` entry exports six components and their corresponding `*Props` types:
+
+| Component    | Standalone props beyond className                                                                                                             | Built-in name and JSON options                                        |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| TextCell     | `value?: unknown`, `text?: string`, `ellipsis?: boolean`, `copyable?: boolean`                                                                | `fve/text`: ellipsis/copyable, default false                          |
+| TagsCell     | `value?: CellValue \| readonly CellValue[] \| null`, `options?: readonly CellOption[]`, `maxVisible?: number`                                 | `fve/tags`: maxVisible, positive integer, default 2                   |
+| StatusCell   | `value?: CellValue \| null`, `options?: readonly CellOption[]`, `tones?: readonly CellStatusTone[]`                                           | `fve/status`: tones array                                             |
+| LinkCell     | `value?: unknown`, `text?: string`, `href?: string \| null`, `newTab?: boolean`                                                               | `fve/link`: hrefField/newTab; newTab defaults false                   |
+| DateTimeCell | `value?: string \| number \| Date \| null`, `type?: 'date' \| 'datetime'`, `timeZone?: string`, `locale?: string`, `dateStyle?`, `timeStyle?` | `fve/date-time`: locale/dateStyle/timeStyle; type/timeZone from field |
+| NumberCell   | `value?: number \| null`, `format?: ViewFieldDefinition['numberFormat']`                                                                      | `fve/number`: no options; format from field.numberFormat              |
+
+`CellValue = string | number | boolean`; numbers must be finite. `CellOption` has value/label. `CellTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'`; `CellStatusTone` has value/tone. These types are exported from `/react`. Date/time styles use Intl full/long/medium/short; default date and time styles are medium, standalone type is datetime. Calendar dates do not shift with timezone. Local date/time strings use existing scalar timezone/DST validation and reject fractional seconds beyond three digits. Invalid row dates/numbers become placeholders; invalid builtin options are configuration errors.
+
+Column renderer overrides field.cellRenderer. Explicit own-property extensions.cells entries override builtins, including an explicit matching builtin name. Unknown names and inherited names do not silently resolve. Static builtin registration is internal, not a second public plugin registry. JSON preserves name/options only; all six components are independent of ViewHost and query state.
+
+Tags deduplicate typed values, preserve enum labels and expose overflow through a keyboard-operable Popover. Status tones preserve 1 versus '1' identity and reject duplicate mappings in JSON. Text copies the original value; optional text changes display only. Clipboard failures show local feedback and old-value feedback does not appear on a changed cell. Links parse and allowlist HTTP(S)/mailto/tel/relative protocols; unsafe links retain readable text. Explicit null href disables linking; omitted href uses value. newTab always adds noopener noreferrer. Domain routing remains custom.
+
+Core `formatRecordNumber(value: number, field: Pick<ViewFieldDefinition, 'numberFormat'>): string` is shared with summaries. Currency/percent are numberFormat styles, with no currency-string parsing or unit guessing (0.125 => 12.5%). Summary calculations retain raw values. Tone CSS tokens are --fve-success/--fve-warning/--fve-info and existing --fve-destructive.
+
+`examples/react/BuiltinCellsExample.tsx` consumes only public exports and demonstrates column renderer/options persistence through LocalStorageViewHost. Storybook **View Engine / 单元格 / 内置组件** separates display examples from interaction regressions.
+
+## Recovery and input boundary corrections
+
+An unconfirmed create retains its original requestId, submitted snapshot and original known IDs until validated completion. A rejected retry does not prove an earlier attempt failed. Full engine load preserves in-flight/unconfirmed requests; replaying the original request remains possible even when ordinary writes are blocked. reloadInstance replays unknown creates through instance.create using the same key/body; it never adopts a new list item based on matching content. A response that explicitly identifies the new instance may instead be checked through instance.load or exact ID lookup in instance.list. Existing independently opened copies keep their own edits and newer baselines. Pending requests are engine-lifetime state, not serialized view configuration.
+
+LocalStorageViewHost preserves explicit null default selection and create does not update that preference. A removed previously specified default can fall back to an available instance. Scoped absent deletion is a successful no-op; it never removes a hidden private instance. Existing visible instances retain permission and revision checks.
+
+Remote onValueChange uses current candidate labels for newly added/reselected IDs; unchanged IDs preserve their existing saved snapshots, excluding unavailable decorations. Paste replaces the selected text or inserts at the caret before tokenization. Datetime range compilation uses the shared strict scalar validation, so false/0 in the date/time properties cannot become an unset filter. DateTimeCell accepts explicit calendar/clock forms (T/t or whitespace, optional Z/z or numeric offset), rejects unsupported text, and never uses the host timezone to interpret a field-zoned local string.

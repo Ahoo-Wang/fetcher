@@ -58,6 +58,7 @@ function validateFields(value: unknown) {
       for (const option of field.options) {
         assertObject(option, '枚举选项');
         assertText(option.label, '枚举选项名称');
+        if (option.group !== undefined) assertText(option.group, '枚举选项分组');
         if (
           !['string', 'number', 'boolean'].includes(typeof option.value) ||
           (typeof option.value === 'number' && !Number.isFinite(option.value))

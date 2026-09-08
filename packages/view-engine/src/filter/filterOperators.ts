@@ -165,6 +165,22 @@ const common = [
 ];
 const comparison = [Op.GT, Op.GTE, Op.LT, Op.LTE, Op.BETWEEN];
 export const stringOperators = [Op.CONTAINS, Op.STARTS_WITH, Op.ENDS_WITH];
+const namedFilterOperators: Readonly<Record<string, readonly Op[]>> = {
+  'fve/select': [Op.EQ, Op.NE],
+  'fve/remote-select': [Op.EQ, Op.NE],
+  'fve/multi-select': [Op.IN, Op.NOT_IN],
+  'fve/remote-multi-select': [Op.IN, Op.NOT_IN],
+  'fve/text-values': [Op.IN, Op.NOT_IN],
+  'fve/datetime-range': [Op.BETWEEN],
+};
+export function getNamedFilterOperators(
+  name?: string,
+): readonly Op[] | undefined {
+  return name &&
+    Object.prototype.hasOwnProperty.call(namedFilterOperators, name)
+    ? namedFilterOperators[name]
+    : undefined;
+}
 export function getFieldOperators(field: FilterFieldDefinition): readonly Op[] {
   let operators: Op[];
   switch (field.type) {
@@ -199,9 +215,9 @@ export function getFieldOperators(field: FilterFieldDefinition): readonly Op[] {
         ['field', 'element'].includes(FILTER_OPERATORS[op].category),
       );
   }
-  return field.operators
-    ? field.operators.filter(op => operators.includes(op))
-    : operators;
+  const allowed =
+    field.operators ?? getNamedFilterOperators(field.editor?.name);
+  return allowed ? allowed.filter(op => operators.includes(op)) : operators;
 }
 
 export function definition(op: Op): FilterOperatorDefinition {

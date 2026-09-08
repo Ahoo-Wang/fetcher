@@ -294,7 +294,7 @@ public exports nor included in the package. See [the experiment](dev/README.md).
 The copyable order example accepts a `createViewHost` callback; HTTP wiring is
 confined to `dev/HttpOrderExample.tsx`.
 
-`ViewHost.instance.create(input, {requestId, signal?})` requires one ID per logical create. Same user/key and canonical body replay the stored receipt; changed content returns CONFLICT. The view and receipt are committed in the same transaction. ViewEngine retains the ID on unknown failures and blocks changing that pending request's content; retry or explicit reload reconciles the created instance. It never treats a transport failure as proof that a write did not happen. Direct clients must retain their request ID when retrying, including after reconstructing a client. Fixture receipts live until the administrative reset.
+`ViewHost.instance.create(input, {requestId, signal?})` requires one ID per logical create. Same user/key and canonical body replay the stored receipt; changed content returns CONFLICT. The view and receipt are committed in the same transaction. ViewEngine retains the ID and original snapshot until the result is verified, including denied retries and a full reload. Unknown creation results are confirmed by replaying the same create request, never by matching list content. An explicitly returned created ID can be inspected directly. Other writes wait for confirmation; the original request remains retryable and newer local edits are retained. It never treats a transport failure as proof that a write did not happen. Direct clients must retain their request ID when retrying, including after reconstructing a client. Fixture receipts live until the administrative reset.
 
 Personal ordering is a complete replacement: the last successful replacement for the same user wins. The current visible ID set must match, and no other user's order is modified. Instance writes use revision CAS. These are separate, explicit concurrency semantics.
 
@@ -515,3 +515,75 @@ from the repository, package or a worktree.
 Regression tests lint invalid Hooks/Compiler examples through all three entry paths
 and retain a valid manual-memoization example. See the
 [official rule reference](https://react.dev/reference/eslint-plugin-react-hooks).
+
+### Built-in filter components
+
+The React entry exports `FilterMultiSelect`, `FilterRemoteSelect`, `FilterTextValues`, and `FilterDateTimeRange`. Configured fields can use `fve/select`, `fve/multi-select`, `fve/remote-select`, `fve/remote-multi-select`, `fve/text-values`, or `fve/datetime-range` without registering their own components. Explicit custom registrations take precedence consistently for render, compile and clear; unknown names still fail.
+
+Selection IDs are strings or finite numbers; `1` and `'1'` remain distinct. Grouped options use `group`. Single selection uses EQ/NE, multiple selection and text collections use IN/NOT_IN, and date/datetime ranges use BETWEEN. Empty selection contributes no predicate. An incomplete or reversed range is invalid; timestamps follow the field timezone and existing DST rules.
+
+Remote candidates are supplied through `extensions.optionSources`, outside ViewHost. The source object should remain stable during a session; replace it when its data scope changes. `ViewPage.scopeKey` isolates access scopes; standalone panels should use a React `key` when the user/tenant changes.
+
+```tsx
+import type { FilterOptionSource } from '@ahoo-wang/fetcher-view-engine';
+import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+
+// sources.users implements search(query, signal) and resolve(ids, signal).
+// search returns the existing Wow CursorPage: { list, nextCursor }.
+// resolve returns { list, missing }, explicitly accounting for every requested ID.
+const sources: Record<string, FilterOptionSource> = { users: userOptionSource };
+
+<ViewPage
+  definitionId="orders"
+  scopeKey="tenant:user:access"
+  host={host}
+  extensions={{ optionSources: sources }}
+/>;
+// Field: editor: { name: 'fve/remote-multi-select', options: { source: 'users', pageSize: 20, debounceMs: 300 } }
+```
+
+The remote component reuses `@ahoo-wang/fetcher-react/core` for asynchronous execution and debounce; candidate responses reuse `CursorPage`. It supports manual load-more, cancellation, stale-response suppression, page deduplication, and independent candidate/label retries. IME composition does not start a search. Search Enter confirms a candidate without submitting the record query.
+
+Saved props contain `value` or `values` plus `selectedOptions` label snapshots. Label hydration is runtime-only: it does not update props, dirty state or record queries. Explicitly missing IDs retain their saved identity; failed hydration is not treated as deletion. Clearing removes selected values and snapshots while keeping the configured filter node.
+
+Text collections split pasted input on newlines, commas and semicolons, trim and deduplicate, and preserve spaces inside identifiers, case and leading zeros. Enter commits a pending token first. This is not a CSV parser. Date-time ranges retain `lowerBound` and `upperBound`; they never automatically expand the end to the end of the day.
+
+Open **View Engine → 过滤器 → 内置组件** in Storybook, or the standalone example with `?example=builtin-filters`. `BuiltinFiltersExample.tsx` uses Fetcher with deterministic data-URL fixtures and LocalStorageViewHost to demonstrate selected-label recovery and JSON persistence. Only this data-URL fixture removes URL-template resolution; real HTTP clients keep their usual URL/authentication interceptors.
+
+Named built-in editors choose their applicable operators automatically when `field.operators` is omitted; an explicit field restriction takes precedence.
+
+### Built-in table cells
+
+`TextCell`, `TagsCell`, `StatusCell`, `LinkCell`, `DateTimeCell`, and `NumberCell` are exported from `/react`. Use them independently or reference their built-in names from `field.cellRenderer` / `column.renderer`; no `extensions.cells` registration is required. Explicit own-property custom registrations override the built-ins. Column references take precedence over field references.
+
+| Renderer        | JSON options                                   | Behavior                                                                          |
+| --------------- | ---------------------------------------------- | --------------------------------------------------------------------------------- |
+| `fve/text`      | `ellipsis`, `copyable` (both false by default) | Enum display labels, accessible full-text tooltip, copy the original value        |
+| `fve/tags`      | `maxVisible` (positive integer, default 2)     | Scalar/array enum labels, typed deduplication, keyboard-accessible overflow popup |
+| `fve/status`    | `tones: [{ value, tone }]`                     | Enum label plus `neutral`, `success`, `warning`, `danger` or `info` tone          |
+| `fve/link`      | `hrefField`, `newTab` (default false)          | Address from the value or another record field; text remains the bound field      |
+| `fve/date-time` | `locale`, `dateStyle`, `timeStyle`             | Field type/timezone; styles are `full`, `long`, `medium` (default), `short`       |
+| `fve/number`    | None; use `field.numberFormat`                 | The same numeric/currency/percent format as summaries                             |
+
+```tsx
+import { NumberCell, TextCell } from '@ahoo-wang/fetcher-view-engine/react';
+
+<TextCell value="ORDER-0001" ellipsis copyable />;
+<NumberCell
+  value={0.125}
+  format={{ style: 'percent', maximumFractionDigits: 1 }}
+/>; // 12.5%
+// Field: { field: 'amount', label: 'Amount', type: 'number',
+//   numberFormat: { style: 'currency', currency: 'CNY' },
+//   cellRenderer: { name: 'fve/number' } }
+```
+
+Empty values render `—`; zero and false remain values. NumberCell accepts finite numbers, not formatted strings. Date-only `YYYY-MM-DD` stays a calendar date without timezone shifting; epoch zero is valid. Date/time text accepts YYYY-MM-DD with an optional T/t or whitespace separator and HH:mm[:ss[.fraction]], followed optionally by Z/z or a numeric offset. Other formats are rejected. Timestamp-less local date/time strings use the field timezone and the existing DST validation; fractional seconds beyond three digits are rejected instead of falling back to the machine timezone. Invalid dates/numbers render a placeholder. Invalid component options are configuration errors, isolated by the table's existing renderer boundary.
+
+LinkCell allows HTTP(S), mailto, tel and relative URLs after URL parsing; unsafe addresses render as text. New tabs always include `noopener noreferrer`. Application routing remains a custom component. Copy uses the raw value, not the enum label or ellipsis; clipboard rejection/unavailability shows a local retry message. TextCell's optional `text` only changes display. Nothing in these interactions mutates the view or triggers a query.
+
+Status theme tokens are `--fve-success`, `--fve-warning`, `--fve-info` and the existing `--fve-destructive`; labels remain visible without relying on color. Popups inherit the active theme. See **View Engine → 单元格 → 内置组件** and `examples/react/BuiltinCellsExample.tsx` for standalone usage, dark/narrow layout, invalid data and LocalStorageViewHost reload recovery.
+
+Creation does not modify the default-instance preference. `LocalStorageViewHost` preserves explicit `defaultInstanceId: null`; only a previously selected default that is no longer visible falls back to an available instance. Deleting an absent instance in the current access scope succeeds without affecting another user's private view; existing visible instances still require permission and the correct revision. Pending creation state belongs to the current engine lifetime; callers of the service keep their own request ID across client reconstruction.
+
+Remote label snapshots change for an ID when that ID is added or reselected, using the selected candidate. Hydration and changes to other IDs do not overwrite its saved label. Text collection paste honors the current caret/selection before splitting values. Invalid range endpoint structures report validation errors instead of becoming an unset predicate.

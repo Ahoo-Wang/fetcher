@@ -11,11 +11,12 @@
  * limitations under the License.
  */
 
-import type { RecordSession, ViewInstance } from '../recordModel.js';
+import type { ViewInstance } from '../recordModel.js';
 import type { ViewHost } from '../ViewHost.js';
 import { validateViewInstance } from '../recordValidation.js';
 import { readInstanceList } from '../validation/instanceValidation.js';
 import { sameFilterState } from '../../filter/filterTree.js';
+import { permissionsFor } from './instancePermissions.js';
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import type { InstanceWork } from './InstanceWork.js';
@@ -42,7 +43,9 @@ export class ViewReload {
     const pending = this.work.unverifiedCreates.get(id);
     return pending
       ? Boolean(
-          (pending.id && this.host.instance?.load) || this.host.instance?.list,
+          (pending.id &&
+            (this.host.instance?.load || this.host.instance?.list)) ||
+          (this.work.createRequests.has(id) && this.host.instance?.create),
         )
       : Boolean(this.host.instance?.load);
   }
@@ -67,9 +70,12 @@ export class ViewReload {
       started = true;
       this.queries.cancel(id);
       let result: ViewInstance;
-      const additions: Record<string, RecordSession> = Object.create(null);
-      if (unverified && (!unverified.id || !this.host.instance?.load)) {
-        const list = await this.host.instance!.list!(
+      if (
+        unverified?.id &&
+        !this.host.instance?.load &&
+        this.host.instance?.list
+      ) {
+        const list = await this.host.instance.list(
           definition.id,
           controller.signal,
         );
@@ -78,37 +84,42 @@ export class ViewReload {
           this.work.reloads.get(id) !== controller
         )
           return;
-        const instances = readInstanceList(list, definition);
-        for (const item of instances) {
-          if (!this.store.find(item.id))
-            additions[item.id] = createSession(
-              copy(item),
-              definition,
-              this.store.filterCompilers,
-            );
-        }
-        const candidates = instances.filter(item =>
-          unverified.id
-            ? item.id === unverified.id
-            : !unverified.knownIds.has(item.id) &&
-              sameFilterState(
-                instanceContent(item),
-                instanceContent(unverified.submitted),
-              ),
+        const matched = readInstanceList(list, definition).find(
+          item => item.id === unverified.id,
         );
-        if (candidates.length !== 1) {
-          this.store.publish({
-            instanceIds: [
-              ...this.store.getSnapshot().instanceIds,
-              ...Object.keys(additions),
-            ],
-            sessions: { ...this.store.getSnapshot().sessions, ...additions },
-          });
-          throw new Error(
-            '无法确定另存结果；已重新加载实例列表，请核对服务端创建结果',
-          );
-        }
-        result = candidates[0];
+        if (!matched)
+          throw new Error('实例列表未包含已返回的创建 ID，仍需核对');
+        result = matched;
+      } else if (unverified && (!unverified.id || !this.host.instance?.load)) {
+        const request = this.work.createRequests.get(id);
+        if (!request || !this.host.instance?.create)
+          throw new Error('缺少原创建请求，无法确认另存结果');
+        const permissions = permissionsFor(this.host, session);
+        if (
+          !(request.submitted.scope.type === 'personal'
+            ? permissions.saveAsPersonal
+            : permissions.saveAsShared)
+        )
+          throw new Error('宿主未允许重试此创建操作');
+        // Replaying the original request is authoritative; list content is not identity.
+        const { definitionId, kind, title, scope, config } = request.submitted;
+        result = await this.host.instance.create(
+          structuredClone({ definitionId, kind, title, scope, config }),
+          { requestId: request.requestId, signal: controller.signal },
+        );
+        if (
+          !this.scope.current(lifecycle) ||
+          this.work.reloads.get(id) !== controller
+        )
+          return;
+        validateViewInstance(result, definition, unverified.id ?? undefined);
+        if (
+          !sameFilterState(
+            instanceContent(result),
+            instanceContent(request.submitted),
+          )
+        )
+          throw new Error('创建回执不符合原样保存契约，仍需核对');
       } else
         result = await this.host.instance!.load!(
           unverified?.id ?? id,
@@ -150,23 +161,17 @@ export class ViewReload {
           this.scope.selection === selection;
         if (this.store.getSnapshot().selectedInstanceId === baseline.id)
           queryId = baseline.id;
-        this.work.unverifiedCreates.delete(id);
-        this.work.createRequests.delete(id);
+        this.work.finishCreate(id);
         if (selectCopy) {
           this.scope.advanceSelection();
           queryId = baseline.id;
         }
         this.store.publish({
           instanceIds: [
-            ...new Set([
-              ...this.store.getSnapshot().instanceIds,
-              ...Object.keys(additions),
-              baseline.id,
-            ]),
+            ...new Set([...this.store.getSnapshot().instanceIds, baseline.id]),
           ],
           sessions: {
             ...this.store.getSnapshot().sessions,
-            ...additions,
             [id]: { ...latest, writeError: null, requiresReload: false },
             [baseline.id]: created,
           },

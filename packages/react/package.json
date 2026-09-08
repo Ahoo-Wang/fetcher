@@ -34,6 +34,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.es.js",
       "require": "./dist/index.umd.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core.js"
     }
   },
   "files": [
@@ -43,9 +47,10 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.umd.config.ts && pnpm test:package",
     "test:ui": "vitest --ui",
     "test": "vitest run --coverage && pnpm test:type",
+    "test:package": "node scripts/verify-package.mjs",
     "test:type": "tsc --noEmit -p test/tsconfig.types.json",
     "lint": "eslint . --fix",
     "clean": "rm -rf dist",

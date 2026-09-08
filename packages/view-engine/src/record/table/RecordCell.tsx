@@ -26,40 +26,14 @@ import {
   TooltipContent,
 } from '../../components/ui/tooltip.js';
 import {
-  formatRecordNumber,
   type RecordColumn,
   type RecordData,
   type RecordKey,
-  type ViewFieldDefinition,
 } from '../recordModel.js';
 import type { RecordTableProps } from '../recordReactTypes.js';
 import { readRecordValue } from '../recordValidation.js';
-
-function displayValue(value: unknown, field: ViewFieldDefinition): string {
-  if (value === null || value === undefined) return '—';
-  const option = field.options?.find(option => Object.is(option.value, value));
-  if (option) return option.label;
-  if (
-    (field.type === 'date' || field.type === 'datetime') &&
-    (typeof value === 'string' ||
-      typeof value === 'number' ||
-      value instanceof Date)
-  ) {
-    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
-      return value;
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isFinite(date.getTime()))
-      return new Intl.DateTimeFormat('zh-CN', {
-        timeZone: field.timeZone,
-        dateStyle: 'medium',
-        ...(field.type === 'datetime' ? { timeStyle: 'medium' } : {}),
-      }).format(date);
-  }
-  if (typeof value === 'boolean') return value ? '是' : '否';
-  if (typeof value === 'number') return formatRecordNumber(value, field);
-  if (typeof value === 'object') return JSON.stringify(value) ?? '—';
-  return String(value);
-}
+import { formatRecordValue } from '../recordValueFormat.js';
+import { BUILTIN_CELL_RENDERERS } from '../cells/builtinCellRenderers.js';
 
 export function RecordCell({
   column,
@@ -139,7 +113,12 @@ export function RecordCell({
     const Renderer =
       registry && Object.prototype.hasOwnProperty.call(registry, reference.name)
         ? registry[reference.name]
-        : undefined;
+        : Object.prototype.hasOwnProperty.call(
+              BUILTIN_CELL_RENDERERS,
+              reference.name,
+            )
+          ? BUILTIN_CELL_RENDERERS[reference.name]
+          : undefined;
     if (!Renderer)
       return <span role="alert">未注册单元格渲染器：{reference.name}</span>;
     return (
@@ -156,7 +135,7 @@ export function RecordCell({
       />
     );
   }
-  const text = displayValue(value, field);
+  const text = formatRecordValue(value, field);
   if (compact && column.field === definition.rowKey) {
     return (
       <TooltipProvider>

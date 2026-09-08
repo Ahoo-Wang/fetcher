@@ -120,6 +120,7 @@ export function FilterLeafEditor({
         fields={copy(scopeFields)}
         mode={mode}
         context={props.context}
+        optionSources={props.extensions?.optionSources}
         options={editorOptions ? copy(editorOptions) : undefined}
         disabled={disabled}
         onOperatorChange={op => {

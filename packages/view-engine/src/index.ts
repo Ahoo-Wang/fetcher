@@ -73,3 +73,9 @@ export type {
   ViewPermissionSnapshot,
   ViewStorageLock,
 } from './record/viewServiceContract.js';
+
+export type {
+  FilterOptionSource,
+  FilterOptionValue,
+  FilterOptionItem,
+} from './filter/filterOptionSource.js';

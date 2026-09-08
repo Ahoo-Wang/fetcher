@@ -62,6 +62,8 @@ export class ViewLoader {
   }
   async load(): Promise<void> {
     const lifecycle = this.scope.restart();
+    // Reloading cannot prove whether an already dispatched creation committed.
+    this.work.preserveCreates();
     this.loadController?.abort();
     this.work.cancelReloads();
     this.queries.reset();

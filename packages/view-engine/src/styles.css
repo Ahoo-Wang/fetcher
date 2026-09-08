@@ -31,6 +31,9 @@
   --color-popover: var(--fve-popover);
   --color-popover-foreground: var(--fve-popover-foreground);
   --color-destructive: var(--fve-destructive);
+  --color-success: var(--fve-success);
+  --color-warning: var(--fve-warning);
+  --color-info: var(--fve-info);
   --color-border: var(--fve-border);
   --color-input: var(--fve-input);
   --color-ring: var(--fve-ring);
@@ -56,6 +59,9 @@
     oklch(0.577 0.245 27.325),
     oklch(0.704 0.191 22.216)
   );
+  --fve-success: light-dark(oklch(0.42 0.12 150), oklch(0.8 0.12 150));
+  --fve-warning: light-dark(oklch(0.45 0.1 75), oklch(0.83 0.12 75));
+  --fve-info: light-dark(oklch(0.44 0.16 255), oklch(0.8 0.1 255));
   --fve-border: light-dark(oklch(0.922 0 0), oklch(1 0 0 / 10%));
   --fve-input: light-dark(oklch(0.922 0 0), oklch(1 0 0 / 15%));
   --fve-ring: light-dark(oklch(0.708 0 0), oklch(0.556 0 0));

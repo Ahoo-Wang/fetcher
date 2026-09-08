@@ -11,10 +11,11 @@
  * limitations under the License.
  */
 
-export interface FilterOption<Value extends string = string> {
+export interface FilterOption<Value extends string | number = string> {
   readonly value: Value;
   readonly label: string;
   readonly disabled?: boolean;
+  readonly group?: string;
 }
 
 export interface FilterField<Field extends string = string> {

@@ -890,6 +890,9 @@ importers:
 
   packages/view-engine:
     dependencies:
+      '@ahoo-wang/fetcher-react':
+        specifier: workspace:^
+        version: link:../react
       '@ahoo-wang/fetcher-wow':
         specifier: workspace:^
         version: link:../wow
@@ -918,6 +921,9 @@ importers:
         specifier: 'catalog:'
         version: 3.6.0
     devDependencies:
+      '@ahoo-wang/fetcher':
+        specifier: workspace:^
+        version: link:../fetcher
       '@eslint/js':
         specifier: 'catalog:'
         version: 10.0.1(eslint@10.9.1(jiti@2.7.0))

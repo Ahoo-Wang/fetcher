@@ -87,11 +87,12 @@ export class LocalStorageViewHost implements ViewHost {
             instances: ids.map(id =>
               this.dto(visible.find(item => item.id === id)!),
             ),
-            defaultInstanceId: visible.some(
-              item => item.id === user.defaultInstanceId,
-            )
-              ? user.defaultInstanceId
-              : (ids[0] ?? null),
+            defaultInstanceId:
+              user.defaultInstanceId === null
+                ? null
+                : visible.some(item => item.id === user.defaultInstanceId)
+                  ? user.defaultInstanceId
+                  : (ids[0] ?? null),
           };
         },
         false,
@@ -190,7 +191,6 @@ export class LocalStorageViewHost implements ViewHost {
             ...state.creates,
             [receiptKey]: { input: copy(body), result: candidate },
           };
-          state.users[this.options.scopeKey].defaultInstanceId ??= candidate.id;
           return candidate;
         },
         true,
@@ -215,7 +215,10 @@ export class LocalStorageViewHost implements ViewHost {
       }, true);
     },
     delete: async (id: string, revision?: string): Promise<void> => {
+      encodeViewResourceId(id);
       await this.transaction(state => {
+        // Absence is scoped to this caller, including inaccessible personal views.
+        if (!this.visible(state).some(item => item.id === id)) return;
         const previous = this.writable(state, id, revision, 'delete');
         state.instances.splice(state.instances.indexOf(previous), 1);
       }, true);

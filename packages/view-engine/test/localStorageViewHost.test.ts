@@ -193,3 +193,18 @@ it('restores a saved view through a fresh engine while delegating record queries
   expect(paged).toHaveBeenCalledTimes(2);
   second.dispose();
 });
+
+it('keeps scoped deletion idempotent without touching another users instance', async () => {
+  const alice = new LocalStorageViewHost(options('alice'));
+  const bob = new LocalStorageViewHost(options('bob'));
+  const own = await alice.instance.load(instance.id);
+  const others = await bob.instance.load(instance.id);
+  await alice.instance.delete(own.id, own.revision);
+  await expect(
+    alice.instance.delete(own.id, own.revision),
+  ).resolves.toBeUndefined();
+  expect(await bob.instance.load(instance.id)).toEqual(others);
+  await expect(alice.instance.delete('system')).rejects.toMatchObject({
+    code: 'FORBIDDEN',
+  });
+});

@@ -10,6 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { getBuiltinFilterCompiler } from './builtinFilterCompilers.js';
 import type { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { copy } from '../lib/snapshot.js';
 import type { DeepReadonly } from '../lib/types.js';
@@ -55,7 +56,7 @@ export function clearFilterDraftValues(
                 node.component.name,
               )
             ? compilers[node.component.name]
-            : undefined;
+            : getBuiltinFilterCompiler(node.component.name);
       if (!compiler)
         throw new TypeError(`未注册筛选编译器：${node.component.name}`);
       if (compiler.clear)

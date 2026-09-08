@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { getBuiltinFilterRegistration } from './builtinFilterRegistrations.js';
 import { copy } from '../lib/snapshot.js';
 import type {
   FilterComponentProperties,
@@ -47,15 +48,36 @@ export function resolveFilterEditor(
   try {
     const properties = filterComponentProps(node);
     if (reference.name === 'builtin') return { props: properties, reference };
-    const registration = props.extensions?.filters?.[reference.name];
-    if (
-      !registration ||
-      !Object.prototype.hasOwnProperty.call(
-        props.extensions?.filters,
+    const registration =
+      props.extensions?.filters &&
+      Object.prototype.hasOwnProperty.call(
+        props.extensions.filters,
         reference.name,
       )
-    )
-      return { error: `未注册筛选器：${reference.name}` };
+        ? props.extensions.filters[reference.name]
+        : getBuiltinFilterRegistration(reference.name);
+    if (!registration) return { error: `未注册筛选器：${reference.name}` };
+    if (
+      registration === getBuiltinFilterRegistration(reference.name) &&
+      ['fve/remote-select', 'fve/remote-multi-select'].includes(reference.name)
+    ) {
+      const name = reference.options?.source;
+      const source =
+        typeof name === 'string' &&
+        props.extensions?.optionSources &&
+        Object.prototype.hasOwnProperty.call(
+          props.extensions.optionSources,
+          name,
+        )
+          ? props.extensions.optionSources[name]
+          : undefined;
+      if (
+        !source ||
+        typeof source.search !== 'function' ||
+        typeof source.resolve !== 'function'
+      )
+        return { error: '未注册候选数据源' };
+    }
     const supported =
       registration.modes.includes(mode) &&
       (!registration.supports ||

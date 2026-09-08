@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import type { FilterOptionSource } from './filterOptionSource.js';
 import type { ComponentType, ReactNode } from 'react';
 import type { FilterExpression, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import type { FilterOption } from './filterTypes.js';
@@ -28,6 +29,7 @@ import type {
 
 /** UI-library-independent value editor. Inputs are read-only snapshots, not applied query state. */
 export interface FilterEditorProps {
+  optionSources?: Readonly<Record<string, FilterOptionSource>>;
   props: DeepReadonly<FilterComponentProperties>;
   operator: FilterOperator;
   field?: DeepReadonly<FilterFieldDefinition>;
@@ -79,6 +81,7 @@ export interface FilterComponentRegistration extends Omit<
 export type FilterRegistration =
   FilterEditorRegistration | FilterComponentRegistration;
 export interface FilterExtensions {
+  optionSources?: Readonly<Record<string, FilterOptionSource>>;
   filters?: Readonly<Record<string, FilterRegistration>>;
 }
 /** Compose panel controls elsewhere without bypassing the panel's mode transition guards. */

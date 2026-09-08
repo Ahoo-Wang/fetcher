@@ -180,8 +180,7 @@ export class ViewManagement {
       this.queries.cancel(id);
       this.summaries.invalidate(id);
       if (!current()) return;
-      this.work.unverifiedCreates.delete(id);
-      this.work.createRequests.delete(id);
+      this.work.finishCreate(id);
       const sessions = { ...this.store.getSnapshot().sessions };
       delete sessions[id];
       const instanceIds = this.store

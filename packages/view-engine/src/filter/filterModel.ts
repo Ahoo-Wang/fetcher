@@ -46,6 +46,7 @@ export interface FilterFieldDefinition extends FilterField {
     value: Exclude<FilterLiteral, null>;
     label: string;
     disabled?: boolean;
+    group?: string;
   }[];
   fields?: readonly FilterFieldDefinition[];
   operators?: readonly FilterOperator[];

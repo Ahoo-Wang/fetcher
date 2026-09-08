@@ -163,7 +163,7 @@ const host = new LocalStorageViewHost({
 
 HTTP 类和状态码映射位于 `dev/http`，没有公共导出，也不进入发布包。详见[开发实验](dev/README.zh-CN.md)。可复制的订单示例通过 `createViewHost` 回调注入宿主；HTTP 接线仅存在于 `dev/HttpOrderExample.tsx`。
 
-`ViewHost.instance.create(input, {requestId, signal?})` 要求每个逻辑创建保留同一个请求 ID。同一用户、同一键和同一规范化正文重放已存回执；正文变化返回 CONFLICT。实例与回执在同一个事务内提交。引擎在结果不明时保留 ID，阻止修改尚未确认请求的内容；原请求重试或显式重载可以核对已创建实例，不会把传输失败当成“肯定未写入”。直接使用客户端的调用者在重试、重建客户端后也必须保留原 ID。测试服务回执保留到管理重置为止。
+`ViewHost.instance.create(input, {requestId, signal?})` 要求每个逻辑创建保留同一个请求 ID。同一用户、同一键和同一规范化正文重放已存回执；正文变化返回 CONFLICT。实例与回执在同一个事务内提交。引擎保留原 ID 与提交快照直到结果验证完成，权限拒绝的重试和完整加载都不会清除未确认请求。未知创建结果通过同一 create 请求重放确认，不按列表内容认领实例；明确返回的新实例 ID 可以直接读取核对。其他写入等待确认，原请求仍可重试，后续本地编辑保留。直接使用客户端的调用者在重试、重建客户端后也必须保留原 ID。测试服务回执保留到管理重置为止。
 
 个人排序采用完整替换，同一用户最后一次成功替换生效；可见 ID 集合必须仍然匹配，不修改其他用户顺序。实例写入使用 revision CAS，两者是明确不同的并发语义。
 
@@ -337,3 +337,75 @@ pnpm storybook
 两处入口共享官方 `eslint-plugin-react-hooks` 稳定 recommended 规则，包含 Compiler 诊断。依赖数组、不兼容库、不支持的语法均按 error 处理，无效的禁用注释也会报错；无需另加旧的编译器 lint 插件。根目录 CI 的 `pnpm lint` 同时检查 `stories/view-engine`。显式解析器根目录避免从仓库、包目录或 worktree 执行时出现根目录推断歧义。
 
 回归测试通过三种入口检查错误 Hook 和编译器用法，并确认合法的手动 memoization 可以通过。参见[官方规则说明](https://react.dev/reference/eslint-plugin-react-hooks)。
+
+### 常用内置筛选组件
+
+React 入口导出 `FilterMultiSelect`、`FilterRemoteSelect`、`FilterTextValues` 和 `FilterDateTimeRange`。字段可直接引用 `fve/select`、`fve/multi-select`、`fve/remote-select`、`fve/remote-multi-select`、`fve/text-values`、`fve/datetime-range`，无需重复注册组件。显式业务注册在渲染、编译和清空三处具有一致优先级；未知名称仍报错。
+
+选择值支持字符串与有限数字，`1` 和 `'1'` 不混淆；候选可用 `group` 分组。单选对应 EQ/NE，多选及多值文本对应 IN/NOT_IN，日期/日期时间区间对应 BETWEEN。空选择不生成条件；不完整或逆序区间无效，时间戳继续遵循字段时区与 DST 规则。
+
+远程候选通过 `extensions.optionSources` 注入，不加入 ViewHost。数据源对象在会话内应保持稳定，范围变化时替换对象。ViewPage 使用 `scopeKey` 隔离访问范围，独立 FilterPanel 在用户/租户变化时使用 React `key` 重挂载。
+
+```tsx
+import type { FilterOptionSource } from '@ahoo-wang/fetcher-view-engine';
+import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+
+// sources.users 提供 search(query, signal) 和 resolve(ids, signal)。
+// search 复用 Wow CursorPage，返回 { list, nextCursor }。
+// resolve 返回 { list, missing }，明确交代每一个请求 ID。
+const sources: Record<string, FilterOptionSource> = { users: userOptionSource };
+
+<ViewPage
+  definitionId="orders"
+  scopeKey="tenant:user:access"
+  host={host}
+  extensions={{ optionSources: sources }}
+/>;
+// 字段：editor: { name: 'fve/remote-multi-select', options: { source: 'users', pageSize: 20, debounceMs: 300 } }
+```
+
+远程组件复用 `@ahoo-wang/fetcher-react/core` 的异步执行与防抖，分页复用 `CursorPage`。支持加载更多、取消、过期响应丢弃、分页去重，以及候选和标签的独立重试。输入法组合期间不搜索，搜索框 Enter 确认候选而不触发记录查询。
+
+持久化属性为 `value` 或 `values` 加 `selectedOptions` 标签快照。自动标签回填只更新运行时显示，不修改属性、dirty 或记录查询。明确缺失的 ID 仍保留原标识；回填失败不代表选项已删除。清空移除选择值和标签快照，保留配置好的筛选节点。
+
+多值文本按换行、中英文逗号和分号拆分、去除两端空白并去重，保留名称内部空格、大小写和前导零；Enter 先提交未完成条目，不承担 CSV 引号解析。区间保留 `lowerBound`、`upperBound`，不自动将结束值补到日末。
+
+在 Storybook 的 **View Engine → 过滤器 → 内置组件** 或独立示例 `?example=builtin-filters` 查看。`BuiltinFiltersExample.tsx` 通过 Fetcher 读取确定性 data URL 夹具，并以 LocalStorageViewHost 验证标签恢复与 JSON 持久化。只有该 data URL 夹具移除 URL 模板解析，真实 HTTP 客户端保留原有 URL 和鉴权拦截器。
+
+字段未声明 `operators` 时，命名内置编辑器自动选用适用操作；显式字段限制仍具有优先级。
+
+### 内置表格单元格
+
+`/react` 导出 `TextCell`、`TagsCell`、`StatusCell`、`LinkCell`、`DateTimeCell` 和 `NumberCell`。可以独立使用，也可以在 `field.cellRenderer` / `column.renderer` 中引用内置名称，无需配置 `extensions.cells`。显式注册的自有业务组件优先；列配置优先于字段配置。
+
+| 渲染器          | JSON options                           | 行为                                                     |
+| --------------- | -------------------------------------- | -------------------------------------------------------- |
+| `fve/text`      | `ellipsis`、`copyable`，默认均为 false | 枚举名称、可聚焦完整内容提示、复制原始值                 |
+| `fve/tags`      | `maxVisible`，正整数，默认 2           | 标量/数组标签、按类型去重、键盘展开全部标签              |
+| `fve/status`    | `tones: [{ value, tone }]`             | 枚举名称与 neutral/success/warning/danger/info 语义色    |
+| `fve/link`      | `hrefField`、`newTab`，默认 false      | 地址来自当前值或记录的其他字段；文字仍来自绑定字段       |
+| `fve/date-time` | `locale`、`dateStyle`、`timeStyle`     | 沿用字段类型/时区；样式为 full/long/medium（默认）/short |
+| `fve/number`    | 无；使用 `field.numberFormat`          | 与汇总共用数字、金额、百分比格式                         |
+
+```tsx
+import { NumberCell, TextCell } from '@ahoo-wang/fetcher-view-engine/react';
+
+<TextCell value="ORDER-0001" ellipsis copyable />;
+<NumberCell
+  value={0.125}
+  format={{ style: 'percent', maximumFractionDigits: 1 }}
+/>; // 12.5%
+// 字段：{ field: 'amount', label: '金额', type: 'number',
+//   numberFormat: { style: 'currency', currency: 'CNY' },
+//   cellRenderer: { name: 'fve/number' } }
+```
+
+空值显示 `—`，0 和 false 保留为有效值。NumberCell 接收有限数值，不解析已格式化的金额字符串。纯日期 `YYYY-MM-DD` 不发生时区平移，时间戳 0 有效；日期时间文本支持 YYYY-MM-DD，后接可选的 T/t 或空白分隔符和 HH:mm[:ss[.fraction]]，末尾可带 Z/z 或数字偏移；其他格式明确拒绝。不带偏移的本地日期时间使用字段时区与现有 DST 校验；小数秒超过三位时拒绝显示，避免回退到电脑时区。无效日期/数值显示占位。无效组件选项属于配置错误，由表格现有渲染边界隔离。
+
+LinkCell 在 URL 解析后允许 HTTP(S)、mailto、tel 和相对地址，危险地址呈现为普通文本；新页链接固定带 `noopener noreferrer`。业务路由继续通过自定义组件处理。复制使用原始值，不能复制枚举名称或截断文字；剪贴板拒绝/不可用在按钮旁提示重试。TextCell 的 `text` 只改变展示。这些交互不会修改视图或触发查询。
+
+状态主题变量为 `--fve-success`、`--fve-warning`、`--fve-info` 与已有 `--fve-destructive`；状态始终保留文字，不只依赖颜色。弹层继承当前主题。**View Engine → 单元格 → 内置组件** 与 `examples/react/BuiltinCellsExample.tsx` 包含独立组合、深色窄屏、异常数据及 LocalStorageViewHost 刷新恢复示例。
+
+创建不修改默认实例偏好。`LocalStorageViewHost` 保留显式 `defaultInstanceId: null`；只有原先指定的默认实例已不可见时才回退到其他实例。删除当前访问范围中不存在的实例视为成功，不触及其他用户的私有视图；仍存在的可见实例继续校验权限和 revision。待确认创建状态属于当前引擎生命周期，直接服务调用者在重建客户端后自行保留原 requestId。
+
+远程标签快照仅在该 ID 新增或重新选择时采用当前候选；后台回填或修改其他 ID 不覆盖其已保存名称。多值文本粘贴先按光标/选区替换再拆分。畸形区间端点报告校验错误，不会退化为未设置条件。

@@ -10,6 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { getBuiltinFilterCompiler } from './builtinFilterCompilers.js';
 import {
   filter,
   FilterOperator as Op,
@@ -154,7 +155,7 @@ export function compileFilterConfiguration(
                 node.component.name,
               )
             ? compilers[node.component.name]
-            : undefined;
+            : getBuiltinFilterCompiler(node.component.name);
       if (!compiler || typeof compiler.compile !== 'function')
         throw new TypeError(`未注册筛选编译器：${node.component.name}`);
       const expression = compiler.compile(

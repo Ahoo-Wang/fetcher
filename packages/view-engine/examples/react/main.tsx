@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { BuiltinCellsExample } from './BuiltinCellsExample.js';
+import { BuiltinFiltersExample } from './BuiltinFiltersExample.js';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { OrderExample } from './OrderExample.js';
@@ -18,17 +20,19 @@ import { FilterPersistenceExample } from './FilterPersistenceExample.js';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('订单示例缺少 root 容器。');
+const example = new URLSearchParams(location.search).get('example');
 createRoot(root).render(
   <StrictMode>
-    {new URLSearchParams(location.search).get('example') === 'persistence' ? (
+    {example === 'builtin-cells' ? (
+      <BuiltinCellsExample persist />
+    ) : example === 'builtin-filters' ? (
+      <BuiltinFiltersExample persist />
+    ) : example === 'persistence' ? (
       <FilterPersistenceExample />
     ) : (
       <OrderExample
         scopeKey="local-user:demo-orders"
-        persistViews={
-          new URLSearchParams(location.search).get('example') ===
-          'local-storage'
-        }
+        persistViews={example === 'local-storage'}
       />
     )}
   </StrictMode>,

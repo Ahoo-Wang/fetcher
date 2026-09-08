@@ -222,7 +222,7 @@ export interface RecordSummaryMetric {
 }
 export function formatRecordNumber(
   value: number,
-  field: ViewFieldDefinition,
+  field: Pick<ViewFieldDefinition, 'numberFormat'>,
 ): string {
   const { locale = 'zh-CN', ...options } = field.numberFormat ?? {};
   if (

@@ -66,7 +66,10 @@ export class ViewPersistence {
     try {
       if (session.filterPending)
         throw new Error('请先查询或撤销筛选修改，再保存视图');
-      this.work.assertWritable(session);
+      this.work.assertWritable(
+        session,
+        Boolean(options && this.work.createRequests.has(id)),
+      );
       const permissions = permissionsFor(this.host, session);
       if (
         options &&
@@ -91,7 +94,9 @@ export class ViewPersistence {
           : session.instance,
       );
       validateViewInstance(submitted, definition, id);
-      const knownIds = new Set(this.store.getSnapshot().instanceIds);
+      const knownIds =
+        this.work.createRequests.get(id)?.knownIds ??
+        new Set(this.store.getSnapshot().instanceIds);
       this.work.writes.set(id, token);
       this.store.patch(id, {
         writeStatus: options ? 'creating' : 'saving',
@@ -116,6 +121,7 @@ export class ViewPersistence {
         const request = previous ?? {
           requestId: crypto.randomUUID(),
           submitted,
+          knownIds,
         };
         this.work.createRequests.set(id, request);
         try {
@@ -123,7 +129,6 @@ export class ViewPersistence {
             structuredClone({ definitionId, kind, title, scope, config }),
             { requestId: request.requestId },
           );
-          this.work.createRequests.delete(id);
         } catch (error) {
           if (
             !(error instanceof ViewServiceError) ||
@@ -135,8 +140,9 @@ export class ViewPersistence {
                 submitted,
                 knownIds,
               });
-          } else {
-            this.work.createRequests.delete(id);
+          } else if (!this.work.unverifiedCreates.has(id)) {
+            // A rejected retry says nothing about an earlier uncertain attempt.
+            this.work.finishCreate(id);
           }
           throw error;
         }
@@ -157,12 +163,12 @@ export class ViewPersistence {
           knownIds,
         });
       validateViewInstance(result, definition, options ? undefined : id);
-      if (options && this.store.find(result.id))
+      if (options && knownIds.has(result.id))
         throw new Error('另存返回的实例 ID 已存在');
       if (!sameFilterState(instanceContent(result), instanceContent(submitted)))
         throw new Error('保存结果不符合原样保存契约，请重新加载核对');
       const saved = copy(result);
-      if (options) this.work.unverifiedCreates.delete(id);
+      if (options) this.work.finishCreate(id);
       const latest = this.store.session(id);
       if (options) {
         let created = createSession(
@@ -185,7 +191,7 @@ export class ViewPersistence {
             this.store.getSnapshot().selectedInstanceId !== id
           )
             selectedCopy = undefined;
-          else
+          else if (!this.store.find(saved.id))
             created = inheritEditingSession(
               saved,
               this.store.session(id),
@@ -194,15 +200,19 @@ export class ViewPersistence {
             );
         }
         this.store.publish({
-          instanceIds: [...this.store.getSnapshot().instanceIds, saved.id],
+          instanceIds: [
+            ...new Set([...this.store.getSnapshot().instanceIds, saved.id]),
+          ],
           sessions: {
             ...this.store.getSnapshot().sessions,
             [id]: {
               ...this.store.session(id),
               writeStatus: 'idle',
               writeError: null,
+              requiresReload: false,
             },
-            [saved.id]: created,
+            // Cancellation notifies observers; an opened copy may now own newer edits.
+            [saved.id]: this.store.find(saved.id) ?? created,
           },
           ...(selectedCopy
             ? { selectedInstanceId: selectedCopy, error: null }
@@ -230,7 +240,9 @@ export class ViewPersistence {
       this.store.patch(id, {
         writeError: message(error),
         ...(this.work.writes.get(id) === token ? { writeStatus: 'idle' } : {}),
-        ...(received ? { requiresReload: true } : {}),
+        ...(received || this.work.unverifiedCreates.has(id)
+          ? { requiresReload: true }
+          : {}),
       });
       throw error;
     } finally {

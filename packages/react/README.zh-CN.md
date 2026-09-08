@@ -59,3 +59,11 @@ export function UserProfile({ id }: { id: string }) {
 - [交互式 Hook Story](https://fetcher.ahoo.me/storybook/)
 
 [English](./README.md) · [许可证](../../LICENSE)
+
+### 轻量核心入口
+
+通用 Hook 可通过 ESM 子路径 `@ahoo-wang/fetcher-react/core` 导入，包括 `useExecutePromise`、`useQuery` 和 `useDebouncedCallback`。仅使用核心 Hook 时无需加载 HTTP、安全、存储和事件集成模块；原根入口的 ESM/UMD 导出不变。
+
+`useExecutePromise.abort()` 会先使当前请求失效，再执行取消回调。即使数据源忽略 AbortSignal，迟到的成功或失败也不会发布；异步 onAbort 回调不会颠倒新请求的调用顺序。
+
+根 ESM 入口与 `/core` 共用核心模块和 FullscreenContext，Provider 与 Hook 可以跨这两个 ESM 入口组合。`pnpm test:package` 验证构建产物互操作，并包含在 build 流程中。`abort()` 先摘除旧 controller 再通知同步监听器，监听器启动的新请求仍可取消。

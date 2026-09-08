@@ -53,6 +53,7 @@
     "react-day-picker": "catalog:",
     "tailwind-merge": "catalog:",
     "@ahoo-wang/fetcher-wow": "workspace:^",
+    "@ahoo-wang/fetcher-react": "workspace:^",
     "@date-fns/tz": "catalog:"
   },
   "peerDependencies": {
@@ -68,6 +69,7 @@
     }
   },
   "devDependencies": {
+    "@ahoo-wang/fetcher": "workspace:^",
     "@eslint/js": "catalog:",
     "@rolldown/plugin-babel": "catalog:",
     "@tailwindcss/vite": "catalog:",

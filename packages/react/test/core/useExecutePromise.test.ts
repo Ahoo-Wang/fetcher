@@ -373,3 +373,102 @@ describe('useExecutePromise', () => {
     consoleWarnSpy.mockRestore();
   });
 });
+
+it('ignores late success and failure after manual abort', async () => {
+  for (const rejected of [false, true]) {
+    const success = vi.fn(),
+      error = vi.fn();
+    const pending = pendingPromise<string>();
+    const { result, unmount } = renderHook(() =>
+      useExecutePromise<string>({ onSuccess: success, onError: error }),
+    );
+    let execution!: Promise<void>;
+    act(() => {
+      execution = result.current.execute(() => pending.promise);
+    });
+    await act(async () => {
+      await result.current.abort();
+    });
+    await act(async () => {
+      if (rejected) pending.reject(new Error('late'));
+      else pending.resolve('late');
+      await execution;
+    });
+    expect(success).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
+    unmount();
+  }
+});
+
+it('keeps invocation order when an asynchronous onAbort is still pending', async () => {
+  const first = pendingPromise<string>();
+  const cancellation = pendingPromise<void>();
+  const onAbort = vi.fn().mockImplementationOnce(() => cancellation.promise);
+  const success = vi.fn();
+  const { result } = renderHook(() =>
+    useExecutePromise<string>({ onAbort, onSuccess: success }),
+  );
+  let a!: Promise<void>, b!: Promise<void>, c!: Promise<void>;
+  const second = vi.fn().mockResolvedValue('second');
+  act(() => {
+    a = result.current.execute(() => first.promise);
+  });
+  act(() => {
+    b = result.current.execute(second);
+  });
+  await act(async () => {
+    c = result.current.execute(async () => 'third');
+    await c;
+  });
+  await act(async () => {
+    cancellation.resolve();
+    first.resolve('first');
+    await Promise.all([a, b]);
+  });
+  expect(second).not.toHaveBeenCalled();
+  expect(result.current.result).toBe('third');
+  expect(success).toHaveBeenCalledTimes(1);
+});
+
+it('keeps a request started synchronously by an abort listener cancellable', async () => {
+  const first = pendingPromise<string>();
+  const second = pendingPromise<string>();
+  const { result } = renderHook(() => useExecutePromise<string>());
+  let replacementSignal!: AbortSignal;
+  let a!: Promise<void>, b!: Promise<void>;
+  act(() => {
+    a = result.current.execute(controller => {
+      controller.signal.addEventListener('abort', () => {
+        b = result.current.execute(replacement => {
+          replacementSignal = replacement.signal;
+          return second.promise;
+        });
+      });
+      return first.promise;
+    });
+  });
+  await act(async () => {
+    await result.current.abort();
+  });
+  expect(replacementSignal.aborted).toBe(false);
+  expect(result.current.status).toBe(PromiseStatus.LOADING);
+  await act(async () => {
+    await result.current.abort();
+    first.resolve('first');
+    second.resolve('second');
+    await Promise.all([a, b]);
+  });
+  expect(replacementSignal.aborted).toBe(true);
+  expect(result.current.status).toBe(PromiseStatus.IDLE);
+});
+
+function pendingPromise<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}

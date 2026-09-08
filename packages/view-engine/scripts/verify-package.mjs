@@ -89,7 +89,7 @@ function verifyCoreImports(entry, packageDirectory) {
       } else if (specifier) {
         assert.doesNotMatch(
           specifier,
-          /^(react(?:$|[-/])|@tanstack\/|@base-ui\/|lucide-react$)/,
+          /^(react(?:$|[-/])|@ahoo-wang\/fetcher-react(?:$|\/)|@tanstack\/|@base-ui\/|lucide-react$)/,
           'Core imports a UI dependency',
         );
       }
@@ -116,6 +116,18 @@ function verifyTypes(directory) {
     import { ViewEngine, restoreFilterConfiguration, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance, type RecordQuerySource } from '${manifest.name}';
     import { ViewPage, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
     import { OrderExample } from './examples/react/OrderExample.js';
+    import type { FilterOptionSource } from '${manifest.name}';
+    import { FilterRemoteSelect, FilterMultiSelect } from '${manifest.name}/react';
+    import { TextCell, TagsCell, StatusCell, LinkCell, DateTimeCell, NumberCell } from '${manifest.name}/react';
+    export const standaloneCells = <><TextCell value="001" ellipsis copyable/><TagsCell value={[1,'1',false]}/><StatusCell value={1} tones={[{value:1,tone:'success'}]}/><LinkCell value="详情" href="/orders/1"/><DateTimeCell value={0} timeZone="UTC"/><NumberCell value={0.125} format={{style:'percent'}}/></>;
+    // @ts-expect-error Numeric cells do not parse currency strings.
+    export const invalidNumber = <NumberCell value="¥1,234"/>;
+    declare const optionSource: FilterOptionSource;
+    export const multi = <FilterRemoteSelect label="users" source={optionSource} multiple values={[1,'1']} onValueChange={values => { const ids: (string|number)[] = values; void ids; }} />;
+    export const single = <FilterRemoteSelect label="user" source={optionSource} value={1} onValueChange={value => { const id: string|number|null = value; void id; }} />;
+    export const localMulti = <FilterMultiSelect label="ids" options={[{value: 1,label:'one'}]} value={[1]} onValueChange={values => { const id: number = values[0]; void id; }} />;
+    // @ts-expect-error A multiple remote picker cannot accept scalar value.
+    export const wrongSelection = <FilterRemoteSelect label="users" source={optionSource} multiple value={1} onValueChange={() => {}} />;
     declare const paged: NonNullable<RecordQuerySource['paged']>;
     declare const cursor: NonNullable<RecordQuerySource['cursor']>;
     export const pagedOnly: RecordQuerySource = {paged};
@@ -304,6 +316,9 @@ try {
     assert.equal(typeof core.ViewEngine, 'function');
     assert.deepEqual(Object.keys(core).filter(name => name.startsWith('HttpView') || name === 'VIEW_SERVICE_STATUS'), [], 'Experimental HTTP API leaked into the package');
     assert.equal(typeof react.ViewPage, 'function');
+    for (const name of ['FilterMultiSelect','FilterRemoteSelect','FilterTextValues','FilterDateTimeRange','TextCell','TagsCell','StatusCell','LinkCell','DateTimeCell','NumberCell']) assert.equal(typeof react[name], 'function', name);
+    const configured = core.createFilterConfiguration({id:'selected',op:'IN',field:'id',editor:{name:'fve/multi-select'},props:{values:[1],selectedOptions:[{value:1,label:'One'}]}});
+    assert.deepEqual(core.compileFilterConfiguration(configured,[{field:'id',label:'ID',type:'number'}]).expression,{op:'IN',field:'id',values:[1]});
   `;
   run(process.execPath, ['--input-type=module', '-e', runtimeProbe], packed);
   cpSync(join(root, 'examples/core.mjs'), join(packed, 'core-example.mjs'));
