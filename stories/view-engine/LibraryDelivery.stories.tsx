@@ -77,3 +77,48 @@ export const NarrowDark: Story = {
   ),
   play: playNarrowDark,
 };
+
+export const LocalStorageViews: Story = {
+  name: '开发验证 · 浏览器本地视图',
+  args: {
+    persistViews: true,
+    scopeKey: 'storybook:local-view-host',
+    initialSidebarCollapsed: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '保存、另存、改名、删除及排序写入 localStorage。可以刷新浏览器或重新打开视图验证恢复；重置仅清除此示例的视图配置。',
+      },
+    },
+  },
+};
+
+export const HttpViewService: Story = {
+  name: '契约验证 · HTTP 视图服务',
+  tags: ['!test'],
+  args: {
+    scopeKey: 'tenant:alice',
+    accessToken: 'alice-token',
+    viewServiceTimeoutMs: 1000,
+    initialSidebarCollapsed: false,
+  },
+  render: args => (
+    <OrderExample
+      {...args}
+      viewServiceUrl={
+        new URLSearchParams(location.search).get('viewService') ??
+        'http://127.0.0.1:6010/view-service/'
+      }
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '运行 verify-http-view-host.mjs --serve 启动测试服务。所有视图读写通过 HTTP；五类组件扩展留在前端。',
+      },
+    },
+  },
+};

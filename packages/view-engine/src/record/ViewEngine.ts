@@ -43,6 +43,7 @@ import { ViewManagement } from './engine/ViewManagement.js';
 /** Fixed-scope public facade. Internal services own state, reads and durable writes. */
 export class ViewEngine {
   private host: ViewHost;
+  private unsubscribePermissions?: () => void;
   private capabilities?: { state: ViewEngineState; value: ViewCapabilities };
   private readonly scope = new EngineScope();
   private readonly store: SessionStore;
@@ -120,6 +121,7 @@ export class ViewEngine {
       this.summaries,
       options.definitionId,
     );
+    this.observePermissions();
   }
 
   getSnapshot = (): ViewEngineState => this.store.getSnapshot();
@@ -130,8 +132,17 @@ export class ViewEngine {
   updateHost(host: ViewHost): void {
     this.scope.assertActive();
     if (this.host === host) return;
+    this.unsubscribePermissions?.();
     this.host = host;
+    this.observePermissions();
     this.store.publish({});
+  }
+
+  private observePermissions(): void {
+    const host = this.host;
+    this.unsubscribePermissions = host.subscribePermissions?.(() => {
+      if (this.host === host && !this.scope.disposed) this.store.publish({});
+    });
   }
 
   /** Cached immutable projection for render-time reads; commands still recheck live policy. */
@@ -266,6 +277,7 @@ export class ViewEngine {
 
   dispose(): void {
     if (this.scope.disposed) return;
+    this.unsubscribePermissions?.();
     this.scope.dispose();
     this.capabilities = undefined;
     this.loader.dispose();

@@ -150,6 +150,7 @@ export class ViewReload {
         if (this.store.getSnapshot().selectedInstanceId === baseline.id)
           queryId = baseline.id;
         this.work.unverifiedCreates.delete(id);
+        this.work.createRequests.delete(id);
         if (selectCopy) {
           this.scope.advanceSelection();
           queryId = baseline.id;

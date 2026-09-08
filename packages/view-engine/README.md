@@ -215,7 +215,98 @@ See **View Engine → Record View** in Storybook and the full
 [host/renderer API contract](../../skills/fetcher-view-engine/references/api.md#record-views-and-host-contract).
 The stories use an in-memory service to demonstrate request/response behavior.
 
-### Page and all-record summaries
+## View service contract and runtime boundary
+
+Acceptance follows **service JSON → ViewHost → fresh ViewEngine → frontend registry → recovered components/actions**. LocalStorageViewHost is the executable service fixture; HttpViewHost is its real REST adapter. The service owns definitions, instances, visibility, revisions, create receipts and user ordering. The frontend owns components, callbacks, filter compilation and business-query clients. Business record writes never rewrite view configuration.
+
+### Local service fixture
+
+```tsx
+import { LocalStorageViewHost } from '@ahoo-wang/fetcher-view-engine';
+
+const host = new LocalStorageViewHost({
+  serviceKey: 'development-tenant',
+  scopeKey: 'alice',
+  storage: localStorage,
+  lock: (name, operation, signal) =>
+    navigator.locks.request(name, { signal }, operation),
+  definition: orderDefinition,
+  instances: orderViews,
+  resolveSource: id => orderService.host.resolveSource(id),
+});
+```
+
+`serviceKey` is a trusted tenant/service namespace; `scopeKey` is the trusted user within it. Storage uses `fve:views:${JSON.stringify([serviceKey, definition.id])}`. Public views are shared within this namespace; personal views and display order are isolated by user. Private ownership is service-owned and is not accepted from write bodies. Use an access-scoped ViewPage key that includes both tenant and user; omit ViewPage's local `definition`/`instances` props so loading goes through the host.
+
+The required lock covers the complete read/authorize/revision-check/write transaction. The browser example injects Web Locks, which serialize same-origin tabs; use one shared lock domain for every writer of a storage key. Seed instances get service-issued revisions on initialization. System views are read-only. Optional `getInstancePermissions`, `canReorder` and `permissionsRevision` supply a trusted policy; increment the monotonic policy revision whenever grants change. Writes always recheck the current policy inside the transaction.
+
+`loadPermissions(definitionId, signal?)` reads authority snapshots. `refreshPermissions()` notifies `subscribePermissions`; ViewEngine subscribes/unsubscribes with its host lifetime, so permission changes update controls without destroying drafts. Permissions remain synchronous reads during rendering. `await reset()` is an administrative fixture reset for the whole service/definition (including users and create receipts), not a REST operation. Malformed storage is reported rather than silently reset. The raw local-storage document is internal service state, not a ViewInstanceList DTO.
+
+### HTTP adapter and protocol
+
+```tsx
+import { HttpViewHost } from '@ahoo-wang/fetcher-view-engine';
+
+const host = new HttpViewHost({
+  baseUrl: 'https://example.test/view-service/',
+  definitionId: orderDefinition.id,
+  headers: () => applicationAuthHeaders(),
+  resolveSource: id => businessSources[id],
+  timeoutMs: 10000,
+});
+// ViewPage: host + definitionId + an access-scoped scopeKey; no local definition/instances props.
+```
+
+| Method | Path relative to `/view-service/definitions/{definitionId}` | Body / condition |
+| --- | --- | --- |
+| GET | `/` | ViewDefinition |
+| GET | `/instances` | ViewInstanceList |
+| GET | `/instances/{id}` | ViewInstance |
+| GET | `/permissions` | ViewPermissionSnapshot |
+| POST | `/instances` | Instance without id/revision; `Idempotency-Key` required |
+| PUT | `/instances/{id}` | Complete instance; quoted revision in `If-Match` |
+| PATCH | `/instances/{id}/name` | `{title}`; `If-Match` |
+| DELETE | `/instances/{id}` | `If-Match` |
+| PUT | `/order` | `{instanceIds}`: complete unique visible order |
+
+The GET root path is exactly the definition URL, without requiring a trailing slash. Success responses are `{data, permissions}`; completion-only writes use `data: null`. Instance reads and create/save/rename return complete authoritative instances with revisions. Errors are `{data: null, error: {code, message}, permissions?}`; authenticated failures refresh the permission snapshot when available. Responses and client fetches use `no-store`.
+
+A permission snapshot is `{revision, reorder, instances: {[id]: {save, rename, delete, saveAsPersonal, saveAsShared}}}` with explicit booleans. Older authority revisions cannot restore revoked grants. A 401 clears cached grants and fences off older in-flight permission responses. Applications call `refreshPermissions(signal?)` on an authority-change event; this is not a polling or push-transport implementation. Identity/access-scope changes still require a new ViewPage scopeKey.
+
+| Code | HTTP | Meaning |
+| --- | ---: | --- |
+| INVALID_ARGUMENT | 400 | Invalid input |
+| UNAUTHENTICATED | 401 | Missing/invalid server session |
+| FORBIDDEN | 403 | Authenticated but operation denied |
+| NOT_FOUND | 404 | Missing or invisible resource |
+| CONFLICT | 409 | Reused request ID with different content, or stale visible-order set |
+| REVISION_CONFLICT | 412 | Current revision does not match |
+| PRECONDITION_REQUIRED | 428 | Missing write revision |
+| CORRUPT_STATE | 500 | Invalid stored service document |
+| UNAVAILABLE | 503 | Service/storage unavailable; also used locally for failed/timed-out reads |
+| UNKNOWN_OUTCOME | 503 | Write receipt unavailable; locally raised after write timeout, cancellation after dispatch, or invalid/lost response |
+
+`If-Match` revision failures use 412, following [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#name-if-match). Authentication is derived from a server-owned session, never a posted scopeKey/owner field. The included HTTP server uses explicit fake bearer sessions solely for contract verification; production authentication and persistence implementations must honor the same interface rather than deploy those fake sessions.
+
+`ViewHost.createInstance(input, {requestId, signal?})` requires one ID per logical create. Same user/key and canonical body replay the stored receipt; changed content returns CONFLICT. The view and receipt are committed in the same transaction. ViewEngine retains the ID on unknown failures and blocks changing that pending request's content; retry or explicit reload reconciles the created instance. It never treats a transport failure as proof that a write did not happen. Direct clients must retain their request ID when retrying, including after reconstructing a client. Fixture receipts live until the administrative reset.
+
+Personal ordering is a complete replacement: the last successful replacement for the same user wins. The current visible ID set must match, and no other user's order is modified. Instance writes use revision CAS. These are separate, explicit concurrency semantics.
+
+### Reproducible verification
+
+```bash
+pnpm --filter @ahoo-wang/fetcher-view-engine build
+pnpm storybook
+# In another terminal:
+node packages/view-engine/scripts/verify-view-host.mjs
+node packages/view-engine/scripts/verify-http-view-host.mjs
+# Keep the HTTP fixture running for manual Storybook use:
+node packages/view-engine/scripts/verify-http-view-host.mjs --serve
+```
+
+The HTTP script starts an isolated local server with the same LocalStorageViewHost logic, a synchronous storage port, and server-bound identities; the browser uses HttpViewHost and the real UI. It covers shared/private visibility, private ordering, response loss/idempotency, permission revoke/restore, timeout/retry and engine cancellation. It separately runs native localStorage + Web Locks races and queued cancellation across two tabs. `httpViewHost.test.ts` also tests stale permission-response ordering, invalid sessions, ownership forgery and concurrent HTTP writers. Both compiled and uncompiled component tests cover missing/replaced extensions and conflict recovery. Business records remain a separate service; no real production backend or authentication provider is claimed by this fixture.
+
+## Page and all-record summaries
 
 Only fields declared as `type: 'number'` support column summaries. Set
 `summary: ['SUM', 'AVG', 'MIN', 'MAX']` to select several metrics for one column.
@@ -387,7 +478,7 @@ Select menus, dropdown menus and Popover panels use a body portal so clipping an
 
 ## Development
 
-React Compiler is enabled for the library build through the existing Vite `reactCompilerPreset`. It targets the React 19 runtime exposed as `react/compiler-runtime`; consumers do not install the compiler. Pure derived values, table JSX and action callbacks rely on compiler memoization. Two explicit caches remain for Effect dependency stability: the controlled filter draft clone and portal theme capture. Permissions and host capabilities are observed through `getCapabilitiesSnapshot` and `subscribe`; no component needs a `use no memo` escape hatch. For caller-owned engines, call `updateHost(nextHost)` when callbacks or policy change within the same scope. Replace the engine when the user/tenant/access scope changes. Host policies must be pure; mutating a closure without replacing the host does not notify subscribers. Commands recheck permissions at execution time.
+React Compiler is enabled for the library build through the existing Vite `reactCompilerPreset`. It targets the React 19 runtime exposed as `react/compiler-runtime`; consumers do not install the compiler. Pure derived values, table JSX and action callbacks rely on compiler memoization. Two explicit caches remain for Effect dependency stability: the controlled filter draft clone and portal theme capture. Permissions and host capabilities are observed through `getCapabilitiesSnapshot` and `subscribe`; no component needs a `use no memo` escape hatch. For caller-owned engines, call `updateHost(nextHost)` when callbacks or policy change within the same scope. Replace the engine when the user/tenant/access scope changes. Host policies must be pure; mutating a closure without replacing the host or notifying subscribePermissions does not notify the engine. Commands recheck permissions at execution time.
 
 `test` runs the same suite without compilation and in compiler mode, then checks types. Storybook runs against compiled public exports. Packed verification checks the compiler runtime import in `/react` and rejects React imports in the core entry. The record-cell regression verifies that typing an unapplied filter adds no cell renders in the compiled mode; this is a regression bound, not a claim that every screen becomes faster.
 

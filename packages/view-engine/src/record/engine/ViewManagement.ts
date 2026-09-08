@@ -107,9 +107,18 @@ export class ViewManagement {
   }
 
   canReorderInstances(): boolean {
-    return (
-      !this.scope.disposed && typeof this.host.saveInstanceOrder === 'function'
-    );
+    if (
+      this.scope.disposed ||
+      typeof this.host.saveInstanceOrder !== 'function'
+    )
+      return false;
+    try {
+      return this.host.getDefinitionPermissions
+        ? this.host.getDefinitionPermissions().reorder === true
+        : true;
+    } catch {
+      return false;
+    }
   }
 
   async reorderInstances(instanceIds: readonly string[]): Promise<void> {
@@ -171,6 +180,7 @@ export class ViewManagement {
       this.summaries.invalidate(id);
       if (!current()) return;
       this.work.unverifiedCreates.delete(id);
+      this.work.createRequests.delete(id);
       const sessions = { ...this.store.getSnapshot().sessions };
       delete sessions[id];
       const instanceIds = this.store

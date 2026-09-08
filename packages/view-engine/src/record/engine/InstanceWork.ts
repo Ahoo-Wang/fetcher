@@ -15,6 +15,10 @@ import type { RecordSession, ViewInstance } from '../recordModel.js';
 
 /** Per-instance coordination between durable writes and reload/reconciliation. */
 export class InstanceWork {
+  readonly createRequests = new Map<
+    string,
+    { requestId: string; submitted: ViewInstance }
+  >();
   readonly writes = new Map<string, symbol>();
   readonly reloads = new Map<string, AbortController>();
   readonly unverifiedCreates = new Map<
@@ -43,5 +47,6 @@ export class InstanceWork {
   dispose(): void {
     this.cancelReloads();
     this.unverifiedCreates.clear();
+    this.createRequests.clear();
   }
 }

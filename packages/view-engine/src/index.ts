@@ -59,3 +59,24 @@ export {
   RECORD_COLUMN_DEFAULT_WIDTH,
 } from './record/recordModel.js';
 export { sameFilterQuery } from './filter/filterTree.js';
+
+export {
+  LocalStorageViewHost,
+  type LocalStorageViewHostOptions,
+} from './record/LocalStorageViewHost.js';
+
+export {
+  ViewServiceError,
+  VIEW_SERVICE_STATUS,
+} from './record/viewServiceContract.js';
+export type {
+  ViewServiceErrorCode,
+  ViewCreateContext,
+  ViewPermissionSnapshot,
+  ViewStorageLock,
+} from './record/viewServiceContract.js';
+
+export {
+  HttpViewHost,
+  type HttpViewHostOptions,
+} from './record/HttpViewHost.js';

@@ -112,7 +112,100 @@ Storybook 的 **View Engine → Record View** 使用内存服务演示完整请�
 
 自动刷新暂停时提供原因和恢复条件。普通保存成功后短暂显示“已保存”及无障碍播报。
 
-### 本页 / 所有汇总
+## 视图服务契约与运行时边界
+
+验收链路为 **服务 JSON → ViewHost → 新建 ViewEngine → 前端注册表 → 组件和操作恢复**。`LocalStorageViewHost` 是可执行的服务替身，`HttpViewHost` 是真实 REST 适配器。服务负责定义、实例、可见性、版本、创建回执和用户排序；前端负责组件实现、回调、过滤器编译和业务查询客户端。业务数据写入不应改变视图配置。
+
+### 本地服务替身
+
+```tsx
+import { LocalStorageViewHost } from '@ahoo-wang/fetcher-view-engine';
+
+const host = new LocalStorageViewHost({
+  serviceKey: 'development-tenant',
+  scopeKey: 'alice',
+  storage: localStorage,
+  lock: (name, operation, signal) =>
+    navigator.locks.request(name, { signal }, operation),
+  definition: orderDefinition,
+  instances: orderViews,
+  resolveSource: id => orderService.host.resolveSource(id),
+});
+```
+
+`serviceKey` 标识服务／租户，`scopeKey` 标识其中的可信用户。存储键为 `fve:views:${JSON.stringify([serviceKey, definition.id])}`。公共视图在同一服务内共享，个人视图与展示顺序按用户隔离；归属由服务决定，不能通过写入正文伪造。ViewPage 的 scopeKey 应包含租户与用户；不传本地 definition/instances，让加载完整经过宿主。
+
+必填 `lock` 覆盖读取、授权、版本检查和写入的整个事务。示例使用 Web Locks 串行化同源标签页；同一存储键的所有写入者必须使用同一个锁域。初始实例在初始化时取得服务端版本。系统视图只读。可选 `getInstancePermissions`、`canReorder`、`permissionsRevision` 提供可信权限策略，权限变化时必须递增策略版本；写入在事务内重新检查最新权限。
+
+`loadPermissions(definitionId, signal?)` 读取权限快照，`refreshPermissions()` 通过 `subscribePermissions` 通知引擎。引擎随宿主生命周期订阅和解绑，权限更新不会丢弃草稿，渲染时仍只进行同步权限读取。`await reset()` 是清除此服务／定义下全部用户及幂等回执的测试管理操作，不映射为 REST 端点。损坏存储会报错，不自动覆盖。原始存储文档是内部服务状态，不是 ViewInstanceList DTO。
+
+### HTTP 适配器与协议
+
+```tsx
+import { HttpViewHost } from '@ahoo-wang/fetcher-view-engine';
+
+const host = new HttpViewHost({
+  baseUrl: 'https://example.test/view-service/',
+  definitionId: orderDefinition.id,
+  headers: () => applicationAuthHeaders(),
+  resolveSource: id => businessSources[id],
+  timeoutMs: 10000,
+});
+// ViewPage: host + definitionId + an access-scoped scopeKey; no local definition/instances props.
+```
+
+以下路径相对于 `/view-service/definitions/{definitionId}`：
+
+| 方法 | 路径 | 输入／条件 |
+| --- | --- | --- |
+| GET | 定义根路径 | 返回 ViewDefinition |
+| GET | `/instances` | 返回 ViewInstanceList |
+| GET | `/instances/{id}` | 返回完整实例 |
+| GET | `/permissions` | 返回权限快照 |
+| POST | `/instances` | 不含 id/revision 的实例；必须提供 Idempotency-Key |
+| PUT | `/instances/{id}` | 完整实例；If-Match 提供带引号的 revision |
+| PATCH | `/instances/{id}/name` | `{title}` 与 If-Match |
+| DELETE | `/instances/{id}` | If-Match |
+| PUT | `/order` | `{instanceIds}`，必须完整且不重复 |
+
+成功响应为 `{data, permissions}`，无返回内容的写入使用 `data: null`。读取实例、创建、保存和改名均返回完整权威实例及版本。错误响应为 `{data: null, error: {code, message}, permissions?}`；可识别身份的失败同时返回最新权限。响应和客户端请求均禁止缓存。
+
+权限快照为 `{revision, reorder, instances: {[id]: {save, rename, delete, saveAsPersonal, saveAsShared}}}`，所有授权字段均为显式 boolean。旧策略版本不能恢复已撤销权限；401 会清空缓存授权，并阻止此前在途响应恢复旧授权。应用在权限变化事件中调用 `refreshPermissions(signal?)`；这里不内置轮询或推送传输。用户或访问范围改变仍必须切换 ViewPage.scopeKey。
+
+| 错误码 | HTTP | 含义 |
+| --- | ---: | --- |
+| INVALID_ARGUMENT | 400 | 输入不合法 |
+| UNAUTHENTICATED | 401 | 会话缺失或无效 |
+| FORBIDDEN | 403 | 身份有效但不允许该操作 |
+| NOT_FOUND | 404 | 资源不存在或不可见 |
+| CONFLICT | 409 | 幂等键复用于不同内容，或排序的可见 ID 集合已变化 |
+| REVISION_CONFLICT | 412 | revision 不匹配 |
+| PRECONDITION_REQUIRED | 428 | 写入缺少版本前提 |
+| CORRUPT_STATE | 500 | 服务存储文档损坏 |
+| UNAVAILABLE | 503 | 服务／存储不可用；客户端也用于读取失败或超时 |
+| UNKNOWN_OUTCOME | 503 | 写入回执不明；客户端在发送后的超时、取消、响应丢失／无效时抛出 |
+
+If-Match 版本不匹配使用 412，依据 [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#name-if-match)。身份从服务端会话解析，不从正文 scopeKey 或 owner 字段取得。测试服务器使用明确的假 bearer 会话；生产实现应替换身份提供方与存储实现，不应部署这些测试会话。
+
+`ViewHost.createInstance(input, {requestId, signal?})` 要求每个逻辑创建保留同一个请求 ID。同一用户、同一键和同一规范化正文重放已存回执；正文变化返回 CONFLICT。实例与回执在同一个事务内提交。引擎在结果不明时保留 ID，阻止修改尚未确认请求的内容；原请求重试或显式重载可以核对已创建实例，不会把传输失败当成“肯定未写入”。直接使用客户端的调用者在重试、重建客户端后也必须保留原 ID。测试服务回执保留到管理重置为止。
+
+个人排序采用完整替换，同一用户最后一次成功替换生效；可见 ID 集合必须仍然匹配，不修改其他用户顺序。实例写入使用 revision CAS，两者是明确不同的并发语义。
+
+### 可重复验证
+
+```bash
+pnpm --filter @ahoo-wang/fetcher-view-engine build
+pnpm storybook
+# 另一终端：
+node packages/view-engine/scripts/verify-view-host.mjs
+node packages/view-engine/scripts/verify-http-view-host.mjs
+# 手动体验 Storybook 的 HTTP 示例：
+node packages/view-engine/scripts/verify-http-view-host.mjs --serve
+```
+
+HTTP 脚本启动隔离的本地服务，以相同的 LocalStorageViewHost 逻辑、同步存储接口和服务端身份绑定处理请求，浏览器通过 HttpViewHost 驱动真实组件。覆盖共享／私有可见性、个人排序、响应丢失幂等、权限撤销／恢复、超时重试和引擎取消；另用两个标签页验证真实 localStorage + Web Locks 竞争写入及排队取消。HTTP 测试还覆盖权限响应乱序、无效会话、归属伪造与并发写入。编译开关两种模式的组件测试验证缺失／替换扩展及冲突恢复。测试服务不是已经接入生产数据库或生产认证的部署系统。
+
+## 本页 / 所有汇总
 
 计算、查询构建与结果解析函数接收独立的 `RecordSummaryMetric[]`，每项为 `{ id, field, function }`。使用 `getRecordSummaryMetrics(instance.config.presentation)` 将表格实例转换为指标，查询计算不再依赖列宽、固定位置等展示属性。`ViewInstanceMetadata`、`RecordQueryConfig` 与 `RecordTablePresentation` 分别描述通用实例元数据、记录查询与表格展示。
 
@@ -246,7 +339,7 @@ Select、下拉菜单与 Popover 面板默认 Portal 到 body，避免被有裁�
 
 ## 开发
 
-库构建通过 Vite 的 `reactCompilerPreset` 启用 React Compiler，使用 React 19 提供的 `react/compiler-runtime`，使用者无需安装编译插件。纯计算、表格 JSX 和操作回调交由编译器缓存；仅保留受控筛选草稿副本及弹层主题捕获两处缓存，以稳定 Effect 依赖。错误边界按渲染输入恢复，不依赖事件回调引用。权限与宿主能力通过 `getCapabilitiesSnapshot` 和 `subscribe` 订阅，无需组件使用 `use no memo`。自行管理引擎时，同一作用域下用 `updateHost(nextHost)` 更新回调或权限策略；用户、租户、访问范围改变时更换引擎。权限策略必须纯粹，修改闭包但不替换宿主不会通知订阅者。操作执行时仍会重新检查权限。
+库构建通过 Vite 的 `reactCompilerPreset` 启用 React Compiler，使用 React 19 提供的 `react/compiler-runtime`，使用者无需安装编译插件。纯计算、表格 JSX 和操作回调交由编译器缓存；仅保留受控筛选草稿副本及弹层主题捕获两处缓存，以稳定 Effect 依赖。错误边界按渲染输入恢复，不依赖事件回调引用。权限与宿主能力通过 `getCapabilitiesSnapshot` 和 `subscribe` 订阅，无需组件使用 `use no memo`。自行管理引擎时，同一作用域下用 `updateHost(nextHost)` 更新回调或权限策略；用户、租户、访问范围改变时更换引擎。权限策略必须纯粹，修改闭包后需替换宿主或通过 subscribePermissions 通知引擎。操作执行时仍会重新检查权限。
 
 `test` 在不启用编译器和启用编译器两种模式下运行同一套测试，再检查类型。Storybook 验证编译后的公开产物。打包检查要求 `/react` 包含编译器运行时导入，并禁止核心入口引入 React。单元格回归检查保证编译模式下输入待查询筛选不增加单元格渲染次数，这是回归约束，不代表所有场景都会变快。
 

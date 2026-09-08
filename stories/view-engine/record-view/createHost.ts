@@ -12,7 +12,11 @@
  */
 
 import type { AggregationQuery } from '@ahoo-wang/fetcher-wow';
-import type { ViewHost, ViewInstance } from '@ahoo-wang/fetcher-view-engine';
+import {
+  ViewServiceError,
+  type ViewHost,
+  type ViewInstance,
+} from '@ahoo-wang/fetcher-view-engine';
 import type { DemoQuery, ScenarioOptions } from './demoTypes.js';
 import { definition, makeInstances, pause } from './fixtures.js';
 import { createOrderSource } from './querySource.js';
@@ -50,6 +54,10 @@ export function createHost(
   let instanceOrder = [...saved.keys()];
   let failNextDelete = failFirstDelete;
   let nextInstance = 1;
+  const createReceipts = new Map<
+    string,
+    { body: string; result: ViewInstance }
+  >();
 
   function loadInstance(id: string) {
     const instance = saved.get(id);
@@ -161,8 +169,14 @@ export function createHost(
       onWrite('save', structuredClone(updated));
       return structuredClone(updated);
     },
-    async createInstance(instance) {
+    async createInstance(instance, { requestId }) {
       await pause();
+      const previous = createReceipts.get(requestId);
+      if (previous) {
+        if (previous.body !== JSON.stringify(instance))
+          throw new ViewServiceError('CONFLICT', '创建请求标识已用于不同内容');
+        return structuredClone(previous.result);
+      }
       const created = {
         ...structuredClone(instance),
         id: `orders-copy-${nextInstance++}`,
@@ -170,6 +184,10 @@ export function createHost(
       };
       saved.set(created.id, created);
       instanceOrder.push(created.id);
+      createReceipts.set(requestId, {
+        body: JSON.stringify(instance),
+        result: structuredClone(created),
+      });
       onWrite('create', structuredClone(created));
       return structuredClone(created);
     },

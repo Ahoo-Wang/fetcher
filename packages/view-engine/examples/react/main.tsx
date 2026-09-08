@@ -23,7 +23,13 @@ createRoot(root).render(
     {new URLSearchParams(location.search).get('example') === 'persistence' ? (
       <FilterPersistenceExample />
     ) : (
-      <OrderExample scopeKey="local-user:demo-orders" />
+      <OrderExample
+        scopeKey="local-user:demo-orders"
+        persistViews={
+          new URLSearchParams(location.search).get('example') ===
+          'local-storage'
+        }
+      />
     )}
   </StrictMode>,
 );

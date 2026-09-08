@@ -24,6 +24,7 @@ import {
   inheritEditingSession,
   instanceContent,
 } from './sessionState.js';
+import { ViewServiceError } from '../viewServiceContract.js';
 import { permissionsFor } from './instancePermissions.js';
 
 /** Saved configuration writes and their immutable response reconciliation. */
@@ -99,9 +100,45 @@ export class ViewPersistence {
       let result: ViewInstance;
       if (options) {
         const { definitionId, kind, title, scope, config } = submitted;
-        result = await this.host.createInstance!(
-          structuredClone({ definitionId, kind, title, scope, config }),
-        );
+        const previous = this.work.createRequests.get(id);
+        if (
+          previous &&
+          !sameFilterState(
+            instanceContent(previous.submitted),
+            instanceContent(submitted),
+          )
+        )
+          throw new ViewServiceError(
+            'UNKNOWN_OUTCOME',
+            '上次另存结果尚未确认，请先使用原配置重试',
+          );
+        const request = previous ?? {
+          requestId: crypto.randomUUID(),
+          submitted,
+        };
+        this.work.createRequests.set(id, request);
+        try {
+          result = await this.host.createInstance!(
+            structuredClone({ definitionId, kind, title, scope, config }),
+            { requestId: request.requestId },
+          );
+          this.work.createRequests.delete(id);
+        } catch (error) {
+          if (
+            !(error instanceof ViewServiceError) ||
+            ['UNKNOWN_OUTCOME', 'UNAVAILABLE'].includes(error.code)
+          ) {
+            if (!this.work.unverifiedCreates.has(id))
+              this.work.unverifiedCreates.set(id, {
+                id: null,
+                submitted,
+                knownIds,
+              });
+          } else {
+            this.work.createRequests.delete(id);
+          }
+          throw error;
+        }
       } else result = await this.host.saveInstance!(structuredClone(submitted));
       if (!current()) return;
       received = true;

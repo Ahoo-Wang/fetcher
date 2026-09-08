@@ -27,6 +27,11 @@ import type {
 } from '../filter/filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 
+import type {
+  ViewCreateContext,
+  ViewPermissionSnapshot,
+} from './viewServiceContract.js';
+
 export type RecordData = Record<string, unknown>;
 export type RecordKey = string | number;
 export type RendererReference = FilterEditorReference;
@@ -152,7 +157,7 @@ export interface ViewCapabilities {
 }
 export type RecordQuerySource = Pick<QueryApi<RecordData>, 'paged' | 'cursor'> &
   Partial<Pick<QueryApi<RecordData>, 'aggregate'>>;
-/** One host/engine belongs to one fixed user, tenant and access scope. */
+/** Bridges view-service persistence and local runtime capabilities within one fixed access scope. */
 export interface ViewHost {
   loadDefinition?(
     definitionId: string,
@@ -168,6 +173,7 @@ export interface ViewHost {
   ): Promise<ViewInstance>;
   createInstance?(
     instance: Omit<ViewInstance, 'id' | 'revision'>,
+    context: ViewCreateContext,
   ): Promise<ViewInstance>;
   saveInstance?(instance: ViewInstance): Promise<ViewInstance>;
   /** Resolves after deletion. The host enforces access and revision checks. */
@@ -183,11 +189,15 @@ export interface ViewHost {
     definitionId: string,
     instanceIds: string[],
   ): Promise<void>;
+  /** Client-side source lookup. Business record queries are separate from view persistence. */
   resolveSource(
     sourceId: string,
   ): RecordQuerySource | Promise<RecordQuerySource>;
-  /** Pure synchronous policy. Replace the host when external policy inputs change. */
+  /** Synchronous policy projection, not a per-render HTTP request. Replace the host when policy inputs change. */
   getInstancePermissions?(instance: ViewInstance): ViewInstancePermissions;
+  getDefinitionPermissions?(): Pick<ViewPermissionSnapshot, 'reorder'>;
+  /** Notify only permission changes, not record-query updates. */
+  subscribePermissions?(listener: () => void): () => void;
 }
 export interface ViewEngineOptions {
   /** Headless filter capabilities fixed for this engine lifetime; ViewPage uses extensions.filters. */
