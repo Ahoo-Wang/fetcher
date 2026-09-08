@@ -298,30 +298,3 @@ export { snapshots, history };
 | `thisWeek`                             | [过滤表达式与旧条件](/zh/reference/wow/filters#api-thisWeek)                                    |
 | `today`                                | [过滤表达式与旧条件](/zh/reference/wow/filters#api-today)                                       |
 | `tomorrow`                             | [过滤表达式与旧条件](/zh/reference/wow/filters#api-tomorrow)                                    |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="选择-client"></span>选择 Client | [阅读对应专题](/zh/reference/wow/index.md) |
-| <span id="共享配置"></span>共享配置 | [阅读对应专题](/zh/reference/wow/configuration.md) |
-| <span id="命令"></span>命令 | [阅读对应专题](/zh/reference/wow/commands.md) |
-| <span id="command-方法"></span>Command 方法 | [阅读对应专题](/zh/reference/wow/commands.md) |
-| <span id="command-stage"></span>Command Stage | [阅读对应专题](/zh/reference/wow/commands.md) |
-| <span id="command-header"></span>Command Header | [阅读对应专题](/zh/reference/wow/commands.md) |
-| <span id="snapshot-query"></span>Snapshot Query | [阅读对应专题](/zh/reference/wow/query-options.md) |
-| <span id="id-helper"></span>ID Helper | [阅读对应专题](/zh/reference/wow/snapshot-queries.md) |
-| <span id="query-builder-与默认值"></span>Query Builder 与默认值 | [阅读对应专题](/zh/reference/wow/query-options.md) |
-| <span id="cursor-遍历"></span>Cursor 遍历 | [阅读对应专题](/zh/reference/wow/cursor-queries.md) |
-| <span id="filterexpression"></span>FilterExpression | [阅读对应专题](/zh/reference/wow/filters.md) |
-| <span id="aggregation"></span>Aggregation | [阅读对应专题](/zh/reference/wow/aggregations.md) |
-| <span id="扁平聚合"></span>扁平聚合 | [阅读对应专题](/zh/reference/wow/aggregations.md) |
-| <span id="嵌套-element-聚合"></span>嵌套 Element 聚合 | [阅读对应专题](/zh/reference/wow/aggregations.md) |
-| <span id="aggregation-builder"></span>Aggregation Builder | [阅读对应专题](/zh/reference/wow/aggregations.md) |
-| <span id="domain-event-query"></span>Domain Event Query | [阅读对应专题](/zh/reference/wow/events-and-history.md) |
-| <span id="历史状态加载"></span>历史状态加载 | [阅读对应专题](/zh/reference/wow/events-and-history.md) |
-| <span id="返回结构"></span>返回结构 | [阅读对应专题](/zh/reference/wow/shared-types.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/wow/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/wow/index.md) |

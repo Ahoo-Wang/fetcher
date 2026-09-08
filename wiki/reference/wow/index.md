@@ -298,31 +298,3 @@ export { snapshots, history };
 | `thisWeek`                             | [Filter expressions and legacy conditions](/reference/wow/filters#api-thisWeek)                           |
 | `today`                                | [Filter expressions and legacy conditions](/reference/wow/filters#api-today)                              |
 | `tomorrow`                             | [Filter expressions and legacy conditions](/reference/wow/filters#api-tomorrow)                           |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/wow/index.md) |
-| <span id="choose-a-client"></span>Choose a client | [Read this topic](/reference/wow/index.md) |
-| <span id="shared-configuration"></span>Shared configuration | [Read this topic](/reference/wow/configuration.md) |
-| <span id="commands"></span>Commands | [Read this topic](/reference/wow/commands.md) |
-| <span id="command-methods"></span>Command methods | [Read this topic](/reference/wow/commands.md) |
-| <span id="command-stages"></span>Command stages | [Read this topic](/reference/wow/commands.md) |
-| <span id="command-headers"></span>Command headers | [Read this topic](/reference/wow/commands.md) |
-| <span id="snapshot-queries"></span>Snapshot queries | [Read this topic](/reference/wow/snapshot-queries.md) |
-| <span id="id-helpers"></span>ID helpers | [Read this topic](/reference/wow/snapshot-queries.md) |
-| <span id="query-builders-and-defaults"></span>Query builders and defaults | [Read this topic](/reference/wow/query-options.md) |
-| <span id="cursor-traversal"></span>Cursor traversal | [Read this topic](/reference/wow/cursor-queries.md) |
-| <span id="filterexpression"></span>FilterExpression | [Read this topic](/reference/wow/filters.md) |
-| <span id="aggregation"></span>Aggregation | [Read this topic](/reference/wow/aggregations.md) |
-| <span id="flat-aggregation"></span>Flat aggregation | [Read this topic](/reference/wow/aggregations.md) |
-| <span id="nested-element-aggregation"></span>Nested element aggregation | [Read this topic](/reference/wow/aggregations.md) |
-| <span id="aggregation-builders"></span>Aggregation builders | [Read this topic](/reference/wow/aggregations.md) |
-| <span id="domain-event-queries"></span>Domain-event queries | [Read this topic](/reference/wow/events-and-history.md) |
-| <span id="historical-state-loading"></span>Historical state loading | [Read this topic](/reference/wow/events-and-history.md) |
-| <span id="return-shapes"></span>Return shapes | [Read this topic](/reference/wow/shared-types.md) |
-| <span id="troubleshooting"></span>Troubleshooting | [Read this topic](/reference/wow/index.md) |
-| <span id="source-references"></span>Source references | [Read this topic](/reference/wow/index.md) |

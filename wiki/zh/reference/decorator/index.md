@@ -97,17 +97,3 @@ void loadUser;
 | `DECORATOR_TARGET_ATTRIBUTE_KEY`   | [元数据与执行生命周期](/zh/reference/decorator/execution.md#decorator_target_attribute_key)   | [requestExecutor.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L17)                     |
 | `DECORATOR_METADATA_ATTRIBUTE_KEY` | [元数据与执行生命周期](/zh/reference/decorator/execution.md#decorator_metadata_attribute_key) | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | `RequestExecutor`                  | [元数据与执行生命周期](/zh/reference/decorator/execution.md#requestexecutor)                  | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装"></span>安装 | [阅读对应专题](/zh/reference/decorator/index.md) |
-| <span id="decorator-选择"></span>Decorator 选择 | [阅读对应专题](/zh/reference/decorator/services-and-endpoints.md) |
-| <span id="完整服务示例"></span>完整服务示例 | [阅读对应专题](/zh/reference/decorator/services-and-endpoints.md) |
-| <span id="metadata-合并与执行"></span>Metadata 合并与执行 | [阅读对应专题](/zh/reference/decorator/execution.md) |
-| <span id="fetcher、取消与生命周期所有权"></span>Fetcher、取消与生命周期所有权 | [阅读对应专题](/zh/reference/decorator/execution.md) |
-| <span id="继承与常见失败"></span>继承与常见失败 | [阅读对应专题](/zh/reference/decorator/execution.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/decorator/index.md) |

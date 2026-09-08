@@ -37,19 +37,3 @@ pnpm exec fetcher-generator generate -i ./openapi.json -o ./src/generated -t ./t
 | `DEFAULT_CONFIG_PATH` | [程序化 API](/zh/reference/generator/programmatic-api#default_config_path) |
 
 [packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L35)
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与运行"></span>安装与运行 | [阅读对应专题](/zh/reference/generator/index.md) |
-| <span id="cli-契约"></span>CLI 契约 | [阅读对应专题](/zh/reference/generator/cli.md) |
-| <span id="远程输入-guard"></span>远程输入 Guard | [阅读对应专题](/zh/reference/generator/cli.md) |
-| <span id="配置与优先级"></span>配置与优先级 | [阅读对应专题](/zh/reference/generator/configuration.md) |
-| <span id="输出与流水线"></span>输出与流水线 | [阅读对应专题](/zh/reference/generator/generated-output.md) |
-| <span id="程序化-api"></span>程序化 API | [阅读对应专题](/zh/reference/generator/index.md) |
-| <span id="wow-发现矩阵"></span>Wow 发现矩阵 | [阅读对应专题](/zh/reference/generator/wow-discovery.md) |
-| <span id="可复现故障定位"></span>可复现故障定位 | [阅读对应专题](/zh/reference/generator/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/generator/index.md) |

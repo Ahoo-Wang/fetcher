@@ -194,18 +194,3 @@ export function Profile() {
 | `useSecurity`                       | [Security hooks and route guards](/reference/react/cosec#api-useSecurity)                                       |
 | `useSecurityContext`                | [Security hooks and route guards](/reference/react/cosec#api-useSecurityContext)                                |
 | `useSingleQuery`                    | [Wow query hooks](/reference/react/wow#api-useSingleQuery)                                                      |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-fetcher-source"></span>Install and Fetcher source | [Read this topic](/reference/react/index.md) |
-| <span id="choose-a-public-hook"></span>Choose a public hook | [Read this topic](/reference/react/index.md) |
-| <span id="remaining-root-helpers-and-api-hook-factories"></span>Remaining root helpers and API-hook factories | [Read this topic](/reference/react/monitoring-and-utilities.md) |
-| <span id="promise-and-query-contract"></span>Promise and query contract | [Read this topic](/reference/react/promise-and-query-state.md) |
-| <span id="debounce-and-fullscreen"></span>Debounce and fullscreen | [Read this topic](/reference/react/monitoring-and-utilities.md) |
-| <span id="cosec-monitors-and-wow"></span>CoSec, monitors, and Wow | [Read this topic](/reference/react/monitoring-and-utilities.md) |
-| <span id="diagnose"></span>Diagnose | [Read this topic](/reference/react/index.md) |
-| <span id="source-and-runnable-scenarios"></span>Source and runnable scenarios | [Read this topic](/reference/react/index.md) |

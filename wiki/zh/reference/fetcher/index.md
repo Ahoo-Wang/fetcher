@@ -148,18 +148,3 @@ fetcherRegistrar.unregister('reports');
 | `VALIDATE_STATUS_INTERCEPTOR_ORDER` | [错误、超时与取消](/zh/reference/fetcher/errors-and-cancellation.md#validate_status_interceptor_order) | [validateStatusInterceptor.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L77)   |
 | `IGNORE_VALIDATE_STATUS`            | [错误、超时与取消](/zh/reference/fetcher/errors-and-cancellation.md#ignore_validate_status)            | [validateStatusInterceptor.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L97)   |
 | `ValidateStatusInterceptor`         | [错误、超时与取消](/zh/reference/fetcher/errors-and-cancellation.md#validatestatusinterceptor)         | [validateStatusInterceptor.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L126) |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节                                                                          | 新专题                                                           |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| <span id="安装与入口选择"></span>安装与入口选择                                 | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
-| <span id="http-方法矩阵"></span>HTTP 方法矩阵                                   | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
-| <span id="client-配置"></span>Client 配置                                       | [阅读对应专题](/zh/reference/fetcher/client.md)                  |
-| <span id="类型化请求与-fetchrequestinit"></span>类型化请求与 FetchRequestInit   | [阅读对应专题](/zh/reference/fetcher/requests.md)                |
-| <span id="解析与-url-规则"></span>解析与 URL 规则                               | [阅读对应专题](/zh/reference/fetcher/urls.md)                    |
-| <span id="result、interceptor-与错误契约"></span>Result、Interceptor 与错误契约 | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
-| <span id="超时与调用方取消"></span>超时与调用方取消                             | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
-| <span id="源码参考"></span>源码参考                                             | [阅读对应专题](/zh/reference/fetcher/index.md)                   |

@@ -12,7 +12,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 import { createMarkdownRenderer } from 'vitepress';
 import { fileURLToPath } from 'node:url';
@@ -30,12 +30,11 @@ test('every reference topic has complete bilingual page metadata', () => {
         assert.match(source, /^---\r?\n/, path);
         assert.match(source, /^title: .+/m, path);
         assert.match(source, /^description: .+/m, path);
-        if (topic === 'index')
-          assert.doesNotMatch(
-            source,
-            /\]\(\.\.?\//,
-            `${path}: old non-slash URLs need absolute topic links`,
-          );
+        assert.doesNotMatch(
+          source,
+          /^## (?:旧章节链接|Earlier section links)$/m,
+          path,
+        );
       }
     }
   }
@@ -43,12 +42,6 @@ test('every reference topic has complete bilingual page metadata', () => {
 
 test('LLM corpus includes every canonical page in both languages exactly once', () => {
   const wiki = new URL('../', import.meta.url);
-  const old = new Set(
-    referencePackages.flatMap(({ name }) => [
-      `reference/${name}.md`,
-      `zh/reference/${name}.md`,
-    ]),
-  );
   const directories = [
     'start',
     'learn',
@@ -64,7 +57,7 @@ test('LLM corpus includes every canonical page in both languages exactly once', 
         recursive: true,
       })) {
         const path = `${prefix}${directory}/${file}`;
-        if (file.endsWith('.md') && !old.has(path)) expected.push(path);
+        if (file.endsWith('.md')) expected.push(path);
       }
     }
   }
@@ -74,24 +67,6 @@ test('LLM corpus includes every canonical page in both languages exactly once', 
   ].map(match => match[1]);
   assert.equal(actual.length, new Set(actual).size, 'duplicate corpus page');
   assert.deepEqual(new Set(actual), new Set(expected));
-});
-
-test('legacy pages cannot shadow the canonical package directory on static hosts', () => {
-  const dist = new URL('../.vitepress/dist/', import.meta.url);
-  for (const { name } of referencePackages) {
-    for (const prefix of ['', 'zh/']) {
-      assert.ok(
-        existsSync(new URL(`${prefix}reference/${name}/index.html`, dist)),
-      );
-      assert.ok(
-        existsSync(new URL(`${prefix}reference/${name}/migration.html`, dist)),
-      );
-      assert.equal(
-        existsSync(new URL(`${prefix}reference/${name}.html`, dist)),
-        false,
-      );
-    }
-  }
 });
 
 test('reference tables preserve complete union type code spans in both languages', async () => {

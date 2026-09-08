@@ -1635,21 +1635,6 @@ fetcherRegistrar.unregister('reports');
 | `IGNORE_VALIDATE_STATUS`            | [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation.md#ignore_validate_status)            | [validateStatusInterceptor.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L97)   |
 | `ValidateStatusInterceptor`         | [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation.md#validatestatusinterceptor)         | [validateStatusInterceptor.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L126) |
 
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section                                                                                   | Current topic                                                    |
-| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| <span id="install-and-choose-an-entry-point"></span>Install and choose an entry point             | [Read this topic](/reference/fetcher/index.md)                   |
-| <span id="http-method-matrix"></span>HTTP method matrix                                           | [Read this topic](/reference/fetcher/index.md)                   |
-| <span id="client-configuration"></span>Client configuration                                       | [Read this topic](/reference/fetcher/client.md)                  |
-| <span id="typed-request-and-fetchrequestinit"></span>Typed request and FetchRequestInit           | [Read this topic](/reference/fetcher/requests.md)                |
-| <span id="resolution-and-url-rules"></span>Resolution and URL rules                               | [Read this topic](/reference/fetcher/urls.md)                    |
-| <span id="result-interceptor-and-error-contracts"></span>Result, interceptor, and error contracts | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
-| <span id="timeout-and-caller-cancellation"></span>Timeout and caller cancellation                 | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
-| <span id="source-reference"></span>Source reference                                               | [Read this topic](/reference/fetcher/index.md)                   |
-
 </doc>
 
 <doc title="Client and registration" path="reference/fetcher/client.md">
@@ -2240,20 +2225,6 @@ void loadUser;
 | `DECORATOR_METADATA_ATTRIBUTE_KEY` | [Metadata and execution lifecycle](/reference/decorator/execution.md#decorator_metadata_attribute_key) | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | `RequestExecutor`                  | [Metadata and execution lifecycle](/reference/decorator/execution.md#requestexecutor)                  | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |
 
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/decorator/index.md) |
-| <span id="decorator-selection"></span>Decorator selection | [Read this topic](/reference/decorator/services-and-endpoints.md) |
-| <span id="complete-service-example"></span>Complete service example | [Read this topic](/reference/decorator/services-and-endpoints.md) |
-| <span id="metadata-merge-and-execution"></span>Metadata merge and execution | [Read this topic](/reference/decorator/execution.md) |
-| <span id="fetcher-cancellation-and-lifecycle-ownership"></span>Fetcher, cancellation, and lifecycle ownership | [Read this topic](/reference/decorator/execution.md) |
-| <span id="inheritance-and-common-failures"></span>Inheritance and common failures | [Read this topic](/reference/decorator/execution.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/decorator/index.md) |
-
 </doc>
 
 <doc title="Services and endpoints" path="reference/decorator/services-and-endpoints.md">
@@ -2623,20 +2594,6 @@ bus.destroy();
 | `EventType`                     | [Events and local delivery](/reference/eventbus/events-and-delivery.md#eventtype)                               | [types.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L17)                                                    |
 | `EventHandler`                  | [Events and local delivery](/reference/eventbus/events-and-delivery.md#eventhandler)                            | [types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L19)                                                    |
 
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/eventbus/index.md) |
-| <span id="choose-an-entry-point"></span>Choose an entry point | [Read this topic](/reference/eventbus/index.md) |
-| <span id="typed-and-named-events"></span>Typed and named events | [Read this topic](/reference/eventbus/events-and-delivery.md) |
-| <span id="delivery-and-failure-contract"></span>Delivery and failure contract | [Read this topic](/reference/eventbus/events-and-delivery.md) |
-| <span id="cross-tab-bus-and-messenger-selection"></span>Cross-tab bus and messenger selection | [Read this topic](/reference/eventbus/broadcast-and-messengers.md) |
-| <span id="lifecycle-and-diagnosis"></span>Lifecycle and diagnosis | [Read this topic](/reference/eventbus/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/eventbus/index.md) |
-
 </doc>
 
 <doc title="Events and local delivery" path="reference/eventbus/events-and-delivery.md">
@@ -2880,21 +2837,6 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | `TextLineTransformStream`                | [The SSE parsing pipeline](/reference/eventstream/sse-pipeline.md#textlinetransformstream)                                                      | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                         |
 
 Response prototype members and the ReadableStream iterator augmentation are global additions rather than named exports; see [Response helpers](/reference/eventstream/json-and-results.md#response) and [iteration](/reference/eventstream/consumption-and-cancellation.md#iteration).
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/eventstream/index.md) |
-| <span id="choose-an-entry-point"></span>Choose an entry point | [Read this topic](/reference/eventstream/index.md) |
-| <span id="consume-typed-json-events"></span>Consume typed JSON events | [Read this topic](/reference/eventstream/json-and-results.md) |
-| <span id="sse-frame-and-conversion-pipeline"></span>SSE frame and conversion pipeline | [Read this topic](/reference/eventstream/sse-pipeline.md) |
-| <span id="response-helpers-and-fetcher-extractors"></span>Response helpers and Fetcher extractors | [Read this topic](/reference/eventstream/json-and-results.md) |
-| <span id="termination-cancellation-and-errors"></span>Termination, cancellation, and errors | [Read this topic](/reference/eventstream/consumption-and-cancellation.md) |
-| <span id="diagnosis"></span>Diagnosis | [Read this topic](/reference/eventstream/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/eventstream/index.md) |
 
 </doc>
 
@@ -3196,20 +3138,6 @@ settings.eventBus.destroy();
 | `identitySerializer`      | [Serialization and runtime storage](/reference/storage/serialization-and-runtime.md#identityserializer-instance) | [serializer.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L92)           |
 | `typedIdentitySerializer` | [Serialization and runtime storage](/reference/storage/serialization-and-runtime.md#typedidentityserializer)     | [serializer.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L94)           |
 
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/storage/index.md) |
-| <span id="construct-keystorage-t"></span>Construct `KeyStorage<T>` | [Read this topic](/reference/storage/key-storage.md) |
-| <span id="method-and-event-contract"></span>Method and event contract | [Read this topic](/reference/storage/key-storage.md) |
-| <span id="serializer-and-storage-selection"></span>Serializer and storage selection | [Read this topic](/reference/storage/serialization-and-runtime.md) |
-| <span id="listener-lifecycle-and-cross-context-behavior"></span>Listener lifecycle and cross-context behavior | [Read this topic](/reference/storage/key-storage.md) |
-| <span id="diagnosis"></span>Diagnosis | [Read this topic](/reference/storage/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/storage/index.md) |
-
 </doc>
 
 <doc title="KeyStorage and change listeners" path="reference/storage/key-storage.md">
@@ -3458,20 +3386,6 @@ console.log(document.openapi);
 | `XML`                   | [Schemas and references](/reference/openapi/schemas-and-references#xml)                       |
 
 [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-entry-points"></span>Install and entry points | [Read this topic](/reference/openapi/index.md) |
-| <span id="export-map"></span>Export map | [Read this topic](/reference/openapi/documents-and-operations.md) |
-| <span id="minimal-typed-document"></span>Minimal typed document | [Read this topic](/reference/openapi/schemas-and-references.md) |
-| <span id="type-contracts"></span>Type contracts | [Read this topic](/reference/openapi/schemas-and-references.md) |
-| <span id="openapi-3-0-3-1-boundary"></span>OpenAPI 3.0 / 3.1 boundary | [Read this topic](/reference/openapi/schemas-and-references.md) |
-| <span id="failure-guide"></span>Failure guide | [Read this topic](/reference/openapi/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/openapi/index.md) |
 
 </doc>
 
@@ -4237,22 +4151,6 @@ pnpm exec fetcher-generator generate -i ./openapi.json -o ./src/generated -t ./t
 
 [packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L35)
 
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-run"></span>Install and run | [Read this topic](/reference/generator/index.md) |
-| <span id="cli-contract"></span>CLI contract | [Read this topic](/reference/generator/cli.md) |
-| <span id="remote-input-guard"></span>Remote-input guard | [Read this topic](/reference/generator/cli.md) |
-| <span id="configuration-and-precedence"></span>Configuration and precedence | [Read this topic](/reference/generator/configuration.md) |
-| <span id="output-and-pipeline"></span>Output and pipeline | [Read this topic](/reference/generator/generated-output.md) |
-| <span id="programmatic-api"></span>Programmatic API | [Read this topic](/reference/generator/programmatic-api.md) |
-| <span id="wow-discovery-matrix"></span>Wow discovery matrix | [Read this topic](/reference/generator/wow-discovery.md) |
-| <span id="reproducible-diagnosis"></span>Reproducible diagnosis | [Read this topic](/reference/generator/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/generator/index.md) |
-
 </doc>
 
 <doc title="Generator CLI" path="reference/generator/cli.md">
@@ -4748,19 +4646,6 @@ export const createChat = (baseURL: string, apiKey: string) =>
 
 [packages/openai/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/index.ts#L14)
 
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="choose-an-entry-point"></span>Choose an entry point | [Read this topic](/reference/openai/client-and-completions.md) |
-| <span id="typed-completion"></span>Typed completion | [Read this topic](/reference/openai/client-and-completions.md) |
-| <span id="shared-fetcher-and-chatclient"></span>Shared Fetcher and ChatClient | [Read this topic](/reference/openai/client-and-completions.md) |
-| <span id="streaming-done-and-cancellation"></span>Streaming, [DONE], and cancellation | [Read this topic](/reference/openai/streaming.md) |
-| <span id="failure-boundary-and-troubleshooting"></span>Failure boundary and troubleshooting | [Read this topic](/reference/openai/index.md) |
-| <span id="security-and-source-references"></span>Security and source references | [Read this topic](/reference/openai/index.md) |
-
 </doc>
 
 <doc title="Client and chat completions" path="reference/openai/client-and-completions.md">
@@ -5050,20 +4935,6 @@ CoSec without a tokenRefresher installs metadata/attribution only. Read configur
 | `parseJwtPayload`                                | [Tokens and refresh](/reference/cosec/tokens-and-refresh#parsejwtpayload)                                                    |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-choose-the-setup"></span>Install and choose the setup | [Read this topic](/reference/cosec/index.md) |
-| <span id="configuration-and-minimal-safe-example"></span>Configuration and minimal safe example | [Read this topic](/reference/cosec/configuration.md) |
-| <span id="token-lifecycle-and-state"></span>Token lifecycle and state | [Read this topic](/reference/cosec/tokens-and-refresh.md) |
-| <span id="interceptor-pipeline-and-refresh-semantics"></span>Interceptor pipeline and refresh semantics | [Read this topic](/reference/cosec/interceptors-and-attribution.md) |
-| <span id="concurrent-refresh-retry-and-errors"></span>Concurrent refresh, retry, and errors | [Read this topic](/reference/cosec/tokens-and-refresh.md) |
-| <span id="cleanup-security-and-troubleshooting"></span>Cleanup, security, and troubleshooting | [Read this topic](/reference/cosec/index.md) |
-| <span id="source-references"></span>Source references | [Read this topic](/reference/cosec/index.md) |
 
 </doc>
 
@@ -5813,21 +5684,6 @@ export function Profile() {
 | `useSecurity`                       | [Security hooks and route guards](/reference/react/cosec#api-useSecurity)                                       |
 | `useSecurityContext`                | [Security hooks and route guards](/reference/react/cosec#api-useSecurityContext)                                |
 | `useSingleQuery`                    | [Wow query hooks](/reference/react/wow#api-useSingleQuery)                                                      |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-fetcher-source"></span>Install and Fetcher source | [Read this topic](/reference/react/index.md) |
-| <span id="choose-a-public-hook"></span>Choose a public hook | [Read this topic](/reference/react/index.md) |
-| <span id="remaining-root-helpers-and-api-hook-factories"></span>Remaining root helpers and API-hook factories | [Read this topic](/reference/react/monitoring-and-utilities.md) |
-| <span id="promise-and-query-contract"></span>Promise and query contract | [Read this topic](/reference/react/promise-and-query-state.md) |
-| <span id="debounce-and-fullscreen"></span>Debounce and fullscreen | [Read this topic](/reference/react/monitoring-and-utilities.md) |
-| <span id="cosec-monitors-and-wow"></span>CoSec, monitors, and Wow | [Read this topic](/reference/react/monitoring-and-utilities.md) |
-| <span id="diagnose"></span>Diagnose | [Read this topic](/reference/react/index.md) |
-| <span id="source-and-runnable-scenarios"></span>Source and runnable scenarios | [Read this topic](/reference/react/index.md) |
 
 </doc>
 
@@ -8483,34 +8339,6 @@ export { snapshots, history };
 | `thisWeek`                             | [Filter expressions and legacy conditions](/reference/wow/filters#api-thisWeek)                           |
 | `today`                                | [Filter expressions and legacy conditions](/reference/wow/filters#api-today)                              |
 | `tomorrow`                             | [Filter expressions and legacy conditions](/reference/wow/filters#api-tomorrow)                           |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/wow/index.md) |
-| <span id="choose-a-client"></span>Choose a client | [Read this topic](/reference/wow/index.md) |
-| <span id="shared-configuration"></span>Shared configuration | [Read this topic](/reference/wow/configuration.md) |
-| <span id="commands"></span>Commands | [Read this topic](/reference/wow/commands.md) |
-| <span id="command-methods"></span>Command methods | [Read this topic](/reference/wow/commands.md) |
-| <span id="command-stages"></span>Command stages | [Read this topic](/reference/wow/commands.md) |
-| <span id="command-headers"></span>Command headers | [Read this topic](/reference/wow/commands.md) |
-| <span id="snapshot-queries"></span>Snapshot queries | [Read this topic](/reference/wow/snapshot-queries.md) |
-| <span id="id-helpers"></span>ID helpers | [Read this topic](/reference/wow/snapshot-queries.md) |
-| <span id="query-builders-and-defaults"></span>Query builders and defaults | [Read this topic](/reference/wow/query-options.md) |
-| <span id="cursor-traversal"></span>Cursor traversal | [Read this topic](/reference/wow/cursor-queries.md) |
-| <span id="filterexpression"></span>FilterExpression | [Read this topic](/reference/wow/filters.md) |
-| <span id="aggregation"></span>Aggregation | [Read this topic](/reference/wow/aggregations.md) |
-| <span id="flat-aggregation"></span>Flat aggregation | [Read this topic](/reference/wow/aggregations.md) |
-| <span id="nested-element-aggregation"></span>Nested element aggregation | [Read this topic](/reference/wow/aggregations.md) |
-| <span id="aggregation-builders"></span>Aggregation builders | [Read this topic](/reference/wow/aggregations.md) |
-| <span id="domain-event-queries"></span>Domain-event queries | [Read this topic](/reference/wow/events-and-history.md) |
-| <span id="historical-state-loading"></span>Historical state loading | [Read this topic](/reference/wow/events-and-history.md) |
-| <span id="return-shapes"></span>Return shapes | [Read this topic](/reference/wow/shared-types.md) |
-| <span id="troubleshooting"></span>Troubleshooting | [Read this topic](/reference/wow/index.md) |
-| <span id="source-references"></span>Source references | [Read this topic](/reference/wow/index.md) |
 
 </doc>
 
@@ -12665,21 +12493,6 @@ export function PageControls() {
 | `viewQueryClientFactory`                  | [FetcherViewer remote integration](/reference/viewer/fetcher-viewer#api-viewQueryClientFactory)                      |
 | `viewerDefinitionQueryClientFactory`      | [FetcherViewer remote integration](/reference/viewer/fetcher-viewer#api-viewerDefinitionQueryClientFactory)          |
 
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/viewer/index.md) |
-| <span id="component-selection-and-ownership"></span>Component selection and ownership | [Read this topic](/reference/viewer/view-and-viewer.md) |
-| <span id="core-models-and-callbacks"></span>Core models and callbacks | [Read this topic](/reference/viewer/models-and-state.md) |
-| <span id="exact-public-component-contracts"></span>Exact public component contracts | [Read this topic](/reference/viewer/view-and-viewer.md) |
-| <span id="state-and-saved-view-persistence"></span>State and saved-view persistence | [Read this topic](/reference/viewer/saved-views.md) |
-| <span id="filters-cells-inputs-and-registries"></span>Filters, cells, inputs, and registries | [Read this topic](/reference/viewer/registries-and-inputs.md) |
-| <span id="fetcherviewer-data-flow-and-failure-boundaries"></span>FetcherViewer data flow and failure boundaries | [Read this topic](/reference/viewer/fetcher-viewer.md) |
-| <span id="diagnose-and-scenarios"></span>Diagnose and scenarios | [Read this topic](/reference/viewer/index.md) |
-
 </doc>
 
 <doc title="Models and state ownership" path="reference/viewer/models-and-state.md">
@@ -16594,9 +16407,9 @@ Resolve public exports through package.json and src/index.ts, then read implemen
 
 Reference package indexes map public symbols to topic anchors. Split topics by independent concepts, not one file per symbol. Keep English and Chinese complete at matching paths, with title and description frontmatter on every page.
 
-## Keep navigation and old links working
+## Keep navigation complete
 
-Add a Reference topic to `.vitepress/config/reference.mjs`; it supplies order to navigation, the LLM generator and checks. Update both language pages. When moving a page, preserve a short migration page and its existing anchors, with a canonical link to the new location. Migration pages are excluded from search, sitemap and the LLM corpus.
+Add a Reference topic to `.vitepress/config/reference.mjs`; it supplies order to navigation, the LLM generator and checks. Update both language pages. This is a new documentation site: maintain only current pages and links, without migration pages or legacy section indexes.
 
 ## Validate examples and diagrams
 
@@ -18237,21 +18050,6 @@ fetcherRegistrar.unregister('reports');
 | `IGNORE_VALIDATE_STATUS`            | [错误、超时与取消](/zh/reference/fetcher/errors-and-cancellation.md#ignore_validate_status)            | [validateStatusInterceptor.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L97)   |
 | `ValidateStatusInterceptor`         | [错误、超时与取消](/zh/reference/fetcher/errors-and-cancellation.md#validatestatusinterceptor)         | [validateStatusInterceptor.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L126) |
 
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节                                                                          | 新专题                                                           |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| <span id="安装与入口选择"></span>安装与入口选择                                 | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
-| <span id="http-方法矩阵"></span>HTTP 方法矩阵                                   | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
-| <span id="client-配置"></span>Client 配置                                       | [阅读对应专题](/zh/reference/fetcher/client.md)                  |
-| <span id="类型化请求与-fetchrequestinit"></span>类型化请求与 FetchRequestInit   | [阅读对应专题](/zh/reference/fetcher/requests.md)                |
-| <span id="解析与-url-规则"></span>解析与 URL 规则                               | [阅读对应专题](/zh/reference/fetcher/urls.md)                    |
-| <span id="result、interceptor-与错误契约"></span>Result、Interceptor 与错误契约 | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
-| <span id="超时与调用方取消"></span>超时与调用方取消                             | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
-| <span id="源码参考"></span>源码参考                                             | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
-
 </doc>
 
 <doc title="客户端与注册" path="zh/reference/fetcher/client.md">
@@ -18842,20 +18640,6 @@ void loadUser;
 | `DECORATOR_METADATA_ATTRIBUTE_KEY` | [元数据与执行生命周期](/zh/reference/decorator/execution.md#decorator_metadata_attribute_key) | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | `RequestExecutor`                  | [元数据与执行生命周期](/zh/reference/decorator/execution.md#requestexecutor)                  | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |
 
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装"></span>安装 | [阅读对应专题](/zh/reference/decorator/index.md) |
-| <span id="decorator-选择"></span>Decorator 选择 | [阅读对应专题](/zh/reference/decorator/services-and-endpoints.md) |
-| <span id="完整服务示例"></span>完整服务示例 | [阅读对应专题](/zh/reference/decorator/services-and-endpoints.md) |
-| <span id="metadata-合并与执行"></span>Metadata 合并与执行 | [阅读对应专题](/zh/reference/decorator/execution.md) |
-| <span id="fetcher、取消与生命周期所有权"></span>Fetcher、取消与生命周期所有权 | [阅读对应专题](/zh/reference/decorator/execution.md) |
-| <span id="继承与常见失败"></span>继承与常见失败 | [阅读对应专题](/zh/reference/decorator/execution.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/decorator/index.md) |
-
 </doc>
 
 <doc title="服务与端点" path="zh/reference/decorator/services-and-endpoints.md">
@@ -19225,20 +19009,6 @@ bus.destroy();
 | `EventType`                     | [事件与本地投递](/zh/reference/eventbus/events-and-delivery.md#eventtype)                              | [types.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L17)                                                    |
 | `EventHandler`                  | [事件与本地投递](/zh/reference/eventbus/events-and-delivery.md#eventhandler)                           | [types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L19)                                                    |
 
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装"></span>安装 | [阅读对应专题](/zh/reference/eventbus/index.md) |
-| <span id="选择入口"></span>选择入口 | [阅读对应专题](/zh/reference/eventbus/index.md) |
-| <span id="类型化与命名事件"></span>类型化与命名事件 | [阅读对应专题](/zh/reference/eventbus/events-and-delivery.md) |
-| <span id="投递与失败契约"></span>投递与失败契约 | [阅读对应专题](/zh/reference/eventbus/events-and-delivery.md) |
-| <span id="跨标签页-bus-与-messenger-选择"></span>跨标签页 Bus 与 Messenger 选择 | [阅读对应专题](/zh/reference/eventbus/broadcast-and-messengers.md) |
-| <span id="生命周期与故障定位"></span>生命周期与故障定位 | [阅读对应专题](/zh/reference/eventbus/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/eventbus/index.md) |
-
 </doc>
 
 <doc title="事件与本地投递" path="zh/reference/eventbus/events-and-delivery.md">
@@ -19482,21 +19252,6 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | `TextLineTransformStream`                | [SSE 解析管线](/zh/reference/eventstream/sse-pipeline.md#textlinetransformstream)                                          | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                         |
 
 Response 原型成员和 ReadableStream 迭代器是全局扩展，不是具名导出，见 [Response 辅助方法](/zh/reference/eventstream/json-and-results.md#response)及[迭代](/zh/reference/eventstream/consumption-and-cancellation.md#iteration)。
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装"></span>安装 | [阅读对应专题](/zh/reference/eventstream/index.md) |
-| <span id="选择入口"></span>选择入口 | [阅读对应专题](/zh/reference/eventstream/index.md) |
-| <span id="消费类型化-json-事件"></span>消费类型化 JSON 事件 | [阅读对应专题](/zh/reference/eventstream/json-and-results.md) |
-| <span id="sse-frame-与转换流水线"></span>SSE Frame 与转换流水线 | [阅读对应专题](/zh/reference/eventstream/sse-pipeline.md) |
-| <span id="response-辅助-api-与-fetcher-extractor"></span>Response 辅助 API 与 Fetcher Extractor | [阅读对应专题](/zh/reference/eventstream/json-and-results.md) |
-| <span id="终止、取消与错误"></span>终止、取消与错误 | [阅读对应专题](/zh/reference/eventstream/consumption-and-cancellation.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/eventstream/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/eventstream/index.md) |
 
 </doc>
 
@@ -19798,20 +19553,6 @@ settings.eventBus.destroy();
 | `identitySerializer`      | [序列化与运行时存储](/zh/reference/storage/serialization-and-runtime.md#identityserializer-instance) | [serializer.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L92)           |
 | `typedIdentitySerializer` | [序列化与运行时存储](/zh/reference/storage/serialization-and-runtime.md#typedidentityserializer)     | [serializer.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L94)           |
 
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装"></span>安装 | [阅读对应专题](/zh/reference/storage/index.md) |
-| <span id="构造-keystorage-t"></span>构造 `KeyStorage<T>` | [阅读对应专题](/zh/reference/storage/key-storage.md) |
-| <span id="方法与事件契约"></span>方法与事件契约 | [阅读对应专题](/zh/reference/storage/key-storage.md) |
-| <span id="serializer-与-storage-选择"></span>Serializer 与 Storage 选择 | [阅读对应专题](/zh/reference/storage/serialization-and-runtime.md) |
-| <span id="listener-生命周期与跨上下文行为"></span>Listener 生命周期与跨上下文行为 | [阅读对应专题](/zh/reference/storage/key-storage.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/storage/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/storage/index.md) |
-
 </doc>
 
 <doc title="KeyStorage 与变更监听" path="zh/reference/storage/key-storage.md">
@@ -20060,20 +19801,6 @@ console.log(document.openapi);
 | `XML`                   | [Schema 与引用](/zh/reference/openapi/schemas-and-references#xml)                  |
 
 [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与入口选择"></span>安装与入口选择 | [阅读对应专题](/zh/reference/openapi/index.md) |
-| <span id="导出地图"></span>导出地图 | [阅读对应专题](/zh/reference/openapi/documents-and-operations.md) |
-| <span id="最小类型化文档"></span>最小类型化文档 | [阅读对应专题](/zh/reference/openapi/schemas-and-references.md) |
-| <span id="类型契约"></span>类型契约 | [阅读对应专题](/zh/reference/openapi/schemas-and-references.md) |
-| <span id="openapi-3-0-3-1-边界"></span>OpenAPI 3.0 / 3.1 边界 | [阅读对应专题](/zh/reference/openapi/schemas-and-references.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/openapi/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/openapi/index.md) |
 
 </doc>
 
@@ -20839,22 +20566,6 @@ pnpm exec fetcher-generator generate -i ./openapi.json -o ./src/generated -t ./t
 
 [packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L35)
 
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与运行"></span>安装与运行 | [阅读对应专题](/zh/reference/generator/index.md) |
-| <span id="cli-契约"></span>CLI 契约 | [阅读对应专题](/zh/reference/generator/cli.md) |
-| <span id="远程输入-guard"></span>远程输入 Guard | [阅读对应专题](/zh/reference/generator/cli.md) |
-| <span id="配置与优先级"></span>配置与优先级 | [阅读对应专题](/zh/reference/generator/configuration.md) |
-| <span id="输出与流水线"></span>输出与流水线 | [阅读对应专题](/zh/reference/generator/generated-output.md) |
-| <span id="程序化-api"></span>程序化 API | [阅读对应专题](/zh/reference/generator/index.md) |
-| <span id="wow-发现矩阵"></span>Wow 发现矩阵 | [阅读对应专题](/zh/reference/generator/wow-discovery.md) |
-| <span id="可复现故障定位"></span>可复现故障定位 | [阅读对应专题](/zh/reference/generator/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/generator/index.md) |
-
 </doc>
 
 <doc title="生成器 CLI" path="zh/reference/generator/cli.md">
@@ -21350,19 +21061,6 @@ export const createChat = (baseURL: string, apiKey: string) =>
 
 [packages/openai/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/index.ts#L14)
 
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="选择入口"></span>选择入口 | [阅读对应专题](/zh/reference/openai/client-and-completions.md) |
-| <span id="类型化-completion"></span>类型化 Completion | [阅读对应专题](/zh/reference/openai/client-and-completions.md) |
-| <span id="共享-fetcher-与-chatclient"></span>共享 Fetcher 与 ChatClient | [阅读对应专题](/zh/reference/openai/client-and-completions.md) |
-| <span id="streaming、-done-与取消"></span>Streaming、[DONE] 与取消 | [阅读对应专题](/zh/reference/openai/streaming.md) |
-| <span id="失败边界与排障"></span>失败边界与排障 | [阅读对应专题](/zh/reference/openai/index.md) |
-| <span id="安全与源码参考"></span>安全与源码参考 | [阅读对应专题](/zh/reference/openai/index.md) |
-
 </doc>
 
 <doc title="客户端与聊天补全" path="zh/reference/openai/client-and-completions.md">
@@ -21652,20 +21350,6 @@ cosec.applyTo(fetcher);
 | `parseJwtPayload`                                | [Token 与刷新](/zh/reference/cosec/tokens-and-refresh#parsejwtpayload)                                              |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与选择配置"></span>安装与选择配置 | [阅读对应专题](/zh/reference/cosec/index.md) |
-| <span id="配置与最小安全示例"></span>配置与最小安全示例 | [阅读对应专题](/zh/reference/cosec/configuration.md) |
-| <span id="token-生命周期与状态"></span>Token 生命周期与状态 | [阅读对应专题](/zh/reference/cosec/tokens-and-refresh.md) |
-| <span id="interceptor-pipeline-与刷新语义"></span>Interceptor Pipeline 与刷新语义 | [阅读对应专题](/zh/reference/cosec/interceptors-and-attribution.md) |
-| <span id="并发刷新、重试与错误"></span>并发刷新、重试与错误 | [阅读对应专题](/zh/reference/cosec/tokens-and-refresh.md) |
-| <span id="清理、安全与排障"></span>清理、安全与排障 | [阅读对应专题](/zh/reference/cosec/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/cosec/index.md) |
 
 </doc>
 
@@ -22415,21 +22099,6 @@ export function Profile() {
 | `useSecurity`                       | [安全 Hook 与路由守卫](/zh/reference/react/cosec#api-useSecurity)                                   |
 | `useSecurityContext`                | [安全 Hook 与路由守卫](/zh/reference/react/cosec#api-useSecurityContext)                            |
 | `useSingleQuery`                    | [Wow 查询 Hook](/zh/reference/react/wow#api-useSingleQuery)                                         |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与-fetcher-来源"></span>安装与 Fetcher 来源 | [阅读对应专题](/zh/reference/react/index.md) |
-| <span id="选择公开-hook"></span>选择公开 Hook | [阅读对应专题](/zh/reference/react/index.md) |
-| <span id="其余-root-helper-与-api-hook-factory"></span>其余 Root Helper 与 API-hook Factory | [阅读对应专题](/zh/reference/react/monitoring-and-utilities.md) |
-| <span id="promise-与-query-契约"></span>Promise 与 Query 契约 | [阅读对应专题](/zh/reference/react/promise-and-query-state.md) |
-| <span id="debounce-与-fullscreen"></span>Debounce 与 Fullscreen | [阅读对应专题](/zh/reference/react/monitoring-and-utilities.md) |
-| <span id="cosec、monitor-与-wow"></span>CoSec、Monitor 与 Wow | [阅读对应专题](/zh/reference/react/monitoring-and-utilities.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/react/index.md) |
-| <span id="源码与可运行场景"></span>源码与可运行场景 | [阅读对应专题](/zh/reference/react/index.md) |
 
 </doc>
 
@@ -25085,33 +24754,6 @@ export { snapshots, history };
 | `thisWeek`                             | [过滤表达式与旧条件](/zh/reference/wow/filters#api-thisWeek)                                    |
 | `today`                                | [过滤表达式与旧条件](/zh/reference/wow/filters#api-today)                                       |
 | `tomorrow`                             | [过滤表达式与旧条件](/zh/reference/wow/filters#api-tomorrow)                                    |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="选择-client"></span>选择 Client | [阅读对应专题](/zh/reference/wow/index.md) |
-| <span id="共享配置"></span>共享配置 | [阅读对应专题](/zh/reference/wow/configuration.md) |
-| <span id="命令"></span>命令 | [阅读对应专题](/zh/reference/wow/commands.md) |
-| <span id="command-方法"></span>Command 方法 | [阅读对应专题](/zh/reference/wow/commands.md) |
-| <span id="command-stage"></span>Command Stage | [阅读对应专题](/zh/reference/wow/commands.md) |
-| <span id="command-header"></span>Command Header | [阅读对应专题](/zh/reference/wow/commands.md) |
-| <span id="snapshot-query"></span>Snapshot Query | [阅读对应专题](/zh/reference/wow/query-options.md) |
-| <span id="id-helper"></span>ID Helper | [阅读对应专题](/zh/reference/wow/snapshot-queries.md) |
-| <span id="query-builder-与默认值"></span>Query Builder 与默认值 | [阅读对应专题](/zh/reference/wow/query-options.md) |
-| <span id="cursor-遍历"></span>Cursor 遍历 | [阅读对应专题](/zh/reference/wow/cursor-queries.md) |
-| <span id="filterexpression"></span>FilterExpression | [阅读对应专题](/zh/reference/wow/filters.md) |
-| <span id="aggregation"></span>Aggregation | [阅读对应专题](/zh/reference/wow/aggregations.md) |
-| <span id="扁平聚合"></span>扁平聚合 | [阅读对应专题](/zh/reference/wow/aggregations.md) |
-| <span id="嵌套-element-聚合"></span>嵌套 Element 聚合 | [阅读对应专题](/zh/reference/wow/aggregations.md) |
-| <span id="aggregation-builder"></span>Aggregation Builder | [阅读对应专题](/zh/reference/wow/aggregations.md) |
-| <span id="domain-event-query"></span>Domain Event Query | [阅读对应专题](/zh/reference/wow/events-and-history.md) |
-| <span id="历史状态加载"></span>历史状态加载 | [阅读对应专题](/zh/reference/wow/events-and-history.md) |
-| <span id="返回结构"></span>返回结构 | [阅读对应专题](/zh/reference/wow/shared-types.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/wow/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/wow/index.md) |
 
 </doc>
 
@@ -29266,20 +28908,6 @@ export function PageControls() {
 | `viewQueryClientFactory`                  | [FetcherViewer 远端集成](/zh/reference/viewer/fetcher-viewer#api-viewQueryClientFactory)                  |
 | `viewerDefinitionQueryClientFactory`      | [FetcherViewer 远端集成](/zh/reference/viewer/fetcher-viewer#api-viewerDefinitionQueryClientFactory)      |
 
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="组件选择与所有权"></span>组件选择与所有权 | [阅读对应专题](/zh/reference/viewer/view-and-viewer.md) |
-| <span id="核心模型与-callback"></span>核心模型与 Callback | [阅读对应专题](/zh/reference/viewer/models-and-state.md) |
-| <span id="精确-public-component-contract"></span>精确 Public Component Contract | [阅读对应专题](/zh/reference/viewer/view-and-viewer.md) |
-| <span id="state-与保存-view-持久化"></span>State 与保存 View 持久化 | [阅读对应专题](/zh/reference/viewer/saved-views.md) |
-| <span id="filter、cell、input-与-registry"></span>Filter、Cell、Input 与 Registry | [阅读对应专题](/zh/reference/viewer/registries-and-inputs.md) |
-| <span id="fetcherviewer-data-flow-与失败边界"></span>FetcherViewer Data Flow 与失败边界 | [阅读对应专题](/zh/reference/viewer/fetcher-viewer.md) |
-| <span id="故障定位与场景"></span>故障定位与场景 | [阅读对应专题](/zh/reference/viewer/index.md) |
-
 </doc>
 
 <doc title="模型与状态所有权" path="zh/reference/viewer/models-and-state.md">
@@ -33192,9 +32820,9 @@ node --test wiki/test/mermaid-browser.test.mjs
 
 包索引将公开符号映射到专题锚点。按独立概念拆分，不为每个符号建页。英文和中文路径对应、内容完整，每页具备 title 和 description。
 
-## 保持导航与旧链接可用
+## 保持导航完整
 
-Reference 新专题加入 .vitepress/config/reference.mjs；该清单为导航、LLM 生成与检查提供顺序。同步两种语言页面。移动页面时保留简短迁移页及已有锚点，并用 canonical 指向新位置；迁移页不进入搜索、sitemap 或 LLM 语料。
+Reference 新专题加入 .vitepress/config/reference.mjs；该清单为导航、LLM 生成与检查提供顺序。同步两种语言页面。这是全新文档站，只维护当前页面和链接，不保留迁移页或旧章节索引。
 
 ## 验证示例和图表
 

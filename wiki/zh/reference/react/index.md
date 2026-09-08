@@ -194,18 +194,3 @@ export function Profile() {
 | `useSecurity`                       | [安全 Hook 与路由守卫](/zh/reference/react/cosec#api-useSecurity)                                   |
 | `useSecurityContext`                | [安全 Hook 与路由守卫](/zh/reference/react/cosec#api-useSecurityContext)                            |
 | `useSingleQuery`                    | [Wow 查询 Hook](/zh/reference/react/wow#api-useSingleQuery)                                         |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与-fetcher-来源"></span>安装与 Fetcher 来源 | [阅读对应专题](/zh/reference/react/index.md) |
-| <span id="选择公开-hook"></span>选择公开 Hook | [阅读对应专题](/zh/reference/react/index.md) |
-| <span id="其余-root-helper-与-api-hook-factory"></span>其余 Root Helper 与 API-hook Factory | [阅读对应专题](/zh/reference/react/monitoring-and-utilities.md) |
-| <span id="promise-与-query-契约"></span>Promise 与 Query 契约 | [阅读对应专题](/zh/reference/react/promise-and-query-state.md) |
-| <span id="debounce-与-fullscreen"></span>Debounce 与 Fullscreen | [阅读对应专题](/zh/reference/react/monitoring-and-utilities.md) |
-| <span id="cosec、monitor-与-wow"></span>CoSec、Monitor 与 Wow | [阅读对应专题](/zh/reference/react/monitoring-and-utilities.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/react/index.md) |
-| <span id="源码与可运行场景"></span>源码与可运行场景 | [阅读对应专题](/zh/reference/react/index.md) |

@@ -313,18 +313,3 @@ export function PageControls() {
 | `useViewerViews`                          | [FetcherViewer remote integration](/reference/viewer/fetcher-viewer#api-useViewerViews)                              |
 | `viewQueryClientFactory`                  | [FetcherViewer remote integration](/reference/viewer/fetcher-viewer#api-viewQueryClientFactory)                      |
 | `viewerDefinitionQueryClientFactory`      | [FetcherViewer remote integration](/reference/viewer/fetcher-viewer#api-viewerDefinitionQueryClientFactory)          |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/viewer/index.md) |
-| <span id="component-selection-and-ownership"></span>Component selection and ownership | [Read this topic](/reference/viewer/view-and-viewer.md) |
-| <span id="core-models-and-callbacks"></span>Core models and callbacks | [Read this topic](/reference/viewer/models-and-state.md) |
-| <span id="exact-public-component-contracts"></span>Exact public component contracts | [Read this topic](/reference/viewer/view-and-viewer.md) |
-| <span id="state-and-saved-view-persistence"></span>State and saved-view persistence | [Read this topic](/reference/viewer/saved-views.md) |
-| <span id="filters-cells-inputs-and-registries"></span>Filters, cells, inputs, and registries | [Read this topic](/reference/viewer/registries-and-inputs.md) |
-| <span id="fetcherviewer-data-flow-and-failure-boundaries"></span>FetcherViewer data flow and failure boundaries | [Read this topic](/reference/viewer/fetcher-viewer.md) |
-| <span id="diagnose-and-scenarios"></span>Diagnose and scenarios | [Read this topic](/reference/viewer/index.md) |

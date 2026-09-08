@@ -76,17 +76,3 @@ console.log(document.openapi);
 | `XML`                   | [Schema 与引用](/zh/reference/openapi/schemas-and-references#xml)                  |
 
 [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与入口选择"></span>安装与入口选择 | [阅读对应专题](/zh/reference/openapi/index.md) |
-| <span id="导出地图"></span>导出地图 | [阅读对应专题](/zh/reference/openapi/documents-and-operations.md) |
-| <span id="最小类型化文档"></span>最小类型化文档 | [阅读对应专题](/zh/reference/openapi/schemas-and-references.md) |
-| <span id="类型契约"></span>类型契约 | [阅读对应专题](/zh/reference/openapi/schemas-and-references.md) |
-| <span id="openapi-3-0-3-1-边界"></span>OpenAPI 3.0 / 3.1 边界 | [阅读对应专题](/zh/reference/openapi/schemas-and-references.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/openapi/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/openapi/index.md) |

@@ -72,17 +72,3 @@ bus.destroy();
 | `TypedEventBus`                 | [事件与本地投递](/zh/reference/eventbus/events-and-delivery.md#typedeventbus)                          | [typedEventBus.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/typedEventBus.ts#L21)                                    |
 | `EventType`                     | [事件与本地投递](/zh/reference/eventbus/events-and-delivery.md#eventtype)                              | [types.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L17)                                                    |
 | `EventHandler`                  | [事件与本地投递](/zh/reference/eventbus/events-and-delivery.md#eventhandler)                           | [types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L19)                                                    |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装"></span>安装 | [阅读对应专题](/zh/reference/eventbus/index.md) |
-| <span id="选择入口"></span>选择入口 | [阅读对应专题](/zh/reference/eventbus/index.md) |
-| <span id="类型化与命名事件"></span>类型化与命名事件 | [阅读对应专题](/zh/reference/eventbus/events-and-delivery.md) |
-| <span id="投递与失败契约"></span>投递与失败契约 | [阅读对应专题](/zh/reference/eventbus/events-and-delivery.md) |
-| <span id="跨标签页-bus-与-messenger-选择"></span>跨标签页 Bus 与 Messenger 选择 | [阅读对应专题](/zh/reference/eventbus/broadcast-and-messengers.md) |
-| <span id="生命周期与故障定位"></span>生命周期与故障定位 | [阅读对应专题](/zh/reference/eventbus/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/eventbus/index.md) |

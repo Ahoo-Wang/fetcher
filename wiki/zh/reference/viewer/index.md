@@ -313,17 +313,3 @@ export function PageControls() {
 | `useViewerViews`                          | [FetcherViewer 远端集成](/zh/reference/viewer/fetcher-viewer#api-useViewerViews)                          |
 | `viewQueryClientFactory`                  | [FetcherViewer 远端集成](/zh/reference/viewer/fetcher-viewer#api-viewQueryClientFactory)                  |
 | `viewerDefinitionQueryClientFactory`      | [FetcherViewer 远端集成](/zh/reference/viewer/fetcher-viewer#api-viewerDefinitionQueryClientFactory)      |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="组件选择与所有权"></span>组件选择与所有权 | [阅读对应专题](/zh/reference/viewer/view-and-viewer.md) |
-| <span id="核心模型与-callback"></span>核心模型与 Callback | [阅读对应专题](/zh/reference/viewer/models-and-state.md) |
-| <span id="精确-public-component-contract"></span>精确 Public Component Contract | [阅读对应专题](/zh/reference/viewer/view-and-viewer.md) |
-| <span id="state-与保存-view-持久化"></span>State 与保存 View 持久化 | [阅读对应专题](/zh/reference/viewer/saved-views.md) |
-| <span id="filter、cell、input-与-registry"></span>Filter、Cell、Input 与 Registry | [阅读对应专题](/zh/reference/viewer/registries-and-inputs.md) |
-| <span id="fetcherviewer-data-flow-与失败边界"></span>FetcherViewer Data Flow 与失败边界 | [阅读对应专题](/zh/reference/viewer/fetcher-viewer.md) |
-| <span id="故障定位与场景"></span>故障定位与场景 | [阅读对应专题](/zh/reference/viewer/index.md) |

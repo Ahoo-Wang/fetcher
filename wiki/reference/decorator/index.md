@@ -97,17 +97,3 @@ void loadUser;
 | `DECORATOR_TARGET_ATTRIBUTE_KEY`   | [Metadata and execution lifecycle](/reference/decorator/execution.md#decorator_target_attribute_key)   | [requestExecutor.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L17)                     |
 | `DECORATOR_METADATA_ATTRIBUTE_KEY` | [Metadata and execution lifecycle](/reference/decorator/execution.md#decorator_metadata_attribute_key) | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | `RequestExecutor`                  | [Metadata and execution lifecycle](/reference/decorator/execution.md#requestexecutor)                  | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/decorator/index.md) |
-| <span id="decorator-selection"></span>Decorator selection | [Read this topic](/reference/decorator/services-and-endpoints.md) |
-| <span id="complete-service-example"></span>Complete service example | [Read this topic](/reference/decorator/services-and-endpoints.md) |
-| <span id="metadata-merge-and-execution"></span>Metadata merge and execution | [Read this topic](/reference/decorator/execution.md) |
-| <span id="fetcher-cancellation-and-lifecycle-ownership"></span>Fetcher, cancellation, and lifecycle ownership | [Read this topic](/reference/decorator/execution.md) |
-| <span id="inheritance-and-common-failures"></span>Inheritance and common failures | [Read this topic](/reference/decorator/execution.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/decorator/index.md) |

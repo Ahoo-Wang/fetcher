@@ -81,18 +81,3 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | `TextLineTransformStream`                | [The SSE parsing pipeline](/reference/eventstream/sse-pipeline.md#textlinetransformstream)                                                      | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                         |
 
 Response prototype members and the ReadableStream iterator augmentation are global additions rather than named exports; see [Response helpers](/reference/eventstream/json-and-results.md#response) and [iteration](/reference/eventstream/consumption-and-cancellation.md#iteration).
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/eventstream/index.md) |
-| <span id="choose-an-entry-point"></span>Choose an entry point | [Read this topic](/reference/eventstream/index.md) |
-| <span id="consume-typed-json-events"></span>Consume typed JSON events | [Read this topic](/reference/eventstream/json-and-results.md) |
-| <span id="sse-frame-and-conversion-pipeline"></span>SSE frame and conversion pipeline | [Read this topic](/reference/eventstream/sse-pipeline.md) |
-| <span id="response-helpers-and-fetcher-extractors"></span>Response helpers and Fetcher extractors | [Read this topic](/reference/eventstream/json-and-results.md) |
-| <span id="termination-cancellation-and-errors"></span>Termination, cancellation, and errors | [Read this topic](/reference/eventstream/consumption-and-cancellation.md) |
-| <span id="diagnosis"></span>Diagnosis | [Read this topic](/reference/eventstream/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/eventstream/index.md) |

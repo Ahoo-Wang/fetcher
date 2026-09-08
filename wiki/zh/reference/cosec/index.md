@@ -111,17 +111,3 @@ cosec.applyTo(fetcher);
 | `parseJwtPayload`                                | [Token 与刷新](/zh/reference/cosec/tokens-and-refresh#parsejwtpayload)                                              |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与选择配置"></span>安装与选择配置 | [阅读对应专题](/zh/reference/cosec/index.md) |
-| <span id="配置与最小安全示例"></span>配置与最小安全示例 | [阅读对应专题](/zh/reference/cosec/configuration.md) |
-| <span id="token-生命周期与状态"></span>Token 生命周期与状态 | [阅读对应专题](/zh/reference/cosec/tokens-and-refresh.md) |
-| <span id="interceptor-pipeline-与刷新语义"></span>Interceptor Pipeline 与刷新语义 | [阅读对应专题](/zh/reference/cosec/interceptors-and-attribution.md) |
-| <span id="并发刷新、重试与错误"></span>并发刷新、重试与错误 | [阅读对应专题](/zh/reference/cosec/tokens-and-refresh.md) |
-| <span id="清理、安全与排障"></span>清理、安全与排障 | [阅读对应专题](/zh/reference/cosec/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/cosec/index.md) |

@@ -65,17 +65,3 @@ settings.eventBus.destroy();
 | `jsonSerializer`          | [序列化与运行时存储](/zh/reference/storage/serialization-and-runtime.md#jsonserializer-instance)     | [serializer.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L88)           |
 | `identitySerializer`      | [序列化与运行时存储](/zh/reference/storage/serialization-and-runtime.md#identityserializer-instance) | [serializer.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L92)           |
 | `typedIdentitySerializer` | [序列化与运行时存储](/zh/reference/storage/serialization-and-runtime.md#typedidentityserializer)     | [serializer.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L94)           |
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装"></span>安装 | [阅读对应专题](/zh/reference/storage/index.md) |
-| <span id="构造-keystorage-t"></span>构造 `KeyStorage<T>` | [阅读对应专题](/zh/reference/storage/key-storage.md) |
-| <span id="方法与事件契约"></span>方法与事件契约 | [阅读对应专题](/zh/reference/storage/key-storage.md) |
-| <span id="serializer-与-storage-选择"></span>Serializer 与 Storage 选择 | [阅读对应专题](/zh/reference/storage/serialization-and-runtime.md) |
-| <span id="listener-生命周期与跨上下文行为"></span>Listener 生命周期与跨上下文行为 | [阅读对应专题](/zh/reference/storage/key-storage.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/storage/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/storage/index.md) |

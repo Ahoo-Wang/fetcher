@@ -47,16 +47,3 @@ export const createChat = (baseURL: string, apiKey: string) =>
 | `Usage`                           | [Client and chat completions](/reference/openai/client-and-completions#usage)             |
 
 [packages/openai/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/index.ts#L14)
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="choose-an-entry-point"></span>Choose an entry point | [Read this topic](/reference/openai/client-and-completions.md) |
-| <span id="typed-completion"></span>Typed completion | [Read this topic](/reference/openai/client-and-completions.md) |
-| <span id="shared-fetcher-and-chatclient"></span>Shared Fetcher and ChatClient | [Read this topic](/reference/openai/client-and-completions.md) |
-| <span id="streaming-done-and-cancellation"></span>Streaming, [DONE], and cancellation | [Read this topic](/reference/openai/streaming.md) |
-| <span id="failure-boundary-and-troubleshooting"></span>Failure boundary and troubleshooting | [Read this topic](/reference/openai/index.md) |
-| <span id="security-and-source-references"></span>Security and source references | [Read this topic](/reference/openai/index.md) |

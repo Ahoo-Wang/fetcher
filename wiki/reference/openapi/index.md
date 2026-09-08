@@ -76,17 +76,3 @@ console.log(document.openapi);
 | `XML`                   | [Schemas and references](/reference/openapi/schemas-and-references#xml)                       |
 
 [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-entry-points"></span>Install and entry points | [Read this topic](/reference/openapi/index.md) |
-| <span id="export-map"></span>Export map | [Read this topic](/reference/openapi/documents-and-operations.md) |
-| <span id="minimal-typed-document"></span>Minimal typed document | [Read this topic](/reference/openapi/schemas-and-references.md) |
-| <span id="type-contracts"></span>Type contracts | [Read this topic](/reference/openapi/schemas-and-references.md) |
-| <span id="openapi-3-0-3-1-boundary"></span>OpenAPI 3.0 / 3.1 boundary | [Read this topic](/reference/openapi/schemas-and-references.md) |
-| <span id="failure-guide"></span>Failure guide | [Read this topic](/reference/openapi/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/openapi/index.md) |

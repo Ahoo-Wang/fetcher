@@ -72,17 +72,3 @@ bus.destroy();
 | `TypedEventBus`                 | [Events and local delivery](/reference/eventbus/events-and-delivery.md#typedeventbus)                           | [typedEventBus.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/typedEventBus.ts#L21)                                    |
 | `EventType`                     | [Events and local delivery](/reference/eventbus/events-and-delivery.md#eventtype)                               | [types.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L17)                                                    |
 | `EventHandler`                  | [Events and local delivery](/reference/eventbus/events-and-delivery.md#eventhandler)                            | [types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L19)                                                    |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/eventbus/index.md) |
-| <span id="choose-an-entry-point"></span>Choose an entry point | [Read this topic](/reference/eventbus/index.md) |
-| <span id="typed-and-named-events"></span>Typed and named events | [Read this topic](/reference/eventbus/events-and-delivery.md) |
-| <span id="delivery-and-failure-contract"></span>Delivery and failure contract | [Read this topic](/reference/eventbus/events-and-delivery.md) |
-| <span id="cross-tab-bus-and-messenger-selection"></span>Cross-tab bus and messenger selection | [Read this topic](/reference/eventbus/broadcast-and-messengers.md) |
-| <span id="lifecycle-and-diagnosis"></span>Lifecycle and diagnosis | [Read this topic](/reference/eventbus/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/eventbus/index.md) |

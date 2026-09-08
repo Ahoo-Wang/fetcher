@@ -21,9 +21,9 @@ description: 维护准确的文档 — Fetcher
 
 包索引将公开符号映射到专题锚点。按独立概念拆分，不为每个符号建页。英文和中文路径对应、内容完整，每页具备 title 和 description。
 
-## 保持导航与旧链接可用
+## 保持导航完整
 
-Reference 新专题加入 .vitepress/config/reference.mjs；该清单为导航、LLM 生成与检查提供顺序。同步两种语言页面。移动页面时保留简短迁移页及已有锚点，并用 canonical 指向新位置；迁移页不进入搜索、sitemap 或 LLM 语料。
+Reference 新专题加入 .vitepress/config/reference.mjs；该清单为导航、LLM 生成与检查提供顺序。同步两种语言页面。这是全新文档站，只维护当前页面和链接，不保留迁移页或旧章节索引。
 
 ## 验证示例和图表
 

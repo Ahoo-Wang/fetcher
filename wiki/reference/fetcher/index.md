@@ -148,18 +148,3 @@ fetcherRegistrar.unregister('reports');
 | `VALIDATE_STATUS_INTERCEPTOR_ORDER` | [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation.md#validate_status_interceptor_order) | [validateStatusInterceptor.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L77)   |
 | `IGNORE_VALIDATE_STATUS`            | [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation.md#ignore_validate_status)            | [validateStatusInterceptor.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L97)   |
 | `ValidateStatusInterceptor`         | [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation.md#validatestatusinterceptor)         | [validateStatusInterceptor.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L126) |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section                                                                                   | Current topic                                                    |
-| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| <span id="install-and-choose-an-entry-point"></span>Install and choose an entry point             | [Read this topic](/reference/fetcher/index.md)                   |
-| <span id="http-method-matrix"></span>HTTP method matrix                                           | [Read this topic](/reference/fetcher/index.md)                   |
-| <span id="client-configuration"></span>Client configuration                                       | [Read this topic](/reference/fetcher/client.md)                  |
-| <span id="typed-request-and-fetchrequestinit"></span>Typed request and FetchRequestInit           | [Read this topic](/reference/fetcher/requests.md)                |
-| <span id="resolution-and-url-rules"></span>Resolution and URL rules                               | [Read this topic](/reference/fetcher/urls.md)                    |
-| <span id="result-interceptor-and-error-contracts"></span>Result, interceptor, and error contracts | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
-| <span id="timeout-and-caller-cancellation"></span>Timeout and caller cancellation                 | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
-| <span id="source-reference"></span>Source reference                                               | [Read this topic](/reference/fetcher/index.md)                   |

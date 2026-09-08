@@ -81,18 +81,3 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | `TextLineTransformStream`                | [SSE 解析管线](/zh/reference/eventstream/sse-pipeline.md#textlinetransformstream)                                          | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                         |
 
 Response 原型成员和 ReadableStream 迭代器是全局扩展，不是具名导出，见 [Response 辅助方法](/zh/reference/eventstream/json-and-results.md#response)及[迭代](/zh/reference/eventstream/consumption-and-cancellation.md#iteration)。
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装"></span>安装 | [阅读对应专题](/zh/reference/eventstream/index.md) |
-| <span id="选择入口"></span>选择入口 | [阅读对应专题](/zh/reference/eventstream/index.md) |
-| <span id="消费类型化-json-事件"></span>消费类型化 JSON 事件 | [阅读对应专题](/zh/reference/eventstream/json-and-results.md) |
-| <span id="sse-frame-与转换流水线"></span>SSE Frame 与转换流水线 | [阅读对应专题](/zh/reference/eventstream/sse-pipeline.md) |
-| <span id="response-辅助-api-与-fetcher-extractor"></span>Response 辅助 API 与 Fetcher Extractor | [阅读对应专题](/zh/reference/eventstream/json-and-results.md) |
-| <span id="终止、取消与错误"></span>终止、取消与错误 | [阅读对应专题](/zh/reference/eventstream/consumption-and-cancellation.md) |
-| <span id="故障定位"></span>故障定位 | [阅读对应专题](/zh/reference/eventstream/index.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/eventstream/index.md) |

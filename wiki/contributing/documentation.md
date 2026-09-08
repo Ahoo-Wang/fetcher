@@ -21,9 +21,9 @@ Resolve public exports through package.json and src/index.ts, then read implemen
 
 Reference package indexes map public symbols to topic anchors. Split topics by independent concepts, not one file per symbol. Keep English and Chinese complete at matching paths, with title and description frontmatter on every page.
 
-## Keep navigation and old links working
+## Keep navigation complete
 
-Add a Reference topic to `.vitepress/config/reference.mjs`; it supplies order to navigation, the LLM generator and checks. Update both language pages. When moving a page, preserve a short migration page and its existing anchors, with a canonical link to the new location. Migration pages are excluded from search, sitemap and the LLM corpus.
+Add a Reference topic to `.vitepress/config/reference.mjs`; it supplies order to navigation, the LLM generator and checks. Update both language pages. This is a new documentation site: maintain only current pages and links, without migration pages or legacy section indexes.
 
 ## Validate examples and diagrams
 

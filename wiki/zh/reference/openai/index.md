@@ -47,16 +47,3 @@ export const createChat = (baseURL: string, apiKey: string) =>
 | `Usage`                           | [客户端与聊天补全](/zh/reference/openai/client-and-completions#usage)            |
 
 [packages/openai/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/index.ts#L14)
-
-## 旧章节链接
-
-旧版参考链接仍可定位到下列专题。
-
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="选择入口"></span>选择入口 | [阅读对应专题](/zh/reference/openai/client-and-completions.md) |
-| <span id="类型化-completion"></span>类型化 Completion | [阅读对应专题](/zh/reference/openai/client-and-completions.md) |
-| <span id="共享-fetcher-与-chatclient"></span>共享 Fetcher 与 ChatClient | [阅读对应专题](/zh/reference/openai/client-and-completions.md) |
-| <span id="streaming、-done-与取消"></span>Streaming、[DONE] 与取消 | [阅读对应专题](/zh/reference/openai/streaming.md) |
-| <span id="失败边界与排障"></span>失败边界与排障 | [阅读对应专题](/zh/reference/openai/index.md) |
-| <span id="安全与源码参考"></span>安全与源码参考 | [阅读对应专题](/zh/reference/openai/index.md) |

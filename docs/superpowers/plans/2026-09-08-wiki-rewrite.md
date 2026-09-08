@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task in this session. Steps use checkbox (`- [x]`) syntax for tracking. Do not delegate unless the user selects parallel execution.
 
-**Status:** 已实施并验证；静态路由修正见设计稿与覆盖报告。
+**Status:** 已实施并验证；按全新文档范围验收，见设计稿与覆盖报告。
 
 **Goal:** 完整重写双语文档站，提供按包复杂度拆分的可靠 Reference，以及参考 Wow 的 Mermaid 阅读体验。
 
@@ -30,7 +30,6 @@
 | --- | --- |
 | `wiki/reference/<package>/index.md` 及设计稿列出的专题文件 | 包入口、符号到专题锚点的索引与契约 |
 | `wiki/zh/reference/<package>/` | 对应完整中文内容 |
-| `wiki/reference/<package>.md`、`wiki/zh/reference/<package>.md` | 旧路径/锚点到新专题的迁移提示 |
 | `wiki/{index.md,start/,learn/,recipes/,skills/,contributing/}` 及 `wiki/zh/` 对应目录 | 全站首页、教程、实战与维护内容 |
 | `wiki/.vitepress/config/{index,en,zh,mermaid}.ts` | 路由、导航、搜索、sitemap、图表配置 |
 | `wiki/.vitepress/theme/{index.ts,custom.css}` | 阅读样式、Mermaid 初始化与生命周期 |
@@ -153,16 +152,16 @@ test('reference entry pages exist in both languages with metadata', () => {
 - [x] 重写双语首页：定位、一个完整请求示例、开始使用按钮、按需求的生态入口；使用 VitePress 原生布局及现有品牌资源。
 - [x] 检查所有完整示例及双语事实，运行 wiki build。
 
-## Task 11：导航、迁移与 LLM 输出
+## Task 11：导航与 LLM 输出
 
 **Files:** `wiki/.vitepress/config/{en,zh,index}.ts`、所有旧 `reference/<package>.md`、`wiki/scripts/generate-llms-full.mjs`、`wiki/test/documentation.test.mjs`。
 
 - [x] en/zh 配置使用设计中的顶栏和包专题侧栏；确保更具体的包前缀匹配完整专题树，并提供回包索引链接。
-- [x] 在移动旧页前记录原有标题锚点；保留旧文件为迁移页，用显式 anchor 和链接映射每个旧章节到新页；不复制旧 API 正文。
-- [x] 迁移页添加 `search: false` 和 canonical head；config/index.ts 的 sitemap transformItems 排除这 24 个迁移 URL，保留新目录入口。
-- [x] 修改所有站内旧 reference 链接；按 VitePress 构建结果检查 `/reference/fetcher` 与 `/reference/fetcher/` 能分别呈现迁移页和新入口，中文同样检查。
+- [x] 删除旧单页、包入口的旧章节索引与兼容路由，只保留新的包目录和专题。
+- [x] sitemap 使用当前页面集合，无需旧页面排除规则。
+- [x] 所有站内链接指向当前专题，英文和中文入口均可访问。
 - [x] 更新 PAGE_SECTIONS 到全部规范新页面；英文或中文缺失都让生成器抛错，不能只警告后发布不完整语料。
-- [x] 扩展结构检查：全部规范页双语存在、frontmatter 完整、生成的 `<doc path="...">` 集合包含所有规范路径且无迁移页。用 `assert.deepEqual(new Set(actual), new Set(expected))` 对比集合。
+- [x] 扩展结构检查：全部规范页双语存在、frontmatter 完整、生成的 `<doc path="...">` 集合包含所有规范路径。用 `assert.deepEqual(new Set(actual), new Set(expected))` 对比集合。
 - [x] 运行 `pnpm --dir wiki generate:llms`、`node --test wiki/test/documentation.test.mjs`、`pnpm --dir wiki build`，检查 sitemap 和生成语料。
 
 ## Task 12：Mermaid 阅读交互与站点样式
@@ -181,13 +180,13 @@ test('reference entry pages exist in both languages with metadata', () => {
 
 - [x] 自审公开符号账目，确保没有未归属项，抽查 API 签名、默认值和失败说明对应当前源码。
 - [x] 运行 `pnpm --dir wiki fix:mermaid`，检查是否波及无关文档并收窄；运行 `pnpm --dir wiki build` 与 `node --test wiki/test/documentation.test.mjs`。
-- [x] 使用 `pnpm --dir wiki preview --host 127.0.0.1` 验证最终产物：首页→首次请求→专题，跨包切换，英中对应页，搜索，旧 URL/锚点，所有 Mermaid 操作；覆盖 390px 手机和桌面视口。
+- [x] 使用 `pnpm --dir wiki preview --host 127.0.0.1` 验证最终产物：首页→首次请求→专题，跨包切换，英中对应页，搜索，所有 Mermaid 操作；覆盖 390px 手机和桌面视口。
 - [x] 对源码变更对应的包运行测试/构建；本任务原则上不修改包源码。准备提交时必须执行 `pnpm test:unit`。
 - [x] 执行 `git diff --check`、`git status --short`，核对没有 SDK 修改、无关格式化和手改生成产物。
 - [x] 向用户交付变更摘要、预览入口、真实验证结果和剩余阻塞；没有部署请求则不发布。不得以计划完成冒充站点完成。
 
 ## 自审记录
 
-设计的 12 包拆分对应任务 2–9；全站内容任务 10；双语/迁移/生成任务 11；视觉和 Wow Mermaid 契约任务 12；覆盖和最终浏览器验证任务 1、13。API 事实核对安排在每个包任务中，未将内部符号推测成公共契约。当前计划不声称已验证 Mermaid 锁定版本行为。
+设计的 12 包拆分对应任务 2–9；全站内容任务 10；双语/生成任务 11；视觉和 Wow Mermaid 契约任务 12；覆盖和最终浏览器验证任务 1、13。API 事实核对安排在每个包任务中，未将内部符号推测成公共契约。当前计划不声称已验证 Mermaid 锁定版本行为。
 
-完成证据见 `2026-09-08-wiki-reference-coverage.md`。外部管理的 detached worktree 保持原位；未执行未授权的提交或发布。路由迁移按生产预览证据作了设计中记录的修正。
+完成证据见 `2026-09-08-wiki-reference-coverage.md`。按用户最新要求交付全新文档，不保留旧文档兼容层。

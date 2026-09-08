@@ -1,5 +1,4 @@
 import { defineConfig } from 'vitepress';
-import { referencePackages } from './reference.mjs';
 import { en } from './en';
 import { zh } from './zh';
 
@@ -9,28 +8,9 @@ export default defineConfig({
     'Typed HTTP requests, streams, services, and React data workflows',
   lastUpdated: true,
   cleanUrls: true,
-  rewrites: Object.fromEntries(referencePackages.flatMap(({ name }) =>
-    ['', 'zh/'].map(prefix => [`${prefix}reference/${name}.md`, `${prefix}reference/${name}/migration.md`])
-  )),
   srcExclude: ['AGENTS.md', 'CLAUDE.md'],
   sitemap: {
     hostname: 'https://fetcher.ahoo.me',
-    transformItems: items =>
-      items.filter(
-        item =>
-          !referencePackages.some(({ name }) =>
-            [
-              `reference/${name}`,
-              `reference/${name}.html`,
-              `reference/${name}/migration`,
-              `reference/${name}/migration.html`,
-              `zh/reference/${name}`,
-              `zh/reference/${name}.html`,
-              `zh/reference/${name}/migration`,
-              `zh/reference/${name}/migration.html`,
-            ].includes(item.url.replace(/^\//, '')),
-          ),
-      ),
   },
   ignoreDeadLinks: [/localhost/],
   head: [

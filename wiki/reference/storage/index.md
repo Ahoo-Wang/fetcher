@@ -65,17 +65,3 @@ settings.eventBus.destroy();
 | `jsonSerializer`          | [Serialization and runtime storage](/reference/storage/serialization-and-runtime.md#jsonserializer-instance)     | [serializer.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L88)           |
 | `identitySerializer`      | [Serialization and runtime storage](/reference/storage/serialization-and-runtime.md#identityserializer-instance) | [serializer.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L92)           |
 | `typedIdentitySerializer` | [Serialization and runtime storage](/reference/storage/serialization-and-runtime.md#typedidentityserializer)     | [serializer.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L94)           |
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install"></span>Install | [Read this topic](/reference/storage/index.md) |
-| <span id="construct-keystorage-t"></span>Construct `KeyStorage<T>` | [Read this topic](/reference/storage/key-storage.md) |
-| <span id="method-and-event-contract"></span>Method and event contract | [Read this topic](/reference/storage/key-storage.md) |
-| <span id="serializer-and-storage-selection"></span>Serializer and storage selection | [Read this topic](/reference/storage/serialization-and-runtime.md) |
-| <span id="listener-lifecycle-and-cross-context-behavior"></span>Listener lifecycle and cross-context behavior | [Read this topic](/reference/storage/key-storage.md) |
-| <span id="diagnosis"></span>Diagnosis | [Read this topic](/reference/storage/index.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/storage/index.md) |

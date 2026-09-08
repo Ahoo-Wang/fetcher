@@ -111,17 +111,3 @@ CoSec without a tokenRefresher installs metadata/attribution only. Read configur
 | `parseJwtPayload`                                | [Tokens and refresh](/reference/cosec/tokens-and-refresh#parsejwtpayload)                                                    |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)
-
-## Earlier section links
-
-Earlier reference links still lead to the corresponding topics below.
-
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-choose-the-setup"></span>Install and choose the setup | [Read this topic](/reference/cosec/index.md) |
-| <span id="configuration-and-minimal-safe-example"></span>Configuration and minimal safe example | [Read this topic](/reference/cosec/configuration.md) |
-| <span id="token-lifecycle-and-state"></span>Token lifecycle and state | [Read this topic](/reference/cosec/tokens-and-refresh.md) |
-| <span id="interceptor-pipeline-and-refresh-semantics"></span>Interceptor pipeline and refresh semantics | [Read this topic](/reference/cosec/interceptors-and-attribution.md) |
-| <span id="concurrent-refresh-retry-and-errors"></span>Concurrent refresh, retry, and errors | [Read this topic](/reference/cosec/tokens-and-refresh.md) |
-| <span id="cleanup-security-and-troubleshooting"></span>Cleanup, security, and troubleshooting | [Read this topic](/reference/cosec/index.md) |
-| <span id="source-references"></span>Source references | [Read this topic](/reference/cosec/index.md) |

@@ -22,7 +22,7 @@
 | Viewer      |          263 |         18 |
 | 合计        |          968 |        132 |
 
-全站包括 186 个双语规范页面、24 个迁移页面，另有生成的 404 页。LLM 语料与 sitemap 均覆盖 186 个规范页，不包含迁移页。
+全站保留 186 个双语页面及生成的 404 页。LLM 语料与 sitemap 对应当前页面。
 
 ## 实际验证
 
@@ -33,17 +33,17 @@
 - 示例类型检查采用现有包适用的 Bundler 模块解析。现有 dist 声明中的无扩展名重导出在 NodeNext 下存在解析限制；未以文档任务修改 SDK。
 - `pnpm --dir wiki fix:mermaid`：4 个图表块，无损坏，无需自动修改。
 - `pnpm --dir wiki build` 成功。保留构建已有的大 chunk 警告，未为消除提示修改打包架构。
-- `node --test wiki/test/documentation.test.mjs`：双语元数据、LLM 全量覆盖、静态路由防遮蔽检查通过。
+- `node --test wiki/test/documentation.test.mjs`：双语元数据、LLM 全量覆盖、当前文档结构检查通过。
 - `WIKI_TEST_URL=http://127.0.0.1:4173 node --test wiki/test/mermaid-browser.test.mjs`：正文宽度、对话框、焦点循环/恢复、Esc、普通滚轮与 Command 缩放通过。
 - 生产预览验证：英中首页/参考/图表、搜索、语言对应页、深浅主题、桌面/390px移动端、图表错误源码回退、展开/关闭及跨路由清理通过。无正文横向溢出。
-- 211 个构建 HTML 页面扫描：内部 fragment 零断链、ID 零重复。旧包地址在禁用 JavaScript 时仍可进入对应专题。
+- 构建 HTML 页面扫描：内部 fragment 零断链、ID 零重复。
 - `git diff --check` 通过。SDK、根 package.json、workspace catalog、锁文件无修改。
 
 ## 审阅修正
 
 独立子代理审阅并复验后修正：类/单例和自动标题的锚点碰撞、Generator JSON 输入、Viewer datetime 注册键与分页大小受控问题、Mermaid 内联尺寸/全视口/工具栏/主题行为。
 
-静态主机不能同时可靠区分 `<package>.html` 和 `<package>/index.html`：旧源码通过 rewrites 输出到包内 migration 路径；新包入口保留旧锚点，正文链接使用绝对路径，支持无 JS 的旧无斜杠地址。
+用户明确要求不考虑旧文档兼容性；已移除旧单页、旧章节链接、路由重写及对应兼容测试。
 
 ## 范围
 
