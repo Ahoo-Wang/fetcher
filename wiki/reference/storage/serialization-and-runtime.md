@@ -13,14 +13,14 @@ Use a string serializer with `KeyStorage`; use a native `Storage` backend or the
 
 `InMemoryStorage` implements `Storage` using `Map<string, string>`:
 
-| Member                      | Contract                    |
-| --------------------------- | --------------------------- |
-| `length`                    | Number of stored keys.      |
-| `setItem(key, value): void` | Store/replace string value. |
-| `getItem(key): string       | null`                       | Missing key returns null.                        |
-| `removeItem(key): void`     | Remove if present.          |
-| `key(index): string         | null`                       | Insertion-order key; outside range returns null. |
-| `clear(): void`             | Remove every entry.         |
+| Member                         | Contract                                         |
+| ------------------------------ | ------------------------------------------------ |
+| `length`                       | Number of stored keys.                           |
+| `setItem(key, value): void`    | Store/replace string value.                      |
+| `getItem(key): string \| null` | Missing key returns null.                        |
+| `removeItem(key): void`        | Remove if present.                               |
+| `key(index): string \| null`   | Insertion-order key; outside range returns null. |
+| `clear(): void`                | Remove every entry.                              |
 
 Memory storage does not dispatch native storage events or persist across process/page lifetimes. Its TypeScript API expects strings; do not rely on the runtime string coercion of browser Storage for non-string inputs.
 

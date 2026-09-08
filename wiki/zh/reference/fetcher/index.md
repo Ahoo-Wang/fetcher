@@ -17,13 +17,13 @@ pnpm add @ahoo-wang/fetcher
 
 ## 选择专题
 
-| 专题                                             | 用途                                                                                                                                                                                                                                                                                                              |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 专题                                                                 | 用途                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [客户端与注册](/zh/reference/fetcher/client.md)                      | 创建 `Fetcher` 以共享 URL、请求头、超时和拦截器策略。请求仍调用运行时全局 `fetch`；客户端不管理连接池，也不需要 `destroy()`。                                                                                                                                                                                     |
 | [请求、请求头与正文](/zh/reference/fetcher/requests.md)              | `FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。 |
 | [URL 构建与模板](/zh/reference/fetcher/urls.md)                      | `UrlBuilder` 组合基础 URL、路径替换值和查询记录，不发起请求，也不实现通用 RFC URI-template 展开。                                                                                                                                                                                                                 |
 | [Exchange 与结果提取](/zh/reference/fetcher/results.md)              | 结果提取器决定运行时返回值，与 `request<R>` 或 `get<R>` 的 TypeScript 泛型独立。在 `RequestOptions.resultExtractor` 中选择提取器。                                                                                                                                                                                |
-| [拦截器管线](/zh/reference/fetcher/interceptors.md)                  | 拦截器修改共享 `FetchExchange`，返回 `void                                                                                                                                                                                                                                                                        | Promise<void>`，不返回替代 exchange。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor`是`Interceptor`的结构化特例，必填`name`、`order`、`intercept(exchange)`。 |
+| [拦截器管线](/zh/reference/fetcher/interceptors.md)                  | 拦截器修改共享 `FetchExchange`，返回 `void \| Promise<void>`，不返回替代 exchange。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor`是`Interceptor`的结构化特例，必填`name`、`order`、`intercept(exchange)`。                                                                                       |
 | [错误、超时与取消](/zh/reference/fetcher/errors-and-cancellation.md) | Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身会正常返回这些响应，因此处理 Fetcher 请求失败时应检查 exchange。                                                                                                                                                                                    |
 
 ## 最小完整示例
@@ -51,8 +51,8 @@ fetcherRegistrar.unregister('reports');
 
 ## 公开导出索引 {#exports}
 
-| 符号                                | 契约                                                                               | 源码                                                                                                                                      |
-| ----------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 符号                                | 契约                                                                                                   | 源码                                                                                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `AttributesCapable`                 | [Exchange 与结果提取](/zh/reference/fetcher/results.md#attributescapable)                              | [fetchExchange.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L23)                           |
 | `FetchExchangeInit`                 | [Exchange 与结果提取](/zh/reference/fetcher/results.md#fetchexchangeinit)                              | [fetchExchange.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L41)                           |
 | `FetchExchange`                     | [Exchange 与结果提取](/zh/reference/fetcher/results.md#fetchexchange)                                  | [fetchExchange.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105)                         |
@@ -153,13 +153,13 @@ fetcherRegistrar.unregister('reports');
 
 旧版参考链接仍可定位到下列专题。
 
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与入口选择"></span>安装与入口选择 | [阅读对应专题](/zh/reference/fetcher/index.md) |
-| <span id="http-方法矩阵"></span>HTTP 方法矩阵 | [阅读对应专题](/zh/reference/fetcher/index.md) |
-| <span id="client-配置"></span>Client 配置 | [阅读对应专题](/zh/reference/fetcher/client.md) |
-| <span id="类型化请求与-fetchrequestinit"></span>类型化请求与 FetchRequestInit | [阅读对应专题](/zh/reference/fetcher/requests.md) |
-| <span id="解析与-url-规则"></span>解析与 URL 规则 | [阅读对应专题](/zh/reference/fetcher/urls.md) |
+| 旧章节                                                                          | 新专题                                                           |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| <span id="安装与入口选择"></span>安装与入口选择                                 | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
+| <span id="http-方法矩阵"></span>HTTP 方法矩阵                                   | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
+| <span id="client-配置"></span>Client 配置                                       | [阅读对应专题](/zh/reference/fetcher/client.md)                  |
+| <span id="类型化请求与-fetchrequestinit"></span>类型化请求与 FetchRequestInit   | [阅读对应专题](/zh/reference/fetcher/requests.md)                |
+| <span id="解析与-url-规则"></span>解析与 URL 规则                               | [阅读对应专题](/zh/reference/fetcher/urls.md)                    |
 | <span id="result、interceptor-与错误契约"></span>Result、Interceptor 与错误契约 | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
-| <span id="超时与调用方取消"></span>超时与调用方取消 | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/fetcher/index.md) |
+| <span id="超时与调用方取消"></span>超时与调用方取消                             | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
+| <span id="源码参考"></span>源码参考                                             | [阅读对应专题](/zh/reference/fetcher/index.md)                   |

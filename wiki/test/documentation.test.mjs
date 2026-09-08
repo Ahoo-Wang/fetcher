@@ -14,6 +14,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { test } from 'node:test';
+import { createMarkdownRenderer } from 'vitepress';
+import { fileURLToPath } from 'node:url';
 import { referencePackages } from '../.vitepress/config/reference.mjs';
 
 test('every reference topic has complete bilingual page metadata', () => {
@@ -88,6 +90,44 @@ test('legacy pages cannot shadow the canonical package directory on static hosts
         existsSync(new URL(`${prefix}reference/${name}.html`, dist)),
         false,
       );
+    }
+  }
+});
+
+test('reference tables preserve complete union type code spans in both languages', async () => {
+  const wiki = new URL('../', import.meta.url);
+  const markdown = await createMarkdownRenderer(fileURLToPath(wiki));
+  const contracts = {
+    'fetcher/requests': [
+      'string | undefined',
+      'BodyInit | Record<string, any> | string | null',
+    ],
+    'fetcher/index': ['void | Promise<void>'],
+    'decorator/services-and-endpoints': ['fetcher?: string | Fetcher'],
+    'storage/serialization-and-runtime': [
+      'getItem(key): string | null',
+      'key(index): string | null',
+    ],
+    'storage/key-storage': ['T | null'],
+  };
+  for (const prefix of ['', 'zh/']) {
+    for (const [topic, expected] of Object.entries(contracts)) {
+      const path = `${prefix}reference/${topic}.md`;
+      const source = readFileSync(new URL(path, wiki), 'utf8');
+      const tokens = markdown.parse(source, {});
+      const codes = tokens
+        .filter(
+          (token, index) =>
+            token.type === 'inline' && tokens[index - 1]?.type === 'td_open',
+        )
+        .flatMap(token => token.children ?? [])
+        .filter(token => token.type === 'code_inline')
+        .map(token => token.content);
+      for (const contract of expected)
+        assert.ok(
+          codes.includes(contract),
+          `${path}: missing rendered ${contract}`,
+        );
     }
   }
 });

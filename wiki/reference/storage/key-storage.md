@@ -23,7 +23,7 @@ description: 'KeyStorage and change listeners — @ahoo-wang/fetcher-storage 5.0
 
 | Method                 | Return                               | Behavior                                                                                                  |
 | ---------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T                                   | null`                                                                                                     | Return non-null cache; otherwise read and deserialize backend or return default. |
+| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default.                          |
 | `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`.             |
 | `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default. |
 | `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.              |

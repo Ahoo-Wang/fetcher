@@ -1503,13 +1503,13 @@ Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has 
 
 ## Choose a topic
 
-| Topic                                                              | Use it for                                                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Topic                                                                               | Use it for                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Client and registration](/reference/fetcher/client.md)                             | Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Requests still use the runtime's global `fetch`; a client does not own a connection pool or require `destroy()`.                                                                                                                                                                    |
 | [Requests, headers, and bodies](/reference/fetcher/requests.md)                     | `FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, and `abortController`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through. |
 | [URL construction and templates](/reference/fetcher/urls.md)                        | `UrlBuilder` combines a base URL, path substitutions, and a query record. It does not send a request and does not perform general RFC URI-template expansion.                                                                                                                                                                                                    |
 | [Exchanges and result extraction](/reference/fetcher/results.md)                    | A result extractor controls the runtime result, independently of the TypeScript generic on `request<R>` or `get<R>`. Choose it in `RequestOptions.resultExtractor`.                                                                                                                                                                                              |
-| [Interceptor pipeline](/reference/fetcher/interceptors.md)                          | Interceptors mutate a shared `FetchExchange`; they return `void                                                                                                                                                                                                                                                                                                  | Promise<void>`, not a replacement exchange. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor`are structural specializations of`Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`. |
+| [Interceptor pipeline](/reference/fetcher/interceptors.md)                          | Interceptors mutate a shared `FetchExchange`; they return `void \| Promise<void>`, not a replacement exchange. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor`are structural specializations of`Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`.                                                          |
 | [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation.md) | Fetcher's default pipeline rejects HTTP statuses outside 200–299. Native fetch alone would resolve those responses, so inspect the exchange when handling a failed Fetcher request.                                                                                                                                                                              |
 
 ## Minimal complete example
@@ -1537,8 +1537,8 @@ fetcherRegistrar.unregister('reports');
 
 ## Public export index {#exports}
 
-| Symbol                              | Contract                                                                                             | Source                                                                                                                                    |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Symbol                              | Contract                                                                                                              | Source                                                                                                                                    |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `AttributesCapable`                 | [Exchanges and result extraction](/reference/fetcher/results.md#attributescapable)                                    | [fetchExchange.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L23)                           |
 | `FetchExchangeInit`                 | [Exchanges and result extraction](/reference/fetcher/results.md#fetchexchangeinit)                                    | [fetchExchange.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L41)                           |
 | `FetchExchange`                     | [Exchanges and result extraction](/reference/fetcher/results.md#fetchexchange)                                        | [fetchExchange.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105)                         |
@@ -1639,16 +1639,16 @@ fetcherRegistrar.unregister('reports');
 
 Earlier reference links still lead to the corresponding topics below.
 
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-choose-an-entry-point"></span>Install and choose an entry point | [Read this topic](/reference/fetcher/index.md) |
-| <span id="http-method-matrix"></span>HTTP method matrix | [Read this topic](/reference/fetcher/index.md) |
-| <span id="client-configuration"></span>Client configuration | [Read this topic](/reference/fetcher/client.md) |
-| <span id="typed-request-and-fetchrequestinit"></span>Typed request and FetchRequestInit | [Read this topic](/reference/fetcher/requests.md) |
-| <span id="resolution-and-url-rules"></span>Resolution and URL rules | [Read this topic](/reference/fetcher/urls.md) |
+| Earlier section                                                                                   | Current topic                                                    |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| <span id="install-and-choose-an-entry-point"></span>Install and choose an entry point             | [Read this topic](/reference/fetcher/index.md)                   |
+| <span id="http-method-matrix"></span>HTTP method matrix                                           | [Read this topic](/reference/fetcher/index.md)                   |
+| <span id="client-configuration"></span>Client configuration                                       | [Read this topic](/reference/fetcher/client.md)                  |
+| <span id="typed-request-and-fetchrequestinit"></span>Typed request and FetchRequestInit           | [Read this topic](/reference/fetcher/requests.md)                |
+| <span id="resolution-and-url-rules"></span>Resolution and URL rules                               | [Read this topic](/reference/fetcher/urls.md)                    |
 | <span id="result-interceptor-and-error-contracts"></span>Result, interceptor, and error contracts | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
-| <span id="timeout-and-caller-cancellation"></span>Timeout and caller cancellation | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/fetcher/index.md) |
+| <span id="timeout-and-caller-cancellation"></span>Timeout and caller cancellation                 | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
+| <span id="source-reference"></span>Source reference                                               | [Read this topic](/reference/fetcher/index.md)                   |
 
 </doc>
 
@@ -1751,8 +1751,8 @@ fetcherRegistrar.unregister('reports');
 
 | Field/type                                 | Contract                                                                                                                      |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `RequestHeaders` / `RequestHeadersCapable` | Plain string-keyed record of `string                                                                                          | undefined`; not a native `Headers` instance. |
-| `RequestBodyType`                          | `BodyInit                                                                                                                     | Record<string, any>                          | string | null`; a missing body remains missing. |
+| `RequestHeaders` / `RequestHeadersCapable` | Plain string-keyed record of `string \| undefined`; not a native `Headers` instance.                                          |
+| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`; a missing body remains missing.                                          |
 | `BaseURLCapable`                           | Required `baseURL: string`; `UrlParamsCapable` supplies optional `urlParams`.                                                 |
 | `HttpMethod`                               | String enum GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE; platform restrictions still apply.                           |
 | `CONTENT_TYPE_HEADER`                      | `'Content-Type'`; `ContentTypeValues.APPLICATION_JSON` is `'application/json'`, `TEXT_EVENT_STREAM` is `'text/event-stream'`. |
@@ -2276,15 +2276,15 @@ Use legacy TypeScript decorators to replace service methods with Fetcher request
 
 ## API metadata and precedence {#metadata}
 
-| Field on `ApiMetadata`    | Resolution                                                                                              |
-| ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `basePath?: string`       | Endpoint truthy override, then API path, then empty.                                                    |
-| `fetcher?: string         | Fetcher`                                                                                                | Endpoint non-nullish override, then API; resolved through `getFetcher`. |
-| `headers?` / `urlParams?` | Client defaults (headers), API, endpoint, then bound argument/request values; headers case-insensitive. |
-| `timeout?: number`        | Endpoint defined value (including zero), API, then client default.                                      |
-| `resultExtractor?`        | Endpoint, API, then `JsonResultExtractor`.                                                              |
-| `returnType?`             | Endpoint, API, then `EndpointReturnType.RESULT`.                                                        |
-| `attributes?`             | API entries followed by endpoint entries, then argument attributes.                                     |
+| Field on `ApiMetadata`        | Resolution                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `basePath?: string`           | Endpoint truthy override, then API path, then empty.                                                    |
+| `fetcher?: string \| Fetcher` | Endpoint non-nullish override, then API; resolved through `getFetcher`.                                 |
+| `headers?` / `urlParams?`     | Client defaults (headers), API, endpoint, then bound argument/request values; headers case-insensitive. |
+| `timeout?: number`            | Endpoint defined value (including zero), API, then client default.                                      |
+| `resultExtractor?`            | Endpoint, API, then `JsonResultExtractor`.                                                              |
+| `returnType?`                 | Endpoint, API, then `EndpointReturnType.RESULT`.                                                        |
+| `attributes?`                 | API entries followed by endpoint entries, then argument attributes.                                     |
 
 `ApiMetadataCapable.apiMetadata` enables instance configuration. At the **first call of each method**, `buildRequestExecutor` shallow-spreads instance metadata over decorator metadata and caches the executor on that instance by method name. Set instance metadata before calling the method; later replacing metadata is not a supported live reconfiguration mechanism. Endpoint metadata still takes precedence. Shallow merging means an instance header object replaces the class header object before endpoint/request merging.
 
@@ -3234,7 +3234,7 @@ Earlier reference links still lead to the corresponding topics below.
 
 | Method                 | Return                               | Behavior                                                                                                  |
 | ---------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T                                   | null`                                                                                                     | Return non-null cache; otherwise read and deserialize backend or return default. |
+| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default.                          |
 | `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`.             |
 | `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default. |
 | `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.              |
@@ -3301,14 +3301,14 @@ Use a string serializer with `KeyStorage`; use a native `Storage` backend or the
 
 `InMemoryStorage` implements `Storage` using `Map<string, string>`:
 
-| Member                      | Contract                    |
-| --------------------------- | --------------------------- |
-| `length`                    | Number of stored keys.      |
-| `setItem(key, value): void` | Store/replace string value. |
-| `getItem(key): string       | null`                       | Missing key returns null.                        |
-| `removeItem(key): void`     | Remove if present.          |
-| `key(index): string         | null`                       | Insertion-order key; outside range returns null. |
-| `clear(): void`             | Remove every entry.         |
+| Member                         | Contract                                         |
+| ------------------------------ | ------------------------------------------------ |
+| `length`                       | Number of stored keys.                           |
+| `setItem(key, value): void`    | Store/replace string value.                      |
+| `getItem(key): string \| null` | Missing key returns null.                        |
+| `removeItem(key): void`        | Remove if present.                               |
+| `key(index): string \| null`   | Insertion-order key; outside range returns null. |
+| `clear(): void`                | Remove every entry.                              |
 
 Memory storage does not dispatch native storage events or persist across process/page lifetimes. Its TypeScript API expects strings; do not rely on the runtime string coercion of browser Storage for non-string inputs.
 
@@ -18105,13 +18105,13 @@ pnpm add @ahoo-wang/fetcher
 
 ## 选择专题
 
-| 专题                                             | 用途                                                                                                                                                                                                                                                                                                              |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 专题                                                                 | 用途                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [客户端与注册](/zh/reference/fetcher/client.md)                      | 创建 `Fetcher` 以共享 URL、请求头、超时和拦截器策略。请求仍调用运行时全局 `fetch`；客户端不管理连接池，也不需要 `destroy()`。                                                                                                                                                                                     |
 | [请求、请求头与正文](/zh/reference/fetcher/requests.md)              | `FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。 |
 | [URL 构建与模板](/zh/reference/fetcher/urls.md)                      | `UrlBuilder` 组合基础 URL、路径替换值和查询记录，不发起请求，也不实现通用 RFC URI-template 展开。                                                                                                                                                                                                                 |
 | [Exchange 与结果提取](/zh/reference/fetcher/results.md)              | 结果提取器决定运行时返回值，与 `request<R>` 或 `get<R>` 的 TypeScript 泛型独立。在 `RequestOptions.resultExtractor` 中选择提取器。                                                                                                                                                                                |
-| [拦截器管线](/zh/reference/fetcher/interceptors.md)                  | 拦截器修改共享 `FetchExchange`，返回 `void                                                                                                                                                                                                                                                                        | Promise<void>`，不返回替代 exchange。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor`是`Interceptor`的结构化特例，必填`name`、`order`、`intercept(exchange)`。 |
+| [拦截器管线](/zh/reference/fetcher/interceptors.md)                  | 拦截器修改共享 `FetchExchange`，返回 `void \| Promise<void>`，不返回替代 exchange。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor`是`Interceptor`的结构化特例，必填`name`、`order`、`intercept(exchange)`。                                                                                       |
 | [错误、超时与取消](/zh/reference/fetcher/errors-and-cancellation.md) | Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身会正常返回这些响应，因此处理 Fetcher 请求失败时应检查 exchange。                                                                                                                                                                                    |
 
 ## 最小完整示例
@@ -18139,8 +18139,8 @@ fetcherRegistrar.unregister('reports');
 
 ## 公开导出索引 {#exports}
 
-| 符号                                | 契约                                                                               | 源码                                                                                                                                      |
-| ----------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 符号                                | 契约                                                                                                   | 源码                                                                                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `AttributesCapable`                 | [Exchange 与结果提取](/zh/reference/fetcher/results.md#attributescapable)                              | [fetchExchange.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L23)                           |
 | `FetchExchangeInit`                 | [Exchange 与结果提取](/zh/reference/fetcher/results.md#fetchexchangeinit)                              | [fetchExchange.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L41)                           |
 | `FetchExchange`                     | [Exchange 与结果提取](/zh/reference/fetcher/results.md#fetchexchange)                                  | [fetchExchange.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105)                         |
@@ -18241,16 +18241,16 @@ fetcherRegistrar.unregister('reports');
 
 旧版参考链接仍可定位到下列专题。
 
-| 旧章节 | 新专题 |
-| --- | --- |
-| <span id="安装与入口选择"></span>安装与入口选择 | [阅读对应专题](/zh/reference/fetcher/index.md) |
-| <span id="http-方法矩阵"></span>HTTP 方法矩阵 | [阅读对应专题](/zh/reference/fetcher/index.md) |
-| <span id="client-配置"></span>Client 配置 | [阅读对应专题](/zh/reference/fetcher/client.md) |
-| <span id="类型化请求与-fetchrequestinit"></span>类型化请求与 FetchRequestInit | [阅读对应专题](/zh/reference/fetcher/requests.md) |
-| <span id="解析与-url-规则"></span>解析与 URL 规则 | [阅读对应专题](/zh/reference/fetcher/urls.md) |
+| 旧章节                                                                          | 新专题                                                           |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| <span id="安装与入口选择"></span>安装与入口选择                                 | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
+| <span id="http-方法矩阵"></span>HTTP 方法矩阵                                   | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
+| <span id="client-配置"></span>Client 配置                                       | [阅读对应专题](/zh/reference/fetcher/client.md)                  |
+| <span id="类型化请求与-fetchrequestinit"></span>类型化请求与 FetchRequestInit   | [阅读对应专题](/zh/reference/fetcher/requests.md)                |
+| <span id="解析与-url-规则"></span>解析与 URL 规则                               | [阅读对应专题](/zh/reference/fetcher/urls.md)                    |
 | <span id="result、interceptor-与错误契约"></span>Result、Interceptor 与错误契约 | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
-| <span id="超时与调用方取消"></span>超时与调用方取消 | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
-| <span id="源码参考"></span>源码参考 | [阅读对应专题](/zh/reference/fetcher/index.md) |
+| <span id="超时与调用方取消"></span>超时与调用方取消                             | [阅读对应专题](/zh/reference/fetcher/errors-and-cancellation.md) |
+| <span id="源码参考"></span>源码参考                                             | [阅读对应专题](/zh/reference/fetcher/index.md)                   |
 
 </doc>
 
@@ -18353,8 +18353,8 @@ fetcherRegistrar.unregister('reports');
 
 | 字段/类型                                  | 契约                                                                                                                           |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `RequestHeaders` / `RequestHeadersCapable` | 普通字符串键记录，值为 `string                                                                                                 | undefined`，不是原生 `Headers` 实例。 |
-| `RequestBodyType`                          | `BodyInit                                                                                                                      | Record<string, any>                   | string | null`；省略正文时保持缺失。 |
+| `RequestHeaders` / `RequestHeadersCapable` | 普通字符串键记录，值为 `string \| undefined`，不是原生 `Headers` 实例。                                                        |
+| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`；省略正文时保持缺失。                                                      |
 | `BaseURLCapable`                           | 必填 `baseURL: string`；`UrlParamsCapable` 提供可选 `urlParams`。                                                              |
 | `HttpMethod`                               | GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、TRACE 字符串枚举；仍受平台限制。                                                 |
 | `CONTENT_TYPE_HEADER`                      | `'Content-Type'`；`ContentTypeValues.APPLICATION_JSON` 为 `'application/json'`，`TEXT_EVENT_STREAM` 为 `'text/event-stream'`。 |
@@ -18878,15 +18878,15 @@ void loadUser;
 
 ## API 元数据与优先级 {#metadata}
 
-| `ApiMetadata` 字段        | 解析规则                                                                   |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `basePath?: string`       | 端点真值覆盖 API 路径，再回退空值。                                        |
-| `fetcher?: string         | Fetcher`                                                                   | 端点非 nullish 值优先，再 API，通过 `getFetcher` 解析。 |
-| `headers?` / `urlParams?` | 客户端默认值（头）、API、端点、绑定参数/request 值依次覆盖；头忽略大小写。 |
-| `timeout?: number`        | 端点已定义值（含零）、API、客户端默认值依次回退。                          |
-| `resultExtractor?`        | 端点、API、`JsonResultExtractor`。                                         |
-| `returnType?`             | 端点、API、`EndpointReturnType.RESULT`。                                   |
-| `attributes?`             | API 条目、端点条目、参数属性依次覆盖。                                     |
+| `ApiMetadata` 字段            | 解析规则                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `basePath?: string`           | 端点真值覆盖 API 路径，再回退空值。                                        |
+| `fetcher?: string \| Fetcher` | 端点非 nullish 值优先，再 API，通过 `getFetcher` 解析。                    |
+| `headers?` / `urlParams?`     | 客户端默认值（头）、API、端点、绑定参数/request 值依次覆盖；头忽略大小写。 |
+| `timeout?: number`            | 端点已定义值（含零）、API、客户端默认值依次回退。                          |
+| `resultExtractor?`            | 端点、API、`JsonResultExtractor`。                                         |
+| `returnType?`                 | 端点、API、`EndpointReturnType.RESULT`。                                   |
+| `attributes?`                 | API 条目、端点条目、参数属性依次覆盖。                                     |
 
 `ApiMetadataCapable.apiMetadata` 支持实例配置。在**每个方法首次调用时**，`buildRequestExecutor` 将实例元数据浅展开覆盖装饰器元数据，并按方法名在实例缓存执行器。必须在调用前设置实例元数据，后续替换不是受支持的动态重配置机制；端点元数据仍优先。浅合并意味着实例 headers 对象先整体替换类 headers，再参与端点/请求合并。
 
@@ -19836,7 +19836,7 @@ settings.eventBus.destroy();
 
 | 方法                   | 返回值                               | 行为                                                                             |
 | ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
-| `get()`                | `T                                   | null`                                                                            | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。 |
+| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。                         |
 | `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。           |
 | `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。 |
 | `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。     |
@@ -19903,14 +19903,14 @@ settings.eventBus.destroy();
 
 `InMemoryStorage` 使用 `Map<string, string>` 实现 `Storage`：
 
-| 成员                        | 契约               |
-| --------------------------- | ------------------ |
-| `length`                    | 已保存的键数。     |
-| `setItem(key, value): void` | 保存或替换字符串。 |
-| `getItem(key): string       | null`              | 缺失返回 null。                       |
-| `removeItem(key): void`     | 存在则移除。       |
-| `key(index): string         | null`              | 返回插入顺序对应的键，越界返回 null。 |
-| `clear(): void`             | 删除全部条目。     |
+| 成员                           | 契约                                  |
+| ------------------------------ | ------------------------------------- |
+| `length`                       | 已保存的键数。                        |
+| `setItem(key, value): void`    | 保存或替换字符串。                    |
+| `getItem(key): string \| null` | 缺失返回 null。                       |
+| `removeItem(key): void`        | 存在则移除。                          |
+| `key(index): string \| null`   | 返回插入顺序对应的键，越界返回 null。 |
+| `clear(): void`                | 删除全部条目。                        |
 
 内存存储不触发原生 storage 事件，也不会跨进程/页面生命周期持久化。TypeScript API 要求字符串，不能依赖浏览器 Storage 对非字符串参数的运行时强制转换。
 

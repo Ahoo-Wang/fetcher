@@ -23,7 +23,7 @@ description: 'KeyStorage 与变更监听 — @ahoo-wang/fetcher-storage 5.0.0'
 
 | 方法                   | 返回值                               | 行为                                                                             |
 | ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
-| `get()`                | `T                                   | null`                                                                            | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。 |
+| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。                         |
 | `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。           |
 | `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。 |
 | `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。     |

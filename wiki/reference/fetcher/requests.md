@@ -11,8 +11,8 @@ description: 'Requests, headers, and bodies — @ahoo-wang/fetcher 5.0.0'
 
 | Field/type                                 | Contract                                                                                                                      |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `RequestHeaders` / `RequestHeadersCapable` | Plain string-keyed record of `string                                                                                          | undefined`; not a native `Headers` instance. |
-| `RequestBodyType`                          | `BodyInit                                                                                                                     | Record<string, any>                          | string | null`; a missing body remains missing. |
+| `RequestHeaders` / `RequestHeadersCapable` | Plain string-keyed record of `string \| undefined`; not a native `Headers` instance.                                          |
+| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`; a missing body remains missing.                                          |
 | `BaseURLCapable`                           | Required `baseURL: string`; `UrlParamsCapable` supplies optional `urlParams`.                                                 |
 | `HttpMethod`                               | String enum GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE; platform restrictions still apply.                           |
 | `CONTENT_TYPE_HEADER`                      | `'Content-Type'`; `ContentTypeValues.APPLICATION_JSON` is `'application/json'`, `TEXT_EVENT_STREAM` is `'text/event-stream'`. |

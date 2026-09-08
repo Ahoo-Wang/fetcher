@@ -13,14 +13,14 @@ description: '序列化与运行时存储 — @ahoo-wang/fetcher-storage 5.0.0'
 
 `InMemoryStorage` 使用 `Map<string, string>` 实现 `Storage`：
 
-| 成员                        | 契约               |
-| --------------------------- | ------------------ |
-| `length`                    | 已保存的键数。     |
-| `setItem(key, value): void` | 保存或替换字符串。 |
-| `getItem(key): string       | null`              | 缺失返回 null。                       |
-| `removeItem(key): void`     | 存在则移除。       |
-| `key(index): string         | null`              | 返回插入顺序对应的键，越界返回 null。 |
-| `clear(): void`             | 删除全部条目。     |
+| 成员                           | 契约                                  |
+| ------------------------------ | ------------------------------------- |
+| `length`                       | 已保存的键数。                        |
+| `setItem(key, value): void`    | 保存或替换字符串。                    |
+| `getItem(key): string \| null` | 缺失返回 null。                       |
+| `removeItem(key): void`        | 存在则移除。                          |
+| `key(index): string \| null`   | 返回插入顺序对应的键，越界返回 null。 |
+| `clear(): void`                | 删除全部条目。                        |
 
 内存存储不触发原生 storage 事件，也不会跨进程/页面生命周期持久化。TypeScript API 要求字符串，不能依赖浏览器 Storage 对非字符串参数的运行时强制转换。
 

@@ -21,15 +21,15 @@ description: '服务与端点 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 ## API 元数据与优先级 {#metadata}
 
-| `ApiMetadata` 字段        | 解析规则                                                                   |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `basePath?: string`       | 端点真值覆盖 API 路径，再回退空值。                                        |
-| `fetcher?: string         | Fetcher`                                                                   | 端点非 nullish 值优先，再 API，通过 `getFetcher` 解析。 |
-| `headers?` / `urlParams?` | 客户端默认值（头）、API、端点、绑定参数/request 值依次覆盖；头忽略大小写。 |
-| `timeout?: number`        | 端点已定义值（含零）、API、客户端默认值依次回退。                          |
-| `resultExtractor?`        | 端点、API、`JsonResultExtractor`。                                         |
-| `returnType?`             | 端点、API、`EndpointReturnType.RESULT`。                                   |
-| `attributes?`             | API 条目、端点条目、参数属性依次覆盖。                                     |
+| `ApiMetadata` 字段            | 解析规则                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `basePath?: string`           | 端点真值覆盖 API 路径，再回退空值。                                        |
+| `fetcher?: string \| Fetcher` | 端点非 nullish 值优先，再 API，通过 `getFetcher` 解析。                    |
+| `headers?` / `urlParams?`     | 客户端默认值（头）、API、端点、绑定参数/request 值依次覆盖；头忽略大小写。 |
+| `timeout?: number`            | 端点已定义值（含零）、API、客户端默认值依次回退。                          |
+| `resultExtractor?`            | 端点、API、`JsonResultExtractor`。                                         |
+| `returnType?`                 | 端点、API、`EndpointReturnType.RESULT`。                                   |
+| `attributes?`                 | API 条目、端点条目、参数属性依次覆盖。                                     |
 
 `ApiMetadataCapable.apiMetadata` 支持实例配置。在**每个方法首次调用时**，`buildRequestExecutor` 将实例元数据浅展开覆盖装饰器元数据，并按方法名在实例缓存执行器。必须在调用前设置实例元数据，后续替换不是受支持的动态重配置机制；端点元数据仍优先。浅合并意味着实例 headers 对象先整体替换类 headers，再参与端点/请求合并。
 

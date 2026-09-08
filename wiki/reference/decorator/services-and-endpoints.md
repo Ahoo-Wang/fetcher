@@ -21,15 +21,15 @@ Use legacy TypeScript decorators to replace service methods with Fetcher request
 
 ## API metadata and precedence {#metadata}
 
-| Field on `ApiMetadata`    | Resolution                                                                                              |
-| ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `basePath?: string`       | Endpoint truthy override, then API path, then empty.                                                    |
-| `fetcher?: string         | Fetcher`                                                                                                | Endpoint non-nullish override, then API; resolved through `getFetcher`. |
-| `headers?` / `urlParams?` | Client defaults (headers), API, endpoint, then bound argument/request values; headers case-insensitive. |
-| `timeout?: number`        | Endpoint defined value (including zero), API, then client default.                                      |
-| `resultExtractor?`        | Endpoint, API, then `JsonResultExtractor`.                                                              |
-| `returnType?`             | Endpoint, API, then `EndpointReturnType.RESULT`.                                                        |
-| `attributes?`             | API entries followed by endpoint entries, then argument attributes.                                     |
+| Field on `ApiMetadata`        | Resolution                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `basePath?: string`           | Endpoint truthy override, then API path, then empty.                                                    |
+| `fetcher?: string \| Fetcher` | Endpoint non-nullish override, then API; resolved through `getFetcher`.                                 |
+| `headers?` / `urlParams?`     | Client defaults (headers), API, endpoint, then bound argument/request values; headers case-insensitive. |
+| `timeout?: number`            | Endpoint defined value (including zero), API, then client default.                                      |
+| `resultExtractor?`            | Endpoint, API, then `JsonResultExtractor`.                                                              |
+| `returnType?`                 | Endpoint, API, then `EndpointReturnType.RESULT`.                                                        |
+| `attributes?`                 | API entries followed by endpoint entries, then argument attributes.                                     |
 
 `ApiMetadataCapable.apiMetadata` enables instance configuration. At the **first call of each method**, `buildRequestExecutor` shallow-spreads instance metadata over decorator metadata and caches the executor on that instance by method name. Set instance metadata before calling the method; later replacing metadata is not a supported live reconfiguration mechanism. Endpoint metadata still takes precedence. Shallow merging means an instance header object replaces the class header object before endpoint/request merging.
 

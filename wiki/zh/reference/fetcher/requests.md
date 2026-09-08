@@ -11,8 +11,8 @@ description: '请求、请求头与正文 — @ahoo-wang/fetcher 5.0.0'
 
 | 字段/类型                                  | 契约                                                                                                                           |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `RequestHeaders` / `RequestHeadersCapable` | 普通字符串键记录，值为 `string                                                                                                 | undefined`，不是原生 `Headers` 实例。 |
-| `RequestBodyType`                          | `BodyInit                                                                                                                      | Record<string, any>                   | string | null`；省略正文时保持缺失。 |
+| `RequestHeaders` / `RequestHeadersCapable` | 普通字符串键记录，值为 `string \| undefined`，不是原生 `Headers` 实例。                                                        |
+| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`；省略正文时保持缺失。                                                      |
 | `BaseURLCapable`                           | 必填 `baseURL: string`；`UrlParamsCapable` 提供可选 `urlParams`。                                                              |
 | `HttpMethod`                               | GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、TRACE 字符串枚举；仍受平台限制。                                                 |
 | `CONTENT_TYPE_HEADER`                      | `'Content-Type'`；`ContentTypeValues.APPLICATION_JSON` 为 `'application/json'`，`TEXT_EVENT_STREAM` 为 `'text/event-stream'`。 |

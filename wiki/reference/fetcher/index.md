@@ -17,13 +17,13 @@ Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has 
 
 ## Choose a topic
 
-| Topic                                                              | Use it for                                                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Topic                                                                               | Use it for                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Client and registration](/reference/fetcher/client.md)                             | Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Requests still use the runtime's global `fetch`; a client does not own a connection pool or require `destroy()`.                                                                                                                                                                    |
 | [Requests, headers, and bodies](/reference/fetcher/requests.md)                     | `FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, and `abortController`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through. |
 | [URL construction and templates](/reference/fetcher/urls.md)                        | `UrlBuilder` combines a base URL, path substitutions, and a query record. It does not send a request and does not perform general RFC URI-template expansion.                                                                                                                                                                                                    |
 | [Exchanges and result extraction](/reference/fetcher/results.md)                    | A result extractor controls the runtime result, independently of the TypeScript generic on `request<R>` or `get<R>`. Choose it in `RequestOptions.resultExtractor`.                                                                                                                                                                                              |
-| [Interceptor pipeline](/reference/fetcher/interceptors.md)                          | Interceptors mutate a shared `FetchExchange`; they return `void                                                                                                                                                                                                                                                                                                  | Promise<void>`, not a replacement exchange. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor`are structural specializations of`Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`. |
+| [Interceptor pipeline](/reference/fetcher/interceptors.md)                          | Interceptors mutate a shared `FetchExchange`; they return `void \| Promise<void>`, not a replacement exchange. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor`are structural specializations of`Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`.                                                          |
 | [Errors, timeouts, and cancellation](/reference/fetcher/errors-and-cancellation.md) | Fetcher's default pipeline rejects HTTP statuses outside 200–299. Native fetch alone would resolve those responses, so inspect the exchange when handling a failed Fetcher request.                                                                                                                                                                              |
 
 ## Minimal complete example
@@ -51,8 +51,8 @@ fetcherRegistrar.unregister('reports');
 
 ## Public export index {#exports}
 
-| Symbol                              | Contract                                                                                             | Source                                                                                                                                    |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Symbol                              | Contract                                                                                                              | Source                                                                                                                                    |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `AttributesCapable`                 | [Exchanges and result extraction](/reference/fetcher/results.md#attributescapable)                                    | [fetchExchange.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L23)                           |
 | `FetchExchangeInit`                 | [Exchanges and result extraction](/reference/fetcher/results.md#fetchexchangeinit)                                    | [fetchExchange.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L41)                           |
 | `FetchExchange`                     | [Exchanges and result extraction](/reference/fetcher/results.md#fetchexchange)                                        | [fetchExchange.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105)                         |
@@ -153,13 +153,13 @@ fetcherRegistrar.unregister('reports');
 
 Earlier reference links still lead to the corresponding topics below.
 
-| Earlier section | Current topic |
-| --- | --- |
-| <span id="install-and-choose-an-entry-point"></span>Install and choose an entry point | [Read this topic](/reference/fetcher/index.md) |
-| <span id="http-method-matrix"></span>HTTP method matrix | [Read this topic](/reference/fetcher/index.md) |
-| <span id="client-configuration"></span>Client configuration | [Read this topic](/reference/fetcher/client.md) |
-| <span id="typed-request-and-fetchrequestinit"></span>Typed request and FetchRequestInit | [Read this topic](/reference/fetcher/requests.md) |
-| <span id="resolution-and-url-rules"></span>Resolution and URL rules | [Read this topic](/reference/fetcher/urls.md) |
+| Earlier section                                                                                   | Current topic                                                    |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| <span id="install-and-choose-an-entry-point"></span>Install and choose an entry point             | [Read this topic](/reference/fetcher/index.md)                   |
+| <span id="http-method-matrix"></span>HTTP method matrix                                           | [Read this topic](/reference/fetcher/index.md)                   |
+| <span id="client-configuration"></span>Client configuration                                       | [Read this topic](/reference/fetcher/client.md)                  |
+| <span id="typed-request-and-fetchrequestinit"></span>Typed request and FetchRequestInit           | [Read this topic](/reference/fetcher/requests.md)                |
+| <span id="resolution-and-url-rules"></span>Resolution and URL rules                               | [Read this topic](/reference/fetcher/urls.md)                    |
 | <span id="result-interceptor-and-error-contracts"></span>Result, interceptor, and error contracts | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
-| <span id="timeout-and-caller-cancellation"></span>Timeout and caller cancellation | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
-| <span id="source-reference"></span>Source reference | [Read this topic](/reference/fetcher/index.md) |
+| <span id="timeout-and-caller-cancellation"></span>Timeout and caller cancellation                 | [Read this topic](/reference/fetcher/errors-and-cancellation.md) |
+| <span id="source-reference"></span>Source reference                                               | [Read this topic](/reference/fetcher/index.md)                   |
