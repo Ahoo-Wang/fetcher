@@ -77,15 +77,18 @@ const refresh = async () => {
 async function measure(name, operation) {
   await operation(); // Warm the interaction before collecting samples.
   const samples = [];
+  const phases = [];
   for (let n = 0; n < 10; n++) {
     const started = performance.now();
-    await operation();
+    const phaseTimings = await operation();
     samples.push(Math.round((performance.now() - started) * 100) / 100);
+    if (phaseTimings) phases.push(phaseTimings);
   }
   const sorted = [...samples].sort((a, b) => a - b);
   const p95 = sorted[Math.ceil(sorted.length * 0.95) - 1];
   report.timings[name] = {
     samples,
+    ...(phases.length ? { phases } : {}),
     p95,
     budget: 1000,
     unit: 'ms',
@@ -265,17 +268,30 @@ try {
   if (await rowSelection.isChecked()) await rowSelection.uncheck();
   const add = page.getByRole('button', { name: '添加筛选', exact: true });
   await measure('fieldPicker', async () => {
+    const phases = {};
+    let previous = performance.now();
+    const mark = name => {
+      const now = performance.now();
+      phases[name] = Math.round((now - previous) * 100) / 100;
+      previous = now;
+    };
     await add.click();
+    mark('click');
     await page
       .getByRole('dialog')
       .filter({ hasText: '选择筛选字段' })
       .waitFor();
+    mark('visible');
     await frame();
+    mark('paintedFrames');
     await page.keyboard.press('Escape');
+    mark('escape');
     await page
       .getByRole('dialog')
       .filter({ hasText: '选择筛选字段' })
       .waitFor({ state: 'hidden' });
+    mark('hidden');
+    return phases;
   });
   report.checks.push(
     'Warm no-network interaction p95 within 1000ms regression ceiling',
