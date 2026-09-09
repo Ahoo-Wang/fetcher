@@ -36,6 +36,7 @@ export function RecordTableHeader({
     sortColumnIds,
     withFiller,
     columnStyle,
+    columnClassName,
     layout: { compact },
   } = model;
   const { sorting } = table.state;
@@ -85,7 +86,10 @@ export function RecordTableHeader({
               <TableHead
                 key={header.id}
                 scope="col"
-                className="fve:relative fve:whitespace-normal fve:pr-3"
+                className={cn(
+                  'fve:relative fve:whitespace-normal fve:pr-3',
+                  columnClassName(header.column),
+                )}
                 style={columnStyle(header.column)}
                 data-pinned={header.column.getIsPinned() || undefined}
                 aria-sort={

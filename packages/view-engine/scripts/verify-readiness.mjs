@@ -95,7 +95,6 @@ async function measure(name, operation) {
     includes:
       'automation transport and two painted frames; fixture has no network',
   };
-  assert.ok(p95 <= 1000, `${name} p95 ${p95}ms exceeds 1000ms`);
 }
 async function axe(name) {
   // WebKit can start inherited-color transitions on a later painted frame.
@@ -293,6 +292,9 @@ try {
     mark('hidden');
     return phases;
   });
+  for (const [name, { p95, budget }] of Object.entries(report.timings)) {
+    assert.ok(p95 <= budget, `${name} p95 ${p95}ms exceeds ${budget}ms`);
+  }
   report.checks.push(
     'Warm no-network interaction p95 within 1000ms regression ceiling',
   );

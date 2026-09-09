@@ -53,6 +53,7 @@ export function RecordTableSummary({
     byId,
     visibleColumns,
     columnStyle,
+    columnClassName,
     withFiller,
     layout: { summaryLabelColumnCount, summaryLabelSpan, summaryLabelWidth },
   } = model;
@@ -111,6 +112,7 @@ export function RecordTableSummary({
                   className={cn(
                     'fve:h-auto fve:py-2 fve:font-normal',
                     scopeCell ? 'fve:align-middle' : 'fve:align-top',
+                    columnClassName(column),
                   )}
                   style={columnStyle(column)}
                   data-pinned={column.getIsPinned() || undefined}

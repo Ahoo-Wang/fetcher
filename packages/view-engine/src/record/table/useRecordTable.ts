@@ -193,24 +193,22 @@ export function useRecordTable({
     const index = firstEnd < 0 ? items.length : firstEnd;
     return [...items.slice(0, index), null, ...items.slice(index)];
   }
-  function columnStyle(column: RecordTableColumn): CSSProperties {
-    const pinned = column.getIsPinned();
+  function columnClassName(column: RecordTableColumn): string | undefined {
     const configured = byId.get(column.id)!;
     const numeric =
       configured.kind === 'field' &&
       definition.fields.some(
         field => field.field === configured.field && field.type === 'number',
       );
-    return {
-      width: column.getSize(),
-      textAlign: numeric ? 'right' : undefined,
-      fontVariantNumeric: numeric ? 'tabular-nums' : undefined,
-      left:
-        pinned === 'start'
-          ? column.getStart('start') + (selectable ? 48 : 0)
-          : undefined,
-      right: pinned === 'end' ? column.getAfter('end') : undefined,
-    };
+    return numeric ? 'fve:text-right fve:tabular-nums' : undefined;
+  }
+  // Colgroup owns widths; only pinned offsets need per-cell inline styles.
+  function columnStyle(column: RecordTableColumn): CSSProperties | undefined {
+    const pinned = column.getIsPinned();
+    if (!pinned) return undefined;
+    return pinned === 'start'
+      ? { left: column.getStart('start') + (selectable ? 48 : 0) }
+      : { right: column.getAfter('end') };
   }
   return {
     table,
@@ -219,6 +217,7 @@ export function useRecordTable({
     visibleColumns,
     layout,
     columnStyle,
+    columnClassName,
     withFiller,
   };
 }

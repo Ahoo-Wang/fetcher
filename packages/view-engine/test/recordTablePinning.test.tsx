@@ -119,6 +119,9 @@ it('keeps headers, records and summaries aligned with default action pins, resiz
   ).toEqual(['本页', '合计10', '', '']);
   for (const selector of ['thead th', 'tbody td']) {
     const row = cells(selector);
+    expect(row[3].hasAttribute('style')).toBe(false);
+    expect(row[3].classList.contains('fve:text-right')).toBe(true);
+    expect(row[3].classList.contains('fve:tabular-nums')).toBe(true);
     expect(row[0].style.left).toBe('0px');
     expect(row[1].style.left).toBe('48px');
     expect(row[2].style.left).toBe('168px');
@@ -130,12 +133,16 @@ it('keeps headers, records and summaries aligned with default action pins, resiz
     'tfoot tr:last-child > *',
   ]) {
     const row = cells(selector);
+    expect(row[1].hasAttribute('style')).toBe(false);
+    expect(row[1].classList.contains('fve:text-right')).toBe(true);
+    expect(row[1].classList.contains('fve:tabular-nums')).toBe(true);
     expect(row[0].getAttribute('colspan')).toBe('3');
     expect(row[0].style.left).toBe('0px');
     expect(row[0].style.width).toBe('268px');
     expect(row[2].style.right).toBe('64px');
     expect(row[3].style.right).toBe('0px');
   }
+  expect(cells('col')[3].style.width).toBe('200px');
   view.rerender(
     draw(
       pinnedColumns.map(column =>

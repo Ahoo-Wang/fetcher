@@ -46,6 +46,7 @@ export interface RecordTableModel {
   sortColumnIds: ReadonlyMap<string, string>;
   visibleColumns: RecordTableColumn[];
   layout: ReturnType<typeof getRecordTableLayout>;
-  columnStyle(column: RecordTableColumn): CSSProperties;
+  columnStyle(column: RecordTableColumn): CSSProperties | undefined;
+  columnClassName(column: RecordTableColumn): string | undefined;
   withFiller<T>(items: T[]): (T | null)[];
 }

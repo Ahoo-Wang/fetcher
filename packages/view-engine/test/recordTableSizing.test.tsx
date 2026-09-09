@@ -27,6 +27,13 @@ import {
 
 afterEach(cleanupTable);
 
+function columnWidth(header: HTMLElement): string {
+  const index = Array.from(header.parentElement!.children).indexOf(header);
+  return header
+    .closest('table')!
+    .querySelectorAll<HTMLTableColElement>('colgroup col')[index].style.width;
+}
+
 it('fills available width with automatic business columns and preserves explicit widths after resizing', () => {
   const resize = mockTableWidth();
   const onColumnsChange = vi.fn();
@@ -75,19 +82,19 @@ it('fills available width with automatic business columns and preserves explicit
   render(<Example />);
   act(() => resize(1000));
   const name = screen.getByRole('columnheader', { name: /名称/ });
-  expect(name.style.width).toBe('480px');
-  expect(screen.getByRole('columnheader', { name: /编号/ }).style.width).toBe(
+  expect(columnWidth(name)).toBe('480px');
+  expect(columnWidth(screen.getByRole('columnheader', { name: /编号/ }))).toBe(
     '120px',
   );
-  expect(screen.getByRole('columnheader', { name: /金额/ }).style.width).toBe(
+  expect(columnWidth(screen.getByRole('columnheader', { name: /金额/ }))).toBe(
     '100px',
   );
-  expect(screen.getByRole('columnheader', { name: /操作/ }).style.width).toBe(
+  expect(columnWidth(screen.getByRole('columnheader', { name: /操作/ }))).toBe(
     '80px',
   );
   expect(onColumnsChange).not.toHaveBeenCalled();
   act(() => resize(600));
-  expect(name.style.width).toBe('252px');
+  expect(columnWidth(name)).toBe('252px');
   act(() => resize(1000));
   fireEvent.keyDown(screen.getByRole('separator', { name: '调整名称列宽' }), {
     key: 'ArrowLeft',
@@ -97,9 +104,9 @@ it('fills available width with automatic business columns and preserves explicit
       column.id === 'name' ? { ...column, width: 470 } : column,
     ),
   );
-  expect(name.style.width).toBe('470px');
+  expect(columnWidth(name)).toBe('470px');
   act(() => resize(1200));
-  expect(name.style.width).toBe('470px');
+  expect(columnWidth(name)).toBe('470px');
   expect(screen.getByRole('table').style.width).toBe('1200px');
   expect(screen.getByRole('columnheader', { name: /操作/ }).style.right).toBe(
     '0px',
@@ -146,7 +153,7 @@ it('keeps fractional automatic columns automatic after a resize gesture without 
   fireEvent.mouseUp(document, { clientX: 334 });
   expect(onColumnsChange).not.toHaveBeenCalled();
   for (const column of screen.getAllByRole('columnheader'))
-    expect(column.style.width).toBe('400px');
+    expect(columnWidth(column)).toBe('400px');
   fireEvent.mouseDown(handle, { clientX: 400 });
   fireEvent.mouseUp(document, { clientX: 440 });
   expect(onColumnsChange).toHaveBeenCalledTimes(1);
@@ -198,7 +205,7 @@ it('keeps business fields readable in compact tables and restores saved pinning 
   const key = screen.getByRole('columnheader', { name: /编号/ });
   const actions = screen.getByRole('columnheader', { name: /操作/ });
   expect(
-    356 - 48 - parseFloat(key.style.width) - parseFloat(actions.style.width),
+    356 - 48 - parseFloat(columnWidth(key)) - parseFloat(columnWidth(actions)),
   ).toBeGreaterThanOrEqual(128);
   expect(key.getAttribute('data-pinned')).toBe('start');
   expect(actions.getAttribute('data-pinned')).toBe('end');
@@ -217,10 +224,10 @@ it('keeps business fields readable in compact tables and restores saved pinning 
   expect(screen.getByText('空间不足，请展开视图或减少显示列。')).toBeTruthy();
   act(() => resize(1000));
   expect(screen.queryByText('空间不足，请展开视图或减少显示列。')).toBeNull();
-  expect(screen.getByRole('columnheader', { name: /编号/ }).style.width).toBe(
+  expect(columnWidth(screen.getByRole('columnheader', { name: /编号/ }))).toBe(
     '210px',
   );
-  expect(screen.getByRole('columnheader', { name: /操作/ }).style.width).toBe(
+  expect(columnWidth(screen.getByRole('columnheader', { name: /操作/ }))).toBe(
     '110px',
   );
   expect(

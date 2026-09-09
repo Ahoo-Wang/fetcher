@@ -13,6 +13,7 @@
 
 import { Checkbox } from '../../components/ui/checkbox.js';
 import { TableBody, TableCell, TableRow } from '../../components/ui/table.js';
+import { cn } from '../../lib/utils.js';
 import type { RecordTableProps } from '../recordReactTypes.js';
 import { getRecordKey } from '../recordValidation.js';
 import { RecordRendererBoundary } from '../RecordRendererBoundary.js';
@@ -50,6 +51,7 @@ export function RecordTableBody({
     visibleColumns,
     withFiller,
     columnStyle,
+    columnClassName,
     layout: { compact },
   } = model;
   return (
@@ -82,7 +84,10 @@ export function RecordTableBody({
             return (
               <TableCell
                 key={cell.id}
-                className="fve:overflow-hidden fve:whitespace-normal fve:break-words"
+                className={cn(
+                  'fve:overflow-hidden fve:whitespace-normal fve:break-words',
+                  columnClassName(cell.column),
+                )}
                 style={columnStyle(cell.column)}
                 data-pinned={cell.column.getIsPinned() || undefined}
               >
