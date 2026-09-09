@@ -54,6 +54,17 @@ export const readingGroups = [
     topics: ['index', 'requests', 'queries', 'debounce', 'cleanup'],
   },
   {
+    directory: 'guides/view-engine',
+    topics: [
+      'index',
+      'getting-started',
+      'filters',
+      'table-and-runtime',
+      'saved-views',
+      'extensions',
+    ],
+  },
+  {
     directory: 'guides/viewer',
     topics: [
       'index',
@@ -82,7 +93,7 @@ export const readingGroups = [
   },
   {
     directory: 'examples',
-    topics: ['index', 'http', 'react', 'viewer'],
+    topics: ['index', 'http', 'react', 'viewer', 'view-engine'],
   },
   {
     directory: 'skills',

@@ -1,5 +1,7 @@
 # Fetcher View Engine
 
+[任务指南](../../wiki/zh/guides/view-engine/index.md) · [API 参考](../../wiki/zh/reference/view-engine/index.md) · [共享可运行示例](../../wiki/zh/examples/view-engine.md)
+
 独立的 `@ahoo-wang/fetcher-view-engine` 包，提供可独立使用的 Wow 过滤器编译与校验、完整 `FilterPanel`、结构化值编辑器和 shadcn/Base UI 控件。同时提供不依赖 React 的 ViewEngine 和完整 RecordView 页面，定义、实例与保存接口由宿主管理。卡片、AnalysisView 与 DashboardView 属于后续工作。
 
 ## 模块职责

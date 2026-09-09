@@ -32,3 +32,7 @@ FetcherViewer 在模块作用域创建默认视图 ID 存储，固定键为 `fet
 定义、租户或所有者变化时重新挂载视图，可以分隔 UI 状态；服务端仍须实施访问控制，应用仍须合理划分持久化偏好。具体 SSR 框架仍需要导入、渲染和水合验证，本章不代表所有框架已通过认证。
 
 继续阅读[共享客户端](../guides/http/shared-client.md)、[存储与事件](../guides/integrations/storage-and-events.md)和[状态所有权](./state-and-resources.md)。
+
+## View Engine 运行环境
+
+view-engine 包声明 Node >=20.20.2。核心入口独立于 React 和浏览器全局对象；浏览器控件通过独立的 `/react` 入口使用 React 19。ViewPage 在 Effect 中创建、释放引擎，自行持有的引擎必须显式管理范围和释放。剪贴板、页面可见性和布局 API 属于浏览器能力。LocalStorageViewHost 必须注入存储与独占锁，开发示例使用 Web Locks。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。

@@ -77,7 +77,15 @@ const meta = {
     appearance: { control: 'inline-radio', options: ['light', 'dark'] },
     disabled: { control: 'boolean' },
   },
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        component:
+          'FilterSelect 是受控单选组件：提供 options、label、onValueChange，并用 value 控制选中项，传入 onClear 才显示清空入口。用 inline 放入 FieldFilter，未设置使用 null。此组件只更新值，不执行查询。\n\n依次尝试选择、清空、重新选择，并用键盘 Enter/Escape 和禁用/主题控制检查交互。多选和远程候选见“过滤器 → 内置组件”。',
+      },
+    },
+  },
 } satisfies Meta<DemoArgs>;
 
 export default meta;

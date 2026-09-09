@@ -20,3 +20,5 @@ After the first example succeeds, choose the change your application needs next.
 | Connect an existing platform service            | [Wow, CoSec, storage and events](../guides/integrations/index.md)                                 |
 
 Use [architecture and selection](../architecture/index.md) to decide who owns state, cancellation, and persistence. Use [API reference](../reference/index.md) when you know the operation and need its exact contract; the [complete examples](../examples/index.md) remain the executable baseline.
+
+For the independent record engine, continue with [View Engine tasks](../guides/view-engine/index.md): component configuration, remote candidates, cells, summaries and ViewHost services.

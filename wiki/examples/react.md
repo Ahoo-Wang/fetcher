@@ -16,7 +16,7 @@ This component uses a stable `Fetcher` instance and the real `useFetcher` hook. 
 Contributors need Node `>=20.20.2`, pnpm `10.34.5`, and the repository dependencies installed. From the repository root, run:
 
 ```bash
-pnpm exec vitest run --project=storybook stories/docs/ReactRequests.stories.tsx
+pnpm exec vitest run --project=storybook stories/docs/ReactRequests.test.stories.tsx
 ```
 
 To try the same interactions manually, run `pnpm storybook`, open the printed local URL, and select **Docs / React requests** in the sidebar. The repository Storybook is the no-backend runnable example.

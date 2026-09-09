@@ -20,13 +20,33 @@ import source from '../../packages/view-engine/examples/react/BuiltinCellsExampl
 const meta = {
   title: 'View Engine/单元格/内置组件',
   component: BuiltinCellsExample,
+  args: { appearance: 'light' },
+  argTypes: {
+    appearance: {
+      control: 'inline-radio',
+      options: ['light', 'dark'],
+      description: '组件及弹层共用的主题。',
+    },
+    invalidData: {
+      control: 'boolean',
+      description: '展示无效数据占位和安全链接边界。',
+    },
+    persist: {
+      control: 'boolean',
+      description: '开发用途：保存视图配置到浏览器。',
+    },
+    scopeKey: {
+      control: false,
+      description: '访问范围身份；变化时隔离恢复状态。',
+    },
+  },
   parameters: {
     layout: 'fullscreen',
     docs: {
       source: { code: source, language: 'tsx' },
       description: {
         component:
-          '文本、标签、状态、链接、日期时间、数字。仅配置 renderer 即可使用；独立组件可直接组合，金额与百分比复用字段数值格式。',
+          '字段默认使用 `cellRenderer`，实例的 `column.renderer` 可覆盖它。内置名称不带 `fve/` 前缀。\n\n| renderer | 常用配置 |\n| --- | --- |\n| text | ellipsis、copyable；复制原始值，成功 2 秒后恢复 |\n| tags | maxVisible，默认 2；多余标签在弹层查看 |\n| status | tones；标签来自字段 options |\n| link | hrefField、newTab；危险 URL 保持文本 |\n| date-time | locale、dateStyle、timeStyle；时区来自定义 |\n| number | 格式设置在字段 numberFormat，可用于金额和比例 |\n\n字段可使用 `customer.name` 或 `items.0.sku` 等记录相对路径。先切换列显隐并保存，再“重新打开已保存视图”，验证 renderer 配置恢复。独立组合、深色窄容器和异常数据场景分别覆盖直接组件使用、布局及占位行为。',
       },
     },
   },

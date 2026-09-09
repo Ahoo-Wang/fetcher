@@ -34,8 +34,8 @@ features:
     link: /zh/guides/react/
     linkText: 了解更多
   - title: 数据视图
-    details: 组合表格、过滤、排序与已保存视图，明确应用的数据和持久化责任。
-    link: /zh/guides/viewer/
+    details: 选择 shadcn/Base UI View Engine 或 Ant Design Viewer，接入表格、筛选和已保存视图。
+    link: /zh/start/first-view
     linkText: 了解更多
   - title: 架构与选型
     details: 评估包边界、运行环境要求与集成责任，选择适合应用的能力。

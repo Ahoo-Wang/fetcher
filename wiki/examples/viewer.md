@@ -1,5 +1,4 @@
 ---
-next: false
 title: Local Viewer example
 description: Filter, sort, page and save a local data view with application-owned state.
 ---
@@ -74,12 +73,12 @@ pnpm install
 pnpm storybook
 ```
 
-Open [Docs → Local Viewer → Local Data](http://localhost:6006/?path=/story/docs-local-viewer--local-data). The play function automatically runs the actions above; reload the story to start again, or use the consumer app for an untouched initial state.
+Open [Docs → Local Viewer → Local Data](http://localhost:6006/?path=/story/docs-local-viewer--local-data) and perform the actions above manually. Reload the story to return to its initial state. Automated interactions run separately in the regression story.
 
 Run the same browser checks headlessly:
 
 ```bash
-pnpm exec vitest run --project=storybook stories/docs/LocalViewer.stories.tsx
+pnpm exec vitest run --project=storybook stories/docs/LocalViewer.test.stories.tsx
 ```
 
 The checks assert table row collections and order, filtered results, and restored saved settings. Callback text is only an additional save confirmation, not a substitute for verifying the displayed rows.

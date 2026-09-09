@@ -10,20 +10,21 @@ pageClass: reference-index-page
 
 Each package has an entry page and focused reference topics. Choose the responsibility first, then the API family. Complex packages have deeper navigation; small packages stay compact.
 
-| Package                               | Responsibility             | Topics |
-| ------------------------------------- | -------------------------- | ------ |
-| [fetcher](./fetcher/index.md)         | HTTP requests              | 6      |
-| [decorator](./decorator/index.md)     | Declarative services       | 3      |
-| [eventbus](./eventbus/index.md)       | Event delivery             | 2      |
-| [eventstream](./eventstream/index.md) | SSE consumption            | 3      |
-| [storage](./storage/index.md)         | Stored values              | 2      |
-| [openapi](./openapi/index.md)         | OpenAPI type contracts     | 3      |
-| [generator](./generator/index.md)     | Generated clients          | 5      |
-| [openai](./openai/index.md)           | Chat and token streams     | 2      |
-| [cosec](./cosec/index.md)             | Authentication and refresh | 3      |
-| [react](./react/index.md)             | Component request state    | 8      |
-| [wow](./wow/index.md)                 | Commands and queries       | 9      |
-| [viewer](./viewer/index.md)           | Data views and persistence | 8      |
+| Package                               | Responsibility                                              | Topics |
+| ------------------------------------- | ----------------------------------------------------------- | ------ |
+| [fetcher](./fetcher/index.md)         | HTTP requests                                               | 6      |
+| [decorator](./decorator/index.md)     | Declarative services                                        | 3      |
+| [eventbus](./eventbus/index.md)       | Event delivery                                              | 2      |
+| [eventstream](./eventstream/index.md) | SSE consumption                                             | 3      |
+| [storage](./storage/index.md)         | Stored values                                               | 2      |
+| [openapi](./openapi/index.md)         | OpenAPI type contracts                                      | 3      |
+| [generator](./generator/index.md)     | Generated clients                                           | 5      |
+| [openai](./openai/index.md)           | Chat and token streams                                      | 2      |
+| [cosec](./cosec/index.md)             | Authentication and refresh                                  | 3      |
+| [react](./react/index.md)             | Component request state                                     | 8      |
+| [wow](./wow/index.md)                 | Commands and queries                                        | 9      |
+| [viewer](./viewer/index.md)           | Data views and persistence                                  | 8      |
+| [view-engine](./view-engine/index.md) | Headless engine, component configuration and shadcn/Base UI | 5      |
 
 ## Use the right depth
 

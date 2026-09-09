@@ -5,6 +5,17 @@ description: Run a local Viewer and understand where data and saved state belong
 
 # Your first data view
 
+Choose the UI package before copying a definition; the two packages have different models.
+
+| UI and ownership                                                                  | Entry                                                                                              |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| shadcn/Base UI, headless engine, component-configuration persistence and ViewHost | [View Engine example](../examples/view-engine.md) and [task guide](../guides/view-engine/index.md) |
+| Ant Design, application-controlled table data and Viewer state                    | [Viewer example](../examples/viewer.md)                                                            |
+
+View Engine currently uses workspace/local-archive instructions until its first registry release. Its core entry is usable independently of the React UI.
+
+## Ant Design Viewer path
+
 Start with the [complete local Viewer example](../examples/viewer). It supplies a consumer installation, one complete component, the React entry and a run command. No server, authentication setup or Storybook fixtures are needed.
 
 Follow its five actions: inspect the first page, change pages, sort Name, filter Active, then save and switch views. The row results change because the example application calculates the data and supplies it to Viewer.

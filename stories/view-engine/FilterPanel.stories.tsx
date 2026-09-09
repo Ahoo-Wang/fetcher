@@ -38,7 +38,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '完整 FilterPanel。宿主接收 onApply 后执行查询；此处只记录条件与调用次数。字段元数据与查询错误通过 props 注入。自定义筛选器在 extensions.filters 中一次注册 component、纯函数 compile 和可选 clear，由同一组件定义负责渲染、生成条件和清空值，无需另行注册编译器。',
+          'FilterPanel 管理草稿、校验和显式查询。输入只改变草稿；Enter/查询触发 onApply，由宿主执行记录查询。本页输出条件与调用次数，不连接业务服务。\n\n“添加筛选”使用分组 Checkbox 弹层，支持连续选择且不撑开页面；高级模式通过独立按钮菜单添加 AND/OR/NOR，允许同字段多条规则。自定义组件在 extensions.filters 一次提供 component、compile、modes、clear；保存原始 props，保留未设置控件和本地展示属性。\n\n建议依次验证：手动查询 → 高级嵌套 → 无效状态保护 → 错误重试 → 深色/禁用状态。',
       },
     },
   },

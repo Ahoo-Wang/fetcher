@@ -34,8 +34,8 @@ features:
     link: /guides/react/
     linkText: Learn more
   - title: Data views
-    details: Compose tables, filtering, sorting, and saved views with explicit application ownership.
-    link: /guides/viewer/
+    details: Choose View Engine with shadcn/Base UI or Ant Design Viewer for tables, filters, and saved views.
+    link: /start/first-view
     linkText: Learn more
   - title: Architecture and choices
     details: Evaluate package boundaries, runtime requirements, and integration responsibilities.

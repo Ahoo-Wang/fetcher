@@ -86,6 +86,7 @@ test('reference tables preserve complete union type code spans in both languages
       'key(index): string | null',
     ],
     'storage/key-storage': ['T | null'],
+    'view-engine/models': ["{ mode: 'paged' | 'cursor', size: number }"],
   };
   for (const prefix of ['', 'zh/']) {
     for (const [topic, expected] of Object.entries(contracts)) {
@@ -129,6 +130,7 @@ test('LLM corpus expands the actual shared examples', () => {
     'examples/http/client.ts',
     '../stories/docs/ReactRequests.tsx',
     '../stories/docs/LocalViewer.tsx',
+    '../stories/docs/RecordViewExample.tsx',
   ]) {
     const source = readFileSync(
       new URL(`../${path}`, import.meta.url),

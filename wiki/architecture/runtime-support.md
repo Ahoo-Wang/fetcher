@@ -32,3 +32,7 @@ FetcherViewer creates default-view-ID storage at module scope with the fixed key
 Remounting a view when its definition, tenant, or owner changes separates UI state. The server must still enforce access control, and the application must scope persisted preferences appropriately. A particular SSR framework still needs import, render, and hydration validation; this chapter does not certify all frameworks.
 
 Continue with [shared clients](../guides/http/shared-client.md), [storage and events](../guides/integrations/storage-and-events.md), and [state ownership](./state-and-resources.md).
+
+## View Engine runtime
+
+The view-engine package declares Node >=20.20.2. Its core entry is independent of React and browser globals; browser controls use the separate `/react` entry with React 19. `ViewPage` initializes and disposes its engine in Effects, while caller-owned engines must be scoped and disposed explicitly. Clipboard, page visibility and layout APIs remain browser capabilities. LocalStorageViewHost requires supplied storage and an exclusive lock, such as Web Locks in the development example. Validate a framework-specific SSR/hydration integration instead of treating headless import support as certification of every UI component.

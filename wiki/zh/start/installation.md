@@ -36,3 +36,7 @@ pnpm add -D typescript
 ## React 与 Viewer 起点
 
 已有 React 应用请使用 [React 示例的完整 peer 安装与挂载步骤](../examples/react.md)。需要表格时使用[第一张数据表](./first-view.md)。这两条路径的 UI 依赖与核心 HTTP 安装不同；先按[起点选择](./index.md)确定任务。
+
+## View Engine
+
+View Engine 使用 React 19 与已编译的作用域 CSS。当前分支按[工作区/本地归档流程](../guides/view-engine/getting-started.md)接入，尚未在公共注册表首次发布。

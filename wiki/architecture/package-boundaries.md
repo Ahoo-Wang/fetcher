@@ -44,3 +44,7 @@ A React peer edge to CoSec does not mean every Hook authenticates through CoSec.
 Keep the generator in the code-generation workflow: run it against the service specification and compile/review its output. OpenAPI types themselves neither send requests nor validate input. Generated code still needs the runtime packages it imports. React Compiler tooling listed as development dependencies does not by itself impose the repository's compiler pipeline on every consumer.
 
 Follow [declarative services](../guides/services/declarative-client.md), [generated services](../guides/services/generated-client.md), and the [generator output reference](../reference/generator/generated-output.md) for implementation. See [runtime support](./runtime-support.md) before choosing consumer versions.
+
+## View Engine entries
+
+`@ahoo-wang/fetcher-view-engine` declares direct dependencies on Wow/React and its UI implementation packages; these are separate from the peer-only arrows above. Its public core entry imports no React/DOM/CSS. The `/react` entry provides shadcn/Base UI components and owns browser UI integration. `ViewHost` composes definition, instance, preference and permission services; the record query source and option sources remain application runtime adapters. See [View Engine contracts](../reference/view-engine/index.md) and its [package manifest](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/package.json).

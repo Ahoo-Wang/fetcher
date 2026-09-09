@@ -35,6 +35,11 @@ const labels: Record<string, [string, string]> = {
   'guides/react/queries': ['Queries', '查询'],
   'guides/react/debounce': ['Debouncing', '防抖'],
   'guides/react/cleanup': ['Cancellation and cleanup', '取消与清理'],
+  'guides/view-engine/getting-started': ['Getting started', '快速接入'],
+  'guides/view-engine/filters': ['Filters', '筛选器'],
+  'guides/view-engine/table-and-runtime': ['Table and runtime', '表格与运行时'],
+  'guides/view-engine/saved-views': ['Saved views', '保存视图'],
+  'guides/view-engine/extensions': ['Extensions', '业务扩展'],
   'guides/viewer/local-data': ['Local data', '本地数据'],
   'guides/viewer/pagination-and-sorting': [
     'Pagination and sorting',

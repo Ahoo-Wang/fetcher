@@ -1,5 +1,4 @@
 ---
-next: false
 title: 本地 Viewer 示例
 description: 使用应用持有的状态，对本地数据过滤、排序、分页并保存视图。
 ---
@@ -74,12 +73,12 @@ pnpm install
 pnpm storybook
 ```
 
-打开 [Docs → Local Viewer → Local Data](http://localhost:6006/?path=/story/docs-local-viewer--local-data)。play 函数会自动执行上述操作；重新加载故事可再次运行，或使用消费者应用查看未经操作的初始状态。
+打开 [Docs → Local Viewer → Local Data](http://localhost:6006/?path=/story/docs-local-viewer--local-data)，手动执行上述操作；重新加载可恢复初始状态。自动交互验证在独立回归故事中执行。
 
 无头运行相同的浏览器验证：
 
 ```bash
-pnpm exec vitest run --project=storybook stories/docs/LocalViewer.stories.tsx
+pnpm exec vitest run --project=storybook stories/docs/LocalViewer.test.stories.tsx
 ```
 
 验证会检查表格行集合与顺序、过滤结果和保存设置的恢复。回调文字只是额外的保存确认，不能代替对实际显示行的验证。

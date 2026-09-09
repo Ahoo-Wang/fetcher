@@ -22,7 +22,7 @@ const meta = {
       ...recordViewMeta.parameters.docs,
       description: {
         component:
-          '本地定义扩展：宿主提供视图定义，自定义操作与单元格经公开注册接口接入。',
+          '通过定义的 recordActions 引用全局/表格/行操作，通过字段或列 renderer 引用单元格。这里使用本地定义与应用提供的运行时注册，不要求远端视图服务。\n\n操作获得已应用 filter、sort、选中键或当前记录，以及绑定实例的 refresh。业务应用负责执行写入、错误反馈和防重；读写结果不会通过修改只读 record/instance 对象回写。完整五类扩展源码见“扩展接入 → 公共包”。',
       },
     },
   },

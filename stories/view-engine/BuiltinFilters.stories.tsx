@@ -17,13 +17,37 @@ import source from '../../packages/view-engine/examples/react/BuiltinFiltersExam
 const meta = {
   title: 'View Engine/过滤器/内置组件',
   component: BuiltinFiltersExample,
+  args: { appearance: 'light' },
+  argTypes: {
+    appearance: {
+      control: 'inline-radio',
+      options: ['light', 'dark'],
+      description: '筛选控件及弹层主题。',
+    },
+    failNextPage: {
+      control: 'boolean',
+      description: '模拟后续候选页失败，验证保留与重试。',
+    },
+    failResolve: {
+      control: 'boolean',
+      description: '模拟标签回填失败，验证保存标签与重试。',
+    },
+    persist: {
+      control: 'boolean',
+      description: '开发用途：验证刷新后的组件配置恢复。',
+    },
+    scopeKey: {
+      control: false,
+      description: '访问范围身份；变化时隔离候选与配置。',
+    },
+  },
   parameters: {
     layout: 'fullscreen',
     docs: {
       source: { code: source, language: 'tsx' },
       description: {
         component:
-          '本地多选、远程单选/多选、多值文本和日期范围。日期默认覆盖完整自然日；候选经 Fetcher 读取，分页复用 CursorPage，保存只包含组件属性。',
+          '通过字段 `editor: { name, options }` 使用内置筛选器，名称不带 `fve/` 前缀。\n\n| 名称 | 用途 | 操作符 |\n| --- | --- | --- |\n| select / multi-select | 本地单选、多选 | EQ/NE、IN/NOT_IN |\n| remote-select / remote-multi-select | 远程查询、分页、标签回填 | EQ/NE、IN/NOT_IN |\n| text-values | 多个带类型的值 | IN/NOT_IN |\n| datetime-range | 日期或日期时间区间 | BETWEEN |\n\n先编辑，再查询；保存包含组件属性和未设置控件。远程候选由 `extensions.optionSources` 提供，使用 Fetcher 和 Wow CursorPage。失败场景分别演示后续页和标签回填重试。\n\n日期默认完整自然日、双月日历；设置 `showTime: true` 后在组合弹层确认起止日期与秒级时间。时区统一来自定义，默认本地。开发存储场景会写入浏览器测试数据，可通过“重置示例”恢复。',
       },
     },
   },
