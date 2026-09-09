@@ -12,7 +12,9 @@
  */
 
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
+import { useLayoutEffect, useRef } from 'react';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -334,4 +336,267 @@ it('keeps the draft available when a query handler throws without a message and 
   expect(apply).toHaveBeenCalledTimes(2);
   expect(apply).toHaveBeenLastCalledWith(filter.eq('amount', 1));
   expect(screen.queryByRole('alert')).toBeNull();
+});
+
+it.each([Op.MATCH_ALL, Op.MATCH_NONE])(
+  'restricts a loaded %s element predicate to element-safe root operators',
+  async op => {
+    const apply = vi.fn();
+    render(
+      <FilterPanel
+        fields={fields}
+        value={filter.elementMatch('items', { op })}
+        onApply={apply}
+      />,
+    );
+    fireEvent.click(screen.getByRole('combobox', { name: '特殊条件类型' }));
+    expect(
+      await screen.findByRole('option', { name: '全部记录' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('option', { name: '不匹配记录' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: '记录标识' })).toBeNull();
+    expect(screen.queryByRole('option', { name: '搜索' })).toBeNull();
+    const next = screen.getByRole('option', {
+      name: op === Op.MATCH_ALL ? '不匹配记录' : '全部记录',
+    });
+    fireEvent.pointerDown(next, { pointerType: 'mouse' });
+    fireEvent.click(next);
+    fireEvent.click(screen.getByRole('button', { name: '查询' }));
+    expect(apply).toHaveBeenCalledExactlyOnceWith(
+      filter.elementMatch('items', {
+        op: op === Op.MATCH_ALL ? Op.MATCH_NONE : Op.MATCH_ALL,
+      }),
+    );
+  },
+);
+
+it('clears incompatible custom properties when recovering a crashed renderer with the builtin editor', () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  const apply = vi.fn(),
+    changed = vi.fn();
+  function Broken(): never {
+    throw new Error('金额组件崩溃');
+  }
+  render(
+    <FilterPanel
+      fields={[amountField]}
+      value={filter.eq('amount', 'custom-value')}
+      onApply={apply}
+      onDraftChange={changed}
+      extensions={{
+        filters: {
+          amount: {
+            ...amountEditor,
+            component: Broken,
+            compile: () => filter.eq('amount', 10),
+          },
+        },
+      }}
+    />,
+  );
+  expect(screen.getByRole('alert').textContent).toContain('金额组件崩溃');
+  fireEvent.click(screen.getByRole('button', { name: '使用内置编辑器' }));
+  expect(screen.getByRole('textbox', { name: '订单金额值' })).toHaveProperty(
+    'value',
+    '',
+  );
+  expect(changed.mock.lastCall![0]).toMatchObject({
+    field: 'amount',
+    op: Op.EQ,
+    editor: { name: 'builtin' },
+  });
+  expect(changed.mock.lastCall![0].value).toBeUndefined();
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.matchAll());
+});
+
+it('keeps repeated local validity errors blocking until the editor completes its value', () => {
+  const apply = vi.fn(),
+    validity = vi.fn();
+  function DraftAmount({ onChange, onValidityChange }: FilterComponentProps) {
+    return (
+      <input
+        aria-label="金额暂存"
+        onChange={event => {
+          const text = event.target.value;
+          if (/^[0-9]+$/.test(text)) {
+            onChange({ value: Number(text) });
+            onValidityChange(true);
+          } else onValidityChange(false, '金额输入尚未完成');
+        }}
+      />
+    );
+  }
+  render(
+    <FilterPanel
+      fields={[amountField]}
+      value={filter.eq('amount', 10)}
+      onApply={apply}
+      onValidityChange={validity}
+      extensions={{
+        filters: { amount: { ...amountEditor, component: DraftAmount } },
+      }}
+    />,
+  );
+  const input = screen.getByRole('textbox', { name: '金额暂存' });
+  fireEvent.change(input, { target: { value: '-' } });
+  fireEvent.change(input, { target: { value: '--' } });
+  expect(screen.getAllByRole('alert').map(alert => alert.textContent)).toEqual([
+    '金额输入尚未完成',
+  ]);
+  expect(validity.mock.calls.map(([valid]) => valid)).toEqual([true, false]);
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  expect(apply).not.toHaveBeenCalled();
+  fireEvent.change(input, { target: { value: '25' } });
+  expect(validity).toHaveBeenLastCalledWith(true);
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('amount', 25));
+});
+
+it('preserves a specific editor-output error when an operator change requires a different value shape', () => {
+  const apply = vi.fn();
+  function RangeAmount(props: FilterComponentProps) {
+    return (
+      <>
+        <AmountEditor {...props} />
+        <button onClick={() => props.onOperatorChange(Op.BETWEEN)}>
+          改用范围
+        </button>
+        <button
+          onClick={() => props.onChange({ lowerBound: 1, upperBound: 5 })}
+        >
+          设置范围
+        </button>
+      </>
+    );
+  }
+  render(
+    <FilterPanel
+      fields={[amountField]}
+      value={filter.eq('amount', 10)}
+      onApply={apply}
+      extensions={{
+        filters: { amount: { ...amountEditor, component: RangeAmount } },
+      }}
+    />,
+  );
+  fireEvent.change(screen.getByRole('textbox', { name: '自定义金额' }), {
+    target: { value: 'NaN' },
+  });
+  const error = screen.getByRole('alert').textContent;
+  expect(error).toContain('JSON');
+  fireEvent.click(screen.getByRole('button', { name: '改用范围' }));
+  expect(screen.getByRole('alert').textContent).toBe(error);
+  expect(screen.getByRole('button', { name: '查询' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '设置范围' }));
+  expect(screen.queryByRole('alert')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  expect(apply).toHaveBeenCalledExactlyOnceWith({
+    op: Op.BETWEEN,
+    field: 'amount',
+    lowerBound: 1,
+    upperBound: 5,
+  });
+});
+
+it('rejects an asynchronous editor result after its controlled node is rebound to another field', async () => {
+  let finish!: () => void;
+  const pending = new Promise<void>(resolve => {
+    finish = resolve;
+  });
+  const changed = vi.fn(),
+    apply = vi.fn();
+  function AsyncAmount(props: FilterComponentProps) {
+    return (
+      <button
+        onClick={async () => {
+          await pending;
+          props.onChange({ value: 999 });
+          props.onValidityChange(false, '旧字段输入错误');
+          props.onClear?.();
+          props.onOperatorChange(Op.NE);
+        }}
+      >
+        读取{props.field?.label}
+      </button>
+    );
+  }
+  const definitions = [
+    amountField,
+    {
+      field: 'total',
+      label: '合计',
+      type: 'number' as const,
+      editor: { name: 'amount' },
+    },
+  ];
+  const extensions = {
+    filters: { amount: { ...amountEditor, component: AsyncAmount } },
+  };
+  const panel = (field: string) => (
+    <FilterPanel
+      fields={definitions}
+      extensions={extensions}
+      value={filter.eq('amount', 10)}
+      draft={{ id: 'same-id', field, op: Op.EQ, value: 10 }}
+      onDraftChange={changed}
+      onApply={apply}
+    />
+  );
+  const view = render(panel('amount'));
+  fireEvent.click(screen.getByRole('button', { name: '读取订单金额' }));
+  view.rerender(panel('total'));
+  await act(async () => {
+    finish();
+    await pending;
+  });
+  expect(changed).not.toHaveBeenCalled();
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.getByRole('button', { name: '读取合计' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('total', 10));
+});
+
+it('keeps a new output error when a replacement component recovers from the previous render failure', () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  const apply = vi.fn();
+  function Broken(): never {
+    throw new Error('先前渲染失败');
+  }
+  function Replacement({ onChange }: FilterComponentProps) {
+    const initialized = useRef(false);
+    useLayoutEffect(() => {
+      if (!initialized.current) {
+        initialized.current = true;
+        onChange({ value: NaN });
+      }
+    }, [onChange]);
+    return (
+      <button onClick={() => onChange({ value: 25 })}>修正初始化金额</button>
+    );
+  }
+  const panel = (component: typeof Broken | typeof Replacement) => (
+    <FilterPanel
+      fields={[amountField]}
+      value={filter.eq('amount', 10)}
+      onApply={apply}
+      extensions={{ filters: { amount: { ...amountEditor, component } } }}
+    />
+  );
+  const view = render(panel(Broken));
+  expect(screen.getByRole('alert').textContent).toBe('先前渲染失败');
+  view.rerender(panel(Replacement));
+  expect(screen.getByRole('alert').textContent).toContain('JSON');
+  expect(screen.getByRole('alert').textContent).not.toContain('先前渲染失败');
+  expect(screen.getByRole('button', { name: '查询' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '修正初始化金额' }));
+  expect(screen.queryByRole('alert')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('amount', 25));
 });
