@@ -13,7 +13,10 @@ export function validate(title, body) {
     'PR title must use Conventional Commits',
   );
   assert.ok(
-    body?.trim(),
+    body
+      ?.replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/^\s*#{1,6}\s+.*$/gm, '')
+      .trim(),
     'PR description must explain the change and validation',
   );
 }

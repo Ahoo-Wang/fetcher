@@ -11,7 +11,7 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `quality.yml`                                    | Conventional Commit PR title and nonempty description, CI routing tests, changed-file formatting, read-only lint and documentation build.                      |
 | `changes.yml`                                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                  |
 | `build-storybook.yml`                            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build. |
-| `integration-test.yml`                           | Build integration dependencies, invoke the built generator directly, and run integration tests.                                                                |
+| `integration-test.yml`                           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                              |
 | `generator-test.yml`                             | Verify generation against both supported Wow versions.                                                                                                         |
 | `pr-labeler.yml`                                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                       |
 | `deploy-wiki.yml`                                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                             |
@@ -37,7 +37,8 @@ The source and regression cases live in `.github/scripts/ci-scope*`.
 
 PR description structure is guided by the template, not brittle prose parsing.
 The metadata check runs before dependency installation and requires a
-Conventional Commit title and nonempty body.
+Conventional Commit title and meaningful body after removing template comments
+and empty headings.
 Dependency bots obey the same minimum rules.
 
 No repository branch/ruleset settings are changed by these workflows. If adding

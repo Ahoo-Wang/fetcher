@@ -69,7 +69,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm --filter @ahoo-wang/fetcher-integration-test^... build
+        run: pnpm --filter @ahoo-wang/fetcher-integration-test... build
 
       - name: Generate Code
         working-directory: ./integration-test
