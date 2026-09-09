@@ -308,3 +308,39 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
   expect(host.instance!.save).toHaveBeenCalledTimes(1);
   engine.dispose();
 });
+
+it('changes filter mode from the global toolbar and reopens the same pending draft', async () => {
+  const { host, paged } = setup();
+  render(<ViewPage scopeKey="mode-user" definitionId="orders" host={host} />);
+  await screen.findByRole('cell', { name: '42' });
+  fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
+    target: { value: '99' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '收起筛选' }));
+  fireEvent.click(screen.getByRole('button', { name: '筛选模式' }));
+  fireEvent.click(
+    await screen.findByRole('menuitemradio', { name: '高级', exact: true }),
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: '收起筛选' }).textContent,
+    ).toContain('高级'),
+  );
+  expect(
+    (screen.getByRole('textbox', { name: '金额值' }) as HTMLInputElement).value,
+  ).toBe('99');
+  expect(paged).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: '筛选模式' }));
+  fireEvent.click(
+    await screen.findByRole('menuitemradio', { name: '简单', exact: true }),
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: '收起筛选' }).textContent,
+    ).toContain('简单'),
+  );
+  expect(paged).toHaveBeenCalledTimes(1);
+  expect(
+    (screen.getByRole('textbox', { name: '金额值' }) as HTMLInputElement).value,
+  ).toBe('99');
+});
