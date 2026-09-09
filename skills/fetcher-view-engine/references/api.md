@@ -328,6 +328,8 @@ query records are JSON data; renderer functions belong in the React extension
 map, never in a remote definition. Source paths are used exactly as supplied,
 without a `state.` prefix or a visibility-based projection.
 
+Response record property names must not contain dots. Dots in `field` and `rowKey` are navigation separators; each segment (including array indices) reads only an own property. Literal dotted property names are not supported.
+
 ```ts
 const engine = new ViewEngine({ definitionId, host });
 const unsubscribe = engine.subscribe(() => {
@@ -512,6 +514,8 @@ readonly definitions, instances and rows, plus required explicit `appliedFilter:
 accept readonly inputs.
 
 Methods with an optional instance ID default to the selected instance:
+
+When a paged response reports a total that no longer includes the requested page, the engine clears that page and re-queries page one once. Failures remain retryable at page one; newer queries/navigation supersede the correction. Cursor pagination is unchanged.
 
 - `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `retryQuery(id?)`, `dispose()`. Full `load()` rejects while save/rename/delete or preference ordering is in flight, preserving ownership of its receipt. Commands that read or edit sessions are rejected from load cancellation through metadata initialization; snapshots remain readable. This also blocks reads reentered from cancellation callbacks from capturing an old schema with the new lifecycle. `retryQuery` re-runs the current applied query at its existing page/cursor; explicit `refresh` still restarts cursor pagination at page one. Ordinary instance reload can use `instance.list` with an exact ID match when `instance.load` is absent; local edits remain intact.
 

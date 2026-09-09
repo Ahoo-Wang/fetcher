@@ -34,13 +34,15 @@ const column: RecordColumn = {
 
 Number formatting is shared by cells and summaries; calculations keep raw values. Text copying uses the original value, even when an enum label or ellipsis is displayed. Success feedback resets after 2 seconds. Unsafe link schemes render as text; new-tab links include `noopener noreferrer`.
 
-`field` and `rowKey` paths are relative to each returned record: `customer.name`, `items.0.sku`, `meta.id`. An own property literally named `customer.name` takes precedence over traversal. The table does not insert `state.` or another backend prefix. Configure paths for the actual response shape and ensure the backend understands query field paths separately.
+`field` and `rowKey` paths are relative to each returned record: `customer.name`, `items.0.sku`, `meta.id`. Response property names must not contain dots; dots in field paths are navigation separators, including array indices. Each segment reads only an own property. The table does not insert `state.` or another backend prefix. Configure paths for the actual response shape and ensure the backend understands query field paths separately.
 
 ## Columns and selection
 
 Persist column identity, visibility, order, width, pinning and summary selections in `presentation.table.columns`. The row-key column is fixed left, actions right. Width is changed by dragging the table boundary, not a number input in settings. Ordinary pinning follows contiguous pinned neighbors. Fixed edges have a shadow.
 
 Selection is opt-in (`selectable`). Batch operations receive keys from the currently loaded page, not every record matching the filter. Declare a unique string/finite-number row key; missing, duplicate or invalid keys are data errors.
+
+For paged queries, if the returned total no longer includes the current page, the engine clears that page and requests page one. A failed correction remains a query error and retries page one; newer navigation or queries take precedence. Cursor pagination retains its separate cursor protocol.
 
 ## Summary scope and failures
 

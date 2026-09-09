@@ -18,6 +18,10 @@ import { deferred, instance, selected, setup } from './fixtures.js';
 
 it('sends server pagination without projection and keeps column edits local', async () => {
   const { engine, paged } = setup();
+  paged.mockResolvedValue({
+    total: 100,
+    list: [{ state: { id: 'a', amount: 10 } }],
+  });
   await engine.load();
   expect(paged.mock.calls[0]).toEqual([
     {

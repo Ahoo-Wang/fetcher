@@ -133,6 +133,23 @@ export class RecordQueries {
         )
           throw new Error('查询结果 total 必须是非负整数');
         total = result.total;
+        if (session.page > Math.max(1, Math.ceil(total / pagination.size))) {
+          if (background) this.summaries.invalidate(id);
+          if (!current()) return;
+          this.store.patch(id, {
+            page: 1,
+            rows: [],
+            selectedRowKeys: [],
+            total: null,
+            nextCursor: null,
+            queryStatus: 'loading',
+            refreshing: false,
+          });
+          if (!current()) return;
+          // Page one remains valid even at total=0, so correction cannot loop.
+          // Return the new owner directly so its failures reach the caller.
+          return this.run(id);
+        }
       } else {
         if (
           !('nextCursor' in result) ||

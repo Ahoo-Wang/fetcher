@@ -147,6 +147,10 @@ it('cancels a pending summary when navigating and ignores its late result', asyn
 
 it('rejects invalid editing commands without changing the draft or dispatching records', async () => {
   const { engine, paged } = fixture();
+  paged.mockResolvedValue({
+    total: 100,
+    list: [{ state: { id: 'a', amount: 10 } }],
+  });
   await engine.load();
   const before = engine.getSnapshot();
   expect(() =>
