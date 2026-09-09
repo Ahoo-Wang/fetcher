@@ -110,3 +110,53 @@ it.each(['paged', 'cursor'] as const)(
     }
   },
 );
+
+it.each(['load', 'select'] as const)(
+  'preserves a newer paging query started by a %s notification',
+  async operation => {
+    const { engine, host, paged } = setup({
+      instances: {
+        instances: [instance()],
+        defaultInstanceId: operation === 'load' ? 'mine' : null,
+      },
+    });
+    if (operation === 'select') await engine.load();
+    const source = deferred<Awaited<ReturnType<typeof host.resolveSource>>>();
+    vi.mocked(host.resolveSource).mockReturnValue(source.promise);
+    let newer: Promise<void> | undefined;
+    let finished = false;
+    const unsubscribe = engine.subscribe(() => {
+      if (!newer && engine.getSnapshot().selectedInstanceId === 'mine') {
+        // Guard before setPage publishes another notification.
+        newer = Promise.resolve();
+        newer = engine.setPage(2).then(() => {
+          finished = true;
+        });
+      }
+    });
+    const initial =
+      operation === 'load' ? engine.load() : engine.selectInstance('mine');
+    try {
+      await vi.waitFor(() => expect(host.resolveSource).toHaveBeenCalled());
+      expect(host.resolveSource).toHaveBeenCalledTimes(1);
+      expect(finished).toBe(false);
+      paged.mockResolvedValue({
+        total: 20,
+        list: [{ state: { id: 'page-2', amount: 2 } }],
+      });
+      source.resolve({ paged });
+      await Promise.all([initial, newer]);
+      expect(finished).toBe(true);
+      expect(paged).toHaveBeenCalledTimes(1);
+      expect(paged.mock.calls[0][0].pagination.index).toBe(2);
+      expect(selected(engine).rows).toEqual([
+        { state: { id: 'page-2', amount: 2 } },
+      ]);
+    } finally {
+      unsubscribe();
+      engine.dispose();
+      source.resolve({ paged });
+      await Promise.all([initial, newer]);
+    }
+  },
+);

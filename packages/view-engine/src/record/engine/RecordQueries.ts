@@ -61,18 +61,17 @@ export class RecordQueries {
   }
 
   /** Capture before a terminal notification; newer reads/cancellations own any follow-up. */
-  followUp(id: string, refresh = false): () => void {
+  followUp(id: string, refresh = false): () => Promise<void> {
     const intent = this.intents.get(id),
       lifecycle = this.scope.version;
-    return () => {
+    return async () => {
       if (
         !this.scope.current(lifecycle) ||
         this.intents.get(id) !== intent ||
         this.store.getSnapshot().selectedInstanceId !== id
       )
         return;
-      // The durable operation is complete; read errors belong to query state.
-      void (refresh ? this.refresh(id) : this.run(id)).catch(() => {});
+      await (refresh ? this.refresh(id) : this.run(id));
     };
   }
 

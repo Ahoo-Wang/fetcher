@@ -226,7 +226,7 @@ export class ViewManagement {
           selectedInstanceId: nextId,
         }),
       );
-      followUp?.();
+      void followUp?.().catch(() => {});
     } catch (error) {
       if (!current()) return;
       if (dispatched && hasUnknownWriteOutcome(error))

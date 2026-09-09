@@ -90,6 +90,7 @@ export class ViewLoader {
       sessions: Object.create(null),
     });
     let defaultId: string | null = null;
+    let followUp: (() => Promise<void>) | undefined;
     try {
       if (this.inputError) throw this.inputError;
       const [definition, list] = await Promise.all([
@@ -172,6 +173,7 @@ export class ViewLoader {
       )
         defaultId = list.defaultInstanceId;
       this.scope.loading = false;
+      if (defaultId !== null) followUp = this.queries.followUp(defaultId);
       this.store.publish({
         status: 'ready',
         error: null,
@@ -189,12 +191,7 @@ export class ViewLoader {
       this.store.publish({ status: 'error', error: message(error) });
       throw error;
     }
-    if (
-      defaultId !== null &&
-      this.scope.current(lifecycle) &&
-      this.store.getSnapshot().selectedInstanceId === defaultId
-    )
-      await this.queries.run(defaultId);
+    await followUp?.();
   }
 
   async selectInstance(id: string): Promise<void> {
@@ -249,7 +246,8 @@ export class ViewLoader {
     if (!current()) return;
     this.summaries.invalidate(id);
     if (!current()) return;
+    const followUp = this.queries.followUp(id);
     this.store.publish({ selectedInstanceId: id, error: null });
-    if (current()) await this.queries.run(id);
+    if (current()) await followUp();
   }
 }

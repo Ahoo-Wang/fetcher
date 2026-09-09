@@ -113,3 +113,15 @@ Ownership: consumer agent — stories/view-engine, packages/view-engine/examples
 - chromium: refresh 236.95ms, selection 100.96ms, fieldPicker 161.41ms
 - firefox: refresh 320.02ms, selection 260.75ms, fieldPicker 241.4ms
 - webkit: refresh 298.26ms, selection 109.84ms, fieldPicker 143.24ms
+
+## Post-review lifecycle corrections
+
+- Reproduced suspended `startTransition` replacements dropping edits from the still-visible committed panel. Kept observed configuration/generation in render-local React state; event refs advance during commit. Retained custom editor callbacks use before-mutation committed props/generation, and the fallback button captures its rendered props. Child layout-effect updates still merge into the replacement configuration; obsolete callbacks remain rejected.
+- Reproduced both load and selection notifications starting a newer page query that the older automatic query superseded. Both entry points now use the existing query-intent guard. Follow-up reads return a promise so load/navigation preserve errors; completed durable writes continue to isolate subsequent read failures.
+- Added seven regression cases: builtin/custom editors with and without suspended replacement, suspended fallback recovery, and load/selection query ownership. Independent review found the fallback sibling path; its ordinary/compiled reproducers passed after the scoped correction.
+- No public API, persistence schema, dependency or product scope changes. Nine unrelated height edits remain excluded.
+
+- Final corrected candidate: full `pnpm test:unit` passed (5,554 passed / one skipped; view-engine 862 ordinary + 862 compiled and types), 286 Storybook tests, package/story lint, build, scoped formatting and diff checks. `verify:view-engine` passed public archive/types, LocalStorage/HTTP restoration and Chromium/Firefox/WebKit readiness at unchanged budgets. Logs: `/tmp/fve-commit-boundaries-unit.log`, `/tmp/fve-commit-boundaries-storybook.log`, `/tmp/fve-commit-boundaries-acceptance/`.
+- Latest chromium p95: refresh 265.78ms, selection 100.18ms, field picker 152.3ms.
+- Latest firefox p95: refresh 290.08ms, selection 239.73ms, field picker 227.52ms.
+- Latest webkit p95: refresh 288.55ms, selection 106.75ms, field picker 130.86ms.

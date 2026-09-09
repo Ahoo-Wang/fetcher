@@ -34,6 +34,14 @@ export class EditorSession extends Component<
     field: this.props.field?.field,
     generation: {},
   };
+  // React may render replacement props without committing them. Retained callbacks
+  // must read the committed owner, never the class instance's work-in-progress props.
+  private committed = { props: this.props, generation: this.state.generation };
+  getSnapshotBeforeUpdate() {
+    this.committed = { props: this.props, generation: this.state.generation };
+    return null;
+  }
+  componentDidUpdate() {}
   static getDerivedStateFromProps(
     props: EditorSession['props'],
     state: EditorSession['state'],
@@ -57,6 +65,7 @@ export class EditorSession extends Component<
   }
   componentDidMount() {
     this.active = true;
+    this.committed = { props: this.props, generation: this.state.generation };
   }
   componentWillUnmount() {
     this.active = false;
@@ -66,30 +75,33 @@ export class EditorSession extends Component<
     const generation = this.state.generation;
     const isActive = () =>
       this.active &&
-      this.props.session === session &&
-      this.state.generation === generation;
+      this.committed.props.session === session &&
+      this.committed.generation === generation;
     return (
       <Editor
         {...props}
         onChange={node => {
-          if (isActive() && !this.props.disabled) this.props.onChange(node);
+          if (isActive() && !this.committed.props.disabled)
+            this.committed.props.onChange(node);
         }}
         onOperatorChange={operator => {
-          if (isActive() && !this.props.disabled)
-            this.props.onOperatorChange(operator);
+          if (isActive() && !this.committed.props.disabled)
+            this.committed.props.onOperatorChange(operator);
         }}
         onClear={
           props.onClear
             ? () => {
-                if (isActive() && !this.props.disabled) this.props.onClear?.();
+                if (isActive() && !this.committed.props.disabled)
+                  this.committed.props.onClear?.();
               }
             : undefined
         }
         onRemove={() => {
-          if (isActive() && !this.props.disabled) this.props.onRemove();
+          if (isActive() && !this.committed.props.disabled)
+            this.committed.props.onRemove();
         }}
         onValidityChange={(valid, message) => {
-          if (isActive()) this.props.onValidityChange(valid, message);
+          if (isActive()) this.committed.props.onValidityChange(valid, message);
         }}
       />
     );
@@ -146,12 +158,13 @@ export class EditorBoundary extends Component<
       this.props.onRecover(previousState.error);
   }
   render() {
+    const { disabled, onFallback } = this.props;
     return this.state.error ? (
       <Button
         variant="outline"
-        disabled={this.props.disabled}
+        disabled={disabled}
         onClick={() => {
-          if (!this.props.disabled) this.props.onFallback();
+          if (!disabled) onFallback();
         }}
       >
         使用内置编辑器

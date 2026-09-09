@@ -63,7 +63,7 @@ export class ViewReload {
     const controller = new AbortController();
     let started = false;
     let queryId = id;
-    let followUp: (() => void) | undefined;
+    let followUp: (() => Promise<void>) | undefined;
     const selection = this.scope.selection;
     try {
       const unverified = this.work.unverifiedCreate(id);
@@ -270,6 +270,6 @@ export class ViewReload {
     } finally {
       this.work.finishReload(id, controller);
     }
-    followUp?.();
+    void followUp?.().catch(() => {});
   }
 }

@@ -62,7 +62,7 @@ export class ViewPersistence {
     let received = false;
     let dispatched = false;
     let selectedCopy: string | undefined;
-    let followUp: (() => void) | undefined;
+    let followUp: (() => Promise<void>) | undefined;
     const current = () =>
       this.scope.current(lifecycle) && this.work.writeToken(id) === token;
     try {
@@ -273,6 +273,6 @@ export class ViewPersistence {
     } finally {
       this.work.finishWrite(id, token);
     }
-    followUp?.();
+    void followUp?.().catch(() => {});
   }
 }

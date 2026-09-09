@@ -11,7 +11,14 @@
  * limitations under the License.
  */
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { cloneSnapshot } from '../lib/types.js';
 import {
@@ -58,7 +65,6 @@ export function useFilterPanelState(props: FilterPanelProps) {
   const configuration = controlled ?? localConfiguration;
   const draft = configuration.root;
   const configurationRef = useRef(configuration);
-  configurationRef.current = configuration;
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -88,23 +94,30 @@ export function useFilterPanelState(props: FilterPanelProps) {
     setEditorEpochs,
   } = useFilterPanelEditors(props, configuration, baseline, mode);
   const latest = useRef({ props, simple, issues });
-  latest.current = { props, simple, issues };
   const emitted = useRef<FilterConfiguration | undefined>(undefined);
-  const observed = useRef(props.value);
-  const session = useRef({ id: 0 });
-  // Controlled owners acknowledge our edits unchanged. A different replacement starts a new editor session.
-  if (!sameFilterState(observed.current, props.value)) {
-    observed.current = props.value;
-    if (!sameFilterState(emitted.current, props.value))
-      session.current = { id: session.current.id + 1 };
+  const [observed, setObserved] = useState({
+    value: props.value,
+    generation: { id: 0 },
+  });
+  const generation = observed.generation;
+  // Render-local state can be discarded by Suspense without invalidating committed callbacks.
+  if (!sameFilterState(observed.value, props.value)) {
+    const replacement = !sameFilterState(emitted.current, props.value);
+    setObserved({
+      value: props.value,
+      generation: replacement ? { id: generation.id + 1 } : generation,
+    });
+    if (replacement) {
+      setEditorValidity({});
+      setEditorOutputErrors({});
+    }
   }
-  const generation = session.current;
-  const [editorSession, setEditorSession] = useState(generation);
-  if (editorSession !== generation) {
-    setEditorSession(generation);
-    setEditorValidity({});
-    setEditorOutputErrors({});
-  }
+  const session = useRef(generation);
+  useLayoutEffect(() => {
+    configurationRef.current = configuration;
+    latest.current = { props, simple, issues };
+    session.current = generation;
+  }, [configuration, props, simple, issues, generation]);
   // Query-equivalent edits (unset controls and display props) belong to the same applied snapshot.
   useEffect(() => {
     if (
@@ -236,7 +249,15 @@ export function useFilterPanelState(props: FilterPanelProps) {
     if (mode === 'advanced' || isSimpleFilter(next)) update(current.id, next);
   }
   function currentEditorNode(node: FilterComponentConfig) {
-    if (!mounted.current) return undefined;
+    if (!mounted.current || session.current.id > generation.id)
+      return undefined;
+    // Child layout effects run before the panel's layout effect. Their callbacks
+    // already belong to the committed replacement and must use its current tree.
+    if (session.current !== generation) {
+      configurationRef.current = configuration;
+      latest.current = { props, simple, issues };
+      session.current = generation;
+    }
     const current = locateFilterNodes(
       configurationRef.current.root,
       fields,
