@@ -11,7 +11,7 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `quality.yml`                                    | Conventional Commit PR title and nonempty description, CI routing tests, changed-file formatting, read-only lint and documentation build.                      |
 | `changes.yml`                                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                  |
 | `build-storybook.yml`                            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build. |
-| `integration-test.yml`                           | Build integration dependencies, generate against Wow, and run integration tests.                                                                               |
+| `integration-test.yml`                           | Build integration dependencies, invoke the built generator directly, and run integration tests.                                                                |
 | `generator-test.yml`                             | Verify generation against both supported Wow versions.                                                                                                         |
 | `pr-labeler.yml`                                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                       |
 | `deploy-wiki.yml`                                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                             |
@@ -91,3 +91,8 @@ passes. Distinguish source-repository/network failures from code defects.
 Codecov, npm, optional LLM integration, mirroring and assistant secrets stay in
 GitHub settings. Do not print them. No PR code is executed by the privileged
 labeler. Coverage uploader failures fail Node 24 CI rather than being hidden.
+
+Third-party pnpm/Codecov/labeler actions are pinned to verified commit SHAs.
+The integration job calls the built generator by its workspace path: an install
+before build cannot create a bin link whose target does not exist yet. This
+avoids relying on a second installation to repair that link.
