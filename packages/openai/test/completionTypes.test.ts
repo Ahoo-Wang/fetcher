@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { expect, it } from 'vitest';
 
+// TypeScript compilation can exceed the default 5s on shared CI runners.
 it('compiles the true, false, omitted and dynamic stream return contracts', () => {
   const program = ts.createProgram(
     [fileURLToPath(new URL('./fixtures/completionTypes.ts', import.meta.url))],
@@ -33,4 +34,4 @@ it('compiles the true, false, omitted and dynamic stream return contracts', () =
       ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
     ),
   ).toEqual([]);
-});
+}, 30_000);
