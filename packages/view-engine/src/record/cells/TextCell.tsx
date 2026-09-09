@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -35,6 +35,11 @@ function CopyText({ text }: { text: string }) {
   const [status, setStatus] = useState<
     'idle' | 'loading' | 'success' | 'error'
   >('idle');
+  useEffect(() => {
+    if (status !== 'success') return;
+    const timer = setTimeout(() => setStatus('idle'), 2000);
+    return () => clearTimeout(timer);
+  }, [status]);
   return (
     <>
       <Button

@@ -208,7 +208,10 @@ export function FilterChoiceSelect<V extends string | number>({
                   </ul>
                 </details>
               )}
-              <Combobox.List className="fve:min-h-0 fve:max-h-60 fve:overflow-y-auto fve:p-1">
+              <Combobox.List
+                aria-label={`${label}选项`}
+                className="fve:min-h-0 fve:max-h-60 fve:overflow-y-auto fve:p-1"
+              >
                 {[...groups].map(([group, items]) => (
                   <Combobox.Group key={group}>
                     {group && (

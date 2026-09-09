@@ -13,6 +13,7 @@
 
 import { afterEach, expect, it, vi } from 'vitest';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -31,6 +32,7 @@ import { definition, instance } from './fixtures/recordTable.js';
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 function cell(
@@ -122,6 +124,30 @@ it('copies raw values while retaining enum display labels', async () => {
     'textContent',
     '已复制',
   );
+});
+it('restores copy feedback after the latest copy and clears its timer on unmount', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal('navigator', {
+    clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+  });
+  const view = render(
+    cell('001', { name: 'text', options: { copyable: true } }),
+  );
+  const copy = screen.getByRole('button', { name: '复制文本' });
+  copy.focus();
+  await act(async () => fireEvent.click(copy));
+  expect(screen.getByRole('status').textContent).toBe('已复制');
+  act(() => vi.advanceTimersByTime(1500));
+  await act(async () => fireEvent.click(copy));
+  act(() => vi.advanceTimersByTime(500));
+  expect(screen.getByRole('status').textContent).toBe('已复制');
+  act(() => vi.advanceTimersByTime(1500));
+  expect(screen.queryByRole('status')).toBeNull();
+  expect(copy.hasAttribute('disabled')).toBe(false);
+  expect(document.activeElement).toBe(copy);
+  await act(async () => fireEvent.click(copy));
+  view.unmount();
+  expect(vi.getTimerCount()).toBe(0);
 });
 it('shows a local clipboard failure and does not attach old feedback to a changed value', async () => {
   let reject!: (reason: unknown) => void;

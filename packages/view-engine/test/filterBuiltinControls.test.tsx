@@ -34,6 +34,7 @@ it('keeps numeric and string IDs distinct and permits continuous grouped selecti
   }
   render(<Example />);
   fireEvent.click(screen.getByRole('combobox', { name: '客户' }));
+  expect(await screen.findByRole('listbox', { name: '客户选项' })).toBeTruthy();
   fireEvent.click(await screen.findByRole('option', { name: '数字' }));
   fireEvent.click(screen.getByRole('option', { name: '文本' }));
   expect(
