@@ -68,6 +68,7 @@ export function FilterFieldPicker({
         {children}
       </ButtonGroup>
       <PopoverContent
+        keepMounted
         align="start"
         className="fve:w-[min(28rem,calc(100vw-2rem))] fve:max-h-[min(28rem,var(--available-height))] fve:gap-0 fve:overflow-hidden fve:p-0"
       >

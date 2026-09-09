@@ -13,8 +13,14 @@
 
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
 import { cn } from '../../lib/utils.js';
-import { createContext, useContext, useId, type CSSProperties } from 'react';
-import { usePortalTheme } from '../../lib/usePortalTheme.js';
+import {
+  createContext,
+  useContext,
+  useId,
+  useLayoutEffect,
+  useState,
+} from 'react';
+import { usePortalTheme, type PortalTheme } from '../../lib/usePortalTheme.js';
 
 function TooltipProvider({
   delay = 0,
@@ -29,20 +35,29 @@ function TooltipProvider({
   );
 }
 
-const TooltipContext = createContext<{ theme: CSSProperties; id?: string }>({
-  theme: {},
+const TooltipContext = createContext<{
+  theme: PortalTheme;
+  id?: string;
+  registerId?(id: string | undefined): void;
+}>({
+  theme: { style: {} },
 });
 function Tooltip(props: TooltipPrimitive.Root.Props) {
-  const { scope, theme, captureTheme } = usePortalTheme(props.open);
-  const id = useId();
+  const { scope, theme, captureTheme } = usePortalTheme(
+    props.open,
+    props.defaultOpen,
+  );
+  const generatedId = useId();
+  const [contentId, registerId] = useState<string>();
+  const id = contentId ?? generatedId;
   return (
     <span ref={scope} className="fve-root fve:contents">
-      <TooltipContext.Provider value={{ theme, id }}>
+      <TooltipContext.Provider value={{ theme, id, registerId }}>
         <TooltipPrimitive.Root
           data-slot="tooltip"
           {...props}
           onOpenChange={(open, details) => {
-            if (open) captureTheme();
+            captureTheme(open);
             props.onOpenChange?.(open, details);
           }}
         />
@@ -65,6 +80,7 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
 }
 
 function TooltipContent({
+  id: contentId,
   className,
   side = 'top',
   sideOffset = 4,
@@ -77,19 +93,22 @@ function TooltipContent({
     TooltipPrimitive.Positioner.Props,
     'align' | 'alignOffset' | 'side' | 'sideOffset'
   >) {
-  const { theme, id } = useContext(TooltipContext);
+  const { theme, id, registerId } = useContext(TooltipContext);
+  useLayoutEffect(() => {
+    registerId?.(contentId);
+    return () => registerId?.(undefined);
+  }, [contentId, registerId]);
   return (
-    <TooltipPrimitive.Portal>
+    <TooltipPrimitive.Portal className="fve-root" {...theme}>
       <TooltipPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
         className="fve-root fve:isolate fve:z-50"
-        style={theme}
       >
         <TooltipPrimitive.Popup
-          id={id}
+          id={contentId ?? id}
           role="tooltip"
           data-slot="tooltip-content"
           className={cn(

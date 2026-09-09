@@ -25,6 +25,7 @@ export function hasUnknownWriteOutcome(error: unknown): boolean {
 
 /** Per-instance coordination between durable writes and reload/reconciliation. */
 export class InstanceWork {
+  ordering?: symbol;
   readonly createRequests = new Map<
     string,
     {
@@ -76,6 +77,7 @@ export class InstanceWork {
   }
 
   dispose(): void {
+    this.ordering = undefined;
     this.cancelReloads();
     this.unverifiedCreates.clear();
     this.createRequests.clear();

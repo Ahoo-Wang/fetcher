@@ -19,11 +19,17 @@ import {
   type CSSProperties,
 } from 'react';
 
-export function usePortalTheme(open?: boolean) {
+export interface PortalTheme {
+  style: CSSProperties;
+  'data-theme'?: 'dark' | 'light';
+}
+
+export function usePortalTheme(open?: boolean, defaultOpen = false) {
   const scope = useRef<HTMLSpanElement>(null);
-  const [theme, setTheme] = useState<CSSProperties>({});
+  const [theme, setTheme] = useState<PortalTheme>({ style: {} });
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
   // Shared by open events and the layout effect; identity controls theme recapture.
-  const captureTheme = useCallback(() => {
+  const readTheme = useCallback(() => {
     if (!scope.current) return;
     const computed = getComputedStyle(scope.current);
     const variables = Object.fromEntries(
@@ -34,15 +40,48 @@ export function usePortalTheme(open?: boolean) {
         )
         .map(name => [name, computed.getPropertyValue(name)]),
     );
+    const marker = scope.current.closest(
+      ".dark, [data-theme='dark'], [data-theme='light']",
+    );
     setTheme({
-      ...variables,
-      colorScheme: computed.colorScheme,
-      fontFamily: computed.fontFamily,
-      fontSize: computed.fontSize,
-      lineHeight: computed.lineHeight,
+      'data-theme': marker
+        ? marker.getAttribute('data-theme') === 'dark' ||
+          (marker.getAttribute('data-theme') !== 'light' &&
+            marker.classList.contains('dark'))
+          ? 'dark'
+          : 'light'
+        : undefined,
+      style: {
+        ...variables,
+        colorScheme: computed.colorScheme,
+        fontFamily: computed.fontFamily,
+        fontSize: computed.fontSize,
+        lineHeight: computed.lineHeight,
+      },
     });
   }, []);
   // Controlled openings do not emit the primitive's onOpenChange event.
-  useLayoutEffect(captureTheme, [captureTheme, open]);
+  useLayoutEffect(readTheme, [readTheme, open]);
+  useLayoutEffect(() => {
+    if (!(open ?? uncontrolledOpen) || !scope.current) return;
+    const observer = new MutationObserver(readTheme);
+    for (
+      let element: HTMLElement | null = scope.current;
+      element;
+      element = element.parentElement
+    )
+      observer.observe(element, {
+        attributes: true,
+        attributeFilter: ['class', 'data-theme', 'style'],
+      });
+    return () => observer.disconnect();
+  }, [readTheme, open, uncontrolledOpen]);
+  const captureTheme = useCallback(
+    (nextOpen: boolean) => {
+      setUncontrolledOpen(nextOpen);
+      if (nextOpen) readTheme();
+    },
+    [readTheme],
+  );
   return { scope, theme, captureTheme };
 }

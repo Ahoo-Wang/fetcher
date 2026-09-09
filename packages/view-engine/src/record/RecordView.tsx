@@ -103,7 +103,7 @@ export function RecordView({
       | 'onSortChange'
     >
   > = {
-    onQueryRetry: () => run(refresh),
+    onQueryRetry: () => run(() => engine.retryQuery(id ?? undefined)),
     onSummaryRetry: () => {
       void engine.refreshSummary(id ?? undefined).catch(() => {});
     },

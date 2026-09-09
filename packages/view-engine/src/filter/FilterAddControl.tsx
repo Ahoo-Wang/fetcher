@@ -40,7 +40,8 @@ export function FilterAddControl({
   label: string;
   panel: FilterPanelState;
 }) {
-  const { props, mode, disabled, append, removeField } = panel;
+  const { props, mode, disabled, append, canAppend, removeField } = panel;
+  const canAdd = canAppend(target);
   const bindings = target.operands ?? [target];
   const options: FieldChoice[] = scopeFields.flatMap(field => {
     const operators = getFieldOperators(field).filter(
@@ -48,6 +49,7 @@ export function FilterAddControl({
     );
     if (
       !operators.length ||
+      (!canAdd && !bindings.some(node => node.field === field.field)) ||
       (mode === 'simple' &&
         field.type === 'array' &&
         operators.every(op => FILTER_OPERATORS[op].category === 'element'))
@@ -59,11 +61,11 @@ export function FilterAddControl({
         label: field.label,
         group: field.group ?? '',
         count: bindings.filter(node => node.field === field.field).length,
-        repeatable: mode === 'advanced',
+        repeatable: mode === 'advanced' && canAdd,
       },
     ];
   });
-  if (mode === 'advanced') {
+  if (mode === 'advanced' && canAdd) {
     for (const op of Object.values(FilterOperator))
       if (
         FILTER_OPERATORS[op].category === 'root' &&
@@ -117,6 +119,7 @@ export function FilterAddControl({
             title="添加逻辑分组"
             disabled={
               disabled ||
+              !canAdd ||
               logicalOperators.every(
                 op =>
                   props.allowedOperators &&

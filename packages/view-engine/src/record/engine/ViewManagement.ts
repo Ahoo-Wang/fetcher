@@ -26,7 +26,6 @@ import { permissionsFor } from './instancePermissions.js';
 
 /** Explicit persisted name, deletion and user-order operations. */
 export class ViewManagement {
-  private ordering?: symbol;
   constructor(
     private readonly store: SessionStore,
     private readonly scope: EngineScope,
@@ -129,7 +128,7 @@ export class ViewManagement {
   async reorderInstances(instanceIds: readonly string[]): Promise<void> {
     this.store.definition();
     if (!this.canReorderInstances()) throw new Error('宿主未提供视图排序接口');
-    if (this.ordering) throw new Error('视图顺序正在保存');
+    if (this.work.ordering) throw new Error('视图顺序正在保存');
     const known = new Set(this.store.getSnapshot().instanceIds);
     if (
       !Array.isArray(instanceIds) ||
@@ -147,10 +146,11 @@ export class ViewManagement {
       return;
     const lifecycle = this.scope.version;
     const token = Symbol();
-    this.ordering = token;
+    this.work.ordering = token;
     try {
       await this.host.preference!.saveOrder!(this.definitionId, [...order]);
-      if (!this.scope.current(lifecycle) || this.ordering !== token) return;
+      if (!this.scope.current(lifecycle) || this.work.ordering !== token)
+        return;
       const latest = new Set(this.store.getSnapshot().instanceIds);
       const remaining = order.filter(id => latest.has(id));
       const included = new Set(remaining);
@@ -161,7 +161,7 @@ export class ViewManagement {
           .instanceIds.map(id => (included.has(id) ? remaining[index++] : id)),
       });
     } finally {
-      if (this.ordering === token) this.ordering = undefined;
+      if (this.work.ordering === token) this.work.ordering = undefined;
     }
   }
 

@@ -27,13 +27,15 @@ Tests and Storybook interactions are grouped by behavior, including controlled e
 From the repository root, using the existing workspace dependencies:
 
 ```bash
-pnpm --filter @ahoo-wang/fetcher-view-engine build
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
 node packages/view-engine/examples/core.mjs
 node packages/view-engine/scripts/verify-package.mjs
 pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 ```
 
 `examples/core.mjs` runs the headless public API, including JSON save and restoration by a new engine for unset controls and opaque component props. The standalone `examples/react/OrderExample.tsx` composes a page and all five extension types using public imports only. Open `http://127.0.0.1:4175`, or **View Engine → 快速开始 / 扩展接入** in Storybook, for actions, custom filtering/cells, error recovery and a narrow dark view.
+
+After `pnpm install`, `pnpm storybook` and `pnpm build-storybook` explicitly build View Engine and its workspace dependencies before starting or building Storybook. Both use the public `dist` entries, including CSS. Restart the command after editing package source to rebuild it; no source aliases replace the package during production acceptance.
 
 `examples/react/FilterPersistenceExample.tsx` saves the selected status ID and an independently edited display name. Open `http://127.0.0.1:4175/?example=persistence`, or **View Engine → 扩展接入 → 公共包 → 公共包 · 组件配置 JSON 保存与重新打开**, to add an unset control, save it without querying, and reopen the JSON in a new engine. Changing the display name can also be saved directly; changing the status requires Query before Save.
 
@@ -109,6 +111,8 @@ When replacing only one method, merge its service explicitly, for example
 
 `ViewHost` loads the definition and complete instance list, resolves a configured
 Wow query source, supplies permissions, and optionally saves/creates instances.
+Instance lists require `defaultInstanceId: null` or an ID present in that list.
+If supplied, `revision` must be a nonblank string. Invalid responses fail at the load boundary.
 For local data, pass `definition` and `instances: {instances, defaultInstanceId}`
 to the page. Required `scopeKey` identifies the user/tenant/access scope; change
 it when that scope changes. The engine lives for `[scopeKey, definitionId]`.
@@ -191,6 +195,9 @@ only persisted metadata, retaining pending filters and unsaved column configurat
 The optional `preference.saveOrder(definitionId, ids)` stores ordering for the fixed
 current user, including public views; it must not change other users' ordering.
 Writes persist before updating the list and failures keep edits available for retry.
+Full `engine.load()` rejects while save, rename, delete or preference ordering is in flight;
+commands that read or edit sessions are rejected until loading finishes, including cancellation callbacks. Successful Save As and reconciliation complete
+independently of the subsequent record request, whose failure stays in `queryError`.
 After a dispatched save, rename or delete returns `UNKNOWN_OUTCOME`, `UNAVAILABLE`
 or an unclassified exception, the engine blocks unrelated writes to that instance and retains
 local edits. Save/rename require successful reload; an absent or inaccessible instance
@@ -247,7 +254,9 @@ many mandatory columns show an explicit space warning. This adaptation does not
 persist presentation changes.
 
 Query failures render in the record area, with an icon, cause and retry. They do not
-show the empty-result icon, zero-record claims or pagination. Background failures
+show the empty-result icon, zero-record claims or pagination. `engine.retryQuery(id?)`
+retries the current page/cursor, as does the record error action; explicit `refresh()`
+still restarts cursor pagination at page one. Background failures
 retain existing rows and label them as the previous result. Auto-refresh tooltips
 explain pauses and what will resume the countdown.
 
@@ -507,7 +516,7 @@ export function AmountFilter() {
 
 Styles reuse the shadcn base-nova Neutral theme. Utilities use the `fve:` prefix; theme tokens use `--fve-*`. Wrap controls in `.fve-root` to override tokens together; `data-theme="light"` and `data-theme="dark"` select an explicit appearance. Without an explicit theme, components follow the inherited CSS `color-scheme` using `light-dark()`.
 
-Select menus, dropdown menus and Popover panels use a body portal so clipping ancestors do not hide them. Each opening, including a controlled `open` change, copies the control's current theme tokens, color scheme and typography to the portal. `SelectContent.container` is available for hosts that explicitly choose another Select portal target.
+Select menus, dropdown menus and Popover panels use a body portal so clipping ancestors do not hide them. Each opening, including a controlled `open` change, copies the control's current theme tokens, explicit theme marker, color scheme and typography to the portal. Dark variants use native CSS container style queries to respect the nearest explicit theme, including light sections inside a dark page and dark sections inside light sections. A `data-theme` value takes priority over `.dark` on the same element. This requires modern browsers with container style query support; no legacy compatibility layer is included. While open, ancestor theme class, data-theme and inline style changes are reflected in the popup; closed popups do not observe ancestors. `SelectContent.container` is available for hosts that explicitly choose another Select portal target.
 
 `FilterDatePicker` uses the shadcn Calendar with a Chinese locale and a controlled `Date | undefined`. `FilterTimeInput` combines a text input with hour/minute/second Select controls; it preserves incomplete input and accepts `HH:mm` or `HH:mm:ss`, with whole-second precision at most. Restored fractional clock values are truncated to seconds when displayed or edited. Both accept `inline` for composition inside `FieldFilter`. The host owns timezone conversion and applying the query. Unset values are valid: keep the editor visible and omit its value-dependent predicate on Query. If no predicates remain, apply `filter.matchAll()`. A date/time pair is unset only when both parts are empty; partial values require completion. Clock selectors preserve the other typed segments during partial input. Malformed nonempty input remains invalid; value-free operators and explicit null/zero/false literals retain their Wow semantics.
 

@@ -242,6 +242,11 @@ export class ViewEngine {
     return this.queries.refresh(id, options);
   }
 
+  /** Retry the current query without changing its page or cursor. */
+  retryQuery(id?: string): Promise<void> {
+    return this.queries.retry(id);
+  }
+
   restore(id?: string): Promise<void> {
     return this.edits.restore(id);
   }

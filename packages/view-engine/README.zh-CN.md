@@ -27,13 +27,15 @@
 在仓库根目录使用已有工作区依赖运行：
 
 ```bash
-pnpm --filter @ahoo-wang/fetcher-view-engine build
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
 node packages/view-engine/examples/core.mjs
 node packages/view-engine/scripts/verify-package.mjs
 pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 ```
 
 `examples/core.mjs` 演示无 React 的公开 API，包括未设置控件和自定义原始属性的 JSON 保存及新引擎恢复；`examples/react/OrderExample.tsx` 仅通过公开导入组合页面和五类扩展。打开 `http://127.0.0.1:4175`，或 Storybook 的 **View Engine → 快速开始 / 扩展接入**，体验操作、自定义过滤器/单元格、异常恢复与深色窄容器。
+
+执行 `pnpm install` 后，`pnpm storybook` 和 `pnpm build-storybook` 会先显式构建 View Engine 及其工作区依赖，再启动或构建 Storybook。两者均使用包含 CSS 的公开 `dist` 入口；编辑包源码后重新运行命令即可重建，生产验收继续验证真实包产物。
 
 `examples/react/FilterPersistenceExample.tsx` 保存选中状态 ID 和独立编辑的显示名称。打开 `http://127.0.0.1:4175/?example=persistence`，或 **View Engine → 扩展接入 → 公共包 → 公共包 · 组件配置 JSON 保存与重新打开**：新增未设置控件后无需查询即可保存，并在新引擎中恢复；只改显示名称也能直接保存，状态值改变后则需先查询。
 
@@ -97,6 +99,8 @@ const host: ViewHost = {
 
 服务契约位于独立的 `src/record/ViewHost.ts`。`LocalStorageViewHost` 实现相同职责边界，存储操作共用事务以保持完整性；HTTP 保留为包外的开发实验。只替换某个方法时显式合并该服务，例如 `instance: {...host.instance, save: customSave}`。
 
+实例列表必须提供 `defaultInstanceId: null` 或列表中已有的实例 ID；可选 `revision` 一旦提供就必须是非空白字符串。无效响应在加载边界失败。
+
 `ViewHost` 加载定义及完整实例列表、解析已配置的 Wow 查询客户端、提供权限，并按需实现保存与创建接口。本地数据可直接传入 `definition` 与 `instances: {instances, defaultInstanceId}`。必填 `scopeKey` 标识用户、租户与访问范围，范围变化时更换此值；引擎按 `[scopeKey, definitionId]` 管理生命周期。同一作用域下替换宿主对象会更新回调与能力，保留草稿。本地定义和列表作为该生命周期的初始值，引用变化不触发重载；需要重新初始化时显式改变 React key。宿主自行管理引擎时，使用 `ViewPageContent` 或 `RecordView`。
 
 每次 `engine.load()` 都会与元数据并行初始化权限：优先等待 `permission.load(definitionId, signal)`，未提供时等待 `permission.refresh(signal)`。权限服务负责维护快照，并须在完成前准备好同步 getter。初始化失败时不进入 ready、不查询记录；通过 `load()` 重试，释放或重新加载会取消初始化信号。只有同步 getter 的服务无需初始化。同作用域 `updateHost` 接收已准备好的权限投影；后续异步变化通过 `permission.subscribe` 通知。
@@ -129,7 +133,7 @@ const host: ViewHost = {
 执行，宿主通过 `permission.getInstance` 的 `rename` / `delete` 授权。
 改名只保存名称，保留待查询筛选和未保存的列配置，不触发查询。
 `preference.saveOrder(definitionId, ids)` 保存当前用户的展示顺序，包括公共视图；不影响其他用户。
-写入成功后更新列表，失败保留编辑并可重试。原保存菜单移除独立删除入口，保留另存为和还原。
+写入成功后更新列表，失败保留编辑并可重试。save、rename、delete 或偏好排序进行中时，完整 `engine.load()` 会被拒绝；加载完成前不接受读取或编辑会话的命令，包括取消回调中重入的命令；快照仍可读取。另存为或核对成功后独立完成，后续记录读取失败仅保留在 `queryError` 中。原保存菜单移除独立删除入口，保留另存为和还原。
 
 save、rename 或 delete 发出后，`UNKNOWN_OUTCOME`、`UNAVAILABLE` 或未分类异常会阻止该实例的其他写入并保留本地编辑。保存和改名需要重载成功核对版本；实例不存在或不可访问时保留核对错误与编辑。不确定的创建可通过原请求 ID 重试；不确定的删除可按同一 ID/revision 幂等重试。界面订阅 `getCapabilitiesSnapshot().instances[id].retryDelete` 判断此例外。宿主应使用明确的 `ViewServiceError` 代码报告确定拒绝。
 无 React 时可调用 `renameInstance(title, id?)`、`deleteInstance(id?)`、
@@ -154,6 +158,8 @@ Storybook 的 **View Engine → Record View** 使用内存服务演示完整请�
 查询失败在记录区展示图标、原因与重试，不使用空结果图标，不显示零条记录或分页。后台失败保留原记录，并标明上次查询结果。
 
 已应用筛选在编辑区下方、表格工具栏上方展示为 shadcn Badge 标签，收起编辑区后仍可见；顶层 AND 条件分别展示，OR/NOR 与元素条件保留完整分组。点击标签的 × 按注册的清空语义将值设为“未设置”并立即查询，保留字段、操作符、分组与编辑器 ID；无需值的操作及未提供清空语义的自定义组件不提供清空按钮。查询中或有待查询修改时禁用清空，先查询或撤销修改后可继续操作。单行筛选输入框支持回车查询；中文输入法确认、下拉选择、多行输入和弹层交互保留原有键盘行为。标签保留精确阈值，长条件自动换行，无条件时显示“全部记录”。待查询草稿不会替换标签；顶部筛选按钮仅保留展开/收起与模式，不再显示摘要 Tooltip。
+
+记录错误区域的“重试查询”调用 `engine.retryQuery(id?)`，保留当前页码与游标；显式 `refresh()` 仍使游标分页回到第一页。
 
 自动刷新暂停时提供原因和恢复条件。普通保存成功后短暂显示“已保存”及无障碍播报。
 
@@ -334,7 +340,7 @@ export function AmountFilter() {
 
 样式沿用 shadcn base-nova 的默认 Neutral 主题。工具类使用 `fve:` 前缀，主题变量使用 `--fve-*`。宿主可用 `.fve-root` 包裹组件并覆盖变量，通过 `data-theme="light"` 或 `data-theme="dark"` 显式指定外观；未指定时通过 `light-dark()` 跟随继承的 CSS `color-scheme`。
 
-Select、下拉菜单与 Popover 面板默认 Portal 到 body，避免被有裁剪或滚动的祖先容器遮住。每次打开（包括受控 `open` 变化）时，将所属范围当前的主题变量、颜色模式和字体传到弹层。宿主需要其他 Select 挂载位置时可显式指定 `SelectContent.container`。
+Select、下拉菜单与 Popover 面板默认 Portal 到 body，避免被有裁剪或滚动的祖先容器遮住。每次打开（包括受控 `open` 变化）时，将所属范围当前的主题变量、显式主题标记、颜色模式和字体传到弹层。深色变体使用原生 CSS 容器样式查询遵循最近的显式主题，支持深色页面内的浅色区域及浅色区域内的深色区域；同一元素上的 `data-theme` 优先于 `.dark`。需要支持容器样式查询的现代浏览器，不提供旧浏览器兼容层。打开期间会同步实际祖先的 class、data-theme 与行内样式变化，关闭后停止监听。宿主需要其他 Select 挂载位置时可显式指定 `SelectContent.container`。
 
 `FilterDatePicker` 使用中文 shadcn Calendar，受控值为 `Date | undefined`。`FilterTimeInput` 组合文本输入与时、分、秒 Select，保留未完成输入，接受 `HH:mm` 或 `HH:mm:ss`，最多精确到秒；已有小数秒时间在显示或编辑时截到秒。两者均支持 `inline`，可放入 `FieldFilter`。时区转换和查询生效时机由宿主管理。未设置值合法：保留编辑器，点击查询时不生成需要值的对应谓词；没有剩余条件时使用 `filter.matchAll()`。日期和时间均为空才算未设置，只填一项时提示补全；时间下拉保留其他已填写片段。已填写但格式错误时仍提示错误；无需值的操作与显式 null / 零 / false 保留 Wow 语义。
 

@@ -61,13 +61,14 @@ export class SessionStore {
 
   patch(id: string, patch: Partial<RecordSession>): void {
     const session = this.find(id);
-    if (!session || this.scope.disposed) return;
+    const definition = this.state.definition;
+    if (!session || !definition || this.scope.disposed) return;
     this.publish({
       sessions: {
         ...this.state.sessions,
         [id]: deriveSession(
           { ...session, ...patch },
-          this.definition(),
+          definition,
           this.filterCompilers,
           session,
         ),
@@ -82,13 +83,13 @@ export class SessionStore {
   }
 
   definition(): NonNullable<ViewEngineState['definition']> {
-    this.scope.assertActive();
+    this.scope.assertReady();
     if (!this.state.definition) throw new Error('视图定义尚未加载');
     return this.state.definition;
   }
 
   session(id = this.state.selectedInstanceId): RecordSession {
-    this.scope.assertActive();
+    this.scope.assertReady();
     if (id === null || !this.find(id))
       throw new Error('请先选择有效的视图实例');
     return this.find(id)!;

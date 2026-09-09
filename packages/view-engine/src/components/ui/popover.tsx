@@ -12,22 +12,25 @@
  */
 
 import type * as React from 'react';
-import { createContext, useContext, type CSSProperties } from 'react';
-import { usePortalTheme } from '../../lib/usePortalTheme.js';
+import { createContext, useContext } from 'react';
+import { usePortalTheme, type PortalTheme } from '../../lib/usePortalTheme.js';
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { cn } from '../../lib/utils.js';
 
-const PopoverTheme = createContext<CSSProperties>({});
+const PopoverTheme = createContext<PortalTheme>({ style: {} });
 
 function Popover(props: PopoverPrimitive.Root.Props) {
-  const { scope, theme, captureTheme } = usePortalTheme(props.open);
+  const { scope, theme, captureTheme } = usePortalTheme(
+    props.open,
+    props.defaultOpen,
+  );
   return (
     <span ref={scope} className="fve-root fve:inline-flex fve:max-w-full">
       <PopoverTheme.Provider value={theme}>
         <PopoverPrimitive.Root
           {...props}
           onOpenChange={(open, details) => {
-            if (open) captureTheme();
+            captureTheme(open);
             props.onOpenChange?.(open, details);
           }}
         />
@@ -42,26 +45,31 @@ function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {
 
 function PopoverContent({
   className,
+  keepMounted,
   align = 'center',
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 4,
   ...props
 }: PopoverPrimitive.Popup.Props &
+  Pick<PopoverPrimitive.Portal.Props, 'keepMounted'> &
   Pick<
     PopoverPrimitive.Positioner.Props,
     'align' | 'alignOffset' | 'side' | 'sideOffset'
   >) {
   const theme = useContext(PopoverTheme);
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal
+      keepMounted={keepMounted}
+      className="fve-root"
+      {...theme}
+    >
       <PopoverPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
         className="fve-root fve:isolate fve:z-50"
-        style={theme}
       >
         <PopoverPrimitive.Popup
           data-slot="popover-content"

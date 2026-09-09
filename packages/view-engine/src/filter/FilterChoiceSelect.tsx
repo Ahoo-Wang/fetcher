@@ -116,7 +116,7 @@ export function FilterChoiceSelect<V extends string | number>({
         disabled={disabled}
         isItemEqualToValue={(a, b) => a.value === b.value}
         onOpenChange={open => {
-          if (open) captureTheme();
+          captureTheme(open);
           onOpenChange?.(open);
         }}
         onValueChange={next => {
@@ -151,12 +151,11 @@ export function FilterChoiceSelect<V extends string | number>({
           </span>
           <ChevronDownIcon aria-hidden="true" data-icon="inline-end" />
         </Combobox.Trigger>
-        <Combobox.Portal>
+        <Combobox.Portal className="fve-root" {...theme}>
           <Combobox.Positioner
             align="start"
             sideOffset={4}
             className="fve-root fve:isolate fve:z-50"
-            style={theme}
           >
             <Combobox.Popup
               aria-label={`${label}候选`}

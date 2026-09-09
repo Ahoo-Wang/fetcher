@@ -12,25 +12,28 @@
  */
 
 import type * as React from 'react';
-import { createContext, useContext, type CSSProperties } from 'react';
-import { usePortalTheme } from '../../lib/usePortalTheme.js';
+import { createContext, useContext } from 'react';
+import { usePortalTheme, type PortalTheme } from '../../lib/usePortalTheme.js';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { cn } from '../../lib/utils.js';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react';
 
-const SelectTheme = createContext<CSSProperties>({});
+const SelectTheme = createContext<PortalTheme>({ style: {} });
 
 function Select<Value, Multiple extends boolean | undefined = false>(
   props: SelectPrimitive.Root.Props<Value, Multiple>,
 ) {
-  const { scope, theme, captureTheme } = usePortalTheme(props.open);
+  const { scope, theme, captureTheme } = usePortalTheme(
+    props.open,
+    props.defaultOpen,
+  );
   return (
     <span ref={scope} className="fve-root fve:inline-flex fve:max-w-full">
       <SelectTheme.Provider value={theme}>
         <SelectPrimitive.Root
           {...props}
           onOpenChange={(open, details) => {
-            if (open) captureTheme();
+            captureTheme(open);
             props.onOpenChange?.(open, details);
           }}
         />
@@ -105,7 +108,11 @@ function SelectContent({
   Pick<SelectPrimitive.Portal.Props, 'container'>) {
   const theme = useContext(SelectTheme);
   return (
-    <SelectPrimitive.Portal container={container}>
+    <SelectPrimitive.Portal
+      container={container}
+      className="fve-root"
+      {...theme}
+    >
       <SelectPrimitive.Positioner
         side={side}
         sideOffset={sideOffset}
@@ -113,7 +120,6 @@ function SelectContent({
         alignOffset={alignOffset}
         alignItemWithTrigger={alignItemWithTrigger}
         className="fve-root fve:isolate fve:z-50"
-        style={theme}
       >
         <SelectPrimitive.Popup
           data-slot="select-content"

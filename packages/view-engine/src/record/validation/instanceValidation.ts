@@ -52,8 +52,7 @@ export function validateViewInstance(
     )
   )
     throw new Error('实例范围无效');
-  if (value.revision !== undefined && typeof value.revision !== 'string')
-    throw new Error('实例 revision 必须是字符串');
+  if (value.revision !== undefined) assertText(value.revision, '实例 revision');
   assertObject(value.config, '实例配置');
   const config = value.config;
   if ('filter' in config) throw new Error('视图配置必须保存 filters 组件配置');
@@ -172,5 +171,12 @@ export function readInstanceList(
     if (seen.has(instance.id)) throw new Error(`实例 ID 重复：${instance.id}`);
     seen.add(instance.id);
   }
+  if (
+    !('defaultInstanceId' in value) ||
+    (value.defaultInstanceId !== null &&
+      (typeof value.defaultInstanceId !== 'string' ||
+        !seen.has(value.defaultInstanceId)))
+  )
+    throw new Error('默认视图必须为当前列表中的实例 ID 或 null');
   return value.instances;
 }

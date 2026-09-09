@@ -61,16 +61,21 @@ export class ViewLoader {
     this.loadController?.abort();
   }
   async load(): Promise<void> {
+    this.scope.assertActive();
+    if (this.work.ordering) throw new Error('视图顺序正在保存，请等待操作完成');
     for (const id of this.work.writes.keys()) {
       if (!this.work.createRequests.has(id))
         throw new Error('实例正在写入，请等待操作完成后重新加载');
     }
     const lifecycle = this.scope.restart();
+    if (!this.scope.current(lifecycle)) return;
     // Reloading cannot prove whether an already dispatched creation committed.
     this.work.preserveCreates();
     this.work.unverifiedDeletes.clear();
     this.loadController?.abort();
+    if (!this.scope.current(lifecycle)) return;
     this.work.cancelReloads();
+    if (!this.scope.current(lifecycle)) return;
     this.queries.reset();
     if (!this.scope.current(lifecycle)) return;
     const controller = new AbortController();
@@ -133,6 +138,7 @@ export class ViewLoader {
         Object.prototype.hasOwnProperty.call(sessions, list.defaultInstanceId)
       )
         defaultId = list.defaultInstanceId;
+      this.scope.loading = false;
       this.store.publish({
         status: 'ready',
         error: null,
@@ -144,6 +150,8 @@ export class ViewLoader {
     } catch (error) {
       if (!this.scope.current(lifecycle)) return;
       controller.abort();
+      if (!this.scope.current(lifecycle)) return;
+      this.scope.loading = false;
       this.store.publish({ status: 'error', error: message(error) });
       throw error;
     }
@@ -186,7 +194,11 @@ export class ViewLoader {
     }
     if (!current()) return;
     const previousId = this.store.getSnapshot().selectedInstanceId;
-    if (previousId === id) return;
+    if (previousId === id) {
+      if (this.store.getSnapshot().error !== null)
+        this.store.publish({ error: null });
+      return;
+    }
     if (previousId !== null) {
       this.queries.cancel(previousId);
       if (!current()) return;

@@ -120,3 +120,50 @@ it('uses the next cursor without presenting a previous-page action or a total co
   expect(paged).not.toHaveBeenCalled();
   engine.dispose();
 });
+
+it('retries a failed cursor page from the record error action without returning to the first page', async () => {
+  const { host } = setup();
+  const cursor = vi
+    .fn()
+    .mockResolvedValueOnce({
+      list: [{ id: 0, amount: 42 }],
+      nextCursor: 'after-42',
+    })
+    .mockRejectedValueOnce(new Error('当前游标页暂时不可用'))
+    .mockResolvedValueOnce({ list: [{ id: 1, amount: 84 }], nextCursor: null });
+  host.resolveSource = () => ({ cursor });
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    host,
+    instances: {
+      instances: [
+        {
+          ...instance,
+          config: {
+            ...instance.config,
+            pagination: { mode: 'cursor', size: 10 },
+          },
+        },
+      ],
+      defaultInstanceId: instance.id,
+    },
+  });
+  try {
+    await engine.load();
+    render(<ViewPageContent engine={engine} />);
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }));
+    const retry = await screen.findByRole('button', { name: '重试查询' });
+    expect(engine.getSnapshot().sessions.mine.page).toBe(2);
+    fireEvent.click(retry);
+    expect(await screen.findByRole('cell', { name: '84' })).toBeTruthy();
+    expect(screen.getByText('第 2 页')).toBeTruthy();
+    expect(cursor.mock.calls.map(([query]) => query.cursor)).toEqual([
+      null,
+      'after-42',
+      'after-42',
+    ]);
+  } finally {
+    engine.dispose();
+  }
+});

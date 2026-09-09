@@ -87,6 +87,7 @@ export interface RequestHeadersCapable {
 
 export type RequestBodyType =
   | Exclude<RequestInit['body'], undefined>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Accept typed request interfaces without requiring an index signature.
   | Record<string, any>;
 
 /**

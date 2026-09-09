@@ -22,9 +22,52 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
+import { FilterFieldPicker } from '../src/filter/FilterFieldPicker.js';
 import { fields } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
+
+it('retains hidden field controls across opens, respects disabled and removes them on unmount', async () => {
+  const onAdd = vi.fn();
+  const onRemove = vi.fn();
+  const draw = (disabled: boolean) => (
+    <FilterFieldPicker
+      label="添加筛选"
+      options={[{ value: 'amount', label: '金额', group: '', count: 0 }]}
+      disabled={disabled}
+      onAdd={onAdd}
+      onRemove={onRemove}
+    />
+  );
+  const view = render(draw(false));
+  const trigger = screen.getByRole('button', { name: '添加筛选' });
+  fireEvent.click(trigger);
+  const dialog = await screen.findByRole('dialog', { name: '选择筛选字段' });
+  const checkbox = within(dialog).getByRole('checkbox', { name: '金额' });
+  fireEvent.click(within(dialog).getByRole('button', { name: '完成' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  expect(checkbox.isConnected).toBe(true);
+  expect(screen.queryByRole('checkbox', { name: '金额' })).toBeNull();
+  expect(dialog.closest('[hidden]')).not.toBeNull();
+
+  fireEvent.click(trigger);
+  expect(await screen.findByRole('dialog', { name: '选择筛选字段' })).toBe(
+    dialog,
+  );
+  expect(within(dialog).getByRole('checkbox', { name: '金额' })).toBe(checkbox);
+  view.rerender(draw(true));
+  expect(checkbox.getAttribute('aria-disabled')).toBe('true');
+  fireEvent.click(checkbox);
+  expect(onAdd).not.toHaveBeenCalled();
+  expect(onRemove).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole('button', { name: '完成' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  expect(trigger).toHaveProperty('disabled', true);
+  fireEvent.click(trigger);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  view.unmount();
+  expect(checkbox.isConnected).toBe(false);
+});
 
 it('uses field checkboxes for continuous selection and removal without querying', async () => {
   const apply = vi.fn();

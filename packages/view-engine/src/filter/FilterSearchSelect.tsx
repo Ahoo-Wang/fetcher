@@ -63,7 +63,7 @@ export function FilterSearchSelect<Value extends string>({
         disabled={disabled}
         isItemEqualToValue={(a, b) => a.value === b.value}
         onOpenChange={open => {
-          if (open) captureTheme();
+          captureTheme(open);
         }}
         onValueChange={next => {
           if (next === null) onClear?.();
@@ -95,12 +95,11 @@ export function FilterSearchSelect<Value extends string>({
             清空
           </Combobox.Clear>
         )}
-        <Combobox.Portal>
+        <Combobox.Portal className="fve-root" {...theme}>
           <Combobox.Positioner
             align="start"
             sideOffset={4}
             className="fve-root fve:isolate fve:z-50"
-            style={theme}
           >
             <Combobox.Popup
               aria-label={`${label}候选`}
@@ -121,7 +120,10 @@ export function FilterSearchSelect<Value extends string>({
                   {emptyText}
                 </div>
               </Combobox.Empty>
-              <Combobox.List className="fve:max-h-60 fve:scroll-py-1 fve:overflow-y-auto fve:overscroll-contain fve:p-1 fve:data-empty:p-0">
+              <Combobox.List
+                aria-label={`${label}选项`}
+                className="fve:max-h-60 fve:scroll-py-1 fve:overflow-y-auto fve:overscroll-contain fve:p-1 fve:data-empty:p-0"
+              >
                 {(option: FilterOption<Value>) => (
                   <Combobox.Item
                     key={option.value}

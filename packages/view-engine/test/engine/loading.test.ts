@@ -19,26 +19,22 @@ import type {
 import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, definition, instance, selected, setup } from './fixtures.js';
 
-it('keeps absent and invalid defaults unselected without querying', async () => {
-  for (const defaultInstanceId of [null, 'missing']) {
+it.each([{ instances: [] }, { instances: [instance()] }])(
+  'keeps explicit null defaults unselected without querying (%j)',
+  async ({ instances }) => {
     const { engine, paged } = setup({
-      instances: { instances: [instance()], defaultInstanceId },
+      instances: { instances, defaultInstanceId: null },
     });
     await engine.load();
     expect(engine.getSnapshot()).toMatchObject({
       status: 'ready',
       selectedInstanceId: null,
-      instanceIds: ['mine'],
+      instanceIds: instances.map(item => item.id),
     });
     expect(paged).not.toHaveBeenCalled();
-  }
-  const { engine, paged } = setup({
-    instances: { instances: [], defaultInstanceId: null },
-  });
-  await engine.load();
-  expect(engine.getSnapshot().instanceIds).toEqual([]);
-  expect(paged).not.toHaveBeenCalled();
-});
+    engine.dispose();
+  },
+);
 
 it('rejects a foreign or duplicate list before selecting or querying', async () => {
   for (const entries of [

@@ -12,24 +12,27 @@
  */
 
 import type * as React from 'react';
-import { createContext, useContext, type CSSProperties } from 'react';
-import { usePortalTheme } from '../../lib/usePortalTheme.js';
+import { createContext, useContext } from 'react';
+import { usePortalTheme, type PortalTheme } from '../../lib/usePortalTheme.js';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cn } from '../../lib/utils.js';
 
 import { Button } from './button.js';
 import { XIcon } from 'lucide-react';
 
-const DialogTheme = createContext<CSSProperties>({});
+const DialogTheme = createContext<PortalTheme>({ style: {} });
 function Dialog(props: DialogPrimitive.Root.Props) {
-  const { scope, theme, captureTheme } = usePortalTheme(props.open);
+  const { scope, theme, captureTheme } = usePortalTheme(
+    props.open,
+    props.defaultOpen,
+  );
   return (
     <span ref={scope} className="fve-root fve:inline-flex">
       <DialogTheme.Provider value={theme}>
         <DialogPrimitive.Root
           {...props}
           onOpenChange={(open, details) => {
-            if (open) captureTheme();
+            captureTheme(open);
             props.onOpenChange?.(open, details);
           }}
         />
@@ -42,8 +45,16 @@ function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
-function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
+function DialogPortal({ className, ...props }: DialogPrimitive.Portal.Props) {
+  const theme = useContext(DialogTheme);
+  return (
+    <DialogPrimitive.Portal
+      data-slot="dialog-portal"
+      className={cn('fve-root', className)}
+      {...theme}
+      {...props}
+    />
+  );
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
@@ -74,13 +85,11 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
 }) {
-  const theme = useContext(DialogTheme);
   return (
     <DialogPortal>
-      <DialogOverlay style={theme} />
+      <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        style={theme}
         className={cn(
           'fve-root fve:fixed fve:top-1/2 fve:left-1/2 fve:z-50 fve:grid fve:w-full fve:max-w-[calc(100%-2rem)] fve:-translate-x-1/2 fve:-translate-y-1/2 fve:gap-4 fve:rounded-xl fve:bg-popover fve:p-4 fve:text-sm fve:text-popover-foreground fve:ring-1 fve:ring-foreground/10 fve:duration-100 fve:outline-none fve:sm:max-w-sm fve:data-open:animate-in fve:data-open:fade-in-0 fve:data-open:zoom-in-95 fve:data-closed:animate-out fve:data-closed:fade-out-0 fve:data-closed:zoom-out-95',
           className,

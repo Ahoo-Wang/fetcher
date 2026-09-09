@@ -13,6 +13,7 @@
 
 /** Lifetime and navigation identities shared by this engine's asynchronous work. */
 export class EngineScope {
+  loading = false;
   private generation = 0;
   private navigation = 0;
   private released = false;
@@ -30,6 +31,11 @@ export class EngineScope {
 
   assertActive(): void {
     if (this.released) throw new Error('视图引擎已释放');
+  }
+
+  assertReady(): void {
+    this.assertActive();
+    if (this.loading) throw new Error('视图正在加载，请等待加载完成');
   }
 
   current(version: number): boolean {
@@ -55,6 +61,7 @@ export class EngineScope {
 
   restart(): number {
     this.assertActive();
+    this.loading = true;
     const version = ++this.generation;
     this.advanceSelection();
     return version;
@@ -63,6 +70,7 @@ export class EngineScope {
   dispose(): void {
     if (this.released) return;
     this.released = true;
+    this.loading = false;
     ++this.generation;
     this.advanceSelection();
   }

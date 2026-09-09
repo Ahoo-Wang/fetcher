@@ -332,17 +332,11 @@ export class LocalStorageViewHost implements ViewHost {
     this.storedDefinition = copy(options.definition);
     validateViewDefinition(this.storedDefinition);
     this.initial = copy(options.instances);
-    readInstanceList(this.initial, this.storedDefinition);
-    if (
-      this.initial.defaultInstanceId !== null &&
-      !this.initial.instances.some(
-        item => item.id === this.initial.defaultInstanceId,
-      )
-    )
-      throw new ViewServiceError(
-        'INVALID_ARGUMENT',
-        '默认视图必须为有效实例或 null',
-      );
+    try {
+      readInstanceList(this.initial, this.storedDefinition);
+    } catch (error) {
+      throw new ViewServiceError('INVALID_ARGUMENT', message(error));
+    }
     this.options = { ...options };
     this.storageKey = `fve:views:${JSON.stringify([options.serviceKey, this.storedDefinition.id])}`;
   }

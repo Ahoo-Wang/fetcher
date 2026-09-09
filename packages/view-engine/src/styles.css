@@ -12,10 +12,24 @@
  */
 
 @layer theme, base, utilities;
+
+/* stylelint-disable import-notation -- Tailwind prefix() requires string imports. */
 @import 'tailwindcss/theme.css' layer(theme) prefix(fve);
 @import 'tailwindcss/utilities.css' layer(utilities) prefix(fve);
+/* stylelint-enable import-notation */
+
 @source './';
-@custom-variant dark (&:is(.dark *, [data-theme='dark'] *));
+
+@custom-variant dark (@container style(--fve-theme-mode: dark));
+
+.dark:not([data-theme='light']),
+[data-theme='dark'] {
+  --fve-theme-mode: dark;
+}
+
+[data-theme='light'] {
+  --fve-theme-mode: light;
+}
 
 @theme inline {
   --color-background: var(--fve-background);
@@ -43,30 +57,37 @@
 }
 
 .fve-root:not(.fve-root .fve-root) {
-  --fve-background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
-  --fve-foreground: light-dark(oklch(0.145 0 0), oklch(0.985 0 0));
-  --fve-primary: light-dark(oklch(0.205 0 0), oklch(0.922 0 0));
-  --fve-primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.205 0 0));
-  --fve-secondary: light-dark(oklch(0.97 0 0), oklch(0.269 0 0));
-  --fve-secondary-foreground: light-dark(oklch(0.205 0 0), oklch(0.985 0 0));
-  --fve-muted: light-dark(oklch(0.97 0 0), oklch(0.269 0 0));
-  --fve-muted-foreground: light-dark(oklch(0.556 0 0), oklch(0.708 0 0));
+  --fve-background: light-dark(oklch(1 0 0deg), oklch(0.145 0 0deg));
+  --fve-foreground: light-dark(oklch(0.145 0 0deg), oklch(0.985 0 0deg));
+  --fve-primary: light-dark(oklch(0.205 0 0deg), oklch(0.922 0 0deg));
+  --fve-primary-foreground: light-dark(
+    oklch(0.985 0 0deg),
+    oklch(0.205 0 0deg)
+  );
+  --fve-secondary: light-dark(oklch(0.97 0 0deg), oklch(0.269 0 0deg));
+  --fve-secondary-foreground: light-dark(
+    oklch(0.205 0 0deg),
+    oklch(0.985 0 0deg)
+  );
+  --fve-muted: light-dark(oklch(0.97 0 0deg), oklch(0.269 0 0deg));
+  --fve-muted-foreground: light-dark(oklch(0.556 0 0deg), oklch(0.708 0 0deg));
   --fve-accent: var(--fve-muted);
   --fve-accent-foreground: var(--fve-foreground);
-  --fve-popover: light-dark(oklch(1 0 0), oklch(0.205 0 0));
+  --fve-popover: light-dark(oklch(1 0 0deg), oklch(0.205 0 0deg));
   --fve-popover-foreground: var(--fve-foreground);
   --fve-destructive: light-dark(
-    oklch(0.577 0.245 27.325),
-    oklch(0.704 0.191 22.216)
+    oklch(0.577 0.245 27.325deg),
+    oklch(0.704 0.191 22.216deg)
   );
-  --fve-success: light-dark(oklch(0.42 0.12 150), oklch(0.8 0.12 150));
-  --fve-warning: light-dark(oklch(0.45 0.1 75), oklch(0.83 0.12 75));
-  --fve-info: light-dark(oklch(0.44 0.16 255), oklch(0.8 0.1 255));
-  --fve-border: light-dark(oklch(0.922 0 0), oklch(1 0 0 / 10%));
-  --fve-input: light-dark(oklch(0.922 0 0), oklch(1 0 0 / 15%));
-  --fve-ring: light-dark(oklch(0.708 0 0), oklch(0.556 0 0));
+  --fve-success: light-dark(oklch(0.42 0.12 150deg), oklch(0.8 0.12 150deg));
+  --fve-warning: light-dark(oklch(0.45 0.1 75deg), oklch(0.83 0.12 75deg));
+  --fve-info: light-dark(oklch(0.44 0.16 255deg), oklch(0.8 0.1 255deg));
+  --fve-border: light-dark(oklch(0.922 0 0deg), oklch(1 0 0deg / 10%));
+  --fve-input: light-dark(oklch(0.922 0 0deg), oklch(1 0 0deg / 15%));
+  --fve-ring: light-dark(oklch(0.708 0 0deg), oklch(0.556 0 0deg));
   --fve-radius: 0.625rem;
   --fve-radius-md: calc(var(--fve-radius) * 0.8);
+
   color: var(--fve-foreground);
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
@@ -81,35 +102,43 @@
     box-sizing: border-box;
     border: 0 solid var(--fve-border);
   }
+
   .fve-root :where(button, input, select, textarea) {
     font: inherit;
     color: inherit;
     background: transparent;
     margin: 0;
   }
+
   .fve-root :where(svg) {
     display: inline-block;
     vertical-align: middle;
   }
+
   .fve-root :where(h1, h2, h3, h4, h5, h6) {
     font-size: inherit;
     font-weight: inherit;
     margin: 0;
   }
+
   .fve-root :where(button) {
     cursor: pointer;
   }
+
   .fve-root :where(button:disabled) {
     cursor: not-allowed;
   }
+
   .fve-root[hidden]:not([hidden='until-found']),
   .fve-root :where([hidden]:not([hidden='until-found'])) {
     display: none !important;
   }
 }
+
 .fve-root[data-theme='dark'] {
   color-scheme: dark;
 }
+
 .fve-root[data-theme='light'] {
   color-scheme: light;
 }
@@ -119,6 +148,7 @@
   --fve-record-row-background: var(--fve-background);
   --fve-record-pin-shadow: light-dark(rgb(0 0 0 / 16%), rgb(0 0 0 / 45%));
 }
+
 .fve-record-table tfoot,
 .fve-record-table tr:hover,
 .fve-record-table tr:has([aria-expanded='true']) {
@@ -128,36 +158,44 @@
     var(--fve-background)
   );
 }
+
 .fve-record-table tr[data-state='selected'] {
   --fve-record-row-background: var(--fve-muted);
 }
+
 .fve-record-table [data-pinned] {
   position: sticky;
   z-index: 1;
   background: var(--fve-record-row-background);
 }
+
 .fve-record-table [data-pinned='start'] {
   box-shadow: 1px 0 var(--fve-border);
 }
+
 .fve-record-table [data-pinned='end'] {
   box-shadow: -1px 0 var(--fve-border);
 }
+
 /* Only the edges facing scrollable columns cast a shadow. */
 .fve-record-table [data-pinned='start']:not(:has(+ [data-pinned='start'])) {
   box-shadow:
     1px 0 var(--fve-border),
     6px 0 8px -4px var(--fve-record-pin-shadow);
 }
+
 .fve-record-table
   [data-pinned='end']:not([data-pinned='end'] + [data-pinned='end']) {
   box-shadow:
     -1px 0 var(--fve-border),
     -6px 0 8px -4px var(--fve-record-pin-shadow);
 }
+
 .fve-record-table thead th,
 .fve-record-table tbody tr:not(:last-child) td {
   border-bottom: 1px solid var(--fve-border);
 }
+
 .fve-record-table tfoot td,
 .fve-record-table tfoot th {
   border-top: 1px solid var(--fve-border);

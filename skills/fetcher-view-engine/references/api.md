@@ -170,7 +170,7 @@ Changing logical operators preserves all conditions. In advanced mode, an adjace
 group; these three entries are excluded from the field picker. Disallowed
 operators are disabled. Simple mode omits this icon. Root-level operators
 remain add actions. Removing a field from its filter row also updates its
-checkbox. Empty nested groups stay incomplete until filled or removed.
+checkbox. When `allowedOperators` excludes AND, adding a sibling to a standalone condition is unavailable because it would implicitly create AND; existing bindings remain removable, and permitted OR/NOR groups still accept children. Empty nested groups stay incomplete until filled or removed.
 
 Groups follow their first occurrence in the definitions; mixed ungrouped fields
 use Other fields. `group` is a nonempty display string when supplied and is
@@ -190,7 +190,7 @@ const fields: FilterFieldDefinition[] = [
 
 `FilterEditorProps` supplies cloned readonly component `props`, `operator`, readonly `field`, current-scope `fields`, `mode`, host `context`, JSON `options`, global `timeZone`, optional `errors`/`errorId`, `disabled`, `onChange(props)` and `onValidityChange(valid, message?)`. Publish raw serializable component properties, including selected IDs and display labels. Compilation belongs to the registration and runs independently of mounting. Builtin-compatible renderers can use `compileBuiltinFilter` and `clearBuiltinFilterProps`. Invalid local buffers must report `onValidityChange(false)`; a later true notification does not make invalid compiled output valid.
 
-Explicit saved references remain attached to their components. Missing registrations and invalid outputs block Query; rendering failures are contained per editor and offer explicit built-in fallback. Logical and element containers use built-in tree controls. Compiler output cannot change the bound field, escape scope or make the component into a container, though it may combine predicates for its bound field. Callbacks from cleared, replaced or unmounted editors are ignored. `FilterValueEditor` remains available with `{node, field?, fields, timeZone?, showTime?, errors?, errorId?, disabled?, onChange(node)}` for raw built-in draft editing.
+Explicit saved references remain attached to their components. Missing registrations and invalid outputs block Query; rendering failures are contained per editor and offer explicit built-in fallback, which remains disabled while the panel is disabled. Logical and element containers use built-in tree controls. Compiler output cannot change the bound field, escape scope or make the component into a container, though it may combine predicates for its bound field. Callbacks from cleared, replaced or unmounted editors are ignored. `FilterValueEditor` remains available with `{node, field?, fields, timeZone?, showTime?, errors?, errorId?, disabled?, onChange(node)}` for raw built-in draft editing.
 
 `FilterComponentProps extends FilterEditorProps` adds:
 
@@ -240,7 +240,7 @@ The menu uses shadcn Select / Base UI with selected indicators and keyboard inte
 
 A searchable single select backed by Base UI Combobox, styled with the shadcn base-nova tokens. Exported from `/react`; its `FilterSearchSelectProps<Value extends string>` extends `FilterSelectProps<Value>` with optional `searchPlaceholder` (default `搜索选项…`) and `emptyText` (default `没有匹配选项`). The selection placeholder defaults to `未设置`.
 
-The input is inside the popup: the native Combobox filters `options` by label and handles keyboard navigation. Typing only changes the candidate search, never the selected value or applied query. `onValueChange` emits the selected string ID; optional `onClear` enables a direct Clear control. Disabled options and an already-open disabled picker cannot select. If the selected ID is absent from `options`, that ID remains visible rather than silently clearing it. Popup portals inherit the trigger's scoped theme.
+The input is inside the popup: the native Combobox filters `options` by label and handles keyboard navigation. Typing only changes the candidate search, never the selected value or applied query. `onValueChange` emits the selected string ID; optional `onClear` enables a direct Clear control. Disabled options and an already-open disabled picker cannot select. If the selected ID is absent from `options`, that ID remains visible rather than silently clearing it. Popup portals inherit the trigger's scoped theme tokens and explicit marker. Native CSS container style queries keep dark variants within the nearest theme boundary; modern container style query support is required.
 
 Use it inside a locally registered custom editor; it does not require changes to FilterPanel or the Wow compiler:
 
@@ -312,11 +312,11 @@ Select items belong in `SelectGroup`. `SelectContent` preserves the Base UI popu
 
 Default styling comes from shadcn `base-nova`, with `fve:` utilities and `--fve-*` tokens. CSS intentionally has no global preflight. Explicit theme boundaries use `.fve-root[data-theme="light"|"dark"]`; native `light-dark()` is retained in the build.
 
-Popover also inherits its trigger's theme in the body portal. Calendar forwards React DayPicker props and uses shadcn day buttons with keyboard focus support.
+Popover also inherits its trigger's theme in the body portal. `PopoverContent.keepMounted` forwards the Base UI Portal option (default false). The field picker enables it to retain its closed, hidden controls between opens; closing still removes them from keyboard navigation, and unmounting releases the retained subtree. Calendar forwards React DayPicker props and uses shadcn day buttons with keyboard focus support.
 
 ## Storybook
 
-Build the package, then run `pnpm storybook` from the repository root. `View Engine/过滤器` consumes the public package exports and demonstrates business filters, nested logic/element scopes, custom editors, query errors, dark mode and a 50-operator gallery. `View Engine/基础组件/日期时间` covers individual controls. Its combined example retains edits until Query, then creates a Wow filter using browser-local time and epoch milliseconds. It makes no service requests. Focused browser checks: `pnpm exec vitest run --project=storybook stories/view-engine/`.
+After `pnpm install`, run `pnpm storybook` from the repository root. Both it and `pnpm build-storybook` explicitly build View Engine and its workspace dependencies, retaining the public core/React/CSS `dist` paths for development and production acceptance. `View Engine/过滤器` demonstrates business filters, nested logic/element scopes, custom editors, query errors, dark mode and a 50-operator gallery. `View Engine/基础组件/日期时间` covers individual controls. Its combined example retains edits until Query, then creates a Wow filter using browser-local time and epoch milliseconds. It makes no service requests. Focused browser checks after the package build: `pnpm exec vitest run --project=storybook stories/view-engine/`.
 
 ## Record views and host contract
 
@@ -512,7 +512,7 @@ accept readonly inputs.
 
 Methods with an optional instance ID default to the selected instance:
 
-- `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `dispose()`. Full `load()` rejects while save/rename/delete is in flight, preserving ownership of its receipt. Ordinary instance reload can use `instance.list` with an exact ID match when `instance.load` is absent; local edits remain intact.
+- `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `retryQuery(id?)`, `dispose()`. Full `load()` rejects while save/rename/delete or preference ordering is in flight, preserving ownership of its receipt. Commands that read or edit sessions are rejected from load cancellation through metadata initialization; snapshots remain readable. This also blocks reads reentered from cancellation callbacks from capturing an old schema with the new lifecycle. `retryQuery` re-runs the current applied query at its existing page/cursor; explicit `refresh` still restarts cursor pagination at page one. Ordinary instance reload can use `instance.list` with an exact ID match when `instance.load` is absent; local edits remain intact.
 - `applyFilter(expression?,id?)`, `setFilterDraft(draft,id?,valid?)`,
   `setFilterValidity(valid,id?)`, `setFilterMode(mode,id?)`.
 - `setSort(sort,id?)`, `setColumns(columns,id?)`, `setPage(index,id?)`,
@@ -1058,8 +1058,8 @@ Core `formatRecordNumber(value: number, field: Pick<ViewFieldDefinition, 'number
 
 ## Recovery and input boundary corrections
 
-An unconfirmed create retains its original requestId, submitted snapshot and original known IDs until validated completion. A rejected retry does not prove an earlier attempt failed. Full engine load preserves in-flight/unconfirmed requests; replaying the original request remains possible even when ordinary writes are blocked. reloadInstance replays unknown creates through instance.create using the same key/body; it never adopts a new list item based on matching content. A response that explicitly identifies the new instance may instead be checked through instance.load or exact ID lookup in instance.list. Existing independently opened copies keep their own edits and newer baselines. Pending requests are engine-lifetime state, not serialized view configuration.
+An unconfirmed create retains its original requestId, submitted snapshot and original known IDs until validated completion. A rejected retry does not prove an earlier attempt failed. Full engine load preserves in-flight/unconfirmed requests; replaying the original request remains possible even when ordinary writes are blocked. reloadInstance replays unknown creates through instance.create using the same key/body; it never adopts a new list item based on matching content. A response that explicitly identifies the new instance may instead be checked through instance.load or exact ID lookup in instance.list. Existing independently opened copies keep their own edits and newer baselines. Pending requests are engine-lifetime state, not serialized view configuration. Successful save-as and reconciliation complete independently of the following record request; record failures remain in the selected session query state and can be retried with `retryQuery`, without reissuing creation. Selecting the already-active valid instance clears a prior navigation error without querying or replacing its draft.
 
-LocalStorageViewHost preserves explicit null default selection and create does not update that preference. A removed previously specified default can fall back to an available instance. Scoped absent deletion is a successful no-op; it never removes a hidden private instance. Existing visible instances retain permission and revision checks.
+Instance lists must provide `defaultInstanceId: null` or the ID of a member; invalid or omitted defaults are rejected before sessions are published. An optional `revision`, when supplied, must be a nonblank string. LocalStorageViewHost preserves explicit null default selection and create does not update that preference. A removed previously specified default can fall back to an available instance. Scoped absent deletion is a successful no-op; it never removes a hidden private instance. Existing visible instances retain permission and revision checks.
 
 Remote onValueChange uses current candidate labels for newly added/reselected IDs; unchanged IDs preserve their existing saved snapshots, excluding unavailable decorations. Paste replaces the selected text or inserts at the caret before tokenization. Datetime range compilation uses the shared strict scalar validation, so false/0 in the date/time properties cannot become an unset filter. DateTimeCell accepts explicit calendar/clock forms (T/t or whitespace, optional Z/z or numeric offset), rejects unsupported text, and never uses the host timezone to interpret a field-zoned local string.

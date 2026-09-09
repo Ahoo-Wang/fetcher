@@ -11,22 +11,25 @@
  * limitations under the License.
  */
 
-import { createContext, useContext, type CSSProperties } from 'react';
-import { usePortalTheme } from '../../lib/usePortalTheme.js';
+import { createContext, useContext } from 'react';
+import { usePortalTheme, type PortalTheme } from '../../lib/usePortalTheme.js';
 import { Menu as MenuPrimitive } from '@base-ui/react/menu';
 import { cn } from '../../lib/utils.js';
 import { CheckIcon } from 'lucide-react';
 
-const MenuTheme = createContext<CSSProperties>({});
+const MenuTheme = createContext<PortalTheme>({ style: {} });
 function DropdownMenu(props: MenuPrimitive.Root.Props) {
-  const { scope, theme, captureTheme } = usePortalTheme(props.open);
+  const { scope, theme, captureTheme } = usePortalTheme(
+    props.open,
+    props.defaultOpen,
+  );
   return (
     <span ref={scope} className="fve-root fve:inline-flex">
       <MenuTheme.Provider value={theme}>
         <MenuPrimitive.Root
           {...props}
           onOpenChange={(open, details) => {
-            if (open) captureTheme();
+            captureTheme(open);
             props.onOpenChange?.(open, details);
           }}
         />
@@ -53,10 +56,9 @@ function DropdownMenuContent({
   >) {
   const theme = useContext(MenuTheme);
   return (
-    <MenuPrimitive.Portal>
+    <MenuPrimitive.Portal className="fve-root" {...theme}>
       <MenuPrimitive.Positioner
         className="fve-root fve:isolate fve:z-50 fve:outline-none"
-        style={theme}
         align={align}
         alignOffset={alignOffset}
         side={side}

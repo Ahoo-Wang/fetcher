@@ -150,39 +150,49 @@ export class ViewReload {
       if (unverified) {
         if (unverified.knownIds.has(baseline.id))
           throw new Error('另存结果没有新的实例 ID，仍需核对');
-        const existing = this.store.find(baseline.id);
-        // An already opened copy owns its own saves and drafts. A late reconciliation must not roll them back.
+        let selectCopy =
+          this.store.getSnapshot().selectedInstanceId === id &&
+          this.scope.selection === selection;
+        if (selectCopy) {
+          const navigation = this.scope.advanceSelection();
+          if (
+            !this.scope.current(lifecycle) ||
+            this.work.reloads.get(id) !== controller
+          )
+            return;
+          selectCopy =
+            this.scope.selection === navigation &&
+            this.store.getSnapshot().selectedInstanceId === id;
+        }
+        const source = this.store.session(id);
+        // Abort observers may have opened or edited the copy or the source.
         const created =
-          existing ??
+          this.store.find(baseline.id) ??
           inheritEditingSession(
             baseline,
-            latest,
+            source,
             definition,
             this.store.filterCompilers,
             {
               ...baseline,
               title: unverified.submitted.title,
               scope: unverified.submitted.scope,
-              config: latest.instance.config,
+              config: source.instance.config,
             },
           );
-        const selectCopy =
-          this.store.getSnapshot().selectedInstanceId === id &&
-          this.scope.selection === selection;
-        if (this.store.getSnapshot().selectedInstanceId === baseline.id)
+        if (
+          selectCopy ||
+          this.store.getSnapshot().selectedInstanceId === baseline.id
+        )
           queryId = baseline.id;
         this.work.finishCreate(id);
-        if (selectCopy) {
-          this.scope.advanceSelection();
-          queryId = baseline.id;
-        }
         this.store.publish({
           instanceIds: [
             ...new Set([...this.store.getSnapshot().instanceIds, baseline.id]),
           ],
           sessions: {
             ...this.store.getSnapshot().sessions,
-            [id]: { ...latest, writeError: null, requiresReload: false },
+            [id]: { ...source, writeError: null, requiresReload: false },
             [baseline.id]: created,
           },
           ...(selectCopy
@@ -223,6 +233,7 @@ export class ViewReload {
       this.scope.current(lifecycle) &&
       this.store.getSnapshot().selectedInstanceId === queryId
     )
-      await this.queries.refresh(queryId);
+      // Reconciliation is complete; record failures remain in query state.
+      void this.queries.refresh(queryId).catch(() => {});
   }
 }

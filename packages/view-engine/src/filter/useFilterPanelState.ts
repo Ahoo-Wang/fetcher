@@ -96,6 +96,8 @@ export function useFilterPanelState(props: FilterPanelProps) {
     setEpoch,
     setEditorEpochs,
   } = useFilterPanelEditors(props, draft, baseline, mode, loadError);
+  const latest = useRef({ props, simple, issues });
+  latest.current = { props, simple, issues };
   useEffect(() => {
     if (
       !props.appliedDraft &&
@@ -170,10 +172,15 @@ export function useFilterPanelState(props: FilterPanelProps) {
   ]);
 
   function change(next: FilterDraftNode) {
-    if (!mounted.current || sameFilterState(draftRef.current, next)) return;
+    if (
+      latest.current.props.disabled ||
+      !mounted.current ||
+      sameFilterState(draftRef.current, next)
+    )
+      return;
     draftRef.current = next;
     setLocalDraft(next);
-    onDraftChange?.(next);
+    latest.current.props.onDraftChange?.(next);
     setApplyError(undefined);
     const ids = new Set(
       locateFilterNodes(next, fields).map(({ node }) => node.id),
@@ -255,11 +262,20 @@ export function useFilterPanelState(props: FilterPanelProps) {
       );
     }
   }
+  function canAppend(target: FilterDraftNode) {
+    const allowedOperators = latest.current.props.allowedOperators;
+    return (
+      target.op === FilterOperator.MATCH_ALL ||
+      !!target.operands ||
+      !allowedOperators ||
+      allowedOperators.includes(FilterOperator.AND)
+    );
+  }
   function append(target: FilterDraftNode, child: FilterDraftNode) {
     const current = locateFilterNodes(draftRef.current, fields).find(
       item => item.node.id === target.id,
     )?.node;
-    if (!current) return;
+    if (!current || !canAppend(current)) return;
     const next = appendNode(current, child);
     if (mode === 'advanced' || isSimpleFilter(next)) update(current.id, next);
   }
@@ -286,10 +302,14 @@ export function useFilterPanelState(props: FilterPanelProps) {
       { value: 'advanced', label: '高级' },
     ],
     onModeChange(next) {
-      if (disabled || (next === 'simple' && (!simple || issues.length > 0)))
+      const current = latest.current;
+      if (
+        current.props.disabled ||
+        (next === 'simple' && (!current.simple || current.issues.length > 0))
+      )
         return;
       setLocalMode(next);
-      props.onModeChange?.(next);
+      current.props.onModeChange?.(next);
     },
   };
   function removeField(targetId: string, field: string) {
@@ -369,6 +389,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
     clearNode,
     changeOperator,
     append,
+    canAppend,
     removeField,
     currentEditorNode,
     setEditorValidity,

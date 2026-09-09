@@ -262,6 +262,7 @@ export class ViewPersistence {
       this.scope.current(lifecycle) &&
       this.store.getSnapshot().selectedInstanceId === selectedCopy
     )
-      await this.queries.run(selectedCopy);
+      // Creation is complete; a record read failure belongs to the new session.
+      void this.queries.run(selectedCopy).catch(() => {});
   }
 }

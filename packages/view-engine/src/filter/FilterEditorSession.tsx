@@ -27,6 +27,7 @@ export class EditorSession extends Component<
     editor: this.props.editor,
     operator: this.props.operator,
     mode: this.props.mode,
+    field: this.props.field?.field,
     generation: {},
   };
   static getDerivedStateFromProps(
@@ -36,13 +37,15 @@ export class EditorSession extends Component<
     if (
       props.editor === state.editor &&
       props.operator === state.operator &&
-      props.mode === state.mode
+      props.mode === state.mode &&
+      props.field?.field === state.field
     )
       return null;
     return {
       editor: props.editor,
       operator: props.operator,
       mode: props.mode,
+      field: props.field?.field,
       generation: {},
     };
   }
@@ -60,24 +63,24 @@ export class EditorSession extends Component<
       <Editor
         {...props}
         onChange={node => {
-          if (isActive() && !this.props.disabled) props.onChange(node);
+          if (isActive() && !this.props.disabled) this.props.onChange(node);
         }}
         onOperatorChange={operator => {
           if (isActive() && !this.props.disabled)
-            props.onOperatorChange(operator);
+            this.props.onOperatorChange(operator);
         }}
         onClear={
           props.onClear
             ? () => {
-                if (isActive() && !this.props.disabled) props.onClear?.();
+                if (isActive() && !this.props.disabled) this.props.onClear?.();
               }
             : undefined
         }
         onRemove={() => {
-          if (isActive() && !this.props.disabled) props.onRemove();
+          if (isActive() && !this.props.disabled) this.props.onRemove();
         }}
         onValidityChange={(valid, message) => {
-          if (isActive()) props.onValidityChange(valid, message);
+          if (isActive()) this.props.onValidityChange(valid, message);
         }}
       />
     );
@@ -85,6 +88,7 @@ export class EditorSession extends Component<
 }
 export class EditorBoundary extends Component<
   Pick<FilterComponentProps, 'operator' | 'mode'> & {
+    disabled?: boolean;
     children: ReactNode;
     editor: FilterRegistration['component'];
     onError(message: string): void;
@@ -130,7 +134,13 @@ export class EditorBoundary extends Component<
   }
   render() {
     return this.state.error ? (
-      <Button variant="outline" onClick={this.props.onFallback}>
+      <Button
+        variant="outline"
+        disabled={this.props.disabled}
+        onClick={() => {
+          if (!this.props.disabled) this.props.onFallback();
+        }}
+      >
         使用内置编辑器
       </Button>
     ) : (

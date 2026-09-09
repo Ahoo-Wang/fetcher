@@ -89,6 +89,7 @@ export function FilterLeafEditor({
       editor={Custom}
       operator={node.op}
       mode={mode}
+      disabled={disabled}
       onError={error =>
         setEditorOutputErrors(previous => ({ ...previous, [node.id]: error }))
       }
@@ -100,6 +101,7 @@ export function FilterLeafEditor({
         )
       }
       onFallback={() => {
+        if (disabled) return;
         const properties = filterComponentProps(node);
         const candidate = {
           ...properties,

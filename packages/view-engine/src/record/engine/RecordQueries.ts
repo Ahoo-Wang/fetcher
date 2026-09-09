@@ -180,6 +180,11 @@ export class RecordQueries {
     }
   }
 
+  async retry(id?: string): Promise<void> {
+    const session = this.store.session(id);
+    await this.run(session.instance.id);
+  }
+
   async refresh(
     id?: string,
     options?: { background?: boolean },
