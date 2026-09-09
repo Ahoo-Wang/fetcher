@@ -58,7 +58,8 @@ export function createHost(
 
   function loadInstance(id: string) {
     const instance = saved.get(id);
-    if (!instance) throw new Error(`视图 ${id} 不存在。`);
+    if (!instance)
+      throw new ViewServiceError('NOT_FOUND', `视图 ${id} 不存在。`);
     return structuredClone(instance);
   }
   const host: ViewHost = {
@@ -119,9 +120,12 @@ export function createHost(
           previous.scope.type === 'public' &&
           previous.scope.source === 'system'
         )
-          throw new Error('系统视图不能编辑名称。');
+          throw new ViewServiceError('FORBIDDEN', '系统视图不能编辑名称。');
         if (revision !== previous.revision)
-          throw new Error('视图已被更新，请重新加载。');
+          throw new ViewServiceError(
+            'REVISION_CONFLICT',
+            '视图已被更新，请重新加载。',
+          );
         const updated = {
           ...previous,
           title,
@@ -139,12 +143,15 @@ export function createHost(
           previous.scope.type === 'public' &&
           previous.scope.source === 'system'
         )
-          throw new Error('系统视图不能删除。');
+          throw new ViewServiceError('FORBIDDEN', '系统视图不能删除。');
         if (revision !== previous.revision)
-          throw new Error('视图已被更新，请重新加载后再删除。');
+          throw new ViewServiceError(
+            'REVISION_CONFLICT',
+            '视图已被更新，请重新加载后再删除。',
+          );
         if (failNextDelete) {
           failNextDelete = false;
-          throw new Error('删除失败，请重试。');
+          throw new ViewServiceError('CONFLICT', '删除失败，请重试。');
         }
         saved.delete(id);
         instanceOrder = instanceOrder.filter(value => value !== id);
@@ -154,7 +161,10 @@ export function createHost(
         await pause();
         const previous = loadInstance(instance.id);
         if (instance.revision !== previous.revision)
-          throw new Error('视图已被更新，请重新加载后再保存。');
+          throw new ViewServiceError(
+            'REVISION_CONFLICT',
+            '视图已被更新，请重新加载后再保存。',
+          );
         const updated = {
           ...structuredClone(instance),
           revision: String(Number(previous.revision) + 1),

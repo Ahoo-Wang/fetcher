@@ -22,9 +22,70 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPage } from '../src/record/ViewPage.js';
+import { ViewServiceError } from '../src/record/viewServiceContract.js';
 import { instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
+
+it('can reopen and retry the original uncertain deletion without enabling other writes', async () => {
+  const { host } = setup();
+  host.permission!.getInstance = () => ({
+    save: true,
+    rename: true,
+    delete: true,
+  });
+  host.instance!.rename = vi.fn(async (id, title) => ({
+    ...instance,
+    id,
+    title,
+  }));
+  host.instance!.delete = vi
+    .fn()
+    .mockRejectedValueOnce(
+      new ViewServiceError('UNKNOWN_OUTCOME', '删除结果未知'),
+    )
+    .mockResolvedValue(undefined);
+  render(
+    <ViewPage scopeKey="delete-recovery" definitionId="orders" host={host} />,
+  );
+  await screen.findByRole('cell', { name: '42' });
+  fireEvent.click(screen.getAllByRole('button', { name: '管理视图' })[0]);
+  const manager = within(
+    await screen.findByRole('dialog', { name: '管理视图' }),
+  );
+  fireEvent.click(manager.getByRole('button', { name: '删除我的订单' }));
+  let confirmation = within(
+    await screen.findByRole('dialog', { name: '删除视图' }),
+  );
+  fireEvent.click(
+    confirmation.getByRole('button', { name: '删除视图', exact: true }),
+  );
+  await confirmation.findByText('删除结果未知');
+  fireEvent.click(confirmation.getByRole('button', { name: '取消' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '删除视图' })).toBeNull(),
+  );
+  const rename = await manager.findByRole('button', {
+    name: '编辑我的订单名称',
+  });
+  expect(rename.hasAttribute('disabled')).toBe(true);
+  const retry = await manager.findByRole('button', { name: '删除我的订单' });
+  expect(retry.hasAttribute('disabled')).toBe(false);
+  fireEvent.click(retry);
+  confirmation = within(
+    await screen.findByRole('dialog', { name: '删除视图' }),
+  );
+  fireEvent.click(
+    confirmation.getByRole('button', { name: '删除视图', exact: true }),
+  );
+  await waitFor(() =>
+    expect(manager.queryByRole('button', { name: '删除我的订单' })).toBeNull(),
+  );
+  expect(host.instance!.delete).toHaveBeenCalledTimes(2);
+  expect(vi.mocked(host.instance!.delete!).mock.calls[1]).toEqual(
+    vi.mocked(host.instance!.delete!).mock.calls[0],
+  );
+});
 
 it('manages names and deletion together while protecting system views and pending filters', async () => {
   const { host } = setup();
@@ -43,7 +104,7 @@ it('manages names and deletion together while protecting system views and pendin
   }));
   host.instance!.delete = vi
     .fn()
-    .mockRejectedValueOnce(new Error('删除失败，请重试'))
+    .mockRejectedValueOnce(new ViewServiceError('CONFLICT', '删除失败，请重试'))
     .mockResolvedValue(undefined);
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
@@ -152,7 +213,9 @@ it('retains a rejected name for retry and discards the editor buffer on closing 
     key: 'Escape',
   });
   expect(screen.getByRole('dialog', { name: '管理视图' })).toBeTruthy();
-  await act(async () => rejectRename(new Error('名称保存失败')));
+  await act(async () =>
+    rejectRename(new ViewServiceError('CONFLICT', '名称保存失败')),
+  );
   expect(manager.getByRole('alert').textContent).toBe('名称保存失败');
   expect(input.value).toBe('待重试名称');
   await waitFor(() => expect(document.activeElement).toBe(input));

@@ -86,3 +86,5 @@ node packages/view-engine/scripts/verify-http-view-host.mjs
 # Manual Storybook service:
 node packages/view-engine/scripts/verify-http-view-host.mjs --serve
 ```
+
+The fixture allows only the origin in `VIEW_ENGINE_E2E_BASE_URL` (default `http://127.0.0.1:6006`). Set it when using another Storybook address, including `http://localhost:6006`. Requests from other browser origins are rejected before preflight or mutations.

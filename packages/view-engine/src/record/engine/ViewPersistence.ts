@@ -17,7 +17,7 @@ import { validateViewInstance } from '../recordValidation.js';
 import { sameFilterState } from '../../filter/filterTree.js';
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
-import type { InstanceWork } from './InstanceWork.js';
+import { hasUnknownWriteOutcome, type InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
 import { copy, message } from './recordSnapshot.js';
 import {
@@ -60,6 +60,7 @@ export class ViewPersistence {
     const token = Symbol();
     const selection = this.scope.selection;
     let received = false;
+    let dispatched = false;
     let selectedCopy: string | undefined;
     const current = () =>
       this.scope.current(lifecycle) && this.work.writes.get(id) === token;
@@ -125,15 +126,13 @@ export class ViewPersistence {
         };
         this.work.createRequests.set(id, request);
         try {
+          dispatched = true;
           result = await this.host.instance!.create!(
             structuredClone({ definitionId, kind, title, scope, config }),
             { requestId: request.requestId },
           );
         } catch (error) {
-          if (
-            !(error instanceof ViewServiceError) ||
-            ['UNKNOWN_OUTCOME', 'UNAVAILABLE'].includes(error.code)
-          ) {
+          if (hasUnknownWriteOutcome(error)) {
             if (!this.work.unverifiedCreates.has(id))
               this.work.unverifiedCreates.set(id, {
                 id: null,
@@ -146,8 +145,10 @@ export class ViewPersistence {
           }
           throw error;
         }
-      } else
+      } else {
+        dispatched = true;
         result = await this.host.instance!.save!(structuredClone(submitted));
+      }
       if (!current()) return;
       received = true;
       if (options)
@@ -240,7 +241,9 @@ export class ViewPersistence {
       this.store.patch(id, {
         writeError: message(error),
         ...(this.work.writes.get(id) === token ? { writeStatus: 'idle' } : {}),
-        ...(received || this.work.unverifiedCreates.has(id)
+        ...(received ||
+        this.work.unverifiedCreates.has(id) ||
+        (dispatched && hasUnknownWriteOutcome(error))
           ? { requiresReload: true }
           : {}),
       });

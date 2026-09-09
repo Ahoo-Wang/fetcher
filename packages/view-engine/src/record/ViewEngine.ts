@@ -158,6 +158,7 @@ export class ViewEngine {
           {
             permissions: this.getPermissions(id),
             reload: this.canReloadInstance(id),
+            retryDelete: this.management.canRetryDeleteInstance(id),
           },
         ]),
       ),

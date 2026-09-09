@@ -143,6 +143,7 @@ export class ViewReload {
         unverified ? (unverified.id ?? undefined) : id,
       );
       const baseline = copy(result);
+      this.work.unverifiedDeletes.delete(id);
       const latest = this.store.session(id);
       if (unverified) {
         if (unverified.knownIds.has(baseline.id))

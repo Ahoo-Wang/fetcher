@@ -33,6 +33,8 @@ A logical create retains `ViewCreateContext.requestId` across uncertain retries.
 
 `ViewServiceError(code, message)` distinguishes INVALID_ARGUMENT, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND, CONFLICT, REVISION_CONFLICT, PRECONDITION_REQUIRED, CORRUPT_STATE, UNAVAILABLE and UNKNOWN_OUTCOME. These are service categories, not a public HTTP status mapping.
 
+After save, rename or delete is dispatched, UNKNOWN_OUTCOME, UNAVAILABLE and unclassified exceptions mark `requiresReload` and block unrelated writes to that instance while preserving local edits. Save and rename require a successful `reloadInstance()` to obtain the authoritative revision. A missing or inaccessible instance keeps the recovery error and edits. Hosts must report definitive rejections with the corresponding `ViewServiceError` code. An uncertain create can replay its original request ID; an uncertain delete can replay the same ID and revision. `getCapabilitiesSnapshot().instances[id].retryDelete` exposes that exception for subscribed UI controls.
+
 ## LocalStorageViewHost
 
 Required options: `serviceKey`, `scopeKey`, `definition`, `instances`, `resolveSource`, `storage`, `lock`. Optional policy callbacks: `instancePermissions`, `canReorder`, `permissionsRevision`. `storage` implements getItem/setItem/removeItem; all clients for one storage key must share an exclusive lock domain.

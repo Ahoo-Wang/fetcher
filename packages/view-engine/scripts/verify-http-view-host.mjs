@@ -22,6 +22,9 @@ const source = {
   },
 };
 const serveOnly = process.argv.includes('--serve');
+const origin = (
+  process.env.VIEW_ENGINE_E2E_BASE_URL ?? 'http://127.0.0.1:6006'
+).replace(/\/$/, '');
 const server = await startViewService({
   Host: LocalStorageViewHost,
   ServiceError: ViewServiceError,
@@ -29,6 +32,7 @@ const server = await startViewService({
   ...fixture,
   source,
   port: serveOnly ? 6010 : 0,
+  allowedOrigin: new URL(origin).origin,
 });
 if (serveOnly) {
   console.log(
@@ -61,9 +65,6 @@ if (serveOnly) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     bobPage.on('pageerror', error => errors.push(error.message));
-    const origin = (
-      process.env.VIEW_ENGINE_E2E_BASE_URL ?? 'http://127.0.0.1:6006'
-    ).replace(/\/$/, '');
     const url = `${origin}/iframe.html?id=development-http-service--http-view-service&viewMode=story&viewService=${encodeURIComponent(server.baseUrl)}`;
     const alice = new HttpViewHost({
       baseUrl: server.baseUrl,

@@ -150,6 +150,8 @@ export interface ViewCapabilities {
       {
         readonly permissions: Readonly<ViewInstancePermissions>;
         readonly reload: boolean;
+        /** The original versioned delete can be replayed after an unknown outcome. */
+        readonly retryDelete: boolean;
       }
     >
   >;

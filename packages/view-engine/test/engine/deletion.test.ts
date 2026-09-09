@@ -14,6 +14,7 @@
 import { expect, it, vi } from 'vitest';
 import type { ViewInstance } from '../../src/record/recordModel.js';
 import type { ViewHost } from '../../src/record/ViewHost.js';
+import { ViewServiceError } from '../../src/record/viewServiceContract.js';
 import {
   deferred,
   instance,
@@ -98,7 +99,7 @@ it('retains drafts on failure and blocks concurrent saves or repeated deletion',
   await expect(engine.deleteInstance()).rejects.toThrow();
   await expect(engine.save()).rejects.toThrow();
   expect(selected(engine).writeStatus).toBe('deleting');
-  response.reject(new Error('delete denied'));
+  response.reject(new ViewServiceError('CONFLICT', 'delete denied'));
   await expect(deleting).rejects.toThrow('delete denied');
   expect(selected(engine)).toMatchObject({
     dirty: true,

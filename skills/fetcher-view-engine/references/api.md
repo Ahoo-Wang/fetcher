@@ -584,6 +584,16 @@ the load/list interface for a known ID or the create replay interface for an unk
 write failures as well as mismatched echoes, so revision conflicts can be resolved
 without discarding the draft.
 
+After dispatch, save/rename/delete failures classified as `UNKNOWN_OUTCOME`,
+`UNAVAILABLE`, or an unclassified exception also set `requiresReload` and block
+unrelated writes to that instance. Hosts must use a definitive `ViewServiceError` code for
+known rejections. Successful reload unlocks writes with the authoritative revision
+and retains edits; a missing/inaccessible instance keeps its recovery error and
+draft. Create retains its original idempotency key for replay; delete retains its
+original ID/revision for idempotent retry. The immutable capability snapshot exposes
+`instances[id].retryDelete` so UI controls can offer only that retained delete.
+A successful reload or full load clears the retained delete marker.
+
 For a mismatched create echo, reload verifies the explicitly returned created ID
 through instance.load, or exact ID lookup in instance.list when load is absent.
 It never unlocks the source by reading that source or matching list content.
@@ -893,7 +903,7 @@ default `--fve-border` token; it never resets unrelated host elements.
 
 The published `/react` entry is built with React Compiler using the repository Vite `reactCompilerPreset`. Compiler packages are development dependencies; React 19 supplies `react/compiler-runtime`. Consumers do not configure the compiler. Core runtime imports remain React-free and packed verification enforces both entry boundaries.
 
-`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with `reorder` and `instances[id].{permissions,reload}`; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host or notify permission.subscribe when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit memoization remains only for the controlled draft clone and theme capture, which are Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.
+`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with `reorder` and `instances[id].{permissions,reload,retryDelete}`; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host or notify permission.subscribe when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit memoization remains only for the controlled draft clone and theme capture, which are Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.
 
 ### View service contracts and development adapters
 

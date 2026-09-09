@@ -16,6 +16,7 @@ export async function startViewService({
   instances,
   source,
   port = 0,
+  allowedOrigin = 'http://127.0.0.1:6006',
 }) {
   const values = new Map();
   const storage = {
@@ -94,10 +95,12 @@ export async function startViewService({
       permissionsRevision: () => account.revision,
     });
   const server = createServer(async (request, response) => {
-    response.setHeader(
-      'Access-Control-Allow-Origin',
-      request.headers.origin ?? 'http://127.0.0.1:6006',
-    );
+    response.setHeader('Vary', 'Origin');
+    if (request.headers.origin && request.headers.origin !== allowedOrigin) {
+      response.writeHead(403).end();
+      return;
+    }
+    response.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     response.setHeader(
       'Access-Control-Allow-Headers',
       'authorization, content-type, idempotency-key, if-match',

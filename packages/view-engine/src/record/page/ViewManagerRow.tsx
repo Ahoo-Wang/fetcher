@@ -33,7 +33,8 @@ import type { RecordSession } from '../recordModel.js';
 import type { ExecuteViewManagerAction } from './useViewManagerAction.js';
 
 /** A row owns its transient name buffer and returns focus after rename or cancellation. */
-import { useViewPermissions } from './useViewCapabilities.js';
+import { useViewCapabilities } from './useViewCapabilities.js';
+import { deniedPermissions } from '../engine/instancePermissions.js';
 
 export function ViewManagerRow({
   engine,
@@ -66,7 +67,8 @@ export function ViewManagerRow({
 }) {
   const { id, scope } = session.instance;
   const title = session.baseline.title;
-  const permissions = useViewPermissions(engine, id);
+  const capabilities = useViewCapabilities(engine).instances[id];
+  const permissions = capabilities?.permissions ?? deniedPermissions;
   const system = scope.type === 'public' && scope.source === 'system';
   const writing =
     busy || session.writeStatus !== 'idle' || session.requiresReload;
@@ -207,7 +209,11 @@ export function ViewManagerRow({
           size="icon-sm"
           aria-label={`删除${title}`}
           title="删除视图"
-          disabled={writing}
+          disabled={
+            busy ||
+            session.writeStatus !== 'idle' ||
+            (session.requiresReload && !capabilities?.retryDelete)
+          }
           onClick={event => onDelete(event.currentTarget)}
         >
           <Trash2Icon aria-hidden="true" />

@@ -16,6 +16,7 @@ import { expect, it, vi } from 'vitest';
 import { newFilterDraft } from '../../src/filter/filterCore.js';
 import type { ViewInstance } from '../../src/record/recordModel.js';
 import type { ViewHost } from '../../src/record/ViewHost.js';
+import { ViewServiceError } from '../../src/record/viewServiceContract.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 
 it('denies unavailable writes and pending filter drafts', async () => {
@@ -32,6 +33,7 @@ it('denies unavailable writes and pending filter drafts', async () => {
   });
   await expect(engine.save()).rejects.toThrow();
   expect(host.instance!.save).not.toHaveBeenCalled();
+  expect(selected(engine).requiresReload).toBe(false);
   const pending = setup();
   await pending.engine.load();
   pending.engine.setFilterValidity(false);
@@ -42,6 +44,7 @@ it('denies unavailable writes and pending filter drafts', async () => {
   expect(pending.host.instance!.save).not.toHaveBeenCalled();
   expect(pending.host.instance!.create).not.toHaveBeenCalled();
   expect(selected(pending.engine).writeError).toBeTruthy();
+  expect(selected(pending.engine).requiresReload).toBe(false);
 });
 
 it('captures the submitted snapshot and revision while retaining subsequent edits', async () => {
@@ -118,7 +121,7 @@ it('blocks same-instance concurrent writes and keeps ordinary failures visible w
     engine.saveAs({ title: 'Duplicate', scope: { type: 'personal' } }),
   ).rejects.toThrow();
   expect(host.instance!.create).not.toHaveBeenCalled();
-  response.reject(new Error('conflict'));
+  response.reject(new ViewServiceError('REVISION_CONFLICT', 'conflict'));
   await expect(saving).rejects.toThrow('conflict');
   expect(selected(engine)).toMatchObject({
     writeError: 'conflict',

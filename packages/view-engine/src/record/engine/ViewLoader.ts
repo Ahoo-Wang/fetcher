@@ -64,6 +64,7 @@ export class ViewLoader {
     const lifecycle = this.scope.restart();
     // Reloading cannot prove whether an already dispatched creation committed.
     this.work.preserveCreates();
+    this.work.unverifiedDeletes.clear();
     this.loadController?.abort();
     this.work.cancelReloads();
     this.queries.reset();

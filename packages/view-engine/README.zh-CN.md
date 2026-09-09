@@ -130,6 +130,8 @@ const host: ViewHost = {
 改名只保存名称，保留待查询筛选和未保存的列配置，不触发查询。
 `preference.saveOrder(definitionId, ids)` 保存当前用户的展示顺序，包括公共视图；不影响其他用户。
 写入成功后更新列表，失败保留编辑并可重试。原保存菜单移除独立删除入口，保留另存为和还原。
+
+save、rename 或 delete 发出后，`UNKNOWN_OUTCOME`、`UNAVAILABLE` 或未分类异常会阻止该实例的其他写入并保留本地编辑。保存和改名需要重载成功核对版本；实例不存在或不可访问时保留核对错误与编辑。不确定的创建可通过原请求 ID 重试；不确定的删除可按同一 ID/revision 幂等重试。界面订阅 `getCapabilitiesSnapshot().instances[id].retryDelete` 判断此例外。宿主应使用明确的 `ViewServiceError` 代码报告确定拒绝。
 无 React 时可调用 `renameInstance(title, id?)`、`deleteInstance(id?)`、
 `canReorderInstances()` 和 `reorderInstances(ids)`。
 

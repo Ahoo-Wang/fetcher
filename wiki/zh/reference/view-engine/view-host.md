@@ -33,6 +33,8 @@ description: 定义、实例、偏好、权限与记录查询数据源的职责�
 
 `ViewServiceError(code, message)` 区分 INVALID_ARGUMENT、UNAUTHENTICATED、FORBIDDEN、NOT_FOUND、CONFLICT、REVISION_CONFLICT、PRECONDITION_REQUIRED、CORRUPT_STATE、UNAVAILABLE、UNKNOWN_OUTCOME。这些是服务分类，不是公开的 HTTP 状态码映射。
 
+save、rename 或 delete 发出后，UNKNOWN_OUTCOME、UNAVAILABLE 及未分类异常会标记 `requiresReload`，保留本地编辑并阻止该实例的其他写入。保存和改名需要 `reloadInstance()` 成功取得权威版本后才解除限制；实例不存在或不可访问时继续保留错误与编辑。宿主应使用对应的 `ViewServiceError` 代码报告明确拒绝。不确定的创建可使用原请求 ID 重试；不确定的删除可使用同一 ID、同一 revision 幂等重试。界面通过订阅 `getCapabilitiesSnapshot().instances[id].retryDelete` 判断此例外。
+
 ## LocalStorageViewHost
 
 必填配置为 `serviceKey`、`scopeKey`、`definition`、`instances`、`resolveSource`、`storage`、`lock`。可选策略回调为 `instancePermissions`、`canReorder`、`permissionsRevision`。storage 提供 getItem/setItem/removeItem，同一存储键的所有客户端必须共用独占锁域。

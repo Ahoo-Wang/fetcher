@@ -191,6 +191,13 @@ only persisted metadata, retaining pending filters and unsaved column configurat
 The optional `preference.saveOrder(definitionId, ids)` stores ordering for the fixed
 current user, including public views; it must not change other users' ordering.
 Writes persist before updating the list and failures keep edits available for retry.
+After a dispatched save, rename or delete returns `UNKNOWN_OUTCOME`, `UNAVAILABLE`
+or an unclassified exception, the engine blocks unrelated writes to that instance and retains
+local edits. Save/rename require successful reload; an absent or inaccessible instance
+retains its recovery error and edits. Unknown creates can replay their original request
+ID, and unknown deletes can replay the same ID/revision. Subscribed UI controls read
+`getCapabilitiesSnapshot().instances[id].retryDelete`. Hosts should use definitive
+`ViewServiceError` codes for known rejections.
 The headless engine exposes `renameInstance(title, id?)`, `deleteInstance(id?)`,
 `canReorderInstances()` and `reorderInstances(ids)`. Save As and Restore remain
 in the original split button; its standalone Delete entry is removed.

@@ -17,7 +17,7 @@ import { validateViewInstance } from '../recordValidation.js';
 import { sameFilterState } from '../../filter/filterTree.js';
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
-import type { InstanceWork } from './InstanceWork.js';
+import { hasUnknownWriteOutcome, type InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
 import type { RecordSummaries } from './RecordSummaries.js';
 import { copy, message } from './recordSnapshot.js';
@@ -60,10 +60,12 @@ export class ViewManagement {
     const current = () =>
       this.scope.current(lifecycle) && this.work.writes.get(id) === token;
     let received = false;
+    let dispatched = false;
     try {
       this.work.writes.set(id, token);
       this.store.patch(id, { writeStatus: 'renaming', writeError: null });
       if (!current()) return;
+      dispatched = true;
       const result = await this.host.instance!.rename!(
         id,
         title,
@@ -99,7 +101,9 @@ export class ViewManagement {
       this.store.patch(id, {
         writeStatus: 'idle',
         writeError: message(error),
-        ...(received ? { requiresReload: true } : {}),
+        ...(received || (dispatched && hasUnknownWriteOutcome(error))
+          ? { requiresReload: true }
+          : {}),
       });
       throw error;
     } finally {
@@ -161,22 +165,38 @@ export class ViewManagement {
     }
   }
 
+  canRetryDeleteInstance(id?: string): boolean {
+    const key = id ?? this.store.getSnapshot().selectedInstanceId;
+    const session = key === null ? undefined : this.store.find(key);
+    return Boolean(
+      session?.requiresReload &&
+      this.getPermissions(session.instance.id).delete &&
+      this.work.unverifiedDeletes.has(session.instance.id) &&
+      this.work.unverifiedDeletes.get(session.instance.id) ===
+        session.baseline.revision,
+    );
+  }
+
   async deleteInstance(id?: string): Promise<void> {
     const session = this.store.session(id);
     id = session.instance.id;
     if (!this.getPermissions(id).delete)
       throw new Error('系统视图或宿主未授权的视图不能删除');
-    this.work.assertWritable(session);
+    // Repeating the same versioned delete is idempotent; other writes still need reconciliation.
+    this.work.assertWritable(session, this.canRetryDeleteInstance(id));
     const lifecycle = this.scope.version;
     const token = Symbol();
     const current = () =>
       this.scope.current(lifecycle) && this.work.writes.get(id) === token;
+    let dispatched = false;
     try {
       this.work.writes.set(id, token);
       this.store.patch(id, { writeStatus: 'deleting', writeError: null });
       if (!current()) return;
+      dispatched = true;
       await this.host.instance!.delete!(id, session.baseline.revision);
       if (!current()) return;
+      this.work.unverifiedDeletes.delete(id);
       this.queries.cancel(id);
       this.summaries.invalidate(id);
       if (!current()) return;
@@ -201,7 +221,15 @@ export class ViewManagement {
         void this.queries.run(nextId).catch(() => {});
     } catch (error) {
       if (!current()) return;
-      this.store.patch(id, { writeStatus: 'idle', writeError: message(error) });
+      if (dispatched && hasUnknownWriteOutcome(error))
+        this.work.unverifiedDeletes.set(id, session.baseline.revision);
+      this.store.patch(id, {
+        writeStatus: 'idle',
+        writeError: message(error),
+        ...(dispatched && hasUnknownWriteOutcome(error)
+          ? { requiresReload: true }
+          : {}),
+      });
       throw error;
     } finally {
       if (this.work.writes.get(id) === token) this.work.writes.delete(id);

@@ -12,6 +12,16 @@
  */
 
 import type { RecordSession, ViewInstance } from '../recordModel.js';
+import { ViewServiceError } from '../viewServiceContract.js';
+
+/** Only a definitive service rejection proves a dispatched write did not commit. */
+export function hasUnknownWriteOutcome(error: unknown): boolean {
+  return (
+    !(error instanceof ViewServiceError) ||
+    error.code === 'UNKNOWN_OUTCOME' ||
+    error.code === 'UNAVAILABLE'
+  );
+}
 
 /** Per-instance coordination between durable writes and reload/reconciliation. */
 export class InstanceWork {
@@ -24,6 +34,7 @@ export class InstanceWork {
     }
   >();
   readonly writes = new Map<string, symbol>();
+  readonly unverifiedDeletes = new Map<string, string | undefined>();
   readonly reloads = new Map<string, AbortController>();
   readonly unverifiedCreates = new Map<
     string,
@@ -50,13 +61,13 @@ export class InstanceWork {
     }
   }
 
-  assertWritable(session: RecordSession, replayingCreate = false): void {
+  assertWritable(session: RecordSession, replayingWrite = false): void {
     const id = session.instance.id;
     if (this.writes.has(id)) throw new Error('实例正在写入，请等待操作完成');
     if (this.reloads.has(id))
       throw new Error('实例正在重新加载，请等待加载完成');
-    if (session.requiresReload && !replayingCreate)
-      throw new Error('保存结果需要核对，请先重新加载实例');
+    if (session.requiresReload && !replayingWrite)
+      throw new Error('写入结果需要核对，请先重新加载实例');
   }
 
   cancelReloads(): void {
@@ -68,5 +79,6 @@ export class InstanceWork {
     this.cancelReloads();
     this.unverifiedCreates.clear();
     this.createRequests.clear();
+    this.unverifiedDeletes.clear();
   }
 }

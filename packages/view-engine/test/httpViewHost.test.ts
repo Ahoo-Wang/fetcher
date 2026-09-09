@@ -52,6 +52,34 @@ function client(token = 'alice-token', timeoutMs = 1000) {
     resolveSource: setup().host.resolveSource,
   });
 }
+it('allows only the configured browser origin before preflight or writes', async () => {
+  const endpoint = `${server.baseUrl}definitions/${definition.id}/instances`;
+  for (const method of ['OPTIONS', 'POST']) {
+    const rejected = await fetch(endpoint, {
+      method,
+      headers: {
+        Origin: 'https://untrusted.example',
+        Authorization: 'Bearer alice-token',
+      },
+    });
+    expect(rejected.status).toBe(403);
+    expect(rejected.headers.has('Access-Control-Allow-Origin')).toBe(false);
+  }
+  expect(server.control.mutations).toBe(0);
+  const allowed = await fetch(endpoint, {
+    method: 'OPTIONS',
+    headers: { Origin: 'http://127.0.0.1:6006' },
+  });
+  expect(allowed.status).toBe(204);
+  expect(allowed.headers.get('Access-Control-Allow-Origin')).toBe(
+    'http://127.0.0.1:6006',
+  );
+  expect(allowed.headers.get('Vary')).toBe('Origin');
+  // Node service clients do not send a browser Origin header.
+  expect((await client().instance.list(definition.id)).instances).toHaveLength(
+    1,
+  );
+});
 it('executes JSON writes over HTTP with shared visibility, private isolation and typed errors', async () => {
   const alice = client(),
     bob = client('bob-token');
@@ -164,6 +192,77 @@ it('reconciles an unknown create by reload and then allows a distinct create', a
   expect((await host.instance!.list(definition.id)).instances).toHaveLength(3);
   engine.dispose();
 });
+it.each(['save', 'rename', 'delete'] as const)(
+  'blocks writes and retains edits after losing a committed %s response',
+  async operation => {
+    const method = { save: 'PUT', rename: 'PATCH', delete: 'DELETE' }[
+      operation
+    ];
+    let dropResponse = true;
+    const host = new HttpViewHost({
+      baseUrl: server.baseUrl,
+      definitionId: definition.id,
+      headers: () => ({ Authorization: 'Bearer alice-token' }),
+      resolveSource: setup().host.resolveSource,
+      fetch: async (input, init) => {
+        const response = await fetch(input, init);
+        if (dropResponse && init?.method === method) {
+          dropResponse = false;
+          await response.body?.cancel();
+          throw new TypeError('Connection lost after the service committed');
+        }
+        return response;
+      },
+    });
+    const engine = new ViewEngine({ definitionId: definition.id, host });
+    try {
+      await engine.load();
+      engine.setTitle('本地编辑');
+      const session = () => engine.getSnapshot().sessions[instance.id];
+      const revision = session().baseline.revision;
+      await expect(
+        operation === 'save'
+          ? engine.save()
+          : operation === 'rename'
+            ? engine.renameInstance('服务端名称')
+            : engine.deleteInstance(),
+      ).rejects.toMatchObject({ code: 'UNKNOWN_OUTCOME' });
+      expect(session()).toMatchObject({
+        requiresReload: true,
+        writeStatus: 'idle',
+        instance: { title: '本地编辑' },
+        baseline: { revision },
+      });
+      const mutations = server.control.mutations;
+      await expect(engine.save()).rejects.toThrow('核对');
+      await expect(engine.renameInstance('不能写入')).rejects.toThrow('核对');
+      await expect(
+        engine.saveAs({ title: '不能另存', scope: { type: 'personal' } }),
+      ).rejects.toThrow('核对');
+      expect(server.control.mutations).toBe(mutations);
+      if (operation === 'delete') {
+        await engine.deleteInstance();
+        expect(session()).toBeUndefined();
+        expect((await client().instance.list(definition.id)).instances).toEqual(
+          [],
+        );
+      } else {
+        await expect(engine.deleteInstance()).rejects.toThrow('核对');
+        await engine.reloadInstance();
+        expect(session().requiresReload).toBe(false);
+        expect(session().baseline.revision).not.toBe(revision);
+        expect(session().instance.title).toBe('本地编辑');
+        engine.setTitle('核对后的编辑');
+        await engine.save();
+        expect((await client().instance.load(instance.id)).title).toBe(
+          '核对后的编辑',
+        );
+      }
+    } finally {
+      engine.dispose();
+    }
+  },
+);
 it('forwards cancellation and distinguishes read timeout from an unknown write outcome', async () => {
   const host = client('alice-token', 50);
   server.control.delayNextRead = 200;
