@@ -129,3 +129,17 @@ delivery 285s were sequential. They now use independent runners, each retaining
 its required package build; delivery still runs all three browsers in isolation.
 This trades one additional setup/build for overlap. Actual wall-clock savings
 must be measured on the new CI run, not inferred from local hardware.
+
+## Isolate the heavy suites
+
+Each Node version now runs `core`, `view-engine` and `viewer` on separate runners.
+Tests still use the unchanged package scripts, including both view-engine modes.
+The partition regression uses pnpm's actual workspace selection to require every
+package exactly once; leaf builds include their dependencies. This removes the
+single-runner chain of view-engine ordinary/compiled tests followed by viewer.
+
+Node 24 artifacts preserve `packages/<name>/coverage/coverage-final.json` paths.
+The combined coverage job waits for all test jobs, merges the disjoint reports,
+and requires a valid JSON report from every package before uploading once.
+This adds build/runner overhead in exchange for a shorter critical path; timing
+claims remain pending measurement. Required job names now include the suite.

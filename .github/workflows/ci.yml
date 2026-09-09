@@ -18,6 +18,7 @@ jobs:
   changes:
     uses: ./.github/workflows/changes.yml
   build-and-test:
+    name: Node ${{ matrix.node-version }} / ${{ matrix.suite }}
     needs: changes
     if: needs.changes.outputs.code == 'true'
     timeout-minutes: 45
@@ -27,6 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         node-version: [20, 22, 24]
+        suite: [core, view-engine, viewer]
 
     steps:
       - name: Checkout code
@@ -46,36 +48,59 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm -r --filter './packages/*' build
-
-      - name: Test with coverage
-        if: matrix.node-version == 24
-        run: pnpm test:unit
+      - name: Build suite and dependencies
+        run: node .github/scripts/ci-suite.mjs build
         env:
+          CI_SUITE: ${{ matrix.suite }}
+
+      - name: Test suite
+        run: node .github/scripts/ci-suite.mjs test
+        env:
+          CI_SUITE: ${{ matrix.suite }}
+          COLLECT_COVERAGE: ${{ matrix.node-version == 24 }}
           VITEST_MAX_WORKERS: 2
           npm_config_workspace_concurrency: 1
 
-      - name: Test compatibility without coverage
-        if: matrix.node-version != 24
-        run: pnpm -r --filter './packages/*' run test:no-coverage
-        env:
-          VITEST_MAX_WORKERS: 2
-          npm_config_workspace_concurrency: 1
+      - name: Stage coverage with package paths
+        if: always() && matrix.node-version == 24
+        run: |
+          mkdir -p coverage-artifact
+          for report in packages/*/coverage/coverage-final.json; do
+            if [ -f "$report" ]; then
+              cp --parents "$report" coverage-artifact/
+            fi
+          done
 
-      - name: Upload coverage reports to Codecov
-        if: matrix.node-version == 24
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: packages/*/coverage/coverage-final.json
-          fail_ci_if_error: true
-
-      - name: Preserve coverage for diagnosis
+      - name: Preserve suite coverage
         if: always() && matrix.node-version == 24
         uses: actions/upload-artifact@v6
         with:
-          name: unit-coverage-node24
-          path: packages/*/coverage/coverage-final.json
+          name: unit-coverage-node24-${{ matrix.suite }}
+          path: coverage-artifact/
           retention-days: 7
           if-no-files-found: ignore
+
+  coverage:
+    name: Combined coverage
+    needs: [changes, build-and-test]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: unit-coverage-node24-*
+          merge-multiple: true
+          path: coverage-artifacts
+      - name: Require coverage from every package
+        run: node .github/scripts/check-coverage.mjs
+      - name: Upload combined coverage to Codecov
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage-artifacts/packages/*/coverage/coverage-final.json
+          disable_search: true
+          fail_ci_if_error: true
