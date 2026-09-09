@@ -13,6 +13,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { StrictMode, useLayoutEffect } from 'react';
 import { useMounted } from '../../src';
 
 describe('useMounted', () => {
@@ -32,4 +33,28 @@ describe('useMounted', () => {
 
     expect(result.current()).toBe(false);
   });
+
+  it.each([false, true])(
+    'tracks mount and cleanup before consumer layout effects with StrictMode=%s',
+    strict => {
+      const mounted: boolean[] = [];
+      const { unmount } = renderHook(
+        () => {
+          const isMounted = useMounted();
+          useLayoutEffect(() => {
+            mounted.push(isMounted());
+            return () => {
+              mounted.push(isMounted());
+            };
+          }, [isMounted]);
+        },
+        { wrapper: strict ? StrictMode : undefined },
+      );
+      expect(mounted).toEqual(strict ? [true, false, true] : [true]);
+      unmount();
+      expect(mounted).toEqual(
+        strict ? [true, false, true, false] : [true, false],
+      );
+    },
+  );
 });

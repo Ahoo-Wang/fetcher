@@ -20,3 +20,5 @@ description: 从已成功运行的请求或数据表继续完成具体应用能�
 | 接入已有平台服务                   | [Wow、CoSec、存储与事件](../guides/integrations/index.md)                           |
 
 通过[架构与选型](../architecture/index.md)决定状态、取消和持久化的所有者。已知操作、需要精确契约时查询 [API 参考](../reference/index.md)；[完整示例](../examples/index.md)继续作为可执行基线。
+
+独立数据视图引擎的下一步见 [View Engine 任务指南](../guides/view-engine/index.md)：组件配置、远程候选、单元格、汇总与 ViewHost 服务。

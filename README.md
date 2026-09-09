@@ -83,8 +83,9 @@ dependencies and the smallest useful combination.
 ```bash
 pnpm install --frozen-lockfile
 pnpm build
-pnpm test:unit
+VITEST_MAX_WORKERS=4 pnpm test:unit
 pnpm lint
+pnpm verify:view-engine
 ```
 
 See the [contributor guide](https://fetcher.ahoo.me/contributing/) for focused

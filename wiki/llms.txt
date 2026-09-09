@@ -48,6 +48,15 @@
 - [Debounce input-driven requests](/guides/react/debounce) — Delay changing input and distinguish queued execution from an active request.
 - [Clean up React async work](/guides/react/cleanup) — Connect cancellation to the actual operation and distinguish abort, reset, and debounce cancellation.
 
+## guides/view-engine
+
+- [View Engine tasks](/guides/view-engine/) — Build a record page, configure filters and cells, and connect application-owned services.
+- [Start a record page](/guides/view-engine/getting-started) — Run the local example and connect ViewDefinition, ViewInstance, ViewHost and ViewPage.
+- [Configure filters](/guides/view-engine/filters) — Choose built-in editors, preserve component configuration, and apply queries explicitly.
+- [Table and runtime operations](/guides/view-engine/table-and-runtime) — Configure built-in cells, column layout, summaries, refresh and page expansion.
+- [Save and manage views](/guides/view-engine/saved-views) — Separate component configuration, service writes, user preferences and runtime state.
+- [Add application extensions](/guides/view-engine/extensions) — Register global, table, row, filter and cell extensions with explicit ownership.
+
 ## guides/viewer
 
 - [Data view tasks](/guides/viewer/) — Choose a concrete task for data view tasks.
@@ -76,10 +85,11 @@
 
 ## examples
 
-- [Run complete examples](/examples/) — Run deterministic HTTP, React, and Viewer examples with clear consumer and repository instructions.
+- [Run complete examples](/examples/) — Run deterministic HTTP, React, Viewer, and View Engine examples with clear consumer and repository instructions.
 - [Runnable HTTP example](/examples/http) — Run a local deterministic server and verify Fetcher success and HTTP failure behavior.
 - [Runnable React request example](/examples/react) — Exercise successful, failed, and cancelled Fetcher requests with real React hook state.
 - [Local Viewer example](/examples/viewer) — Filter, sort, page and save a local data view with application-owned state.
+- [Complete View Engine example](/examples/view-engine) — A shared runnable record page with real local filtering, sorting and pagination.
 
 ## skills
 
@@ -170,6 +180,13 @@
 - [Business errors and document utilities](/reference/wow/errors-and-utilities) — Business errors and document utilities — @ahoo-wang/fetcher-wow 5.0.0
 - [Legacy operator locales](/reference/wow/operator-locales) — Legacy operator locales — @ahoo-wang/fetcher-wow 5.0.0
 - [Wow symbol index](/reference/wow/symbols) — Wow symbol index — @ahoo-wang/fetcher-wow 5.0.0
+- [View Engine reference](/reference/view-engine/) — Public entries, prerequisites and contracts for the independent record view engine.
+- [Definitions and instances](/reference/view-engine/models) — Persist component configuration and declare record and source capabilities explicitly.
+- [ViewHost and service boundaries](/reference/view-engine/view-host) — Definition, instance, preference, permission and query-source responsibilities.
+- [ViewEngine lifecycle and commands](/reference/view-engine/engine) — Own engine lifetimes, read immutable snapshots and issue scoped commands.
+- [Filter configuration and components](/reference/view-engine/filters) — Serialize editor props, compile pure expressions, and connect remote option sources.
+- [React components and theme](/reference/view-engine/components) — Choose the right ownership layer and configure controls, cells and action props.
+- [View Engine symbol index](/reference/view-engine/symbols) — All public core and React export names with their source declarations.
 - [Viewer reference](/reference/viewer/) — Viewer entry selection, installation and behavior contracts
 - [View and Viewer composition](/reference/viewer/view-and-viewer) — View and Viewer composition — @ahoo-wang/fetcher-viewer 5.0.0
 - [Models and state ownership](/reference/viewer/models-and-state) — Models and state ownership — @ahoo-wang/fetcher-viewer 5.0.0

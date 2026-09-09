@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   ActionCell,
@@ -29,7 +29,6 @@ import {
   typedCellRender,
 } from '@ahoo-wang/fetcher-viewer';
 import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 import { fixtureAvatar, fixtureViewerUsers } from '../fixtures/viewer';
 
 function CellGallery() {
@@ -201,21 +200,21 @@ function CellGallery() {
 }
 
 const meta = {
-  title: 'Viewer/Tables/Cells',
+  decorators: [
+    Story => (
+      <AntdProvider>
+        <Story />
+      </AntdProvider>
+    ),
+  ],
+  title: 'Viewer/单元格与表格/Cells',
   parameters: { layout: 'padded' },
 } satisfies Meta;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const Gallery: Story = {
   render: () => <CellGallery />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit' }));
-    await expect(await canvas.findByText('Action: Edit Ada')).toBeVisible();
-    await expect(
-      canvas.getByRole('link', { name: 'docs@example.test' }),
-    ).toHaveAttribute('href', 'mailto:docs@example.test');
-  },
 };

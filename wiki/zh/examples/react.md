@@ -16,7 +16,7 @@ description: 使用真实 React Hook 状态验证 Fetcher 请求的成功、失�
 仓库贡献者需要 Node `>=20.20.2`、pnpm `10.34.5`，并已安装仓库依赖。在仓库根目录运行：
 
 ```bash
-pnpm exec vitest run --project=storybook stories/docs/ReactRequests.stories.tsx
+pnpm exec vitest run --project=storybook stories/docs/ReactRequests.test.stories.tsx
 ```
 
 要手动尝试相同交互，请运行 `pnpm storybook`，打开命令输出的本地地址，然后在侧栏选择 **Docs / React requests**。仓库 Storybook 就是不需要后端的可运行样例。

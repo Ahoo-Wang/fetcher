@@ -1,0 +1,54 @@
+---
+next: false
+title: Complete View Engine example
+description: A shared runnable record page with real local filtering, sorting and pagination.
+---
+
+# Complete View Engine example
+
+## Run and verify
+
+From this repository, with Node >=20.20.2 and pnpm 10.34.5:
+
+```bash
+pnpm install
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
+pnpm storybook
+```
+
+Open [View Engine → 快速开始 → 第一个数据视图](http://localhost:6006/?path=/story/view-engine-快速开始--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
+
+```bash
+pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx
+```
+
+Install Playwright Chromium first (`pnpm exec playwright install chromium`), or set `VIEW_ENGINE_BROWSER_CHANNEL=chrome` to use installed Chrome. This command also checks the existing five-extension and narrow-dark examples.
+
+| Action                             | Expected result                                              |
+| ---------------------------------- | ------------------------------------------------------------ |
+| Open the page                      | ORDER-001 and ORDER-002, 3 total rows                        |
+| Next page                          | ORDER-003                                                    |
+| Set Amount to 200 without querying | Current result stays unchanged                               |
+| Press Enter                        | Only ORDER-002                                               |
+| Clear the applied amount value     | All 3 records are eligible again; the filter control remains |
+| Sort Amount ascending              | ORDER-003, ORDER-001 on page 1                               |
+
+## Full shared component
+
+The source below is the component rendered by the Storybook Minimal story. It uses the public package entries. The local source supports only the advertised amount lower-bound/AND predicates and ordinary paging; other operators require a business QueryApi. It returns full records and supplies no saved-view service, so saving is unavailable. The [saved-view guide](../guides/view-engine/saved-views.md) covers that next step.
+
+<<< @/../stories/docs/RecordViewExample.tsx
+
+## Use a separate React application
+
+Until this package is published, build and verify its local archive:
+
+```bash
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
+node packages/view-engine/scripts/verify-package.mjs
+pnpm --filter @ahoo-wang/fetcher-view-engine pack --pack-destination /tmp/view-engine-pack
+```
+
+The pack command prints the archive filename. In a React 19 TypeScript application, install that absolute `.tgz` path with `pnpm add`, satisfy the declared peer dependencies, copy the shared component, and render `<RecordViewExample />`. If an internal dependency version is not published in your environment, pack the corresponding workspace dependency as well; the package verifier exercises the workspace-built artifacts together without publishing them.
+
+This verifies a browser UI and a local record source. Authentication, durable view storage and your backend's query behavior belong to the application integration; see [ViewHost](../reference/view-engine/view-host.md).

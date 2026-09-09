@@ -62,6 +62,10 @@ SSE media types are matched case-insensitively after removing parameters, using 
 
 ## SSE Stream Processing Pipeline
 
+`SafeTransformer<I, O>` implements the platform `TransformStream<I, O>`
+constructor's transformer contract. Its types work with browser or Node Web
+Streams globals without requiring the DOM-only global `Transformer`.
+
 The internal pipeline transforms raw bytes into typed events:
 
 ```

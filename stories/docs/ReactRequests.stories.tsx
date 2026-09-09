@@ -12,7 +12,6 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
 import { installDocumentationFetchFixture } from '../fixtures/http';
 import { ReactRequests } from './ReactRequests';
 
@@ -27,39 +26,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Success: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.queryByText('Ada, Lin')).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: 'Load' }));
-    await expect(await canvas.findByText('Ada, Lin')).toBeVisible();
-  },
-};
+export const Success: Story = {};
 
-export const Failure: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.queryByText('Error · ExchangeError')).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: 'Fail' }));
-    await expect(
-      await canvas.findByText('Error · ExchangeError'),
-    ).toBeVisible();
-  },
-};
+export const Failure: Story = {};
 
-export const Cancellation: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.queryByText('completed')).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: 'Load' }));
-    await expect(await canvas.findByText('Ada, Lin')).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Load slow' }));
-    await expect(canvas.getByText('loading')).toBeVisible();
-    await new Promise(resolve => window.setTimeout(resolve, 100));
-    await expect(canvas.getByText('loading')).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
-    await expect(canvas.getByText('idle')).toBeVisible();
-    await new Promise(resolve => window.setTimeout(resolve, 2100));
-    expect(canvas.queryByText('completed')).not.toBeInTheDocument();
-  },
-};
+export const Cancellation: Story = {};

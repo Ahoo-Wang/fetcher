@@ -14,6 +14,8 @@ import storybook from 'eslint-plugin-storybook';
  * limitations under the License.
  */
 
+import { fileURLToPath } from 'node:url';
+import { reactLintConfig } from './packages/view-engine/eslint.config.js';
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -27,6 +29,9 @@ export default tseslint.config(
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2020,
+      parserOptions: {
+        tsconfigRootDir: fileURLToPath(new URL('.', import.meta.url)),
+      },
       globals: globals.browser,
     },
     rules: {
@@ -48,4 +53,11 @@ export default tseslint.config(
     },
   },
   storybook.configs['flat/recommended'],
+  {
+    ...reactLintConfig,
+    files: [
+      'packages/view-engine/**/*.{ts,tsx}',
+      'stories/view-engine/**/*.{ts,tsx}',
+    ],
+  },
 );

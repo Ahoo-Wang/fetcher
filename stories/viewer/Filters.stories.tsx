@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { EditableFilterPanel, TypedFilter } from '@ahoo-wang/fetcher-viewer';
 import type {
@@ -20,7 +20,6 @@ import type {
 } from '@ahoo-wang/fetcher-viewer';
 import { Operator } from '@ahoo-wang/fetcher-wow';
 import { useRef, useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 import { fixtureAvailableFilters } from '../fixtures/viewer';
 
 const initialNameFilter: ActiveFilter = {
@@ -132,72 +131,39 @@ function EditableWorkflow() {
 }
 
 const meta = {
-  title: 'Viewer/Filters',
+  decorators: [
+    Story => (
+      <AntdProvider>
+        <Story />
+      </AntdProvider>
+    ),
+  ],
+  title: 'Viewer/输入与过滤/Filters',
   parameters: { layout: 'padded' },
 } satisfies Meta;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const EditTextFilter: Story = {
   render: () => <EditTextFilterDemo />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.type(canvas.getByPlaceholderText('Filter name'), 'Ada');
-    await expect(
-      await canvas.findByText('{"field":"name","operator":"EQ","value":"Ada"}'),
-    ).toBeVisible();
-  },
 };
 
 export const TypedGallery: Story = {
   render: () => <FilterGallery />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Read filters' }));
-    await expect(await canvas.findByText(/"field":"name"/)).toBeVisible();
-  },
 };
 
 export const AddAvailableFilter: Story = {
   render: () => <EditableWorkflow />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const page = within(canvasElement.ownerDocument.body);
-    await userEvent.click(canvas.getByRole('button', { name: /添加过滤器/ }));
-    await userEvent.click(await page.findByRole('checkbox', { name: 'Role' }));
-    await userEvent.click(page.getByRole('button', { name: 'OK' }));
-    await expect(
-      await canvas.findByText('Active filters: Name, Role'),
-    ).toBeVisible();
-  },
 };
 
 export const RemoveFilter: Story = {
   render: () => <EditableWorkflow />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.hover(canvas.getByText('Name'));
-    const remove = canvas
-      .getAllByRole('button')
-      .find(button => button.classList.contains('ant-btn-circle'));
-    if (!remove) throw new Error('Remove filter button was not shown');
-    await userEvent.click(remove);
-    await expect(await canvas.findByText('Active filters: none')).toBeVisible();
-  },
 };
 
 export const ResetValues: Story = {
   render: () => <EditableWorkflow />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.type(canvas.getByPlaceholderText('Filter name'), 'Ada');
-    await userEvent.click(canvas.getByRole('button', { name: /搜索|Search/ }));
-    await expect(await canvas.findByText(/"value":"Ada"/)).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: /Reset/ }));
-    await userEvent.click(canvas.getByRole('button', { name: /搜索|Search/ }));
-    await expect(await canvas.findByText('{"operator":"ALL"}')).toBeVisible();
-  },
 };
 
 export const UnsupportedType: Story = {

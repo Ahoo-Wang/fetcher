@@ -22,6 +22,7 @@ export const en: LocaleConfig<DefaultTheme.Config>[string] = {
           { text: 'GitHub', link: 'https://github.com/Ahoo-Wang/fetcher' },
         ],
       },
+      { text: 'Storybook', link: '/storybook/', target: '_blank' },
     ],
     sidebar: siteSidebar(false),
     socialLinks: [

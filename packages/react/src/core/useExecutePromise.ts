@@ -244,18 +244,21 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
    */
   const execute = useCallback(
     async (input: PromiseSupplier<R>): Promise<void> => {
+      const previous = abortControllerRef.current;
       const currentRequestId = requestId.generate();
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        await handleOnAbort();
-        if (!requestId.isLatest(currentRequestId)) {
-          return;
-        }
-      }
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
       setLoading();
       try {
+        if (previous) {
+          previous.abort();
+          if (onAbortRef.current) await handleOnAbort();
+        }
+        // Allow StrictMode effect replay to remount before checking ownership.
+        if (!isMounted()) await Promise.resolve();
+        if (!isMounted() || !requestId.isLatest(currentRequestId)) return;
+        // A request deferred until mount still needs its loading transition.
+        setLoading();
         const data = await input(abortController);
 
         if (isMounted() && requestId.isLatest(currentRequestId)) {
@@ -298,6 +301,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       requestId,
       propagateError,
       handleOnAbort,
+      onAbortRef,
     ],
   );
 
@@ -328,11 +332,12 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       resetOnMountRequestIdRef.current = requestId.current();
     }
     reset();
-    if (!abortControllerRef.current) {
+    const abortController = abortControllerRef.current;
+    abortControllerRef.current = undefined;
+    if (!abortController) {
       return;
     }
-    abortControllerRef.current.abort();
-    abortControllerRef.current = undefined;
+    abortController.abort();
     await handleOnAbort();
   }, [reset, handleOnAbort, requestId, isMounted]);
 

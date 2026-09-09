@@ -1,6 +1,6 @@
 # Fetcher Wiki — Full Content
 
-> All documentation pages inlined for LLM consumption. Generated 2026-09-08.
+> All documentation pages inlined for LLM consumption. Generated 2026-09-09.
 
 ## Overview
 
@@ -35,6 +35,7 @@ Fetcher adds reusable request configuration and result handling to native Fetch.
 | TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package          | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
 | Existing React application                 | Compatible React and Fetcher peers, a bundler      | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
 | Existing React application needing a table | Viewer peers, CSS-capable bundling, local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering                                |
+| Headless record engine or shadcn/Base UI   | Current workspace/local archive; React 19 for UI   | [View Engine quick start](../guides/view-engine/getting-started.md)                                          |
 
 The runnable HTTP and Storybook examples have deterministic fixtures. When you move them into your application, supply the routes and response JSON documented in each example. Installing a client does not create a server.
 
@@ -79,6 +80,10 @@ Continue with [Your first request](./first-request.md).
 ## React and Viewer starting points
 
 For an existing React application, follow the [React example peer installation and mounting steps](../examples/react.md). For a table, use [your first data view](./first-view.md). These UI paths require additional peers beyond the core HTTP installation; [choose your starting point](./index.md) first.
+
+## View Engine
+
+View Engine uses React 19 and compiled scoped CSS. Its current branch is available through the [workspace/local-archive workflow](../guides/view-engine/getting-started.md); it has not yet had its first public registry release.
 
 </doc>
 
@@ -229,6 +234,17 @@ See the [repository HTTP example](../examples/http.md) for repository-specific v
 
 # Your first data view
 
+Choose the UI package before copying a definition; the two packages have different models.
+
+| UI and ownership                                                                  | Entry                                                                                              |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| shadcn/Base UI, headless engine, component-configuration persistence and ViewHost | [View Engine example](../examples/view-engine.md) and [task guide](../guides/view-engine/index.md) |
+| Ant Design, application-controlled table data and Viewer state                    | [Viewer example](../examples/viewer.md)                                                            |
+
+View Engine currently uses workspace/local-archive instructions until its first registry release. Its core entry is usable independently of the React UI.
+
+## Ant Design Viewer path
+
 Start with the [complete local Viewer example](../examples/viewer). It supplies a consumer installation, one complete component, the React entry and a run command. No server, authentication setup or Storybook fixtures are needed.
 
 Follow its five actions: inspect the first page, change pages, sort Name, filter Active, then save and switch views. The row results change because the example application calculates the data and supplies it to Viewer.
@@ -266,6 +282,8 @@ After the first example succeeds, choose the change your application needs next.
 
 Use [architecture and selection](../architecture/index.md) to decide who owns state, cancellation, and persistence. Use [API reference](../reference/index.md) when you know the operation and need its exact contract; the [complete examples](../examples/index.md) remain the executable baseline.
 
+For the independent record engine, continue with [View Engine tasks](../guides/view-engine/index.md): component configuration, remote candidates, cells, summaries and ViewHost services.
+
 </doc>
 
 ## guides
@@ -280,7 +298,8 @@ Choose the task you need to complete. New to Fetcher? [Start with a runnable res
 - [Service clients](./services/index.md): Use direct Fetcher calls for a few endpoints. Decorators require a compatible TypeScript compiler; generation requires a complete OpenAPI document and a compile step. Neither creates backend routes.
 - [Streaming data](./streaming/index.md): Your runtime needs Fetch, Response bodies, and ReadableStream. The server must emit SSE frames; a normal JSON response is not an event stream. Keep a caller-owned cancellation signal for long-lived reads.
 - [React data flow](./react/index.md): Start in an existing React application with the declared peer dependencies. The runnable React example supplies a deterministic backend fixture; production routes remain application-owned.
-- [Data view tasks](./viewer/index.md): Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
+- [View Engine](./view-engine/index.md): Build a shadcn/Base UI record page with component-configuration persistence, built-in filters/cells and explicit ViewHost services. Start with the workspace example.
+- [Ant Design Viewer](./viewer/index.md): Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
 - [Platform integrations](./integrations/index.md): Wow and CoSec require compatible server protocols, authentication and application-specific routes. Storage and local events can be used without a platform server. Confirm the chosen package peers before installing.
 
 For a working baseline use [complete examples](../examples/index.md). For ownership and adoption tradeoffs use [architecture](../architecture/index.md).
@@ -1318,6 +1337,266 @@ See [promise lifecycle](../../reference/react/promise-and-query-state.md), [HTTP
 
 </doc>
 
+## guides/view-engine
+
+<doc title="View Engine tasks" path="guides/view-engine/index.md">
+
+# View Engine tasks
+
+View Engine combines a React-independent engine, persisted component configuration, and React controls built with shadcn/Base UI. The implemented view kind is `record` with a table presentation. Analysis, cards and dashboards are separate work.
+
+| Task                             | Start here                                  | Verify in Storybook                     |
+| -------------------------------- | ------------------------------------------- | --------------------------------------- |
+| Render your first page           | [Getting started](./getting-started.md)     | View Engine → 快速开始 → 第一个数据视图 |
+| Add local or remote filters      | [Filters](./filters.md)                     | View Engine → 过滤器 → 内置组件         |
+| Format cells, summarize, refresh | [Table and runtime](./table-and-runtime.md) | View Engine → 单元格 / Record View      |
+| Save and manage views            | [Saved views](./saved-views.md)             | View Engine → Record View → 视图管理    |
+| Add business operations          | [Extensions](./extensions.md)               | View Engine → 扩展接入 → 公共包         |
+
+The [complete example](../../examples/view-engine.md) is also used by Storybook. Use the [API reference](../../reference/view-engine/index.md) for contracts. `@ahoo-wang/fetcher-viewer` is the separate Ant Design package; its `ViewDefinition` and filter models are different.
+
+</doc>
+
+<doc title="Start a record page" path="guides/view-engine/getting-started.md">
+
+# Start a record page
+
+## Run the current checkout
+
+This branch's view-engine package is not yet available from the public npm registry. Repository examples are the reproducible entry point; use the local archive procedure in the [complete example](../../examples/view-engine.md) for a separate application.
+
+```bash
+pnpm install
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
+pnpm storybook
+```
+
+Open **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `200`: the rows stay unchanged until you press Enter or Query, then only `ORDER-002` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
+
+## Connect four responsibilities
+
+| Part             | Provide                                             | Owns                                                           |
+| ---------------- | --------------------------------------------------- | -------------------------------------------------------------- |
+| `ViewDefinition` | `id`, `sourceId`, `rowKey`, fields and capabilities | Shared metadata                                                |
+| `ViewInstance`   | Identity, scope and `config`                        | One saved filter/column/sort/page-size configuration           |
+| `ViewHost`       | Services plus `resolveSource(sourceId)`             | Metadata, persistence, permissions and the local source bridge |
+| `ViewPage`       | `scopeKey`, `definitionId`, host                    | Engine creation, loading, subscriptions and disposal           |
+
+For local metadata, pass `definition` and `instances: { instances, defaultInstanceId }` directly to `ViewPage`. A query-only host is enough to display the page. Saving, creation, deletion and reordering appear according to the supplied methods and permissions.
+
+```tsx
+import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
+
+// host is your application-provided ViewHost.
+<ViewPage
+  scopeKey="tenant:user:access"
+  definitionId="orders"
+  host={host}
+  selectable
+/>;
+```
+
+`scopeKey` is a stable access identity. Change it when user, tenant or authorization scope changes; it is not a server authorization credential. `[scopeKey, definitionId]` owns the engine lifetime. Replacing host callbacks within that scope preserves sessions. Local metadata props initialize that lifetime; change the React key when you intentionally want a fresh initialization.
+
+Use `ViewPageContent` for navigation around a caller-owned engine, or `RecordView` for only the current record view. A caller-owned engine requires `load()` and `dispose()`; do not create it on every render. See [engine ownership](../../reference/view-engine/engine.md).
+
+## Style once
+
+Import the compiled CSS once. Consumers do not need Tailwind or React Compiler build plugins. Wrap the page in `.fve-root` with `data-theme="light"` or `data-theme="dark"` for an explicit theme. Otherwise it follows inherited `color-scheme`. See [components and theme](../../reference/view-engine/components.md).
+
+</doc>
+
+<doc title="Configure filters" path="guides/view-engine/filters.md">
+
+# Configure filters
+
+## Choose the field editor
+
+Field `type` and explicit `operators` declare capability; `editor` selects the default component for new nodes only. Existing nodes use their own `component` reference, which a field default change cannot replace or further restrict. Built-in names have no `fve/` prefix.
+
+| Need                                       | `editor.name`            | Operators / options                                              |
+| ------------------------------------------ | ------------------------ | ---------------------------------------------------------------- |
+| Text, number, boolean, ordinary date input | `builtin` or omit editor | Operators inferred from field type and restricted by `operators` |
+| One local option                           | `select`                 | EQ / NE, `field.options`                                         |
+| Multiple local options                     | `multi-select`           | IN / NOT_IN, `field.options`                                     |
+| One remote option                          | `remote-select`          | EQ / NE, `options.source`                                        |
+| Multiple remote options                    | `remote-multi-select`    | IN / NOT_IN, `options.source`                                    |
+| Multiple typed values                      | `text-values`            | IN / NOT_IN                                                      |
+| Date or datetime interval                  | `datetime-range`         | BETWEEN, optional `showTime`                                     |
+
+Options can declare `group`. IDs preserve type: `1` and `'1'` are different. `group` on the field organizes the add-filter picker, while `group` on an option organizes candidates. A field's empty `operators: []` disables filtering for that field; `definition.allowedOperators` further restricts the complete expression.
+
+## Editing, querying and saving
+
+Typing edits a draft. Query or Enter applies valid input. An unset control remains rendered and contributes no value-dependent predicate; it is not removed from saved configuration. The applied-condition clear button clears that control's value and queries immediately. Removing a control from the editing panel changes the draft instead.
+
+Simple mode has one control per field. Advanced mode can repeat a field and nest AND/OR/NOR or supported element conditions. Existing nested branches are not flattened on a mode switch. The field picker uses grouped checkboxes in a popup; logical groups are added through the separate button-group menu.
+
+Persist `ViewInstance.config.filters: FilterConfiguration`, including component name, options, operator and raw `props`. Do not replace it with the compiled Wow `FilterExpression`: an expression cannot restore unset controls, chosen editors or display-only properties. The component registration owns pure `compile` and optional `clear` semantics; the panel coordinates application. See [filter contracts](../../reference/view-engine/filters.md).
+
+## Remote candidates
+
+```ts
+import type { ViewFieldDefinition } from '@ahoo-wang/fetcher-view-engine';
+
+const customerField: ViewFieldDefinition = {
+  field: 'customerId',
+  label: 'Customer',
+  type: 'string',
+  group: 'Customer',
+  editor: {
+    name: 'remote-multi-select',
+    options: { source: 'customers', pageSize: 20, debounceMs: 250 },
+  },
+};
+// ViewPage extensions: { optionSources: { customers: customerOptionSource } }
+```
+
+`FilterOptionSource.search({ search, cursor, size }, signal)` returns `{ list, nextCursor }`. `resolve(ids, signal)` returns `{ list, missing }` and must account for every ID exactly once. Preserve a stable source object within an access scope and forward the signal to Fetcher or the backend. Candidate data belongs to `extensions.optionSources`, separate from record queries resolved by ViewHost. Only component configuration is saved, not the source function or search cache.
+
+## Date granularity and timezone
+
+Date/datetime ranges use a dual-month Date Range Picker by default. Datetime fields in date-only mode include the complete selected natural days, including the final day and DST boundaries. Set `editor.options.showTime: true` to edit start/end date and time through seconds in one popup; Confirm publishes, Cancel/Escape discards the popup draft.
+
+Configure `ViewDefinition.timeZone` once, for example `Asia/Shanghai`; omission uses the local runtime timezone. A standalone `FilterPanel` receives `timeZone` directly. Fields do not override it. Runtime queries use epoch milliseconds; component configuration retains editable date/time values.
+
+Verify **View Engine → 过滤器 → 内置组件** for remote paging/retry/restoration, and **基础组件 → 日期时间** for the standalone controls.
+
+</doc>
+
+<doc title="Table and runtime operations" path="guides/view-engine/table-and-runtime.md">
+
+# Table and runtime operations
+
+## Configure cells at the field or column
+
+Use `field.cellRenderer` as the default and `column.renderer` for an instance-specific override. Built-ins are `text`, `tags`, `status`, `link`, `date-time` and `number`; standalone React components expose the same display capabilities.
+
+```ts
+import type {
+  RecordColumn,
+  ViewFieldDefinition,
+} from '@ahoo-wang/fetcher-view-engine';
+
+const amount: ViewFieldDefinition = {
+  field: 'amount',
+  label: 'Amount',
+  type: 'number',
+  sortable: true,
+  cellRenderer: { name: 'number' },
+  numberFormat: { style: 'currency', currency: 'CNY' },
+  summaryFunctions: ['SUM', 'AVG'],
+};
+const column: RecordColumn = {
+  id: 'amount',
+  kind: 'field',
+  field: 'amount',
+  summary: ['SUM', 'AVG'],
+};
+```
+
+Number formatting is shared by cells and summaries; calculations keep raw values. Text copying uses the original value, even when an enum label or ellipsis is displayed. Success feedback resets after 2 seconds. Unsafe link schemes render as text; new-tab links include `noopener noreferrer`.
+
+`field` and `rowKey` paths are relative to each returned record: `customer.name`, `items.0.sku`, `meta.id`. Response property names must not contain dots; dots in field paths are navigation separators, including array indices. Each segment reads only an own property. The table does not insert `state.` or another backend prefix. Configure paths for the actual response shape and ensure the backend understands query field paths separately.
+
+## Columns and selection
+
+Persist column identity, visibility, order, width, pinning and summary selections in `presentation.table.columns`. The row-key column is fixed left, actions right. Width is changed by dragging the table boundary, not a number input in settings. Ordinary pinning follows contiguous pinned neighbors. Fixed edges have a shadow.
+
+Selection is opt-in (`selectable`). Batch operations receive keys from the currently loaded page, not every record matching the filter. Declare a unique string/finite-number row key; missing, duplicate or invalid keys are data errors.
+
+For paged queries, if the returned total no longer includes the current page, the engine clears that page and requests page one. A failed correction remains a query error and retries page one; newer navigation or queries take precedence. Cursor pagination retains its separate cursor protocol.
+
+## Summary scope and failures
+
+A numeric column can select several of SUM/AVG/MIN/MAX, subject to `summaryFunctions`. “This page” summarizes loaded rows; “All” uses the applied filter and the optional source `aggregate()` capability. Selection does not define aggregate scope. One failure indicator is shown at its scope label; open it for the reason and retry. `refreshSummary()` retries aggregates without requerying records. Missing numeric data remains a placeholder rather than an invented zero.
+
+## Global runtime controls
+
+Manual refresh, automatic refresh and page expansion are in the global toolbar. Automatic refresh offers 30 seconds, 1 minute and 5 minutes with a countdown; it does not change saved query configuration. Pause external business work through `autoRefreshPaused`. Hidden-page and active-work guards prevent overlapping automatic reads.
+
+Expansion fills the page area and exits with Escape; it is not the browser Fullscreen API. Query errors, summary errors and action errors retain their own recovery positions. During background refresh, the last successful rows remain usable; first load uses Spin and empty results use an icon.
+
+Verify **Record View → 表格与汇总 / 运行时工具 / 布局与主题** and **单元格 → 内置组件**. See [component props](../../reference/view-engine/components.md).
+
+</doc>
+
+<doc title="Save and manage views" path="guides/view-engine/saved-views.md">
+
+# Save and manage views
+
+## Persist instance configuration
+
+A saved record instance contains `config.filters`, `sort`, `pagination` and `presentation`. Filters store component attributes. The current page/cursor, rows, selection, loading state, errors, refresh countdown and expanded state are runtime state.
+
+Editing a filter does not query. Query applies it; Save persists the applied configuration. Valid display-only editor properties or an added unset control may be saved without changing the query. Pending query-affecting values require Query or Undo before Save. Reopening should restore component configuration and execute records through the source; it should not deserialize cached records as the current result.
+
+## Connect only the services you implement
+
+`ViewHost.definition` loads shared metadata; `instance` loads/lists/saves/creates/renames/deletes instances; `preference.saveOrder` stores the current user's order; `permission` supplies a policy projection and change notifications. `resolveSource` remains the local bridge to business query clients. See [signatures and responses](../../reference/view-engine/view-host.md).
+
+Return the authoritative saved instance and updated `revision` from save/create/rename. Enforce ownership, grants and revisions on the service side; UI capability checks are not authorization. Creation receives `ViewCreateContext.requestId` for idempotent recovery. Read signals can be cancelled; a cancelled UI lifetime cannot prove that a write was rolled back.
+
+## Scope and permissions
+
+The UI has two groups: personal views and public views. Public system views carry a System label and cannot be renamed or deleted. Public shared views depend on policy. Name editing starts after the edit icon; management also supports deletion and order changes. Reordering is the current user's preference, including their ordering of public views.
+
+Load permissions before exposing synchronous getters. Publish policy changes through `permission.subscribe`, or replace the host/update its callbacks within the same scope. Changing the user or tenant requires a new `scopeKey`.
+
+## Develop against LocalStorageViewHost
+
+`LocalStorageViewHost` is an executable development service fixture. It models shared content, personal ownership, user order, revisions and create receipts. It requires explicit `storage`, a shared exclusive `lock`, trusted `serviceKey` and `scopeKey`, a definition and initial instance list. It stores view configuration; the record source is still separate.
+
+Use **开发验证 → 本地视图恢复** to save, reload and inspect recovery. The public-package five-extension example also supports `persistViews`. Browser storage is editable by its user and is not production authorization. HTTP adapters under `packages/view-engine/dev` are experiments, not public package exports or a fixed REST endpoint specification.
+
+Verify **Record View → 视图管理**, **扩展接入 → 公共包** and the standalone service verification scripts described in [ViewHost](../../reference/view-engine/view-host.md).
+
+</doc>
+
+<doc title="Add application extensions" path="guides/view-engine/extensions.md">
+
+# Add application extensions
+
+## Five extension points
+
+| Need                          | Registration               | Configuration reference                               |
+| ----------------------------- | -------------------------- | ----------------------------------------------------- |
+| Global business operation     | `extensions.globalActions` | `definition.recordActions.global`                     |
+| Batch / table operation       | `extensions.tableActions`  | `definition.recordActions.table`                      |
+| Per-record action             | `extensions.rowActions`    | `definition.recordActions.row` plus an actions column |
+| Filter component and compiler | `extensions.filters`       | Field/editor/operator component reference             |
+| Custom cell                   | `extensions.cells`         | `field.cellRenderer` or `column.renderer`             |
+
+Each reference is `{ name, options? }`; options must be JSON data. Register components, service clients and callbacks in runtime extensions, not persisted JSON. Unknown names and invalid configuration surface an error; they are not silently treated as another component. Start with built-ins before registering a custom implementation.
+
+```ts
+// The values on the right are your application components/registrations.
+const extensions = {
+  globalActions: { 'create-order': CreateOrder },
+  tableActions: { 'process-orders': ProcessSelectedOrders },
+  rowActions: { 'process-order': ProcessOrder },
+  cells: { 'customer-link': CustomerLink },
+  filters: { 'order-status': orderStatusFilter },
+};
+```
+
+## Operations
+
+Action props include the immutable definition/instance, applied `filter`, `sort`, options and an instance-bound `refresh()`. Table/global actions also receive `selectedRowKeys` and `querying`; row actions receive `record` and `rowKey`. A null applied filter means query scope is unavailable: do not start a filter-wide write from it.
+
+The application executes business writes, handles their errors and prevents duplicates. Await the write, then refresh the bound instance. If refresh fails after a successful write, retry the refresh instead of repeating the write. Disable or pause conflicting work and pass `autoRefreshPaused` while your business operation is active. Cell renderers only receive display context; do not issue writes during render.
+
+## Filters
+
+One `FilterRegistration` combines `component`, pure `compile(props, context)`, required supported `modes`, optional `supports`, and optional `clear`. The default `render: 'value'` composes the editor inside the standard field/operator/remove frame. `render: 'filter'` receives the complete control contract, including labels, operator changes, clearing and removal.
+
+`onChange` publishes serializable raw props and does not apply a query. Report incomplete local input through `onValidityChange(false, message)`. Compilation returns `undefined` for an unset value and throws for invalid nonempty input. Clearing preserves unrelated display attributes. Keep the registration stable for an engine lifetime; incompatible saved-prop semantics require a new component name.
+
+The complete implementation is available in **View Engine → 扩展接入 → 公共包**. `packages/view-engine/examples/react/OrderExtensions.tsx` implements all five extension types; `OrderOperations.tsx` coordinates business writes and refresh. The code panels show the actual source, and the regression scenarios exercise writes, failure recovery and JSON restoration. API details: [filters](../../reference/view-engine/filters.md), [components](../../reference/view-engine/components.md).
+
+</doc>
+
 ## guides/viewer
 
 <doc title="Data view tasks" path="guides/viewer/index.md">
@@ -2089,6 +2368,10 @@ Keep the generator in the code-generation workflow: run it against the service s
 
 Follow [declarative services](../guides/services/declarative-client.md), [generated services](../guides/services/generated-client.md), and the [generator output reference](../reference/generator/generated-output.md) for implementation. See [runtime support](./runtime-support.md) before choosing consumer versions.
 
+## View Engine entries
+
+`@ahoo-wang/fetcher-view-engine` declares direct dependencies on Wow/React and its UI implementation packages; these are separate from the peer-only arrows above. Its public core entry imports no React/DOM/CSS. The `/react` entry provides shadcn/Base UI components and owns browser UI integration. `ViewHost` composes definition, instance, preference and permission services; the record query source and option sources remain application runtime adapters. See [View Engine contracts](../reference/view-engine/index.md) and its [package manifest](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/package.json).
+
 </doc>
 
 <doc title="Runtime support and SSR" path="architecture/runtime-support.md">
@@ -2122,6 +2405,10 @@ FetcherViewer creates default-view-ID storage at module scope with the fixed key
 Remounting a view when its definition, tenant, or owner changes separates UI state. The server must still enforce access control, and the application must scope persisted preferences appropriately. A particular SSR framework still needs import, render, and hydration validation; this chapter does not certify all frameworks.
 
 Continue with [shared clients](../guides/http/shared-client.md), [storage and events](../guides/integrations/storage-and-events.md), and [state ownership](./state-and-resources.md).
+
+## View Engine runtime
+
+The view-engine package declares Node >=20.20.2. Its core entry is independent of React and browser globals; browser controls use the separate `/react` entry with React 19. `ViewPage` initializes and disposes its engine in Effects, while caller-owned engines must be scoped and disposed explicitly. Clipboard, page visibility and layout APIs remain browser capabilities. LocalStorageViewHost requires supplied storage and an exclusive lock, such as Web Locks in the development example. Validate a framework-specific SSR/hydration integration instead of treating headless import support as certification of every UI component.
 
 </doc>
 
@@ -2327,11 +2614,12 @@ Continue with [Wow](../guides/integrations/wow.md), [CoSec](../guides/integratio
 
 Each example includes maintained source, prerequisites, run commands, expected results, and cleanup. The repository fixtures require no external backend.
 
-| Example               | Run it to observe                                                              | Use it in your application                                                     |
-| --------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| [HTTP](./http.md)     | A local server returns Ada; a missing route produces HTTP 404                  | Copy the server and client into the independent ESM setup                      |
-| [React](./react.md)   | Load, fail, start a delayed request, then cancel it                            | Mount the component in an existing React app and provide the documented routes |
-| [Viewer](./viewer.md) | Four rows, paging, name sorting, Active filtering, and saved-view confirmation | Mount the local component with compatible React/Viewer peers                   |
+| Example                         | Run it to observe                                                              | Use it in your application                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| [HTTP](./http.md)               | A local server returns Ada; a missing route produces HTTP 404                  | Copy the server and client into the independent ESM setup                      |
+| [React](./react.md)             | Load, fail, start a delayed request, then cancel it                            | Mount the component in an existing React app and provide the documented routes |
+| [Viewer](./viewer.md)           | Four rows, paging, name sorting, Active filtering, and saved-view confirmation | Mount the local component with compatible React/Viewer peers                   |
+| [View Engine](./view-engine.md) | Three orders, manual queries, sorting and paging through ViewPage              | Use the current workspace or verified local archive in a React 19 application  |
 
 The Viewer example saves to component memory and resets on remount. The React fixture's slow route takes 2000 ms so cancellation is visible. These checks prove the example behavior, not authentication, server consistency, or production persistence.
 
@@ -2541,7 +2829,7 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 Contributors need Node `>=20.20.2`, pnpm `10.34.5`, and the repository dependencies installed. From the repository root, run:
 
 ```bash
-pnpm exec vitest run --project=storybook stories/docs/ReactRequests.stories.tsx
+pnpm exec vitest run --project=storybook stories/docs/ReactRequests.test.stories.tsx
 ```
 
 To try the same interactions manually, run `pnpm storybook`, open the printed local URL, and select **Docs / React requests** in the sidebar. The repository Storybook is the no-backend runnable example.
@@ -2862,15 +3150,253 @@ pnpm install
 pnpm storybook
 ```
 
-Open [Docs → Local Viewer → Local Data](http://localhost:6006/?path=/story/docs-local-viewer--local-data). The play function automatically runs the actions above; reload the story to start again, or use the consumer app for an untouched initial state.
+Open [Docs → Local Viewer → Local Data](http://localhost:6006/?path=/story/docs-local-viewer--local-data) and perform the actions above manually. Reload the story to return to its initial state. Automated interactions run separately in the regression story.
 
 Run the same browser checks headlessly:
 
 ```bash
-pnpm exec vitest run --project=storybook stories/docs/LocalViewer.stories.tsx
+pnpm exec vitest run --project=storybook stories/docs/LocalViewer.test.stories.tsx
 ```
 
 The checks assert table row collections and order, filtered results, and restored saved settings. Callback text is only an additional save confirmation, not a substitute for verifying the displayed rows.
+
+</doc>
+
+<doc title="Complete View Engine example" path="examples/view-engine.md">
+
+# Complete View Engine example
+
+## Run and verify
+
+From this repository, with Node >=20.20.2 and pnpm 10.34.5:
+
+```bash
+pnpm install
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
+pnpm storybook
+```
+
+Open [View Engine → 快速开始 → 第一个数据视图](http://localhost:6006/?path=/story/view-engine-快速开始--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
+
+```bash
+pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx
+```
+
+Install Playwright Chromium first (`pnpm exec playwright install chromium`), or set `VIEW_ENGINE_BROWSER_CHANNEL=chrome` to use installed Chrome. This command also checks the existing five-extension and narrow-dark examples.
+
+| Action                             | Expected result                                              |
+| ---------------------------------- | ------------------------------------------------------------ |
+| Open the page                      | ORDER-001 and ORDER-002, 3 total rows                        |
+| Next page                          | ORDER-003                                                    |
+| Set Amount to 200 without querying | Current result stays unchanged                               |
+| Press Enter                        | Only ORDER-002                                               |
+| Clear the applied amount value     | All 3 records are eligible again; the filter control remains |
+| Sort Amount ascending              | ORDER-003, ORDER-001 on page 1                               |
+
+## Full shared component
+
+The source below is the component rendered by the Storybook Minimal story. It uses the public package entries. The local source supports only the advertised amount lower-bound/AND predicates and ordinary paging; other operators require a business QueryApi. It returns full records and supplies no saved-view service, so saving is unavailable. The [saved-view guide](../guides/view-engine/saved-views.md) covers that next step.
+
+```tsx
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  createFilterConfiguration,
+  newFilterNode,
+  type RecordData,
+  type RecordQuerySource,
+  type ViewDefinition,
+  type ViewHost,
+  type ViewInstanceList,
+} from '@ahoo-wang/fetcher-view-engine';
+import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import {
+  FilterOperator,
+  SortDirection,
+  type FilterExpression,
+  type PagedList,
+  type PagedQueryRequest,
+} from '@ahoo-wang/fetcher-wow';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
+
+const orders = [
+  { id: 'ORDER-001', amount: 120, status: 'pending' },
+  { id: 'ORDER-002', amount: 250, status: 'done' },
+  { id: 'ORDER-003', amount: 80, status: 'pending' },
+];
+const definition: ViewDefinition = {
+  id: 'first-orders',
+  sourceId: 'orders',
+  title: '第一个数据视图',
+  rowKey: 'id',
+  allowedOperators: [
+    FilterOperator.MATCH_ALL,
+    FilterOperator.AND,
+    FilterOperator.GTE,
+  ],
+  fields: [
+    {
+      field: 'id',
+      label: '订单编号',
+      type: 'string',
+      sortable: true,
+      operators: [],
+      cellRenderer: { name: 'text', options: { copyable: true } },
+    },
+    {
+      field: 'amount',
+      label: '金额',
+      type: 'number',
+      sortable: true,
+      operators: [FilterOperator.GTE],
+      summaryFunctions: [],
+      numberFormat: { style: 'currency', currency: 'CNY' },
+      cellRenderer: { name: 'number' },
+    },
+    {
+      field: 'status',
+      label: '状态',
+      type: 'string',
+      operators: [],
+      options: [
+        { value: 'pending', label: '待处理' },
+        { value: 'done', label: '已完成' },
+      ],
+      cellRenderer: {
+        name: 'status',
+        options: { tones: [{ value: 'done', tone: 'success' }] },
+      },
+    },
+  ],
+};
+const instances: ViewInstanceList = {
+  defaultInstanceId: 'my-orders',
+  instances: [
+    {
+      id: 'my-orders',
+      definitionId: definition.id,
+      title: '我的订单',
+      kind: 'record',
+      scope: { type: 'personal' },
+      config: {
+        filters: createFilterConfiguration({
+          ...newFilterNode(FilterOperator.GTE, 'amount'),
+          props: { value: 0 },
+        }),
+        sort: [{ field: 'id', direction: SortDirection.ASC }],
+        pagination: { mode: 'paged', size: 2 },
+        presentation: {
+          layout: 'table',
+          table: {
+            columns: [
+              { id: 'id', kind: 'field', field: 'id', width: 200 },
+              { id: 'amount', kind: 'field', field: 'amount', width: 160 },
+              { id: 'status', kind: 'field', field: 'status', width: 140 },
+            ],
+          },
+        },
+      },
+    },
+  ],
+};
+
+// ponytail: local amount/AND demo only; use a business QueryApi for other predicates.
+function matches(amount: number, expression: FilterExpression): boolean {
+  if (expression.op === FilterOperator.MATCH_ALL) return true;
+  if (expression.op === FilterOperator.AND)
+    return expression.operands.every(item => matches(amount, item));
+  if (
+    expression.op === FilterOperator.GTE &&
+    expression.field === 'amount' &&
+    typeof expression.value === 'number'
+  )
+    return amount >= expression.value;
+  throw new Error('示例只支持金额下限和 AND 条件');
+}
+const source: RecordQuerySource = {
+  async paged<T extends Partial<RecordData> = RecordData>(
+    query: PagedQueryRequest,
+    _attributes?: Record<string, unknown>,
+    controller?: AbortController,
+  ): Promise<PagedList<T>> {
+    controller?.signal.throwIfAborted();
+    if (!('filter' in query)) throw new Error('示例使用 FilterExpression 查询');
+    const rows = orders.filter(order => matches(order.amount, query.filter));
+    for (const sort of [...(query.sort ?? [])].reverse()) {
+      if (sort.field !== 'id' && sort.field !== 'amount')
+        throw new Error('示例只支持按编号或金额排序');
+      const direction = sort.direction === SortDirection.ASC ? 1 : -1;
+      rows.sort(
+        (left, right) =>
+          direction *
+          (sort.field === 'amount'
+            ? left.amount - right.amount
+            : left.id.localeCompare(right.id)),
+      );
+    }
+    const { index = 1, size = 2 } = query.pagination ?? {};
+    // This source always returns whole rows; QueryApi also permits projected rows.
+    return {
+      list: rows.slice((index - 1) * size, index * size) as unknown as T[],
+      total: rows.length,
+    };
+  },
+};
+const host: ViewHost = {
+  resolveSource(id) {
+    if (id !== definition.sourceId) throw new Error('未知数据源');
+    return source;
+  },
+};
+
+export function RecordViewExample({
+  appearance = 'light',
+}: {
+  appearance?: 'light' | 'dark';
+}) {
+  return (
+    <div
+      className="fve-root"
+      data-theme={appearance}
+      style={{ padding: 16, minWidth: 0 }}
+    >
+      <ViewPage
+        scopeKey="docs:orders"
+        definitionId={definition.id}
+        definition={definition}
+        instances={instances}
+        host={host}
+        initialSidebarCollapsed
+        selectable
+      />
+    </div>
+  );
+}
+```
+
+## Use a separate React application
+
+Until this package is published, build and verify its local archive:
+
+```bash
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
+node packages/view-engine/scripts/verify-package.mjs
+pnpm --filter @ahoo-wang/fetcher-view-engine pack --pack-destination /tmp/view-engine-pack
+```
+
+The pack command prints the archive filename. In a React 19 TypeScript application, install that absolute `.tgz` path with `pnpm add`, satisfy the declared peer dependencies, copy the shared component, and render `<RecordViewExample />`. If an internal dependency version is not published in your environment, pack the corresponding workspace dependency as well; the package verifier exercises the workspace-built artifacts together without publishing them.
+
+This verifies a browser UI and a local record source. Authentication, durable view storage and your backend's query behavior belong to the application integration; see [ViewHost](../reference/view-engine/view-host.md).
 
 </doc>
 
@@ -3159,20 +3685,21 @@ Reading groups are listed in `.vitepress/config/pages.mjs`; stop pagination at t
 
 Each package has an entry page and focused reference topics. Choose the responsibility first, then the API family. Complex packages have deeper navigation; small packages stay compact.
 
-| Package                               | Responsibility             | Topics |
-| ------------------------------------- | -------------------------- | ------ |
-| [fetcher](./fetcher/index.md)         | HTTP requests              | 6      |
-| [decorator](./decorator/index.md)     | Declarative services       | 3      |
-| [eventbus](./eventbus/index.md)       | Event delivery             | 2      |
-| [eventstream](./eventstream/index.md) | SSE consumption            | 3      |
-| [storage](./storage/index.md)         | Stored values              | 2      |
-| [openapi](./openapi/index.md)         | OpenAPI type contracts     | 3      |
-| [generator](./generator/index.md)     | Generated clients          | 5      |
-| [openai](./openai/index.md)           | Chat and token streams     | 2      |
-| [cosec](./cosec/index.md)             | Authentication and refresh | 3      |
-| [react](./react/index.md)             | Component request state    | 8      |
-| [wow](./wow/index.md)                 | Commands and queries       | 9      |
-| [viewer](./viewer/index.md)           | Data views and persistence | 8      |
+| Package                               | Responsibility                                              | Topics |
+| ------------------------------------- | ----------------------------------------------------------- | ------ |
+| [fetcher](./fetcher/index.md)         | HTTP requests                                               | 6      |
+| [decorator](./decorator/index.md)     | Declarative services                                        | 3      |
+| [eventbus](./eventbus/index.md)       | Event delivery                                              | 2      |
+| [eventstream](./eventstream/index.md) | SSE consumption                                             | 3      |
+| [storage](./storage/index.md)         | Stored values                                               | 2      |
+| [openapi](./openapi/index.md)         | OpenAPI type contracts                                      | 3      |
+| [generator](./generator/index.md)     | Generated clients                                           | 5      |
+| [openai](./openai/index.md)           | Chat and token streams                                      | 2      |
+| [cosec](./cosec/index.md)             | Authentication and refresh                                  | 3      |
+| [react](./react/index.md)             | Component request state                                     | 8      |
+| [wow](./wow/index.md)                 | Commands and queries                                        | 9      |
+| [viewer](./viewer/index.md)           | Data views and persistence                                  | 8      |
+| [view-engine](./view-engine/index.md) | Headless engine, component configuration and shadcn/Base UI | 5      |
 
 ## Use the right depth
 
@@ -14296,6 +14823,492 @@ Both dictionaries are declared as `export const <locale>: OperatorLocale`. The f
 
 </doc>
 
+<doc title="View Engine reference" path="reference/view-engine/index.md">
+
+# View Engine reference
+
+This reference describes the current 5.0.0 workspace contract. The package has not yet been published to the public registry; follow [the local build/archive instructions](../../examples/view-engine.md). Repository development requires Node >=20.20.2 and pnpm 10.34.5. React UI requires React/ReactDOM ^19.2.8; direct dependencies are installed with the package and their declared peers must also be satisfied.
+
+| Entry                                       | Contents                                                                | Runtime                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------- |
+| `@ahoo-wang/fetcher-view-engine`            | Models, ViewHost, ViewEngine, pure filter helpers, LocalStorageViewHost | Core import does not load React, DOM or CSS |
+| `@ahoo-wang/fetcher-view-engine/react`      | ViewPage, RecordView, FilterPanel, table and built-in controls          | React 19 and browser UI                     |
+| `@ahoo-wang/fetcher-view-engine/styles.css` | Compiled scoped styles                                                  | Import once in the application              |
+
+No consumer Tailwind or React Compiler plugin is required. `fve:` is the CSS utility prefix, not a prefix for configured component names. The current implementation supports `kind: 'record'` and `layout: 'table'`.
+
+| Contract                                                       | Topic                         |
+| -------------------------------------------------------------- | ----------------------------- |
+| Definition, instance, filter configuration and source shape    | [Models](./models.md)         |
+| Service facade, permissions, revisions and development storage | [ViewHost](./view-host.md)    |
+| Headless lifecycle, commands and snapshots                     | [ViewEngine](./engine.md)     |
+| Filter serialization, compiler and remote candidates           | [Filters](./filters.md)       |
+| React ownership, extension props, cells and theme              | [Components](./components.md) |
+| Every exported name in both code entries                       | [Symbol index](./symbols.md)  |
+
+Use [task guides](../../guides/view-engine/index.md) for integration steps and [the shared runnable example](../../examples/view-engine.md) for a verified starting point. Files under `dev`, internal engine services and private UI primitives are not additional public imports.
+
+</doc>
+
+<doc title="Definitions and instances" path="reference/view-engine/models.md">
+
+# Definitions and instances
+
+## ViewDefinition
+
+| Property                              | Contract                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `id`, `title`                         | Shared definition identity and display title                                                    |
+| `sourceId`                            | Local identifier passed to `host.resolveSource`                                                 |
+| `rowKey`                              | Record-relative own-property path to a unique string or finite-number key                       |
+| `fields`                              | Read-only field definitions with `field`, `label`, optional type/group/options/operators/editor |
+| `timeZone?`                           | Shared filter/cell datetime timezone; omission uses local runtime                               |
+| `allowedOperators?`, `filterEditors?` | Definition-level operator restrictions and editor defaults                                      |
+| `recordActions?`                      | Named global/table/row renderer references                                                      |
+
+`ViewFieldDefinition` also supports `sortable`, `cellRenderer`, `numberFormat` and `summaryFunctions`. `RendererReference` and `FilterEditorReference` are `{ name: string, options?: JSON object }`. Functions belong to runtime registration.
+
+## ViewInstance and RecordViewConfig
+
+A `ViewInstance` is a `RecordViewInstance`: `id`, `definitionId`, `title`, optional `revision`, `scope`, `kind: 'record'`, and `config`.
+
+| Config property | Stored value                                    |
+| --------------- | ----------------------------------------------- |
+| `filters`       | `FilterConfiguration`: mode plus component tree |
+| `sort`          | Wow `FieldSort[]`                               |
+| `pagination`    | `{ mode: 'paged' \| 'cursor', size: number }`   |
+| `presentation`  | `{ layout: 'table', table: { columns } }`       |
+
+Scope is `{ type: 'personal' }` or `{ type: 'public', source: 'system' | 'shared' }`. Save-as accepts personal or shared scope. `ViewInstanceList` returns the complete visible `instances` and a `defaultInstanceId` string or null.
+
+A field column has `id`, `kind: 'field'`, `field` and optional `title`, `width`, `visible`, `pinned`, `renderer`, `summary`. An actions column uses `kind: 'actions'` and no field. Explicit width is 64–960 px; helpers export minimum, maximum and default (180 px). Row-key/action mandatory pinning is computed by `getRecordColumnPinning`; `orderRecordColumns` returns display order without rewriting persisted preferences.
+
+## RecordQuerySource
+
+The source supplies `paged` and/or `cursor` from Wow `QueryApi<RecordData>`, with optional `aggregate`. These methods receive `(query, attributes?, abortController?)`; forward cancellation to the transport. The query uses the `FilterExpression` branch of Wow request types, not the older `condition` DSL.
+
+Paged results are `{ list, total }`. Cursor results are `{ list, nextCursor }`, with `nextCursor: null` at the end. An aggregate returns result rows described by the generated aggregation query; use the summary helpers rather than guessing aliases. Advertise only supported modes. Metadata and source capability must agree.
+
+`readRecordValue` traverses own properties and canonical dot-separated array indices; a literal dotted own key wins. `getRecordKey` and `validateRecordRows` check stable identities. `validateViewDefinition` and `validateViewInstance` are available at trust boundaries; runtime snapshots use `DeepReadonly`.
+
+</doc>
+
+<doc title="ViewHost and service boundaries" path="reference/view-engine/view-host.md">
+
+# ViewHost and service boundaries
+
+`ViewHost` is an application composition facade. Optional services/methods enable capabilities independently; `resolveSource` is required. It does not prescribe one REST controller or URL layout.
+
+| Service      | Method                                         | Result / responsibility                                                       |
+| ------------ | ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| `definition` | `load(definitionId, signal?)`                  | `Promise<ViewDefinition>`                                                     |
+| `instance`   | `list(definitionId, signal?)`                  | `Promise<ViewInstanceList>`                                                   |
+| `instance`   | `load(instanceId, signal?)`                    | `Promise<ViewInstance>`                                                       |
+| `instance`   | `create(instanceWithoutIdOrRevision, context)` | Authoritative created instance; context carries requestId and optional signal |
+| `instance`   | `save(instance)`                               | Saved instance with authoritative revision                                    |
+| `instance`   | `rename(instanceId, title, revision?)`         | Renamed instance                                                              |
+| `instance`   | `delete(instanceId, revision?)`                | `Promise<void>`                                                               |
+| `preference` | `saveOrder(definitionId, instanceIds)`         | Persist the current user's ordering                                           |
+| `permission` | `getInstance(instance)`                        | Synchronous `ViewInstancePermissions`                                         |
+| `permission` | `getDefinition()`                              | Synchronous `{ reorder }` projection                                          |
+| `permission` | `load(definitionId, signal?)`                  | Initialize getters; resolve a `ViewPermissionSnapshot`                        |
+| `permission` | `refresh(signal?)`, `subscribe(listener)`      | Refresh grants; return an unsubscribe function from subscribe                 |
+| host         | `resolveSource(sourceId)`                      | A `RecordQuerySource` or Promise of one                                       |
+
+Engine loading awaits `permission.load`, falling back to `permission.refresh` when load is absent. Permission initialization failure prevents ready state. A getter must be pure and expose the initialized policy. Notify subsequent changes or replace the host; mutating an invisible closure does not notify React.
+
+## Writes and uncertainty
+
+Services enforce identities, ownership, permissions and revisions. The engine rechecks UI grants but cannot authenticate a backend request. System view rename/delete remain forbidden. `save` and `rename` responses must preserve the instance identity and return the server's configuration/revision.
+
+A logical create retains `ViewCreateContext.requestId` across uncertain retries. The service must deduplicate that ID and reject reuse with a different body. A UI cancellation or navigation does not establish whether a write committed. Use the authoritative receipt/reload behavior rather than repeating a new create blindly.
+
+`ViewServiceError(code, message)` distinguishes INVALID_ARGUMENT, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND, CONFLICT, REVISION_CONFLICT, PRECONDITION_REQUIRED, CORRUPT_STATE, UNAVAILABLE and UNKNOWN_OUTCOME. These are service categories, not a public HTTP status mapping.
+
+After save, rename or delete is dispatched, UNKNOWN_OUTCOME, UNAVAILABLE and unclassified exceptions mark `requiresReload` and block unrelated writes to that instance while preserving local edits. Save and rename require a successful `reloadInstance()` to obtain the authoritative revision. A missing or inaccessible instance keeps the recovery error and edits. Hosts must report definitive rejections with the corresponding `ViewServiceError` code. An uncertain create can replay its original request ID; an uncertain delete can replay the same ID and revision. `getCapabilitiesSnapshot().instances[id].retryDelete` exposes that exception for subscribed UI controls.
+
+## LocalStorageViewHost
+
+Required options: `serviceKey`, `scopeKey`, `definition`, `instances`, `resolveSource`, `storage`, `lock`. Optional policy callbacks: `instancePermissions`, `canReorder`, `permissionsRevision`. `storage` implements getItem/setItem/removeItem; all clients for one storage key must share an exclusive lock domain.
+
+```ts
+const host = new LocalStorageViewHost({
+  serviceKey: 'demo-service:tenant-a',
+  scopeKey: 'user-a',
+  definition,
+  instances,
+  resolveSource,
+  storage: localStorage,
+  lock: (name, operation, signal) =>
+    navigator.locks.request(name, { signal }, operation),
+});
+```
+
+This is a browser development fixture for restoration, isolation, revisions and atomic writes. `reset()` resets its test service state. It does not persist business records or provide trusted production authorization.
+
+With the workspace built and Storybook running on port 6006, run `node packages/view-engine/scripts/verify-view-host.mjs` for the local service/browser recovery checks; use `pnpm verify:view-engine` for the combined package, service and browser acceptance entry point. HTTP fixture files under `dev` remain outside the published package.
+
+</doc>
+
+<doc title="ViewEngine lifecycle and commands" path="reference/view-engine/engine.md">
+
+# ViewEngine lifecycle and commands
+
+## Ownership
+
+`new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers? })` creates a headless runtime. Call `await engine.load()` and eventually `engine.dispose()`. React applications usually let `ViewPage` own this lifecycle. Reusing a disposed engine is invalid.
+
+`getSnapshot()` returns a cached immutable `ViewEngineState`; `subscribe(listener)` returns an unsubscribe function. State has status/error/definition, instance IDs, selected ID and per-instance sessions. `getCapabilitiesSnapshot()` exposes immutable permission/capability projections through the same subscription. Do not mutate snapshots.
+
+## Session state
+
+| Field                                                           | Meaning                                                                   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `baseline`, `instance`, `dirty`                                 | Saved baseline, current instance and save difference                      |
+| `filterDraft`, `filterBaseline`, `filterPending`, `filterValid` | Editing tree, applied tree, query-affecting difference and local validity |
+| `appliedFilter`                                                 | Compiled expression, or null when query scope is invalid                  |
+| `rows`, `total`, `page`, `cursor`, `nextCursor`                 | Current record result and navigation                                      |
+| `queryStatus`, `refreshing`, `queryError`                       | Read state; background refresh can retain rows                            |
+| `pageSummary`, `allSummary`                                     | Independently tracked summary scopes                                      |
+| `writeStatus`, `writeError`, `requiresReload`                   | Write progress, failure and reconciliation requirement                    |
+| `selectedRowKeys`                                               | Selection within loaded records                                           |
+
+## Commands
+
+Unless specified otherwise, optional `id` selects an instance; omission uses the current selection. Async actions return `Promise<void>` and failures must be handled by the caller.
+
+| Command                                                                                                   | Effect                                                              |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `selectInstance(id)`                                                                                      | Navigate and load its records                                       |
+| `setFilterDraft(configuration, id?, valid?)`, `setFilterValidity(valid, id?)`, `setFilterMode(mode, id?)` | Edit without querying                                               |
+| `applyFilter(id?)`                                                                                        | Compile the current configuration, accept it and query              |
+| `setSort(sort, id?)`, `setPage(index, id?)`, `setPageSize(size, id?)`, `nextPage(id?)`                    | Apply record navigation/query changes                               |
+| `setColumns(columns, id?)`                                                                                | Change presentation; changed summary metrics may request aggregates |
+| `setSelection(keys, id?)`, `setTitle(title, id?)`                                                         | Change local selection or title state                               |
+| `refresh(id?, { background? })`                                                                           | Query current applied scope                                         |
+| `refreshSummary(id?)`                                                                                     | Retry aggregate scope separately                                    |
+| `save(id?)`, `saveAs({ title, scope }, id?)`                                                              | Persist through host services                                       |
+| `renameInstance(title, id?)`, `deleteInstance(id?)`, `reorderInstances(ids)`                              | Manage service-owned views/preferences                              |
+| `restore(id?)`                                                                                            | Restore the saved local baseline and query                          |
+| `reloadInstance(id?)`, `canReloadInstance(id?)`                                                           | Reload/reconcile an instance from the host                          |
+| `getPermissions(id?)`, `canReorderInstances()`                                                            | Check current action policy                                         |
+| `updateHost(host)`                                                                                        | Replace same-scope callbacks/policy while retaining sessions        |
+| `dispose()`                                                                                               | End subscriptions and cancel owned reads                            |
+
+Do not create an extra engine-level transport protocol. Use the provided source's QueryApi methods, forward AbortController, and keep write authorization and persistence in ViewHost services. Query cancellation and stale-response rejection preserve ownership; they cannot undo completed business writes.
+
+</doc>
+
+<doc title="Filter configuration and components" path="reference/view-engine/filters.md">
+
+# Filter configuration and components
+
+## Configuration and query
+
+| Representation          | Purpose                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `FilterComponentConfig` | The only editing node: id/component/operator/field/props and optional operands or predicate |
+| `FilterConfiguration`   | JSON-safe `{ mode, root }`, shared by editing, applied and saved snapshots                  |
+| Wow `FilterExpression`  | Compiled request predicate; it is not a UI restoration format                               |
+
+`FilterJsonValue` allows null, booleans, finite numbers, strings, arrays and JSON objects. Object properties may be unset (`undefined`) and are omitted when serialized; do not put functions, cycles or undefined array items into props. A component name identifies its persistence/compile protocol.
+
+## Core functions
+
+| Function                                                                               | Result / behavior                                                                                      |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `newFilterNode(operator, field?, component?)`                                          | Create a canonical node with an ID, explicit component reference (default `builtin`) and initial props |
+| `createFilterConfiguration(root, mode?)`                                               | Clone and validate the canonical root; infer mode when omitted                                         |
+| `validateFilterConfiguration(value, fields?, allowedOperators?)`                       | Assert valid configuration, throwing on malformed input                                                |
+| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?, timeZone?)` | `{ expression?, errors }`                                                                              |
+| `clearFilterValues(root, fields, compilers?, timeZone?)`                               | Clear through component semantics while preserving node identities                                     |
+| `compileBuiltinFilter`, `clearBuiltinFilterProps`                                      | Reuse default component compilation/clearing                                                           |
+| `getFieldOperators`, `FILTER_OPERATORS`, `isSimpleFilter`, `sameFilterQuery`           | Capability, metadata, mode and query comparisons                                                       |
+
+Construct component props directly. The panel resolves field/operator defaults only when creating nodes; saved nodes always use their explicit component references. A compile error prevents application; an empty valid collection of predicates compiles to MATCH_ALL.
+
+`getFieldOperators(field)` derives capabilities only from field type and explicit `field.operators`. Field `editor` and definition `filterEditors` are defaults for new nodes; an existing node's `component` is authoritative. Its registration supplies component-specific compatibility checks, so changing a field editor default does not restrict or replace saved components.
+
+## FilterPanel
+
+Required props are `fields` and `onApply({configuration, expression})`. Use controlled `value/onChange` with `FilterConfiguration`, or `defaultValue` for local ownership; these forms are mutually exclusive. `appliedValue` optionally supplies the accepted configuration baseline. Mode belongs to `configuration.mode`. Optional props include `onPendingChange`, `onValidityChange`, `timeZone`, `extensions`, `editors` and `allowedOperators`. `querying`, `queryError`, `disabled`, `collapsed`, `renderToolbar` and `className` integrate it with a host layout.
+
+Keep editing and accepted configurations independently if editors unmount while navigating. `collapsed` hides the panel body while retaining local buffers. Use `FilterPanelToolbarProps.onModeChange` when relocating its toolbar, so mode guards remain effective. Enter in an ordinary input queries; Enter used by a popup remains owned by that popup.
+
+## FilterRegistration
+
+The registration's `component` receives immutable raw `props`, field/operator/mode/context/options, errors, disabled state and change/validity callbacks. `compile(props, context)` is pure and returns an expression or undefined; `clear` optionally returns cleared props. `modes` is required. `supports` can reject incompatible bindings. Default `render: 'value'` receives `FilterEditorProps`; `render: 'filter'` receives `FilterComponentProps` with id/operators/errorId and onOperatorChange/onClear/onRemove.
+
+`FilterCompilerRegistry` is the headless subset for callers of ViewEngine/core helpers. React users register the combined definition once in `extensions.filters`; ViewPage connects its compiler and component. Changing a registration's protocol requires a new name or an explicit configuration migration.
+
+## Remote option contract
+
+`FilterOptionSource` is independent of ViewHost:
+
+```ts
+import type { CursorPage, CursorQuery } from '@ahoo-wang/fetcher-wow';
+import type {
+  FilterOptionItem,
+  FilterOptionValue,
+} from '@ahoo-wang/fetcher-view-engine';
+
+interface FilterOptionSource {
+  search(
+    query: Pick<CursorQuery, 'cursor' | 'size'> & { search: string },
+    signal: AbortSignal,
+  ): Promise<CursorPage<FilterOptionItem>>;
+  resolve(
+    values: readonly FilterOptionValue[],
+    signal: AbortSignal,
+  ): Promise<{
+    list: FilterOptionItem[];
+    missing: FilterOptionValue[];
+  }>;
+}
+```
+
+The actual search query uses `Pick<CursorQuery, 'cursor' | 'size'>` plus search; follow its exported types when implementing. Values are strings or finite numbers. Resolve must classify each requested ID once, preserving number/string identity. Search, pagination and label hydration have separate error recovery; a failed next page retains prior candidates. Saved labels do not replace authorization or source revalidation.
+
+</doc>
+
+<doc title="React components and theme" path="reference/view-engine/components.md">
+
+# React components and theme
+
+## Page and table surfaces
+
+| Component              | Required input                                                                      | Owner                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `ViewPage`             | scopeKey, definitionId, host                                                        | Creates/loads/disposes engine; optional local definition and instance list |
+| `ViewPageContent`      | engine                                                                              | Renders page navigation and record view; caller owns engine                |
+| `RecordView`           | engine                                                                              | Renders the selected record session; caller owns engine                    |
+| `RecordTable`          | definition, instance, appliedFilter, rows, selection/column/sort callbacks, refresh | Controlled table; caller owns requests and state                           |
+| `RecordColumnSettings` | definition, columns, onChange                                                       | Controlled column configuration                                            |
+
+`ViewPage`/`RecordView` accept `extensions`, `filterContext`, `selectable` (default false), `autoRefreshPaused` (default false), and `className`. ViewPage also accepts `initialSidebarCollapsed`; RecordView has `toolbarStart`. RecordTable separately accepts query/summary states and retry callbacks.
+
+## Built-in cell props
+
+All standalone cells accept `className`. Configured renderer options are intentionally narrower than standalone props.
+
+| Component / renderer name    | Main props or options                                     | Defaults / behavior                                                                      |
+| ---------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `TextCell` / `text`          | value, text, ellipsis, copyable                           | ellipsis/copyable false; text only changes display; raw-value copying                    |
+| `TagsCell` / `tags`          | value, options, maxVisible                                | maxVisible 2; typed deduplication; remaining tags open a popup                           |
+| `StatusCell` / `status`      | value, options, tones                                     | neutral/success/warning/danger/info tones; unknown values remain readable                |
+| `LinkCell` / `link`          | value, text, href, newTab; renderer uses hrefField/newTab | newTab false; safe URL policy                                                            |
+| `DateTimeCell` / `date-time` | value, type, timeZone, locale, dateStyle, timeStyle       | type datetime, locale zh-CN, medium date/time styles; view renderer uses global timezone |
+| `NumberCell` / `number`      | value, format                                             | Renderer uses field.numberFormat; empty/invalid numbers use a placeholder                |
+
+The configured renderer is **`date-time`**, while the field type is **`datetime`**. For currency/percentage configure `field.numberFormat` with Intl options; do not put a separate format object into the number renderer's options. For tags/status, field.options supplies value labels.
+
+Plain YYYY-MM-DD strings retain calendar-date display; timestamp values are formatted in the chosen timezone. Missing or invalid dates display a placeholder.
+
+## Standalone filter controls
+
+`FieldFilter` composes a label, operator selector, children and optional remove callback. It does not execute queries. `FilterSelect`/`FilterSearchSelect` provide controlled string values, options, label, onValueChange and optional onClear; SearchSelect adds candidate search. `FilterMultiSelect` handles typed multiple IDs. `FilterTextValues` retains typed input items. Use `FilterPanel` when you need configuration ownership and validation.
+
+`FilterRemoteSelect` receives source/label and either single value or `multiple: true` with values. Its change callback includes selected items. `selectedOptions` supplies retained labels, default debounce is 300 ms and pageSize follows Wow DEFAULT_CURSOR_SIZE (bounded by MAX_CURSOR_SIZE). Invalid page sizes/debounce values throw. Changing source identity starts a new remote session.
+
+`FilterDatePicker` uses `Date | undefined`; `FilterTimeInput` accepts incomplete text and hour/minute/second selection. `FilterDateTimeRange` receives field/value/onValueChange and optional showTime/timeZone/validity props. Date-only ranges use two months; datetime with showTime uses a combined date/time popup and explicit Confirm. These primitives do not save or apply a query by themselves.
+
+## Extension context
+
+`GlobalActionsRendererProps` and `TableActionsRendererProps` provide definition/instance/filter/sort/options/refresh, selectedRowKeys and querying. `RowActionsRendererProps` adds record/rowKey to the common action context. `CellRendererProps` provides value/record/rowKey/index/field/column/definition/instance/options. These inputs are immutable; construct new values for changes. Cell props do not include a business command API.
+
+## Theme and accessibility
+
+Compiled styles use `.fve-root`, `fve:` utilities and `--fve-*` variables. Explicit data-theme values are light/dark; otherwise inherited color-scheme selects the appearance. Portals copy current tokens, typography and color scheme from their trigger scope so clipped/scrolling containers remain usable. Keep labels, error associations and keyboard semantics when composing custom controls.
+
+The public composition primitives are Button, Calendar, Popover/PopoverContent/PopoverTitle/PopoverTrigger, the Select family and the InputGroup family listed in [symbols](./symbols.md). Internal DropdownMenu, Dialog and other private files are not extra supported package imports.
+
+</doc>
+
+<doc title="View Engine symbol index" path="reference/view-engine/symbols.md">
+
+# View Engine symbol index
+
+These names come from the current public entry exports and declarations. Import from the listed entry; internal files not listed here are not public API. Behavior contracts: [models](./models.md), [host](./view-host.md), [engine](./engine.md), [filters](./filters.md), [components](./components.md).
+
+## `@ahoo-wang/fetcher-view-engine`
+
+| Symbol                        | Declaration                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `calculateRecordSummary`      | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
+| `clearBuiltinFilterProps`     | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
+| `clearFilterValues`           | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
+| `compileBuiltinFilter`        | [filterBuiltinCompiler.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L172)                 |
+| `compileFilterConfiguration`  | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
+| `createFilterConfiguration`   | [filterConfigurationState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationState.ts#L42)             |
+| `createRecordSummaryQuery`    | [recordSummary.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L112)                                 |
+| `DeepReadonly`                | [types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/lib/types.ts#L15)                                                      |
+| `FILTER_OPERATORS`            | [filterOperators.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L19)                               |
+| `FilterApplyResult`           | [filterModel.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L124)                                     |
+| `FilterCompiler`              | [filterModel.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L112)                                     |
+| `FilterCompilerContext`       | [filterModel.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L103)                                     |
+| `FilterCompileResult`         | [filterModel.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L80)                                       |
+| `FilterCompilerRegistry`      | [filterModel.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L122)                                     |
+| `FilterComponentConfig`       | [filterModel.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L90)                                       |
+| `FilterComponentProperties`   | [filterModel.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L86)                                       |
+| `FilterConfiguration`         | [filterModel.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L99)                                       |
+| `FilterDateTimeValue`         | [filterModel.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L51)                                       |
+| `FilterEditorReference`       | [filterModel.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L32)                                       |
+| `FilterField`                 | [filterTypes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTypes.ts#L21)                                       |
+| `FilterFieldDefinition`       | [filterModel.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L37)                                       |
+| `FilterFieldType`             | [filterModel.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L23)                                       |
+| `FilterJsonValue`             | [filterModel.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L25)                                       |
+| `FilterMode`                  | [filterModel.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L22)                                       |
+| `FilterOperatorDefinition`    | [filterModel.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L62)                                       |
+| `FilterOption`                | [filterTypes.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTypes.ts#L14)                                       |
+| `FilterOptionItem`            | [filterOptionSource.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOptionSource.ts#L17)                         |
+| `FilterOptionSource`          | [filterOptionSource.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOptionSource.ts#L18)                         |
+| `FilterOptionValue`           | [filterOptionSource.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOptionSource.ts#L16)                         |
+| `FilterScalarDraftValue`      | [filterModel.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L58)                                       |
+| `FilterValidationError`       | [filterModel.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L76)                                       |
+| `formatRecordNumber`          | [recordValueFormat.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordValueFormat.ts#L97)                           |
+| `getFieldOperators`           | [filterOperators.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L184)                             |
+| `getRecordColumnPinning`      | [recordColumns.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L16)                                   |
+| `getRecordKey`                | [recordData.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L32)                              |
+| `getRecordSummaryFunctions`   | [recordPresentation.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L53)                         |
+| `getRecordSummaryMetrics`     | [recordPresentation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L21)                         |
+| `isSimpleFilter`              | [filterNodes.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L40)                                       |
+| `LocalStorageViewHost`        | [LocalStorageViewHost.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L62)                     |
+| `LocalStorageViewHostOptions` | [LocalStorageViewHost.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L42)                     |
+| `newFilterNode`               | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
+| `orderRecordColumns`          | [recordColumns.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L26)                                   |
+| `readRecordSummaryResult`     | [recordSummary.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L140)                                 |
+| `readRecordValue`             | [recordData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L18)                              |
+| `RECORD_COLUMN_DEFAULT_WIDTH` | [recordColumns.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L43)                                   |
+| `RECORD_COLUMN_MAX_WIDTH`     | [recordColumns.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L41)                                   |
+| `RECORD_COLUMN_MIN_WIDTH`     | [recordColumns.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L39)                                   |
+| `RECORD_SUMMARY_LABELS`       | [recordPresentation.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L46)                         |
+| `RecordColumn`                | [recordModel.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L73)                                       |
+| `RecordColumnPinning`         | [recordModel.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L62)                                       |
+| `RecordData`                  | [recordModel.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L30)                                       |
+| `RecordKey`                   | [recordModel.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L31)                                       |
+| `RecordQuerySource`           | [recordModel.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L134)                                     |
+| `RecordSession`               | [recordModel.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L146)                                     |
+| `RecordSummaryFunction`       | [recordModel.ts:185](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L185)                                     |
+| `RecordSummaryMetric`         | [recordModel.ts:187](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L187)                                     |
+| `RecordSummaryResult`         | [recordModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L192)                                     |
+| `RecordTablePresentation`     | [recordModel.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L81)                                       |
+| `RecordViewConfig`            | [recordModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L85)                                       |
+| `RecordViewInstance`          | [recordModel.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L100)                                     |
+| `RendererReference`           | [recordModel.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L32)                                       |
+| `sameFilterQuery`             | [filterTree.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTree.ts#L24)                                         |
+| `SaveAsScope`                 | [recordModel.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L60)                                       |
+| `validateFilterConfiguration` | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
+| `validateRecordRows`          | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
+| `validateViewDefinition`      | [definitionValidation.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L106)        |
+| `validateViewInstance`        | [instanceValidation.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L34)              |
+| `ViewCapabilities`            | [recordModel.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L119)                                     |
+| `ViewCreateContext`           | [viewServiceContract.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L37)                       |
+| `ViewDefinition`              | [recordModel.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L42)                                       |
+| `ViewDefinitionService`       | [ViewHost.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L26)                                             |
+| `ViewEngine`                  | [ViewEngine.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewEngine.ts#L44)                                         |
+| `ViewEngineOptions`           | [recordModel.ts:138](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L138)                                     |
+| `ViewEngineState`             | [recordModel.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L175)                                     |
+| `ViewFieldDefinition`         | [recordModel.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L33)                                       |
+| `ViewHost`                    | [ViewHost.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L63)                                             |
+| `ViewInstance`                | [recordModel.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L104)                                     |
+| `ViewInstanceList`            | [recordModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L105)                                     |
+| `ViewInstanceMetadata`        | [recordModel.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L92)                                       |
+| `ViewInstancePermissions`     | [recordModel.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L109)                                     |
+| `ViewInstanceService`         | [ViewHost.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L30)                                             |
+| `ViewPermissionService`       | [ViewHost.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L50)                                             |
+| `ViewPermissionSnapshot`      | [viewServiceContract.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L41)                       |
+| `ViewPreferenceService`       | [ViewHost.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L46)                                             |
+| `ViewScope`                   | [recordModel.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L58)                                       |
+| `ViewServiceError`            | [viewServiceContract.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L27)                       |
+| `ViewServiceErrorCode`        | [viewServiceContract.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L16)                       |
+| `ViewStorageLock`             | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
+
+## `@ahoo-wang/fetcher-view-engine/react`
+
+| Symbol                        | Declaration                                                                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Button`                      | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                      |
+| `Calendar`                    | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                  |
+| `CellOption`                  | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                   |
+| `CellRendererProps`           | [recordReactTypes.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L49)           |
+| `CellStatusTone`              | [StatusCell.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L24)               |
+| `CellTone`                    | [StatusCell.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L23)               |
+| `CellValue`                   | [cellValue.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L14)                   |
+| `DateTimeCell`                | [DateTimeCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L26)           |
+| `DateTimeCellProps`           | [DateTimeCell.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L20)           |
+| `FieldFilter`                 | [FieldFilter.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FieldFilter.tsx#L35)                   |
+| `FieldFilterProps`            | [FieldFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FieldFilter.tsx#L25)                   |
+| `FilterComponentProps`        | [filterReactTypes.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L51)           |
+| `FilterComponentRegistration` | [filterReactTypes.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L77)           |
+| `FilterDatePicker`            | [FilterDatePicker.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterDatePicker.tsx#L37)         |
+| `FilterDatePickerProps`       | [FilterDatePicker.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterDatePicker.tsx#L27)         |
+| `FilterDateTimeRange`         | [FilterDateTimeRange.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterDateTimeRange.tsx#L58)   |
+| `FilterDateTimeRangeProps`    | [FilterDateTimeRange.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterDateTimeRange.tsx#L46)   |
+| `FilterEditorProps`           | [filterReactTypes.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L32)           |
+| `FilterEditorRegistration`    | [filterReactTypes.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L67)           |
+| `FilterExtensions`            | [filterReactTypes.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L87)           |
+| `FilterMultiSelect`           | [FilterMultiSelect.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterMultiSelect.tsx#L33)       |
+| `FilterMultiSelectProps`      | [FilterMultiSelect.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterMultiSelect.tsx#L19)       |
+| `FilterPanel`                 | [FilterPanel.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterPanel.tsx#L25)                   |
+| `FilterPanelProps`            | [filterReactTypes.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L100)         |
+| `FilterPanelToolbarProps`     | [filterReactTypes.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L92)           |
+| `FilterRegistration`          | [filterReactTypes.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L85)           |
+| `FilterRemoteSelect`          | [FilterRemoteSelect.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterRemoteSelect.tsx#L57)     |
+| `FilterRemoteSelectProps`     | [FilterRemoteSelect.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterRemoteSelect.tsx#L36)     |
+| `FilterSearchSelect`          | [FilterSearchSelect.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterSearchSelect.tsx#L33)     |
+| `FilterSearchSelectProps`     | [FilterSearchSelect.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterSearchSelect.tsx#L26)     |
+| `FilterSelect`                | [FilterSelect.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterSelect.tsx#L40)                 |
+| `FilterSelectProps`           | [FilterSelect.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterSelect.tsx#L27)                 |
+| `FilterTextValues`            | [FilterTextValues.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTextValues.tsx#L29)         |
+| `FilterTextValuesProps`       | [FilterTextValues.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTextValues.tsx#L20)         |
+| `FilterTimeInput`             | [FilterTimeInput.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTimeInput.tsx#L51)           |
+| `FilterTimeInputProps`        | [FilterTimeInput.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTimeInput.tsx#L41)           |
+| `FilterValueEditor`           | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
+| `FilterValueEditorProps`      | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
+| `GlobalActionsRendererProps`  | [recordReactTypes.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L39)           |
+| `InputGroup`                  | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
+| `InputGroupAddon`             | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
+| `InputGroupButton`            | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |
+| `InputGroupInput`             | [input-group.tsx:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L131)          |
+| `InputGroupText`              | [input-group.tsx:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L119)          |
+| `LinkCell`                    | [LinkCell.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/LinkCell.tsx#L36)                   |
+| `LinkCellProps`               | [LinkCell.tsx:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/LinkCell.tsx#L18)                   |
+| `NumberCell`                  | [NumberCell.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/NumberCell.tsx#L24)               |
+| `NumberCellProps`             | [NumberCell.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/NumberCell.tsx#L19)               |
+| `Popover`                     | [popover.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L22)                    |
+| `PopoverContent`              | [popover.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L46)                    |
+| `PopoverTitle`                | [popover.tsx:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L97)                    |
+| `PopoverTrigger`              | [popover.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L42)                    |
+| `RecordActionsContext`        | [recordReactTypes.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L29)           |
+| `RecordColumnSettings`        | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46) |
+| `RecordColumnSettingsProps`   | [recordReactTypes.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L93)           |
+| `RecordTable`                 | [RecordTable.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordTable.tsx#L23)                   |
+| `RecordTableProps`            | [recordReactTypes.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L70)           |
+| `RecordView`                  | [RecordView.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordView.tsx#L45)                     |
+| `RecordViewProps`             | [RecordView.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordView.tsx#L33)                     |
+| `RowActionsRendererProps`     | [recordReactTypes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L45)           |
+| `Select`                      | [select.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L23)                      |
+| `SelectContent`               | [select.tsx:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L93)                      |
+| `SelectGroup`                 | [select.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L45)                      |
+| `SelectItem`                  | [select.tsx:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L163)                    |
+| `SelectLabel`                 | [select.tsx:147](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L147)                    |
+| `SelectTrigger`               | [select.tsx:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L65)                      |
+| `SelectValue`                 | [select.tsx:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L55)                      |
+| `StatusCell`                  | [StatusCell.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L34)               |
+| `StatusCellProps`             | [StatusCell.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L28)               |
+| `TableActionsRendererProps`   | [recordReactTypes.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L44)           |
+| `TagsCell`                    | [TagsCell.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L36)                   |
+| `TagsCellProps`               | [TagsCell.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L30)                   |
+| `TextCell`                    | [TextCell.tsx:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L80)                   |
+| `TextCellProps`               | [TextCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L26)                   |
+| `ViewExtensions`              | [recordReactTypes.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L60)           |
+| `ViewPage`                    | [ViewPage.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewPage.tsx#L32)                         |
+| `ViewPageContent`             | [ViewPageContent.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/page/ViewPageContent.tsx#L37)      |
+| `ViewPageContentProps`        | [ViewPageContent.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/page/ViewPageContent.tsx#L30)      |
+| `ViewPageProps`               | [ViewPage.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewPage.tsx#L23)                         |
+
+</doc>
+
 <doc title="Viewer reference" path="reference/viewer/index.md">
 
 # Viewer
@@ -18733,6 +19746,7 @@ Fetcher 在原生 Fetch 之上提供可复用的请求配置与结果处理。�
 | TypeScript 或 JavaScript HTTP 客户端 | 支持 Fetch 的运行环境及核心包                   | [安装](./installation.md)，然后对配套本地服务执行[第一个请求](./first-request.md) |
 | 已有 React 应用                      | 兼容的 React、Fetcher peer 依赖和打包器         | [运行 React 示例](../examples/react.md)，展示加载、数据、错误与取消               |
 | 已有 React 应用，需要数据表          | Viewer peer 依赖、支持 CSS 的打包器和本地行数据 | [创建第一张表](./first-view.md)，操作分页、排序与过滤                             |
+| 无头记录引擎或 shadcn/Base UI        | 当前工作区/本地归档，UI 使用 React 19           | [View Engine 快速接入](../guides/view-engine/getting-started.md)                  |
 
 可运行的 HTTP 和 Storybook 示例使用确定性夹具。移入应用时，必须提供示例中写明的路由与响应 JSON。安装客户端不会创建服务端。
 
@@ -18777,6 +19791,10 @@ pnpm add -D typescript
 ## React 与 Viewer 起点
 
 已有 React 应用请使用 [React 示例的完整 peer 安装与挂载步骤](../examples/react.md)。需要表格时使用[第一张数据表](./first-view.md)。这两条路径的 UI 依赖与核心 HTTP 安装不同；先按[起点选择](./index.md)确定任务。
+
+## View Engine
+
+View Engine 使用 React 19 与已编译的作用域 CSS。当前分支按[工作区/本地归档流程](../guides/view-engine/getting-started.md)接入，尚未在公共注册表首次发布。
 
 </doc>
 
@@ -18927,6 +19945,17 @@ Ada
 
 # 第一个数据视图
 
+复制定义前先选择 UI 包，两者使用不同模型。
+
+| UI 与所有权                                         | 入口                                                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| shadcn/Base UI、无头引擎、组件配置持久化与 ViewHost | [View Engine 示例](../examples/view-engine.md)及[任务指南](../guides/view-engine/index.md) |
+| Ant Design、应用控制表格数据和 Viewer 状态          | [Viewer 示例](../examples/viewer.md)                                                       |
+
+View Engine 在首次注册表发布前采用工作区/本地归档接入，核心入口可独立于 React UI 使用。
+
+## Ant Design Viewer 路径
+
 从[完整的本地 Viewer 示例](../examples/viewer)开始。该页提供消费者安装命令、一个完整组件、React 入口和运行命令，无需服务端、认证设置或 Storybook fixture。
 
 按示例的五步操作：查看首屏、切页、按 Name 排序、按 Active 过滤，然后保存并切换视图。行数据会变化，是因为示例应用计算了数据并传给 Viewer。
@@ -18964,6 +19993,8 @@ Ada
 
 通过[架构与选型](../architecture/index.md)决定状态、取消和持久化的所有者。已知操作、需要精确契约时查询 [API 参考](../reference/index.md)；[完整示例](../examples/index.md)继续作为可执行基线。
 
+独立数据视图引擎的下一步见 [View Engine 任务指南](../guides/view-engine/index.md)：组件配置、远程候选、单元格、汇总与 ViewHost 服务。
+
 </doc>
 
 <doc title="完成应用开发任务" path="zh/guides/index.md">
@@ -18976,7 +20007,8 @@ Ada
 - [服务客户端](./services/index.md)：少量端点可以直接调用 Fetcher。装饰器需要兼容的 TypeScript 编译器；生成客户端需要完整 OpenAPI 文档与编译步骤。两者都不会创建后端路由。
 - [流式消费](./streaming/index.md)：运行环境需要 Fetch、Response body 和 ReadableStream。服务端必须输出 SSE 帧；普通 JSON 响应不是事件流。长时间读取需要由调用者持有取消信号。
 - [React 数据流](./react/index.md)：从已具备声明 peer 依赖的 React 应用开始。可运行 React 示例提供确定性后端夹具；生产路由仍归应用负责。
-- [数据视图任务](./viewer/index.md)：在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
+- [View Engine 数据视图](./view-engine/index.md)：使用 shadcn/Base UI 组件、可保存的组件配置、内置筛选/单元格和明确的 ViewHost 服务，从工作区示例开始接入。
+- [Ant Design Viewer](./viewer/index.md)：在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
 - [平台集成](./integrations/index.md)：Wow 与 CoSec 需要兼容的服务端协议、认证和应用路由。存储与本地事件不需要平台服务。安装前核对所选包的 peer 依赖。
 
 使用[完整示例](../examples/index.md)获得可执行基线；通过[架构与选型](../architecture/index.md)理解资源归属与采用代价。
@@ -20006,6 +21038,264 @@ const load = () =>
 
 </doc>
 
+<doc title="View Engine 数据视图" path="zh/guides/view-engine/index.md">
+
+# View Engine 数据视图
+
+View Engine 由不依赖 React 的引擎、可保存的组件配置和基于 shadcn/Base UI 的 React 组件组成。当前实现 `record` 数据视图与表格展示；分析、卡片和仪表板属于后续工作。
+
+| 任务                   | 阅读入口                               | Storybook 验证位置                      |
+| ---------------------- | -------------------------------------- | --------------------------------------- |
+| 展示第一个页面         | [快速接入](./getting-started.md)       | View Engine → 快速开始 → 第一个数据视图 |
+| 配置本地、远程筛选     | [筛选器](./filters.md)                 | View Engine → 过滤器 → 内置组件         |
+| 渲染单元格、汇总与刷新 | [表格与运行时](./table-and-runtime.md) | View Engine → 单元格 / Record View      |
+| 保存与管理视图         | [保存视图](./saved-views.md)           | View Engine → Record View → 视图管理    |
+| 添加业务操作           | [扩展接入](./extensions.md)            | View Engine → 扩展接入 → 公共包         |
+
+[完整示例](../../examples/view-engine.md)与 Storybook 共用源码，接口细节见 [API 参考](../../reference/view-engine/index.md)。`@ahoo-wang/fetcher-viewer` 是独立的 Ant Design 包，其 `ViewDefinition` 和过滤器模型与本包不同。
+
+</doc>
+
+<doc title="快速接入数据视图" path="zh/guides/view-engine/getting-started.md">
+
+# 快速接入数据视图
+
+## 运行当前仓库
+
+当前分支的 view-engine 尚未在公共 npm 注册表发布。先从仓库示例开始；独立应用可按[完整示例](../../examples/view-engine.md)中的本地归档步骤接入。
+
+```bash
+pnpm install
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
+pnpm storybook
+```
+
+打开 **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**。金额改为 `200` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `ORDER-002`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
+
+## 连接四个职责
+
+| 部分             | 提供内容                               | 负责什么                               |
+| ---------------- | -------------------------------------- | -------------------------------------- |
+| `ViewDefinition` | `id`、`sourceId`、`rowKey`、字段与能力 | 多个实例共用的元数据                   |
+| `ViewInstance`   | 身份、范围与 `config`                  | 一份保存的筛选、列、排序和每页条数配置 |
+| `ViewHost`       | 服务及 `resolveSource(sourceId)`       | 元数据、持久化、权限与本地数据源连接   |
+| `ViewPage`       | `scopeKey`、`definitionId`、host       | 创建、加载、订阅和释放引擎             |
+
+本地元数据可通过 `definition` 和 `instances: { instances, defaultInstanceId }` 直接传入 `ViewPage`。只有查询数据源也能展示页面；保存、创建、删除、排序等能力根据宿主方法和权限启用。
+
+```tsx
+import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
+
+// host 由应用提供，满足 ViewHost 契约。
+<ViewPage
+  scopeKey="tenant:user:access"
+  definitionId="orders"
+  host={host}
+  selectable
+/>;
+```
+
+`scopeKey` 标识稳定的访问范围。用户、租户或授权范围变化时必须改变它，它不能替代服务端鉴权。引擎生命周期由 `[scopeKey, definitionId]` 决定；同一范围内更换宿主回调会保留会话。本地元数据只用于初始化该生命周期；需要重新初始化时显式更换 React key。
+
+应用自己持有引擎时，用 `ViewPageContent` 提供视图导航，或用 `RecordView` 只展示当前数据视图。自行持有的引擎需要调用 `load()` 和 `dispose()`，不能在每次 render 时创建。参阅[引擎生命周期](../../reference/view-engine/engine.md)。
+
+## 统一样式
+
+导入一次已编译的 CSS 即可，消费者无需接入 Tailwind 或 React Compiler 构建插件。外层使用 `.fve-root`，通过 `data-theme="light"` / `data-theme="dark"` 指定主题；未指定时跟随继承的 `color-scheme`。参阅[组件与主题](../../reference/view-engine/components.md)。
+
+</doc>
+
+<doc title="配置筛选器" path="zh/guides/view-engine/filters.md">
+
+# 配置筛选器
+
+## 选择字段编辑器
+
+字段定义的 `type` 和显式 `operators` 声明能力，`editor` 仅选择新建节点的默认组件。已有节点的 `component` 是实际组件引用；修改字段默认值不会替换或额外限制它。内置名称不带 `fve/` 前缀。
+
+| 需求                           | `editor.name`         | 操作符 / 配置                           |
+| ------------------------------ | --------------------- | --------------------------------------- |
+| 文本、数字、布尔、普通日期输入 | `builtin` 或省略      | 根据字段类型推导，再由 `operators` 限制 |
+| 本地单选                       | `select`              | EQ / NE，使用 `field.options`           |
+| 本地多选                       | `multi-select`        | IN / NOT_IN，使用 `field.options`       |
+| 远程单选                       | `remote-select`       | EQ / NE，配置 `options.source`          |
+| 远程多选                       | `remote-multi-select` | IN / NOT_IN，配置 `options.source`      |
+| 多个带类型的值                 | `text-values`         | IN / NOT_IN                             |
+| 日期、日期时间区间             | `datetime-range`      | BETWEEN，可设置 `showTime`              |
+
+候选项可设置 `group`。ID 保留原类型，`1` 与 `'1'` 不相等。字段上的 `group` 用于“添加筛选”分组，候选项上的 `group` 用于候选分组。字段 `operators: []` 表示不提供该字段的筛选能力，`definition.allowedOperators` 进一步约束整个表达式。
+
+## 编辑、查询与保存
+
+输入只修改草稿，点击查询或按 Enter 才应用有效输入。未设置的控件会保留，但不产生依赖值的查询条件。已应用条件的清空按钮会清空对应控件值并立即查询；编辑面板中的删除按钮则删除整个草稿控件。
+
+简单模式每个字段只有一个控件；高级模式允许同字段多条规则，并支持 AND/OR/NOR 嵌套及已声明的元素条件。切换模式不会自动展开或删除已有分支。字段选择使用分组 Checkbox 弹层；逻辑组合从独立的 Button Group 菜单添加。
+
+保存 `ViewInstance.config.filters: FilterConfiguration`，包括组件名、options、操作符和原始 `props`。不能用编译后的 Wow `FilterExpression` 替代，否则无法恢复未设置控件、所选编辑器和展示属性。组件注册负责纯 `compile` 与可选 `clear`，面板负责协调查询。参阅[筛选契约](../../reference/view-engine/filters.md)。
+
+## 远程候选
+
+```ts
+import type { ViewFieldDefinition } from '@ahoo-wang/fetcher-view-engine';
+
+const customerField: ViewFieldDefinition = {
+  field: 'customerId',
+  label: '客户',
+  type: 'string',
+  group: '客户信息',
+  editor: {
+    name: 'remote-multi-select',
+    options: { source: 'customers', pageSize: 20, debounceMs: 250 },
+  },
+};
+// ViewPage 的 extensions: { optionSources: { customers: customerOptionSource } }
+```
+
+`FilterOptionSource.search({ search, cursor, size }, signal)` 返回 `{ list, nextCursor }`；`resolve(ids, signal)` 返回 `{ list, missing }`，必须完整、唯一地覆盖每个请求 ID。访问范围内保持 source 对象稳定，并把 signal 传给 Fetcher 或后端。候选数据通过 `extensions.optionSources` 注入，与 ViewHost 解析的记录查询数据源分离。保存的是组件配置，不包含数据源函数或搜索缓存。
+
+## 日期粒度与时区
+
+日期/日期时间区间默认使用双月 Date Range Picker。datetime 字段只显示日期时，会查询完整自然日，包含结束日及其实际夏令时边界。设置 `editor.options.showTime: true` 后，在组合弹层编辑起止日期与精确到秒的时间；确定后回填，取消/Escape 放弃弹层草稿。
+
+时区统一设置在 `ViewDefinition.timeZone`，例如 `Asia/Shanghai`；省略时使用运行环境本地时区。独立 `FilterPanel` 直接接收 `timeZone`，字段不覆盖全局设置。查询使用毫秒时间戳，组件配置保留可编辑的日期时间值。
+
+在 **View Engine → 过滤器 → 内置组件** 验证远程分页、重试与恢复，在 **基础组件 → 日期时间** 验证独立日期控件。
+
+</doc>
+
+<doc title="表格与运行时操作" path="zh/guides/view-engine/table-and-runtime.md">
+
+# 表格与运行时操作
+
+## 在字段或列上配置单元格
+
+`field.cellRenderer` 提供默认渲染，`column.renderer` 可在某个实例中覆盖。内置名称为 `text`、`tags`、`status`、`link`、`date-time`、`number`，也可以直接组合对应的独立 React 组件。
+
+```ts
+import type {
+  RecordColumn,
+  ViewFieldDefinition,
+} from '@ahoo-wang/fetcher-view-engine';
+
+const amount: ViewFieldDefinition = {
+  field: 'amount',
+  label: '金额',
+  type: 'number',
+  sortable: true,
+  cellRenderer: { name: 'number' },
+  numberFormat: { style: 'currency', currency: 'CNY' },
+  summaryFunctions: ['SUM', 'AVG'],
+};
+const column: RecordColumn = {
+  id: 'amount',
+  kind: 'field',
+  field: 'amount',
+  summary: ['SUM', 'AVG'],
+};
+```
+
+数字格式由单元格与汇总共用，计算保留原始数值。文本复制使用原始值，即使界面显示枚举标签或省略号；成功提示在 2 秒后恢复。危险链接协议呈现为文本，新标签页链接带有 `noopener noreferrer`。
+
+`field` 和 `rowKey` 都相对于每条返回记录，例如 `customer.name`、`items.0.sku`、`meta.id`。返回对象的属性名不能包含点号；字段路径中的点号只作为导航分隔符，也支持数组下标。每一段只读取自有属性。表格不会自动加 `state.` 等后端前缀；应按实际响应结构配置路径，并独立确认后端支持对应查询字段。
+
+## 列与选择
+
+列身份、显隐、顺序、宽度、固定位置和汇总选择保存在 `presentation.table.columns`。主键固定左侧，操作列固定右侧。列宽通过拖动表格边界调整，列设置中没有数值宽度输入。普通列只能沿连续固定列的相邻位置固定，固定边缘显示阴影。
+
+设置 `selectable` 开启选择。批处理收到的是当前已加载页的选中键，不代表整个查询匹配集。行键必须是唯一的字符串或有限数字；缺失、重复或无效键属于数据错误。
+
+页码分页查询返回的总数若已不足以覆盖当前页，引擎会清空该页并重新查询第一页。纠正查询失败时保留查询错误，重试仍查询第一页；期间发起的新导航或查询优先。游标分页继续使用独立的游标协议。
+
+## 汇总范围与失败
+
+数字列可多选 SUM/AVG/MIN/MAX，并受 `summaryFunctions` 限制。“本页”汇总已加载记录，“所有”基于已应用筛选调用数据源可选的 `aggregate()`。选中行不会改变汇总范围。每个范围只在标签旁显示一个错误入口，展开可查看原因并重试；`refreshSummary()` 不会重新查询记录。缺失数字保持占位，不虚构为零。
+
+## 全局运行时工具
+
+手动刷新、自动刷新与页面展开放在顶部全局工具栏。自动刷新提供 30 秒、1 分钟、5 分钟和倒计时，不会修改已保存的查询配置。业务写入期间可传入 `autoRefreshPaused`；页面不可见或已有工作时，运行时会阻止重叠的自动查询。
+
+展开覆盖页面区域，Escape 退出，不调用浏览器原生 Fullscreen API。查询、汇总和操作错误各自保留对应恢复入口。后台刷新期间保留最近一次成功记录，首次加载使用 Spin，空结果使用图标。
+
+在 **Record View → 表格与汇总 / 运行时工具 / 布局与主题** 和 **单元格 → 内置组件** 验证。属性细节见[组件参考](../../reference/view-engine/components.md)。
+
+</doc>
+
+<doc title="保存与管理视图" path="zh/guides/view-engine/saved-views.md">
+
+# 保存与管理视图
+
+## 保存实例配置
+
+数据视图实例保存 `config.filters`、`sort`、`pagination` 和 `presentation`，其中 filters 保存组件属性。当前页/cursor、记录、选择、加载状态、错误、刷新倒计时和展开状态属于运行时。
+
+修改筛选不立即查询；查询应用筛选，保存持久化已应用配置。有效的纯展示属性或新增未设置控件可以在查询不变时直接保存；会影响查询的待应用值必须先查询或撤销。重新打开时应恢复组件配置，再经数据源执行查询，不能把缓存记录反序列化后当作当前结果。
+
+## 接入已实现的服务
+
+`ViewHost.definition` 加载共享元数据；`instance` 负责实例的加载、列表、保存、创建、改名与删除；`preference.saveOrder` 保存当前用户顺序；`permission` 提供权限投影和变化通知。`resolveSource` 继续作为本地业务查询客户端的连接点。参阅[签名与返回值](../../reference/view-engine/view-host.md)。
+
+保存、创建、改名后返回服务端确认的实例及新 `revision`。服务端必须检查所有权、权限与版本，UI 能力检查不能替代鉴权。创建通过 `ViewCreateContext.requestId` 支持幂等恢复。读请求可取消；界面生命周期结束不代表服务写入已回滚。
+
+## 范围与权限
+
+界面分为个人视图和公共视图两组。公共系统视图带“系统”标签，不允许改名或删除；公共共享视图按权限开放操作。点击编辑图标才进入名称输入，统一管理中还支持删除与排序。排序保存为当前用户偏好，也包括该用户看到的公共视图顺序。
+
+权限初始化完成后才提供同步 getter。权限变化应通过 `permission.subscribe` 发布，或在同一范围内替换宿主/更新回调。切换用户、租户需要新的 `scopeKey`。
+
+## 用 LocalStorageViewHost 开发验证
+
+`LocalStorageViewHost` 是可执行的开发服务夹具，覆盖共享内容、个人所有权、用户顺序、版本和创建回执。必须显式提供 `storage`、共同使用的独占 `lock`、可信 `serviceKey` / `scopeKey`、定义与初始实例列表。它保存视图配置，业务记录数据源仍然独立。
+
+在 **开发验证 → 本地视图恢复** 中保存、刷新并检查恢复；公开包的五类扩展示例也支持 `persistViews`。浏览器存储可被使用者修改，不能作为生产鉴权依据。`packages/view-engine/dev` 下的 HTTP 适配器属于实验，不是公开包导出，也不是已定稿的 REST 路由规范。
+
+在 **Record View → 视图管理**、**扩展接入 → 公共包** 验证交互，服务验证脚本见 [ViewHost](../../reference/view-engine/view-host.md)。
+
+</doc>
+
+<doc title="接入业务扩展" path="zh/guides/view-engine/extensions.md">
+
+# 接入业务扩展
+
+## 五类扩展入口
+
+| 需求               | 注册位置                   | 配置引用                                          |
+| ------------------ | -------------------------- | ------------------------------------------------- |
+| 全局业务操作       | `extensions.globalActions` | `definition.recordActions.global`                 |
+| 批处理 / 表格操作  | `extensions.tableActions`  | `definition.recordActions.table`                  |
+| 单行操作           | `extensions.rowActions`    | `definition.recordActions.row`，并提供 actions 列 |
+| 筛选组件与编译逻辑 | `extensions.filters`       | 字段、操作符或组件配置的编辑器引用                |
+| 自定义单元格       | `extensions.cells`         | `field.cellRenderer` 或 `column.renderer`         |
+
+引用统一为 `{ name, options? }`，options 只能包含 JSON 数据。组件、服务客户端和回调注册在运行时 extensions 中，不写入保存的 JSON。未知名称和无效配置会显式报错，不会静默换成其他组件。优先使用已有内置组件。
+
+```ts
+// 右侧组件和注册由业务应用提供。
+const extensions = {
+  globalActions: { 'create-order': CreateOrder },
+  tableActions: { 'process-orders': ProcessSelectedOrders },
+  rowActions: { 'process-order': ProcessOrder },
+  cells: { 'customer-link': CustomerLink },
+  filters: { 'order-status': orderStatusFilter },
+};
+```
+
+## 业务操作
+
+操作组件收到只读 definition/instance、已应用 `filter`、`sort`、options，以及绑定到该实例的 `refresh()`。全局/表格操作还收到 `selectedRowKeys` 和 `querying`，行操作收到 `record`、`rowKey`。已应用 filter 为 null 表示查询范围不可用，不能据此发起面向整个筛选范围的写入。
+
+业务应用负责执行写入、处理错误和防止重复提交。写入成功后刷新绑定实例；如果写入已成功而刷新失败，只重试刷新，不能重复写入。业务操作期间禁用或暂停冲突工作，并传入 `autoRefreshPaused`。单元格渲染器只接收展示上下文，不能在 render 中发起写入。
+
+## 筛选扩展
+
+一份 `FilterRegistration` 同时提供 `component`、纯 `compile(props, context)`、必填的支持 `modes`，以及可选 `supports` / `clear`。默认 `render: 'value'` 让编辑器复用标准字段、操作符和删除框架；`render: 'filter'` 接收完整控件契约，包括标签、操作符变更、清空与移除。
+
+`onChange` 发布可序列化的原始 props，不直接查询。不完整的本地输入必须通过 `onValidityChange(false, message)` 报告。未设置时 compile 返回 `undefined`，非空非法输入抛出错误。clear 应保留无关展示属性。注册定义在引擎生命周期内保持稳定，保存属性语义发生不兼容变化时应使用新的组件名。
+
+完整实现在 **View Engine → 扩展接入 → 公共包**。`packages/view-engine/examples/react/OrderExtensions.tsx` 实现五类扩展，`OrderOperations.tsx` 协调业务写入与刷新。代码面板展示真实源码，回归场景验证写入、失败恢复和 JSON 还原。接口细节见[筛选契约](../../reference/view-engine/filters.md)与[组件参考](../../reference/view-engine/components.md)。
+
+</doc>
+
 <doc title="数据视图任务" path="zh/guides/viewer/index.md">
 
 # 数据视图任务
@@ -20771,6 +22061,10 @@ React 到 CoSec 的 peer 箭头不表示每个 Hook 都通过 CoSec 认证。Vie
 
 实现步骤见[声明式服务](../guides/services/declarative-client.md)、[生成式服务](../guides/services/generated-client.md)及[生成产物参考](../reference/generator/generated-output.md)。选择消费者版本前阅读[运行环境](./runtime-support.md)。
 
+## View Engine 入口
+
+`@ahoo-wang/fetcher-view-engine` 直接依赖 Wow/React 及其 UI 实现包，与上图只描述 peer 的箭头不同。公开核心入口不导入 React/DOM/CSS，`/react` 提供 shadcn/Base UI 组件及浏览器 UI 接入。ViewHost 组合 definition、instance、preference 和 permission 服务，记录查询与候选数据源仍是应用的运行时适配器。参阅 [View Engine 契约](../reference/view-engine/index.md)及[包声明](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/package.json)。
+
 </doc>
 
 <doc title="运行环境与 SSR" path="zh/architecture/runtime-support.md">
@@ -20804,6 +22098,10 @@ FetcherViewer 在模块作用域创建默认视图 ID 存储，固定键为 `fet
 定义、租户或所有者变化时重新挂载视图，可以分隔 UI 状态；服务端仍须实施访问控制，应用仍须合理划分持久化偏好。具体 SSR 框架仍需要导入、渲染和水合验证，本章不代表所有框架已通过认证。
 
 继续阅读[共享客户端](../guides/http/shared-client.md)、[存储与事件](../guides/integrations/storage-and-events.md)和[状态所有权](./state-and-resources.md)。
+
+## View Engine 运行环境
+
+view-engine 包声明 Node >=20.20.2。核心入口独立于 React 和浏览器全局对象；浏览器控件通过独立的 `/react` 入口使用 React 19。ViewPage 在 Effect 中创建、释放引擎，自行持有的引擎必须显式管理范围和释放。剪贴板、页面可见性和布局 API 属于浏览器能力。LocalStorageViewHost 必须注入存储与独占锁，开发示例使用 Web Locks。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
 
 </doc>
 
@@ -21008,11 +22306,12 @@ SSE JSON 转换调用 `JSON.parse`，未处理的转换错误成为流错误，�
 
 每个示例包含维护中的源码、前提、运行命令、预期结果和清理方式。仓库夹具不需要外部后端。
 
-| 示例                  | 运行后观察                                      | 接入应用                                        |
-| --------------------- | ----------------------------------------------- | ----------------------------------------------- |
-| [HTTP](./http.md)     | 本地服务返回 Ada；不存在的路由产生 HTTP 404     | 将服务与客户端复制到独立 ESM 项目               |
-| [React](./react.md)   | 加载、失败、启动延迟请求并取消                  | 在已有 React 应用挂载组件，并提供文档列出的路由 |
-| [Viewer](./viewer.md) | 四行数据、分页、姓名排序、Active 过滤与保存确认 | 在兼容的 React/Viewer peer 环境挂载本地组件     |
+| 示例                            | 运行后观察                                      | 接入应用                                           |
+| ------------------------------- | ----------------------------------------------- | -------------------------------------------------- |
+| [HTTP](./http.md)               | 本地服务返回 Ada；不存在的路由产生 HTTP 404     | 将服务与客户端复制到独立 ESM 项目                  |
+| [React](./react.md)             | 加载、失败、启动延迟请求并取消                  | 在已有 React 应用挂载组件，并提供文档列出的路由    |
+| [Viewer](./viewer.md)           | 四行数据、分页、姓名排序、Active 过滤与保存确认 | 在兼容的 React/Viewer peer 环境挂载本地组件        |
+| [View Engine](./view-engine.md) | 三笔订单，通过 ViewPage 手动查询、排序和分页    | 在 React 19 应用中使用当前工作区或验证后的本地归档 |
 
 Viewer 示例将视图保存在组件内存，重新挂载会重置。React 夹具的慢请求耗时 2000 ms，便于观察取消。这些检查证明示例行为，不证明认证、服务端一致性或生产持久化。
 
@@ -21222,7 +22521,7 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 仓库贡献者需要 Node `>=20.20.2`、pnpm `10.34.5`，并已安装仓库依赖。在仓库根目录运行：
 
 ```bash
-pnpm exec vitest run --project=storybook stories/docs/ReactRequests.stories.tsx
+pnpm exec vitest run --project=storybook stories/docs/ReactRequests.test.stories.tsx
 ```
 
 要手动尝试相同交互，请运行 `pnpm storybook`，打开命令输出的本地地址，然后在侧栏选择 **Docs / React requests**。仓库 Storybook 就是不需要后端的可运行样例。
@@ -21543,15 +22842,253 @@ pnpm install
 pnpm storybook
 ```
 
-打开 [Docs → Local Viewer → Local Data](http://localhost:6006/?path=/story/docs-local-viewer--local-data)。play 函数会自动执行上述操作；重新加载故事可再次运行，或使用消费者应用查看未经操作的初始状态。
+打开 [Docs → Local Viewer → Local Data](http://localhost:6006/?path=/story/docs-local-viewer--local-data)，手动执行上述操作；重新加载可恢复初始状态。自动交互验证在独立回归故事中执行。
 
 无头运行相同的浏览器验证：
 
 ```bash
-pnpm exec vitest run --project=storybook stories/docs/LocalViewer.stories.tsx
+pnpm exec vitest run --project=storybook stories/docs/LocalViewer.test.stories.tsx
 ```
 
 验证会检查表格行集合与顺序、过滤结果和保存设置的恢复。回调文字只是额外的保存确认，不能代替对实际显示行的验证。
+
+</doc>
+
+<doc title="完整 View Engine 示例" path="zh/examples/view-engine.md">
+
+# 完整 View Engine 示例
+
+## 运行与验证
+
+仓库开发需要 Node >=20.20.2 和 pnpm 10.34.5：
+
+```bash
+pnpm install
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
+pnpm storybook
+```
+
+打开 [View Engine → 快速开始 → 第一个数据视图](http://localhost:6006/?path=/story/view-engine-快速开始--minimal)。展示页面保持初始状态，由你手动操作；断言放在独立回归故事中：
+
+```bash
+pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx
+```
+
+先用 `pnpm exec playwright install chromium` 安装 Chromium，或设置 `VIEW_ENGINE_BROWSER_CHANNEL=chrome` 使用已安装的 Chrome。该命令还会验证已有的五类扩展和深色窄容器场景。
+
+| 操作                   | 预期结果                                  |
+| ---------------------- | ----------------------------------------- |
+| 打开页面               | 显示 ORDER-001、ORDER-002，共 3 条记录    |
+| 下一页                 | 显示 ORDER-003                            |
+| 金额改为 200，暂不查询 | 当前结果保持不变                          |
+| 按 Enter               | 只显示 ORDER-002                          |
+| 清空已应用金额条件值   | 恢复全部 3 条记录的查询范围，筛选控件保留 |
+| 金额升序               | 第一页显示 ORDER-003、ORDER-001           |
+
+## 完整共享组件
+
+以下源码就是 Storybook Minimal 故事使用的组件，仅导入公开包入口。本地数据源只支持定义中声明的金额下限、AND 和普通分页；更多操作符应由业务 QueryApi 实现。示例返回完整记录，没有提供视图保存服务，因此保存不可用。后续接入见[保存视图指南](../guides/view-engine/saved-views.md)。
+
+```tsx
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  createFilterConfiguration,
+  newFilterNode,
+  type RecordData,
+  type RecordQuerySource,
+  type ViewDefinition,
+  type ViewHost,
+  type ViewInstanceList,
+} from '@ahoo-wang/fetcher-view-engine';
+import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import {
+  FilterOperator,
+  SortDirection,
+  type FilterExpression,
+  type PagedList,
+  type PagedQueryRequest,
+} from '@ahoo-wang/fetcher-wow';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
+
+const orders = [
+  { id: 'ORDER-001', amount: 120, status: 'pending' },
+  { id: 'ORDER-002', amount: 250, status: 'done' },
+  { id: 'ORDER-003', amount: 80, status: 'pending' },
+];
+const definition: ViewDefinition = {
+  id: 'first-orders',
+  sourceId: 'orders',
+  title: '第一个数据视图',
+  rowKey: 'id',
+  allowedOperators: [
+    FilterOperator.MATCH_ALL,
+    FilterOperator.AND,
+    FilterOperator.GTE,
+  ],
+  fields: [
+    {
+      field: 'id',
+      label: '订单编号',
+      type: 'string',
+      sortable: true,
+      operators: [],
+      cellRenderer: { name: 'text', options: { copyable: true } },
+    },
+    {
+      field: 'amount',
+      label: '金额',
+      type: 'number',
+      sortable: true,
+      operators: [FilterOperator.GTE],
+      summaryFunctions: [],
+      numberFormat: { style: 'currency', currency: 'CNY' },
+      cellRenderer: { name: 'number' },
+    },
+    {
+      field: 'status',
+      label: '状态',
+      type: 'string',
+      operators: [],
+      options: [
+        { value: 'pending', label: '待处理' },
+        { value: 'done', label: '已完成' },
+      ],
+      cellRenderer: {
+        name: 'status',
+        options: { tones: [{ value: 'done', tone: 'success' }] },
+      },
+    },
+  ],
+};
+const instances: ViewInstanceList = {
+  defaultInstanceId: 'my-orders',
+  instances: [
+    {
+      id: 'my-orders',
+      definitionId: definition.id,
+      title: '我的订单',
+      kind: 'record',
+      scope: { type: 'personal' },
+      config: {
+        filters: createFilterConfiguration({
+          ...newFilterNode(FilterOperator.GTE, 'amount'),
+          props: { value: 0 },
+        }),
+        sort: [{ field: 'id', direction: SortDirection.ASC }],
+        pagination: { mode: 'paged', size: 2 },
+        presentation: {
+          layout: 'table',
+          table: {
+            columns: [
+              { id: 'id', kind: 'field', field: 'id', width: 200 },
+              { id: 'amount', kind: 'field', field: 'amount', width: 160 },
+              { id: 'status', kind: 'field', field: 'status', width: 140 },
+            ],
+          },
+        },
+      },
+    },
+  ],
+};
+
+// ponytail: local amount/AND demo only; use a business QueryApi for other predicates.
+function matches(amount: number, expression: FilterExpression): boolean {
+  if (expression.op === FilterOperator.MATCH_ALL) return true;
+  if (expression.op === FilterOperator.AND)
+    return expression.operands.every(item => matches(amount, item));
+  if (
+    expression.op === FilterOperator.GTE &&
+    expression.field === 'amount' &&
+    typeof expression.value === 'number'
+  )
+    return amount >= expression.value;
+  throw new Error('示例只支持金额下限和 AND 条件');
+}
+const source: RecordQuerySource = {
+  async paged<T extends Partial<RecordData> = RecordData>(
+    query: PagedQueryRequest,
+    _attributes?: Record<string, unknown>,
+    controller?: AbortController,
+  ): Promise<PagedList<T>> {
+    controller?.signal.throwIfAborted();
+    if (!('filter' in query)) throw new Error('示例使用 FilterExpression 查询');
+    const rows = orders.filter(order => matches(order.amount, query.filter));
+    for (const sort of [...(query.sort ?? [])].reverse()) {
+      if (sort.field !== 'id' && sort.field !== 'amount')
+        throw new Error('示例只支持按编号或金额排序');
+      const direction = sort.direction === SortDirection.ASC ? 1 : -1;
+      rows.sort(
+        (left, right) =>
+          direction *
+          (sort.field === 'amount'
+            ? left.amount - right.amount
+            : left.id.localeCompare(right.id)),
+      );
+    }
+    const { index = 1, size = 2 } = query.pagination ?? {};
+    // This source always returns whole rows; QueryApi also permits projected rows.
+    return {
+      list: rows.slice((index - 1) * size, index * size) as unknown as T[],
+      total: rows.length,
+    };
+  },
+};
+const host: ViewHost = {
+  resolveSource(id) {
+    if (id !== definition.sourceId) throw new Error('未知数据源');
+    return source;
+  },
+};
+
+export function RecordViewExample({
+  appearance = 'light',
+}: {
+  appearance?: 'light' | 'dark';
+}) {
+  return (
+    <div
+      className="fve-root"
+      data-theme={appearance}
+      style={{ padding: 16, minWidth: 0 }}
+    >
+      <ViewPage
+        scopeKey="docs:orders"
+        definitionId={definition.id}
+        definition={definition}
+        instances={instances}
+        host={host}
+        initialSidebarCollapsed
+        selectable
+      />
+    </div>
+  );
+}
+```
+
+## 接入独立 React 应用
+
+在包发布之前，先构建并验证本地归档：
+
+```bash
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
+node packages/view-engine/scripts/verify-package.mjs
+pnpm --filter @ahoo-wang/fetcher-view-engine pack --pack-destination /tmp/view-engine-pack
+```
+
+打包命令会输出归档文件名。在 React 19 TypeScript 应用中，使用 `pnpm add` 安装该 `.tgz` 的绝对路径，满足包声明的 peer 依赖，复制共享组件并渲染 `<RecordViewExample />`。如果环境中的内部依赖版本尚未发布，也需要打包相应工作区依赖；包验证脚本会联合验证工作区构建产物，不会执行发布。
+
+这验证的是浏览器界面和本地记录数据源。鉴权、视图持久化和后端查询行为仍由应用接入负责，参阅 [ViewHost 契约](../reference/view-engine/view-host.md)。
 
 </doc>
 
@@ -21834,20 +23371,21 @@ node --test wiki/test/documentation.test.mjs
 
 每个包提供入口页和专题目录。先选择职责，再进入需要的 API 家族；复杂包拆分更细，简单包保持紧凑。
 
-| 包                                    | 职责             | 专题数 |
-| ------------------------------------- | ---------------- | ------ |
-| [fetcher](./fetcher/index.md)         | HTTP 请求        | 6      |
-| [decorator](./decorator/index.md)     | 声明式服务       | 3      |
-| [eventbus](./eventbus/index.md)       | 事件投递         | 2      |
-| [eventstream](./eventstream/index.md) | SSE 消费         | 3      |
-| [storage](./storage/index.md)         | 值存储           | 2      |
-| [openapi](./openapi/index.md)         | OpenAPI 类型契约 | 3      |
-| [generator](./generator/index.md)     | 生成客户端       | 5      |
-| [openai](./openai/index.md)           | 对话与 token 流  | 2      |
-| [cosec](./cosec/index.md)             | 认证与刷新       | 3      |
-| [react](./react/index.md)             | 组件请求状态     | 8      |
-| [wow](./wow/index.md)                 | 命令与查询       | 9      |
-| [viewer](./viewer/index.md)           | 数据视图与持久化 | 8      |
+| 包                                    | 职责                                | 专题数 |
+| ------------------------------------- | ----------------------------------- | ------ |
+| [fetcher](./fetcher/index.md)         | HTTP 请求                           | 6      |
+| [decorator](./decorator/index.md)     | 声明式服务                          | 3      |
+| [eventbus](./eventbus/index.md)       | 事件投递                            | 2      |
+| [eventstream](./eventstream/index.md) | SSE 消费                            | 3      |
+| [storage](./storage/index.md)         | 值存储                              | 2      |
+| [openapi](./openapi/index.md)         | OpenAPI 类型契约                    | 3      |
+| [generator](./generator/index.md)     | 生成客户端                          | 5      |
+| [openai](./openai/index.md)           | 对话与 token 流                     | 2      |
+| [cosec](./cosec/index.md)             | 认证与刷新                          | 3      |
+| [react](./react/index.md)             | 组件请求状态                        | 8      |
+| [wow](./wow/index.md)                 | 命令与查询                          | 9      |
+| [viewer](./viewer/index.md)           | 数据视图与持久化                    | 8      |
+| [view-engine](./view-engine/index.md) | 无头引擎、组件配置与 shadcn/Base UI | 5      |
 
 ## 如何使用参考
 
@@ -32968,6 +34506,492 @@ console.log(zh_CN.EQ);
 
 - `@ahoo-wang/fetcher-wow/query/locale/en_US` → [en_US](./operator-locales#api-en_US)
 - `@ahoo-wang/fetcher-wow/query/locale/zh_CN` → [zh_CN](./operator-locales#api-zh_CN)
+
+</doc>
+
+<doc title="View Engine API 参考" path="zh/reference/view-engine/index.md">
+
+# View Engine API 参考
+
+本文描述当前工作区 5.0.0 契约。该包尚未在公共注册表发布，请按[本地构建与归档步骤](../../examples/view-engine.md)接入。仓库开发需要 Node >=20.20.2、pnpm 10.34.5。React 界面需要 React/ReactDOM ^19.2.8；直接依赖随包安装，其声明的 peer 依赖也需满足。
+
+| 入口                                        | 内容                                                         | 运行时                           |
+| ------------------------------------------- | ------------------------------------------------------------ | -------------------------------- |
+| `@ahoo-wang/fetcher-view-engine`            | 模型、ViewHost、ViewEngine、纯筛选函数、LocalStorageViewHost | 核心导入不加载 React、DOM 或 CSS |
+| `@ahoo-wang/fetcher-view-engine/react`      | ViewPage、RecordView、FilterPanel、表格及内置控件            | React 19 与浏览器 UI             |
+| `@ahoo-wang/fetcher-view-engine/styles.css` | 编译后的作用域样式                                           | 应用中导入一次                   |
+
+消费者不需要 Tailwind 或 React Compiler 插件。`fve:` 是 CSS 工具类前缀，不是配置中的组件名前缀。当前实现支持 `kind: 'record'` 与 `layout: 'table'`。
+
+| 契约                                 | 阅读主题                   |
+| ------------------------------------ | -------------------------- |
+| 定义、实例、筛选配置与数据源形状     | [模型](./models.md)        |
+| 服务门面、权限、版本与开发存储       | [ViewHost](./view-host.md) |
+| 无头生命周期、命令与快照             | [ViewEngine](./engine.md)  |
+| 筛选序列化、编译与远程候选           | [筛选契约](./filters.md)   |
+| React 所有权、扩展属性、单元格与主题 | [组件](./components.md)    |
+| 两个代码入口的全部导出名称           | [符号索引](./symbols.md)   |
+
+接入步骤见[任务指南](../../guides/view-engine/index.md)，可运行基线见[共享示例](../../examples/view-engine.md)。`dev`、引擎内部服务和未导出的 UI 原语不构成额外公开入口。
+
+</doc>
+
+<doc title="定义与实例模型" path="zh/reference/view-engine/models.md">
+
+# 定义与实例模型
+
+## ViewDefinition
+
+| 属性                                  | 契约                                                                         |
+| ------------------------------------- | ---------------------------------------------------------------------------- |
+| `id`、`title`                         | 共用定义身份与标题                                                           |
+| `sourceId`                            | 传给 `host.resolveSource` 的本地标识                                         |
+| `rowKey`                              | 相对记录的自有属性路径，指向唯一字符串或有限数字                             |
+| `fields`                              | 只读字段定义：`field`、`label`，以及可选 type/group/options/operators/editor |
+| `timeZone?`                           | 筛选与日期时间单元格共用时区，省略时使用本地运行环境                         |
+| `allowedOperators?`、`filterEditors?` | 定义级操作符限制和编辑器默认值                                               |
+| `recordActions?`                      | 全局、表格、行操作的命名引用                                                 |
+
+`ViewFieldDefinition` 还支持 `sortable`、`cellRenderer`、`numberFormat` 和 `summaryFunctions`。`RendererReference` 与 `FilterEditorReference` 都是 `{ name: string, options?: JSON object }`，函数属于运行时注册。
+
+## ViewInstance 与 RecordViewConfig
+
+`ViewInstance` 当前就是 `RecordViewInstance`：包含 `id`、`definitionId`、`title`、可选 `revision`、`scope`、`kind: 'record'` 和 `config`。
+
+| 配置属性       | 保存内容                                      |
+| -------------- | --------------------------------------------- |
+| `filters`      | `FilterConfiguration`：模式与组件树           |
+| `sort`         | Wow `FieldSort[]`                             |
+| `pagination`   | `{ mode: 'paged' \| 'cursor', size: number }` |
+| `presentation` | `{ layout: 'table', table: { columns } }`     |
+
+scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shared' }`；另存为只接受个人或共享范围。`ViewInstanceList` 返回完整可见 `instances`，以及字符串或 null 的 `defaultInstanceId`。
+
+字段列包含 `id`、`kind: 'field'`、`field`，以及可选 `title`、`width`、`visible`、`pinned`、`renderer`、`summary`。操作列使用 `kind: 'actions'`，没有 field。显式宽度为 64–960 px，导出常量提供最小、最大与默认值（180 px）。`getRecordColumnPinning` 计算主键/操作列的强制固定位置；`orderRecordColumns` 返回展示顺序，不改写保存偏好。
+
+## RecordQuerySource
+
+数据源提供 Wow `QueryApi<RecordData>` 的 `paged` 和/或 `cursor`，以及可选 `aggregate`。方法参数为 `(query, attributes?, abortController?)`，应继续向传输层传递取消信号。查询使用 Wow 请求类型中的 `FilterExpression` 分支，不是旧 `condition` DSL。
+
+普通分页返回 `{ list, total }`；游标分页返回 `{ list, nextCursor }`，末页 `nextCursor: null`。聚合返回生成查询所描述的结果行，应使用汇总辅助函数处理别名。只声明实际支持的模式，元数据与数据源能力必须一致。
+
+`readRecordValue` 读取自有属性与标准点分数组下标，字面点号键优先。`getRecordKey`、`validateRecordRows` 检查稳定身份。信任边界可调用 `validateViewDefinition`、`validateViewInstance`；运行时快照使用 `DeepReadonly`。
+
+</doc>
+
+<doc title="ViewHost 与服务边界" path="zh/reference/view-engine/view-host.md">
+
+# ViewHost 与服务边界
+
+`ViewHost` 是应用内组合门面。可选服务/方法分别启用能力，`resolveSource` 必填；它不规定统一的 REST Controller 或 URL 布局。
+
+| 服务         | 方法                                           | 返回值 / 职责                                            |
+| ------------ | ---------------------------------------------- | -------------------------------------------------------- |
+| `definition` | `load(definitionId, signal?)`                  | `Promise<ViewDefinition>`                                |
+| `instance`   | `list(definitionId, signal?)`                  | `Promise<ViewInstanceList>`                              |
+| `instance`   | `load(instanceId, signal?)`                    | `Promise<ViewInstance>`                                  |
+| `instance`   | `create(instanceWithoutIdOrRevision, context)` | 返回创建后的权威实例，context 含 requestId 和可选 signal |
+| `instance`   | `save(instance)`                               | 返回保存实例及权威 revision                              |
+| `instance`   | `rename(instanceId, title, revision?)`         | 返回改名后的实例                                         |
+| `instance`   | `delete(instanceId, revision?)`                | `Promise<void>`                                          |
+| `preference` | `saveOrder(definitionId, instanceIds)`         | 保存当前用户的排序偏好                                   |
+| `permission` | `getInstance(instance)`                        | 同步 `ViewInstancePermissions`                           |
+| `permission` | `getDefinition()`                              | 同步 `{ reorder }` 投影                                  |
+| `permission` | `load(definitionId, signal?)`                  | 初始化 getter，并返回 `ViewPermissionSnapshot`           |
+| `permission` | `refresh(signal?)`、`subscribe(listener)`      | 刷新权限；subscribe 返回取消订阅函数                     |
+| host         | `resolveSource(sourceId)`                      | `RecordQuerySource` 或其 Promise                         |
+
+加载引擎时等待 `permission.load`；没有 load 时使用 `permission.refresh`。权限初始化失败不能进入 ready。getter 必须是纯函数，读取已初始化策略。后续变化需要发布通知或替换 host，仅修改不可观察的闭包不会通知 React。
+
+## 写入与不确定结果
+
+服务负责身份、所有权、权限和版本检查。引擎会复查界面权限，但不能代替后端鉴权。系统视图禁止改名与删除。save/rename 响应必须保持实例身份，并返回服务确认的配置与版本。
+
+同一次逻辑创建在不确定重试期间保留 `ViewCreateContext.requestId`。服务必须按该 ID 去重，并拒绝同一 ID 搭配不同正文。界面取消或导航不能证明写入是否已提交，应通过权威回执/重载协调，不能盲目创建新的请求。
+
+`ViewServiceError(code, message)` 区分 INVALID_ARGUMENT、UNAUTHENTICATED、FORBIDDEN、NOT_FOUND、CONFLICT、REVISION_CONFLICT、PRECONDITION_REQUIRED、CORRUPT_STATE、UNAVAILABLE、UNKNOWN_OUTCOME。这些是服务分类，不是公开的 HTTP 状态码映射。
+
+save、rename 或 delete 发出后，UNKNOWN_OUTCOME、UNAVAILABLE 及未分类异常会标记 `requiresReload`，保留本地编辑并阻止该实例的其他写入。保存和改名需要 `reloadInstance()` 成功取得权威版本后才解除限制；实例不存在或不可访问时继续保留错误与编辑。宿主应使用对应的 `ViewServiceError` 代码报告明确拒绝。不确定的创建可使用原请求 ID 重试；不确定的删除可使用同一 ID、同一 revision 幂等重试。界面通过订阅 `getCapabilitiesSnapshot().instances[id].retryDelete` 判断此例外。
+
+## LocalStorageViewHost
+
+必填配置为 `serviceKey`、`scopeKey`、`definition`、`instances`、`resolveSource`、`storage`、`lock`。可选策略回调为 `instancePermissions`、`canReorder`、`permissionsRevision`。storage 提供 getItem/setItem/removeItem，同一存储键的所有客户端必须共用独占锁域。
+
+```ts
+const host = new LocalStorageViewHost({
+  serviceKey: 'demo-service:tenant-a',
+  scopeKey: 'user-a',
+  definition,
+  instances,
+  resolveSource,
+  storage: localStorage,
+  lock: (name, operation, signal) =>
+    navigator.locks.request(name, { signal }, operation),
+});
+```
+
+该浏览器开发夹具验证恢复、隔离、版本和原子写入；`reset()` 重置测试服务状态。它不保存业务记录，也不提供可信的生产鉴权。
+
+构建工作区并在 6006 端口启动 Storybook 后，运行 `node packages/view-engine/scripts/verify-view-host.mjs` 验证本地服务与浏览器恢复；`pnpm verify:view-engine` 是包、服务和浏览器验收的组合入口。`dev` 下的 HTTP 夹具不进入发布包。
+
+</doc>
+
+<doc title="ViewEngine 生命周期与命令" path="zh/reference/view-engine/engine.md">
+
+# ViewEngine 生命周期与命令
+
+## 生命周期所有权
+
+`new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers? })` 创建无头运行时。调用 `await engine.load()`，结束时调用 `engine.dispose()`。React 应用通常交给 `ViewPage` 管理，已释放的引擎不能继续复用。
+
+`getSnapshot()` 返回缓存的不可变 `ViewEngineState`，`subscribe(listener)` 返回取消订阅函数。状态包含 status/error/definition、实例 ID、当前实例与各实例会话。`getCapabilitiesSnapshot()` 通过同一订阅机制提供不可变权限/能力投影。不要直接修改快照。
+
+## 会话状态
+
+| 字段                                                            | 含义                                   |
+| --------------------------------------------------------------- | -------------------------------------- |
+| `baseline`、`instance`、`dirty`                                 | 已保存基线、当前实例、待保存差异       |
+| `filterDraft`、`filterBaseline`、`filterPending`、`filterValid` | 编辑树、已应用树、查询差异和本地有效性 |
+| `appliedFilter`                                                 | 编译表达式，查询范围无效时为 null      |
+| `rows`、`total`、`page`、`cursor`、`nextCursor`                 | 当前记录结果与导航                     |
+| `queryStatus`、`refreshing`、`queryError`                       | 读取状态；后台刷新可保留记录           |
+| `pageSummary`、`allSummary`                                     | 独立跟踪的两个汇总范围                 |
+| `writeStatus`、`writeError`、`requiresReload`                   | 写入进度、失败与协调要求               |
+| `selectedRowKeys`                                               | 已加载记录内的选择                     |
+
+## 命令
+
+下表中可选 `id` 指定实例，省略时使用当前实例。异步操作返回 `Promise<void>`，调用方需处理失败。
+
+| 命令                                                                                                      | 作用                               |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `selectInstance(id)`                                                                                      | 导航并加载对应记录                 |
+| `setFilterDraft(configuration, id?, valid?)`、`setFilterValidity(valid, id?)`、`setFilterMode(mode, id?)` | 编辑，不查询                       |
+| `applyFilter(id?)`                                                                                        | 编译当前配置、接受配置并查询       |
+| `setSort(sort, id?)`、`setPage(index, id?)`、`setPageSize(size, id?)`、`nextPage(id?)`                    | 应用记录查询与导航变化             |
+| `setColumns(columns, id?)`                                                                                | 修改展示；汇总指标变化可能发起聚合 |
+| `setSelection(keys, id?)`、`setTitle(title, id?)`                                                         | 修改本地选择或标题                 |
+| `refresh(id?, { background? })`                                                                           | 查询当前已应用范围                 |
+| `refreshSummary(id?)`                                                                                     | 独立重试聚合范围                   |
+| `save(id?)`、`saveAs({ title, scope }, id?)`                                                              | 经宿主服务保存                     |
+| `renameInstance(title, id?)`、`deleteInstance(id?)`、`reorderInstances(ids)`                              | 管理服务端视图与用户偏好           |
+| `restore(id?)`                                                                                            | 恢复本地保存基线并查询             |
+| `reloadInstance(id?)`、`canReloadInstance(id?)`                                                           | 从宿主重载并协调实例               |
+| `getPermissions(id?)`、`canReorderInstances()`                                                            | 检查当前操作权限                   |
+| `updateHost(host)`                                                                                        | 更新同范围回调/策略并保留会话      |
+| `dispose()`                                                                                               | 结束订阅并取消拥有的读取           |
+
+通过数据源的 QueryApi 方法读取并传递 AbortController，写入授权与持久化留在 ViewHost 服务。请求取消和旧响应丢弃保障结果所有权，不能撤销已经完成的业务写入。
+
+</doc>
+
+<doc title="筛选配置与组件契约" path="zh/reference/view-engine/filters.md">
+
+# 筛选配置与组件契约
+
+## 配置与查询
+
+| 表示                    | 用途                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `FilterComponentConfig` | 唯一编辑节点：id/component/operator/field/props，以及可选 operands 或 predicate |
+| `FilterConfiguration`   | 可 JSON 保存的 `{ mode, root }`，编辑、已应用和已保存快照共用此结构             |
+| Wow `FilterExpression`  | 编译后的请求条件，不是 UI 恢复格式                                              |
+
+`FilterJsonValue` 支持 null、布尔、有限数字、字符串、数组和 JSON 对象。对象属性可为未设置的 `undefined`，序列化时省略；不能把函数、循环引用或 undefined 数组项写入 props。组件名称标识其保存与编译协议。
+
+## 核心函数
+
+| 函数                                                                                   | 返回值 / 行为                                                  |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `newFilterNode(operator, field?, component?)`                                          | 创建带 ID、明确组件引用（默认 builtin）和初始 props 的配置节点 |
+| `createFilterConfiguration(root, mode?)`                                               | 复制并校验配置根节点；省略模式时推导模式                       |
+| `validateFilterConfiguration(value, fields?, allowedOperators?)`                       | 断言配置有效，无效输入抛出错误                                 |
+| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?, timeZone?)` | `{ expression?, errors }`                                      |
+| `clearFilterValues(root, fields, compilers?, timeZone?)`                               | 按组件语义清空值并保留节点身份                                 |
+| `compileBuiltinFilter`、`clearBuiltinFilterProps`                                      | 复用默认组件编译与清空                                         |
+| `getFieldOperators`、`FILTER_OPERATORS`、`isSimpleFilter`、`sameFilterQuery`           | 能力、元数据、模式与查询比较                                   |
+
+直接构造组件 props。面板仅在新建节点时解析字段/操作符默认编辑器；已保存节点始终使用明确组件引用。编译错误阻止应用；有效但没有实际条件时得到 MATCH_ALL。
+
+`getFieldOperators(field)` 仅根据字段类型和显式 `field.operators` 推导能力。字段 `editor` 和定义 `filterEditors` 仅作为新建节点默认值；已有节点以自身 `component` 为准，由该组件注册检查兼容性。因此修改字段默认编辑器不会限制或替换已保存组件。
+
+## FilterPanel
+
+必填 `fields`、`onApply({configuration, expression})`。受控时使用配置值 `value/onChange`；本地所有权使用 `defaultValue`，两者互斥。可选 `appliedValue` 提供已接受的配置基线。模式保存在 `configuration.mode`。其他可选属性包括 `onPendingChange`、`onValidityChange`、`timeZone`、`extensions`、`editors`、`allowedOperators`。通过 `querying`、`queryError`、`disabled`、`collapsed`、`renderToolbar`、`className` 接入宿主布局。
+
+导航会卸载编辑器时，应分别保留编辑配置和已接受配置。collapsed 隐藏面板主体并保留本地输入缓冲。移动工具栏时使用 `FilterPanelToolbarProps.onModeChange`，保持模式切换保护。普通输入框中的 Enter 查询，弹层中的 Enter 仍由弹层处理。
+
+## FilterRegistration
+
+component 接收只读原始 props、field/operator/mode/context/options、错误、禁用状态及变更/有效性回调。纯函数 `compile(props, context)` 返回表达式或 undefined，可选 clear 返回清空后的 props。modes 必填，supports 可拒绝不兼容绑定。默认 `render: 'value'` 使用 `FilterEditorProps`；`render: 'filter'` 使用含 id/operators/errorId 及 onOperatorChange/onClear/onRemove 的 `FilterComponentProps`。
+
+`FilterCompilerRegistry` 是 ViewEngine/核心辅助函数使用的无头子集。React 接入只需在 `extensions.filters` 注册同一份定义，ViewPage 连接其编译和组件能力。注册的协议不兼容变化时，使用新名称或执行明确的配置迁移。
+
+## 远程候选契约
+
+`FilterOptionSource` 独立于 ViewHost：
+
+```ts
+import type { CursorPage, CursorQuery } from '@ahoo-wang/fetcher-wow';
+import type {
+  FilterOptionItem,
+  FilterOptionValue,
+} from '@ahoo-wang/fetcher-view-engine';
+
+interface FilterOptionSource {
+  search(
+    query: Pick<CursorQuery, 'cursor' | 'size'> & { search: string },
+    signal: AbortSignal,
+  ): Promise<CursorPage<FilterOptionItem>>;
+  resolve(
+    values: readonly FilterOptionValue[],
+    signal: AbortSignal,
+  ): Promise<{
+    list: FilterOptionItem[];
+    missing: FilterOptionValue[];
+  }>;
+}
+```
+
+实际 search 类型为 `Pick<CursorQuery, 'cursor' | 'size'>` 加 search，实现时以导出类型为准。值只允许字符串或有限数字，resolve 必须保留字符串/数字身份并将每个请求 ID 唯一归类。搜索、分页和标签回填分别恢复错误；后续页失败保留已有候选。保存的标签不能替代权限判断和来源校验。
+
+</doc>
+
+<doc title="React 组件与主题" path="zh/reference/view-engine/components.md">
+
+# React 组件与主题
+
+## 页面与表格
+
+| 组件                   | 必填输入                                                             | 所有权                                             |
+| ---------------------- | -------------------------------------------------------------------- | -------------------------------------------------- |
+| `ViewPage`             | scopeKey、definitionId、host                                         | 创建、加载、释放引擎，可直接提供本地定义和实例列表 |
+| `ViewPageContent`      | engine                                                               | 展示视图导航和数据页，引擎由调用方拥有             |
+| `RecordView`           | engine                                                               | 展示当前数据会话，引擎由调用方拥有                 |
+| `RecordTable`          | definition、instance、appliedFilter、rows、选择/列/排序回调、refresh | 受控表格，请求和状态由调用方拥有                   |
+| `RecordColumnSettings` | definition、columns、onChange                                        | 受控列配置                                         |
+
+ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默认 false）、`autoRefreshPaused`（默认 false）、`className`。ViewPage 还有 `initialSidebarCollapsed`，RecordView 有 `toolbarStart`。RecordTable 单独接收查询/汇总状态与重试回调。
+
+## 内置单元格属性
+
+独立单元格均支持 className。配置中的 renderer options 有意小于独立组件的完整 props。
+
+| 组件 / 配置名称              | 主要属性或 options                                        | 默认值 / 行为                                                                     |
+| ---------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `TextCell` / `text`          | value、text、ellipsis、copyable                           | ellipsis/copyable 默认 false；text 只改展示，复制原始值                           |
+| `TagsCell` / `tags`          | value、options、maxVisible                                | maxVisible 默认 2，按类型去重，剩余标签在弹层展开                                 |
+| `StatusCell` / `status`      | value、options、tones                                     | neutral/success/warning/danger/info，未知值仍可读                                 |
+| `LinkCell` / `link`          | value、text、href、newTab；renderer 使用 hrefField/newTab | newTab 默认 false，校验安全 URL                                                   |
+| `DateTimeCell` / `date-time` | value、type、timeZone、locale、dateStyle、timeStyle       | type 默认 datetime，locale 默认 zh-CN，日期/时间默认 medium，视图渲染使用全局时区 |
+| `NumberCell` / `number`      | value、format                                             | renderer 使用 field.numberFormat，空或无效数字显示占位                            |
+
+配置中的渲染器名是 **`date-time`**，字段类型是 **`datetime`**。金额/百分比通过 `field.numberFormat` 设置 Intl 格式，不要往 number renderer 的 options 放独立 format 对象。tags/status 的值标签来自 field.options。
+
+纯 YYYY-MM-DD 字符串保留日期展示语义；时间戳按选定时区格式化，缺失或无效日期显示占位。
+
+## 独立筛选控件
+
+`FieldFilter` 组合字段标签、操作符、children 和可选删除回调，不执行查询。`FilterSelect` / `FilterSearchSelect` 提供受控字符串值、options、label、onValueChange 和可选 onClear；SearchSelect 增加候选搜索。`FilterMultiSelect` 处理带类型的多选 ID，`FilterTextValues` 保留带类型的输入项。需要配置所有权和校验时使用 FilterPanel。
+
+`FilterRemoteSelect` 接收 source/label，以及单个 value 或 `multiple: true` 配合 values；变更回调还返回选中候选。selectedOptions 提供保存标签，debounce 默认 300 ms，pageSize 使用 Wow DEFAULT_CURSOR_SIZE 并受 MAX_CURSOR_SIZE 限制。无效分页大小或防抖值会抛错，更换 source 对象会创建新候选会话。
+
+`FilterDatePicker` 使用 `Date | undefined`；`FilterTimeInput` 保留不完整文本并提供时/分/秒选择。`FilterDateTimeRange` 接收 field/value/onValueChange，以及可选 showTime/timeZone/有效性属性。日期范围使用双月，datetime 开启 showTime 后使用日期时间组合弹层和显式确定。独立控件本身不保存或应用查询。
+
+## 扩展上下文
+
+`GlobalActionsRendererProps` / `TableActionsRendererProps` 提供 definition/instance/filter/sort/options/refresh、selectedRowKeys、querying。`RowActionsRendererProps` 在通用操作上下文上增加 record/rowKey。`CellRendererProps` 包含 value/record/rowKey/index/field/column/definition/instance/options。输入不可变，修改时构造新值。单元格 props 不提供业务命令 API。
+
+## 主题与可访问性
+
+编译样式采用 `.fve-root`、`fve:` 工具类和 `--fve-*` 变量。显式 data-theme 支持 light/dark，否则跟随继承的 color-scheme。弹层从触发控件复制当前 token、字体和色彩模式，适应裁切和滚动容器。自定义控件需要保留标签、错误关联与键盘语义。
+
+公开组合原语包括 Button、Calendar、Popover/PopoverContent/PopoverTitle/PopoverTrigger，以及[符号索引](./symbols.md)中的 Select、InputGroup 家族。内部 DropdownMenu、Dialog 等私有文件不是额外受支持的包导入路径。
+
+</doc>
+
+<doc title="View Engine 符号索引" path="zh/reference/view-engine/symbols.md">
+
+# View Engine 符号索引
+
+以下名称来自当前公开入口及其导出声明。按入口导入；未列出的内部文件不属于公共 API。行为契约见[模型](./models.md)、[宿主](./view-host.md)、[引擎](./engine.md)、[筛选](./filters.md)、[组件](./components.md)。
+
+## `@ahoo-wang/fetcher-view-engine`
+
+| 符号                          | 声明                                                                                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `calculateRecordSummary`      | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
+| `clearBuiltinFilterProps`     | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
+| `clearFilterValues`           | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
+| `compileBuiltinFilter`        | [filterBuiltinCompiler.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L172)                 |
+| `compileFilterConfiguration`  | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
+| `createFilterConfiguration`   | [filterConfigurationState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationState.ts#L42)             |
+| `createRecordSummaryQuery`    | [recordSummary.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L112)                                 |
+| `DeepReadonly`                | [types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/lib/types.ts#L15)                                                      |
+| `FILTER_OPERATORS`            | [filterOperators.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L19)                               |
+| `FilterApplyResult`           | [filterModel.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L124)                                     |
+| `FilterCompiler`              | [filterModel.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L112)                                     |
+| `FilterCompilerContext`       | [filterModel.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L103)                                     |
+| `FilterCompileResult`         | [filterModel.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L80)                                       |
+| `FilterCompilerRegistry`      | [filterModel.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L122)                                     |
+| `FilterComponentConfig`       | [filterModel.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L90)                                       |
+| `FilterComponentProperties`   | [filterModel.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L86)                                       |
+| `FilterConfiguration`         | [filterModel.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L99)                                       |
+| `FilterDateTimeValue`         | [filterModel.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L51)                                       |
+| `FilterEditorReference`       | [filterModel.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L32)                                       |
+| `FilterField`                 | [filterTypes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTypes.ts#L21)                                       |
+| `FilterFieldDefinition`       | [filterModel.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L37)                                       |
+| `FilterFieldType`             | [filterModel.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L23)                                       |
+| `FilterJsonValue`             | [filterModel.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L25)                                       |
+| `FilterMode`                  | [filterModel.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L22)                                       |
+| `FilterOperatorDefinition`    | [filterModel.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L62)                                       |
+| `FilterOption`                | [filterTypes.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTypes.ts#L14)                                       |
+| `FilterOptionItem`            | [filterOptionSource.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOptionSource.ts#L17)                         |
+| `FilterOptionSource`          | [filterOptionSource.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOptionSource.ts#L18)                         |
+| `FilterOptionValue`           | [filterOptionSource.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOptionSource.ts#L16)                         |
+| `FilterScalarDraftValue`      | [filterModel.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L58)                                       |
+| `FilterValidationError`       | [filterModel.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L76)                                       |
+| `formatRecordNumber`          | [recordValueFormat.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordValueFormat.ts#L97)                           |
+| `getFieldOperators`           | [filterOperators.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L184)                             |
+| `getRecordColumnPinning`      | [recordColumns.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L16)                                   |
+| `getRecordKey`                | [recordData.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L32)                              |
+| `getRecordSummaryFunctions`   | [recordPresentation.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L53)                         |
+| `getRecordSummaryMetrics`     | [recordPresentation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L21)                         |
+| `isSimpleFilter`              | [filterNodes.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L40)                                       |
+| `LocalStorageViewHost`        | [LocalStorageViewHost.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L62)                     |
+| `LocalStorageViewHostOptions` | [LocalStorageViewHost.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L42)                     |
+| `newFilterNode`               | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
+| `orderRecordColumns`          | [recordColumns.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L26)                                   |
+| `readRecordSummaryResult`     | [recordSummary.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L140)                                 |
+| `readRecordValue`             | [recordData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L18)                              |
+| `RECORD_COLUMN_DEFAULT_WIDTH` | [recordColumns.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L43)                                   |
+| `RECORD_COLUMN_MAX_WIDTH`     | [recordColumns.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L41)                                   |
+| `RECORD_COLUMN_MIN_WIDTH`     | [recordColumns.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L39)                                   |
+| `RECORD_SUMMARY_LABELS`       | [recordPresentation.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L46)                         |
+| `RecordColumn`                | [recordModel.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L73)                                       |
+| `RecordColumnPinning`         | [recordModel.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L62)                                       |
+| `RecordData`                  | [recordModel.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L30)                                       |
+| `RecordKey`                   | [recordModel.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L31)                                       |
+| `RecordQuerySource`           | [recordModel.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L134)                                     |
+| `RecordSession`               | [recordModel.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L146)                                     |
+| `RecordSummaryFunction`       | [recordModel.ts:185](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L185)                                     |
+| `RecordSummaryMetric`         | [recordModel.ts:187](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L187)                                     |
+| `RecordSummaryResult`         | [recordModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L192)                                     |
+| `RecordTablePresentation`     | [recordModel.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L81)                                       |
+| `RecordViewConfig`            | [recordModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L85)                                       |
+| `RecordViewInstance`          | [recordModel.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L100)                                     |
+| `RendererReference`           | [recordModel.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L32)                                       |
+| `sameFilterQuery`             | [filterTree.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTree.ts#L24)                                         |
+| `SaveAsScope`                 | [recordModel.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L60)                                       |
+| `validateFilterConfiguration` | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
+| `validateRecordRows`          | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
+| `validateViewDefinition`      | [definitionValidation.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L106)        |
+| `validateViewInstance`        | [instanceValidation.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L34)              |
+| `ViewCapabilities`            | [recordModel.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L119)                                     |
+| `ViewCreateContext`           | [viewServiceContract.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L37)                       |
+| `ViewDefinition`              | [recordModel.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L42)                                       |
+| `ViewDefinitionService`       | [ViewHost.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L26)                                             |
+| `ViewEngine`                  | [ViewEngine.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewEngine.ts#L44)                                         |
+| `ViewEngineOptions`           | [recordModel.ts:138](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L138)                                     |
+| `ViewEngineState`             | [recordModel.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L175)                                     |
+| `ViewFieldDefinition`         | [recordModel.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L33)                                       |
+| `ViewHost`                    | [ViewHost.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L63)                                             |
+| `ViewInstance`                | [recordModel.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L104)                                     |
+| `ViewInstanceList`            | [recordModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L105)                                     |
+| `ViewInstanceMetadata`        | [recordModel.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L92)                                       |
+| `ViewInstancePermissions`     | [recordModel.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L109)                                     |
+| `ViewInstanceService`         | [ViewHost.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L30)                                             |
+| `ViewPermissionService`       | [ViewHost.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L50)                                             |
+| `ViewPermissionSnapshot`      | [viewServiceContract.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L41)                       |
+| `ViewPreferenceService`       | [ViewHost.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L46)                                             |
+| `ViewScope`                   | [recordModel.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L58)                                       |
+| `ViewServiceError`            | [viewServiceContract.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L27)                       |
+| `ViewServiceErrorCode`        | [viewServiceContract.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L16)                       |
+| `ViewStorageLock`             | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
+
+## `@ahoo-wang/fetcher-view-engine/react`
+
+| 符号                          | 声明                                                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Button`                      | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                      |
+| `Calendar`                    | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                  |
+| `CellOption`                  | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                   |
+| `CellRendererProps`           | [recordReactTypes.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L49)           |
+| `CellStatusTone`              | [StatusCell.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L24)               |
+| `CellTone`                    | [StatusCell.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L23)               |
+| `CellValue`                   | [cellValue.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L14)                   |
+| `DateTimeCell`                | [DateTimeCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L26)           |
+| `DateTimeCellProps`           | [DateTimeCell.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L20)           |
+| `FieldFilter`                 | [FieldFilter.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FieldFilter.tsx#L35)                   |
+| `FieldFilterProps`            | [FieldFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FieldFilter.tsx#L25)                   |
+| `FilterComponentProps`        | [filterReactTypes.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L51)           |
+| `FilterComponentRegistration` | [filterReactTypes.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L77)           |
+| `FilterDatePicker`            | [FilterDatePicker.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterDatePicker.tsx#L37)         |
+| `FilterDatePickerProps`       | [FilterDatePicker.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterDatePicker.tsx#L27)         |
+| `FilterDateTimeRange`         | [FilterDateTimeRange.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterDateTimeRange.tsx#L58)   |
+| `FilterDateTimeRangeProps`    | [FilterDateTimeRange.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterDateTimeRange.tsx#L46)   |
+| `FilterEditorProps`           | [filterReactTypes.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L32)           |
+| `FilterEditorRegistration`    | [filterReactTypes.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L67)           |
+| `FilterExtensions`            | [filterReactTypes.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L87)           |
+| `FilterMultiSelect`           | [FilterMultiSelect.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterMultiSelect.tsx#L33)       |
+| `FilterMultiSelectProps`      | [FilterMultiSelect.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterMultiSelect.tsx#L19)       |
+| `FilterPanel`                 | [FilterPanel.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterPanel.tsx#L25)                   |
+| `FilterPanelProps`            | [filterReactTypes.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L100)         |
+| `FilterPanelToolbarProps`     | [filterReactTypes.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L92)           |
+| `FilterRegistration`          | [filterReactTypes.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L85)           |
+| `FilterRemoteSelect`          | [FilterRemoteSelect.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterRemoteSelect.tsx#L57)     |
+| `FilterRemoteSelectProps`     | [FilterRemoteSelect.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterRemoteSelect.tsx#L36)     |
+| `FilterSearchSelect`          | [FilterSearchSelect.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterSearchSelect.tsx#L33)     |
+| `FilterSearchSelectProps`     | [FilterSearchSelect.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterSearchSelect.tsx#L26)     |
+| `FilterSelect`                | [FilterSelect.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterSelect.tsx#L40)                 |
+| `FilterSelectProps`           | [FilterSelect.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterSelect.tsx#L27)                 |
+| `FilterTextValues`            | [FilterTextValues.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTextValues.tsx#L29)         |
+| `FilterTextValuesProps`       | [FilterTextValues.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTextValues.tsx#L20)         |
+| `FilterTimeInput`             | [FilterTimeInput.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTimeInput.tsx#L51)           |
+| `FilterTimeInputProps`        | [FilterTimeInput.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTimeInput.tsx#L41)           |
+| `FilterValueEditor`           | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
+| `FilterValueEditorProps`      | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
+| `GlobalActionsRendererProps`  | [recordReactTypes.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L39)           |
+| `InputGroup`                  | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
+| `InputGroupAddon`             | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
+| `InputGroupButton`            | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |
+| `InputGroupInput`             | [input-group.tsx:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L131)          |
+| `InputGroupText`              | [input-group.tsx:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L119)          |
+| `LinkCell`                    | [LinkCell.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/LinkCell.tsx#L36)                   |
+| `LinkCellProps`               | [LinkCell.tsx:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/LinkCell.tsx#L18)                   |
+| `NumberCell`                  | [NumberCell.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/NumberCell.tsx#L24)               |
+| `NumberCellProps`             | [NumberCell.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/NumberCell.tsx#L19)               |
+| `Popover`                     | [popover.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L22)                    |
+| `PopoverContent`              | [popover.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L46)                    |
+| `PopoverTitle`                | [popover.tsx:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L97)                    |
+| `PopoverTrigger`              | [popover.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L42)                    |
+| `RecordActionsContext`        | [recordReactTypes.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L29)           |
+| `RecordColumnSettings`        | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46) |
+| `RecordColumnSettingsProps`   | [recordReactTypes.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L93)           |
+| `RecordTable`                 | [RecordTable.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordTable.tsx#L23)                   |
+| `RecordTableProps`            | [recordReactTypes.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L70)           |
+| `RecordView`                  | [RecordView.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordView.tsx#L45)                     |
+| `RecordViewProps`             | [RecordView.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordView.tsx#L33)                     |
+| `RowActionsRendererProps`     | [recordReactTypes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L45)           |
+| `Select`                      | [select.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L23)                      |
+| `SelectContent`               | [select.tsx:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L93)                      |
+| `SelectGroup`                 | [select.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L45)                      |
+| `SelectItem`                  | [select.tsx:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L163)                    |
+| `SelectLabel`                 | [select.tsx:147](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L147)                    |
+| `SelectTrigger`               | [select.tsx:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L65)                      |
+| `SelectValue`                 | [select.tsx:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L55)                      |
+| `StatusCell`                  | [StatusCell.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L34)               |
+| `StatusCellProps`             | [StatusCell.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L28)               |
+| `TableActionsRendererProps`   | [recordReactTypes.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L44)           |
+| `TagsCell`                    | [TagsCell.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L36)                   |
+| `TagsCellProps`               | [TagsCell.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L30)                   |
+| `TextCell`                    | [TextCell.tsx:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L80)                   |
+| `TextCellProps`               | [TextCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L26)                   |
+| `ViewExtensions`              | [recordReactTypes.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L60)           |
+| `ViewPage`                    | [ViewPage.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewPage.tsx#L32)                         |
+| `ViewPageContent`             | [ViewPageContent.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/page/ViewPageContent.tsx#L37)      |
+| `ViewPageContentProps`        | [ViewPageContent.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/page/ViewPageContent.tsx#L30)      |
+| `ViewPageProps`               | [ViewPage.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewPage.tsx#L23)                         |
 
 </doc>
 

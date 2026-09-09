@@ -44,3 +44,7 @@ React 到 CoSec 的 peer 箭头不表示每个 Hook 都通过 CoSec 认证。Vie
 生成器属于代码生成工作流：针对服务规范运行，再编译、审查输出。OpenAPI 类型本身既不发送请求，也不验证输入。生成代码仍需要它导入的运行包。React Compiler 工具列在开发依赖中，并不据此要求所有消费者采用仓库相同的编译管线。
 
 实现步骤见[声明式服务](../guides/services/declarative-client.md)、[生成式服务](../guides/services/generated-client.md)及[生成产物参考](../reference/generator/generated-output.md)。选择消费者版本前阅读[运行环境](./runtime-support.md)。
+
+## View Engine 入口
+
+`@ahoo-wang/fetcher-view-engine` 直接依赖 Wow/React 及其 UI 实现包，与上图只描述 peer 的箭头不同。公开核心入口不导入 React/DOM/CSS，`/react` 提供 shadcn/Base UI 组件及浏览器 UI 接入。ViewHost 组合 definition、instance、preference 和 permission 服务，记录查询与候选数据源仍是应用的运行时适配器。参阅 [View Engine 契约](../reference/view-engine/index.md)及[包声明](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/package.json)。

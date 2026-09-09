@@ -601,3 +601,11 @@ import {
   RouteGuard,
 } from '@ahoo-wang/fetcher-react';
 ```
+
+## Lightweight core import
+
+`@ahoo-wang/fetcher-react/core` is an ESM export of `src/core/index.ts`, with runtime `dist/core.js` and types `dist/core/index.d.ts`. It provides the existing generic hooks without initializing HTTP/security/storage/event integrations; root ESM and UMD exports remain unchanged. Prefer this entry for generic execution and debounce in UI libraries.
+
+`useExecutePromise` assigns request order synchronously before awaiting onAbort. Manual abort invalidates useRequestId before releasing the controller, so even sources ignoring cancellation cannot publish stale results or callbacks. There is no return-type change: execute still returns Promise<void>; use state or onSuccess for results.
+
+The root ESM entry and `/core` are generated together and share module identity, including FullscreenContext. UMD is built separately. `pnpm --filter @ahoo-wang/fetcher-react test:package` checks built export targets, cross-entry providers/consumers and the core dependency boundary; build runs it automatically. `useExecutePromise.abort` clears its old controller reference before abort notification so synchronous listeners can start a replacement request without losing its cancellation handle.

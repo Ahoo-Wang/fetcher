@@ -30,8 +30,28 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
+
       - name: Test Storybook interactions
         run: pnpm test:storybook
 
       - name: Build Storybook
         run: pnpm build-storybook
+
+      - name: Verify acceptance process cleanup
+        run: node --test scripts/owned-process.test.mjs
+
+      - name: Verify view engine delivery
+        run: pnpm verify:view-engine
+        env:
+          VIEW_ENGINE_ARTIFACTS: artifacts/view-engine
+          VIEW_ENGINE_BROWSERS: chromium,firefox,webkit
+
+      - name: Upload view engine failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: view-engine-failure
+          path: artifacts/view-engine
+          if-no-files-found: ignore

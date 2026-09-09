@@ -36,3 +36,7 @@ Continue with [Your first request](./first-request.md).
 ## React and Viewer starting points
 
 For an existing React application, follow the [React example peer installation and mounting steps](../examples/react.md). For a table, use [your first data view](./first-view.md). These UI paths require additional peers beyond the core HTTP installation; [choose your starting point](./index.md) first.
+
+## View Engine
+
+View Engine uses React 19 and compiled scoped CSS. Its current branch is available through the [workspace/local-archive workflow](../guides/view-engine/getting-started.md); it has not yet had its first public registry release.

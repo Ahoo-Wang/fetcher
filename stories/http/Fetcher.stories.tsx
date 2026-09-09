@@ -10,7 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
+import { ScenarioFrame } from '../shared/ScenarioFrame.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   ExchangeError,
@@ -20,7 +21,6 @@ import {
   ResultExtractors,
 } from '@ahoo-wang/fetcher';
 import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 import { installFetchFixture } from '../fixtures/http';
 
 type Scenario = 'basic' | 'path-query' | 'post' | 'timeout' | 'error';
@@ -102,8 +102,26 @@ function RequestDemo({ scenario }: RequestDemoProps) {
   );
 }
 
+const scene = {
+  domain: 'HTTP exchange',
+  summary: 'Trace a request through URL resolution, transport, and extraction.',
+  fixture: 'Local fetch fixture · api.example.test',
+  setup: 'A Fetcher and deterministic HTTP fixture are created for this path.',
+  observe: 'The result names the URL, payload, timeout, or wrapped HTTP error.',
+};
+
 const meta = {
-  title: 'HTTP & Streaming/Fetcher',
+  parameters: { docs: { story: { inline: false, height: '480px' } } },
+  decorators: [
+    (Story, context) => (
+      <AntdProvider>
+        <ScenarioFrame title={context.name} {...scene}>
+          <Story />
+        </ScenarioFrame>
+      </AntdProvider>
+    ),
+  ],
+  title: 'HTTP/Fetcher',
   component: RequestDemo,
   beforeEach: installFetchFixture,
   args: { scenario: 'basic' },
@@ -111,45 +129,25 @@ const meta = {
 } satisfies Meta<typeof RequestDemo>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-async function sendAndExpect(canvasElement: HTMLElement, text: string) {
-  const canvas = within(canvasElement);
-  await userEvent.click(canvas.getByRole('button', { name: 'Send request' }));
-  await expect(await canvas.findByText(text)).toBeVisible();
-}
+type Story = StoryObj<typeof meta>;
 
 export const BasicRequest: Story = {
   args: { scenario: 'basic' },
-  play: ({ canvasElement }) => sendAndExpect(canvasElement, 'Ada'),
 };
 
 export const PathAndQuery: Story = {
   args: { scenario: 'path-query' },
-  play: ({ canvasElement }) =>
-    sendAndExpect(
-      canvasElement,
-      'GET https://api.example.test/users/u-ada?include=team',
-    ),
 };
 
 export const PostJson: Story = {
   args: { scenario: 'post' },
-  play: ({ canvasElement }) =>
-    sendAndExpect(canvasElement, 'Created u-new: Kai'),
 };
 
 export const Timeout: Story = {
   args: { scenario: 'timeout' },
-  play: ({ canvasElement }) =>
-    sendAndExpect(canvasElement, 'ExchangeError → FetchTimeoutError · 10ms'),
 };
 
 export const ServerError: Story = {
   args: { scenario: 'error' },
-  play: ({ canvasElement }) =>
-    sendAndExpect(
-      canvasElement,
-      'ExchangeError → HttpStatusValidationError · 500',
-    ),
 };

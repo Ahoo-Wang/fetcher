@@ -473,6 +473,19 @@ requires `cursorState`.
 `snapshot/aggregation` and `event/aggregation`, respectively;
 `aggregateStream` requests an SSE result stream.
 
+### Query cancellation
+
+`QueryApi.single`, `list`, `listStream`, `paged`, and `count` accept an optional
+third `abortController?: AbortController` argument, matching the concrete
+clients and the existing cursor/aggregation methods. The second argument
+remains request attributes. Cancellation is cooperative: consumers must also
+ignore responses from superseded requests.
+
+```typescript
+const controller = new AbortController();
+const page = await snapshotClient.paged(query, undefined, controller);
+```
+
 ### ID-Based Lookup Methods
 
 ```typescript

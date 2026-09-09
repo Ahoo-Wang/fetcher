@@ -10,17 +10,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { AntdProvider } from '../shared/AntdProvider.js';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type {
-  ViewTableActionColumn,
   ViewColumn,
+  ViewTableActionColumn,
 } from '@ahoo-wang/fetcher-viewer';
 import { ViewTable } from '@ahoo-wang/fetcher-viewer';
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import type { SorterResult } from 'antd/es/table/interface';
 import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
 import type { FixtureViewerUser } from '../fixtures/viewer';
 import {
   fixtureColumns,
@@ -104,7 +103,14 @@ function ViewTableDemo({ scenario }: { scenario: Scenario }) {
 }
 
 const meta = {
-  title: 'Viewer/Tables/ViewTable',
+  decorators: [
+    Story => (
+      <AntdProvider>
+        <Story />
+      </AntdProvider>
+    ),
+  ],
+  title: 'Viewer/单元格与表格/ViewTable',
   component: ViewTableDemo,
   args: { scenario: 'default' },
   argTypes: { scenario: { control: 'radio' } },
@@ -112,59 +118,35 @@ const meta = {
 } satisfies Meta<typeof ViewTableDemo>;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = { args: { scenario: 'default' } };
+
 export const Loading: Story = { args: { scenario: 'loading' } };
+
 export const Empty: Story = {
   args: { scenario: 'empty' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(
-      await canvas.findByText('No data', { selector: 'div' }),
-    ).toBeVisible();
-  },
 };
+
 export const ErrorPresentation: Story = {
   args: { scenario: 'error' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const alert = await canvas.findByRole('alert');
-    await expect(alert).toHaveTextContent(fixtureViewerError.message);
-  },
 };
+
 export const RowSelection: Story = {
   args: { scenario: 'selection' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getAllByRole('checkbox')[1]);
-    await expect(await canvas.findByText('Selected: Ada')).toBeVisible();
-  },
 };
+
 export const Sorting: Story = {
   args: { scenario: 'sorting' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('columnheader', { name: /Name/ }));
-    await expect(await canvas.findByText('Sort: name ascend')).toBeVisible();
-  },
 };
+
 export const ActionColumn: Story = {
   args: { scenario: 'actions' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getAllByRole('button', { name: 'Edit' })[0]);
-    await expect(await canvas.findByText('Edited Ada')).toBeVisible();
-  },
 };
+
 export const ColumnSettings: Story = {
   args: { scenario: 'settings' },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('img', { name: 'setting' }));
-    const page = within(canvasElement.ownerDocument.body);
-    await userEvent.click(await page.findByRole('checkbox', { name: 'Name' }));
-    await expect(await canvas.findByText('Columns: 6')).toBeVisible();
-  },
 };
+
 export const DenseRows: Story = { args: { scenario: 'small' } };

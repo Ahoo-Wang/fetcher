@@ -5,6 +5,17 @@ description: 运行本地 Viewer，理解数据与已保存状态的归属。
 
 # 第一个数据视图
 
+复制定义前先选择 UI 包，两者使用不同模型。
+
+| UI 与所有权                                         | 入口                                                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| shadcn/Base UI、无头引擎、组件配置持久化与 ViewHost | [View Engine 示例](../examples/view-engine.md)及[任务指南](../guides/view-engine/index.md) |
+| Ant Design、应用控制表格数据和 Viewer 状态          | [Viewer 示例](../examples/viewer.md)                                                       |
+
+View Engine 在首次注册表发布前采用工作区/本地归档接入，核心入口可独立于 React UI 使用。
+
+## Ant Design Viewer 路径
+
 从[完整的本地 Viewer 示例](../examples/viewer)开始。该页提供消费者安装命令、一个完整组件、React 入口和运行命令，无需服务端、认证设置或 Storybook fixture。
 
 按示例的五步操作：查看首屏、切页、按 Name 排序、按 Active 过滤，然后保存并切换视图。行数据会变化，是因为示例应用计算了数据并传给 Viewer。

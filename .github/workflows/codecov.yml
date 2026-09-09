@@ -33,7 +33,7 @@ jobs:
         run: pnpm build
 
       - name: Test
-        run: pnpm test:unit
+        run: VITEST_MAX_WORKERS=1 pnpm test:unit
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v7

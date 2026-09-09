@@ -13,6 +13,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { useLayoutEffect } from 'react';
 
 // Import before mocks
 import { useExecutePromise, PromiseStatus } from '../../src';
@@ -374,32 +375,150 @@ describe('useExecutePromise', () => {
   });
 });
 
-it.each(['success', 'failure'] as const)(
-  'ignores late %s after manual abort',
-  async outcome => {
-    let resolve!: (value: string) => void;
-    let reject!: (error: Error) => void;
+it('ignores late success and failure after manual abort', async () => {
+  for (const rejected of [false, true]) {
+    const success = vi.fn(),
+      error = vi.fn();
+    const pending = pendingPromise<string>();
+    const { result, unmount } = renderHook(() =>
+      useExecutePromise<string>({ onSuccess: success, onError: error }),
+    );
     let execution!: Promise<void>;
-    const { result } = renderHook(() => useExecutePromise<string>());
     act(() => {
-      execution = result.current.execute(
-        () =>
-          new Promise((yes, no) => {
-            resolve = yes;
-            reject = no;
-          }),
-      );
+      execution = result.current.execute(() => pending.promise);
     });
     await act(async () => {
       await result.current.abort();
     });
     await act(async () => {
-      if (outcome === 'success') resolve('obsolete');
-      else reject(new Error('obsolete'));
+      if (rejected) pending.reject(new Error('late'));
+      else pending.resolve('late');
       await execution;
     });
-    expect(result.current.status).toBe('idle');
+    expect(success).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+    expect(result.current.status).toBe(PromiseStatus.IDLE);
     expect(result.current.result).toBeUndefined();
     expect(result.current.error).toBeUndefined();
-  },
-);
+    unmount();
+  }
+});
+
+it('keeps invocation order when an asynchronous onAbort is still pending', async () => {
+  const first = pendingPromise<string>();
+  const cancellation = pendingPromise<void>();
+  const onAbort = vi.fn().mockImplementationOnce(() => cancellation.promise);
+  const success = vi.fn();
+  const { result } = renderHook(() =>
+    useExecutePromise<string>({ onAbort, onSuccess: success }),
+  );
+  let a!: Promise<void>, b!: Promise<void>, c!: Promise<void>;
+  const second = vi.fn().mockResolvedValue('second');
+  act(() => {
+    a = result.current.execute(() => first.promise);
+  });
+  act(() => {
+    b = result.current.execute(second);
+  });
+  await act(async () => {
+    c = result.current.execute(async () => 'third');
+    await c;
+  });
+  await act(async () => {
+    cancellation.resolve();
+    first.resolve('first');
+    await Promise.all([a, b]);
+  });
+  expect(second).not.toHaveBeenCalled();
+  expect(result.current.result).toBe('third');
+  expect(success).toHaveBeenCalledTimes(1);
+});
+
+it('keeps a request started synchronously by an abort listener cancellable', async () => {
+  const first = pendingPromise<string>();
+  const second = pendingPromise<string>();
+  const { result } = renderHook(() => useExecutePromise<string>());
+  let replacementSignal!: AbortSignal;
+  let a!: Promise<void>, b!: Promise<void>;
+  act(() => {
+    a = result.current.execute(controller => {
+      controller.signal.addEventListener('abort', () => {
+        b = result.current.execute(replacement => {
+          replacementSignal = replacement.signal;
+          return second.promise;
+        });
+      });
+      return first.promise;
+    });
+  });
+  await act(async () => {
+    await result.current.abort();
+  });
+  expect(replacementSignal.aborted).toBe(false);
+  expect(result.current.status).toBe(PromiseStatus.LOADING);
+  await act(async () => {
+    await result.current.abort();
+    first.resolve('first');
+    second.resolve('second');
+    await Promise.all([a, b]);
+  });
+  expect(replacementSignal.aborted).toBe(true);
+  expect(result.current.status).toBe(PromiseStatus.IDLE);
+});
+
+it('does not start a reentrant cancellation request after unmount', async () => {
+  const first = pendingPromise<string>();
+  const replacement = vi.fn().mockResolvedValue('replacement');
+  let start!: ReturnType<typeof useExecutePromise<string>>['execute'];
+  let restarted!: Promise<void>;
+  const { result, unmount } = renderHook(() =>
+    useExecutePromise<string>({
+      onAbort: () => {
+        restarted = start(replacement);
+      },
+    }),
+  );
+  start = result.current.execute;
+  let execution!: Promise<void>;
+  act(() => {
+    execution = start(() => first.promise);
+  });
+  unmount();
+  await restarted;
+  first.resolve('obsolete');
+  await execution;
+  expect(replacement).not.toHaveBeenCalled();
+});
+
+it('reports loading for a request started during the layout effect', async () => {
+  const pending = pendingPromise<string>();
+  const supplier = vi.fn(() => pending.promise);
+  let execution!: Promise<void>;
+  const { result } = renderHook(() => {
+    const hook = useExecutePromise<string>();
+    useLayoutEffect(() => {
+      execution = hook.execute(supplier);
+    }, [hook.execute]);
+    return hook;
+  });
+  await act(async () => {});
+  expect(supplier).toHaveBeenCalledTimes(1);
+  expect(result.current.loading).toBe(true);
+  expect(result.current.status).toBe(PromiseStatus.LOADING);
+  await act(async () => {
+    pending.resolve('loaded');
+    await execution;
+  });
+  expect(result.current.result).toBe('loaded');
+  expect(result.current.loading).toBe(false);
+});
+
+function pendingPromise<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}

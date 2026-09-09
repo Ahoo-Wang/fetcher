@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 import { StrictMode, useEffect, useRef } from 'react';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { Fetcher, FetchExchange } from '@ahoo-wang/fetcher';
 import type { FetchRequest } from '@ahoo-wang/fetcher';
 import { useFetcher } from '../../src/fetcher/useFetcher';
@@ -249,7 +249,7 @@ it('keeps the exchange started by a reentrant onAbort during StrictMode cleanup'
     },
     { wrapper: StrictMode },
   );
-  expect(exchange).toHaveBeenCalledTimes(2);
+  await waitFor(() => expect(exchange).toHaveBeenCalledTimes(2));
   expect(staleRequest.abortController?.signal.aborted).toBe(true);
   expect(currentRequest.abortController?.signal.aborted).toBe(false);
   expect(result.current.loading).toBe(true);

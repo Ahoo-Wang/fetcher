@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useLayoutEffect, useCallback } from 'react';
 
 /**
  * A React hook that returns a function to check if the component is mounted.
@@ -40,7 +40,7 @@ import { useRef, useEffect, useCallback } from 'react';
 export function useMounted() {
   const isMountedRef = useRef(false);
   const isMountedFn = useCallback(() => isMountedRef.current, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;

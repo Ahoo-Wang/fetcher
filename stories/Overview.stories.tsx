@@ -10,105 +10,107 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
-import { fixtureUsers } from './fixtures/http';
 
 const meta = {
-  title: 'Overview',
+  id: 'overview',
+  title: '开始使用',
   parameters: { layout: 'fullscreen' },
 } satisfies Meta;
-
 export default meta;
-
 type Story = StoryObj<typeof meta>;
+
+const entries = [
+  {
+    title: 'HTTP',
+    task: '发送第一个请求',
+    description: 'Fetcher 请求、参数、错误处理与 OpenAI 流式响应。',
+    href: './?path=/docs/http-fetcher--docs',
+  },
+  {
+    title: '事件',
+    task: '订阅与消费事件',
+    description: '比较 Event Bus 执行顺序，读取和取消 SSE。',
+    href: './?path=/docs/事件与存储-event-bus--docs',
+  },
+  {
+    title: '存储',
+    task: '保存与观察状态',
+    description: '序列化、变更监听与监听器清理。',
+    href: './?path=/docs/事件与存储-storage--docs',
+  },
+  {
+    title: 'React Hooks',
+    task: '驱动异步状态',
+    description: '加载、失败、重试、取消与 Wow 查询。',
+    href: './?path=/docs/react-hooks-async-state--docs',
+  },
+  {
+    title: 'View Engine',
+    task: '接入视图引擎',
+    description: '从可复制的订单示例开始，了解视图配置与五类扩展。',
+    href: './?path=/docs/view-engine-快速开始--docs',
+  },
+  {
+    title: 'Viewer',
+    task: '组合业务界面',
+    description: 'Ant Design 输入、过滤器、表格与完整业务流程。',
+    href: './?path=/docs/viewer-完整业务流程-viewer--docs',
+  },
+];
 
 export const StartHere: Story = {
   render: () => (
     <main aria-labelledby="storybook-title" className="story-overview">
       <header className="story-overview-hero">
-        <p className="story-overview-eyebrow">Fetcher Scenario Lab</p>
-        <h1 id="storybook-title">Fetcher interactive workflows</h1>
+        <p className="story-overview-eyebrow">Fetcher · Developer Guide</p>
+        <h1 id="storybook-title">从示例开始接入</h1>
         <p>
-          Explore real package behavior with deterministic local data. Every
-          scenario names its setup, action, and observable contract before you
-          run it.
+          选择能力，操作示例，再查看对应接入代码。普通演示使用本地数据，交互回归独立运行。
         </p>
-        <div className="story-overview-facts" aria-label="Lab guarantees">
-          <span>Local fixtures</span>
-          <span>No credentials</span>
-          <span>Repeatable assertions</span>
-        </div>
       </header>
-
-      <section aria-labelledby="scenario-catalog-title">
-        <h2 id="scenario-catalog-title">Choose a developer scenario</h2>
-        <div className="story-overview-grid">
-          <a href="./?path=/docs/http-streaming-fetcher--docs" target="_top">
-            <span>HTTP exchange</span>
-            <strong>Trace a request</strong>
-            <p>Follow URL resolution, transport, extraction, and failure.</p>
-          </a>
-          <a href="./?path=/docs/http-streaming-event-bus--docs" target="_top">
-            <span>Event delivery</span>
-            <strong>Compare handler execution</strong>
-            <p>Observe serial order, parallel completion, and cleanup.</p>
+      <section aria-labelledby="capabilities-title">
+        <h2 id="capabilities-title">选择你需要的能力</h2>
+        <nav className="story-overview-grid" aria-label="能力导航">
+          {entries.map(entry => (
+            <a key={entry.title} href={entry.href} target="_top">
+              <span>{entry.title}</span>
+              <strong>{entry.task}</strong>
+              <p>{entry.description}</p>
+            </a>
+          ))}
+        </nav>
+      </section>
+      <section aria-labelledby="verification-title">
+        <h2 id="verification-title">开发验证</h2>
+        <p>以下场景用于验证接入边界，具有独立的存储或服务条件。</p>
+        <nav className="story-overview-grid" aria-label="开发验证导航">
+          <a href="./?path=/docs/development-local-storage--docs" target="_top">
+            <span>浏览器存储</span>
+            <strong>验证视图恢复</strong>
+            <p>保存视图后刷新页面；重置仅清理该示例的视图配置。</p>
           </a>
           <a
-            href="./?path=/docs/http-streaming-event-stream--docs"
+            href="./?path=/story/development-http-service--http-view-service"
             target="_top"
           >
-            <span>Streaming</span>
-            <strong>Read an SSE response</strong>
+            <span>独立服务实验</span>
+            <strong>验证 HTTP 视图服务</strong>
             <p>
-              Inspect parsing, termination, malformed data, and cancellation.
+              需先运行 node
+              packages/view-engine/scripts/verify-http-view-host.mjs --serve。
             </p>
           </a>
-          <a href="./?path=/docs/react-hooks-async-state--docs" target="_top">
-            <span>React async state</span>
-            <strong>Drive a promise lifecycle</strong>
-            <p>
-              See success, rejection, retry, debounce, and stale suppression.
-            </p>
-          </a>
-          <a href="./?path=/docs/react-hooks-fetcher--docs" target="_top">
-            <span>React request state</span>
-            <strong>Bind Fetcher to a hook</strong>
-            <p>Exercise loading, result, error, refresh, and cancellation.</p>
-          </a>
-          <a href="./?path=/docs/react-hooks-wow-queries--docs" target="_top">
-            <span>CQRS query state</span>
-            <strong>Run typed Wow queries</strong>
-            <p>Compare single, list, page, count, and stream query state.</p>
-          </a>
-        </div>
+        </nav>
       </section>
-
-      <section aria-labelledby="scenario-reading-title">
-        <h2 id="scenario-reading-title">Read every scenario the same way</h2>
-        <ol className="story-overview-flow">
-          <li>
-            <strong>Setup</strong>
-            <span>Know the fixture and starting state.</span>
-          </li>
-          <li>
-            <strong>Action</strong>
-            <span>Run one named behavior variant.</span>
-          </li>
-          <li>
-            <strong>Observe</strong>
-            <span>Compare the visible result with the contract.</span>
-          </li>
-        </ol>
-      </section>
-
       <footer className="story-overview-footer">
-        <output className="story-output">
-          Fixtures: {fixtureUsers.map(user => user.name).join(', ')} · Users
-        </output>
+        <p>
+          打开示例不会自动创建或删除记录。回归测试通过 pnpm test:storybook
+          执行。
+        </p>
         <a href="https://fetcher.ahoo.me/start/first-request">
-          Read the five-minute guide
+          阅读完整接入指南
         </a>
       </footer>
     </main>
@@ -116,18 +118,28 @@ export const StartHere: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole('heading', { name: 'Fetcher interactive workflows' }),
+      canvas.getByRole('heading', { name: '从示例开始接入' }),
     ).toBeVisible();
-    await expect(canvas.getByText('Setup')).toBeVisible();
-    await expect(canvas.getByText('Action')).toBeVisible();
-    await expect(canvas.getByText('Observe')).toBeVisible();
-    const links = canvas.getAllByRole('link');
-    await expect(links).toHaveLength(7);
-    for (const link of links.slice(0, 6)) {
-      await expect(link.getAttribute('href')?.startsWith('./?path=')).toBe(
-        true,
-      );
+    const navigation = within(
+      canvas.getByRole('navigation', { name: '能力导航' }),
+    );
+    for (const name of [
+      '发送第一个请求',
+      '订阅与消费事件',
+      '保存与观察状态',
+      '驱动异步状态',
+      '接入视图引擎',
+      '组合业务界面',
+    ]) {
+      await expect(
+        navigation.getByRole('link', { name: new RegExp(name) }),
+      ).toBeVisible();
     }
-    await expect(canvas.getByText('Fixtures: Ada, Lin · Users')).toBeVisible();
+    await expect(
+      canvas.getByRole('link', { name: /验证视图恢复/ }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole('link', { name: /验证 HTTP 视图服务/ }),
+    ).toBeVisible();
   },
 };
