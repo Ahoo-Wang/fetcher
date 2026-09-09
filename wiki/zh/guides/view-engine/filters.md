@@ -25,7 +25,7 @@ description: 选择内置编辑器，保存组件配置，并显式应用查询�
 
 输入只修改草稿，点击查询或按 Enter 才应用有效输入。未设置的控件会保留，但不产生依赖值的查询条件。已应用条件的清空按钮会清空对应控件值并立即查询；编辑面板中的删除按钮则删除整个草稿控件。
 
-简单模式每个字段只有一个控件；高级模式允许同字段多条规则，并支持 AND/OR/NOR 嵌套及已声明的元素条件。切换模式不会自动展开或删除已有分支。字段选择使用分组 Checkbox 弹层；逻辑组合从独立的 Button Group 菜单添加。
+简单模式每个作用域内的字段只有一个控件，支持 ELEMENT_MATCH 及嵌套数组；每个“同一元素满足”子筛选区隐含 AND。空元素作用域可继续编辑，但添加子条件前不能查询。高级模式允许同字段多条规则，并支持 AND/OR/NOR 嵌套。切换模式不会自动展开或删除已有分支。字段选择使用分组 Checkbox 弹层；逻辑组合从独立的 Button Group 菜单添加。
 
 保存 `ViewInstance.config.filters: FilterConfiguration`，包括组件名、options、操作符和原始 `props`。不能用编译后的 Wow `FilterExpression` 替代，否则无法恢复未设置控件、所选编辑器和展示属性。组件注册负责纯 `compile` 与可选 `clear`，面板负责协调查询。参阅[筛选契约](../../reference/view-engine/filters.md)。
 

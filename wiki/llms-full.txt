@@ -1431,7 +1431,7 @@ Options can declare `group`. IDs preserve type: `1` and `'1'` are different. `gr
 
 Typing edits a draft. Query or Enter applies valid input. An unset control remains rendered and contributes no value-dependent predicate; it is not removed from saved configuration. The applied-condition clear button clears that control's value and queries immediately. Removing a control from the editing panel changes the draft instead.
 
-Simple mode has one control per field. Advanced mode can repeat a field and nest AND/OR/NOR or supported element conditions. Existing nested branches are not flattened on a mode switch. The field picker uses grouped checkboxes in a popup; logical groups are added through the separate button-group menu.
+Simple mode has one control per field in each scope. It supports ELEMENT_MATCH, including nested arrays, with an implicit AND inside each “same element satisfies” section. Empty element scopes remain editable but block Query until a child condition is added. Advanced mode can repeat a field and nest AND/OR/NOR. Existing nested branches are not flattened on a mode switch. The field picker uses grouped checkboxes in a popup; logical groups are added through the separate button-group menu.
 
 Persist `ViewInstance.config.filters: FilterConfiguration`, including component name, options, operator and raw `props`. Do not replace it with the compiled Wow `FilterExpression`: an expression cannot restore unset controls, chosen editors or display-only properties. The component registration owns pure `compile` and optional `clear` semantics; the panel coordinates application. See [filter contracts](../../reference/view-engine/filters.md).
 
@@ -21130,7 +21130,7 @@ import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 输入只修改草稿，点击查询或按 Enter 才应用有效输入。未设置的控件会保留，但不产生依赖值的查询条件。已应用条件的清空按钮会清空对应控件值并立即查询；编辑面板中的删除按钮则删除整个草稿控件。
 
-简单模式每个字段只有一个控件；高级模式允许同字段多条规则，并支持 AND/OR/NOR 嵌套及已声明的元素条件。切换模式不会自动展开或删除已有分支。字段选择使用分组 Checkbox 弹层；逻辑组合从独立的 Button Group 菜单添加。
+简单模式每个作用域内的字段只有一个控件，支持 ELEMENT_MATCH 及嵌套数组；每个“同一元素满足”子筛选区隐含 AND。空元素作用域可继续编辑，但添加子条件前不能查询。高级模式允许同字段多条规则，并支持 AND/OR/NOR 嵌套。切换模式不会自动展开或删除已有分支。字段选择使用分组 Checkbox 弹层；逻辑组合从独立的 Button Group 菜单添加。
 
 保存 `ViewInstance.config.filters: FilterConfiguration`，包括组件名、options、操作符和原始 `props`。不能用编译后的 Wow `FilterExpression` 替代，否则无法恢复未设置控件、所选编辑器和展示属性。组件注册负责纯 `compile` 与可选 `clear`，面板负责协调查询。参阅[筛选契约](../../reference/view-engine/filters.md)。
 
