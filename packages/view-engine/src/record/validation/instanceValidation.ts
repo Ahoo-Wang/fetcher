@@ -56,7 +56,11 @@ export function validateViewInstance(
   assertObject(value.config, '实例配置');
   const config = value.config;
   if ('filter' in config) throw new Error('视图配置必须保存 filters 组件配置');
-  validateFilterConfiguration(config.filters, definition.fields);
+  validateFilterConfiguration(
+    config.filters,
+    definition.fields,
+    definition.allowedOperators,
+  );
   if (!Array.isArray(config.sort) || config.sort.length > 32)
     throw new Error('排序必须为最多 32 项的数组');
   const sorted = new Set<string>();

@@ -75,6 +75,7 @@ function keys(value: Record<string, unknown>, allowed: readonly string[]) {
 export function validateFilterConfiguration(
   value: unknown,
   fields?: readonly FilterFieldDefinition[],
+  allowedOperators?: readonly FilterOperator[],
 ): asserts value is FilterConfiguration {
   validateFilterJson(value);
   object(value);
@@ -106,9 +107,10 @@ export function validateFilterConfiguration(
       throw new TypeError('筛选组件引用无效');
     if (value.component.options !== undefined) object(value.component.options);
     object(value.props);
-    const descriptor = definition(
-      value.operator as FilterConfiguration['root']['operator'],
-    );
+    const operator = value.operator as FilterOperator;
+    const descriptor = definition(operator);
+    if (allowedOperators && !allowedOperators.includes(operator))
+      throw new TypeError(`当前视图不允许操作 ${String(value.operator)}`);
     const bound =
       descriptor.category === 'field' || descriptor.category === 'element';
     if (bound && (typeof value.field !== 'string' || !value.field))
@@ -119,10 +121,7 @@ export function validateFilterConfiguration(
     if (
       scope &&
       bound &&
-      (!field ||
-        !getFieldOperators(field).includes(
-          value.operator as FilterConfiguration['root']['operator'],
-        ))
+      (!field || !getFieldOperators(field).includes(operator))
     )
       throw new TypeError(
         `字段 ${String(value.field)} 不支持操作 ${String(value.operator)}`,
