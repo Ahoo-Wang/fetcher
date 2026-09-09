@@ -41,10 +41,6 @@ function Dialog(props: DialogPrimitive.Root.Props) {
   );
 }
 
-function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
-}
-
 function DialogPortal({ className, ...props }: DialogPrimitive.Portal.Props) {
   const theme = useContext(DialogTheme);
   return (
@@ -193,5 +189,4 @@ export {
   DialogOverlay,
   DialogPortal,
   DialogTitle,
-  DialogTrigger,
 };

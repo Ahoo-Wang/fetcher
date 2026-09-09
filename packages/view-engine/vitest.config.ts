@@ -41,11 +41,7 @@ export default defineConfig(({ mode }) => ({
     clearMocks: true,
     restoreMocks: true,
     coverage: {
-      include: [
-        'src/filter/**/*.{ts,tsx}',
-        'src/record/**/*.{ts,tsx}',
-        'src/lib/snapshot.ts',
-      ],
+      include: ['src/**/*.{ts,tsx}'],
     },
   },
 }));

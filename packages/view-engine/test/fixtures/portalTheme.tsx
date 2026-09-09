@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { useLayoutEffect, useState, type ReactNode } from 'react';
 import {
   Popover,
@@ -22,7 +23,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  DialogTrigger,
 } from '../../src/components/ui/dialog.js';
 import { FilterSelect } from '../../src/filter/FilterSelect.js';
 import {
@@ -98,7 +98,7 @@ export function PortalThemeExample({
     case 'dialog':
       content = (
         <Dialog>
-          <DialogTrigger>打开弹层</DialogTrigger>
+          <DialogPrimitive.Trigger>打开弹层</DialogPrimitive.Trigger>
           <DialogContent className="fve:dark:border-input">
             <DialogTitle>主题弹层</DialogTitle>
             {input}

@@ -19,7 +19,6 @@ import { cn } from '../../lib/utils.js';
 
 import { Button } from './button.js';
 import { Input } from './input.js';
-import { Textarea } from './textarea.js';
 
 function InputGroup({ className, ...props }: React.ComponentProps<'div'>) {
   return (
@@ -145,27 +144,10 @@ function InputGroupInput({
   );
 }
 
-function InputGroupTextarea({
-  className,
-  ...props
-}: React.ComponentProps<'textarea'>) {
-  return (
-    <Textarea
-      data-slot="input-group-control"
-      className={cn(
-        'fve:flex-1 fve:resize-none fve:rounded-none fve:border-0 fve:bg-transparent fve:py-2 fve:shadow-none fve:ring-0 fve:focus-visible:ring-0 fve:disabled:bg-transparent fve:aria-invalid:ring-0 fve:dark:bg-transparent fve:dark:disabled:bg-transparent',
-        className,
-      )}
-      {...props}
-    />
-  );
-}
-
 export {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupText,
   InputGroupInput,
-  InputGroupTextarea,
 };

@@ -144,11 +144,11 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `FilterValueEditor`           | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
 | `FilterValueEditorProps`      | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
 | `GlobalActionsRendererProps`  | [recordReactTypes.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L39)           |
-| `InputGroup`                  | [input-group.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L24)            |
-| `InputGroupAddon`             | [input-group.tsx:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L59)            |
-| `InputGroupButton`            | [input-group.tsx:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L99)            |
-| `InputGroupInput`             | [input-group.tsx:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L132)          |
-| `InputGroupText`              | [input-group.tsx:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L120)          |
+| `InputGroup`                  | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
+| `InputGroupAddon`             | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
+| `InputGroupButton`            | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |
+| `InputGroupInput`             | [input-group.tsx:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L131)          |
+| `InputGroupText`              | [input-group.tsx:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L119)          |
 | `LinkCell`                    | [LinkCell.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/LinkCell.tsx#L36)                   |
 | `LinkCellProps`               | [LinkCell.tsx:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/LinkCell.tsx#L18)                   |
 | `NumberCell`                  | [NumberCell.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/NumberCell.tsx#L24)               |
