@@ -25,6 +25,7 @@ import type {
   ViewInstance,
 } from '../recordModel.js';
 import { EMPTY_RECORD_SUMMARY } from '../recordSummary.js';
+import { getRecordKey } from '../validation/recordData.js';
 
 export function createSession(
   instance: ViewInstance,
@@ -100,8 +101,22 @@ export function deriveSession(
       compiled.errors.length > 0 ||
       !sameFilterQuery(compiled.expression, session.appliedFilter);
   }
+  let selectedRowKeys = session.selectedRowKeys;
+  if (
+    selectedRowKeys.length &&
+    (!previous ||
+      previous.rows !== session.rows ||
+      previous.selectedRowKeys !== selectedRowKeys)
+  ) {
+    const available = new Set(
+      session.rows.map(row => getRecordKey(row, definition.rowKey)),
+    );
+    if (selectedRowKeys.some(key => !available.has(key)))
+      selectedRowKeys = selectedRowKeys.filter(key => available.has(key));
+  }
   return {
     ...session,
+    selectedRowKeys,
     filterPending: filterPending!,
     dirty:
       previous &&

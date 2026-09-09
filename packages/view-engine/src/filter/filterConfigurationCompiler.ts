@@ -13,7 +13,7 @@
 import { getBuiltinFilterCompiler } from './builtinFilterCompilers.js';
 import {
   filter,
-  FilterOperator as Op,
+  type FilterOperator as Op,
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
 import { copy } from '../lib/snapshot.js';
@@ -31,13 +31,14 @@ import type {
 import {
   validateFilterConfiguration,
   validateFilterJson,
+  validateFilterNodeContext,
 } from './filterConfigurationValidation.js';
 import {
   compileBuiltinDraft,
   compileBuiltinFilter,
 } from './filterBuiltinCompiler.js';
 import { createFilterDraft } from './filterDraft.js';
-import { definition, getFieldOperators } from './filterOperators.js';
+import { definition } from './filterOperators.js';
 import { build } from './filterProtocol.js';
 
 export function filterCompilerContext(
@@ -123,29 +124,13 @@ export function compileFilterConfiguration(
   ): FilterExpression | undefined {
     try {
       const descriptor = definition(node.operator);
-      if (allowedOperators && !allowedOperators.includes(node.operator))
-        throw new TypeError(`当前视图不允许操作 ${node.operator}`);
-      if (
-        element &&
-        descriptor.category === 'root' &&
-        ![Op.MATCH_ALL, Op.MATCH_NONE].includes(node.operator)
-      )
-        throw new TypeError('元素条件不能使用根级操作');
-      const field = scope.find(field => field.field === node.field);
-      if (
-        descriptor.category === 'field' ||
-        descriptor.category === 'element'
-      ) {
-        if (!field)
-          throw new TypeError(
-            `当前作用域没有字段 ${node.field ?? '（未指定）'}`,
-          );
-        filter.exists(field.field);
-        if (!getFieldOperators(field).includes(node.operator))
-          throw new TypeError(
-            `字段 ${field.label} 不支持操作 ${node.operator}`,
-          );
-      }
+      const field = validateFilterNodeContext(
+        node.operator,
+        node.field,
+        scope,
+        allowedOperators,
+        element,
+      );
       if (descriptor.category === 'logical') {
         if (!node.operands?.length) throw new TypeError('分组至少需要一个条件');
         const operands = node.operands

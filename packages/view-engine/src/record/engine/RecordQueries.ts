@@ -24,6 +24,7 @@ import { copy, message } from './recordSnapshot.js';
 /** Owns record reads; pagination and UI edits only submit explicit query commands. */
 export class RecordQueries {
   private readonly queries = new Map<string, AbortController>();
+  private readonly intents = new Map<string, symbol>();
   private readonly consumedCursors = new Map<string, Set<string>>();
   constructor(
     private readonly store: SessionStore,
@@ -35,6 +36,7 @@ export class RecordQueries {
     this.queries.forEach(controller => controller.abort());
     this.queries.clear();
     this.consumedCursors.clear();
+    this.intents.clear();
     this.summaries.reset();
   }
 
@@ -43,6 +45,7 @@ export class RecordQueries {
   }
 
   private replaceController(id: string, next?: AbortController): void {
+    this.intents.set(id, Symbol());
     const previous = this.queries.get(id);
     if (next) this.queries.set(id, next);
     else this.queries.delete(id);
@@ -55,6 +58,22 @@ export class RecordQueries {
         refreshing: false,
         ...(session.queryStatus === 'loading' ? { queryStatus: 'idle' } : {}),
       });
+  }
+
+  /** Capture before a terminal notification; newer reads/cancellations own any follow-up. */
+  followUp(id: string, refresh = false): () => void {
+    const intent = this.intents.get(id),
+      lifecycle = this.scope.version;
+    return () => {
+      if (
+        !this.scope.current(lifecycle) ||
+        this.intents.get(id) !== intent ||
+        this.store.getSnapshot().selectedInstanceId !== id
+      )
+        return;
+      // The durable operation is complete; read errors belong to query state.
+      void (refresh ? this.refresh(id) : this.run(id)).catch(() => {});
+    };
   }
 
   async run(id: string, background = false): Promise<void> {

@@ -45,12 +45,12 @@ export class ViewReload {
       !(this.store.find(id) ?? this.store.findPendingCreate(id))
     )
       return false;
-    const pending = this.work.unverifiedCreates.get(id);
+    const pending = this.work.unverifiedCreate(id);
     return pending
       ? Boolean(
           (pending.id &&
             (this.host.instance?.load || this.host.instance?.list)) ||
-          (this.work.createRequests.has(id) && this.host.instance?.create),
+          (this.work.createRequest(id) && this.host.instance?.create),
         )
       : Boolean(this.host.instance?.load || this.host.instance?.list);
   }
@@ -63,9 +63,10 @@ export class ViewReload {
     const controller = new AbortController();
     let started = false;
     let queryId = id;
+    let followUp: (() => void) | undefined;
     const selection = this.scope.selection;
     try {
-      const unverified = this.work.unverifiedCreates.get(id);
+      const unverified = this.work.unverifiedCreate(id);
       const existingBaseline = unverified?.id
         ? this.store.find(unverified.id)?.baseline
         : undefined;
@@ -73,17 +74,16 @@ export class ViewReload {
         throw new Error(
           '宿主未提供 instance.load 或 instance.list，无法重新加载',
         );
-      if (this.work.writes.has(id))
+      if (this.work.writeToken(id))
         throw new Error('实例正在写入，请等待操作完成');
-      const previous = this.work.reloads.get(id);
-      this.work.reloads.set(id, controller);
+      const previous = this.work.beginReload(id, controller);
       started = true;
       previous?.abort();
-      if (this.work.reloads.get(id) !== controller) return;
+      if (this.work.reloadToken(id) !== controller) return;
       this.queries.cancel(id);
       if (
         !this.scope.current(lifecycle) ||
-        this.work.reloads.get(id) !== controller
+        this.work.reloadToken(id) !== controller
       )
         return;
       let result: ViewInstance;
@@ -98,7 +98,7 @@ export class ViewReload {
         );
         if (
           !this.scope.current(lifecycle) ||
-          this.work.reloads.get(id) !== controller
+          this.work.reloadToken(id) !== controller
         )
           return;
         const matched = readInstanceList(list, definition).find(
@@ -108,7 +108,7 @@ export class ViewReload {
           throw new Error('实例列表未包含待核对的实例 ID，仍需核对');
         result = matched;
       } else if (unverified && (!unverified.id || !this.host.instance?.load)) {
-        const request = this.work.createRequests.get(id);
+        const request = this.work.createRequest(id);
         if (!request || !this.host.instance?.create)
           throw new Error('缺少原创建请求，无法确认另存结果');
         const permissions = permissionsFor(this.host, session);
@@ -126,7 +126,7 @@ export class ViewReload {
         );
         if (
           !this.scope.current(lifecycle) ||
-          this.work.reloads.get(id) !== controller
+          this.work.reloadToken(id) !== controller
         )
           return;
         validateViewInstance(result, definition, unverified.id ?? undefined);
@@ -144,7 +144,7 @@ export class ViewReload {
         );
       if (
         !this.scope.current(lifecycle) ||
-        this.work.reloads.get(id) !== controller
+        this.work.reloadToken(id) !== controller
       )
         return;
       validateViewInstance(
@@ -153,7 +153,7 @@ export class ViewReload {
         unverified ? (unverified.id ?? undefined) : id,
       );
       const baseline = copy(result);
-      this.work.unverifiedDeletes.delete(id);
+      this.work.clearDelete(id);
       const latest = this.store.sessionForReload(id);
       if (unverified) {
         if (unverified.knownIds.has(baseline.id))
@@ -165,7 +165,7 @@ export class ViewReload {
           const navigation = this.scope.advanceSelection();
           if (
             !this.scope.current(lifecycle) ||
-            this.work.reloads.get(id) !== controller
+            this.work.reloadToken(id) !== controller
           )
             return;
           selectCopy =
@@ -174,10 +174,12 @@ export class ViewReload {
         }
         const source = this.store.sessionForReload(id);
         const existing = this.store.find(baseline.id);
-        if (this.work.deletedInstances.has(baseline.id)) {
+        if (this.work.isDeleted(baseline.id)) {
           this.work.finishCreate(id);
           this.store.clearPendingCreate(id);
-          this.store.patch(id, { writeError: null, requiresReload: false });
+          this.work.finishReload(id, controller, () =>
+            this.store.patch(id, { writeError: null, requiresReload: false }),
+          );
           return;
         }
         // Abort observers may have opened or edited the copy or the source.
@@ -213,50 +215,61 @@ export class ViewReload {
         this.work.finishCreate(id);
         const pendingCreates = { ...this.store.getSnapshot().pendingCreates };
         delete pendingCreates[id];
-        this.store.publish({
-          pendingCreates,
-          instanceIds: [
-            ...new Set([...this.store.getSnapshot().instanceIds, baseline.id]),
-          ],
-          sessions: {
-            ...this.store.getSnapshot().sessions,
-            ...(this.store.find(id)
-              ? { [id]: { ...source, writeError: null, requiresReload: false } }
+        followUp = this.queries.followUp(queryId, true);
+        this.work.finishReload(id, controller, () =>
+          this.store.publish({
+            pendingCreates,
+            instanceIds: [
+              ...new Set([
+                ...this.store.getSnapshot().instanceIds,
+                baseline.id,
+              ]),
+            ],
+            sessions: {
+              ...this.store.getSnapshot().sessions,
+              ...(this.store.find(id)
+                ? {
+                    [id]: {
+                      ...source,
+                      writeError: null,
+                      requiresReload: false,
+                    },
+                  }
+                : {}),
+              [baseline.id]: created,
+            },
+            ...(selectCopy
+              ? { selectedInstanceId: baseline.id, error: null }
               : {}),
-            [baseline.id]: created,
-          },
-          ...(selectCopy
-            ? { selectedInstanceId: baseline.id, error: null }
-            : {}),
-        });
+          }),
+        );
       } else {
-        this.store.patch(
-          id,
-          rebaseSession(
-            baseline,
-            latest,
-            definition,
-            this.store.filterCompilers,
+        followUp = this.queries.followUp(queryId, true);
+        this.work.finishReload(id, controller, () =>
+          this.store.patch(
+            id,
+            rebaseSession(
+              baseline,
+              latest,
+              definition,
+              this.store.filterCompilers,
+            ),
           ),
         );
       }
     } catch (error) {
       if (
         !this.scope.current(lifecycle) ||
-        (started && this.work.reloads.get(id) !== controller)
+        (started && this.work.reloadToken(id) !== controller)
       )
         return;
-      this.store.patch(id, { writeError: message(error) });
+      this.work.finishReload(id, controller, () =>
+        this.store.patch(id, { writeError: message(error) }),
+      );
       throw error;
     } finally {
-      if (this.work.reloads.get(id) === controller)
-        this.work.reloads.delete(id);
+      this.work.finishReload(id, controller);
     }
-    if (
-      this.scope.current(lifecycle) &&
-      this.store.getSnapshot().selectedInstanceId === queryId
-    )
-      // Reconciliation is complete; record failures remain in query state.
-      void this.queries.refresh(queryId).catch(() => {});
+    followUp?.();
   }
 }

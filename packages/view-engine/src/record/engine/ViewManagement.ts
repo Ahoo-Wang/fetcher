@@ -57,11 +57,11 @@ export class ViewManagement {
     const lifecycle = this.scope.version;
     const token = Symbol();
     const current = () =>
-      this.scope.current(lifecycle) && this.work.writes.get(id) === token;
+      this.scope.current(lifecycle) && this.work.writeToken(id) === token;
     let received = false;
     let dispatched = false;
     try {
-      this.work.writes.set(id, token);
+      this.work.beginWrite(id, token);
       this.store.patch(id, { writeStatus: 'renaming', writeError: null });
       if (!current()) return;
       dispatched = true;
@@ -82,31 +82,35 @@ export class ViewManagement {
         throw new Error('改名结果修改了其他视图配置，请重新加载核对');
       const baseline = copy(result);
       const latest = this.store.session(id);
-      this.store.patch(id, {
-        baseline,
-        instance: {
-          ...baseline,
-          config: latest.instance.config,
-          title:
-            latest.instance.title === session.instance.title
-              ? title
-              : latest.instance.title,
-        },
-        writeStatus: 'idle',
-        writeError: null,
-      });
+      this.work.finishWrite(id, token, () =>
+        this.store.patch(id, {
+          baseline,
+          instance: {
+            ...baseline,
+            config: latest.instance.config,
+            title:
+              latest.instance.title === session.instance.title
+                ? title
+                : latest.instance.title,
+          },
+          writeStatus: 'idle',
+          writeError: null,
+        }),
+      );
     } catch (error) {
       if (!current()) return;
-      this.store.patch(id, {
-        writeStatus: 'idle',
-        writeError: message(error),
-        ...(received || (dispatched && hasUnknownWriteOutcome(error))
-          ? { requiresReload: true }
-          : {}),
-      });
+      this.work.finishWrite(id, token, () =>
+        this.store.patch(id, {
+          writeStatus: 'idle',
+          writeError: message(error),
+          ...(received || (dispatched && hasUnknownWriteOutcome(error))
+            ? { requiresReload: true }
+            : {}),
+        }),
+      );
       throw error;
     } finally {
-      if (this.work.writes.get(id) === token) this.work.writes.delete(id);
+      this.work.finishWrite(id, token);
     }
   }
 
@@ -146,7 +150,7 @@ export class ViewManagement {
       return;
     const lifecycle = this.scope.version;
     const token = Symbol();
-    this.work.ordering = token;
+    this.work.beginOrder(token);
     try {
       await this.host.preference!.saveOrder!(this.definitionId, [...order]);
       if (!this.scope.current(lifecycle) || this.work.ordering !== token)
@@ -155,13 +159,14 @@ export class ViewManagement {
       const remaining = order.filter(id => latest.has(id));
       const included = new Set(remaining);
       let index = 0;
+      this.work.finishOrder(token);
       this.store.publish({
         instanceIds: this.store
           .getSnapshot()
           .instanceIds.map(id => (included.has(id) ? remaining[index++] : id)),
       });
     } finally {
-      if (this.work.ordering === token) this.work.ordering = undefined;
+      this.work.finishOrder(token);
     }
   }
 
@@ -171,8 +176,8 @@ export class ViewManagement {
     return Boolean(
       session?.requiresReload &&
       this.getPermissions(session.instance.id).delete &&
-      this.work.unverifiedDeletes.has(session.instance.id) &&
-      this.work.unverifiedDeletes.get(session.instance.id) ===
+      this.work.unverifiedDelete(session.instance.id) &&
+      this.work.unverifiedDelete(session.instance.id)?.revision ===
         session.baseline.revision,
     );
   }
@@ -187,17 +192,16 @@ export class ViewManagement {
     const lifecycle = this.scope.version;
     const token = Symbol();
     const current = () =>
-      this.scope.current(lifecycle) && this.work.writes.get(id) === token;
+      this.scope.current(lifecycle) && this.work.writeToken(id) === token;
     let dispatched = false;
     try {
-      this.work.writes.set(id, token);
+      this.work.beginWrite(id, token);
       this.store.patch(id, { writeStatus: 'deleting', writeError: null });
       if (!current()) return;
       dispatched = true;
       await this.host.instance!.delete!(id, session.baseline.revision);
       if (!current()) return;
-      this.work.deletedInstances.add(id);
-      this.work.unverifiedDeletes.delete(id);
+      this.work.markDeleted(id);
       this.queries.cancel(id);
       this.summaries.invalidate(id);
       if (!current()) return;
@@ -211,29 +215,34 @@ export class ViewManagement {
       const nextId = wasSelected
         ? (instanceIds[0] ?? null)
         : this.store.getSnapshot().selectedInstanceId;
-      this.store.publish({ sessions, instanceIds, selectedInstanceId: nextId });
-      // Deletion is complete. A failure loading the next view belongs to its query state.
-      if (
-        wasSelected &&
-        nextId !== null &&
-        current() &&
-        this.store.getSnapshot().selectedInstanceId === nextId
-      )
-        void this.queries.run(nextId).catch(() => {});
+      const followUp =
+        wasSelected && nextId !== null
+          ? this.queries.followUp(nextId)
+          : undefined;
+      this.work.finishWrite(id, token, () =>
+        this.store.publish({
+          sessions,
+          instanceIds,
+          selectedInstanceId: nextId,
+        }),
+      );
+      followUp?.();
     } catch (error) {
       if (!current()) return;
       if (dispatched && hasUnknownWriteOutcome(error))
-        this.work.unverifiedDeletes.set(id, session.baseline.revision);
-      this.store.patch(id, {
-        writeStatus: 'idle',
-        writeError: message(error),
-        ...(dispatched && hasUnknownWriteOutcome(error)
-          ? { requiresReload: true }
-          : {}),
-      });
+        this.work.markDeleteUnverified(id, session.baseline.revision);
+      this.work.finishWrite(id, token, () =>
+        this.store.patch(id, {
+          writeStatus: 'idle',
+          writeError: message(error),
+          ...(dispatched && hasUnknownWriteOutcome(error)
+            ? { requiresReload: true }
+            : {}),
+        }),
+      );
       throw error;
     } finally {
-      if (this.work.writes.get(id) === token) this.work.writes.delete(id);
+      this.work.finishWrite(id, token);
     }
   }
 }

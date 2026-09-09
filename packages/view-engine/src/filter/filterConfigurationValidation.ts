@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import type {
   FilterComponentConfig,
   FilterConfiguration,
@@ -72,6 +72,39 @@ function keys(value: Record<string, unknown>, allowed: readonly string[]) {
   if (Object.keys(value).some(key => !allowed.includes(key)))
     throw new TypeError('筛选配置包含未知属性');
 }
+
+/** Admission and compilation share context policy, independently of component props. */
+export function validateFilterNodeContext(
+  operator: FilterOperator,
+  fieldName: string | undefined,
+  scope: readonly FilterFieldDefinition[] | undefined,
+  allowedOperators?: readonly FilterOperator[],
+  element = false,
+): FilterFieldDefinition | undefined {
+  const descriptor = definition(operator);
+  if (allowedOperators && !allowedOperators.includes(operator))
+    throw new TypeError(`当前视图不允许操作 ${operator}`);
+  if (
+    element &&
+    descriptor.category === 'root' &&
+    operator !== FilterOperator.MATCH_ALL &&
+    operator !== FilterOperator.MATCH_NONE
+  )
+    throw new TypeError('元素条件不能使用根级操作');
+  const field = scope?.find(field => field.field === fieldName);
+  if (
+    scope &&
+    (descriptor.category === 'field' || descriptor.category === 'element')
+  ) {
+    if (!field)
+      throw new TypeError(`当前作用域没有字段 ${fieldName ?? '（未指定）'}`);
+    filter.exists(field.field);
+    if (!getFieldOperators(field).includes(operator))
+      throw new TypeError(`字段 ${field.label} 不支持操作 ${operator}`);
+  }
+  return field;
+}
+
 export function validateFilterConfiguration(
   value: unknown,
   fields?: readonly FilterFieldDefinition[],
@@ -83,7 +116,11 @@ export function validateFilterConfiguration(
   if (value.mode !== 'simple' && value.mode !== 'advanced')
     throw new TypeError('筛选模式无效');
   const ids = new Set<string>();
-  function visit(value: unknown, scope?: readonly FilterFieldDefinition[]) {
+  function visit(
+    value: unknown,
+    scope?: readonly FilterFieldDefinition[],
+    element = false,
+  ) {
     object(value);
     keys(value, [
       'id',
@@ -109,31 +146,27 @@ export function validateFilterConfiguration(
     object(value.props);
     const operator = value.operator as FilterOperator;
     const descriptor = definition(operator);
-    if (allowedOperators && !allowedOperators.includes(operator))
-      throw new TypeError(`当前视图不允许操作 ${String(value.operator)}`);
     const bound =
       descriptor.category === 'field' || descriptor.category === 'element';
     if (bound && (typeof value.field !== 'string' || !value.field))
       throw new TypeError('筛选组件缺少绑定字段');
     if (!bound && value.field !== undefined)
       throw new TypeError('根级操作不能绑定字段');
-    const field = scope?.find(field => field.field === value.field);
-    if (
-      scope &&
-      bound &&
-      (!field || !getFieldOperators(field).includes(operator))
-    )
-      throw new TypeError(
-        `字段 ${String(value.field)} 不支持操作 ${String(value.operator)}`,
-      );
+    const field = validateFilterNodeContext(
+      operator,
+      value.field as string | undefined,
+      scope,
+      allowedOperators,
+      element,
+    );
     if (descriptor.category === 'logical') {
       if (!Array.isArray(value.operands))
         throw new TypeError('分组条件必须是数组');
-      value.operands.forEach(child => visit(child, scope));
+      value.operands.forEach(child => visit(child, scope, element));
     } else if (value.operands !== undefined)
       throw new TypeError('非分组组件不能包含 operands');
     if (descriptor.category === 'element') {
-      visit(value.predicate, field?.fields);
+      visit(value.predicate, scope ? (field?.fields ?? []) : undefined, true);
     } else if (value.predicate !== undefined)
       throw new TypeError('非元素组件不能包含 predicate');
     if (

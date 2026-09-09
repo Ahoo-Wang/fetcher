@@ -62,14 +62,15 @@ export class ViewPersistence {
     let received = false;
     let dispatched = false;
     let selectedCopy: string | undefined;
+    let followUp: (() => void) | undefined;
     const current = () =>
-      this.scope.current(lifecycle) && this.work.writes.get(id) === token;
+      this.scope.current(lifecycle) && this.work.writeToken(id) === token;
     try {
       if (session.filterPending)
         throw new Error('请先查询或撤销筛选修改，再保存视图');
       this.work.assertWritable(
         session,
-        Boolean(options && this.work.createRequests.has(id)),
+        Boolean(options && this.work.createRequest(id)),
       );
       const permissions = permissionsFor(this.host, session);
       if (
@@ -96,9 +97,9 @@ export class ViewPersistence {
       );
       validateViewInstance(submitted, definition, id);
       const knownIds =
-        this.work.createRequests.get(id)?.knownIds ??
+        this.work.createRequest(id)?.knownIds ??
         new Set(this.store.getSnapshot().instanceIds);
-      this.work.writes.set(id, token);
+      this.work.beginWrite(id, token);
       this.store.patch(id, {
         writeStatus: options ? 'creating' : 'saving',
         writeError: null,
@@ -107,7 +108,7 @@ export class ViewPersistence {
       let result: ViewInstance;
       if (options) {
         const { definitionId, kind, title, scope, config } = submitted;
-        const previous = this.work.createRequests.get(id);
+        const previous = this.work.createRequest(id);
         if (
           previous &&
           !sameFilterState(
@@ -125,7 +126,7 @@ export class ViewPersistence {
           knownIds,
           source: session,
         };
-        this.work.createRequests.set(id, request);
+        this.work.beginCreate(id, request);
         try {
           dispatched = true;
           result = await this.host.instance!.create!(
@@ -134,22 +135,20 @@ export class ViewPersistence {
           );
         } catch (error) {
           if (hasUnknownWriteOutcome(error)) {
-            if (!this.work.unverifiedCreates.has(id))
-              this.work.unverifiedCreates.set(id, {
-                id: null,
-                submitted,
-                knownIds,
-              });
-          } else if (
-            !previous &&
-            this.work.createRequests.get(id) === request
-          ) {
+            if (!this.work.unverifiedCreate(id))
+              this.work.markCreateUnverified(id);
+          } else if (!previous && this.work.createRequest(id) === request) {
             // A rejected retry says nothing about an earlier uncertain attempt.
             // Full load may have preserved this original request while it was pending.
             this.work.finishCreate(id);
-            this.store.clearPendingCreate(id);
-            if (this.store.find(id)?.requiresReload)
-              this.store.patch(id, { requiresReload: false, writeError: null });
+            this.work.finishWrite(id, token, () => {
+              this.store.clearPendingCreate(id);
+              if (this.store.find(id)?.requiresReload)
+                this.store.patch(id, {
+                  requiresReload: false,
+                  writeError: null,
+                });
+            });
           }
           throw error;
         }
@@ -160,17 +159,15 @@ export class ViewPersistence {
       if (!current()) return;
       received = true;
       if (options)
-        this.work.unverifiedCreates.set(id, {
-          id:
-            result &&
+        this.work.markCreateUnverified(
+          id,
+          result &&
             typeof result.id === 'string' &&
             result.id.trim() &&
             !knownIds.has(result.id)
-              ? result.id
-              : null,
-          submitted,
-          knownIds,
-        });
+            ? result.id
+            : null,
+        );
       validateViewInstance(result, definition, options ? undefined : id);
       if (options && knownIds.has(result.id))
         throw new Error('另存返回的实例 ID 已存在');
@@ -208,71 +205,74 @@ export class ViewPersistence {
               this.store.filterCompilers,
             );
         }
-        if (this.work.deletedInstances.has(saved.id)) {
-          this.store.patch(id, {
-            writeStatus: 'idle',
-            writeError: null,
-            requiresReload: false,
-          });
-          return;
-        }
-        this.store.publish({
-          instanceIds: [
-            ...new Set([...this.store.getSnapshot().instanceIds, saved.id]),
-          ],
-          sessions: {
-            ...this.store.getSnapshot().sessions,
-            [id]: {
-              ...this.store.session(id),
+        if (this.work.isDeleted(saved.id)) {
+          this.work.finishWrite(id, token, () =>
+            this.store.patch(id, {
               writeStatus: 'idle',
               writeError: null,
               requiresReload: false,
+            }),
+          );
+          return;
+        }
+        if (selectedCopy) followUp = this.queries.followUp(selectedCopy);
+        this.work.finishWrite(id, token, () =>
+          this.store.publish({
+            instanceIds: [
+              ...new Set([...this.store.getSnapshot().instanceIds, saved.id]),
+            ],
+            sessions: {
+              ...this.store.getSnapshot().sessions,
+              [id]: {
+                ...this.store.session(id),
+                writeStatus: 'idle',
+                writeError: null,
+                requiresReload: false,
+              },
+              // Cancellation notifies observers; an opened copy may now own newer edits.
+              [saved.id]: this.store.find(saved.id) ?? created,
             },
-            // Cancellation notifies observers; an opened copy may now own newer edits.
-            [saved.id]: this.store.find(saved.id) ?? created,
-          },
-          ...(selectedCopy
-            ? { selectedInstanceId: selectedCopy, error: null }
-            : {}),
-        });
+            ...(selectedCopy
+              ? { selectedInstanceId: selectedCopy, error: null }
+              : {}),
+          }),
+        );
       } else
-        this.store.patch(id, {
-          baseline: saved,
-          instance: {
-            ...saved,
-            title: latest.instance.title,
-            config: latest.instance.config,
-          },
-          writeStatus: 'idle',
-          writeError: null,
-        });
+        this.work.finishWrite(id, token, () =>
+          this.store.patch(id, {
+            baseline: saved,
+            instance: {
+              ...saved,
+              title: latest.instance.title,
+              config: latest.instance.config,
+            },
+            writeStatus: 'idle',
+            writeError: null,
+          }),
+        );
     } catch (error) {
       if (
         !this.scope.current(lifecycle) ||
-        (this.work.writes.has(id) && this.work.writes.get(id) !== token)
+        (this.work.writeToken(id) && this.work.writeToken(id) !== token)
       ) {
         if (this.scope.current(lifecycle)) throw error;
         return;
       }
-      this.store.patch(id, {
-        writeError: message(error),
-        ...(this.work.writes.get(id) === token ? { writeStatus: 'idle' } : {}),
-        ...(received ||
-        this.work.unverifiedCreates.has(id) ||
-        (dispatched && hasUnknownWriteOutcome(error))
-          ? { requiresReload: true }
-          : {}),
-      });
+      this.work.finishWrite(id, token, () =>
+        this.store.patch(id, {
+          writeError: message(error),
+          writeStatus: 'idle',
+          ...(received ||
+          this.work.unverifiedCreate(id) ||
+          (dispatched && hasUnknownWriteOutcome(error))
+            ? { requiresReload: true }
+            : {}),
+        }),
+      );
       throw error;
     } finally {
-      if (this.work.writes.get(id) === token) this.work.writes.delete(id);
+      this.work.finishWrite(id, token);
     }
-    if (
-      selectedCopy &&
-      this.scope.current(lifecycle) &&
-      this.store.getSnapshot().selectedInstanceId === selectedCopy
-    )
-      // Creation is complete; a record read failure belongs to the new session.
-      void this.queries.run(selectedCopy).catch(() => {});
+    followUp?.();
   }
 }

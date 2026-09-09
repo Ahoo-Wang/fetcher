@@ -23,70 +23,185 @@ export function hasUnknownWriteOutcome(error: unknown): boolean {
   );
 }
 
-/** Per-instance coordination between durable writes and reload/reconciliation. */
-export class InstanceWork {
-  ordering?: symbol;
-  /** Confirmed local deletions must win over older creation receipts. */
-  readonly deletedInstances = new Set<string>();
-  readonly createRequests = new Map<
-    string,
-    {
-      requestId: string;
-      submitted: ViewInstance;
-      knownIds: ReadonlySet<string>;
-      source: RecordSession;
-    }
-  >();
-  readonly writes = new Map<string, symbol>();
-  readonly unverifiedDeletes = new Map<string, string | undefined>();
-  readonly reloads = new Map<string, AbortController>();
-  readonly unverifiedCreates = new Map<
-    string,
-    {
-      id: string | null;
-      submitted: ViewInstance;
-      knownIds: ReadonlySet<string>;
-    }
-  >();
+interface CreateRequest {
+  requestId: string;
+  submitted: ViewInstance;
+  knownIds: ReadonlySet<string>;
+  source: RecordSession;
+}
+interface InstanceOperation {
+  write?: symbol;
+  reload?: AbortController;
+  creation?: { request: CreateRequest; resultId?: string | null };
+  deletion?: { revision?: string };
+}
 
-  finishCreate(id: string): void {
-    this.unverifiedCreates.delete(id);
-    this.createRequests.delete(id);
+/** Owns operation identities and recovery together; callers never mutate coordination maps. */
+export class InstanceWork {
+  private readonly operations = new Map<string, InstanceOperation>();
+  private readonly deleted = new Set<string>();
+  private order?: symbol;
+  get ordering(): symbol | undefined {
+    return this.order;
+  }
+  beginOrder(token: symbol): void {
+    this.order = token;
+  }
+  finishOrder(token: symbol): void {
+    if (this.order === token) this.order = undefined;
   }
 
-  preserveCreates(sessions: Readonly<Record<string, RecordSession>>): void {
-    for (const [id, request] of this.createRequests) {
-      if (Object.prototype.hasOwnProperty.call(sessions, id))
-        request.source = sessions[id];
-      if (!this.unverifiedCreates.has(id))
-        this.unverifiedCreates.set(id, {
-          id: null,
-          submitted: request.submitted,
-          knownIds: request.knownIds,
-        });
+  private operation(id: string): InstanceOperation {
+    let operation = this.operations.get(id);
+    if (!operation) {
+      operation = {};
+      this.operations.set(id, operation);
     }
+    return operation;
+  }
+  private prune(id: string): void {
+    const operation = this.operations.get(id);
+    if (
+      operation &&
+      !operation.write &&
+      !operation.reload &&
+      !operation.creation &&
+      !operation.deletion
+    )
+      this.operations.delete(id);
+  }
+  writeToken(id: string): symbol | undefined {
+    return this.operations.get(id)?.write;
+  }
+  beginWrite(id: string, token: symbol): void {
+    this.operation(id).write = token;
+  }
+  /** Release ownership before synchronous observers can issue the next command. */
+  finishWrite(id: string, token: symbol, publish?: () => void): void {
+    const operation = this.operations.get(id);
+    if (operation?.write && operation.write !== token) return;
+    if (operation) delete operation.write;
+    this.prune(id);
+    publish?.();
+  }
+  assertLoadable(): void {
+    if (this.order) throw new Error('视图顺序正在保存，请等待操作完成');
+    for (const operation of this.operations.values())
+      if (operation.write && !operation.creation)
+        throw new Error('实例正在写入，请等待操作完成后重新加载');
+  }
+  createRequest(id: string): Readonly<CreateRequest> | undefined {
+    return this.operations.get(id)?.creation?.request;
+  }
+  beginCreate(id: string, request: CreateRequest): void {
+    const operation = this.operation(id);
+    if (operation.creation?.request !== request)
+      operation.creation = { request };
+  }
+  unverifiedCreate(
+    id: string,
+  ): (Readonly<CreateRequest> & { id: string | null }) | undefined {
+    const creation = this.operations.get(id)?.creation;
+    return creation?.resultId === undefined
+      ? undefined
+      : { ...creation.request, id: creation.resultId };
+  }
+  markCreateUnverified(id: string, resultId: string | null = null): void {
+    const creation = this.operations.get(id)?.creation;
+    if (creation) creation.resultId = resultId;
+  }
+  createEntries(): readonly (readonly [string, Readonly<CreateRequest>])[] {
+    return Array.from(this.operations).flatMap(([id, operation]) =>
+      operation.creation ? [[id, operation.creation.request] as const] : [],
+    );
+  }
+  finishCreate(id: string): void {
+    const operation = this.operations.get(id);
+    if (operation) delete operation.creation;
+    this.prune(id);
+  }
+  preserveCreates(sessions: Readonly<Record<string, RecordSession>>): void {
+    for (const [id, operation] of this.operations) {
+      const creation = operation.creation;
+      if (!creation) continue;
+      if (Object.prototype.hasOwnProperty.call(sessions, id))
+        creation.request.source = sessions[id];
+      creation.resultId ??= null;
+    }
+  }
+  reloadToken(id: string): AbortController | undefined {
+    return this.operations.get(id)?.reload;
+  }
+  beginReload(
+    id: string,
+    controller: AbortController,
+  ): AbortController | undefined {
+    const operation = this.operation(id),
+      previous = operation.reload;
+    operation.reload = controller;
+    return previous;
+  }
+  finishReload(
+    id: string,
+    controller: AbortController,
+    publish?: () => void,
+  ): void {
+    const operation = this.operations.get(id);
+    if (operation?.reload && operation.reload !== controller) return;
+    if (operation) delete operation.reload;
+    this.prune(id);
+    publish?.();
+  }
+  unverifiedDelete(id: string): Readonly<{ revision?: string }> | undefined {
+    return this.operations.get(id)?.deletion;
+  }
+  markDeleteUnverified(id: string, revision?: string): void {
+    this.operation(id).deletion = { revision };
+  }
+  clearDelete(id: string): void {
+    const operation = this.operations.get(id);
+    if (operation) delete operation.deletion;
+    this.prune(id);
+  }
+  clearDeletes(): void {
+    for (const id of this.operations.keys()) this.clearDelete(id);
+  }
+  isDeleted(id: string): boolean {
+    return this.deleted.has(id);
+  }
+  markDeleted(id: string): void {
+    this.deleted.add(id);
+    this.clearDelete(id);
+  }
+  forgetDeleted(id: string): void {
+    this.deleted.delete(id);
   }
 
   assertWritable(session: RecordSession, replayingWrite = false): void {
     const id = session.instance.id;
-    if (this.writes.has(id)) throw new Error('实例正在写入，请等待操作完成');
-    if (this.reloads.has(id))
+    if (this.writeToken(id)) throw new Error('实例正在写入，请等待操作完成');
+    if (this.reloadToken(id))
       throw new Error('实例正在重新加载，请等待加载完成');
     if (session.requiresReload && !replayingWrite)
       throw new Error('写入结果需要核对，请先重新加载实例');
   }
-
   cancelReloads(): void {
-    this.reloads.forEach(controller => controller.abort());
-    this.reloads.clear();
+    const controllers: AbortController[] = [];
+    for (const [id, operation] of this.operations) {
+      if (operation.reload) controllers.push(operation.reload);
+      delete operation.reload;
+      this.prune(id);
+    }
+    controllers.forEach(controller => controller.abort());
   }
-
   dispose(): void {
-    this.ordering = undefined;
-    this.deletedInstances.clear();
-    this.cancelReloads();
-    this.unverifiedCreates.clear();
-    this.createRequests.clear();
-    this.unverifiedDeletes.clear();
+    this.order = undefined;
+    this.deleted.clear();
+    const controllers = Array.from(
+      this.operations.values(),
+      operation => operation.reload,
+    );
+    this.operations.clear();
+    controllers.forEach(controller => controller?.abort());
   }
 }

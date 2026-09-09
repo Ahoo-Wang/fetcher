@@ -64,11 +64,7 @@ export class ViewLoader {
   }
   async load(): Promise<void> {
     this.scope.assertActive();
-    if (this.work.ordering) throw new Error('视图顺序正在保存，请等待操作完成');
-    for (const id of this.work.writes.keys()) {
-      if (!this.work.createRequests.has(id))
-        throw new Error('实例正在写入，请等待操作完成后重新加载');
-    }
+    this.work.assertLoadable();
     const lifecycle = this.scope.restart();
     if (!this.scope.current(lifecycle)) return;
     // Reloading cannot prove whether an already dispatched creation committed.
@@ -76,7 +72,7 @@ export class ViewLoader {
       ...this.store.getSnapshot().pendingCreates,
       ...this.store.getSnapshot().sessions,
     });
-    this.work.unverifiedDeletes.clear();
+    this.work.clearDeletes();
     this.loadController?.abort();
     if (!this.scope.current(lifecycle)) return;
     this.work.cancelReloads();
@@ -127,21 +123,21 @@ export class ViewLoader {
       const sessions: Record<string, RecordSession> = Object.create(null);
       const pendingCreates: Record<string, RecordSession> = Object.create(null);
       for (const instance of instances) {
-        this.work.deletedInstances.delete(instance.id);
+        this.work.forgetDeleted(instance.id);
         sessions[instance.id] = {
           ...createSession(
             copy(instance),
             definition,
             this.store.filterCompilers,
           ),
-          requiresReload: this.work.unverifiedCreates.has(instance.id),
-          writeError: this.work.unverifiedCreates.has(instance.id)
+          requiresReload: Boolean(this.work.unverifiedCreate(instance.id)),
+          writeError: this.work.unverifiedCreate(instance.id)
             ? '另存结果尚未核对，请重新加载核对'
             : null,
         };
       }
-      for (const [id, request] of this.work.createRequests) {
-        if (!this.work.unverifiedCreates.has(id)) continue;
+      for (const [id, request] of this.work.createEntries()) {
+        if (!this.work.unverifiedCreate(id)) continue;
         const loaded = sessions[id];
         const restored = createSession(
           cloneSnapshot<ViewInstance>(request.source.instance),
