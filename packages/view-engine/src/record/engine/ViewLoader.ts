@@ -61,6 +61,10 @@ export class ViewLoader {
     this.loadController?.abort();
   }
   async load(): Promise<void> {
+    for (const id of this.work.writes.keys()) {
+      if (!this.work.createRequests.has(id))
+        throw new Error('实例正在写入，请等待操作完成后重新加载');
+    }
     const lifecycle = this.scope.restart();
     // Reloading cannot prove whether an already dispatched creation committed.
     this.work.preserveCreates();

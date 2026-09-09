@@ -1,6 +1,6 @@
 # View Engine API
 
-Package: `@ahoo-wang/fetcher-view-engine`, version `4.0.1`. The filter layer and RecordView are implemented: headless compilation and view engine, definitions/instances with host persistence, and React filter/table/page components. AnalysisView, DashboardView and cards remain separate work.
+Package: `@ahoo-wang/fetcher-view-engine`, version `5.0.0`. The filter layer and RecordView are implemented: headless compilation and view engine, definitions/instances with host persistence, and React filter/table/page components. AnalysisView, DashboardView and cards remain separate work.
 
 Library acceptance: after workspace build, `pnpm verify:view-engine` verifies the packed public API, owns an isolated Storybook process, runs local/HTTP host recovery, and checks the 100-row/30-column/100-filter fixture. `VIEW_ENGINE_BROWSERS=chromium,firefox,webkit` selects the readiness matrix; `VIEW_ENGINE_BROWSER_CHANNEL=chrome` optionally selects installed Chrome for Chromium; `VIEW_ENGINE_ARTIFACTS` retains stage logs, screenshots and JSON. Install matching Playwright browsers first. The CI job uses this same entry point; full unit validation uses `VITEST_MAX_WORKERS=4 pnpm test:unit`.
 
@@ -512,7 +512,7 @@ accept readonly inputs.
 
 Methods with an optional instance ID default to the selected instance:
 
-- `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `dispose()`.
+- `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `dispose()`. Full `load()` rejects while save/rename/delete is in flight, preserving ownership of its receipt. Ordinary instance reload can use `instance.list` with an exact ID match when `instance.load` is absent; local edits remain intact.
 - `applyFilter(expression?,id?)`, `setFilterDraft(draft,id?,valid?)`,
   `setFilterValidity(valid,id?)`, `setFilterMode(mode,id?)`.
 - `setSort(sort,id?)`, `setColumns(columns,id?)`, `setPage(index,id?)`,
@@ -919,7 +919,8 @@ the published package. Routes, envelopes, status mapping and fake sessions are a
 internal experiment; see the bilingual `packages/view-engine/dev/README*.md`.
 
 LocalStorageViewHostOptions requires serviceKey, scopeKey, definition, instances,
-resolveSource, storage and lock. Optional instancePermissions, canReorder and
+resolveSource, storage and lock. Storage is structural (`getItem`, `setItem`,
+`removeItem`), so headless consumers need no DOM `Storage` declaration. Optional instancePermissions, canReorder and
 permissionsRevision provide trusted policy. Public content is shared; private views
 and ordering are per-user. Each transaction covers read, authorization, revision
 check and write. reset() clears the entire fixture service/definition.

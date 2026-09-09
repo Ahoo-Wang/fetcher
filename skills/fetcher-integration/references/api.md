@@ -125,6 +125,11 @@ registry.clear(): void;                   // remove all
 
 All HTTP methods return `Promise<R>` defaulting to `Promise<Response>`.
 
+`FetchRequestInit<BODY>` and `FetchRequest<BODY>` constrain `BODY` to
+`RequestBodyType = Exclude<RequestInit['body'], undefined> | Record<string, any>`.
+This uses the platform's native request body types (including `null`) plus
+JSON object bodies, without requiring the DOM-only global `BodyInit` in Node.
+
 ```typescript
 import { fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 

@@ -12,9 +12,11 @@
  */
 
 import { expect, it, vi } from 'vitest';
+import type { ViewInstance } from '../../src/record/recordModel.js';
 import type { ViewHost } from '../../src/record/ViewHost.js';
 import { ViewServiceError } from '../../src/record/viewServiceContract.js';
 import {
+  deferred,
   instance,
   managementPermissions,
   selected,
@@ -83,6 +85,156 @@ it.each(['save', 'rename', 'delete'] as const)(
           expect(host.instance!.delete).toHaveBeenCalledOnce();
         }
       } finally {
+        engine.dispose();
+      }
+    }
+  },
+);
+
+it.each(['save', 'rename'] as const)(
+  'recovers an uncertain %s through a list-only host without discarding edits',
+  async operation => {
+    const persisted = { ...instance(), title: 'Server title', revision: 'r2' };
+    const list = vi.fn(async () => ({
+      instances: [instance('other'), persisted],
+      defaultInstanceId: 'other',
+    }));
+    const failure = new ViewServiceError('UNKNOWN_OUTCOME', 'Response lost');
+    const { engine, host } = setup({
+      host: {
+        instance: { list },
+        permission: { getInstance: managementPermissions },
+      } as ViewHost,
+    });
+    host.instance![operation] = vi.fn().mockRejectedValue(failure);
+    try {
+      await engine.load();
+      engine.setTitle('Local title');
+      await expect(
+        operation === 'save' ? engine.save() : engine.renameInstance('Rename'),
+      ).rejects.toBe(failure);
+      engine.setColumns([
+        { id: 'amount', kind: 'field', field: 'state.amount', width: 321 },
+      ]);
+      const draft = selected(engine).instance.config;
+      expect(engine.canReloadInstance()).toBe(true);
+      expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
+      await engine.reloadInstance();
+      expect(list).toHaveBeenCalledWith('orders', expect.any(AbortSignal));
+      expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+      expect(selected(engine)).toMatchObject({
+        baseline: persisted,
+        instance: { title: 'Local title', config: draft, revision: 'r2' },
+        requiresReload: false,
+        writeError: null,
+        dirty: true,
+      });
+      host.instance!.save = vi.fn(async value => ({
+        ...value,
+        revision: 'r3',
+      }));
+      await engine.save();
+      expect(host.instance!.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          revision: 'r2',
+          title: 'Local title',
+          config: draft,
+        }),
+      );
+    } finally {
+      engine.dispose();
+    }
+  },
+);
+
+it('retains the recovery requirement when a list-only host omits the current ID', async () => {
+  const { engine, host } = setup({
+    host: {
+      instance: {
+        list: async () => ({
+          instances: [instance('other')],
+          defaultInstanceId: null,
+        }),
+      },
+    } as ViewHost,
+  });
+  host.instance!.save = vi
+    .fn()
+    .mockRejectedValue(
+      new ViewServiceError('UNKNOWN_OUTCOME', 'Response lost'),
+    );
+  try {
+    await engine.load();
+    engine.setTitle('Local title');
+    await expect(engine.save()).rejects.toThrow('Response lost');
+    const baseline = selected(engine).baseline;
+    await expect(engine.reloadInstance()).rejects.toThrow('实例列表未包含');
+    expect(selected(engine)).toMatchObject({
+      baseline,
+      instance: { title: 'Local title' },
+      requiresReload: true,
+    });
+  } finally {
+    engine.dispose();
+  }
+});
+
+it.each(['save', 'rename', 'delete'] as const)(
+  'rejects full load during a pending %s and still processes its receipt',
+  async operation => {
+    for (const unknown of [false, true]) {
+      const response = deferred<ViewInstance>();
+      const persisted = { ...instance(), title: 'Submitted', revision: 'r2' };
+      const failure = new ViewServiceError('UNKNOWN_OUTCOME', 'Response lost');
+      const { engine, host } = setup({
+        host: {
+          permission: { getInstance: managementPermissions },
+        } as ViewHost,
+      });
+      host.instance!.save = vi.fn(() => response.promise);
+      host.instance!.rename = vi.fn(() => response.promise);
+      host.instance!.delete = vi.fn(async () => {
+        await response.promise;
+      });
+      await engine.load();
+      engine.setTitle('Submitted');
+      const writing =
+        operation === 'save'
+          ? engine.save()
+          : operation === 'rename'
+            ? engine.renameInstance('Submitted')
+            : engine.deleteInstance();
+      try {
+        expect(host.instance![operation]).toHaveBeenCalledOnce();
+        const pending = engine.getSnapshot();
+        await expect(engine.load()).rejects.toThrow('实例正在写入');
+        expect(engine.getSnapshot()).toBe(pending);
+        if (unknown) {
+          response.reject(failure);
+          await expect(writing).rejects.toBe(failure);
+          expect(selected(engine)).toMatchObject({
+            baseline: { revision: 'r1' },
+            instance: { title: 'Submitted' },
+            writeStatus: 'idle',
+            requiresReload: true,
+          });
+        } else {
+          response.resolve(persisted);
+          await writing;
+          if (operation === 'delete') {
+            expect(engine.getSnapshot().instanceIds).not.toContain('mine');
+            expect(engine.getSnapshot().sessions.mine).toBeUndefined();
+          } else {
+            expect(selected(engine)).toMatchObject({
+              baseline: persisted,
+              writeStatus: 'idle',
+              requiresReload: false,
+            });
+          }
+        }
+      } finally {
+        response.resolve(persisted);
+        await writing.catch(() => {});
         engine.dispose();
       }
     }

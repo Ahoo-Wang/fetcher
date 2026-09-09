@@ -13,6 +13,7 @@
 
 import {
   useContext,
+  useEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -62,6 +63,10 @@ export function RecordView({
   } | null>(null);
   const id = state.selectedInstanceId;
   const session = id ? state.sessions[id] : undefined;
+  const selectionCount = session?.selectedRowKeys.length ?? 0;
+  useEffect(() => {
+    if (!selectable && id && selectionCount) engine.setSelection([], id);
+  }, [engine, id, selectable, selectionCount]);
   const definition = state.definition;
   const rootRef = useRef<HTMLElement>(null);
   const inheritedExpansion = useContext(ViewExpansionContext);

@@ -85,7 +85,9 @@ export interface RequestHeadersCapable {
   headers?: RequestHeaders;
 }
 
-export type RequestBodyType = BodyInit | Record<string, any> | string | null;
+export type RequestBodyType =
+  | Exclude<RequestInit['body'], undefined>
+  | Record<string, any>;
 
 /**
  * Fetcher request configuration interface

@@ -180,7 +180,7 @@ it('ignores a late query response after its view is deleted', async () => {
 });
 
 it.each(['load', 'dispose'] as const)(
-  'ignores deletion completion after %s',
+  'preserves the pending deletion lifecycle when %s is requested',
   async operation => {
     const response = deferred<void>();
     const { engine } = setup({
@@ -191,11 +191,18 @@ it.each(['load', 'dispose'] as const)(
     });
     await engine.load();
     const deleting = engine.deleteInstance();
-    await engine[operation]();
     const snapshot = engine.getSnapshot();
+    if (operation === 'load')
+      await expect(engine.load()).rejects.toThrow('实例正在写入');
+    else engine.dispose();
+    expect(engine.getSnapshot()).toBe(snapshot);
     response.resolve();
     await deleting;
-    expect(engine.getSnapshot()).toBe(snapshot);
+    if (operation === 'load') {
+      expect(engine.getSnapshot().sessions.mine).toBeUndefined();
+      expect(engine.getSnapshot().instanceIds).toEqual(['shared']);
+      expect(engine.getSnapshot().selectedInstanceId).toBe('shared');
+    } else expect(engine.getSnapshot()).toBe(snapshot);
     engine.dispose();
   },
 );

@@ -20,9 +20,77 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPage } from '../src/record/ViewPage.js';
-import { setup } from './fixtures/viewPage.js';
+import { RecordView } from '../src/record/RecordView.js';
+import { ViewEngine } from '../src/record/ViewEngine.js';
+import type { GlobalActionsRendererProps } from '../src/record/recordReactTypes.js';
+import { definition, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
+
+it('clears selection when selection is disabled so actions and automatic refresh recover', async () => {
+  const { host, paged } = setup();
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: {
+      ...definition,
+      recordActions: { global: { name: 'global' }, table: { name: 'table' } },
+    },
+    host,
+  });
+  await engine.load();
+  const extensions = {
+    globalActions: {
+      global: ({ selectedRowKeys }: GlobalActionsRendererProps) => (
+        <button>全局选中 {selectedRowKeys.length}</button>
+      ),
+    },
+    tableActions: {
+      table: ({ selectedRowKeys }: GlobalActionsRendererProps) => (
+        <button>表格选中 {selectedRowKeys.length}</button>
+      ),
+    },
+  };
+  const view = render(
+    <RecordView engine={engine} extensions={extensions} selectable />,
+  );
+  fireEvent.click(screen.getByRole('checkbox', { name: '选择记录 0' }));
+  expect(screen.getByRole('button', { name: '表格选中 1' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '自动刷新设置' }));
+  const interval = await screen.findByRole('menuitemradio', {
+    name: '每 30 秒',
+  });
+  vi.useFakeTimers();
+  try {
+    fireEvent.click(interval);
+    const refresh = screen.getByRole('button', { name: '刷新' });
+    expect(refresh.getAttribute('title')).toContain('已选择记录');
+    await act(() => vi.advanceTimersByTimeAsync(30000));
+    expect(paged).toHaveBeenCalledTimes(1);
+    view.rerender(
+      <RecordView engine={engine} extensions={extensions} selectable={false} />,
+    );
+    expect(engine.getSnapshot().sessions.mine.selectedRowKeys).toEqual([]);
+    expect(screen.getByRole('button', { name: '全局选中 0' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '表格选中 0' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '取消选择' })).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: '选择记录 0' })).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(30000));
+    expect(paged).toHaveBeenCalledTimes(2);
+    view.rerender(
+      <RecordView engine={engine} extensions={extensions} selectable />,
+    );
+    expect(
+      screen
+        .getByRole('checkbox', { name: '选择记录 0' })
+        .getAttribute('aria-checked'),
+    ).toBe('false');
+  } finally {
+    view.unmount();
+    engine.dispose();
+    vi.useRealTimers();
+  }
+});
 
 it('automatically refreshes without overlapping requests and stops when disabled', async () => {
   const { host, paged } = setup();

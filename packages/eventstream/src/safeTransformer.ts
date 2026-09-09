@@ -41,7 +41,9 @@ export type TransformerPhase = 'transform' | 'flush';
  * @template I - The type of input chunks
  * @template O - The type of output chunks
  */
-export abstract class SafeTransformer<I, O> implements Transformer<I, O> {
+export abstract class SafeTransformer<I, O> implements NonNullable<
+  ConstructorParameters<typeof TransformStream<I, O>>[0]
+> {
   /**
    * Guard flag indicating the stream has been terminated or errored.
    * Once set, subsequent chunks are silently dropped in `transform()`.

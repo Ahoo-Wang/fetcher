@@ -14,6 +14,8 @@
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { XIcon } from 'lucide-react';
 import { FILTER_OPERATORS, getFieldOperators } from './filterOperators.js';
+import { transitionFilterOperator } from './filterDraftTransitions.js';
+import { resolveFilterEditor } from './resolveFilterEditor.js';
 import type { FilterDraftNode } from './filterModel.js';
 import type { FilterPanelState } from './useFilterPanelState.js';
 import {
@@ -168,7 +170,16 @@ export function FilterNode({
   ).filter(
     op =>
       (!props.allowedOperators || props.allowedOperators.includes(op)) &&
-      (mode === 'advanced' || FILTER_OPERATORS[op].category === 'field'),
+      (mode === 'advanced' || FILTER_OPERATORS[op].category === 'field') &&
+      !resolveFilterEditor(
+        {
+          ...location,
+          node: op === node.op ? node : transitionFilterOperator(node, op),
+        },
+        props,
+        mode,
+        builtIn,
+      ).error,
   );
   const options = [...new Set([...operators, node.op])].map(op => ({
     value: op,

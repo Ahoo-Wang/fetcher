@@ -12,7 +12,7 @@
  */
 
 import { createFilterDraft } from '../../src/filter/filterCore.js';
-import { aggregation, filter } from '@ahoo-wang/fetcher-wow';
+import { aggregation, filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import type { RecordSummaryFunction } from '../../src/record/recordModel.js';
 import { deferred, session, setup } from './fixtures.js';
@@ -159,4 +159,39 @@ it('refreshes changed summary bindings but preserves totals on presentation chan
   await engine.refresh();
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(3));
   engine.dispose();
+});
+
+it('refreshes changed page and all totals manually but reuses all totals on paging and sorting', async () => {
+  const { engine, source } = setup();
+  try {
+    await engine.load();
+    await vi.waitFor(() =>
+      expect(session(engine).allSummary.values.amount?.SUM).toBe(30),
+    );
+    expect(session(engine).pageSummary.values.amount?.SUM).toBe(5);
+    source.paged.mockResolvedValue({
+      list: [{ id: 'a', amount: 7 }],
+      total: 3,
+    });
+    source.aggregate.mockResolvedValue([{ summary0: 50 }]);
+
+    await engine.setPage(2);
+    await engine.setSort([{ field: 'amount', direction: SortDirection.DESC }]);
+    expect(session(engine).pageSummary.values.amount?.SUM).toBe(7);
+    expect(session(engine).allSummary.values.amount?.SUM).toBe(30);
+    expect(source.aggregate).toHaveBeenCalledTimes(1);
+
+    source.paged.mockResolvedValue({
+      list: [{ id: 'a', amount: 9 }],
+      total: 3,
+    });
+    await engine.refresh();
+    await vi.waitFor(() =>
+      expect(session(engine).allSummary.values.amount?.SUM).toBe(50),
+    );
+    expect(session(engine).pageSummary.values.amount?.SUM).toBe(9);
+    expect(source.aggregate).toHaveBeenCalledTimes(2);
+  } finally {
+    engine.dispose();
+  }
 });

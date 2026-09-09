@@ -47,7 +47,7 @@ export class ViewReload {
             (this.host.instance?.load || this.host.instance?.list)) ||
           (this.work.createRequests.has(id) && this.host.instance?.create),
         )
-      : Boolean(this.host.instance?.load);
+      : Boolean(this.host.instance?.load || this.host.instance?.list);
   }
 
   async reloadInstance(id?: string): Promise<void> {
@@ -62,7 +62,9 @@ export class ViewReload {
     try {
       const unverified = this.work.unverifiedCreates.get(id);
       if (!this.canReloadInstance(id))
-        throw new Error('宿主未提供 instance.load，无法重新加载');
+        throw new Error(
+          '宿主未提供 instance.load 或 instance.list，无法重新加载',
+        );
       if (this.work.writes.has(id))
         throw new Error('实例正在写入，请等待操作完成');
       const previous = this.work.reloads.get(id);
@@ -78,7 +80,7 @@ export class ViewReload {
         return;
       let result: ViewInstance;
       if (
-        unverified?.id &&
+        (!unverified || unverified.id) &&
         !this.host.instance?.load &&
         this.host.instance?.list
       ) {
@@ -92,10 +94,10 @@ export class ViewReload {
         )
           return;
         const matched = readInstanceList(list, definition).find(
-          item => item.id === unverified.id,
+          item => item.id === (unverified?.id ?? id),
         );
         if (!matched)
-          throw new Error('实例列表未包含已返回的创建 ID，仍需核对');
+          throw new Error('实例列表未包含待核对的实例 ID，仍需核对');
         result = matched;
       } else if (unverified && (!unverified.id || !this.host.instance?.load)) {
         const request = this.work.createRequests.get(id);

@@ -69,11 +69,19 @@ it('derives reload capability from uncertain creation receipts as well as host m
   }));
   const engine = new ViewEngine({ definitionId: 'orders', host });
   await engine.load();
+  expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
+  engine.updateHost({
+    ...host,
+    instance: { ...host.instance, list: undefined },
+  });
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(false);
   await expect(
     engine.saveAs({ title: '副本', scope: { type: 'personal' } }),
   ).rejects.toThrow();
-  // listInstances can reconcile a received but invalid create result without loadInstance.
+  // The original request can be replayed even without either read method.
+  expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
+  engine.updateHost({ ...host, instance: { list: host.instance!.list } });
+  // A list-only host can instead reconcile the known creation ID.
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
   engine.updateHost({ ...host, instance: { list: undefined } });
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(false);

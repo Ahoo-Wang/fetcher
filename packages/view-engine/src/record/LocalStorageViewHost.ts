@@ -41,7 +41,11 @@ export interface LocalStorageViewHostOptions {
   definition: ViewDefinition;
   instances: ViewInstanceList;
   resolveSource: ViewHost['resolveSource'];
-  storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+  storage: {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+    removeItem(key: string): void;
+  };
   /** All clients for the same storage key must use the same exclusive lock domain. */
   lock: ViewStorageLock;
   instancePermissions?: NonNullable<ViewHost['permission']>['getInstance'];

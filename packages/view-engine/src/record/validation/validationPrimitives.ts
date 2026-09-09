@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
+
 export function assertObject(
   value: unknown,
   label: string,
@@ -39,27 +41,12 @@ export function validateReference(value: unknown) {
   assertText(value.name, '扩展名称');
   if (value.options !== undefined) {
     assertObject(value.options, '扩展选项');
-    const seen = new Set<object>();
-    function json(item: unknown): void {
-      if (
-        item === null ||
-        typeof item === 'string' ||
-        typeof item === 'boolean'
-      )
-        return;
-      if (typeof item === 'number' && Number.isFinite(item)) return;
-      if (!item || typeof item !== 'object' || seen.has(item))
-        throw new Error('扩展选项必须可序列化为 JSON');
-      if (
-        !Array.isArray(item) &&
-        Object.getPrototypeOf(item) !== Object.prototype &&
-        Object.getPrototypeOf(item) !== null
-      )
-        throw new Error('扩展选项必须是 JSON 对象');
-      seen.add(item);
-      Object.values(item).forEach(json);
-      seen.delete(item);
+    validateFilterJson(value.options);
+    function rejectUndefined(item: unknown): void {
+      if (item === undefined) throw new Error('扩展选项必须可序列化为 JSON');
+      if (item && typeof item === 'object')
+        Object.values(item).forEach(rejectUndefined);
     }
-    json(value.options);
+    rejectUndefined(value.options);
   }
 }

@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { useState } from 'react';
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
   act,
@@ -22,7 +23,8 @@ import {
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import type { FilterComponentProps } from '../src/filter/filterReactTypes.js';
-import { fields, builtinCompiler } from './fixtures/filterPanel.js';
+import { createFilterDraft } from '../src/filter/filterCore.js';
+import { fields, builtinCompiler, select } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
 
@@ -238,3 +240,123 @@ it.each(['same-event', 'retained-callback'])(
     expect(contract!.errors).toContain('金额尚未完成');
   },
 );
+
+it('limits a saved custom editor to supported operators and retains its properties on a valid switch', () => {
+  let contract: FilterComponentProps | undefined;
+  const apply = vi.fn();
+  function Custom(props: FilterComponentProps) {
+    contract = props;
+    return <span>持久化金额编辑器</span>;
+  }
+  function Harness() {
+    const [draft, setDraft] = useState({
+      id: 'saved',
+      op: FilterOperator.EQ,
+      field: 'amount',
+      editor: { name: 'custom' },
+      props: { value: 10, label: '保留' },
+    });
+    return (
+      <FilterPanel
+        fields={fields}
+        draft={draft}
+        onDraftChange={next => setDraft(next as typeof draft)}
+        value={filter.eq('amount', 10)}
+        onApply={apply}
+        extensions={{
+          filters: {
+            custom: {
+              ...builtinCompiler,
+              compile: (props, context) =>
+                builtinCompiler.compile({ value: props.value }, context),
+              component: Custom,
+              render: 'filter',
+              modes: ['simple'],
+              supports: (props, context) =>
+                [FilterOperator.EQ, FilterOperator.NE].includes(
+                  context.operator,
+                ) && props.label === '保留',
+            },
+          },
+        }}
+      />
+    );
+  }
+  render(<Harness />);
+  expect(
+    contract!.operators
+      .filter(option => !option.disabled)
+      .map(option => option.value),
+  ).toEqual([FilterOperator.EQ, FilterOperator.NE]);
+  act(() => contract!.onOperatorChange(FilterOperator.GTE));
+  expect(contract!.operator).toBe(FilterOperator.EQ);
+  expect(screen.getByText('持久化金额编辑器')).toBeTruthy();
+  act(() => contract!.onChange({ value: 10, label: '保留' }));
+  act(() => contract!.onOperatorChange(FilterOperator.NE));
+  expect(contract!.operator).toBe(FilterOperator.NE);
+  expect(contract!.props).toEqual({ value: 10, label: '保留' });
+  fireEvent.click(screen.getByRole('button', { name: '查询' }));
+  expect(apply).toHaveBeenLastCalledWith(filter.ne('amount', 10));
+});
+
+it('checks editor support against the properties produced by the operator transition', () => {
+  let contract: FilterComponentProps | undefined;
+  function Custom(props: FilterComponentProps) {
+    contract = props;
+    return <span>可变输入编辑器</span>;
+  }
+  render(
+    <FilterPanel
+      fields={fields}
+      draft={{
+        ...createFilterDraft(filter.eq('amount', 10)),
+        editor: { name: 'custom' },
+      }}
+      value={filter.eq('amount', 10)}
+      onApply={() => {}}
+      extensions={{
+        filters: {
+          custom: {
+            ...builtinCompiler,
+            component: Custom,
+            render: 'filter',
+            modes: ['simple'],
+            supports: (props, context) =>
+              context.operator === FilterOperator.EQ ||
+              (context.operator === FilterOperator.BETWEEN &&
+                props.value === undefined),
+          },
+        },
+      }}
+    />,
+  );
+  expect(
+    contract!.operators
+      .filter(option => !option.disabled)
+      .map(option => option.value),
+  ).toEqual([FilterOperator.EQ, FilterOperator.BETWEEN]);
+});
+
+it('keeps builtin operator transitions available when the new input still needs values', async () => {
+  const changed = vi.fn();
+  render(
+    <FilterPanel
+      fields={fields}
+      draft={{
+        ...createFilterDraft(filter.eq('amount', 10)),
+        editor: { name: 'builtin' },
+      }}
+      value={filter.eq('amount', 10)}
+      onDraftChange={changed}
+      onApply={() => {}}
+    />,
+  );
+  await select('订单金额操作', '介于');
+  expect(changed).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      op: FilterOperator.BETWEEN,
+      editor: { name: 'builtin' },
+    }),
+  );
+  expect(changed.mock.lastCall![0].value).toBeUndefined();
+});

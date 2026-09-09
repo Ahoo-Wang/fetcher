@@ -100,3 +100,66 @@ it('emits server multi-sort with a reset cycle and leaves server row order uncha
       .map(row => within(row).getAllByRole('cell')[0].textContent),
   ).toEqual(['Zulu', 'Alpha']);
 });
+
+it('shares field sorting across duplicate columns without emitting duplicate sort fields', () => {
+  const onSortChange = vi.fn();
+  function Example() {
+    const [sort, setSort] = useState(instance.config.sort);
+    return (
+      <RecordTable
+        {...props({
+          instance: {
+            ...instance,
+            config: {
+              ...instance.config,
+              sort,
+              presentation: {
+                layout: 'table',
+                table: {
+                  columns: [
+                    ...instance.config.presentation.table.columns,
+                    {
+                      id: 'alias',
+                      kind: 'field',
+                      field: 'name',
+                      title: '别名',
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          onSortChange: next => {
+            onSortChange(next);
+            setSort(next);
+          },
+        })}
+      />
+    );
+  }
+  render(<Example />);
+  fireEvent.click(screen.getByRole('button', { name: '别名排序：未排序' }));
+  expect(screen.getByRole('button', { name: '别名排序：升序' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '名称排序：升序' })).toBeTruthy();
+  expect(onSortChange).toHaveBeenLastCalledWith([
+    { field: 'name', direction: SortDirection.ASC },
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: '金额排序：未排序' }), {
+    shiftKey: true,
+  });
+  fireEvent.click(screen.getByRole('button', { name: '别名排序：升序' }), {
+    shiftKey: true,
+  });
+  expect(onSortChange).toHaveBeenLastCalledWith([
+    { field: 'name', direction: SortDirection.DESC },
+    { field: 'amount', direction: SortDirection.ASC },
+  ]);
+  expect(screen.getByRole('button', { name: '别名排序：降序' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '别名排序：降序' }), {
+    shiftKey: true,
+  });
+  expect(onSortChange).toHaveBeenLastCalledWith([
+    { field: 'amount', direction: SortDirection.ASC },
+  ]);
+  expect(screen.getByRole('button', { name: '别名排序：未排序' })).toBeTruthy();
+});

@@ -183,6 +183,41 @@ function verifyTypes(directory) {
       'react/jsx-dev-runtime': [join(reactTypes, 'jsx-dev-runtime.d.ts')],
     },
   };
+  const coreProbe = join(directory, 'headless-types.ts');
+  writeFileSync(
+    coreProbe,
+    `import { ViewEngine, type LocalStorageViewHostOptions } from '${manifest.name}';
+     export const engine = ViewEngine;
+     export const storage: LocalStorageViewHostOptions['storage'] = {
+       getItem: (_key: string) => null,
+       setItem: (_key: string, _value: string) => {},
+       removeItem: (_key: string) => {},
+     };`,
+  );
+  const headless = ts.createProgram([coreProbe], {
+    ...options,
+    skipLibCheck: false,
+    lib: ['lib.es2022.d.ts'],
+    types: ['node'],
+    typeRoots: [join(root, 'node_modules/@types')],
+    paths: {},
+  });
+  const headlessDiagnostics = ts.getPreEmitDiagnostics(headless);
+  assert.equal(
+    headlessDiagnostics.length,
+    0,
+    ts.formatDiagnosticsWithColorAndContext(headlessDiagnostics, {
+      getCanonicalFileName: file => file,
+      getCurrentDirectory: () => directory,
+      getNewLine: () => '\n',
+    }),
+  );
+  assert.ok(
+    !headless
+      .getSourceFiles()
+      .some(file => /lib\.dom(?:\.|\b)/.test(file.fileName)),
+    'Headless types loaded DOM declarations',
+  );
   // Map only installed React declarations; both library imports must resolve through the packed exports.
   for (const [specifier, target] of [
     [manifest.name, manifest.exports['.'].types],

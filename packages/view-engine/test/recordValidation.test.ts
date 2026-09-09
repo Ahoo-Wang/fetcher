@@ -15,7 +15,7 @@ import {
   createFilterConfiguration,
   createFilterDraft,
 } from '../src/filter/filterCore.js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FilterOperator, SortDirection } from '@ahoo-wang/fetcher-wow';
 import type {
   ViewDefinition,
@@ -282,3 +282,67 @@ it('rejects unaddressable resource IDs while retaining ordinary Unicode and rese
     ).not.toThrow();
   }
 });
+
+it.each([
+  ['sparse array', () => new Array(1)],
+  ['extra array property', () => Object.assign([1], { extra: 2 })],
+  ['symbol property', () => ({ [Symbol('hidden')]: 1 })],
+  [
+    'non-enumerable property',
+    () => Object.defineProperty({}, 'hidden', { value: 1 }),
+  ],
+  ['undefined property', () => ({ missing: undefined })],
+])(
+  'rejects %s in definition and instance extension options',
+  (_name, value) => {
+    const reference = { name: 'custom', options: { value: value() } };
+    expect(() =>
+      validateViewDefinition({
+        ...definition,
+        fields: [{ ...definition.fields[0], editor: reference }],
+      }),
+    ).toThrow();
+    expect(() =>
+      validateViewInstance(
+        {
+          ...instance,
+          config: {
+            ...instance.config,
+            presentation: {
+              layout: 'table',
+              table: {
+                columns: [
+                  {
+                    id: 'amount',
+                    kind: 'field',
+                    field: 'amount',
+                    renderer: reference,
+                  },
+                ],
+              },
+            },
+          },
+        },
+        definition,
+      ),
+    ).toThrow();
+  },
+);
+
+it.each([{}, [1]])(
+  'rejects extension option accessors without invoking them (%j)',
+  value => {
+    const getter = vi.fn(() => 1);
+    Object.defineProperty(value, Array.isArray(value) ? '0' : 'field', {
+      get: getter,
+      enumerable: true,
+    });
+    expect(() =>
+      validateViewDefinition({
+        ...definition,
+        recordActions: { table: { name: 'custom', options: { value } } },
+      }),
+    ).toThrow();
+    expect(getter).not.toHaveBeenCalled();
+  },
+);
