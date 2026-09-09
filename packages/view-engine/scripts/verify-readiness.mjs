@@ -61,8 +61,11 @@ const ready = async () => {
   await frame();
 };
 const refresh = async () => {
+  const started = performance.now();
   const before = (await metrics()).queries;
+  const observed = performance.now();
   await page.getByRole('button', { name: '刷新', exact: true }).click();
+  const clicked = performance.now();
   await page.waitForFunction(
     before =>
       window.__viewReadiness.metrics.queries > before &&
@@ -72,7 +75,14 @@ const refresh = async () => {
         ?.getAttribute('aria-busy') !== 'true',
     before,
   );
+  const settled = performance.now();
   await frame();
+  return {
+    observe: Math.round((observed - started) * 100) / 100,
+    click: Math.round((clicked - observed) * 100) / 100,
+    settle: Math.round((settled - clicked) * 100) / 100,
+    paint: Math.round((performance.now() - settled) * 100) / 100,
+  };
 };
 async function measure(name, operation) {
   await operation(); // Warm the interaction before collecting samples.
