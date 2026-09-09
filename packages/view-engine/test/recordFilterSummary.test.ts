@@ -12,7 +12,13 @@
  */
 
 import { expect, it } from 'vitest';
-import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  filter,
+  FilterOperator,
+  SearchMode,
+  StringComparison,
+  DeletionState,
+} from '@ahoo-wang/fetcher-wow';
 import { describeRecordFilter } from '../src/record/recordFilterSummary.js';
 import type { ViewFieldDefinition } from '../src/record/recordModel.js';
 
@@ -134,4 +140,59 @@ it('describes date-only component intent instead of its expanded query', () => {
       },
     ).text,
   ).toBe('创建时间 不等于 2026-09-08');
+});
+
+it('describes search scope and matching semantics in the applied summary', () => {
+  for (const [mode, label] of [
+    [SearchMode.PHRASE, '短语匹配'],
+    [SearchMode.TERMS, '分词匹配'],
+  ] as const) {
+    expect(
+      describeRecordFilter(
+        {
+          op: FilterOperator.SEARCH,
+          query: '采购订单',
+          fields: ['customer', 'legacy'],
+          mode,
+        },
+        fields,
+      ).text,
+    ).toBe(`全文搜索 采购订单 范围：客户、legacy ${label}`);
+  }
+  expect(
+    describeRecordFilter(
+      { op: FilterOperator.DELETION, state: DeletionState.DELETED },
+      fields,
+    ).text,
+  ).toContain('已删除');
+});
+
+it('shows case sensitivity and relative-time zones without changing the applied values', () => {
+  for (const [comparison, label] of [
+    [StringComparison.CASE_INSENSITIVE, '不区分大小写'],
+    [StringComparison.CASE_SENSITIVE, '区分大小写'],
+  ] as const) {
+    expect(
+      describeRecordFilter(
+        {
+          op: FilterOperator.CONTAINS,
+          field: 'customer',
+          value: 'AbC',
+          stringComparison: comparison,
+        },
+        fields,
+      ).text,
+    ).toBe(`客户 包含文本 AbC ${label}`);
+  }
+  const summary = describeRecordFilter(
+    {
+      op: FilterOperator.RECENT_DAYS,
+      field: 'created',
+      days: 7,
+      zoneId: 'Asia/Shanghai',
+    },
+    [{ field: 'created', label: '时间', type: 'datetime' }],
+  );
+  expect(summary.text).toContain('7 天');
+  expect(summary.text).toContain('时区：Asia/Shanghai');
 });
