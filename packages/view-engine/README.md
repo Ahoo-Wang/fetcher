@@ -41,7 +41,7 @@ pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 
 ### Library delivery acceptance
 
-Run `pnpm verify:view-engine` from the repository root after building the workspace. It checks the public package, starts an owned isolated Storybook server, and verifies local/HTTP recovery followed by browser acceptance. Success, failure and interruption clean up its owned processes; your existing port 6006 server is not used.
+Run `pnpm verify:view-engine` from the repository root after building the workspace. It checks the public package and local/HTTP recovery using an isolated development Storybook, then builds and serves a fresh production Storybook for browser acceptance and performance measurements. Success, failure and interruption clean up its owned processes; your existing port 6006 server is not used.
 
 ```bash
 pnpm build

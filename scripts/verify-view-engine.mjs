@@ -147,6 +147,24 @@ try {
       [script],
       env,
     );
+  await stopOwned(storybook);
+  await run('storybook-build', pnpm, ['build-storybook']);
+  storybook = start('storybook-preview', pnpm, [
+    'exec',
+    'vite',
+    'preview',
+    '--host',
+    '127.0.0.1',
+    '--outDir',
+    'storybook-static',
+    '--port',
+    String(port),
+    '--strictPort',
+  ]);
+  storybook.once('error', error => {
+    storybookError = error;
+  });
+  await waitFor(`${baseUrl}/index.json`);
   for (const browser of readinessBrowsers)
     await run(
       `verify-readiness-${browser}`,

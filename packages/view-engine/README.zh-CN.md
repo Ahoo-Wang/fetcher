@@ -41,7 +41,7 @@ pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 
 ### 库级交付验收
 
-从仓库根目录执行 `pnpm verify:view-engine`（先完成工作区构建）。入口会校验公开包、启动自己的隔离 Storybook 服务，依次验证本地/HTTP 服务恢复和数据视图验收，完成、失败或中断时清理自己启动的进程。它不使用你正在调试的 6006 服务。
+从仓库根目录执行 `pnpm verify:view-engine`（先完成工作区构建）。入口会校验公开包，使用隔离的 Storybook 开发服务验证本地/HTTP 服务恢复，再构建并启动新鲜的 Storybook 生产产物进行浏览器验收和性能测量，完成、失败或中断时清理自己启动的进程。它不使用你正在调试的 6006 服务。
 
 ```bash
 pnpm build

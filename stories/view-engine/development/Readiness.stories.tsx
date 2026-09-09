@@ -5,9 +5,9 @@
  */
 import {
   createContext,
-  Profiler,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
 } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -31,11 +31,8 @@ declare global {
 }
 function MeasuredText({ value }: CellRendererProps) {
   const service = useContext(Service)!;
-  return (
-    <Profiler id="cell" onRender={service.recordCellCommit}>
-      <TextCell value={value} />
-    </Profiler>
-  );
+  useLayoutEffect(() => service.recordCellCommit());
+  return <TextCell value={value} />;
 }
 const extensions = { cells: { 'measured-text': MeasuredText } };
 

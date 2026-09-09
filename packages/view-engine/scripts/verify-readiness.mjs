@@ -196,6 +196,10 @@ try {
   );
   await page.addScriptTag({ path: axeRequire.resolve('axe-core/axe.min.js') });
   assert.equal(await table.locator('tbody tr').count(), 100);
+  assert.ok(
+    (await metrics()).cellCommits >= 100,
+    'Initial data cells must record commits in the production build',
+  );
   assert.equal(await table.locator('thead th').count(), 31);
   assert.equal(
     await table
