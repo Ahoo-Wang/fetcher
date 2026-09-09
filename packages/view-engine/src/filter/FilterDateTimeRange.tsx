@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { sameJsonState } from '../lib/snapshot.js';
 import type {
   FilterFieldDefinition,
   FilterComponentProperties,
@@ -36,7 +37,7 @@ import {
   dateTimeToSeconds,
 } from './filterDateTimeValue.js';
 import { getBuiltinFilterCompiler } from './builtinFilterCompilers.js';
-import { sameFilterState } from './filterTree.js';
+
 import {
   InputGroup,
   InputGroupButton,
@@ -73,7 +74,7 @@ export function FilterDateTimeRange({
   const timed = datetime && showTime;
   const inputs = { field, showTime, timeZone, value, disabled };
   const [previous, setPrevious] = useState(inputs);
-  if (!sameFilterState(previous, inputs)) {
+  if (!sameJsonState(previous, inputs)) {
     setPrevious(inputs);
     if (
       timed ||

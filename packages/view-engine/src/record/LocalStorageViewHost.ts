@@ -18,8 +18,8 @@ import {
   type StoredInstance,
   type ServiceState,
 } from './localViewState.js';
-import { copy, message } from '../lib/snapshot.js';
-import { sameFilterState } from '../filter/filterTree.js';
+import { copy, message, sameJsonState } from '../lib/snapshot.js';
+
 import {
   validateViewDefinition,
   validateViewInstance,
@@ -115,7 +115,7 @@ export class LocalStorageViewHost implements ViewHost {
           instance.revision,
           'save',
         );
-        if (!sameFilterState(previous.scope, instance.scope))
+        if (!sameJsonState(previous.scope, instance.scope))
           throw new ViewServiceError(
             'INVALID_ARGUMENT',
             '保存不能改变视图可见范围，请另存为',
@@ -173,7 +173,7 @@ export class LocalStorageViewHost implements ViewHost {
           ]);
           if (Object.prototype.hasOwnProperty.call(state.creates, receiptKey)) {
             const receipt = state.creates[receiptKey];
-            if (!sameFilterState(receipt.input, body))
+            if (!sameJsonState(receipt.input, body))
               throw new ViewServiceError(
                 'CONFLICT',
                 'requestId 已用于不同的创建内容',

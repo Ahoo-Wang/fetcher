@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { sameJsonState } from '../lib/snapshot.js';
 import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
 import { newFilterNode } from './filterNodes.js';
 import type {
@@ -19,20 +20,6 @@ import type {
 } from './filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 
-export function sameFilterState(a: unknown, b: unknown): boolean {
-  function canonical(value: unknown): unknown {
-    if (Array.isArray(value)) return value.map(canonical);
-    if (value && typeof value === 'object')
-      return Object.fromEntries(
-        Object.entries(value)
-          .filter(([, value]) => value !== undefined)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([key, value]) => [key, canonical(value)]),
-      );
-    return value;
-  }
-  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
-}
 /** Ignore only redundant singleton AND/OR wrappers; keep persisted structure unchanged. */
 export function sameFilterQuery(
   a: DeepReadonly<FilterExpression> | null | undefined,
@@ -54,7 +41,7 @@ export function sameFilterQuery(
       ? { ...value, predicate: normalize(value.predicate) }
       : value;
   }
-  return sameFilterState(normalize(a), normalize(b));
+  return sameJsonState(normalize(a), normalize(b));
 }
 export function sameFilterNode(
   a: DeepReadonly<FilterComponentConfig>,
@@ -68,7 +55,7 @@ export function sameFilterNode(
       predicate: node.predicate ? content(node.predicate) : undefined,
     };
   }
-  return sameFilterState(content(a), content(b));
+  return sameJsonState(content(a), content(b));
 }
 export function replaceFilterNode(
   root: FilterComponentConfig,

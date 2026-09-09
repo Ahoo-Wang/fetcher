@@ -125,3 +125,16 @@ Ownership: consumer agent — stories/view-engine, packages/view-engine/examples
 - Latest chromium p95: refresh 265.78ms, selection 100.18ms, field picker 152.3ms.
 - Latest firefox p95: refresh 290.08ms, selection 239.73ms, field picker 227.52ms.
 - Latest webkit p95: refresh 288.55ms, selection 106.75ms, field picker 130.86ms.
+
+## JSON comparison responsibility and Unicode correctness
+
+- Moved internal JSON snapshot comparison from `filterTree` to the existing `lib/snapshot` module as `sameJsonState`. Record persistence, local service and HTTP permission projection no longer import the filter tree for generic object comparison. Public `sameFilterQuery` remains the domain-specific comparison API.
+- Replaced linguistic key collation with deterministic code-unit comparison. Two distinct Unicode keys that collate equally previously made identical reordered custom properties look changed; a legitimate save response was rejected. Pure comparison and engine-save regressions failed before the fix and passed after it. Values and array ordering remain significant, undefined object properties retain their prior semantics.
+- Added `src/lib/snapshot.ts` to coverage inclusion so moving the comparator does not remove it from coverage. Coverage totals now include additional shared snapshot helpers and are not directly comparable with the previous denominator.
+- Independent review found no additional issue. No dependency, public API or saved-schema changes; refreshed bilingual symbol source links and generated wiki text.
+- Final unit gate: 5,558 passed / one skipped, view-engine 864 ordinary + 864 compiled and types. Full Storybook: 286 passed. Build, package/story lint, documentation tests and bilingual wiki build passed. Logs: `/tmp/fve-json-quality-unit.log`, `/tmp/fve-json-quality-storybook.log`, `/tmp/fve-json-quality-docs.log`.
+
+- Final `verify:view-engine` passed public archive/types, LocalStorage/HTTP end-to-end restoration and all three browsers at unchanged scale/budgets. Artifacts: `/tmp/fve-json-quality-acceptance/`. This is a scoped cleanup, not a claim that every historical debt or dynamically referenced public entry point has been audited away.
+- Latest chromium p95: refresh 253.91ms, selection 104.06ms, field picker 145.03ms.
+- Latest firefox p95: refresh 331.05ms, selection 261.96ms, field picker 275.89ms.
+- Latest webkit p95: refresh 326.25ms, selection 91.11ms, field picker 143.55ms.

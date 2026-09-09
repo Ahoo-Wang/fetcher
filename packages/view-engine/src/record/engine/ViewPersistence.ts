@@ -14,12 +14,12 @@
 import type { ViewInstance, SaveAsScope } from '../recordModel.js';
 import type { ViewHost } from '../ViewHost.js';
 import { validateViewInstance } from '../recordValidation.js';
-import { sameFilterState } from '../../filter/filterTree.js';
+
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import { hasUnknownWriteOutcome, type InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
-import { copy, message } from '../../lib/snapshot.js';
+import { copy, message, sameJsonState } from '../../lib/snapshot.js';
 import {
   createSession,
   inheritEditingSession,
@@ -111,7 +111,7 @@ export class ViewPersistence {
         const previous = this.work.createRequest(id);
         if (
           previous &&
-          !sameFilterState(
+          !sameJsonState(
             instanceContent(previous.submitted),
             instanceContent(submitted),
           )
@@ -171,7 +171,7 @@ export class ViewPersistence {
       validateViewInstance(result, definition, options ? undefined : id);
       if (options && knownIds.has(result.id))
         throw new Error('另存返回的实例 ID 已存在');
-      if (!sameFilterState(instanceContent(result), instanceContent(submitted)))
+      if (!sameJsonState(instanceContent(result), instanceContent(submitted)))
         throw new Error('保存结果不符合原样保存契约，请重新加载核对');
       const saved = copy(result);
       if (options) this.work.finishCreate(id);

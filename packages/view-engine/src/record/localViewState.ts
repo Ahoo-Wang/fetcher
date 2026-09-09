@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
+import { sameJsonState } from '../lib/snapshot.js';
 import type { ViewDefinition, ViewInstance } from './recordModel.js';
 import { validateViewInstance } from './recordValidation.js';
-import { sameFilterState } from '../filter/filterTree.js';
 
 export type StoredInstance = ViewInstance & { ownerKey: string | null };
 export interface ServiceState {
@@ -68,7 +68,7 @@ export function validateLocalViewState(
       throw new Error('用户顺序无效');
   for (const receipt of Object.values(state.creates)) {
     validateViewInstance(receipt.result, definition);
-    if (!sameFilterState(receipt.input, createViewInput(receipt.result)))
+    if (!sameJsonState(receipt.input, createViewInput(receipt.result)))
       throw new Error('创建回执无效');
   }
 }

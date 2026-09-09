@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
+import { sameJsonState } from '../../lib/snapshot.js';
 import { compileFilterConfiguration } from '../../filter/filterConfiguration.js';
 import type { FilterCompilerRegistry } from '../../filter/filterModel.js';
-import { sameFilterQuery, sameFilterState } from '../../filter/filterTree.js';
+import { sameFilterQuery } from '../../filter/filterTree.js';
 import type { DeepReadonly } from '../../lib/types.js';
 import type {
   RecordSession,
@@ -117,7 +118,7 @@ export function deriveSession(
       previous.instance === session.instance &&
       previous.baseline === session.baseline
         ? previous.dirty
-        : !sameFilterState(
+        : !sameJsonState(
             instanceContent(session.instance),
             instanceContent(session.baseline),
           ),

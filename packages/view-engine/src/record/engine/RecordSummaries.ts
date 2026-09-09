@@ -24,10 +24,10 @@ import {
   readRecordSummaryResult,
 } from '../recordSummary.js';
 import { getRecordSummaryMetrics } from '../recordPresentation.js';
-import { sameFilterState } from '../../filter/filterTree.js';
+
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
-import { copy, message } from '../../lib/snapshot.js';
+import { copy, message, sameJsonState } from '../../lib/snapshot.js';
 
 /** Independent page/all summary state and cancellable aggregate requests. */
 export class RecordSummaries {
@@ -88,7 +88,7 @@ export class RecordSummaries {
         }
       }
     }
-    if (!sameFilterState(session.pageSummary, pageSummary))
+    if (!sameJsonState(session.pageSummary, pageSummary))
       this.store.patch(id, { pageSummary });
   }
 

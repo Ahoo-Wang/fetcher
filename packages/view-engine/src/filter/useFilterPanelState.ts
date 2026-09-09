@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { sameJsonState } from '../lib/snapshot.js';
 import {
   useEffect,
   useId,
@@ -36,11 +37,7 @@ import type {
   FilterPanelProps,
   FilterPanelToolbarProps,
 } from './filterReactTypes.js';
-import {
-  locateFilterNodes,
-  replaceFilterNode,
-  sameFilterState,
-} from './filterTree.js';
+import { locateFilterNodes, replaceFilterNode } from './filterTree.js';
 import {
   appendNode,
   transitionFilterOperator,
@@ -101,8 +98,8 @@ export function useFilterPanelState(props: FilterPanelProps) {
   });
   const generation = observed.generation;
   // Render-local state can be discarded by Suspense without invalidating committed callbacks.
-  if (!sameFilterState(observed.value, props.value)) {
-    const replacement = !sameFilterState(emitted.current, props.value);
+  if (!sameJsonState(observed.value, props.value)) {
+    const replacement = !sameJsonState(emitted.current, props.value);
     setObserved({
       value: props.value,
       generation: replacement ? { id: generation.id + 1 } : generation,
@@ -123,7 +120,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
     if (
       !props.appliedValue &&
       !pending &&
-      !sameFilterState(localBaseline, configuration)
+      !sameJsonState(localBaseline, configuration)
     )
       setBaseline(cloneSnapshot<FilterConfiguration>(configuration));
   }, [props.appliedValue, pending, localBaseline, configuration]);
@@ -140,7 +137,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
     if (
       latest.current.props.disabled ||
       !mounted.current ||
-      sameFilterState(configurationRef.current, next)
+      sameJsonState(configurationRef.current, next)
     )
       return;
     configurationRef.current = next;

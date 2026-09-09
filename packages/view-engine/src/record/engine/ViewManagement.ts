@@ -14,13 +14,13 @@
 import type { ViewInstancePermissions } from '../recordModel.js';
 import type { ViewHost } from '../ViewHost.js';
 import { validateViewInstance } from '../recordValidation.js';
-import { sameFilterState } from '../../filter/filterTree.js';
+
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import { hasUnknownWriteOutcome, type InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
 import type { RecordSummaries } from './RecordSummaries.js';
-import { copy, message } from '../../lib/snapshot.js';
+import { copy, message, sameJsonState } from '../../lib/snapshot.js';
 import { instanceContent } from './sessionState.js';
 import { permissionsFor } from './instancePermissions.js';
 
@@ -74,7 +74,7 @@ export class ViewManagement {
       received = true;
       validateViewInstance(result, this.store.definition(), id);
       if (
-        !sameFilterState(instanceContent(result), {
+        !sameJsonState(instanceContent(result), {
           ...instanceContent(session.baseline),
           title,
         })

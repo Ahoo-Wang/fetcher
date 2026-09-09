@@ -15,13 +15,13 @@ import type { ViewInstance } from '../recordModel.js';
 import type { ViewHost } from '../ViewHost.js';
 import { validateViewInstance } from '../recordValidation.js';
 import { readInstanceList } from '../validation/instanceValidation.js';
-import { sameFilterState } from '../../filter/filterTree.js';
+
 import { permissionsFor } from './instancePermissions.js';
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import type { InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
-import { copy, message } from '../../lib/snapshot.js';
+import { copy, message, sameJsonState } from '../../lib/snapshot.js';
 import {
   rebaseSession,
   inheritEditingSession,
@@ -131,7 +131,7 @@ export class ViewReload {
           return;
         validateViewInstance(result, definition, unverified.id ?? undefined);
         if (
-          !sameFilterState(
+          !sameJsonState(
             instanceContent(result),
             instanceContent(request.submitted),
           )

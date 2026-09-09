@@ -46,3 +46,19 @@ export function copy<T>(value: T): T {
 export function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
+
+/** Compare JSON snapshots independent of object key order; absent and undefined properties agree. */
+export function sameJsonState(a: unknown, b: unknown): boolean {
+  function canonical(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object')
+      return Object.fromEntries(
+        Object.entries(value)
+          .filter(([, value]) => value !== undefined)
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([key, value]) => [key, canonical(value)]),
+      );
+    return value;
+  }
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+}

@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { copy } from '../../src/lib/snapshot.js';
-import { sameFilterState } from '../../src/filter/filterTree.js';
+import { copy, sameJsonState } from '../../src/lib/snapshot.js';
+
 import type {
   ViewInstance,
   ViewInstancePermissions,
@@ -67,7 +67,7 @@ export class HttpViewPermissionService implements ViewPermissionService {
     // Never return a raw payload that escaped those checks or predates a revocation.
     if (
       this.permissionSnapshot.revision < 0 ||
-      !sameFilterState(result, this.permissionSnapshot)
+      !sameJsonState(result, this.permissionSnapshot)
     )
       throw new ViewServiceError(
         'UNAVAILABLE',
@@ -114,7 +114,7 @@ export class HttpViewPermissionService implements ViewPermissionService {
         throw new ViewServiceError('UNAVAILABLE', '服务实例权限无效');
     if (
       next.revision < this.permissionSnapshot.revision ||
-      sameFilterState(next, this.permissionSnapshot)
+      sameJsonState(next, this.permissionSnapshot)
     )
       return;
     this.permissionSnapshot = copy(next);

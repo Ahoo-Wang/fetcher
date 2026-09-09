@@ -21,14 +21,14 @@ import {
   isSimpleFilter,
 } from '../../filter/filterCore.js';
 import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
-import { sameFilterQuery, sameFilterState } from '../../filter/filterTree.js';
+import { sameFilterQuery } from '../../filter/filterTree.js';
 import type { DeepReadonly } from '../../lib/types.js';
 import type { RecordColumn, RecordKey } from '../recordModel.js';
 import { getRecordKey } from '../recordValidation.js';
 import type { SessionStore } from './SessionStore.js';
 import type { RecordQueries } from './RecordQueries.js';
 import type { RecordSummaries } from './RecordSummaries.js';
-import { copy } from '../../lib/snapshot.js';
+import { copy, sameJsonState } from '../../lib/snapshot.js';
 import { isSystemSession } from './sessionState.js';
 
 /** Explicit session edits, validation and the queries each edit requires. */
@@ -87,7 +87,7 @@ export class RecordEdits {
       throw new Error('筛选有效性必须是布尔值');
     validateFilterJson(draft);
     if (
-      sameFilterState(session.filterDraft, draft) &&
+      sameJsonState(session.filterDraft, draft) &&
       session.filterValid === nextValid
     )
       return;
