@@ -161,8 +161,20 @@ export class RecordSummaries {
 
   async refresh(id?: string): Promise<void> {
     const session = this.store.session(id);
-    this.updatePage(session.instance.id);
-    this.invalidate(session.instance.id);
-    await this.query(session.instance.id);
+    id = session.instance.id;
+    const lifecycle = this.scope.version;
+    const request = this.requests.get(id),
+      key = this.keys.get(id);
+    this.updatePage(id);
+    if (
+      !this.scope.current(lifecycle) ||
+      !this.store.find(id) ||
+      this.requests.get(id) !== request ||
+      this.keys.get(id) !== key
+    )
+      return;
+    this.invalidate(id);
+    if (this.scope.current(lifecycle) && this.store.find(id))
+      await this.query(id);
   }
 }

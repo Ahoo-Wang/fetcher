@@ -35,8 +35,8 @@ import { isSystemSession } from './sessionState.js';
 export class RecordEdits {
   constructor(
     private readonly store: SessionStore,
-    private readonly queries: RecordQueries,
-    private readonly summaries: RecordSummaries,
+    private readonly queries: Pick<RecordQueries, 'change' | 'cancel'>,
+    private readonly summaries: Pick<RecordSummaries, 'key' | 'sync'>,
   ) {}
 
   async applyFilter(id?: string): Promise<void> {
@@ -57,23 +57,27 @@ export class RecordEdits {
           '筛选组件无法编译',
       );
     const filters = copy(session.filterDraft);
-    this.store.updateInstance(
-      session,
-      {
-        ...session.instance,
-        config: { ...session.instance.config, filters },
+    await this.queries.change(
+      session.instance.id,
+      () => {
+        this.store.updateInstance(
+          session,
+          {
+            ...session.instance,
+            config: { ...session.instance.config, filters },
+          },
+          {
+            filterDraft: filters,
+            filterBaseline: filters,
+            filterValid: true,
+            page: 1,
+            cursor: null,
+            appliedFilter: compiled.expression,
+          },
+        );
       },
-      {
-        filterDraft: filters,
-        filterBaseline: filters,
-        filterValid: true,
-        page: 1,
-        cursor: null,
-        appliedFilter: compiled.expression,
-      },
+      true,
     );
-    this.summaries.invalidate(session.instance.id);
-    await this.queries.run(session.instance.id);
   }
 
   setFilterDraft(
@@ -134,12 +138,13 @@ export class RecordEdits {
 
   async setSort(sort: DeepReadonly<FieldSort[]>, id?: string): Promise<void> {
     const session = this.store.session(id);
-    this.store.updateInstance(
-      session,
-      { ...session.instance, config: { ...session.instance.config, sort } },
-      { page: 1, cursor: null },
-    );
-    await this.queries.run(session.instance.id);
+    await this.queries.change(session.instance.id, () => {
+      this.store.updateInstance(
+        session,
+        { ...session.instance, config: { ...session.instance.config, sort } },
+        { page: 1, cursor: null },
+      );
+    });
   }
 
   setColumns(columns: DeepReadonly<RecordColumn[]>, id?: string): void {
@@ -155,7 +160,8 @@ export class RecordEdits {
         },
       },
     });
-    if (key !== this.summaries.key(this.store.session(session.instance.id)))
+    const current = this.store.find(session.instance.id);
+    if (current && key !== this.summaries.key(current))
       this.summaries.sync(session.instance.id);
   }
 
@@ -165,24 +171,26 @@ export class RecordEdits {
       throw new Error('游标分页仅支持向后加载下一页');
     if (!Number.isSafeInteger(index) || index < 1)
       throw new Error('页码必须是正整数');
-    this.store.patch(session.instance.id, { page: index });
-    await this.queries.run(session.instance.id);
+    await this.queries.change(session.instance.id, () => {
+      this.store.patch(session.instance.id, { page: index });
+    });
   }
 
   async setPageSize(size: number, id?: string): Promise<void> {
     const session = this.store.session(id);
-    this.store.updateInstance(
-      session,
-      {
-        ...session.instance,
-        config: {
-          ...session.instance.config,
-          pagination: { ...session.instance.config.pagination, size },
+    await this.queries.change(session.instance.id, () => {
+      this.store.updateInstance(
+        session,
+        {
+          ...session.instance,
+          config: {
+            ...session.instance.config,
+            pagination: { ...session.instance.config.pagination, size },
+          },
         },
-      },
-      { page: 1, cursor: null },
-    );
-    await this.queries.run(session.instance.id);
+        { page: 1, cursor: null },
+      );
+    });
   }
 
   async nextPage(id?: string): Promise<void> {
@@ -191,11 +199,12 @@ export class RecordEdits {
       return this.setPage(session.page + 1, session.instance.id);
     if (session.queryStatus !== 'success' || session.nextCursor === null)
       return;
-    this.store.patch(session.instance.id, {
-      page: session.page + 1,
-      cursor: session.nextCursor,
+    await this.queries.change(session.instance.id, () => {
+      this.store.patch(session.instance.id, {
+        page: session.page + 1,
+        cursor: session.nextCursor,
+      });
     });
-    await this.queries.run(session.instance.id);
   }
 
   setTitle(title: string, id?: string): void {
@@ -222,7 +231,6 @@ export class RecordEdits {
 
   async restore(id?: string): Promise<void> {
     const session = this.store.session(id);
-    this.summaries.invalidate(session.instance.id);
     const filters = session.baseline.config.filters;
     const filterDraft = filters;
     const definition = this.store.definition();
@@ -233,16 +241,21 @@ export class RecordEdits {
       this.store.filterCompilers,
       definition.timeZone,
     );
-    this.store.patch(session.instance.id, {
-      instance: session.baseline,
-      filterDraft,
-      filterBaseline: filterDraft,
-      filterValid: true,
-      appliedFilter: compiled.expression ?? null,
-      page: 1,
-      cursor: null,
-      writeError: session.requiresReload ? session.writeError : null,
-    });
-    await this.queries.run(session.instance.id);
+    await this.queries.change(
+      session.instance.id,
+      () => {
+        this.store.patch(session.instance.id, {
+          instance: session.baseline,
+          filterDraft,
+          filterBaseline: filterDraft,
+          filterValid: true,
+          appliedFilter: compiled.expression ?? null,
+          page: 1,
+          cursor: null,
+          writeError: session.requiresReload ? session.writeError : null,
+        });
+      },
+      true,
+    );
   }
 }

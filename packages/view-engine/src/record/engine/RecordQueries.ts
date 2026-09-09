@@ -60,16 +60,31 @@ export class RecordQueries {
       });
   }
 
-  /** Capture before a terminal notification; newer reads/cancellations own any follow-up. */
-  followUp(id: string, refresh = false): () => Promise<void> {
+  /** One boundary for a synchronous edit and its read; observers may submit newer work. */
+  async change(
+    id: string,
+    update: () => void,
+    invalidateSummary = false,
+  ): Promise<void> {
+    const current = this.captureIntent(id);
+    update();
+    if (!current()) return;
+    if (invalidateSummary) this.summaries.invalidate(id);
+    if (current()) await this.run(id);
+  }
+
+  private captureIntent(id: string): () => boolean {
     const intent = this.intents.get(id),
       lifecycle = this.scope.version;
+    return () =>
+      this.scope.current(lifecycle) && this.intents.get(id) === intent;
+  }
+
+  /** Automatic follow-ups additionally require the instance to remain selected. */
+  followUp(id: string, refresh = false): () => Promise<void> {
+    const current = this.captureIntent(id);
     return async () => {
-      if (
-        !this.scope.current(lifecycle) ||
-        this.intents.get(id) !== intent ||
-        this.store.getSnapshot().selectedInstanceId !== id
-      )
+      if (!current() || this.store.getSnapshot().selectedInstanceId !== id)
         return;
       await (refresh ? this.refresh(id) : this.run(id));
     };
@@ -230,9 +245,13 @@ export class RecordQueries {
       await this.run(session.instance.id, true);
       return;
     }
-    this.summaries.invalidate(session.instance.id);
-    if (session.instance.config.pagination.mode === 'cursor')
-      this.store.patch(session.instance.id, { page: 1, cursor: null });
-    await this.run(session.instance.id);
+    await this.change(
+      session.instance.id,
+      () => {
+        if (session.instance.config.pagination.mode === 'cursor')
+          this.store.patch(session.instance.id, { page: 1, cursor: null });
+      },
+      true,
+    );
   }
 }
