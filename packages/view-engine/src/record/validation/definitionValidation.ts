@@ -12,6 +12,7 @@
  */
 
 import { encodeViewResourceId } from '../viewServiceContract.js';
+import { validateTimeZone } from '../../lib/timeZone.js';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
   RECORD_SUMMARY_LABELS,
@@ -113,7 +114,7 @@ export function validateViewDefinition(
   assertPath(value.rowKey, '记录主键');
   if (value.timeZone !== undefined) {
     assertText(value.timeZone, '时区');
-    new Intl.DateTimeFormat('en', { timeZone: value.timeZone });
+    validateTimeZone(value.timeZone);
   }
   validateFields(value.fields);
   if (

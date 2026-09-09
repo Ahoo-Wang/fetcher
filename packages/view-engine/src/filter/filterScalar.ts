@@ -12,6 +12,7 @@
  */
 import type { FilterLiteral } from '@ahoo-wang/fetcher-wow';
 import { TZDate } from '@date-fns/tz';
+import { fixedTimeZoneOffset } from '../lib/timeZone.js';
 import type {
   FilterDateTimeValue,
   FilterFieldDefinition,
@@ -88,6 +89,13 @@ function datetime(value: unknown, timeZone?: string): number | undefined {
     Number(seconds),
     Number(fraction.padEnd(3, '0')),
   ];
+  const offset = fixedTimeZoneOffset(timeZone);
+  if (offset !== undefined) {
+    const date = new Date(0);
+    date.setUTCFullYear(parts[0], parts[1], parts[2]);
+    date.setUTCHours(parts[3], parts[4], parts[5], parts[6]);
+    return date.getTime() - offset * 60_000;
+  }
   const zoned = new TZDate(0, timeZone);
   zoned.setFullYear(parts[0], parts[1], parts[2]);
   zoned.setHours(parts[3], parts[4], parts[5], parts[6]);

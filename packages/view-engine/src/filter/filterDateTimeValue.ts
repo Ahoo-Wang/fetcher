@@ -12,6 +12,7 @@
  */
 
 import { TZDate } from '@date-fns/tz';
+import { fixedTimeZoneOffset } from '../lib/timeZone.js';
 import type { FilterDateTimeValue } from './filterModel.js';
 
 /** Keep incomplete/invalid input available for correction; discard only valid subsecond precision. */
@@ -60,14 +61,21 @@ export function dateTimeValue(
     return value as FilterDateTimeValue;
   if (typeof value === 'number' && Number.isFinite(value)) {
     try {
-      const date = timeZone ? new TZDate(value, timeZone) : new Date(value);
+      const offset = fixedTimeZoneOffset(timeZone);
+      const date =
+        offset !== undefined
+          ? new TZDate(value + offset * 60_000, 'UTC')
+          : timeZone
+            ? new TZDate(value, timeZone)
+            : new Date(value);
       if (Number.isFinite(date.getTime())) {
         const time = [date.getHours(), date.getMinutes(), date.getSeconds()]
           .map(part => String(part).padStart(2, '0'))
           .join(':');
         return {
           date: dateText(date),
-          offsetMinutes: date.getTimezoneOffset(),
+          offsetMinutes:
+            offset === undefined ? date.getTimezoneOffset() : -offset,
           time:
             time +
             (date.getMilliseconds()

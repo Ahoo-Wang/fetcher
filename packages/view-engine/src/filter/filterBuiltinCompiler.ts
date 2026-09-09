@@ -16,6 +16,7 @@ import {
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
 import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
+import { fixedTimeZoneOffset, validateTimeZone } from '../lib/timeZone.js';
 import type {
   FilterCompilerContext,
   FilterComponentProperties,
@@ -199,7 +200,7 @@ export function compileBuiltinFilter(
     typeof context.options.showTime !== 'boolean'
   )
     throw new TypeError('showTime 必须是布尔值');
-  new Intl.DateTimeFormat('en', { timeZone: context.timeZone });
+  validateTimeZone(context.timeZone);
   if (
     context.field?.type === 'datetime' &&
     !context.field.options &&
@@ -277,7 +278,9 @@ function compileCalendarDays(
   if (expression.op === Op.MATCH_ALL) return undefined;
   const bounds = (value: unknown): [number, number] => {
     const [year, month, day] = String(value).split('-').map(Number);
-    const start = new TZDate(0, context.timeZone);
+    const offset = fixedTimeZoneOffset(context.timeZone);
+    const timeZone = offset === undefined ? context.timeZone : 'UTC';
+    const start = new TZDate(0, timeZone);
     start.setFullYear(year, month - 1, day);
     start.setHours(0, 0, 0, 0);
     if (
@@ -286,10 +289,11 @@ function compileCalendarDays(
       start.getDate() !== day
     )
       throw new TypeError('日期在指定时区不存在');
-    const next = new TZDate(start.getTime(), context.timeZone);
+    const next = new TZDate(start.getTime(), timeZone);
     next.setDate(next.getDate() + 1);
     next.setHours(0, 0, 0, 0);
-    return [start.getTime(), next.getTime() - 1];
+    const shift = (offset ?? 0) * 60_000;
+    return [start.getTime() - shift, next.getTime() - shift - 1];
   };
   if ('value' in expression) {
     if (expression.value === null) return expression;

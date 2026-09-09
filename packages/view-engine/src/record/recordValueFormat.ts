@@ -12,6 +12,7 @@
  */
 
 import { scalar } from '../filter/filterScalar.js';
+import { fixedTimeZoneOffset } from '../lib/timeZone.js';
 import { formatRecordNumber, type ViewFieldDefinition } from './recordModel.js';
 
 export type RecordDateTimeFormat = Pick<
@@ -25,8 +26,9 @@ export function formatRecordDateTime(
   format: RecordDateTimeFormat = {},
 ): string {
   // Validate configuration even when this row has no value.
+  const offset = fixedTimeZoneOffset(timeZone);
   const formatter = new Intl.DateTimeFormat(format.locale ?? 'zh-CN', {
-    timeZone,
+    timeZone: offset === undefined ? timeZone : 'UTC',
     dateStyle: format.dateStyle ?? 'medium',
     ...(type === 'datetime' ? { timeStyle: format.timeStyle ?? 'medium' } : {}),
   });
@@ -62,7 +64,14 @@ export function formatRecordDateTime(
   } catch {
     return '—';
   }
-  return Number.isFinite(date.getTime()) ? formatter.format(date) : '—';
+  const timestamp = date.getTime() + (offset ?? 0) * 60_000;
+  if (!Number.isFinite(new Date(timestamp).getTime())) return '—';
+  if (offset === undefined) return formatter.format(timestamp);
+  const zone = `GMT${offset < 0 ? '-' : '+'}${String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0')}:${String(Math.abs(offset) % 60).padStart(2, '0')}`;
+  return formatter
+    .formatToParts(timestamp)
+    .map(part => (part.type === 'timeZoneName' ? zone : part.value))
+    .join('');
 }
 export function recordValueText(value: unknown): string {
   if (value === null || value === undefined) return '';

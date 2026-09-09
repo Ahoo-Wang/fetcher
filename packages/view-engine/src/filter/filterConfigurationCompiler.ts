@@ -17,6 +17,7 @@ import {
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
 import { copy } from '../lib/snapshot.js';
+import { validateTimeZone } from '../lib/timeZone.js';
 import type { DeepReadonly } from '../lib/types.js';
 import type {
   FilterCompileResult,
@@ -104,7 +105,7 @@ export function compileFilterConfiguration(
   const errors: FilterValidationError[] = [];
   try {
     validateFilterConfiguration(config);
-    new Intl.DateTimeFormat('en', { timeZone });
+    validateTimeZone(timeZone);
   } catch (error) {
     return {
       errors: [
