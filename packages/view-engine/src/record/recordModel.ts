@@ -206,6 +206,8 @@ export interface ViewEngineState {
   readonly instanceIds: readonly string[];
   readonly selectedInstanceId: string | null;
   readonly sessions: Readonly<Record<string, RecordSession>>;
+  /** Local recovery contexts whose source is absent from the authoritative instance list. */
+  readonly pendingCreates: Readonly<Record<string, RecordSession>>;
 }
 export const RECORD_COLUMN_MIN_WIDTH = 64;
 export const RECORD_COLUMN_MAX_WIDTH = 960;

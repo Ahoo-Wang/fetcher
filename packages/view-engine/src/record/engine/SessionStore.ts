@@ -32,6 +32,7 @@ export class SessionStore {
     instanceIds: [],
     selectedInstanceId: null,
     sessions: Object.create(null),
+    pendingCreates: Object.create(null),
   });
   private readonly listeners = new Set<() => void>();
   constructor(
@@ -60,12 +61,13 @@ export class SessionStore {
   }
 
   patch(id: string, patch: Partial<RecordSession>): void {
-    const session = this.find(id);
+    const session = this.find(id) ?? this.findPendingCreate(id);
+    const target = this.find(id) ? 'sessions' : 'pendingCreates';
     const definition = this.state.definition;
     if (!session || !definition || this.scope.disposed) return;
     this.publish({
-      sessions: {
-        ...this.state.sessions,
+      [target]: {
+        ...this.state[target],
         [id]: deriveSession(
           { ...session, ...patch },
           definition,
@@ -82,6 +84,12 @@ export class SessionStore {
       : undefined;
   }
 
+  findPendingCreate(id: string): RecordSession | undefined {
+    return Object.prototype.hasOwnProperty.call(this.state.pendingCreates, id)
+      ? this.state.pendingCreates[id]
+      : undefined;
+  }
+
   definition(): NonNullable<ViewEngineState['definition']> {
     this.scope.assertReady();
     if (!this.state.definition) throw new Error('视图定义尚未加载');
@@ -93,6 +101,22 @@ export class SessionStore {
     if (id === null || !this.find(id))
       throw new Error('请先选择有效的视图实例');
     return this.find(id)!;
+  }
+
+  sessionForReload(id = this.state.selectedInstanceId): RecordSession {
+    this.scope.assertReady();
+    const session =
+      id === null ? undefined : (this.find(id) ?? this.findPendingCreate(id));
+    if (!session) throw new Error('请先选择有效的视图实例');
+    return session;
+  }
+
+  clearPendingCreate(id: string): void {
+    if (!Object.prototype.hasOwnProperty.call(this.state.pendingCreates, id))
+      return;
+    const pendingCreates = { ...this.state.pendingCreates };
+    delete pendingCreates[id];
+    this.publish({ pendingCreates });
   }
 
   updateInstance(

@@ -50,7 +50,7 @@ it('reconciles a changed create echo by reading the created ID and preserving bo
   expect(selected(engine)).toMatchObject({
     baseline: persisted,
     dirty: true,
-    instance: { title: 'My copy', scope: { type: 'personal' }, revision: 'r2' },
+    instance: { title: 'My copy', scope: persisted.scope, revision: 'r2' },
     filterDraft: draft,
     filterPending: true,
   });

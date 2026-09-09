@@ -153,7 +153,12 @@ export class ViewEngine {
     const value: ViewCapabilities = freeze({
       reorder: this.canReorderInstances(),
       instances: Object.fromEntries(
-        state.instanceIds.map(id => [
+        [
+          ...new Set([
+            ...state.instanceIds,
+            ...Object.keys(state.pendingCreates),
+          ]),
+        ].map(id => [
           id,
           {
             permissions: this.getPermissions(id),

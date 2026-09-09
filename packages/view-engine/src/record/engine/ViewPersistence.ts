@@ -123,6 +123,7 @@ export class ViewPersistence {
           requestId: crypto.randomUUID(),
           submitted,
           knownIds,
+          source: session,
         };
         this.work.createRequests.set(id, request);
         try {
@@ -146,6 +147,7 @@ export class ViewPersistence {
             // A rejected retry says nothing about an earlier uncertain attempt.
             // Full load may have preserved this original request while it was pending.
             this.work.finishCreate(id);
+            this.store.clearPendingCreate(id);
             if (this.store.find(id)?.requiresReload)
               this.store.patch(id, { requiresReload: false, writeError: null });
           }
@@ -205,6 +207,14 @@ export class ViewPersistence {
               definition,
               this.store.filterCompilers,
             );
+        }
+        if (this.work.deletedInstances.has(saved.id)) {
+          this.store.patch(id, {
+            writeStatus: 'idle',
+            writeError: null,
+            requiresReload: false,
+          });
+          return;
         }
         this.store.publish({
           instanceIds: [

@@ -121,6 +121,33 @@ export function isSystemSession(session: RecordSession): boolean {
   );
 }
 
+/** Server metadata is authoritative; only locally editable content survives a reload. */
+export function rebaseSession(
+  baseline: ViewInstance,
+  latest: RecordSession,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
+): RecordSession {
+  if (!latest.dirty && !latest.filterPending && !latest.requiresReload)
+    return createSession(baseline, definition, compilers);
+  return deriveSession(
+    {
+      ...latest,
+      baseline,
+      instance: {
+        ...baseline,
+        title: latest.instance.title,
+        config: latest.instance.config,
+      },
+      writeError: null,
+      requiresReload: false,
+    },
+    definition,
+    compilers,
+    latest,
+  );
+}
+
 /** A new copy carries the originating editor state without confusing its saved baseline. */
 export function inheritEditingSession(
   baseline: ViewInstance,

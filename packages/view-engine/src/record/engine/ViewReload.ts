@@ -23,7 +23,7 @@ import type { InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
 import { copy, message } from './recordSnapshot.js';
 import {
-  createSession,
+  rebaseSession,
   inheritEditingSession,
   instanceContent,
 } from './sessionState.js';
@@ -39,7 +39,12 @@ export class ViewReload {
   ) {}
 
   canReloadInstance(id = this.store.getSnapshot().selectedInstanceId): boolean {
-    if (this.scope.disposed || !id || !this.store.find(id)) return false;
+    if (
+      this.scope.disposed ||
+      !id ||
+      !(this.store.find(id) ?? this.store.findPendingCreate(id))
+    )
+      return false;
     const pending = this.work.unverifiedCreates.get(id);
     return pending
       ? Boolean(
@@ -51,7 +56,7 @@ export class ViewReload {
   }
 
   async reloadInstance(id?: string): Promise<void> {
-    const session = this.store.session(id);
+    const session = this.store.sessionForReload(id);
     id = session.instance.id;
     const lifecycle = this.scope.version;
     const definition = this.store.definition();
@@ -61,6 +66,9 @@ export class ViewReload {
     const selection = this.scope.selection;
     try {
       const unverified = this.work.unverifiedCreates.get(id);
+      const existingBaseline = unverified?.id
+        ? this.store.find(unverified.id)?.baseline
+        : undefined;
       if (!this.canReloadInstance(id))
         throw new Error(
           '宿主未提供 instance.load 或 instance.list，无法重新加载',
@@ -146,7 +154,7 @@ export class ViewReload {
       );
       const baseline = copy(result);
       this.work.unverifiedDeletes.delete(id);
-      const latest = this.store.session(id);
+      const latest = this.store.sessionForReload(id);
       if (unverified) {
         if (unverified.knownIds.has(baseline.id))
           throw new Error('另存结果没有新的实例 ID，仍需核对');
@@ -164,10 +172,28 @@ export class ViewReload {
             this.scope.selection === navigation &&
             this.store.getSnapshot().selectedInstanceId === id;
         }
-        const source = this.store.session(id);
+        const source = this.store.sessionForReload(id);
+        const existing = this.store.find(baseline.id);
+        if (this.work.deletedInstances.has(baseline.id)) {
+          this.work.finishCreate(id);
+          this.store.clearPendingCreate(id);
+          this.store.patch(id, { writeError: null, requiresReload: false });
+          return;
+        }
         // Abort observers may have opened or edited the copy or the source.
         const created =
-          this.store.find(baseline.id) ??
+          (existing
+            ? existing.baseline === existingBaseline &&
+              existing.writeStatus === 'idle' &&
+              !existing.requiresReload
+              ? rebaseSession(
+                  baseline,
+                  existing,
+                  definition,
+                  this.store.filterCompilers,
+                )
+              : existing
+            : undefined) ??
           inheritEditingSession(
             baseline,
             source,
@@ -176,7 +202,6 @@ export class ViewReload {
             {
               ...baseline,
               title: unverified.submitted.title,
-              scope: unverified.submitted.scope,
               config: source.instance.config,
             },
           );
@@ -186,13 +211,18 @@ export class ViewReload {
         )
           queryId = baseline.id;
         this.work.finishCreate(id);
+        const pendingCreates = { ...this.store.getSnapshot().pendingCreates };
+        delete pendingCreates[id];
         this.store.publish({
+          pendingCreates,
           instanceIds: [
             ...new Set([...this.store.getSnapshot().instanceIds, baseline.id]),
           ],
           sessions: {
             ...this.store.getSnapshot().sessions,
-            [id]: { ...source, writeError: null, requiresReload: false },
+            ...(this.store.find(id)
+              ? { [id]: { ...source, writeError: null, requiresReload: false } }
+              : {}),
             [baseline.id]: created,
           },
           ...(selectCopy
@@ -200,22 +230,15 @@ export class ViewReload {
             : {}),
         });
       } else {
-        const next =
-          latest.dirty || latest.filterPending || latest.requiresReload
-            ? {
-                ...latest,
-                baseline,
-                instance: {
-                  ...baseline,
-                  title: latest.instance.title,
-                  scope: latest.instance.scope,
-                  config: latest.instance.config,
-                },
-                writeError: null,
-                requiresReload: false,
-              }
-            : createSession(baseline, definition, this.store.filterCompilers);
-        this.store.patch(id, next);
+        this.store.patch(
+          id,
+          rebaseSession(
+            baseline,
+            latest,
+            definition,
+            this.store.filterCompilers,
+          ),
+        );
       }
     } catch (error) {
       if (

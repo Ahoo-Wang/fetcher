@@ -196,6 +196,7 @@ export class ViewManagement {
       dispatched = true;
       await this.host.instance!.delete!(id, session.baseline.revision);
       if (!current()) return;
+      this.work.deletedInstances.add(id);
       this.work.unverifiedDeletes.delete(id);
       this.queries.cancel(id);
       this.summaries.invalidate(id);

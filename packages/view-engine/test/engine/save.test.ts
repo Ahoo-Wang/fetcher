@@ -198,7 +198,7 @@ it('does not let a host mutate the write request to validate a changed echo', as
   });
 });
 
-it('reload preserves the local scope against a changed server baseline', async () => {
+it('reload adopts server scope while preserving locally editable content', async () => {
   const saveInstance = vi.fn(async (value: ViewInstance) => ({
     ...value,
     revision: 'r10',
@@ -221,13 +221,16 @@ it('reload preserves the local scope against a changed server baseline', async (
   expect(selected(engine)).toMatchObject({
     dirty: true,
     instance: {
-      scope: { type: 'personal' },
+      scope: { type: 'public', source: 'shared' },
       title: 'My draft',
       revision: 'r9',
     },
     baseline: { scope: { type: 'public', source: 'shared' }, revision: 'r9' },
   });
   await engine.save();
-  expect(saveInstance.mock.calls[0][0].scope).toEqual({ type: 'personal' });
+  expect(saveInstance.mock.calls[0][0].scope).toEqual({
+    type: 'public',
+    source: 'shared',
+  });
   engine.dispose();
 });

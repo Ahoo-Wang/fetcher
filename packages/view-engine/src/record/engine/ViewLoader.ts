@@ -16,7 +16,9 @@ import type {
   ViewDefinition,
   ViewInstanceList,
   ViewEngineOptions,
+  ViewInstance,
 } from '../recordModel.js';
+import { cloneSnapshot } from '../../lib/types.js';
 import type { ViewHost } from '../ViewHost.js';
 import {
   validateViewDefinition,
@@ -29,7 +31,7 @@ import type { InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
 import type { RecordSummaries } from './RecordSummaries.js';
 import { copy, message } from './recordSnapshot.js';
-import { createSession } from './sessionState.js';
+import { createSession, inheritEditingSession } from './sessionState.js';
 
 /** Loads definitions/instances and owns navigation intent independently of record queries. */
 export class ViewLoader {
@@ -70,7 +72,10 @@ export class ViewLoader {
     const lifecycle = this.scope.restart();
     if (!this.scope.current(lifecycle)) return;
     // Reloading cannot prove whether an already dispatched creation committed.
-    this.work.preserveCreates();
+    this.work.preserveCreates({
+      ...this.store.getSnapshot().pendingCreates,
+      ...this.store.getSnapshot().sessions,
+    });
     this.work.unverifiedDeletes.clear();
     this.loadController?.abort();
     if (!this.scope.current(lifecycle)) return;
@@ -120,7 +125,9 @@ export class ViewLoader {
         throw new Error('返回的视图定义 ID 不匹配');
       const instances = readInstanceList(list, definition);
       const sessions: Record<string, RecordSession> = Object.create(null);
+      const pendingCreates: Record<string, RecordSession> = Object.create(null);
       for (const instance of instances) {
+        this.work.deletedInstances.delete(instance.id);
         sessions[instance.id] = {
           ...createSession(
             copy(instance),
@@ -132,6 +139,36 @@ export class ViewLoader {
             ? '另存结果尚未核对，请重新加载核对'
             : null,
         };
+      }
+      for (const [id, request] of this.work.createRequests) {
+        if (!this.work.unverifiedCreates.has(id)) continue;
+        const loaded = sessions[id];
+        const restored = createSession(
+          cloneSnapshot<ViewInstance>(request.source.instance),
+          definition,
+          this.store.filterCompilers,
+        );
+        const recovery = {
+          ...inheritEditingSession(
+            cloneSnapshot<ViewInstance>(
+              loaded?.baseline ?? request.source.baseline,
+            ),
+            { ...request.source, appliedFilter: restored.appliedFilter },
+            definition,
+            this.store.filterCompilers,
+            {
+              ...(loaded?.instance ?? request.source.instance),
+              title: request.source.instance.title,
+              config: request.source.instance.config,
+            },
+          ),
+          requiresReload: true,
+          writeError: loaded
+            ? '另存结果尚未核对，请重新加载核对'
+            : '原视图已不在当前列表，另存结果仍需核对',
+        };
+        if (loaded) sessions[id] = recovery;
+        else pendingCreates[id] = recovery;
       }
       if (
         typeof list.defaultInstanceId === 'string' &&
@@ -146,6 +183,7 @@ export class ViewLoader {
         instanceIds: instances.map(instance => instance.id),
         selectedInstanceId: defaultId,
         sessions,
+        pendingCreates,
       });
     } catch (error) {
       if (!this.scope.current(lifecycle)) return;
@@ -165,6 +203,13 @@ export class ViewLoader {
 
   async selectInstance(id: string): Promise<void> {
     const definition = this.store.definition();
+    if (
+      Object.prototype.hasOwnProperty.call(
+        this.store.getSnapshot().pendingCreates,
+        id,
+      )
+    )
+      throw new Error('另存结果待核对，请先重新加载核对');
     const lifecycle = this.scope.version;
     const { selection, controller } = this.scope.beginSelection();
     const current = () =>

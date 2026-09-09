@@ -26,12 +26,15 @@ export function hasUnknownWriteOutcome(error: unknown): boolean {
 /** Per-instance coordination between durable writes and reload/reconciliation. */
 export class InstanceWork {
   ordering?: symbol;
+  /** Confirmed local deletions must win over older creation receipts. */
+  readonly deletedInstances = new Set<string>();
   readonly createRequests = new Map<
     string,
     {
       requestId: string;
       submitted: ViewInstance;
       knownIds: ReadonlySet<string>;
+      source: RecordSession;
     }
   >();
   readonly writes = new Map<string, symbol>();
@@ -51,8 +54,10 @@ export class InstanceWork {
     this.createRequests.delete(id);
   }
 
-  preserveCreates(): void {
+  preserveCreates(sessions: Readonly<Record<string, RecordSession>>): void {
     for (const [id, request] of this.createRequests) {
+      if (Object.prototype.hasOwnProperty.call(sessions, id))
+        request.source = sessions[id];
       if (!this.unverifiedCreates.has(id))
         this.unverifiedCreates.set(id, {
           id: null,
@@ -78,6 +83,7 @@ export class InstanceWork {
 
   dispose(): void {
     this.ordering = undefined;
+    this.deletedInstances.clear();
     this.cancelReloads();
     this.unverifiedCreates.clear();
     this.createRequests.clear();

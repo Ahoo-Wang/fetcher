@@ -471,7 +471,8 @@ resurrects deleted IDs. The host must validate current-user access and persist
 these preferences under that user's identity, including for public/system views.
 
 Local input uses `new ViewEngine({definitionId,host,definition,instances,filterCompilers})`. Optional `filterCompilers` supplies the React-independent capabilities for this directly owned engine; keep them consistent throughout the engine scope. `ViewPage` does not accept this option and derives the same capabilities solely from `extensions.filters`. Unknown saved components remain in configuration and block queries until their compiler is available.
-An empty list or absent/unknown default leaves selection empty without a query.
+An empty list with `defaultInstanceId: null` leaves selection empty without a query.
+Omitting `defaultInstanceId` or naming an ID absent from the list is rejected.
 A foreign instance is rejected. Explicit selection loads an unknown instance
 through `instance.load` and validates its definition before querying.
 
@@ -513,6 +514,9 @@ accept readonly inputs.
 Methods with an optional instance ID default to the selected instance:
 
 - `load()`, `selectInstance(id)`, `reloadInstance(id?)`, `canReloadInstance(id?)`, `refresh(id?, {background?: boolean})`, `retryQuery(id?)`, `dispose()`. Full `load()` rejects while save/rename/delete or preference ordering is in flight, preserving ownership of its receipt. Commands that read or edit sessions are rejected from load cancellation through metadata initialization; snapshots remain readable. This also blocks reads reentered from cancellation callbacks from capturing an old schema with the new lifecycle. `retryQuery` re-runs the current applied query at its existing page/cursor; explicit `refresh` still restarts cursor pagination at page one. Ordinary instance reload can use `instance.list` with an exact ID match when `instance.load` is absent; local edits remain intact.
+
+Reload keeps editable title/configuration and filter drafts, but always adopts the returned authoritative `scope`. If an unconfirmed creation's source disappears from the full instance list, `ViewEngineState.pendingCreates` retains its immutable editor context under the source ID, without rows or summaries. These entries are separate from visible `instanceIds`/`sessions`: ordinary query, edit, selection and save commands cannot use them. `canReloadInstance(sourceId)` and `reloadInstance(sourceId)` still reconcile the original create request under current host permissions. `ViewPageContent` displays a scoped recovery entry. Validated recovery removes that entry and adds the created view; a confirmed deletion of that copy wins over an older creation receipt, and reconciliation preserves independently updated baselines or pending/unknown writes on an already opened copy; a definitive rejection of the original request removes the entry without creating a view. This context is engine-lifetime state and is not serialized as view configuration.
+
 - `applyFilter(expression?,id?)`, `setFilterDraft(draft,id?,valid?)`,
   `setFilterValidity(valid,id?)`, `setFilterMode(mode,id?)`.
 - `setSort(sort,id?)`, `setColumns(columns,id?)`, `setPage(index,id?)`,

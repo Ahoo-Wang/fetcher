@@ -184,6 +184,27 @@ export function ViewPageContent({
           className="fve:flex fve:min-w-0 fve:flex-1 fve:flex-col fve:gap-3"
         >
           {!session && <header>{toolbarStart}</header>}
+          {Object.entries(state.pendingCreates).map(([sourceId, pending]) => (
+            <div
+              key={sourceId}
+              role="alert"
+              aria-label={`待核对另存：${pending.instance.title}`}
+              className="fve:flex fve:flex-wrap fve:items-center fve:gap-2 fve:rounded-lg fve:border fve:p-3 fve:text-sm"
+            >
+              <span>
+                {pending.instance.title}：{pending.writeError}
+              </span>
+              <Button
+                variant="outline"
+                disabled={!capabilities.instances[sourceId]?.reload}
+                onClick={() => {
+                  void engine.reloadInstance(sourceId).catch(() => {});
+                }}
+              >
+                核对另存结果
+              </Button>
+            </div>
+          ))}
           {(state.error || currentActionError || session?.writeError) && (
             <div
               role="alert"
