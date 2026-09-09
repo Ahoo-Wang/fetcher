@@ -104,6 +104,10 @@ it('resets cursor position on filter, sort, size and refresh and exposes no prev
       defaultInstanceId: 'mine',
     },
   });
+  cursor.mockImplementation(async query => ({
+    list: [{ state: { id: 'a' } }],
+    nextCursor: query.cursor === null ? 'next' : null,
+  }));
   await engine.load();
   expect(cursor.mock.calls[0][0]).toEqual({
     filter: { op: 'MATCH_ALL' },

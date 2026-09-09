@@ -269,6 +269,57 @@ it('retains creation identity when a full load overlaps the original response', 
   expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(false);
 });
 
+it.each(['loading', 'loaded'] as const)(
+  'clears a definitively rejected original create after the source is %s again',
+  async timing => {
+    const host = service();
+    const response = deferred<ViewInstance>();
+    const listing = deferred<Awaited<ReturnType<typeof host.instance.list>>>();
+    let blockListing = false;
+    const create = vi.fn(
+      (
+        input: Omit<ViewInstance, 'id' | 'revision'>,
+        context: ViewCreateContext,
+      ) =>
+        create.mock.calls.length === 1
+          ? response.promise
+          : host.instance.create(input, context),
+    );
+    const engine = engineFor({
+      ...host,
+      instance: {
+        ...host.instance,
+        create,
+        list: (id, signal) =>
+          blockListing ? listing.promise : host.instance.list(id, signal),
+      },
+      resolveSource: id => host.resolveSource(id),
+    });
+    await engine.load();
+    const saving = engine.saveAs(copyOptions);
+    await vi.waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+    blockListing = timing === 'loading';
+    const reloading = engine.load();
+    if (timing === 'loaded') {
+      await reloading;
+      expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(true);
+    }
+    response.reject(new ViewServiceError('FORBIDDEN', 'create denied'));
+    await saving;
+    blockListing = false;
+    listing.resolve(await host.instance.list(definition.id));
+    await reloading;
+    expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(false);
+    expect(engine.getSnapshot().sessions.mine.writeError).toBeNull();
+    await engine.saveAs({ ...copyOptions, title: 'Allowed copy' });
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create.mock.calls[1][1].requestId).not.toBe(
+      create.mock.calls[0][1].requestId,
+    );
+    expect((await host.instance.list(definition.id)).instances).toHaveLength(2);
+  },
+);
+
 it('preserves edits to an existing copy made by synchronous query-cancellation observers', async () => {
   const host = service();
   const pending = deferred<{ list: never[]; total: number }>(),

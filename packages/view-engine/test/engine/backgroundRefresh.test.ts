@@ -101,6 +101,10 @@ it('does not refresh selected records, pending filters or a later cursor page', 
       defaultInstanceId: 'mine',
     },
   });
+  cursorView.cursor.mockImplementation(async query => ({
+    list: [{ state: { id: 'a' } }],
+    nextCursor: query.cursor === null ? 'next' : null,
+  }));
   await cursorView.engine.load();
   await cursorView.engine.nextPage();
   await cursorView.engine.refresh(undefined, { background: true });

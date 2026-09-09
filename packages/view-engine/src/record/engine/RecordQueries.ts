@@ -24,6 +24,7 @@ import { copy, message } from './recordSnapshot.js';
 /** Owns record reads; pagination and UI edits only submit explicit query commands. */
 export class RecordQueries {
   private readonly queries = new Map<string, AbortController>();
+  private readonly consumedCursors = new Map<string, Set<string>>();
   constructor(
     private readonly store: SessionStore,
     private readonly scope: EngineScope,
@@ -33,6 +34,7 @@ export class RecordQueries {
   reset(): void {
     this.queries.forEach(controller => controller.abort());
     this.queries.clear();
+    this.consumedCursors.clear();
     this.summaries.reset();
   }
 
@@ -122,6 +124,7 @@ export class RecordQueries {
       validateRecordRows(result.list, definition.rowKey);
       let total: number | null = null;
       let nextCursor: string | null = null;
+      let consumedCursors: Set<string> | undefined;
       if (pagination.mode === 'paged') {
         if (
           !('total' in result) ||
@@ -138,11 +141,25 @@ export class RecordQueries {
         )
           throw new Error('查询结果 nextCursor 必须是非空字符串或 null');
         nextCursor = result.nextCursor;
+        consumedCursors =
+          session.cursor === null
+            ? new Set<string>()
+            : (this.consumedCursors.get(id) ?? new Set<string>());
+        if (
+          nextCursor !== null &&
+          (nextCursor === session.cursor || consumedCursors.has(nextCursor))
+        )
+          throw new Error('查询结果返回了重复分页游标');
       }
       if (background) this.summaries.invalidate(id);
       if (!current()) return;
+      const rows = copy(result.list);
+      if (consumedCursors) {
+        if (session.cursor !== null) consumedCursors.add(session.cursor);
+        this.consumedCursors.set(id, consumedCursors);
+      }
       this.store.patch(id, {
-        rows: copy(result.list),
+        rows,
         refreshing: false,
         total,
         nextCursor,

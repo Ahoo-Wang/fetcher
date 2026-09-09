@@ -20,6 +20,10 @@ import {
 
 type ViewExpansion = { expanded: boolean; toggle(): void };
 export const ViewExpansionContext = createContext<ViewExpansion | null>(null);
+const scrollLocks = new WeakMap<
+  Document,
+  { count: number; overflow: string; priority: string }
+>();
 
 /** Expand in place so editors, selection, navigation and portal content keep their owners. */
 export function useViewExpansion(
@@ -31,9 +35,18 @@ export function useViewExpansion(
     const element = target.current;
     if (!expanded || !enabled || !element) return;
     const doc = element.ownerDocument;
-    const previousOverflow = doc.body.style.overflow;
+    const style = doc.body.style;
+    const lock = scrollLocks.get(doc) ?? {
+      count: 0,
+      overflow: style.getPropertyValue('overflow'),
+      priority: style.getPropertyPriority('overflow'),
+    };
+    if (lock.count === 0) {
+      scrollLocks.set(doc, lock);
+      style.setProperty('overflow', 'hidden');
+    }
+    lock.count += 1;
     element.setAttribute('data-view-expanded', 'true');
-    doc.body.style.setProperty('overflow', 'hidden');
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
       if (
@@ -51,7 +64,11 @@ export function useViewExpansion(
     doc.addEventListener('keydown', onKeyDown);
     return () => {
       element.removeAttribute('data-view-expanded');
-      doc.body.style.setProperty('overflow', previousOverflow);
+      lock.count -= 1;
+      if (lock.count === 0) {
+        style.setProperty('overflow', lock.overflow, lock.priority);
+        scrollLocks.delete(doc);
+      }
       doc.removeEventListener('keydown', onKeyDown);
     };
   }, [target, expanded, enabled]);

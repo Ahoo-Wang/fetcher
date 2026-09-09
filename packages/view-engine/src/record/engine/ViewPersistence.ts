@@ -139,9 +139,15 @@ export class ViewPersistence {
                 submitted,
                 knownIds,
               });
-          } else if (!this.work.unverifiedCreates.has(id)) {
+          } else if (
+            !previous &&
+            this.work.createRequests.get(id) === request
+          ) {
             // A rejected retry says nothing about an earlier uncertain attempt.
+            // Full load may have preserved this original request while it was pending.
             this.work.finishCreate(id);
+            if (this.store.find(id)?.requiresReload)
+              this.store.patch(id, { requiresReload: false, writeError: null });
           }
           throw error;
         }
