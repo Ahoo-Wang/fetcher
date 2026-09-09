@@ -24,7 +24,7 @@ import displayMeta, {
   ResponsiveColumns as DisplayResponsiveColumns,
   ThemeSwitching as DisplayThemeSwitching,
 } from './Layout.stories.js';
-import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
+import type { Story } from './demoTypes.js';
 
 const meta = {
   ...displayMeta,
@@ -33,8 +33,6 @@ const meta = {
 };
 
 export default meta;
-
-type Story = RegressionStoryObj<typeof displayMeta>;
 
 export const CompactWorkbench: Story = {
   ...DisplayCompactWorkbench,

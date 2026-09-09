@@ -66,7 +66,7 @@ export const playBusinessRecords: RecordViewPlay = async ({
   );
   await expect(canvas.getByRole('button', { name: /批量处理/ })).toBeDisabled();
   await expect(canvas.getByTestId('record-query')).toHaveTextContent(
-    '"field": "amount"',
+    '"field": "state.totalAmount"',
   );
   await userEvent.click(
     canvas.getByRole('checkbox', { name: '选择记录 ORD-202609-1009' }),

@@ -13,9 +13,12 @@
 
 import { useMemo, useState } from 'react';
 import type { AggregationQuery } from '@ahoo-wang/fetcher-wow';
+import { readRecordValue } from '@ahoo-wang/fetcher-view-engine';
 import {
   Button,
+  TagsCell,
   ViewPage,
+  type CellRendererProps,
   type GlobalActionsRendererProps,
   type RowActionsRendererProps,
   type ViewExtensions,
@@ -26,8 +29,28 @@ import type {
   QueryDiagnostic,
   WriteDiagnostic,
 } from './demoTypes.js';
-import { definition } from './fixtures.js';
+import { currentUserId, definition, orders } from './fixtures.js';
 import { createHost } from './createHost.js';
+
+function OrderItems({ value }: CellRendererProps) {
+  const labels = Array.isArray(value)
+    ? value.map((item: unknown) => {
+        if (
+          typeof item !== 'object' ||
+          item === null ||
+          !('productName' in item) ||
+          typeof item.productName !== 'string' ||
+          !('quantity' in item) ||
+          typeof item.quantity !== 'number'
+        )
+          return '—';
+        return `${item.productName} × ${item.quantity}`;
+      })
+    : [];
+  return <TagsCell value={labels} />;
+}
+
+export const orderCells = { 'order-items': OrderItems };
 
 function OrderActions({
   selectedRowKeys,
@@ -58,7 +81,9 @@ function OrderActions({
     <Button
       disabled={querying || busy}
       onClick={() =>
-        void run(() => `已创建订单 ${runtime.createOrder().id}，列表已刷新。`)
+        void run(
+          () => `已创建订单 ${runtime.createOrder().aggregateId}，列表已刷新。`,
+        )
       }
     >
       创建订单
@@ -66,11 +91,12 @@ function OrderActions({
   ) : (
     <Button
       variant="outline"
+      title="开始处理选中的待处理订单"
       disabled={querying || busy || !selectedRowKeys.length}
       onClick={() =>
         void run(() => {
-          runtime.processOrders(selectedRowKeys);
-          return `已处理 ${selectedRowKeys.length} 笔订单，列表已刷新。`;
+          const processed = runtime.processOrders(selectedRowKeys);
+          return `已处理 ${processed} 笔订单，列表已刷新。`;
         })
       }
     >
@@ -126,6 +152,7 @@ export function Scenario({
   );
   const extensions = useMemo<ViewExtensions>(
     () => ({
+      cells: orderCells,
       optionSources: { customers: runtime.customerOptions },
       globalActions: {
         'order-actions': props => (
@@ -159,7 +186,7 @@ export function Scenario({
             aria-label={`查看订单 ${rowKey}`}
             onClick={() =>
               setNotice(
-                `订单 ${rowKey} · ${record.customer} · 负责人 ${record.owner} · ${record.region} · 当前视图：${instance.title}`,
+                `订单 ${rowKey} · ${readRecordValue(record, 'state.customer')} · 负责人 ${readRecordValue(record, 'state.owner')} · ${readRecordValue(record, 'state.region')} · 当前视图：${instance.title}`,
               )
             }
           >
@@ -180,7 +207,7 @@ export function Scenario({
       }}
     >
       <ViewPage
-        scopeKey="storybook-user"
+        scopeKey={currentUserId}
         definitionId={definition.id}
         host={runtime.host}
         definition={options.local ? definition : undefined}
@@ -206,7 +233,12 @@ export function Scenario({
         <summary>开发者：查看宿主查询与保存结果</summary>
         <p>
           当前场景使用隔离的内存宿主。筛选、排序和分页在宿主执行；保存校验
-          revision 并返回完整实例。
+          revision 并返回完整实例。 订单查询返回 Wow MaterializedSnapshot，根层
+          aggregateId 作为行标识，state
+          保存业务数据。金额单位为人民币元，订单金额等于商品小计之和，实付金额包含未付、部分支付与付清场景。
+          下单时间取 firstEventTime，支付时间取 state.paidAt（未支付为
+          null），均使用毫秒时间戳。 firstOperator 和 operator 保留 userId，字段
+          options 提供姓名映射；查询与保存仍使用 ID。
         </p>
         <p>
           查询次数：
@@ -248,6 +280,15 @@ export function Scenario({
         >
           {JSON.stringify(summary.request, null, 2)}
         </pre>
+        <details>
+          <summary>查看初始订单快照（Wow）</summary>
+          <pre
+            data-testid="record-snapshot-example"
+            style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+          >
+            {JSON.stringify(orders[0], null, 2)}
+          </pre>
+        </details>
       </details>
     </div>
   );

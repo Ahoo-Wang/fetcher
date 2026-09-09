@@ -15,7 +15,7 @@ import '@ahoo-wang/fetcher-view-engine/styles.css';
 import displayMeta, {
   LocalDefinitions as DisplayLocalDefinitions,
 } from './LocalExtensions.stories.js';
-import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
+import type { Story } from './demoTypes.js';
 
 const meta = {
   ...displayMeta,
@@ -24,8 +24,6 @@ const meta = {
 };
 
 export default meta;
-
-type Story = RegressionStoryObj<typeof displayMeta>;
 
 export const LocalDefinitions: Story = {
   ...DisplayLocalDefinitions,

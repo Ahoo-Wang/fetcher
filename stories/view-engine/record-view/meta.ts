@@ -28,7 +28,7 @@ export const recordViewMeta = {
       source: { code: scenarioSource, language: 'tsx' },
       description: {
         component:
-          '以 definitionId 打开订单页。个人、系统与共享视图复用同一 ViewDefinition；每个实例独立保留筛选草稿与已应用配置。演示通过公开包入口接入 ViewHost、Wow paged/cursor 查询与自定义操作、单元格。',
+          '以 definitionId 打开订单页。个人、系统与共享视图复用同一 ViewDefinition；每个实例独立保留筛选草稿与已应用配置。所有 Record View 场景共用 fixtures.ts 的 Wow 快照订单模型：aggregateId 标识记录，state.totalAmount/state.paidAmount 表示订单与实付金额，state.items 保存商品明细。开发输出可展开查看初始快照。演示通过公开包入口接入 ViewHost、Wow paged/cursor 查询与自定义操作、单元格。',
       },
     },
   },

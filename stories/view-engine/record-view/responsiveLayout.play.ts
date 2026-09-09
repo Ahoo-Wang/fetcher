@@ -21,6 +21,29 @@ export const playResponsiveColumns: RecordViewPlay = async ({
   const canvas = within(canvasElement);
   const page = within(canvasElement.ownerDocument.body);
   await canvas.findByRole('row', { name: /ORD-202609-1015/ });
+  // Leave room to exercise growing columns as well as the full order table's horizontal scroll.
+  await userEvent.click(canvas.getByRole('button', { name: '列设置' }));
+  for (const title of [
+    '实付金额',
+    '商品明细',
+    '创建人',
+    '最后操作人',
+    '支付时间',
+  ])
+    await userEvent.click(
+      page.getByRole('checkbox', { name: `显示 ${title}` }),
+    );
+  await userEvent.keyboard('{Escape}');
+  await userEvent.click(canvas.getByRole('button', { name: '保存' }));
+  await waitFor(() =>
+    expect(canvas.getByTestId('record-save-count')).toHaveTextContent(/^1$/),
+  );
+  await waitFor(() =>
+    expect(
+      canvas.queryByRole('status', { name: '所有汇总加载中' }),
+    ).not.toBeInTheDocument(),
+  );
+  const summaryCalls = canvas.getByTestId('record-summary-count').textContent!;
   const table = canvas.getByRole('table');
   const scroller = table.parentElement!;
   const row = canvas.getByRole('row', { name: /ORD-202609-1001/ });
@@ -80,12 +103,14 @@ export const playResponsiveColumns: RecordViewPlay = async ({
   await waitFor(() =>
     near(customer.getBoundingClientRect().width, previousWidth - 10),
   );
-  await expect(canvas.getByRole('button', { name: '保存' })).toBeEnabled();
+  await waitFor(() =>
+    expect(canvas.getByRole('button', { name: '保存' })).toBeEnabled(),
+  );
   await expect(canvas.getByTestId('record-query-count')).toHaveTextContent(
     /^1$/,
   );
   await expect(canvas.getByTestId('record-summary-count')).toHaveTextContent(
-    /^1$/,
+    summaryCalls,
   );
   await userEvent.click(canvas.getByRole('button', { name: '视图选项' }));
   await userEvent.click(await page.findByRole('menuitem', { name: '还原' }));

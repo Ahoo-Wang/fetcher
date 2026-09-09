@@ -93,7 +93,7 @@ export const playPinnedColumns: RecordViewPlay = async ({ canvasElement }) => {
   ).toBeDisabled();
   await expect(page.getByRole('button', { name: '固定客户' })).toBeEnabled();
   await expect(
-    page.getByRole('button', { name: '固定下单时间' }),
+    page.getByRole('button', { name: '固定支付时间' }),
   ).toBeEnabled();
   const summaryControl = page.getByRole('combobox', {
     name: '订单金额汇总方式',
@@ -205,7 +205,19 @@ export const playPinnedColumns: RecordViewPlay = async ({ canvasElement }) => {
   ) as ViewInstance;
   await expect(
     saved.config.presentation.table.columns.map(column => column.id),
-  ).toEqual(['id', 'amount', 'status', 'customer', 'createdAt', 'actions']);
+  ).toEqual([
+    'aggregateId',
+    'totalAmount',
+    'status',
+    'customer',
+    'paidAmount',
+    'items',
+    'firstOperator',
+    'operator',
+    'firstEventTime',
+    'paidAt',
+    'actions',
+  ]);
   await togglePin('订单金额', true);
   await userEvent.click(canvas.getByRole('button', { name: '保存' }));
   await waitFor(() => {

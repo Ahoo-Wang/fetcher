@@ -10,7 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { expect, within } from 'storybook/test';
+import { expect, waitFor, within } from 'storybook/test';
+import { filter } from '@ahoo-wang/fetcher-wow';
 import type { Story } from './demoTypes.js';
 import { Scenario } from './Scenario.js';
 import { recordViewMeta } from './meta.js';
@@ -23,7 +24,7 @@ const meta = {
       ...recordViewMeta.parameters.docs,
       description: {
         component:
-          '筛选输入只修改草稿，Enter/查询才更新记录。已应用区域的清空按钮将控件值恢复为未设置并立即查询，不删除控件。\n\n普通分页返回 list/total；游标模式返回 list/nextCursor，只向后翻页。排序、页大小和筛选改变后由引擎重新协调查询。失败时保留可恢复状态，空结果保留工具栏与创建入口。\n\n请实际修改条件、切页并重试失败场景，观察记录而不只观察开发输出。所有 source 方法沿用 Wow QueryApi，取消信号继续传给业务 I/O。',
+          '筛选输入只修改草稿，Enter/查询才更新记录。已应用区域的清空按钮将控件值恢复为未设置并立即查询，不删除控件。\n\n普通分页返回 list/total；游标模式返回 list/nextCursor，只向后翻页。每条记录采用 Wow MaterializedSnapshot<OrderState>：aggregateId 为行标识，业务字段使用 state.customer、state.totalAmount、state.paidAmount 等路径，state.items 保留商品、单价、数量和小计。下单时间使用快照 firstEventTime，支付时间使用 state.paidAt，两者均为毫秒时间戳；未支付时 paidAt 为 null。金额单位为人民币元；商品明细通过自定义渲染器组合内置 TagsCell 展示。\n\nfirstOperator（创建人）与 operator（最后操作人）保存 userId，字段 options 使用 { value: userId, label: 姓名 } 映射。内置 text 单元格显示姓名，multi-select 按姓名选择但提交 ID；没有映射的 ID 保留原值。新建记录使用当前用户作为创建人，批量处理仅更新最后操作人。\n\n排序、页大小和筛选改变后由引擎重新协调查询。失败时保留可恢复状态，空结果保留工具栏与创建入口。请实际修改条件、切页并重试失败场景，观察记录而不只观察开发输出。所有 source 方法沿用 Wow QueryApi，取消信号继续传给业务 I/O。',
       },
     },
   },
@@ -58,6 +59,47 @@ export const BusinessRecords: Story = {
 export const CursorRecords: Story = {
   name: '游标查询 · 只向后翻页',
   render: args => <Scenario {...args} mode="cursor" summaries />,
+};
+
+export const ItemFilters: Story = {
+  name: '商品明细 · 同一商品满足条件',
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText('共 2 条记录');
+    for (const id of ['ORD-202609-1001', 'ORD-202609-1007'])
+      await expect(
+        canvas.getByRole('row', { name: new RegExp(id) }),
+      ).toBeVisible();
+    await expect(
+      canvas.getByRole('row', { name: '本页汇总' }),
+    ).toHaveTextContent('¥2,360.00');
+    await waitFor(() =>
+      expect(canvas.getByRole('row', { name: '所有汇总' })).toHaveTextContent(
+        '¥1,680.00',
+      ),
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '高级筛选 → 添加筛选 → 商品明细。支持商品编码、名称、单价、数量和小计，多个条件约束同一条明细；例如“名称包含键盘且数量 ≥ 2”。返回整笔订单，汇总仍统计订单总额与实付金额。保存保留 ELEMENT_MATCH 分支与子字段组件配置。',
+      },
+    },
+  },
+  render: args => (
+    <Scenario
+      {...args}
+      summaries
+      initialFilter={filter.elementMatch(
+        'state.items',
+        filter.and([
+          filter.contains('productName', '键盘'),
+          filter.gte('quantity', 2),
+        ]),
+      )}
+    />
+  ),
 };
 
 export const EmptyRecords: Story = {

@@ -15,6 +15,7 @@ import {
   filter,
   FilterOperator,
   SortDirection,
+  StringComparison,
   type AggregationQuery,
   type CursorPage,
   type CursorQuery,
@@ -22,14 +23,20 @@ import {
   type PagedList,
   type PagedQueryRequest,
 } from '@ahoo-wang/fetcher-wow';
-import type {
-  RecordData,
-  RecordKey,
-  RecordQuerySource,
-  FilterOptionSource,
+import {
+  readRecordValue,
+  type RecordData,
+  type RecordKey,
+  type RecordQuerySource,
+  type FilterOptionSource,
 } from '@ahoo-wang/fetcher-view-engine';
 import type { DemoQuery, ScenarioOptions } from './demoTypes.js';
-import { orders, pause } from './fixtures.js';
+import {
+  createOrderSnapshot,
+  currentUserId,
+  orders,
+  pause,
+} from './fixtures.js';
 
 function matches(record: RecordData, expression: FilterExpression): boolean {
   switch (expression.op) {
@@ -39,20 +46,41 @@ function matches(record: RecordData, expression: FilterExpression): boolean {
       return expression.operands.every(child => matches(record, child));
     case FilterOperator.OR:
       return expression.operands.some(child => matches(record, child));
+    case FilterOperator.ELEMENT_MATCH: {
+      const items = readRecordValue(record, expression.field);
+      return (
+        Array.isArray(items) &&
+        items.some(
+          item =>
+            item !== null &&
+            typeof item === 'object' &&
+            !Array.isArray(item) &&
+            matches(item, expression.predicate),
+        )
+      );
+    }
+    case FilterOperator.CONTAINS: {
+      const actual = readRecordValue(record, expression.field);
+      if (typeof actual !== 'string') return false;
+      return expression.stringComparison === StringComparison.CASE_INSENSITIVE
+        ? actual.toLowerCase().includes(expression.value.toLowerCase())
+        : actual.includes(expression.value);
+    }
     case FilterOperator.EQ:
-      return record[expression.field] === expression.value;
+      return readRecordValue(record, expression.field) === expression.value;
     case FilterOperator.NE:
-      return record[expression.field] !== expression.value;
+      return readRecordValue(record, expression.field) !== expression.value;
     case FilterOperator.IN:
       return expression.values.some(
-        value => value === record[expression.field],
+        value => value === readRecordValue(record, expression.field),
       );
     case FilterOperator.NOT_IN:
       return !expression.values.some(
-        value => value === record[expression.field],
+        value => value === readRecordValue(record, expression.field),
       );
     case FilterOperator.BETWEEN: {
-      const actual = record[expression.field];
+      const actual = readRecordValue(record, expression.field);
+      if (actual === null || actual === undefined) return false;
       if (
         typeof actual !== 'number' ||
         typeof expression.lowerBound !== 'number' ||
@@ -65,7 +93,7 @@ function matches(record: RecordData, expression: FilterExpression): boolean {
     case FilterOperator.GTE:
     case FilterOperator.LT:
     case FilterOperator.LTE: {
-      const actual = record[expression.field];
+      const actual = readRecordValue(record, expression.field);
       if (typeof actual !== 'number' || typeof expression.value !== 'number')
         throw new Error('演示服务的大小比较仅支持数值字段。');
       if (expression.op === FilterOperator.GT) return actual > expression.value;
@@ -79,12 +107,22 @@ function matches(record: RecordData, expression: FilterExpression): boolean {
   }
 }
 
-function compare(left: unknown, right: unknown): number {
+function compare(
+  left: unknown,
+  right: unknown,
+  direction: SortDirection,
+): number {
+  // Unpaid timestamps stay last for either direction.
+  if (left === null || left === undefined)
+    return right === null || right === undefined ? 0 : 1;
+  if (right === null || right === undefined) return -1;
+  let result: number;
   if (typeof left === 'number' && typeof right === 'number')
-    return left - right;
-  if (typeof left === 'string' && typeof right === 'string')
-    return left.localeCompare(right, 'zh-CN');
-  throw new Error('演示服务仅支持字符串和数值排序。');
+    result = left - right;
+  else if (typeof left === 'string' && typeof right === 'string')
+    result = left.localeCompare(right, 'zh-CN');
+  else throw new Error('演示服务仅支持字符串和数值排序。');
+  return direction === SortDirection.ASC ? result : -result;
 }
 
 export function createOrderSource(
@@ -120,15 +158,18 @@ export function createOrderSource(
       .filter(record => matches(record, query.filter))
       .sort((left, right) => {
         for (const sort of query.sort ?? []) {
-          const result = compare(left[sort.field], right[sort.field]);
-          if (result)
-            return sort.direction === SortDirection.ASC ? result : -result;
+          const result = compare(
+            readRecordValue(left, sort.field),
+            readRecordValue(right, sort.field),
+            sort.direction,
+          );
+          if (result) return result;
         }
         return 0;
       });
   }
 
-  const source: RecordQuerySource = {
+  const source = {
     async aggregate<
       Row extends RecordData = RecordData,
       Fields extends string = string,
@@ -156,7 +197,7 @@ export function createOrderSource(
           throw new Error('演示服务仅支持数值字段汇总');
         const field = metric.expression.field;
         const values = matched
-          .map(record => record[field])
+          .map(record => readRecordValue(record, field))
           .filter(
             (value): value is number =>
               typeof value === 'number' && Number.isFinite(value),
@@ -206,7 +247,7 @@ export function createOrderSource(
         nextCursor: end < result.length ? `orders:${end}` : null,
       };
     },
-  };
+  } satisfies RecordQuerySource;
   return {
     source,
     customerOptions: {
@@ -215,7 +256,7 @@ export function createOrderSource(
         await pause();
         signal.throwIfAborted();
         const values = [
-          ...new Set(records.map(record => String(record.customer))),
+          ...new Set(records.map(record => record.state.customer)),
         ];
         const filtered = values.filter(value => value.includes(search));
         const offset = cursor ? Number(cursor) : 0;
@@ -233,7 +274,9 @@ export function createOrderSource(
         signal.throwIfAborted();
         await pause();
         signal.throwIfAborted();
-        const available = new Set(records.map(record => record.customer));
+        const available = new Set<unknown>(
+          records.map(record => record.state.customer),
+        );
         return {
           list: values
             .filter(value => available.has(value))
@@ -243,23 +286,43 @@ export function createOrderSource(
       },
     } satisfies FilterOptionSource,
     createOrder() {
-      const order = {
-        ...structuredClone(orders[0]),
-        id: `ORD-202609-${nextOrder++}`,
-        customer: '新叶商贸',
-        amount: 3200,
-        status: 'pending',
-        createdAt: Date.parse('2026-09-06T12:30:00+08:00'),
-      };
+      const order = createOrderSnapshot(
+        {
+          ...structuredClone(orders[16].state),
+          id: `ORD-202609-${nextOrder++}`,
+          customer: '新叶商贸',
+          paidAmount: 0,
+          status: 'pending',
+          paidAt: null,
+        },
+        'sales-2',
+        Date.parse('2026-09-06T12:30:00+08:00'),
+        currentUserId,
+      );
       records.push(order);
       return order;
     },
     processOrders(keys: readonly RecordKey[]) {
-      records = records.map(record =>
-        keys.includes(String(record.id))
-          ? { ...record, status: 'processing' }
-          : record,
-      );
+      let processed = 0;
+      records = records.map(record => {
+        if (
+          !keys.includes(record.aggregateId) ||
+          record.state.status !== 'pending'
+        )
+          return record;
+        processed++;
+        const eventTime = Math.max(Date.now(), record.eventTime + 1);
+        return {
+          ...record,
+          version: record.version + 1,
+          eventId: `event-${record.aggregateId}-${record.version + 1}`,
+          operator: currentUserId,
+          eventTime,
+          snapshotTime: eventTime,
+          state: { ...record.state, status: 'processing' as const },
+        };
+      });
+      return processed;
     },
   };
 }

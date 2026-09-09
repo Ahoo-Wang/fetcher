@@ -21,7 +21,9 @@ export const playSummaries: RecordViewPlay = async ({ canvasElement }) => {
   const local = () => canvas.getByRole('row', { name: '本页汇总' });
   const all = () => canvas.getByRole('row', { name: '所有汇总' });
   await expect(local()).toHaveTextContent('8,499');
+  await expect(local()).toHaveTextContent('¥3,039.00');
   await waitFor(() => expect(all()).toHaveTextContent('36,456'));
+  await expect(all()).toHaveTextContent('¥14,198.50');
   await expect(
     canvas.queryByRole('combobox', { name: '汇总范围' }),
   ).not.toBeInTheDocument();
@@ -52,7 +54,15 @@ export const playSummaries: RecordViewPlay = async ({ canvasElement }) => {
     /^2$/,
   );
   await userEvent.click(canvas.getByRole('button', { name: '列设置' }));
-  for (const title of ['订单编号', '客户', '订单状态', '下单时间'])
+  for (const title of [
+    '订单编号',
+    '客户',
+    '订单状态',
+    '创建人',
+    '最后操作人',
+    '下单时间',
+    '支付时间',
+  ])
     await expect(
       page.queryByRole('combobox', { name: `${title}汇总方式` }),
     ).not.toBeInTheDocument();
@@ -136,7 +146,7 @@ export const playLoadingSummaries: RecordViewPlay = async ({
     await expect(
       scope.getByRole('status', { name: `${label}汇总加载中` }),
     ).toBeVisible();
-    await expect(scope.getAllByRole('group')).toHaveLength(3);
+    await expect(scope.getAllByRole('group')).toHaveLength(4);
   }
   await expect(canvas.queryByText(/统计中|正在加载/)).toBeNull();
 };
@@ -175,7 +185,10 @@ export const playSummaryFailure: RecordViewPlay = async ({ canvasElement }) => {
   await expect(within(all).getByRole('alert')).toHaveTextContent(
     '所有汇总失败',
   );
-  await expect(within(all).getByText('—')).toBeVisible();
+  for (const label of ['订单金额合计', '实付金额合计'])
+    await expect(
+      within(within(all).getByRole('group', { name: label })).getByText('—'),
+    ).toBeVisible();
   await expect(
     canvas.queryByText('汇总服务暂时不可用，请重试汇总。'),
   ).toBeNull();
@@ -221,13 +234,16 @@ export const playEmptySummary: RecordViewPlay = async ({ canvasElement }) => {
   ).toBeVisible();
   await expect(canvas.queryByText('暂无记录')).toBeNull();
   for (const name of ['本页汇总', '所有汇总']) {
-    await waitFor(() =>
-      expect(
-        within(canvas.getByRole('row', { name })).getByText('—', {
-          exact: true,
-        }),
-      ).toBeInTheDocument(),
-    );
+    for (const label of ['订单金额合计', '实付金额合计'])
+      await waitFor(() =>
+        expect(
+          within(
+            within(canvas.getByRole('row', { name })).getByRole('group', {
+              name: label,
+            }),
+          ).getByText('—', { exact: true }),
+        ).toBeInTheDocument(),
+      );
   }
   await expect(
     canvas.queryByText('记录数', { exact: true }),

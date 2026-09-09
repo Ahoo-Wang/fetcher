@@ -41,7 +41,12 @@ export function createHost(
   } = options;
   const { source, customerOptions, createOrder, processOrders } =
     createOrderSource(options, onQuery, onSummary);
-  const initialInstances = makeInstances(mode, summaries, pageSize);
+  const initialInstances = makeInstances(
+    mode,
+    summaries,
+    pageSize,
+    options.initialFilter,
+  );
   const saved = new Map(
     initialInstances.instances.map(instance => [
       instance.id,

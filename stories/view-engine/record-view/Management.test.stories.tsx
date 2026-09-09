@@ -17,7 +17,7 @@ import displayMeta, {
   ManageViews as DisplayManageViews,
   RestoreFocus as DisplayRestoreFocus,
 } from './Management.stories.js';
-import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
+import type { Story } from './demoTypes.js';
 
 const meta = {
   ...displayMeta,
@@ -26,8 +26,6 @@ const meta = {
 };
 
 export default meta;
-
-type Story = RegressionStoryObj<typeof displayMeta>;
 
 export const RestoreFocus: Story = {
   ...DisplayRestoreFocus,

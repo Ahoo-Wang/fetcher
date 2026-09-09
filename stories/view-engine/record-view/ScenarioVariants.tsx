@@ -16,7 +16,7 @@ import { filter } from '@ahoo-wang/fetcher-wow';
 import { Button, RecordTable } from '@ahoo-wang/fetcher-view-engine/react';
 import type { DemoArgs, Story } from './demoTypes.js';
 import { definition, makeInstances } from './fixtures.js';
-import { Scenario } from './Scenario.js';
+import { orderCells, Scenario } from './Scenario.js';
 
 export function ResponsiveWorkbench(args: DemoArgs) {
   const [narrow, setNarrow] = useState(false);
@@ -55,7 +55,7 @@ export const renderLoadingSummaries: Story['render'] = args => {
   const instance = makeInstances('paged', true).instances[0];
   instance.config.presentation.table.columns =
     instance.config.presentation.table.columns.map(column =>
-      column.kind === 'field' && column.field === 'amount'
+      column.kind === 'field' && column.field === 'state.totalAmount'
         ? { ...column, summary: ['AVG', 'MIN', 'MAX'] }
         : column,
     );
@@ -71,8 +71,9 @@ export const renderLoadingSummaries: Story['render'] = args => {
     >
       <RecordTable
         definition={definition}
+        extensions={{ cells: orderCells }}
         instance={instance}
-        appliedFilter={filter.gte('amount', 0)}
+        appliedFilter={filter.gte('state.totalAmount', 0)}
         rows={[]}
         querying
         selectable
