@@ -1,0 +1,36 @@
+name: Change scope
+on:
+  workflow_call:
+    outputs:
+      code:
+        value: ${{ jobs.changes.outputs.code }}
+      storybook:
+        value: ${{ jobs.changes.outputs.storybook }}
+      integration:
+        value: ${{ jobs.changes.outputs.integration }}
+      generator:
+        value: ${{ jobs.changes.outputs.generator }}
+      wiki:
+        value: ${{ jobs.changes.outputs.wiki }}
+permissions:
+  contents: read
+jobs:
+  changes:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.scope.outputs.code }}
+      storybook: ${{ steps.scope.outputs.storybook }}
+      integration: ${{ steps.scope.outputs.integration }}
+      generator: ${{ steps.scope.outputs.generator }}
+      wiki: ${{ steps.scope.outputs.wiki }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: scope
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+        run: node .github/scripts/ci-scope.mjs

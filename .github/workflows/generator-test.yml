@@ -7,9 +7,21 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
   generator-test:
+    needs: changes
+    if: needs.changes.outputs.generator == 'true'
     name: generator-test (Wow ${{ matrix.wow-version }})
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -58,7 +70,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build fetcher-generator
         run: pnpm --filter @ahoo-wang/fetcher-generator... build

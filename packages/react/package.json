@@ -37,7 +37,7 @@
     },
     "./core": {
       "types": "./dist/core/index.d.ts",
-      "import": "./dist/core.js"
+      "import": "./dist/core.es.js"
     }
   },
   "files": [

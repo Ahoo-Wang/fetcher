@@ -8,8 +8,20 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
   integration-test:
+    needs: changes
+    if: needs.changes.outputs.integration == 'true'
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     services:
       mongo:
@@ -54,13 +66,10 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm build
-
-      - name: Install dependencies
-        run: pnpm install
+        run: pnpm --filter @ahoo-wang/fetcher-integration-test^... build
 
       - name: Generate Code
         working-directory: ./integration-test

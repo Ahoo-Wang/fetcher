@@ -24,7 +24,7 @@ export default defineConfig({
       formats: ['es'],
       name: 'FetcherReact',
       fileName: (format, entry) =>
-        entry === 'core' ? 'core.js' : `index.${format}.js`,
+        entry === 'core' ? 'core.es.js' : `index.${format}.js`,
     },
     rolldownOptions: {
       external: [

@@ -1,32 +1,93 @@
 # GitHub Actions workflows
 
-CI workflows run with pnpm 10.34.5 and current supported Node.js versions.
-Reproduce the matching local gate before changing workflow configuration.
+Use pnpm 10.34.5 and Node 20/22/24. Install with `--frozen-lockfile`.
+PR updates cancel superseded runs; pushes to main and releases are not cancelled.
+Jobs have explicit timeouts (5 minutes for scope/labels, 20 for quality/service
+tests, 30 for browser acceptance and 45 for the Node test matrix).
 
-| Workflow               | Trigger                           | Purpose                                                      | Local equivalent                                                                       |
-| ---------------------- | --------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `ci.yml`               | Push/PR to `main`, manual         | Build, lint, and package unit tests on Node 20/22/24         | `pnpm build && pnpm lint && VITEST_MAX_WORKERS=4 pnpm test:unit`                       |
-| `build-storybook.yml`  | PR to `main`, manual              | Build packages, test interactions, and verify three browsers | `pnpm build && pnpm test:storybook && pnpm build-storybook && pnpm verify:view-engine` |
-| `codecov.yml`          | Push/PR to `main`, manual         | Build, unit coverage, Codecov upload                         | `pnpm build && VITEST_MAX_WORKERS=4 pnpm test:unit`                                    |
-| `integration-test.yml` | Push/PR to `main`, manual         | Wow service, generation, integration and optional LLM tests  | Follow `integration-test/README.md`                                                    |
-| `generator-test.yml`   | Push/PR to `main`, manual         | Generate clients against supported Wow server versions       | Run generator against the matching local server                                        |
-| `deploy-wiki.yml`      | Relevant `main` changes, manual   | Build Wiki and Storybook, deploy GitHub Pages                | `pnpm build && pnpm --dir wiki build && pnpm build-storybook`                          |
-| `release.yml`          | GitHub release, manual            | Build and publish all packages to npm                        | No ordinary local equivalent                                                           |
-| `gitee-sync.yml`       | Schedule, selected pushes, manual | Mirror the repository to Gitee                               | No local equivalent                                                                    |
-| `renovate.yml`         | Schedule, manual                  | Run self-hosted dependency updates                           | Inspect `renovate.json`                                                                |
-| `opencode.yml`         | Explicit PR/issue comment command | Run the configured coding assistant                          | No local equivalent                                                                    |
+| Workflow                                         | Responsibility                                                                                                                                                 |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                                         | Build packages and run all package tests on Node 20/22/24. Node 24 uploads its existing coverage to Codecov; there is no separate coverage test run.           |
+| `quality.yml`                                    | Conventional Commit PR title and nonempty description, CI routing tests, changed-file formatting, read-only lint and documentation build.                      |
+| `changes.yml`                                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                  |
+| `build-storybook.yml`                            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build. |
+| `integration-test.yml`                           | Build integration dependencies, generate against Wow, and run integration tests.                                                                               |
+| `generator-test.yml`                             | Verify generation against both supported Wow versions.                                                                                                         |
+| `pr-labeler.yml`                                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                       |
+| `deploy-wiki.yml`                                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                             |
+| `release.yml`                                    | Build and publish on release/manual dispatch.                                                                                                                  |
+| `gitee-sync.yml`, `renovate.yml`, `opencode.yml` | Existing repository automation; unchanged.                                                                                                                     |
+
+## Scope and gates
+
+Any package, lockfile, root configuration, CI script or unknown path runs all
+verification scopes. Only known independent paths narrow the work:
+
+- `wiki/**`: documentation build.
+- `stories/**`, `.storybook/**`: Storybook acceptance and documentation build.
+- `integration-test/**`: integration tests and static checks.
+- Root README/license, Markdown in `docs/**` and `skills/**`, and PR/issue templates: formatting
+  and metadata checks. Changes to executable root scripts remain full scope.
+
+Main pushes and manual dispatch always run all scopes. Deleted and renamed paths
+are included in classification: rename detection is disabled so both the old and
+new paths are assessed. A real Git repository regression verifies source-to-docs
+moves cannot skip code tests; invalid revisions fail closed. Errors while determining scope fail the job.
+The source and regression cases live in `.github/scripts/ci-scope*`.
+
+PR description structure is guided by the template, not brittle prose parsing.
+The metadata check runs before dependency installation and requires a
+Conventional Commit title and nonempty body.
+Dependency bots obey the same minimum rules.
+
+No repository branch/ruleset settings are changed by these workflows. If adding
+required checks, use current job names: the removed standalone
+`build-test-upload-coverage` job is replaced by Node 24 CI and Codecov checks.
+At inspection, main had no classic branch protection and an active Copilot rule.
+Recheck repository settings before changing enforcement.
+
+## Verification and cost
+
+Local checks:
+
+```sh
+node --test .github/scripts/*.test.mjs
+actionlint
+pnpm -r --filter './packages/*' build
+pnpm -r --filter './packages/*' exec eslint .
+pnpm --dir integration-test exec eslint .
+pnpm lint:view-engine:stories
+VITEST_MAX_WORKERS=1 pnpm test:unit
+pnpm --dir wiki build
+```
+
+Formatting uses Prettier already installed by the fetcher workspace, since the
+root does not declare a direct Prettier dependency. Only changed files are checked;
+no repository-wide rewrite is performed. Manual dispatch formats HEAD's diff
+against its parent.
+
+The React package build checks generated declaration imports as a real consumer,
+without source aliases, in addition to ESM context identity. The core runtime output
+uses `core.es.js` so relative declaration imports of `./core` resolve to the
+`core/index.d.ts` directory rather than the JavaScript entrypoint. Unit tests retain
+existing type and architecture contract checks. Viewer also runs an explicit `tsc --noEmit` against built dependencies, once
+in Engineering Quality. Build log diagnostics alone are not proof of a failing
+exit status. Node 24 coverage JSON is retained as a seven-day artifact even when
+a later uploader fails.
+
+Baseline run 34383307720: Node 24 install 4s, build 74s, lint 29s, tests 1016s.
+The changes remove one complete duplicate coverage build/test, two repeated lint
+runs, the duplicate Storybook production build, and repeated integration install.
+They do not reduce the Node matrix, browsers, test assertions or performance and
+coverage thresholds. Actual elapsed-time improvement requires a new CI run;
+runner load and cache state make local timing unsuitable for that claim.
+
+Performance acceptance must run separately from CPU-heavy tests/builds. Keep
+phase timings and failure artifacts; do not rerun a performance failure until it
+passes. Distinguish source-repository/network failures from code defects.
 
 ## Secrets
 
-Workflows reference secret categories for Codecov, npm publishing, repository
-mirroring, Renovate, the coding assistant, and optional LLM integration tests.
-Secret values belong in GitHub environment/repository settings and must never be
-printed, copied into workflow files, or included in fixtures.
-
-## Triage
-
-1. Open the full failing job log and find the first failing command.
-2. Reproduce that exact command and Node version locally.
-3. Distinguish service readiness, missing secret, network, generation, build,
-   lint, and test failures.
-4. Fix the smallest owning layer; do not weaken checks to make a job green.
+Codecov, npm, optional LLM integration, mirroring and assistant secrets stay in
+GitHub settings. Do not print them. No PR code is executed by the privileged
+labeler. Coverage uploader failures fail Node 24 CI rather than being hidden.

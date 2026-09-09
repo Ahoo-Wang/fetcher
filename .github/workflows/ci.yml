@@ -7,11 +7,24 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
   build-and-test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 45
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         node-version: [20, 22, 24]
 
@@ -31,13 +44,27 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm build
-
-      - name: Lint
-        run: pnpm lint
+        run: pnpm -r --filter './packages/*' build
 
       - name: Test
         run: VITEST_MAX_WORKERS=1 pnpm test:unit
+
+      - name: Upload coverage reports to Codecov
+        if: matrix.node-version == 24
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/*/coverage/coverage-final.json
+          fail_ci_if_error: true
+
+      - name: Preserve coverage for diagnosis
+        if: always() && matrix.node-version == 24
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-coverage-node24
+          path: packages/*/coverage/coverage-final.json
+          retention-days: 7
+          if-no-files-found: ignore

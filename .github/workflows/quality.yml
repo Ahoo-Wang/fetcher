@@ -1,0 +1,61 @@
+name: Engineering Quality
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
+  quality:
+    name: Engineering Quality
+    needs: changes
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Check PR metadata and CI routing
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          node --test .github/scripts/*.test.mjs
+          node .github/scripts/pr-quality.mjs
+      - run: pnpm install --frozen-lockfile
+      - name: Check changed-file formatting
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: node .github/scripts/format-changed.mjs
+      - name: Build packages for static checks
+        if: needs.changes.outputs.code == 'true' || needs.changes.outputs.storybook == 'true' || needs.changes.outputs.integration == 'true' || needs.changes.outputs.wiki == 'true'
+        run: pnpm -r --filter './packages/*' build
+      - name: Lint without rewriting files
+        if: needs.changes.outputs.code == 'true' || needs.changes.outputs.storybook == 'true' || needs.changes.outputs.integration == 'true'
+        run: |
+          pnpm -r --filter './packages/*' exec eslint .
+          pnpm --dir integration-test exec eslint .
+          pnpm lint:view-engine:stories
+      - name: Check viewer types against built dependencies
+        if: needs.changes.outputs.code == 'true' || needs.changes.outputs.storybook == 'true'
+        run: pnpm --filter @ahoo-wang/fetcher-viewer exec tsc --noEmit --incremental false --composite false
+      - name: Build documentation
+        if: needs.changes.outputs.wiki == 'true'
+        run: pnpm --dir wiki build

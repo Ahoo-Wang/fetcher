@@ -1,0 +1,14 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ['wiki/**', 'docs/**', '**/*.md']
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**']
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          ['**/package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']
+view-engine:
+  - changed-files:
+      - any-glob-to-any-file:
+          ['packages/view-engine/**', 'stories/view-engine/**']
