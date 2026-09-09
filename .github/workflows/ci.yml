@@ -49,8 +49,13 @@ jobs:
       - name: Build
         run: pnpm -r --filter './packages/*' build
 
-      - name: Test
+      - name: Test with coverage
+        if: matrix.node-version == 24
         run: VITEST_MAX_WORKERS=1 pnpm test:unit
+
+      - name: Test compatibility without coverage
+        if: matrix.node-version != 24
+        run: VITEST_MAX_WORKERS=1 pnpm -r --filter './packages/*' run test:no-coverage
 
       - name: Upload coverage reports to Codecov
         if: matrix.node-version == 24

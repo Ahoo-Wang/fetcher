@@ -7,16 +7,24 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
+  checks: read
 jobs:
   publish-npm:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Verify release SHA admission
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/release-admission.mjs
+
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 10.34.5
 
@@ -28,7 +36,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build
         run: pnpm build

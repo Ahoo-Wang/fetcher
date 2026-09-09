@@ -2,7 +2,7 @@ name: Engineering Quality
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, edited, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
@@ -31,13 +31,8 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - name: Check PR metadata and CI routing
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          node --test .github/scripts/*.test.mjs
-          node .github/scripts/pr-quality.mjs
+      - name: Check CI policy regressions
+        run: node --test .github/scripts/*.test.mjs
       - run: pnpm install --frozen-lockfile
       - name: Check changed-file formatting
         env:
@@ -53,9 +48,9 @@ jobs:
           pnpm -r --filter './packages/*' exec eslint .
           pnpm --dir integration-test exec eslint .
           pnpm lint:view-engine:stories
-      - name: Check viewer types against built dependencies
+      - name: Check all package types against built dependencies
         if: needs.changes.outputs.code == 'true' || needs.changes.outputs.storybook == 'true'
-        run: pnpm --filter @ahoo-wang/fetcher-viewer exec tsc --noEmit --incremental false --composite false
+        run: pnpm -r --filter './packages/*' exec tsc --noEmit --incremental false --composite false
       - name: Build documentation
         if: needs.changes.outputs.wiki == 'true'
         run: pnpm --dir wiki build

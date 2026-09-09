@@ -5,18 +5,19 @@ PR updates cancel superseded runs; pushes to main and releases are not cancelled
 Jobs have explicit timeouts (5 minutes for scope/labels, 20 for quality/service
 tests, 30 for browser acceptance and 45 for the Node test matrix).
 
-| Workflow                                         | Responsibility                                                                                                                                                 |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                                         | Build packages and run all package tests on Node 20/22/24. Node 24 uploads its existing coverage to Codecov; there is no separate coverage test run.           |
-| `quality.yml`                                    | Conventional Commit PR title and nonempty description, CI routing tests, changed-file formatting, read-only lint and documentation build.                      |
-| `changes.yml`                                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                  |
-| `build-storybook.yml`                            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build. |
-| `integration-test.yml`                           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                              |
-| `generator-test.yml`                             | Verify generation against both supported Wow versions.                                                                                                         |
-| `pr-labeler.yml`                                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                       |
-| `deploy-wiki.yml`                                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                             |
-| `release.yml`                                    | Build and publish on release/manual dispatch.                                                                                                                  |
-| `gitee-sync.yml`, `renovate.yml`, `opencode.yml` | Existing repository automation; unchanged.                                                                                                                     |
+| Workflow                                         | Responsibility                                                                                                                                                                                            |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                                         | Build packages and run all package tests on Node 20/22/24. Node 24 collects and uploads coverage; Node 20/22 run the same assertions, compiler/type checks and timeouts without coverage instrumentation. |
+| `quality.yml`                                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                         |
+| `pr-quality.yml`                                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                     |
+| `changes.yml`                                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                             |
+| `build-storybook.yml`                            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build.                                            |
+| `integration-test.yml`                           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                         |
+| `generator-test.yml`                             | Verify generation against both supported Wow versions.                                                                                                                                                    |
+| `pr-labeler.yml`                                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                  |
+| `deploy-wiki.yml`                                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                        |
+| `release.yml`                                    | Admit the checked-out SHA against successful full CI and trusted quality checks before build/publish.                                                                                                     |
+| `gitee-sync.yml`, `renovate.yml`, `opencode.yml` | Existing repository automation; unchanged.                                                                                                                                                                |
 
 ## Scope and gates
 
@@ -36,9 +37,9 @@ moves cannot skip code tests; invalid revisions fail closed. Errors while determ
 The source and regression cases live in `.github/scripts/ci-scope*`.
 
 PR description structure is guided by the template, not brittle prose parsing.
-The metadata check runs before dependency installation and requires a
-Conventional Commit title and meaningful body after removing template comments
-and empty headings.
+The separate metadata workflow requires a Conventional Commit title and meaningful
+body after removing template comments and empty headings. Editing PR prose does
+not retrigger package builds or static/documentation checks.
 Dependency bots obey the same minimum rules.
 
 No repository branch/ruleset settings are changed by these workflows. If adding
@@ -58,6 +59,7 @@ pnpm -r --filter './packages/*' build
 pnpm -r --filter './packages/*' exec eslint .
 pnpm --dir integration-test exec eslint .
 pnpm lint:view-engine:stories
+pnpm -r --filter './packages/*' exec tsc --noEmit --incremental false --composite false
 VITEST_MAX_WORKERS=1 pnpm test:unit
 pnpm --dir wiki build
 ```
@@ -71,8 +73,9 @@ The React package build checks generated declaration imports as a real consumer,
 without source aliases, in addition to ESM context identity. The core runtime output
 uses `core.es.js` so relative declaration imports of `./core` resolve to the
 `core/index.d.ts` directory rather than the JavaScript entrypoint. Unit tests retain
-existing type and architecture contract checks. Viewer also runs an explicit `tsc --noEmit` against built dependencies, once
-in Engineering Quality. Build log diagnostics alone are not proof of a failing
+existing type and architecture contract checks. Every package runs an explicit `tsc --noEmit` against built dependencies, once
+in Engineering Quality. The integration job type-checks its generated sources
+after generation as well. Build log diagnostics alone are not proof of a failing
 exit status. Node 24 coverage JSON is retained as a seven-day artifact even when
 a later uploader fails.
 
@@ -97,3 +100,19 @@ Third-party pnpm/Codecov/labeler actions are pinned to verified commit SHAs.
 The integration job calls the built generator by its workspace path: an install
 before build cannot create a bin link whose target does not exist yet. This
 avoids relying on a second installation to repair that link.
+
+## Release admission
+
+Admission reads `git rev-parse HEAD` after checkout (including release tags), then
+requires the latest successful `push` or `workflow_dispatch` run for that SHA of
+CI, Engineering Quality, Build Storybook, Integration Test and Generator Test.
+PR runs are excluded because they may test a synthetic merge. Main pushes now
+also run Storybook delivery verification. Missing/pending/failed checks block;
+manual dispatch of the verification workflows can validate another release SHA.
+Codacy and Codecov project checks must come from their expected GitHub Apps.
+No npm publish command is invoked by policy tests or local admission verification.
+
+Default `pnpm test:unit` still collects coverage. `test:no-coverage` scripts retain
+all existing commands and generator timeouts; a regression check prevents the
+compatibility suite from drifting away from the default suite. Coverage thresholds
+remain unchanged and enforced by Node 24.

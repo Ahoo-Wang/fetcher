@@ -75,6 +75,10 @@ jobs:
         working-directory: ./integration-test
         run: node ../packages/generator/dist/cli.js generate -i http://localhost:8080/v3/api-docs
 
+      - name: Check generated integration types
+        working-directory: ./integration-test
+        run: pnpm exec tsc --noEmit --incremental false --composite false
+
       - name: Test
         run: pnpm test:it
         env:
