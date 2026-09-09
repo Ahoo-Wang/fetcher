@@ -13,6 +13,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { useLayoutEffect } from 'react';
 
 // Import before mocks
 import { useExecutePromise, PromiseStatus } from '../../src';
@@ -487,6 +488,29 @@ it('does not start a reentrant cancellation request after unmount', async () => 
   first.resolve('obsolete');
   await execution;
   expect(replacement).not.toHaveBeenCalled();
+});
+
+it('reports loading for a request started during the layout effect', async () => {
+  const pending = pendingPromise<string>();
+  const supplier = vi.fn(() => pending.promise);
+  let execution!: Promise<void>;
+  const { result } = renderHook(() => {
+    const hook = useExecutePromise<string>();
+    useLayoutEffect(() => {
+      execution = hook.execute(supplier);
+    }, [hook.execute]);
+    return hook;
+  });
+  await act(async () => {});
+  expect(supplier).toHaveBeenCalledTimes(1);
+  expect(result.current.loading).toBe(true);
+  expect(result.current.status).toBe(PromiseStatus.LOADING);
+  await act(async () => {
+    pending.resolve('loaded');
+    await execution;
+  });
+  expect(result.current.result).toBe('loaded');
+  expect(result.current.loading).toBe(false);
 });
 
 function pendingPromise<T>() {

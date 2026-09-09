@@ -257,6 +257,8 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
         // Allow StrictMode effect replay to remount before checking ownership.
         if (!isMounted()) await Promise.resolve();
         if (!isMounted() || !requestId.isLatest(currentRequestId)) return;
+        // A request deferred until mount still needs its loading transition.
+        setLoading();
         const data = await input(abortController);
 
         if (isMounted() && requestId.isLatest(currentRequestId)) {
