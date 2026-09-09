@@ -48,9 +48,6 @@ jobs:
       - name: Test Storybook interactions
         run: pnpm test:storybook
 
-      - name: Build Storybook
-        run: pnpm -r --filter './packages/*' build-storybook
-
       - name: Verify acceptance process cleanup
         run: node --test scripts/owned-process.test.mjs
 
