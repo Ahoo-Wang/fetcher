@@ -309,3 +309,5 @@ const commandClient = new CartCommandClient();
 
 - [Package Source](https://github.com/Ahoo-Wang/fetcher/tree/main/packages/generator/) - Source code and README
 - CLI: `fetcher-generator`; programmatic entry: `CodeGenerator` (see Key Exports above)
+
+Aggregate framework event-stream and materialized-snapshot cursor-page wrappers are skipped alongside their paged-list wrappers. Their query behavior is provided by `QueryClientFactory` from `@ahoo-wang/fetcher-wow`; ordinary business cursor-page models remain generated.

@@ -604,7 +604,7 @@ import {
 
 ## Lightweight core import
 
-`@ahoo-wang/fetcher-react/core` is an ESM export of `src/core/index.ts`, with runtime `dist/core.js` and types `dist/core/index.d.ts`. It provides the existing generic hooks without initializing HTTP/security/storage/event integrations; root ESM and UMD exports remain unchanged. Prefer this entry for generic execution and debounce in UI libraries.
+`@ahoo-wang/fetcher-react/core` is an ESM export of `src/core/index.ts`, with runtime `dist/core.es.js` and types `dist/core/index.d.ts`. It provides the existing generic hooks without initializing HTTP/security/storage/event integrations; root ESM and UMD exports remain unchanged. Prefer this entry for generic execution and debounce in UI libraries.
 
 `useExecutePromise` assigns request order synchronously before awaiting onAbort. Manual abort invalidates useRequestId before releasing the controller, so even sources ignoring cancellation cannot publish stale results or callbacks. There is no return-type change: execute still returns Promise<void>; use state or onSuccess for results.
 
