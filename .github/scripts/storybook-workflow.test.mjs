@@ -23,3 +23,17 @@ test('Storybook production build is owned by the delivery verifier, not duplicat
     /await run\('storybook-build', pnpm, \['build-storybook'\]\)/,
   );
 });
+
+test('interaction tests and delivery run on separate jobs without dropping either gate', () => {
+  const workflow = readFileSync(
+    new URL('../workflows/build-storybook.yml', import.meta.url),
+    'utf8',
+  );
+  const [delivery, interactions] = workflow.split('\n  interactions:\n');
+  assert.ok(interactions, 'Interactions need their own runner');
+  assert.match(delivery, /run: pnpm verify:view-engine/);
+  assert.doesNotMatch(delivery, /run: pnpm test:storybook/);
+  assert.match(interactions, /run: pnpm test:storybook/);
+  assert.match(interactions, /needs: changes/);
+  assert.doesNotMatch(interactions, /verify:view-engine/);
+});

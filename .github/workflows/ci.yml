@@ -51,11 +51,17 @@ jobs:
 
       - name: Test with coverage
         if: matrix.node-version == 24
-        run: VITEST_MAX_WORKERS=1 pnpm test:unit
+        run: pnpm test:unit
+        env:
+          VITEST_MAX_WORKERS: 2
+          npm_config_workspace_concurrency: 1
 
       - name: Test compatibility without coverage
         if: matrix.node-version != 24
-        run: VITEST_MAX_WORKERS=1 pnpm -r --filter './packages/*' run test:no-coverage
+        run: pnpm -r --filter './packages/*' run test:no-coverage
+        env:
+          VITEST_MAX_WORKERS: 2
+          npm_config_workspace_concurrency: 1
 
       - name: Upload coverage reports to Codecov
         if: matrix.node-version == 24

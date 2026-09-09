@@ -116,3 +116,16 @@ Default `pnpm test:unit` still collects coverage. `test:no-coverage` scripts ret
 all existing commands and generator timeouts; a regression check prevents the
 compatibility suite from drifting away from the default suite. Coverage thresholds
 remain unchanged and enforced by Node 24.
+
+## Critical-path follow-up
+
+Completed Node 20/22 compatibility tests in run 34415983833 took 711s/665s;
+builds took 40s/32s. Coverage removal alone did not eliminate the long test path.
+Use the locally validated scheduler (one workspace at a time, two Vitest workers)
+instead of several workspaces each with one worker. All assertions remain.
+
+Storybook run 34415983847 took about eight minutes: interactions 111s and
+delivery 285s were sequential. They now use independent runners, each retaining
+its required package build; delivery still runs all three browsers in isolation.
+This trades one additional setup/build for overlap. Actual wall-clock savings
+must be measured on the new CI run, not inferred from local hardware.
