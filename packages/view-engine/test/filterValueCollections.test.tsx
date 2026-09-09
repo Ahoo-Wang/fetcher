@@ -11,10 +11,11 @@
  * limitations under the License.
  */
 
+import { configuration } from './fixtures/filterPanel.js';
 import { FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { compileFilterDraft } from '../src/filter/filterCore';
+import { compileFilterConfiguration } from '../src/filter/filterCore';
 import type { FilterFieldDefinition } from '../src/filter/filterModel';
 import { change, fields, mount, select } from './fixtures/filterValueEditor.js';
 
@@ -23,10 +24,10 @@ afterEach(cleanup);
 it('preserves loaded string bounds and only wraps the numeric bound being edited', () => {
   const initial = {
     id: 'loaded-bounds',
-    op: Op.BETWEEN,
+    operator: Op.BETWEEN,
     field: 'amount',
-    lowerBound: '001',
-    upperBound: '020',
+    component: { name: 'builtin' },
+    props: { lowerBound: '001', upperBound: '020' },
   };
   const state = mount(initial);
   expect(state.changes).toEqual([]);
@@ -34,11 +35,13 @@ it('preserves loaded string bounds and only wraps the numeric bound being edited
   change('金额上限', '030');
   expect(state.current()).toEqual({
     ...initial,
-    upperBound: { type: 'number', value: '030' },
+    props: { ...initial.props, upperBound: { type: 'number', value: '030' } },
   });
   expect(screen.getAllByRole('alert')).toHaveLength(1);
   change('金额下限', '002');
-  expect(compileFilterDraft(state.current(), fields)).toEqual({
+  expect(
+    compileFilterConfiguration(configuration(state.current()), fields),
+  ).toEqual({
     expression: {
       op: Op.BETWEEN,
       field: 'amount',
@@ -52,9 +55,10 @@ it('preserves loaded string bounds and only wraps the numeric bound being edited
 it('preserves loaded string collection items and only wraps the edited numeric item', () => {
   const initial = {
     id: 'loaded-items',
-    op: Op.IN,
+    operator: Op.IN,
     field: 'amount',
-    values: ['001', 2],
+    component: { name: 'builtin' },
+    props: { values: ['001', 2] },
   };
   const state = mount(initial);
   expect(state.changes).toEqual([]);
@@ -62,36 +66,50 @@ it('preserves loaded string collection items and only wraps the edited numeric i
   change('金额值2', '3');
   expect(state.current()).toEqual({
     ...initial,
-    values: ['001', { type: 'number', value: '3' }],
+    props: {
+      ...initial.props,
+      values: ['001', { type: 'number', value: '3' }],
+    },
   });
   change('金额值1', '002');
-  expect(compileFilterDraft(state.current(), fields)).toEqual({
+  expect(
+    compileFilterConfiguration(configuration(state.current()), fields),
+  ).toEqual({
     expression: { op: Op.IN, field: 'amount', values: [2, 3] },
     errors: [],
   });
 });
 
 it('keeps incomplete collection entries and removes the last entry to an empty collection', async () => {
-  const initial = { id: 'c', op: Op.IN, field: 'amount', values: [0, 2] };
+  const initial = {
+    id: 'c',
+    operator: Op.IN,
+    field: 'amount',
+    component: { name: 'builtin' },
+    props: { values: [0, 2] },
+  };
   const state = mount(initial);
   change('金额值2', '-');
-  expect(state.current().values).toEqual([0, { type: 'number', value: '-' }]);
-  fireEvent.click(screen.getByRole('button', { name: '添加金额值' }));
-  expect(state.current().values).toEqual([
+  expect(state.current().props.values).toEqual([
     0,
     { type: 'number', value: '-' },
-    undefined,
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: '添加金额值' }));
+  expect(state.current().props.values).toEqual([
+    0,
+    { type: 'number', value: '-' },
+    { type: 'number' },
   ]);
   change('金额值3', '3');
-  expect(state.current().values).toEqual([
+  expect(state.current().props.values).toEqual([
     0,
     { type: 'number', value: '-' },
     { type: 'number', value: '3' },
   ]);
   for (const index of [3, 2, 1])
     fireEvent.click(screen.getByRole('button', { name: `删除金额值${index}` }));
-  expect(state.current().values).toEqual([]);
-  expect(initial.values).toEqual([0, 2]);
+  expect(state.current().props.values).toEqual([]);
+  expect(initial.props.values).toEqual([0, 2]);
 });
 
 it('preserves mixed collection types and keeps the selected type after clearing a boolean', async () => {
@@ -103,31 +121,36 @@ it('preserves mixed collection types and keeps the selected type after clearing 
   const state = mount(
     {
       id: 'mixed',
-      op: Op.CONTAINS_ALL,
+      operator: Op.CONTAINS_ALL,
       field: 'tags',
-      values: [0, false, '0'],
+      component: { name: 'builtin' },
+      props: { values: [0, false, '0'] },
     },
     field,
   );
   change('标签值1', '-');
-  expect(state.current().values).toEqual([
+  expect(state.current().props.values).toEqual([
     { type: 'number', value: '-' },
     false,
     '0',
   ]);
-  expect(compileFilterDraft(state.current(), [field]).errors).toHaveLength(1);
+  expect(
+    compileFilterConfiguration(configuration(state.current()), [field]).errors,
+  ).toHaveLength(1);
   change('标签值1', '2');
   await select('标签值2', '清空选择');
   expect(
     screen.getByRole('combobox', { name: '标签值2类型' }).textContent,
   ).toContain('布尔');
-  expect(state.current().values).toEqual([
+  expect(state.current().props.values).toEqual([
     { type: 'number', value: '2' },
     { type: 'boolean', value: undefined },
     '0',
   ]);
   await select('标签值2', '否');
-  expect(compileFilterDraft(state.current(), [field])).toEqual({
+  expect(
+    compileFilterConfiguration(configuration(state.current()), [field]),
+  ).toEqual({
     expression: {
       op: Op.CONTAINS_ALL,
       field: 'tags',
@@ -140,18 +163,18 @@ it('preserves mixed collection types and keeps the selected type after clearing 
 it('edits between bounds independently without losing zero or a partial bound', () => {
   const state = mount({
     id: 'r',
-    op: Op.BETWEEN,
+    operator: Op.BETWEEN,
     field: 'amount',
-    lowerBound: 0,
-    upperBound: 10,
+    component: { name: 'builtin' },
+    props: { lowerBound: 0, upperBound: 10 },
   });
   change('金额上限', '');
-  expect(state.current()).toMatchObject({
+  expect(state.current().props).toMatchObject({
     lowerBound: 0,
     upperBound: { type: 'number', value: undefined },
   });
   change('金额下限', '-');
-  expect(state.current()).toMatchObject({
+  expect(state.current().props).toMatchObject({
     lowerBound: { type: 'number', value: '-' },
     upperBound: { type: 'number', value: undefined },
   });

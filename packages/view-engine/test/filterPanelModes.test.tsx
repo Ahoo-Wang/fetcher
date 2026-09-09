@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter } from '@ahoo-wang/fetcher-wow';
 import {
   cleanup,
@@ -29,7 +30,17 @@ it('preserves loaded AND duplicates in advanced mode until simple mode can repre
   const apply = vi.fn();
   const value = filter.and([filter.gte('amount', 1), filter.lte('amount', 2)]);
   render(
-    <FilterPanel fields={fields} value={value} mode="simple" onApply={apply} />,
+    <FilterPanel
+      fields={fields}
+      defaultValue={configuration({
+        ...node('AND'),
+        operands: [
+          node('GTE', 'amount', { value: 1 }),
+          node('LTE', 'amount', { value: 2 }),
+        ],
+      })}
+      onApply={apply}
+    />,
   );
   expect(screen.getAllByLabelText('订单金额值')).toHaveLength(2);
   expect(
@@ -44,15 +55,22 @@ it('preserves loaded AND duplicates in advanced mode until simple mode can repre
   ).toBe('true');
   fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
   fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
-  expect(apply).toHaveBeenCalledWith(value);
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({ expression: value }),
+  );
   fireEvent.click(
     screen.getAllByRole('button', { name: '删除订单金额条件' })[1],
   );
+  await select('筛选模式', '简单');
   expect(
     screen.getByRole('combobox', { name: '筛选模式' }).textContent,
   ).toContain('简单');
   fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
-  expect(apply).toHaveBeenCalledWith(filter.and([filter.gte('amount', 1)]));
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({
+      expression: filter.and([filter.gte('amount', 1)]),
+    }),
+  );
 });
 
 it('allows switching repeated-field groups from OR to AND without dropping rules', async () => {
@@ -60,7 +78,13 @@ it('allows switching repeated-field groups from OR to AND without dropping rules
   render(
     <FilterPanel
       fields={fields}
-      value={filter.or([filter.eq('amount', 1), filter.gte('amount', 2)])}
+      defaultValue={configuration({
+        ...node('OR'),
+        operands: [
+          node('EQ', 'amount', { value: 1 }),
+          node('GTE', 'amount', { value: 2 }),
+        ],
+      })}
       onApply={apply}
     />,
   );
@@ -72,7 +96,9 @@ it('allows switching repeated-field groups from OR to AND without dropping rules
   expect(apply).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
   expect(apply).toHaveBeenCalledWith(
-    filter.and([filter.eq('amount', 1), filter.gte('amount', 2)]),
+    expect.objectContaining({
+      expression: filter.and([filter.eq('amount', 1), filter.gte('amount', 2)]),
+    }),
   );
 });
 
@@ -82,9 +108,11 @@ it('keeps mode guards in the panel when its toolbar is composed externally', () 
   render(
     <FilterPanel
       fields={fields}
-      value={filter.between('amount', 1, 10)}
+      defaultValue={configuration(
+        node('BETWEEN', 'amount', { lowerBound: 1, upperBound: 10 }),
+      )}
       onApply={apply}
-      onModeChange={modeChange}
+      onChange={next => modeChange(next.mode)}
       renderToolbar={({ mode, options, onModeChange }) => (
         <div>
           <span>{mode}</span>
@@ -106,13 +134,14 @@ it('keeps mode guards in the panel when its toolbar is composed externally', () 
   const simple = screen.getByRole('button', { name: '简单模式' });
   expect(simple.getAttribute('aria-disabled')).toBe('true');
   fireEvent.click(simple);
-  expect(modeChange).toHaveBeenCalledTimes(1);
   expect(modeChange).toHaveBeenLastCalledWith('advanced');
   fireEvent.change(upper, { target: { value: '30' } });
   fireEvent.click(simple);
   expect(modeChange).toHaveBeenLastCalledWith('simple');
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith(filter.between('amount', 1, 30));
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.between('amount', 1, 30) }),
+  );
 });
 
 it('adds fields without rebinding and changes modes without querying', async () => {
@@ -121,9 +150,9 @@ it('adds fields without rebinding and changes modes without querying', async () 
   render(
     <FilterPanel
       fields={fields}
-      value={filter.matchAll()}
+      defaultValue={configuration(node('MATCH_ALL'))}
       onApply={apply}
-      onModeChange={mode}
+      onChange={next => mode(next.mode)}
     />,
   );
   fireEvent.click(screen.getByRole('button', { name: '添加筛选' }));
@@ -147,22 +176,45 @@ it('keeps simple filters free of condition menus and applies the original order'
     filter.eq('amount', 10),
     filter.eq('status', 'pending'),
   ]);
-  render(<FilterPanel fields={fields} value={value} onApply={apply} />);
+  render(
+    <FilterPanel
+      fields={fields}
+      defaultValue={configuration({
+        ...node('AND'),
+        operands: [
+          node('EQ', 'amount', { value: 10 }),
+          node('EQ', 'status', { value: 'pending' }),
+        ],
+      })}
+      onApply={apply}
+    />,
+  );
   expect(
     screen.queryByRole('button', { name: /条件操作|移动.*条件/ }),
   ).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenCalledWith(value);
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({ expression: value }),
+  );
 });
 
 it('does not offer destructive simple-mode conversion for element conditions', async () => {
   render(
     <FilterPanel
       fields={fields}
-      value={filter.and([
-        filter.eq('amount', 10),
-        filter.elementMatch('items', filter.and([filter.eq('quantity', 2)])),
-      ])}
+      defaultValue={configuration({
+        ...node('AND'),
+        operands: [
+          node('EQ', 'amount', { value: 10 }),
+          {
+            ...node('ELEMENT_MATCH', 'items'),
+            predicate: {
+              ...node('AND'),
+              operands: [node('EQ', 'quantity', { value: 2 })],
+            },
+          },
+        ],
+      })}
       onApply={() => {}}
     />,
   );

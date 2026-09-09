@@ -13,22 +13,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { DeepReadonly } from '../lib/types.js';
-import type { FilterDraftNode, FilterMode } from './filterModel.js';
+import type { FilterConfiguration, FilterMode } from './filterModel.js';
 import type { FilterPanelProps } from './filterReactTypes.js';
-import { compileFilterDraft, FILTER_OPERATORS } from './filterCore.js';
+import { compileFilterConfiguration, FILTER_OPERATORS } from './filterCore.js';
 import { locateFilterNodes, sameFilterQuery } from './filterTree.js';
 import { resolveFilterEditor } from './resolveFilterEditor.js';
 import { ownValue } from './filterPanelUtils.js';
-import { filterComponentReference } from './filterConfiguration.js';
 import { filterClearCompiler } from './filterConfigurationClear.js';
 
 /** Resolve extension support and combine local input validity with protocol validation. */
 export function useFilterPanelEditors(
   props: FilterPanelProps,
-  draft: FilterDraftNode,
-  baseline: DeepReadonly<FilterDraftNode>,
+  configuration: FilterConfiguration,
+  baseline: DeepReadonly<FilterConfiguration>,
   mode: FilterMode,
-  loadError?: string,
 ) {
   const { fields, onPendingChange, onValidityChange } = props;
   const [editorValidity, setEditorValidity] = useState<Record<string, string>>(
@@ -37,38 +35,36 @@ export function useFilterPanelEditors(
   const [editorOutputErrors, setEditorOutputErrors] = useState<
     Record<string, string>
   >({});
-  const [builtIn, setBuiltIn] = useState<ReadonlySet<string>>(new Set());
   const [epoch, setEpoch] = useState(0);
   const [editorEpochs, setEditorEpochs] = useState<Record<string, number>>({});
-  const locations = locateFilterNodes(draft, fields);
-  const compiled = compileFilterDraft(
-    draft,
+  const locations = locateFilterNodes(configuration.root, fields);
+  const compiled = compileFilterConfiguration(
+    configuration,
     fields,
     props.allowedOperators,
     props.extensions?.filters,
-    props.editors,
     props.timeZone,
   );
   const resolutions = new Map(
     locations
       .filter(
         ({ node }) =>
-          !['logical', 'element'].includes(FILTER_OPERATORS[node.op]?.category),
+          !['logical', 'element'].includes(
+            FILTER_OPERATORS[node.operator]?.category,
+          ),
       )
       .map(location => [
         location.node.id,
-        resolveFilterEditor(location, props, mode, builtIn),
+        resolveFilterEditor(location, props, mode),
       ]),
   );
-  const clearable = locations.every(({ node, fields: scope }) => {
-    if (['logical', 'element'].includes(FILTER_OPERATORS[node.op]?.category))
+  const clearable = locations.every(({ node }) => {
+    if (
+      ['logical', 'element'].includes(FILTER_OPERATORS[node.operator]?.category)
+    )
       return true;
     try {
-      const reference = filterComponentReference(
-        node,
-        scope.find(field => field.field === node.field),
-        props.editors,
-      );
+      const reference = node.component;
       return !!filterClearCompiler(reference.name, props.extensions?.filters)
         .clear;
     } catch {
@@ -90,19 +86,17 @@ export function useFilterPanelEditors(
         message: text || '输入尚未完成或格式无效。',
       })),
   );
-  const valid = !loadError && issues.length === 0;
-  const applied = compileFilterDraft(
+  const valid = issues.length === 0;
+  const applied = compileFilterConfiguration(
     baseline,
     fields,
     props.allowedOperators,
     props.extensions?.filters,
-    props.editors,
     props.timeZone,
   );
   const pending =
     !valid ||
     !compiled.expression ||
-    props.value === null ||
     !sameFilterQuery(compiled.expression, applied.expression);
   const previousValidity = useRef<boolean | undefined>(undefined);
   useEffect(() => {
@@ -122,17 +116,16 @@ export function useFilterPanelEditors(
   return {
     locations,
     compiled,
+    applied: applied.expression,
     resolutions,
     clearable,
     issues,
     valid,
     pending,
-    builtIn,
     epoch,
     editorEpochs,
     setEditorValidity,
     setEditorOutputErrors,
-    setBuiltIn,
     setEpoch,
     setEditorEpochs,
   };

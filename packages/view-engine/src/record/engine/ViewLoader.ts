@@ -30,7 +30,7 @@ import type { SessionStore } from './SessionStore.js';
 import type { InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
 import type { RecordSummaries } from './RecordSummaries.js';
-import { copy, message } from './recordSnapshot.js';
+import { copy, message } from '../../lib/snapshot.js';
 import { createSession, inheritEditingSession } from './sessionState.js';
 
 /** Loads definitions/instances and owns navigation intent independently of record queries. */

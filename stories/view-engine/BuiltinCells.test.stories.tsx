@@ -41,13 +41,9 @@ export const Workbench: Story = {
     await userEvent.click(canvas.getByRole('button', { name: '列设置' }));
     await userEvent.click(page.getByRole('checkbox', { name: /显示.*链接/ }));
     await userEvent.keyboard('{Escape}');
-    await userEvent.click(
-      canvas.getByRole('button', { name: '保存', exact: true }),
-    );
+    await userEvent.click(canvas.getByRole('button', { name: '保存' }));
     await waitFor(() =>
-      expect(
-        canvas.getByRole('button', { name: '保存', exact: true }),
-      ).toBeDisabled(),
+      expect(canvas.getByRole('button', { name: '保存' })).toBeDisabled(),
     );
     await userEvent.click(
       canvas.getByRole('button', { name: '重新打开已保存视图' }),

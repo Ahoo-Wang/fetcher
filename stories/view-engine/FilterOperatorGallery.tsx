@@ -12,17 +12,15 @@
  */
 
 import {
-  compileFilterDraft,
+  compileFilterConfiguration,
   FILTER_OPERATORS,
-  newFilterDraft,
+  createFilterConfiguration,
+  type FilterConfiguration,
+  newFilterNode,
   type FilterFieldDefinition,
 } from '@ahoo-wang/fetcher-view-engine';
 import { FilterSelect } from '@ahoo-wang/fetcher-view-engine/react';
-import {
-  DeletionState,
-  FilterOperator,
-  type FilterExpression,
-} from '@ahoo-wang/fetcher-wow';
+import { DeletionState, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 import { Scenario, type DemoArgs } from './FilterPanelExamples.js';
 
@@ -33,9 +31,9 @@ const galleryFields: FilterFieldDefinition[] = [
     fields: [{ field: 'quantity', label: '元素数量', type: 'number' }],
   },
 ];
-function example(op: FilterOperator): FilterExpression {
+function example(op: FilterOperator): FilterConfiguration {
   const descriptor = FILTER_OPERATORS[op];
-  const draft = newFilterDraft(
+  const draft = newFilterNode(
     op,
     descriptor.category === 'field' || descriptor.category === 'element'
       ? 'data'
@@ -43,7 +41,7 @@ function example(op: FilterOperator): FilterExpression {
   );
   switch (descriptor.input) {
     case 'value':
-      draft.value =
+      draft.props.value =
         descriptor.category === 'root' ||
         [
           FilterOperator.CONTAINS,
@@ -54,47 +52,47 @@ function example(op: FilterOperator): FilterExpression {
           : 0;
       break;
     case 'values':
-      draft.values =
+      draft.props.values =
         descriptor.category === 'root' ? ['id-1', 'id-2'] : [0, false, '示例'];
       break;
     case 'between':
-      draft.lowerBound = 0;
-      draft.upperBound = 10;
+      draft.props.lowerBound = 0;
+      draft.props.upperBound = 10;
       break;
     case 'search':
-      draft.query = '示例';
-      draft.fields = ['data'];
+      draft.props.query = '示例';
+      draft.props.fields = ['data'];
       break;
     case 'deletion':
-      draft.state = DeletionState.ACTIVE;
+      draft.props.state = DeletionState.ACTIVE;
       break;
     case 'time':
-      draft.time = '09:30:45.123456789';
+      draft.props.time = '09:30:45.123456789';
       break;
     case 'days':
-      draft.days = 7;
+      draft.props.days = 7;
       break;
   }
   if (descriptor.category === 'logical')
     draft.operands = [
-      { ...newFilterDraft(FilterOperator.EQ, 'data'), value: '示例' },
+      { ...newFilterNode(FilterOperator.EQ, 'data'), props: { value: '示例' } },
     ];
   if (descriptor.category === 'element')
     draft.predicate = {
-      ...newFilterDraft(FilterOperator.GTE, 'quantity'),
-      value: 1,
+      ...newFilterNode(FilterOperator.GTE, 'quantity'),
+      props: { value: 1 },
     };
-  const result = compileFilterDraft(
-    draft,
+  const configuration = createFilterConfiguration(draft, 'advanced');
+  const result = compileFilterConfiguration(
+    configuration,
     galleryFields,
-    undefined,
     undefined,
     undefined,
     'Asia/Shanghai',
   );
   if (!result.expression)
     throw new Error(result.errors.map(error => error.message).join('；'));
-  return result.expression;
+  return configuration;
 }
 export function OperatorGallery(args: DemoArgs) {
   const [op, setOp] = useState(FilterOperator.EQ);

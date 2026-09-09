@@ -12,7 +12,7 @@
  */
 import {
   createFilterConfiguration,
-  createFilterDraft,
+  newFilterNode,
   type RecordData,
   type RecordQuerySource,
   type ViewDefinition,
@@ -21,7 +21,6 @@ import {
 } from '@ahoo-wang/fetcher-view-engine';
 import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
 import {
-  filter,
   FilterOperator,
   SortDirection,
   type FilterExpression,
@@ -90,9 +89,10 @@ const instances: ViewInstanceList = {
       kind: 'record',
       scope: { type: 'personal' },
       config: {
-        filters: createFilterConfiguration(
-          createFilterDraft(filter.gte('amount', 0)),
-        ),
+        filters: createFilterConfiguration({
+          ...newFilterNode(FilterOperator.GTE, 'amount'),
+          props: { value: 0 },
+        }),
         sort: [{ field: 'id', direction: SortDirection.ASC }],
         pagination: { mode: 'paged', size: 2 },
         presentation: {

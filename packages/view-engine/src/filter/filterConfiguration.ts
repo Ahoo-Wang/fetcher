@@ -12,10 +12,8 @@
  */
 export {
   createFilterConfiguration,
-  restoreFilterConfiguration,
-  filterComponentReference,
-  filterComponentProps,
+  resolveFilterComponent,
 } from './filterConfigurationState.js';
 export { validateFilterConfiguration } from './filterConfigurationValidation.js';
 export { compileFilterConfiguration } from './filterConfigurationCompiler.js';
-export { clearFilterDraftValues } from './filterConfigurationClear.js';
+export { clearFilterValues } from './filterConfigurationClear.js';

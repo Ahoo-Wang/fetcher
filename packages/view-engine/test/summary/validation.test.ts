@@ -14,7 +14,7 @@
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { expect, it } from 'vitest';
 import type { RecordColumn } from '../../src/record/recordModel.js';
-import { getRecordSummaryFunctions } from '../../src/record/recordModel.js';
+import { getRecordSummaryFunctions } from '../../src/record/recordPresentation.js';
 import { createRecordSummaryQuery } from '../../src/record/recordSummary.js';
 import {
   validateViewDefinition,

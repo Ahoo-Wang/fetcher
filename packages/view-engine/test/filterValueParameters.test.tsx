@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { configuration } from './fixtures/filterPanel.js';
 import {
   DeletionState,
   FilterOperator as Op,
@@ -20,59 +21,77 @@ import {
 } from '@ahoo-wang/fetcher-wow';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { compileFilterDraft } from '../src/filter/filterCore';
+import { compileFilterConfiguration } from '../src/filter/filterCore';
 import { change, fields, mount, select } from './fixtures/filterValueEditor.js';
 
 afterEach(cleanup);
 
 it('edits search query, field scope and mode without inserting defaults', async () => {
-  const state = mount({ id: 'q', op: Op.SEARCH, query: 'hello' });
+  const state = mount({
+    id: 'q',
+    operator: Op.SEARCH,
+    component: { name: 'builtin' },
+    props: { query: 'hello' },
+  });
   change('搜索内容', 'world');
-  expect(state.current()).toEqual({ id: 'q', op: Op.SEARCH, query: 'world' });
+  expect(state.current()).toEqual({
+    id: 'q',
+    operator: Op.SEARCH,
+    component: { name: 'builtin' },
+    props: { query: 'world' },
+  });
   fireEvent.click(screen.getByRole('button', { name: '搜索参数' }));
   await select('搜索模式', '短语');
-  expect(state.current().mode).toBe(SearchMode.PHRASE);
+  expect(state.current().props.mode).toBe(SearchMode.PHRASE);
   await select('添加搜索字段', '名称');
-  expect(state.current().fields).toEqual(['name']);
+  expect(state.current().props.fields).toEqual(['name']);
   fireEvent.click(screen.getByRole('button', { name: '删除搜索字段名称' }));
-  expect(state.current().fields).toEqual([]);
+  expect(state.current().props.fields).toEqual([]);
   fireEvent.click(screen.getByRole('button', { name: '使用默认搜索字段' }));
-  expect(state.current().fields).toBeUndefined();
-  expect(state.current().query).toBe('world');
+  expect(state.current().props.fields).toBeUndefined();
+  expect(state.current().props.query).toBe('world');
 });
 
 it('retains a loaded search scope and optional mode while raw scope edits remain visible', async () => {
   const initial = {
     id: 'search',
-    op: Op.SEARCH,
-    query: 'hello',
-    fields: ['name', 'amount'],
-    mode: SearchMode.TERMS,
+    operator: Op.SEARCH,
+    component: { name: 'builtin' },
+    props: {
+      query: 'hello',
+      fields: ['name', 'amount'],
+      mode: SearchMode.TERMS,
+    },
   };
   const state = mount(initial);
   change('搜索内容', 'new query');
-  expect(state.current()).toEqual({ ...initial, query: 'new query' });
+  expect(state.current()).toEqual({
+    ...initial,
+    props: { ...initial.props, query: 'new query' },
+  });
   fireEvent.click(screen.getByRole('button', { name: '搜索参数' }));
   change('搜索字段2', '');
-  expect(state.current().fields).toEqual(['name', '']);
-  expect(compileFilterDraft(state.current(), fields).errors).toHaveLength(1);
+  expect(state.current().props.fields).toEqual(['name', '']);
+  expect(
+    compileFilterConfiguration(configuration(state.current()), fields).errors,
+  ).toHaveLength(1);
 });
 
 it('preserves search fields and optional string comparison while editing primary values', async () => {
   const state = mount({
     id: 's',
-    op: Op.CONTAINS,
+    operator: Op.CONTAINS,
     field: 'name',
-    value: 'x',
-    stringComparison: StringComparison.CASE_INSENSITIVE,
+    component: { name: 'builtin' },
+    props: { value: 'x', stringComparison: StringComparison.CASE_INSENSITIVE },
   });
   change('名称值', 'y');
-  expect(state.current().stringComparison).toBe(
+  expect(state.current().props.stringComparison).toBe(
     StringComparison.CASE_INSENSITIVE,
   );
   fireEvent.click(screen.getByRole('button', { name: '名称参数' }));
   await select('大小写比较', '区分大小写');
-  expect(state.current()).toMatchObject({
+  expect(state.current().props).toMatchObject({
     value: 'y',
     stringComparison: StringComparison.CASE_SENSITIVE,
   });
@@ -81,15 +100,18 @@ it('preserves search fields and optional string comparison while editing primary
 it('edits relative options without injecting unset defaults and retains invalid day input', async () => {
   const state = mount({
     id: 't',
-    op: Op.RECENT_DAYS,
+    operator: Op.RECENT_DAYS,
     field: 'createdAt',
-    days: 3,
-    zoneId: 'UTC',
-    datePattern: 'yyyy-MM-dd',
-    timeUnit: TimeUnit.SECONDS,
+    component: { name: 'builtin' },
+    props: {
+      days: 3,
+      zoneId: 'UTC',
+      datePattern: 'yyyy-MM-dd',
+      timeUnit: TimeUnit.SECONDS,
+    },
   });
   change('创建时间天数', '1.5');
-  expect(state.current()).toMatchObject({
+  expect(state.current().props).toMatchObject({
     days: '1.5',
     zoneId: 'UTC',
     datePattern: 'yyyy-MM-dd',
@@ -99,31 +121,32 @@ it('edits relative options without injecting unset defaults and retains invalid 
   expect(screen.queryByRole('textbox', { name: '时区' })).toBeNull();
   change('日期格式', 'yyyy-MM');
   await select('时间单位', '毫秒');
-  expect(state.current()).toMatchObject({
+  expect(state.current().props).toMatchObject({
     days: '1.5',
     zoneId: 'UTC',
     datePattern: 'yyyy-MM',
     timeUnit: TimeUnit.MILLISECONDS,
   });
-  expect(compileFilterDraft(state.current(), fields).errors).toHaveLength(1);
+  expect(
+    compileFilterConfiguration(configuration(state.current()), fields).errors,
+  ).toHaveLength(1);
 });
 
 it('edits BEFORE_TODAY time as raw text', () => {
   const state = mount({
     id: 'bt',
-    op: Op.BEFORE_TODAY,
+    operator: Op.BEFORE_TODAY,
     field: 'createdAt',
-    time: '12:30',
-    zoneId: 'UTC',
+    component: { name: 'builtin' },
+    props: { time: '12:30', zoneId: 'UTC' },
   });
   change('创建时间时间', '12:');
-  expect(state.current()).toMatchObject({ time: '12:', zoneId: 'UTC' });
+  expect(state.current().props).toMatchObject({ time: '12:', zoneId: 'UTC' });
   change('创建时间时间', '12:30:59.123456789');
   expect(
-    compileFilterDraft(
-      state.current(),
+    compileFilterConfiguration(
+      configuration(state.current()),
       fields,
-      undefined,
       undefined,
       undefined,
       'UTC',
@@ -137,29 +160,48 @@ it('edits BEFORE_TODAY time as raw text', () => {
 });
 
 it('edits root metadata as strings and deletion with typed state', async () => {
-  const state = mount({ id: 'm', op: Op.ID, value: '001' });
+  const state = mount({
+    id: 'm',
+    operator: Op.ID,
+    component: { name: 'builtin' },
+    props: { value: '001' },
+  });
   change('记录标识值', '000');
-  expect(state.current().value).toBe('000');
+  expect(state.current().props.value).toBe('000');
   state.unmount();
   const deletion = mount({
     id: 'x',
-    op: Op.DELETION,
-    state: DeletionState.ACTIVE,
+    operator: Op.DELETION,
+    component: { name: 'builtin' },
+    props: { state: DeletionState.ACTIVE },
   });
   await select('删除状态', '已删除');
   expect(deletion.current()).toEqual({
     id: 'x',
-    op: Op.DELETION,
-    state: DeletionState.DELETED,
+    operator: Op.DELETION,
+    component: { name: 'builtin' },
+    props: { state: DeletionState.DELETED },
   });
 });
 
 it('renders no value control for presence operators but exposes relative options', async () => {
-  const state = mount({ id: 'n', op: Op.IS_NULL, field: 'name' });
+  const state = mount({
+    id: 'n',
+    operator: Op.IS_NULL,
+    field: 'name',
+    component: { name: 'builtin' },
+    props: {},
+  });
   expect(screen.queryByRole('textbox')).toBeNull();
   expect(screen.queryByRole('combobox')).toBeNull();
   state.unmount();
-  const today = mount({ id: 'today', op: Op.TODAY, field: 'createdAt' });
+  const today = mount({
+    id: 'today',
+    operator: Op.TODAY,
+    field: 'createdAt',
+    component: { name: 'builtin' },
+    props: {},
+  });
   fireEvent.click(screen.getByRole('button', { name: '创建时间参数' }));
   expect(
     (screen.getByRole('textbox', { name: '日期格式' }) as HTMLInputElement)
@@ -169,9 +211,10 @@ it('renders no value control for presence operators but exposes relative options
   change('日期格式', 'yyyy-MM');
   expect(today.current()).toEqual({
     id: 'today',
-    op: Op.TODAY,
+    operator: Op.TODAY,
     field: 'createdAt',
-    datePattern: 'yyyy-MM',
+    component: { name: 'builtin' },
+    props: { datePattern: 'yyyy-MM' },
   });
 });
 
@@ -189,11 +232,23 @@ it.each([
   Op.NEXT_YEAR,
   Op.LAST_YEAR,
 ])('edits %s options without inserting other parameters', op => {
-  const initial = { id: op, op, field: 'createdAt' };
+  const initial = {
+    id: op,
+    operator: op,
+    field: 'createdAt',
+    component: { name: 'builtin' },
+    props: {},
+  };
   const state = mount(initial);
   fireEvent.click(screen.getByRole('button', { name: '创建时间参数' }));
   change('日期格式', 'yyyy-MM-dd');
-  expect(state.current()).toEqual({ ...initial, datePattern: 'yyyy-MM-dd' });
+  expect(state.current()).toEqual({
+    ...initial,
+    props: { ...initial.props, datePattern: 'yyyy-MM-dd' },
+  });
   change('日期格式', '');
-  expect(state.current()).toEqual({ ...initial, datePattern: undefined });
+  expect(state.current()).toEqual({
+    ...initial,
+    props: { ...initial.props, datePattern: undefined },
+  });
 });

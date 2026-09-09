@@ -12,8 +12,10 @@
  */
 
 import {
-  createFilterDraft,
-  type FilterDraftNode,
+  createFilterConfiguration,
+  compileFilterConfiguration,
+  newFilterNode,
+  type FilterConfiguration,
   type FilterFieldDefinition,
   type FilterMode,
 } from '@ahoo-wang/fetcher-view-engine';
@@ -21,7 +23,7 @@ import {
   FilterPanel,
   type FilterExtensions,
 } from '@ahoo-wang/fetcher-view-engine/react';
-import { filter, type FilterExpression } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { useState } from 'react';
 
 export interface DemoArgs {
@@ -60,41 +62,91 @@ export const fields: FilterFieldDefinition[] = [
     ],
   },
 ];
-export const businessFilter = filter.and([
-  filter.eq('status', 'pending'),
-  filter.gte('amount', 1000),
-]);
-export const nestedFilter = filter.and([
-  filter.or([filter.eq('status', 'pending'), filter.eq('priority', true)]),
-  filter.nor([filter.eq('status', 'closed')]),
-  filter.elementMatch(
-    'items',
-    filter.and([filter.startsWith('sku', 'SKU-'), filter.gte('quantity', 2)]),
-  ),
-]);
+export const businessFilter = createFilterConfiguration({
+  ...newFilterNode(FilterOperator.AND),
+  operands: [
+    {
+      ...newFilterNode(FilterOperator.EQ, 'status', { name: 'select' }),
+      props: { value: 'pending' },
+    },
+    { ...newFilterNode(FilterOperator.GTE, 'amount'), props: { value: 1000 } },
+  ],
+});
+export const nestedFilter = createFilterConfiguration({
+  ...newFilterNode(FilterOperator.AND),
+  operands: [
+    {
+      ...newFilterNode(FilterOperator.OR),
+      operands: [
+        {
+          ...newFilterNode(FilterOperator.EQ, 'status', { name: 'select' }),
+          props: { value: 'pending' },
+        },
+        {
+          ...newFilterNode(FilterOperator.EQ, 'priority'),
+          props: { value: true },
+        },
+      ],
+    },
+    {
+      ...newFilterNode(FilterOperator.NOR),
+      operands: [
+        {
+          ...newFilterNode(FilterOperator.EQ, 'status', { name: 'select' }),
+          props: { value: 'closed' },
+        },
+      ],
+    },
+    {
+      ...newFilterNode(FilterOperator.ELEMENT_MATCH, 'items'),
+      predicate: {
+        ...newFilterNode(FilterOperator.AND),
+        operands: [
+          {
+            ...newFilterNode(FilterOperator.STARTS_WITH, 'sku'),
+            props: { value: 'SKU-' },
+          },
+          {
+            ...newFilterNode(FilterOperator.GTE, 'quantity'),
+            props: { value: 2 },
+          },
+        ],
+      },
+    },
+  ],
+});
 
 export function Scenario({
   appearance,
   disabled,
   initial = businessFilter,
-  initialDraft,
   definitions = fields,
   extensions,
   mode,
   initialError,
   timeZone = 'Asia/Shanghai',
 }: DemoArgs & {
-  initial?: FilterExpression;
-  initialDraft?: FilterDraftNode;
+  initial?: FilterConfiguration;
   definitions?: readonly FilterFieldDefinition[];
   extensions?: FilterExtensions;
   mode?: FilterMode;
   initialError?: string;
   timeZone?: string;
 }) {
-  const [value, setValue] = useState(initial);
-  const [draft, setDraft] = useState(
-    () => initialDraft ?? createFilterDraft(initial),
+  const [draft, setDraft] = useState(() => ({
+    ...initial,
+    mode: mode ?? initial.mode,
+  }));
+  const [applied, setApplied] = useState(draft);
+  const [value, setValue] = useState(
+    () =>
+      compileFilterConfiguration(
+        initial,
+        definitions,
+        undefined,
+        extensions?.filters,
+        timeZone,
+      ).expression,
   );
   const [calls, setCalls] = useState(0);
   const [pending, setPending] = useState(false);
@@ -114,18 +166,18 @@ export function Scenario({
       }}
     >
       <FilterPanel
-        value={value}
-        draft={draft}
-        onDraftChange={setDraft}
+        value={draft}
+        onChange={setDraft}
+        appliedValue={applied}
         fields={definitions}
         timeZone={timeZone}
-        mode={mode}
         extensions={extensions}
         disabled={disabled}
         queryError={error}
         onPendingChange={setPending}
         onApply={next => {
-          setValue(next);
+          setValue(next.expression);
+          setApplied(next.configuration);
           setCalls(count => count + 1);
           setError(undefined);
         }}

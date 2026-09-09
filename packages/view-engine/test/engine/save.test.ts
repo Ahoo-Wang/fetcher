@@ -10,10 +10,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createFilterConfiguration } from '../../src/filter/filterCore.js';
 
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import { newFilterDraft } from '../../src/filter/filterCore.js';
+import { newFilterNode } from '../../src/filter/filterCore.js';
 import type { ViewInstance } from '../../src/record/recordModel.js';
 import type { ViewHost } from '../../src/record/ViewHost.js';
 import { ViewServiceError } from '../../src/record/viewServiceContract.js';
@@ -162,14 +163,14 @@ it('requires explicit reload after a malformed or changed echo, preserving local
     });
     await expect(engine.save()).rejects.toThrow();
     expect(saveInstance).toHaveBeenCalledOnce();
-    const draft = newFilterDraft(FilterOperator.EQ, 'state.amount');
-    engine.setFilterDraft(draft);
+    const draft = newFilterNode(FilterOperator.EQ, 'state.amount');
+    engine.setFilterDraft(createFilterConfiguration(draft));
     engine.setFilterValidity(false);
     await engine.reloadInstance();
     expect(selected(engine)).toMatchObject({
       requiresReload: false,
       dirty: true,
-      filterDraft: draft,
+      filterDraft: { root: draft },
       filterPending: true,
       instance: { title: 'My draft', revision: 'r9' },
       baseline: { title: 'Server title', revision: 'r9' },

@@ -23,7 +23,7 @@ import type {
   RecordSummaryResult,
 } from './recordModel.js';
 import { readRecordValue } from './recordValidation.js';
-import { RECORD_SUMMARY_LABELS } from './recordModel.js';
+import { RECORD_SUMMARY_LABELS } from './recordPresentation.js';
 import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
 
 export const EMPTY_RECORD_SUMMARY: RecordSummaryResult = {

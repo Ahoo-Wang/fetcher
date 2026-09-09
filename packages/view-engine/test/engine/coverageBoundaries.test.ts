@@ -10,10 +10,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  newFilterNode,
+  createFilterConfiguration,
+} from '../../src/filter/filterCore.js';
 
 import { afterEach, expect, it, vi } from 'vitest';
-import { filter } from '@ahoo-wang/fetcher-wow';
-import { createFilterDraft } from '../../src/filter/filterCore.js';
+import {} from '@ahoo-wang/fetcher-wow';
+
 import type { FilterMode } from '../../src/filter/filterModel.js';
 import type { ViewEngine } from '../../src/record/ViewEngine.js';
 import type { ViewHost } from '../../src/record/ViewHost.js';
@@ -155,7 +160,7 @@ it('rejects invalid editing commands without changing the draft or dispatching r
   const before = engine.getSnapshot();
   expect(() =>
     engine.setFilterDraft(
-      selected(engine).filterDraft,
+      createFilterConfiguration(selected(engine).filterDraft.root),
       undefined,
       'true' as unknown as boolean,
     ),
@@ -168,9 +173,19 @@ it('rejects invalid editing commands without changing the draft or dispatching r
   expect(engine.getSnapshot()).toBe(before);
   expect(paged).toHaveBeenCalledOnce();
   engine.setFilterDraft(
-    createFilterDraft(
-      filter.or([filter.eq('state.amount', 1), filter.eq('state.amount', 2)]),
-    ),
+    createFilterConfiguration({
+      ...newFilterNode(FilterOperator.OR),
+      operands: [
+        {
+          ...newFilterNode(FilterOperator.EQ, 'state.amount'),
+          props: { value: 1 },
+        },
+        {
+          ...newFilterNode(FilterOperator.EQ, 'state.amount'),
+          props: { value: 2 },
+        },
+      ],
+    }),
   );
   expect(() => engine.setFilterMode('simple')).toThrow('高级筛选模式');
   expect(paged).toHaveBeenCalledOnce();

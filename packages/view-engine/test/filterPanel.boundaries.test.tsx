@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import {
   cleanup,
@@ -32,8 +33,8 @@ it.each(['simple', 'advanced'] as const)(
     render(
       <FilterPanel
         fields={fields}
-        value={filter.eq('amount', 10)}
-        mode={mode}
+        defaultValue={configuration(node('EQ', 'amount', { value: 10 }), mode)}
+
         allowedOperators={[Op.EQ, Op.OR, Op.ID]}
         onApply={apply}
       />,
@@ -59,7 +60,9 @@ it.each(['simple', 'advanced'] as const)(
       target: { value: 'paid' },
     });
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
-    expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('status', 'paid'));
+    expect(apply).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ expression: filter.eq('status', 'paid') }),
+    );
   },
 );
 
@@ -68,7 +71,10 @@ it('allows adding to an existing permitted OR without creating AND', async () =>
   render(
     <FilterPanel
       fields={fields}
-      value={filter.or([filter.eq('amount', 10)])}
+      defaultValue={configuration({
+        ...node('OR'),
+        operands: [node('EQ', 'amount', { value: 10 })],
+      })}
       allowedOperators={[Op.EQ, Op.OR]}
       onApply={apply}
     />,
@@ -84,7 +90,12 @@ it('allows adding to an existing permitted OR without creating AND', async () =>
   });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   expect(apply).toHaveBeenCalledExactlyOnceWith(
-    filter.or([filter.eq('amount', 10), filter.eq('status', 'paid')]),
+    expect.objectContaining({
+      expression: filter.or([
+        filter.eq('amount', 10),
+        filter.eq('status', 'paid'),
+      ]),
+    }),
   );
 });
 
@@ -102,7 +113,10 @@ it('blocks implicit AND inside an element predicate while retaining its field re
           ],
         },
       ]}
-      value={filter.elementMatch('items', filter.eq('quantity', 1))}
+      defaultValue={configuration({
+        ...node('ELEMENT_MATCH', 'items'),
+        predicate: node('EQ', 'quantity', { value: 1 }),
+      })}
       allowedOperators={[Op.ELEMENT_MATCH, Op.EQ]}
       onApply={() => {}}
     />,
@@ -126,9 +140,11 @@ it.each([true, false])(
     const draw = (disabled: boolean) => (
       <FilterPanel
         fields={[{ ...fields[0], editor: { name: 'broken' } }]}
-        value={filter.eq('amount', 10)}
+        defaultValue={configuration(
+          node('EQ', 'amount', { value: 10 }, { name: 'broken' }),
+        )}
         onApply={() => {}}
-        onDraftChange={changed}
+        onChange={changed}
         disabled={disabled}
         extensions={{
           filters: {

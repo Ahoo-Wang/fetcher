@@ -49,13 +49,15 @@ it('checks readonly snapshots and component registration boundaries at compile t
     // @ts-expect-error core query configuration is a snapshot
     snapshot.sessions.mine.instance.config.sort.pop();
     // @ts-expect-error core drafts are snapshots
-    session.filterDraft.field = 'other';
+    session.filterDraft.root.field = 'other';
     // @ts-expect-error definition metadata is a snapshot
     state.definition!.title = 'changed';
     engine.setFilterDraft(snapshot.sessions.mine.filterDraft);
     engine.setSort(snapshot.sessions.mine.instance.config.sort);
     engine.setColumns(snapshot.sessions.mine.instance.config.presentation.table.columns);
-    engine.applyFilter(snapshot.sessions.mine.appliedFilter ?? undefined);
+    engine.applyFilter('mine');
+    // @ts-expect-error queries compile the canonical configuration rather than accepting expressions
+    engine.applyFilter(snapshot.sessions.mine.appliedFilter);
     // @ts-expect-error extension records are snapshots
     cell.record.amount = 100;
     // @ts-expect-error instance metadata is a snapshot

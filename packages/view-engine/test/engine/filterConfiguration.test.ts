@@ -15,8 +15,7 @@ import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import {
   createFilterConfiguration,
-  createFilterDraft,
-  newFilterDraft,
+  newFilterNode,
 } from '../../src/filter/filterCore.js';
 import type { FilterCompilerRegistry } from '../../src/filter/filterModel.js';
 import type { ViewInstance } from '../../src/record/recordModel.js';
@@ -26,10 +25,10 @@ it('uses the definition timezone when loading, editing, applying and restoring l
   const saved = instance();
   saved.config.filters = createFilterConfiguration({
     id: 'created-filter',
-    op: FilterOperator.GTE,
+    operator: FilterOperator.GTE,
     field: 'state.created',
-    editor: { name: 'builtin', options: { showTime: true } },
-    value: { date: '2026-01-15', time: '10:30' },
+    component: { name: 'builtin', options: { showTime: true } },
+    props: { value: { date: '2026-01-15', time: '10:30' } },
   });
   const { engine, paged } = setup({
     definition: {
@@ -47,18 +46,25 @@ it('uses the definition timezone when loading, editing, applying and restoring l
     const initial = filter.gte('state.created', Date.UTC(2026, 0, 15, 15, 30));
     expect(paged.mock.lastCall?.[0].filter).toEqual(initial);
     expect(selected(engine).filterPending).toBe(false);
-    engine.setFilterDraft({
-      ...selected(engine).filterDraft,
-      id: 'renamed-created-filter',
-    });
+    engine.setFilterDraft(
+      createFilterConfiguration({
+        ...selected(engine).filterDraft.root,
+        id: 'renamed-created-filter',
+      }),
+    );
     expect(selected(engine)).toMatchObject({
       filterPending: false,
       dirty: true,
     });
-    engine.setFilterDraft({
-      ...selected(engine).filterDraft,
-      value: { date: '2026-01-15', time: '11:30' },
-    });
+    engine.setFilterDraft(
+      createFilterConfiguration({
+        ...selected(engine).filterDraft.root,
+        props: {
+          ...selected(engine).filterDraft.root.props,
+          value: { date: '2026-01-15', time: '11:30' },
+        },
+      }),
+    );
     expect(selected(engine).filterPending).toBe(true);
     await engine.applyFilter();
     expect(paged.mock.lastCall?.[0].filter).toEqual(
@@ -79,15 +85,22 @@ it('uses the definition timezone when loading, editing, applying and restoring l
 it('saves an added unset control without a query and restores its identity through JSON', async () => {
   const { engine, host, paged } = setup();
   await engine.load();
-  const condition = createFilterDraft(filter.gte('state.amount', 10));
-  engine.setFilterDraft(condition);
-  await engine.applyFilter(filter.gte('state.amount', 10));
-  const unset = newFilterDraft(FilterOperator.EQ, 'state.id');
-  engine.setFilterDraft({
-    id: 'saved-group',
-    op: FilterOperator.AND,
-    operands: [condition, unset],
-  });
+  const condition = {
+    ...newFilterNode(FilterOperator.GTE, 'state.amount'),
+    props: { value: 10 },
+  };
+  engine.setFilterDraft(createFilterConfiguration(condition));
+  await engine.applyFilter();
+  const unset = newFilterNode(FilterOperator.EQ, 'state.id');
+  engine.setFilterDraft(
+    createFilterConfiguration({
+      id: 'saved-group',
+      operator: FilterOperator.AND,
+      operands: [condition, unset],
+      component: { name: 'builtin' },
+      props: {},
+    }),
+  );
   expect(selected(engine).filterPending).toBe(false);
   expect(selected(engine).dirty).toBe(true);
   await engine.save();
@@ -105,7 +118,7 @@ it('saves an added unset control without a query and restores its identity throu
     host,
   });
   await restored.engine.load();
-  expect(selected(restored.engine).filterDraft).toMatchObject({
+  expect(selected(restored.engine).filterDraft.root).toMatchObject({
     id: 'saved-group',
     operands: [condition, unset],
   });
@@ -125,9 +138,9 @@ function customView(): ViewInstance {
   const saved = instance();
   saved.config.filters = createFilterConfiguration({
     id: 'amount-picker',
-    op: FilterOperator.GTE,
+    operator: FilterOperator.GTE,
     field: 'state.amount',
-    editor: { name: 'amountPicker', options: { searchable: true } },
+    component: { name: 'amountPicker', options: { searchable: true } },
     props: { selectedAmount: 10, displayLabel: 'Ten', appearance: 'compact' },
   });
   return saved;
@@ -148,11 +161,13 @@ it('saves non-query custom props without querying and requires Query for changed
   expect(active.paged.mock.calls[0][0].filter).toEqual(
     filter.gte('state.amount', 10),
   );
-  const original = selected(active.engine).filterDraft;
-  active.engine.setFilterDraft({
-    ...original,
-    props: { ...original.props, displayLabel: '十元' },
-  });
+  const original = selected(active.engine).filterDraft.root;
+  active.engine.setFilterDraft(
+    createFilterConfiguration({
+      ...original,
+      props: { ...original.props, displayLabel: '十元' },
+    }),
+  );
   expect(selected(active.engine)).toMatchObject({
     dirty: true,
     filterPending: false,
@@ -164,10 +179,12 @@ it('saves non-query custom props without querying and requires Query for changed
     displayLabel: '十元',
     appearance: 'compact',
   });
-  active.engine.setFilterDraft({
-    ...original,
-    props: { ...original.props, selectedAmount: 50, displayLabel: 'Fifty' },
-  });
+  active.engine.setFilterDraft(
+    createFilterConfiguration({
+      ...original,
+      props: { ...original.props, selectedAmount: 50, displayLabel: 'Fifty' },
+    }),
+  );
   await expect(active.engine.save()).rejects.toThrow(/先查询/);
   expect(selected(active.engine).appliedFilter).toEqual(
     filter.gte('state.amount', 10),
@@ -181,9 +198,9 @@ it('saves non-query custom props without querying and requires Query for changed
     instances: { instances: [saved], defaultInstanceId: saved.id },
   });
   await reloaded.engine.load();
-  expect(selected(reloaded.engine).filterDraft).toMatchObject({
+  expect(selected(reloaded.engine).filterDraft.root).toMatchObject({
     id: original.id,
-    editor: original.editor,
+    component: original.component,
     props: { selectedAmount: 50, displayLabel: 'Fifty', appearance: 'compact' },
   });
   expect(reloaded.paged.mock.calls[0][0].filter).toEqual(
@@ -215,17 +232,6 @@ it('preserves an unresolved component and prevents every record and aggregate re
   expect(cursor).not.toHaveBeenCalled();
 });
 
-it('rejects a caller-supplied query that was not compiled from its components', async () => {
-  const { engine, paged } = setup();
-  await engine.load();
-  const draft = selected(engine).filterDraft;
-  await expect(
-    engine.applyFilter(filter.gte('state.amount', 20)),
-  ).rejects.toThrow(/组件配置/);
-  expect(selected(engine).filterDraft).toBe(draft);
-  expect(paged).toHaveBeenCalledTimes(1);
-});
-
 it('blocks a registered compiler which tries to query another field', async () => {
   const saved = customView();
   const { engine, host } = setup({
@@ -249,7 +255,7 @@ it('persists filter mode independently of a query and restores the saved mode', 
   await engine.save();
   engine.setFilterMode('simple');
   await engine.restore();
-  expect(selected(engine).filterMode).toBe('advanced');
+  expect(selected(engine).filterDraft.mode).toBe('advanced');
   expect(selected(engine).dirty).toBe(false);
   expect(paged).toHaveBeenCalledTimes(2);
 });
@@ -260,7 +266,13 @@ it('rejects non-JSON component edits even when JSON.stringify would hide the cha
   const initial = selected(engine).filterDraft;
   for (const value of [() => {}, Number.NaN, new Date(), [undefined]]) {
     expect(() =>
-      engine.setFilterDraft({ ...initial, extra: value } as typeof initial),
+      engine.setFilterDraft({
+        ...initial,
+        root: {
+          ...initial.root,
+          props: { ...initial.root.props, extra: value },
+        },
+      } as unknown as typeof initial),
     ).toThrow();
     expect(selected(engine).filterDraft).toBe(initial);
   }

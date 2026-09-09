@@ -20,7 +20,7 @@ import type { SessionStore } from './SessionStore.js';
 import { hasUnknownWriteOutcome, type InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
 import type { RecordSummaries } from './RecordSummaries.js';
-import { copy, message } from './recordSnapshot.js';
+import { copy, message } from '../../lib/snapshot.js';
 import { instanceContent } from './sessionState.js';
 import { permissionsFor } from './instancePermissions.js';
 

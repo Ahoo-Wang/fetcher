@@ -11,16 +11,7 @@
  * limitations under the License.
  */
 
-import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
-
-import type { DeepReadonly } from '../lib/types.js';
-import type { FilterPanelProps } from './filterReactTypes.js';
-import {
-  compileFilterDraft,
-  createFilterDraft,
-  newFilterDraft,
-} from './filterCore.js';
-import { sameFilterQuery } from './filterTree.js';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 
 export const logicalOperators = [
   FilterOperator.AND,
@@ -53,39 +44,4 @@ export function without(values: Record<string, string>, id: string) {
   return Object.fromEntries(
     Object.entries(values).filter(([key]) => key !== id),
   );
-}
-
-export function readValue(value: DeepReadonly<FilterExpression> | null) {
-  try {
-    if (value === null) throw new TypeError('筛选条件尚未编译');
-    return { draft: createFilterDraft(value), error: undefined };
-  } catch (error) {
-    return {
-      draft: newFilterDraft(FilterOperator.MATCH_ALL),
-      error: message(error),
-    };
-  }
-}
-
-export function readInitialFilterPanelState(props: FilterPanelProps) {
-  const loaded = readValue(props.value);
-  if (props.draft) loaded.error = undefined;
-  const restored =
-    props.draft && !loaded.error
-      ? compileFilterDraft(
-          props.draft,
-          props.fields,
-          props.allowedOperators,
-          props.extensions?.filters,
-          props.editors,
-          props.timeZone,
-        )
-      : undefined;
-  return {
-    ...loaded,
-    baseline:
-      restored?.expression && sameFilterQuery(restored.expression, props.value)
-        ? props.draft!
-        : loaded.draft,
-  };
 }

@@ -11,9 +11,14 @@
  * limitations under the License.
  */
 
+import type { BuiltinFilterProperties } from './filterReactTypes.js';
 import { SearchMode } from '@ahoo-wang/fetcher-wow';
 import { XIcon } from 'lucide-react';
-import type { FilterDraftNode, FilterFieldDefinition } from './filterModel.js';
+import type {
+  FilterComponentConfig,
+  FilterComponentProperties,
+  FilterFieldDefinition,
+} from './filterModel.js';
 import { FilterSelect } from './FilterSelect.js';
 import { Parameters } from './FilterValueParameters.js';
 import { Button } from '../components/ui/button.js';
@@ -33,22 +38,26 @@ export function FilterSearchEditor({
   errorId,
   onChange,
 }: {
-  node: FilterDraftNode;
+  node: FilterComponentConfig;
   fields: readonly FilterFieldDefinition[];
   disabled?: boolean;
   invalid?: boolean;
   errorId?: string;
-  onChange(node: FilterDraftNode): void;
+  onChange(node: FilterComponentConfig): void;
 }) {
-  const update = (patch: Partial<FilterDraftNode>) =>
-    onChange({ ...node, ...patch });
+  const properties = node.props as BuiltinFilterProperties;
+  const searchFields = Array.isArray(properties.fields)
+    ? properties.fields
+    : [];
+  const update = (patch: FilterComponentProperties) =>
+    onChange({ ...node, props: { ...node.props, ...patch } });
   return (
     <>
       <InputGroupInput
         aria-invalid={invalid || undefined}
         aria-describedby={invalid ? errorId : undefined}
         aria-label="搜索内容"
-        value={node.query ?? ''}
+        value={properties.query ?? ''}
         placeholder="搜索内容"
         disabled={disabled}
         className="fve:w-40 fve:flex-none"
@@ -60,7 +69,7 @@ export function FilterSearchEditor({
           errorId={errorId}
           label="搜索模式"
           placeholder="默认模式"
-          value={node.mode}
+          value={properties.mode}
           disabled={disabled}
           options={[
             { value: SearchMode.TERMS, label: '词项' },
@@ -70,13 +79,13 @@ export function FilterSearchEditor({
           onValueChange={mode => update({ mode })}
         />
         <InputGroupText>
-          {node.fields === undefined
+          {properties.fields === undefined
             ? '默认搜索字段'
-            : node.fields.length === 0
+            : searchFields.length === 0
               ? '全部搜索字段'
               : '搜索字段'}
         </InputGroupText>
-        {(node.fields ?? []).map((path, index) => (
+        {searchFields.map((path, index) => (
           <InputGroup key={index}>
             <InputGroupInput
               aria-invalid={invalid || undefined}
@@ -86,7 +95,7 @@ export function FilterSearchEditor({
               disabled={disabled}
               onChange={event =>
                 update({
-                  fields: node.fields?.map((value, position) =>
+                  fields: searchFields.map((value, position) =>
                     position === index ? event.target.value : value,
                   ),
                 })
@@ -99,7 +108,7 @@ export function FilterSearchEditor({
                 size="icon-xs"
                 onClick={() =>
                   update({
-                    fields: node.fields?.filter(
+                    fields: searchFields.filter(
                       (_, position) => position !== index,
                     ),
                   })
@@ -119,11 +128,9 @@ export function FilterSearchEditor({
           options={fields.map(item => ({
             value: item.field,
             label: item.label,
-            disabled: node.fields?.includes(item.field),
+            disabled: searchFields.includes(item.field),
           }))}
-          onValueChange={path =>
-            update({ fields: [...(node.fields ?? []), path] })
-          }
+          onValueChange={path => update({ fields: [...searchFields, path] })}
         />
         <Button
           variant="ghost"
@@ -133,7 +140,7 @@ export function FilterSearchEditor({
         >
           使用默认搜索字段
         </Button>
-        {node.fields === undefined && (
+        {properties.fields === undefined && (
           <Button
             variant="ghost"
             size="sm"

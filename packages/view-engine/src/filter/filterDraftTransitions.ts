@@ -12,30 +12,33 @@
  */
 
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
-import type { FilterDraftNode } from './filterModel.js';
-import { newFilterDraft } from './filterDraft.js';
+import type { FilterComponentConfig } from './filterModel.js';
+import { newFilterNode } from './filterNodes.js';
 import { FILTER_OPERATORS } from './filterOperators.js';
 
 export function appendNode(
-  target: FilterDraftNode,
-  child: FilterDraftNode,
-): FilterDraftNode {
+  target: FilterComponentConfig,
+  child: FilterComponentConfig,
+): FilterComponentConfig {
   if (target.operands)
     return { ...target, operands: [...target.operands, child] };
-  if (target.op === FilterOperator.MATCH_ALL) return child;
-  return { ...newFilterDraft(FilterOperator.AND), operands: [target, child] };
+  if (target.operator === FilterOperator.MATCH_ALL) return child;
+  return { ...newFilterNode(FilterOperator.AND), operands: [target, child] };
 }
 export function transitionFilterOperator(
-  node: FilterDraftNode,
+  node: FilterComponentConfig,
   op: FilterOperator,
-): FilterDraftNode {
+): FilterComponentConfig {
+  if (node.operator === op) return structuredClone(node);
   const next = {
-    ...newFilterDraft(op, node.field),
+    ...newFilterNode(op, node.field, node.component),
     id: node.id,
-    ...(node.editor ? { editor: node.editor } : {}),
-    ...(node.props ? { props: node.props } : {}),
   };
-  const before = FILTER_OPERATORS[node.op]?.input,
+  if (node.component.name !== 'builtin') {
+    next.props = structuredClone(node.props);
+    return next;
+  }
+  const before = FILTER_OPERATORS[node.operator]?.input,
     after = FILTER_OPERATORS[op]?.input;
   if (before === after) {
     const keys =
@@ -51,15 +54,16 @@ export function transitionFilterOperator(
                 ? ['days']
                 : [];
     for (const key of keys)
-      if (key in node)
-        Object.assign(next, { [key]: node[key as keyof FilterDraftNode] });
+      if (key in node.props)
+        Object.assign(next.props, { [key]: node.props[key] });
   }
   if (
-    FILTER_OPERATORS[node.op]?.relativeTime &&
+    FILTER_OPERATORS[node.operator]?.relativeTime &&
     FILTER_OPERATORS[op]?.relativeTime
   ) {
     for (const key of ['zoneId', 'datePattern', 'timeUnit'] as const)
-      if (key in node) Object.assign(next, { [key]: node[key] });
+      if (key in node.props)
+        Object.assign(next.props, { [key]: node.props[key] });
   }
   return next;
 }

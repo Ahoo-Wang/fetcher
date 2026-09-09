@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { useState } from 'react';
 import {
   filter,
@@ -125,7 +126,9 @@ it('does not commit IME text or a paste until composition has ended', () => {
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'text-values' } }]}
-      value={filter.isIn('name', ['001'])}
+      defaultValue={configuration(
+        node('IN', 'name', { values: ['001'] }, { name: 'text-values' }),
+      )}
       onApply={apply}
     />,
   );
@@ -145,75 +148,85 @@ it('does not commit IME text or a paste until composition has ended', () => {
   expect(apply).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   expect(apply).toHaveBeenCalledExactlyOnceWith(
-    filter.isIn('name', ['001', '上海']),
+    expect.objectContaining({
+      expression: filter.isIn('name', ['001', '上海']),
+    }),
   );
 });
 
 it('clears optional string-comparison and time-unit choices without deleting primary values', async () => {
   const text = mount({
     id: 'text',
-    op: Op.CONTAINS,
+    operator: Op.CONTAINS,
     field: 'name',
-    value: 'hello',
-    stringComparison: StringComparison.CASE_INSENSITIVE,
+    component: { name: 'builtin' },
+    props: {
+      value: 'hello',
+      stringComparison: StringComparison.CASE_INSENSITIVE,
+    },
   });
   fireEvent.click(screen.getByRole('button', { name: '名称参数' }));
   await select('大小写比较', '清空选择');
   expect(text.current()).toEqual({
     id: 'text',
-    op: Op.CONTAINS,
+    operator: Op.CONTAINS,
     field: 'name',
-    value: 'hello',
-    stringComparison: undefined,
+    component: { name: 'builtin' },
+    props: { value: 'hello', stringComparison: undefined },
   });
   text.unmount();
   const time = mount({
     id: 'time',
-    op: Op.RECENT_DAYS,
+    operator: Op.RECENT_DAYS,
     field: 'createdAt',
-    days: 3,
-    timeUnit: TimeUnit.SECONDS,
+    component: { name: 'builtin' },
+    props: { days: 3, timeUnit: TimeUnit.SECONDS },
   });
   fireEvent.click(screen.getByRole('button', { name: '创建时间参数' }));
   await select('时间单位', '清空选择');
   expect(time.current()).toEqual({
     id: 'time',
-    op: Op.RECENT_DAYS,
+    operator: Op.RECENT_DAYS,
     field: 'createdAt',
-    days: 3,
-    timeUnit: undefined,
+    component: { name: 'builtin' },
+    props: { days: 3, timeUnit: undefined },
   });
 });
 
 it('clears search mode and deliberately changes default scope to all fields', async () => {
   const state = mount({
     id: 'search',
-    op: Op.SEARCH,
-    query: 'hello',
-    mode: SearchMode.PHRASE,
+    operator: Op.SEARCH,
+    component: { name: 'builtin' },
+    props: { query: 'hello', mode: SearchMode.PHRASE },
   });
   fireEvent.click(screen.getByRole('button', { name: '搜索参数' }));
   await select('搜索模式', '清空选择');
   fireEvent.click(screen.getByRole('button', { name: '搜索全部字段' }));
   expect(state.current()).toEqual({
     id: 'search',
-    op: Op.SEARCH,
-    query: 'hello',
-    mode: undefined,
-    fields: [],
+    operator: Op.SEARCH,
+    component: { name: 'builtin' },
+    props: { query: 'hello', mode: undefined, fields: [] },
   });
 });
 
 it('preserves raw values while changing dynamically typed scalar controls', async () => {
   const state = mount(
-    { id: 'free', op: Op.EQ, field: 'free', value: false },
+    {
+      id: 'free',
+      operator: Op.EQ,
+      field: 'free',
+      component: { name: 'builtin' },
+      props: { value: false },
+    },
     { field: 'free', label: '自由值' },
   );
   await select('自由值值类型', '文本');
-  expect(state.current().value).toEqual({ type: 'string', value: false });
+  expect(state.current().props.value).toEqual({ type: 'string', value: false });
   change('自由值值', '007');
   await select('自由值值类型', '数值');
-  expect(state.current().value).toEqual({ type: 'number', value: '007' });
+  expect(state.current().props.value).toEqual({ type: 'number', value: '007' });
   expect(screen.getByRole('textbox', { name: '自由值值' })).toHaveProperty(
     'value',
     '007',
@@ -223,9 +236,10 @@ it('preserves raw values while changing dynamically typed scalar controls', asyn
 it('selects and clears a scalar date with the calendar while retaining its filter binding', async () => {
   const state = mount({
     id: 'birth',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'birthday',
-    value: '2026-09-01',
+    component: { name: 'builtin' },
+    props: { value: '2026-09-01' },
   });
   fireEvent.click(screen.getByRole('button', { name: '生日日历：2026-09-01' }));
   const dialog = await screen.findByRole('dialog', { name: '生日日历' });
@@ -234,16 +248,17 @@ it('selects and clears a scalar date with the calendar while retaining its filte
   );
   expect(state.current()).toEqual({
     id: 'birth',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'birthday',
-    value: '2026-09-05',
+    component: { name: 'builtin' },
+    props: { value: '2026-09-05' },
   });
   fireEvent.click(screen.getByRole('button', { name: '生日日历：2026-09-05' }));
   const again = await screen.findByRole('dialog', { name: '生日日历' });
   fireEvent.click(
     again.querySelector<HTMLButtonElement>('[data-day="2026/9/5"]')!,
   );
-  expect(state.current().value).toBeUndefined();
+  expect(state.current().props.value).toBeUndefined();
 });
 
 it('marks an invalid standalone date and allows replacing it from the calendar', async () => {
@@ -282,10 +297,13 @@ it('edits and clears typed datetime-range dates without committing until confirm
   const state = mount(
     {
       id: 'range',
-      op: Op.BETWEEN,
+      operator: Op.BETWEEN,
       field: 'createdAt',
-      lowerBound: { date: '2026-09-01', time: '09:00' },
-      upperBound: { date: '2026-09-02', time: '10:00' },
+      component: { name: 'builtin' },
+      props: {
+        lowerBound: { date: '2026-09-01', time: '09:00' },
+        upperBound: { date: '2026-09-02', time: '10:00' },
+      },
     },
     undefined,
     { showTime: true, timeZone: 'Asia/Shanghai' },
@@ -297,11 +315,11 @@ it('edits and clears typed datetime-range dates without committing until confirm
   change('创建时间开始日期', '2026-09-03');
   change('创建时间结束日期', '2026-09-04');
   fireEvent.click(screen.getByRole('button', { name: '确定', exact: true }));
-  expect(state.current().lowerBound).toEqual({
+  expect(state.current().props.lowerBound).toEqual({
     date: '2026-09-03',
     time: '09:00',
   });
-  expect(state.current().upperBound).toEqual({
+  expect(state.current().props.upperBound).toEqual({
     date: '2026-09-04',
     time: '10:00',
   });

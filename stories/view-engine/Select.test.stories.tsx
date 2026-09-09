@@ -15,6 +15,7 @@ import '@ahoo-wang/fetcher-view-engine/styles.css';
 import displayMeta, {
   Clearable as DisplayClearable,
 } from './Select.stories.js';
+import type { DemoArgs } from './Select.stories.js';
 import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
 
 const meta = {
@@ -25,7 +26,7 @@ const meta = {
 
 export default meta;
 
-type Story = RegressionStoryObj<typeof displayMeta>;
+type Story = RegressionStoryObj<DemoArgs>;
 
 export const Clearable: Story = {
   ...DisplayClearable,

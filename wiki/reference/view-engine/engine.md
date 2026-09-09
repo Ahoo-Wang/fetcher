@@ -28,22 +28,22 @@ description: Own engine lifetimes, read immutable snapshots and issue scoped com
 
 Unless specified otherwise, optional `id` selects an instance; omission uses the current selection. Async actions return `Promise<void>` and failures must be handled by the caller.
 
-| Command                                                                                           | Effect                                                                            |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `selectInstance(id)`                                                                              | Navigate and load its records                                                     |
-| `setFilterDraft(draft, id?, valid?)`, `setFilterValidity(valid, id?)`, `setFilterMode(mode, id?)` | Edit without querying                                                             |
-| `applyFilter(expression?, id?)`                                                                   | Compile/apply and query; supplied expressions are checked against component state |
-| `setSort(sort, id?)`, `setPage(index, id?)`, `setPageSize(size, id?)`, `nextPage(id?)`            | Apply record navigation/query changes                                             |
-| `setColumns(columns, id?)`                                                                        | Change presentation; changed summary metrics may request aggregates               |
-| `setSelection(keys, id?)`, `setTitle(title, id?)`                                                 | Change local selection or title state                                             |
-| `refresh(id?, { background? })`                                                                   | Query current applied scope                                                       |
-| `refreshSummary(id?)`                                                                             | Retry aggregate scope separately                                                  |
-| `save(id?)`, `saveAs({ title, scope }, id?)`                                                      | Persist through host services                                                     |
-| `renameInstance(title, id?)`, `deleteInstance(id?)`, `reorderInstances(ids)`                      | Manage service-owned views/preferences                                            |
-| `restore(id?)`                                                                                    | Restore the saved local baseline and query                                        |
-| `reloadInstance(id?)`, `canReloadInstance(id?)`                                                   | Reload/reconcile an instance from the host                                        |
-| `getPermissions(id?)`, `canReorderInstances()`                                                    | Check current action policy                                                       |
-| `updateHost(host)`                                                                                | Replace same-scope callbacks/policy while retaining sessions                      |
-| `dispose()`                                                                                       | End subscriptions and cancel owned reads                                          |
+| Command                                                                                                   | Effect                                                              |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `selectInstance(id)`                                                                                      | Navigate and load its records                                       |
+| `setFilterDraft(configuration, id?, valid?)`, `setFilterValidity(valid, id?)`, `setFilterMode(mode, id?)` | Edit without querying                                               |
+| `applyFilter(id?)`                                                                                        | Compile the current configuration, accept it and query              |
+| `setSort(sort, id?)`, `setPage(index, id?)`, `setPageSize(size, id?)`, `nextPage(id?)`                    | Apply record navigation/query changes                               |
+| `setColumns(columns, id?)`                                                                                | Change presentation; changed summary metrics may request aggregates |
+| `setSelection(keys, id?)`, `setTitle(title, id?)`                                                         | Change local selection or title state                               |
+| `refresh(id?, { background? })`                                                                           | Query current applied scope                                         |
+| `refreshSummary(id?)`                                                                                     | Retry aggregate scope separately                                    |
+| `save(id?)`, `saveAs({ title, scope }, id?)`                                                              | Persist through host services                                       |
+| `renameInstance(title, id?)`, `deleteInstance(id?)`, `reorderInstances(ids)`                              | Manage service-owned views/preferences                              |
+| `restore(id?)`                                                                                            | Restore the saved local baseline and query                          |
+| `reloadInstance(id?)`, `canReloadInstance(id?)`                                                           | Reload/reconcile an instance from the host                          |
+| `getPermissions(id?)`, `canReorderInstances()`                                                            | Check current action policy                                         |
+| `updateHost(host)`                                                                                        | Replace same-scope callbacks/policy while retaining sessions        |
+| `dispose()`                                                                                               | End subscriptions and cancel owned reads                            |
 
 Do not create an extra engine-level transport protocol. Use the provided source's QueryApi methods, forward AbortController, and keep write authorization and persistence in ViewHost services. Query cancellation and stale-response rejection preserve ownership; they cannot undo completed business writes.

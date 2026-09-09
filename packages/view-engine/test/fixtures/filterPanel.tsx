@@ -39,3 +39,22 @@ export const builtinCompiler = {
   compile: compileBuiltinFilter,
   clear: clearBuiltinFilterProps,
 };
+
+export { createFilterConfiguration as configuration } from '../../src/filter/filterConfiguration.js';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { newFilterNode } from '../../src/filter/filterNodes.js';
+import type {
+  FilterComponentProperties,
+  FilterEditorReference,
+} from '../../src/filter/filterModel.js';
+export function node(
+  operator: keyof typeof FilterOperator,
+  field?: string,
+  props: FilterComponentProperties = {},
+  component?: FilterEditorReference,
+) {
+  return {
+    ...newFilterNode(FilterOperator[operator], field, component),
+    props,
+  };
+}

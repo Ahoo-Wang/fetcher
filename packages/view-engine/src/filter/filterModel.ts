@@ -12,13 +12,9 @@
  */
 
 import type {
-  DeletionState,
   FilterExpression,
   FilterLiteral,
   FilterOperator,
-  SearchMode,
-  StringComparison,
-  TimeUnit,
 } from '@ahoo-wang/fetcher-wow';
 import type { DeepReadonly } from '../lib/types.js';
 import type { FilterField } from './filterTypes.js';
@@ -32,7 +28,7 @@ export type FilterJsonValue =
   | number
   | boolean
   | readonly FilterJsonValue[]
-  | { readonly [key: string]: FilterJsonValue };
+  | { readonly [key: string]: FilterJsonValue | undefined };
 export interface FilterEditorReference {
   /** Persisted protocol identity; incompatible property/compile semantics require a new name. */
   name: string;
@@ -62,30 +58,6 @@ export interface FilterDateTimeValue {
 export interface FilterScalarDraftValue {
   type: 'string' | 'number' | 'boolean';
   value: unknown;
-}
-/** Transient editor state. Compile before sending a query; never persist this as a Wow expression. */
-export interface FilterDraftNode {
-  id: string;
-  op: FilterOperator;
-  field?: string;
-  editor?: FilterEditorReference;
-  props?: FilterComponentProperties;
-  value?: unknown;
-  values?: unknown[];
-  lowerBound?: unknown;
-  upperBound?: unknown;
-  operands?: FilterDraftNode[];
-  predicate?: FilterDraftNode;
-  query?: string;
-  fields?: string[];
-  mode?: SearchMode;
-  state?: DeletionState;
-  time?: string;
-  days?: number | string;
-  stringComparison?: StringComparison;
-  zoneId?: string;
-  datePattern?: string;
-  timeUnit?: TimeUnit;
 }
 export interface FilterOperatorDefinition {
   label: string;
@@ -148,3 +120,8 @@ export interface FilterCompiler {
   ): FilterComponentProperties;
 }
 export type FilterCompilerRegistry = Readonly<Record<string, FilterCompiler>>;
+
+export interface FilterApplyResult {
+  configuration: FilterConfiguration;
+  expression: FilterExpression;
+}

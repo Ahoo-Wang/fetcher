@@ -11,12 +11,13 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
-import { compileFilterDraft } from '../src/filter/filterCore.js';
-import type { FilterDraftNode } from '../src/filter/filterModel.js';
+import { compileFilterConfiguration } from '../src/filter/filterCore.js';
+import type { FilterComponentConfig } from '../src/filter/filterModel.js';
 import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
 import { builtinCompiler, fields } from './fixtures/filterPanel.js';
 
@@ -29,8 +30,14 @@ it.each(['constructor', 'toString', '__proto__'])(
     render(
       <FilterPanel
         fields={fields}
-        value={filter.eq('amount', 10)}
-        draft={{ id, op: Op.EQ, field: 'amount', value: 10 }}
+
+        defaultValue={configuration({
+          id,
+          operator: Op.EQ,
+          field: 'amount',
+          component: { name: 'builtin' },
+          props: { value: 10 },
+        })}
         onApply={apply}
       />,
     );
@@ -38,7 +45,9 @@ it.each(['constructor', 'toString', '__proto__'])(
     expect((query as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(query);
-    expect(apply).toHaveBeenCalledWith(filter.eq('amount', 10));
+    expect(apply).toHaveBeenCalledWith(
+      expect.objectContaining({ expression: filter.eq('amount', 10) }),
+    );
   },
 );
 
@@ -56,7 +65,9 @@ it.each(['value', 'filter'] as const)(
     const panel = (component: typeof Healthy | typeof Broken) => (
       <FilterPanel
         fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-        value={filter.eq('amount', 10)}
+        defaultValue={configuration(
+          node('EQ', 'amount', { value: 10 }, { name: 'custom' }),
+        )}
         onApply={apply}
         extensions={{
           filters: {
@@ -76,7 +87,9 @@ it.each(['value', 'filter'] as const)(
     expect(screen.queryByLabelText('恢复的金额')).not.toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
-    expect(apply).toHaveBeenCalledWith(filter.eq('amount', 10));
+    expect(apply).toHaveBeenCalledWith(
+      expect.objectContaining({ expression: filter.eq('amount', 10) }),
+    );
   },
 );
 
@@ -94,30 +107,40 @@ it.each(['single', 'mixed', 'nested'])(
         />
       );
     }
-    const leaf: FilterDraftNode = {
+    const leaf: FilterComponentConfig = {
       id: 'custom',
-      op: Op.EQ,
+      operator: Op.EQ,
       field: shape === 'nested' ? 'quantity' : 'amount',
-      editor: { name: 'custom' },
+      component: { name: 'custom' },
       props: { selected: 10, displayLabel: '保留' },
     };
-    const draft: FilterDraftNode =
+    const draft: FilterComponentConfig =
       shape === 'single'
         ? leaf
         : shape === 'mixed'
           ? {
               id: 'group',
-              op: Op.AND,
+              operator: Op.AND,
               operands: [
-                { id: 'status', op: Op.EQ, field: 'status', value: 'paid' },
+                {
+                  id: 'status',
+                  operator: Op.EQ,
+                  field: 'status',
+                  component: { name: 'builtin' },
+                  props: { value: 'paid' },
+                },
                 leaf,
               ],
+              component: { name: 'builtin' },
+              props: {},
             }
           : {
               id: 'items',
-              op: Op.ELEMENT_MATCH,
+              operator: Op.ELEMENT_MATCH,
               field: 'items',
               predicate: leaf,
+              component: { name: 'builtin' },
+              props: {},
             };
     const registration = {
       component: Custom,
@@ -130,9 +153,9 @@ it.each(['single', 'mixed', 'nested'])(
     const panel = (clearable: boolean) => (
       <FilterPanel
         fields={fields}
-        value={filter.matchAll()}
-        draft={draft}
-        onDraftChange={changed}
+
+        defaultValue={configuration(draft)}
+        onChange={changed}
         onApply={() => {}}
         extensions={{
           filters: {
@@ -168,7 +191,7 @@ it.each(['single', 'mixed', 'nested'])(
     fireEvent.click(clear);
     expect(clearCalls).toBe(1);
     expect(
-      compileFilterDraft(changed.mock.lastCall![0], fields, undefined, {
+      compileFilterConfiguration(changed.mock.lastCall![0], fields, undefined, {
         custom: registration,
       }).expression,
     ).toEqual(filter.matchAll());

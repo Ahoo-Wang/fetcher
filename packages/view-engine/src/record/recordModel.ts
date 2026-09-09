@@ -20,10 +20,8 @@ import type {
 import type {
   FilterCompilerRegistry,
   FilterConfiguration,
-  FilterDraftNode,
   FilterEditorReference,
   FilterFieldDefinition,
-  FilterMode,
 } from '../filter/filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 
@@ -80,37 +78,13 @@ export type RecordColumn =
       summary?: readonly RecordSummaryFunction[];
     })
   | (RecordColumnBase & { kind: 'actions' });
-export function getRecordColumnPinning(
-  column: RecordColumn,
-  rowKey = 'id',
-): RecordColumnPinning {
-  if (column.kind === 'actions') return 'right';
-  if (column.field === rowKey) return 'left';
-  return column.pinned ?? false;
-}
-/** Returns display order without rewriting persisted preferences or omitting hidden columns. */
-export function orderRecordColumns(
-  columns: readonly RecordColumn[],
-  rowKey = 'id',
-): RecordColumn[] {
-  function priority(column: RecordColumn): number {
-    if (column.kind === 'actions') return 4;
-    if (column.field === rowKey) return 0;
-    const pinned = getRecordColumnPinning(column, rowKey);
-    return pinned === 'left' ? 1 : pinned === 'right' ? 3 : 2;
-  }
-  return [...columns].sort((left, right) => priority(left) - priority(right));
-}
-export interface RecordQueryConfig {
-  filter: FilterExpression;
-  sort: FieldSort[];
-  pagination: { mode: 'paged' | 'cursor'; size: number };
-}
 export interface RecordTablePresentation {
   layout: 'table';
   table: { columns: RecordColumn[] };
 }
-export interface RecordViewConfig extends Omit<RecordQueryConfig, 'filter'> {
+export interface RecordViewConfig {
+  sort: FieldSort[];
+  pagination: { mode: 'paged' | 'cursor'; size: number };
   filters: FilterConfiguration;
   presentation: RecordTablePresentation;
 }
@@ -173,12 +147,11 @@ export interface RecordSession {
   readonly baseline: DeepReadonly<ViewInstance>;
   readonly instance: DeepReadonly<ViewInstance>;
   readonly dirty: boolean;
-  readonly filterDraft: DeepReadonly<FilterDraftNode>;
+  readonly filterDraft: DeepReadonly<FilterConfiguration>;
   /** Last applied editor tree, including intentionally unset controls. */
-  readonly filterBaseline: DeepReadonly<FilterDraftNode>;
+  readonly filterBaseline: DeepReadonly<FilterConfiguration>;
   /** Validity of local editor buffers not represented in the Wow expression. */
   readonly filterValid: boolean;
-  readonly filterMode: FilterMode;
   readonly filterPending: boolean;
   /** Compiled query scope. Null blocks reads until the component configuration is valid. */
   readonly appliedFilter: DeepReadonly<FilterExpression> | null;
@@ -209,37 +182,12 @@ export interface ViewEngineState {
   /** Local recovery contexts whose source is absent from the authoritative instance list. */
   readonly pendingCreates: Readonly<Record<string, RecordSession>>;
 }
-export const RECORD_COLUMN_MIN_WIDTH = 64;
-export const RECORD_COLUMN_MAX_WIDTH = 960;
-export const RECORD_COLUMN_DEFAULT_WIDTH = 180;
-
-export const RECORD_SUMMARY_LABELS = {
-  SUM: '合计',
-  AVG: '平均值',
-  MIN: '最小值',
-  MAX: '最大值',
-} as const;
-export type RecordSummaryFunction = keyof typeof RECORD_SUMMARY_LABELS;
+export type RecordSummaryFunction = 'SUM' | 'AVG' | 'MIN' | 'MAX';
 /** A query metric independent of a table column or other presentation settings. */
 export interface RecordSummaryMetric {
   id: string;
   field: string;
   function: RecordSummaryFunction;
-}
-export function formatRecordNumber(
-  value: number,
-  field: Pick<ViewFieldDefinition, 'numberFormat'>,
-): string {
-  const { locale = 'zh-CN', ...options } = field.numberFormat ?? {};
-  if (
-    (!options.style || options.style === 'decimal') &&
-    options.minimumFractionDigits === undefined &&
-    options.maximumFractionDigits === undefined &&
-    options.minimumSignificantDigits === undefined &&
-    options.maximumSignificantDigits === undefined
-  )
-    options.maximumFractionDigits = 2;
-  return new Intl.NumberFormat(locale, options).format(value);
 }
 export interface RecordSummaryResult {
   readonly status: 'idle' | 'loading' | 'success' | 'error';
@@ -250,11 +198,4 @@ export interface RecordSummaryResult {
     >
   >;
   readonly error: string | null;
-}
-export function getRecordSummaryFunctions(
-  field: ViewFieldDefinition,
-): readonly RecordSummaryFunction[] {
-  return field.type === 'number'
-    ? (field.summaryFunctions ?? ['SUM', 'AVG', 'MIN', 'MAX'])
-    : [];
 }

@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { filter } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { vi } from 'vitest';
-import { createFilterDraft } from '../../src/filter/filterCore.js';
+import { newFilterNode } from '../../src/filter/filterCore.js';
 import { createFilterConfiguration } from '../../src/filter/filterConfiguration.js';
 import type {
   ViewDefinition,
@@ -35,9 +35,10 @@ export const instance: ViewInstance = {
   kind: 'record',
   scope: { type: 'personal' },
   config: {
-    filters: createFilterConfiguration(
-      createFilterDraft(filter.gte('amount', 10)),
-    ),
+    filters: createFilterConfiguration({
+      ...newFilterNode(FilterOperator.GTE, 'amount'),
+      props: { value: 10 },
+    }),
     sort: [],
     pagination: { mode: 'paged', size: 10 },
     presentation: {

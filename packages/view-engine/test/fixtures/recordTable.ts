@@ -13,8 +13,8 @@
 
 import { cleanup, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import { filter } from '@ahoo-wang/fetcher-wow';
-import { createFilterDraft } from '../../src/filter/filterCore.js';
+import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { newFilterNode } from '../../src/filter/filterCore.js';
 import { createFilterConfiguration } from '../../src/filter/filterConfiguration.js';
 import type {
   RecordColumn,
@@ -98,7 +98,7 @@ export const instance: ViewInstance = {
   kind: 'record',
   scope: { type: 'personal' },
   config: {
-    filters: createFilterConfiguration(createFilterDraft(filter.matchAll())),
+    filters: createFilterConfiguration(newFilterNode(FilterOperator.MATCH_ALL)),
     sort: [],
     pagination: { mode: 'paged', size: 20 },
     presentation: { layout: 'table', table: { columns } },

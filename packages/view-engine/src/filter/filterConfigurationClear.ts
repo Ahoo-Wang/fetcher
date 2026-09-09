@@ -11,20 +11,15 @@
  * limitations under the License.
  */
 import { getBuiltinFilterCompiler } from './builtinFilterCompilers.js';
-import type { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { copy } from '../lib/snapshot.js';
 import type { DeepReadonly } from '../lib/types.js';
 import type {
   FilterCompilerRegistry,
   FilterConfiguration,
-  FilterDraftNode,
-  FilterEditorReference,
+  FilterComponentConfig,
   FilterFieldDefinition,
 } from './filterModel.js';
-import {
-  createFilterConfiguration,
-  restoreFilterConfiguration,
-} from './filterConfigurationState.js';
+import { createFilterConfiguration } from './filterConfigurationState.js';
 import { filterCompilerContext } from './filterConfigurationCompiler.js';
 import { clearBuiltinFilterProps } from './filterBuiltinCompiler.js';
 import { validateFilterConfiguration } from './filterConfigurationValidation.js';
@@ -42,14 +37,13 @@ export function filterClearCompiler(
   return compiler;
 }
 
-export function clearFilterDraftValues(
-  node: DeepReadonly<FilterDraftNode>,
+export function clearFilterValues(
+  node: DeepReadonly<FilterComponentConfig>,
   fields: readonly FilterFieldDefinition[],
   compilers?: FilterCompilerRegistry,
-  editors?: Readonly<Partial<Record<FilterOperator, FilterEditorReference>>>,
   timeZone?: string,
-): FilterDraftNode {
-  const config = createFilterConfiguration(node, undefined, fields, editors);
+): FilterComponentConfig {
+  const config = createFilterConfiguration(node);
   function clear(
     node: FilterConfiguration['root'],
     scope: readonly FilterFieldDefinition[],
@@ -71,5 +65,5 @@ export function clearFilterDraftValues(
   }
   clear(config.root, fields);
   validateFilterConfiguration(config);
-  return restoreFilterConfiguration(config);
+  return config.root;
 }

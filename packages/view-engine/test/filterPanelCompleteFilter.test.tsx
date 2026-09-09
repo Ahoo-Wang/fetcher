@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { useState } from 'react';
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
@@ -23,7 +24,6 @@ import {
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import type { FilterComponentProps } from '../src/filter/filterReactTypes.js';
-import { createFilterDraft } from '../src/filter/filterCore.js';
 import { fields, builtinCompiler, select } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
@@ -66,7 +66,14 @@ it('lets a complete filter own its UI while the panel owns changes, clearing and
           editor: { name: 'full', options: { unit: '元' } },
         },
       ]}
-      value={filter.eq('amount', 10)}
+      defaultValue={configuration(
+        node(
+          'EQ',
+          'amount',
+          { value: 10 },
+          { name: 'full', options: { unit: '元' } },
+        ),
+      )}
       context={context}
       onApply={apply}
       extensions={{
@@ -96,13 +103,17 @@ it('lets a complete filter own its UI while the panel owns changes, clearing and
   fireEvent.click(screen.getByText('改为至少'));
   expect(apply).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith(filter.gte('amount', 20));
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.gte('amount', 20) }),
+  );
   fireEvent.click(screen.getByText('清空自定义金额'));
   expect((screen.getByLabelText('最低金额') as HTMLInputElement).value).toBe(
     '',
   );
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith(filter.matchAll());
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
   fireEvent.click(screen.getByText('移除自定义金额'));
   expect(screen.queryByLabelText('业务金额筛选器')).toBeNull();
   expect(apply).toHaveBeenCalledTimes(2);
@@ -124,7 +135,9 @@ it('validates complete-filter operator requests and keeps empty-message errors b
           editor: { name: 'full' },
         },
       ]}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'full' }),
+      )}
       onApply={apply}
       extensions={{
         filters: {
@@ -172,7 +185,9 @@ it('rejects disabled and stale complete-filter actions', () => {
   const view = render(
     <FilterPanel
       fields={definitions}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'full' }),
+      )}
       onApply={apply}
       extensions={extensions}
       disabled
@@ -186,13 +201,17 @@ it('rejects disabled and stale complete-filter actions', () => {
   view.rerender(
     <FilterPanel
       fields={definitions}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'full' }),
+      )}
       onApply={apply}
       extensions={extensions}
     />,
   );
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith(filter.eq('amount', 1));
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.eq('amount', 1) }),
+  );
   const old = contract!;
   act(() => contract!.onClear!());
   act(() => old.onRemove());
@@ -211,7 +230,9 @@ it.each(['same-event', 'retained-callback'])(
     render(
       <FilterPanel
         fields={[{ ...fields[0], editor: { name: 'full' } }]}
-        value={filter.eq('amount', 1)}
+        defaultValue={configuration(
+          node('EQ', 'amount', { value: 1 }, { name: 'full' }),
+        )}
         onApply={apply}
         extensions={{
           filters: {
@@ -251,17 +272,17 @@ it('limits a saved custom editor to supported operators and retains its properti
   function Harness() {
     const [draft, setDraft] = useState({
       id: 'saved',
-      op: FilterOperator.EQ,
+      operator: FilterOperator.EQ,
       field: 'amount',
-      editor: { name: 'custom' },
+      component: { name: 'custom' },
       props: { value: 10, label: '保留' },
     });
     return (
       <FilterPanel
         fields={fields}
-        draft={draft}
-        onDraftChange={next => setDraft(next as typeof draft)}
-        value={filter.eq('amount', 10)}
+        value={configuration(draft)}
+        onChange={next => setDraft(next.root as typeof draft)}
+
         onApply={apply}
         extensions={{
           filters: {
@@ -296,10 +317,12 @@ it('limits a saved custom editor to supported operators and retains its properti
   expect(contract!.operator).toBe(FilterOperator.NE);
   expect(contract!.props).toEqual({ value: 10, label: '保留' });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith(filter.ne('amount', 10));
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.ne('amount', 10) }),
+  );
 });
 
-it('checks editor support against the properties produced by the operator transition', () => {
+it('checks editor support against the retained canonical properties on operator transitions', () => {
   let contract: FilterComponentProps | undefined;
   function Custom(props: FilterComponentProps) {
     contract = props;
@@ -308,11 +331,11 @@ it('checks editor support against the properties produced by the operator transi
   render(
     <FilterPanel
       fields={fields}
-      draft={{
-        ...createFilterDraft(filter.eq('amount', 10)),
-        editor: { name: 'custom' },
-      }}
-      value={filter.eq('amount', 10)}
+      defaultValue={configuration({
+        ...node('EQ', 'amount', { value: 10 }),
+        component: { name: 'custom' },
+      })}
+
       onApply={() => {}}
       extensions={{
         filters: {
@@ -334,7 +357,7 @@ it('checks editor support against the properties produced by the operator transi
     contract!.operators
       .filter(option => !option.disabled)
       .map(option => option.value),
-  ).toEqual([FilterOperator.EQ, FilterOperator.BETWEEN]);
+  ).toEqual([FilterOperator.EQ]);
 });
 
 it('keeps builtin operator transitions available when the new input still needs values', async () => {
@@ -342,21 +365,23 @@ it('keeps builtin operator transitions available when the new input still needs 
   render(
     <FilterPanel
       fields={fields}
-      draft={{
-        ...createFilterDraft(filter.eq('amount', 10)),
-        editor: { name: 'builtin' },
-      }}
-      value={filter.eq('amount', 10)}
-      onDraftChange={changed}
+      defaultValue={configuration({
+        ...node('EQ', 'amount', { value: 10 }),
+        component: { name: 'builtin' },
+      })}
+
+      onChange={changed}
       onApply={() => {}}
     />,
   );
   await select('订单金额操作', '介于');
   expect(changed).toHaveBeenLastCalledWith(
     expect.objectContaining({
-      op: FilterOperator.BETWEEN,
-      editor: { name: 'builtin' },
+      root: expect.objectContaining({
+        operator: FilterOperator.BETWEEN,
+        component: { name: 'builtin' },
+      }),
     }),
   );
-  expect(changed.mock.lastCall![0].value).toBeUndefined();
+  expect(changed.mock.lastCall![0].root.props.value).toBeUndefined();
 });

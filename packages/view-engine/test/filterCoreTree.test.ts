@@ -13,24 +13,37 @@
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { expect, it } from 'vitest';
 import {
-  compileFilterDraft,
-  createFilterDraft,
+  compileFilterConfiguration,
   getFieldOperators,
   isSimpleFilter,
-  newFilterDraft,
+  newFilterNode,
 } from '../src/filter/filterCore';
-import type { FilterDraftNode } from '../src/filter/filterModel';
+import type { FilterComponentConfig } from '../src/filter/filterModel';
 import { compile, fields, node } from './fixtures/filterCore.js';
 
 it('compiles repeated AND fields but keeps them out of simple mode, including unset values', () => {
   for (const value of [undefined, 2]) {
-    const draft: FilterDraftNode = {
+    const draft: FilterComponentConfig = {
       id: 'and',
-      op: Op.AND,
+      operator: Op.AND,
       operands: [
-        { id: 'first', op: Op.GTE, field: 'amount', value: 1 },
-        { id: 'second', op: Op.LTE, field: 'amount', value },
+        {
+          id: 'first',
+          operator: Op.GTE,
+          field: 'amount',
+          component: { name: 'builtin', options: { showTime: true } },
+          props: { value: 1 },
+        },
+        {
+          id: 'second',
+          operator: Op.LTE,
+          field: 'amount',
+          component: { name: 'builtin', options: { showTime: true } },
+          props: { value },
+        },
       ],
+      component: { name: 'builtin', options: { showTime: true } },
+      props: {},
     };
     expect(compile(draft)).toEqual({
       expression: filter.and([
@@ -44,19 +57,86 @@ it('compiles repeated AND fields but keeps them out of simple mode, including un
 });
 
 it('keeps OR/NOR branches and separate nested groups independent', () => {
-  for (const expression of [
-    filter.or([filter.eq('amount', 1), filter.eq('amount', 2)]),
-    filter.nor([filter.eq('amount', 1), filter.eq('amount', 2)]),
-    filter.and([
-      filter.and([filter.gte('amount', 1)]),
-      filter.and([filter.lte('amount', 2)]),
-    ]),
-    filter.and([
-      filter.eq('amount', 1),
-      filter.elementMatch('items', filter.eq('quantity', 1)),
-    ]),
+  for (const [draft, expression] of [
+    [
+      node(
+        Op.OR,
+        undefined,
+        {},
+        {
+          operands: [
+            node(Op.EQ, 'amount', { value: 1 }),
+            node(Op.EQ, 'amount', { value: 2 }),
+          ],
+        },
+      ),
+      filter.or([filter.eq('amount', 1), filter.eq('amount', 2)]),
+    ] as const,
+    [
+      node(
+        Op.NOR,
+        undefined,
+        {},
+        {
+          operands: [
+            node(Op.EQ, 'amount', { value: 1 }),
+            node(Op.EQ, 'amount', { value: 2 }),
+          ],
+        },
+      ),
+      filter.nor([filter.eq('amount', 1), filter.eq('amount', 2)]),
+    ] as const,
+    [
+      node(
+        Op.AND,
+        undefined,
+        {},
+        {
+          operands: [
+            node(
+              Op.AND,
+              undefined,
+              {},
+              { operands: [node(Op.GTE, 'amount', { value: 1 })] },
+            ),
+            node(
+              Op.AND,
+              undefined,
+              {},
+              { operands: [node(Op.LTE, 'amount', { value: 2 })] },
+            ),
+          ],
+        },
+      ),
+      filter.and([
+        filter.and([filter.gte('amount', 1)]),
+        filter.and([filter.lte('amount', 2)]),
+      ]),
+    ] as const,
+    [
+      node(
+        Op.AND,
+        undefined,
+        {},
+        {
+          operands: [
+            node(Op.EQ, 'amount', { value: 1 }),
+            node(
+              Op.ELEMENT_MATCH,
+              'items',
+              {},
+              { predicate: node(Op.EQ, 'quantity', { value: 1 }) },
+            ),
+          ],
+        },
+      ),
+      filter.and([
+        filter.eq('amount', 1),
+        filter.elementMatch('items', filter.eq('quantity', 1)),
+      ]),
+    ] as const,
   ])
-    expect(compile(createFilterDraft(expression))).toEqual({
+    expect(compile(draft)).toEqual({
       expression,
       errors: [],
     });
@@ -64,22 +144,43 @@ it('keeps OR/NOR branches and separate nested groups independent', () => {
     'items',
     filter.and([filter.eq('quantity', 1), filter.eq('quantity', 2)]),
   );
-  expect(compile(createFilterDraft(element))).toEqual({
+  expect(
+    compile(
+      node(
+        Op.ELEMENT_MATCH,
+        'items',
+        {},
+        {
+          predicate: node(
+            Op.AND,
+            undefined,
+            {},
+            {
+              operands: [
+                node(Op.EQ, 'quantity', { value: 1 }),
+                node(Op.EQ, 'quantity', { value: 2 }),
+              ],
+            },
+          ),
+        },
+      ),
+    ),
+  ).toEqual({
     expression: element,
     errors: [],
   });
 });
 
 it('creates unset values and explicitly empty groups', () => {
-  expect(compile(newFilterDraft(Op.EQ, 'amount')).expression).toEqual(
+  expect(compile(newFilterNode(Op.EQ, 'amount')).expression).toEqual(
     filter.matchAll(),
   );
-  expect(newFilterDraft(Op.AND).operands).toEqual([]);
-  expect(newFilterDraft(Op.ELEMENT_MATCH, 'items').predicate?.operands).toEqual(
+  expect(newFilterNode(Op.AND).operands).toEqual([]);
+  expect(newFilterNode(Op.ELEMENT_MATCH, 'items').predicate?.operands).toEqual(
     [],
   );
-  expect(compile(newFilterDraft(Op.AND)).errors).not.toEqual([]);
-  expect(compile(newFilterDraft(Op.ELEMENT_MATCH, 'items')).errors).not.toEqual(
+  expect(compile(newFilterNode(Op.AND)).errors).not.toEqual([]);
+  expect(compile(newFilterNode(Op.ELEMENT_MATCH, 'items')).errors).not.toEqual(
     [],
   );
 });
@@ -87,12 +188,17 @@ it('creates unset values and explicitly empty groups', () => {
 it.each([Op.OR, Op.NOR, Op.AND])(
   'prunes inactive %s children before composing, retaining wrappers',
   op => {
-    const draft = node(op, undefined, {
-      operands: [
-        node(Op.EQ, 'amount'),
-        node(Op.EQ, 'enabled', { value: false }),
-      ],
-    });
+    const draft = node(
+      op,
+      undefined,
+      {},
+      {
+        operands: [
+          node(Op.EQ, 'amount'),
+          node(Op.EQ, 'enabled', { value: false }),
+        ],
+      },
+    );
     expect(compile(draft).expression).toEqual({
       op,
       operands: [filter.eq('enabled', false)],
@@ -103,17 +209,30 @@ it.each([Op.OR, Op.NOR, Op.AND])(
 );
 
 it('prunes wholly inactive nested groups and element predicates', () => {
-  const draft = node(Op.OR, undefined, {
-    operands: [
-      node(Op.ELEMENT_MATCH, 'items', {
-        predicate: node(Op.AND, undefined, {
-          operands: [node(Op.EQ, 'quantity')],
-        }),
-      }),
-      node(Op.NOR, undefined, { operands: [node(Op.EQ, 'amount')] }),
-      node(Op.EQ, 'name', { value: 'a' }),
-    ],
-  });
+  const draft = node(
+    Op.OR,
+    undefined,
+    {},
+    {
+      operands: [
+        node(
+          Op.ELEMENT_MATCH,
+          'items',
+          {},
+          {
+            predicate: node(
+              Op.AND,
+              undefined,
+              {},
+              { operands: [node(Op.EQ, 'quantity')] },
+            ),
+          },
+        ),
+        node(Op.NOR, undefined, {}, { operands: [node(Op.EQ, 'amount')] }),
+        node(Op.EQ, 'name', { value: 'a' }),
+      ],
+    },
+  );
   expect(compile(draft).expression).toEqual(
     filter.or([filter.eq('name', 'a')]),
   );
@@ -125,16 +244,26 @@ it('validates fields, capabilities and element relative scope even for unset val
     node(Op.EQ),
     node('BOGUS' as Op),
     node(Op.CONTAINS, 'amount', { value: 'x' }),
-    node(Op.ELEMENT_MATCH, 'items', {
-      predicate: node(Op.EQ, 'amount', { value: 1 }),
-    }),
-    node(Op.ELEMENT_MATCH, 'items', {
-      predicate: node(Op.ID, undefined, { value: 'x' }),
-    }),
+    node(
+      Op.ELEMENT_MATCH,
+      'items',
+      {},
+      { predicate: node(Op.EQ, 'amount', { value: 1 }) },
+    ),
+    node(
+      Op.ELEMENT_MATCH,
+      'items',
+      {},
+      { predicate: node(Op.ID, undefined, { value: 'x' }) },
+    ),
   ])
     expect(compile(draft).errors).not.toEqual([]);
   expect(
-    compileFilterDraft(node(Op.EQ, 'amount'), fields, [Op.NE]).errors,
+    compileFilterConfiguration(
+      { mode: 'advanced', root: node(Op.EQ, 'amount') },
+      fields,
+      [Op.NE],
+    ).errors,
   ).not.toEqual([]);
   expect(
     compile(node(Op.EQ, 'amount'), [
@@ -152,24 +281,32 @@ it('validates fields, capabilities and element relative scope even for unset val
 });
 
 it('recognizes only root match-all, field predicates and flat AND as simple', () => {
-  expect(isSimpleFilter(newFilterDraft(Op.MATCH_ALL))).toBe(true);
+  expect(isSimpleFilter(newFilterNode(Op.MATCH_ALL))).toBe(true);
   expect(isSimpleFilter(node(Op.EQ, 'amount'))).toBe(true);
   expect(
     isSimpleFilter(
-      node(Op.AND, undefined, {
-        operands: [node(Op.EQ, 'amount'), node(Op.EQ, 'name')],
-      }),
+      node(
+        Op.AND,
+        undefined,
+        {},
+        { operands: [node(Op.EQ, 'amount'), node(Op.EQ, 'name')] },
+      ),
     ),
   ).toBe(true);
   for (const draft of [
     node(Op.MATCH_NONE),
     node(Op.ID),
-    node(Op.OR, undefined, { operands: [node(Op.EQ, 'amount')] }),
-    node(Op.AND, undefined, {
-      operands: [
-        node(Op.AND, undefined, { operands: [node(Op.EQ, 'amount')] }),
-      ],
-    }),
+    node(Op.OR, undefined, {}, { operands: [node(Op.EQ, 'amount')] }),
+    node(
+      Op.AND,
+      undefined,
+      {},
+      {
+        operands: [
+          node(Op.AND, undefined, {}, { operands: [node(Op.EQ, 'amount')] }),
+        ],
+      },
+    ),
     node(Op.ELEMENT_MATCH, 'items'),
     node(Op.EQ),
   ])

@@ -10,62 +10,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { FilterOperator } from '@ahoo-wang/fetcher-wow';
-import type { DeepReadonly } from '../lib/types.js';
-import type {
-  FilterCompileResult,
-  FilterCompilerRegistry,
-  FilterDraftNode,
-  FilterEditorReference,
-  FilterFieldDefinition,
-} from './filterModel.js';
-import {
-  createFilterConfiguration,
-  compileFilterConfiguration,
-} from './filterConfiguration.js';
 export { FILTER_OPERATORS, getFieldOperators } from './filterOperators.js';
-export {
-  createFilterDraft,
-  isSimpleFilter,
-  newFilterDraft,
-} from './filterDraft.js';
+export { isSimpleFilter, newFilterNode } from './filterNodes.js';
 export {
   compileBuiltinFilter,
   clearBuiltinFilterProps,
 } from './filterBuiltinCompiler.js';
-
-export function compileFilterDraft(
-  draft: DeepReadonly<FilterDraftNode>,
-  fields: readonly FilterFieldDefinition[],
-  allowedOperators?: readonly FilterOperator[],
-  compilers?: FilterCompilerRegistry,
-  editors?: Readonly<Partial<Record<FilterOperator, FilterEditorReference>>>,
-  timeZone?: string,
-): FilterCompileResult {
-  try {
-    return compileFilterConfiguration(
-      createFilterConfiguration(draft, undefined, fields, editors),
-      fields,
-      allowedOperators,
-      compilers,
-      timeZone,
-    );
-  } catch (error) {
-    return {
-      errors: [
-        {
-          id: draft?.id ?? '',
-          message: error instanceof Error ? error.message : '过滤配置无效',
-        },
-      ],
-    };
-  }
-}
-
 export {
   createFilterConfiguration,
-  restoreFilterConfiguration,
   validateFilterConfiguration,
   compileFilterConfiguration,
-  clearFilterDraftValues,
+  clearFilterValues,
 } from './filterConfiguration.js';

@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 import '@ahoo-wang/fetcher-view-engine/styles.css';
-import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  createFilterConfiguration,
+  newFilterNode,
+} from '@ahoo-wang/fetcher-view-engine';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   completeExtensions,
@@ -66,7 +70,13 @@ export const AdvancedTree: Story = {
 export const LogicalGroupMenu: Story = {
   name: '高级 · 独立添加逻辑分组',
   render: args => (
-    <Scenario {...args} initial={filter.matchAll()} mode="advanced" />
+    <Scenario
+      {...args}
+      initial={createFilterConfiguration(
+        newFilterNode(FilterOperator.MATCH_ALL),
+      )}
+      mode="advanced"
+    />
   ),
 };
 
@@ -75,10 +85,19 @@ export const RepeatedFields: Story = {
   render: args => (
     <Scenario
       {...args}
-      initial={filter.and([
-        filter.startsWith('customer', '上海'),
-        filter.contains('customer', '科技'),
-      ])}
+      initial={createFilterConfiguration({
+        ...newFilterNode(FilterOperator.AND),
+        operands: [
+          {
+            ...newFilterNode(FilterOperator.STARTS_WITH, 'customer'),
+            props: { value: '上海' },
+          },
+          {
+            ...newFilterNode(FilterOperator.CONTAINS, 'customer'),
+            props: { value: '科技' },
+          },
+        ],
+      })}
     />
   ),
 };
@@ -90,21 +109,27 @@ export const CustomEditor: Story = {
       {...args}
       definitions={customFields}
       extensions={customExtensions}
-      initial={filter.isIn('customer', ['customer-1', 'customer-2'])}
-      initialDraft={{
+      initial={createFilterConfiguration({
         id: 'customer-groups',
-        op: FilterOperator.IN,
+        operator: FilterOperator.IN,
         field: 'customer',
-        editor: { name: 'customer-groups' },
+        component: { name: 'customer-groups' },
         props: { values: ['customer-1', 'customer-2'] },
-      }}
+      })}
     />
   ),
 };
 
 export const Empty: Story = {
   name: '未设置值 · 从空条件开始',
-  render: args => <Scenario {...args} initial={filter.matchAll()} />,
+  render: args => (
+    <Scenario
+      {...args}
+      initial={createFilterConfiguration(
+        newFilterNode(FilterOperator.MATCH_ALL),
+      )}
+    />
+  ),
 };
 
 export const SearchableSelect: Story = {
@@ -113,7 +138,10 @@ export const SearchableSelect: Story = {
     <Scenario
       {...args}
       definitions={searchableFields}
-      initial={filter.eq('customer', 'customer-1')}
+      initial={createFilterConfiguration({
+        ...newFilterNode(FilterOperator.EQ, 'customer', { name: 'select' }),
+        props: { value: 'customer-1' },
+      })}
     />
   ),
   parameters: {
@@ -133,14 +161,13 @@ export const CompleteFilter: Story = {
       {...args}
       definitions={searchableFields}
       extensions={completeExtensions}
-      initial={filter.eq('customer', 'customer-1')}
-      initialDraft={{
+      initial={createFilterConfiguration({
         id: 'customer-search',
-        op: FilterOperator.EQ,
+        operator: FilterOperator.EQ,
         field: 'customer',
-        editor: { name: 'customer-search' },
+        component: { name: 'customer-search' },
         props: { value: 'customer-1' },
-      }}
+      })}
     />
   ),
   parameters: {
@@ -169,7 +196,15 @@ export const SavedDateTime: Story = {
   render: args => (
     <Scenario
       {...args}
-      initial={filter.eq('createdAt', Date.parse('2026-11-01T06:30:00Z'))}
+      initial={createFilterConfiguration({
+        ...newFilterNode(FilterOperator.EQ, 'createdAt', {
+          name: 'builtin',
+          options: { showTime: true },
+        }),
+        props: {
+          value: { date: '2026-11-01', time: '01:30:00', offsetMinutes: 300 },
+        },
+      })}
       timeZone="America/New_York"
       definitions={[
         {

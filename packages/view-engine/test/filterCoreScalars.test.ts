@@ -10,13 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  filter,
-  FilterOperator as Op,
-  type FilterExpression,
-} from '@ahoo-wang/fetcher-wow';
+import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { expect, it } from 'vitest';
-import { createFilterDraft } from '../src/filter/filterCore';
 import type { FilterFieldDefinition } from '../src/filter/filterModel';
 import { compile, node } from './fixtures/filterCore.js';
 
@@ -68,13 +63,21 @@ it.each([
 });
 
 it.each([
-  { op: Op.EQ, field: 'amount', value: '001' },
-  { op: Op.IN, field: 'amount', values: ['001', '002'] },
-  { op: Op.BETWEEN, field: 'amount', lowerBound: '001', upperBound: '002' },
-] as FilterExpression[])(
-  'does not reinterpret loaded strings as numbers for $op',
-  expression => {
-    const draft = createFilterDraft(expression);
+  [
+    node(Op.EQ, 'amount', { value: '001' }, {}),
+    { op: Op.EQ, field: 'amount', value: '001' },
+  ] as const,
+  [
+    node(Op.IN, 'amount', { values: ['001', '002'] }, {}),
+    { op: Op.IN, field: 'amount', values: ['001', '002'] },
+  ] as const,
+  [
+    node(Op.BETWEEN, 'amount', { lowerBound: '001', upperBound: '002' }, {}),
+    { op: Op.BETWEEN, field: 'amount', lowerBound: '001', upperBound: '002' },
+  ] as const,
+])(
+  'does not reinterpret loaded strings as numbers for %j',
+  (draft, expression) => {
     const before = structuredClone(draft);
     const result = compile(draft);
     expect(result.errors).not.toEqual([]);
@@ -129,7 +132,7 @@ it('treats cleared draft collections as unset but rejects incomplete entries and
     filter.matchAll(),
   );
   expect(() =>
-    createFilterDraft({ op: Op.IN, field: 'amount', values: [] }),
+    parseFilterOutput({ op: Op.IN, field: 'amount', values: [] }),
   ).toThrow();
   for (const values of [[1, undefined], [1, null], ['']])
     expect(compile(node(Op.IN, 'amount', { values })).errors).not.toEqual([]);
@@ -196,3 +199,5 @@ it('allows partial string matching on enum fields without allowing unknown equal
     compile(node(Op.EQ, 'name', { value: 'pend' }), enumFields).errors,
   ).not.toEqual([]);
 });
+
+import { parseFilterOutput } from '../src/filter/filterProtocol.js';

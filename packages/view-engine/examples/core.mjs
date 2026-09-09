@@ -16,10 +16,9 @@ import assert from 'node:assert/strict';
 import {
   ViewEngine,
   compileBuiltinFilter,
-  compileFilterDraft,
+  compileFilterConfiguration,
   createFilterConfiguration,
-  createFilterDraft,
-  newFilterDraft,
+  newFilterNode,
 } from '@ahoo-wang/fetcher-view-engine';
 
 const definition = {
@@ -41,7 +40,7 @@ const initial = {
   scope: { type: 'personal' },
   revision: '1',
   config: {
-    filters: createFilterConfiguration(newFilterDraft('MATCH_ALL')),
+    filters: createFilterConfiguration(newFilterNode('MATCH_ALL')),
     sort: [],
     pagination: { mode: 'paged', size: 2 },
     presentation: {
@@ -200,11 +199,8 @@ try {
   assert.equal(records[0].amount, 10);
 
   // An intentionally unset numeric control is valid and remains in the editor baseline.
-  const unset = {
-    ...newFilterDraft('GTE', 'amount'),
-    editor: { name: 'builtin' },
-  };
-  const compiledUnset = compileFilterDraft(
+  const unset = createFilterConfiguration(newFilterNode('GTE', 'amount'));
+  const compiledUnset = compileFilterConfiguration(
     unset,
     definition.fields,
     definition.allowedOperators,
@@ -218,15 +214,21 @@ try {
   assert.equal(session().dirty, true);
   await engine.save();
   assert.equal(queries.length, 1);
-  assert.equal(JSON.parse(saved.get('mine')).config.filters.root.id, unset.id);
+  assert.equal(
+    JSON.parse(saved.get('mine')).config.filters.root.id,
+    unset.root.id,
+  );
   assert.deepEqual(JSON.parse(saved.get('mine')).config.filters.root.props, {});
   await verifyReloadedDraft(session().filterDraft);
-  assert.equal(session().filterDraft.op, 'GTE');
-  assert.equal(session().filterDraft.value, undefined);
+  assert.equal(session().filterDraft.root.operator, 'GTE');
+  assert.equal(session().filterDraft.root.props.value, undefined);
   assert.equal(session().filterPending, false);
 
-  const invalid = { ...unset, value: 'not-a-number' };
-  const compiledInvalid = compileFilterDraft(
+  const invalid = {
+    ...unset,
+    root: { ...unset.root, props: { value: 'not-a-number' } },
+  };
+  const compiledInvalid = compileFilterConfiguration(
     invalid,
     definition.fields,
     definition.allowedOperators,
@@ -235,21 +237,20 @@ try {
   assert.equal(compiledInvalid.expression, undefined);
   engine.setFilterDraft(invalid, undefined, false);
   const callsBeforeInvalid = queries.length;
-  await assert.rejects(engine.applyFilter({ op: 'MATCH_ALL' }));
+  await assert.rejects(engine.applyFilter());
   await assert.rejects(engine.save());
   assert.equal(queries.length, callsBeforeInvalid);
   assert.deepEqual(writes, ['save']);
 
-  const valid = { ...unset, value: 25 };
+  const valid = { ...unset, root: { ...unset.root, props: { value: 25 } } };
   engine.setFilterDraft(valid, undefined, true);
-  const compiled = compileFilterDraft(
+  const compiled = compileFilterConfiguration(
     valid,
     definition.fields,
     definition.allowedOperators,
   );
   assert.deepEqual(compiled.errors, []);
   await assert.rejects(engine.save());
-  await assert.rejects(engine.applyFilter({ op: 'MATCH_ALL' }));
   await engine.applyFilter();
   assert.deepEqual(
     session().rows.map(row => row.id),
@@ -268,21 +269,24 @@ try {
   // The EQ/GTE result cannot reconstruct a preset ID or its editable display label.
   const opaque = {
     ...unset,
-    editor: { name: 'amount-preset' },
-    props: {
-      selectedId: 'minimum-25',
-      displayLabel: 'My manually named threshold',
+    root: {
+      ...unset.root,
+      component: { name: 'amount-preset' },
+      props: {
+        selectedId: 'minimum-25',
+        displayLabel: 'My manually named threshold',
+      },
     },
   };
   const beforeMetadata = queries.length;
   engine.setFilterDraft(opaque, undefined, true);
   assert.equal(session().filterPending, false);
   assert.equal(session().dirty, true);
-  assert.equal(createFilterDraft(session().appliedFilter).props, undefined);
+  assert.equal('props' in session().appliedFilter, false);
   await engine.save();
   assert.equal(queries.length, beforeMetadata);
   const persisted = JSON.parse(saved.get('mine'));
-  assert.deepEqual(persisted.config.filters.root.props, opaque.props);
+  assert.deepEqual(persisted.config.filters.root.props, opaque.root.props);
   assert.equal('filter' in persisted.config, false);
   await verifyReloadedDraft(session().filterDraft);
   await engine.saveAs({

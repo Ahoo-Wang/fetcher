@@ -95,9 +95,9 @@ it('allows explicitly registered names even if they match Object.prototype', () 
 it('applies the same explicit-registration rule to filter compilers', () => {
   const config = createFilterConfiguration({
     id: 'custom',
-    op: 'EQ',
+    operator: 'EQ',
     field: 'state.amount',
-    editor: { name: 'toString' },
+    component: { name: 'toString' },
     props: { value: 1 },
   });
   expect(

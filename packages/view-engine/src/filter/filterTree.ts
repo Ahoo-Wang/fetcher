@@ -12,8 +12,11 @@
  */
 
 import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
-import { newFilterDraft } from './filterDraft.js';
-import type { FilterDraftNode, FilterFieldDefinition } from './filterModel.js';
+import { newFilterNode } from './filterNodes.js';
+import type {
+  FilterComponentConfig,
+  FilterFieldDefinition,
+} from './filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 
 export function sameFilterState(a: unknown, b: unknown): boolean {
@@ -53,11 +56,11 @@ export function sameFilterQuery(
   }
   return sameFilterState(normalize(a), normalize(b));
 }
-export function sameFilterDraft(
-  a: DeepReadonly<FilterDraftNode>,
-  b: DeepReadonly<FilterDraftNode>,
+export function sameFilterNode(
+  a: DeepReadonly<FilterComponentConfig>,
+  b: DeepReadonly<FilterComponentConfig>,
 ): boolean {
-  function content(node: DeepReadonly<FilterDraftNode>): unknown {
+  function content(node: DeepReadonly<FilterComponentConfig>): unknown {
     return {
       ...node,
       id: undefined,
@@ -68,10 +71,10 @@ export function sameFilterDraft(
   return sameFilterState(content(a), content(b));
 }
 export function replaceFilterNode(
-  root: FilterDraftNode,
+  root: FilterComponentConfig,
   id: string,
-  next?: FilterDraftNode,
-): FilterDraftNode | undefined {
+  next?: FilterComponentConfig,
+): FilterComponentConfig | undefined {
   if (root.id === id) return next;
   if (root.operands)
     return {
@@ -86,22 +89,22 @@ export function replaceFilterNode(
       ...root,
       predicate:
         replaceFilterNode(root.predicate, id, next) ??
-        newFilterDraft(FilterOperator.AND),
+        newFilterNode(FilterOperator.AND),
     };
   return root;
 }
 export interface FilterNodeLocation {
-  node: FilterDraftNode;
+  node: FilterComponentConfig;
   fields: readonly FilterFieldDefinition[];
   scope: string;
 }
 export function locateFilterNodes(
-  root: FilterDraftNode,
+  root: FilterComponentConfig,
   fields: readonly FilterFieldDefinition[],
 ): FilterNodeLocation[] {
   const result: FilterNodeLocation[] = [];
   function visit(
-    node: FilterDraftNode,
+    node: FilterComponentConfig,
     fields: readonly FilterFieldDefinition[],
     scope: string,
   ) {

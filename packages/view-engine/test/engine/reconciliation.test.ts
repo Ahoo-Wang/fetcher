@@ -10,10 +10,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createFilterConfiguration } from '../../src/filter/filterCore.js';
 
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import { newFilterDraft } from '../../src/filter/filterCore.js';
+import { newFilterNode } from '../../src/filter/filterCore.js';
 import type { ViewInstance } from '../../src/record/recordModel.js';
 import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
@@ -41,8 +42,8 @@ it('reconciles a changed create echo by reading the created ID and preserving bo
   engine.setColumns([
     { id: 'amount', kind: 'field', field: 'state.amount', width: 200 },
   ]);
-  const draft = newFilterDraft(FilterOperator.GTE, 'state.amount');
-  engine.setFilterDraft(draft);
+  const draft = newFilterNode(FilterOperator.GTE, 'state.amount');
+  engine.setFilterDraft(createFilterConfiguration(draft));
   engine.setFilterValidity(false);
   await engine.reloadInstance();
   expect(loadInstance.mock.calls[0][0]).toBe('created-1');
@@ -51,7 +52,7 @@ it('reconciles a changed create echo by reading the created ID and preserving bo
     baseline: persisted,
     dirty: true,
     instance: { title: 'My copy', scope: persisted.scope, revision: 'r2' },
-    filterDraft: draft,
+    filterDraft: { root: draft },
     filterPending: true,
   });
   expect(
@@ -59,7 +60,7 @@ it('reconciles a changed create echo by reading the created ID and preserving bo
   ).toBe(200);
   expect(selected(engine, 'mine').baseline).toEqual(source.baseline);
   expect(selected(engine, 'mine').instance.title).toBe(source.instance.title);
-  expect(selected(engine, 'mine').filterDraft).toEqual(draft);
+  expect(selected(engine, 'mine').filterDraft.root).toEqual(draft);
   expect(host.instance!.save).not.toHaveBeenCalled();
   engine.dispose();
 });

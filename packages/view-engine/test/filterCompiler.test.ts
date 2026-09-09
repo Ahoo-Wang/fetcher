@@ -13,19 +13,19 @@
 
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { expect, it } from 'vitest';
-import { compileFilterDraft } from '../src/filter/filterCore.js';
+import { compileFilterConfiguration } from '../src/filter/filterCore.js';
 import type {
   FilterCompilerRegistry,
-  FilterDraftNode,
+  FilterComponentConfig,
 } from '../src/filter/filterModel.js';
 import { sameFilterQuery } from '../src/filter/filterTree.js';
 import { fields } from './fixtures/filterCore.js';
 
-const draft: FilterDraftNode = {
+const draft: FilterComponentConfig = {
   id: 'custom',
-  op: Op.EQ,
+  operator: Op.EQ,
   field: 'amount',
-  editor: { name: 'range', options: { inclusive: true } },
+  component: { name: 'range', options: { inclusive: true } },
   props: { minimum: 0, maximum: 10, displayLabel: '零至十', unset: undefined },
 };
 const compilers: FilterCompilerRegistry = {
@@ -42,7 +42,14 @@ const compilers: FilterCompilerRegistry = {
 
 it('compiles opaque component properties without mounting or replacing their configuration', () => {
   const before = structuredClone(draft);
-  expect(compileFilterDraft(draft, fields, undefined, compilers)).toEqual({
+  expect(
+    compileFilterConfiguration(
+      { mode: 'advanced', root: draft },
+      fields,
+      undefined,
+      compilers,
+    ),
+  ).toEqual({
     expression: filter.and([filter.gte('amount', 0), filter.lte('amount', 10)]),
     errors: [],
   });
@@ -51,27 +58,34 @@ it('compiles opaque component properties without mounting or replacing their con
 
 it('resolves an explicit component before changed field and operator defaults', () => {
   expect(
-    compileFilterDraft(
-      draft,
+    compileFilterConfiguration(
+      { mode: 'advanced', root: draft },
       fields.map(field => ({ ...field, editor: { name: 'unknown' } })),
       undefined,
       compilers,
-      { [Op.EQ]: { name: 'also-unknown' } },
     ).errors,
   ).toEqual([]);
 });
 
 it('fails closed for missing compilers, malformed output and cross-field output', () => {
-  expect(compileFilterDraft(draft, fields).expression).toBeUndefined();
+  expect(
+    compileFilterConfiguration({ mode: 'advanced', root: draft }, fields)
+      .expression,
+  ).toBeUndefined();
   for (const expression of [
     filter.eq('name', 'wrong'),
     filter.matchAll(),
     { op: Op.EQ, field: 'amount' },
     filter.elementMatch('items', filter.eq('quantity', 1)),
   ]) {
-    const result = compileFilterDraft(draft, fields, undefined, {
-      range: { compile: () => expression as ReturnType<typeof filter.eq> },
-    });
+    const result = compileFilterConfiguration(
+      { mode: 'advanced', root: draft },
+      fields,
+      undefined,
+      {
+        range: { compile: () => expression as ReturnType<typeof filter.eq> },
+      },
+    );
     expect(result.errors.length).toBeGreaterThan(0);
     expect(result.expression).toBeUndefined();
   }
@@ -83,7 +97,12 @@ it('validates compiler output capabilities and allowed operators', () => {
     fields.map(field => ({ ...field, operators: [Op.EQ] })),
   ]) {
     expect(
-      compileFilterDraft(draft, definitions, [Op.EQ], compilers).errors.length,
+      compileFilterConfiguration(
+        { mode: 'advanced', root: draft },
+        definitions,
+        [Op.EQ],
+        compilers,
+      ).errors.length,
     ).toBeGreaterThan(0);
   }
 });
@@ -98,16 +117,16 @@ it('keeps unset custom props distinct from empty strings, false and zero', () =>
     },
   };
   expect(
-    compileFilterDraft(
-      { ...draft, props: { label: 'empty' } },
+    compileFilterConfiguration(
+      { mode: 'advanced', root: { ...draft, props: { label: 'empty' } } },
       fields,
       undefined,
       custom,
     ),
   ).toEqual({ expression: filter.matchAll(), errors: [] });
   expect(
-    compileFilterDraft(
-      { ...draft, props: { value: 0 } },
+    compileFilterConfiguration(
+      { mode: 'advanced', root: { ...draft, props: { value: 0 } } },
       fields,
       undefined,
       custom,

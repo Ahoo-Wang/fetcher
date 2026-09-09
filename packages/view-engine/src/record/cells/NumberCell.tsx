@@ -12,10 +12,8 @@
  */
 
 import { cn } from '../../lib/utils.js';
-import {
-  formatRecordNumber,
-  type ViewFieldDefinition,
-} from '../recordModel.js';
+import { type ViewFieldDefinition } from '../recordModel.js';
+import { formatRecordNumber } from '../recordValueFormat.js';
 import { TextCell } from './TextCell.js';
 
 export interface NumberCellProps {

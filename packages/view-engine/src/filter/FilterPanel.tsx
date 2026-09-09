@@ -32,7 +32,6 @@ export function FilterPanel(props: FilterPanelProps) {
     toolbar,
     simple,
     issues,
-    loadError,
     draft,
     epoch,
     apply,
@@ -117,10 +116,9 @@ export function FilterPanel(props: FilterPanelProps) {
             当前条件尚未完善，完成后可切换简单模式。
           </p>
         )}
-        {loadError && <div role="alert">条件加载失败：{loadError}</div>}
         <div className={filterLayout}>
-          {draft.op === FilterOperator.MATCH_ALL ? null : mode === 'simple' &&
-            draft.op === FilterOperator.AND ? (
+          {draft.operator === FilterOperator.MATCH_ALL ? null : mode ===
+              'simple' && draft.operator === FilterOperator.AND ? (
             draft.operands?.map(child => (
               <FilterNode
                 key={`${epoch}:${child.id}`}

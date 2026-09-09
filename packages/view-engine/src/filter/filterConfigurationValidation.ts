@@ -16,6 +16,7 @@ import type {
   FilterConfiguration,
   FilterFieldDefinition,
 } from './filterModel.js';
+import { isSimpleFilter } from './filterNodes.js';
 import { definition, getFieldOperators } from './filterOperators.js';
 import { checkShape, checkBuiltinProps } from './filterProtocol.js';
 
@@ -105,6 +106,15 @@ export function validateFilterNodeContext(
   return field;
 }
 
+export class FilterConfigurationError extends TypeError {
+  constructor(
+    message: string,
+    readonly id: string,
+  ) {
+    super(message);
+  }
+}
+
 export function validateFilterConfiguration(
   value: unknown,
   fields?: readonly FilterFieldDefinition[],
@@ -116,7 +126,7 @@ export function validateFilterConfiguration(
   if (value.mode !== 'simple' && value.mode !== 'advanced')
     throw new TypeError('筛选模式无效');
   const ids = new Set<string>();
-  function visit(
+  function validateNode(
     value: unknown,
     scope?: readonly FilterFieldDefinition[],
     element = false,
@@ -166,6 +176,7 @@ export function validateFilterConfiguration(
     } else if (value.operands !== undefined)
       throw new TypeError('非分组组件不能包含 operands');
     if (descriptor.category === 'element') {
+      if (value.predicate === undefined) throw new TypeError('请补全元素条件');
       visit(value.predicate, scope ? (field?.fields ?? []) : undefined, true);
     } else if (value.predicate !== undefined)
       throw new TypeError('非元素组件不能包含 predicate');
@@ -188,20 +199,25 @@ export function validateFilterConfiguration(
       } as Parameters<typeof checkShape>[0]);
     }
   }
-  visit(value.root, fields);
-  if (value.mode === 'simple') {
-    const root = value.root as FilterComponentConfig;
-    const ordinary = (node: FilterComponentConfig) =>
-      definition(node.operator).category === 'field';
-    if (!(
-      root.operator === FilterOperator.MATCH_ALL ||
-      ordinary(root) ||
-      (root.operator === FilterOperator.AND &&
-        root.operands!.length > 0 &&
-        root.operands!.every(ordinary) &&
-        new Set(root.operands!.map(node => node.field)).size ===
-          root.operands!.length)
-    ))
-      throw new TypeError('当前筛选结构不支持简单模式');
+  function visit(
+    node: unknown,
+    scope?: readonly FilterFieldDefinition[],
+    element = false,
+  ) {
+    try {
+      validateNode(node, scope, element);
+    } catch (error) {
+      if (error instanceof FilterConfigurationError) throw error;
+      throw new FilterConfigurationError(
+        error instanceof Error ? error.message : '筛选配置无效',
+        (node as { id?: string })?.id ?? '',
+      );
+    }
   }
+  visit(value.root, fields);
+  if (
+    value.mode === 'simple' &&
+    !isSimpleFilter(value.root as FilterComponentConfig)
+  )
+    throw new TypeError('当前筛选结构不支持简单模式');
 }

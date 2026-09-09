@@ -5,37 +5,37 @@ description: Serialize editor props, compile pure expressions, and connect remot
 
 # Filter configuration and components
 
-## Three representations
+## Configuration and query
 
-| Representation         | Purpose                                                                                             |
-| ---------------------- | --------------------------------------------------------------------------------------------------- |
-| `FilterDraftNode`      | Transient editing tree: id/op/field/editor, raw values/props, operands or predicate                 |
-| `FilterConfiguration`  | JSON-safe `{ mode, root }`; root nodes have id/component/operator/field/props and optional children |
-| Wow `FilterExpression` | Compiled request predicate; it is not a UI restoration format                                       |
+| Representation          | Purpose                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `FilterComponentConfig` | The only editing node: id/component/operator/field/props and optional operands or predicate |
+| `FilterConfiguration`   | JSON-safe `{ mode, root }`, shared by editing, applied and saved snapshots                  |
+| Wow `FilterExpression`  | Compiled request predicate; it is not a UI restoration format                               |
 
 `FilterJsonValue` allows null, booleans, finite numbers, strings, arrays and JSON objects. Object properties may be unset (`undefined`) and are omitted when serialized; do not put functions, cycles or undefined array items into props. A component name identifies its persistence/compile protocol.
 
 ## Core functions
 
-| Function                                                                                | Result / behavior                                                       |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `createFilterDraft(expression)`, `newFilterDraft(op, field?)`                           | Create transient nodes with IDs                                         |
-| `createFilterConfiguration(draft, mode?, fields?, editors?)`                            | Copy raw props and resolve component identities into JSON configuration |
-| `restoreFilterConfiguration(config)`                                                    | Validate and return a draft tree; read the mode from config             |
-| `validateFilterConfiguration(value, fields?)`                                           | Assert valid configuration, throwing on malformed input                 |
-| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?, timeZone?)`  | `{ expression?, errors }`                                               |
-| `compileFilterDraft(draft, fields, allowedOperators?, compilers?, editors?, timeZone?)` | Serialize then compile using the same contract                          |
-| `clearFilterDraftValues(node, fields, compilers?, editors?, timeZone?)`                 | Clear through component semantics while preserving nodes                |
-| `compileBuiltinFilter`, `clearBuiltinFilterProps`                                       | Reuse default component compilation/clearing                            |
-| `getFieldOperators`, `FILTER_OPERATORS`, `isSimpleFilter`, `sameFilterQuery`            | Capability, metadata, mode and query comparisons                        |
+| Function                                                                               | Result / behavior                                                                                      |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `newFilterNode(operator, field?, component?)`                                          | Create a canonical node with an ID, explicit component reference (default `builtin`) and initial props |
+| `createFilterConfiguration(root, mode?)`                                               | Clone and validate the canonical root; infer mode when omitted                                         |
+| `validateFilterConfiguration(value, fields?, allowedOperators?)`                       | Assert valid configuration, throwing on malformed input                                                |
+| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?, timeZone?)` | `{ expression?, errors }`                                                                              |
+| `clearFilterValues(root, fields, compilers?, timeZone?)`                               | Clear through component semantics while preserving node identities                                     |
+| `compileBuiltinFilter`, `clearBuiltinFilterProps`                                      | Reuse default component compilation/clearing                                                           |
+| `getFieldOperators`, `FILTER_OPERATORS`, `isSimpleFilter`, `sameFilterQuery`           | Capability, metadata, mode and query comparisons                                                       |
 
-Supply fields/editor defaults when creating configuration if the draft relies on them. Explicit node editors take precedence over field editors, operator defaults and `builtin`. A compile error prevents application; an empty valid collection of predicates compiles to MATCH_ALL.
+Construct component props directly. The panel resolves field/operator defaults only when creating nodes; saved nodes always use their explicit component references. A compile error prevents application; an empty valid collection of predicates compiles to MATCH_ALL.
+
+`getFieldOperators(field)` derives capabilities only from field type and explicit `field.operators`. Field `editor` and definition `filterEditors` are defaults for new nodes; an existing node's `component` is authoritative. Its registration supplies component-specific compatibility checks, so changing a field editor default does not restrict or replace saved components.
 
 ## FilterPanel
 
-Required props are `value: FilterExpression | null`, `fields` and `onApply(expression)`. Optional controlled props include `draft/onDraftChange`, `appliedDraft`, `mode/onModeChange`, `onPendingChange`, `onValidityChange`, `timeZone`, `extensions`, `editors` and `allowedOperators`. `querying`, `queryError`, `disabled`, `collapsed`, `renderToolbar` and `className` integrate it with a host layout.
+Required props are `fields` and `onApply({configuration, expression})`. Use controlled `value/onChange` with `FilterConfiguration`, or `defaultValue` for local ownership; these forms are mutually exclusive. `appliedValue` optionally supplies the accepted configuration baseline. Mode belongs to `configuration.mode`. Optional props include `onPendingChange`, `onValidityChange`, `timeZone`, `extensions`, `editors` and `allowedOperators`. `querying`, `queryError`, `disabled`, `collapsed`, `renderToolbar` and `className` integrate it with a host layout.
 
-`value` is the applied predicate. Keep draft and appliedDraft independently if editors unmount while navigating. `collapsed` hides the panel body while retaining local buffers. Use `FilterPanelToolbarProps.onModeChange` when relocating its toolbar, so mode guards remain effective. Enter in an ordinary input queries; Enter used by a popup remains owned by that popup.
+Keep editing and accepted configurations independently if editors unmount while navigating. `collapsed` hides the panel body while retaining local buffers. Use `FilterPanelToolbarProps.onModeChange` when relocating its toolbar, so mode guards remain effective. Enter in an ordinary input queries; Enter used by a popup remains owned by that popup.
 
 ## FilterRegistration
 

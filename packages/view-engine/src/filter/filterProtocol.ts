@@ -13,17 +13,83 @@
 import {
   filter,
   FilterOperator as Op,
+  type DeletionState,
+  type SearchMode,
+  type StringComparison,
+  type TimeUnit,
   type ComparableFilterLiteral,
   type ElementFilterExpression,
   type FilterExpression,
   type FilterLiteral,
 } from '@ahoo-wang/fetcher-wow';
 import type { DeepReadonly } from '../lib/types.js';
-import type {
-  FilterDraftNode,
-  FilterOperatorDefinition,
-} from './filterModel.js';
+import type { FilterOperatorDefinition } from './filterModel.js';
 import { definition, stringOperators } from './filterOperators.js';
+
+export interface ProtocolNode {
+  id: string;
+  op: Op;
+  field?: string;
+  value?: unknown;
+  values?: unknown[];
+  lowerBound?: unknown;
+  upperBound?: unknown;
+  operands?: ProtocolNode[];
+  predicate?: ProtocolNode;
+  query?: string;
+  fields?: string[];
+  mode?: SearchMode;
+  state?: DeletionState;
+  time?: string;
+  days?: number | string;
+  stringComparison?: StringComparison;
+  zoneId?: string;
+  datePattern?: string;
+  timeUnit?: TimeUnit;
+}
+
+export function parseFilterOutput(
+  expression: DeepReadonly<FilterExpression>,
+): ProtocolNode {
+  if (
+    !expression ||
+    typeof expression !== 'object' ||
+    Array.isArray(expression)
+  )
+    throw new TypeError('过滤表达式必须是对象');
+  const node: ProtocolNode = {
+    ...expression,
+    id: 'output',
+  } as ProtocolNode;
+  const descriptor = checkShape(node);
+  if (node.operands !== undefined) {
+    if (!Array.isArray(node.operands))
+      throw new TypeError('分组条件必须是数组');
+    node.operands = Array.from(
+      (expression as { operands: DeepReadonly<FilterExpression[]> }).operands,
+      parseFilterOutput,
+    );
+  }
+  if (node.predicate !== undefined)
+    node.predicate = parseFilterOutput(
+      (expression as { predicate: DeepReadonly<FilterExpression> }).predicate,
+    );
+  if (node.values !== undefined) {
+    if (!Array.isArray(node.values)) throw new TypeError('集合值必须是数组');
+    node.values = [...node.values];
+  }
+  if (node.fields !== undefined) {
+    if (!Array.isArray(node.fields)) throw new TypeError('搜索字段必须是数组');
+    node.fields = [...node.fields];
+  }
+  // No editor conversion here: remote objects are not protocol literals.
+  if (descriptor.input === 'values' && !Array.isArray(node.values))
+    throw new TypeError('缺少集合值');
+  if (descriptor.category === 'logical' && !Array.isArray(node.operands))
+    throw new TypeError('缺少分组条件');
+  build(node as unknown as CompiledNode);
+  return node;
+}
 
 const optionalParameters = [
   'stringComparison',
@@ -35,7 +101,7 @@ const optionalParameters = [
 ] as const;
 
 export function checkShape(
-  node: DeepReadonly<FilterDraftNode>,
+  node: DeepReadonly<ProtocolNode>,
 ): FilterOperatorDefinition {
   const descriptor = definition(node.op);
   const keys = ['id', 'op'];
@@ -69,7 +135,7 @@ export function checkShape(
   if (stringOperators.includes(node.op)) keys.push('stringComparison');
   if (descriptor.relativeTime) keys.push('zoneId', 'datePattern', 'timeUnit');
   for (const key of Object.keys(node)) {
-    if (!keys.includes(key) && node[key as keyof FilterDraftNode] !== undefined)
+    if (!keys.includes(key) && node[key as keyof ProtocolNode] !== undefined)
       throw new TypeError(`${node.op} 不支持参数 ${key}`);
   }
   return descriptor;
@@ -95,7 +161,7 @@ export function checkBuiltinProps(
 }
 
 export type CompiledNode = Omit<
-  FilterDraftNode,
+  ProtocolNode,
   'operands' | 'predicate' | 'values' | 'fields'
 > & {
   operands?: FilterExpression[];

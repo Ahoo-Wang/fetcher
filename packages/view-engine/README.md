@@ -151,7 +151,7 @@ record and aggregate requests. Saved JSON never reconstructs components from a
 compiled expression. Object properties with `undefined` are omitted; explicit
 null, false, zero and empty strings survive JSON. Non-JSON values are rejected.
 
-`setFilterDraft(draft, id?, valid?)` compiles through the registered pure functions.
+`setFilterDraft(configuration, id?, valid?)` compiles through the registered pure functions.
 Valid edits producing the same applied query immediately update the accepted
 configuration and editor baseline, enabling Save without a request. Adding an
 unset control or changing its display label follows this path. Changed query
@@ -161,14 +161,13 @@ changes when synchronized. `dirty` compares accepted configuration with saved JS
 `sameFilterQuery` ignores object key order and redundant singleton AND/OR wrappers;
 other expression differences still require Query.
 
-Programmatic clients call `setFilterDraft` before `applyFilter()`. An optional
-expression passed to `applyFilter(expression)` must equal the compiled draft;
-it cannot replace component state. `applyFilter` rejects invalid editor buffers
+Programmatic clients call `setFilterDraft(configuration)` before `applyFilter(id?)`.
+Editing and accepted filter snapshots both use `FilterConfiguration`, including mode. `applyFilter` rejects invalid editor buffers
 without changing the draft or applied query. `setFilterValidity(true)` cannot
 make a changed or uncompiled query eligible for Save.
 
 Core snapshots use `DeepReadonly` for definitions, instances, drafts and records.
-Read these values directly, or pass them back to `applyFilter`, `setFilterDraft`,
+Read these values directly, or pass them back to `setFilterDraft`,
 `setSort` and `setColumns`; the engine copies accepted inputs. Build edits as new
 objects. Host query/write requests receive independent, editable DTOs.
 
@@ -263,8 +262,9 @@ explain pauses and what will resume the countdown.
 Summary calculation/query helpers consume `RecordSummaryMetric[]` (`id`, `field`,
 `function`) independently of table settings. Use
 `getRecordSummaryMetrics(instance.config.presentation)` to adapt a table instance.
-Common instance metadata, record query settings and table presentation are named
-separately as `ViewInstanceMetadata`, `RecordQueryConfig` and `RecordTablePresentation`.
+`ViewInstanceMetadata` holds common instance metadata. `RecordViewConfig` directly
+contains `sort`, `pagination`, canonical `filters` and `presentation`;
+`RecordTablePresentation` defines its table layout and columns.
 
 The field bound to `definition.rowKey` always stays at the left edge, and action
 columns at the right edge. Their sides cannot be changed by saved preferences or
@@ -421,9 +421,12 @@ frame. These display preferences are not saved to the instance. Storybook's
 ## FilterPanel
 
 ```tsx
-import { useState } from 'react';
-import { filter, type FilterExpression } from '@ahoo-wang/fetcher-wow';
-import type { FilterFieldDefinition } from '@ahoo-wang/fetcher-view-engine';
+import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
+import {
+  createFilterConfiguration,
+  newFilterNode,
+  type FilterFieldDefinition,
+} from '@ahoo-wang/fetcher-view-engine';
 import { FilterPanel } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
@@ -437,27 +440,25 @@ export function OrderFilters({
 }: {
   onQuery: (expression: FilterExpression) => void;
 }) {
-  const [value, setValue] = useState<FilterExpression>(filter.matchAll());
   return (
     <FilterPanel
       fields={fields}
-      value={value}
-      onApply={next => {
-        setValue(next);
-        onQuery(next);
-      }}
+      defaultValue={createFilterConfiguration(
+        newFilterNode(FilterOperator.MATCH_ALL),
+      )}
+      onApply={({ expression }) => onQuery(expression)}
     />
   );
 }
 ```
 
-Simple mode uses an implicit AND; advanced mode structurally edits all 50 Wow operators including AND / OR / NOR / ELEMENT_MATCH. Editing, clearing, undo and mode switches make no requests. Query calls `onApply` with a valid expression. The host synchronously updates `value`, executes the request and supplies `querying` / `queryError`. Use `onPendingChange` to guard view saving.
+Simple mode uses an implicit AND; advanced mode structurally edits all 50 Wow operators including AND / OR / NOR / ELEMENT_MATCH. Editing, clearing, undo and mode switches make no requests. Query calls `onApply` with `{configuration, expression}`. The host executes the request and supplies `querying` / `queryError`. Use `onPendingChange` to guard view saving.
 
 Simple mode allows one condition per field, including unset values. Advanced AND/OR/NOR groups allow multiple conditions on the same field, including inside element scopes. Repeated bindings are valid for compilation and instance persistence; they keep the editor in advanced mode until each field occurs once and the tree is otherwise simple.
 
 Add filter opens an anchored Popover with grouped checkboxes, keeping the table and query toolbar in place. Its height is capped and its field area scrolls internally. It stays open for continuous additions; Done or Escape closes it and returns focus to Add filter. Clicking outside dismisses it. Set `group` on field definitions to group choices in definition order. Ungrouped fields appear under Other fields when mixed with named groups. Checking a field adds its condition; unchecking removes that field's direct conditions in the current group. Checkbox state follows the draft even when a value is unset. Advanced mode shows each selected field’s condition count and an adjacent Append condition action for additional same-field predicates in any logical group; advanced mode places AND/OR/NOR in the adjacent icon dropdown instead of the field picker. Root-level operators remain add actions. Logical menu choices respect the definition allowlist. Changes apply only on Query.
 
-Fully unset values keep their controls but produce no predicate; partial values, invalid data and missing extensions block Query. Fields bind when added and remain in their original group and scope. `extensions.filters` supplies local custom editors. `draft` / `onDraftChange` lets the host retain edit buffers per instance. Custom components publish serializable `props` through `onChange(props)`; saveable UI state such as selected IDs and display labels belongs there. Keep only unsaved temporary buffers in local React state.
+Fully unset values keep their controls but produce no predicate; partial values, invalid data and missing extensions block Query. Fields bind when added and remain in their original group and scope. `extensions.filters` supplies local custom editors. `value` / `onChange` lets the host own the configuration per instance; `defaultValue` instead gives the panel local ownership. `appliedValue` supplies an accepted configuration baseline. These snapshots share the same component tree; mode lives in configuration.mode. Custom components publish serializable `props` through `onChange(props)`; saveable UI state such as selected IDs and display labels belongs there. Keep only unsaved temporary buffers in local React state.
 
 Simple mode has no condition action menu or ordering controls. Advanced mode supports adding, deleting and editing groups without moving conditions between groups. Built-in scalar rows omit Clear and Special value buttons; deleting input text leaves an unset value. Use null/empty-string operators for those predicates. Existing datetime edits retain their original offset in repeated DST hours, while dates in other seasons use their actual offset. Without an applicable offset hint, repeated local times choose the earlier occurrence independently of the system timezone; nonexistent DST times remain invalid.
 
@@ -510,7 +511,7 @@ export function AmountFilter() {
 
 ## Entries and theme
 
-- The core entry exports field/draft contracts and filter compilation helpers without React, DOM or CSS.
+- The core entry exports field/configuration contracts and filter compilation helpers without React, DOM or CSS.
 - `/react` exports `FilterPanel`, `FilterValueEditor`, individual filter controls and composition primitives.
 - `/styles.css` contains compiled, prefixed styles. Consumers do not need Tailwind. React 19 is required when using `/react`.
 
@@ -603,7 +604,7 @@ Text collections split pasted input on newlines, commas and semicolons, trim and
 
 Open **View Engine → 过滤器 → 内置组件** in Storybook, or the standalone example with `?example=builtin-filters`. `BuiltinFiltersExample.tsx` uses Fetcher with deterministic data-URL fixtures and LocalStorageViewHost to demonstrate selected-label recovery and JSON persistence. Only this data-URL fixture removes URL-template resolution; real HTTP clients keep their usual URL/authentication interceptors.
 
-Named built-in editors choose their applicable operators automatically when `field.operators` is omitted; an explicit field restriction takes precedence.
+`getFieldOperators(field)` derives capabilities only from field type and explicit `field.operators`. Field `editor` and definition `filterEditors` are defaults for new nodes; an existing node's `component` is authoritative. Its registration supplies component-specific compatibility checks, so changing a field editor default does not restrict or replace saved components.
 
 ### Built-in table cells
 

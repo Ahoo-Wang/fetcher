@@ -13,7 +13,7 @@
 
 import {
   createFilterConfiguration,
-  createFilterDraft,
+  newFilterNode,
 } from '../src/filter/filterCore.js';
 import { describe, expect, it, vi } from 'vitest';
 import { FilterOperator, SortDirection } from '@ahoo-wang/fetcher-wow';
@@ -42,9 +42,7 @@ const instance: ViewInstance = {
   kind: 'record',
   scope: { type: 'personal' },
   config: {
-    filters: createFilterConfiguration(
-      createFilterDraft({ op: FilterOperator.MATCH_ALL }),
-    ),
+    filters: createFilterConfiguration(newFilterNode(FilterOperator.MATCH_ALL)),
     sort: [],
     pagination: { mode: 'paged', size: 20 },
     presentation: {
@@ -119,15 +117,19 @@ describe('record boundaries', () => {
           ...instance,
           config: {
             ...instance.config,
-            filters: createFilterConfiguration(
-              createFilterDraft({
-                op: FilterOperator.AND,
-                operands: [
-                  { op: FilterOperator.GTE, field: 'amount', value: 1 },
-                  { op: FilterOperator.LTE, field: 'amount', value: 10 },
-                ],
-              }),
-            ),
+            filters: createFilterConfiguration({
+              ...newFilterNode(FilterOperator.AND),
+              operands: [
+                {
+                  ...newFilterNode(FilterOperator.GTE, 'amount'),
+                  props: { value: 1 },
+                },
+                {
+                  ...newFilterNode(FilterOperator.LTE, 'amount'),
+                  props: { value: 10 },
+                },
+              ],
+            }),
           },
         },
         definition,
@@ -228,13 +230,10 @@ describe('record boundaries', () => {
           ...instance,
           config: {
             ...instance.config,
-            filters: createFilterConfiguration(
-              createFilterDraft({
-                op: FilterOperator.EQ,
-                field: 'missing',
-                value: 1,
-              }),
-            ),
+            filters: createFilterConfiguration({
+              ...newFilterNode(FilterOperator.EQ, 'missing'),
+              props: { value: 1 },
+            }),
           },
         },
         definition,

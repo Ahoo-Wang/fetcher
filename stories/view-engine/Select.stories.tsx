@@ -18,7 +18,7 @@ import {
 } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-interface DemoArgs {
+export interface DemoArgs {
   appearance: 'light' | 'dark';
   disabled: boolean;
 }

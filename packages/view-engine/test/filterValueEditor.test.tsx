@@ -11,13 +11,14 @@
  * limitations under the License.
  */
 
+import { configuration } from './fixtures/filterPanel.js';
 import { FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { FilterValueEditor } from '../src/filter/FilterValueEditor';
-import { compileFilterDraft } from '../src/filter/filterCore';
+import { compileFilterConfiguration } from '../src/filter/filterCore';
 import type {
-  FilterDraftNode,
+  FilterComponentConfig,
   FilterFieldDefinition,
 } from '../src/filter/filterModel';
 import { change, fields, mount, select } from './fixtures/filterValueEditor.js';
@@ -27,10 +28,10 @@ afterEach(cleanup);
 it('keeps invalid numeric input raw and preserves the bound node', () => {
   const initial = {
     id: 'a',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'amount',
-    value: 0,
-    zoneId: 'UTC',
+    component: { name: 'builtin' },
+    props: { value: 0, zoneId: 'UTC' },
   };
   const state = mount(initial);
   expect(
@@ -39,19 +40,23 @@ it('keeps invalid numeric input raw and preserves the bound node', () => {
   change('金额值', '-');
   expect(state.current()).toEqual({
     ...initial,
-    value: { type: 'number', value: '-' },
+    props: { ...initial.props, value: { type: 'number', value: '-' } },
   });
-  expect(initial.value).toBe(0);
+  expect(initial.props.value).toBe(0);
   change('金额值', '');
-  expect(state.current().value).toEqual({ type: 'number', value: undefined });
+  expect(state.current().props.value).toEqual({
+    type: 'number',
+    value: undefined,
+  });
 });
 
 it('preserves a loaded numeric-looking string until an explicit numeric edit', () => {
   const initial = {
     id: 'loaded-string',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'amount',
-    value: '001',
+    component: { name: 'builtin' },
+    props: { value: '001' },
   };
   const state = mount(initial);
   expect(
@@ -59,14 +64,16 @@ it('preserves a loaded numeric-looking string until an explicit numeric edit', (
   ).toBe('001');
   expect(screen.getByRole('alert').textContent).toContain('不兼容');
   expect(state.changes).toEqual([]);
-  expect(state.current().value).toBe('001');
+  expect(state.current().props.value).toBe('001');
   change('金额值', '002');
   expect(state.current()).toEqual({
     ...initial,
-    value: { type: 'number', value: '002' },
+    props: { ...initial.props, value: { type: 'number', value: '002' } },
   });
   expect(screen.queryByRole('alert')).toBeNull();
-  expect(compileFilterDraft(state.current(), fields)).toEqual({
+  expect(
+    compileFilterConfiguration(configuration(state.current()), fields),
+  ).toEqual({
     expression: { op: Op.EQ, field: 'amount', value: 2 },
     errors: [],
   });
@@ -77,35 +84,48 @@ it.each([undefined, null, ''])(
   initial => {
     const state = mount({
       id: 's',
-      op: Op.EQ,
+      operator: Op.EQ,
       field: 'name',
-      value: initial,
+      component: { name: 'builtin' },
+      props: { value: initial },
     });
-    expect(state.current().value).toBe(initial);
+    expect(state.current().props.value).toBe(initial);
     expect(screen.queryByRole('button', { name: '名称值选项' })).toBeNull();
     expect(screen.queryByRole('button', { name: '清空名称值' })).toBeNull();
     change('名称值', 'hello');
-    expect(state.current().value).toBe('hello');
+    expect(state.current().props.value).toBe('hello');
     change('名称值', '');
-    expect(state.current().value).toBeUndefined();
+    expect(state.current().props.value).toBeUndefined();
   },
 );
 
 it('retains false and clears it without converting to a string', async () => {
-  const state = mount({ id: 'b', op: Op.EQ, field: 'enabled', value: false });
+  const state = mount({
+    id: 'b',
+    operator: Op.EQ,
+    field: 'enabled',
+    component: { name: 'builtin' },
+    props: { value: false },
+  });
   expect(
     screen.getByRole('combobox', { name: '启用值' }).textContent,
   ).toContain('否');
   await select('启用值', '是');
-  expect(state.current().value).toBe(true);
+  expect(state.current().props.value).toBe(true);
   await select('启用值', '清空选择');
-  expect(state.current().value).toBeUndefined();
+  expect(state.current().props.value).toBeUndefined();
   await select('启用值', '否');
-  expect(state.current().value).toBe(false);
+  expect(state.current().props.value).toBe(false);
 });
 
 it('maps enum labels to the original types including zero and empty string', async () => {
-  const state = mount({ id: 'e', op: Op.NE, field: 'status', value: 0 });
+  const state = mount({
+    id: 'e',
+    operator: Op.NE,
+    field: 'status',
+    component: { name: 'builtin' },
+    props: { value: 0 },
+  });
   expect(screen.getByRole('combobox', { name: '状态值' }).textContent).toBe(
     '零',
   );
@@ -116,16 +136,17 @@ it('maps enum labels to the original types including zero and empty string', asy
     ['零', 0],
   ] as const) {
     await select('状态值', label);
-    expect(state.current().value).toBe(value);
+    expect(state.current().props.value).toBe(value);
   }
 });
 
 it('round-trips null in enum equality without assigning a default option', async () => {
   const state = mount({
     id: 'null-enum',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'status',
-    value: null,
+    component: { name: 'builtin' },
+    props: { value: null },
   });
   expect(screen.getByRole('combobox', { name: '状态值' }).textContent).toBe(
     '空值',
@@ -133,15 +154,16 @@ it('round-trips null in enum equality without assigning a default option', async
   expect(state.changes).toEqual([]);
   await select('状态值', '零');
   await select('状态值', '空值');
-  expect(state.current().value).toBeNull();
+  expect(state.current().props.value).toBeNull();
 });
 
 it('shows incompatible loaded values and retains them until explicitly replaced', async () => {
   const initial = {
     id: 'bad-enum',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'status',
-    value: 'missing',
+    component: { name: 'builtin' },
+    props: { value: 'missing' },
   };
   const state = mount(initial);
   expect(screen.getByRole('alert').textContent).toContain('不兼容');
@@ -150,30 +172,47 @@ it('shows incompatible loaded values and retains them until explicitly replaced'
   ).toContain('missing');
   expect(state.changes).toEqual([]);
   await select('状态值', '零');
-  expect(state.changes.map(node => node.value)).toEqual([0]);
-  expect(state.current()).toEqual({ ...initial, value: 0 });
+  expect(state.changes.map(node => node.props.value)).toEqual([0]);
+  expect(state.current()).toEqual({
+    ...initial,
+    props: { ...initial.props, value: 0 },
+  });
   expect(screen.queryByRole('alert')).toBeNull();
 });
 
 it('keeps the selected numeric type when deleting input text', async () => {
   const field: FilterFieldDefinition = { field: 'loose', label: '任意值' };
   const state = mount(
-    { id: 'loose', op: Op.EQ, field: 'loose', value: 0 },
+    {
+      id: 'loose',
+      operator: Op.EQ,
+      field: 'loose',
+      component: { name: 'builtin' },
+      props: { value: 0 },
+    },
     field,
   );
   change('任意值值', '');
   expect(
     screen.getByRole('combobox', { name: '任意值值类型' }).textContent,
   ).toContain('数值');
-  expect(compileFilterDraft(state.current(), [field])).toEqual({
+  expect(
+    compileFilterConfiguration(configuration(state.current()), [field]),
+  ).toEqual({
     expression: { op: Op.MATCH_ALL },
     errors: [],
   });
 });
 
 it('disables inputs and parameter triggers without emitting a change', () => {
-  const changes: FilterDraftNode[] = [];
-  const node = { id: 'disabled', op: Op.EQ, field: 'name', value: 'hello' };
+  const changes: FilterComponentConfig[] = [];
+  const node = {
+    id: 'disabled',
+    operator: Op.EQ,
+    field: 'name',
+    component: { name: 'builtin' },
+    props: { value: 'hello' },
+  };
   render(
     <FilterValueEditor
       node={node}
@@ -193,11 +232,20 @@ it('disables inputs and parameter triggers without emitting a change', () => {
 });
 
 it('clears a numeric value by deleting its input text', () => {
-  const state = mount({ id: 'amount', op: Op.GTE, field: 'amount', value: 10 });
+  const state = mount({
+    id: 'amount',
+    operator: Op.GTE,
+    field: 'amount',
+    component: { name: 'builtin' },
+    props: { value: 10 },
+  });
   expect(screen.queryByRole('button', { name: '金额值选项' })).toBeNull();
   expect(screen.queryByRole('button', { name: '清空金额值' })).toBeNull();
   change('金额值', '');
-  expect(compileFilterDraft(state.current(), fields).expression).toEqual({
+  expect(
+    compileFilterConfiguration(configuration(state.current()), fields)
+      .expression,
+  ).toEqual({
     op: Op.MATCH_ALL,
   });
   expect(screen.getByRole('textbox', { name: '金额值' })).toBeTruthy();

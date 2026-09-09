@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { configuration } from './fixtures/filterPanel.js';
 import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
@@ -24,14 +25,11 @@ import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import type { FilterPanelProps } from '../src/filter/filterReactTypes.js';
 import type {
-  FilterDraftNode,
+  FilterComponentConfig,
   FilterFieldDefinition,
 } from '../src/filter/filterModel.js';
 import type { FilterOptionSource } from '../src/filter/filterOptionSource.js';
-import {
-  createFilterConfiguration,
-  restoreFilterConfiguration,
-} from '../src/filter/filterConfiguration.js';
+import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
 import { select } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
@@ -39,23 +37,23 @@ afterEach(cleanup);
 const customer: FilterFieldDefinition = { field: 'customer', label: '客户' };
 
 function mountPanel(
-  initial: FilterDraftNode,
+  initial: FilterComponentConfig,
   options: Partial<FilterPanelProps> = {},
 ) {
   let current = initial;
   const apply = vi.fn();
   function Example() {
-    const [draft, setDraft] = useState(initial);
+    const [draft, setDraft] = useState(configuration(initial));
     return (
       <FilterPanel
         fields={[customer]}
-        value={filter.matchAll()}
+
         {...options}
-        draft={draft}
-        appliedDraft={initial}
+        value={draft}
+        appliedValue={configuration(initial)}
         onApply={apply}
-        onDraftChange={next => {
-          current = next;
+        onChange={next => {
+          current = next.root;
           setDraft(next);
         }}
       />
@@ -75,8 +73,8 @@ it('selects and clears a local scalar, preserving numeric zero and the serialize
     {
       id: 'local',
       field: 'customer',
-      op: Op.EQ,
-      editor: {
+      operator: Op.EQ,
+      component: {
         name: 'select',
         options: { items: [{ value: 0, label: '编号零' }] },
       },
@@ -100,10 +98,12 @@ it('selects and clears a local scalar, preserving numeric zero and the serialize
     screen.queryAllByRole('alert').map(alert => alert.textContent),
   ).toEqual([]);
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(state.apply).toHaveBeenLastCalledWith(filter.eq('customer', 0));
-  const restored = restoreFilterConfiguration(
-    JSON.parse(JSON.stringify(createFilterConfiguration(state.current()))),
+  expect(state.apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.eq('customer', 0) }),
   );
+  const restored = JSON.parse(
+    JSON.stringify(createFilterConfiguration(state.current())),
+  ).root;
   state.unmount();
   const again = mountPanel(restored);
   expect(screen.getByRole('combobox', { name: '客户' }).textContent).toContain(
@@ -119,7 +119,9 @@ it('selects and clears a local scalar, preserving numeric zero and the serialize
     selectedOptions: [],
   });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(again.apply).toHaveBeenLastCalledWith(filter.matchAll());
+  expect(again.apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
 });
 
 it('deduplicates restored local multi-values while keeping numeric and string IDs distinct', async () => {
@@ -127,8 +129,8 @@ it('deduplicates restored local multi-values while keeping numeric and string ID
     {
       id: 'local-multi',
       field: 'customer',
-      op: Op.NOT_IN,
-      editor: { name: 'multi-select' },
+      operator: Op.NOT_IN,
+      component: { name: 'multi-select' },
       props: {
         note: 'retained',
         values: [1, 1],
@@ -161,11 +163,15 @@ it('deduplicates restored local multi-values while keeping numeric and string ID
     ],
   });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(state.apply).toHaveBeenLastCalledWith({
-    op: Op.NOT_IN,
-    field: 'customer',
-    values: [1, '1'],
-  });
+  expect(state.apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      expression: {
+        op: Op.NOT_IN,
+        field: 'customer',
+        values: [1, '1'],
+      },
+    }),
+  );
 });
 
 it.each([false, true])(
@@ -188,8 +194,8 @@ it.each([false, true])(
       {
         id: 'remote',
         field: 'customer',
-        op: multiple ? Op.IN : Op.NE,
-        editor: {
+        operator: multiple ? Op.IN : Op.NE,
+        component: {
           name: multiple ? 'remote-multi-select' : 'remote-select',
           options: { source: 'customers', pageSize: 7, debounceMs: 0 },
         },
@@ -226,9 +232,11 @@ it.each([false, true])(
     expect(state.apply).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
     expect(state.apply).toHaveBeenLastCalledWith(
-      multiple
-        ? filter.isIn('customer', ['old', 'new'])
-        : filter.ne('customer', 'new'),
+      expect.objectContaining({
+        expression: multiple
+          ? filter.isIn('customer', ['old', 'new'])
+          : filter.ne('customer', 'new'),
+      }),
     );
     fireEvent.click(screen.getByRole('combobox', { name: '客户' }));
     fireEvent.click(
@@ -239,7 +247,9 @@ it.each([false, true])(
       fireEvent.click(screen.getByRole('button', { name: '移除回填名称' }));
     closeChoices();
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
-    expect(state.apply).toHaveBeenLastCalledWith(filter.matchAll());
+    expect(state.apply).toHaveBeenLastCalledWith(
+      expect.objectContaining({ expression: filter.matchAll() }),
+    );
     expect(state.current().props).toEqual({
       note: 'retained',
       ...(multiple ? { values: [] } : { value: undefined }),
@@ -252,8 +262,8 @@ it('blocks Query for uncommitted text and recovers after Enter, paste and remova
   const state = mountPanel({
     id: 'text',
     field: 'customer',
-    op: Op.IN,
-    editor: { name: 'text-values' },
+    operator: Op.IN,
+    component: { name: 'text-values' },
     props: { note: 'retained', values: ['001', '001'] },
   });
   expect(screen.getAllByRole('button', { name: '移除001' })).toHaveLength(1);
@@ -272,7 +282,9 @@ it('blocks Query for uncommitted text and recovers after Enter, paste and remova
   });
   fireEvent.click(query);
   expect(state.apply).toHaveBeenLastCalledWith(
-    filter.isIn('customer', ['A B', '002']),
+    expect.objectContaining({
+      expression: filter.isIn('customer', ['A B', '002']),
+    }),
   );
 });
 
@@ -281,8 +293,8 @@ it('blocks Query for an unfinished registered date range and applies the complet
     {
       id: 'range',
       field: 'created',
-      op: Op.BETWEEN,
-      editor: { name: 'datetime-range' },
+      operator: Op.BETWEEN,
+      component: { name: 'datetime-range' },
       props: {
         note: 'retained',
         lowerBound: '2026-09-01',
@@ -310,12 +322,16 @@ it('blocks Query for an unfinished registered date range and applies the complet
     upperBound: '2026-09-07',
   });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(state.apply).toHaveBeenLastCalledWith({
-    op: Op.BETWEEN,
-    field: 'created',
-    lowerBound: '2026-09-05',
-    upperBound: '2026-09-07',
-  });
+  expect(state.apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      expression: {
+        op: Op.BETWEEN,
+        field: 'created',
+        lowerBound: '2026-09-05',
+        upperBound: '2026-09-07',
+      },
+    }),
+  );
 });
 
 it.each([
@@ -329,9 +345,9 @@ it.each([
     const state = mountPanel({
       id: 'invalid',
       field: 'customer',
-      op,
-      editor: { name },
-      props,
+      operator: op,
+      component: { name },
+      props: { ...props },
     });
     expect(
       screen
@@ -345,7 +361,9 @@ it.each([
     fireEvent.click(screen.getByRole('button', { name: '清空条件' }));
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
-    expect(state.apply).toHaveBeenLastCalledWith(filter.matchAll());
+    expect(state.apply).toHaveBeenLastCalledWith(
+      expect.objectContaining({ expression: filter.matchAll() }),
+    );
   },
 );
 
@@ -361,8 +379,8 @@ it.each(['pageSize', 'debounceMs'])(
       {
         id: 'bad-remote',
         field: 'customer',
-        op: Op.EQ,
-        editor: {
+        operator: Op.EQ,
+        component: {
           name: 'remote-select',
           options: { source: 'customers', [key]: '7' },
         },
@@ -382,6 +400,8 @@ it.each(['pageSize', 'debounceMs'])(
     expect(screen.getByLabelText('客户值')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
-    expect(state.apply).toHaveBeenLastCalledWith(filter.matchAll());
+    expect(state.apply).toHaveBeenLastCalledWith(
+      expect.objectContaining({ expression: filter.matchAll() }),
+    );
   },
 );

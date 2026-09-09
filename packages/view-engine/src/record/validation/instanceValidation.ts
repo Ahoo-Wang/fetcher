@@ -15,14 +15,16 @@ import { encodeViewResourceId } from '../viewServiceContract.js';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
 import { validateFilterConfiguration } from '../../filter/filterConfiguration.js';
 import {
-  RECORD_COLUMN_MAX_WIDTH,
-  RECORD_COLUMN_MIN_WIDTH,
-  getRecordSummaryFunctions,
   type RecordSummaryFunction,
   type ViewDefinition,
   type ViewInstance,
   type ViewFieldDefinition,
 } from '../recordModel.js';
+import {
+  RECORD_COLUMN_MAX_WIDTH,
+  RECORD_COLUMN_MIN_WIDTH,
+} from '../recordColumns.js';
+import { getRecordSummaryFunctions } from '../recordPresentation.js';
 import {
   assertObject,
   assertText,

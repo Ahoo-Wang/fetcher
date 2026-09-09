@@ -20,7 +20,7 @@ import type {
 } from '../recordModel.js';
 import { validateViewInstance } from '../recordValidation.js';
 import type { EngineScope } from './EngineScope.js';
-import { copy, freeze } from './recordSnapshot.js';
+import { copy, freeze } from '../../lib/snapshot.js';
 import { deriveSession } from './sessionState.js';
 
 /** Sole owner of published immutable session state and subscriptions. */

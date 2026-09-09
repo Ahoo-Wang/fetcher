@@ -18,7 +18,7 @@ import {
   type FilterValueEditorProps,
 } from '../../src/filter/FilterValueEditor';
 import type {
-  FilterDraftNode,
+  FilterComponentConfig,
   FilterFieldDefinition,
 } from '../../src/filter/filterModel';
 
@@ -44,11 +44,11 @@ export const fields: FilterFieldDefinition[] = [
   },
 ];
 export function mount(
-  initial: FilterDraftNode,
+  initial: FilterComponentConfig,
   field = fields.find(item => item.field === initial.field),
   options: Pick<FilterValueEditorProps, 'showTime' | 'timeZone'> = {},
 ) {
-  const changes: FilterDraftNode[] = [];
+  const changes: FilterComponentConfig[] = [];
   let current = initial;
   function Example() {
     const [node, setNode] = useState(initial);

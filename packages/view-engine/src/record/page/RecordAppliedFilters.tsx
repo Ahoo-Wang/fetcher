@@ -17,16 +17,13 @@ import { useId, useRef } from 'react';
 import { Badge } from '../../components/ui/badge.js';
 import { Button } from '../../components/ui/button.js';
 import { getBuiltinFilterCompiler } from '../../filter/builtinFilterCompilers.js';
-import { compileFilterDraft } from '../../filter/filterCore.js';
-import {
-  clearFilterDraftValues,
-  filterComponentReference,
-} from '../../filter/filterConfiguration.js';
+import { compileFilterConfiguration } from '../../filter/filterCore.js';
+import { clearFilterValues } from '../../filter/filterConfiguration.js';
 import type {
-  FilterDraftNode,
+  FilterComponentConfig,
   FilterFieldDefinition,
 } from '../../filter/filterModel.js';
-import { replaceFilterNode, sameFilterDraft } from '../../filter/filterTree.js';
+import { replaceFilterNode, sameFilterNode } from '../../filter/filterTree.js';
 import { cloneSnapshot, type DeepReadonly } from '../../lib/types.js';
 import { describeRecordFilter } from '../recordFilterSummary.js';
 import type { RecordSession, ViewDefinition } from '../recordModel.js';
@@ -45,38 +42,33 @@ export function RecordAppliedFilters({
 }) {
   const rootRef = useRef<HTMLElement>(null);
   const pendingId = useId();
-  const baseline = session.filterBaseline;
+  const baseline = session.filterBaseline.root;
   // Only the outer AND is split. OR/NOR and element scopes remain complete groups.
   const nodes =
     session.appliedFilter === null
       ? []
-      : baseline.op === FilterOperator.AND
+      : baseline.operator === FilterOperator.AND
         ? (baseline.operands ?? [])
         : [baseline];
   function describe(
-    node: DeepReadonly<FilterDraftNode>,
+    node: DeepReadonly<FilterComponentConfig>,
     fields: readonly FilterFieldDefinition[],
   ): ReturnType<typeof describeRecordFilter> | undefined {
-    const result = compileFilterDraft(
-      node,
+    const result = compileFilterConfiguration(
+      { mode: 'advanced', root: node },
       fields,
       definition.allowedOperators,
       engine.filterCompilers,
-      definition.filterEditors,
       definition.timeZone,
     );
     if (
       !result.expression ||
       (result.expression.op === FilterOperator.MATCH_ALL &&
-        node.op !== FilterOperator.MATCH_ALL)
+        node.operator !== FilterOperator.MATCH_ALL)
     )
       return undefined;
     const field = fields.find(field => field.field === node.field);
-    const editor = filterComponentReference(
-      node,
-      field,
-      definition.filterEditors,
-    );
+    const editor = node.component;
     const builtin =
       editor.name === 'builtin' ||
       (!Object.prototype.hasOwnProperty.call(
@@ -103,16 +95,15 @@ export function RecordAppliedFilters({
   }
   const items = nodes.flatMap(node => {
     const summary = describe(node, definition.fields);
-    if (!summary || node.op === FilterOperator.MATCH_ALL) return [];
+    if (!summary || node.operator === FilterOperator.MATCH_ALL) return [];
     let clearable = false;
     try {
-      clearable = !sameFilterDraft(
+      clearable = !sameFilterNode(
         node,
-        clearFilterDraftValues(
+        clearFilterValues(
           node,
           definition.fields,
           engine.filterCompilers,
-          definition.filterEditors,
           definition.timeZone,
         ),
       );
@@ -140,37 +131,38 @@ export function RecordAppliedFilters({
         current.queryStatus === 'loading'
       )
         return;
-      const root = cloneSnapshot<FilterDraftNode>(current.filterBaseline);
+      const root = cloneSnapshot<FilterComponentConfig>(
+        current.filterBaseline.root,
+      );
       const node =
         root.id === nodeId
           ? root
-          : root.op === FilterOperator.AND
+          : root.operator === FilterOperator.AND
             ? root.operands?.find(child => child.id === nodeId)
             : undefined;
       if (!node) return;
-      const cleared = clearFilterDraftValues(
+      const cleared = clearFilterValues(
         node,
         state.definition.fields,
         engine.filterCompilers,
-        state.definition.filterEditors,
         state.definition.timeZone,
       );
-      if (sameFilterDraft(node, cleared)) return;
+      if (sameFilterNode(node, cleared)) return;
       const draft = replaceFilterNode(root, nodeId, cleared);
       if (!draft) return;
-      const result = compileFilterDraft(
-        draft,
+      const configuration = { ...current.filterBaseline, root: draft };
+      const result = compileFilterConfiguration(
+        configuration,
         state.definition.fields,
         state.definition.allowedOperators,
         engine.filterCompilers,
-        state.definition.filterEditors,
         state.definition.timeZone,
       );
       if (!result.expression)
         throw new Error(result.errors[0]?.message ?? '无法清空此筛选条件值');
       // Keep every field, operator and editor ID; only values become unset.
-      engine.setFilterDraft(draft, current.instance.id);
-      const query = engine.applyFilter(undefined, current.instance.id);
+      engine.setFilterDraft(configuration, current.instance.id);
+      const query = engine.applyFilter(current.instance.id);
       rootRef.current?.focus();
       await query;
     });

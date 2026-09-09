@@ -17,11 +17,7 @@ import {
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
 import { expect, it } from 'vitest';
-import { compileBuiltinDraft } from '../src/filter/filterBuiltinCompiler.js';
-import {
-  compileFilterDraft,
-  createFilterDraft,
-} from '../src/filter/filterCore.js';
+import { compileFilterConfiguration } from '../src/filter/filterCore.js';
 import {
   createFilterConfiguration,
   validateFilterConfiguration,
@@ -32,56 +28,124 @@ import {
   readFilterOptions,
   readResolvedFilterOptions,
 } from '../src/filter/filterOptionSource.js';
-import type { FilterDraftNode } from '../src/filter/filterModel.js';
+import type { FilterComponentConfig } from '../src/filter/filterModel.js';
 import { fields } from './fixtures/filterCore.js';
 
 it('validates builtin tree scope without widening malformed or unauthorized conditions', () => {
-  const invalid: FilterDraftNode[] = [
-    { id: 'missing-field', op: Op.EQ, field: 'missing', value: 1 },
-    { id: 'unsupported', op: Op.CONTAINS, field: 'amount', value: '1' },
-    { id: 'empty-group', op: Op.AND, operands: [] },
-    { id: 'missing-predicate', op: Op.ELEMENT_MATCH, field: 'items' },
+  const invalid: FilterComponentConfig[] = [
+    {
+      id: 'missing-field',
+      operator: Op.EQ,
+      field: 'missing',
+      component: { name: 'builtin', options: { showTime: true } },
+      props: { value: 1 },
+    },
+    {
+      id: 'unsupported',
+      operator: Op.CONTAINS,
+      field: 'amount',
+      component: { name: 'builtin', options: { showTime: true } },
+      props: { value: '1' },
+    },
+    {
+      id: 'empty-group',
+      operator: Op.AND,
+      operands: [],
+      component: { name: 'builtin', options: { showTime: true } },
+      props: {},
+    },
+    {
+      id: 'missing-predicate',
+      operator: Op.ELEMENT_MATCH,
+      field: 'items',
+      component: { name: 'builtin', options: { showTime: true } },
+      props: {},
+    },
     {
       id: 'element',
-      op: Op.ELEMENT_MATCH,
+      operator: Op.ELEMENT_MATCH,
       field: 'items',
-      predicate: { id: 'wrong-scope', op: Op.OWNER_ID, value: 'alice' },
+      predicate: {
+        id: 'wrong-scope',
+        operator: Op.OWNER_ID,
+        component: { name: 'builtin', options: { showTime: true } },
+        props: { value: 'alice' },
+      },
+      component: { name: 'builtin', options: { showTime: true } },
+      props: {},
     },
   ];
   for (const draft of invalid) {
-    const result = compileBuiltinDraft(draft, fields);
+    const result = compileFilterConfiguration(
+      { mode: 'advanced', root: draft },
+      fields,
+    );
     expect(result.expression).toBeUndefined();
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0].id).toBe(draft.predicate?.id ?? draft.id);
   }
   expect(
-    compileBuiltinDraft(
-      { id: 'forbidden', op: Op.GT, field: 'amount', value: 1 },
+    compileFilterConfiguration(
+      {
+        mode: 'advanced',
+        root: {
+          id: 'forbidden',
+          operator: Op.GT,
+          field: 'amount',
+          component: { name: 'builtin', options: { showTime: true } },
+          props: { value: 1 },
+        },
+      },
       fields,
       [Op.EQ],
     ).errors[0].message,
   ).toContain('不允许');
-  const element: FilterDraftNode = {
+  const element: FilterComponentConfig = {
     id: 'element',
-    op: Op.ELEMENT_MATCH,
+    operator: Op.ELEMENT_MATCH,
     field: 'items',
-    predicate: { id: 'quantity', op: Op.GTE, field: 'quantity', value: 2 },
+    predicate: {
+      id: 'quantity',
+      operator: Op.GTE,
+      field: 'quantity',
+      component: { name: 'builtin', options: { showTime: true } },
+      props: { value: 2 },
+    },
+    component: { name: 'builtin', options: { showTime: true } },
+    props: {},
   };
-  expect(compileBuiltinDraft(element, fields)).toEqual({
+  expect(
+    compileFilterConfiguration({ mode: 'advanced', root: element }, fields),
+  ).toEqual({
     expression: filter.elementMatch('items', filter.gte('quantity', 2)),
     errors: [],
   });
-  delete element.predicate!.value;
-  expect(compileBuiltinDraft(element, fields)).toEqual({
+  delete element.predicate!.props.value;
+  expect(
+    compileFilterConfiguration({ mode: 'advanced', root: element }, fields),
+  ).toEqual({
     expression: filter.matchAll(),
     errors: [],
   });
   expect(
-    compileBuiltinDraft(
+    compileFilterConfiguration(
       {
-        id: 'unset',
-        op: Op.AND,
-        operands: [{ id: 'value', op: Op.EQ, field: 'amount' }],
+        mode: 'advanced',
+        root: {
+          id: 'unset',
+          operator: Op.AND,
+          operands: [
+            {
+              id: 'value',
+              operator: Op.EQ,
+              field: 'amount',
+              component: { name: 'builtin', options: { showTime: true } },
+              props: {},
+            },
+          ],
+          component: { name: 'builtin', options: { showTime: true } },
+          props: {},
+        },
       },
       fields,
     ),
@@ -97,7 +161,7 @@ it.each([
   'rejects malformed remote expressions before constructing an editor: %j',
   expression => {
     expect(() =>
-      createFilterDraft(expression as unknown as FilterExpression),
+      parseFilterOutput(expression as unknown as FilterExpression),
     ).toThrow();
   },
 );
@@ -105,9 +169,10 @@ it.each([
 it('rejects malformed saved component structure and validates the supplied field scope', () => {
   const valid = createFilterConfiguration({
     id: 'amount',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'amount',
-    value: 1,
+    component: { name: 'builtin', options: { showTime: true } },
+    props: { value: 1 },
   });
   for (const patch of [
     { unexpected: true },
@@ -125,8 +190,10 @@ it('rejects malformed saved component structure and validates the supplied field
   expect(() =>
     createFilterConfiguration({
       id: 'items',
-      op: Op.ELEMENT_MATCH,
+      operator: Op.ELEMENT_MATCH,
       field: 'items',
+      component: { name: 'builtin', options: { showTime: true } },
+      props: {},
     }),
   ).toThrow('请补全元素条件');
   expect(() =>
@@ -159,29 +226,32 @@ it('rejects malformed saved component structure and validates the supplied field
 it.each([
   {
     id: 'select',
-    op: Op.BETWEEN,
+    operator: Op.BETWEEN,
     field: 'amount',
-    editor: { name: 'select' },
+    component: { name: 'select' },
     props: { lowerBound: 1, upperBound: 2 },
   },
   {
     id: 'range',
-    op: Op.BETWEEN,
+    operator: Op.BETWEEN,
     field: 'name',
-    editor: { name: 'datetime-range' },
+    component: { name: 'datetime-range' },
     props: { lowerBound: 'a', upperBound: 'z' },
   },
   {
     id: 'remote',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'name',
-    editor: { name: 'remote-select' },
+    component: { name: 'remote-select' },
     props: { value: 'a' },
   },
 ])(
   'fails closed when a saved builtin component is incompatible: $id',
   draft => {
-    const result = compileFilterDraft(draft, fields);
+    const result = compileFilterConfiguration(
+      { mode: 'advanced', root: draft },
+      fields,
+    );
     expect(result.expression).toBeUndefined();
     expect(result.errors).toEqual([
       { id: draft.id, message: expect.any(String) },
@@ -192,22 +262,36 @@ it.each([
 it.each([
   {
     id: 'typed',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'items',
-    value: { type: 'number', value: 1, extra: true },
+    component: { name: 'builtin', options: { showTime: true } },
+    props: { value: { type: 'number', value: 1, extra: true } },
   },
-  { id: 'object', op: Op.EQ, field: 'items', value: { raw: 'unsupported' } },
+  {
+    id: 'object',
+    operator: Op.EQ,
+    field: 'items',
+    component: { name: 'builtin', options: { showTime: true } },
+    props: { value: { raw: 'unsupported' } },
+  },
   {
     id: 'datetime',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'created',
-    value: '2026-09-09T12:00:00Z',
+    component: { name: 'builtin', options: { showTime: true } },
+    props: { value: '2026-09-09T12:00:00Z' },
   },
 ])(
   'keeps malformed scalar buffers invalid rather than interpreting them differently: $id',
   draft => {
-    expect(compileFilterDraft(draft, fields).expression).toBeUndefined();
-    expect(compileFilterDraft(draft, fields).errors).toHaveLength(1);
+    expect(
+      compileFilterConfiguration({ mode: 'advanced', root: draft }, fields)
+        .expression,
+    ).toBeUndefined();
+    expect(
+      compileFilterConfiguration({ mode: 'advanced', root: draft }, fields)
+        .errors,
+    ).toHaveLength(1);
   },
 );
 
@@ -215,17 +299,17 @@ it('preserves range/time buffers and component metadata on a same-operator trans
   for (const draft of [
     {
       id: 'range',
-      op: Op.BETWEEN,
+      operator: Op.BETWEEN,
       field: 'amount',
-      lowerBound: 0,
-      upperBound: 2,
+      component: { name: 'builtin', options: { showTime: true } },
+      props: { lowerBound: 0, upperBound: 2 },
     },
     {
       id: 'time',
-      op: Op.BEFORE_TODAY,
+      operator: Op.BEFORE_TODAY,
       field: 'created',
-      time: '09:12:34',
-      zoneId: 'UTC',
+      component: { name: 'builtin', options: { showTime: true } },
+      props: { time: '09:12:34', zoneId: 'UTC' },
     },
   ]) {
     const configured = {
@@ -233,7 +317,9 @@ it('preserves range/time buffers and component metadata on a same-operator trans
       editor: { name: 'builtin' },
       props: { label: 'retained' },
     };
-    expect(transitionFilterOperator(configured, draft.op)).toEqual(configured);
+    expect(transitionFilterOperator(configured, draft.operator)).toEqual(
+      configured,
+    );
   }
 });
 
@@ -272,3 +358,5 @@ it('preserves an invalid zoned timestamp for correction and renders local timest
     offsetMinutes: new Date(value).getTimezoneOffset(),
   });
 });
+
+import { parseFilterOutput } from '../src/filter/filterProtocol.js';

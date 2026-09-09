@@ -10,43 +10,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { expect, it } from 'vitest';
-import { createFilterDraft } from '../src/filter/filterCore.js';
 import {
   createFilterConfiguration,
-  restoreFilterConfiguration,
   compileFilterConfiguration,
   validateFilterConfiguration,
-  clearFilterDraftValues,
+  clearFilterValues,
 } from '../src/filter/filterConfiguration.js';
 import type {
   FilterConfiguration,
-  FilterDraftNode,
+  FilterComponentConfig,
 } from '../src/filter/filterModel.js';
-import { fields } from './fixtures/filterCore.js';
+import { fields, node } from './fixtures/filterCore.js';
 
 it('round trips stable identities, unset controls, typed buffers and date/time attributes through JSON', () => {
-  const draft: FilterDraftNode = {
+  const draft: FilterComponentConfig = {
     id: 'group',
-    op: Op.AND,
+    operator: Op.AND,
     operands: [
-      { id: 'unset', op: Op.EQ, field: 'amount' },
+      {
+        id: 'unset',
+        operator: Op.EQ,
+        field: 'amount',
+        component: { name: 'builtin', options: { showTime: true } },
+        props: {},
+      },
       {
         id: 'date',
-        op: Op.GTE,
+        operator: Op.GTE,
         field: 'created',
-        value: { date: '2026-09-08', time: '09:00', offsetMinutes: -480 },
+        component: { name: 'builtin', options: { showTime: true } },
+        props: {
+          value: { date: '2026-09-08', time: '09:00', offsetMinutes: -480 },
+        },
       },
       {
         id: 'typed',
-        op: Op.EQ,
+        operator: Op.EQ,
         field: 'items',
-        value: { type: 'number', value: undefined },
+        component: { name: 'builtin', options: { showTime: true } },
+        props: { value: { type: 'number', value: undefined } },
       },
     ],
+    component: { name: 'builtin', options: { showTime: true } },
+    props: {},
   };
-  const config = createFilterConfiguration(draft, 'advanced', fields);
+  const config = createFilterConfiguration(draft, 'advanced');
   const reloaded = JSON.parse(JSON.stringify(config)) as FilterConfiguration;
   expect(reloaded.root.operands?.map(node => node.id)).toEqual([
     'unset',
@@ -55,9 +65,9 @@ it('round trips stable identities, unset controls, typed buffers and date/time a
   ]);
   expect(reloaded.root.operands?.[0].props).toEqual({});
   expect(reloaded.root.operands?.[1].props.value).toEqual(
-    draft.operands?.[1].value,
+    draft.operands?.[1].props.value,
   );
-  expect(restoreFilterConfiguration(reloaded).operands?.[2].value).toEqual({
+  expect(reloaded.root.operands?.[2].props.value).toEqual({
     type: 'number',
   });
   expect(compileFilterConfiguration(reloaded, fields).errors).toEqual([]);
@@ -65,15 +75,15 @@ it('round trips stable identities, unset controls, typed buffers and date/time a
 
 it('serializes the chosen component and opaque props without deriving them from its expression', () => {
   const draft = {
-    ...createFilterDraft(filter.eq('amount', 0)),
-    editor: { name: 'custom', options: { compact: false } },
+    ...node(Op.EQ, 'amount', { value: 0 }),
+    component: { name: 'custom', options: { compact: false } },
     props: { selected: 0, displayLabel: '', nullable: null, visible: false },
   };
-  const config = createFilterConfiguration(draft, 'simple', fields);
-  const result = restoreFilterConfiguration(JSON.parse(JSON.stringify(config)));
-  expect(result.editor).toEqual(draft.editor);
+  const config = createFilterConfiguration(draft, 'simple');
+  const result = JSON.parse(JSON.stringify(config)).root;
+  expect(result.component).toEqual(draft.component);
   expect(result.props).toEqual(draft.props);
-  expect(result.value).toBeUndefined();
+  expect(result.props.value).toBeUndefined();
   expect(compileFilterConfiguration(config, fields).expression).toBeUndefined();
   expect(() => validateFilterConfiguration(config, fields)).not.toThrow();
 });
@@ -96,19 +106,17 @@ it('rejects values that JSON drops or changes, including sparse arrays and cycli
     expect(() =>
       createFilterConfiguration({
         id: 'bad',
-        op: Op.EQ,
+        operator: Op.EQ,
         field: 'amount',
-        editor: { name: 'custom' },
+        component: { name: 'custom' },
         props: { value },
-      } as FilterDraftNode),
+      } as FilterComponentConfig),
     ).toThrow();
   }
 });
 
 it('rejects malformed component references, field bindings and container shapes', () => {
-  const base = createFilterConfiguration(
-    createFilterDraft(filter.eq('amount', 1)),
-  );
+  const base = createFilterConfiguration(node(Op.EQ, 'amount', { value: 1 }));
   for (const patch of [
     { component: { name: '' } },
     { component: 'custom' },
@@ -128,21 +136,29 @@ it('rejects malformed component references, field bindings and container shapes'
 });
 
 it('clears builtin and custom values while retaining components, IDs and non-query properties', () => {
-  const draft: FilterDraftNode = {
+  const draft: FilterComponentConfig = {
     id: 'group',
-    op: Op.AND,
+    operator: Op.AND,
     operands: [
-      { id: 'builtin', op: Op.EQ, field: 'amount', value: 1 },
+      {
+        id: 'builtin',
+        operator: Op.EQ,
+        field: 'amount',
+        component: { name: 'builtin', options: { showTime: true } },
+        props: { value: 1 },
+      },
       {
         id: 'custom',
-        op: Op.EQ,
+        operator: Op.EQ,
         field: 'name',
-        editor: { name: 'custom' },
+        component: { name: 'custom' },
         props: { selected: 'a', displayLabel: '姓名' },
       },
     ],
+    component: { name: 'builtin', options: { showTime: true } },
+    props: {},
   };
-  const cleared = clearFilterDraftValues(draft, fields, {
+  const cleared = clearFilterValues(draft, fields, {
     custom: {
       compile: () => undefined,
       clear: props => ({ ...props, selected: undefined }),
@@ -150,18 +166,26 @@ it('clears builtin and custom values while retaining components, IDs and non-que
   });
   expect(cleared.id).toBe('group');
   expect(cleared.operands?.map(node => node.id)).toEqual(['builtin', 'custom']);
-  expect(cleared.operands?.[0].value).toBeUndefined();
+  expect(cleared.operands?.[0].props.value).toBeUndefined();
   expect(cleared.operands?.[1].props).toEqual({
     displayLabel: '姓名',
     selected: undefined,
   });
-  expect(draft.operands?.[0].value).toBe(1);
+  expect(draft.operands?.[0].props.value).toBe(1);
 });
 
 it('rejects duplicate stable IDs and incompatible saved simple mode without changing the configuration', () => {
   const config = createFilterConfiguration(
-    createFilterDraft(
-      filter.or([filter.eq('amount', 1), filter.eq('amount', 2)]),
+    node(
+      Op.OR,
+      undefined,
+      {},
+      {
+        operands: [
+          node(Op.EQ, 'amount', { value: 1 }),
+          node(Op.EQ, 'amount', { value: 2 }),
+        ],
+      },
     ),
     'advanced',
   );
@@ -173,9 +197,7 @@ it('rejects duplicate stable IDs and incompatible saved simple mode without chan
 });
 
 it('rejects structural attributes hidden inside builtin props and extra array properties', () => {
-  const config = createFilterConfiguration(
-    createFilterDraft(filter.eq('amount', 1)),
-  );
+  const config = createFilterConfiguration(node(Op.EQ, 'amount', { value: 1 }));
   for (const props of [
     { id: 'hidden' },
     { op: Op.NE },
@@ -192,22 +214,22 @@ it('rejects structural attributes hidden inside builtin props and extra array pr
   expect(() =>
     createFilterConfiguration({
       id: 'array',
-      op: Op.IN,
+      operator: Op.IN,
       field: 'amount',
-      values,
+      component: { name: 'builtin', options: { showTime: true } },
+      props: { values },
     }),
   ).toThrow();
 });
 
 it('keeps element and logical containers builtin when a field has a custom leaf default', () => {
-  const draft = createFilterDraft(
-    filter.elementMatch('items', filter.eq('quantity', 1)),
+  const draft = node(
+    Op.ELEMENT_MATCH,
+    'items',
+    {},
+    { predicate: node(Op.EQ, 'quantity', { value: 1 }) },
   );
-  const config = createFilterConfiguration(
-    draft,
-    'advanced',
-    fields.map(field => ({ ...field, editor: { name: 'custom' } })),
-  );
+  const config = createFilterConfiguration(draft, 'advanced');
   expect(config.root.component.name).toBe('builtin');
   expect(compileFilterConfiguration(config, fields).errors).toEqual([]);
 });

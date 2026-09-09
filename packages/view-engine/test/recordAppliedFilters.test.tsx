@@ -11,11 +11,7 @@
  * limitations under the License.
  */
 
-import {
-  filter,
-  FilterOperator,
-  type FilterExpression,
-} from '@ahoo-wang/fetcher-wow';
+import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
   act,
   cleanup,
@@ -26,11 +22,11 @@ import {
   within,
 } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { createFilterDraft, newFilterDraft } from '../src/filter/filterCore.js';
+import { newFilterNode } from '../src/filter/filterCore.js';
 import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
 import type {
   FilterCompilerRegistry,
-  FilterDraftNode,
+  FilterComponentConfig,
 } from '../src/filter/filterModel.js';
 import { ViewEngine } from '../src/record/ViewEngine.js';
 import { ViewPageContent } from '../src/record/ViewPage.js';
@@ -44,7 +40,7 @@ afterEach(() => {
   engines.splice(0).forEach(engine => engine.dispose());
 });
 
-async function openView(expression: FilterExpression) {
+async function openView(root: FilterComponentConfig) {
   const { host, paged } = setup();
   const engine = new ViewEngine({
     definitionId: definition.id,
@@ -61,7 +57,7 @@ async function openView(expression: FilterExpression) {
           ...instance,
           config: {
             ...instance.config,
-            filters: createFilterConfiguration(createFilterDraft(expression)),
+            filters: createFilterConfiguration(root),
           },
         },
       ],
@@ -77,7 +73,7 @@ async function openView(expression: FilterExpression) {
 }
 
 async function openApplied(
-  draft: FilterDraftNode,
+  draft: FilterComponentConfig,
   viewDefinition: ViewDefinition,
   filterCompilers?: FilterCompilerRegistry,
 ) {
@@ -117,16 +113,18 @@ async function openApplied(
 }
 
 it('unsets one applied AND value while keeping every filter and editor', async () => {
-  const expression = filter.and([
-    filter.gte('amount', 10),
-    filter.lte('amount', 100),
-  ]);
-  const { engine, paged } = await openView(expression);
-  const baseline = createFilterDraft(expression);
-  baseline.operands!.push(newFilterDraft(FilterOperator.EQ, 'customer'));
+  const baseline: FilterComponentConfig = {
+    ...newFilterNode(FilterOperator.AND),
+    operands: [
+      { ...newFilterNode(FilterOperator.GTE, 'amount'), props: { value: 10 } },
+      { ...newFilterNode(FilterOperator.LTE, 'amount'), props: { value: 100 } },
+    ],
+  };
+  const { engine, paged } = await openView(baseline);
+  baseline.operands!.push(newFilterNode(FilterOperator.EQ, 'customer'));
   await act(async () => {
-    engine.setFilterDraft(baseline);
-    await engine.applyFilter(expression);
+    engine.setFilterDraft(createFilterConfiguration(baseline));
+    await engine.applyFilter();
   });
   const customer = screen.getByRole('textbox', { name: '客户值' });
   const summary = screen.getByRole('region', { name: '已应用筛选' });
@@ -151,16 +149,19 @@ it('unsets one applied AND value while keeping every filter and editor', async (
   expect(
     engine
       .getSnapshot()
-      .sessions.mine.filterDraft.operands?.map(node => node.id),
+      .sessions.mine.filterDraft.root.operands?.map(node => node.id),
   ).toEqual(baseline.operands!.map(node => node.id));
   expect(engine.getSnapshot().sessions.mine.filterPending).toBe(false);
   expect(document.activeElement).toBe(summary);
 });
 
 it('unsets the last value and queries all records while keeping its filter', async () => {
-  const { engine, paged } = await openView(filter.gte('amount', 10));
+  const { engine, paged } = await openView({
+    ...newFilterNode(FilterOperator.GTE, 'amount'),
+    props: { value: 10 },
+  });
   const input = screen.getByRole('textbox', { name: '金额值' });
-  const id = engine.getSnapshot().sessions.mine.filterDraft.id;
+  const id = engine.getSnapshot().sessions.mine.filterDraft.root.id;
   const summary = screen.getByRole('region', { name: '已应用筛选' });
   fireEvent.click(
     within(summary).getByRole('button', { name: /金额 大于等于 10/ }),
@@ -171,9 +172,9 @@ it('unsets the last value and queries all records while keeping its filter', asy
   expect(within(summary).queryByRole('button')).toBeNull();
   expect(screen.getByRole('textbox', { name: '金额值' })).toBe(input);
   expect((input as HTMLInputElement).value).toBe('');
-  expect(engine.getSnapshot().sessions.mine.filterDraft).toMatchObject({
+  expect(engine.getSnapshot().sessions.mine.filterDraft.root).toMatchObject({
     id,
-    op: FilterOperator.GTE,
+    operator: FilterOperator.GTE,
     field: 'amount',
   });
 });
@@ -181,11 +182,16 @@ it('unsets the last value and queries all records while keeping its filter', asy
 it.each([FilterOperator.OR, FilterOperator.NOR])(
   'keeps the %s group and its filters when unsetting values',
   async op => {
-    const expression: FilterExpression = {
-      op,
-      operands: [filter.lt('amount', 10), filter.gt('amount', 100)],
-    };
-    const { engine, paged } = await openView(expression);
+    const { engine, paged } = await openView({
+      ...newFilterNode(op),
+      operands: [
+        { ...newFilterNode(FilterOperator.LT, 'amount'), props: { value: 10 } },
+        {
+          ...newFilterNode(FilterOperator.GT, 'amount'),
+          props: { value: 100 },
+        },
+      ],
+    });
     const summary = screen.getByRole('region', { name: '已应用筛选' });
     const buttons = within(summary).getAllByRole('button');
     expect(buttons).toHaveLength(1);
@@ -194,7 +200,9 @@ it.each([FilterOperator.OR, FilterOperator.NOR])(
     fireEvent.click(buttons[0]);
     await waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
     expect(paged.mock.lastCall?.[0].filter).toEqual(filter.matchAll());
-    expect(engine.getSnapshot().sessions.mine.filterDraft.op).toBe(op);
+    expect(engine.getSnapshot().sessions.mine.filterDraft.root.operator).toBe(
+      op,
+    );
     expect(
       screen
         .getAllByRole('textbox', { name: '金额值' })
@@ -204,7 +212,10 @@ it.each([FilterOperator.OR, FilterOperator.NOR])(
 );
 
 it('protects pending input until the user queries or undoes it', async () => {
-  const { paged } = await openView(filter.gte('amount', 10));
+  const { paged } = await openView({
+    ...newFilterNode(FilterOperator.GTE, 'amount'),
+    props: { value: 10 },
+  });
   const summary = screen.getByRole('region', { name: '已应用筛选' });
   const input = screen.getByRole('textbox', {
     name: '金额值',
@@ -229,11 +240,20 @@ it('protects pending input until the user queries or undoes it', async () => {
 });
 
 it('does not offer value clearing for a value-free condition', async () => {
-  const { engine } = await openView(filter.exists('amount'));
+  const { engine } = await openView(
+    newFilterNode(FilterOperator.EXISTS, 'amount'),
+  );
   const summary = screen.getByRole('region', { name: '已应用筛选' });
   expect(summary.textContent).toContain('金额');
   expect(within(summary).queryByRole('button')).toBeNull();
-  act(() => engine.setFilterDraft(createFilterDraft(filter.gt('amount', 1))));
+  act(() =>
+    engine.setFilterDraft(
+      createFilterConfiguration({
+        ...newFilterNode(FilterOperator.GT, 'amount'),
+        props: { value: 1 },
+      }),
+    ),
+  );
   expect(summary.textContent).not.toContain('先查询或撤销筛选修改');
 });
 
@@ -255,25 +275,29 @@ it('keeps applied remote labels scoped to their nodes while skipping unset nodes
     id: string,
     label: string,
     value = 'u1',
-  ): FilterDraftNode => ({
+  ): FilterComponentConfig => ({
     id,
-    op: FilterOperator.IN,
+    operator: FilterOperator.IN,
     field: 'customer',
-    editor: { name: 'remote-multi-select', options: { source: 'users' } },
+    component: { name: 'remote-multi-select', options: { source: 'users' } },
     props: { values: [value], selectedOptions: [{ value, label }] },
   });
   const unset = customer('unset', '未设置标签');
   delete unset.props!.values;
-  const draft: FilterDraftNode = {
+  const draft: FilterComponentConfig = {
     id: 'root',
-    op: FilterOperator.OR,
+    operator: FilterOperator.OR,
+    component: { name: 'builtin' },
+    props: {},
     operands: [
       unset,
       customer('first', '用户甲'),
       customer('second', '用户乙'),
       {
         id: 'items',
-        op: FilterOperator.ELEMENT_MATCH,
+        operator: FilterOperator.ELEMENT_MATCH,
+        component: { name: 'builtin' },
+        props: {},
         field: 'items',
         predicate: customer('item-customer', '明细用户'),
       },
@@ -285,7 +309,7 @@ it('keeps applied remote labels scoped to their nodes while skipping unset nodes
     '满足任一条件（客户 属于 [用户甲]；客户 属于 [用户乙]；明细 同一元素满足（明细客户 属于 [明细用户]））',
   );
   draft.operands![1] = customer('first', '草稿标签', 'u2');
-  engine.setFilterDraft(draft);
+  engine.setFilterDraft(createFilterConfiguration(draft));
   expect(engine.getSnapshot().sessions.mine.filterPending).toBe(true);
   rerender();
   expect(summary.textContent).toContain('客户 属于 [用户甲]');
@@ -305,19 +329,22 @@ it('uses the view timezone and each builtin display mode while preserving custom
   await openApplied(
     {
       id: 'root',
-      op: FilterOperator.AND,
+      operator: FilterOperator.AND,
+      component: { name: 'builtin' },
+      props: {},
       operands: [
         {
           id: 'date',
-          op: FilterOperator.NE,
+          operator: FilterOperator.NE,
+          component: { name: 'builtin' },
           field: 'createdAt',
-          value: { date: '2026-09-08', time: '09:00:00.123' },
+          props: { value: { date: '2026-09-08', time: '09:00:00.123' } },
         },
         {
           id: 'time',
-          op: FilterOperator.BETWEEN,
+          operator: FilterOperator.BETWEEN,
           field: 'createdAt',
-          editor: { name: 'datetime-range', options: { showTime: true } },
+          component: { name: 'datetime-range', options: { showTime: true } },
           props: {
             lowerBound: Date.parse('2026-09-08T01:00:00.123Z'),
             upperBound: Date.parse('2026-09-08T02:00:00Z'),
@@ -325,9 +352,9 @@ it('uses the view timezone and each builtin display mode while preserving custom
         },
         {
           id: 'custom',
-          op: FilterOperator.EQ,
+          operator: FilterOperator.EQ,
           field: 'createdAt',
-          editor: { name: 'custom-date' },
+          component: { name: 'custom-date' },
           props: { value: 1 },
         },
       ],

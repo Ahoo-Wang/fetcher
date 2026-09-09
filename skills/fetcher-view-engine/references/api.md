@@ -8,7 +8,7 @@ The readiness gate keeps raw axe findings and permits only the documented WebKit
 
 ## Core entry
 
-`src/index.ts` exports the headless compiler and JSON-friendly field/draft contracts. The basic display contracts remain:
+`src/index.ts` exports the headless compiler and JSON-friendly field/configuration contracts. The basic display contracts remain:
 
 ```ts
 interface FilterField<Field extends string = string> {
@@ -22,27 +22,22 @@ interface FilterOption<Value extends string = string> {
 }
 ```
 
-Core imports do not load React, DOM or CSS. Field descriptors define editor capabilities; persisted component configuration is separate from the compiled Wow query.
+Core imports do not load React, DOM or CSS. Field descriptors define field capabilities; persisted component configuration is separate from the compiled Wow query.
 
-### Fields, drafts and compilation
+### Fields, configuration and compilation
 
 `FilterFieldDefinition` extends `FilterField` with optional `type` (`string`, `number`, `boolean`, `date`, `datetime`, `array`), typed enum `options`, optional display `group`, element-relative child `fields`, allowed `operators`, an `editor: {name, options?}` reference. Unspecified type keeps protocol scalar types; explicit types restrict supported operators and values. The optional global operator allowlist further restricts them.
 
-`FilterDraftNode` is editor state with a stable configuration `id`, optional explicit `editor` and opaque custom `props`, plus the existing built-in Wow property names. Raw numeric text uses `FilterScalarDraftValue = {type: 'number', value: raw}`; never interpret an already-loaded protocol string as numeric input. Mixed scalar collection items can similarly use string/boolean wrappers. `FilterDateTimeValue = {date?: string, time?: string, offsetMinutes?: number}` keeps both parts while editing. Use `createFilterConfiguration` to persist these attributes; never reconstruct them from a compiled query.
+`FilterComponentConfig` is the only editing and persistence node. It keeps a stable `id`, explicit `component`, `operator`, optional `field`, and `props`; logical/element children use the same node type. Raw numeric text in props uses `FilterScalarDraftValue = {type: 'number', value: raw}`; never interpret a loaded protocol string as numeric input. Mixed scalar collection items can use string/boolean wrappers. `FilterDateTimeValue = {date?: string, time?: string, offsetMinutes?: number}` keeps date/time input. Never reconstruct component attributes from a compiled query.
 
-`createFilterDraft` accepts `DeepReadonly<FilterExpression>` and returns an editable
-draft. `compileFilterDraft` and `isSimpleFilter` accept `DeepReadonly<FilterDraftNode>`.
-`FilterPanel.value` accepts a readonly expression or null; `draft` and `appliedDraft` accept readonly component editor trees;
-its editing buffer and emitted drafts remain independent editable values.
+`createFilterConfiguration` and `isSimpleFilter` accept readonly canonical nodes. `FilterPanel.value`, `defaultValue` and `appliedValue` accept readonly configurations; emitted configurations remain independent editable values.
 
-| Export                                                                                  | Contract                                                                                                                                                                                                                                                  |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FILTER_OPERATORS`                                                                      | Complete readonly record of all 50 Wow operators: business label, category, input kind, and relative-time flag.                                                                                                                                           |
-| `createFilterDraft(expression)`                                                         | Strictly validates a real Wow expression, clones it and assigns IDs for new built-in editor state. It does not restore custom component props. Throws on invalid protocol input; preserves value types, nesting, ordering and absent optional parameters. |
-| `newFilterDraft(op, field?)`                                                            | Creates a new draft. Value-dependent leaves start unset; logical groups and element predicates start incomplete; DELETION initially uses ACTIVE.                                                                                                          |
-| `compileFilterDraft(draft, fields, allowedOperators?, compilers?, editors?, timeZone?)` | Returns `{expression, errors: []}` or `{errors}` with no executable expression. Each error has `{id, message}`. Validates fields, capability, type, scope and protocol through Wow constructors.                                                          |
-| `getFieldOperators(field)`                                                              | Returns the field's compatible operators, restricted by its explicit allowlist.                                                                                                                                                                           |
-| `isSimpleFilter(draft)`                                                                 | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Panel also checks editor validity before switching modes.                                                                                              |
+| Export                                        | Contract                                                                                                                                     |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FILTER_OPERATORS`                            | Complete readonly record of all 50 Wow operators: label, category, input kind and relative-time flag.                                        |
+| `newFilterNode(operator, field?, component?)` | Creates a canonical node with an ID, explicit component (default builtin), unset props, initial container children or ACTIVE deletion state. |
+| `getFieldOperators(field)`                    | Returns operators from field type and explicit field allowlist only; ignores editor defaults.                                                |
+| `isSimpleFilter(root)`                        | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Mode changes also check validity.         |
 
 The persisted contract is:
 
@@ -88,13 +83,12 @@ type FilterCompilerRegistry = Readonly<Record<string, FilterCompiler>>;
 
 | Export                                                                                 | Contract                                                                                                                                                                                                                                                                                                                                 |
 | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createFilterConfiguration(draft, mode?, fields?, editors?)`                           | Copies editor attributes into JSON configuration, preserving IDs, unset controls, custom props and date/time attributes. Resolves explicit editor first, then field/operator defaults, then `builtin`, and saves the chosen reference.                                                                                                   |
-| `restoreFilterConfiguration(config)`                                                   | Restores an editable draft directly from saved component attributes, preserving IDs. Does not compile or reverse a query.                                                                                                                                                                                                                |
+| `createFilterConfiguration(root, mode?)`                                               | Clones and validates the canonical component root, preserving all component references and props. Infers mode when omitted. Field/operator defaults apply only when the panel creates new nodes.                                                                                                                                         |
 | `validateFilterConfiguration(value, fields?, allowedOperators?)`                       | Asserts JSON component structure, optional field bindings and an optional definition-wide operator allowlist at every node, including groups and element predicates. Element predicates reject root-only operations through nested groups; a known array without child fields has an empty child scope. Throws on invalid configuration. |
 | `compileFilterConfiguration(config, fields, allowedOperators?, compilers?, timeZone?)` | Invokes component-owned pure compilers and returns `FilterCompileResult`. Requires no React mounting. Unknown components, invalid output and cross-field output return errors without an executable query.                                                                                                                               |
 | `compileBuiltinFilter(props, context)`                                                 | Compiles built-in payload attributes, reusable by builtin-compatible custom renderers. Returns undefined for unset values.                                                                                                                                                                                                               |
 | `clearBuiltinFilterProps(props)`                                                       | Clears built-in values while retaining other component attributes.                                                                                                                                                                                                                                                                       |
-| `clearFilterDraftValues(draft, fields, compilers?, editors?, timeZone?)`               | Applies registered clear semantics while preserving component IDs and structure.                                                                                                                                                                                                                                                         |
+| `clearFilterValues(root, fields, compilers?, timeZone?)`                               | Applies registered clear semantics while preserving component IDs and structure.                                                                                                                                                                                                                                                         |
 | `sameFilterQuery(a, b)`                                                                | Compares readonly expressions (also accepts null/undefined), ignoring object key order and redundant singleton AND/OR wrappers. Preserves predicate order and does not perform general Boolean equivalence.                                                                                                                              |
 
 Configuration is JSON data. An object property with undefined represents an unset input and is omitted on save; null, false, zero and empty strings retain their meaning. Arrays cannot contain undefined or other non-JSON values. Functions, DOM objects, non-finite numbers and cycles are rejected. Configuration IDs are stable persisted identities; mounted renderer DOM IDs are separate.
@@ -108,9 +102,9 @@ Fully unset scalar predicates and cleared collections are omitted. An explicitly
 `ViewDefinition.timeZone` is the global timezone shared by all filters, applied summaries and date/time cells; standalone `FilterPanel.timeZone`, compiler context/last parameters and direct date controls use the same setting. Omission means the local runtime timezone. Fields do not configure individual timezones. `date` fields use YYYY-MM-DD strings; `datetime` queries use epoch milliseconds. Built-in time-enabled filters floor restored fractional seconds and numeric timestamps to the start of their second. Nonexistent local DST times are rejected; new ambiguous local DST times choose the earlier occurrence consistently across system timezones. Editing an existing timestamp retains its `offsetMinutes` hint (integer minutes, the sign used by `Date.getTimezoneOffset()`) when that offset still describes the edited local date/time. A date change across DST seasons uses the new date's actual offset; the hint cannot make a nonexistent local time valid. Relative-time predicates receive Wow `zoneId` from the global timezone (resolved local zone when omitted); the UI has no node-level timezone input. Their `datePattern` and `timeUnit` remain component properties.
 
 ```ts
-const draft = newFilterDraft(FilterOperator.GTE, 'amount');
-draft.value = { type: 'number', value: '12.5' };
-const result = compileFilterDraft(draft, [
+const root = newFilterNode(FilterOperator.GTE, 'amount');
+root.props.value = { type: 'number', value: '12.5' };
+const result = compileFilterConfiguration(createFilterConfiguration(root), [
   { field: 'amount', label: 'Amount', type: 'number' },
 ]);
 // result.expression: {op: 'GTE', field: 'amount', value: 12.5}
@@ -122,26 +116,25 @@ Import components from `@ahoo-wang/fetcher-view-engine/react` and compiled style
 
 ### FilterPanel
 
-| Prop                            | Contract                                                                                                                                                                                                                                                                            |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                         | Required applied Wow FilterExpression or null when uncompiled. Invalid/uncompiled input never falls back to all records.                                                                                                                                                            |
-| `timeZone`                      | Global timezone shared by all filters; omission uses the local runtime zone.                                                                                                                                                                                                        |
-| `fields`                        | Required field definitions for this root scope; array fields carry their element-relative definitions.                                                                                                                                                                              |
-| `onApply(expression)`           | Called exactly when Query applies a complete valid expression. The host synchronously updates `value`, then owns asynchronous requests and cancellation.                                                                                                                            |
-| `mode`, `onModeChange(mode)`    | Optional controlled simple/advanced mode. Otherwise initialized from the expression. Complex loaded trees safely display advanced mode; incompatible or incomplete trees cannot switch to simple.                                                                                   |
-| `onPendingChange(pending)`      | Observes changed query semantics or invalid editor input. Configuration-only changes are synchronized without a request; this is separate from the saved view dirty flag.                                                                                                           |
-| `draft`, `onDraftChange(draft)` | Optional controlled draft tree; parent can retain built-in buffers and opaque custom props per instance. Otherwise managed locally.                                                                                                                                                 |
-| `appliedDraft`                  | Optional controlled accepted editor baseline, including unset controls and configuration-only edits. ViewEngine consumers pass `session.filterBaseline`. When it compiles to an externally updated `value`, the panel preserves the supplied controlled `draft` and its editor IDs. |
-| `onValidityChange(valid)`       | Reports aggregate editor/buffer validity. ViewEngine consumers call `setFilterValidity`; reporting true cannot clear an unsubmitted draft.                                                                                                                                          |
-| `allowedOperators`              | Optional global operator allowlist, including logical and root operators.                                                                                                                                                                                                           |
-| `extensions`                    | Per-panel `{filters: Record<string, FilterRegistration>}` map; no global registry.                                                                                                                                                                                                  |
-| `editors`                       | Optional operator-to-editor-reference map; field references take priority.                                                                                                                                                                                                          |
-| `context`                       | Opaque host definition/instance/business context passed to custom editors.                                                                                                                                                                                                          |
-| `querying`, `queryError`        | Host request state. Editing stays available while querying; an unchanged in-flight query cannot be sent twice, changed filters may be applied. Errors retain applied conditions and allow retry.                                                                                    |
-| `disabled`                      | Disables editing and query actions. Defaults false.                                                                                                                                                                                                                                 |
-| `collapsed`                     | Defaults false. Hides the panel body while retaining mounted editors and their local buffers.                                                                                                                                                                                       |
-| `renderToolbar(props)`          | Replaces the default heading; renders before the collapsible body. Receives `FilterPanelToolbarProps`, described below.                                                                                                                                                             |
-| `className`                     | Optional host layout classes; keep scoped theme tokens.                                                                                                                                                                                                                             |
+| Prop                                   | Contract                                                                                                                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`, `onChange(configuration)`     | Controlled `FilterConfiguration`; the parent owns edits. Mutually exclusive with `defaultValue`.                                                                                                 |
+| `timeZone`                             | Global timezone shared by all filters; omission uses the local runtime zone.                                                                                                                     |
+| `fields`                               | Required field definitions for this root scope; array fields carry their element-relative definitions.                                                                                           |
+| `onApply({configuration, expression})` | Receives the accepted configuration and compiled query; the host owns asynchronous requests and cancellation.                                                                                    |
+| `defaultValue`                         | Initial `FilterConfiguration` for local ownership. Mode is part of configuration; toolbar mode commands update it.                                                                               |
+| `onPendingChange(pending)`             | Observes changed query semantics or invalid editor input. Configuration-only changes are synchronized without a request; this is separate from the saved view dirty flag.                        |
+| `appliedValue`                         | Optional accepted configuration baseline. ViewEngine consumers pass `session.filterBaseline`. Keep editing and accepted configurations independently across editor unmounts.                     |
+| `onValidityChange(valid)`              | Reports aggregate editor/buffer validity. ViewEngine consumers call `setFilterValidity`; reporting true cannot clear an unsubmitted draft.                                                       |
+| `allowedOperators`                     | Optional global operator allowlist, including logical and root operators.                                                                                                                        |
+| `extensions`                           | Per-panel `{filters: Record<string, FilterRegistration>}` map; no global registry.                                                                                                               |
+| `editors`                              | Optional operator-to-editor-reference map; field references take priority.                                                                                                                       |
+| `context`                              | Opaque host definition/instance/business context passed to custom editors.                                                                                                                       |
+| `querying`, `queryError`               | Host request state. Editing stays available while querying; an unchanged in-flight query cannot be sent twice, changed filters may be applied. Errors retain applied conditions and allow retry. |
+| `disabled`                             | Disables editing and query actions. Defaults false.                                                                                                                                              |
+| `collapsed`                            | Defaults false. Hides the panel body while retaining mounted editors and their local buffers.                                                                                                    |
+| `renderToolbar(props)`                 | Replaces the default heading; renders before the collapsible body. Receives `FilterPanelToolbarProps`, described below.                                                                          |
+| `className`                            | Optional host layout classes; keep scoped theme tokens.                                                                                                                                          |
 
 `FilterPanelToolbarProps` supplies `panelId: string`, `mode: FilterMode`, readonly
 `options: FilterOption<FilterMode>[]`, `pending: boolean`, `disabled: boolean`, and
@@ -190,7 +183,7 @@ const fields: FilterFieldDefinition[] = [
 
 `FilterEditorProps` supplies cloned readonly component `props`, `operator`, readonly `field`, current-scope `fields`, `mode`, host `context`, JSON `options`, global `timeZone`, optional `errors`/`errorId`, `disabled`, `onChange(props)` and `onValidityChange(valid, message?)`. Publish raw serializable component properties, including selected IDs and display labels. Compilation belongs to the registration and runs independently of mounting. Builtin-compatible renderers can use `compileBuiltinFilter` and `clearBuiltinFilterProps`. Invalid local buffers must report `onValidityChange(false)`; a later true notification does not make invalid compiled output valid.
 
-Explicit saved references remain attached to their components. Missing registrations and invalid outputs block Query; rendering failures are contained per editor and offer explicit built-in fallback, which remains disabled while the panel is disabled. Logical and element containers use built-in tree controls. Compiler output cannot change the bound field, escape scope or make the component into a container, though it may combine predicates for its bound field. Callbacks from cleared, replaced or unmounted editors are ignored. `FilterValueEditor` remains available with `{node, field?, fields, timeZone?, showTime?, errors?, errorId?, disabled?, onChange(node)}` for raw built-in draft editing.
+Explicit saved references remain attached to their components. Missing registrations and invalid outputs block Query; rendering failures are contained per editor and offer explicit built-in fallback, which remains disabled while the panel is disabled. Logical and element containers use built-in tree controls. Compiler output cannot change the bound field, escape scope or make the component into a container, though it may combine predicates for its bound field. Callbacks from cleared, replaced or unmounted editors are ignored. `FilterValueEditor` remains available with `{node, field?, fields, timeZone?, showTime?, errors?, errorId?, disabled?, onChange(node)}` for built-in component props editing.
 
 `FilterComponentProps extends FilterEditorProps` adds:
 
@@ -223,16 +216,16 @@ The corresponding field uses `editor: {name: 'customer-picker', options: {...}}`
 
 ### FilterSelect
 
-| Prop                   | Contract                                                                                                                                                                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `options`              | Readonly `FilterOption<Value>[]`; labels are separate from emitted values.                                                                                                                                     |
-| `value`                | Optional controlled `Value` or `null`; omitted/undefined values default to null and show the placeholder.                                                                                                      |
-| `onValueChange(value)` | Called with the selected non-null value; does not query or save.                                                                                                                                               |
-| `onClear()`            | Optional callback enabling the popup's Clear selection item. The host sets the controlled value to null/undefined; this does not call `onValueChange`, query or save. Omit it for required operator selectors. |
-| `label`                | Required accessible name for the trigger.                                                                                                                                                                      |
-| `placeholder`          | Optional text when value is null.                                                                                                                                                                              |
-| `inline`               | Defaults to false. True uses an InputGroupButton trigger for a joined field control.                                                                                                                           |
-| `disabled`             | Defaults to false. Disables selection.                                                                                                                                                                         |
+| Prop                               | Contract                                                                                                                                                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options`                          | Readonly `FilterOption<Value>[]`; labels are separate from emitted values.                                                                                                                                     |
+| `value`, `onChange(configuration)` | Controlled `FilterConfiguration`; the parent owns edits. Mutually exclusive with `defaultValue`.                                                                                                               |
+| `onValueChange(value)`             | Called with the selected non-null value; does not query or save.                                                                                                                                               |
+| `onClear()`                        | Optional callback enabling the popup's Clear selection item. The host sets the controlled value to null/undefined; this does not call `onValueChange`, query or save. Omit it for required operator selectors. |
+| `label`                            | Required accessible name for the trigger.                                                                                                                                                                      |
+| `placeholder`                      | Optional text when value is null.                                                                                                                                                                              |
+| `inline`                           | Defaults to false. True uses an InputGroupButton trigger for a joined field control.                                                                                                                           |
+| `disabled`                         | Defaults to false. Disables selection.                                                                                                                                                                         |
 
 The menu uses shadcn Select / Base UI with selected indicators and keyboard interaction. It opens at the trigger edge with `alignItemWithTrigger={false}` and `align="start"`. The menu is portalled outside clipping parents while inheriting the component's theme when opened.
 
@@ -278,25 +271,25 @@ The parent owns expression validation, pending edits, manual query and view save
 
 ### FilterDatePicker
 
-| Prop                  | Contract                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| `value`               | Optional controlled `Date`; `undefined` shows the placeholder. Invalid dates show an invalid state. |
-| `onValueChange(date)` | Receives the selected `Date` or `undefined`; selecting a day closes the panel.                      |
-| `label`               | Required accessible name. The trigger includes the displayed date.                                  |
-| `inline`              | Defaults to false; true uses an InputGroupButton for a joined field control.                        |
-| `disabled`            | Defaults to false; disables the trigger and calendar days, including an already-open panel.         |
+| Prop                               | Contract                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `value`, `onChange(configuration)` | Controlled `FilterConfiguration`; the parent owns edits. Mutually exclusive with `defaultValue`. |
+| `onValueChange(date)`              | Receives the selected `Date` or `undefined`; selecting a day closes the panel.                   |
+| `label`                            | Required accessible name. The trigger includes the displayed date.                               |
+| `inline`                           | Defaults to false; true uses an InputGroupButton for a joined field control.                     |
+| `disabled`                         | Defaults to false; disables the trigger and calendar days, including an already-open panel.      |
 
 Composes shadcn Calendar and Base UI Popover. The calendar uses the Chinese locale and displays `YYYY-MM-DD`. A date represents a selected calendar day; the component does not convert it into a Wow timestamp or apply a timezone.
 
 ### FilterTimeInput
 
-| Prop                   | Contract                                                                                   |
-| ---------------------- | ------------------------------------------------------------------------------------------ |
-| `value`                | Optional controlled raw string; omitted/undefined values default to an empty string.       |
-| `onValueChange(value)` | Receives edited text or a clock value at second precision at most; does not query or save. |
-| `label`                | Required accessible name for the input and clock controls.                                 |
-| `inline`               | Defaults to false; true omits the outer InputGroup border for use inside FieldFilter.      |
-| `disabled`             | Defaults to false; disables text input and clock selectors.                                |
+| Prop                               | Contract                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `value`, `onChange(configuration)` | Controlled `FilterConfiguration`; the parent owns edits. Mutually exclusive with `defaultValue`. |
+| `onValueChange(value)`             | Receives edited text or a clock value at second precision at most; does not query or save.       |
+| `label`                            | Required accessible name for the input and clock controls.                                       |
+| `inline`                           | Defaults to false; true omits the outer InputGroup border for use inside FieldFilter.            |
+| `disabled`                         | Defaults to false; disables text input and clock selectors.                                      |
 
 Uses shadcn InputGroup, Popover and Select for a 24-hour clock. Clock values use `HH:mm` or `HH:mm:ss`; legacy fractional seconds are truncated before display or editing. Other nonempty formats receive `aria-invalid`. Unset or empty input is valid and never receives a required-field error. Editing hours or minutes preserves existing seconds; selecting seconds adds the seconds segment when absent. Malformed text is never silently converted to a query value. The host decides timezone and when to apply the query.
 
@@ -348,7 +341,8 @@ engine.dispose();
 and `numberFormat?: Intl.NumberFormatOptions & { locale?: string }`.
 Sorting requires `sortable: true`.
 `RendererReference` uses the existing `{name, options?}` JSON contract. Filter
-references keep field `editor` and definition `filterEditors`; there is no
+defaults use field `editor` and definition `filterEditors` only for new nodes.
+Existing nodes retain their authoritative `component` reference; there is no
 separate filter-renderer protocol.
 
 `ViewInstance` contains `id`, `definitionId`, `title`, `kind: 'record'`, `scope`,
@@ -501,15 +495,15 @@ Operation-completion notifications are synchronous and release the completed wri
 
 `getSnapshot` is referentially stable until state changes; `subscribe` returns
 an unsubscribe function. Snapshots isolate and freeze JSON data. Each session
-keeps baseline and current instance, dirty flag, transient filter draft/mode,
-`filterBaseline` (accepted editor tree), `appliedFilter` (compiled query or null), `filterValid` (reported local editor validity),
+keeps baseline and current instance, dirty flag, editing `FilterConfiguration`,
+`filterBaseline` (accepted configuration), `appliedFilter` (compiled query or null), `filterValid` (reported local editor validity),
 derived `filterPending`, rows, total, page/cursor, selected keys, `pageSummary`, `allSummary`, and independent query/write
 status and error. Runtime state is never serialized into instance config.
 
 `RecordSession.baseline`, `instance`, `filterDraft`, `filterBaseline` and `rows`,
 plus `ViewEngineState.definition`, use `DeepReadonly<T>` recursively. Assignment
 to nested metadata or mutation of query arrays is rejected by TypeScript.
-`applyFilter`, `setFilterDraft`, `setSort` and `setColumns` accept readonly
+`setFilterDraft`, `setSort` and `setColumns` accept readonly
 snapshots directly and copy accepted inputs. Host query/write/permission
 callbacks still receive independent editable DTOs. `RecordTable` accepts
 readonly definitions, instances and rows, plus required explicit `appliedFilter: DeepReadonly<FilterExpression> | null`; presentation/summary readers also
@@ -523,7 +517,7 @@ When a paged response reports a total that no longer includes the requested page
 
 Reload keeps editable title/configuration and filter drafts, but always adopts the returned authoritative `scope`. If an unconfirmed creation's source disappears from the full instance list, `ViewEngineState.pendingCreates` retains its immutable editor context under the source ID, without rows or summaries. These entries are separate from visible `instanceIds`/`sessions`: ordinary query, edit, selection and save commands cannot use them. `canReloadInstance(sourceId)` and `reloadInstance(sourceId)` still reconcile the original create request under current host permissions. `ViewPageContent` displays a scoped recovery entry. Validated recovery removes that entry and adds the created view; a confirmed deletion of that copy wins over an older creation receipt, and reconciliation preserves independently updated baselines or pending/unknown writes on an already opened copy; a definitive rejection of the original request removes the entry without creating a view. This context is engine-lifetime state and is not serialized as view configuration.
 
-- `applyFilter(expression?,id?)`, `setFilterDraft(draft,id?,valid?)`,
+- `applyFilter(id?)`, `setFilterDraft(configuration,id?,valid?)`,
   `setFilterValidity(valid,id?)`, `setFilterMode(mode,id?)`.
 - `setSort(sort,id?)`, `setColumns(columns,id?)`, `setPage(index,id?)`,
   `setPageSize(size,id?)`, `nextPage(id?)`, `setSelection(keys,id?)`.
@@ -544,8 +538,8 @@ are persisted; pending edits retain their mode until Query accepts the whole
 configuration. These rules also apply without React.
 
 `applyFilter()` compiles the current draft. Programmatic clients must first call
-`setFilterDraft`; optional `applyFilter(expression)` verifies that supplied output
-equals the compiled result and cannot create editor state from an expression.
+`setFilterDraft(configuration)`; `applyFilter(id?)` accepts no external expression.
+The editing and accepted snapshots both use the canonical configuration.
 Acceptance updates configuration, `filterBaseline`, `appliedFilter`, pagination
 and summary scope together. Invalid local input or compiler output rejects
 before mutation or requests. `setFilterValidity(true)` cannot bypass changed
@@ -760,10 +754,10 @@ already-owned `engine` with the same visual props and leaves lifecycle to the
 caller. `RecordView` renders only the selected record instance's business
 operations, FilterPanel, column controls, table and pagination. The lower-level
 `RecordTable` and `RecordColumnSettings` can also be controlled directly.
-`ViewInstanceMetadata`, `RecordQueryConfig` and `RecordTablePresentation` name
-the common metadata, record query and implemented presentation boundaries.
-`RecordViewConfig` combines query settings and presentation, replacing the compiled `filter` with persisted component `filters`; `ViewInstance` currently remains the
-record kind. These named boundaries do not claim additional view renderers.
+`ViewInstanceMetadata` holds common metadata; `RecordTablePresentation` defines
+table layout and columns. `RecordViewConfig` directly contains `sort`, `pagination`,
+canonical component `filters` and `presentation`. `ViewInstance` currently remains
+the record kind. These named boundaries do not claim additional view renderers.
 The published record table relies on React Compiler to cache derived values, callbacks and JSX; unsubmitted draft edits do not rerender record cells in the compiled build. Uncompiled source tests verify the same functional behavior without promising identical render counts. Its widths,
 effective pinning, filler and summary-label region are computed in a pure internal
 layout module. The engine and auto-refresh control share one domain block policy;
@@ -913,7 +907,7 @@ default `--fve-border` token; it never resets unrelated host elements.
 
 The published `/react` entry is built with React Compiler using the repository Vite `reactCompilerPreset`. Compiler packages are development dependencies; React 19 supplies `react/compiler-runtime`. Consumers do not configure the compiler. Core runtime imports remain React-free and packed verification enforces both entry boundaries.
 
-`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with `reorder` and `instances[id].{permissions,reload,retryDelete}`; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host or notify permission.subscribe when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit memoization remains only for the controlled draft clone and theme capture, which are Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.
+`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with `reorder` and `instances[id].{permissions,reload,retryDelete}`; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host or notify permission.subscribe when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit caches remain for the controlled configuration clone and theme capture to stabilize Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.
 
 ### View service contracts and development adapters
 
@@ -1041,7 +1035,7 @@ Selection props use `value` or `values` and an optional `selectedOptions` label 
 
 `examples/react/BuiltinFiltersExample.tsx` and **View Engine / 过滤器 / 内置组件** demonstrate Fetcher candidate loading and LocalStorageViewHost JSON recovery. The implementation reuses `@ahoo-wang/fetcher-react/core`; it does not import Ant Design or add candidate operations to ViewHost.
 
-When `field.operators` is absent, named built-in editors supply their applicable defaults (EQ/NE, IN/NOT_IN, or BETWEEN). Explicit field operator restrictions take precedence.
+`getFieldOperators(field)` derives capabilities only from field type and explicit `field.operators`. Field `editor` and definition `filterEditors` are defaults for new nodes; an existing node's `component` is authoritative. Its registration supplies component-specific compatibility checks, so changing a field editor default does not restrict or replace saved components.
 
 ## Built-in table cells
 

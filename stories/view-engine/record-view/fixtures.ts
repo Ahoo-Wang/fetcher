@@ -12,15 +12,14 @@
  */
 
 import {
-  filter,
   FilterOperator,
   SortDirection,
-  type FilterExpression,
   type MaterializedSnapshot,
 } from '@ahoo-wang/fetcher-wow';
 import {
   createFilterConfiguration,
-  createFilterDraft,
+  newFilterNode,
+  type FilterConfiguration,
   type RecordData,
   type ViewDefinition,
   type ViewInstance,
@@ -347,7 +346,10 @@ export function makeInstances(
   mode: 'paged' | 'cursor',
   summaries = false,
   pageSize = 5,
-  initialFilter: FilterExpression = filter.gte('state.totalAmount', 0),
+  initialFilter: FilterConfiguration = createFilterConfiguration({
+    ...newFilterNode(FilterOperator.GTE, 'state.totalAmount'),
+    props: { value: 0 },
+  }),
 ): ViewInstanceList {
   const personal: ViewInstance = {
     id: 'my-orders',
@@ -357,11 +359,7 @@ export function makeInstances(
     scope: { type: 'personal' },
     revision: '1',
     config: {
-      filters: createFilterConfiguration(
-        createFilterDraft(initialFilter),
-        undefined,
-        definition.fields,
-      ),
+      filters: initialFilter,
       sort: [{ field: 'aggregateId', direction: SortDirection.ASC }],
       pagination: { mode, size: pageSize },
       presentation: {
@@ -423,7 +421,9 @@ export function makeInstances(
     scope: { type: 'public', source: 'system' },
     config: {
       ...structuredClone(personal.config),
-      filters: createFilterConfiguration(createFilterDraft(filter.matchAll())),
+      filters: createFilterConfiguration(
+        newFilterNode(FilterOperator.MATCH_ALL),
+      ),
     },
   };
   const shared: ViewInstance = {
@@ -434,14 +434,22 @@ export function makeInstances(
     config: {
       ...structuredClone(personal.config),
       filters: createFilterConfiguration(
-        createFilterDraft(
-          filter.and([
-            filter.isIn('state.status', ['pending', 'processing']),
-            filter.gte('state.totalAmount', 1000),
-          ]),
-        ),
+        {
+          ...newFilterNode(FilterOperator.AND),
+          operands: [
+            {
+              ...newFilterNode(FilterOperator.IN, 'state.status', {
+                name: 'multi-select',
+              }),
+              props: { values: ['pending', 'processing'] },
+            },
+            {
+              ...newFilterNode(FilterOperator.GTE, 'state.totalAmount'),
+              props: { value: 1000 },
+            },
+          ],
+        },
         'simple',
-        definition.fields,
       ),
     },
   };

@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
   cleanup,
@@ -22,7 +23,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
-import { fields } from './fixtures/filterPanel.js';
+import { fields, select } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
 
@@ -31,24 +32,16 @@ it.each([FilterOperator.AND, FilterOperator.OR, FilterOperator.NOR])(
   async op => {
     const apply = vi.fn();
     const change = vi.fn();
-    const view = render(
+    render(
       <FilterPanel
         fields={fields}
-        value={filter.matchAll()}
+        defaultValue={configuration(node('MATCH_ALL'))}
         onApply={apply}
-        onDraftChange={change}
+        onChange={change}
       />,
     );
     expect(screen.queryByRole('button', { name: '添加逻辑分组' })).toBeNull();
-    view.rerender(
-      <FilterPanel
-        fields={fields}
-        value={filter.matchAll()}
-        mode="advanced"
-        onApply={apply}
-        onDraftChange={change}
-      />,
-    );
+    await select('筛选模式', '高级');
     fireEvent.click(screen.getByRole('button', { name: '添加逻辑分组' }));
     for (const operator of ['AND', 'OR', 'NOR'])
       expect(
@@ -59,7 +52,10 @@ it.each([FilterOperator.AND, FilterOperator.OR, FilterOperator.NOR])(
     fireEvent.click(
       screen.getByRole('menuitem', { name: new RegExp(`^${op}`) }),
     );
-    expect(change.mock.lastCall?.[0]).toMatchObject({ op, operands: [] });
+    expect(change.mock.lastCall?.[0].root).toMatchObject({
+      operator: op,
+      operands: [],
+    });
     expect(apply).not.toHaveBeenCalled();
   },
 );
@@ -68,8 +64,11 @@ it('keeps logical groups out of the picker and respects the allowed-operator lis
   render(
     <FilterPanel
       fields={fields}
-      value={filter.eq('amount', 1)}
-      mode="advanced"
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }),
+        'advanced',
+      )}
+
       allowedOperators={[FilterOperator.EQ, FilterOperator.AND]}
       onApply={() => {}}
     />,
@@ -110,27 +109,33 @@ it('adds a logical group to the selected nested target', async () => {
   render(
     <FilterPanel
       fields={fields}
-      value={filter.and([
-        filter.eq('amount', 1),
-        filter.or([filter.eq('status', 'pending')]),
-      ])}
+      defaultValue={configuration({
+        ...node('AND'),
+        operands: [
+          node('EQ', 'amount', { value: 1 }),
+          {
+            ...node('OR'),
+            operands: [node('EQ', 'status', { value: 'pending' })],
+          },
+        ],
+      })}
       onApply={() => {}}
-      onDraftChange={change}
+      onChange={change}
     />,
   );
   fireEvent.click(
     screen.getByRole('button', { name: '添加到组合 3：添加逻辑分组' }),
   );
   fireEvent.click(await screen.findByRole('menuitem', { name: /^NOR/ }));
-  expect(change.mock.lastCall?.[0]).toMatchObject({
-    op: FilterOperator.AND,
+  expect(change.mock.lastCall?.[0].root).toMatchObject({
+    operator: FilterOperator.AND,
     operands: [
-      { field: 'amount', value: 1 },
+      { field: 'amount', props: { value: 1 } },
       {
-        op: FilterOperator.OR,
+        operator: FilterOperator.OR,
         operands: [
-          { field: 'status', value: 'pending' },
-          { op: FilterOperator.NOR, operands: [] },
+          { field: 'status', props: { value: 'pending' } },
+          { operator: FilterOperator.NOR, operands: [] },
         ],
       },
     ],
@@ -143,10 +148,27 @@ it('loads nested scopes in advanced mode without losing structure', () => {
     filter.eq('status', 'pending'),
     filter.elementMatch('items', filter.gte('quantity', 2)),
   ]);
-  render(<FilterPanel fields={fields} value={value} onApply={apply} />);
+  render(
+    <FilterPanel
+      fields={fields}
+      defaultValue={configuration({
+        ...node('OR'),
+        operands: [
+          node('EQ', 'status', { value: 'pending' }),
+          {
+            ...node('ELEMENT_MATCH', 'items'),
+            predicate: node('GTE', 'quantity', { value: 2 }),
+          },
+        ],
+      })}
+      onApply={apply}
+    />,
+  );
   expect(screen.getByLabelText('数量值')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenCalledWith(value);
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({ expression: value }),
+  );
 });
 
 it('omits group-move controls in advanced mode and preserves the condition tree', () => {
@@ -155,19 +177,39 @@ it('omits group-move controls in advanced mode and preserves the condition tree'
     filter.eq('amount', 10),
     filter.or([filter.eq('status', 'pending')]),
   ]);
-  render(<FilterPanel fields={fields} value={value} onApply={apply} />);
+  render(
+    <FilterPanel
+      fields={fields}
+      defaultValue={configuration({
+        ...node('AND'),
+        operands: [
+          node('EQ', 'amount', { value: 10 }),
+          {
+            ...node('OR'),
+            operands: [node('EQ', 'status', { value: 'pending' })],
+          },
+        ],
+      })}
+      onApply={apply}
+    />,
+  );
   expect(screen.queryAllByRole('button', { name: /移动.*条件/ })).toHaveLength(
     0,
   );
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenCalledWith(value);
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({ expression: value }),
+  );
 });
 
 it('loaded single-predicate element scopes can add another child', () => {
   render(
     <FilterPanel
       fields={fields}
-      value={filter.elementMatch('items', filter.eq('quantity', 1))}
+      defaultValue={configuration({
+        ...node('ELEMENT_MATCH', 'items'),
+        predicate: node('EQ', 'quantity', { value: 1 }),
+      })}
       onApply={() => {}}
     />,
   );

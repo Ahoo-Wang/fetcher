@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 import { expect, waitFor, within } from 'storybook/test';
-import { filter } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  createFilterConfiguration,
+  newFilterNode,
+} from '@ahoo-wang/fetcher-view-engine';
 import type { Story } from './demoTypes.js';
 import { Scenario } from './Scenario.js';
 import { recordViewMeta } from './meta.js';
@@ -91,13 +95,22 @@ export const ItemFilters: Story = {
     <Scenario
       {...args}
       summaries
-      initialFilter={filter.elementMatch(
-        'state.items',
-        filter.and([
-          filter.contains('productName', '键盘'),
-          filter.gte('quantity', 2),
-        ]),
-      )}
+      initialFilter={createFilterConfiguration({
+        ...newFilterNode(FilterOperator.ELEMENT_MATCH, 'state.items'),
+        predicate: {
+          ...newFilterNode(FilterOperator.AND),
+          operands: [
+            {
+              ...newFilterNode(FilterOperator.CONTAINS, 'productName'),
+              props: { value: '键盘' },
+            },
+            {
+              ...newFilterNode(FilterOperator.GTE, 'quantity'),
+              props: { value: 2 },
+            },
+          ],
+        },
+      })}
     />
   ),
 };

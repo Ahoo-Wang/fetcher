@@ -36,7 +36,7 @@ Plain YYYY-MM-DD strings retain calendar-date display; timestamp values are form
 
 ## Standalone filter controls
 
-`FieldFilter` composes a label, operator selector, children and optional remove callback. It does not execute queries. `FilterSelect`/`FilterSearchSelect` provide controlled string values, options, label, onValueChange and optional onClear; SearchSelect adds candidate search. `FilterMultiSelect` handles typed multiple IDs. `FilterTextValues` retains typed input items. Use `FilterPanel` when you need expression ownership and validation.
+`FieldFilter` composes a label, operator selector, children and optional remove callback. It does not execute queries. `FilterSelect`/`FilterSearchSelect` provide controlled string values, options, label, onValueChange and optional onClear; SearchSelect adds candidate search. `FilterMultiSelect` handles typed multiple IDs. `FilterTextValues` retains typed input items. Use `FilterPanel` when you need configuration ownership and validation.
 
 `FilterRemoteSelect` receives source/label and either single value or `multiple: true` with values. Its change callback includes selected items. `selectedOptions` supplies retained labels, default debounce is 300 ms and pageSize follows Wow DEFAULT_CURSOR_SIZE (bounded by MAX_CURSOR_SIZE). Invalid page sizes/debounce values throw. Changing source identity starts a new remote session.
 

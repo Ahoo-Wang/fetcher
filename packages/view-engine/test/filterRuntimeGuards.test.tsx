@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import {
   act,
   cleanup,
@@ -25,7 +26,7 @@ import { FilterValueEditor } from '../src/filter/FilterValueEditor.js';
 import { getBuiltinFilterRegistration } from '../src/filter/builtinFilterRegistrations.js';
 import { useFilterPanelQuery } from '../src/filter/useFilterPanelQuery.js';
 import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
-import type { FilterDraftNode } from '../src/filter/filterModel.js';
+import type { FilterComponentConfig } from '../src/filter/filterModel.js';
 
 afterEach(cleanup);
 
@@ -33,7 +34,13 @@ it('shows an actionable error when the standalone value editor receives an unkno
   const change = vi.fn();
   render(
     <FilterValueEditor
-      node={{ id: 'unknown', op: 'UNKNOWN' as Op, field: 'amount' }}
+      node={{
+        id: 'unknown',
+        operator: 'UNKNOWN' as Op,
+        field: 'amount',
+        component: { name: 'builtin' },
+        props: {},
+      }}
       fields={[]}
       onChange={change}
     />,
@@ -69,23 +76,32 @@ it('does not inherit a candidate source from the registry prototype', () => {
 it('rejects duplicate in-flight submissions while allowing a changed query', () => {
   const onApply = vi.fn(),
     setBaseline = vi.fn();
-  const value = filter.eq('amount', 0);
-  const draft: FilterDraftNode = {
+  const value = configuration(node('EQ', 'amount', { value: 0 }));
+  const generation = {};
+  const draft: FilterComponentConfig = {
     id: 'amount',
-    op: Op.EQ,
+    operator: Op.EQ,
     field: 'amount',
-    value: 1,
+    component: { name: 'builtin' },
+    props: { value: 1 },
   };
   const { result, rerender } = renderHook(
     ({ expression }) =>
       useFilterPanelQuery(
-        { value, querying: true, fields: [], onApply },
-        draft,
+        {
+          appliedValue: value,
+          querying: true,
+          fields: [{ field: 'amount', label: '金额', type: 'number' }],
+          onApply,
+        },
+        configuration(draft),
+        filter.eq('amount', 0),
         { expression, errors: [] },
         true,
+        generation,
         setBaseline,
       ),
-    { initialProps: { expression: value } },
+    { initialProps: { expression: filter.eq('amount', 0) } },
   );
   act(() => result.current.apply());
   expect(onApply).not.toHaveBeenCalled();
@@ -94,7 +110,9 @@ it('rejects duplicate in-flight submissions while allowing a changed query', () 
     result.current.apply();
     result.current.apply();
   });
-  expect(onApply).toHaveBeenCalledExactlyOnceWith(filter.eq('amount', 1));
-  expect(setBaseline).toHaveBeenCalledExactlyOnceWith(draft);
+  expect(onApply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ expression: filter.eq('amount', 1) }),
+  );
+  expect(setBaseline).toHaveBeenCalledExactlyOnceWith(configuration(draft));
   expect(setBaseline.mock.calls[0][0]).not.toBe(draft);
 });

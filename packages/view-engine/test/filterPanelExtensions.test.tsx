@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
@@ -44,7 +45,9 @@ it('blocks stale valid custom values and rejects changed field bindings', () => 
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }, fields[1]]}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+      )}
       onApply={apply}
       extensions={{
         filters: {
@@ -75,7 +78,9 @@ it('blocks stale valid custom values and rejects changed field bindings', () => 
   expect(screen.getByRole('alert').textContent).toContain('字段');
   fireEvent.click(screen.getByText('零'));
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenCalledWith(filter.eq('amount', 0));
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({ expression: filter.eq('amount', 0) }),
+  );
 });
 
 it.each(['value', 'filter'] as const)(
@@ -85,7 +90,9 @@ it.each(['value', 'filter'] as const)(
     const { unmount } = render(
       <FilterPanel
         fields={broken}
-        value={filter.eq('amount', 1)}
+        defaultValue={configuration(
+          node('EQ', 'amount', { value: 1 }, { name: 'missing' }),
+        )}
         onApply={() => {}}
       />,
     );
@@ -98,7 +105,9 @@ it.each(['value', 'filter'] as const)(
     render(
       <FilterPanel
         fields={broken}
-        value={filter.eq('amount', 1)}
+        defaultValue={configuration(
+          node('EQ', 'amount', { value: 1 }, { name: 'missing' }),
+        )}
         onApply={() => {}}
         extensions={{
           filters: {
@@ -119,7 +128,7 @@ it.each(['value', 'filter'] as const)(
   },
 );
 
-it('keeps mode-specific extension fallback and ignores unused lower-priority references', () => {
+it('keeps saved component identity explicit and reports an unsupported mode', () => {
   function Custom({ onValidityChange }: FilterEditorProps) {
     useEffect(() => onValidityChange(true), [onValidityChange]);
     return <span>业务编辑器</span>;
@@ -127,7 +136,10 @@ it('keeps mode-specific extension fallback and ignores unused lower-priority ref
   const view = render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
+      value={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+      )}
+      onChange={() => {}}
       onApply={() => {}}
       editors={{ [FilterOperator.EQ]: { name: 'not-used' } }}
       extensions={{
@@ -149,9 +161,13 @@ it('keeps mode-specific extension fallback and ignores unused lower-priority ref
   view.rerender(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
+      value={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+        'advanced',
+      )}
+      onChange={() => {}}
       onApply={() => {}}
-      mode="advanced"
+
       extensions={{
         filters: {
           custom: { ...builtinCompiler, component: Custom, modes: ['simple'] },
@@ -160,14 +176,19 @@ it('keeps mode-specific extension fallback and ignores unused lower-priority ref
     />,
   );
   expect(screen.queryByText('业务编辑器')).toBeNull();
-  expect(screen.getByLabelText('订单金额值')).toBeTruthy();
+  expect(screen.getByRole('alert').textContent).toContain('不支持当前模式');
+  expect(
+    screen.getByRole('button', { name: '查询', exact: true }),
+  ).toHaveProperty('disabled', true);
 });
 
 it('blocks a failing extension compatibility predicate instead of applying stale state', () => {
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+      )}
       onApply={() => {}}
       extensions={{
         filters: {

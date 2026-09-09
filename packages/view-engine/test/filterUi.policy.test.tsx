@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import {
   cleanup,
   fireEvent,
@@ -21,7 +22,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { StrictMode } from 'react';
-import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import type {
   FilterPanelToolbarProps,
@@ -61,9 +62,9 @@ it('rejects retained toolbar mode callbacks after the panel becomes disabled', (
   const draw = (disabled: boolean) => (
     <FilterPanel
       fields={fields}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(node('EQ', 'amount', { value: 1 }))}
       onApply={() => {}}
-      onModeChange={changed}
+      onChange={next => changed(next.mode)}
       disabled={disabled}
       renderToolbar={props => {
         toolbar = props;
@@ -125,9 +126,11 @@ it('checks the current operator policy before honoring a retained complete-filte
   const draw = (restricted: boolean) => (
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+      )}
       onApply={() => {}}
-      onDraftChange={changed}
+      onChange={changed}
       allowedOperators={restricted ? [Op.EQ] : [Op.EQ, Op.GTE]}
       extensions={{
         filters: {

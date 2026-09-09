@@ -110,9 +110,10 @@ const instances: ViewInstanceList = {
       config: {
         filters: createFilterConfiguration({
           id: 'amount',
-          op: Op.GTE,
+          operator: Op.GTE,
+          component: { name: 'builtin' },
           field: 'state.amount',
-          value: 0,
+          props: { value: 0 },
         }),
         sort: [],
         pagination: { mode: 'paged', size: 100 },

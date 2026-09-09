@@ -11,16 +11,16 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { afterEach, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
-import { filter } from '@ahoo-wang/fetcher-wow';
 afterEach(cleanup);
 it('links numeric validation to the focused input and clears the association when corrected', () => {
   render(
     <FilterPanel
       fields={[{ field: 'amount', label: '金额', type: 'number' }]}
-      value={filter.gte('amount', 0)}
+      defaultValue={configuration(node('GTE', 'amount', { value: 0 }))}
       onApply={() => {}}
     />,
   );
@@ -39,7 +39,7 @@ it('also associates relative-day validation with the actual days input', () => {
   render(
     <FilterPanel
       fields={[{ field: 'created', label: '创建', type: 'datetime' }]}
-      value={filter.recentDays('created', 2)}
+      defaultValue={configuration(node('RECENT_DAYS', 'created', { days: 2 }))}
       onApply={() => {}}
     />,
   );

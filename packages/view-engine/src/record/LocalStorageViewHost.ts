@@ -12,6 +12,12 @@
  */
 
 import type { ViewHost } from './ViewHost.js';
+import {
+  createViewInput,
+  validateLocalViewState,
+  type StoredInstance,
+  type ServiceState,
+} from './localViewState.js';
 import { copy, message } from '../lib/snapshot.js';
 import { sameFilterState } from '../filter/filterTree.js';
 import {
@@ -52,16 +58,6 @@ export interface LocalStorageViewHostOptions {
   canReorder?: () => boolean;
   permissionsRevision?: () => number;
 }
-type StoredInstance = ViewInstance & { ownerKey: string | null };
-interface ServiceState {
-  instances: StoredInstance[];
-  users: Record<string, { order: string[]; defaultInstanceId: string | null }>;
-  creates: Record<
-    string,
-    { input: Omit<ViewInstance, 'id' | 'revision'>; result: ViewInstance }
-  >;
-}
-
 /** Executable view-service fixture: shared content, private views/order, atomic CAS and create receipts. */
 export class LocalStorageViewHost implements ViewHost {
   readonly definition = {
@@ -149,7 +145,7 @@ export class LocalStorageViewHost implements ViewHost {
         );
       return this.transaction(
         state => {
-          const body = this.createInput(input);
+          const body = createViewInput(input);
           const candidate = {
             ...copy(body),
             id: crypto.randomUUID(),
@@ -443,49 +439,7 @@ export class LocalStorageViewHost implements ViewHost {
                   creates: {},
                 }
               : JSON.parse(raw);
-          if (
-            !Array.isArray(state.instances) ||
-            !state.users ||
-            typeof state.users !== 'object' ||
-            Array.isArray(state.users) ||
-            !state.creates ||
-            typeof state.creates !== 'object' ||
-            Array.isArray(state.creates)
-          )
-            throw new Error('服务存储格式无效');
-          const known = new Set<string>();
-          for (const item of state.instances) {
-            validateViewInstance(item, this.storedDefinition);
-            if (
-              !item.revision ||
-              (item.scope.type === 'personal'
-                ? typeof item.ownerKey !== 'string'
-                : item.ownerKey !== null)
-            )
-              throw new Error('实例归属或版本无效');
-            const key = JSON.stringify([item.ownerKey, item.id]);
-            if (known.has(key)) throw new Error('实例重复');
-            known.add(key);
-          }
-          for (const user of Object.values(state.users))
-            if (
-              !user ||
-              !Array.isArray(user.order) ||
-              user.order.some(id => typeof id !== 'string') ||
-              new Set(user.order).size !== user.order.length ||
-              !(
-                user.defaultInstanceId === null ||
-                typeof user.defaultInstanceId === 'string'
-              )
-            )
-              throw new Error('用户顺序无效');
-          for (const receipt of Object.values(state.creates)) {
-            validateViewInstance(receipt.result, this.storedDefinition);
-            if (
-              !sameFilterState(receipt.input, this.createInput(receipt.result))
-            )
-              throw new Error('创建回执无效');
-          }
+          validateLocalViewState(state, this.storedDefinition);
         } catch (error) {
           throw new ViewServiceError('CORRUPT_STATE', message(error));
         }
@@ -534,14 +488,5 @@ export class LocalStorageViewHost implements ViewHost {
       },
       signal,
     );
-  }
-  private createInput({
-    definitionId,
-    kind,
-    title,
-    scope,
-    config,
-  }: Omit<ViewInstance, 'id' | 'revision'>) {
-    return { definitionId, kind, title, scope, config };
   }
 }

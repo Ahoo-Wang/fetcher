@@ -10,16 +10,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  filter,
-  FilterOperator as Op,
-  type FilterExpression,
-} from '@ahoo-wang/fetcher-wow';
+import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import {
-  compileFilterDraft,
-  createFilterDraft,
-} from '../src/filter/filterCore';
+import { compileFilterConfiguration } from '../src/filter/filterCore';
 import { compile, fields, node } from './fixtures/filterCore.js';
 
 it('outputs real date strings and rejects calendar normalization', () => {
@@ -144,22 +137,29 @@ it('rejects DST gaps and malformed datetime offset hints', () => {
 });
 
 it.each([
-  { op: Op.EQ, field: 'created', value: 0 },
-  { op: Op.IN, field: 'created', values: [0] },
-  { op: Op.BETWEEN, field: 'created', lowerBound: 0, upperBound: 1000 },
-] as FilterExpression[])(
-  'validates the timezone of loaded numeric datetime values for $op',
-  expression => {
-    const draft = createFilterDraft(expression);
+  [
+    node(Op.EQ, 'created', { value: 0 }, {}),
+    { op: Op.EQ, field: 'created', value: 0 },
+  ] as const,
+  [
+    node(Op.IN, 'created', { values: [0] }, {}),
+    { op: Op.IN, field: 'created', values: [0] },
+  ] as const,
+  [
+    node(Op.BETWEEN, 'created', { lowerBound: 0, upperBound: 1000 }, {}),
+    { op: Op.BETWEEN, field: 'created', lowerBound: 0, upperBound: 1000 },
+  ] as const,
+])(
+  'validates the timezone of loaded numeric datetime values for %j',
+  (draft, expression) => {
     const invalid = compile(draft, [fields[4]], 'Bad/Zone');
     expect(invalid.errors).not.toEqual([]);
     expect(invalid.expression).toBeUndefined();
     for (const timeZone of ['Asia/Shanghai', '+08:00', undefined]) {
       expect(
-        compileFilterDraft(
-          draft,
+        compileFilterConfiguration(
+          { mode: 'advanced', root: draft },
           [fields[4]],
-          undefined,
           undefined,
           undefined,
           timeZone,
@@ -173,12 +173,14 @@ it('keeps local datetime behavior when the global timezone is unspecified', () =
   const local = [fields[4]];
   const expected = new Date(2024, 0, 15, 12, 30, 59, 0).getTime();
   expect(
-    compileFilterDraft(
-      node(Op.EQ, 'created', {
-        value: { date: '2024-01-15', time: '12:30:59.123' },
-      }),
+    compileFilterConfiguration(
+      {
+        mode: 'advanced',
+        root: node(Op.EQ, 'created', {
+          value: { date: '2024-01-15', time: '12:30:59.123' },
+        }),
+      },
       local,
-      undefined,
       undefined,
       undefined,
       undefined,

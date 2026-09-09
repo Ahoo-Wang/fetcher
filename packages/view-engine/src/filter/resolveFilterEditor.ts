@@ -23,17 +23,12 @@ import type {
   FilterRegistration,
 } from './filterReactTypes.js';
 import type { FilterNodeLocation } from './filterTree.js';
-import {
-  filterComponentProps,
-  filterComponentReference,
-} from './filterConfiguration.js';
 import { message } from './filterPanelUtils.js';
 
 export function resolveFilterEditor(
   location: FilterNodeLocation,
   props: FilterPanelProps,
   mode: FilterMode,
-  builtIn: ReadonlySet<string>,
 ): {
   props?: FilterComponentProperties;
   reference?: FilterEditorReference;
@@ -41,12 +36,11 @@ export function resolveFilterEditor(
   options?: FilterEditorReference['options'];
   error?: string;
 } {
-  if (builtIn.has(location.node.id)) return {};
   const { node, fields } = location;
   const field = fields.find(field => field.field === node.field);
-  const reference = filterComponentReference(node, field, props.editors);
+  const reference = node.component;
   try {
-    const properties = filterComponentProps(node);
+    const properties = node.props;
     if (reference.name === 'builtin') return { props: properties, reference };
     const registration =
       props.extensions?.filters &&
@@ -84,7 +78,7 @@ export function resolveFilterEditor(
         registration.supports(
           copy(properties),
           copy({
-            operator: node.op,
+            operator: node.operator,
             field,
             fields,
             options: reference.options,
@@ -92,9 +86,7 @@ export function resolveFilterEditor(
           }),
         ));
     if (!supported)
-      return node.editor
-        ? { error: `筛选器 ${reference.name} 不支持当前模式或属性` }
-        : {};
+      return { error: `筛选器 ${reference.name} 不支持当前模式或属性` };
     return {
       props: properties,
       reference,

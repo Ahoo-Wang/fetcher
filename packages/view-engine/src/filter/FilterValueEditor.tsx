@@ -11,10 +11,16 @@
  * limitations under the License.
  */
 
+import type { BuiltinFilterProperties } from './filterReactTypes.js';
 import type { ReactNode } from 'react';
 import { DeletionState, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { PlusIcon, XIcon } from 'lucide-react';
-import type { FilterDraftNode, FilterFieldDefinition } from './filterModel.js';
+import type {
+  FilterComponentConfig,
+  FilterComponentProperties,
+  FilterJsonValue,
+  FilterFieldDefinition,
+} from './filterModel.js';
 import { FILTER_OPERATORS, stringOperators } from './filterOperators.js';
 import { ScalarEditor } from './FilterScalarEditor.js';
 import {
@@ -32,7 +38,7 @@ import {
 } from '../components/ui/input-group.js';
 
 export interface FilterValueEditorProps {
-  node: FilterDraftNode;
+  node: FilterComponentConfig;
   field?: FilterFieldDefinition;
   fields: readonly FilterFieldDefinition[];
   disabled?: boolean;
@@ -40,7 +46,7 @@ export interface FilterValueEditorProps {
   timeZone?: string;
   errors?: readonly string[];
   errorId?: string;
-  onChange(node: FilterDraftNode): void;
+  onChange(node: FilterComponentConfig): void;
 }
 
 export function FilterValueEditor({
@@ -55,17 +61,19 @@ export function FilterValueEditor({
   onChange,
 }: FilterValueEditorProps) {
   const invalid = errors.length > 0;
-  const descriptor = FILTER_OPERATORS[node.op];
+  const descriptor = FILTER_OPERATORS[node.operator];
   if (!descriptor)
     return <InputGroupText role="alert">未知操作</InputGroupText>;
   const label = field?.label ?? descriptor.label;
-  const stringOperation = stringOperators.includes(node.op);
+  const stringOperation = stringOperators.includes(node.operator);
   const valueField =
     descriptor.category === 'root' || stringOperation
       ? { field: '', label, type: 'string' as const }
       : field;
-  const update = (patch: Partial<FilterDraftNode>) =>
-    onChange({ ...node, ...patch });
+  const properties = node.props as BuiltinFilterProperties;
+  const values = Array.isArray(properties.values) ? properties.values : [];
+  const update = (patch: FilterComponentProperties) =>
+    onChange({ ...node, props: { ...node.props, ...patch } });
   let input: ReactNode;
   switch (descriptor.input) {
     case 'value':
@@ -77,20 +85,23 @@ export function FilterValueEditor({
           errorId={errorId}
           label={`${label}值`}
           dateLabel={label}
-          value={node.value}
+          value={properties.value}
           field={valueField}
           nullable={
-            node.op === FilterOperator.EQ || node.op === FilterOperator.NE
+            node.operator === FilterOperator.EQ ||
+            node.operator === FilterOperator.NE
           }
           disabled={disabled}
-          onChange={value => update({ value })}
+          onChange={value =>
+            update({ value: value as FilterJsonValue | undefined })
+          }
         />
       );
       break;
     case 'values':
       input = (
         <span className="fve:inline-flex fve:max-w-full fve:flex-wrap fve:items-center">
-          {(node.values ?? []).map((value, index) => (
+          {values.map((value, index) => (
             <span
               key={index}
               className="fve:inline-flex fve:max-w-full fve:flex-wrap fve:items-center"
@@ -106,8 +117,8 @@ export function FilterValueEditor({
                 disabled={disabled}
                 onChange={value =>
                   update({
-                    values: node.values?.map((current, position) =>
-                      position === index ? value : current,
+                    values: values.map((current, position) =>
+                      position === index ? (value as FilterJsonValue) : current,
                     ),
                   })
                 }
@@ -118,9 +129,7 @@ export function FilterValueEditor({
                 size="icon-xs"
                 onClick={() =>
                   update({
-                    values: node.values?.filter(
-                      (_, position) => position !== index,
-                    ),
+                    values: values.filter((_, position) => position !== index),
                   })
                 }
               >
@@ -132,7 +141,19 @@ export function FilterValueEditor({
             aria-label={`添加${label}值`}
             disabled={disabled}
             onClick={() =>
-              update({ values: [...(node.values ?? []), undefined] })
+              update({
+                values: [
+                  ...values,
+                  {
+                    type:
+                      valueField?.type === 'number'
+                        ? 'number'
+                        : valueField?.type === 'boolean'
+                          ? 'boolean'
+                          : 'string',
+                  },
+                ],
+              })
             }
           >
             <PlusIcon data-icon="inline-start" aria-hidden="true" />
@@ -152,8 +173,8 @@ export function FilterValueEditor({
             field={field}
             value={
               {
-                lowerBound: node.lowerBound,
-                upperBound: node.upperBound,
+                lowerBound: properties.lowerBound,
+                upperBound: properties.upperBound,
               } as FilterDateTimeRangeProps['value']
             }
             disabled={disabled}
@@ -170,10 +191,12 @@ export function FilterValueEditor({
             invalid={invalid}
             errorId={errorId}
             label={`${label}下限`}
-            value={node.lowerBound}
+            value={properties.lowerBound}
             field={field}
             disabled={disabled}
-            onChange={lowerBound => update({ lowerBound })}
+            onChange={lowerBound =>
+              update({ lowerBound: lowerBound as FilterJsonValue | undefined })
+            }
           />
           <InputGroupText>至</InputGroupText>
           <ScalarEditor
@@ -182,10 +205,12 @@ export function FilterValueEditor({
             invalid={invalid}
             errorId={errorId}
             label={`${label}上限`}
-            value={node.upperBound}
+            value={properties.upperBound}
             field={field}
             disabled={disabled}
-            onChange={upperBound => update({ upperBound })}
+            onChange={upperBound =>
+              update({ upperBound: upperBound as FilterJsonValue | undefined })
+            }
           />
         </>
       );
@@ -209,7 +234,7 @@ export function FilterValueEditor({
           errorId={errorId}
           label="删除状态"
           placeholder="未设置"
-          value={node.state}
+          value={properties.state}
           inline
           disabled={disabled}
           options={[
@@ -228,7 +253,9 @@ export function FilterValueEditor({
           invalid={invalid}
           errorId={errorId}
           label={`${label}时间`}
-          value={node.time}
+          value={
+            properties.time === undefined ? undefined : String(properties.time)
+          }
           disabled={disabled}
           inline
           onValueChange={time => update({ time: time || undefined })}
@@ -242,7 +269,7 @@ export function FilterValueEditor({
             aria-label={`${label}天数`}
             aria-invalid={invalid || undefined}
             aria-describedby={invalid ? errorId : undefined}
-            value={node.days ?? ''}
+            value={properties.days ?? ''}
             placeholder="天数"
             inputMode="numeric"
             disabled={disabled}

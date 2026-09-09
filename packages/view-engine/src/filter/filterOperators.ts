@@ -215,8 +215,7 @@ export function getFieldOperators(field: FilterFieldDefinition): readonly Op[] {
         ['field', 'element'].includes(FILTER_OPERATORS[op].category),
       );
   }
-  const allowed =
-    field.operators ?? getNamedFilterOperators(field.editor?.name);
+  const allowed = field.operators;
   return allowed ? allowed.filter(op => operators.includes(op)) : operators;
 }
 

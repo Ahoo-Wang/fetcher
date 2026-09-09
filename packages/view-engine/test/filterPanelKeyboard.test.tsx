@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createPortal } from 'react-dom';
@@ -26,7 +27,7 @@ it('queries a valid single-line input with Enter while respecting composition an
     <div role="dialog" aria-label="宿主对话框">
       <FilterPanel
         fields={fields}
-        value={filter.eq('amount', 10)}
+        defaultValue={configuration(node('EQ', 'amount', { value: 10 }))}
         onApply={apply}
       />
     </div>,
@@ -37,7 +38,9 @@ it('queries a valid single-line input with Enter while respecting composition an
   fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 });
   expect(apply).not.toHaveBeenCalled();
   fireEvent.keyDown(input, { key: 'Enter' });
-  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('amount', 25));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ expression: filter.eq('amount', 25) }),
+  );
   fireEvent.keyDown(input, { key: 'Enter', repeat: true });
   fireEvent.change(input, { target: { value: 'invalid' } });
   fireEvent.keyDown(input, { key: 'Enter' });
@@ -65,7 +68,9 @@ it('leaves Enter to selectors, multiline inputs, portals and handled editor keys
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'keyboard-editor' } }]}
-      value={filter.eq('amount', 10)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 10 }, { name: 'keyboard-editor' }),
+      )}
       onApply={apply}
       extensions={{
         filters: {

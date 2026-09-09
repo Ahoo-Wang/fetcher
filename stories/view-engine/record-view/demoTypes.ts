@@ -12,12 +12,11 @@
  */
 
 import type { StoryObj } from '@storybook/react-vite';
+import type { CursorQuery, PagedQueryRequest } from '@ahoo-wang/fetcher-wow';
 import type {
-  CursorQuery,
-  FilterExpression,
-  PagedQueryRequest,
-} from '@ahoo-wang/fetcher-wow';
-import type { ViewInstance } from '@ahoo-wang/fetcher-view-engine';
+  FilterConfiguration,
+  ViewInstance,
+} from '@ahoo-wang/fetcher-view-engine';
 
 export interface DemoArgs {
   appearance: 'light' | 'dark';
@@ -34,7 +33,7 @@ export interface ScenarioOptions {
   saveOnly?: boolean;
   pageSize?: number;
   sidebarCollapsed?: boolean;
-  initialFilter?: FilterExpression;
+  initialFilter?: FilterConfiguration;
 }
 
 export type DemoQuery = PagedQueryRequest | CursorQuery;

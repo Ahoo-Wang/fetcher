@@ -18,13 +18,13 @@ import {
   useTable,
   type ColumnDef,
 } from '@tanstack/react-table';
+import { type RecordData } from '../recordModel.js';
 import {
   RECORD_COLUMN_DEFAULT_WIDTH,
   RECORD_COLUMN_MAX_WIDTH,
   RECORD_COLUMN_MIN_WIDTH,
   orderRecordColumns,
-  type RecordData,
-} from '../recordModel.js';
+} from '../recordColumns.js';
 import type { RecordTableProps } from '../recordReactTypes.js';
 import { getRecordKey, readRecordValue } from '../recordValidation.js';
 import { getRecordTableLayout } from '../recordTableLayout.js';

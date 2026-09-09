@@ -19,7 +19,7 @@ import { cn } from '../../lib/utils.js';
 import {
   RECORD_COLUMN_MAX_WIDTH,
   RECORD_COLUMN_MIN_WIDTH,
-} from '../recordModel.js';
+} from '../recordColumns.js';
 import type { RecordTableProps } from '../recordReactTypes.js';
 import type { RecordTableModel } from './recordTableTypes.js';
 

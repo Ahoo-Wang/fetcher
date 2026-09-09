@@ -129,15 +129,12 @@ export function RecordView({
     >
       <FilterPanel
         key={`filter:${id}`}
-        value={session.appliedFilter}
+        value={session.filterDraft}
         fields={definition.fields}
         timeZone={definition.timeZone}
-        onApply={filter => run(() => engine.applyFilter(filter, id))}
-        draft={session.filterDraft}
-        appliedDraft={session.filterBaseline}
-        onDraftChange={draft => engine.setFilterDraft(draft, id)}
-        mode={session.filterMode}
-        onModeChange={mode => engine.setFilterMode(mode, id)}
+        onApply={() => engine.applyFilter(id)}
+        appliedValue={session.filterBaseline}
+        onChange={draft => engine.setFilterDraft(draft, id)}
         onValidityChange={valid => engine.setFilterValidity(valid, id)}
         allowedOperators={definition.allowedOperators}
         editors={definition.filterEditors}

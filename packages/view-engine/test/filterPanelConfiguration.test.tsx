@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import {
   cleanup,
@@ -22,10 +23,7 @@ import {
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import type { FilterComponentProps } from '../src/filter/filterReactTypes.js';
-import {
-  createFilterDraft,
-  compileFilterDraft,
-} from '../src/filter/filterCore.js';
+import { compileFilterConfiguration } from '../src/filter/filterCore.js';
 import { fields } from './fixtures/filterPanel.js';
 
 afterEach(cleanup);
@@ -36,7 +34,7 @@ it('adding an unset component leaves the applied query synchronized without a re
   render(
     <FilterPanel
       fields={fields}
-      value={filter.gte('amount', 10)}
+      defaultValue={configuration(node('GTE', 'amount', { value: 10 }))}
       onApply={apply}
       onPendingChange={pending}
     />,
@@ -71,18 +69,18 @@ it('passes opaque properties to the renderer and keeps non-query changes synchro
     );
   }
   const draft = {
-    ...createFilterDraft(filter.eq('amount', 1)),
-    editor: { name: 'custom' },
+    ...node('EQ', 'amount', { value: 1 }),
+    component: { name: 'custom' },
     props: { selected: 1, displayLabel: '显示文字' },
   };
   render(
     <FilterPanel
       fields={fields}
-      draft={draft}
-      appliedDraft={draft}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(draft)}
+      appliedValue={configuration(draft)}
+
       onApply={apply}
-      onDraftChange={changed}
+      onChange={changed}
       onPendingChange={pending}
       extensions={{
         filters: {
@@ -99,7 +97,7 @@ it('passes opaque properties to the renderer and keeps non-query changes synchro
   const button = screen.getByRole('button', { name: '显示文字' });
   expect(button.getAttribute('data-clearable')).toBe('false');
   fireEvent.click(button);
-  expect(changed.mock.lastCall?.[0].props).toEqual({
+  expect(changed.mock.lastCall?.[0].root.props).toEqual({
     selected: 1,
     displayLabel: '修改后的显示文字',
   });
@@ -109,25 +107,29 @@ it('passes opaque properties to the renderer and keeps non-query changes synchro
 
 it('clear values retains the controls, groups and stable identities', () => {
   const changed = vi.fn();
-  const draft = createFilterDraft(
-    filter.and([filter.eq('amount', 1), filter.eq('status', 'paid')]),
-  );
+  const draft = {
+    ...node('AND'),
+    operands: [
+      node('EQ', 'amount', { value: 1 }),
+      node('EQ', 'status', { value: 'paid' }),
+    ],
+  };
   render(
     <FilterPanel
       fields={fields}
-      draft={draft}
-      value={filter.and([filter.eq('amount', 1), filter.eq('status', 'paid')])}
+      defaultValue={configuration(draft)}
+
       onApply={() => {}}
-      onDraftChange={changed}
+      onChange={changed}
     />,
   );
   fireEvent.click(screen.getByRole('button', { name: '清空条件' }));
   const result = changed.mock.lastCall![0];
-  expect(result.id).toBe(draft.id);
-  expect(result.operands.map((node: { id: string }) => node.id)).toEqual(
+  expect(result.root.id).toBe(draft.id);
+  expect(result.root.operands.map((node: { id: string }) => node.id)).toEqual(
     draft.operands!.map(node => node.id),
   );
-  expect(compileFilterDraft(result, fields).expression).toEqual(
+  expect(compileFilterConfiguration(result, fields).expression).toEqual(
     filter.matchAll(),
   );
 });
@@ -137,14 +139,14 @@ it('keeps an uncompiled custom draft visible and blocks Query without its compil
   render(
     <FilterPanel
       fields={fields}
-      value={null}
-      draft={{
+
+      defaultValue={configuration({
         id: 'unknown',
-        op: Op.EQ,
+        operator: Op.EQ,
         field: 'amount',
-        editor: { name: 'missing' },
+        component: { name: 'missing' },
         props: { selected: 1 },
-      }}
+      })}
       onApply={apply}
     />,
   );
@@ -161,14 +163,14 @@ it('restores the selected type of an unset scalar after JSON removed undefined p
   render(
     <FilterPanel
       fields={fields}
-      value={filter.matchAll()}
-      draft={{
+
+      defaultValue={configuration({
         id: 'typed',
-        op: Op.EQ,
+        operator: Op.EQ,
         field: 'items',
-        editor: { name: 'builtin' },
-        value: { type: 'number' },
-      }}
+        component: { name: 'builtin' },
+        props: { value: { type: 'number' } },
+      })}
       onApply={() => {}}
     />,
   );
@@ -185,7 +187,7 @@ it('does not duplicate an in-flight query after adding only an unset control', a
   render(
     <FilterPanel
       fields={fields}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(node('EQ', 'amount', { value: 1 }))}
       onApply={apply}
       querying
     />,

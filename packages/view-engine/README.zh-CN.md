@@ -111,11 +111,11 @@ const host: ViewHost = {
 
 实例保存 `config.filters: {mode, root}`。每个组件保存稳定配置 ID、`{name, options?}` 引用、操作符、字段绑定、原始 JSON `props` 和子组件。编译结果只在运行时的 `session.appliedFilter` 中；null 表示尚未编译成功，阻止记录及汇总查询。恢复直接读取组件配置，不从查询表达式反推 UI。对象属性中的 undefined 保存时省略；null、false、零和空字符串保留，拒绝非 JSON 值。
 
-`setFilterDraft(draft, id?, valid?)` 通过已注册的纯函数编译。有效修改若未改变已应用查询，会立即更新接受的配置与编辑基线，无需请求即可保存，例如新增未设置控件或修改显示名称。查询值改变或输入无效时产生 `filterPending`，需先查询接受草稿或撤销修改，才能保存。同步状态下 `setFilterMode` 保存支持的模式变化；`dirty` 比较接受的配置与已存 JSON。`sameFilterQuery` 忽略对象键顺序和仅含一个条件的冗余 AND/OR 包装，其余表达式变化仍需查询。
+`setFilterDraft(configuration, id?, valid?)` 通过已注册的纯函数编译。有效修改若未改变已应用查询，会立即更新接受的配置与编辑基线，无需请求即可保存，例如新增未设置控件或修改显示名称。查询值改变或输入无效时产生 `filterPending`，需先查询接受草稿或撤销修改，才能保存。同步状态下 `setFilterMode` 保存支持的模式变化；`dirty` 比较接受的配置与已存 JSON。`sameFilterQuery` 忽略对象键顺序和仅含一个条件的冗余 AND/OR 包装，其余表达式变化仍需查询。
 
-程序调用先 `setFilterDraft`，再 `applyFilter()`。可选的 `applyFilter(expression)` 参数必须与草稿编译结果相等，不能借此替换组件状态。局部输入无效时拒绝执行，保留草稿和已应用查询；`setFilterValidity(true)` 也不能使已改变或未编译的查询变得可保存。
+程序调用先 `setFilterDraft(configuration)`，再 `applyFilter(id?)`。编辑和已接受筛选快照均使用含模式的 `FilterConfiguration`。局部输入无效时拒绝执行，保留草稿和已应用查询；`setFilterValidity(true)` 也不能使已改变或未编译的查询变得可保存。
 
-核心快照中的定义、实例、草稿和记录采用 `DeepReadonly`。可直接读取，也可将快照传回 `applyFilter`、`setFilterDraft`、`setSort` 和 `setColumns`，引擎会复制接受的输入。修改时构造新对象；传给宿主查询和写入接口的参数仍是独立、可编辑的数据对象。
+核心快照中的定义、实例、草稿和记录采用 `DeepReadonly`。可直接读取，也可将快照传回 `setFilterDraft`、`setSort` 和 `setColumns`，引擎会复制接受的输入。修改时构造新对象；传给宿主查询和写入接口的参数仍是独立、可编辑的数据对象。
 
 表格采用 shadcn Table + TanStack Table，支持服务端排序、分页与只向前的游标查询。仅在表头列边缘拖动调整宽度，并保留键盘方向键作为无障碍替代；列设置通过拖动手柄调整同一区域内的顺序，也可聚焦手柄后按上、下方向键移动，同时支持显示/隐藏。松手后写入顺序，取消拖动保持原配置。调整列展示不查询，筛选点击“查询”才生效。页面按实例保留草稿，当前实例不再单独显示“已编辑”标签，由保存按钮表达可保存状态，有待查询筛选时仍阻止保存。另存为支持个人和公共共享实例，实际权限与持久化由宿主负责。
 
@@ -214,7 +214,7 @@ HTTP 脚本启动隔离的本地服务，以相同的 LocalStorageViewHost 逻�
 
 ## 本页 / 所有汇总
 
-计算、查询构建与结果解析函数接收独立的 `RecordSummaryMetric[]`，每项为 `{ id, field, function }`。使用 `getRecordSummaryMetrics(instance.config.presentation)` 将表格实例转换为指标，查询计算不再依赖列宽、固定位置等展示属性。`ViewInstanceMetadata`、`RecordQueryConfig` 与 `RecordTablePresentation` 分别描述通用实例元数据、记录查询与表格展示。
+计算、查询构建与结果解析函数接收独立的 `RecordSummaryMetric[]`，每项为 `{ id, field, function }`。使用 `getRecordSummaryMetrics(instance.config.presentation)` 将表格实例转换为指标，查询计算不再依赖列宽、固定位置等展示属性。`ViewInstanceMetadata` 描述通用实例元数据；`RecordViewConfig` 直接包含 `sort`、`pagination`、统一组件配置 `filters` 与 `presentation`，其中 `RecordTablePresentation` 描述表格布局和列。
 
 只有明确声明为 `type: 'number'` 的字段支持汇总，字段列通过 `summary: ['SUM', 'AVG', 'MIN', 'MAX']` 多选合计、平均值、最小值和最大值；取消全部选择即不汇总，省略或空数组均表示关闭。列设置仅为数值字段提供汇总入口，不支持 COUNT 记录数汇总。`field.summaryFunctions` 可限制可用方式，`[]` 可关闭汇总；列汇总方式随实例保存。
 
@@ -250,9 +250,12 @@ React 控件额外管理定时器、页面可见性与编辑焦点。
 ## FilterPanel
 
 ```tsx
-import { useState } from 'react';
-import { filter, type FilterExpression } from '@ahoo-wang/fetcher-wow';
-import type { FilterFieldDefinition } from '@ahoo-wang/fetcher-view-engine';
+import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
+import {
+  createFilterConfiguration,
+  newFilterNode,
+  type FilterFieldDefinition,
+} from '@ahoo-wang/fetcher-view-engine';
 import { FilterPanel } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
@@ -266,27 +269,25 @@ export function OrderFilters({
 }: {
   onQuery: (expression: FilterExpression) => void;
 }) {
-  const [value, setValue] = useState<FilterExpression>(filter.matchAll());
   return (
     <FilterPanel
       fields={fields}
-      value={value}
-      onApply={next => {
-        setValue(next);
-        onQuery(next);
-      }}
+      defaultValue={createFilterConfiguration(
+        newFilterNode(FilterOperator.MATCH_ALL),
+      )}
+      onApply={({ expression }) => onQuery(expression)}
     />
   );
 }
 ```
 
-简单模式隐含 AND，高级模式结构化编辑全部 50 种 Wow 操作以及 AND / OR / NOR / ELEMENT_MATCH。编辑、清空、撤销、模式切换都不请求服务；点击查询后通过 `onApply` 提交合法条件。宿主同步更新 `value` 并管理请求，通过 `querying` / `queryError` 传回状态。`onPendingChange` 用于保存视图前的待查询保护。
+简单模式隐含 AND，高级模式结构化编辑全部 50 种 Wow 操作以及 AND / OR / NOR / ELEMENT_MATCH。编辑、清空、撤销、模式切换都不请求服务；点击查询后通过 `onApply` 提交合法条件。宿主接收 `{configuration, expression}` 并管理请求，通过 `querying` / `queryError` 传回状态。`onPendingChange` 用于保存视图前的待查询保护。
 
 简单模式中每个字段只保留一项，未设置值也占用该字段。高级模式的 AND、OR、NOR 均允许同一字段多条规则，元素作用域内同样适用；编译与实例保存接受合法的重复字段条件。包含重复字段的草稿保持高级模式，删除多余条件且结构可平铺后才允许切回简单模式。
 
 点击“添加筛选”打开锚定按钮的 Popover，按组展示 Checkbox，打开和关闭不改变表格、查询按钮的位置。浮层限制高度，字段区内部滚动；添加后保持打开，支持连续添加。“完成”或 Esc 关闭并返回触发按钮焦点，点击外部也可关闭。字段定义可通过 `group` 指定分组，按定义中的首次出现顺序展示。与有分组字段混用时，未分组字段显示在“其他字段”下；复选框与当前分组的草稿同步：勾选添加条件，取消勾选移除该字段的直接条件，未设置值仍显示为已勾选。高级模式在已选字段旁显示条件数量和“追加条件”加号，AND、OR、NOR 统一支持追加；高级模式在“添加筛选”旁提供图标下拉按钮，独立选择 AND/OR/NOR 并添加到当前分组，这三项不进入字段面板；未获定义允许的操作禁用。根级操作仍保留添加按钮。所有变更仍在点击“查询”后统一生效。
 
-完全未设置的值保留控件但不产生谓词；部分填写、无效数据和未注册扩展阻止查询。所有字段在添加时绑定，保留所属分组及作用域。`extensions.filters` 提供本地自定义编辑器；`draft` / `onDraftChange` 可将编辑缓冲交由宿主按实例保留。自定义组件通过 `onChange(props)` 发布可序列化属性；选中 ID、显示名称等需要保存的 UI 状态放在 props，仅未提交的临时缓冲保留在 React 局部状态中。
+完全未设置的值保留控件但不产生谓词；部分填写、无效数据和未注册扩展阻止查询。所有字段在添加时绑定，保留所属分组及作用域。`extensions.filters` 提供本地自定义编辑器；`value` / `onChange` 可将配置交由宿主按实例保留；`defaultValue` 则让面板本地管理，两者互斥。`appliedValue` 提供已接受配置基线。各快照共用组件树，模式位于 configuration.mode。自定义组件通过 `onChange(props)` 发布可序列化属性；选中 ID、显示名称等需要保存的 UI 状态放在 props，仅未提交的临时缓冲保留在 React 局部状态中。
 
 简单模式没有条件操作菜单或前后排序。高级模式支持新增、删除和编辑分组，不提供条件或分组的移动功能；内置标量筛选项移除“清空”和“特殊值”按钮；删除输入内容可保留未设置值，空值和空字符串使用对应操作符。编辑已有日期时间会保留夏令时重复小时的原偏移，跨季节日期仍使用目标日期的实际偏移。没有适用的偏移提示时，重复时刻统一选择较早的一次，不受系统时区影响；跳时期间不存在的本地时间仍判为无效。
 
@@ -418,7 +419,7 @@ const sources: Record<string, FilterOptionSource> = { users: userOptionSource };
 
 在 Storybook 的 **View Engine → 过滤器 → 内置组件** 或独立示例 `?example=builtin-filters` 查看。`BuiltinFiltersExample.tsx` 通过 Fetcher 读取确定性 data URL 夹具，并以 LocalStorageViewHost 验证标签恢复与 JSON 持久化。只有该 data URL 夹具移除 URL 模板解析，真实 HTTP 客户端保留原有 URL 和鉴权拦截器。
 
-字段未声明 `operators` 时，命名内置编辑器自动选用适用操作；显式字段限制仍具有优先级。
+`getFieldOperators(field)` 仅根据字段类型和显式 `field.operators` 推导能力。字段 `editor` 和定义 `filterEditors` 仅作为新建节点默认值；已有节点以自身 `component` 为准，由该组件注册检查兼容性。因此修改字段默认编辑器不会限制或替换已保存组件。
 
 ### 内置表格单元格
 

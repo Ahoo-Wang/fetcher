@@ -14,7 +14,7 @@
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
   createFilterConfiguration,
-  newFilterDraft,
+  newFilterNode,
   type ViewDefinition,
   type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
@@ -82,9 +82,9 @@ export const orderDefinition: ViewDefinition = {
 const config = {
   filters: createFilterConfiguration({
     id: 'status-selector',
-    op: FilterOperator.EQ,
+    operator: FilterOperator.EQ,
     field: 'status',
-    editor: { name: 'order-status' },
+    component: { name: 'order-status' },
     props: { selectedId: 'pending', displayLabel: '待办队列（人工命名）' },
   }),
   sort: [],
@@ -122,7 +122,7 @@ export const orderViews: ViewInstanceList = {
       config: {
         ...config,
         filters: createFilterConfiguration(
-          newFilterDraft(FilterOperator.MATCH_ALL),
+          newFilterNode(FilterOperator.MATCH_ALL),
         ),
       },
     },

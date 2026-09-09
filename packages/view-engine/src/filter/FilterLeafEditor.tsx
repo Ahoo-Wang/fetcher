@@ -12,13 +12,9 @@
  */
 
 import type { FilterOperator } from '@ahoo-wang/fetcher-wow';
-import { compileFilterDraft, newFilterDraft } from './filterCore.js';
+import { compileFilterConfiguration, newFilterNode } from './filterCore.js';
 import { copy } from '../lib/snapshot.js';
-import {
-  filterComponentProps,
-  filterComponentReference,
-  restoreFilterConfiguration,
-} from './filterConfiguration.js';
+import { createFilterConfiguration } from './filterConfiguration.js';
 import type { FilterNodeLocation } from './filterTree.js';
 import type { FilterOption } from './filterTypes.js';
 import type { FilterPanelState } from './useFilterPanelState.js';
@@ -42,7 +38,6 @@ export function FilterLeafEditor({
   const {
     props,
     disabled,
-    builtIn,
     resolutions,
     epoch,
     editorEpochs,
@@ -50,7 +45,6 @@ export function FilterLeafEditor({
     mode,
     update,
     setEditorOutputErrors,
-    setBuiltIn,
     setEditorValidity,
     currentEditorNode,
     changeOperator,
@@ -64,30 +58,28 @@ export function FilterLeafEditor({
       field={field}
       fields={scopeFields}
       timeZone={props.timeZone}
-      showTime={
-        filterComponentReference(node, field, props.editors).options
-          ?.showTime === true
-      }
+      showTime={node.component.options?.showTime === true}
       errors={errors}
       errorId={errorId}
       disabled={disabled}
-      onChange={next =>
-        update(node.id, { ...next, id: node.id, field: node.field })
-      }
+      onChange={next => {
+        if (currentEditorNode(node))
+          update(node.id, { ...next, id: node.id, field: node.field });
+      }}
     />
   );
-  if (builtIn.has(node.id)) return builtin;
   const resolved = resolutions.get(node.id);
   if (resolved?.error) return null;
   if (!resolved?.registration) return builtin;
   const { options: editorOptions } = resolved;
   const Custom = resolved.registration.component;
-  let reportedOperator = node.op;
+  let reportedOperator = node.operator;
   return (
     <EditorBoundary
+      session={panel.session}
       key={`${epoch}:${node.id}:${ownValue(editorEpochs, node.id) ?? 0}`}
       editor={Custom}
-      operator={node.op}
+      operator={node.operator}
       mode={mode}
       disabled={disabled}
       onError={error =>
@@ -102,20 +94,12 @@ export function FilterLeafEditor({
       }
       onFallback={() => {
         if (disabled) return;
-        const properties = filterComponentProps(node);
-        const candidate = {
-          ...properties,
-          id: node.id,
-          op: node.op,
-          field: node.field,
-          editor: { name: 'builtin' },
-        };
+        const candidate = { ...node, component: { name: 'builtin' } };
         const valid =
-          compileFilterDraft(
-            candidate,
+          compileFilterConfiguration(
+            { mode, root: candidate },
             scopeFields,
             props.allowedOperators,
-            undefined,
             undefined,
             props.timeZone,
           ).errors.length === 0;
@@ -123,25 +107,21 @@ export function FilterLeafEditor({
           node.id,
           valid
             ? candidate
-            : {
-                ...newFilterDraft(node.op, node.field),
-                id: node.id,
-                editor: { name: 'builtin' },
-              },
+            : { ...newFilterNode(node.operator, node.field), id: node.id },
         );
-        setBuiltIn(previous => new Set([...previous, node.id]));
         setEditorValidity(previous => without(previous, node.id));
         setEditorOutputErrors(previous => without(previous, node.id));
       }}
     >
       <EditorSession
+        session={panel.session}
         editor={Custom}
         id={`${panelId}-${node.id}`}
         operators={operators}
         errors={errors}
         errorId={errors.length ? errorId : undefined}
         props={copy(resolved.props ?? {})}
-        operator={node.op}
+        operator={node.operator}
         field={field ? copy(field) : undefined}
         fields={copy(scopeFields)}
         timeZone={props.timeZone}
@@ -153,7 +133,7 @@ export function FilterLeafEditor({
         onOperatorChange={op => {
           const current = currentEditorNode({
             ...node,
-            op: reportedOperator,
+            operator: reportedOperator,
           });
           if (!current) return;
           if (
@@ -165,7 +145,7 @@ export function FilterLeafEditor({
             }));
             return;
           }
-          if (current.op === op) return;
+          if (current.operator === op) return;
           changeOperator(current, op);
           reportedOperator = op;
         }}
@@ -174,18 +154,19 @@ export function FilterLeafEditor({
             ? () => {
                 const current = currentEditorNode({
                   ...node,
-                  op: reportedOperator,
+                  operator: reportedOperator,
                 });
                 if (current) clearNode(current);
               }
             : undefined
         }
         onRemove={() => {
-          if (currentEditorNode({ ...node, op: reportedOperator }))
+          if (currentEditorNode({ ...node, operator: reportedOperator }))
             update(node.id);
         }}
         onValidityChange={(valid, error) => {
-          if (!currentEditorNode({ ...node, op: reportedOperator })) return;
+          if (!currentEditorNode({ ...node, operator: reportedOperator }))
+            return;
           setEditorValidity(previous =>
             valid
               ? without(previous, node.id)
@@ -201,21 +182,15 @@ export function FilterLeafEditor({
         onChange={next => {
           const current = currentEditorNode({
             ...node,
-            op: reportedOperator,
+            operator: reportedOperator,
           });
           if (!current) return;
           try {
-            const nextDraft = restoreFilterConfiguration({
+            const nextConfiguration = createFilterConfiguration(
+              { ...current, props: next },
               mode,
-              root: {
-                id: current.id,
-                operator: current.op,
-                field: current.field,
-                component: resolved.reference!,
-                props: next,
-              },
-            });
-            update(node.id, nextDraft, true);
+            );
+            update(node.id, nextConfiguration.root, true);
           } catch (error) {
             setEditorOutputErrors(previous =>
               ownValue(previous, node.id) === message(error)

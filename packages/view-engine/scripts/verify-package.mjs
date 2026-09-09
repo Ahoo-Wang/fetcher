@@ -113,8 +113,8 @@ function verifyTypes(directory) {
   writeFileSync(
     probe,
     `
-    import { ViewEngine, restoreFilterConfiguration, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance, type RecordQuerySource } from '${manifest.name}';
-    import { ViewPage, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
+    import { ViewEngine, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance, type RecordQuerySource } from '${manifest.name}';
+    import { FilterPanel, ViewPage, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
     import { OrderExample } from './examples/react/OrderExample.js';
     import type { FilterOptionSource, FilterFieldDefinition, ViewDefinition } from '${manifest.name}';
     import { FilterRemoteSelect, FilterMultiSelect, FilterDateTimeRange } from '${manifest.name}/react';
@@ -143,8 +143,14 @@ function verifyTypes(directory) {
     declare const instance: DeepReadonly<ViewInstance>;
     engine.setColumns(instance.config.presentation.table.columns);
     void engine.setSort(instance.config.sort);
-    engine.setFilterDraft(restoreFilterConfiguration(instance.config.filters));
+    engine.setFilterDraft(instance.config.filters);
     void engine.applyFilter();
+    // @ts-expect-error Query expressions cannot replace canonical editing state.
+    void engine.applyFilter({ op: 'MATCH_ALL' });
+    export const controlledPanel = <FilterPanel fields={[]} value={instance.config.filters} onChange={configuration => engine.setFilterDraft(configuration)} appliedValue={instance.config.filters} onApply={({configuration, expression}) => { engine.setFilterDraft(configuration); void expression; }} />;
+    export const localPanel = <FilterPanel fields={[]} defaultValue={instance.config.filters} onApply={({expression}) => { void expression; }} />;
+    // @ts-expect-error Controlled and local ownership are mutually exclusive.
+    export const mixedPanel = <FilterPanel fields={[]} value={instance.config.filters} defaultValue={instance.config.filters} onChange={() => {}} onApply={() => {}} />;
     const filterEditor = ({ props, onChange }: FilterEditorProps) => {
       // @ts-expect-error Persisted component props are readonly snapshots.
       props.value = 'mutated';
@@ -356,9 +362,9 @@ try {
     assert.deepEqual(Object.keys(core).filter(name => name.startsWith('HttpView') || name === 'VIEW_SERVICE_STATUS'), [], 'Experimental HTTP API leaked into the package');
     assert.equal(typeof react.ViewPage, 'function');
     for (const name of ['FilterMultiSelect','FilterRemoteSelect','FilterTextValues','FilterDateTimeRange','TextCell','TagsCell','StatusCell','LinkCell','DateTimeCell','NumberCell']) assert.equal(typeof react[name], 'function', name);
-    const configured = core.createFilterConfiguration({id:'selected',op:'IN',field:'id',editor:{name:'multi-select'},props:{values:[1],selectedOptions:[{value:1,label:'One'}]}});
+    const configured = core.createFilterConfiguration({id:'selected',operator:'IN',field:'id',component:{name:'multi-select'},props:{values:[1],selectedOptions:[{value:1,label:'One'}]}});
     assert.deepEqual(core.compileFilterConfiguration(configured,[{field:'id',label:'ID',type:'number'}]).expression,{op:'IN',field:'id',values:[1]});
-    const dates = core.createFilterConfiguration({id:'date',op:'EQ',field:'created',value:{date:'2026-09-06'}});
+    const dates = core.createFilterConfiguration({id:'date',operator:'EQ',field:'created',component:{name:'builtin'},props:{value:{date:'2026-09-06'}}});
     assert.deepEqual(core.compileFilterConfiguration(dates,[{field:'created',label:'Created',type:'datetime'}],undefined,undefined,'Asia/Shanghai').expression,{op:'BETWEEN',field:'created',lowerBound:Date.parse('2026-09-05T16:00:00Z'),upperBound:Date.parse('2026-09-06T15:59:59.999Z')});
   `;
   run(process.execPath, ['--input-type=module', '-e', runtimeProbe], packed);

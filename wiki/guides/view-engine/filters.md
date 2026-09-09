@@ -7,7 +7,7 @@ description: Choose built-in editors, preserve component configuration, and appl
 
 ## Choose the field editor
 
-Fields declare capability; `editor` selects a registered component. Built-in names have no `fve/` prefix.
+Field `type` and explicit `operators` declare capability; `editor` selects the default component for new nodes only. Existing nodes use their own `component` reference, which a field default change cannot replace or further restrict. Built-in names have no `fve/` prefix.
 
 | Need                                       | `editor.name`            | Operators / options                                              |
 | ------------------------------------------ | ------------------------ | ---------------------------------------------------------------- |

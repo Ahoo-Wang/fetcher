@@ -21,7 +21,7 @@ import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import type { InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
-import { copy, message } from './recordSnapshot.js';
+import { copy, message } from '../../lib/snapshot.js';
 import {
   rebaseSession,
   inheritEditingSession,

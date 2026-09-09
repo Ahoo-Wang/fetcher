@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter } from '@ahoo-wang/fetcher-wow';
 import {
   cleanup,
@@ -78,7 +79,7 @@ it('uses field checkboxes for continuous selection and removal without querying'
   render(
     <FilterPanel
       fields={definitions}
-      value={filter.gte('amount', 10)}
+      defaultValue={configuration(node('GTE', 'amount', { value: 10 }))}
       onApply={apply}
     />,
   );
@@ -113,7 +114,9 @@ it('uses field checkboxes for continuous selection and removal without querying'
   );
   await waitFor(() => expect(document.activeElement).toBe(trigger));
   fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
-  expect(apply).toHaveBeenCalledWith(filter.matchAll());
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
 });
 
 it.each(['AND', 'OR', 'NOR'] as const)(
@@ -124,10 +127,19 @@ it.each(['AND', 'OR', 'NOR'] as const)(
     render(
       <FilterPanel
         fields={fields}
-        value={filter.and([
-          filter.eq('amount', 1),
-          group([filter.eq('amount', 2), filter.eq('status', 'pending')]),
-        ])}
+        defaultValue={configuration({
+          ...node('AND'),
+          operands: [
+            node('EQ', 'amount', { value: 1 }),
+            {
+              ...node(op),
+              operands: [
+                node('EQ', 'amount', { value: 2 }),
+                node('EQ', 'status', { value: 'pending' }),
+              ],
+            },
+          ],
+        })}
         onApply={apply}
       />,
     );
@@ -155,10 +167,12 @@ it.each(['AND', 'OR', 'NOR'] as const)(
     );
     fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
     expect(apply).toHaveBeenCalledWith(
-      filter.and([
-        filter.eq('amount', 1),
-        group([filter.eq('status', 'pending')]),
-      ]),
+      expect.objectContaining({
+        expression: filter.and([
+          filter.eq('amount', 1),
+          group([filter.eq('status', 'pending')]),
+        ]),
+      }),
     );
   },
 );
@@ -168,7 +182,10 @@ it('keeps an element picker open when its last field is unchecked and reselected
   render(
     <FilterPanel
       fields={fields}
-      value={filter.elementMatch('items', filter.eq('quantity', 1))}
+      defaultValue={configuration({
+        ...node('ELEMENT_MATCH', 'items'),
+        predicate: node('EQ', 'quantity', { value: 1 }),
+      })}
       onApply={apply}
     />,
   );
@@ -191,6 +208,11 @@ it('keeps an element picker open when its last field is unchecked and reselected
   fireEvent.change(screen.getByLabelText('数量值'), { target: { value: '2' } });
   fireEvent.click(screen.getByRole('button', { name: /^查询$/ }));
   expect(apply).toHaveBeenCalledWith(
-    filter.elementMatch('items', filter.and([filter.eq('quantity', 2)])),
+    expect.objectContaining({
+      expression: filter.elementMatch(
+        'items',
+        filter.and([filter.eq('quantity', 2)]),
+      ),
+    }),
   );
 });

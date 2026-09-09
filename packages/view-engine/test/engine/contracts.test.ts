@@ -120,9 +120,9 @@ it('does not recompile filters for selection, title or query status changes', as
   const value = instance();
   value.config.filters = createFilterConfiguration({
     id: 'custom',
-    op: 'EQ',
+    operator: 'EQ',
     field: 'state.amount',
-    editor: { name: 'custom' },
+    component: { name: 'custom' },
     props: { value: 1 },
   });
   const compile = vi.fn((props: { value?: unknown }) =>
@@ -139,10 +139,12 @@ it('does not recompile filters for selection, title or query status changes', as
   await engine.refresh();
   expect(compile).not.toHaveBeenCalled();
   expect(selected(engine).dirty).toBe(true);
-  engine.setFilterDraft({
-    ...selected(engine).filterDraft,
-    props: { value: 2 },
-  });
+  engine.setFilterDraft(
+    createFilterConfiguration({
+      ...selected(engine).filterDraft.root,
+      props: { value: 2 },
+    }),
+  );
   expect(compile).toHaveBeenCalled();
   expect(selected(engine).filterPending).toBe(true);
   await engine.applyFilter();

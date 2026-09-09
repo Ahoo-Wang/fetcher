@@ -15,7 +15,6 @@ import { FilterOperator as Op, filter } from '@ahoo-wang/fetcher-wow';
 import {
   compileFilterConfiguration,
   createFilterConfiguration,
-  restoreFilterConfiguration,
 } from '../src/filter/filterConfiguration.js';
 import type {
   FilterComponentProperties,
@@ -69,7 +68,7 @@ it('defaults datetime ranges to inclusive calendar days in the global zone and r
     errors: [],
   });
   const restored = createFilterConfiguration(
-    restoreFilterConfiguration(JSON.parse(JSON.stringify(config))),
+    JSON.parse(JSON.stringify(config)).root,
   );
   expect(compile(restored, 'Asia/Shanghai')).toEqual({
     expression: expected,
@@ -105,10 +104,9 @@ it('uses second precision when time is explicitly enabled, and preserves the sav
     ),
     errors: [],
   });
-  expect(
-    createFilterConfiguration(restoreFilterConfiguration(config)).root.component
-      .options,
-  ).toEqual({ showTime: true });
+  expect(createFilterConfiguration(config.root).root.component.options).toEqual(
+    { showTime: true },
+  );
   expect(
     compile(
       configuration(

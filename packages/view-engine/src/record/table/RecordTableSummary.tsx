@@ -24,11 +24,9 @@ import {
   TableRow,
 } from '../../components/ui/table.js';
 import { cn } from '../../lib/utils.js';
-import {
-  RECORD_SUMMARY_LABELS,
-  formatRecordNumber,
-  type RecordSummaryFunction,
-} from '../recordModel.js';
+import { type RecordSummaryFunction } from '../recordModel.js';
+import { RECORD_SUMMARY_LABELS } from '../recordPresentation.js';
+import { formatRecordNumber } from '../recordValueFormat.js';
 import type { RecordTableProps } from '../recordReactTypes.js';
 import type { RecordTableModel } from './recordTableTypes.js';
 import { RecordSummaryScope } from './RecordSummaryScope.js';

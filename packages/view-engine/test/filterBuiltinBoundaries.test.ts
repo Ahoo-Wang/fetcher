@@ -14,7 +14,7 @@
 import { FilterOperator as Op, filter } from '@ahoo-wang/fetcher-wow';
 import { expect, it } from 'vitest';
 import { compileBuiltinFilter } from '../src/filter/filterBuiltinCompiler.js';
-import { compileFilterDraft } from '../src/filter/filterCore.js';
+import { compileFilterConfiguration } from '../src/filter/filterCore.js';
 import type {
   FilterComponentProperties,
   FilterCompilerContext,
@@ -35,8 +35,11 @@ const dateContext: FilterCompilerContext = {
 
 it('rejects malformed saved collection values rather than querying all records', () => {
   for (const values of [1, '1,2', {}, [undefined]]) {
-    const result = compileFilterDraft(
-      node(Op.IN, 'amount', { values } as FilterComponentProperties),
+    const result = compileFilterConfiguration(
+      {
+        mode: 'advanced',
+        root: node(Op.IN, 'amount', { values } as FilterComponentProperties),
+      },
       fields,
     );
     expect(result.expression).toBeUndefined();

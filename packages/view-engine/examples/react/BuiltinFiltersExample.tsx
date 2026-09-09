@@ -24,7 +24,7 @@ import {
 import {
   LocalStorageViewHost,
   createFilterConfiguration,
-  type FilterDraftNode,
+  type FilterComponentConfig,
   type FilterOptionSource,
   type ViewDefinition,
   type ViewInstanceList,
@@ -93,53 +93,55 @@ const definition: ViewDefinition = {
     },
   ],
 };
-const draft: FilterDraftNode = {
+const draft: FilterComponentConfig = {
   id: 'all',
-  op: Op.AND,
+  component: { name: 'builtin' },
+  props: {},
+  operator: Op.AND,
   operands: [
     {
       id: 'status',
-      op: Op.IN,
+      operator: Op.IN,
       field: 'status',
       props: {},
-      editor: { name: 'multi-select' },
+      component: { name: 'multi-select' },
     },
     {
       id: 'owner',
-      op: Op.EQ,
+      operator: Op.EQ,
       field: 'owner',
       props: {},
-      editor: {
+      component: {
         name: 'remote-select',
         options: { source: 'users', pageSize: 2, debounceMs: 0 },
       },
     },
     {
       id: 'users',
-      op: Op.IN,
+      operator: Op.IN,
       field: 'users',
       props: {
         values: ['u1'],
         selectedOptions: [{ value: 'u1', label: '保存的用户甲' }],
       },
-      editor: {
+      component: {
         name: 'remote-multi-select',
         options: { source: 'users', pageSize: 2, debounceMs: 0 },
       },
     },
     {
       id: 'refs',
-      op: Op.IN,
+      operator: Op.IN,
       field: 'refs',
       props: {},
-      editor: { name: 'text-values' },
+      component: { name: 'text-values' },
     },
     {
       id: 'created',
-      op: Op.BETWEEN,
+      operator: Op.BETWEEN,
       field: 'created',
       props: {},
-      editor: { name: 'datetime-range' },
+      component: { name: 'datetime-range' },
     },
   ],
 };
@@ -154,7 +156,7 @@ const instances: ViewInstanceList = {
       scope: { type: 'personal' },
       revision: '1',
       config: {
-        filters: createFilterConfiguration(draft, 'simple', definition.fields),
+        filters: createFilterConfiguration(draft, 'simple'),
         sort: [],
         pagination: { mode: 'paged', size: 5 },
         presentation: {

@@ -5,37 +5,37 @@ description: 序列化编辑器属性，纯函数编译表达式，并接入远�
 
 # 筛选配置与组件契约
 
-## 三种表示
+## 配置与查询
 
-| 表示                   | 用途                                                                                     |
-| ---------------------- | ---------------------------------------------------------------------------------------- |
-| `FilterDraftNode`      | 编辑树：id/op/field/editor、原始值/props、operands 或 predicate                          |
-| `FilterConfiguration`  | 可 JSON 保存的 `{ mode, root }`；节点包含 id/component/operator/field/props 和可选子节点 |
-| Wow `FilterExpression` | 编译后的请求条件，不是 UI 恢复格式                                                       |
+| 表示                    | 用途                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `FilterComponentConfig` | 唯一编辑节点：id/component/operator/field/props，以及可选 operands 或 predicate |
+| `FilterConfiguration`   | 可 JSON 保存的 `{ mode, root }`，编辑、已应用和已保存快照共用此结构             |
+| Wow `FilterExpression`  | 编译后的请求条件，不是 UI 恢复格式                                              |
 
 `FilterJsonValue` 支持 null、布尔、有限数字、字符串、数组和 JSON 对象。对象属性可为未设置的 `undefined`，序列化时省略；不能把函数、循环引用或 undefined 数组项写入 props。组件名称标识其保存与编译协议。
 
 ## 核心函数
 
-| 函数                                                                                    | 返回值 / 行为                              |
-| --------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `createFilterDraft(expression)`、`newFilterDraft(op, field?)`                           | 创建带 ID 的编辑节点                       |
-| `createFilterConfiguration(draft, mode?, fields?, editors?)`                            | 复制原始属性，解析组件身份，形成 JSON 配置 |
-| `restoreFilterConfiguration(config)`                                                    | 校验后返回草稿树，模式从 config 读取       |
-| `validateFilterConfiguration(value, fields?)`                                           | 断言配置有效，无效输入抛出错误             |
-| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?, timeZone?)`  | `{ expression?, errors }`                  |
-| `compileFilterDraft(draft, fields, allowedOperators?, compilers?, editors?, timeZone?)` | 通过相同契约序列化并编译                   |
-| `clearFilterDraftValues(node, fields, compilers?, editors?, timeZone?)`                 | 按组件语义清空值并保留节点                 |
-| `compileBuiltinFilter`、`clearBuiltinFilterProps`                                       | 复用默认组件编译与清空                     |
-| `getFieldOperators`、`FILTER_OPERATORS`、`isSimpleFilter`、`sameFilterQuery`            | 能力、元数据、模式与查询比较               |
+| 函数                                                                                   | 返回值 / 行为                                                  |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `newFilterNode(operator, field?, component?)`                                          | 创建带 ID、明确组件引用（默认 builtin）和初始 props 的配置节点 |
+| `createFilterConfiguration(root, mode?)`                                               | 复制并校验配置根节点；省略模式时推导模式                       |
+| `validateFilterConfiguration(value, fields?, allowedOperators?)`                       | 断言配置有效，无效输入抛出错误                                 |
+| `compileFilterConfiguration(config, fields, allowedOperators?, compilers?, timeZone?)` | `{ expression?, errors }`                                      |
+| `clearFilterValues(root, fields, compilers?, timeZone?)`                               | 按组件语义清空值并保留节点身份                                 |
+| `compileBuiltinFilter`、`clearBuiltinFilterProps`                                      | 复用默认组件编译与清空                                         |
+| `getFieldOperators`、`FILTER_OPERATORS`、`isSimpleFilter`、`sameFilterQuery`           | 能力、元数据、模式与查询比较                                   |
 
-草稿依赖字段/操作符默认编辑器时，创建配置必须传入 fields/editors。优先级为节点显式 editor、字段 editor、操作符默认值、builtin。编译错误阻止应用；有效但没有实际条件时得到 MATCH_ALL。
+直接构造组件 props。面板仅在新建节点时解析字段/操作符默认编辑器；已保存节点始终使用明确组件引用。编译错误阻止应用；有效但没有实际条件时得到 MATCH_ALL。
+
+`getFieldOperators(field)` 仅根据字段类型和显式 `field.operators` 推导能力。字段 `editor` 和定义 `filterEditors` 仅作为新建节点默认值；已有节点以自身 `component` 为准，由该组件注册检查兼容性。因此修改字段默认编辑器不会限制或替换已保存组件。
 
 ## FilterPanel
 
-必填 `value: FilterExpression | null`、`fields`、`onApply(expression)`。可选受控属性包括 `draft/onDraftChange`、`appliedDraft`、`mode/onModeChange`、`onPendingChange`、`onValidityChange`、`timeZone`、`extensions`、`editors`、`allowedOperators`。通过 `querying`、`queryError`、`disabled`、`collapsed`、`renderToolbar`、`className` 接入宿主布局。
+必填 `fields`、`onApply({configuration, expression})`。受控时使用配置值 `value/onChange`；本地所有权使用 `defaultValue`，两者互斥。可选 `appliedValue` 提供已接受的配置基线。模式保存在 `configuration.mode`。其他可选属性包括 `onPendingChange`、`onValidityChange`、`timeZone`、`extensions`、`editors`、`allowedOperators`。通过 `querying`、`queryError`、`disabled`、`collapsed`、`renderToolbar`、`className` 接入宿主布局。
 
-value 表示已应用条件；导航会卸载编辑器时，应分别保留 draft 和 appliedDraft。collapsed 隐藏面板主体并保留本地输入缓冲。移动工具栏时使用 `FilterPanelToolbarProps.onModeChange`，保持模式切换保护。普通输入框中的 Enter 查询，弹层中的 Enter 仍由弹层处理。
+导航会卸载编辑器时，应分别保留编辑配置和已接受配置。collapsed 隐藏面板主体并保留本地输入缓冲。移动工具栏时使用 `FilterPanelToolbarProps.onModeChange`，保持模式切换保护。普通输入框中的 Enter 查询，弹层中的 Enter 仍由弹层处理。
 
 ## FilterRegistration
 

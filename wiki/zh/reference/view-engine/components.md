@@ -36,7 +36,7 @@ ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默�
 
 ## 独立筛选控件
 
-`FieldFilter` 组合字段标签、操作符、children 和可选删除回调，不执行查询。`FilterSelect` / `FilterSearchSelect` 提供受控字符串值、options、label、onValueChange 和可选 onClear；SearchSelect 增加候选搜索。`FilterMultiSelect` 处理带类型的多选 ID，`FilterTextValues` 保留带类型的输入项。需要表达式所有权和校验时使用 FilterPanel。
+`FieldFilter` 组合字段标签、操作符、children 和可选删除回调，不执行查询。`FilterSelect` / `FilterSearchSelect` 提供受控字符串值、options、label、onValueChange 和可选 onClear；SearchSelect 增加候选搜索。`FilterMultiSelect` 处理带类型的多选 ID，`FilterTextValues` 保留带类型的输入项。需要配置所有权和校验时使用 FilterPanel。
 
 `FilterRemoteSelect` 接收 source/label，以及单个 value 或 `multiple: true` 配合 values；变更回调还返回选中候选。selectedOptions 提供保存标签，debounce 默认 300 ms，pageSize 使用 Wow DEFAULT_CURSOR_SIZE 并受 MAX_CURSOR_SIZE 限制。无效分页大小或防抖值会抛错，更换 source 对象会创建新候选会话。
 

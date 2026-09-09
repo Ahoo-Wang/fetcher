@@ -16,16 +16,13 @@ export type { DeepReadonly } from './lib/types.js';
 
 export type * from './filter/filterModel.js';
 export {
-  createFilterDraft,
-  newFilterDraft,
-  compileFilterDraft,
+  newFilterNode,
   createFilterConfiguration,
-  restoreFilterConfiguration,
   validateFilterConfiguration,
   compileFilterConfiguration,
   compileBuiltinFilter,
   clearBuiltinFilterProps,
-  clearFilterDraftValues,
+  clearFilterValues,
   getFieldOperators,
   isSimpleFilter,
   FILTER_OPERATORS,
@@ -38,10 +35,12 @@ export { getRecordSummaryMetrics } from './record/recordPresentation.js';
 export {
   RECORD_SUMMARY_LABELS,
   getRecordSummaryFunctions,
-  formatRecordNumber,
+} from './record/recordPresentation.js';
+export { formatRecordNumber } from './record/recordValueFormat.js';
+export {
   getRecordColumnPinning,
   orderRecordColumns,
-} from './record/recordModel.js';
+} from './record/recordColumns.js';
 export {
   calculateRecordSummary,
   createRecordSummaryQuery,
@@ -58,7 +57,7 @@ export {
   RECORD_COLUMN_MIN_WIDTH,
   RECORD_COLUMN_MAX_WIDTH,
   RECORD_COLUMN_DEFAULT_WIDTH,
-} from './record/recordModel.js';
+} from './record/recordColumns.js';
 export { sameFilterQuery } from './filter/filterTree.js';
 
 export {

@@ -11,10 +11,14 @@
  * limitations under the License.
  */
 
+import type { BuiltinFilterProperties } from './filterReactTypes.js';
 import type { ReactNode } from 'react';
 import { StringComparison, TimeUnit } from '@ahoo-wang/fetcher-wow';
 import { Settings2Icon } from 'lucide-react';
-import type { FilterDraftNode } from './filterModel.js';
+import type {
+  FilterComponentConfig,
+  FilterComponentProperties,
+} from './filterModel.js';
 import { FILTER_OPERATORS, stringOperators } from './filterOperators.js';
 import { FilterSelect } from './FilterSelect.js';
 import {
@@ -77,17 +81,18 @@ export function FilterValueParameters({
   errorId,
   onChange,
 }: {
-  node: FilterDraftNode;
+  node: FilterComponentConfig;
   label: string;
   disabled?: boolean;
   invalid?: boolean;
   errorId?: string;
-  onChange(node: FilterDraftNode): void;
+  onChange(node: FilterComponentConfig): void;
 }) {
-  const descriptor = FILTER_OPERATORS[node.op];
-  const stringOperation = stringOperators.includes(node.op);
-  const update = (patch: Partial<FilterDraftNode>) =>
-    onChange({ ...node, ...patch });
+  const descriptor = FILTER_OPERATORS[node.operator];
+  const stringOperation = stringOperators.includes(node.operator);
+  const properties = node.props as BuiltinFilterProperties;
+  const update = (patch: FilterComponentProperties) =>
+    onChange({ ...node, props: { ...node.props, ...patch } });
   return (
     <>
       {(descriptor.relativeTime || stringOperation) && (
@@ -98,7 +103,7 @@ export function FilterValueParameters({
               errorId={errorId}
               label="大小写比较"
               placeholder="默认比较方式"
-              value={node.stringComparison}
+              value={properties.stringComparison}
               options={stringOptions}
               disabled={disabled}
               onClear={() => update({ stringComparison: undefined })}
@@ -113,7 +118,7 @@ export function FilterValueParameters({
                   aria-describedby={invalid ? errorId : undefined}
                   aria-label="日期格式"
                   placeholder="日期格式（未指定）"
-                  value={node.datePattern ?? ''}
+                  value={properties.datePattern ?? ''}
                   disabled={disabled}
                   onChange={event =>
                     update({ datePattern: event.target.value || undefined })
@@ -125,7 +130,7 @@ export function FilterValueParameters({
                 errorId={errorId}
                 label="时间单位"
                 placeholder="默认时间单位"
-                value={node.timeUnit}
+                value={properties.timeUnit}
                 options={timeUnits}
                 disabled={disabled}
                 onClear={() => update({ timeUnit: undefined })}

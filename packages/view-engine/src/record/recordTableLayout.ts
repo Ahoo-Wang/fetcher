@@ -11,13 +11,12 @@
  * limitations under the License.
  */
 
+import { type RecordColumn, type ViewFieldDefinition } from './recordModel.js';
 import {
   getRecordColumnPinning,
   RECORD_COLUMN_DEFAULT_WIDTH,
   RECORD_COLUMN_MIN_WIDTH,
-  type RecordColumn,
-  type ViewFieldDefinition,
-} from './recordModel.js';
+} from './recordColumns.js';
 
 /** Pure layout for columns already ordered by orderRecordColumns; no DOM or table-library state. */
 export function getRecordTableLayout({

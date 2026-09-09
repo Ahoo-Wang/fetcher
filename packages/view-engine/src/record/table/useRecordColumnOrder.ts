@@ -18,11 +18,11 @@ import {
   type HTMLAttributes,
   type ButtonHTMLAttributes,
 } from 'react';
+import { type RecordColumn } from '../recordModel.js';
 import {
   getRecordColumnPinning,
   orderRecordColumns,
-  type RecordColumn,
-} from '../recordModel.js';
+} from '../recordColumns.js';
 import type { RecordColumnSettingsProps } from '../recordReactTypes.js';
 
 /** Reordering stays inside each pinned region and supports pointer and keyboard input. */

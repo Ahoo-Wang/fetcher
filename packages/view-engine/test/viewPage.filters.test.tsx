@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { filter } from '@ahoo-wang/fetcher-wow';
+import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
   act,
   cleanup,
@@ -24,7 +24,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import {
   compileBuiltinFilter,
   createFilterConfiguration,
-  createFilterDraft,
+  newFilterNode,
 } from '../src/filter/filterCore.js';
 import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
 import { ViewEngine } from '../src/record/ViewEngine.js';
@@ -52,10 +52,9 @@ it('edits record datetime filters in the definition timezone', async () => {
           config: {
             ...instance.config,
             filters: createFilterConfiguration({
-              ...createFilterDraft(
-                filter.gte('created', Date.UTC(2026, 0, 15, 15, 30)),
-              ),
-              editor: { name: 'builtin', options: { showTime: true } },
+              ...newFilterNode(FilterOperator.GTE, 'created'),
+              props: { value: Date.UTC(2026, 0, 15, 15, 30) },
+              component: { name: 'builtin', options: { showTime: true } },
             }),
           },
         },
@@ -266,12 +265,8 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
   await act(() => engine.setTitle('Updated title'));
   fireEvent.click(screen.getByRole('button', { name: '输入不完整金额' }));
   await act(async () => {
-    await expect(engine.applyFilter(filter.gte('amount', 10))).rejects.toThrow(
-      /筛选/,
-    );
-    await expect(engine.applyFilter(filter.gte('amount', 100))).rejects.toThrow(
-      /筛选/,
-    );
+    await expect(engine.applyFilter()).rejects.toThrow(/筛选/);
+    await expect(engine.applyFilter(instance.id)).rejects.toThrow(/筛选/);
     await expect(engine.save()).rejects.toThrow(/先查询/);
   });
   expect(engine.getSnapshot().sessions.mine).toMatchObject({
@@ -298,7 +293,7 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
   expect(paged).toHaveBeenCalledTimes(1);
   expect(host.instance!.save).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '修正金额' }));
-  await act(() => engine.applyFilter(filter.gte('amount', 10)));
+  await act(() => engine.applyFilter());
   await act(() => engine.save());
   expect(engine.getSnapshot().sessions.mine).toMatchObject({
     filterValid: true,

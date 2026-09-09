@@ -10,16 +10,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { newFilterNode } from '../../src/filter/filterCore.js';
 
-import {
-  filter,
-  FilterOperator as Op,
-  type FilterExpression,
-} from '@ahoo-wang/fetcher-wow';
+import { FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   createFilterConfiguration,
-  createFilterDraft,
   validateFilterConfiguration,
 } from '../../src/filter/filterCore.js';
 import { validateViewInstance } from '../../src/record/recordValidation.js';
@@ -42,23 +38,32 @@ const restricted: ViewDefinition = {
     },
   ],
 };
-const cases: FilterExpression[] = [
-  filter.gt('state.amount', 1),
-  filter.or([filter.eq('state.amount', 1), filter.eq('state.amount', 2)]),
-  filter.and([filter.eq('state.id', 'a'), filter.gt('state.amount', 1)]),
+const cases = [
+  { ...newFilterNode(Op.GT, 'state.amount'), props: { value: 1 } },
   {
-    op: Op.ELEMENT_MATCH,
-    field: 'state.items',
-    predicate: filter.gt('qty', 1),
+    ...newFilterNode(Op.OR),
+    operands: [
+      { ...newFilterNode(Op.EQ, 'state.amount'), props: { value: 1 } },
+      { ...newFilterNode(Op.EQ, 'state.amount'), props: { value: 2 } },
+    ],
+  },
+  {
+    ...newFilterNode(Op.AND),
+    operands: [
+      { ...newFilterNode(Op.EQ, 'state.id'), props: { value: 'a' } },
+      { ...newFilterNode(Op.GT, 'state.amount'), props: { value: 1 } },
+    ],
+  },
+  {
+    ...newFilterNode(Op.ELEMENT_MATCH, 'state.items'),
+    predicate: { ...newFilterNode(Op.GT, 'qty'), props: { value: 1 } },
   },
 ];
 it.each(cases)(
-  'rejects excluded operators before publishing sessions: $op',
+  'rejects excluded operators before publishing sessions: $operator',
   async expression => {
     const saved = instance();
-    saved.config.filters = createFilterConfiguration(
-      createFilterDraft(expression),
-    );
+    saved.config.filters = createFilterConfiguration(expression);
     expect(() => validateViewInstance(saved, restricted)).toThrow(
       '当前视图不允许操作',
     );
@@ -86,9 +91,10 @@ it.each(cases)(
 );
 it('uses the same boundary when selecting or reloading a remote instance', async () => {
   const forbidden = instance('other');
-  forbidden.config.filters = createFilterConfiguration(
-    createFilterDraft(filter.gt('state.amount', 1)),
-  );
+  forbidden.config.filters = createFilterConfiguration({
+    ...newFilterNode(Op.GT, 'state.amount'),
+    props: { value: 1 },
+  });
   const load = vi.fn().mockResolvedValue(forbidden);
   const { engine, paged } = setup({
     definition: restricted,
@@ -112,8 +118,8 @@ it('uses the same boundary when selecting or reloading a remote instance', async
 it('keeps permitted opaque editor props valid without requiring a compiler at the structural boundary', () => {
   const saved = instance();
   saved.config.filters = createFilterConfiguration({
-    ...createFilterDraft(filter.eq('state.amount', 1)),
-    editor: { name: 'custom' },
+    ...{ ...newFilterNode(Op.EQ, 'state.amount'), props: { value: 1 } },
+    component: { name: 'custom' },
     props: { tokens: ['a'] },
   });
   expect(() => validateViewInstance(saved, restricted)).not.toThrow();

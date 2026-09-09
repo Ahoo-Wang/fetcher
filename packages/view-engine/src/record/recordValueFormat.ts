@@ -13,7 +13,7 @@
 
 import { scalar } from '../filter/filterScalar.js';
 import { fixedTimeZoneOffset } from '../lib/timeZone.js';
-import { formatRecordNumber, type ViewFieldDefinition } from './recordModel.js';
+import type { ViewFieldDefinition } from './recordModel.js';
 
 export type RecordDateTimeFormat = Pick<
   Intl.DateTimeFormatOptions,
@@ -92,4 +92,20 @@ export function formatRecordValue(
   if (typeof value === 'number')
     return Number.isFinite(value) ? formatRecordNumber(value, field) : '—';
   return recordValueText(value) || '—';
+}
+
+export function formatRecordNumber(
+  value: number,
+  field: Pick<ViewFieldDefinition, 'numberFormat'>,
+): string {
+  const { locale = 'zh-CN', ...options } = field.numberFormat ?? {};
+  if (
+    (!options.style || options.style === 'decimal') &&
+    options.minimumFractionDigits === undefined &&
+    options.maximumFractionDigits === undefined &&
+    options.minimumSignificantDigits === undefined &&
+    options.maximumSignificantDigits === undefined
+  )
+    options.maximumFractionDigits = 2;
+  return new Intl.NumberFormat(locale, options).format(value);
 }

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { filter } from '@ahoo-wang/fetcher-wow';
+import { node, configuration } from './fixtures/filterPanel.js';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
@@ -38,7 +38,9 @@ it('changing an operator cannot clear a custom editors reported invalid input', 
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+      )}
       onApply={apply}
       extensions={{
         filters: {
@@ -86,7 +88,9 @@ it('accepts validity reporting immediately after publishing custom properties', 
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+      )}
       onApply={apply}
       extensions={{
         filters: {
@@ -116,7 +120,9 @@ it('blocks invalid custom input even when its message is empty', () => {
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+      )}
       onApply={apply}
       extensions={{
         filters: {

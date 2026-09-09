@@ -11,13 +11,10 @@
  * limitations under the License.
  */
 
-import {
-  createFilterConfiguration,
-  createFilterDraft,
-} from '../../src/filter/filterCore.js';
-import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { createFilterConfiguration } from '../../src/filter/filterCore.js';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import { newFilterDraft } from '../../src/filter/filterCore.js';
+import { newFilterNode } from '../../src/filter/filterCore.js';
 import type { ViewInstance } from '../../src/record/recordModel.js';
 import type { ViewHost } from '../../src/record/ViewHost.js';
 import {
@@ -41,8 +38,13 @@ it('renames persisted metadata without saving draft filters, columns or newer ed
   engine.setColumns([
     { id: 'amount', kind: 'field', field: 'state.amount', width: 240 },
   ]);
-  const draft = newFilterDraft(FilterOperator.GTE, 'state.amount');
-  engine.setFilterDraft({ ...draft, value: 50 });
+  const draft = newFilterNode(FilterOperator.GTE, 'state.amount');
+  engine.setFilterDraft(
+    createFilterConfiguration({
+      ...draft,
+      props: { ...draft.props, value: 50 },
+    }),
+  );
   engine.setFilterValidity(false);
   const before = selected(engine);
   const renaming = engine.renameInstance('  New name  ');
@@ -98,9 +100,10 @@ it('rejects changed content from a rename response and requires reconciliation',
           title: 'New',
           config: {
             ...instance().config,
-            filters: createFilterConfiguration(
-              createFilterDraft(filter.gte('state.amount', 99)),
-            ),
+            filters: createFilterConfiguration({
+              ...newFilterNode(FilterOperator.GTE, 'state.amount'),
+              props: { value: 99 },
+            }),
           },
         }),
       },

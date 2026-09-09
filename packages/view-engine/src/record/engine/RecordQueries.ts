@@ -19,7 +19,7 @@ import { cloneSnapshot } from '../../lib/types.js';
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import type { RecordSummaries } from './RecordSummaries.js';
-import { copy, message } from './recordSnapshot.js';
+import { copy, message } from '../../lib/snapshot.js';
 
 /** Owns record reads; pagination and UI edits only submit explicit query commands. */
 export class RecordQueries {

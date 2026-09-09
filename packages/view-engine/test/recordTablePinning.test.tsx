@@ -16,10 +16,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { RecordTable } from '../src/record/RecordTable.js';
 import { RecordColumnSettings } from '../src/record/RecordColumnSettings.js';
 import {
-  getRecordColumnPinning,
   type RecordColumn,
   type ViewDefinition,
 } from '../src/record/recordModel.js';
+import { getRecordColumnPinning } from '../src/record/recordColumns.js';
 import {
   cleanupTable,
   definition,

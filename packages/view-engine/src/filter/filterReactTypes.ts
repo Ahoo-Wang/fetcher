@@ -13,14 +13,15 @@
 
 import type { FilterOptionSource } from './filterOptionSource.js';
 import type { ComponentType, ReactNode } from 'react';
-import type { FilterExpression, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import type { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import type { FilterOption } from './filterTypes.js';
 import type { DeepReadonly } from '../lib/types.js';
 import type {
   FilterCompiler,
   FilterCompilerContext,
   FilterComponentProperties,
-  FilterDraftNode,
+  FilterConfiguration,
+  FilterApplyResult,
   FilterEditorReference,
   FilterFieldDefinition,
   FilterJsonValue,
@@ -96,20 +97,27 @@ export interface FilterPanelToolbarProps {
   disabled: boolean;
   onModeChange(mode: FilterMode): void;
 }
-export interface FilterPanelProps {
+export type FilterPanelProps = FilterPanelOptions &
+  (
+    | {
+        value: DeepReadonly<FilterConfiguration>;
+        onChange(configuration: FilterConfiguration): void;
+        defaultValue?: never;
+      }
+    | {
+        value?: never;
+        defaultValue?: DeepReadonly<FilterConfiguration>;
+        onChange?(configuration: FilterConfiguration): void;
+      }
+  );
+interface FilterPanelOptions {
   /** Shared by all date/time controls and compilation; defaults to local. */
   timeZone?: string;
-  value: DeepReadonly<FilterExpression> | null;
   fields: readonly FilterFieldDefinition[];
-  onApply(expression: FilterExpression): void;
-  mode?: FilterMode;
-  onModeChange?(mode: FilterMode): void;
+  onApply(result: FilterApplyResult): void | Promise<void>;
   onPendingChange?(pending: boolean): void;
-  /** Optional controlled transient tree; keep it per view instance to preserve unmounted editors. */
-  draft?: DeepReadonly<FilterDraftNode>;
-  onDraftChange?(draft: FilterDraftNode): void;
-  /** Controlled last-applied editor tree, including unset controls. */
-  appliedDraft?: DeepReadonly<FilterDraftNode>;
+  /** Last successfully applied configuration, including unset controls. */
+  appliedValue?: DeepReadonly<FilterConfiguration>;
   /** Reports local buffer and editor validity; pending remains derived. */
   onValidityChange?(valid: boolean): void;
   allowedOperators?: readonly FilterOperator[];
@@ -124,4 +132,21 @@ export interface FilterPanelProps {
   /** Replaces the default header; rendered before the collapsible panel body. */
   renderToolbar?(props: FilterPanelToolbarProps): ReactNode;
   className?: string;
+}
+
+/** Narrow builtin input view; compilation remains responsible for validating raw properties. */
+export interface BuiltinFilterProperties {
+  value?: FilterJsonValue;
+  values?: FilterJsonValue[];
+  lowerBound?: FilterJsonValue;
+  upperBound?: FilterJsonValue;
+  query?: string;
+  fields?: string[];
+  mode?: string;
+  state?: string;
+  time?: string;
+  days?: number | string;
+  stringComparison?: string;
+  datePattern?: string;
+  timeUnit?: string;
 }

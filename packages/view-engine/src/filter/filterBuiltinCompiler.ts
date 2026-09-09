@@ -21,16 +21,17 @@ import type {
   FilterCompilerContext,
   FilterComponentProperties,
   FilterCompileResult,
-  FilterDraftNode,
   FilterFieldDefinition,
   FilterValidationError,
 } from './filterModel.js';
+import { validateFilterNodeContext } from './filterConfigurationValidation.js';
 import { getFieldOperators, stringOperators } from './filterOperators.js';
 import {
   build,
   checkShape,
   checkBuiltinProps,
   type CompiledNode,
+  type ProtocolNode,
 } from './filterProtocol.js';
 import { numeric, scalar } from './filterScalar.js';
 import { TZDate } from '@date-fns/tz';
@@ -40,42 +41,27 @@ import {
   timeToSeconds,
 } from './filterDateTimeValue.js';
 
-export function compileBuiltinDraft(
-  draft: DeepReadonly<FilterDraftNode>,
+export function compileProtocolNode(
+  draft: DeepReadonly<ProtocolNode>,
   fields: readonly FilterFieldDefinition[],
   allowedOperators?: readonly Op[],
   timeZone?: string,
 ): FilterCompileResult {
   const errors: FilterValidationError[] = [];
   const visit = (
-    node: DeepReadonly<FilterDraftNode>,
+    node: DeepReadonly<ProtocolNode>,
     scope: readonly FilterFieldDefinition[],
     element = false,
   ): FilterExpression | undefined => {
     try {
       const descriptor = checkShape(node);
-      if (allowedOperators && !allowedOperators.includes(node.op))
-        throw new TypeError(`当前视图不允许操作 ${node.op}`);
-      if (
-        element &&
-        descriptor.category === 'root' &&
-        node.op !== Op.MATCH_ALL &&
-        node.op !== Op.MATCH_NONE
-      )
-        throw new TypeError('元素条件不能使用根级操作');
-      const field = scope.find(candidate => candidate.field === node.field);
-      if (
-        descriptor.category === 'field' ||
-        descriptor.category === 'element'
-      ) {
-        if (!field)
-          throw new TypeError(
-            `当前作用域没有字段 ${node.field ?? '（未指定）'}`,
-          );
-        filter.exists(field.field);
-        if (!getFieldOperators(field).includes(node.op))
-          throw new TypeError(`字段 ${field.label} 不支持操作 ${node.op}`);
-      }
+      const field = validateFilterNodeContext(
+        node.op,
+        node.field,
+        scope,
+        allowedOperators,
+        element,
+      );
       if (descriptor.category === 'logical') {
         if (!Array.isArray(node.operands) || node.operands.length === 0)
           throw new TypeError('分组至少需要一个条件');
@@ -193,7 +179,7 @@ export function compileBuiltinFilter(
     id: 'builtin',
     op: context.operator,
     ...(context.field ? { field: context.field.field } : {}),
-  } as FilterDraftNode;
+  } as ProtocolNode;
   const descriptor = checkShape(node);
   if (
     context.options?.showTime !== undefined &&
@@ -222,7 +208,7 @@ export function compileBuiltinFilter(
       context.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (typeof node.time === 'string') node.time = timeToSeconds(node.time);
   }
-  const result = compileBuiltinDraft(
+  const result = compileProtocolNode(
     node,
     context.fields,
     undefined,
@@ -237,7 +223,7 @@ export function compileBuiltinFilter(
 
 /** Date-only editing keeps calendar dates in props and lowers them at the query boundary. */
 function compileCalendarDays(
-  node: FilterDraftNode,
+  node: ProtocolNode,
   context: FilterCompilerContext,
 ): FilterExpression | undefined {
   const field = context.field!;
@@ -264,7 +250,7 @@ function compileCalendarDays(
   if (Array.isArray(node.values)) normalized.values = node.values.map(day);
   if ('lowerBound' in node) normalized.lowerBound = day(node.lowerBound);
   if ('upperBound' in node) normalized.upperBound = day(node.upperBound);
-  const result = compileBuiltinDraft(
+  const result = compileProtocolNode(
     normalized,
     context.fields.map(item =>
       item.field === field.field ? { ...item, type: 'date' } : item,

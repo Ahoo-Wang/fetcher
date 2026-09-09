@@ -11,18 +11,18 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import {
   createFilterConfiguration,
-  restoreFilterConfiguration,
   compileFilterConfiguration,
-  clearFilterDraftValues,
+  clearFilterValues,
 } from '../src/filter/filterConfiguration.js';
 import type {
-  FilterDraftNode,
+  FilterComponentConfig,
   FilterFieldDefinition,
 } from '../src/filter/filterModel.js';
 afterEach(cleanup);
@@ -39,32 +39,32 @@ const fields: FilterFieldDefinition[] = [
   },
 ];
 it('restores and clears built-in component props through the public configuration pipeline without a custom registry', () => {
-  const draft: FilterDraftNode = {
+  const draft: FilterComponentConfig = {
     id: 'customer-filter',
-    op: Op.IN,
+    operator: Op.IN,
     field: 'customer',
-    editor: { name: 'multi-select' },
+    component: { name: 'multi-select' },
     props: {
       values: ['a'],
       selectedOptions: [{ value: 'a', label: '保存名称' }],
     },
   };
   const config = JSON.parse(
-    JSON.stringify(createFilterConfiguration(draft, 'simple', fields)),
+    JSON.stringify(createFilterConfiguration(draft, 'simple')),
   );
   expect(compileFilterConfiguration(config, fields).expression).toEqual(
     filter.isIn('customer', ['a']),
   );
-  const restored = restoreFilterConfiguration(config);
+  const restored = config.root;
   expect(restored.props?.selectedOptions).toEqual([
     { value: 'a', label: '保存名称' },
   ]);
-  const cleared = clearFilterDraftValues(restored, fields);
+  const cleared = clearFilterValues(restored, fields);
   expect(cleared.id).toBe(draft.id);
-  expect(cleared.editor).toEqual(draft.editor);
+  expect(cleared.component).toEqual(draft.component);
   expect(
     compileFilterConfiguration(
-      createFilterConfiguration(cleared, 'simple', fields),
+      createFilterConfiguration(cleared, 'simple'),
       fields,
     ).expression,
   ).toEqual(filter.matchAll());
@@ -73,7 +73,9 @@ it('renders a configured built-in picker in standalone FilterPanel and applies o
   const apply = vi.fn();
   render(
     <FilterPanel
-      value={filter.isIn('customer', ['a'])}
+      defaultValue={configuration(
+        node('IN', 'customer', { values: ['a'] }, { name: 'multi-select' }),
+      )}
       fields={fields}
       onApply={apply}
     />,
@@ -85,7 +87,11 @@ it('renders a configured built-in picker in standalone FilterPanel and applies o
     key: 'Escape',
   });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledWith(filter.isIn('customer', ['a', 'b']));
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({
+      expression: filter.isIn('customer', ['a', 'b']),
+    }),
+  );
 });
 it('reports an unregistered remote source as a configuration error', async () => {
   const fields: FilterFieldDefinition[] = [
@@ -98,7 +104,14 @@ it('reports an unregistered remote source as a configuration error', async () =>
   ];
   render(
     <FilterPanel
-      value={filter.eq('id', 'u')}
+      defaultValue={configuration(
+        node(
+          'EQ',
+          'id',
+          { value: 'u' },
+          { name: 'remote-select', options: { source: 'missing' } },
+        ),
+      )}
       fields={fields}
       onApply={() => {}}
     />,

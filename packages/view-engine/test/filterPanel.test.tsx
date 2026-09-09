@@ -11,13 +11,10 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
+import { DeletionState, filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
-  DeletionState,
-  filter,
-  FilterOperator,
-  type FilterExpression,
-} from '@ahoo-wang/fetcher-wow';
-import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -26,7 +23,6 @@ import {
 } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createFilterDraft } from '../src/filter/filterCore.js';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import { fields, select } from './fixtures/filterPanel.js';
 
@@ -35,16 +31,16 @@ afterEach(cleanup);
 it('buffers edits and clears until Query, retains unset controls, and undoes without querying', () => {
   const apply = vi.fn();
   function Example() {
-    const [value, setValue] = useState<FilterExpression>(
-      filter.gte('amount', 10),
+    const [value, setValue] = useState(
+      configuration(node('GTE', 'amount', { value: 10 })),
     );
     return (
       <FilterPanel
         fields={fields}
         value={value}
+        onChange={setValue}
         onApply={value => {
           apply(value);
-          setValue(value);
         }}
       />
     );
@@ -55,12 +51,16 @@ it('buffers edits and clears until Query, retains unset controls, and undoes wit
   });
   expect(apply).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenLastCalledWith(filter.gte('amount', 20));
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.gte('amount', 20) }),
+  );
   fireEvent.change(screen.getByLabelText('订单金额值'), {
     target: { value: '' },
   });
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenLastCalledWith(filter.matchAll());
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
   expect(screen.getByLabelText('订单金额值')).toBeTruthy();
   fireEvent.change(screen.getByLabelText('订单金额值'), {
     target: { value: '30' },
@@ -77,7 +77,9 @@ it('does not silently apply partial or invalid input, or submit on Enter during 
   render(
     <FilterPanel
       fields={fields}
-      value={filter.between('amount', 1, 10)}
+      defaultValue={configuration(
+        node('BETWEEN', 'amount', { lowerBound: 1, upperBound: 10 }),
+      )}
       onApply={apply}
     />,
   );
@@ -95,12 +97,30 @@ it('does not silently apply partial or invalid input, or submit on Enter during 
   expect(apply).not.toHaveBeenCalled();
 });
 
-it('preserves edits during a request acknowledgement and resets only for an external value', () => {
-  const apply = vi.fn();
-  const initial = filter.gte('amount', 10);
-  const view = render(
-    <FilterPanel fields={fields} value={initial} onApply={apply} />,
+it('preserves edits during an asynchronous acknowledgement and replaces controlled values explicitly', async () => {
+  let replace!: (value: ReturnType<typeof configuration>) => void;
+  let finish!: () => void;
+  const apply = vi.fn(
+    () =>
+      new Promise<void>(resolve => {
+        finish = resolve;
+      }),
   );
+  function Example() {
+    const [value, setValue] = useState(
+      configuration(node('GTE', 'amount', { value: 10 })),
+    );
+    replace = setValue;
+    return (
+      <FilterPanel
+        fields={fields}
+        value={value}
+        onChange={setValue}
+        onApply={apply}
+      />
+    );
+  }
+  render(<Example />);
   fireEvent.change(screen.getByLabelText('订单金额值'), {
     target: { value: '20' },
   });
@@ -108,37 +128,12 @@ it('preserves edits during a request acknowledgement and resets only for an exte
   fireEvent.change(screen.getByLabelText('订单金额值'), {
     target: { value: '30' },
   });
-  view.rerender(
-    <FilterPanel
-      fields={fields}
-      value={filter.gte('amount', 20)}
-      onApply={apply}
-      querying
-    />,
-  );
-  expect((screen.getByLabelText('订单金额值') as HTMLInputElement).value).toBe(
-    '30',
-  );
-  view.rerender(
-    <FilterPanel
-      fields={fields}
-      value={filter.gte('amount', 40)}
-      onApply={apply}
-    />,
-  );
-  expect((screen.getByLabelText('订单金额值') as HTMLInputElement).value).toBe(
-    '40',
-  );
-  view.rerender(
-    <FilterPanel
-      fields={fields}
-      value={filter.gte('amount', 20)}
-      onApply={apply}
-    />,
-  );
-  expect((screen.getByLabelText('订单金额值') as HTMLInputElement).value).toBe(
-    '20',
-  );
+  await act(async () => finish());
+  expect(screen.getByLabelText('订单金额值')).toHaveProperty('value', '30');
+  act(() => replace(configuration(node('GTE', 'amount', { value: 40 }))));
+  expect(screen.getByLabelText('订单金额值')).toHaveProperty('value', '40');
+  act(() => replace(configuration(node('GTE', 'amount', { value: 20 }))));
+  expect(screen.getByLabelText('订单金额值')).toHaveProperty('value', '20');
 });
 
 it('keeps separate panels isolated and allows query-error retry', () => {
@@ -148,7 +143,7 @@ it('keeps separate panels isolated and allows query-error retry', () => {
       <div data-testid="first">
         <FilterPanel
           fields={fields}
-          value={filter.eq('amount', 1)}
+          defaultValue={configuration(node('EQ', 'amount', { value: 1 }))}
           onApply={apply}
           queryError="请求失败"
         />
@@ -156,7 +151,8 @@ it('keeps separate panels isolated and allows query-error retry', () => {
       <div data-testid="second">
         <FilterPanel
           fields={fields}
-          value={filter.eq('amount', 2)}
+          defaultValue={configuration(node('EQ', 'amount', { value: 2 }))}
+          appliedValue={configuration(node('EQ', 'amount', { value: 1 }))}
           onApply={() => {}}
         />
       </div>
@@ -174,7 +170,9 @@ it('keeps separate panels isolated and allows query-error retry', () => {
     ).value,
   ).toBe('2');
   fireEvent.click(first.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenCalledWith(filter.eq('amount', 3));
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({ expression: filter.eq('amount', 3) }),
+  );
 });
 
 it('clears only values while preserving parameters and really clears deletion state', async () => {
@@ -184,31 +182,45 @@ it('clears only values while preserving parameters and really clears deletion st
     <FilterPanel
       fields={[{ field: 'createdAt', label: '创建时间', type: 'datetime' }]}
       timeZone="Asia/Shanghai"
-      value={filter.beforeToday('createdAt', '09:00', {
-        zoneId: 'Asia/Shanghai',
-      })}
+      defaultValue={configuration(
+        node('BEFORE_TODAY', 'createdAt', {
+          time: '09:00',
+          ...{
+            zoneId: 'Asia/Shanghai',
+          },
+        }),
+      )}
       onApply={apply}
-      onDraftChange={draft}
+      onChange={draft}
     />,
   );
   fireEvent.change(screen.getByRole('textbox', { name: '创建时间时间' }), {
     target: { value: '' },
   });
-  expect(draft.mock.lastCall?.[0].zoneId).toBe('Asia/Shanghai');
-  expect(draft.mock.lastCall?.[0].time).toBeUndefined();
+  expect(draft.mock.lastCall?.[0].root.props.zoneId).toBe('Asia/Shanghai');
+  expect(draft.mock.lastCall?.[0].root.props.time).toBeUndefined();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith(filter.matchAll());
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
   view.unmount();
   render(
     <FilterPanel
       fields={[]}
-      value={{ op: FilterOperator.DELETION, state: DeletionState.ACTIVE }}
+      defaultValue={configuration({
+        id: crypto.randomUUID(),
+        operator: FilterOperator.DELETION,
+        component: { name: 'builtin' },
+        props: { state: DeletionState.ACTIVE },
+      })}
       onApply={apply}
     />,
   );
   await select('删除状态', '清空选择');
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith(filter.matchAll());
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
 });
 
 it('restored unapplied controlled drafts must remain pending and undoable', () => {
@@ -216,8 +228,9 @@ it('restored unapplied controlled drafts must remain pending and undoable', () =
   render(
     <FilterPanel
       fields={fields}
-      value={filter.eq('amount', 1)}
-      draft={createFilterDraft(filter.eq('amount', 2))}
+
+      defaultValue={configuration(node('EQ', 'amount', { value: 2 }))}
+      appliedValue={configuration(node('EQ', 'amount', { value: 1 }))}
       onApply={() => {}}
       onPendingChange={pending}
     />,
@@ -237,7 +250,7 @@ it('does not repeat an in-flight expression after editing only its number format
   render(
     <FilterPanel
       fields={fields}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(node('EQ', 'amount', { value: 1 }))}
       onApply={apply}
       querying
     />,
@@ -256,9 +269,9 @@ it('remounting an already-applied numeric draft must stay synchronized', () => {
   const view = render(
     <FilterPanel
       fields={fields}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(node('EQ', 'amount', { value: 1 }))}
       onApply={apply}
-      onDraftChange={changed}
+      onChange={changed}
     />,
   );
   fireEvent.change(screen.getByLabelText('订单金额值'), {
@@ -271,8 +284,9 @@ it('remounting an already-applied numeric draft must stay synchronized', () => {
   render(
     <FilterPanel
       fields={fields}
-      value={applied}
-      draft={retained}
+
+      defaultValue={retained}
+      appliedValue={applied.configuration}
       onApply={apply}
       onPendingChange={pending}
     />,

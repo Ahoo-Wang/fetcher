@@ -11,11 +11,7 @@
  * limitations under the License.
  */
 
-import { compileFilterDraft } from '../../filter/filterCore.js';
-import {
-  compileFilterConfiguration,
-  restoreFilterConfiguration,
-} from '../../filter/filterConfiguration.js';
+import { compileFilterConfiguration } from '../../filter/filterConfiguration.js';
 import type { FilterCompilerRegistry } from '../../filter/filterModel.js';
 import { sameFilterQuery, sameFilterState } from '../../filter/filterTree.js';
 import type { DeepReadonly } from '../../lib/types.js';
@@ -32,7 +28,7 @@ export function createSession(
   definition: DeepReadonly<ViewDefinition>,
   compilers: FilterCompilerRegistry,
 ): RecordSession {
-  const filterDraft = restoreFilterConfiguration(instance.config.filters);
+  const filterDraft = instance.config.filters;
   const compiled = compileFilterConfiguration(
     instance.config.filters,
     definition.fields,
@@ -47,7 +43,6 @@ export function createSession(
     filterDraft,
     filterBaseline: filterDraft,
     filterValid: true,
-    filterMode: instance.config.filters.mode,
     filterPending: compiled.errors.length > 0,
     appliedFilter: compiled.expression ?? null,
     page: 1,
@@ -88,12 +83,11 @@ export function deriveSession(
     previous.filterValid !== session.filterValid ||
     previous.appliedFilter !== session.appliedFilter
   ) {
-    const compiled = compileFilterDraft(
+    const compiled = compileFilterConfiguration(
       session.filterDraft,
       definition.fields,
       definition.allowedOperators,
       compilers,
-      definition.filterEditors,
       definition.timeZone,
     );
     filterPending =
@@ -181,7 +175,6 @@ export function inheritEditingSession(
       filterDraft: source.filterDraft,
       filterBaseline: source.filterBaseline,
       filterValid: source.filterValid,
-      filterMode: source.filterMode,
       appliedFilter: source.appliedFilter,
     },
     definition,

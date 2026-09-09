@@ -32,12 +32,14 @@ import {
   PopoverTrigger,
 } from '../components/ui/popover.js';
 import {
-  RECORD_SUMMARY_LABELS,
-  getRecordSummaryFunctions,
-  getRecordColumnPinning,
   type RecordColumn,
   type RecordSummaryFunction,
 } from './recordModel.js';
+import {
+  RECORD_SUMMARY_LABELS,
+  getRecordSummaryFunctions,
+} from './recordPresentation.js';
+import { getRecordColumnPinning } from './recordColumns.js';
 import type { RecordColumnSettingsProps } from './recordReactTypes.js';
 import { useRecordColumnOrder } from './table/useRecordColumnOrder.js';
 

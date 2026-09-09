@@ -13,9 +13,17 @@
 
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { ChevronDownIcon } from 'lucide-react';
-import { FILTER_OPERATORS, getFieldOperators } from './filterOperators.js';
-import { newFilterDraft } from './filterDraft.js';
-import type { FilterDraftNode, FilterFieldDefinition } from './filterModel.js';
+import {
+  FILTER_OPERATORS,
+  getFieldOperators,
+  getNamedFilterOperators,
+} from './filterOperators.js';
+import { newFilterNode } from './filterNodes.js';
+import { resolveFilterComponent } from './filterConfiguration.js';
+import type {
+  FilterComponentConfig,
+  FilterFieldDefinition,
+} from './filterModel.js';
 import type { FilterPanelState } from './useFilterPanelState.js';
 import { logicalOperators, groupLabels } from './filterPanelUtils.js';
 import { FilterFieldPicker, type FieldChoice } from './FilterFieldPicker.js';
@@ -34,7 +42,7 @@ export function FilterAddControl({
   label,
   panel,
 }: {
-  target: FilterDraftNode;
+  target: FilterComponentConfig;
   scopeFields: readonly FilterFieldDefinition[];
   scope: string;
   label: string;
@@ -45,7 +53,12 @@ export function FilterAddControl({
   const bindings = target.operands ?? [target];
   const options: FieldChoice[] = scopeFields.flatMap(field => {
     const operators = getFieldOperators(field).filter(
-      op => !props.allowedOperators || props.allowedOperators.includes(op),
+      op =>
+        (!props.allowedOperators || props.allowedOperators.includes(op)) &&
+        (getNamedFilterOperators(
+          resolveFilterComponent(op, field, props.editors).name,
+        )?.includes(op) ??
+          true),
     );
     if (
       !operators.length ||
@@ -90,7 +103,18 @@ export function FilterAddControl({
           const option = options.find(option => option.value === choice);
           if (disabled || !choice || !option) return;
           if (choice.startsWith('op:'))
-            append(target, newFilterDraft(choice.slice(3) as FilterOperator));
+            append(
+              target,
+              newFilterNode(
+                choice.slice(3) as FilterOperator,
+                undefined,
+                resolveFilterComponent(
+                  choice.slice(3) as FilterOperator,
+                  undefined,
+                  props.editors,
+                ),
+              ),
+            );
           else {
             const field = scopeFields.find(
               field => field.field === choice.slice(6),
@@ -100,9 +124,21 @@ export function FilterAddControl({
                 (!props.allowedOperators ||
                   props.allowedOperators.includes(op)) &&
                 (mode === 'advanced' ||
-                  FILTER_OPERATORS[op].category !== 'element'),
+                  FILTER_OPERATORS[op].category !== 'element') &&
+                (getNamedFilterOperators(
+                  resolveFilterComponent(op, field, props.editors).name,
+                )?.includes(op) ??
+                  true),
             )!;
-            if (op) append(target, newFilterDraft(op, field.field));
+            if (op)
+              append(
+                target,
+                newFilterNode(
+                  op,
+                  field.field,
+                  resolveFilterComponent(op, field, props.editors),
+                ),
+              );
           }
         }}
         onRemove={choice => {
@@ -148,7 +184,7 @@ export function FilterAddControl({
                   (!props.allowedOperators ||
                     props.allowedOperators.includes(op))
                 )
-                  append(target, newFilterDraft(op));
+                  append(target, newFilterNode(op));
               }}
             >
               <span className="fve:w-8 fve:font-medium">{op}</span>

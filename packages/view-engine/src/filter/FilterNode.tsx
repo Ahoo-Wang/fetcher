@@ -16,7 +16,7 @@ import { XIcon } from 'lucide-react';
 import { FILTER_OPERATORS, getFieldOperators } from './filterOperators.js';
 import { transitionFilterOperator } from './filterDraftTransitions.js';
 import { resolveFilterEditor } from './resolveFilterEditor.js';
-import type { FilterDraftNode } from './filterModel.js';
+import type { FilterComponentConfig } from './filterModel.js';
 import type { FilterPanelState } from './useFilterPanelState.js';
 import {
   logicalOperators,
@@ -39,7 +39,7 @@ export function FilterNode({
   showAddControl = true,
   panel,
 }: {
-  node: FilterDraftNode;
+  node: FilterComponentConfig;
   showAddControl?: boolean;
   panel: FilterPanelState;
 }) {
@@ -53,18 +53,17 @@ export function FilterNode({
     update,
     mode,
     changeOperator,
-    builtIn,
     resolutions,
   } = panel;
   const location = locations.find(location => location.node.id === node.id)!;
-  const descriptor = FILTER_OPERATORS[node.op];
+  const descriptor = FILTER_OPERATORS[node.operator];
   const field = location.fields.find(field => field.field === node.field);
   const label =
-    field?.label ?? node.field ?? descriptor?.label ?? String(node.op);
+    field?.label ?? node.field ?? descriptor?.label ?? String(node.operator);
   const nodeIssues = issues.filter(issue => issue.id === node.id);
   const errorId = `${panelId}-${node.id}-error`;
-  if (node.operands || node.op === FilterOperator.ELEMENT_MATCH) {
-    const element = node.op === FilterOperator.ELEMENT_MATCH;
+  if (node.operands || node.operator === FilterOperator.ELEMENT_MATCH) {
+    const element = node.operator === FilterOperator.ELEMENT_MATCH;
     return (
       <div
         key={`${epoch}:${node.id}`}
@@ -84,7 +83,7 @@ export function FilterNode({
           ) : (
             <FilterSelect
               label="组合方式"
-              value={node.op}
+              value={node.operator}
               options={logicalOperators.map(op => ({
                 value: op,
                 label: groupLabels[op],
@@ -93,7 +92,7 @@ export function FilterNode({
                   !props.allowedOperators.includes(op),
               }))}
               disabled={disabled}
-              onValueChange={op => update(node.id, { ...node, op })}
+              onValueChange={op => update(node.id, { ...node, operator: op })}
             />
           )}
           <Button
@@ -174,14 +173,14 @@ export function FilterNode({
       !resolveFilterEditor(
         {
           ...location,
-          node: op === node.op ? node : transitionFilterOperator(node, op),
+          node:
+            op === node.operator ? node : transitionFilterOperator(node, op),
         },
         props,
         mode,
-        builtIn,
       ).error,
   );
-  const options = [...new Set([...operators, node.op])].map(op => ({
+  const options = [...new Set([...operators, node.operator])].map(op => ({
     value: op,
     label: FILTER_OPERATORS[op]?.label ?? String(op),
     disabled: !operators.includes(op),
@@ -195,9 +194,7 @@ export function FilterNode({
       panel={panel}
     />
   );
-  const complete =
-    !builtIn.has(node.id) &&
-    resolutions.get(node.id)?.registration?.render === 'filter';
+  const complete = resolutions.get(node.id)?.registration?.render === 'filter';
   return (
     <div
       key={`${epoch}:${node.id}`}
@@ -211,7 +208,7 @@ export function FilterNode({
       ) : field || node.field ? (
         <FieldFilter
           field={{ field: node.field!, label }}
-          operator={node.op}
+          operator={node.operator}
           operators={options}
           onOperatorChange={op => changeOperator(node, op)}
           onRemove={() => update(node.id)}
@@ -226,7 +223,7 @@ export function FilterNode({
         >
           <FilterSelect
             label="特殊条件类型"
-            value={node.op}
+            value={node.operator}
             options={options}
             onValueChange={op => changeOperator(node, op)}
             inline

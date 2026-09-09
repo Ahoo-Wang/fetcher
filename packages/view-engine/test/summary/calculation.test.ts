@@ -14,7 +14,7 @@
 import { aggregation, filter } from '@ahoo-wang/fetcher-wow';
 import { expect, it } from 'vitest';
 import type { RecordColumn } from '../../src/record/recordModel.js';
-import { formatRecordNumber } from '../../src/record/recordModel.js';
+import { formatRecordNumber } from '../../src/record/recordValueFormat.js';
 import {
   calculateRecordSummary,
   createRecordSummaryQuery,

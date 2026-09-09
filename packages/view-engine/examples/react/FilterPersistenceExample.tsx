@@ -14,7 +14,7 @@
 import { useState } from 'react';
 import {
   createFilterConfiguration,
-  newFilterDraft,
+  newFilterNode,
   type ViewDefinition,
   type ViewHost,
   type ViewInstance,
@@ -40,9 +40,7 @@ const initial: ViewInstance = {
   revision: '1',
   config: {
     ...orderViews.instances[0].config,
-    filters: createFilterConfiguration(
-      newFilterDraft(FilterOperator.MATCH_ALL),
-    ),
+    filters: createFilterConfiguration(newFilterNode(FilterOperator.MATCH_ALL)),
     presentation: {
       layout: 'table',
       table: {

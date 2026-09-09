@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter } from '@ahoo-wang/fetcher-wow';
 import {
   act,
@@ -21,7 +22,6 @@ import {
 } from '@testing-library/react';
 import { useLayoutEffect } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createFilterDraft } from '../src/filter/filterCore.js';
 import { FilterPanel } from '../src/filter/FilterPanel.js';
 import type {
   FilterComponentProps,
@@ -41,12 +41,15 @@ it('merges an asynchronous custom change into the latest tree and ignores it aft
   const view = render(
     <FilterPanel
       fields={[fields[0], { ...fields[1], editor: { name: 'custom' } }]}
-      value={filter.and([
-        filter.eq('amount', 1),
-        filter.eq('status', 'pending'),
-      ])}
+      defaultValue={configuration({
+        ...node('AND'),
+        operands: [
+          node('EQ', 'amount', { value: 1 }),
+          node('EQ', 'status', { value: 'pending' }, { name: 'custom' }),
+        ],
+      })}
       onApply={() => {}}
-      onDraftChange={drafts}
+      onChange={drafts}
       extensions={{
         filters: {
           custom: {
@@ -81,7 +84,9 @@ it('clearing a value rejects callbacks from the custom editor it just unmounted'
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-      value={filter.eq('amount', 1)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+      )}
       onApply={apply}
       extensions={{
         filters: {
@@ -98,7 +103,9 @@ it('clearing a value rejects callbacks from the custom editor it just unmounted'
   fireEvent.click(screen.getByRole('button', { name: '清空自定义值' }));
   act(() => publish!({ value: 7 }));
   fireEvent.click(screen.getByRole('button', { name: /^查询/ }));
-  expect(apply).toHaveBeenLastCalledWith(filter.matchAll());
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
 });
 
 it('never revives callbacks when a replaced custom component returns', () => {
@@ -115,7 +122,9 @@ it('never revives callbacks when a replaced custom component returns', () => {
     return (
       <FilterPanel
         fields={[{ ...fields[0], editor: { name: 'custom' } }]}
-        value={filter.eq('amount', 1)}
+        defaultValue={configuration(
+          node('EQ', 'amount', { value: 1 }, { name: 'custom' }),
+        )}
         onApply={apply}
         extensions={{
           filters: {
@@ -135,7 +144,9 @@ it('never revives callbacks when a replaced custom component returns', () => {
   view.rerender(panel(A));
   act(() => oldChange!({ value: 7 }));
   fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
-  expect(apply).toHaveBeenLastCalledWith(filter.eq('amount', 1));
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.eq('amount', 1) }),
+  );
 });
 
 it('merges a custom layout-effect change into the current controlled draft', () => {
@@ -150,11 +161,13 @@ it('merges a custom layout-effect change into the current controlled draft', () 
     }, [props, onChange]);
     return <span>自定义状态</span>;
   }
-  const value = filter.and([
-    filter.eq('amount', 1),
-    filter.eq('status', 'pending'),
-  ]);
-  const initial = createFilterDraft(value);
+  const initial = {
+    ...node('AND'),
+    operands: [
+      node('EQ', 'amount', { value: 1 }),
+      node('EQ', 'status', { value: 'pending' }, { name: 'custom' }),
+    ],
+  };
   const definitions = [fields[0], { ...fields[1], editor: { name: 'custom' } }];
   const extensions = {
     filters: {
@@ -168,37 +181,39 @@ it('merges a custom layout-effect change into the current controlled draft', () 
   const view = render(
     <FilterPanel
       fields={definitions}
-      value={value}
-      draft={initial}
+
+      value={configuration(initial)}
       extensions={extensions}
       onApply={() => {}}
-      onDraftChange={changes}
+      onChange={changes}
     />,
   );
   const restored = structuredClone(initial);
-  restored.operands![0].value = 2;
-  restored.operands![1].value = 'loaded';
+  restored.operands![0].props.value = 2;
+  restored.operands![1].props.value = 'loaded';
   view.rerender(
     <FilterPanel
       fields={definitions}
-      value={value}
-      draft={restored}
+
+      value={configuration(restored)}
       extensions={extensions}
       onApply={() => {}}
-      onDraftChange={changes}
+      onChange={changes}
     />,
   );
-  expect(changes).toHaveBeenLastCalledWith({
-    ...restored,
-    operands: [
-      restored.operands![0],
-      {
-        id: restored.operands![1].id,
-        op: restored.operands![1].op,
-        field: 'status',
-        editor: { name: 'custom' },
-        props: { value: 'paid' },
-      },
-    ],
-  });
+  expect(changes).toHaveBeenLastCalledWith(
+    configuration({
+      ...restored,
+      operands: [
+        restored.operands![0],
+        {
+          id: restored.operands![1].id,
+          operator: restored.operands![1].operator,
+          field: 'status',
+          component: { name: 'custom' },
+          props: { value: 'paid' },
+        },
+      ],
+    }),
+  );
 });

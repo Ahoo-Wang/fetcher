@@ -12,10 +12,10 @@
  */
 
 import {
-  createFilterDraft,
   createFilterConfiguration,
+  newFilterNode,
 } from '../../src/filter/filterCore.js';
-import { filter } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { vi } from 'vitest';
 import { ViewEngine } from '../../src/record/ViewEngine.js';
 import type {
@@ -49,7 +49,7 @@ export function instance(
     revision: 'r1',
     config: {
       filters: createFilterConfiguration({
-        ...createFilterDraft(filter.matchAll()),
+        ...newFilterNode(FilterOperator.MATCH_ALL),
         id: 'filter-root',
       }),
       sort: [],

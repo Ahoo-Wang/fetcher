@@ -400,7 +400,13 @@ it.each(['date', 'datetime'] as const)(
   'uses the same picker for a generic %s BETWEEN editor',
   type => {
     const state = mount(
-      { id: 'range', op: Op.BETWEEN, field: 'created' },
+      {
+        id: 'range',
+        operator: Op.BETWEEN,
+        field: 'created',
+        component: { name: 'builtin' },
+        props: {},
+      },
       { field: 'created', label: '创建', type },
     );
     expect(

@@ -37,3 +37,23 @@ export function getRecordSummaryMetrics(
         left.function.localeCompare(right.function),
     );
 }
+
+import type {
+  ViewFieldDefinition,
+  RecordSummaryFunction,
+} from './recordModel.js';
+
+export const RECORD_SUMMARY_LABELS = {
+  SUM: '合计',
+  AVG: '平均值',
+  MIN: '最小值',
+  MAX: '最大值',
+} as const satisfies Record<RecordSummaryFunction, string>;
+
+export function getRecordSummaryFunctions(
+  field: ViewFieldDefinition,
+): readonly RecordSummaryFunction[] {
+  return field.type === 'number'
+    ? (field.summaryFunctions ?? ['SUM', 'AVG', 'MIN', 'MAX'])
+    : [];
+}

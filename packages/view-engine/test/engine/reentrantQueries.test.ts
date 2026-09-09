@@ -10,22 +10,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { newFilterNode } from '../../src/filter/filterCore.js';
 
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import {
-  createFilterConfiguration,
-  createFilterDraft,
-} from '../../src/filter/filterCore.js';
+import { createFilterConfiguration } from '../../src/filter/filterCore.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 
 it.each(['state', 'abort'] as const)(
   'does not let an older refresh replace a Query started by its %s notification',
   async notification => {
     const saved = instance();
-    saved.config.filters = createFilterConfiguration(
-      createFilterDraft(filter.gte('state.amount', 10)),
-    );
+    saved.config.filters = createFilterConfiguration({
+      ...newFilterNode(FilterOperator.GTE, 'state.amount'),
+      props: { value: 10 },
+    });
     const { engine, paged } = setup({
       instances: { instances: [saved], defaultInstanceId: saved.id },
     });
@@ -44,7 +44,10 @@ it.each(['state', 'abort'] as const)(
       if (!submitted) {
         submitted = true;
         engine.setFilterDraft(
-          createFilterDraft(filter.gte('state.amount', 20)),
+          createFilterConfiguration({
+            ...newFilterNode(FilterOperator.GTE, 'state.amount'),
+            props: { value: 20 },
+          }),
         );
         next = engine.applyFilter();
       }

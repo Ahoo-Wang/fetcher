@@ -15,11 +15,11 @@ import { encodeViewResourceId } from '../viewServiceContract.js';
 import { validateTimeZone } from '../../lib/timeZone.js';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
-  RECORD_SUMMARY_LABELS,
-  formatRecordNumber,
   type ViewDefinition,
   type ViewFieldDefinition,
 } from '../recordModel.js';
+import { RECORD_SUMMARY_LABELS } from '../recordPresentation.js';
+import { formatRecordNumber } from '../recordValueFormat.js';
 import {
   assertObject,
   assertText,

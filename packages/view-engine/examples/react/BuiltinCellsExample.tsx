@@ -92,7 +92,9 @@ const instances: ViewInstanceList = {
       config: {
         filters: createFilterConfiguration({
           id: 'all',
-          op: FilterOperator.MATCH_ALL,
+          operator: FilterOperator.MATCH_ALL,
+          component: { name: 'builtin' },
+          props: {},
         }),
         sort: [],
         pagination: { mode: 'paged', size: 5 },

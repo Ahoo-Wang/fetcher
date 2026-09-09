@@ -10,10 +10,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createFilterConfiguration } from '../../src/filter/filterCore.js';
 
-import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import { newFilterDraft } from '../../src/filter/filterCore.js';
+import { newFilterNode } from '../../src/filter/filterCore.js';
 import type { ViewInstance } from '../../src/record/recordModel.js';
 import type { ViewHost } from '../../src/record/ViewHost.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
@@ -64,8 +65,8 @@ it('keeps a subscriber navigation newer than the selection canceling a query', a
 it('retains each instance draft and mode, clearing selection for the new query when navigating', async () => {
   const { engine, paged } = setup();
   await engine.load();
-  const draft = newFilterDraft(FilterOperator.EQ, 'state.amount');
-  engine.setFilterDraft(draft);
+  const draft = newFilterNode(FilterOperator.EQ, 'state.amount');
+  engine.setFilterDraft(createFilterConfiguration(draft));
   engine.setFilterValidity(false);
   engine.setFilterMode('advanced');
   engine.setTitle('Local draft');
@@ -75,17 +76,17 @@ it('retains each instance draft and mode, clearing selection for the new query w
   expect(selected(engine).filterPending).toBe(false);
   await engine.selectInstance('mine');
   expect(selected(engine)).toMatchObject({
-    filterDraft: draft,
+    filterDraft: { root: draft, mode: 'advanced' },
     filterPending: true,
-    filterMode: 'advanced',
+
     selectedRowKeys: [],
     instance: { title: 'Local draft' },
   });
   expect(paged).toHaveBeenCalledTimes(3);
-  await expect(engine.applyFilter(filter.matchAll())).rejects.toThrow(/筛选/);
+  await expect(engine.applyFilter()).rejects.toThrow(/筛选/);
   engine.setFilterValidity(true);
-  await engine.applyFilter(filter.matchAll());
-  expect(selected(engine).filterDraft).toEqual(draft);
+  await engine.applyFilter();
+  expect(selected(engine).filterDraft.root).toEqual(draft);
   expect(selected(engine).filterPending).toBe(false);
   expect(selected(engine).selectedRowKeys).toEqual([]);
   await engine.restore();

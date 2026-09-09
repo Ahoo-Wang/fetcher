@@ -14,8 +14,7 @@ import { expect, it } from 'vitest';
 import { FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import {
   compileBuiltinFilter,
-  compileFilterDraft,
-  createFilterDraft,
+  compileFilterConfiguration,
 } from '../src/filter/filterCore.js';
 import { dateTimeValue } from '../src/filter/filterDateTimeValue.js';
 import { formatRecordDateTime } from '../src/record/recordValueFormat.js';
@@ -70,10 +69,12 @@ it.each([
       upperBound: timestamp + 16 * 3600000 - 1,
     });
     expect(
-      compileFilterDraft(
-        createFilterDraft({ op: Op.EQ, field: 'created', value: timestamp }),
+      compileFilterConfiguration(
+        {
+          mode: 'advanced',
+          root: node(Op.EQ, 'created', { value: timestamp }, {}),
+        },
         [field],
-        undefined,
         undefined,
         undefined,
         timeZone,
@@ -100,10 +101,9 @@ it.each([
   'rejects invalid timezone %j even for unset conditions and empty cells',
   timeZone => {
     expect(
-      compileFilterDraft(
-        createFilterDraft({ op: Op.MATCH_ALL }),
+      compileFilterConfiguration(
+        { mode: 'advanced', root: node(Op.MATCH_ALL, undefined, {}, {}) },
         [field],
-        undefined,
         undefined,
         undefined,
         timeZone,
@@ -127,3 +127,5 @@ it('keeps the configured offset label in long time formats', () => {
     }),
   ).toBe('09/09/2026, 09:30:00 GMT+05:30');
 });
+
+import { node } from './fixtures/filterCore.js';

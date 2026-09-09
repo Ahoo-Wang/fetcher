@@ -10,6 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createFilterConfiguration } from '../../src/filter/filterCore.js';
 
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
@@ -103,9 +104,9 @@ it('carries edits published while canceling the source read into the selected co
   const saving = engine.saveAs({ title: 'Copy', scope: { type: 'personal' } });
   const draft = {
     id: 'threshold',
-    op: FilterOperator.GTE,
+    operator: FilterOperator.GTE,
     field: 'state.amount',
-    editor: { name: 'threshold' },
+    component: { name: 'threshold' },
     props: { threshold: 20, caption: 'Twenty' },
   };
   let edited = false;
@@ -117,7 +118,7 @@ it('carries edits published while canceling the source read into the selected co
       source.writeStatus === 'creating'
     ) {
       edited = true;
-      engine.setFilterDraft(draft, 'mine');
+      engine.setFilterDraft(createFilterConfiguration(draft), 'mine');
     }
   });
   try {
@@ -127,7 +128,7 @@ it('carries edits published while canceling the source read into the selected co
     expect(engine.getSnapshot().selectedInstanceId).toBe('created');
     for (const id of ['mine', 'created']) {
       expect(engine.getSnapshot().sessions[id]).toMatchObject({
-        filterDraft: draft,
+        filterDraft: { root: draft },
         filterPending: true,
         appliedFilter: filter.matchAll(),
       });

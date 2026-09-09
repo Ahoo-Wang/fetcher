@@ -20,11 +20,15 @@ import { Button } from '../components/ui/button.js';
 import { message } from './filterPanelUtils.js';
 
 export class EditorSession extends Component<
-  FilterComponentProps & { editor: FilterRegistration['component'] }
+  FilterComponentProps & {
+    editor: FilterRegistration['component'];
+    session: object;
+  }
 > {
   private active = true;
   state = {
     editor: this.props.editor,
+    session: this.props.session,
     operator: this.props.operator,
     mode: this.props.mode,
     field: this.props.field?.field,
@@ -35,6 +39,7 @@ export class EditorSession extends Component<
     state: EditorSession['state'],
   ) {
     if (
+      props.session === state.session &&
       props.editor === state.editor &&
       props.operator === state.operator &&
       props.mode === state.mode &&
@@ -43,6 +48,7 @@ export class EditorSession extends Component<
       return null;
     return {
       editor: props.editor,
+      session: props.session,
       operator: props.operator,
       mode: props.mode,
       field: props.field?.field,
@@ -56,9 +62,12 @@ export class EditorSession extends Component<
     this.active = false;
   }
   render() {
-    const { editor: Editor, ...props } = this.props;
+    const { editor: Editor, session, ...props } = this.props;
     const generation = this.state.generation;
-    const isActive = () => this.active && this.state.generation === generation;
+    const isActive = () =>
+      this.active &&
+      this.props.session === session &&
+      this.state.generation === generation;
     return (
       <Editor
         {...props}
@@ -89,6 +98,7 @@ export class EditorSession extends Component<
 export class EditorBoundary extends Component<
   Pick<FilterComponentProps, 'operator' | 'mode'> & {
     disabled?: boolean;
+    session: object;
     children: ReactNode;
     editor: FilterRegistration['component'];
     onError(message: string): void;
@@ -98,6 +108,7 @@ export class EditorBoundary extends Component<
 > {
   state = {
     editor: this.props.editor,
+    session: this.props.session,
     operator: this.props.operator,
     mode: this.props.mode,
     error: undefined as string | undefined,
@@ -107,6 +118,7 @@ export class EditorBoundary extends Component<
     state: EditorBoundary['state'],
   ) {
     if (
+      props.session === state.session &&
       props.editor === state.editor &&
       props.operator === state.operator &&
       props.mode === state.mode
@@ -114,6 +126,7 @@ export class EditorBoundary extends Component<
       return null;
     return {
       editor: props.editor,
+      session: props.session,
       operator: props.operator,
       mode: props.mode,
       error: undefined,

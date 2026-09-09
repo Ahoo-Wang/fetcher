@@ -11,12 +11,13 @@
  * limitations under the License.
  */
 
+import { configuration } from './fixtures/filterPanel.js';
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { FilterTimeInput } from '../src/filter/FilterTimeInput.js';
 import { FilterDateTimeRange } from '../src/filter/FilterDateTimeRange.js';
-import { compileFilterDraft } from '../src/filter/filterCore.js';
+import { compileFilterConfiguration } from '../src/filter/filterCore.js';
 import type { FilterFieldDefinition } from '../src/filter/filterModel.js';
 afterEach(cleanup);
 const fields: FilterFieldDefinition[] = [
@@ -56,10 +57,15 @@ it('compiles whole seconds in epoch-millisecond units and floors instants before
     [{ date: '1970-01-01', time: '08:00:01.987654321' }, 1000],
   ] as const) {
     expect(
-      compileFilterDraft(
-        { id: 'time', op: Op.EQ, field: 'created', value },
+      compileFilterConfiguration(
+        configuration({
+          id: 'time',
+          operator: Op.EQ,
+          field: 'created',
+          component: fields[0].editor!,
+          props: { value },
+        }),
         fields,
-        undefined,
         undefined,
         undefined,
         'Asia/Shanghai',
@@ -106,17 +112,18 @@ it('confirms restored fractional endpoints as whole seconds without mutating can
 });
 it('keeps the complete final natural day and rejects malformed clock text', () => {
   expect(
-    compileFilterDraft(
-      {
+    compileFilterConfiguration(
+      configuration({
         id: 'days',
-        op: Op.BETWEEN,
+        operator: Op.BETWEEN,
         field: 'created',
-        lowerBound: { date: '2026-09-01' },
-        upperBound: { date: '2026-09-01' },
-        editor: { name: 'datetime-range' },
-      },
+        component: { name: 'datetime-range' },
+        props: {
+          lowerBound: { date: '2026-09-01' },
+          upperBound: { date: '2026-09-01' },
+        },
+      }),
       fields,
-      undefined,
       undefined,
       undefined,
       'UTC',
@@ -131,13 +138,14 @@ it('keeps the complete final natural day and rejects malformed clock text', () =
   });
   for (const time of ['10:30:60.123', '10:30:50.bad', '10:30:50.', '10:'])
     expect(
-      compileFilterDraft(
-        {
+      compileFilterConfiguration(
+        configuration({
           id: 'bad',
-          op: Op.EQ,
+          operator: Op.EQ,
           field: 'created',
-          value: { date: '2026-09-01', time },
-        },
+          component: fields[0].editor!,
+          props: { value: { date: '2026-09-01', time } },
+        }),
         fields,
       ).errors.length,
     ).toBeGreaterThan(0);

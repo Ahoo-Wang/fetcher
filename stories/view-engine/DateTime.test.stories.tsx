@@ -20,6 +20,7 @@ import displayMeta, {
   DarkDateTimeRange as DisplayDarkDateTimeRange,
   UnsetValue as DisplayUnsetValue,
 } from './DateTime.stories.js';
+import type { DemoArgs } from './DateTimeExamples.js';
 import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
 
 const meta = {
@@ -30,7 +31,7 @@ const meta = {
 
 export default meta;
 
-type Story = RegressionStoryObj<typeof displayMeta>;
+type Story = RegressionStoryObj<DemoArgs>;
 
 export const DateRange: Story = {
   ...DisplayDateRange,
@@ -110,9 +111,7 @@ export const DateTimeRange: Story = {
       '12:40:50',
     );
     await expect(output).toHaveTextContent(initial);
-    await userEvent.click(
-      popup.getByRole('button', { name: '确定', exact: true }),
-    );
+    await userEvent.click(popup.getByRole('button', { name: '确定' }));
     await waitFor(() =>
       expect(page.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -132,9 +131,7 @@ export const DateTimeRange: Story = {
       page.getByRole('textbox', { name: '创建时间结束时间' }),
       '12:',
     );
-    await userEvent.click(
-      page.getByRole('button', { name: '确定', exact: true }),
-    );
+    await userEvent.click(page.getByRole('button', { name: '确定' }));
     const error = page.getByRole('alert');
     await expect(error).toBeVisible();
     await expect(
@@ -147,9 +144,7 @@ export const DateTimeRange: Story = {
       page.getByRole('textbox', { name: '创建时间结束日期' }),
     ).toHaveAttribute('aria-describedby', error.id);
     await expect(output).toHaveTextContent(confirmed);
-    await userEvent.click(
-      page.getByRole('button', { name: '取消', exact: true }),
-    );
+    await userEvent.click(page.getByRole('button', { name: '取消' }));
     await waitFor(() =>
       expect(page.queryByRole('dialog')).not.toBeInTheDocument(),
     );

@@ -15,13 +15,16 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { cloneSnapshot } from '../lib/types.js';
 import {
-  compileFilterDraft,
   FILTER_OPERATORS,
-  clearFilterDraftValues,
+  clearFilterValues,
   isSimpleFilter,
-  newFilterDraft,
+  newFilterNode,
+  createFilterConfiguration,
 } from './filterCore.js';
-import type { FilterDraftNode, FilterMode } from './filterModel.js';
+import type {
+  FilterComponentConfig,
+  FilterConfiguration,
+} from './filterModel.js';
 import type {
   FilterPanelProps,
   FilterPanelToolbarProps,
@@ -30,36 +33,32 @@ import {
   locateFilterNodes,
   replaceFilterNode,
   sameFilterState,
-  sameFilterQuery,
 } from './filterTree.js';
 import {
   appendNode,
   transitionFilterOperator,
 } from './filterDraftTransitions.js';
-import {
-  message,
-  ownValue,
-  without,
-  readValue,
-  readInitialFilterPanelState,
-} from './filterPanelUtils.js';
+import { message, ownValue, without } from './filterPanelUtils.js';
 import { useFilterPanelEditors } from './useFilterPanelEditors.js';
 import { useFilterPanelQuery } from './useFilterPanelQuery.js';
 
 export function useFilterPanelState(props: FilterPanelProps) {
-  const { fields, value, onDraftChange, disabled = false } = props;
-  const [initial] = useState(() => readInitialFilterPanelState(props));
-  const [localDraft, setLocalDraft] = useState(initial.draft);
-  // Keep the cloned draft stable for the synchronization effects below.
-  const controlledDraft = useMemo(
-    () =>
-      props.draft ? cloneSnapshot<FilterDraftNode>(props.draft) : undefined,
-    [props.draft],
+  const { fields, disabled = false } = props;
+  const [localConfiguration, setLocalConfiguration] = useState(() =>
+    cloneSnapshot<FilterConfiguration>(
+      props.defaultValue ??
+        createFilterConfiguration(newFilterNode(FilterOperator.MATCH_ALL)),
+    ),
   );
-  const draft = controlledDraft ?? localDraft;
-  const draftRef = useRef(draft);
-  // Child layout effects may publish before this hook commits; callbacks must see this render's draft.
-  draftRef.current = draft;
+  const controlled = useMemo(
+    () =>
+      props.value ? cloneSnapshot<FilterConfiguration>(props.value) : undefined,
+    [props.value],
+  );
+  const configuration = controlled ?? localConfiguration;
+  const draft = configuration.root;
+  const configurationRef = useRef(configuration);
+  configurationRef.current = configuration;
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -67,123 +66,77 @@ export function useFilterPanelState(props: FilterPanelProps) {
       mounted.current = false;
     };
   }, []);
-  const [localBaseline, setBaseline] = useState(initial.baseline);
-  const baseline = props.appliedDraft ?? localBaseline;
-  const [loadError, setLoadError] = useState(initial.error);
-  const [localMode, setLocalMode] = useState<FilterMode>(() =>
-    isSimpleFilter(draft) ? 'simple' : 'advanced',
-  );
-  const observedValue = useRef(value);
+  const [localBaseline, setBaseline] = useState(configuration);
+  const baseline = props.appliedValue ?? localBaseline;
   const panelId = useId();
   const simple = isSimpleFilter(draft);
-  const requestedMode = props.mode ?? localMode;
-  const mode =
-    requestedMode === 'simple' && !simple ? 'advanced' : requestedMode;
+  const mode = configuration.mode;
   const {
     locations,
     compiled,
+    applied,
     resolutions,
     clearable,
     issues,
     valid,
     pending,
-    builtIn,
     epoch,
     editorEpochs,
     setEditorValidity,
     setEditorOutputErrors,
-    setBuiltIn,
     setEpoch,
     setEditorEpochs,
-  } = useFilterPanelEditors(props, draft, baseline, mode, loadError);
+  } = useFilterPanelEditors(props, configuration, baseline, mode);
   const latest = useRef({ props, simple, issues });
   latest.current = { props, simple, issues };
-  useEffect(() => {
-    if (
-      !props.appliedDraft &&
-      !pending &&
-      !sameFilterState(localBaseline, draft)
-    ) {
-      setBaseline(cloneSnapshot<FilterDraftNode>(draft));
-    }
-  }, [props.appliedDraft, pending, localBaseline, draft]);
-  const {
-    apply,
-    applyError,
-    setApplyError,
-    submittedRef,
-    setSubmission,
-    submitting,
-  } = useFilterPanelQuery(props, draft, compiled, valid, setBaseline);
-  useEffect(() => {
-    if (sameFilterState(value, observedValue.current)) return;
-    observedValue.current = value;
-    if (submittedRef.current && sameFilterState(value, submittedRef.current)) {
-      submittedRef.current = undefined;
-      setSubmission(undefined);
-      return;
-    }
-    submittedRef.current = undefined;
-    setSubmission(undefined);
-    if (!loadError && props.draft && props.appliedDraft) {
-      const applied = compileFilterDraft(
-        props.appliedDraft,
-        fields,
-        props.allowedOperators,
-        props.extensions?.filters,
-        props.editors,
-        props.timeZone,
-      );
-      if (applied.expression && sameFilterQuery(applied.expression, value)) {
-        // The owner supplied the editing baseline for this value; keep its draft and editor IDs.
-        return;
-      }
-    }
-    const next = readValue(value);
-    draftRef.current = next.draft;
-    // External applied values replace the editing session; acknowledgements above preserve in-progress edits.
-    setLocalDraft(next.draft);
-    onDraftChange?.(next.draft);
-    setBaseline(next.draft);
-    setLoadError(next.error);
+  const emitted = useRef<FilterConfiguration | undefined>(undefined);
+  const observed = useRef(props.value);
+  const session = useRef({ id: 0 });
+  // Controlled owners acknowledge our edits unchanged. A different replacement starts a new editor session.
+  if (!sameFilterState(observed.current, props.value)) {
+    observed.current = props.value;
+    if (!sameFilterState(emitted.current, props.value))
+      session.current = { id: session.current.id + 1 };
+  }
+  const generation = session.current;
+  const [editorSession, setEditorSession] = useState(generation);
+  if (editorSession !== generation) {
+    setEditorSession(generation);
     setEditorValidity({});
     setEditorOutputErrors({});
-    setBuiltIn(new Set());
-    setApplyError(undefined);
-    setEpoch(count => count + 1);
-  }, [
-    value,
-    props.draft,
-    props.appliedDraft,
-    props.allowedOperators,
-    props.extensions?.filters,
-    props.editors,
-    props.timeZone,
-    fields,
-    loadError,
-    onDraftChange,
-    submittedRef,
-    setSubmission,
-    setApplyError,
-    setEditorValidity,
-    setEditorOutputErrors,
-    setBuiltIn,
-    setEpoch,
-  ]);
-
-  function change(next: FilterDraftNode) {
+  }
+  // Query-equivalent edits (unset controls and display props) belong to the same applied snapshot.
+  useEffect(() => {
+    if (
+      !props.appliedValue &&
+      !pending &&
+      !sameFilterState(localBaseline, configuration)
+    )
+      setBaseline(cloneSnapshot<FilterConfiguration>(configuration));
+  }, [props.appliedValue, pending, localBaseline, configuration]);
+  const { apply, applyError, setApplyError, submitting } = useFilterPanelQuery(
+    props,
+    configuration,
+    applied,
+    compiled,
+    valid,
+    generation,
+    setBaseline,
+  );
+  function changeConfiguration(next: FilterConfiguration) {
     if (
       latest.current.props.disabled ||
       !mounted.current ||
-      sameFilterState(draftRef.current, next)
+      sameFilterState(configurationRef.current, next)
     )
       return;
-    draftRef.current = next;
-    setLocalDraft(next);
-    latest.current.props.onDraftChange?.(next);
+    configurationRef.current = next;
+    emitted.current = next;
+    if (!latest.current.props.value) setLocalConfiguration(next);
+    latest.current.props.onChange?.(next);
     setApplyError(undefined);
     const ids = new Set(
-      locateFilterNodes(next, fields).map(({ node }) => node.id),
+      locateFilterNodes(next.root, fields).map(({ node }) => node.id),
     );
     setEditorValidity(previous =>
       Object.fromEntries(
@@ -196,30 +149,32 @@ export function useFilterPanelState(props: FilterPanelProps) {
       ),
     );
   }
+  function change(root: FilterComponentConfig) {
+    changeConfiguration({ ...configurationRef.current, root });
+  }
   function update(
     id: string,
-    next?: FilterDraftNode,
+    next?: FilterComponentConfig,
     preserveValidity = false,
   ) {
     change(
-      replaceFilterNode(draftRef.current, id, next) ??
-        newFilterDraft(FilterOperator.MATCH_ALL),
+      replaceFilterNode(configurationRef.current.root, id, next) ??
+        newFilterNode(FilterOperator.MATCH_ALL),
     );
     if (!preserveValidity) setEditorValidity(previous => without(previous, id));
     setEditorOutputErrors(previous => without(previous, id));
   }
-  function clearNode(node: FilterDraftNode) {
+  function clearNode(node: FilterComponentConfig) {
     try {
       const scope =
         locations.find(location => location.node.id === node.id)?.fields ??
         fields;
       update(
         node.id,
-        clearFilterDraftValues(
+        clearFilterValues(
           node,
           scope,
           props.extensions?.filters,
-          props.editors,
           props.timeZone,
         ),
       );
@@ -234,11 +189,11 @@ export function useFilterPanelState(props: FilterPanelProps) {
       }));
     }
   }
-  function changeOperator(node: FilterDraftNode, op: FilterOperator) {
+  function changeOperator(node: FilterComponentConfig, op: FilterOperator) {
     const next = transitionFilterOperator(node, op);
-    const before = FILTER_OPERATORS[node.op]?.input,
+    const before = FILTER_OPERATORS[node.operator]?.input,
       after = FILTER_OPERATORS[op]?.input;
-    change(replaceFilterNode(draftRef.current, node.id, next)!);
+    change(replaceFilterNode(configurationRef.current.root, node.id, next)!);
     if (
       before !== after &&
       after !== 'none' &&
@@ -250,7 +205,7 @@ export function useFilterPanelState(props: FilterPanelProps) {
         'time',
         'days',
         'query',
-      ].some(key => node[key as keyof FilterDraftNode] !== undefined)
+      ].some(key => node.props[key] !== undefined)
     ) {
       setEditorOutputErrors(previous =>
         ownValue(previous, node.id) !== undefined
@@ -262,29 +217,33 @@ export function useFilterPanelState(props: FilterPanelProps) {
       );
     }
   }
-  function canAppend(target: FilterDraftNode) {
+  function canAppend(target: FilterComponentConfig) {
     const allowedOperators = latest.current.props.allowedOperators;
     return (
-      target.op === FilterOperator.MATCH_ALL ||
+      target.operator === FilterOperator.MATCH_ALL ||
       !!target.operands ||
       !allowedOperators ||
       allowedOperators.includes(FilterOperator.AND)
     );
   }
-  function append(target: FilterDraftNode, child: FilterDraftNode) {
-    const current = locateFilterNodes(draftRef.current, fields).find(
-      item => item.node.id === target.id,
-    )?.node;
+  function append(target: FilterComponentConfig, child: FilterComponentConfig) {
+    const current = locateFilterNodes(
+      configurationRef.current.root,
+      fields,
+    ).find(item => item.node.id === target.id)?.node;
     if (!current || !canAppend(current)) return;
     const next = appendNode(current, child);
     if (mode === 'advanced' || isSimpleFilter(next)) update(current.id, next);
   }
-  function currentEditorNode(node: FilterDraftNode) {
+  function currentEditorNode(node: FilterComponentConfig) {
     if (!mounted.current) return undefined;
-    const current = locateFilterNodes(draftRef.current, fields).find(
-      location => location.node.id === node.id,
-    )?.node;
-    return current?.op === node.op && current.field === node.field
+    const current = locateFilterNodes(
+      configurationRef.current.root,
+      fields,
+    ).find(location => location.node.id === node.id)?.node;
+    return session.current === generation &&
+      current?.operator === node.operator &&
+      current.field === node.field
       ? current
       : undefined;
   }
@@ -308,14 +267,14 @@ export function useFilterPanelState(props: FilterPanelProps) {
         (next === 'simple' && (!current.simple || current.issues.length > 0))
       )
         return;
-      setLocalMode(next);
-      current.props.onModeChange?.(next);
+      changeConfiguration({ ...configurationRef.current, mode: next });
     },
   };
   function removeField(targetId: string, field: string) {
-    const current = locateFilterNodes(draftRef.current, fields).find(
-      item => item.node.id === targetId,
-    )?.node;
+    const current = locateFilterNodes(
+      configurationRef.current.root,
+      fields,
+    ).find(item => item.node.id === targetId)?.node;
     if (!current) return;
     if (current.operands) {
       const operands = current.operands.filter(node => node.field !== field);
@@ -323,29 +282,27 @@ export function useFilterPanelState(props: FilterPanelProps) {
       update(
         current.id,
         !operands.length &&
-          current.id === draftRef.current.id &&
-          current.op === FilterOperator.AND
-          ? newFilterDraft(FilterOperator.MATCH_ALL)
+          current.id === configurationRef.current.root.id &&
+          current.operator === FilterOperator.AND
+          ? newFilterNode(FilterOperator.MATCH_ALL)
           : { ...current, operands },
       );
     } else if (current.field === field) update(current.id);
   }
   function undo() {
-    change(cloneSnapshot<FilterDraftNode>(baseline));
+    changeConfiguration(cloneSnapshot<FilterConfiguration>(baseline));
     setEditorValidity({});
     setEditorOutputErrors({});
-    setBuiltIn(new Set());
     setEpoch(count => count + 1);
   }
   function clear() {
     if (disabled || !clearable) return;
     try {
       change(
-        clearFilterDraftValues(
-          draftRef.current,
+        clearFilterValues(
+          configurationRef.current.root,
           fields,
           props.extensions?.filters,
-          props.editors,
           props.timeZone,
         ),
       );
@@ -353,7 +310,6 @@ export function useFilterPanelState(props: FilterPanelProps) {
       setApplyError(message(error));
       return;
     }
-    setLoadError(undefined);
     setEditorValidity({});
     setEditorOutputErrors({});
     setEpoch(count => count + 1);
@@ -369,22 +325,17 @@ export function useFilterPanelState(props: FilterPanelProps) {
     resolutions,
     issues,
     pending,
-    loadError,
     applyError,
     clearReason: clearable
       ? undefined
       : '当前包含不支持清空值的筛选器，请修改或删除对应条件。',
     epoch,
     editorEpochs,
-    builtIn,
+    session: generation,
     toolbar,
     submitting,
     applyDisabled:
-      disabled ||
-      !!loadError ||
-      issues.length > 0 ||
-      !compiled.expression ||
-      submitting,
+      disabled || issues.length > 0 || !compiled.expression || submitting,
     update,
     clearNode,
     changeOperator,
@@ -394,7 +345,6 @@ export function useFilterPanelState(props: FilterPanelProps) {
     currentEditorNode,
     setEditorValidity,
     setEditorOutputErrors,
-    setBuiltIn,
     apply,
     undo,
     clear,

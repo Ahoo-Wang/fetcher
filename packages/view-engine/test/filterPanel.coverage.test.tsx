@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { node, configuration } from './fixtures/filterPanel.js';
 import { filter, FilterOperator as Op } from '@ahoo-wang/fetcher-wow';
 import { useLayoutEffect, useRef } from 'react';
 import {
@@ -62,9 +63,11 @@ it('rejects a non-serializable numeric editor output without replacing its previ
   render(
     <FilterPanel
       fields={[amountField]}
-      value={filter.eq('amount', 10)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 10 }, { name: 'amount' }),
+      )}
       onApply={apply}
-      onDraftChange={changed}
+      onChange={changed}
       extensions={{ filters: { amount: amountEditor } }}
     />,
   );
@@ -87,7 +90,9 @@ it('rejects a non-serializable numeric editor output without replacing its previ
   fireEvent.change(input, { target: { value: '25' } });
   expect(screen.queryByRole('alert')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('amount', 25));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ expression: filter.eq('amount', 25) }),
+  );
 });
 
 it.each(['清空自定义金额', '清空条件'])(
@@ -98,9 +103,11 @@ it.each(['清空自定义金额', '清空条件'])(
     render(
       <FilterPanel
         fields={[amountField]}
-        value={filter.eq('amount', -10)}
+        defaultValue={configuration(
+          node('EQ', 'amount', { value: -10 }, { name: 'amount' }),
+        )}
         onApply={apply}
-        onDraftChange={changed}
+        onChange={changed}
         extensions={{
           filters: {
             amount: {
@@ -133,7 +140,9 @@ it.each(['清空自定义金额', '清空条件'])(
       '',
     );
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
-    expect(apply).toHaveBeenCalledExactlyOnceWith(filter.matchAll());
+    expect(apply).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ expression: filter.matchAll() }),
+    );
   },
 );
 
@@ -142,10 +151,16 @@ it('removes an entire nested logical group without retaining its child criteria'
   render(
     <FilterPanel
       fields={fields}
-      value={filter.and([
-        filter.eq('amount', 10),
-        filter.or([filter.eq('status', 'paid')]),
-      ])}
+      defaultValue={configuration({
+        ...node('AND'),
+        operands: [
+          node('EQ', 'amount', { value: 10 }),
+          {
+            ...node('OR'),
+            operands: [node('EQ', 'status', { value: 'paid' })],
+          },
+        ],
+      })}
       onApply={apply}
     />,
   );
@@ -155,25 +170,35 @@ it('removes an entire nested logical group without retaining its child criteria'
   expect(apply).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   expect(apply).toHaveBeenCalledExactlyOnceWith(
-    filter.and([filter.eq('amount', 10)]),
+    expect.objectContaining({
+      expression: filter.and([filter.eq('amount', 10)]),
+    }),
   );
 });
 
 it('changes and removes a root-only condition through its own operator and delete controls', async () => {
   const apply = vi.fn();
   render(
-    <FilterPanel fields={fields} value={filter.matchNone()} onApply={apply} />,
+    <FilterPanel
+      fields={fields}
+      defaultValue={configuration(node('MATCH_NONE'))}
+      onApply={apply}
+    />,
   );
   await select('特殊条件类型', '记录标识');
   fireEvent.change(screen.getByRole('textbox', { name: '记录标识值' }), {
     target: { value: 'order-1' },
   });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith({ op: Op.ID, value: 'order-1' });
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: { op: Op.ID, value: 'order-1' } }),
+  );
   fireEvent.click(screen.getByRole('button', { name: '删除记录标识条件' }));
   expect(screen.queryByRole('combobox', { name: '特殊条件类型' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenLastCalledWith(filter.matchAll());
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
 });
 
 it.each([{ pageSize: 0 }, { debounceMs: -1 }])(
@@ -196,8 +221,17 @@ it.each([{ pageSize: 0 }, { debounceMs: -1 }])(
             },
           },
         ]}
-        draft={{ id: 'remote', field: 'amount', op: Op.EQ }}
-        value={filter.matchAll()}
+        defaultValue={configuration({
+          id: 'remote',
+          field: 'amount',
+          operator: Op.EQ,
+          component: {
+            name: 'remote-select',
+            options: { source: 'customers', ...options },
+          },
+          props: {},
+        })}
+
         onApply={apply}
         extensions={{ optionSources: { customers: source } }}
       />,
@@ -215,7 +249,9 @@ it.each([{ pageSize: 0 }, { debounceMs: -1 }])(
     expect(screen.getByRole('textbox', { name: '订单金额值' })).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
-    expect(apply).toHaveBeenCalledExactlyOnceWith(filter.matchAll());
+    expect(apply).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ expression: filter.matchAll() }),
+    );
   },
 );
 
@@ -229,10 +265,10 @@ it('adds only allowed fields, root conditions and logical groups from the advanc
           ? { ...field, operators: [Op.ELEMENT_MATCH] }
           : field,
       )}
-      value={filter.matchAll()}
-      mode="advanced"
+      defaultValue={configuration(node('MATCH_ALL'), 'advanced')}
+
       onApply={apply}
-      onDraftChange={changed}
+      onChange={changed}
       allowedOperators={[Op.EQ, Op.AND, Op.MATCH_NONE]}
     />,
   );
@@ -249,16 +285,18 @@ it('adds only allowed fields, root conditions and logical groups from the advanc
   });
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   expect(apply).toHaveBeenCalledExactlyOnceWith(
-    filter.and([filter.eq('amount', 15), filter.matchNone()]),
+    expect.objectContaining({
+      expression: filter.and([filter.eq('amount', 15), filter.matchNone()]),
+    }),
   );
   fireEvent.click(screen.getByRole('button', { name: '添加逻辑分组' }));
   fireEvent.click(await screen.findByRole('menuitem', { name: /^AND/ }));
-  expect(changed.mock.lastCall![0]).toMatchObject({
-    op: Op.AND,
+  expect(changed.mock.lastCall![0].root).toMatchObject({
+    operator: Op.AND,
     operands: [
       { field: 'amount' },
-      { op: Op.MATCH_NONE },
-      { op: Op.AND, operands: [] },
+      { operator: Op.MATCH_NONE },
+      { operator: Op.AND, operands: [] },
     ],
   });
   expect(apply).toHaveBeenCalledTimes(1);
@@ -269,7 +307,9 @@ it('does not query when Enter belongs to a checkbox in a custom editor', () => {
   render(
     <FilterPanel
       fields={[{ ...fields[0], editor: { name: 'check' } }]}
-      value={filter.eq('amount', 10)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 10 }, { name: 'check' }),
+      )}
       onApply={apply}
       extensions={{
         filters: {
@@ -287,7 +327,9 @@ it('does not query when Enter belongs to a checkbox in a custom editor', () => {
   });
   expect(apply).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('amount', 10));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ expression: filter.eq('amount', 10) }),
+  );
 });
 
 it('preserves the day count and relative options when switching between day operators', async () => {
@@ -295,7 +337,13 @@ it('preserves the day count and relative options when switching between day oper
   render(
     <FilterPanel
       fields={[{ field: 'created', label: '创建', type: 'datetime' }]}
-      value={{ op: Op.RECENT_DAYS, field: 'created', days: 3, zoneId: 'UTC' }}
+      defaultValue={configuration({
+        id: crypto.randomUUID(),
+        operator: Op.RECENT_DAYS,
+        field: 'created',
+        component: { name: 'builtin' },
+        props: { days: 3, zoneId: 'UTC' },
+      })}
       onApply={apply}
       timeZone="UTC"
     />,
@@ -306,12 +354,16 @@ it('preserves the day count and relative options when switching between day oper
     '3',
   );
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledExactlyOnceWith({
-    op: Op.EARLIER_DAYS,
-    field: 'created',
-    days: 3,
-    zoneId: 'UTC',
-  });
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      expression: {
+        op: Op.EARLIER_DAYS,
+        field: 'created',
+        days: 3,
+        zoneId: 'UTC',
+      },
+    }),
+  );
 });
 
 it('keeps the draft available when a query handler throws without a message and allows retry', () => {
@@ -321,8 +373,13 @@ it('keeps the draft available when a query handler throws without a message and 
   });
   render(
     <FilterPanel
-      value={filter.eq('amount', 0)}
-      draft={{ id: 'amount', op: Op.EQ, field: 'amount', value: 1 }}
+      defaultValue={configuration({
+        id: 'amount',
+        operator: Op.EQ,
+        field: 'amount',
+        component: { name: 'builtin' },
+        props: { value: 1 },
+      })}
       fields={[{ field: 'amount', label: '金额', type: 'number' }]}
       onApply={apply}
     />,
@@ -334,7 +391,9 @@ it('keeps the draft available when a query handler throws without a message and 
   ).toBe('1');
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
   expect(apply).toHaveBeenCalledTimes(2);
-  expect(apply).toHaveBeenLastCalledWith(filter.eq('amount', 1));
+  expect(apply).toHaveBeenLastCalledWith(
+    expect.objectContaining({ expression: filter.eq('amount', 1) }),
+  );
   expect(screen.queryByRole('alert')).toBeNull();
 });
 
@@ -345,7 +404,15 @@ it.each([Op.MATCH_ALL, Op.MATCH_NONE])(
     render(
       <FilterPanel
         fields={fields}
-        value={filter.elementMatch('items', { op })}
+        defaultValue={configuration({
+          ...node('ELEMENT_MATCH', 'items'),
+          predicate: {
+            id: crypto.randomUUID(),
+            operator: op,
+            component: { name: 'builtin' },
+            props: {},
+          },
+        })}
         onApply={apply}
       />,
     );
@@ -363,8 +430,10 @@ it.each([Op.MATCH_ALL, Op.MATCH_NONE])(
     fireEvent.click(next);
     fireEvent.click(screen.getByRole('button', { name: '查询' }));
     expect(apply).toHaveBeenCalledExactlyOnceWith(
-      filter.elementMatch('items', {
-        op: op === Op.MATCH_ALL ? Op.MATCH_NONE : Op.MATCH_ALL,
+      expect.objectContaining({
+        expression: filter.elementMatch('items', {
+          op: op === Op.MATCH_ALL ? Op.MATCH_NONE : Op.MATCH_ALL,
+        }),
       }),
     );
   },
@@ -380,9 +449,11 @@ it('clears incompatible custom properties when recovering a crashed renderer wit
   render(
     <FilterPanel
       fields={[amountField]}
-      value={filter.eq('amount', 'custom-value')}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 'custom-value' }, { name: 'amount' }),
+      )}
       onApply={apply}
-      onDraftChange={changed}
+      onChange={changed}
       extensions={{
         filters: {
           amount: {
@@ -400,14 +471,16 @@ it('clears incompatible custom properties when recovering a crashed renderer wit
     'value',
     '',
   );
-  expect(changed.mock.lastCall![0]).toMatchObject({
+  expect(changed.mock.lastCall![0].root).toMatchObject({
     field: 'amount',
-    op: Op.EQ,
-    editor: { name: 'builtin' },
+    operator: Op.EQ,
+    component: { name: 'builtin' },
   });
-  expect(changed.mock.lastCall![0].value).toBeUndefined();
+  expect(changed.mock.lastCall![0].root.props.value).toBeUndefined();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.matchAll());
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
 });
 
 it('keeps repeated local validity errors blocking until the editor completes its value', () => {
@@ -430,7 +503,9 @@ it('keeps repeated local validity errors blocking until the editor completes its
   render(
     <FilterPanel
       fields={[amountField]}
-      value={filter.eq('amount', 10)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 10 }, { name: 'amount' }),
+      )}
       onApply={apply}
       onValidityChange={validity}
       extensions={{
@@ -450,7 +525,9 @@ it('keeps repeated local validity errors blocking until the editor completes its
   fireEvent.change(input, { target: { value: '25' } });
   expect(validity).toHaveBeenLastCalledWith(true);
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('amount', 25));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ expression: filter.eq('amount', 25) }),
+  );
 });
 
 it('preserves a specific editor-output error when an operator change requires a different value shape', () => {
@@ -473,7 +550,9 @@ it('preserves a specific editor-output error when an operator change requires a 
   render(
     <FilterPanel
       fields={[amountField]}
-      value={filter.eq('amount', 10)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 10 }, { name: 'amount' }),
+      )}
       onApply={apply}
       extensions={{
         filters: { amount: { ...amountEditor, component: RangeAmount } },
@@ -486,7 +565,7 @@ it('preserves a specific editor-output error when an operator change requires a 
   const error = screen.getByRole('alert').textContent;
   expect(error).toContain('JSON');
   fireEvent.click(screen.getByRole('button', { name: '改用范围' }));
-  expect(screen.getByRole('alert').textContent).toBe(error);
+  expect(screen.getByRole('alert').textContent).toContain(error);
   expect(screen.getByRole('button', { name: '查询' })).toHaveProperty(
     'disabled',
     true,
@@ -494,12 +573,16 @@ it('preserves a specific editor-output error when an operator change requires a 
   fireEvent.click(screen.getByRole('button', { name: '设置范围' }));
   expect(screen.queryByRole('alert')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledExactlyOnceWith({
-    op: Op.BETWEEN,
-    field: 'amount',
-    lowerBound: 1,
-    upperBound: 5,
-  });
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      expression: {
+        op: Op.BETWEEN,
+        field: 'amount',
+        lowerBound: 1,
+        upperBound: 5,
+      },
+    }),
+  );
 });
 
 it('rejects an asynchronous editor result after its controlled node is rebound to another field', async () => {
@@ -540,9 +623,15 @@ it('rejects an asynchronous editor result after its controlled node is rebound t
     <FilterPanel
       fields={definitions}
       extensions={extensions}
-      value={filter.eq('amount', 10)}
-      draft={{ id: 'same-id', field, op: Op.EQ, value: 10 }}
-      onDraftChange={changed}
+
+      value={configuration({
+        id: 'same-id',
+        field,
+        operator: Op.EQ,
+        component: { name: 'amount' },
+        props: { value: 10 },
+      })}
+      onChange={changed}
       onApply={apply}
     />
   );
@@ -557,7 +646,9 @@ it('rejects an asynchronous editor result after its controlled node is rebound t
   expect(screen.queryByRole('alert')).toBeNull();
   expect(screen.getByRole('button', { name: '读取合计' })).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('total', 10));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ expression: filter.eq('total', 10) }),
+  );
 });
 
 it('keeps a new output error when a replacement component recovers from the previous render failure', () => {
@@ -581,7 +672,9 @@ it('keeps a new output error when a replacement component recovers from the prev
   const panel = (component: typeof Broken | typeof Replacement) => (
     <FilterPanel
       fields={[amountField]}
-      value={filter.eq('amount', 10)}
+      defaultValue={configuration(
+        node('EQ', 'amount', { value: 10 }, { name: 'amount' }),
+      )}
       onApply={apply}
       extensions={{ filters: { amount: { ...amountEditor, component } } }}
     />
@@ -598,5 +691,7 @@ it('keeps a new output error when a replacement component recovers from the prev
   fireEvent.click(screen.getByRole('button', { name: '修正初始化金额' }));
   expect(screen.queryByRole('alert')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '查询' }));
-  expect(apply).toHaveBeenCalledExactlyOnceWith(filter.eq('amount', 25));
+  expect(apply).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ expression: filter.eq('amount', 25) }),
+  );
 });

@@ -11,8 +11,16 @@
  * limitations under the License.
  */
 
-import { createFilterDraft } from '../../src/filter/filterCore.js';
-import { aggregation, filter, SortDirection } from '@ahoo-wang/fetcher-wow';
+import {
+  createFilterConfiguration,
+  newFilterNode,
+} from '../../src/filter/filterCore.js';
+import {
+  aggregation,
+  filter,
+  SortDirection,
+  FilterOperator,
+} from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import type { RecordSummaryFunction } from '../../src/record/recordModel.js';
 import { deferred, session, setup } from './fixtures.js';
@@ -90,7 +98,12 @@ it('loads page and all summaries together, preserving totals across page and pre
   );
   await engine.setPage(2);
   expect(source.aggregate).toHaveBeenCalledTimes(1);
-  engine.setFilterDraft(createFilterDraft(filter.gte('amount', 2)));
+  engine.setFilterDraft(
+    createFilterConfiguration({
+      ...newFilterNode(FilterOperator.GTE, 'amount'),
+      props: { value: 2 },
+    }),
+  );
   await engine.applyFilter();
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(2));
   expect(source.aggregate.mock.calls[1][0].filter).toEqual(
@@ -109,7 +122,12 @@ it('ignores old aggregate responses after filtering, removing summaries and disp
     .mockReturnValueOnce(second.promise)
     .mockReturnValueOnce(third.promise);
   await engine.load();
-  engine.setFilterDraft(createFilterDraft(filter.gte('amount', 10)));
+  engine.setFilterDraft(
+    createFilterConfiguration({
+      ...newFilterNode(FilterOperator.GTE, 'amount'),
+      props: { value: 10 },
+    }),
+  );
   await engine.applyFilter();
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(2));
   expect(source.aggregate.mock.calls[0][2].signal.aborted).toBe(true);

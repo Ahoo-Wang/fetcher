@@ -131,7 +131,8 @@ it('describes date-only component intent instead of its expanded query', () => {
       {
         node: {
           id: 'date',
-          op: FilterOperator.NE,
+          operator: FilterOperator.NE,
+          component: { name: 'builtin' },
           field: 'createdAt',
           props: { value: { date: '2026-09-08', time: '09:00:00.123' } },
         },

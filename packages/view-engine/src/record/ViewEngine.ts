@@ -11,10 +11,10 @@
  * limitations under the License.
  */
 
-import type { FieldSort, FilterExpression } from '@ahoo-wang/fetcher-wow';
+import type { FieldSort } from '@ahoo-wang/fetcher-wow';
 import type {
   FilterCompilerRegistry,
-  FilterDraftNode,
+  FilterConfiguration,
   FilterMode,
 } from '../filter/filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
@@ -28,7 +28,7 @@ import type {
   ViewInstancePermissions,
 } from './recordModel.js';
 import type { ViewHost } from './ViewHost.js';
-import { freeze } from './engine/recordSnapshot.js';
+import { freeze } from '../lib/snapshot.js';
 import { EngineScope } from './engine/EngineScope.js';
 import { SessionStore } from './engine/SessionStore.js';
 import { InstanceWork } from './engine/InstanceWork.js';
@@ -192,15 +192,12 @@ export class ViewEngine {
     return this.reload.canReloadInstance(id);
   }
 
-  applyFilter(
-    expression?: DeepReadonly<FilterExpression>,
-    id?: string,
-  ): Promise<void> {
-    return this.edits.applyFilter(expression, id);
+  applyFilter(id?: string): Promise<void> {
+    return this.edits.applyFilter(id);
   }
 
   setFilterDraft(
-    draft: DeepReadonly<FilterDraftNode>,
+    draft: DeepReadonly<FilterConfiguration>,
     id?: string,
     valid?: boolean,
   ): void {

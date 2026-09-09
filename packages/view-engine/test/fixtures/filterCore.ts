@@ -18,9 +18,10 @@ import {
   TimeUnit,
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
-import { compileFilterDraft } from '../../src/filter/filterCore';
+import { compileFilterConfiguration } from '../../src/filter/filterCore';
 import type {
-  FilterDraftNode,
+  FilterComponentConfig,
+  FilterComponentProperties,
   FilterFieldDefinition,
 } from '../../src/filter/filterModel';
 
@@ -119,27 +120,113 @@ export const expressions: FilterExpression[] = [
   { op: Op.EARLIER_DAYS, field: 'created', days: 1, zoneId: 'Asia/Shanghai' },
 ];
 export const compile = (
-  node: FilterDraftNode,
+  root: FilterComponentConfig,
   definitions = fields,
   timeZone = 'Asia/Shanghai',
 ) =>
-  compileFilterDraft(
-    node,
+  compileFilterConfiguration(
+    { mode: 'advanced', root },
     definitions,
-    undefined,
     undefined,
     undefined,
     timeZone,
   );
 export function node(
-  op: Op,
+  operator: Op,
   field?: string,
-  values: Partial<FilterDraftNode> = {},
-): FilterDraftNode {
+  props: Record<string, unknown> = {},
+  children: Pick<FilterComponentConfig, 'operands' | 'predicate'> = {},
+): FilterComponentConfig {
   return {
     id: crypto.randomUUID(),
-    op,
+    operator,
+    component: { name: 'builtin', options: { showTime: true } },
     ...(field === undefined ? {} : { field }),
-    ...values,
+    props: props as FilterComponentProperties,
+    ...children,
   };
 }
+
+export const configurations = [
+  node(Op.MATCH_ALL),
+  node(Op.MATCH_NONE),
+  node(Op.ID, undefined, { value: '001' }),
+  node(Op.IDS, undefined, { values: ['001', '002'] }),
+  node(Op.AGGREGATE_ID, undefined, { value: '001' }),
+  node(Op.AGGREGATE_IDS, undefined, { values: ['001'] }),
+  node(Op.TENANT_ID, undefined, { value: '01' }),
+  node(Op.OWNER_ID, undefined, { value: '02' }),
+  node(Op.SPACE_ID, undefined, { value: '03' }),
+  node(
+    Op.AND,
+    undefined,
+    {},
+    { operands: [node(Op.EQ, 'amount', { value: 0 })] },
+  ),
+  node(
+    Op.OR,
+    undefined,
+    {},
+    { operands: [node(Op.EQ, 'name', { value: '' })] },
+  ),
+  node(
+    Op.NOR,
+    undefined,
+    {},
+    { operands: [node(Op.EQ, 'enabled', { value: false })] },
+  ),
+  node(Op.EQ, 'amount', { value: null }),
+  node(Op.NE, 'name', { value: null }),
+  node(Op.GT, 'amount', { value: 1 }),
+  node(Op.GTE, 'amount', { value: 1 }),
+  node(Op.LT, 'amount', { value: 2 }),
+  node(Op.LTE, 'amount', { value: 2 }),
+  node(Op.CONTAINS, 'name', { value: '' }, {}),
+  node(
+    Op.STARTS_WITH,
+    'name',
+    { value: 'a', stringComparison: StringComparison.CASE_INSENSITIVE },
+    {},
+  ),
+  node(Op.ENDS_WITH, 'name', { value: 'z' }, {}),
+  node(Op.IN, 'amount', { values: [0, 2] }),
+  node(Op.NOT_IN, 'enabled', { values: [false] }),
+  node(Op.BETWEEN, 'amount', { lowerBound: 0, upperBound: 10 }),
+  node(Op.CONTAINS_ALL, 'items', { values: ['a', 0, false] }),
+  node(Op.IS_EMPTY, 'items', {}),
+  node(Op.IS_EMPTY_STRING, 'name', {}),
+  node(Op.IS_NOT_EMPTY_STRING, 'name', {}),
+  node(Op.IS_NULL, 'amount', {}),
+  node(Op.IS_NOT_NULL, 'amount', {}),
+  node(Op.EXISTS, 'name', {}),
+  node(Op.NOT_EXISTS, 'name', {}),
+  node(Op.DELETION, undefined, { state: DeletionState.ALL }),
+  node(
+    Op.ELEMENT_MATCH,
+    'items',
+    {},
+    {
+      predicate: node(
+        Op.AND,
+        undefined,
+        {},
+        { operands: [node(Op.GT, 'quantity', { value: 0 })] },
+      ),
+    },
+  ),
+  node(Op.SEARCH, undefined, { query: '订单' }, {}),
+  ...calendar.map(op => node(op, 'created', { zoneId: 'Asia/Shanghai' })),
+  node(
+    Op.BEFORE_TODAY,
+    'created',
+    {
+      time: '12:30:59',
+      zoneId: 'Asia/Shanghai',
+      datePattern: 'yyyy-MM-dd',
+      timeUnit: TimeUnit.SECONDS,
+    },
+    {},
+  ),
+  node(Op.RECENT_DAYS, 'created', { days: 7, zoneId: 'Asia/Shanghai' }, {}),
+  node(Op.EARLIER_DAYS, 'created', { days: 1, zoneId: 'Asia/Shanghai' }, {}),
+];

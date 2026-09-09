@@ -142,30 +142,18 @@ it('accepts cleared datetime range endpoints and preserves zero timestamps', () 
   });
 });
 
-it('uses useful default operators for named built-in editors', async () => {
-  const { getFieldOperators } =
+it('separates named component choices from field capabilities', async () => {
+  const { getFieldOperators, getNamedFilterOperators } =
     await import('../src/filter/filterOperators.js');
+  expect(getNamedFilterOperators('multi-select')).toEqual([Op.IN, Op.NOT_IN]);
+  expect(getNamedFilterOperators('datetime-range')).toEqual([Op.BETWEEN]);
+  const field = { field: 'id', label: 'ID', type: 'string' as const };
+  expect(
+    getFieldOperators({ ...field, editor: { name: 'multi-select' } }),
+  ).toEqual(getFieldOperators(field));
   expect(
     getFieldOperators({
-      field: 'id',
-      label: 'ID',
-      type: 'string',
-      editor: { name: 'multi-select' },
-    }),
-  ).toEqual([Op.IN, Op.NOT_IN]);
-  expect(
-    getFieldOperators({
-      field: 'created',
-      label: '创建',
-      type: 'datetime',
-      editor: { name: 'datetime-range' },
-    }),
-  ).toEqual([Op.BETWEEN]);
-  expect(
-    getFieldOperators({
-      field: 'id',
-      label: 'ID',
-      type: 'string',
+      ...field,
       editor: { name: 'multi-select' },
       operators: [Op.EQ],
     }),

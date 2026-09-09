@@ -24,7 +24,7 @@ import {
   dateTimeToSeconds,
 } from '../filter/filterDateTimeValue.js';
 import type {
-  FilterDraftNode,
+  FilterComponentConfig,
   FilterFieldDefinition,
 } from '../filter/filterModel.js';
 import {
@@ -35,7 +35,7 @@ import type { DeepReadonly } from '../lib/types.js';
 
 type FilterSummary = { count: number; text: string };
 interface FilterSummaryContext {
-  node?: DeepReadonly<FilterDraftNode>;
+  node?: DeepReadonly<FilterComponentConfig>;
   timeZone?: string;
   showTime?: boolean;
   operands?: FilterSummary[];
@@ -58,21 +58,16 @@ export function describeRecordFilter(
     !!node &&
     context.showTime === false &&
     (field?.type === 'date' || field?.type === 'datetime') &&
-    ['value', 'values', 'between'].includes(FILTER_OPERATORS[node.op].input);
+    ['value', 'values', 'between'].includes(
+      FILTER_OPERATORS[node.operator].input,
+    );
   // Whole-day queries may expand EQ/NE/IN into groups; keep the selected operation and dates.
-  const display: DeepReadonly<FilterExpression | FilterDraftNode> = dateOnly
-    ? ({
-        ...(node.props ?? node),
-        id: node.id,
-        op: node.op,
-        field: node.field,
-      } as FilterDraftNode)
-    : expression;
-  const operator = FILTER_OPERATORS[display.op];
-  if ('operands' in display && display.operands) {
+  const display = dateOnly ? node.props : expression;
+  const operator = FILTER_OPERATORS[dateOnly ? node.operator : expression.op];
+  if (!dateOnly && 'operands' in expression) {
     const children =
       context.operands ??
-      display.operands.map(child =>
+      expression.operands.map(child =>
         describeRecordFilter(
           child as DeepReadonly<FilterExpression>,
           fields,
@@ -86,14 +81,14 @@ export function describeRecordFilter(
     };
   }
   const label =
-    'field' in display
-      ? `${field?.label ?? display.field} ${operator.label}`
+    dateOnly || 'field' in expression
+      ? `${field?.label ?? (dateOnly ? node.field : 'field' in expression ? expression.field : '')} ${operator.label}`
       : operator.label;
-  if ('predicate' in display && display.predicate) {
+  if (!dateOnly && 'predicate' in expression) {
     const child =
       context.predicate ??
       describeRecordFilter(
-        display.predicate as DeepReadonly<FilterExpression>,
+        expression.predicate,
         field?.fields ?? [],
         context,
         false,
@@ -131,7 +126,7 @@ export function describeRecordFilter(
   }
   const values: string[] = [];
   if ('value' in display) values.push(literal(display.value));
-  if ('values' in display && display.values)
+  if ('values' in display && Array.isArray(display.values))
     values.push(`[${display.values.map(literal).join('、')}]`);
   if ('lowerBound' in display)
     values.push(

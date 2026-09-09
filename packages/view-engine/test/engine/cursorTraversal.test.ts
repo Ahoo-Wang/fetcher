@@ -10,10 +10,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  newFilterNode,
+  createFilterConfiguration,
+} from '../../src/filter/filterCore.js';
 
 import { afterEach, expect, it, vi } from 'vitest';
-import { filter, SortDirection } from '@ahoo-wang/fetcher-wow';
-import { createFilterDraft } from '../../src/filter/filterCore.js';
+import { SortDirection } from '@ahoo-wang/fetcher-wow';
+
 import type { ViewEngine } from '../../src/record/ViewEngine.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 
@@ -128,7 +133,12 @@ it.each(['refresh', 'filter', 'sort', 'size', 'restore', 'load'] as const)(
         await engine.refresh();
         break;
       case 'filter':
-        engine.setFilterDraft(createFilterDraft(filter.gt('state.amount', 10)));
+        engine.setFilterDraft(
+          createFilterConfiguration({
+            ...newFilterNode(FilterOperator.GT, 'state.amount'),
+            props: { value: 10 },
+          }),
+        );
         await engine.applyFilter();
         break;
       case 'sort':

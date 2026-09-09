@@ -29,17 +29,17 @@ import type {
   FilterValidationError,
 } from './filterModel.js';
 import {
+  FilterConfigurationError,
   validateFilterConfiguration,
   validateFilterJson,
   validateFilterNodeContext,
 } from './filterConfigurationValidation.js';
 import {
-  compileBuiltinDraft,
+  compileProtocolNode,
   compileBuiltinFilter,
 } from './filterBuiltinCompiler.js';
-import { createFilterDraft } from './filterDraft.js';
 import { definition } from './filterOperators.js';
-import { build } from './filterProtocol.js';
+import { build, parseFilterOutput } from './filterProtocol.js';
 
 export function filterCompilerContext(
   node: DeepReadonly<FilterComponentConfig>,
@@ -64,9 +64,9 @@ function validateOutput(
   builtin = false,
 ): FilterExpression {
   validateFilterJson(expression);
-  const draft = createFilterDraft(expression);
+  const draft = parseFilterOutput(expression);
   const bound = definition(node.operator).category === 'field';
-  function binding(output: DeepReadonly<ReturnType<typeof createFilterDraft>>) {
+  function binding(output: DeepReadonly<ReturnType<typeof parseFilterOutput>>) {
     const category = definition(output.op).category;
     if (bound && category === 'logical') output.operands!.forEach(binding);
     else if (
@@ -79,7 +79,7 @@ function validateOutput(
   binding(draft);
   // The chosen built-in operator was checked before lowering calendar days.
   // Generated range/group operators express that same authorized condition.
-  const result = compileBuiltinDraft(
+  const result = compileProtocolNode(
     draft,
     builtin
       ? fields.map(field => ({
@@ -111,7 +111,10 @@ export function compileFilterConfiguration(
     return {
       errors: [
         {
-          id: config?.root?.id ?? '',
+          id:
+            error instanceof FilterConfigurationError
+              ? error.id
+              : (config?.root?.id ?? ''),
           message: error instanceof Error ? error.message : '筛选配置无效',
         },
       ],

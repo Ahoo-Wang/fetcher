@@ -513,7 +513,7 @@ it.each([
               refresh: () => engine.refresh('mine'),
               retry: () => engine.retryQuery('mine'),
               sort: () => engine.setSort([], 'mine'),
-              apply: () => engine.applyFilter(undefined, 'mine'),
+              apply: () => engine.applyFilter('mine'),
               page: () => engine.setPage(2, 'mine'),
               pageSize: () => engine.setPageSize(20, 'mine'),
               next: () => engine.nextPage('mine'),
