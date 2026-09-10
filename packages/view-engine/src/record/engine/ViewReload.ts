@@ -148,15 +148,13 @@ export class ViewReload {
           // NOT_FOUND means missing *or* invisible. Do not discard create
           // identity; replay the original request so idempotency can confirm
           // without requiring the instance to remain visible.
-          if (
-            !(
-              unverified?.id &&
-              error instanceof ViewServiceError &&
-              error.code === 'NOT_FOUND' &&
-              this.work.createRequest(id) &&
-              this.host.instance?.create
-            )
-          )
+          if (!(
+            unverified?.id &&
+            error instanceof ViewServiceError &&
+            error.code === 'NOT_FOUND' &&
+            this.work.createRequest(id) &&
+            this.host.instance?.create
+          ))
             throw error;
           const request = this.work.createRequest(id)!;
           const permissions = permissionsFor(this.host, session);
@@ -166,7 +164,8 @@ export class ViewReload {
               : permissions.saveAsShared)
           )
             throw new Error('宿主未允许重试此创建操作');
-          const { definitionId, kind, title, scope, config } = request.submitted;
+          const { definitionId, kind, title, scope, config } =
+            request.submitted;
           result = await this.host.instance.create(
             structuredClone({ definitionId, kind, title, scope, config }),
             { requestId: request.requestId, signal: controller.signal },
