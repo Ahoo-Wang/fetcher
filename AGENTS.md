@@ -54,6 +54,7 @@ pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 - **Ask first** before adding packages, changing root `tsconfig.json`, or modifying build configuration, unless already authorized for the task.
 - Add external dependencies to the `pnpm-workspace.yaml` catalog and use `catalog:`; use the workspace protocol for internal dependencies.
 - Keep package versions aligned with `pnpm update-version <version>`. Never break a public API without a version bump.
+- Exception for `packages/view-engine/`: it is under active development and its API is not yet stable. Breaking API changes do not require compatibility preservation or a version bump solely for the break. Always prioritize a clean architecture and codebase; remove obsolete APIs and code instead of retaining compatibility layers, and update affected callers, tests, and documentation together.
 - Branch new work from `main`; use conventional commits (`feat:`, `fix:`, `chore:`, `test:`, `refactor:`, `docs:`). Merge PRs with squash only.
 
 ## Skills and Documentation
