@@ -35,3 +35,5 @@ Load permissions before exposing synchronous getters. Publish policy changes thr
 ## Choose the storage environment
 
 Use `IndexedDBViewHost` for persisted browser view configuration. Use `MemoryViewHost` for memory examples and Node services, optionally supplying a shared Map; each host otherwise owns independent memory state. Both hosts implement the same per-user ordering, explicit-null default and deletion-fallback rules, while business records come from a separate source. See [ViewHost](../../reference/view-engine/view-host.md) for options and verification.
+
+Deletion returns an authoritative `ViewDeleteResult`, so the default marker follows the transaction result even when another tab changed the order or default. Existing view drafts are preserved without a full reload.

@@ -44,7 +44,7 @@ it('can reopen and retry the original uncertain deletion without enabling other 
     .mockRejectedValueOnce(
       new ViewServiceError('UNKNOWN_OUTCOME', '删除结果未知'),
     )
-    .mockResolvedValue(undefined);
+    .mockResolvedValue({ defaultInstance: null });
   render(
     <ViewPage scopeKey="delete-recovery" definitionId="orders" host={host} />,
   );
@@ -105,7 +105,7 @@ it('manages names and deletion together while protecting system views and pendin
   host.instance!.delete = vi
     .fn()
     .mockRejectedValueOnce(new ViewServiceError('CONFLICT', '删除失败，请重试'))
-    .mockResolvedValue(undefined);
+    .mockResolvedValue({ defaultInstance: null });
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {

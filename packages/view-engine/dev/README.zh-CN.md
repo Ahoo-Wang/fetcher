@@ -83,3 +83,5 @@ node packages/view-engine/scripts/verify-http-view-host.mjs --serve
 ```
 
 夹具仅允许 `VIEW_ENGINE_E2E_BASE_URL` 的来源，默认 `http://127.0.0.1:6006`。使用其他 Storybook 地址（包括 `http://localhost:6006`）时需设置该变量；其他浏览器来源会在预检或写入前被拒绝。
+
+`DELETE /instances/{id}` 的成功 envelope 包含 `ViewDeleteResult`：`{ defaultInstance: ViewInstance | null }`。回执来自删除事务，重复删除也返回当前用户的权威默认项；客户端不能丢弃该响应体。

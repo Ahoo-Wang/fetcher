@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { ViewInstancePermissions } from '../recordModel.js';
+import type { RecordSession, ViewInstancePermissions } from '../recordModel.js';
 import type { ViewHost } from '../ViewHost.js';
 import { validateViewInstance } from '../recordValidation.js';
 
@@ -21,12 +21,12 @@ import { hasUnknownWriteOutcome, type InstanceWork } from './InstanceWork.js';
 import type { RecordQueries } from './RecordQueries.js';
 import type { RecordSummaries } from './RecordSummaries.js';
 import { copy, message, sameJsonState } from '../../lib/snapshot.js';
-import { instanceContent } from './sessionState.js';
+import { createSession, instanceContent } from './sessionState.js';
 import { permissionsFor } from './instancePermissions.js';
 
 /** Explicit persisted name, deletion and user-preference operations. */
 export class ViewManagement {
-  private defaultWrite?: { version: number; id: string | null };
+  private defaultWrite?: { version: number };
   constructor(
     private readonly store: SessionStore,
     private readonly scope: EngineScope,
@@ -133,9 +133,8 @@ export class ViewManagement {
       throw new Error('宿主未提供默认视图保存接口');
     if (instanceId !== null)
       this.work.assertWritable(this.store.session(instanceId));
-    if (this.defaultWrite?.version === this.scope.version)
-      throw new Error('默认视图正在保存');
-    const request = { version: this.scope.version, id: instanceId };
+    this.assertDefaultWritable();
+    const request = { version: this.scope.version };
     this.defaultWrite = request;
     try {
       await this.host.preference!.saveDefault!(this.definitionId, instanceId);
@@ -153,6 +152,16 @@ export class ViewManagement {
     } finally {
       if (this.defaultWrite === request) this.defaultWrite = undefined;
     }
+  }
+
+  private assertDefaultWritable(): void {
+    if (this.defaultWrite) throw new Error('默认视图正在保存');
+    if (
+      Object.values(this.store.getSnapshot().sessions).some(
+        session => session.writeStatus === 'deleting',
+      )
+    )
+      throw new Error('视图正在删除，请等待操作完成');
   }
 
   canReorderInstances(): boolean {
@@ -228,13 +237,9 @@ export class ViewManagement {
     id = session.instance.id;
     if (!this.getPermissions(id).delete)
       throw new Error('系统视图或宿主未授权的视图不能删除');
-    if (
-      this.defaultWrite?.version === this.scope.version &&
-      this.defaultWrite.id === id
-    )
-      throw new Error('默认视图正在保存，请等待操作完成');
     // Repeating the same versioned delete is idempotent; other writes still need reconciliation.
     this.work.assertWritable(session, this.canRetryDeleteInstance(id));
+    this.assertDefaultWritable();
     const lifecycle = this.scope.version;
     const token = Symbol();
     const current = () =>
@@ -245,8 +250,32 @@ export class ViewManagement {
       this.store.patch(id, { writeStatus: 'deleting', writeError: null });
       if (!current()) return;
       dispatched = true;
-      await this.host.instance!.delete!(id, session.baseline.revision);
+      const result = await this.host.instance!.delete!(
+        id,
+        session.baseline.revision,
+      );
       if (!current()) return;
+      if (
+        !result ||
+        typeof result !== 'object' ||
+        Array.isArray(result) ||
+        !('defaultInstance' in result)
+      )
+        throw new Error('删除回执缺少权威默认视图，请重试核对');
+      const defaultInstance =
+        result.defaultInstance === null ? null : copy(result.defaultInstance);
+      let defaultSession: RecordSession | undefined;
+      if (defaultInstance !== null) {
+        validateViewInstance(defaultInstance, this.store.definition());
+        if (defaultInstance.id === id)
+          throw new Error('删除回执不能将已删除视图设为默认');
+        if (!this.store.find(defaultInstance.id))
+          defaultSession = createSession(
+            defaultInstance,
+            this.store.definition(),
+            this.store.filterCompilers,
+          );
+      }
       this.work.markDeleted(id);
       this.queries.cancel(id);
       this.summaries.invalidate(id);
@@ -257,6 +286,10 @@ export class ViewManagement {
       const instanceIds = this.store
         .getSnapshot()
         .instanceIds.filter(key => key !== id);
+      if (defaultSession) {
+        sessions[defaultSession.instance.id] = defaultSession;
+        instanceIds.push(defaultSession.instance.id);
+      }
       const wasSelected = this.store.getSnapshot().selectedInstanceId === id;
       const nextId = wasSelected
         ? (instanceIds[0] ?? null)
@@ -270,10 +303,7 @@ export class ViewManagement {
           sessions,
           instanceIds,
           selectedInstanceId: nextId,
-          defaultInstanceId:
-            this.store.getSnapshot().defaultInstanceId === id
-              ? (instanceIds[0] ?? null)
-              : this.store.getSnapshot().defaultInstanceId,
+          defaultInstanceId: defaultInstance?.id ?? null,
         }),
       );
       void followUp?.().catch(() => {});

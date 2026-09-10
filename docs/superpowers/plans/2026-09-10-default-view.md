@@ -154,7 +154,7 @@ setDefaultInstance(instanceId: string | null): Promise<void> {
 - [x] **Step 4: 在 ViewManagement 实现操作。** 使用此类私有的当前保存身份，不为一个操作引入队列或新的通用协调器：
 
 ```ts
-private defaultWrite?: { version: number; id: string | null };
+private defaultWrite?: { version: number };
 
 canSetDefaultInstance(): boolean {
   return !this.scope.disposed &&
@@ -165,9 +165,8 @@ async setDefaultInstance(instanceId: string | null): Promise<void> {
   this.store.definition();
   if (!this.canSetDefaultInstance()) throw new Error('宿主未提供默认视图保存接口');
   if (instanceId !== null) this.work.assertWritable(this.store.session(instanceId));
-  if (this.defaultWrite?.version === this.scope.version)
-    throw new Error('默认视图正在保存');
-  const request = { version: this.scope.version, id: instanceId };
+  this.assertDefaultWritable();
+  const request = { version: this.scope.version };
   this.defaultWrite = request;
   try {
     await this.host.preference!.saveDefault!(this.definitionId, instanceId);
@@ -185,27 +184,13 @@ async setDefaultInstance(instanceId: string | null): Promise<void> {
 
 在方法入口补充 `instanceId !== null && (typeof instanceId !== 'string' || !instanceId.trim())` 校验，抛出“默认视图必须是有效实例 ID 或 null”。不能省略：`store.session(undefined)` 会使用当前选择，不能将错误输入变成合法目标。
 
-`deleteInstance` 在派发宿主删除前增加同一生命周期、同一目标的保存检查：
+`setDefaultInstance` 和 `deleteInstance` 共用 `assertDefaultWritable()`：存在尚未结束的默认保存（包括重载前的请求），或任一会话处于 deleting 时拒绝新操作。回执格式或内容错误按未知结果保留编辑状态，允许用原删除请求重试核对。
 
-```ts
-if (
-  this.defaultWrite?.version === this.scope.version &&
-  this.defaultWrite.id === id
-)
-  throw new Error('默认视图正在保存，请等待操作完成');
-```
+`ViewInstanceService.delete` 返回 `Promise<ViewDeleteResult>`，包含必填 `defaultInstance: ViewInstance | null`。成功删除后校验回执，直接发布其默认 ID；若该默认实例尚未加载，用 `createSession` 初始化并加入当前列表，已有会话与草稿保持不变。不通过旧排序推断默认，也不追加列表请求。
 
-成功删除发布时增加：
+已有删除写锁使“删除先开始，默认保存后开始”被 `assertWritable` 拒绝。完整重载使旧保存响应不能发布状态，但保存锁必须保持到宿主请求结束，避免跨生命周期写入乱序。不要添加“值相同直接 return”：未知结果后，重新保存原默认值也必须实际到达宿主。
 
-```ts
-defaultInstanceId: this.store.getSnapshot().defaultInstanceId === id
-  ? (instanceIds[0] ?? null)
-  : this.store.getSnapshot().defaultInstanceId,
-```
-
-已有删除写锁使“删除先开始，默认保存后开始”被 `assertWritable` 拒绝。完整重载可以使旧保存身份失效，旧 finally 不能清除新生命周期的请求。不要添加“值相同直接 return”：未知结果后，重新保存原默认值也必须实际到达宿主。
-
-- [x] **Step 5: 增加生命周期失败测试。** 使用上述 `deferred` 测试骨架分别 `response.reject(new Error('offline'))`、`engine.dispose()`、`await engine.load()` 后再 resolve，断言失败/迟到响应不覆盖默认值。重载后发起新请求，先完成旧请求，再尝试第三个请求，断言新请求仍持有重入保护。使用 fixture 的 `managementPermissions` 和 `instance.delete: vi.fn()` 测试两个删除/设置顺序均拒绝冲突；成功删除默认与非默认分别验证回退和不变。用 mock 宿主返回 `null` 验证清除后的重载不查询记录。无保存服务时报错；`updateHost` 增删该能力时快照随订阅更新。系统视图即使 save/rename/delete 全 false 仍允许设置。
+- [x] **Step 5: 增加生命周期失败测试。** 使用上述 `deferred` 测试骨架分别 `response.reject(new Error('offline'))`、`engine.dispose()`、`await engine.load()` 后再 resolve，断言失败/迟到响应不覆盖默认值。重载后断言新的默认保存和删除仍被拒绝；旧请求结束后再次保存，核对宿主持久化值与引擎值一致。使用 fixture 的 `managementPermissions` 和 `instance.delete: vi.fn()` 测试两个删除/设置顺序均拒绝冲突；成功删除默认与非默认分别验证回退和不变。用 mock 宿主返回 `null` 验证清除后的重载不查询记录。无保存服务时报错；`updateHost` 增删该能力时快照随订阅更新。系统视图即使 save/rename/delete 全 false 仍允许设置。
 
 - [x] **Step 6: 绿灯验证。** `pnpm --filter @ahoo-wang/fetcher-view-engine exec vitest run test/engine/defaultView.test.ts test/engine/management.test.ts test/engine/unifiedRecovery.test.ts test/viewEngine.capabilities.test.ts`。检查新增测试包含真实失败条件，不把捕获异常视为成功。
 
@@ -444,3 +429,7 @@ git diff --check
 - 完整 `pnpm test:unit` 在 `npm_config_workspace_concurrency=1 VITEST_MAX_WORKERS=4` 下退出 0；首次无限制并行出现三个超时，同一源码的三文件隔离重跑 12/12 通过。受控运行包含 view-engine 源码及编译模式各 1052 项通过；viewer 保留原有 1 项跳过。
 - 包级 lint、Storybook lint、2 项 Chrome 管理交互及真实 IndexedDB 恢复脚本通过；浏览器使用已安装 Chrome，独立 Storybook 端口 6007。
 - 使用现有脚本更新公开符号索引与 LLM 文档；文档检查 11/11 和 wiki 构建通过。所有分项审查及两轮定向问题修正复审已通过，最后整体审查已通过，无遗留发现。
+
+- 后续审查已复现跨客户端排序造成默认标记不一致，修正为原子删除回执 `ViewDeleteResult`，并同步 HTTP/示例宿主和测试替身。用户批准按未发布 API 演进保留 5.0.0。新增覆盖旧排序、未加载默认、无效回执重试及偏好/删除串行约束。
+
+- 最新审查修正跨重载默认保存锁：回归先复现新请求越过旧写入，再验证请求结束前拒绝默认保存及删除。完整 `npm_config_workspace_concurrency=1 VITEST_MAX_WORKERS=4 pnpm test:unit` 退出 0，view-engine 源码/编译模式各 1066 项，类型检查通过；针对性 90 项、Chrome 管理交互 2 项、原生 IndexedDB、构建、lint、11 项文档检查及 wiki 构建通过。独立复核无新增发现。

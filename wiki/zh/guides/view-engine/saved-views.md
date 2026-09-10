@@ -35,3 +35,5 @@ if (engine.canSetDefaultInstance()) {
 ## 选择存储环境
 
 浏览器视图配置使用 `IndexedDBViewHost`。内存示例和 Node 服务使用 `MemoryViewHost`，可显式传入共享 Map；默认每个宿主拥有独立的内存状态。两种宿主执行相同的用户排序、显式 null 默认项和删除回退规则，业务数据仍经独立数据源查询。完整参数及验证入口见 [ViewHost](../../reference/view-engine/view-host.md)。
+
+删除接口返回权威 `ViewDeleteResult`，因此其他标签页改过排序或默认项时，当前默认标记仍以删除事务的结果为准；已有视图草稿不会被全量重载覆盖。

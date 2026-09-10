@@ -15,7 +15,7 @@ description: Definition, instance, preference, permission and query-source respo
 | `instance`   | `create(instanceWithoutIdOrRevision, context)` | Authoritative created instance; context carries requestId and optional signal |
 | `instance`   | `save(instance)`                               | Saved instance with authoritative revision                                    |
 | `instance`   | `rename(instanceId, title, revision?)`         | Renamed instance                                                              |
-| `instance`   | `delete(instanceId, revision?)`                | `Promise<void>`                                                               |
+| `instance`   | `delete(instanceId, revision?)`                | `Promise<ViewDeleteResult>`                                                   |
 | `preference` | `saveOrder(definitionId, instanceIds)`         | Persist the current user's ordering                                           |
 | `preference` | `saveDefault(definitionId, instanceId)`        | Persist the current user's default; `instanceId` is `string \| null`          |
 | `permission` | `getInstance(instance)`                        | Synchronous `ViewInstancePermissions`                                         |
@@ -25,6 +25,8 @@ description: Definition, instance, preference, permission and query-source respo
 | host         | `resolveSource(sourceId)`                      | A `RecordQuerySource` or Promise of one                                       |
 
 Engine loading awaits `permission.load`, falling back to `permission.refresh` when load is absent. Permission initialization failure prevents ready state. A getter must be pure and expose the initialized policy. Notify subsequent changes or replace the host; mutating an invisible closure does not notify React.
+
+`ViewDeleteResult` has the required field `defaultInstance: ViewInstance | null`: the calling user's authoritative default from the deletion transaction. Idempotent repeats also return this receipt; null explicitly means no default. The engine validates and adopts its ID rather than inferring from stale local order or making an extra list request. It initializes a returned default that is not loaded yet, preserving existing sessions and drafts. An invalid receipt retains local edits and requires reconciliation by retrying the original deletion. Deletions and default-preference writes are mutually exclusive within one engine.
 
 ## Writes and uncertainty
 

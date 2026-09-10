@@ -1583,6 +1583,8 @@ Load permissions before exposing synchronous getters. Publish policy changes thr
 
 Use `IndexedDBViewHost` for persisted browser view configuration. Use `MemoryViewHost` for memory examples and Node services, optionally supplying a shared Map; each host otherwise owns independent memory state. Both hosts implement the same per-user ordering, explicit-null default and deletion-fallback rules, while business records come from a separate source. See [ViewHost](../../reference/view-engine/view-host.md) for options and verification.
 
+Deletion returns an authoritative `ViewDeleteResult`, so the default marker follows the transaction result even when another tab changed the order or default. Existing view drafts are preserved without a full reload.
+
 </doc>
 
 <doc title="Add application extensions" path="guides/view-engine/extensions.md">
@@ -15204,6 +15206,8 @@ Paged results are `{ list, total }`. Cursor results are `{ list, nextCursor }`, 
 
 `readRecordValue` traverses own properties and canonical dot-separated array indices; a literal dotted own key wins. `getRecordKey` and `validateRecordRows` check stable identities. `validateViewDefinition` and `validateViewInstance` are available at trust boundaries; runtime snapshots use `DeepReadonly`.
 
+`ViewDeleteResult` contains required `defaultInstance: ViewInstance | null`, the authoritative default view from the deletion transaction rather than an ID inferred from local order.
+
 </doc>
 
 <doc title="ViewHost and service boundaries" path="reference/view-engine/view-host.md">
@@ -15220,7 +15224,7 @@ Paged results are `{ list, total }`. Cursor results are `{ list, nextCursor }`, 
 | `instance`   | `create(instanceWithoutIdOrRevision, context)` | Authoritative created instance; context carries requestId and optional signal |
 | `instance`   | `save(instance)`                               | Saved instance with authoritative revision                                    |
 | `instance`   | `rename(instanceId, title, revision?)`         | Renamed instance                                                              |
-| `instance`   | `delete(instanceId, revision?)`                | `Promise<void>`                                                               |
+| `instance`   | `delete(instanceId, revision?)`                | `Promise<ViewDeleteResult>`                                                   |
 | `preference` | `saveOrder(definitionId, instanceIds)`         | Persist the current user's ordering                                           |
 | `preference` | `saveDefault(definitionId, instanceId)`        | Persist the current user's default; `instanceId` is `string \| null`          |
 | `permission` | `getInstance(instance)`                        | Synchronous `ViewInstancePermissions`                                         |
@@ -15230,6 +15234,8 @@ Paged results are `{ list, total }`. Cursor results are `{ list, nextCursor }`, 
 | host         | `resolveSource(sourceId)`                      | A `RecordQuerySource` or Promise of one                                       |
 
 Engine loading awaits `permission.load`, falling back to `permission.refresh` when load is absent. Permission initialization failure prevents ready state. A getter must be pure and expose the initialized policy. Notify subsequent changes or replace the host; mutating an invisible closure does not notify React.
+
+`ViewDeleteResult` has the required field `defaultInstance: ViewInstance | null`: the calling user's authoritative default from the deletion transaction. Idempotent repeats also return this receipt; null explicitly means no default. The engine validates and adopts its ID rather than inferring from stale local order or making an extra list request. It initializes a returned default that is not loaded yet, preserving existing sessions and drafts. An invalid receipt retains local edits and requires reconciliation by retrying the original deletion. Deletions and default-preference writes are mutually exclusive within one engine.
 
 ## Writes and uncertainty
 
@@ -15533,20 +15539,21 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewCapabilities`            | [recordModel.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L146)                                     |
 | `ViewCreateContext`           | [viewServiceContract.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L37)                       |
 | `ViewDefinition`              | [recordModel.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L42)                                       |
-| `ViewDefinitionService`       | [ViewHost.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L26)                                             |
+| `ViewDefinitionService`       | [ViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L27)                                             |
+| `ViewDeleteResult`            | [viewServiceContract.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L42)                       |
 | `ViewEngine`                  | [ViewEngine.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewEngine.ts#L45)                                         |
 | `ViewEngineOptions`           | [recordModel.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L166)                                     |
 | `ViewEngineState`             | [recordModel.ts:203](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L203)                                     |
 | `ViewFieldDefinition`         | [recordModel.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L33)                                       |
-| `ViewHost`                    | [ViewHost.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L64)                                             |
+| `ViewHost`                    | [ViewHost.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L65)                                             |
 | `ViewInstance`                | [recordModel.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L131)                                     |
 | `ViewInstanceList`            | [recordModel.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L132)                                     |
 | `ViewInstanceMetadata`        | [recordModel.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L119)                                     |
 | `ViewInstancePermissions`     | [recordModel.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L136)                                     |
-| `ViewInstanceService`         | [ViewHost.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L30)                                             |
-| `ViewPermissionService`       | [ViewHost.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L51)                                             |
-| `ViewPermissionSnapshot`      | [viewServiceContract.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L41)                       |
-| `ViewPreferenceService`       | [ViewHost.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L46)                                             |
+| `ViewInstanceService`         | [ViewHost.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L31)                                             |
+| `ViewPermissionService`       | [ViewHost.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L52)                                             |
+| `ViewPermissionSnapshot`      | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
+| `ViewPreferenceService`       | [ViewHost.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L47)                                             |
 | `ViewScope`                   | [recordModel.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L60)                                       |
 | `ViewServiceError`            | [viewServiceContract.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L27)                       |
 | `ViewServiceErrorCode`        | [viewServiceContract.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L16)                       |
@@ -21661,6 +21668,8 @@ if (engine.canSetDefaultInstance()) {
 ## 选择存储环境
 
 浏览器视图配置使用 `IndexedDBViewHost`。内存示例和 Node 服务使用 `MemoryViewHost`，可显式传入共享 Map；默认每个宿主拥有独立的内存状态。两种宿主执行相同的用户排序、显式 null 默认项和删除回退规则，业务数据仍经独立数据源查询。完整参数及验证入口见 [ViewHost](../../reference/view-engine/view-host.md)。
+
+删除接口返回权威 `ViewDeleteResult`，因此其他标签页改过排序或默认项时，当前默认标记仍以删除事务的结果为准；已有视图草稿不会被全量重载覆盖。
 
 </doc>
 
@@ -35270,6 +35279,8 @@ scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shar
 
 `readRecordValue` 读取自有属性与标准点分数组下标，字面点号键优先。`getRecordKey`、`validateRecordRows` 检查稳定身份。信任边界可调用 `validateViewDefinition`、`validateViewInstance`；运行时快照使用 `DeepReadonly`。
 
+`ViewDeleteResult` 包含必填 `defaultInstance: ViewInstance | null`，表示删除事务中的权威默认视图，而不是本地顺序推算的 ID。
+
 </doc>
 
 <doc title="ViewHost 与服务边界" path="zh/reference/view-engine/view-host.md">
@@ -35286,7 +35297,7 @@ scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shar
 | `instance`   | `create(instanceWithoutIdOrRevision, context)` | 返回创建后的权威实例，context 含 requestId 和可选 signal |
 | `instance`   | `save(instance)`                               | 返回保存实例及权威 revision                              |
 | `instance`   | `rename(instanceId, title, revision?)`         | 返回改名后的实例                                         |
-| `instance`   | `delete(instanceId, revision?)`                | `Promise<void>`                                          |
+| `instance`   | `delete(instanceId, revision?)`                | `Promise<ViewDeleteResult>`                              |
 | `preference` | `saveOrder(definitionId, instanceIds)`         | 保存当前用户的排序偏好                                   |
 | `preference` | `saveDefault(definitionId, instanceId)`        | 保存当前用户默认项；`instanceId` 为 `string \| null`     |
 | `permission` | `getInstance(instance)`                        | 同步 `ViewInstancePermissions`                           |
@@ -35296,6 +35307,8 @@ scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shar
 | host         | `resolveSource(sourceId)`                      | `RecordQuerySource` 或其 Promise                         |
 
 加载引擎时等待 `permission.load`；没有 load 时使用 `permission.refresh`。权限初始化失败不能进入 ready。getter 必须是纯函数，读取已初始化策略。后续变化需要发布通知或替换 host，仅修改不可观察的闭包不会通知 React。
+
+`ViewDeleteResult` 的必填字段 `defaultInstance: ViewInstance | null` 是删除事务确认的当前用户默认视图；幂等重复删除也返回该回执，null 明确表示没有默认项。引擎校验后采用其 ID，不根据本地旧排序推断，也不额外请求列表。返回尚未加载的默认视图时只初始化该会话，保留已有会话和草稿。无效回执保留本地编辑并要求按原删除请求重试核对。同一引擎内，删除操作与默认偏好写入互斥。
 
 ## 写入与不确定结果
 
@@ -35599,20 +35612,21 @@ ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默�
 | `ViewCapabilities`            | [recordModel.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L146)                                     |
 | `ViewCreateContext`           | [viewServiceContract.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L37)                       |
 | `ViewDefinition`              | [recordModel.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L42)                                       |
-| `ViewDefinitionService`       | [ViewHost.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L26)                                             |
+| `ViewDefinitionService`       | [ViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L27)                                             |
+| `ViewDeleteResult`            | [viewServiceContract.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L42)                       |
 | `ViewEngine`                  | [ViewEngine.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewEngine.ts#L45)                                         |
 | `ViewEngineOptions`           | [recordModel.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L166)                                     |
 | `ViewEngineState`             | [recordModel.ts:203](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L203)                                     |
 | `ViewFieldDefinition`         | [recordModel.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L33)                                       |
-| `ViewHost`                    | [ViewHost.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L64)                                             |
+| `ViewHost`                    | [ViewHost.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L65)                                             |
 | `ViewInstance`                | [recordModel.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L131)                                     |
 | `ViewInstanceList`            | [recordModel.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L132)                                     |
 | `ViewInstanceMetadata`        | [recordModel.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L119)                                     |
 | `ViewInstancePermissions`     | [recordModel.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L136)                                     |
-| `ViewInstanceService`         | [ViewHost.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L30)                                             |
-| `ViewPermissionService`       | [ViewHost.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L51)                                             |
-| `ViewPermissionSnapshot`      | [viewServiceContract.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L41)                       |
-| `ViewPreferenceService`       | [ViewHost.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L46)                                             |
+| `ViewInstanceService`         | [ViewHost.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L31)                                             |
+| `ViewPermissionService`       | [ViewHost.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L52)                                             |
+| `ViewPermissionSnapshot`      | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
+| `ViewPreferenceService`       | [ViewHost.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/ViewHost.ts#L47)                                             |
 | `ViewScope`                   | [recordModel.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L60)                                       |
 | `ViewServiceError`            | [viewServiceContract.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L27)                       |
 | `ViewServiceErrorCode`        | [viewServiceContract.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L16)                       |

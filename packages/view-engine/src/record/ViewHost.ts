@@ -20,6 +20,7 @@ import type {
 } from './recordModel.js';
 import type {
   ViewCreateContext,
+  ViewDeleteResult,
   ViewPermissionSnapshot,
 } from './viewServiceContract.js';
 /** Definition metadata, independent of instance persistence and runtime sources. */
@@ -35,7 +36,7 @@ export interface ViewInstanceService {
     context: ViewCreateContext,
   ): Promise<ViewInstance>;
   save?(instance: ViewInstance): Promise<ViewInstance>;
-  delete?(instanceId: string, revision?: string): Promise<void>;
+  delete?(instanceId: string, revision?: string): Promise<ViewDeleteResult>;
   rename?(
     instanceId: string,
     title: string,

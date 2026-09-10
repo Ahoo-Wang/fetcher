@@ -27,6 +27,7 @@ import {
 import { readInstanceList } from './validation/instanceValidation.js';
 import {
   ViewServiceError,
+  type ViewDeleteResult,
   encodeViewResourceId,
   type ViewCreateContext,
   type ViewPermissionSnapshot,
@@ -205,20 +206,35 @@ export abstract class StatefulViewHost implements ViewHost {
         return this.dto(next);
       }, true);
     },
-    delete: async (id: string, revision?: string): Promise<void> => {
+    delete: async (
+      id: string,
+      revision?: string,
+    ): Promise<ViewDeleteResult> => {
       encodeViewResourceId(id);
-      await this.transaction(state => {
+      return this.transaction(state => {
         // Absence is scoped to this caller, including inaccessible personal views.
-        if (!this.visible(state).some(item => item.id === id)) return;
-        const previous = this.writable(state, id, revision, 'delete');
-        state.instances.splice(state.instances.indexOf(previous), 1);
-        for (const [scopeKey, user] of Object.entries(state.users)) {
-          if (user.defaultInstanceId === id)
-            user.defaultInstanceId = this.resolveDefault(
-              id,
-              this.ordered(state, scopeKey),
-            );
+        if (this.visible(state).some(item => item.id === id)) {
+          const previous = this.writable(state, id, revision, 'delete');
+          state.instances.splice(state.instances.indexOf(previous), 1);
+          for (const [scopeKey, user] of Object.entries(state.users)) {
+            if (user.defaultInstanceId === id)
+              user.defaultInstanceId = this.resolveDefault(
+                id,
+                this.ordered(state, scopeKey),
+              );
+          }
         }
+        const visible = this.ordered(state, this.options.scopeKey);
+        const defaultId = this.resolveDefault(
+          state.users[this.options.scopeKey].defaultInstanceId,
+          visible,
+        );
+        return {
+          defaultInstance:
+            defaultId === null
+              ? null
+              : this.dto(visible.find(item => item.id === defaultId)!),
+        };
       }, true);
     },
   };

@@ -145,26 +145,31 @@ export function createHost(
       async delete(id, revision) {
         await pause();
         const previous = saved.get(id);
-        if (!previous) return;
-        if (
-          previous.scope.type === 'public' &&
-          previous.scope.source === 'system'
-        )
-          throw new ViewServiceError('FORBIDDEN', '系统视图不能删除。');
-        if (revision !== previous.revision)
-          throw new ViewServiceError(
-            'REVISION_CONFLICT',
-            '视图已被更新，请重新加载后再删除。',
-          );
-        if (failNextDelete) {
-          failNextDelete = false;
-          throw new ViewServiceError('CONFLICT', '删除失败，请重试。');
+        if (previous) {
+          if (
+            previous.scope.type === 'public' &&
+            previous.scope.source === 'system'
+          )
+            throw new ViewServiceError('FORBIDDEN', '系统视图不能删除。');
+          if (revision !== previous.revision)
+            throw new ViewServiceError(
+              'REVISION_CONFLICT',
+              '视图已被更新，请重新加载后再删除。',
+            );
+          if (failNextDelete) {
+            failNextDelete = false;
+            throw new ViewServiceError('CONFLICT', '删除失败，请重试。');
+          }
+          saved.delete(id);
+          instanceOrder = instanceOrder.filter(value => value !== id);
+          if (defaultInstanceId === id)
+            defaultInstanceId = instanceOrder.find(id => saved.has(id)) ?? null;
+          onWrite('delete', structuredClone(previous));
         }
-        saved.delete(id);
-        instanceOrder = instanceOrder.filter(value => value !== id);
-        if (defaultInstanceId === id)
-          defaultInstanceId = instanceOrder.find(id => saved.has(id)) ?? null;
-        onWrite('delete', structuredClone(previous));
+        return {
+          defaultInstance:
+            defaultInstanceId === null ? null : loadInstance(defaultInstanceId),
+        };
       },
       async save(instance) {
         await pause();

@@ -41,6 +41,75 @@ function options(scopeKey = 'developer') {
   };
 }
 
+it('uses the deletion receipt after another client changes the fallback order', async () => {
+  const input = options();
+  input.instances.instances.push({ ...structuredClone(instance), id: 'other' });
+  const host = new MemoryViewHost(input);
+  const otherClient = new MemoryViewHost(input);
+  const engine = new ViewEngine({ definitionId: definition.id, host });
+  await engine.load();
+  engine.setColumns(
+    [{ id: 'amount', kind: 'field', field: 'amount', width: 240 }],
+    'system',
+  );
+  const draft = engine.getSnapshot().sessions.system;
+  await otherClient.preference.saveOrder(definition.id, [
+    'mine',
+    'other',
+    'system',
+  ]);
+  vi.spyOn(host.instance, 'list').mockRejectedValue(
+    new Error('list unavailable'),
+  );
+  await engine.deleteInstance('mine');
+  expect(engine.getSnapshot().defaultInstanceId).toBe('other');
+  expect(engine.getSnapshot().sessions.system).toMatchObject({
+    instance: draft.instance,
+    dirty: true,
+    filterDraft: draft.filterDraft,
+  });
+  expect(
+    (await otherClient.instance.list(definition.id)).defaultInstanceId,
+  ).toBe('other');
+  engine.dispose();
+});
+
+it.each([true, false])(
+  'adopts an unloaded default with other local views: %s',
+  async withSystem => {
+    const input = options();
+    if (!withSystem) input.instances.instances = [instance];
+    const host = new MemoryViewHost(input);
+    const otherClient = new MemoryViewHost(input);
+    const engine = new ViewEngine({ definitionId: definition.id, host });
+    await engine.load();
+    const created = await otherClient.instance.create(
+      { ...instance, title: 'New default' },
+      { requestId: 'new-default' },
+    );
+    await otherClient.preference.saveDefault(definition.id, created.id);
+    await engine.deleteInstance('mine');
+    expect(engine.getSnapshot().defaultInstanceId).toBe(created.id);
+    expect(engine.getSnapshot().sessions[created.id].instance).toEqual(created);
+    expect(engine.getSnapshot().instanceIds).toContain(created.id);
+    if (withSystem) {
+      expect(engine.getSnapshot().sessions[created.id].queryStatus).toBe(
+        'idle',
+      );
+    } else {
+      expect(engine.getSnapshot().selectedInstanceId).toBe(created.id);
+      await vi.waitFor(() =>
+        expect(engine.getSnapshot().sessions[created.id].queryStatus).toBe(
+          'success',
+        ),
+      );
+    }
+    const replay = await host.instance.delete('mine');
+    expect(replay).toEqual({ defaultInstance: created });
+    engine.dispose();
+  },
+);
+
 it('persists component configuration, names, creation, deletion and ordering across new hosts', async () => {
   const host = new MemoryViewHost(options());
   const edited = await host.instance!.load(instance.id);
@@ -325,7 +394,7 @@ it('keeps scoped deletion idempotent without touching another users instance', a
   await alice.instance.delete(own.id, own.revision);
   await expect(
     alice.instance.delete(own.id, own.revision),
-  ).resolves.toBeUndefined();
+  ).resolves.toMatchObject({ defaultInstance: { id: 'system' } });
   expect(await bob.instance.load(instance.id)).toEqual(others);
   expect(JSON.parse(store.get(alice.storageKey)!).users).toMatchObject({
     alice: { defaultInstanceId: 'system' },

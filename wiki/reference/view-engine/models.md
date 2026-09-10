@@ -50,3 +50,5 @@ The source supplies `paged` and/or `cursor` from Wow `QueryApi<RecordData>`, wit
 Paged results are `{ list, total }`. Cursor results are `{ list, nextCursor }`, with `nextCursor: null` at the end. An aggregate returns result rows described by the generated aggregation query; use the summary helpers rather than guessing aliases. Advertise only supported modes. Metadata and source capability must agree.
 
 `readRecordValue` traverses own properties and canonical dot-separated array indices; a literal dotted own key wins. `getRecordKey` and `validateRecordRows` check stable identities. `validateViewDefinition` and `validateViewInstance` are available at trust boundaries; runtime snapshots use `DeepReadonly`.
+
+`ViewDeleteResult` contains required `defaultInstance: ViewInstance | null`, the authoritative default view from the deletion transaction rather than an ID inferred from local order.

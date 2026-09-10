@@ -93,33 +93,44 @@ it.each(['load', 'dispose'] as const)(
   },
 );
 
-it('does not let an old completion release a new lifecycle default write', async () => {
+it('keeps default writes serialized across reload until the previous host write settles', async () => {
   const first = deferred<void>();
-  const second = deferred<void>();
-  const saveDefault = vi
-    .fn()
-    .mockReturnValueOnce(first.promise)
-    .mockReturnValueOnce(second.promise);
+  let persisted: string | null = 'mine';
+  const saveDefault = vi.fn(
+    async (_definitionId: string, id: string | null) => {
+      if (id === 'shared') await first.promise;
+      persisted = id;
+    },
+  );
   const { engine } = setup({
-    host: { preference: { saveDefault } } as ViewHost,
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () => ({
+          instances: [instance(), instance('shared')],
+          defaultInstanceId: persisted,
+        }),
+        delete: vi.fn(),
+      },
+      permission: { getInstance: managementPermissions },
+      preference: { saveDefault },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const oldWrite = engine.setDefaultInstance('shared');
-  const loading = engine.load();
-  expect(engine.getSnapshot()).toMatchObject({
-    status: 'loading',
-    defaultInstanceId: null,
-    instanceIds: [],
-  });
-  await expect(engine.setDefaultInstance(null)).rejects.toThrow(/正在加载/);
-  await loading;
-  const newWrite = engine.setDefaultInstance(null);
-  first.resolve();
-  await oldWrite;
-  await expect(engine.setDefaultInstance('mine')).rejects.toThrow(/正在保存/);
+  await engine.load();
+  try {
+    await expect(engine.setDefaultInstance(null)).rejects.toThrow(/正在保存/);
+    await expect(engine.deleteInstance('mine')).rejects.toThrow(/正在保存/);
+    expect(saveDefault).toHaveBeenCalledTimes(1);
+  } finally {
+    first.resolve();
+    await oldWrite;
+  }
+  expect(persisted).toBe('shared');
   expect(engine.getSnapshot().defaultInstanceId).toBe('mine');
-  second.resolve();
-  await newWrite;
+  await engine.setDefaultInstance(null);
+  expect(persisted).toBe(null);
   expect(engine.getSnapshot().defaultInstanceId).toBe(null);
   expect(saveDefault).toHaveBeenCalledTimes(2);
   engine.dispose();
@@ -154,9 +165,10 @@ it.each(['default', 'delete'] as const)(
   'rejects conflicting target writes when %s starts first',
   async first => {
     const response = deferred<void>();
-    const remove = vi.fn(() =>
-      first === 'delete' ? response.promise : Promise.resolve(),
-    );
+    const remove = vi.fn(async () => {
+      if (first === 'delete') await response.promise;
+      return { defaultInstance: instance() };
+    });
     const saveDefault = vi.fn(() =>
       first === 'default' ? response.promise : Promise.resolve(),
     );
@@ -187,11 +199,64 @@ it.each(['default', 'delete'] as const)(
   },
 );
 
+it('serializes default writes with deletion of other instances', async () => {
+  const pendingDefault = deferred<void>();
+  const { engine } = setup({
+    host: {
+      preference: { saveDefault: () => pendingDefault.promise },
+      instance: { delete: async () => ({ defaultInstance: null }) },
+      permission: { getInstance: managementPermissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  const saving = engine.setDefaultInstance('shared');
+  try {
+    await expect(engine.deleteInstance('mine')).rejects.toThrow(/正在保存/);
+  } finally {
+    pendingDefault.resolve();
+    await saving;
+    engine.dispose();
+  }
+});
+
+it('serializes deletions and prevents a later default from being overwritten by a receipt', async () => {
+  const response = deferred<{ defaultInstance: null }>();
+  const { engine } = setup({
+    host: {
+      preference: { saveDefault: async () => {} },
+      instance: {
+        delete: async (id: string) =>
+          id === 'mine' ? response.promise : { defaultInstance: null },
+      },
+      permission: { getInstance: managementPermissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  const deleting = engine.deleteInstance('mine');
+  try {
+    await expect(engine.setDefaultInstance('shared')).rejects.toThrow(
+      /正在删除/,
+    );
+    await expect(engine.deleteInstance('shared')).rejects.toThrow(/正在删除/);
+  } finally {
+    response.resolve({ defaultInstance: null });
+    await deleting;
+    engine.dispose();
+  }
+});
+
 it('keeps a nondeleted default and falls back in user order when deleting the default', async () => {
   const { engine } = setup({
     host: {
       preference: { saveDefault: async () => {}, saveOrder: async () => {} },
-      instance: { delete: async () => {} },
+      instance: {
+        delete: vi
+          .fn()
+          .mockResolvedValueOnce({ defaultInstance: instance() })
+          .mockResolvedValueOnce({ defaultInstance: instance('created') })
+          .mockResolvedValueOnce({ defaultInstance: instance('shared') })
+          .mockResolvedValueOnce({ defaultInstance: null }),
+      },
       permission: { getInstance: managementPermissions },
     } as unknown as ViewHost,
   });

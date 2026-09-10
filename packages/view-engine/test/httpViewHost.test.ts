@@ -52,6 +52,32 @@ function client(token = 'alice-token', timeoutMs = 1000) {
     resolveSource: setup().host.resolveSource,
   });
 }
+it('returns the authoritative default through DELETE after another client reorders views', async () => {
+  const host = client();
+  const other = client();
+  const first = await other.instance.create(
+    { ...instance, title: 'First' },
+    { requestId: 'first' },
+  );
+  const second = await other.instance.create(
+    { ...instance, title: 'Second' },
+    { requestId: 'second' },
+  );
+  const engine = new ViewEngine({ definitionId: definition.id, host });
+  await engine.load();
+  const revision = engine.getSnapshot().sessions[instance.id].baseline.revision;
+  await other.preference.saveOrder(definition.id, [
+    instance.id,
+    second.id,
+    first.id,
+  ]);
+  await engine.deleteInstance(instance.id);
+  expect(engine.getSnapshot().defaultInstanceId).toBe(second.id);
+  expect(
+    (await host.instance.delete(instance.id, revision)).defaultInstance,
+  ).toEqual(second);
+  engine.dispose();
+});
 it('allows only the configured browser origin before preflight or writes', async () => {
   const endpoint = `${server.baseUrl}definitions/${definition.id}/instances`;
   for (const method of ['OPTIONS', 'POST']) {

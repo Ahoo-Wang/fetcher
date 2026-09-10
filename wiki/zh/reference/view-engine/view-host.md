@@ -15,7 +15,7 @@ description: 定义、实例、偏好、权限与记录查询数据源的职责�
 | `instance`   | `create(instanceWithoutIdOrRevision, context)` | 返回创建后的权威实例，context 含 requestId 和可选 signal |
 | `instance`   | `save(instance)`                               | 返回保存实例及权威 revision                              |
 | `instance`   | `rename(instanceId, title, revision?)`         | 返回改名后的实例                                         |
-| `instance`   | `delete(instanceId, revision?)`                | `Promise<void>`                                          |
+| `instance`   | `delete(instanceId, revision?)`                | `Promise<ViewDeleteResult>`                              |
 | `preference` | `saveOrder(definitionId, instanceIds)`         | 保存当前用户的排序偏好                                   |
 | `preference` | `saveDefault(definitionId, instanceId)`        | 保存当前用户默认项；`instanceId` 为 `string \| null`     |
 | `permission` | `getInstance(instance)`                        | 同步 `ViewInstancePermissions`                           |
@@ -25,6 +25,8 @@ description: 定义、实例、偏好、权限与记录查询数据源的职责�
 | host         | `resolveSource(sourceId)`                      | `RecordQuerySource` 或其 Promise                         |
 
 加载引擎时等待 `permission.load`；没有 load 时使用 `permission.refresh`。权限初始化失败不能进入 ready。getter 必须是纯函数，读取已初始化策略。后续变化需要发布通知或替换 host，仅修改不可观察的闭包不会通知 React。
+
+`ViewDeleteResult` 的必填字段 `defaultInstance: ViewInstance | null` 是删除事务确认的当前用户默认视图；幂等重复删除也返回该回执，null 明确表示没有默认项。引擎校验后采用其 ID，不根据本地旧排序推断，也不额外请求列表。返回尚未加载的默认视图时只初始化该会话，保留已有会话和草稿。无效回执保留本地编辑并要求按原删除请求重试核对。同一引擎内，删除操作与默认偏好写入互斥。
 
 ## 写入与不确定结果
 
