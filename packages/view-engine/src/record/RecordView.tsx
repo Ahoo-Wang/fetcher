@@ -138,10 +138,10 @@ export function RecordView({
   const paginationOperations = bindRecordPagination(engine, id);
   const tableOperations = {
     setLayout(layout: Parameters<ViewEngine['setLayout']>[0]) {
-      engine.setLayout(layout, id);
+      if (engine.getSnapshot().sessions[id]) engine.setLayout(layout, id);
     },
     setCardConfig(card: Parameters<ViewEngine['setCardConfig']>[0]) {
-      engine.setCardConfig(card, id);
+      if (engine.getSnapshot().sessions[id]) engine.setCardConfig(card, id);
     },
     clearSelection() {
       if (engine.getSnapshot().sessions[id]) engine.setSelection([], id);

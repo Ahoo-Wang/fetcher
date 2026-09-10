@@ -149,7 +149,7 @@ export function RecordCardList(props: RecordCardListProps) {
           const cell = (column: RecordColumn) => (
             <RecordRendererBoundary
               label={column.title ?? '卡片字段'}
-              resetKey={[record, column, props.extensions, instance]}
+              resetKey={[record, card, props.extensions, instance, definition]}
             >
               <RecordCell
                 {...props}

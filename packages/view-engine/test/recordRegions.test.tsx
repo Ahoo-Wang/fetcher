@@ -442,3 +442,36 @@ it('sorts a card-only view using the shared engine configuration', async () => {
     ).toEqual([]),
   );
 });
+
+it('ignores delayed layout edits after their rendered instance has been deleted', async () => {
+  const { host } = setup();
+  host.instance!.delete = vi.fn().mockResolvedValue(undefined);
+  host.permission = { getInstance: () => ({ delete: true }) };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host,
+  });
+  engines.push(engine);
+  await engine.load();
+  let captured!: RecordToolbarRenderContext;
+  render(
+    <RecordView
+      engine={engine}
+      renderToolbar={context => {
+        captured = context;
+        return context.defaultContent;
+      }}
+    />,
+  );
+  await screen.findByRole('cell', { name: '42' });
+  const delayed = captured;
+  await act(() => engine.deleteInstance(instance.id));
+  const state = engine.getSnapshot();
+  expect(() => delayed.setLayout('card')).not.toThrow();
+  expect(() =>
+    delayed.setCardConfig({ title: { id: 'title', field: 'id' }, fields: [] }),
+  ).not.toThrow();
+  expect(engine.getSnapshot()).toBe(state);
+});

@@ -295,3 +295,73 @@ it('rejects mismatched layouts at both standalone renderer boundaries', () => {
     log.mockRestore();
   }
 });
+
+it.each(['title', 'field', 'actions'] as const)(
+  'retains a failed %s renderer across unrelated selection updates',
+  kind => {
+    const base = props();
+    const record = { meta: { id: 'a' }, name: 'A', amount: 42 };
+    const broken = vi.fn(() => {
+      throw new Error('broken renderer');
+    });
+    const extensions = { cells: { broken }, rowActions: { broken } };
+    const card = {
+      title: {
+        id: 'title',
+        field: 'name',
+        ...(kind === 'title' ? { renderer: { name: 'broken' } } : {}),
+      },
+      fields:
+        kind === 'field'
+          ? [{ id: 'amount', field: 'amount', renderer: { name: 'broken' } }]
+          : [],
+      ...(kind === 'actions'
+        ? { actions: { renderer: { name: 'broken' } } }
+        : {}),
+    };
+    const instance = {
+      ...base.instance,
+      config: {
+        ...base.instance.config,
+        presentation: { layout: 'card' as const, card },
+      },
+    };
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const view = render(
+        <RecordCardList
+          {...base}
+          instance={instance}
+          rows={[record]}
+          extensions={extensions}
+          selectable
+        />,
+      );
+      expect(screen.getByRole('alert').textContent).toContain('渲染失败');
+      const calls = broken.mock.calls.length;
+      view.rerender(
+        <RecordCardList
+          {...base}
+          instance={instance}
+          rows={[record]}
+          extensions={extensions}
+          selectable
+          selectedRowKeys={['a']}
+        />,
+      );
+      expect(broken).toHaveBeenCalledTimes(calls);
+      view.rerender(
+        <RecordCardList
+          {...base}
+          instance={instance}
+          rows={[{ ...record, name: 'updated' }]}
+          extensions={extensions}
+          selectable
+        />,
+      );
+      expect(broken.mock.calls.length).toBeGreaterThan(calls);
+    } finally {
+      log.mockRestore();
+    }
+  },
+);
