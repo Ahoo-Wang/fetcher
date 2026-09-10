@@ -320,6 +320,41 @@ it.each(['loading', 'loaded'] as const)(
   },
 );
 
+it('clears an unverified create when the known created instance is gone', async () => {
+  const host = service();
+  let firstCreate = true;
+  const engine = engineFor({
+    ...host,
+    instance: {
+      ...host.instance,
+      create: async (input, ctx) => {
+        const created = await host.instance.create(input, ctx);
+        if (!firstCreate) return created;
+        firstCreate = false;
+        // Commit then disappear; the engine still holds the known new id.
+        await host.instance.delete(created.id, created.revision);
+        return { ...created, title: 'mutated-by-transport' };
+      },
+    },
+    resolveSource: id => host.resolveSource(id),
+  });
+  await engine.load();
+  await expect(engine.saveAs(copyOptions)).rejects.toThrow(
+    '保存结果不符合原样保存契约',
+  );
+  expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(true);
+  await engine.reloadInstance();
+  const session = engine.getSnapshot().sessions.mine;
+  expect(session.requiresReload).toBe(false);
+  expect(session.writeError).toContain('已不存在');
+  await engine.saveAs({ ...copyOptions, title: 'Allowed copy' });
+  expect(
+    (await host.instance.list(definition.id)).instances.filter(
+      item => item.title === 'Allowed copy',
+    ),
+  ).toHaveLength(1);
+});
+
 it('preserves edits to an existing copy made by synchronous query-cancellation observers', async () => {
   const host = service();
   const pending = deferred<{ list: never[]; total: number }>(),

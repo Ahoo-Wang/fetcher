@@ -75,6 +75,48 @@ it('preserves loaded AND duplicates in advanced mode until simple mode can repre
   );
 });
 
+it('collapses an emptied root AND back to MATCH_ALL in simple mode', async () => {
+  const apply = vi.fn();
+  const change = vi.fn();
+  render(
+    <FilterPanel
+      fields={fields}
+      defaultValue={configuration(
+        {
+          ...node('AND'),
+          operands: [
+            node('GTE', 'amount', { value: 1 }),
+            node('EQ', 'status', { value: 'open' }),
+          ],
+        },
+        'simple',
+      )}
+      onApply={apply}
+      onChange={change}
+    />,
+  );
+  expect(
+    screen.getByRole('combobox', { name: '筛选模式' }).textContent,
+  ).toContain('简单');
+  fireEvent.click(screen.getByRole('button', { name: '删除订单金额条件' }));
+  expect(change.mock.lastCall?.[0].root.operands).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: '删除订单状态条件' }));
+  const root = change.mock.lastCall?.[0].root;
+  expect(root.operator).toBe(filter.matchAll().op);
+  expect(root.operands).toBeUndefined();
+  expect(change.mock.lastCall?.[0].mode).toBe('simple');
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(
+    screen
+      .getByRole('button', { name: '查询', exact: true })
+      .hasAttribute('disabled'),
+  ).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: '查询', exact: true }));
+  expect(apply).toHaveBeenCalledWith(
+    expect.objectContaining({ expression: filter.matchAll() }),
+  );
+});
+
 it('allows switching repeated-field groups from OR to AND without dropping rules', async () => {
   const apply = vi.fn();
   render(

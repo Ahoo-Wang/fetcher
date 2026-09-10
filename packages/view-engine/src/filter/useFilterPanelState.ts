@@ -167,9 +167,18 @@ export function useFilterPanelState(props: FilterPanelProps) {
     next?: FilterComponentConfig,
     preserveValidity = false,
   ) {
+    const replaced = replaceFilterNode(configurationRef.current.root, id, next);
+    // Deleting the last simple-mode leaf leaves an empty root AND, which
+    // isSimpleFilter rejects; collapse only on deletion so intentional empty
+    // groups from the advanced menu stay intact.
     change(
-      replaceFilterNode(configurationRef.current.root, id, next) ??
-        newFilterNode(FilterOperator.MATCH_ALL),
+      next === undefined &&
+        replaced &&
+        replaced.operator === FilterOperator.AND &&
+        Array.isArray(replaced.operands) &&
+        replaced.operands.length === 0
+        ? newFilterNode(FilterOperator.MATCH_ALL)
+        : (replaced ?? newFilterNode(FilterOperator.MATCH_ALL)),
     );
     if (!preserveValidity) setEditorValidity(previous => without(previous, id));
     setEditorOutputErrors(previous => without(previous, id));

@@ -27,6 +27,7 @@ import {
   inheritEditingSession,
   instanceContent,
 } from './sessionState.js';
+import { ViewServiceError } from '../viewServiceContract.js';
 
 /** Reload and uncertain-save-as reconciliation; never silently discards local edits. */
 export class ViewReload {
@@ -137,11 +138,38 @@ export class ViewReload {
           )
         )
           throw new Error('创建回执不符合原样保存契约，仍需核对');
-      } else
-        result = await this.host.instance!.load!(
-          unverified?.id ?? id,
-          controller.signal,
-        );
+      } else {
+        try {
+          result = await this.host.instance!.load!(
+            unverified?.id ?? id,
+            controller.signal,
+          );
+        } catch (error) {
+          // A known created id that no longer exists is a definitive negative.
+          // Without this path the session stays requiresReload forever.
+          if (
+            unverified?.id &&
+            error instanceof ViewServiceError &&
+            error.code === 'NOT_FOUND'
+          ) {
+            if (
+              !this.scope.current(lifecycle) ||
+              this.work.reloadToken(id) !== controller
+            )
+              return;
+            this.work.finishCreate(id);
+            this.store.clearPendingCreate(id);
+            this.work.finishReload(id, controller, () =>
+              this.store.patch(id, {
+                requiresReload: false,
+                writeError: '另存创建的实例已不存在，可重新另存',
+              }),
+            );
+            return;
+          }
+          throw error;
+        }
+      }
       if (
         !this.scope.current(lifecycle) ||
         this.work.reloadToken(id) !== controller
