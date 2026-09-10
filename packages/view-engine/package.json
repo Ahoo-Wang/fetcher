@@ -25,7 +25,12 @@
       "import": "./dist/react.js"
     },
     "./styles.css": "./dist/styles.css",
-    "./themes/*.css": "./dist/themes/*.css"
+    "./themes/neutral.css": "./dist/themes/neutral.css",
+    "./themes/blue.css": "./dist/themes/blue.css",
+    "./themes/violet.css": "./dist/themes/violet.css",
+    "./themes/green.css": "./dist/themes/green.css",
+    "./themes/orange.css": "./dist/themes/orange.css",
+    "./themes/shadcn.css": "./dist/themes/shadcn.css"
   },
   "files": [
     "dist",

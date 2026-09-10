@@ -20,8 +20,8 @@
     --fve-background: light-dark(oklch(1 0 0deg), oklch(0.145 0 0deg));
     --fve-foreground: light-dark(oklch(0.145 0 0deg), oklch(0.985 0 0deg));
     --fve-primary: light-dark(
-      oklch(48.8% 0.243 264.376),
-      oklch(80.9% 0.105 251.813)
+      oklch(48.8% 0.243 264.376deg),
+      oklch(80.9% 0.105 251.813deg)
     );
     --fve-primary-foreground: light-dark(#fff, #171717);
     --fve-secondary: light-dark(oklch(0.97 0 0deg), oklch(0.269 0 0deg));
@@ -48,8 +48,8 @@
     --fve-border: light-dark(oklch(0.922 0 0deg), oklch(1 0 0deg / 10%));
     --fve-input: light-dark(oklch(0.922 0 0deg), oklch(1 0 0deg / 15%));
     --fve-ring: light-dark(
-      oklch(48.8% 0.243 264.376),
-      oklch(80.9% 0.105 251.813)
+      oklch(48.8% 0.243 264.376deg),
+      oklch(80.9% 0.105 251.813deg)
     );
   }
 }

@@ -18,6 +18,7 @@
   --fve-ring: light-dark(#1d4ed8, #93c5fd);
   --fve-radius: 0.25rem;
 }
+
 /* Example host shadcn tokens, scoped so other examples are unaffected. */
 .theme-example-host {
   --primary: #6d28d9;
