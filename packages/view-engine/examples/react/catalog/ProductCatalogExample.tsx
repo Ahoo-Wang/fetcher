@@ -32,16 +32,29 @@ import {
 import { createCatalog, definition, views } from './catalog.js';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-export function ProductCatalogExample({
-  appearance = 'light',
-  custom = false,
-  persistViews = false,
-}: {
+type ProductCatalogExampleProps = {
   appearance?: 'light' | 'dark';
   custom?: boolean;
   persistViews?: boolean;
-}) {
+};
+
+export function ProductCatalogExample(props: ProductCatalogExampleProps) {
   const [catalog] = useState(createCatalog);
+  return (
+    <CatalogWorkspace
+      key={String(props.persistViews ?? false)}
+      {...props}
+      catalog={catalog}
+    />
+  );
+}
+
+function CatalogWorkspace({
+  appearance = 'light',
+  custom = false,
+  persistViews = false,
+  catalog,
+}: ProductCatalogExampleProps & { catalog: ReturnType<typeof createCatalog> }) {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [notice, setNotice] = useState('');
