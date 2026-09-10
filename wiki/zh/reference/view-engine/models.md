@@ -13,9 +13,11 @@ description: 保存组件配置，并显式声明记录与数据源能力。
 | `sourceId`                            | 传给 `host.resolveSource` 的本地标识                                         |
 | `rowKey`                              | 相对记录的自有属性路径，指向唯一字符串或有限数字                             |
 | `fields`                              | 只读字段定义：`field`、`label`，以及可选 type/group/options/operators/editor |
+| `allowedLayouts`                      | 必填、非空且不重复的布局数组：`table`、`card` 或两者。仅一种时隐藏切换入口。 |
+| `defaultPresentation?`                | 可选的 `table` / `card` 默认配置；首次切换到尚未配置的布局时初始化。         |
 | `timeZone?`                           | 筛选与日期时间单元格共用时区，省略时使用本地运行环境                         |
 | `allowedOperators?`、`filterEditors?` | 定义级操作符限制和编辑器默认值                                               |
-| `recordActions?`                      | 全局、表格、行操作的命名引用                                                 |
+| `recordActions?`                      | 全局、工具栏、行操作的命名引用                                               |
 
 `ViewFieldDefinition` 还支持 `sortable`、`cellRenderer`、`numberFormat` 和 `summaryFunctions`。`RendererReference` 与 `FilterEditorReference` 都是 `{ name: string, options?: JSON object }`，函数属于运行时注册。
 
@@ -28,11 +30,18 @@ description: 保存组件配置，并显式声明记录与数据源能力。
 | `filters`      | `FilterConfiguration`：模式与组件树           |
 | `sort`         | Wow `FieldSort[]`                             |
 | `pagination`   | `{ mode: 'paged' \| 'cursor', size: number }` |
-| `presentation` | `{ layout: 'table', table: { columns } }`     |
+| `presentation` | `RecordPresentation`                          |
 
 scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shared' }`；另存为只接受个人或共享范围。`ViewInstanceList` 返回完整可见 `instances`，以及字符串或 null 的 `defaultInstanceId`。
 
 字段列包含 `id`、`kind: 'field'`、`field`，以及可选 `title`、`width`、`visible`、`pinned`、`renderer`、`summary`。操作列使用 `kind: 'actions'`，没有 field。显式宽度为 64–960 px，导出常量提供最小、最大与默认值（180 px）。`getRecordColumnPinning` 计算主键/操作列的强制固定位置；`orderRecordColumns` 返回展示顺序，不改写保存偏好。
+
+`RecordPresentation` 为以 `layout` 区分的联合类型：
+
+- `{ layout: 'table', table: RecordTableConfig, card?: RecordCardConfig }`
+- `{ layout: 'card', card: RecordCardConfig, table?: RecordTableConfig }`
+
+活动布局必须在定义的 `allowedLayouts` 中。表格配置包含 `columns`；卡片配置包含 `title`、`fields`，以及可选 `cover` 和 `actions`。切换保留另一种布局的配置，视图保存和恢复包含双方配置；不包含运行时 `renderCard` 回调。
 
 ## RecordQuerySource
 

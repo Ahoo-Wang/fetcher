@@ -14,7 +14,7 @@ description: 独立数据视图引擎的公开入口、使用前提与契约。
 | `@ahoo-wang/fetcher-view-engine/react`      | ViewPage、RecordView、FilterPanel、表格及内置控件            | React 19 与浏览器 UI             |
 | `@ahoo-wang/fetcher-view-engine/styles.css` | 编译后的作用域样式                                           | 应用中导入一次                   |
 
-消费者不需要 Tailwind 或 React Compiler 插件。`fve:` 是 CSS 工具类前缀，不是配置中的组件名前缀。当前实现支持 `kind: 'record'` 与 `layout: 'table'`。
+消费者不需要 Tailwind 或 React Compiler 插件。`fve:` 是 CSS 工具类前缀，不是配置中的组件名前缀。当前实现支持 `kind: 'record'` 与 `layout: 'table' | 'card'`。
 
 | 契约                                 | 阅读主题                   |
 | ------------------------------------ | -------------------------- |
@@ -26,3 +26,5 @@ description: 独立数据视图引擎的公开入口、使用前提与契约。
 | 两个代码入口的全部导出名称           | [符号索引](./symbols.md)   |
 
 接入步骤见[任务指南](../../guides/view-engine/index.md)，可运行基线见[共享示例](../../examples/view-engine.md)。`dev`、引擎内部服务和未导出的 UI 原语不构成额外公开入口。
+
+可用布局由必填的 `ViewDefinition.allowedLayouts` 控制；仅允许一种时不显示切换入口。切换会保留各布局配置，参见[模型契约](./models.md)。

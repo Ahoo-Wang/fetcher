@@ -7,15 +7,17 @@ description: Persist component configuration and declare record and source capab
 
 ## ViewDefinition
 
-| Property                              | Contract                                                                                        |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `id`, `title`                         | Shared definition identity and display title                                                    |
-| `sourceId`                            | Local identifier passed to `host.resolveSource`                                                 |
-| `rowKey`                              | Record-relative own-property path to a unique string or finite-number key                       |
-| `fields`                              | Read-only field definitions with `field`, `label`, optional type/group/options/operators/editor |
-| `timeZone?`                           | Shared filter/cell datetime timezone; omission uses local runtime                               |
-| `allowedOperators?`, `filterEditors?` | Definition-level operator restrictions and editor defaults                                      |
-| `recordActions?`                      | Named global/table/row renderer references                                                      |
+| Property                              | Contract                                                                                             |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `id`, `title`                         | Shared definition identity and display title                                                         |
+| `sourceId`                            | Local identifier passed to `host.resolveSource`                                                      |
+| `rowKey`                              | Record-relative own-property path to a unique string or finite-number key                            |
+| `fields`                              | Read-only field definitions with `field`, `label`, optional type/group/options/operators/editor      |
+| `allowedLayouts`                      | Required, nonempty, unique layout array: `table`, `card`, or both. A single layout hides the switch. |
+| `defaultPresentation?`                | Optional `table` / `card` presets used when first initializing an unconfigured layout.               |
+| `timeZone?`                           | Shared filter/cell datetime timezone; omission uses local runtime                                    |
+| `allowedOperators?`, `filterEditors?` | Definition-level operator restrictions and editor defaults                                           |
+| `recordActions?`                      | Named global/toolbar/row renderer references                                                         |
 
 `ViewFieldDefinition` also supports `sortable`, `cellRenderer`, `numberFormat` and `summaryFunctions`. `RendererReference` and `FilterEditorReference` are `{ name: string, options?: JSON object }`. Functions belong to runtime registration.
 
@@ -28,11 +30,18 @@ A `ViewInstance` is a `RecordViewInstance`: `id`, `definitionId`, `title`, optio
 | `filters`       | `FilterConfiguration`: mode plus component tree |
 | `sort`          | Wow `FieldSort[]`                               |
 | `pagination`    | `{ mode: 'paged' \| 'cursor', size: number }`   |
-| `presentation`  | `{ layout: 'table', table: { columns } }`       |
+| `presentation`  | `RecordPresentation`                            |
 
 Scope is `{ type: 'personal' }` or `{ type: 'public', source: 'system' | 'shared' }`. Save-as accepts personal or shared scope. `ViewInstanceList` returns the complete visible `instances` and a `defaultInstanceId` string or null.
 
 A field column has `id`, `kind: 'field'`, `field` and optional `title`, `width`, `visible`, `pinned`, `renderer`, `summary`. An actions column uses `kind: 'actions'` and no field. Explicit width is 64–960 px; helpers export minimum, maximum and default (180 px). Row-key/action mandatory pinning is computed by `getRecordColumnPinning`; `orderRecordColumns` returns display order without rewriting persisted preferences.
+
+`RecordPresentation` is a union discriminated by `layout`:
+
+- `{ layout: 'table', table: RecordTableConfig, card?: RecordCardConfig }`
+- `{ layout: 'card', card: RecordCardConfig, table?: RecordTableConfig }`
+
+The active layout must belong to the definition's `allowedLayouts`. Table configuration contains `columns`; card configuration contains `title`, `fields`, and optional `cover` and `actions`. Switching preserves the other layout's configuration; saving/restoring includes both configurations, but never the runtime `renderCard` callback.
 
 ## RecordQuerySource
 

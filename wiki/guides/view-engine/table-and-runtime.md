@@ -55,3 +55,29 @@ Manual refresh, automatic refresh and page expansion are in the global toolbar. 
 Expansion fills the page area and exits with Escape; it is not the browser Fullscreen API. Query errors, summary errors and action errors retain their own recovery positions. During background refresh, the last successful rows remain usable; first load uses Spin and empty results use an icon.
 
 Verify **Record View → 表格与汇总 / 运行时工具 / 布局与主题** and **单元格 → 内置组件**. See [component props](../../reference/view-engine/components.md).
+
+## Card layout and default configuration
+
+Set `ViewDefinition.defaultPresentation.card` to provide the initial title, optional cover, summary fields and row actions. `defaultPresentation.table` supplies default columns. Both presets work with local definitions and remote JSON. Existing instance configuration takes precedence; switching layouts never overwrites settings or reruns record queries.
+
+```ts
+const defaultPresentation = {
+  card: {
+    title: { id: 'title', field: 'id' },
+    fields: [
+      { id: 'amount', field: 'amount', renderer: { name: 'number' } },
+      { id: 'status', field: 'status' },
+    ],
+  },
+};
+```
+
+Attach this object to a definition that declares these fields. Call `resolveRecordPresentation(definition, 'card')` when constructing an instance, or use the built-in Table/Card toolbar buttons. Only the active layout configuration is required. `engine.setLayout('card')` selects cards; `engine.setCardConfig(config)` changes their settings. Switching back restores that layout's last applied configuration, including unsaved edits. Save persists layout and both configured presentations; defaults are not reapplied on reload.
+
+Card settings edit a local draft; Apply updates the instance, Cancel discards it. Row actions use `actions: { renderer: { name: 'custom' } }`, or `{}` to use `definition.recordActions.row`. Hiding actions sets `visible: false` and preserves the renderer. Presets contain JSON references, while actual components remain in `extensions.cells`/`rowActions`.
+
+Missing title values fall back to the record key; 0 and false remain valid. A cover must reference a string field containing an http/https or relative image URL. Invalid or failed images show a placeholder. Card selection uses the same current-page keys as table selection. Cards do not run summaries; returning to table recalculates configured summaries without reloading records.
+
+`ViewDefinition.allowedLayouts` is required and must be nonempty and unique: `['table']`, `['card']`, or both. A single allowed layout hides the toolbar switch. The engine and instance loading reject disallowed active layouts. Switching preserves each layout's configuration. Cards use a top-right selection button (`aria-pressed`) without a separate row; custom content should leave this corner clear. Global controls use icons with hints; menus retain text.
+
+The shared record toolbar exposes sorting, as active rules in priority order, with drag/keyboard reordering, add/remove controls and a clear action. It uses the same `instance.config.sort` as table headers and remains available for card-only views. Explicit refresh of the same paged query retains existing rows so actions remain mounted; filter, sort, page changes and cursor refresh still reload their results.

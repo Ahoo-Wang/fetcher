@@ -8,13 +8,13 @@ description: 注册业务渲染器、组合记录视图区域并选择局部 CSS
 
 ## 注册式业务扩展
 
-| 需求               | 注册位置                   | 配置引用                                          |
-| ------------------ | -------------------------- | ------------------------------------------------- |
-| 全局业务操作       | `extensions.globalActions` | `definition.recordActions.global`                 |
-| 批处理 / 表格操作  | `extensions.tableActions`  | `definition.recordActions.table`                  |
-| 单行操作           | `extensions.rowActions`    | `definition.recordActions.row`，并提供 actions 列 |
-| 筛选组件与编译逻辑 | `extensions.filters`       | 字段、操作符或组件配置的编辑器引用                |
-| 自定义单元格       | `extensions.cells`         | `field.cellRenderer` 或 `column.renderer`         |
+| 需求               | 注册位置                    | 配置引用                                          |
+| ------------------ | --------------------------- | ------------------------------------------------- |
+| 全局业务操作       | `extensions.globalActions`  | `definition.recordActions.global`                 |
+| 批处理 / 表格操作  | `extensions.toolbarActions` | `definition.recordActions.toolbar`                |
+| 单行操作           | `extensions.rowActions`     | `definition.recordActions.row`，并提供 actions 列 |
+| 筛选组件与编译逻辑 | `extensions.filters`        | 字段、操作符或组件配置的编辑器引用                |
+| 自定义单元格       | `extensions.cells`          | `field.cellRenderer` 或 `column.renderer`         |
 
 引用统一为 `{ name, options? }`，options 只能包含 JSON 数据。组件、服务客户端和回调注册在运行时 extensions 中，不能写入保存的 JSON。未知名称和无效配置会显式报错。优先使用已有内置组件。
 
@@ -28,9 +28,9 @@ description: 注册业务渲染器、组合记录视图区域并选择局部 CSS
 
 `ViewTheme` 是 `/react` 提供的可选包装。`theme?: string` 接受内置或任意用户主题名；`appearance` 接受 `light`、`dark` 或 `system`；`density` 接受 `comfortable` 或 `compact`。省略时继承。`ViewThemeStyle` 接受 React CSS 属性以及有类型的 `--fve-*` 行内变量。CSS 仍是基础接口。
 
-`ViewPage`、`ViewPageContent` 与 `RecordView` 支持 `renderTableToolbar` 和 `renderPagination`。只读上下文提供 `defaultContent`、相关状态以及绑定实例的受控操作。返回 `defaultContent` 可保留默认区域，包裹它可追加 UI，返回 `null` 可隐藏区域；默认节点最多渲染一次。回调是渲染函数，需要 Hook 或局部状态时应返回自有组件。库按区域隔离渲染错误；事件处理与异步操作错误仍由应用处理。
+`ViewPage`、`ViewPageContent` 与 `RecordView` 支持 `renderToolbar` 和 `renderPagination`。只读上下文提供 `defaultContent`、相关状态以及绑定实例的受控操作。返回 `defaultContent` 可保留默认区域，包裹它可追加 UI，返回 `null` 可隐藏区域；默认节点最多渲染一次。回调是渲染函数，需要 Hook 或局部状态时应返回自有组件。库按区域隔离渲染错误；事件处理与异步操作错误仍由应用处理。
 
-稳定样式钩子为 `data-slot="record-view"`、`record-global-toolbar`、`record-table-toolbar`、`record-applied-filters` 与 `record-pagination`。内部 DOM 层级和工具类可能变化。完整全局工具栏继续固定，因为它负责刷新与展开生命周期。
+稳定样式钩子为 `data-slot="record-view"`、`record-global-toolbar`、`record-toolbar`、`record-applied-filters` 与 `record-pagination`。内部 DOM 层级和工具类可能变化。完整全局工具栏继续固定，因为它负责刷新与展开生命周期。
 
 ## 四个可复制示例
 
@@ -127,15 +127,11 @@ import { useState } from 'react';
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
 import {
   ViewPage,
-  type RecordTableToolbarRenderContext,
+  type RecordToolbarRenderContext,
 } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-function OrdersToolbar({
-  context,
-}: {
-  context: RecordTableToolbarRenderContext;
-}) {
+function OrdersToolbar({ context }: { context: RecordToolbarRenderContext }) {
   const [showHelp, setShowHelp] = useState(false);
 
   return (
@@ -162,7 +158,7 @@ export function Orders({
       scopeKey={scopeKey}
       definitionId="orders"
       selectable
-      renderTableToolbar={context => <OrdersToolbar context={context} />}
+      renderToolbar={context => <OrdersToolbar context={context} />}
     />
   );
 }
@@ -177,3 +173,28 @@ export function Orders({
 库 Portal 会复制已计算的公开颜色、排版、密度与有效外观。变量主题可跨 body Portal，`.brand [data-slot=...]` 一类结构选择器不可跨越。主题/密度属性、class、行内变量及系统偏好变化会更新打开的 Portal；没有伴随这些变化的任意 CSSOM 样式表替换不在监听范围。第三方 Portal 需要采用其自己的主题容器机制。
 
 CSS 自定义属性别名在继承前解析。派生值应定义在目标主题边界，不能依赖子作用域覆盖后重新计算继承的别名。移除局部变量或主题属性后会回到父级/默认作用域。组件契约见 [组件参考](../../reference/view-engine/components.md)，所有支持变量见包的[公开 API 表](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-view-engine/references/api.md)。
+
+### 自定义卡片内容
+
+在 `ViewPage`、`ViewPageContent`、`RecordView` 或 `RecordCardList` 上使用 `renderCard` 替换单张卡片内容。回调接收只读 record、rowKey、definition、instance、index、selected、defaultContent，以及绑定当前实例的 refresh。返回自有组件可自由安排信息结构，包裹 defaultContent 则保留配置字段。选择、网格、分页和错误隔离仍由库管理。回调不持久化；默认卡片设置仅影响 defaultContent。
+
+```tsx
+<ViewPage
+  {...pageProps}
+  renderCard={({ record, rowKey, selected }) => (
+    <article>
+      <h2>{String(rowKey)}</h2>
+      <p>{String(record.amount)}</p>
+      {selected && <span>已选择</span>}
+    </article>
+  )}
+/>
+```
+
+展示方式切换统一放在顶部全局工具栏，通过显示当前模式名称的下拉框操作，所有宽度保持一致。记录工具栏保留批量操作和布局设置。
+
+卡片预览包含实际的本地订单操作：查看详情、处理单笔订单、批量处理已选订单和创建订单。默认卡片与自定义卡片复用同一行操作组件。处理会修改数据并刷新当前队列，失败反馈和重试沿用已有订单操作 Provider。示例业务数据在刷新页面后重置，可持久化示例独立保存视图配置。
+
+提供 `renderCard` 时，RecordView/ViewPage 隐藏内置卡片设置；需要业务配置时通过现有 `renderToolbar` 和 `setCardConfig` 提供。包裹 `defaultContent` 的自定义渲染也遵循此规则，表格列设置不受影响。
+
+卡片 Storybook 使用 12 件家居与出行商品、本地 SVG 封面、详情、收藏及单个/批量上下架，默认卡片、自定义卡片、窄屏深色和保存视图共用同一数据源。原订单业务回归独立保留。
