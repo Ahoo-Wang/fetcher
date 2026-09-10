@@ -81,44 +81,39 @@ if (serveOnly) {
       throw new Error('Service assertion timed out');
     };
     await page.goto(url);
-    await page.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
+    await page
+      .getByRole('cell', { name: 'SO-202609-1018', exact: true })
+      .waitFor();
     await page
       .getByRole('textbox', { name: '状态显示名称' })
       .fill('HTTP 恢复标签');
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await waitUntil(
       async () =>
-        (await list()).instances.find(item => item.id === 'pending').config
+        (await list()).instances.find(item => item.id === 'my-orders').config
           .filters.root.props.displayLabel === 'HTTP 恢复标签',
     );
     await page.reload();
-    await page.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
+    await page
+      .getByRole('cell', { name: 'SO-202609-1018', exact: true })
+      .waitFor();
     assert.equal(
       await page.getByRole('textbox', { name: '状态显示名称' }).inputValue(),
       'HTTP 恢复标签',
     );
-    // All five runtime extension categories work with a restored HTTP-backed view.
-    await page.getByLabel('金额 120.00 元', { exact: true }).waitFor();
-    const beforeBusiness = await alice.instance.load('pending');
+    // The restored host resolves business data separately from view storage.
+    const beforeBusiness = await alice.instance.load('my-orders');
     await page.getByRole('button', { name: '创建订单', exact: true }).click();
-    await page.getByRole('cell', { name: 'DEMO-4', exact: true }).waitFor();
+    await page.getByRole('button', { name: '确认创建', exact: true }).click();
     await page
-      .getByRole('button', { name: '处理订单 DEMO-1', exact: true })
-      .click();
-    await page
-      .getByRole('cell', { name: 'DEMO-1', exact: true })
-      .waitFor({ state: 'detached' });
-    await page
-      .getByRole('checkbox', { name: '选择记录 DEMO-2', exact: true })
-      .click();
-    await page
-      .getByRole('checkbox', { name: '选择记录 DEMO-4', exact: true })
-      .click();
-    await page.getByRole('button', { name: '批量处理', exact: true }).click();
-    await page.getByRole('img', { name: '暂无记录', exact: true }).waitFor();
-    assert.deepEqual(await alice.instance.load('pending'), beforeBusiness);
+      .getByRole('dialog', { name: '订单详情 SO-202609-1019', exact: true })
+      .waitFor();
+    await page.getByRole('button', { name: '关闭详情', exact: true }).click();
+    assert.deepEqual(await alice.instance.load('my-orders'), beforeBusiness);
     await page.reload();
-    await page.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
+    await page
+      .getByRole('cell', { name: 'SO-202609-1018', exact: true })
+      .waitFor();
     await page.getByRole('button', { name: '视图选项', exact: true }).click();
     await page.getByRole('menuitem', { name: '另存为', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '另存为视图' });
@@ -156,7 +151,9 @@ if (serveOnly) {
     await bobPage
       .getByRole('button', { name: '共享 HTTP 视图', exact: true })
       .click();
-    await bobPage.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
+    await bobPage
+      .getByRole('cell', { name: 'SO-202609-1018', exact: true })
+      .waitFor();
     assert.equal(
       await bobPage.getByRole('textbox', { name: '状态显示名称' }).inputValue(),
       'HTTP 恢复标签',
@@ -189,7 +186,8 @@ if (serveOnly) {
           await server.hostFor('bob-token').instance.list(fixture.definition.id)
         ).instances
           .map(item => item.id)
-          .indexOf(shared.id) === 1,
+          .indexOf(shared.id) ===
+        aliceOrder.indexOf(shared.id) - 1,
     );
     assert.deepEqual(
       (await list()).instances.map(item => item.id),
@@ -233,7 +231,9 @@ if (serveOnly) {
     await page
       .getByRole('button', { name: '重新加载视图', exact: true })
       .click();
-    await page.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
+    await page
+      .getByRole('cell', { name: 'SO-202609-1018', exact: true })
+      .waitFor();
     const delayed = server.control.delayedReads;
     server.control.delayNextRead = 2000;
     await page
@@ -243,7 +243,9 @@ if (serveOnly) {
     await page
       .getByRole('button', { name: '重新打开已保存视图', exact: true })
       .click();
-    await page.getByRole('cell', { name: 'DEMO-1', exact: true }).waitFor();
+    await page
+      .getByRole('cell', { name: 'SO-202609-1018', exact: true })
+      .waitFor();
     await waitUntil(() => server.control.abortedReads >= 2);
     assert.deepEqual(errors, []);
 
@@ -271,7 +273,7 @@ if (serveOnly) {
         { coreUrl, fixture },
       );
     const old = await page.evaluate(() =>
-      window.storageHost.instance.load('pending'),
+      window.storageHost.instance.load('my-orders'),
     );
     const race = await Promise.all(
       [page, bobPage].map((tab, index) =>
@@ -327,10 +329,10 @@ if (serveOnly) {
     assert.equal(
       (
         await page.evaluate(() =>
-          window.storageHost.instance.list('demo-orders'),
+          window.storageHost.instance.list('sales-orders'),
         )
       ).instances.length,
-      2,
+      fixture.instances.instances.length,
     );
     console.log(
       JSON.stringify({

@@ -35,11 +35,11 @@ node packages/view-engine/scripts/verify-package.mjs
 pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175
 ```
 
-`examples/core.mjs` 演示无 React 的公开 API，包括未设置控件和自定义原始属性的 JSON 保存及新引擎恢复；`examples/react/OrderExample.tsx` 仅通过公开导入组合页面和五类扩展。打开 `http://127.0.0.1:4175`，或 Storybook 的 **View Engine → 快速开始 / 扩展接入**，体验操作、自定义过滤器/单元格、异常恢复与深色窄容器。
+`examples/core.mjs` 演示无 React 的公开 API，包括未设置控件和自定义原始属性的 JSON 保存及新引擎恢复；`examples/react/sales-order/OrderWorkbench.tsx` 仅通过公开导入组合页面和五类扩展。打开 `http://127.0.0.1:4175`，或 Storybook 的 **View Engine → 开始体验 → 全链路体验 / 开发接入 → 最小接入**，体验操作、自定义过滤器/单元格、异常恢复与深色窄容器。
 
 执行 `pnpm install` 后，`pnpm storybook` 和 `pnpm build-storybook` 会先显式构建 View Engine 及其工作区依赖，再启动或构建 Storybook。两者均使用包含 CSS 的公开 `dist` 入口；编辑包源码后重新运行命令即可重建，生产验收继续验证真实包产物。
 
-`examples/react/FilterPersistenceExample.tsx` 保存选中状态 ID 和独立编辑的显示名称。打开 `http://127.0.0.1:4175/?example=persistence`，或 **View Engine → 扩展接入 → 公共包 → 公共包 · 组件配置 JSON 保存与重新打开**：新增未设置控件后无需查询即可保存，并在新引擎中恢复；只改显示名称也能直接保存，状态值改变后则需先查询。
+`examples/react/FilterPersistenceExample.tsx` 保存选中状态 ID 和独立编辑的显示名称。打开 `http://127.0.0.1:4175/?example=persistence`，或 **View Engine → 专项场景 → 视图与运行时 → 配置与恢复 → 公共包 · 组件配置 JSON 保存与重新打开**：新增未设置控件后无需查询即可保存，并在新引擎中恢复；只改显示名称也能直接保存，状态值改变后则需先查询。
 
 `verify-package.mjs` 创建临时归档，检查 exports、CSS 与构建内容一致性，再针对解包后的产物运行并类型校验使用方代码，不执行安装或发布。示例使用严格的本地模拟服务；库级验证不替代宿主的真实鉴权、权限、持久化和后端查询验证。
 
@@ -151,7 +151,7 @@ save、rename 或 delete 发出后，`UNKNOWN_OUTCOME`、`UNAVAILABLE` 或未分
 
 全局和批量操作组件渲染失败后，选择、查询状态等实际输入发生变化时会重新尝试渲染；无关的筛选草稿编辑不会反复触发失败组件。
 
-Storybook 的 **View Engine → Record View** 使用内存服务演示完整请求与回包。详见[宿主与扩展契约](../../skills/fetcher-view-engine/references/api.md#record-views-and-host-contract)。
+Storybook 的 **View Engine → 专项场景 → 数据展示** 使用内存服务演示完整请求与回包。详见[宿主与扩展契约](../../skills/fetcher-view-engine/references/api.md#record-views-and-host-contract)。
 
 另存为的“可见范围”使用 Radio：个人视图仅自己可见，公共视图对有访问权限的用户可见。两项均直接展示说明；无创建权限的范围禁用，默认选中有权限的范围。
 
@@ -380,7 +380,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine test:compiled
 pnpm storybook
 ```
 
-在 Storybook 中打开 **View Engine → 过滤器**，体验业务筛选、嵌套元素条件、自定义编辑器校验、查询重试、深色主题与 50 种操作。**View Engine → 基础组件 → 日期时间** 提供单独日期时间控件。示例包括手动查询的字段组合、日期选择、秒精度时间、未完成输入、未设置值和深色主题；**View Engine → 基础组件 → Select** 演示选择、清空和重新选择；Controls 支持切换外观与禁用状态。组合示例使用浏览器本地时区生成毫秒时间戳的 Wow 表达式，不请求业务服务。这些示例消费包的公开构建产物，修改包源码后需重新构建。
+在 Storybook 中打开 **View Engine → 专项场景 → 查询与筛选 → 组合筛选**，体验业务筛选、嵌套元素条件、自定义编辑器校验、查询重试、深色主题与 50 种操作。**View Engine → 专项场景 → 组件与主题 → 日期时间** 提供单独日期时间控件。示例包括手动查询的字段组合、日期选择、秒精度时间、未完成输入、未设置值和深色主题；**View Engine → 专项场景 → 组件与主题 → Select** 演示选择、清空和重新选择；Controls 支持切换外观与禁用状态。组合示例使用浏览器本地时区生成毫秒时间戳的 Wow 表达式，不请求业务服务。这些示例消费包的公开构建产物，修改包源码后需重新构建。
 
 详见 [API 参考](../../skills/fetcher-view-engine/references/api.md) 与 [第三方许可说明](THIRD_PARTY_NOTICES.md)。
 
@@ -439,7 +439,7 @@ const sources: Record<string, FilterOptionSource> = { users: userOptionSource };
 
 多值文本按换行、中英文逗号和分号拆分、去除两端空白并去重，保留名称内部空格、大小写和前导零；Enter 先提交未完成条目，不承担 CSV 引号解析。区间保留 `lowerBound`、`upperBound` 组件属性；日期模式编译时包含最后一天全天，显式时间模式按精确时刻查询。
 
-在 Storybook 的 **View Engine → 过滤器 → 内置组件** 或独立示例 `?example=builtin-filters` 查看。`BuiltinFiltersExample.tsx` 通过 Fetcher 读取确定性 data URL 夹具，并以 LocalStorageViewHost 验证标签恢复与 JSON 持久化。只有该 data URL 夹具移除 URL 模板解析，真实 HTTP 客户端保留原有 URL 和鉴权拦截器。
+在 Storybook 的 **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** 或独立示例 `?example=builtin-filters` 查看。`BuiltinFiltersExample.tsx` 通过 Fetcher 读取确定性 data URL 夹具，并以 LocalStorageViewHost 验证标签恢复与 JSON 持久化。只有该 data URL 夹具移除 URL 模板解析，真实 HTTP 客户端保留原有 URL 和鉴权拦截器。
 
 `getFieldOperators(field)` 仅根据字段类型和显式 `field.operators` 推导能力。字段 `editor` 和定义 `filterEditors` 仅作为新建节点默认值；已有节点以自身 `component` 为准，由该组件注册检查兼容性。因此修改字段默认编辑器不会限制或替换已保存组件。
 
@@ -473,7 +473,7 @@ import { NumberCell, TextCell } from '@ahoo-wang/fetcher-view-engine/react';
 
 LinkCell 在 URL 解析后允许 HTTP(S)、mailto、tel 和相对地址，危险地址呈现为普通文本；新页链接固定带 `noopener noreferrer`。业务路由继续通过自定义组件处理。复制使用原始值，不能复制枚举名称或截断文字；剪贴板拒绝/不可用在按钮旁提示重试。TextCell 的 `text` 只改变展示。这些交互不会修改视图或触发查询。
 
-状态主题变量为 `--fve-success`、`--fve-warning`、`--fve-info` 与已有 `--fve-destructive`；状态始终保留文字，不只依赖颜色。弹层继承当前主题。**View Engine → 单元格 → 内置组件** 与 `examples/react/BuiltinCellsExample.tsx` 包含独立组合、深色窄屏、异常数据及 LocalStorageViewHost 刷新恢复示例。
+状态主题变量为 `--fve-success`、`--fve-warning`、`--fve-info` 与已有 `--fve-destructive`；状态始终保留文字，不只依赖颜色。弹层继承当前主题。**View Engine → 专项场景 → 组件与主题 → 内置单元格** 与 `examples/react/BuiltinCellsExample.tsx` 包含独立组合、深色窄屏、异常数据及 LocalStorageViewHost 刷新恢复示例。
 
 创建不修改默认实例偏好。`LocalStorageViewHost` 保留显式 `defaultInstanceId: null`；只有原先指定的默认实例已不可见时才回退到其他实例。删除当前访问范围中不存在的实例视为成功，不触及其他用户的私有视图；仍存在的可见实例继续校验权限和 revision。待确认创建状态属于当前引擎生命周期，直接服务调用者在重建客户端后自行保留原 requestId。
 

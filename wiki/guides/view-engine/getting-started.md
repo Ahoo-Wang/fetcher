@@ -15,7 +15,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-Open **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `200`: the rows stay unchanged until you press Enter or Query, then only `ORDER-002` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
+Open **View Engine → 开发接入 → 最小接入 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `10000`: the rows stay unchanged until you press Enter or Query, then only `SO-202609-1001` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
 
 ## Connect four responsibilities
 

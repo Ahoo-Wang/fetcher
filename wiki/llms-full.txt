@@ -1345,13 +1345,13 @@ See [promise lifecycle](../../reference/react/promise-and-query-state.md), [HTTP
 
 View Engine combines a React-independent engine, persisted component configuration, and React controls built with shadcn/Base UI. The implemented view kind is `record` with a table presentation. Analysis, cards and dashboards are separate work.
 
-| Task                             | Start here                                  | Verify in Storybook                     |
-| -------------------------------- | ------------------------------------------- | --------------------------------------- |
-| Render your first page           | [Getting started](./getting-started.md)     | View Engine → 快速开始 → 第一个数据视图 |
-| Add local or remote filters      | [Filters](./filters.md)                     | View Engine → 过滤器 → 内置组件         |
-| Format cells, summarize, refresh | [Table and runtime](./table-and-runtime.md) | View Engine → 单元格 / Record View      |
-| Save and manage views            | [Saved views](./saved-views.md)             | View Engine → Record View → 视图管理    |
-| Add business operations          | [Extensions](./extensions.md)               | View Engine → 扩展接入 → 公共包         |
+| Task                             | Start here                                  | Verify in Storybook                                |
+| -------------------------------- | ------------------------------------------- | -------------------------------------------------- |
+| Render your first page           | [Getting started](./getting-started.md)     | View Engine → 开发接入 → 最小接入 → 第一个数据视图 |
+| Add local or remote filters      | [Filters](./filters.md)                     | View Engine → 专项场景 → 查询与筛选 → 内置筛选器         |
+| Format cells, summarize, refresh | [Table and runtime](./table-and-runtime.md) | View Engine → 专项场景 → 数据展示 / 组件与主题      |
+| Save and manage views            | [Saved views](./saved-views.md)             | View Engine → 专项场景 → 视图与运行时 → 视图管理    |
+| Add business operations          | [Extensions](./extensions.md)               | View Engine → 开发接入 → 业务扩展                  |
 
 The [complete example](../../examples/view-engine.md) is also used by Storybook. Use the [API reference](../../reference/view-engine/index.md) for contracts. `@ahoo-wang/fetcher-viewer` is the separate Ant Design package; its `ViewDefinition` and filter models are different.
 
@@ -1371,7 +1371,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-Open **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `200`: the rows stay unchanged until you press Enter or Query, then only `ORDER-002` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
+Open **View Engine → 开发接入 → 最小接入 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `10000`: the rows stay unchanged until you press Enter or Query, then only `SO-202609-1001` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
 
 ## Connect four responsibilities
 
@@ -1461,7 +1461,7 @@ Date/datetime ranges use a dual-month Date Range Picker by default. Datetime fie
 
 Configure `ViewDefinition.timeZone` once, for example `Asia/Shanghai`; omission uses the local runtime timezone. A standalone `FilterPanel` receives `timeZone` directly. Fields do not override it. Runtime queries use epoch milliseconds; component configuration retains editable date/time values.
 
-Verify **View Engine → 过滤器 → 内置组件** for remote paging/retry/restoration, and **基础组件 → 日期时间** for the standalone controls.
+Verify **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** for remote paging/retry/restoration, and **专项场景 → 组件与主题 → 日期时间** for the standalone controls.
 
 </doc>
 
@@ -1576,7 +1576,7 @@ Load permissions before exposing synchronous getters. Publish policy changes thr
 
 Use **开发验证 → 本地视图恢复** to save, reload and inspect recovery. The public-package five-extension example also supports `persistViews`. Browser storage is editable by its user and is not production authorization. HTTP adapters under `packages/view-engine/dev` are experiments, not public package exports or a fixed REST endpoint specification.
 
-Verify **Record View → 视图管理**, **扩展接入 → 公共包** and the standalone service verification scripts described in [ViewHost](../../reference/view-engine/view-host.md).
+Verify **专项场景 → 视图与运行时 → 视图管理**, **开发接入 → 业务扩展** and the standalone service verification scripts described in [ViewHost](../../reference/view-engine/view-host.md).
 
 </doc>
 
@@ -3390,22 +3390,32 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-Open [View Engine → 快速开始 → 第一个数据视图](http://localhost:6006/?path=/story/view-engine-快速开始--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
+Open [View Engine → 开发接入 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
 
 ```bash
 pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx
 ```
 
-Install Playwright Chromium first (`pnpm exec playwright install chromium`), or set `VIEW_ENGINE_BROWSER_CHANNEL=chrome` to use installed Chrome. This command also checks the existing five-extension and narrow-dark examples.
+Install Playwright Chromium first (`pnpm exec playwright install chromium`), or set `VIEW_ENGINE_BROWSER_CHANNEL=chrome` to use installed Chrome. Full business and narrow-dark regressions live in `stories/view-engine/orders`.
 
-| Action                             | Expected result                                              |
-| ---------------------------------- | ------------------------------------------------------------ |
-| Open the page                      | ORDER-001 and ORDER-002, 3 total rows                        |
-| Next page                          | ORDER-003                                                    |
-| Set Amount to 200 without querying | Current result stays unchanged                               |
-| Press Enter                        | Only ORDER-002                                               |
-| Clear the applied amount value     | All 3 records are eligible again; the filter control remains |
-| Sort Amount ascending              | ORDER-003, ORDER-001 on page 1                               |
+| Action                               | Expected result                                              |
+| ------------------------------------ | ------------------------------------------------------------ |
+| Open the page                        | SO-202609-1001 and SO-202609-1002, 3 total rows              |
+| Next page                            | SO-202609-1003                                               |
+| Set Amount to 10000 without querying | Current result stays unchanged                               |
+| Press Enter                          | Only SO-202609-1001                                          |
+| Clear the applied amount value       | All 3 records are eligible again; the filter control remains |
+| Sort Amount ascending                | SO-202609-1002, SO-202609-1003 on page 1                     |
+
+## Sales order lifecycle
+
+Start with [the complete order workbench](http://localhost:6006/?path=/story/view-engine-全链路体验--workbench). Create an order for two monitors (CNY 2,400), submit it as sales, approve it as the manager, collect payment as finance, then release, prepare, ship and receive it. Record the invoice, reconcile, and close the order. The order detail shows the next action and responsible role. Use its handoff button to change operator while keeping the same order open. Aftersales orders remain queued until closure; a failed refresh can be retried inside the detail without repeating the write.
+
+The chapter stories cover prepaid and credit release, partial shipments, rejected deliveries, returns, refunds and invoice credits. They share 18 consistent order seeds and start independently. Query and view settings use the public engine; business forms, validation and mutations live in `packages/view-engine/examples/react/sales-order/`. Resetting the workbench restores business records. View persistence is demonstrated separately and never persists business orders.
+
+```bash
+VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm exec vitest run --project=storybook stories/view-engine/orders
+```
 
 ## Full shared component
 
@@ -3449,9 +3459,9 @@ import {
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 const orders = [
-  { id: 'ORDER-001', amount: 120, status: 'pending' },
-  { id: 'ORDER-002', amount: 250, status: 'done' },
-  { id: 'ORDER-003', amount: 80, status: 'pending' },
+  { id: 'SO-202609-1001', amount: 12000, status: 'confirmed' },
+  { id: 'SO-202609-1002', amount: 6000, status: 'confirmed' },
+  { id: 'SO-202609-1003', amount: 8000, status: 'confirmed' },
 ];
 const definition: ViewDefinition = {
   id: 'first-orders',
@@ -3498,12 +3508,12 @@ const definition: ViewDefinition = {
       type: 'string',
       operators: [],
       options: [
-        { value: 'pending', label: '待处理' },
-        { value: 'done', label: '已完成' },
+        { value: 'draft', label: '草稿' },
+        { value: 'confirmed', label: '已确认' },
       ],
       cellRenderer: {
         name: 'status',
-        options: { tones: [{ value: 'done', tone: 'success' }] },
+        options: { tones: [{ value: 'confirmed', tone: 'success' }] },
       },
     },
   ],
@@ -21402,13 +21412,13 @@ const load = () =>
 
 View Engine 由不依赖 React 的引擎、可保存的组件配置和基于 shadcn/Base UI 的 React 组件组成。当前实现 `record` 数据视图与表格展示；分析、卡片和仪表板属于后续工作。
 
-| 任务                   | 阅读入口                               | Storybook 验证位置                      |
-| ---------------------- | -------------------------------------- | --------------------------------------- |
-| 展示第一个页面         | [快速接入](./getting-started.md)       | View Engine → 快速开始 → 第一个数据视图 |
-| 配置本地、远程筛选     | [筛选器](./filters.md)                 | View Engine → 过滤器 → 内置组件         |
-| 渲染单元格、汇总与刷新 | [表格与运行时](./table-and-runtime.md) | View Engine → 单元格 / Record View      |
-| 保存与管理视图         | [保存视图](./saved-views.md)           | View Engine → Record View → 视图管理    |
-| 添加业务操作           | [扩展接入](./extensions.md)            | View Engine → 扩展接入 → 公共包         |
+| 任务                   | 阅读入口                               | Storybook 验证位置                                 |
+| ---------------------- | -------------------------------------- | -------------------------------------------------- |
+| 展示第一个页面         | [快速接入](./getting-started.md)       | View Engine → 开发接入 → 最小接入 → 第一个数据视图 |
+| 配置本地、远程筛选     | [筛选器](./filters.md)                 | View Engine → 专项场景 → 查询与筛选 → 内置筛选器         |
+| 渲染单元格、汇总与刷新 | [表格与运行时](./table-and-runtime.md) | View Engine → 专项场景 → 数据展示 / 组件与主题      |
+| 保存与管理视图         | [保存视图](./saved-views.md)           | View Engine → 专项场景 → 视图与运行时 → 视图管理    |
+| 添加业务操作           | [扩展接入](./extensions.md)            | View Engine → 开发接入 → 业务扩展                  |
 
 [完整示例](../../examples/view-engine.md)与 Storybook 共用源码，接口细节见 [API 参考](../../reference/view-engine/index.md)。`@ahoo-wang/fetcher-viewer` 是独立的 Ant Design 包，其 `ViewDefinition` 和过滤器模型与本包不同。
 
@@ -21428,7 +21438,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-打开 **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**。金额改为 `200` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `ORDER-002`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
+打开 **View Engine → 开发接入 → 最小接入 → 第一个数据视图 · 查询、排序与分页**。金额改为 `10000` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `SO-202609-1001`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
 
 ## 连接四个职责
 
@@ -21518,7 +21528,7 @@ const customerField: ViewFieldDefinition = {
 
 时区统一设置在 `ViewDefinition.timeZone`，例如 `Asia/Shanghai`；省略时使用运行环境本地时区。独立 `FilterPanel` 直接接收 `timeZone`，字段不覆盖全局设置。查询使用毫秒时间戳，组件配置保留可编辑的日期时间值。
 
-在 **View Engine → 过滤器 → 内置组件** 验证远程分页、重试与恢复，在 **基础组件 → 日期时间** 验证独立日期控件。
+在 **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** 验证远程分页、重试与恢复，在 **专项场景 → 组件与主题 → 日期时间** 验证独立日期控件。
 
 </doc>
 
@@ -21633,7 +21643,7 @@ const defaultPresentation = {
 
 在 **开发验证 → 本地视图恢复** 中保存、刷新并检查恢复；公开包的五类扩展示例也支持 `persistViews`。浏览器存储可被使用者修改，不能作为生产鉴权依据。`packages/view-engine/dev` 下的 HTTP 适配器属于实验，不是公开包导出，也不是已定稿的 REST 路由规范。
 
-在 **Record View → 视图管理**、**扩展接入 → 公共包** 验证交互，服务验证脚本见 [ViewHost](../../reference/view-engine/view-host.md)。
+在 **专项场景 → 视图与运行时 → 视图管理**、**开发接入 → 业务扩展** 验证交互，服务验证脚本见 [ViewHost](../../reference/view-engine/view-host.md)。
 
 </doc>
 
@@ -23440,22 +23450,32 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-打开 [View Engine → 快速开始 → 第一个数据视图](http://localhost:6006/?path=/story/view-engine-快速开始--minimal)。展示页面保持初始状态，由你手动操作；断言放在独立回归故事中：
+打开 [View Engine → 开发接入 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal)。展示页面保持初始状态，由你手动操作；断言放在独立回归故事中：
 
 ```bash
 pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx
 ```
 
-先用 `pnpm exec playwright install chromium` 安装 Chromium，或设置 `VIEW_ENGINE_BROWSER_CHANNEL=chrome` 使用已安装的 Chrome。该命令还会验证已有的五类扩展和深色窄容器场景。
+先用 `pnpm exec playwright install chromium` 安装 Chromium，或设置 `VIEW_ENGINE_BROWSER_CHANNEL=chrome` 使用已安装的 Chrome。完整业务与深色窄容器回归位于 `stories/view-engine/orders`。
 
-| 操作                   | 预期结果                                  |
-| ---------------------- | ----------------------------------------- |
-| 打开页面               | 显示 ORDER-001、ORDER-002，共 3 条记录    |
-| 下一页                 | 显示 ORDER-003                            |
-| 金额改为 200，暂不查询 | 当前结果保持不变                          |
-| 按 Enter               | 只显示 ORDER-002                          |
-| 清空已应用金额条件值   | 恢复全部 3 条记录的查询范围，筛选控件保留 |
-| 金额升序               | 第一页显示 ORDER-003、ORDER-001           |
+| 操作                     | 预期结果                                         |
+| ------------------------ | ------------------------------------------------ |
+| 打开页面                 | 显示 SO-202609-1001、SO-202609-1002，共 3 条记录 |
+| 下一页                   | 显示 SO-202609-1003                              |
+| 金额改为 10000，暂不查询 | 当前结果保持不变                                 |
+| 按 Enter                 | 只显示 SO-202609-1001                            |
+| 清空已应用金额条件值     | 恢复全部 3 条记录的查询范围，筛选控件保留        |
+| 金额升序                 | 第一页显示 SO-202609-1002、SO-202609-1003        |
+
+## 销售订单全链路
+
+从[完整订单工作台](http://localhost:6006/?path=/story/view-engine-全链路体验--workbench)开始。创建两台显示器、合计 2,400 元的订单，由销售提交、主管审核、财务收款，再放行、备货、发货和签收；登记开票、核对结算后关闭。订单详情会指出下一步动作和责任岗位，可直接交接并保留当前订单。售后订单直到关闭才离开队列；刷新失败时可在详情内重试，不重复执行业务写入。
+
+章节分别覆盖预付与账期放行、分批发货、拒收重发、退货、退款和开票冲减，共用 18 笔一致的订单样本，每个故事独立初始化。查询和视图设置使用公开引擎；业务表单、校验和写入放在 `packages/view-engine/examples/react/sales-order/`。重置恢复业务记录；视图持久化单独演示，不保存业务订单。
+
+```bash
+VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm exec vitest run --project=storybook stories/view-engine/orders
+```
 
 ## 完整共享组件
 
@@ -23499,9 +23519,9 @@ import {
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 const orders = [
-  { id: 'ORDER-001', amount: 120, status: 'pending' },
-  { id: 'ORDER-002', amount: 250, status: 'done' },
-  { id: 'ORDER-003', amount: 80, status: 'pending' },
+  { id: 'SO-202609-1001', amount: 12000, status: 'confirmed' },
+  { id: 'SO-202609-1002', amount: 6000, status: 'confirmed' },
+  { id: 'SO-202609-1003', amount: 8000, status: 'confirmed' },
 ];
 const definition: ViewDefinition = {
   id: 'first-orders',
@@ -23548,12 +23568,12 @@ const definition: ViewDefinition = {
       type: 'string',
       operators: [],
       options: [
-        { value: 'pending', label: '待处理' },
-        { value: 'done', label: '已完成' },
+        { value: 'draft', label: '草稿' },
+        { value: 'confirmed', label: '已确认' },
       ],
       cellRenderer: {
         name: 'status',
-        options: { tones: [{ value: 'done', tone: 'success' }] },
+        options: { tones: [{ value: 'confirmed', tone: 'success' }] },
       },
     },
   ],

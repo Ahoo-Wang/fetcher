@@ -15,7 +15,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-打开 **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**。金额改为 `200` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `ORDER-002`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
+打开 **View Engine → 开发接入 → 最小接入 → 第一个数据视图 · 查询、排序与分页**。金额改为 `10000` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `SO-202609-1001`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
 
 ## 连接四个职责
 

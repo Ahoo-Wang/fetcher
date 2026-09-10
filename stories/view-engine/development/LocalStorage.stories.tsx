@@ -12,14 +12,14 @@
  * limitations under the License.
  */
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { OrderExample } from '../../../packages/view-engine/examples/react/OrderExample.js';
+import { OrderWorkbench } from '../../../packages/view-engine/examples/react/sales-order/OrderWorkbench.js';
 
-import exampleSource from '../../../packages/view-engine/examples/react/OrderExample.tsx?raw';
+import exampleSource from '../../../packages/view-engine/examples/react/sales-order/OrderWorkbench.tsx?raw';
 
 const meta = {
   title: '开发验证/本地视图恢复',
   id: 'development-local-storage',
-  component: OrderExample,
+  component: OrderWorkbench,
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -30,7 +30,7 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof OrderExample>;
+} satisfies Meta<typeof OrderWorkbench>;
 
 export default meta;
 

@@ -29,4 +29,4 @@ description: 区分组件配置、服务写入、用户偏好与运行时状态�
 
 在 **开发验证 → 本地视图恢复** 中保存、刷新并检查恢复；公开包的五类扩展示例也支持 `persistViews`。浏览器存储可被使用者修改，不能作为生产鉴权依据。`packages/view-engine/dev` 下的 HTTP 适配器属于实验，不是公开包导出，也不是已定稿的 REST 路由规范。
 
-在 **Record View → 视图管理**、**扩展接入 → 公共包** 验证交互，服务验证脚本见 [ViewHost](../../reference/view-engine/view-host.md)。
+在 **专项场景 → 视图与运行时 → 视图管理**、**开发接入 → 业务扩展** 验证交互，服务验证脚本见 [ViewHost](../../reference/view-engine/view-host.md)。

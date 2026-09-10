@@ -29,4 +29,4 @@ Load permissions before exposing synchronous getters. Publish policy changes thr
 
 Use **开发验证 → 本地视图恢复** to save, reload and inspect recovery. The public-package five-extension example also supports `persistViews`. Browser storage is editable by its user and is not production authorization. HTTP adapters under `packages/view-engine/dev` are experiments, not public package exports or a fixed REST endpoint specification.
 
-Verify **Record View → 视图管理**, **扩展接入 → 公共包** and the standalone service verification scripts described in [ViewHost](../../reference/view-engine/view-host.md).
+Verify **专项场景 → 视图与运行时 → 视图管理**, **开发接入 → 业务扩展** and the standalone service verification scripts described in [ViewHost](../../reference/view-engine/view-host.md).

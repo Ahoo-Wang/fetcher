@@ -67,7 +67,7 @@ it('rebuilds the document example host when persistence is enabled or disabled',
   ).toBeNull();
   view.rerender(<RecordViewExample layout="card" persistViews />);
   await screen.findByRole('list', { name: '记录卡片' });
-  await screen.findByRole('heading', { name: 'ORDER-001' });
+  await screen.findByRole('heading', { name: 'SO-202609-1001' });
   expect(
     within(screen.getByRole('list', { name: '记录卡片' })).queryByText('金额', {
       exact: true,
