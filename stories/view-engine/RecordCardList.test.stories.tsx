@@ -34,18 +34,23 @@ async function changeLayout(
   target: string,
 ) {
   const canvas = within(canvasElement);
+  const page = within(canvasElement.ownerDocument.body);
+  const trigger = within(
+    canvas.getByRole('group', { name: '全局工具栏' }),
+  ).getByRole('button', { name: `展示方式：${current}` });
+  await userEvent.click(trigger);
   await userEvent.click(
-    within(canvas.getByRole('group', { name: '全局工具栏' })).getByRole(
-      'button',
-      { name: `展示方式：${current}` },
-    ),
+    await page.findByRole('menuitemradio', { name: target, exact: true }),
   );
-  await userEvent.click(
-    await within(canvasElement.ownerDocument.body).findByRole('menuitemradio', {
-      name: target,
-      exact: true,
-    }),
-  );
+  // The modal menu releases its inert scope and restores focus asynchronously.
+  // A new layout in the DOM is not enough to begin the next interaction.
+  await waitFor(() => {
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('aria-label', `展示方式：${target}`);
+    expect(page.queryByRole('menu')).not.toBeInTheDocument();
+    expect(canvasElement.closest('[data-base-ui-inert]')).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
 }
 
 export const RoundTrip: Story = {
