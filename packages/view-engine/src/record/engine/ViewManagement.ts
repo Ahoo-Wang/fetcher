@@ -142,12 +142,7 @@ export class ViewManagement {
       if (!this.scope.current(request.version) || this.defaultWrite !== request)
         return;
       this.defaultWrite = undefined;
-      this.store.publish({
-        defaultInstanceId:
-          instanceId === null || this.store.find(instanceId)
-            ? instanceId
-            : (this.store.getSnapshot().instanceIds[0] ?? null),
-      });
+      this.store.publish({ defaultInstanceId: instanceId });
     } catch (error) {
       if (!this.scope.current(request.version) || this.defaultWrite !== request)
         return;

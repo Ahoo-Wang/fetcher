@@ -173,11 +173,7 @@ async setDefaultInstance(instanceId: string | null): Promise<void> {
     await this.host.preference!.saveDefault!(this.definitionId, instanceId);
     if (!this.scope.current(request.version) || this.defaultWrite !== request) return;
     this.defaultWrite = undefined;
-    this.store.publish({
-      defaultInstanceId: instanceId === null || this.store.find(instanceId)
-        ? instanceId
-        : (this.store.getSnapshot().instanceIds[0] ?? null),
-    });
+    this.store.publish({ defaultInstanceId: instanceId });
   } catch (error) {
     if (!this.scope.current(request.version) || this.defaultWrite !== request) return;
     throw Object.assign(new Error(`${message(error)}；请重试或重新加载核对默认视图`), { cause: error });
