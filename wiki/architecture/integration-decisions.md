@@ -22,6 +22,10 @@ Start with [HTTP requests](../guides/http/requests.md), then use [declarative cl
 
 ## View, Viewer, or FetcherViewer
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 | Choice          | Data and state contract                                                                        | Use when                                                 | Cost or mismatch                                                                               |
 | --------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `View`          | Receives `PagedList`; emits interaction changes; optional controlled state                     | One table/view with application-owned data               | Application must apply filtering, sorting, and pagination                                      |

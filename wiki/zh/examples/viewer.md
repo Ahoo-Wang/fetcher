@@ -5,6 +5,10 @@ description: 使用应用持有的状态，对本地数据过滤、排序、分�
 
 # 本地 Viewer 示例
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 这个浏览器示例使用四个用户，无需后端。应用先对完整数据集过滤、排序，再截取请求页。`Viewer` 接收计算后的 `{ list, total }`；它不会替你转换传入的行数据。
 
 ## 在自己的应用中运行

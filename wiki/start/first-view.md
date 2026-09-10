@@ -1,11 +1,11 @@
 ---
 title: Your first data view
-description: Run a local Viewer and understand where data and saved state belong.
+description: Start with View Engine; maintain existing Viewer integrations.
 ---
 
 # Your first data view
 
-Choose the UI package before copying a definition; the two packages have different models.
+Use View Engine for new projects and further data-view development. Viewer is deprecated and in maintenance mode, with no new features; the Viewer path below is retained for existing consumers. The packages use different models and APIs, so migration requires adaptation.
 
 | UI and ownership                                                                  | Entry                                                                                              |
 | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -14,7 +14,7 @@ Choose the UI package before copying a definition; the two packages have differe
 
 View Engine currently uses workspace/local-archive instructions until its first registry release. Its core entry is usable independently of the React UI.
 
-## Ant Design Viewer path
+## Legacy Ant Design Viewer path (deprecated)
 
 Start with the [complete local Viewer example](../examples/viewer). It supplies a consumer installation, one complete component, the React entry and a run command. No server, authentication setup or Storybook fixtures are needed.
 

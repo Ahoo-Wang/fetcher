@@ -5,6 +5,10 @@ description: 'Filters and editable panels — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # Filters and editable panels
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 Viewer filters currently produce legacy Wow Condition objects. They do not emit the new FilterExpression format. A FilterValue wraps `{condition}`, while a FilterState retains the UI operator and raw value even when that value is not a valid query.
 
 | Component / type key      | Operators / default                                                                                                                                         |

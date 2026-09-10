@@ -5,6 +5,10 @@ description: 'Models and state ownership — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # Models and state ownership
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 A ViewDefinition describes the fields and available filters for a data endpoint; ViewState describes one saved arrangement of that definition. The root package's model is `ViewDefinition`/`ViewState`; an unrelated view-engine package is not part of this API.
 
 | Model                         | Required meaning                                                                                                                                                                                               |

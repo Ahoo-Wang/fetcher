@@ -23,7 +23,7 @@ Each package has an entry page and focused reference topics. Choose the responsi
 | [cosec](./cosec/index.md)             | Authentication and refresh                                  | 3      |
 | [react](./react/index.md)             | Component request state                                     | 8      |
 | [wow](./wow/index.md)                 | Commands and queries                                        | 9      |
-| [viewer](./viewer/index.md)           | Data views and persistence                                  | 8      |
+| [viewer (deprecated)](./viewer/index.md)           | Data views and persistence                                  | 8      |
 | [view-engine](./view-engine/index.md) | Headless engine, component configuration and shadcn/Base UI | 5      |
 
 ## Use the right depth

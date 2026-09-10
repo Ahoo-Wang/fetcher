@@ -5,6 +5,10 @@ description: Connect an available filter, saved filter configuration, and an app
 
 # Filter the displayed data
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 ## Prerequisites
 
 Run the [local Viewer example](../../examples/viewer.md). It provides an Active boolean filter and a deliberately limited local evaluator. Do not add unsupported operators to the UI without extending the evaluator or moving evaluation to a compatible server.

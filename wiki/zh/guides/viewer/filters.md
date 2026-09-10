@@ -5,6 +5,10 @@ description: 连接可用过滤器、已保存过滤配置和应用查询计算�
 
 # 过滤展示数据
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 ## 前提
 
 运行[本地 Viewer 示例](../../examples/viewer.md)。它提供 Active 布尔过滤器与刻意限制范围的本地计算器。没有扩展计算逻辑或改用兼容服务端之前，不要给界面添加未支持的操作符。

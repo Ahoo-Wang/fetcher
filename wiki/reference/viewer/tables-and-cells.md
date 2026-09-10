@@ -5,6 +5,10 @@ description: 'Tables, columns and cells — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # Tables, columns and cells
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 `ViewTable<RecordType>` maps FieldDefinition and ViewColumn to Ant Design columns and receives an array of records. It does not paginate/query the server. Required props are fields, columns, dataSource, enableRowSelection and viewTableSetting (false or settings); optional attributes forwards table props, tableSize defaults middle.
 
 ## Rendering and selection

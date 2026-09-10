@@ -5,6 +5,10 @@ description: 'Saved-view panels and persistence callbacks — @ahoo-wang/fetcher
 
 # Saved-view panels and persistence callbacks
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 The saved-view components are UI building blocks around ViewState. A mutation callback requests persistence; the success callback acknowledges that the application has completed it. Do not call success before the write is confirmed if closing the editor would hide a failed save.
 
 | Component                | Contract                                                                                                                                                                                   |

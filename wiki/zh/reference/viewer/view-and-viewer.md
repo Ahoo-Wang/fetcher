@@ -5,6 +5,10 @@ description: 'View 与 Viewer 组合 — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # View 与 Viewer 组合
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 View 提供过滤/表格/分页，数据行由你提供；Viewer 增加已保存视图选择和工具栏。服务实现本包远端定义/视图端点时才选择 [FetcherViewer](./fetcher-viewer)。
 
 | 组件                     | 必填参数 / 所有权                                                                                                                                                |

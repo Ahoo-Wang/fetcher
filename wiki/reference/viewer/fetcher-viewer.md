@@ -5,6 +5,10 @@ description: 'FetcherViewer remote integration — @ahoo-wang/fetcher-viewer 5.0
 
 # FetcherViewer remote integration
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 FetcherViewer connects three remote resources: a viewer definition, its visible saved views, and paged data from the definition's dataUrl. Configure the default Fetcher for your service/authentication before mounting. The backend must implement the `viewer` bounded-context endpoints; this is not a generic URL-only grid.
 
 | Input / ref             | Contract                                                                                                                              |

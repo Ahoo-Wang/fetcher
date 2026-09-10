@@ -1,5 +1,9 @@
 # `@ahoo-wang/fetcher-viewer`
 
+> **Maintenance mode (deprecated)**
+>
+> `@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/README.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+
 React and Ant Design components for filters, tables, saved views, and remote
 data workflows. Start with `Viewer` when the application owns loading and
 persistence; use `FetcherViewer` only for the matching Viewer backend contract.

@@ -5,6 +5,10 @@ description: 实现视图修改回调，仅在所选持久化接受改动后报�
 
 # 保存并恢复视图状态
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 ## 前提
 
 从[完整本地 Viewer 示例](../../examples/viewer.md)开始。它明确使用 React 内存保存数据，可以无需服务端验证保存行为。是否需要刷新后保留、用户共享或服务端授权，要由应用另外决定。
