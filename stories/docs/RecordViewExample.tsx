@@ -10,8 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
-  LocalStorageViewHost,
   createFilterConfiguration,
   resolveRecordPresentation,
   newFilterNode,
@@ -35,9 +35,9 @@ import {
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 const orders = [
-  { id: 'ORDER-001', amount: 120, status: 'pending' },
-  { id: 'ORDER-002', amount: 250, status: 'done' },
-  { id: 'ORDER-003', amount: 80, status: 'pending' },
+  { id: 'SO-202609-1001', amount: 12000, status: 'confirmed' },
+  { id: 'SO-202609-1002', amount: 6000, status: 'confirmed' },
+  { id: 'SO-202609-1003', amount: 8000, status: 'confirmed' },
 ];
 const definition: ViewDefinition = {
   id: 'first-orders',
@@ -84,12 +84,12 @@ const definition: ViewDefinition = {
       type: 'string',
       operators: [],
       options: [
-        { value: 'pending', label: '待处理' },
-        { value: 'done', label: '已完成' },
+        { value: 'draft', label: '草稿' },
+        { value: 'confirmed', label: '已确认' },
       ],
       cellRenderer: {
         name: 'status',
-        options: { tones: [{ value: 'done', tone: 'success' }] },
+        options: { tones: [{ value: 'confirmed', tone: 'success' }] },
       },
     },
   ],
@@ -195,12 +195,9 @@ function RecordViewWorkspace({
 }: RecordViewExampleProps) {
   const [viewHost] = useState(() =>
     persistViews
-      ? new LocalStorageViewHost({
+      ? new IndexedDBViewHost({
           scopeKey: 'card-example-user',
           serviceKey: 'card-example',
-          storage: localStorage,
-          lock: (name, operation, signal) =>
-            navigator.locks.request(name, { signal }, operation),
           definition,
           instances: {
             ...instances,

@@ -1345,13 +1345,13 @@ See [promise lifecycle](../../reference/react/promise-and-query-state.md), [HTTP
 
 View Engine combines a React-independent engine, persisted component configuration, and React controls built with shadcn/Base UI. The implemented view kind is `record` with a table presentation. Analysis, cards and dashboards are separate work.
 
-| Task                             | Start here                                  | Verify in Storybook                     |
-| -------------------------------- | ------------------------------------------- | --------------------------------------- |
-| Render your first page           | [Getting started](./getting-started.md)     | View Engine → 快速开始 → 第一个数据视图 |
-| Add local or remote filters      | [Filters](./filters.md)                     | View Engine → 过滤器 → 内置组件         |
-| Format cells, summarize, refresh | [Table and runtime](./table-and-runtime.md) | View Engine → 单元格 / Record View      |
-| Save and manage views            | [Saved views](./saved-views.md)             | View Engine → Record View → 视图管理    |
-| Add business operations          | [Extensions](./extensions.md)               | View Engine → 扩展接入 → 公共包         |
+| Task                             | Start here                                  | Verify in Storybook                                |
+| -------------------------------- | ------------------------------------------- | -------------------------------------------------- |
+| Render your first page           | [Getting started](./getting-started.md)     | View Engine → 开发接入 → 最小接入 → 第一个数据视图 |
+| Add local or remote filters      | [Filters](./filters.md)                     | View Engine → 专项场景 → 查询与筛选 → 内置筛选器   |
+| Format cells, summarize, refresh | [Table and runtime](./table-and-runtime.md) | View Engine → 专项场景 → 数据展示 / 组件与主题     |
+| Save and manage views            | [Saved views](./saved-views.md)             | View Engine → 专项场景 → 视图与运行时 → 视图管理   |
+| Add business operations          | [Extensions](./extensions.md)               | View Engine → 开发接入 → 业务扩展                  |
 
 The [complete example](../../examples/view-engine.md) is also used by Storybook. Use the [API reference](../../reference/view-engine/index.md) for contracts. `@ahoo-wang/fetcher-viewer` is the separate Ant Design package; its `ViewDefinition` and filter models are different.
 
@@ -1371,7 +1371,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-Open **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `200`: the rows stay unchanged until you press Enter or Query, then only `ORDER-002` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
+Open **View Engine → 开发接入 → 最小接入 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `10000`: the rows stay unchanged until you press Enter or Query, then only `SO-202609-1001` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
 
 ## Connect four responsibilities
 
@@ -1461,7 +1461,7 @@ Date/datetime ranges use a dual-month Date Range Picker by default. Datetime fie
 
 Configure `ViewDefinition.timeZone` once, for example `Asia/Shanghai`; omission uses the local runtime timezone. A standalone `FilterPanel` receives `timeZone` directly. Fields do not override it. Runtime queries use epoch milliseconds; component configuration retains editable date/time values.
 
-Verify **View Engine → 过滤器 → 内置组件** for remote paging/retry/restoration, and **基础组件 → 日期时间** for the standalone controls.
+Verify **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** for remote paging/retry/restoration, and **专项场景 → 组件与主题 → 日期时间** for the standalone controls.
 
 </doc>
 
@@ -1570,13 +1570,9 @@ The UI has two groups: personal views and public views. Public system views carr
 
 Load permissions before exposing synchronous getters. Publish policy changes through `permission.subscribe`, or replace the host/update its callbacks within the same scope. Changing the user or tenant requires a new `scopeKey`.
 
-## Develop against LocalStorageViewHost
+## Choose the storage environment
 
-`LocalStorageViewHost` is an executable development service fixture. It models shared content, personal ownership, user order, revisions and create receipts. It requires explicit `storage`, a shared exclusive `lock`, trusted `serviceKey` and `scopeKey`, a definition and initial instance list. It stores view configuration; the record source is still separate.
-
-Use **开发验证 → 本地视图恢复** to save, reload and inspect recovery. The public-package five-extension example also supports `persistViews`. Browser storage is editable by its user and is not production authorization. HTTP adapters under `packages/view-engine/dev` are experiments, not public package exports or a fixed REST endpoint specification.
-
-Verify **Record View → 视图管理**, **扩展接入 → 公共包** and the standalone service verification scripts described in [ViewHost](../../reference/view-engine/view-host.md).
+Use `IndexedDBViewHost` for persisted browser view configuration. Use `MemoryViewHost` for memory examples and Node services, optionally supplying a shared Map; each host otherwise owns independent memory state. Both hosts manage views, permissions, revisions, create receipts and user ordering, while business records come from a separate source. See [ViewHost](../../reference/view-engine/view-host.md) for options and verification.
 
 </doc>
 
@@ -2614,7 +2610,7 @@ Continue with [shared clients](../guides/http/shared-client.md), [storage and ev
 
 ## View Engine runtime
 
-The view-engine package declares Node >=20.20.2. Its core entry is independent of React and browser globals; browser controls use the separate `/react` entry with React 19. `ViewPage` initializes and disposes its engine in Effects, while caller-owned engines must be scoped and disposed explicitly. Clipboard, page visibility and layout APIs remain browser capabilities. LocalStorageViewHost requires supplied storage and an exclusive lock, such as Web Locks in the development example. Validate a framework-specific SSR/hydration integration instead of treating headless import support as certification of every UI component.
+The view-engine package declares Node >=20.20.2. Its core entry is independent of React and browser globals; browser controls use the separate `/react` entry with React 19. `ViewPage` initializes and disposes its engine in Effects, while caller-owned engines must be scoped and disposed explicitly. Clipboard, page visibility and layout APIs remain browser capabilities. MemoryViewHost uses an optional shared Map for in-process examples and Node services. Browser persistence uses IndexedDBViewHost from the browser/React entry. Validate a framework-specific SSR/hydration integration instead of treating headless import support as certification of every UI component.
 
 </doc>
 
@@ -3390,22 +3386,32 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-Open [View Engine → 快速开始 → 第一个数据视图](http://localhost:6006/?path=/story/view-engine-快速开始--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
+Open [View Engine → 开发接入 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
 
 ```bash
 pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx
 ```
 
-Install Playwright Chromium first (`pnpm exec playwright install chromium`), or set `VIEW_ENGINE_BROWSER_CHANNEL=chrome` to use installed Chrome. This command also checks the existing five-extension and narrow-dark examples.
+Install Playwright Chromium first (`pnpm exec playwright install chromium`), or set `VIEW_ENGINE_BROWSER_CHANNEL=chrome` to use installed Chrome. Full business and narrow-dark regressions live in `stories/view-engine/orders`.
 
-| Action                             | Expected result                                              |
-| ---------------------------------- | ------------------------------------------------------------ |
-| Open the page                      | ORDER-001 and ORDER-002, 3 total rows                        |
-| Next page                          | ORDER-003                                                    |
-| Set Amount to 200 without querying | Current result stays unchanged                               |
-| Press Enter                        | Only ORDER-002                                               |
-| Clear the applied amount value     | All 3 records are eligible again; the filter control remains |
-| Sort Amount ascending              | ORDER-003, ORDER-001 on page 1                               |
+| Action                               | Expected result                                              |
+| ------------------------------------ | ------------------------------------------------------------ |
+| Open the page                        | SO-202609-1001 and SO-202609-1002, 3 total rows              |
+| Next page                            | SO-202609-1003                                               |
+| Set Amount to 10000 without querying | Current result stays unchanged                               |
+| Press Enter                          | Only SO-202609-1001                                          |
+| Clear the applied amount value       | All 3 records are eligible again; the filter control remains |
+| Sort Amount ascending                | SO-202609-1002, SO-202609-1003 on page 1                     |
+
+## Sales order lifecycle
+
+Start with [the complete order workbench](http://localhost:6006/?path=/story/view-engine-全链路体验--workbench). Create an order for two monitors (CNY 2,400), submit it as sales, approve it as the manager, collect payment as finance, then release, prepare, ship and receive it. Record the invoice, reconcile, and close the order. The order detail shows the next action and responsible role. Use its handoff button to change operator while keeping the same order open. Aftersales orders remain queued until closure; a failed refresh can be retried inside the detail without repeating the write.
+
+The chapter stories cover prepaid and credit release, partial shipments, rejected deliveries, returns, refunds and invoice credits. They share 18 consistent order seeds and start independently. Query and view settings use the public engine; business forms, validation and mutations live in `packages/view-engine/examples/react/sales-order/`. Resetting the workbench restores business records. View persistence is demonstrated separately and never persists business orders.
+
+```bash
+VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm exec vitest run --project=storybook stories/view-engine/orders
+```
 
 ## Full shared component
 
@@ -3424,8 +3430,8 @@ The source below is the component rendered by the Storybook Minimal story. It us
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
-  LocalStorageViewHost,
   createFilterConfiguration,
   resolveRecordPresentation,
   newFilterNode,
@@ -3449,9 +3455,9 @@ import {
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 const orders = [
-  { id: 'ORDER-001', amount: 120, status: 'pending' },
-  { id: 'ORDER-002', amount: 250, status: 'done' },
-  { id: 'ORDER-003', amount: 80, status: 'pending' },
+  { id: 'SO-202609-1001', amount: 12000, status: 'confirmed' },
+  { id: 'SO-202609-1002', amount: 6000, status: 'confirmed' },
+  { id: 'SO-202609-1003', amount: 8000, status: 'confirmed' },
 ];
 const definition: ViewDefinition = {
   id: 'first-orders',
@@ -3498,12 +3504,12 @@ const definition: ViewDefinition = {
       type: 'string',
       operators: [],
       options: [
-        { value: 'pending', label: '待处理' },
-        { value: 'done', label: '已完成' },
+        { value: 'draft', label: '草稿' },
+        { value: 'confirmed', label: '已确认' },
       ],
       cellRenderer: {
         name: 'status',
-        options: { tones: [{ value: 'done', tone: 'success' }] },
+        options: { tones: [{ value: 'confirmed', tone: 'success' }] },
       },
     },
   ],
@@ -3609,12 +3615,9 @@ function RecordViewWorkspace({
 }: RecordViewExampleProps) {
   const [viewHost] = useState(() =>
     persistViews
-      ? new LocalStorageViewHost({
+      ? new IndexedDBViewHost({
           scopeKey: 'card-example-user',
           serviceKey: 'card-example',
-          storage: localStorage,
-          lock: (name, operation, signal) =>
-            navigator.locks.request(name, { signal }, operation),
           definition,
           instances: {
             ...instances,
@@ -15121,7 +15124,7 @@ This reference describes the current 5.0.0 workspace contract. The package has n
 
 | Entry                                       | Contents                                                                          | Runtime                                     |
 | ------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------- |
-| `@ahoo-wang/fetcher-view-engine`            | Models, ViewHost, ViewEngine, pure filter helpers, LocalStorageViewHost           | Core import does not load React, DOM or CSS |
+| `@ahoo-wang/fetcher-view-engine`            | Models, ViewHost, ViewEngine, pure filter helpers, MemoryViewHost                 | Core import does not load React, DOM or CSS |
 | `@ahoo-wang/fetcher-view-engine/react`      | ViewPage, RecordView, FilterPanel, table/card presentations and built-in controls | React 19 and browser UI                     |
 | `@ahoo-wang/fetcher-view-engine/styles.css` | Compiled scoped styles                                                            | Import once in the application              |
 
@@ -15228,26 +15231,27 @@ A logical create retains `ViewCreateContext.requestId` across uncertain retries.
 
 After save, rename or delete is dispatched, UNKNOWN_OUTCOME, UNAVAILABLE and unclassified exceptions mark `requiresReload` and block unrelated writes to that instance while preserving local edits. Save and rename require a successful `reloadInstance()` to obtain the authoritative revision. A missing or inaccessible instance keeps the recovery error and edits. Hosts must report definitive rejections with the corresponding `ViewServiceError` code. An uncertain create can replay its original request ID; an uncertain delete can replay the same ID and revision. `getCapabilitiesSnapshot().instances[id].retryDelete` exposes that exception for subscribed UI controls.
 
-## LocalStorageViewHost
+## Browser persistence and in-process services
 
-Required options: `serviceKey`, `scopeKey`, `definition`, `instances`, `resolveSource`, `storage`, `lock`. Optional policy callbacks: `instancePermissions`, `canReorder`, `permissionsRevision`. `storage` implements getItem/setItem/removeItem; all clients for one storage key must share an exclusive lock domain.
+Use `IndexedDBViewHost` from `/react` for browser persistence and `MemoryViewHost` from the core entry for memory examples and Node HTTP fixtures. They share permission, revision, create-receipt, user-isolation and ordering rules; storage uses native IndexedDB transactions or a Map respectively.
+
+Required options: `serviceKey`, `scopeKey`, `definition`, `instances`, `resolveSource`. Optional policy callbacks: `instancePermissions`, `canReorder`, `permissionsRevision`. The browser host additionally accepts `databaseName` (default `fve-view-state`); the memory host accepts `store?: Map<string, string | null>`. Memory hosts share state only when explicitly given the same Map.
 
 ```ts
-const host = new LocalStorageViewHost({
-  serviceKey: 'demo-service:tenant-a',
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
+
+const host = new IndexedDBViewHost({
+  serviceKey: 'demo-service',
   scopeKey: 'user-a',
   definition,
   instances,
   resolveSource,
-  storage: localStorage,
-  lock: (name, operation, signal) =>
-    navigator.locks.request(name, { signal }, operation),
 });
 ```
 
-This is a browser development fixture for restoration, isolation, revisions and atomic writes. `reset()` resets its test service state. It does not persist business records or provide trusted production authorization.
+Browser reads, CAS and writes use one readwrite transaction. Success follows commit; failure and cancellation roll back. `reset()` atomically clears the service/definition's user views, ordering and receipts. Business records remain a separate query source. In-memory transactions complete read, validation and update in one synchronous JS call stack.
 
-With the workspace built and Storybook running on port 6006, run `node packages/view-engine/scripts/verify-view-host.mjs` for the local service/browser recovery checks; use `pnpm verify:view-engine` for the combined package, service and browser acceptance entry point. HTTP fixture files under `dev` remain outside the published package.
+After building, run `pnpm verify:view-engine` for packed-package, HTTP, cross-tab CAS, cancellation, reset and real-page checks. Client storage and development services are not production authorization boundaries.
 
 </doc>
 
@@ -15473,8 +15477,8 @@ These names come from the current public entry exports and declarations. Import 
 | `getRecordSummaryFunctions`   | [recordPresentation.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L51)                         |
 | `getRecordSummaryMetrics`     | [recordPresentation.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L18)                         |
 | `isSimpleFilter`              | [filterNodes.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L40)                                       |
-| `LocalStorageViewHost`        | [LocalStorageViewHost.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L62)                     |
-| `LocalStorageViewHostOptions` | [LocalStorageViewHost.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L42)                     |
+| `MemoryViewHost`              | [MemoryViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L27)                                 |
+| `MemoryViewHostOptions`       | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
 | `newFilterNode`               | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
 | `orderRecordColumns`          | [recordColumns.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L26)                                   |
 | `readRecordSummaryResult`     | [recordSummary.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L140)                                 |
@@ -15529,7 +15533,6 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewScope`                   | [recordModel.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L60)                                       |
 | `ViewServiceError`            | [viewServiceContract.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L27)                       |
 | `ViewServiceErrorCode`        | [viewServiceContract.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L16)                       |
-| `ViewStorageLock`             | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
 
 ## `@ahoo-wang/fetcher-view-engine/react`
 
@@ -15574,6 +15577,8 @@ These names come from the current public entry exports and declarations. Import 
 | `FilterValueEditor`             | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
 | `FilterValueEditorProps`        | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
 | `GlobalActionsRendererProps`    | [recordReactTypes.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L72)           |
+| `IndexedDBViewHost`             | [IndexedDBViewHost.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L25)         |
+| `IndexedDBViewHostOptions`      | [IndexedDBViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L21)         |
 | `InputGroup`                    | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
 | `InputGroupAddon`               | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
 | `InputGroupButton`              | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |
@@ -21402,13 +21407,13 @@ const load = () =>
 
 View Engine 由不依赖 React 的引擎、可保存的组件配置和基于 shadcn/Base UI 的 React 组件组成。当前实现 `record` 数据视图与表格展示；分析、卡片和仪表板属于后续工作。
 
-| 任务                   | 阅读入口                               | Storybook 验证位置                      |
-| ---------------------- | -------------------------------------- | --------------------------------------- |
-| 展示第一个页面         | [快速接入](./getting-started.md)       | View Engine → 快速开始 → 第一个数据视图 |
-| 配置本地、远程筛选     | [筛选器](./filters.md)                 | View Engine → 过滤器 → 内置组件         |
-| 渲染单元格、汇总与刷新 | [表格与运行时](./table-and-runtime.md) | View Engine → 单元格 / Record View      |
-| 保存与管理视图         | [保存视图](./saved-views.md)           | View Engine → Record View → 视图管理    |
-| 添加业务操作           | [扩展接入](./extensions.md)            | View Engine → 扩展接入 → 公共包         |
+| 任务                   | 阅读入口                               | Storybook 验证位置                                 |
+| ---------------------- | -------------------------------------- | -------------------------------------------------- |
+| 展示第一个页面         | [快速接入](./getting-started.md)       | View Engine → 开发接入 → 最小接入 → 第一个数据视图 |
+| 配置本地、远程筛选     | [筛选器](./filters.md)                 | View Engine → 专项场景 → 查询与筛选 → 内置筛选器   |
+| 渲染单元格、汇总与刷新 | [表格与运行时](./table-and-runtime.md) | View Engine → 专项场景 → 数据展示 / 组件与主题     |
+| 保存与管理视图         | [保存视图](./saved-views.md)           | View Engine → 专项场景 → 视图与运行时 → 视图管理   |
+| 添加业务操作           | [扩展接入](./extensions.md)            | View Engine → 开发接入 → 业务扩展                  |
 
 [完整示例](../../examples/view-engine.md)与 Storybook 共用源码，接口细节见 [API 参考](../../reference/view-engine/index.md)。`@ahoo-wang/fetcher-viewer` 是独立的 Ant Design 包，其 `ViewDefinition` 和过滤器模型与本包不同。
 
@@ -21428,7 +21433,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-打开 **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**。金额改为 `200` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `ORDER-002`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
+打开 **View Engine → 开发接入 → 最小接入 → 第一个数据视图 · 查询、排序与分页**。金额改为 `10000` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `SO-202609-1001`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
 
 ## 连接四个职责
 
@@ -21518,7 +21523,7 @@ const customerField: ViewFieldDefinition = {
 
 时区统一设置在 `ViewDefinition.timeZone`，例如 `Asia/Shanghai`；省略时使用运行环境本地时区。独立 `FilterPanel` 直接接收 `timeZone`，字段不覆盖全局设置。查询使用毫秒时间戳，组件配置保留可编辑的日期时间值。
 
-在 **View Engine → 过滤器 → 内置组件** 验证远程分页、重试与恢复，在 **基础组件 → 日期时间** 验证独立日期控件。
+在 **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** 验证远程分页、重试与恢复，在 **专项场景 → 组件与主题 → 日期时间** 验证独立日期控件。
 
 </doc>
 
@@ -21627,13 +21632,9 @@ const defaultPresentation = {
 
 权限初始化完成后才提供同步 getter。权限变化应通过 `permission.subscribe` 发布，或在同一范围内替换宿主/更新回调。切换用户、租户需要新的 `scopeKey`。
 
-## 用 LocalStorageViewHost 开发验证
+## 选择存储环境
 
-`LocalStorageViewHost` 是可执行的开发服务夹具，覆盖共享内容、个人所有权、用户顺序、版本和创建回执。必须显式提供 `storage`、共同使用的独占 `lock`、可信 `serviceKey` / `scopeKey`、定义与初始实例列表。它保存视图配置，业务记录数据源仍然独立。
-
-在 **开发验证 → 本地视图恢复** 中保存、刷新并检查恢复；公开包的五类扩展示例也支持 `persistViews`。浏览器存储可被使用者修改，不能作为生产鉴权依据。`packages/view-engine/dev` 下的 HTTP 适配器属于实验，不是公开包导出，也不是已定稿的 REST 路由规范。
-
-在 **Record View → 视图管理**、**扩展接入 → 公共包** 验证交互，服务验证脚本见 [ViewHost](../../reference/view-engine/view-host.md)。
+浏览器视图配置使用 `IndexedDBViewHost`。内存示例和 Node 服务使用 `MemoryViewHost`，可显式传入共享 Map；默认每个宿主拥有独立的内存状态。两种宿主都负责视图、权限、版本、创建回执和用户排序，业务数据仍经独立数据源查询。完整参数及验证入口见 [ViewHost](../../reference/view-engine/view-host.md)。
 
 </doc>
 
@@ -22665,7 +22666,7 @@ FetcherViewer 在模块作用域创建默认视图 ID 存储，固定键为 `fet
 
 ## View Engine 运行环境
 
-view-engine 包声明 Node >=20.20.2。核心入口独立于 React 和浏览器全局对象；浏览器控件通过独立的 `/react` 入口使用 React 19。ViewPage 在 Effect 中创建、释放引擎，自行持有的引擎必须显式管理范围和释放。剪贴板、页面可见性和布局 API 属于浏览器能力。LocalStorageViewHost 必须注入存储与独占锁，开发示例使用 Web Locks。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
+view-engine 包声明 Node >=20.20.2。核心入口独立于 React 和浏览器全局对象；浏览器控件通过独立的 `/react` 入口使用 React 19。ViewPage 在 Effect 中创建、释放引擎，自行持有的引擎必须显式管理范围和释放。剪贴板、页面可见性和布局 API 属于浏览器能力。MemoryViewHost 使用可选的共享 Map，适用于内存示例和 Node 服务；浏览器持久化使用浏览器/React 入口的 IndexedDBViewHost。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
 
 </doc>
 
@@ -23440,22 +23441,32 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-打开 [View Engine → 快速开始 → 第一个数据视图](http://localhost:6006/?path=/story/view-engine-快速开始--minimal)。展示页面保持初始状态，由你手动操作；断言放在独立回归故事中：
+打开 [View Engine → 开发接入 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal)。展示页面保持初始状态，由你手动操作；断言放在独立回归故事中：
 
 ```bash
 pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx
 ```
 
-先用 `pnpm exec playwright install chromium` 安装 Chromium，或设置 `VIEW_ENGINE_BROWSER_CHANNEL=chrome` 使用已安装的 Chrome。该命令还会验证已有的五类扩展和深色窄容器场景。
+先用 `pnpm exec playwright install chromium` 安装 Chromium，或设置 `VIEW_ENGINE_BROWSER_CHANNEL=chrome` 使用已安装的 Chrome。完整业务与深色窄容器回归位于 `stories/view-engine/orders`。
 
-| 操作                   | 预期结果                                  |
-| ---------------------- | ----------------------------------------- |
-| 打开页面               | 显示 ORDER-001、ORDER-002，共 3 条记录    |
-| 下一页                 | 显示 ORDER-003                            |
-| 金额改为 200，暂不查询 | 当前结果保持不变                          |
-| 按 Enter               | 只显示 ORDER-002                          |
-| 清空已应用金额条件值   | 恢复全部 3 条记录的查询范围，筛选控件保留 |
-| 金额升序               | 第一页显示 ORDER-003、ORDER-001           |
+| 操作                     | 预期结果                                         |
+| ------------------------ | ------------------------------------------------ |
+| 打开页面                 | 显示 SO-202609-1001、SO-202609-1002，共 3 条记录 |
+| 下一页                   | 显示 SO-202609-1003                              |
+| 金额改为 10000，暂不查询 | 当前结果保持不变                                 |
+| 按 Enter                 | 只显示 SO-202609-1001                            |
+| 清空已应用金额条件值     | 恢复全部 3 条记录的查询范围，筛选控件保留        |
+| 金额升序                 | 第一页显示 SO-202609-1002、SO-202609-1003        |
+
+## 销售订单全链路
+
+从[完整订单工作台](http://localhost:6006/?path=/story/view-engine-全链路体验--workbench)开始。创建两台显示器、合计 2,400 元的订单，由销售提交、主管审核、财务收款，再放行、备货、发货和签收；登记开票、核对结算后关闭。订单详情会指出下一步动作和责任岗位，可直接交接并保留当前订单。售后订单直到关闭才离开队列；刷新失败时可在详情内重试，不重复执行业务写入。
+
+章节分别覆盖预付与账期放行、分批发货、拒收重发、退货、退款和开票冲减，共用 18 笔一致的订单样本，每个故事独立初始化。查询和视图设置使用公开引擎；业务表单、校验和写入放在 `packages/view-engine/examples/react/sales-order/`。重置恢复业务记录；视图持久化单独演示，不保存业务订单。
+
+```bash
+VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm exec vitest run --project=storybook stories/view-engine/orders
+```
 
 ## 完整共享组件
 
@@ -23474,8 +23485,8 @@ pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.sto
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
-  LocalStorageViewHost,
   createFilterConfiguration,
   resolveRecordPresentation,
   newFilterNode,
@@ -23499,9 +23510,9 @@ import {
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 const orders = [
-  { id: 'ORDER-001', amount: 120, status: 'pending' },
-  { id: 'ORDER-002', amount: 250, status: 'done' },
-  { id: 'ORDER-003', amount: 80, status: 'pending' },
+  { id: 'SO-202609-1001', amount: 12000, status: 'confirmed' },
+  { id: 'SO-202609-1002', amount: 6000, status: 'confirmed' },
+  { id: 'SO-202609-1003', amount: 8000, status: 'confirmed' },
 ];
 const definition: ViewDefinition = {
   id: 'first-orders',
@@ -23548,12 +23559,12 @@ const definition: ViewDefinition = {
       type: 'string',
       operators: [],
       options: [
-        { value: 'pending', label: '待处理' },
-        { value: 'done', label: '已完成' },
+        { value: 'draft', label: '草稿' },
+        { value: 'confirmed', label: '已确认' },
       ],
       cellRenderer: {
         name: 'status',
-        options: { tones: [{ value: 'done', tone: 'success' }] },
+        options: { tones: [{ value: 'confirmed', tone: 'success' }] },
       },
     },
   ],
@@ -23659,12 +23670,9 @@ function RecordViewWorkspace({
 }: RecordViewExampleProps) {
   const [viewHost] = useState(() =>
     persistViews
-      ? new LocalStorageViewHost({
+      ? new IndexedDBViewHost({
           scopeKey: 'card-example-user',
           serviceKey: 'card-example',
-          storage: localStorage,
-          lock: (name, operation, signal) =>
-            navigator.locks.request(name, { signal }, operation),
           definition,
           instances: {
             ...instances,
@@ -35163,11 +35171,11 @@ console.log(zh_CN.EQ);
 
 本文描述当前工作区 5.0.0 契约。该包尚未在公共注册表发布，请按[本地构建与归档步骤](../../examples/view-engine.md)接入。仓库开发需要 Node >=20.20.2、pnpm 10.34.5。React 界面需要 React/ReactDOM ^19.2.8；直接依赖随包安装，其声明的 peer 依赖也需满足。
 
-| 入口                                        | 内容                                                         | 运行时                           |
-| ------------------------------------------- | ------------------------------------------------------------ | -------------------------------- |
-| `@ahoo-wang/fetcher-view-engine`            | 模型、ViewHost、ViewEngine、纯筛选函数、LocalStorageViewHost | 核心导入不加载 React、DOM 或 CSS |
-| `@ahoo-wang/fetcher-view-engine/react`      | ViewPage、RecordView、FilterPanel、表格及内置控件            | React 19 与浏览器 UI             |
-| `@ahoo-wang/fetcher-view-engine/styles.css` | 编译后的作用域样式                                           | 应用中导入一次                   |
+| 入口                                        | 内容                                                   | 运行时                           |
+| ------------------------------------------- | ------------------------------------------------------ | -------------------------------- |
+| `@ahoo-wang/fetcher-view-engine`            | 模型、ViewHost、ViewEngine、纯筛选函数、MemoryViewHost | 核心导入不加载 React、DOM 或 CSS |
+| `@ahoo-wang/fetcher-view-engine/react`      | ViewPage、RecordView、FilterPanel、表格及内置控件      | React 19 与浏览器 UI             |
+| `@ahoo-wang/fetcher-view-engine/styles.css` | 编译后的作用域样式                                     | 应用中导入一次                   |
 
 消费者不需要 Tailwind 或 React Compiler 插件。`fve:` 是 CSS 工具类前缀，不是配置中的组件名前缀。当前实现支持 `kind: 'record'` 与 `layout: 'table' | 'card'`。
 
@@ -35272,26 +35280,27 @@ scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shar
 
 save、rename 或 delete 发出后，UNKNOWN_OUTCOME、UNAVAILABLE 及未分类异常会标记 `requiresReload`，保留本地编辑并阻止该实例的其他写入。保存和改名需要 `reloadInstance()` 成功取得权威版本后才解除限制；实例不存在或不可访问时继续保留错误与编辑。宿主应使用对应的 `ViewServiceError` 代码报告明确拒绝。不确定的创建可使用原请求 ID 重试；不确定的删除可使用同一 ID、同一 revision 幂等重试。界面通过订阅 `getCapabilitiesSnapshot().instances[id].retryDelete` 判断此例外。
 
-## LocalStorageViewHost
+## 浏览器持久化与内存服务
 
-必填配置为 `serviceKey`、`scopeKey`、`definition`、`instances`、`resolveSource`、`storage`、`lock`。可选策略回调为 `instancePermissions`、`canReorder`、`permissionsRevision`。storage 提供 getItem/setItem/removeItem，同一存储键的所有客户端必须共用独占锁域。
+浏览器使用 `/react` 入口的 `IndexedDBViewHost`；内存示例和 Node HTTP 测试服务使用核心入口的 `MemoryViewHost`。二者共享权限、版本检查、创建回执、用户隔离和排序规则，存储实现分别使用原生 IndexedDB 事务与 Map。
+
+必填参数：`serviceKey`、`scopeKey`、`definition`、`instances`、`resolveSource`。可选权限参数：`instancePermissions`、`canReorder`、`permissionsRevision`。浏览器宿主还接受 `databaseName`，默认 `fve-view-state`；内存宿主接受 `store?: Map<string, string | null>`，仅显式共享同一个 Map 时共享服务状态。
 
 ```ts
-const host = new LocalStorageViewHost({
-  serviceKey: 'demo-service:tenant-a',
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
+
+const host = new IndexedDBViewHost({
+  serviceKey: 'demo-service',
   scopeKey: 'user-a',
   definition,
   instances,
   resolveSource,
-  storage: localStorage,
-  lock: (name, operation, signal) =>
-    navigator.locks.request(name, { signal }, operation),
 });
 ```
 
-该浏览器开发夹具验证恢复、隔离、版本和原子写入；`reset()` 重置测试服务状态。它不保存业务记录，也不提供可信的生产鉴权。
+浏览器的读取、CAS 和写回位于同一个 readwrite 事务内，提交后才返回成功，失败与取消回滚。`reset()` 原子清除该服务和定义下的用户视图、排序及回执；业务订单仍由独立数据源提供。内存服务的同步回调在一次 JS 调用栈内完成读取、校验和更新。
 
-构建工作区并在 6006 端口启动 Storybook 后，运行 `node packages/view-engine/scripts/verify-view-host.mjs` 验证本地服务与浏览器恢复；`pnpm verify:view-engine` 是包、服务和浏览器验收的组合入口。`dev` 下的 HTTP 夹具不进入发布包。
+构建后运行 `pnpm verify:view-engine` 验证独立包、HTTP、跨标签 CAS、取消、重置及真实页面。客户端存储和开发服务不构成生产鉴权边界。
 
 </doc>
 
@@ -35517,8 +35526,8 @@ ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默�
 | `getRecordSummaryFunctions`   | [recordPresentation.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L51)                         |
 | `getRecordSummaryMetrics`     | [recordPresentation.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L18)                         |
 | `isSimpleFilter`              | [filterNodes.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L40)                                       |
-| `LocalStorageViewHost`        | [LocalStorageViewHost.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L62)                     |
-| `LocalStorageViewHostOptions` | [LocalStorageViewHost.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L42)                     |
+| `MemoryViewHost`              | [MemoryViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L27)                                 |
+| `MemoryViewHostOptions`       | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
 | `newFilterNode`               | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
 | `orderRecordColumns`          | [recordColumns.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L26)                                   |
 | `readRecordSummaryResult`     | [recordSummary.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L140)                                 |
@@ -35573,7 +35582,6 @@ ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默�
 | `ViewScope`                   | [recordModel.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L60)                                       |
 | `ViewServiceError`            | [viewServiceContract.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L27)                       |
 | `ViewServiceErrorCode`        | [viewServiceContract.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L16)                       |
-| `ViewStorageLock`             | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
 
 ## `@ahoo-wang/fetcher-view-engine/react`
 
@@ -35618,6 +35626,8 @@ ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默�
 | `FilterValueEditor`             | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
 | `FilterValueEditorProps`        | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
 | `GlobalActionsRendererProps`    | [recordReactTypes.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L72)           |
+| `IndexedDBViewHost`             | [IndexedDBViewHost.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L25)         |
+| `IndexedDBViewHostOptions`      | [IndexedDBViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L21)         |
 | `InputGroup`                    | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
 | `InputGroupAddon`               | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
 | `InputGroupButton`              | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |

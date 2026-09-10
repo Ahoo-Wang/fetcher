@@ -8,11 +8,11 @@ description: 独立数据视图引擎的公开入口、使用前提与契约。
 
 本文描述当前工作区 5.0.0 契约。该包尚未在公共注册表发布，请按[本地构建与归档步骤](../../examples/view-engine.md)接入。仓库开发需要 Node >=20.20.2、pnpm 10.34.5。React 界面需要 React/ReactDOM ^19.2.8；直接依赖随包安装，其声明的 peer 依赖也需满足。
 
-| 入口                                        | 内容                                                         | 运行时                           |
-| ------------------------------------------- | ------------------------------------------------------------ | -------------------------------- |
-| `@ahoo-wang/fetcher-view-engine`            | 模型、ViewHost、ViewEngine、纯筛选函数、LocalStorageViewHost | 核心导入不加载 React、DOM 或 CSS |
-| `@ahoo-wang/fetcher-view-engine/react`      | ViewPage、RecordView、FilterPanel、表格及内置控件            | React 19 与浏览器 UI             |
-| `@ahoo-wang/fetcher-view-engine/styles.css` | 编译后的作用域样式                                           | 应用中导入一次                   |
+| 入口                                        | 内容                                                   | 运行时                           |
+| ------------------------------------------- | ------------------------------------------------------ | -------------------------------- |
+| `@ahoo-wang/fetcher-view-engine`            | 模型、ViewHost、ViewEngine、纯筛选函数、MemoryViewHost | 核心导入不加载 React、DOM 或 CSS |
+| `@ahoo-wang/fetcher-view-engine/react`      | ViewPage、RecordView、FilterPanel、表格及内置控件      | React 19 与浏览器 UI             |
+| `@ahoo-wang/fetcher-view-engine/styles.css` | 编译后的作用域样式                                     | 应用中导入一次                   |
 
 消费者不需要 Tailwind 或 React Compiler 插件。`fve:` 是 CSS 工具类前缀，不是配置中的组件名前缀。当前实现支持 `kind: 'record'` 与 `layout: 'table' | 'card'`。
 

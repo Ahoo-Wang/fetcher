@@ -400,7 +400,7 @@ The optional `definition`, `instance`, `preference`, and `permission` properties
 hold independently replaceable services. Missing methods disable their capability.
 `resolveSource` is the required local runtime bridge, not a REST operation.
 The development-only HttpViewHost composes experimental resource clients;
-LocalStorageViewHost implements the same contracts with a shared storage transaction.
+MemoryViewHost implements the same contracts with a shared storage transaction.
 To override one operation without dropping its siblings, merge the service:
 `{...host, instance: {...host.instance, save: customSave}}`.
 
@@ -966,7 +966,7 @@ compares archive contents with dist, runs public imports/core behavior, and
 type-checks consumers against the extracted package without private source aliases.
 It does not install, publish or modify dependency/build configuration.
 
-`examples/react/OrderExample.tsx` supplies independent global, row, table/batch,
+`examples/react/sales-order/OrderWorkbench.tsx` supplies independent global, row, table/batch,
 filter and cell extensions. It uses public package imports, readonly inputs,
 instance-bound refresh and explicit operation failure/retry handling. Run it with
 `pnpm exec vite packages/view-engine/examples/react --host 127.0.0.1 --port 4175`
@@ -997,19 +997,14 @@ The published `/react` entry is built with React Compiler using the repository V
 instance, preference and permission service interfaces. They remain type exports
 from the public package. `recordModel.ts` contains record metadata and engine state.
 
-Core exports LocalStorageViewHost, LocalStorageViewHostOptions, ViewCreateContext,
-ViewPermissionSnapshot, ViewStorageLock, ViewServiceError and ViewServiceErrorCode.
+Core exports MemoryViewHost, MemoryViewHostOptions, ViewCreateContext,
+ViewPermissionSnapshot, ViewServiceError and ViewServiceErrorCode.
 HttpViewHost, all HTTP resource clients/transport and VIEW_SERVICE_STATUS are **not**
 public exports. They live under `packages/view-engine/dev/http` and are excluded from
 the published package. Routes, envelopes, status mapping and fake sessions are an
 internal experiment; see the bilingual `packages/view-engine/dev/README*.md`.
 
-LocalStorageViewHostOptions requires serviceKey, scopeKey, definition, instances,
-resolveSource, storage and lock. Storage is structural (`getItem`, `setItem`,
-`removeItem`), so headless consumers need no DOM `Storage` declaration. Optional instancePermissions, canReorder and
-permissionsRevision provide trusted policy. Public content is shared; private views
-and ordering are per-user. Each transaction covers read, authorization, revision
-check and write. reset() clears the entire fixture service/definition.
+MemoryViewHostOptions requires serviceKey, scopeKey, definition, instances and resolveSource. Optional store is a native Map<string, string | null>; passing the same Map shares an in-process service, while omitted stores are private to each host. Optional instancePermissions, canReorder and permissionsRevision provide trusted policy. Its synchronous transaction commits only after all domain validation succeeds. reset() clears that service/definition with an explicit empty state.
 
 ViewHost.instance.create(input, {requestId, signal?}) retains one request ID through
 unknown outcomes and retries; the service commits the instance and its receipt
@@ -1022,7 +1017,7 @@ permission.subscribe notifies ViewEngine; synchronous getters never fetch.
 Applications keep one fixed access scope and replace scopeKey when identity changes.
 Definition/instance IDs are nonblank valid Unicode strings and cannot equal . or .. .
 
-OrderExample accepts persistViews and optional createViewHost(resolveSource).
+OrderWorkbench accepts persistViews and optional createViewHost(resolveSource).
 HTTP options belong only to dev/HttpOrderExample.tsx. Copying examples/react into an
 application requires no development adapter files or private package source imports.
 
@@ -1116,7 +1111,7 @@ Selection props use `value` or `values` and an optional `selectedOptions` label 
 
 `FilterTextValues` splits newline/comma/semicolon input and deduplicates without numeric coercion or CSV interpretation. A pending token consumes Enter before Query. Ranges require two complete ordered endpoints and reuse scalar timezone/DST validation; they do not expand a date to the end of the day.
 
-`examples/react/BuiltinFiltersExample.tsx` and **View Engine / 过滤器 / 内置组件** demonstrate Fetcher candidate loading and LocalStorageViewHost JSON recovery. The implementation reuses `@ahoo-wang/fetcher-react/core`; it does not import Ant Design or add candidate operations to ViewHost.
+`examples/react/BuiltinFiltersExample.tsx` and **View Engine / 过滤器 / 内置组件** demonstrate Fetcher candidate loading and IndexedDBViewHost JSON recovery. The implementation reuses `@ahoo-wang/fetcher-react/core`; it does not import Ant Design or add candidate operations to ViewHost.
 
 `getFieldOperators(field)` derives capabilities only from field type and explicit `field.operators`. Field `editor` and definition `filterEditors` are defaults for new nodes; an existing node's `component` is authoritative. Its registration supplies component-specific compatibility checks, so changing a field editor default does not restrict or replace saved components.
 
@@ -1141,13 +1136,13 @@ Tags deduplicate typed values, preserve enum labels and expose overflow through 
 
 Core `formatRecordNumber(value: number, field: Pick<ViewFieldDefinition, 'numberFormat'>): string` is shared with summaries. Currency/percent are numberFormat styles, with no currency-string parsing or unit guessing (0.125 => 12.5%). Summary calculations retain raw values. Tone CSS tokens are --fve-success/--fve-warning/--fve-info and existing --fve-destructive.
 
-`examples/react/BuiltinCellsExample.tsx` consumes only public exports and demonstrates column renderer/options persistence through LocalStorageViewHost. Storybook **View Engine / 单元格 / 内置组件** separates display examples from interaction regressions.
+`examples/react/BuiltinCellsExample.tsx` consumes only public exports and demonstrates column renderer/options persistence through IndexedDBViewHost. Storybook **View Engine / 单元格 / 内置组件** separates display examples from interaction regressions.
 
 ## Recovery and input boundary corrections
 
 An unconfirmed create retains its original requestId, submitted snapshot and original known IDs until validated completion. A rejected retry does not prove an earlier attempt failed. Full engine load preserves in-flight/unconfirmed requests; replaying the original request remains possible even when ordinary writes are blocked. reloadInstance replays unknown creates through instance.create using the same key/body; it never adopts a new list item based on matching content. A response that explicitly identifies the new instance may instead be checked through instance.load or exact ID lookup in instance.list. Existing independently opened copies keep their own edits and newer baselines. Pending requests are engine-lifetime state, not serialized view configuration. Successful save-as and reconciliation complete independently of the following record request; record failures remain in the selected session query state and can be retried with `retryQuery`, without reissuing creation. Selecting the already-active valid instance clears a prior navigation error without querying or replacing its draft.
 
-Instance validation enforces `definition.allowedOperators` together with field-level operator compatibility before publishing host responses; this structural check preserves opaque component props without running custom compilers. Instance lists must provide `defaultInstanceId: null` or the ID of a member; invalid or omitted defaults are rejected before sessions are published. An optional `revision`, when supplied, must be a nonblank string. LocalStorageViewHost preserves explicit null default selection and create does not update that preference. A removed previously specified default can fall back to an available instance. Scoped absent deletion is a successful no-op; it never removes a hidden private instance. Existing visible instances retain permission and revision checks.
+Instance validation enforces `definition.allowedOperators` together with field-level operator compatibility before publishing host responses; this structural check preserves opaque component props without running custom compilers. Instance lists must provide `defaultInstanceId: null` or the ID of a member; invalid or omitted defaults are rejected before sessions are published. An optional `revision`, when supplied, must be a nonblank string. MemoryViewHost preserves explicit null default selection and create does not update that preference. A removed previously specified default can fall back to an available instance. Scoped absent deletion is a successful no-op; it never removes a hidden private instance. Existing visible instances retain permission and revision checks.
 
 Remote onValueChange uses current candidate labels for newly added/reselected IDs; unchanged IDs preserve their existing saved snapshots, excluding unavailable decorations. Paste replaces the selected text or inserts at the caret before tokenization. Datetime range compilation uses the shared strict scalar validation, so false/0 in the date/time properties cannot become an unset filter. DateTimeCell accepts explicit calendar/clock forms (T/t or whitespace, optional Z/z or numeric offset), rejects unsupported text, and never uses the host timezone to interpret a field-zoned local string.
 
@@ -1208,10 +1203,14 @@ The library retains grid/frame, selection, loading/error/empty states and pagina
 
 RecordCardSettings explicitly displays “无封面” when no cover is chosen, and disables the add-field control with “已添加全部字段” when all fields are included. Its apply action updates the current view; saving requires the host's existing persistence capability. The RecordCardList Storybook includes custom-content and persisted-config examples.
 
-The primary card Storybook preview uses ProductCatalogExample: 12 home/travel products with local SVG covers, category/status/favorite filtering, price/stock sorting, details, favorites and individual/batch publishing. Default cards retain built-in configuration; custom cards emphasize price and stock. View configuration can use LocalStorageViewHost. Catalog writes are in-memory and refresh the same query source in Table and Card. Order action retry regressions remain separate.
+The primary card Storybook preview uses ProductCatalogExample: 12 home/travel products with local SVG covers, category/status/favorite filtering, price/stock sorting, details, favorites and individual/batch publishing. Default cards retain built-in configuration; custom cards emphasize price and stock. View configuration can use MemoryViewHost. Catalog writes are in-memory and refresh the same query source in Table and Card. Order action retry regressions remain separate.
 
 `ViewDefinition.allowedLayouts` 为必填的非空、不重复数组：`['table']`、`['card']` 或同时开启。仅允许一种布局时，顶部不显示切换入口；引擎和实例加载均拒绝未允许的活动布局。切换保留各模式配置。卡片使用右上角选择按钮（`aria-pressed`），不占独立行；自定义内容应避让该角标。顶部通用操作使用图标及提示，菜单保留文字。
 
 `RecordView`/`ViewPage` hide built-in card settings when `renderCard` is supplied, including wrappers around `defaultContent`. Provide business configuration through the existing `renderToolbar` and `setCardConfig` when needed. Table column settings remain available.
 
 The shared record toolbar exposes sorting, as active rules in priority order, with drag/keyboard reordering, add/remove controls and a clear action. It uses the same `instance.config.sort` as table headers and remains available for card-only views. Explicit refresh of the same paged query retains existing rows so actions remain mounted; filter, sort, page changes and cursor refresh still reload their results.
+
+### IndexedDB browser persistence
+
+The `/react` entry exports IndexedDBViewHost and IndexedDBViewHostOptions. Required options match MemoryViewHost except for store; optional databaseName defaults to `fve-view-state`. All reads, permission checks, CAS, receipts and writes run in a native IndexedDB readwrite transaction. Success resolves after commit; failure and cancellation roll back. reset() atomically clears the service/definition. The two concrete hosts share only internal view-domain logic; the core entry has no browser globals.

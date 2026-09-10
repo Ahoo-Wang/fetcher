@@ -10,7 +10,7 @@ This reference describes the current 5.0.0 workspace contract. The package has n
 
 | Entry                                       | Contents                                                                          | Runtime                                     |
 | ------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------- |
-| `@ahoo-wang/fetcher-view-engine`            | Models, ViewHost, ViewEngine, pure filter helpers, LocalStorageViewHost           | Core import does not load React, DOM or CSS |
+| `@ahoo-wang/fetcher-view-engine`            | Models, ViewHost, ViewEngine, pure filter helpers, MemoryViewHost                 | Core import does not load React, DOM or CSS |
 | `@ahoo-wang/fetcher-view-engine/react`      | ViewPage, RecordView, FilterPanel, table/card presentations and built-in controls | React 19 and browser UI                     |
 | `@ahoo-wang/fetcher-view-engine/styles.css` | Compiled scoped styles                                                            | Import once in the application              |
 

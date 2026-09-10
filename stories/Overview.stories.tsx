@@ -49,8 +49,9 @@ const entries = [
   {
     title: 'View Engine',
     task: '接入视图引擎',
-    description: '从可复制的订单示例开始，了解视图配置与五类扩展。',
-    href: './?path=/docs/view-engine-快速开始--docs',
+    description:
+      '从销售订单全链路开始，按业务章节、开发接入与专项边界逐步深入。',
+    href: './?path=/docs/view-engine-全链路体验--docs',
   },
   {
     title: 'Viewer',

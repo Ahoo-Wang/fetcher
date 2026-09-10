@@ -23,10 +23,6 @@ description: 区分组件配置、服务写入、用户偏好与运行时状态�
 
 权限初始化完成后才提供同步 getter。权限变化应通过 `permission.subscribe` 发布，或在同一范围内替换宿主/更新回调。切换用户、租户需要新的 `scopeKey`。
 
-## 用 LocalStorageViewHost 开发验证
+## 选择存储环境
 
-`LocalStorageViewHost` 是可执行的开发服务夹具，覆盖共享内容、个人所有权、用户顺序、版本和创建回执。必须显式提供 `storage`、共同使用的独占 `lock`、可信 `serviceKey` / `scopeKey`、定义与初始实例列表。它保存视图配置，业务记录数据源仍然独立。
-
-在 **开发验证 → 本地视图恢复** 中保存、刷新并检查恢复；公开包的五类扩展示例也支持 `persistViews`。浏览器存储可被使用者修改，不能作为生产鉴权依据。`packages/view-engine/dev` 下的 HTTP 适配器属于实验，不是公开包导出，也不是已定稿的 REST 路由规范。
-
-在 **Record View → 视图管理**、**扩展接入 → 公共包** 验证交互，服务验证脚本见 [ViewHost](../../reference/view-engine/view-host.md)。
+浏览器视图配置使用 `IndexedDBViewHost`。内存示例和 Node 服务使用 `MemoryViewHost`，可显式传入共享 Map；默认每个宿主拥有独立的内存状态。两种宿主都负责视图、权限、版本、创建回执和用户排序，业务数据仍经独立数据源查询。完整参数及验证入口见 [ViewHost](../../reference/view-engine/view-host.md)。

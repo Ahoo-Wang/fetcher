@@ -16,22 +16,32 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-Open [View Engine → 快速开始 → 第一个数据视图](http://localhost:6006/?path=/story/view-engine-快速开始--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
+Open [View Engine → 开发接入 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
 
 ```bash
 pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx
 ```
 
-Install Playwright Chromium first (`pnpm exec playwright install chromium`), or set `VIEW_ENGINE_BROWSER_CHANNEL=chrome` to use installed Chrome. This command also checks the existing five-extension and narrow-dark examples.
+Install Playwright Chromium first (`pnpm exec playwright install chromium`), or set `VIEW_ENGINE_BROWSER_CHANNEL=chrome` to use installed Chrome. Full business and narrow-dark regressions live in `stories/view-engine/orders`.
 
-| Action                             | Expected result                                              |
-| ---------------------------------- | ------------------------------------------------------------ |
-| Open the page                      | ORDER-001 and ORDER-002, 3 total rows                        |
-| Next page                          | ORDER-003                                                    |
-| Set Amount to 200 without querying | Current result stays unchanged                               |
-| Press Enter                        | Only ORDER-002                                               |
-| Clear the applied amount value     | All 3 records are eligible again; the filter control remains |
-| Sort Amount ascending              | ORDER-003, ORDER-001 on page 1                               |
+| Action                               | Expected result                                              |
+| ------------------------------------ | ------------------------------------------------------------ |
+| Open the page                        | SO-202609-1001 and SO-202609-1002, 3 total rows              |
+| Next page                            | SO-202609-1003                                               |
+| Set Amount to 10000 without querying | Current result stays unchanged                               |
+| Press Enter                          | Only SO-202609-1001                                          |
+| Clear the applied amount value       | All 3 records are eligible again; the filter control remains |
+| Sort Amount ascending                | SO-202609-1002, SO-202609-1003 on page 1                     |
+
+## Sales order lifecycle
+
+Start with [the complete order workbench](http://localhost:6006/?path=/story/view-engine-全链路体验--workbench). Create an order for two monitors (CNY 2,400), submit it as sales, approve it as the manager, collect payment as finance, then release, prepare, ship and receive it. Record the invoice, reconcile, and close the order. The order detail shows the next action and responsible role. Use its handoff button to change operator while keeping the same order open. Aftersales orders remain queued until closure; a failed refresh can be retried inside the detail without repeating the write.
+
+The chapter stories cover prepaid and credit release, partial shipments, rejected deliveries, returns, refunds and invoice credits. They share 18 consistent order seeds and start independently. Query and view settings use the public engine; business forms, validation and mutations live in `packages/view-engine/examples/react/sales-order/`. Resetting the workbench restores business records. View persistence is demonstrated separately and never persists business orders.
+
+```bash
+VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm exec vitest run --project=storybook stories/view-engine/orders
+```
 
 ## Full shared component
 
