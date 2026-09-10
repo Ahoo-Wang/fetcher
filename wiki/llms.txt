@@ -55,7 +55,7 @@
 - [Configure filters](/guides/view-engine/filters) — Choose built-in editors, preserve component configuration, and apply queries explicitly.
 - [Table and runtime operations](/guides/view-engine/table-and-runtime) — Configure built-in cells, column layout, summaries, refresh and page expansion.
 - [Save and manage views](/guides/view-engine/saved-views) — Separate component configuration, service writes, user preferences and runtime state.
-- [Add application extensions](/guides/view-engine/extensions) — Register global, table, row, filter and cell extensions with explicit ownership.
+- [Add application extensions](/guides/view-engine/extensions) — Register business renderers, compose record regions and select scoped CSS themes.
 
 ## guides/viewer
 

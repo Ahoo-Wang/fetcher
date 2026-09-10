@@ -740,6 +740,70 @@ remains zero. Long numbers stay on one line with an ellipsis and their complete,
 unrounded value in the title. Summary cells never pass fabricated records to cell
 or business-action renderers.
 
+### Themes and public CSS variables
+
+The package exports `styles.css` plus `themes/neutral.css`, `blue.css`, `violet.css`, `green.css`, `orange.css` and `shadcn.css`. `styles.css` contains component CSS and the default Neutral values. A theme import only defines its scoped values; select it with `data-fve-theme`. Theme order does not select the active theme.
+
+`ViewTheme` and its types are exported from `/react`:
+
+```ts
+type ViewThemeStyle = React.CSSProperties & {
+  [variable: `--fve-${string}`]: string | number | undefined;
+};
+
+interface ViewThemeProps extends Omit<
+  React.ComponentPropsWithRef<'div'>,
+  'style'
+> {
+  theme?: string;
+  appearance?: 'light' | 'dark' | 'system';
+  density?: 'comfortable' | 'compact';
+  style?: ViewThemeStyle;
+}
+```
+
+It renders one `.fve-root` div and forwards div props, `ref`, `className` and `style`. `theme`, `appearance` and `density` map to `data-fve-theme`, `data-theme` and `data-fve-density`; explicit props take precedence over raw data attributes, and omitted props preserve/inherit those attributes. `system` follows `prefers-color-scheme` without storing a preference or changing the document root. `comfortable` preserves the defaults; `compact` changes the density values shown below. Explicit xs/sm/lg component sizes keep their own semantics.
+
+| Variable                     | Default                                                                  | Main consumers                                            |
+| ---------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `--fve-background`           | `light-dark(oklch(1 0 0deg), oklch(0.145 0 0deg))`                       | Record surface, table rows                                |
+| `--fve-foreground`           | `light-dark(oklch(0.145 0 0deg), oklch(0.985 0 0deg))`                   | Default text, controls                                    |
+| `--fve-primary`              | `light-dark(oklch(0.205 0 0deg), oklch(0.922 0 0deg))`                   | Primary actions and selected states                       |
+| `--fve-primary-foreground`   | `light-dark(oklch(0.985 0 0deg), oklch(0.205 0 0deg))`                   | Content on primary surfaces                               |
+| `--fve-secondary`            | `light-dark(oklch(0.97 0 0deg), oklch(0.269 0 0deg))`                    | Secondary controls                                        |
+| `--fve-secondary-foreground` | `light-dark(oklch(0.205 0 0deg), oklch(0.985 0 0deg))`                   | Content on secondary surfaces                             |
+| `--fve-muted`                | `light-dark(oklch(0.97 0 0deg), oklch(0.269 0 0deg))`                    | Muted and selected-row surfaces                           |
+| `--fve-muted-foreground`     | `light-dark(oklch(0.556 0 0deg), oklch(0.708 0 0deg))`                   | Auxiliary text and icons                                  |
+| `--fve-accent`               | `var(--fve-muted)`                                                       | Hover and highlighted surfaces                            |
+| `--fve-accent-foreground`    | `var(--fve-foreground)`                                                  | Content on accent surfaces                                |
+| `--fve-popover`              | `light-dark(oklch(1 0 0deg), oklch(0.205 0 0deg))`                       | Select, menu and Popover panels                           |
+| `--fve-popover-foreground`   | `var(--fve-foreground)`                                                  | Portal panel content                                      |
+| `--fve-destructive`          | `light-dark(oklch(0.577 0.245 27.325deg), oklch(0.704 0.191 22.216deg))` | Errors and destructive actions                            |
+| `--fve-success`              | `light-dark(oklch(0.42 0.12 150deg), oklch(0.8 0.12 150deg))`            | Success status                                            |
+| `--fve-warning`              | `light-dark(oklch(0.45 0.1 75deg), oklch(0.83 0.12 75deg))`              | Warning status                                            |
+| `--fve-info`                 | `light-dark(oklch(0.44 0.16 255deg), oklch(0.8 0.1 255deg))`             | Informational status                                      |
+| `--fve-border`               | `light-dark(oklch(0.922 0 0deg), oklch(1 0 0deg / 10%))`                 | Borders and table separators                              |
+| `--fve-input`                | `light-dark(oklch(0.922 0 0deg), oklch(1 0 0deg / 15%))`                 | Input/control surfaces                                    |
+| `--fve-ring`                 | `light-dark(oklch(0.556 0 0deg), oklch(0.708 0 0deg))`                   | Keyboard focus rings                                      |
+| `--fve-radius`               | `0.625rem`                                                               | Component corner-radius scale                             |
+| `--fve-font-family`          | `ui-sans-serif, system-ui, sans-serif`                                   | Root and inherited controls                               |
+| `--fve-font-size`            | `14px`                                                                   | Root and xs/sm/base/lg/xl text scale                      |
+| `--fve-line-height`          | Unset; root falls back to `1.5`                                          | Optional override for root and semantic text line heights |
+| `--fve-control-height`       | `2rem`; compact `1.75rem`                                                | Default inputs and buttons                                |
+| `--fve-table-cell-padding-x` | `0.5rem`; compact `0.375rem`                                             | Table headers and cells                                   |
+| `--fve-table-cell-padding-y` | `0.5rem`; compact `0.25rem`                                              | Table cells                                               |
+| `--fve-toolbar-padding-x`    | `0.75rem`; compact `0.5rem`                                              | Record toolbars                                           |
+| `--fve-toolbar-padding-y`    | `0.5rem`; compact `0.25rem`                                              | Record toolbars                                           |
+| `--fve-toolbar-gap`          | `0.5rem`; compact `0.375rem`                                             | Record toolbar item spacing                               |
+
+`--fve-tw-*`, calculated variables and other undocumented `--fve-*` names are internal. Built-in named color themes define the complete public color set but do not reset font or density. Custom themes may override only part of the table; outer scopes/defaults supply the rest. Define paired colors together, especially primary/primary-foreground. The library does not derive a readable foreground or guarantee contrast for user colors.
+
+CSS typography tokens are applied at the outermost `.fve-root` and explicit `data-fve-theme` boundaries. `ViewTheme.style` also applies explicitly supplied font-family/font-size/line-height tokens without requiring a theme name; omitted items inherit, ordinary CSS style values take precedence, and removing overrides restores inheritance. Internal component wrappers inherit typography, preserving normal CSS/style font overrides and Portal font capture. Use `px` or `rem` for `--fve-font-size`; `em` and `%` compound through the semantic text scale and are unsupported for that token. Other size tokens may use `em` relative to the effective font. When `--fve-line-height` is unset, the root uses `1.5` and semantic text variants keep their upstream ratios; setting it explicitly overrides those ratios.
+
+The shadcn theme maps host `--background`, `--foreground`, `--primary` and the matching semantic tokens into the fve namespace. Host values must be complete CSS colors (`oklch(...)`, `hsl(...)`, `#hex`); bare HSL channels are not parsed. Missing tokens use defaults. Present invalid/cyclic tokens follow CSS behavior and are not type-validated. The mapping reads host variables and never writes them. The host ThemeProvider owns preference, persistence and `.dark`; a local light scope cannot synthesize light values if the host exposes only its currently resolved dark tokens.
+
+Library portals copy the scope's computed public variables and effective appearance. Variable themes therefore propagate, while structural selectors such as `.brand [data-slot=...]` do not cross a body portal. Changes to theme/density attributes, class, inline variables and system preference update open portals; arbitrary CSSOM stylesheet insertion or replacement without those changes is outside the live-update contract. Third-party portals retain their own theme-container rules. CSS custom-property aliases resolve before inheritance, so define dependent values at the target boundary instead of expecting a child override to recompute an inherited alias. Removing a local value returns to the parent/default snapshot.
+
 ### React composition and business extensions
 
 `ViewPage` accepts `Omit<ViewEngineOptions, 'filterCompilers'>`, required nonempty `scopeKey`, plus `extensions`, `filterContext`,
@@ -842,6 +906,24 @@ or unmount. In an iframe it expands within that frame.
 `rowActions`, each a local name-to-React-component map. Custom components may use
 any React UI. Explicit missing names and renderer failures are visible and
 isolated per rendering area.
+
+`RecordViewProps`, `ViewPageContentProps` and `ViewPageProps` also accept two finite region callbacks:
+
+```ts
+renderTableToolbar?: (context: RecordTableToolbarRenderContext) => ReactNode;
+renderPagination?: (context: RecordPaginationRenderContext) => ReactNode;
+```
+
+| Context                           | Readonly state                                                                                                                    | Controlled operations                                                                                                             |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `RecordTableToolbarRenderContext` | `definition`, `session`, `defaultContent`, `appliedFilter`, `querying`, `selectedRowKeys`                                         | `clearSelection(): void`, `setColumns(columns): void`, `refresh(): Promise<void>`                                                 |
+| `RecordPaginationRenderContext`   | `definition`, `session`, `defaultContent`, `mode`, `page`, `pageSize`, `pageCount`, `canNext`, `canPrevious`, `canChangePageSize` | `setPage(index): Promise<void>`, `setPageSize(size): Promise<void>`, `nextPage(): Promise<void>`, `previousPage(): Promise<void>` |
+
+Return `defaultContent` to preserve the built-in region, wrap or add to it to compose, and return `null` to hide it. Render the default node at most once. These are render callbacks, so Hooks cannot be called directly inside them; return a component when local state is needed. Each callback runs below its own recoverable render boundary. Local component state survives ordinary updates within the same instance; switching instances remounts both regions, including when using standalone `RecordView`. Async event failures remain rejected operation promises for the host to handle; React error boundaries do not catch them.
+
+Pagination availability and instance-bound operations reuse engine guards. Loading, query failure, no successful query, the last page and a cursor without `nextCursor` disable progression as applicable. Cursor mode has no random page or previous-page operation. Calling an old callback after instance navigation remains bound to the old instance and rechecks current state. The callbacks do not expose mutable engine storage or bypass query/permission validation.
+
+Stable semantic hooks are `data-slot="record-view"`, `record-global-toolbar`, `record-table-toolbar`, `record-applied-filters` and `record-pagination`. Internal DOM depth and utility classes are not API. The complete global toolbar is not replaceable because it owns refresh and expansion lifecycles; `toolbarStart` and `FilterPanel.renderToolbar` remain available.
 
 Global/table action error boundaries retry when their actual renderer inputs
 change, including `selectedRowKeys` or `querying`. Unrelated unsubmitted draft
