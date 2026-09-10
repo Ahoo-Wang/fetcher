@@ -8,8 +8,20 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
   integration-test:
+    needs: changes
+    if: needs.changes.outputs.integration == 'true'
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     services:
       mongo:
@@ -43,7 +55,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 10.34.5
 
@@ -54,17 +66,18 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm build
-
-      - name: Install dependencies
-        run: pnpm install
+        run: pnpm --filter @ahoo-wang/fetcher-integration-test... build
 
       - name: Generate Code
         working-directory: ./integration-test
-        run: pnpm generate
+        run: node ../packages/generator/dist/cli.js generate -i http://localhost:8080/v3/api-docs
+
+      - name: Check generated integration types
+        working-directory: ./integration-test
+        run: pnpm exec tsc --noEmit --incremental false --composite false
 
       - name: Test
         run: pnpm test:it

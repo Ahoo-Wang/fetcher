@@ -13,7 +13,13 @@
 
 // Run after building: pnpm --filter @ahoo-wang/fetcher-react test:package
 import assert from 'node:assert/strict';
-import { readFileSync, statSync } from 'node:fs';
+import {
+  readFileSync,
+  statSync,
+  mkdtempSync,
+  writeFileSync,
+  rmSync,
+} from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -75,6 +81,35 @@ for (const file of coreModules) {
   }
 }
 assert.ok(usesCompiler, 'Core hooks must retain React Compiler output');
+// Resolve declarations as a consumer does, without source aliases.
+const typeProbe = mkdtempSync(new URL('.package-types-', packageRoot));
+try {
+  const file = `${typeProbe}/consumer.ts`;
+  writeFileSync(
+    file,
+    `import { ${Object.keys(core).join(', ')} } from '${manifest.name}';\nimport type { UseFullscreenOptions, UseDebouncedCallbackOptions } from '${manifest.name}';\nimport { useSingleQuery } from '${manifest.name}';\ndeclare const query: ReturnType<typeof useSingleQuery>;\nquery.result; query.loading; query.error;`,
+  );
+  const program = ts.createProgram([file], {
+    noEmit: true,
+    strict: true,
+    skipLibCheck: true,
+    target: ts.ScriptTarget.ES2020,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+  });
+  const diagnostics = ts.getPreEmitDiagnostics(program);
+  assert.equal(
+    diagnostics.length,
+    0,
+    ts.formatDiagnosticsWithColorAndContext(diagnostics, {
+      getCanonicalFileName: file => file,
+      getCurrentDirectory: () => process.cwd(),
+      getNewLine: () => '\n',
+    }),
+  );
+} finally {
+  rmSync(typeProbe, { recursive: true, force: true });
+}
 console.log(
   `Public ESM contexts share state; ${coreModules.size} core runtime modules and all export targets verified.`,
 );
