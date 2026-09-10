@@ -115,11 +115,8 @@ function WorkbenchSession({
           storage,
           source,
           personal: persistViews,
+          persist: persistViews,
           scopeKey: `${scopeKey}:${r}`,
-          lock: persistViews
-            ? (name, operation, signal) =>
-                navigator.locks.request(name, { signal }, operation)
-            : undefined,
         }),
       ]),
     ) as Record<Role, ReturnType<typeof createOrderHost>>;

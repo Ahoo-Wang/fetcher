@@ -151,6 +151,8 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `FilterValueEditor`             | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
 | `FilterValueEditorProps`        | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
 | `GlobalActionsRendererProps`    | [recordReactTypes.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L72)           |
+| `IndexedDBViewHost`             | [IndexedDBViewHost.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L34)         |
+| `IndexedDBViewHostOptions`      | [IndexedDBViewHost.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L24)         |
 | `InputGroup`                    | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
 | `InputGroupAddon`               | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
 | `InputGroupButton`              | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |

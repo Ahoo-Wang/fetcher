@@ -35,20 +35,22 @@ description: 定义、实例、偏好、权限与记录查询数据源的职责�
 
 save、rename 或 delete 发出后，UNKNOWN_OUTCOME、UNAVAILABLE 及未分类异常会标记 `requiresReload`，保留本地编辑并阻止该实例的其他写入。保存和改名需要 `reloadInstance()` 成功取得权威版本后才解除限制；实例不存在或不可访问时继续保留错误与编辑。宿主应使用对应的 `ViewServiceError` 代码报告明确拒绝。不确定的创建可使用原请求 ID 重试；不确定的删除可使用同一 ID、同一 revision 幂等重试。界面通过订阅 `getCapabilitiesSnapshot().instances[id].retryDelete` 判断此例外。
 
-## LocalStorageViewHost
+## IndexedDBViewHost
 
-必填配置为 `serviceKey`、`scopeKey`、`definition`、`instances`、`resolveSource`、`storage`、`lock`。可选策略回调为 `instancePermissions`、`canReorder`、`permissionsRevision`。storage 提供 getItem/setItem/removeItem，同一存储键的所有客户端必须共用独占锁域。
+浏览器持久化使用 IndexedDBViewHost。必填 serviceKey、scopeKey、definition、instances、resolveSource；可选 databaseName（默认 fve-view-state）和 legacyStorage（只导入尚无数据库记录的旧快照）。重置写入空墓碑，避免旧数据重新导入。事务提交后才返回成功，取消与失败会回滚。权限选项与 LocalStorageViewHost 相同。
+
+LocalStorageViewHost 继续支持同步 storage 和 lock 注入；同一锁域内的存储必须强一致，不能把原生 localStorage + Web Locks 当作跨标签事务。升级持久化实现时应刷新所有旧标签，避免混用两套存储。
 
 ```ts
-const host = new LocalStorageViewHost({
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
+
+const host = new IndexedDBViewHost({
   serviceKey: 'demo-service:tenant-a',
   scopeKey: 'user-a',
   definition,
   instances,
   resolveSource,
-  storage: localStorage,
-  lock: (name, operation, signal) =>
-    navigator.locks.request(name, { signal }, operation),
+  legacyStorage: localStorage, // Optional one-time import of existing view state
 });
 ```
 

@@ -35,20 +35,22 @@ A logical create retains `ViewCreateContext.requestId` across uncertain retries.
 
 After save, rename or delete is dispatched, UNKNOWN_OUTCOME, UNAVAILABLE and unclassified exceptions mark `requiresReload` and block unrelated writes to that instance while preserving local edits. Save and rename require a successful `reloadInstance()` to obtain the authoritative revision. A missing or inaccessible instance keeps the recovery error and edits. Hosts must report definitive rejections with the corresponding `ViewServiceError` code. An uncertain create can replay its original request ID; an uncertain delete can replay the same ID and revision. `getCapabilitiesSnapshot().instances[id].retryDelete` exposes that exception for subscribed UI controls.
 
-## LocalStorageViewHost
+## IndexedDBViewHost
 
-Required options: `serviceKey`, `scopeKey`, `definition`, `instances`, `resolveSource`, `storage`, `lock`. Optional policy callbacks: `instancePermissions`, `canReorder`, `permissionsRevision`. `storage` implements getItem/setItem/removeItem; all clients for one storage key must share an exclusive lock domain.
+Use IndexedDBViewHost for browser persistence. Required: serviceKey, scopeKey, definition, instances, resolveSource. Optional: databaseName (default fve-view-state), legacyStorage (one-time import only when the database has no record). Reset stores a null tombstone to prevent legacy resurrection. Success is returned only after commit; cancellation and failure roll back. Policy options match LocalStorageViewHost.
+
+LocalStorageViewHost still accepts synchronous storage and lock ports; the storage must be coherent under that lock. Native localStorage plus Web Locks is not a cross-tab transaction. Reload all old tabs when switching persistence implementations to avoid mixing stores.
 
 ```ts
-const host = new LocalStorageViewHost({
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
+
+const host = new IndexedDBViewHost({
   serviceKey: 'demo-service:tenant-a',
   scopeKey: 'user-a',
   definition,
   instances,
   resolveSource,
-  storage: localStorage,
-  lock: (name, operation, signal) =>
-    navigator.locks.request(name, { signal }, operation),
+  legacyStorage: localStorage, // Optional one-time import of existing view state
 });
 ```
 

@@ -36,11 +36,30 @@ try {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1000 },
   });
+  await page.addInitScript(() => {
+    window.readViewState = key =>
+      new Promise((resolve, reject) => {
+        const request = indexedDB.open('fve-view-state', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction('states');
+          const read = tx.objectStore('states').get(key);
+          read.onsuccess = () =>
+            resolve(read.result ? JSON.parse(read.result) : null);
+          tx.oncomplete = () => db.close();
+          tx.onabort = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      });
+  });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const read = () =>
-    page.evaluate(key => {
-      const state = JSON.parse(localStorage.getItem(key));
+    page.evaluate(async key => {
+      const state = await window.readViewState(key);
       if (!state) return null;
       const user = state.users['storybook:local-view-host:sales'];
       const visible = state.instances.filter(
@@ -93,8 +112,8 @@ try {
     .waitFor();
   await save();
   await page.waitForFunction(
-    key =>
-      JSON.parse(localStorage.getItem(key))?.instances.find(
+    async key =>
+      (await window.readViewState(key))?.instances.find(
         item =>
           item.id === 'my-orders' &&
           item.ownerKey === 'storybook:local-view-host:sales',
@@ -141,10 +160,10 @@ try {
     .waitFor();
   await save();
   await page.waitForFunction(
-    key =>
+    async key =>
       !(
         'selectedId' in
-        JSON.parse(localStorage.getItem(key)).instances.find(
+        (await window.readViewState(key)).instances.find(
           item =>
             item.id === 'my-orders' &&
             item.ownerKey === 'storybook:local-view-host:sales',
@@ -193,8 +212,8 @@ try {
     .fill('可恢复副本');
   await dialog.getByRole('button', { name: '创建视图', exact: true }).click();
   await page.waitForFunction(
-    key =>
-      JSON.parse(localStorage.getItem(key)).instances.some(
+    async key =>
+      (await window.readViewState(key)).instances.some(
         item => item.title === '可恢复副本',
       ),
     key,
@@ -207,11 +226,11 @@ try {
     .getByRole('button', { name: '拖动调整可恢复副本顺序', exact: true })
     .press('ArrowUp');
   await page.waitForFunction(
-    ({ key, id }) =>
-      JSON.parse(localStorage.getItem(key)).users[
+    async ({ key, id }) =>
+      (await window.readViewState(key)).users[
         'storybook:local-view-host:sales'
       ].order.indexOf(id) <
-      JSON.parse(localStorage.getItem(key)).users[
+      (await window.readViewState(key)).users[
         'storybook:local-view-host:sales'
       ].order.indexOf('my-orders'),
     { key, id: copy.id },
@@ -234,10 +253,8 @@ try {
     .getByRole('button', { name: '删除视图', exact: true })
     .click();
   await page.waitForFunction(
-    ({ key, id }) =>
-      !JSON.parse(localStorage.getItem(key)).instances.some(
-        item => item.id === id,
-      ),
+    async ({ key, id }) =>
+      !(await window.readViewState(key)).instances.some(item => item.id === id),
     { key, id: copy.id },
   );
   await closeManager(manager);

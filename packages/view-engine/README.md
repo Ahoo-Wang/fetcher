@@ -307,23 +307,21 @@ Acceptance follows **service JSON → ViewHost → fresh ViewEngine → frontend
 ### Local service fixture
 
 ```tsx
-import { LocalStorageViewHost } from '@ahoo-wang/fetcher-view-engine';
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 
-const host = new LocalStorageViewHost({
+const host = new IndexedDBViewHost({
   serviceKey: 'development-tenant',
   scopeKey: 'alice',
-  storage: localStorage,
-  lock: (name, operation, signal) =>
-    navigator.locks.request(name, { signal }, operation),
+  legacyStorage: localStorage, // Optional one-time import of existing view state
   definition: orderDefinition,
   instances: orderViews,
-  resolveSource: id => orderService.host.resolveSource(id),
+  resolveSource,
 });
 ```
 
 `serviceKey` is a trusted tenant/service namespace; `scopeKey` is the trusted user within it. Storage uses `fve:views:${JSON.stringify([serviceKey, definition.id])}`. Public views are shared within this namespace; personal views and display order are isolated by user. Private ownership is service-owned and is not accepted from write bodies. Use an access-scoped ViewPage key that includes both tenant and user; omit ViewPage's local `definition`/`instances` props so loading goes through the host.
 
-The required lock covers the complete read/authorize/revision-check/write transaction. The browser example injects Web Locks, which serialize same-origin tabs; use one shared lock domain for every writer of a storage key. Seed instances get service-issued revisions on initialization. System views are read-only. Optional `instancePermissions`, `canReorder` and `permissionsRevision` supply a trusted policy; increment the monotonic policy revision whenever grants change. Writes always recheck the current policy inside the transaction.
+IndexedDBViewHost commits read, authorization, revision checks and writes in one IndexedDB readwrite transaction. LocalStorageViewHost remains an injectable synchronous service fixture: its storage must be coherent under the supplied lock. Native localStorage plus Web Locks does not guarantee that cross-tab coherence. Seed instances get service-issued revisions on initialization. System views are read-only. Optional `instancePermissions`, `canReorder` and `permissionsRevision` supply a trusted policy; increment the monotonic policy revision whenever grants change. Writes always recheck the current policy inside the transaction.
 
 `permission.load(definitionId, signal?)` reads authority snapshots. `permission.refresh()` notifies `permission.subscribe`; ViewEngine subscribes/unsubscribes with its host lifetime, so permission changes update controls without destroying drafts. Permissions remain synchronous reads during rendering. `await reset()` is an administrative fixture reset for the whole service/definition (including users and create receipts), not a REST operation. Malformed storage is reported rather than silently reset. The raw local-storage document is internal service state, not a ViewInstanceList DTO.
 
@@ -350,7 +348,7 @@ node packages/view-engine/scripts/verify-http-view-host.mjs
 node packages/view-engine/scripts/verify-http-view-host.mjs --serve
 ```
 
-The HTTP script starts an isolated local server with the same LocalStorageViewHost logic, a synchronous storage port, and server-bound identities; the browser uses HttpViewHost and the real UI. It covers shared/private visibility, private ordering, response loss/idempotency, permission revoke/restore, timeout/retry and engine cancellation. It separately runs native localStorage + Web Locks races and queued cancellation across two tabs. `httpViewHost.test.ts` also tests stale permission-response ordering, invalid sessions, ownership forgery and concurrent HTTP writers. Both compiled and uncompiled component tests cover missing/replaced extensions and conflict recovery. Business records remain a separate service; no real production backend or authentication provider is claimed by this fixture.
+The HTTP script starts an isolated local server with the same LocalStorageViewHost logic, a synchronous storage port, and server-bound identities; the browser uses HttpViewHost and the real UI. It covers shared/private visibility, private ordering, response loss/idempotency, permission revoke/restore, timeout/retry and engine cancellation. It separately runs native IndexedDB transaction races and queued cancellation across two tabs. `httpViewHost.test.ts` also tests stale permission-response ordering, invalid sessions, ownership forgery and concurrent HTTP writers. Both compiled and uncompiled component tests cover missing/replaced extensions and conflict recovery. Business records remain a separate service; no real production backend or authentication provider is claimed by this fixture.
 
 ## Page and all-record summaries
 

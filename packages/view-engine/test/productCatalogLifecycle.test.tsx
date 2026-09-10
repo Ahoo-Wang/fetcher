@@ -12,6 +12,7 @@
  */
 
 import { afterEach, it, expect, vi } from 'vitest';
+import type * as ViewEngineApi from '../src/react.js';
 import {
   render,
   screen,
@@ -20,6 +21,27 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { ProductCatalogExample } from '../examples/react/catalog/ProductCatalogExample.js';
+vi.mock('@ahoo-wang/fetcher-view-engine/react', async importOriginal => {
+  const api = await importOriginal<typeof ViewEngineApi>();
+  const { LocalStorageViewHost } = await import('../src/index.js');
+  return {
+    ...api,
+    IndexedDBViewHost: class extends LocalStorageViewHost {
+      constructor(
+        options: ConstructorParameters<typeof api.IndexedDBViewHost>[0],
+      ) {
+        super({
+          ...options,
+          storage: localStorage,
+          lock: async (_name, operation, signal) => {
+            signal?.throwIfAborted();
+            return operation();
+          },
+        });
+      }
+    },
+  };
+});
 afterEach(() => {
   cleanup();
   localStorage.clear();

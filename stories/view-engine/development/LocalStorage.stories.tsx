@@ -26,7 +26,7 @@ const meta = {
       source: { code: exampleSource, language: 'tsx' },
       description: {
         component:
-          '开发验证：视图配置写入浏览器 localStorage，订单记录仍由隔离的内存服务提供。刷新或重新打开验证恢复；重置仅清理当前示例配置。',
+          '开发验证：视图配置写入浏览器 IndexedDB，订单记录仍由隔离的内存服务提供。刷新或重新打开验证恢复；重置仅清理当前示例配置。',
       },
     },
   },
@@ -47,7 +47,7 @@ export const LocalStorageViews: Story = {
     docs: {
       description: {
         story:
-          '保存、另存、改名、删除及排序写入 localStorage。可以刷新浏览器或重新打开视图验证恢复；重置仅清除此示例的视图配置。',
+          '保存、另存、改名、删除及排序写入 IndexedDB。可以刷新浏览器或重新打开视图验证恢复；重置仅清除此示例的视图配置。',
       },
     },
   },

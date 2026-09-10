@@ -45,7 +45,10 @@ const definition = structuredClone(orderDefinition);
 // This theme gallery has no business action provider; remove action slots from both layouts.
 delete definition.recordActions;
 if (definition.defaultPresentation?.card)
-  delete definition.defaultPresentation.card.actions;
+  definition.defaultPresentation = {
+    ...definition.defaultPresentation,
+    card: { ...definition.defaultPresentation.card, actions: undefined },
+  };
 for (const instance of orderViews.instances) {
   const table = instance.config.presentation?.table;
   if (table)

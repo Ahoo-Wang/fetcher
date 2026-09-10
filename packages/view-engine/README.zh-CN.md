@@ -172,23 +172,21 @@ Storybook 的 **View Engine → 专项场景 → 数据展示** 使用内存服�
 ### 本地服务替身
 
 ```tsx
-import { LocalStorageViewHost } from '@ahoo-wang/fetcher-view-engine';
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 
-const host = new LocalStorageViewHost({
+const host = new IndexedDBViewHost({
   serviceKey: 'development-tenant',
   scopeKey: 'alice',
-  storage: localStorage,
-  lock: (name, operation, signal) =>
-    navigator.locks.request(name, { signal }, operation),
+  legacyStorage: localStorage, // Optional one-time import of existing view state
   definition: orderDefinition,
   instances: orderViews,
-  resolveSource: id => orderService.host.resolveSource(id),
+  resolveSource,
 });
 ```
 
 `serviceKey` 标识服务／租户，`scopeKey` 标识其中的可信用户。存储键为 `fve:views:${JSON.stringify([serviceKey, definition.id])}`。公共视图在同一服务内共享，个人视图与展示顺序按用户隔离；归属由服务决定，不能通过写入正文伪造。ViewPage 的 scopeKey 应包含租户与用户；不传本地 definition/instances，让加载完整经过宿主。
 
-必填 `lock` 覆盖读取、授权、版本检查和写入的整个事务。示例使用 Web Locks 串行化同源标签页；同一存储键的所有写入者必须使用同一个锁域。初始实例在初始化时取得服务端版本。系统视图只读。可选 `instancePermissions`、`canReorder`、`permissionsRevision` 提供可信权限策略，权限变化时必须递增策略版本；写入在事务内重新检查最新权限。
+`IndexedDBViewHost` 将读取、授权、版本检查和写入放在同一个 IndexedDB 读写事务中提交。`LocalStorageViewHost` 保留为可注入同步存储的服务替身，要求存储在传入锁下保持一致；原生 localStorage 加 Web Locks 不能保证这种跨标签可见性。初始实例在初始化时取得服务端版本。系统视图只读。可选 `instancePermissions`、`canReorder`、`permissionsRevision` 提供可信权限策略，权限变化时必须递增策略版本；写入在事务内重新检查最新权限。
 
 `permission.load(definitionId, signal?)` 读取权限快照，`permission.refresh()` 通过 `permission.subscribe` 通知引擎。引擎随宿主生命周期订阅和解绑，权限更新不会丢弃草稿，渲染时仍只进行同步权限读取。`await reset()` 是清除此服务／定义下全部用户及幂等回执的测试管理操作，不映射为 REST 端点。损坏存储会报错，不自动覆盖。原始存储文档是内部服务状态，不是 ViewInstanceList DTO。
 
@@ -212,7 +210,7 @@ node packages/view-engine/scripts/verify-http-view-host.mjs
 node packages/view-engine/scripts/verify-http-view-host.mjs --serve
 ```
 
-HTTP 脚本启动隔离的本地服务，以相同的 LocalStorageViewHost 逻辑、同步存储接口和服务端身份绑定处理请求，浏览器通过 HttpViewHost 驱动真实组件。覆盖共享／私有可见性、个人排序、响应丢失幂等、权限撤销／恢复、超时重试和引擎取消；另用两个标签页验证真实 localStorage + Web Locks 竞争写入及排队取消。HTTP 测试还覆盖权限响应乱序、无效会话、归属伪造与并发写入。编译开关两种模式的组件测试验证缺失／替换扩展及冲突恢复。测试服务不是已经接入生产数据库或生产认证的部署系统。
+HTTP 脚本启动隔离的本地服务，以相同的 LocalStorageViewHost 逻辑、同步存储接口和服务端身份绑定处理请求，浏览器通过 HttpViewHost 驱动真实组件。覆盖共享／私有可见性、个人排序、响应丢失幂等、权限撤销／恢复、超时重试和引擎取消；另用两个标签页验证真实 IndexedDB 事务竞争写入及排队取消。HTTP 测试还覆盖权限响应乱序、无效会话、归属伪造与并发写入。编译开关两种模式的组件测试验证缺失／替换扩展及冲突恢复。测试服务不是已经接入生产数据库或生产认证的部署系统。
 
 ## 本页 / 所有汇总
 

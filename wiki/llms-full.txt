@@ -1348,9 +1348,9 @@ View Engine combines a React-independent engine, persisted component configurati
 | Task                             | Start here                                  | Verify in Storybook                                |
 | -------------------------------- | ------------------------------------------- | -------------------------------------------------- |
 | Render your first page           | [Getting started](./getting-started.md)     | View Engine → 开发接入 → 最小接入 → 第一个数据视图 |
-| Add local or remote filters      | [Filters](./filters.md)                     | View Engine → 专项场景 → 查询与筛选 → 内置筛选器         |
-| Format cells, summarize, refresh | [Table and runtime](./table-and-runtime.md) | View Engine → 专项场景 → 数据展示 / 组件与主题      |
-| Save and manage views            | [Saved views](./saved-views.md)             | View Engine → 专项场景 → 视图与运行时 → 视图管理    |
+| Add local or remote filters      | [Filters](./filters.md)                     | View Engine → 专项场景 → 查询与筛选 → 内置筛选器   |
+| Format cells, summarize, refresh | [Table and runtime](./table-and-runtime.md) | View Engine → 专项场景 → 数据展示 / 组件与主题     |
+| Save and manage views            | [Saved views](./saved-views.md)             | View Engine → 专项场景 → 视图与运行时 → 视图管理   |
 | Add business operations          | [Extensions](./extensions.md)               | View Engine → 开发接入 → 业务扩展                  |
 
 The [complete example](../../examples/view-engine.md) is also used by Storybook. Use the [API reference](../../reference/view-engine/index.md) for contracts. `@ahoo-wang/fetcher-viewer` is the separate Ant Design package; its `ViewDefinition` and filter models are different.
@@ -3434,8 +3434,8 @@ The source below is the component rendered by the Storybook Minimal story. It us
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
-  LocalStorageViewHost,
   createFilterConfiguration,
   resolveRecordPresentation,
   newFilterNode,
@@ -3619,12 +3619,10 @@ function RecordViewWorkspace({
 }: RecordViewExampleProps) {
   const [viewHost] = useState(() =>
     persistViews
-      ? new LocalStorageViewHost({
+      ? new IndexedDBViewHost({
           scopeKey: 'card-example-user',
           serviceKey: 'card-example',
-          storage: localStorage,
-          lock: (name, operation, signal) =>
-            navigator.locks.request(name, { signal }, operation),
+          legacyStorage: localStorage,
           definition,
           instances: {
             ...instances,
@@ -15238,20 +15236,22 @@ A logical create retains `ViewCreateContext.requestId` across uncertain retries.
 
 After save, rename or delete is dispatched, UNKNOWN_OUTCOME, UNAVAILABLE and unclassified exceptions mark `requiresReload` and block unrelated writes to that instance while preserving local edits. Save and rename require a successful `reloadInstance()` to obtain the authoritative revision. A missing or inaccessible instance keeps the recovery error and edits. Hosts must report definitive rejections with the corresponding `ViewServiceError` code. An uncertain create can replay its original request ID; an uncertain delete can replay the same ID and revision. `getCapabilitiesSnapshot().instances[id].retryDelete` exposes that exception for subscribed UI controls.
 
-## LocalStorageViewHost
+## IndexedDBViewHost
 
-Required options: `serviceKey`, `scopeKey`, `definition`, `instances`, `resolveSource`, `storage`, `lock`. Optional policy callbacks: `instancePermissions`, `canReorder`, `permissionsRevision`. `storage` implements getItem/setItem/removeItem; all clients for one storage key must share an exclusive lock domain.
+Use IndexedDBViewHost for browser persistence. Required: serviceKey, scopeKey, definition, instances, resolveSource. Optional: databaseName (default fve-view-state), legacyStorage (one-time import only when the database has no record). Reset stores a null tombstone to prevent legacy resurrection. Success is returned only after commit; cancellation and failure roll back. Policy options match LocalStorageViewHost.
+
+LocalStorageViewHost still accepts synchronous storage and lock ports; the storage must be coherent under that lock. Native localStorage plus Web Locks is not a cross-tab transaction. Reload all old tabs when switching persistence implementations to avoid mixing stores.
 
 ```ts
-const host = new LocalStorageViewHost({
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
+
+const host = new IndexedDBViewHost({
   serviceKey: 'demo-service:tenant-a',
   scopeKey: 'user-a',
   definition,
   instances,
   resolveSource,
-  storage: localStorage,
-  lock: (name, operation, signal) =>
-    navigator.locks.request(name, { signal }, operation),
+  legacyStorage: localStorage, // Optional one-time import of existing view state
 });
 ```
 
@@ -15584,6 +15584,8 @@ These names come from the current public entry exports and declarations. Import 
 | `FilterValueEditor`             | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
 | `FilterValueEditorProps`        | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
 | `GlobalActionsRendererProps`    | [recordReactTypes.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L72)           |
+| `IndexedDBViewHost`             | [IndexedDBViewHost.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L34)         |
+| `IndexedDBViewHostOptions`      | [IndexedDBViewHost.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L24)         |
 | `InputGroup`                    | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
 | `InputGroupAddon`               | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
 | `InputGroupButton`              | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |
@@ -21415,9 +21417,9 @@ View Engine 由不依赖 React 的引擎、可保存的组件配置和基于 sha
 | 任务                   | 阅读入口                               | Storybook 验证位置                                 |
 | ---------------------- | -------------------------------------- | -------------------------------------------------- |
 | 展示第一个页面         | [快速接入](./getting-started.md)       | View Engine → 开发接入 → 最小接入 → 第一个数据视图 |
-| 配置本地、远程筛选     | [筛选器](./filters.md)                 | View Engine → 专项场景 → 查询与筛选 → 内置筛选器         |
-| 渲染单元格、汇总与刷新 | [表格与运行时](./table-and-runtime.md) | View Engine → 专项场景 → 数据展示 / 组件与主题      |
-| 保存与管理视图         | [保存视图](./saved-views.md)           | View Engine → 专项场景 → 视图与运行时 → 视图管理    |
+| 配置本地、远程筛选     | [筛选器](./filters.md)                 | View Engine → 专项场景 → 查询与筛选 → 内置筛选器   |
+| 渲染单元格、汇总与刷新 | [表格与运行时](./table-and-runtime.md) | View Engine → 专项场景 → 数据展示 / 组件与主题     |
+| 保存与管理视图         | [保存视图](./saved-views.md)           | View Engine → 专项场景 → 视图与运行时 → 视图管理   |
 | 添加业务操作           | [扩展接入](./extensions.md)            | View Engine → 开发接入 → 业务扩展                  |
 
 [完整示例](../../examples/view-engine.md)与 Storybook 共用源码，接口细节见 [API 参考](../../reference/view-engine/index.md)。`@ahoo-wang/fetcher-viewer` 是独立的 Ant Design 包，其 `ViewDefinition` 和过滤器模型与本包不同。
@@ -23494,8 +23496,8 @@ VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm exec vitest run --project=storybook stor
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
-  LocalStorageViewHost,
   createFilterConfiguration,
   resolveRecordPresentation,
   newFilterNode,
@@ -23679,12 +23681,10 @@ function RecordViewWorkspace({
 }: RecordViewExampleProps) {
   const [viewHost] = useState(() =>
     persistViews
-      ? new LocalStorageViewHost({
+      ? new IndexedDBViewHost({
           scopeKey: 'card-example-user',
           serviceKey: 'card-example',
-          storage: localStorage,
-          lock: (name, operation, signal) =>
-            navigator.locks.request(name, { signal }, operation),
+          legacyStorage: localStorage,
           definition,
           instances: {
             ...instances,
@@ -35292,20 +35292,22 @@ scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shar
 
 save、rename 或 delete 发出后，UNKNOWN_OUTCOME、UNAVAILABLE 及未分类异常会标记 `requiresReload`，保留本地编辑并阻止该实例的其他写入。保存和改名需要 `reloadInstance()` 成功取得权威版本后才解除限制；实例不存在或不可访问时继续保留错误与编辑。宿主应使用对应的 `ViewServiceError` 代码报告明确拒绝。不确定的创建可使用原请求 ID 重试；不确定的删除可使用同一 ID、同一 revision 幂等重试。界面通过订阅 `getCapabilitiesSnapshot().instances[id].retryDelete` 判断此例外。
 
-## LocalStorageViewHost
+## IndexedDBViewHost
 
-必填配置为 `serviceKey`、`scopeKey`、`definition`、`instances`、`resolveSource`、`storage`、`lock`。可选策略回调为 `instancePermissions`、`canReorder`、`permissionsRevision`。storage 提供 getItem/setItem/removeItem，同一存储键的所有客户端必须共用独占锁域。
+浏览器持久化使用 IndexedDBViewHost。必填 serviceKey、scopeKey、definition、instances、resolveSource；可选 databaseName（默认 fve-view-state）和 legacyStorage（只导入尚无数据库记录的旧快照）。重置写入空墓碑，避免旧数据重新导入。事务提交后才返回成功，取消与失败会回滚。权限选项与 LocalStorageViewHost 相同。
+
+LocalStorageViewHost 继续支持同步 storage 和 lock 注入；同一锁域内的存储必须强一致，不能把原生 localStorage + Web Locks 当作跨标签事务。升级持久化实现时应刷新所有旧标签，避免混用两套存储。
 
 ```ts
-const host = new LocalStorageViewHost({
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
+
+const host = new IndexedDBViewHost({
   serviceKey: 'demo-service:tenant-a',
   scopeKey: 'user-a',
   definition,
   instances,
   resolveSource,
-  storage: localStorage,
-  lock: (name, operation, signal) =>
-    navigator.locks.request(name, { signal }, operation),
+  legacyStorage: localStorage, // Optional one-time import of existing view state
 });
 ```
 
@@ -35638,6 +35640,8 @@ ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默�
 | `FilterValueEditor`             | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
 | `FilterValueEditorProps`        | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
 | `GlobalActionsRendererProps`    | [recordReactTypes.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L72)           |
+| `IndexedDBViewHost`             | [IndexedDBViewHost.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L34)         |
+| `IndexedDBViewHostOptions`      | [IndexedDBViewHost.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L24)         |
 | `InputGroup`                    | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
 | `InputGroupAddon`               | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
 | `InputGroupButton`              | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |

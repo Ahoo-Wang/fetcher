@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import { useState } from 'react';
 import {
   Fetcher,
@@ -252,10 +253,11 @@ function ExampleSession({
       },
     };
     const createHost = () =>
-      new LocalStorageViewHost({
+      new (persist ? IndexedDBViewHost : LocalStorageViewHost)({
         serviceKey: 'builtin-filter-demo',
         scopeKey,
         storage,
+        legacyStorage: persist ? localStorage : undefined,
         definition,
         instances,
         lock: (name, operation, signal) =>

@@ -44,7 +44,7 @@ export interface ViewPermissionSnapshot {
   instances: Record<string, Required<ViewInstancePermissions>>;
   reorder: boolean;
 }
-/** Inject Web Locks in browsers or the service's transaction lock in tests. */
+/** The injected storage must be coherent under this lock; native localStorage + Web Locks does not guarantee cross-tab CAS. */
 export type ViewStorageLock = <T>(
   name: string,
   operation: () => T,

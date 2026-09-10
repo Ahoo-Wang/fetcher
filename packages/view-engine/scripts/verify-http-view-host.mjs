@@ -4,8 +4,8 @@
  * you may obtain a copy at http://www.apache.org/licenses/LICENSE-2.0
  */
 import assert from 'node:assert/strict';
+import { verifyIndexedDBViewHost } from './verify-indexeddb-view-host.mjs';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { LocalStorageViewHost, ViewServiceError } from '../dist/index.js';
 import { startViewService } from './fixtures/view-service-server.mjs';
@@ -249,91 +249,7 @@ if (serveOnly) {
     await waitUntil(() => server.control.abortedReads >= 2);
     assert.deepEqual(errors, []);
 
-    // Exercise real localStorage + Web Locks across two tabs, not merely a Node mutex.
-    const coreUrl =
-      origin +
-      '/@fs' +
-      fileURLToPath(new URL('../dist/index.js', import.meta.url));
-    for (const tab of [page, bobPage])
-      await tab.evaluate(
-        async ({ coreUrl, fixture }) => {
-          const { LocalStorageViewHost } = await import(coreUrl);
-          window.storageHost = new LocalStorageViewHost({
-            ...fixture,
-            scopeKey: 'alice',
-            serviceKey: 'native-lock-contract',
-            storage: localStorage,
-            lock: (name, operation, signal) =>
-              navigator.locks.request(name, { signal }, operation),
-            resolveSource: () => {
-              throw new Error('not needed');
-            },
-          });
-        },
-        { coreUrl, fixture },
-      );
-    const old = await page.evaluate(() =>
-      window.storageHost.instance.load('my-orders'),
-    );
-    const race = await Promise.all(
-      [page, bobPage].map((tab, index) =>
-        tab.evaluate(
-          async ({ old, index }) => {
-            try {
-              await window.storageHost.instance.save({
-                ...old,
-                title: `writer-${index}`,
-              });
-              return 'saved';
-            } catch (error) {
-              return error.code;
-            }
-          },
-          { old, index },
-        ),
-      ),
-    );
-    assert.deepEqual(race.sort(), ['REVISION_CONFLICT', 'saved']);
-    await page.evaluate(() => {
-      window.heldLock = navigator.locks.request(
-        window.storageHost.storageKey,
-        () =>
-          new Promise(resolve => {
-            window.releaseLock = resolve;
-          }),
-      );
-    });
-    await page.waitForFunction(() => typeof window.releaseLock === 'function');
-    await bobPage.evaluate(input => {
-      window.cancelCreate = new AbortController();
-      window.createOutcome = undefined;
-      window.storageHost.instance
-        .create(input, {
-          requestId: 'native-abort',
-          signal: window.cancelCreate.signal,
-        })
-        .then(
-          () => {
-            window.createOutcome = 'saved';
-          },
-          error => {
-            window.createOutcome = error.name;
-          },
-        );
-    }, old);
-    await bobPage.waitForTimeout(50);
-    assert.equal(await bobPage.evaluate(() => window.createOutcome), undefined);
-    await bobPage.evaluate(() => window.cancelCreate.abort());
-    await bobPage.waitForFunction(() => window.createOutcome === 'AbortError');
-    await page.evaluate(() => window.releaseLock());
-    assert.equal(
-      (
-        await page.evaluate(() =>
-          window.storageHost.instance.list('sales-orders'),
-        )
-      ).instances.length,
-      fixture.instances.instances.length,
-    );
+    await verifyIndexedDBViewHost({ page, bobPage, origin, fixture });
     console.log(
       JSON.stringify({
         passed: true,
@@ -344,7 +260,7 @@ if (serveOnly) {
           'response-lost create retried exactly once',
           'permission revoke/restore keeps draft',
           'HTTP read timeout/retry and engine cancellation',
-          'native cross-tab CAS and queued cancellation',
+          'IndexedDB cross-tab CAS, rollback, receipts, migration and queued cancellation',
         ],
       }),
     );

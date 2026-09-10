@@ -52,7 +52,7 @@ export interface LocalStorageViewHostOptions {
     setItem(key: string, value: string): void;
     removeItem(key: string): void;
   };
-  /** All clients for the same storage key must use the same exclusive lock domain. */
+  /** All clients must share one exclusive lock domain with coherent storage. Use IndexedDBViewHost for browser persistence. */
   lock: ViewStorageLock;
   instancePermissions?: NonNullable<ViewHost['permission']>['getInstance'];
   canReorder?: () => boolean;

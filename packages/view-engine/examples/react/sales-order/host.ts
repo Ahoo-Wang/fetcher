@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
   LocalStorageViewHost,
   type LocalStorageViewHostOptions,
@@ -48,11 +49,12 @@ export function createOrderHost(
     storage?: LocalStorageViewHostOptions['storage'];
     source?: ReturnType<typeof createOrderSource>;
     personal?: boolean;
+    persist?: boolean;
     scopeKey?: string;
     lock?: ViewStorageLock;
   } = {},
 ) {
-  return new LocalStorageViewHost({
+  const configuration: LocalStorageViewHostOptions = {
     serviceKey: 'sales-demo',
     scopeKey: options.scopeKey ?? role,
     definition: options.definition ?? orderDefinition,
@@ -76,7 +78,13 @@ export function createOrderHost(
       saveAsPersonal: true,
       saveAsShared: role === 'manager',
     }),
-  });
+  };
+  return options.persist
+    ? new IndexedDBViewHost({
+        ...configuration,
+        legacyStorage: options.storage,
+      })
+    : new LocalStorageViewHost(configuration);
 }
 export const customerOptions: FilterOptionSource = {
   async search({ search, cursor, size = 5 }, signal) {

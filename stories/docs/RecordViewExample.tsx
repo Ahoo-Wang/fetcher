@@ -10,8 +10,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
-  LocalStorageViewHost,
   createFilterConfiguration,
   resolveRecordPresentation,
   newFilterNode,
@@ -195,12 +195,10 @@ function RecordViewWorkspace({
 }: RecordViewExampleProps) {
   const [viewHost] = useState(() =>
     persistViews
-      ? new LocalStorageViewHost({
+      ? new IndexedDBViewHost({
           scopeKey: 'card-example-user',
           serviceKey: 'card-example',
-          storage: localStorage,
-          lock: (name, operation, signal) =>
-            navigator.locks.request(name, { signal }, operation),
+          legacyStorage: localStorage,
           definition,
           instances: {
             ...instances,

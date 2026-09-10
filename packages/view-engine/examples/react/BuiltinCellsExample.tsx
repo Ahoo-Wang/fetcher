@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import { useState } from 'react';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
@@ -257,10 +258,11 @@ function CellSession({
         ]
       : records;
     return () =>
-      new LocalStorageViewHost({
+      new (persist ? IndexedDBViewHost : LocalStorageViewHost)({
         serviceKey: 'builtin-cell-demo',
         scopeKey,
         storage,
+        legacyStorage: persist ? localStorage : undefined,
         definition,
         instances,
         lock: (name, operation, signal) =>
