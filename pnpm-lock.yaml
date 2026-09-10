@@ -22,7 +22,7 @@ catalogs:
       specifier: ^1.8.0
       version: 1.8.0
     '@date-fns/tz':
-      specifier: ^1.4.1
+      specifier: ^1.5.0
       version: 1.5.0
     '@eslint/js':
       specifier: ^10.0.1
