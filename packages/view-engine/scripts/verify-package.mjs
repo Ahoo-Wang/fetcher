@@ -196,13 +196,9 @@ function verifyTypes(directory) {
   const coreProbe = join(directory, 'headless-types.ts');
   writeFileSync(
     coreProbe,
-    `import { ViewEngine, type LocalStorageViewHostOptions } from '${manifest.name}';
+    `import { ViewEngine, type MemoryViewHostOptions } from '${manifest.name}';
      export const engine = ViewEngine;
-     export const storage: LocalStorageViewHostOptions['storage'] = {
-       getItem: (_key: string) => null,
-       setItem: (_key: string, _value: string) => {},
-       removeItem: (_key: string) => {},
-     };`,
+     export const store: NonNullable<MemoryViewHostOptions['store']> = new Map();`,
   );
   const headless = ts.createProgram([coreProbe], {
     ...options,

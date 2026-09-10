@@ -13,10 +13,9 @@
 
 import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
-  LocalStorageViewHost,
-  type LocalStorageViewHostOptions,
+  MemoryViewHost,
+  type MemoryViewHostOptions,
   type FilterOptionSource,
-  type ViewStorageLock,
 } from '@ahoo-wang/fetcher-view-engine';
 import { createOrderSource, type QueryOptions } from './querySource.js';
 import {
@@ -27,48 +26,27 @@ import {
 import { customers } from './fixtures.js';
 import type { OrderService } from './service.js';
 import type { Role, Stage } from './model.js';
-export function createViewStorage(): LocalStorageViewHostOptions['storage'] {
-  const values = new Map<string, string>();
-  return {
-    getItem: key => values.get(key) ?? null,
-    setItem: (key, value) => {
-      values.set(key, value);
-    },
-    removeItem: key => {
-      values.delete(key);
-    },
-  };
-}
 export function createOrderHost(
   service: OrderService,
   role: Role,
   stage: Stage = 'all',
   options: QueryOptions & {
-    definition?: LocalStorageViewHostOptions['definition'];
-    instances?: LocalStorageViewHostOptions['instances'];
-    storage?: LocalStorageViewHostOptions['storage'];
+    definition?: MemoryViewHostOptions['definition'];
+    instances?: MemoryViewHostOptions['instances'];
+    store?: MemoryViewHostOptions['store'];
     source?: ReturnType<typeof createOrderSource>;
     personal?: boolean;
     persist?: boolean;
     scopeKey?: string;
-    lock?: ViewStorageLock;
   } = {},
 ) {
-  const configuration: LocalStorageViewHostOptions = {
+  const configuration: MemoryViewHostOptions = {
     serviceKey: 'sales-demo',
     scopeKey: options.scopeKey ?? role,
     definition: options.definition ?? orderDefinition,
     instances:
       options.instances ??
       (options.personal ? createProtocolViews() : createOrderViews(stage)),
-    storage: options.storage ?? createViewStorage(),
-    // Operations supplied by LocalStorageViewHost are synchronous; a single JS turn is exclusive for this in-memory store.
-    lock:
-      options.lock ??
-      (async (_name, operation, signal) => {
-        signal?.throwIfAborted();
-        return operation();
-      }),
     resolveSource: () =>
       options.source ?? createOrderSource(service.read, options),
     instancePermissions: instance => ({
@@ -80,11 +58,8 @@ export function createOrderHost(
     }),
   };
   return options.persist
-    ? new IndexedDBViewHost({
-        ...configuration,
-        legacyStorage: options.storage,
-      })
-    : new LocalStorageViewHost(configuration);
+    ? new IndexedDBViewHost(configuration)
+    : new MemoryViewHost({ ...configuration, store: options.store });
 }
 export const customerOptions: FilterOptionSource = {
   async search({ search, cursor, size = 5 }, signal) {

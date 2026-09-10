@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { verifyIndexedDBViewHost } from './verify-indexeddb-view-host.mjs';
 import { createRequire } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
-import { LocalStorageViewHost, ViewServiceError } from '../dist/index.js';
+import { MemoryViewHost, ViewServiceError } from '../dist/index.js';
 import { startViewService } from './fixtures/view-service-server.mjs';
 import { loadOrderFixture } from './fixtures/order-fixture.mjs';
 import { loadHttpHost } from './fixtures/load-http-host.mjs';
@@ -26,7 +26,7 @@ const origin = (
   process.env.VIEW_ENGINE_E2E_BASE_URL ?? 'http://127.0.0.1:6006'
 ).replace(/\/$/, '');
 const server = await startViewService({
-  Host: LocalStorageViewHost,
+  Host: MemoryViewHost,
   ServiceError: ViewServiceError,
   statuses: VIEW_SERVICE_STATUS,
   ...fixture,
@@ -260,7 +260,7 @@ if (serveOnly) {
           'response-lost create retried exactly once',
           'permission revoke/restore keeps draft',
           'HTTP read timeout/retry and engine cancellation',
-          'IndexedDB cross-tab CAS, rollback, receipts, migration and queued cancellation',
+          'IndexedDB cross-tab CAS, rollback, receipts, reset and queued cancellation',
         ],
       }),
     );

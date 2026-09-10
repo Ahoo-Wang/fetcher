@@ -35,25 +35,24 @@ description: 定义、实例、偏好、权限与记录查询数据源的职责�
 
 save、rename 或 delete 发出后，UNKNOWN_OUTCOME、UNAVAILABLE 及未分类异常会标记 `requiresReload`，保留本地编辑并阻止该实例的其他写入。保存和改名需要 `reloadInstance()` 成功取得权威版本后才解除限制；实例不存在或不可访问时继续保留错误与编辑。宿主应使用对应的 `ViewServiceError` 代码报告明确拒绝。不确定的创建可使用原请求 ID 重试；不确定的删除可使用同一 ID、同一 revision 幂等重试。界面通过订阅 `getCapabilitiesSnapshot().instances[id].retryDelete` 判断此例外。
 
-## IndexedDBViewHost
+## 浏览器持久化与内存服务
 
-浏览器持久化使用 IndexedDBViewHost。必填 serviceKey、scopeKey、definition、instances、resolveSource；可选 databaseName（默认 fve-view-state）和 legacyStorage（只导入尚无数据库记录的旧快照）。重置写入空墓碑，避免旧数据重新导入。事务提交后才返回成功，取消与失败会回滚。权限选项与 LocalStorageViewHost 相同。
+浏览器使用 `/react` 入口的 `IndexedDBViewHost`；内存示例和 Node HTTP 测试服务使用核心入口的 `MemoryViewHost`。二者共享权限、版本检查、创建回执、用户隔离和排序规则，存储实现分别使用原生 IndexedDB 事务与 Map。
 
-LocalStorageViewHost 继续支持同步 storage 和 lock 注入；同一锁域内的存储必须强一致，不能把原生 localStorage + Web Locks 当作跨标签事务。升级持久化实现时应刷新所有旧标签，避免混用两套存储。
+必填参数：`serviceKey`、`scopeKey`、`definition`、`instances`、`resolveSource`。可选权限参数：`instancePermissions`、`canReorder`、`permissionsRevision`。浏览器宿主还接受 `databaseName`，默认 `fve-view-state`；内存宿主接受 `store?: Map<string, string | null>`，仅显式共享同一个 Map 时共享服务状态。
 
 ```ts
 import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 
 const host = new IndexedDBViewHost({
-  serviceKey: 'demo-service:tenant-a',
+  serviceKey: 'demo-service',
   scopeKey: 'user-a',
   definition,
   instances,
   resolveSource,
-  legacyStorage: localStorage, // Optional one-time import of existing view state
 });
 ```
 
-该浏览器开发夹具验证恢复、隔离、版本和原子写入；`reset()` 重置测试服务状态。它不保存业务记录，也不提供可信的生产鉴权。
+浏览器的读取、CAS 和写回位于同一个 readwrite 事务内，提交后才返回成功，失败与取消回滚。`reset()` 原子清除该服务和定义下的用户视图、排序及回执；业务订单仍由独立数据源提供。内存服务的同步回调在一次 JS 调用栈内完成读取、校验和更新。
 
-构建工作区并在 6006 端口启动 Storybook 后，运行 `node packages/view-engine/scripts/verify-view-host.mjs` 验证本地服务与浏览器恢复；`pnpm verify:view-engine` 是包、服务和浏览器验收的组合入口。`dev` 下的 HTTP 夹具不进入发布包。
+构建后运行 `pnpm verify:view-engine` 验证独立包、HTTP、跨标签 CAS、取消、重置及真实页面。客户端存储和开发服务不构成生产鉴权边界。

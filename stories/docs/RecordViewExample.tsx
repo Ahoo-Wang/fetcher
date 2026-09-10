@@ -198,7 +198,6 @@ function RecordViewWorkspace({
       ? new IndexedDBViewHost({
           scopeKey: 'card-example-user',
           serviceKey: 'card-example',
-          legacyStorage: localStorage,
           definition,
           instances: {
             ...instances,

@@ -15,10 +15,7 @@ import { expect, it } from 'vitest';
 import { filter, SortDirection } from '@ahoo-wang/fetcher-wow';
 import { createOrderService } from '../examples/react/sales-order/service.js';
 import { createOrderSource } from '../examples/react/sales-order/querySource.js';
-import {
-  createOrderHost,
-  createViewStorage,
-} from '../examples/react/sales-order/host.js';
+import { createOrderHost } from '../examples/react/sales-order/host.js';
 import { orderDefinition } from '../examples/react/sales-order/views.js';
 it('queries the same store after release and matches one item rather than different items', async () => {
   const service = createOrderService();
@@ -61,8 +58,8 @@ it('queries the same store after release and matches one item rather than differ
 });
 it('preserves personal views on reopening but prevents system edits and shared writes by sales', async () => {
   const service = createOrderService();
-  const storage = createViewStorage();
-  const host = createOrderHost(service, 'sales', 'all', { storage });
+  const store = new Map<string, string | null>();
+  const host = createOrderHost(service, 'sales', 'all', { store });
   const list = await host.instance.list(orderDefinition.id);
   const first = list.instances[0];
   await expect(
@@ -79,7 +76,7 @@ it('preserves personal views on reopening but prevents system edits and shared w
     { ...input, title: '我的交付', scope: { type: 'personal' } },
     { requestId: 'save-1' },
   );
-  const reopened = createOrderHost(service, 'sales', 'all', { storage });
+  const reopened = createOrderHost(service, 'sales', 'all', { store });
   expect((await reopened.instance.load(personal.id)).title).toBe('我的交付');
   await expect(
     host.instance.create(

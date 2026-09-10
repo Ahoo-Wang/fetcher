@@ -50,8 +50,8 @@ These names come from the current public entry exports and declarations. Import 
 | `getRecordSummaryFunctions`   | [recordPresentation.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L51)                         |
 | `getRecordSummaryMetrics`     | [recordPresentation.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L18)                         |
 | `isSimpleFilter`              | [filterNodes.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L40)                                       |
-| `LocalStorageViewHost`        | [LocalStorageViewHost.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L62)                     |
-| `LocalStorageViewHostOptions` | [LocalStorageViewHost.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/LocalStorageViewHost.ts#L42)                     |
+| `MemoryViewHost`              | [MemoryViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L27)                                 |
+| `MemoryViewHostOptions`       | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
 | `newFilterNode`               | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
 | `orderRecordColumns`          | [recordColumns.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L26)                                   |
 | `readRecordSummaryResult`     | [recordSummary.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L140)                                 |
@@ -106,7 +106,6 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewScope`                   | [recordModel.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordModel.ts#L60)                                       |
 | `ViewServiceError`            | [viewServiceContract.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L27)                       |
 | `ViewServiceErrorCode`        | [viewServiceContract.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L16)                       |
-| `ViewStorageLock`             | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
 
 ## `@ahoo-wang/fetcher-view-engine/react`
 
@@ -151,8 +150,8 @@ These names come from the current public entry exports and declarations. Import 
 | `FilterValueEditor`             | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)       |
 | `FilterValueEditorProps`        | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)       |
 | `GlobalActionsRendererProps`    | [recordReactTypes.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L72)           |
-| `IndexedDBViewHost`             | [IndexedDBViewHost.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L34)         |
-| `IndexedDBViewHostOptions`      | [IndexedDBViewHost.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L24)         |
+| `IndexedDBViewHost`             | [IndexedDBViewHost.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L25)         |
+| `IndexedDBViewHostOptions`      | [IndexedDBViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L21)         |
 | `InputGroup`                    | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)            |
 | `InputGroupAddon`               | [input-group.tsx:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L58)            |
 | `InputGroupButton`              | [input-group.tsx:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L98)            |

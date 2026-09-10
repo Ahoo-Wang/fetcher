@@ -99,7 +99,7 @@ const host: ViewHost = {
 };
 ```
 
-服务契约位于独立的 `src/record/ViewHost.ts`。`LocalStorageViewHost` 实现相同职责边界，存储操作共用事务以保持完整性；HTTP 保留为包外的开发实验。只替换某个方法时显式合并该服务，例如 `instance: {...host.instance, save: customSave}`。
+服务契约位于独立的 `src/record/ViewHost.ts`。`MemoryViewHost` 实现相同职责边界，存储操作共用事务以保持完整性；HTTP 保留为包外的开发实验。只替换某个方法时显式合并该服务，例如 `instance: {...host.instance, save: customSave}`。
 
 实例列表必须提供 `defaultInstanceId: null` 或列表中已有的实例 ID；可选 `revision` 一旦提供就必须是非空白字符串。无效响应在加载边界失败。
 
@@ -167,7 +167,7 @@ Storybook 的 **View Engine → 专项场景 → 数据展示** 使用内存服�
 
 ## 视图服务契约与运行时边界
 
-验收链路为 **服务 JSON → ViewHost → 新建 ViewEngine → 前端注册表 → 组件和操作恢复**。`LocalStorageViewHost` 是可执行的服务替身，包外 HTTP 适配器用于验证暂定协议。服务负责定义、实例、可见性、版本、创建回执和用户排序；前端负责组件实现、回调、过滤器编译和业务查询客户端。业务数据写入不应改变视图配置。
+验收链路为 **服务 JSON → ViewHost → 新建 ViewEngine → 前端注册表 → 组件和操作恢复**。`MemoryViewHost` 是可执行的服务替身，包外 HTTP 适配器用于验证暂定协议。服务负责定义、实例、可见性、版本、创建回执和用户排序；前端负责组件实现、回调、过滤器编译和业务查询客户端。业务数据写入不应改变视图配置。
 
 ### 本地服务替身
 
@@ -177,7 +177,6 @@ import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 const host = new IndexedDBViewHost({
   serviceKey: 'development-tenant',
   scopeKey: 'alice',
-  legacyStorage: localStorage, // Optional one-time import of existing view state
   definition: orderDefinition,
   instances: orderViews,
   resolveSource,
@@ -186,7 +185,7 @@ const host = new IndexedDBViewHost({
 
 `serviceKey` 标识服务／租户，`scopeKey` 标识其中的可信用户。存储键为 `fve:views:${JSON.stringify([serviceKey, definition.id])}`。公共视图在同一服务内共享，个人视图与展示顺序按用户隔离；归属由服务决定，不能通过写入正文伪造。ViewPage 的 scopeKey 应包含租户与用户；不传本地 definition/instances，让加载完整经过宿主。
 
-`IndexedDBViewHost` 将读取、授权、版本检查和写入放在同一个 IndexedDB 读写事务中提交。`LocalStorageViewHost` 保留为可注入同步存储的服务替身，要求存储在传入锁下保持一致；原生 localStorage 加 Web Locks 不能保证这种跨标签可见性。初始实例在初始化时取得服务端版本。系统视图只读。可选 `instancePermissions`、`canReorder`、`permissionsRevision` 提供可信权限策略，权限变化时必须递增策略版本；写入在事务内重新检查最新权限。
+`IndexedDBViewHost` 将读取、授权、版本检查和写入放在同一个 IndexedDB 读写事务中提交。`MemoryViewHost` 使用原生 Map 保存进程内服务状态，需共享时显式传入同一个 Map；两个宿主只共享业务规则，浏览器持久化全部使用 IndexedDB。初始实例在初始化时取得服务端版本。系统视图只读。可选 `instancePermissions`、`canReorder`、`permissionsRevision` 提供可信权限策略，权限变化时必须递增策略版本；写入在事务内重新检查最新权限。
 
 `permission.load(definitionId, signal?)` 读取权限快照，`permission.refresh()` 通过 `permission.subscribe` 通知引擎。引擎随宿主生命周期订阅和解绑，权限更新不会丢弃草稿，渲染时仍只进行同步权限读取。`await reset()` 是清除此服务／定义下全部用户及幂等回执的测试管理操作，不映射为 REST 端点。损坏存储会报错，不自动覆盖。原始存储文档是内部服务状态，不是 ViewInstanceList DTO。
 
@@ -210,7 +209,7 @@ node packages/view-engine/scripts/verify-http-view-host.mjs
 node packages/view-engine/scripts/verify-http-view-host.mjs --serve
 ```
 
-HTTP 脚本启动隔离的本地服务，以相同的 LocalStorageViewHost 逻辑、同步存储接口和服务端身份绑定处理请求，浏览器通过 HttpViewHost 驱动真实组件。覆盖共享／私有可见性、个人排序、响应丢失幂等、权限撤销／恢复、超时重试和引擎取消；另用两个标签页验证真实 IndexedDB 事务竞争写入及排队取消。HTTP 测试还覆盖权限响应乱序、无效会话、归属伪造与并发写入。编译开关两种模式的组件测试验证缺失／替换扩展及冲突恢复。测试服务不是已经接入生产数据库或生产认证的部署系统。
+HTTP 脚本启动隔离的本地服务，以相同的 MemoryViewHost 逻辑、同步存储接口和服务端身份绑定处理请求，浏览器通过 HttpViewHost 驱动真实组件。覆盖共享／私有可见性、个人排序、响应丢失幂等、权限撤销／恢复、超时重试和引擎取消；另用两个标签页验证真实 IndexedDB 事务竞争写入及排队取消。HTTP 测试还覆盖权限响应乱序、无效会话、归属伪造与并发写入。编译开关两种模式的组件测试验证缺失／替换扩展及冲突恢复。测试服务不是已经接入生产数据库或生产认证的部署系统。
 
 ## 本页 / 所有汇总
 
@@ -437,7 +436,7 @@ const sources: Record<string, FilterOptionSource> = { users: userOptionSource };
 
 多值文本按换行、中英文逗号和分号拆分、去除两端空白并去重，保留名称内部空格、大小写和前导零；Enter 先提交未完成条目，不承担 CSV 引号解析。区间保留 `lowerBound`、`upperBound` 组件属性；日期模式编译时包含最后一天全天，显式时间模式按精确时刻查询。
 
-在 Storybook 的 **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** 或独立示例 `?example=builtin-filters` 查看。`BuiltinFiltersExample.tsx` 通过 Fetcher 读取确定性 data URL 夹具，并以 LocalStorageViewHost 验证标签恢复与 JSON 持久化。只有该 data URL 夹具移除 URL 模板解析，真实 HTTP 客户端保留原有 URL 和鉴权拦截器。
+在 Storybook 的 **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** 或独立示例 `?example=builtin-filters` 查看。`BuiltinFiltersExample.tsx` 通过 Fetcher 读取确定性 data URL 夹具，并以 IndexedDBViewHost 验证标签恢复与 JSON 持久化。只有该 data URL 夹具移除 URL 模板解析，真实 HTTP 客户端保留原有 URL 和鉴权拦截器。
 
 `getFieldOperators(field)` 仅根据字段类型和显式 `field.operators` 推导能力。字段 `editor` 和定义 `filterEditors` 仅作为新建节点默认值；已有节点以自身 `component` 为准，由该组件注册检查兼容性。因此修改字段默认编辑器不会限制或替换已保存组件。
 
@@ -471,9 +470,9 @@ import { NumberCell, TextCell } from '@ahoo-wang/fetcher-view-engine/react';
 
 LinkCell 在 URL 解析后允许 HTTP(S)、mailto、tel 和相对地址，危险地址呈现为普通文本；新页链接固定带 `noopener noreferrer`。业务路由继续通过自定义组件处理。复制使用原始值，不能复制枚举名称或截断文字；剪贴板拒绝/不可用在按钮旁提示重试。TextCell 的 `text` 只改变展示。这些交互不会修改视图或触发查询。
 
-状态主题变量为 `--fve-success`、`--fve-warning`、`--fve-info` 与已有 `--fve-destructive`；状态始终保留文字，不只依赖颜色。弹层继承当前主题。**View Engine → 专项场景 → 组件与主题 → 内置单元格** 与 `examples/react/BuiltinCellsExample.tsx` 包含独立组合、深色窄屏、异常数据及 LocalStorageViewHost 刷新恢复示例。
+状态主题变量为 `--fve-success`、`--fve-warning`、`--fve-info` 与已有 `--fve-destructive`；状态始终保留文字，不只依赖颜色。弹层继承当前主题。**View Engine → 专项场景 → 组件与主题 → 内置单元格** 与 `examples/react/BuiltinCellsExample.tsx` 包含独立组合、深色窄屏、异常数据及 IndexedDBViewHost 刷新恢复示例。
 
-创建不修改默认实例偏好。`LocalStorageViewHost` 保留显式 `defaultInstanceId: null`；只有原先指定的默认实例已不可见时才回退到其他实例。删除当前访问范围中不存在的实例视为成功，不触及其他用户的私有视图；仍存在的可见实例继续校验权限和 revision。待确认创建状态属于当前引擎生命周期，直接服务调用者在重建客户端后自行保留原 requestId。
+创建不修改默认实例偏好。`MemoryViewHost` 保留显式 `defaultInstanceId: null`；只有原先指定的默认实例已不可见时才回退到其他实例。删除当前访问范围中不存在的实例视为成功，不触及其他用户的私有视图；仍存在的可见实例继续校验权限和 revision。待确认创建状态属于当前引擎生命周期，直接服务调用者在重建客户端后自行保留原 requestId。
 
 未确认创建的源视图若从完整列表中消失，`getSnapshot().pendingCreates` 会独立保留编辑上下文，不把它重新放入可见视图。通过 `reloadInstance(sourceId)` 核对原请求，`ViewPageContent` 提供对应恢复入口。这些条目不包含业务记录，不能作为普通实例查询或保存。重载保留本地标题、配置及筛选草稿，可见范围 `scope` 采用服务端返回的权威值。
 

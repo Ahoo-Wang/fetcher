@@ -63,7 +63,6 @@ function CatalogWorkspace({
       ? new IndexedDBViewHost({
           scopeKey: 'demo:product-catalog',
           serviceKey: 'catalog-v1',
-          legacyStorage: localStorage,
           definition,
           instances: views,
           resolveSource: () => catalog.source,

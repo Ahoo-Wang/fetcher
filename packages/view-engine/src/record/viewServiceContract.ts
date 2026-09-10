@@ -44,13 +44,6 @@ export interface ViewPermissionSnapshot {
   instances: Record<string, Required<ViewInstancePermissions>>;
   reorder: boolean;
 }
-/** The injected storage must be coherent under this lock; native localStorage + Web Locks does not guarantee cross-tab CAS. */
-export type ViewStorageLock = <T>(
-  name: string,
-  operation: () => T,
-  signal?: AbortSignal,
-) => Promise<T>;
-
 /** Encode one resource ID without allowing URL normalization to change its resource. */
 export function encodeViewResourceId(value: unknown): string {
   if (

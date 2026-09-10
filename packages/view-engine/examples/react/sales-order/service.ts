@@ -286,6 +286,7 @@ export function createOrderService(options: ServiceOptions = {}): OrderService {
         requireRule(command.reason.trim(), '请填写取消原因');
         order.lifecycle = 'cancelled';
         order.cancelledAt = now;
+        order.prepared = [];
         order.released = false;
         order.reconciled = false;
         break;

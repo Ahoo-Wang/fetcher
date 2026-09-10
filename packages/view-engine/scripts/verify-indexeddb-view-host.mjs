@@ -197,85 +197,23 @@ export async function verifyIndexedDBViewHost({
   }, old);
   assert.equal(aborted, 'AbortError');
 
-  const denied = await page.evaluate(
-    async ({ coreUrl, fixture, databaseName }) => {
-      const { IndexedDBViewHost } = await import(coreUrl);
-      const host = new IndexedDBViewHost({
-        ...fixture,
-        databaseName: `denied-${databaseName}`,
-        scopeKey: 'alice',
-        serviceKey: 'native-cas-contract',
-        legacyStorage: {
-          getItem: () => {
-            throw new Error('denied');
-          },
-        },
-        resolveSource: () => undefined,
-      });
-      try {
-        await host.instance.load('my-orders');
-        return 'saved';
-      } catch (error) {
-        return error.code;
-      }
-    },
-    { coreUrl, fixture, databaseName },
-  );
-  assert.equal(denied, 'UNAVAILABLE');
-
-  // Import once; reset must not resurrect the legacy data in another host or tab.
-  const migrationName = `migration-${databaseName}`;
-  const legacy = await page.evaluate(
-    async ({ databaseName }) =>
-      new Promise((resolve, reject) => {
-        const request = indexedDB.open(databaseName, 1);
-        request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('states');
-          const read = tx
-            .objectStore('states')
-            .get(window.storageHost.storageKey);
-          read.onsuccess = () => resolve(read.result);
-          tx.oncomplete = () => db.close();
-          tx.onabort = () => {
-            db.close();
-            reject(tx.error);
-          };
-        };
-      }),
-    { databaseName },
-  );
-  for (const tab of [page, bobPage]) {
-    await tab.evaluate(
-      async ({ coreUrl, fixture, migrationName, legacy }) => {
-        const { IndexedDBViewHost } = await import(coreUrl);
-        window.migratedHost = new IndexedDBViewHost({
-          ...fixture,
-          databaseName: migrationName,
-          scopeKey: 'alice',
-          serviceKey: 'native-cas-contract',
-          legacyStorage: { getItem: () => legacy },
-          resolveSource: () => undefined,
-        });
-      },
-      { coreUrl, fixture, migrationName, legacy },
-    );
-  }
-  assert.equal(
-    (await page.evaluate(() => window.migratedHost.instance.load('my-orders')))
-      .revision,
-    old.revision,
-  );
-  await page.evaluate(() => window.migratedHost.reset());
+  // Reset is durable: the other tab must see fresh seeds and no prior create receipt.
+  await page.evaluate(() => window.storageHost.reset());
   const reset = await bobPage.evaluate(() =>
-    window.migratedHost.instance.list('sales-orders'),
+    window.storageHost.instance.list('sales-orders'),
   );
   assert.equal(reset.instances.length, fixture.instances.instances.length);
   assert.notEqual(
-    reset.instances.find(r => r.id === 'my-orders').revision,
+    reset.instances.find(row => row.id === 'my-orders').revision,
     old.revision,
   );
+  const afterReset = await bobPage.evaluate(
+    input =>
+      window.storageHost.instance.create(input, { requestId: 'same-create' }),
+    old,
+  );
+  assert.notEqual(afterReset.id, created[0].id);
   console.log(
-    'IndexedDB passed: 50 cross-tab CAS races, create receipts, post-write rollback, queued/pre-abort cancellation, legacy import and reset.',
+    'IndexedDB passed: 50 cross-tab CAS races, create receipts, post-write rollback, queued/pre-abort cancellation and durable reset.',
   );
 }

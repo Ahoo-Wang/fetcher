@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import {
   cleanup,
   fireEvent,
@@ -21,7 +21,79 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { OrderWorkbench } from '../examples/react/sales-order/OrderWorkbench.js';
+import { OrderForms } from '../examples/react/sales-order/OrderForms.js';
+import {
+  createOrderService,
+  type Command,
+} from '../examples/react/sales-order/service.js';
 afterEach(cleanup);
+it('updates layout in both directions without resetting orders', async () => {
+  const view = render(<OrderWorkbench localDefinition layout="table" />);
+  fireEvent.click(await screen.findByRole('button', { name: '创建订单' }));
+  fireEvent.click(await screen.findByRole('button', { name: '确认创建' }));
+  await screen.findByRole('dialog', { name: '订单详情 SO-202609-1019' });
+  await waitFor(() =>
+    expect(
+      (screen.getByRole('button', { name: '关闭详情' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false),
+  );
+  fireEvent.click(screen.getByRole('button', { name: '关闭详情' }));
+  await screen.findByRole('table', { name: '全部订单' });
+  view.rerender(<OrderWorkbench localDefinition layout="card" />);
+  expect(await screen.findByRole('list', { name: '记录卡片' })).toBeTruthy();
+  expect(screen.queryByRole('table')).toBeNull();
+  expect(await screen.findByText('SO-202609-1019')).toBeTruthy();
+  view.rerender(<OrderWorkbench localDefinition layout="table" />);
+  expect(await screen.findByRole('table', { name: '全部订单' })).toBeTruthy();
+  expect(screen.queryByRole('list', { name: '记录卡片' })).toBeNull();
+  expect(await screen.findByText('SO-202609-1019')).toBeTruthy();
+});
+it('rebuilds the default view when the requested stage changes', async () => {
+  const view = render(<OrderWorkbench stage="all" />);
+  await screen.findByRole('table', { name: '全部订单' });
+  view.rerender(<OrderWorkbench stage="release" />);
+  expect(await screen.findByRole('table', { name: '收款与放行' })).toBeTruthy();
+  expect(screen.queryByRole('table', { name: '全部订单' })).toBeNull();
+});
+it('allocates rejected units from the default accepted quantity', async () => {
+  const service = createOrderService();
+  const [order] = await service.execute(
+    {
+      type: 'ship',
+      orderId: 'SO-202609-1001',
+      tracking: 'TEST-SHIP',
+      lines: [{ itemId: 'item-1', quantity: 6 }],
+    },
+    'delivery',
+    'ship',
+  );
+  const submit = vi.fn(async (command: Command) => {
+    await service.execute(command, 'delivery', 'receipt');
+  });
+  render(
+    <OrderForms
+      commandType="receipt"
+      order={order}
+      busy={false}
+      onCancel={() => {}}
+      onSubmit={submit}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText('拒收数量 办公显示器'), {
+    target: { value: '1' },
+  });
+  expect(
+    (screen.getByLabelText('签收数量 办公显示器') as HTMLInputElement).value,
+  ).toBe('5');
+  fireEvent.click(screen.getByRole('button', { name: '确认签收与拒收' }));
+  await waitFor(() =>
+    expect(
+      service.read().find(row => row.aggregateId === order.aggregateId)!.state
+        .items[0],
+    ).toMatchObject({ signed: 5, rejected: 1 }),
+  );
+});
 it('keeps business state for appearance changes but resets it for a new scope', async () => {
   const view = render(<OrderWorkbench scopeKey="first-user" />);
   fireEvent.click(await screen.findByRole('button', { name: '创建订单' }));

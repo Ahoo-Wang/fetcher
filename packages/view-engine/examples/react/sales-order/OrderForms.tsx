@@ -478,38 +478,34 @@ export function OrderForms({
           </label>
         )}
         {quantityAction &&
-          state?.items.map(item => (
-            <div
-              className="sales-fields"
-              key={`${item.id}:${shipmentId}:${returnId}`}
-            >
-              <label>
-                {item.productName} · 本次数量（可处理 {maxQuantity(item)}）
-                <input
-                  aria-label={`本次数量 ${item.productName}`}
-                  name={`qty-${item.id}`}
-                  type="number"
-                  min="0"
-                  max={maxQuantity(item)}
-                  step="1"
-                  defaultValue={Math.max(0, maxQuantity(item))}
-                />
-              </label>
-              {commandType === 'receipt' && (
+          state?.items.map(item =>
+            commandType === 'receipt' ? (
+              <ReceiptQuantities
+                key={`${item.id}:${shipmentId}`}
+                itemId={item.id}
+                name={item.productName}
+                maximum={Math.max(0, maxQuantity(item))}
+              />
+            ) : (
+              <div
+                className="sales-fields"
+                key={`${item.id}:${shipmentId}:${returnId}`}
+              >
                 <label>
-                  拒收数量 {item.productName}
+                  {item.productName} · 本次数量（可处理 {maxQuantity(item)}）
                   <input
-                    name={`reject-${item.id}`}
+                    aria-label={`本次数量 ${item.productName}`}
+                    name={`qty-${item.id}`}
                     type="number"
                     min="0"
                     max={maxQuantity(item)}
                     step="1"
-                    defaultValue="0"
+                    defaultValue={Math.max(0, maxQuantity(item))}
                   />
                 </label>
-              )}
-            </div>
-          ))}
+              </div>
+            ),
+          )}
         {commandType === 'ship' && (
           <label>
             运单号
@@ -543,5 +539,47 @@ export function OrderForms({
         </Button>
       </div>
     </form>
+  );
+}
+
+function ReceiptQuantities({
+  itemId,
+  name,
+  maximum,
+}: {
+  itemId: string;
+  name: string;
+  maximum: number;
+}) {
+  const [quantities, setQuantities] = useState({
+    accepted: maximum,
+    rejected: 0,
+  });
+  function change(field: 'accepted' | 'rejected', raw: string) {
+    const value = Math.max(0, Math.min(maximum, Number(raw) || 0));
+    const other = field === 'accepted' ? 'rejected' : 'accepted';
+    setQuantities(previous => ({
+      ...previous,
+      [field]: value,
+      [other]: Math.min(previous[other], maximum - value),
+    }));
+  }
+  return (
+    <div className="sales-fields">
+      {(['accepted', 'rejected'] as const).map(field => (
+        <label key={field}>
+          {field === 'accepted' ? '签收数量' : '拒收数量'} {name}
+          <input
+            name={`${field === 'accepted' ? 'qty' : 'reject'}-${itemId}`}
+            type="number"
+            min="0"
+            max={maximum}
+            step="1"
+            value={quantities[field]}
+            onChange={event => change(field, event.target.value)}
+          />
+        </label>
+      ))}
+    </div>
   );
 }

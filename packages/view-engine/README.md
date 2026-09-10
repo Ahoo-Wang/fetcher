@@ -106,7 +106,7 @@ const host: ViewHost = {
 ```
 
 The service contracts live in `src/record/ViewHost.ts`, separately from record
-metadata. LocalStorageViewHost implements them with a shared storage transaction.
+metadata. MemoryViewHost implements them with a shared storage transaction.
 HTTP remains an internal development experiment, not part of the public package.
 When replacing only one method, merge its service explicitly, for example
 `instance: {...host.instance, save: customSave}`.
@@ -302,7 +302,7 @@ The stories use an in-memory service to demonstrate request/response behavior.
 
 ## View service contract and runtime boundary
 
-Acceptance follows **service JSON → ViewHost → fresh ViewEngine → frontend registry → recovered components/actions**. LocalStorageViewHost is the executable service fixture; the internal HTTP adapter exercises a provisional protocol. The service owns definitions, instances, visibility, revisions, create receipts and user ordering. The frontend owns components, callbacks, filter compilation and business-query clients. Business record writes never rewrite view configuration.
+Acceptance follows **service JSON → ViewHost → fresh ViewEngine → frontend registry → recovered components/actions**. MemoryViewHost is the executable service fixture; the internal HTTP adapter exercises a provisional protocol. The service owns definitions, instances, visibility, revisions, create receipts and user ordering. The frontend owns components, callbacks, filter compilation and business-query clients. Business record writes never rewrite view configuration.
 
 ### Local service fixture
 
@@ -312,7 +312,6 @@ import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 const host = new IndexedDBViewHost({
   serviceKey: 'development-tenant',
   scopeKey: 'alice',
-  legacyStorage: localStorage, // Optional one-time import of existing view state
   definition: orderDefinition,
   instances: orderViews,
   resolveSource,
@@ -321,7 +320,7 @@ const host = new IndexedDBViewHost({
 
 `serviceKey` is a trusted tenant/service namespace; `scopeKey` is the trusted user within it. Storage uses `fve:views:${JSON.stringify([serviceKey, definition.id])}`. Public views are shared within this namespace; personal views and display order are isolated by user. Private ownership is service-owned and is not accepted from write bodies. Use an access-scoped ViewPage key that includes both tenant and user; omit ViewPage's local `definition`/`instances` props so loading goes through the host.
 
-IndexedDBViewHost commits read, authorization, revision checks and writes in one IndexedDB readwrite transaction. LocalStorageViewHost remains an injectable synchronous service fixture: its storage must be coherent under the supplied lock. Native localStorage plus Web Locks does not guarantee that cross-tab coherence. Seed instances get service-issued revisions on initialization. System views are read-only. Optional `instancePermissions`, `canReorder` and `permissionsRevision` supply a trusted policy; increment the monotonic policy revision whenever grants change. Writes always recheck the current policy inside the transaction.
+IndexedDBViewHost commits read, authorization, revision checks and writes in one IndexedDB readwrite transaction. MemoryViewHost uses a native Map for in-process service state; a shared Map is supplied explicitly. The two hosts share only domain rules, and all browser persistence uses IndexedDB. Seed instances get service-issued revisions on initialization. System views are read-only. Optional `instancePermissions`, `canReorder` and `permissionsRevision` supply a trusted policy; increment the monotonic policy revision whenever grants change. Writes always recheck the current policy inside the transaction.
 
 `permission.load(definitionId, signal?)` reads authority snapshots. `permission.refresh()` notifies `permission.subscribe`; ViewEngine subscribes/unsubscribes with its host lifetime, so permission changes update controls without destroying drafts. Permissions remain synchronous reads during rendering. `await reset()` is an administrative fixture reset for the whole service/definition (including users and create receipts), not a REST operation. Malformed storage is reported rather than silently reset. The raw local-storage document is internal service state, not a ViewInstanceList DTO.
 
@@ -348,7 +347,7 @@ node packages/view-engine/scripts/verify-http-view-host.mjs
 node packages/view-engine/scripts/verify-http-view-host.mjs --serve
 ```
 
-The HTTP script starts an isolated local server with the same LocalStorageViewHost logic, a synchronous storage port, and server-bound identities; the browser uses HttpViewHost and the real UI. It covers shared/private visibility, private ordering, response loss/idempotency, permission revoke/restore, timeout/retry and engine cancellation. It separately runs native IndexedDB transaction races and queued cancellation across two tabs. `httpViewHost.test.ts` also tests stale permission-response ordering, invalid sessions, ownership forgery and concurrent HTTP writers. Both compiled and uncompiled component tests cover missing/replaced extensions and conflict recovery. Business records remain a separate service; no real production backend or authentication provider is claimed by this fixture.
+The HTTP script starts an isolated local server with MemoryViewHost with a shared Map and server-bound identities; the browser uses HttpViewHost and the real UI. It covers shared/private visibility, private ordering, response loss/idempotency, permission revoke/restore, timeout/retry and engine cancellation. It separately runs native IndexedDB transaction races and queued cancellation across two tabs. `httpViewHost.test.ts` also tests stale permission-response ordering, invalid sessions, ownership forgery and concurrent HTTP writers. Both compiled and uncompiled component tests cover missing/replaced extensions and conflict recovery. Business records remain a separate service; no real production backend or authentication provider is claimed by this fixture.
 
 ## Page and all-record summaries
 
@@ -622,7 +621,7 @@ Saved props contain `value` or `values` plus `selectedOptions` label snapshots. 
 
 Text collections split pasted input on newlines, commas and semicolons, trim and deduplicate, and preserve spaces inside identifiers, case and leading zeros. Enter commits a pending token first. This is not a CSV parser. Date-time ranges retain `lowerBound` and `upperBound`; they never automatically expand the end to the end of the day.
 
-Open **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** in Storybook, or the standalone example with `?example=builtin-filters`. `BuiltinFiltersExample.tsx` uses Fetcher with deterministic data-URL fixtures and LocalStorageViewHost to demonstrate selected-label recovery and JSON persistence. Only this data-URL fixture removes URL-template resolution; real HTTP clients keep their usual URL/authentication interceptors.
+Open **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** in Storybook, or the standalone example with `?example=builtin-filters`. `BuiltinFiltersExample.tsx` uses Fetcher with deterministic data-URL fixtures and IndexedDBViewHost to demonstrate selected-label recovery and JSON persistence. Only this data-URL fixture removes URL-template resolution; real HTTP clients keep their usual URL/authentication interceptors.
 
 `getFieldOperators(field)` derives capabilities only from field type and explicit `field.operators`. Field `editor` and definition `filterEditors` are defaults for new nodes; an existing node's `component` is authoritative. Its registration supplies component-specific compatibility checks, so changing a field editor default does not restrict or replace saved components.
 
@@ -656,9 +655,9 @@ Empty values render `—`; zero and false remain values. NumberCell accepts fini
 
 LinkCell allows HTTP(S), mailto, tel and relative URLs after URL parsing; unsafe addresses render as text. New tabs always include `noopener noreferrer`. Application routing remains a custom component. Copy uses the raw value, not the enum label or ellipsis; clipboard rejection/unavailability shows a local retry message. TextCell's optional `text` only changes display. Nothing in these interactions mutates the view or triggers a query.
 
-Status theme tokens are `--fve-success`, `--fve-warning`, `--fve-info` and the existing `--fve-destructive`; labels remain visible without relying on color. Popups inherit the active theme. See **View Engine → 专项场景 → 组件与主题 → 内置单元格** and `examples/react/BuiltinCellsExample.tsx` for standalone usage, dark/narrow layout, invalid data and LocalStorageViewHost reload recovery.
+Status theme tokens are `--fve-success`, `--fve-warning`, `--fve-info` and the existing `--fve-destructive`; labels remain visible without relying on color. Popups inherit the active theme. See **View Engine → 专项场景 → 组件与主题 → 内置单元格** and `examples/react/BuiltinCellsExample.tsx` for standalone usage, dark/narrow layout, invalid data and IndexedDBViewHost reload recovery.
 
-Creation does not modify the default-instance preference. `LocalStorageViewHost` preserves explicit `defaultInstanceId: null`; only a previously selected default that is no longer visible falls back to an available instance. Deleting an absent instance in the current access scope succeeds without affecting another user's private view; existing visible instances still require permission and the correct revision. Pending creation state belongs to the current engine lifetime; callers of the service keep their own request ID across client reconstruction.
+Creation does not modify the default-instance preference. `MemoryViewHost` preserves explicit `defaultInstanceId: null`; only a previously selected default that is no longer visible falls back to an available instance. Deleting an absent instance in the current access scope succeeds without affecting another user's private view; existing visible instances still require permission and the correct revision. Pending creation state belongs to the current engine lifetime; callers of the service keep their own request ID across client reconstruction.
 
 If the source of an unconfirmed creation disappears from a full list response, `getSnapshot().pendingCreates` retains its editor context separately from visible views. Use `reloadInstance(sourceId)` to reconcile the original request; `ViewPageContent` provides the recovery action. These entries contain no business rows and cannot be queried or saved as ordinary instances. Reload preserves local title/configuration and filter drafts, while taking the authoritative returned `scope`.
 

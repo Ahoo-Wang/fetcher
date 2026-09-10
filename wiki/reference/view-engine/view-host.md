@@ -35,25 +35,24 @@ A logical create retains `ViewCreateContext.requestId` across uncertain retries.
 
 After save, rename or delete is dispatched, UNKNOWN_OUTCOME, UNAVAILABLE and unclassified exceptions mark `requiresReload` and block unrelated writes to that instance while preserving local edits. Save and rename require a successful `reloadInstance()` to obtain the authoritative revision. A missing or inaccessible instance keeps the recovery error and edits. Hosts must report definitive rejections with the corresponding `ViewServiceError` code. An uncertain create can replay its original request ID; an uncertain delete can replay the same ID and revision. `getCapabilitiesSnapshot().instances[id].retryDelete` exposes that exception for subscribed UI controls.
 
-## IndexedDBViewHost
+## Browser persistence and in-process services
 
-Use IndexedDBViewHost for browser persistence. Required: serviceKey, scopeKey, definition, instances, resolveSource. Optional: databaseName (default fve-view-state), legacyStorage (one-time import only when the database has no record). Reset stores a null tombstone to prevent legacy resurrection. Success is returned only after commit; cancellation and failure roll back. Policy options match LocalStorageViewHost.
+Use `IndexedDBViewHost` from `/react` for browser persistence and `MemoryViewHost` from the core entry for memory examples and Node HTTP fixtures. They share permission, revision, create-receipt, user-isolation and ordering rules; storage uses native IndexedDB transactions or a Map respectively.
 
-LocalStorageViewHost still accepts synchronous storage and lock ports; the storage must be coherent under that lock. Native localStorage plus Web Locks is not a cross-tab transaction. Reload all old tabs when switching persistence implementations to avoid mixing stores.
+Required options: `serviceKey`, `scopeKey`, `definition`, `instances`, `resolveSource`. Optional policy callbacks: `instancePermissions`, `canReorder`, `permissionsRevision`. The browser host additionally accepts `databaseName` (default `fve-view-state`); the memory host accepts `store?: Map<string, string | null>`. Memory hosts share state only when explicitly given the same Map.
 
 ```ts
 import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 
 const host = new IndexedDBViewHost({
-  serviceKey: 'demo-service:tenant-a',
+  serviceKey: 'demo-service',
   scopeKey: 'user-a',
   definition,
   instances,
   resolveSource,
-  legacyStorage: localStorage, // Optional one-time import of existing view state
 });
 ```
 
-This is a browser development fixture for restoration, isolation, revisions and atomic writes. `reset()` resets its test service state. It does not persist business records or provide trusted production authorization.
+Browser reads, CAS and writes use one readwrite transaction. Success follows commit; failure and cancellation roll back. `reset()` atomically clears the service/definition's user views, ordering and receipts. Business records remain a separate query source. In-memory transactions complete read, validation and update in one synchronous JS call stack.
 
-With the workspace built and Storybook running on port 6006, run `node packages/view-engine/scripts/verify-view-host.mjs` for the local service/browser recovery checks; use `pnpm verify:view-engine` for the combined package, service and browser acceptance entry point. HTTP fixture files under `dev` remain outside the published package.
+After building, run `pnpm verify:view-engine` for packed-package, HTTP, cross-tab CAS, cancellation, reset and real-page checks. Client storage and development services are not production authorization boundaries.

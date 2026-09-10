@@ -41,7 +41,7 @@ export const UsableViews: StoryObj<typeof meta> = {
       canvas.getByRole('button', { name: '展示方式：表格' }),
     );
     await userEvent.click(
-      page.getByRole('menuitemradio', { name: '卡片', exact: true }),
+      await page.findByRole('menuitemradio', { name: '卡片', exact: true }),
     );
     await expect(
       await canvas.findByRole('list', { name: '记录卡片' }),

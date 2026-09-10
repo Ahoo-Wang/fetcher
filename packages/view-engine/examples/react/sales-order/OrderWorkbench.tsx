@@ -11,7 +11,13 @@
  * limitations under the License.
  */
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {
   type ViewHost,
   resolveRecordPresentation,
@@ -23,7 +29,7 @@ import {
   ViewPageContent,
   type RecordCardRenderContext,
 } from '@ahoo-wang/fetcher-view-engine/react';
-import { createOrderHost, createViewStorage } from './host.js';
+import { createOrderHost } from './host.js';
 import { createOrderSource, type QueryOptions } from './querySource.js';
 import { createOrderViews, orderDefinition, stageLabels } from './views.js';
 import { roles, type Role, type Stage } from './model.js';
@@ -83,7 +89,12 @@ export function OrderWorkbench(props: OrderWorkbenchProps) {
   const [generation, setGeneration] = useState(0);
   return (
     <WorkbenchSession
-      key={JSON.stringify([props.scopeKey, props.persistViews, generation])}
+      key={JSON.stringify([
+        props.scopeKey,
+        props.persistViews,
+        props.stage ?? 'all',
+        generation,
+      ])}
       {...props}
       reset={() => setGeneration(g => g + 1)}
     />
@@ -107,12 +118,12 @@ function WorkbenchSession({
   const [runtime] = useState(() => {
     const service = createOrderService(options),
       source = createOrderSource(service.read, options),
-      storage = persistViews ? localStorage : createViewStorage();
+      store = new Map<string, string | null>();
     const hosts = Object.fromEntries(
       Object.keys(roles).map(r => [
         r,
         createOrderHost(service, r as Role, stage, {
-          storage,
+          store,
           source,
           personal: persistViews,
           persist: persistViews,
@@ -144,7 +155,7 @@ function WorkbenchSession({
   const [version, setVersion] = useState(0);
   const [failedRefresh, setFailedRefresh] = useState(false);
   const [reopen, setReopen] = useState(0);
-  const [localViews] = useState(() => {
+  const localViews = useMemo(() => {
     const views = createOrderViews(stage);
     if (layout === 'card')
       for (const v of views.instances)
@@ -154,7 +165,7 @@ function WorkbenchSession({
           v.config.presentation,
         );
     return views;
-  });
+  }, [stage, layout]);
   const [externalHost] = useState(() => createViewHost?.(() => runtime.source));
   const host = externalHost ?? runtime.hosts[role];
   const [owned, setOwned] = useState<{

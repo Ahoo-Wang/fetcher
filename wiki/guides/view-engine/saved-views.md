@@ -23,10 +23,6 @@ The UI has two groups: personal views and public views. Public system views carr
 
 Load permissions before exposing synchronous getters. Publish policy changes through `permission.subscribe`, or replace the host/update its callbacks within the same scope. Changing the user or tenant requires a new `scopeKey`.
 
-## Develop against LocalStorageViewHost
+## Choose the storage environment
 
-`LocalStorageViewHost` is an executable development service fixture. It models shared content, personal ownership, user order, revisions and create receipts. It requires explicit `storage`, a shared exclusive `lock`, trusted `serviceKey` and `scopeKey`, a definition and initial instance list. It stores view configuration; the record source is still separate.
-
-Use **开发验证 → 本地视图恢复** to save, reload and inspect recovery. The public-package five-extension example also supports `persistViews`. Browser storage is editable by its user and is not production authorization. HTTP adapters under `packages/view-engine/dev` are experiments, not public package exports or a fixed REST endpoint specification.
-
-Verify **专项场景 → 视图与运行时 → 视图管理**, **开发接入 → 业务扩展** and the standalone service verification scripts described in [ViewHost](../../reference/view-engine/view-host.md).
+Use `IndexedDBViewHost` for persisted browser view configuration. Use `MemoryViewHost` for memory examples and Node services, optionally supplying a shared Map; each host otherwise owns independent memory state. Both hosts manage views, permissions, revisions, create receipts and user ordering, while business records come from a separate source. See [ViewHost](../../reference/view-engine/view-host.md) for options and verification.

@@ -18,6 +18,20 @@ import type { Command } from '../examples/react/sales-order/service.js';
 import type { Role } from '../examples/react/sales-order/model.js';
 
 describe('sales order business journeys', () => {
+  it('releases prepared stock when cancelling an unshipped order', async () => {
+    const service = createOrderService();
+    const id = 'SO-202609-1001';
+    expect(
+      service.read().find(order => order.aggregateId === id)!.state.items[0]
+        .prepared,
+    ).toBe(6);
+    const [cancelled] = await service.execute(
+      { type: 'cancel', orderId: id, reason: '客户取消' },
+      'sales',
+      'cancel',
+    );
+    expect(cancelled.state.items.every(item => item.prepared === 0)).toBe(true);
+  });
   it('rejects prepaid release until fully paid, and deduplicates money writes', async () => {
     const service = createOrderService();
     await expect(
