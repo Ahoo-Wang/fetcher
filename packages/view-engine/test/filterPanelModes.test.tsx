@@ -117,6 +117,32 @@ it('collapses an emptied root AND back to MATCH_ALL in simple mode', async () =>
   );
 });
 
+it('keeps an emptied root AND editable in advanced mode', async () => {
+  const change = vi.fn();
+  render(
+    <FilterPanel
+      fields={fields}
+      defaultValue={configuration(
+        {
+          ...node('AND'),
+          operands: [node('GTE', 'amount', { value: 1 })],
+        },
+        'advanced',
+      )}
+      onChange={change}
+    />,
+  );
+  expect(
+    screen.getByRole('combobox', { name: '筛选模式' }).textContent,
+  ).toContain('高级');
+  fireEvent.click(screen.getByRole('button', { name: '删除订单金额条件' }));
+  expect(change.mock.lastCall?.[0].root).toMatchObject({
+    operator: 'AND',
+    operands: [],
+  });
+  expect(change.mock.lastCall?.[0].mode).toBe('advanced');
+});
+
 it('allows switching repeated-field groups from OR to AND without dropping rules', async () => {
   const apply = vi.fn();
   render(

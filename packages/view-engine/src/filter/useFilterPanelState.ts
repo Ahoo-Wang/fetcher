@@ -167,12 +167,13 @@ export function useFilterPanelState(props: FilterPanelProps) {
     next?: FilterComponentConfig,
     preserveValidity = false,
   ) {
-    const replaced = replaceFilterNode(configurationRef.current.root, id, next);
-    // Deleting the last simple-mode leaf leaves an empty root AND, which
-    // isSimpleFilter rejects; collapse only on deletion so intentional empty
-    // groups from the advanced menu stay intact.
+    const current = configurationRef.current;
+    const replaced = replaceFilterNode(current.root, id, next);
+    // Simple mode cannot represent an empty root AND; advanced mode keeps the
+    // empty group editable and relies on its own group-delete control.
     change(
       next === undefined &&
+        current.mode === 'simple' &&
         replaced &&
         replaced.operator === FilterOperator.AND &&
         Array.isArray(replaced.operands) &&
@@ -307,10 +308,10 @@ export function useFilterPanelState(props: FilterPanelProps) {
     },
   };
   function removeField(targetId: string, field: string) {
-    const current = locateFilterNodes(
-      configurationRef.current.root,
-      fields,
-    ).find(item => item.node.id === targetId)?.node;
+    const configuration = configurationRef.current;
+    const current = locateFilterNodes(configuration.root, fields).find(
+      item => item.node.id === targetId,
+    )?.node;
     if (!current) return;
     if (current.operands) {
       const operands = current.operands.filter(node => node.field !== field);
@@ -318,7 +319,8 @@ export function useFilterPanelState(props: FilterPanelProps) {
       update(
         current.id,
         !operands.length &&
-          current.id === configurationRef.current.root.id &&
+          configuration.mode === 'simple' &&
+          current.id === configuration.root.id &&
           current.operator === FilterOperator.AND
           ? newFilterNode(FilterOperator.MATCH_ALL)
           : { ...current, operands },

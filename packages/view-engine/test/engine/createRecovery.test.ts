@@ -320,20 +320,30 @@ it.each(['loading', 'loaded'] as const)(
   },
 );
 
-it('clears an unverified create when the known created instance is gone', async () => {
+it('replays the original create when load reports NOT_FOUND for a known id', async () => {
   const host = service();
   let firstCreate = true;
+  const create = vi.fn(
+    async (
+      input: Omit<ViewInstance, 'id' | 'revision'>,
+      ctx: ViewCreateContext,
+    ) => {
+      if (firstCreate) {
+        firstCreate = false;
+        const created = await host.instance.create(input, ctx);
+        return { ...created, title: 'mutated-by-transport' };
+      }
+      return host.instance.create(input, ctx);
+    },
+  );
   const engine = engineFor({
     ...host,
     instance: {
       ...host.instance,
-      create: async (input, ctx) => {
-        const created = await host.instance.create(input, ctx);
-        if (!firstCreate) return created;
-        firstCreate = false;
-        // Commit then disappear; the engine still holds the known new id.
-        await host.instance.delete(created.id, created.revision);
-        return { ...created, title: 'mutated-by-transport' };
+      create,
+      // NOT_FOUND also covers invisible resources; identity must survive via requestId.
+      load: async () => {
+        throw new ViewServiceError('NOT_FOUND', 'missing or invisible');
       },
     },
     resolveSource: id => host.resolveSource(id),
@@ -344,15 +354,50 @@ it('clears an unverified create when the known created instance is gone', async 
   );
   expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(true);
   await engine.reloadInstance();
-  const session = engine.getSnapshot().sessions.mine;
-  expect(session.requiresReload).toBe(false);
-  expect(session.writeError).toContain('已不存在');
-  await engine.saveAs({ ...copyOptions, title: 'Allowed copy' });
-  expect(
-    (await host.instance.list(definition.id)).instances.filter(
-      item => item.title === 'Allowed copy',
-    ),
-  ).toHaveLength(1);
+  expect(create).toHaveBeenCalledTimes(2);
+  expect(create.mock.calls[0][1].requestId).toBe(
+    create.mock.calls[1][1].requestId,
+  );
+  const state = engine.getSnapshot();
+  expect(state.sessions.mine.requiresReload).toBe(false);
+  const createdId = state.selectedInstanceId!;
+  expect(createdId).not.toBe('mine');
+  expect(state.sessions[createdId].instance.title).toBe(copyOptions.title);
+});
+
+it('keeps reconciliation when NOT_FOUND create replay is definitively denied', async () => {
+  const host = service();
+  const create = vi.fn(
+    async (
+      input: Omit<ViewInstance, 'id' | 'revision'>,
+      ctx: ViewCreateContext,
+    ) => {
+      if (create.mock.calls.length > 1)
+        throw new ViewServiceError('FORBIDDEN', 'replay denied');
+      const created = await host.instance.create(input, ctx);
+      return { ...created, title: 'mutated-by-transport' };
+    },
+  );
+  const engine = engineFor({
+    ...host,
+    instance: {
+      ...host.instance,
+      create,
+      load: async () => {
+        throw new ViewServiceError('NOT_FOUND', 'missing or invisible');
+      },
+    },
+    resolveSource: id => host.resolveSource(id),
+  });
+  await engine.load();
+  await expect(engine.saveAs(copyOptions)).rejects.toThrow(
+    '保存结果不符合原样保存契约',
+  );
+  await expect(engine.reloadInstance()).rejects.toThrow('replay denied');
+  expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(true);
+  expect(engine.getSnapshot().sessions.mine.writeError).toContain(
+    'replay denied',
+  );
 });
 
 it('preserves edits to an existing copy made by synchronous query-cancellation observers', async () => {

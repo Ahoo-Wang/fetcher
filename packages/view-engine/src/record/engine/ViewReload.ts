@@ -145,29 +145,45 @@ export class ViewReload {
             controller.signal,
           );
         } catch (error) {
-          // A known created id that no longer exists is a definitive negative.
-          // Without this path the session stays requiresReload forever.
+          // NOT_FOUND means missing *or* invisible. Do not discard create
+          // identity; replay the original request so idempotency can confirm
+          // without requiring the instance to remain visible.
           if (
-            unverified?.id &&
-            error instanceof ViewServiceError &&
-            error.code === 'NOT_FOUND'
-          ) {
-            if (
-              !this.scope.current(lifecycle) ||
-              this.work.reloadToken(id) !== controller
+            !(
+              unverified?.id &&
+              error instanceof ViewServiceError &&
+              error.code === 'NOT_FOUND' &&
+              this.work.createRequest(id) &&
+              this.host.instance?.create
             )
-              return;
-            this.work.finishCreate(id);
-            this.store.clearPendingCreate(id);
-            this.work.finishReload(id, controller, () =>
-              this.store.patch(id, {
-                requiresReload: false,
-                writeError: '另存创建的实例已不存在，可重新另存',
-              }),
-            );
+          )
+            throw error;
+          const request = this.work.createRequest(id)!;
+          const permissions = permissionsFor(this.host, session);
+          if (
+            !(request.submitted.scope.type === 'personal'
+              ? permissions.saveAsPersonal
+              : permissions.saveAsShared)
+          )
+            throw new Error('宿主未允许重试此创建操作');
+          const { definitionId, kind, title, scope, config } = request.submitted;
+          result = await this.host.instance.create(
+            structuredClone({ definitionId, kind, title, scope, config }),
+            { requestId: request.requestId, signal: controller.signal },
+          );
+          if (
+            !this.scope.current(lifecycle) ||
+            this.work.reloadToken(id) !== controller
+          )
             return;
-          }
-          throw error;
+          validateViewInstance(result, definition, unverified.id);
+          if (
+            !sameJsonState(
+              instanceContent(result),
+              instanceContent(request.submitted),
+            )
+          )
+            throw new Error('创建回执不符合原样保存契约，仍需核对');
         }
       }
       if (
