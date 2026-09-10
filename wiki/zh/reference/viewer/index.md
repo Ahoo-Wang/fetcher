@@ -6,6 +6,10 @@ description: 'Viewer 入口选择、安装与行为契约'
 
 # Viewer
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 Viewer 提供 Ant Design 过滤、表格和保存视图 UI。先根据谁拥有行数据和保存视图选择组件。本地表格不要求 Wow 后端；FetcherViewer 要求既定的远端协议。
 
 ## 选择入口

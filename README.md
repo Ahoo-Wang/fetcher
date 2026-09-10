@@ -64,7 +64,8 @@ try {
 | Typed storage                | `@ahoo-wang/fetcher-storage`     |
 | CoSec authentication         | `@ahoo-wang/fetcher-cosec`       |
 | Wow commands and queries     | `@ahoo-wang/fetcher-wow`         |
-| Filterable data viewers      | `@ahoo-wang/fetcher-viewer`      |
+| Data views (new projects) | [`@ahoo-wang/fetcher-view-engine`](packages/view-engine/README.md) |
+| Legacy Viewer (maintenance mode, deprecated) | [`@ahoo-wang/fetcher-viewer`](packages/viewer/README.md) |
 
 [Choose packages](https://fetcher.ahoo.me/architecture/package-boundaries) explains peer
 dependencies and the smallest useful combination.

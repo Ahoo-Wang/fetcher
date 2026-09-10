@@ -5,6 +5,10 @@ description: '过滤器与可编辑面板 — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # 过滤器与可编辑面板
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 Viewer 过滤器目前生成旧 Wow Condition，不生成新 FilterExpression。FilterValue 包装 `{condition}`；FilterState 保留 UI operator 和原始 value，即使当前值不是有效查询。
 
 | 组件 / 类型键             | 操作符 / 默认值                                                                                                      |

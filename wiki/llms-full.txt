@@ -34,7 +34,7 @@ Fetcher adds reusable request configuration and result handling to native Fetch.
 | ------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package          | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
 | Existing React application                 | Compatible React and Fetcher peers, a bundler      | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
-| Existing React application needing a table | Viewer peers, CSS-capable bundling, local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering                                |
+| Existing React application needing a table | View Engine peers, CSS-capable bundling, local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering                                |
 | Headless record engine or shadcn/Base UI   | Current workspace/local archive; React 19 for UI   | [View Engine quick start](../guides/view-engine/getting-started.md)                                          |
 
 The runnable HTTP and Storybook examples have deterministic fixtures. When you move them into your application, supply the routes and response JSON documented in each example. Installing a client does not create a server.
@@ -234,7 +234,7 @@ See the [repository HTTP example](../examples/http.md) for repository-specific v
 
 # Your first data view
 
-Choose the UI package before copying a definition; the two packages have different models.
+Use View Engine for new projects and further data-view development. Viewer is deprecated and in maintenance mode, with no new features; the Viewer path below is retained for existing consumers. The packages use different models and APIs, so migration requires adaptation.
 
 | UI and ownership                                                                  | Entry                                                                                              |
 | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -243,7 +243,7 @@ Choose the UI package before copying a definition; the two packages have differe
 
 View Engine currently uses workspace/local-archive instructions until its first registry release. Its core entry is usable independently of the React UI.
 
-## Ant Design Viewer path
+## Legacy Ant Design Viewer path (deprecated)
 
 Start with the [complete local Viewer example](../examples/viewer). It supplies a consumer installation, one complete component, the React entry and a run command. No server, authentication setup or Storybook fixtures are needed.
 
@@ -299,7 +299,7 @@ Choose the task you need to complete. New to Fetcher? [Start with a runnable res
 - [Streaming data](./streaming/index.md): Your runtime needs Fetch, Response bodies, and ReadableStream. The server must emit SSE frames; a normal JSON response is not an event stream. Keep a caller-owned cancellation signal for long-lived reads.
 - [React data flow](./react/index.md): Start in an existing React application with the declared peer dependencies. The runnable React example supplies a deterministic backend fixture; production routes remain application-owned.
 - [View Engine](./view-engine/index.md): Build a shadcn/Base UI record page with component-configuration persistence, built-in filters/cells and explicit ViewHost services. Start with the workspace example.
-- [Ant Design Viewer](./viewer/index.md): Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
+- [Ant Design Viewer (maintenance mode, deprecated)](./viewer/index.md): Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
 - [Platform integrations](./integrations/index.md): Wow and CoSec require compatible server protocols, authentication and application-specific routes. Storage and local events can be used without a platform server. Confirm the chosen package peers before installing.
 
 For a working baseline use [complete examples](../examples/index.md). For ownership and adoption tradeoffs use [architecture](../architecture/index.md).
@@ -1785,6 +1785,10 @@ The card Storybook now uses a 12-product home/travel catalog with local SVG cove
 
 # Data view tasks
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
 
 - [Render local rows](./local-data.md)
@@ -1800,6 +1804,10 @@ Start with local data in a React application with Viewer peers. View displays on
 <doc title="Render local rows in a Viewer" path="guides/viewer/local-data.md">
 
 # Render local rows in a Viewer
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 ## Prerequisites
 
@@ -1837,6 +1845,10 @@ Continue with [pagination and sorting](./pagination-and-sorting.md), [models and
 
 # Make pagination and sorting change rows
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 ## Prerequisites
 
 Start with [local rows](./local-data.md) and the complete [LocalViewer implementation](../../examples/viewer.md). Its four users and page size of two make page changes visible. Use this working adapter before replacing its calculation with a server request.
@@ -1870,6 +1882,10 @@ See [table contracts](../../reference/viewer/tables-and-cells.md), [query sortin
 
 # Filter the displayed data
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 ## Prerequisites
 
 Run the [local Viewer example](../../examples/viewer.md). It provides an Active boolean filter and a deliberately limited local evaluator. Do not add unsupported operators to the UI without extending the evaluator or moving evaluation to a compatible server.
@@ -1900,6 +1916,10 @@ Continue with [saving filters in a view](./saved-views.md), [filter reference](.
 <doc title="Save and restore view state" path="guides/viewer/saved-views.md">
 
 # Save and restore view state
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 ## Prerequisites
 
@@ -1938,6 +1958,10 @@ See [saved-view reference](../../reference/viewer/saved-views.md), [storage inte
 <doc title="Connect remote rows to a Viewer" path="guides/viewer/remote-data.md">
 
 # Connect remote rows to a Viewer
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 Create a React page that renders a saved default view, loads data and responds to paging/sorting. `Viewer` owns presentation state; your application supplies data and persistence callbacks.
 
@@ -2539,7 +2563,7 @@ flowchart LR
 | storage / cosec        | Storage events / authentication protocol; additional state lifetime to own                                | [packages/storage/package.json:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L55), [packages/cosec/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L53)               |
 | wow / openai           | Service-specific runtime clients using core, decorators, and streams                                      | [packages/wow/package.json:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/package.json#L63), [packages/openai/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L58)                     |
 | react                  | Request and integration Hooks; React/ReactDOM peers, direct `dequal` and `immer` dependencies             | [packages/react/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L54)                                                                                                                                     |
-| viewer                 | Table and saved-view UI; React, Ant Design, icons, and dayjs peers alongside internal peers               | [packages/viewer/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/package.json#L54)                                                                                                                                   |
+| viewer (maintenance mode, deprecated) | Table and saved-view UI; React, Ant Design, icons, and dayjs peers alongside internal peers               | [packages/viewer/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/package.json#L54)                                                                                                                                   |
 | openapi / generator    | OpenAPI type vocabulary / development CLI generating source; generator uses ts-morph, commander, and yaml | [packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21), [packages/generator/package.json:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/package.json#L61)       |
 
 ## Installation is not execution
@@ -2763,6 +2787,10 @@ These share the runtime request boundary: core implements request/extraction ([p
 Start with [HTTP requests](../guides/http/requests.md), then use [declarative client](../guides/services/declarative-client.md) or the verified workflow in [generated client](../guides/services/generated-client.md). Configuration details live in [decorator reference](../reference/decorator/index.md) and [generator reference](../reference/generator/index.md). Check the [peer graph](./package-boundaries.md) separately from the code you expect to execute.
 
 ## View, Viewer, or FetcherViewer
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 | Choice          | Data and state contract                                                                        | Use when                                                 | Cost or mismatch                                                                               |
 | --------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -3065,6 +3093,10 @@ Keep Vite's generated `index.html`, then run `pnpm dev` and open the URL it prin
 <doc title="Local Viewer example" path="examples/viewer.md">
 
 # Local Viewer example
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 This browser example uses four users and no backend. The application filters and sorts the full dataset, then slices the requested page. `Viewer` receives the resulting `{ list, total }`; it does not transform the supplied rows for you.
 
@@ -3956,7 +3988,7 @@ Each package has an entry page and focused reference topics. Choose the responsi
 | [cosec](./cosec/index.md)             | Authentication and refresh                                  | 3      |
 | [react](./react/index.md)             | Component request state                                     | 8      |
 | [wow](./wow/index.md)                 | Commands and queries                                        | 9      |
-| [viewer](./viewer/index.md)           | Data views and persistence                                  | 8      |
+| [viewer (deprecated)](./viewer/index.md)           | Data views and persistence                                  | 8      |
 | [view-engine](./view-engine/index.md) | Headless engine, component configuration and shadcn/Base UI | 5      |
 
 ## Use the right depth
@@ -15599,6 +15631,10 @@ These names come from the current public entry exports and declarations. Import 
 
 # Viewer
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 Viewer supplies Ant Design filter, table and saved-view UI. Begin with the component matching who owns the rows and saved views. A local table does not require a Wow backend; FetcherViewer requires the defined remote protocol.
 
 ## Choose an entry
@@ -15843,6 +15879,10 @@ export function LocalViewer() {
 
 # View and Viewer composition
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 Choose View for a filter/table/pagination surface with supplied rows. Choose Viewer to add saved-view selection and a top toolbar. Choose [FetcherViewer](./fetcher-viewer) only when the service implements the package's remote definition/view endpoints.
 
 | Component                | Required props / ownership                                                                                                                                         |
@@ -16060,6 +16100,10 @@ export interface ViewerProps<RecordType>
 <doc title="Models and state ownership" path="reference/viewer/models-and-state.md">
 
 # Models and state ownership
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 A ViewDefinition describes the fields and available filters for a data endpoint; ViewState describes one saved arrangement of that definition. The root package's model is `ViewDefinition`/`ViewState`; an unrelated view-engine package is not part of this API.
 
@@ -16687,6 +16731,10 @@ export function format(str: string, ...args: any[]): string;
 <doc title="Filters and editable panels" path="reference/viewer/filters.md">
 
 # Filters and editable panels
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 Viewer filters currently produce legacy Wow Condition objects. They do not emit the new FilterExpression format. A FilterValue wraps `{condition}`, while a FilterState retains the UI operator and raw value even when that value is not a valid query.
 
@@ -17466,6 +17514,10 @@ export function currentTimeZone(): string;
 <doc title="Tables, columns and cells" path="reference/viewer/tables-and-cells.md">
 
 # Tables, columns and cells
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 `ViewTable<RecordType>` maps FieldDefinition and ViewColumn to Ant Design columns and receives an array of records. It does not paginate/query the server. Required props are fields, columns, dataSource, enableRowSelection and viewTableSetting (false or settings); optional attributes forwards table props, tableSize defaults middle.
 
@@ -18290,6 +18342,10 @@ export interface ViewTableStateReturn {
 
 # Saved-view panels and persistence callbacks
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 The saved-view components are UI building blocks around ViewState. A mutation callback requests persistence; the success callback acknowledges that the application has completed it. Do not call success before the write is confirmed if closing the editor would hide a failed save.
 
 | Component                | Contract                                                                                                                                                                                   |
@@ -18494,6 +18550,10 @@ export interface ViewManageModalProps {
 <doc title="FetcherViewer remote integration" path="reference/viewer/fetcher-viewer.md">
 
 # FetcherViewer remote integration
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 FetcherViewer connects three remote resources: a viewer definition, its visible saved views, and paged data from the definition's dataUrl. Configure the default Fetcher for your service/authentication before mounting. The backend must implement the `viewer` bounded-context endpoints; this is not a generic URL-only grid.
 
@@ -19094,6 +19154,10 @@ export interface FetcherViewerProps<RecordType>
 
 # Registries, inputs and fullscreen button
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 `TypedComponentRegistry<Type,Props>` stores React FunctionComponents by a type key. `create(entries = [])` constructs and registers entries. register throws for duplicates; get returns undefined when missing, unregister is a no-op for missing keys, clear empties the registry. types/entries return arrays and size/has inspect current state. Registries are mutable nonreactive objects; registering after a component renders does not itself force a rerender. Register application extensions once before rendering and unregister only registrations you own.
 
 The singleton filterRegistry and cellRegistry share this contract. TypedFilter chooses filterRegistry and a fallback; typedCellRender uses cellRegistry and returns undefined on a miss. Replacing an existing registration requires unregister then register. Clearing a singleton removes built-ins for all consumers. Custom filter components must preserve FilterRef/getValue/getState/reset, not only draw an input.
@@ -19335,6 +19399,10 @@ export class TypedComponentRegistry<Type, Props> {
 <doc title="Toolbar, refresh and locale" path="reference/viewer/toolbar-and-locale.md">
 
 # Toolbar, refresh and locale
+
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
 
 TopBar combines view actions, filter/panel toggles, row density, refresh, monitor, share and fullscreen controls. Its props include activeView/views/viewerDefinitionId, selected records and mutation callbacks. Buttons use application callbacks; saving is not an implicit local-storage operation.
 
@@ -19733,6 +19801,10 @@ export interface UseLocaleReturn {
 
 # Complete symbol index
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 | Symbol                                    | Topic                                                                                                |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `ACTIONS_CELL_TYPE`                       | [Tables, columns and cells](./tables-and-cells#api-ACTIONS_CELL_TYPE)                                |
@@ -20031,7 +20103,7 @@ Fetcher 在原生 Fetch 之上提供可复用的请求配置与结果处理。�
 | ------------------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------- |
 | TypeScript 或 JavaScript HTTP 客户端 | 支持 Fetch 的运行环境及核心包                   | [安装](./installation.md)，然后对配套本地服务执行[第一个请求](./first-request.md) |
 | 已有 React 应用                      | 兼容的 React、Fetcher peer 依赖和打包器         | [运行 React 示例](../examples/react.md)，展示加载、数据、错误与取消               |
-| 已有 React 应用，需要数据表          | Viewer peer 依赖、支持 CSS 的打包器和本地行数据 | [创建第一张表](./first-view.md)，操作分页、排序与过滤                             |
+| 已有 React 应用，需要数据表          | View Engine peer 依赖、支持 CSS 的打包器和本地行数据 | [创建第一张表](./first-view.md)，操作分页、排序与过滤                             |
 | 无头记录引擎或 shadcn/Base UI        | 当前工作区/本地归档，UI 使用 React 19           | [View Engine 快速接入](../guides/view-engine/getting-started.md)                  |
 
 可运行的 HTTP 和 Storybook 示例使用确定性夹具。移入应用时，必须提供示例中写明的路由与响应 JSON。安装客户端不会创建服务端。
@@ -20231,7 +20303,7 @@ Ada
 
 # 第一个数据视图
 
-复制定义前先选择 UI 包，两者使用不同模型。
+新项目请使用 View Engine，数据视图能力的后续演进由它承担。Viewer 已进入维护期（弃用），不再新增功能；下方 Viewer 路径仅供存量项目维护参考。两者模型与 API 不同，迁移需要适配。
 
 | UI 与所有权                                         | 入口                                                                                       |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -20240,7 +20312,7 @@ Ada
 
 View Engine 在首次注册表发布前采用工作区/本地归档接入，核心入口可独立于 React UI 使用。
 
-## Ant Design Viewer 路径
+## 旧版 Ant Design Viewer 路径（已弃用）
 
 从[完整的本地 Viewer 示例](../examples/viewer)开始。该页提供消费者安装命令、一个完整组件、React 入口和运行命令，无需服务端、认证设置或 Storybook fixture。
 
@@ -20294,7 +20366,7 @@ View Engine 在首次注册表发布前采用工作区/本地归档接入，核�
 - [流式消费](./streaming/index.md)：运行环境需要 Fetch、Response body 和 ReadableStream。服务端必须输出 SSE 帧；普通 JSON 响应不是事件流。长时间读取需要由调用者持有取消信号。
 - [React 数据流](./react/index.md)：从已具备声明 peer 依赖的 React 应用开始。可运行 React 示例提供确定性后端夹具；生产路由仍归应用负责。
 - [View Engine 数据视图](./view-engine/index.md)：使用 shadcn/Base UI 组件、可保存的组件配置、内置筛选/单元格和明确的 ViewHost 服务，从工作区示例开始接入。
-- [Ant Design Viewer](./viewer/index.md)：在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
+- [Ant Design Viewer（维护期，已弃用）](./viewer/index.md)：在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
 - [平台集成](./integrations/index.md)：Wow 与 CoSec 需要兼容的服务端协议、认证和应用路由。存储与本地事件不需要平台服务。安装前核对所选包的 peer 依赖。
 
 使用[完整示例](../examples/index.md)获得可执行基线；通过[架构与选型](../architecture/index.md)理解资源归属与采用代价。
@@ -21768,6 +21840,10 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 
 # 数据视图任务
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
 
 - [渲染本地行](./local-data.md)
@@ -21783,6 +21859,10 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 <doc title="用 Viewer 渲染本地行" path="zh/guides/viewer/local-data.md">
 
 # 用 Viewer 渲染本地行
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 ## 前提
 
@@ -21820,6 +21900,10 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 
 # 让分页与排序真正改变行
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 ## 前提
 
 先完成[本地行](./local-data.md)，运行完整 [LocalViewer 实现](../../examples/viewer.md)。四个用户、每页两行，便于观察翻页。替换成服务请求前，先理解这个已经工作的适配层。
@@ -21853,6 +21937,10 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 
 # 过滤展示数据
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 ## 前提
 
 运行[本地 Viewer 示例](../../examples/viewer.md)。它提供 Active 布尔过滤器与刻意限制范围的本地计算器。没有扩展计算逻辑或改用兼容服务端之前，不要给界面添加未支持的操作符。
@@ -21883,6 +21971,10 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 <doc title="保存并恢复视图状态" path="zh/guides/viewer/saved-views.md">
 
 # 保存并恢复视图状态
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 ## 前提
 
@@ -21921,6 +22013,10 @@ localStorage 适配器可在一个浏览器配置内持久化，但不提供服�
 <doc title="连接 Viewer 远端行数据" path="zh/guides/viewer/remote-data.md">
 
 # 连接 Viewer 远端行数据
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 创建一个 React 页面，渲染默认视图、加载数据并响应分页/排序。Viewer 管理展示状态，应用提供数据和持久化回调。
 
@@ -22518,7 +22614,7 @@ flowchart LR
 | storage / cosec        | 存储事件 / 认证协议；需要管理额外状态的生命周期                               | [packages/storage/package.json:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L55), [packages/cosec/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L53)               |
 | wow / openai           | 服务专用运行客户端，使用核心、装饰器和流能力                                  | [packages/wow/package.json:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/package.json#L63), [packages/openai/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L58)                     |
 | react                  | 请求与集成 Hook；peer React/ReactDOM，直接依赖 `dequal` 和 `immer`            | [packages/react/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L54)                                                                                                                                     |
-| viewer                 | 表格与保存视图 UI；内部 peer 之外还要求 React、Ant Design、icons 和 dayjs     | [packages/viewer/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/package.json#L54)                                                                                                                                   |
+| viewer（维护期，已弃用） | 表格与保存视图 UI；内部 peer 之外还要求 React、Ant Design、icons 和 dayjs     | [packages/viewer/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/package.json#L54)                                                                                                                                   |
 | openapi / generator    | OpenAPI 类型词汇 / 生成源码的开发 CLI；生成器使用 ts-morph、commander 和 yaml | [packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21), [packages/generator/package.json:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/package.json#L61)       |
 
 ## 安装关系不等于执行关系
@@ -22743,6 +22839,10 @@ SSE JSON 转换调用 `JSON.parse`，未处理的转换错误成为流错误，�
 从 [HTTP 请求](../guides/http/requests.md)开始，再使用[声明式客户端](../guides/services/declarative-client.md)或[生成式客户端](../guides/services/generated-client.md)中的已验证工作流。配置细节见[装饰器参考](../reference/decorator/index.md)和[生成器参考](../reference/generator/index.md)。[peer 图](./package-boundaries.md)应与预期执行代码分别检查。
 
 ## View、Viewer 还是 FetcherViewer
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 | 选择            | 数据与状态契约                                           | 适用情况                          | 代价或不匹配点                                 |
 | --------------- | -------------------------------------------------------- | --------------------------------- | ---------------------------------------------- |
@@ -23043,6 +23143,10 @@ createRoot(document.getElementById('root')!).render(
 <doc title="本地 Viewer 示例" path="zh/examples/viewer.md">
 
 # 本地 Viewer 示例
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 这个浏览器示例使用四个用户，无需后端。应用先对完整数据集过滤、排序，再截取请求页。`Viewer` 接收计算后的 `{ list, total }`；它不会替你转换传入的行数据。
 
@@ -23928,7 +24032,7 @@ node --test wiki/test/documentation.test.mjs
 | [cosec](./cosec/index.md)             | 认证与刷新                          | 3      |
 | [react](./react/index.md)             | 组件请求状态                        | 8      |
 | [wow](./wow/index.md)                 | 命令与查询                          | 9      |
-| [viewer](./viewer/index.md)           | 数据视图与持久化                    | 8      |
+| [viewer（已弃用）](./viewer/index.md)           | 数据视图与持久化                    | 8      |
 | [view-engine](./view-engine/index.md) | 无头引擎、组件配置与 shadcn/Base UI | 5      |
 
 ## 如何使用参考
@@ -35571,6 +35675,10 @@ ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默�
 
 # Viewer
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 Viewer 提供 Ant Design 过滤、表格和保存视图 UI。先根据谁拥有行数据和保存视图选择组件。本地表格不要求 Wow 后端；FetcherViewer 要求既定的远端协议。
 
 ## 选择入口
@@ -35815,6 +35923,10 @@ export function LocalViewer() {
 
 # View 与 Viewer 组合
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 View 提供过滤/表格/分页，数据行由你提供；Viewer 增加已保存视图选择和工具栏。服务实现本包远端定义/视图端点时才选择 [FetcherViewer](./fetcher-viewer)。
 
 | 组件                     | 必填参数 / 所有权                                                                                                                                                |
@@ -36032,6 +36144,10 @@ export interface ViewerProps<RecordType>
 <doc title="模型与状态所有权" path="zh/reference/viewer/models-and-state.md">
 
 # 模型与状态所有权
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 ViewDefinition 描述数据端点的字段和可用过滤器，ViewState 描述该定义的一种已保存布局。根包模型为 `ViewDefinition`/`ViewState`，不相关的 view-engine 包不属于本 API。
 
@@ -36659,6 +36775,10 @@ export function format(str: string, ...args: any[]): string;
 <doc title="过滤器与可编辑面板" path="zh/reference/viewer/filters.md">
 
 # 过滤器与可编辑面板
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 Viewer 过滤器目前生成旧 Wow Condition，不生成新 FilterExpression。FilterValue 包装 `{condition}`；FilterState 保留 UI operator 和原始 value，即使当前值不是有效查询。
 
@@ -37438,6 +37558,10 @@ export function currentTimeZone(): string;
 <doc title="表格、列与单元格" path="zh/reference/viewer/tables-and-cells.md">
 
 # 表格、列与单元格
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 `ViewTable<RecordType>` 将 FieldDefinition/ViewColumn 映射为 Ant Design 列，接收记录数组，不分页或查询服务端。必填 fields、columns、dataSource、enableRowSelection、viewTableSetting（false 或设置）；attributes 可转发表格 props，tableSize 默认 middle。
 
@@ -38262,6 +38386,10 @@ export interface ViewTableStateReturn {
 
 # 已保存视图面板与持久化回调
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 已保存视图组件围绕 ViewState 提供 UI。mutation 回调请求持久化，success 回调表示应用已完成；如果关闭编辑器会隐藏保存失败，不要在写入确认前调用 success。
 
 | 组件                     | 契约                                                                                                                                                     |
@@ -38466,6 +38594,10 @@ export interface ViewManageModalProps {
 <doc title="FetcherViewer 远端集成" path="zh/reference/viewer/fetcher-viewer.md">
 
 # FetcherViewer 远端集成
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 FetcherViewer 连接三个远端资源：视图定义、可见保存视图，以及 definition.dataUrl 的分页数据。挂载前配置默认 Fetcher 的服务/认证；后端必须实现 `viewer` 限界上下文端点，不是仅传 URL 的通用表格。
 
@@ -39066,6 +39198,10 @@ export interface FetcherViewerProps<RecordType>
 
 # 注册表、输入与全屏按钮
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 `TypedComponentRegistry<Type,Props>` 按类型键存储 React FunctionComponent；create(entries = []) 创建并注册。register 遇到重复键抛错，get 缺失时 undefined，unregister 缺失键无操作，clear 清空。types/entries 返回数组，size/has 查询当前状态。注册表可变且不响应式，渲染后注册不会自动重渲染；扩展在渲染前注册一次，只退注册自己拥有的项。
 
 单例 filterRegistry/cellRegistry 使用相同契约。TypedFilter 选择 filterRegistry 并提供回退，typedCellRender 使用 cellRegistry，缺失返回 undefined。替换已有项需要先 unregister 再 register；清空单例会移除所有消费者的内置项。自定义过滤器需保留 FilterRef/getValue/getState/reset 契约，不能只画输入框。
@@ -39307,6 +39443,10 @@ export class TypedComponentRegistry<Type, Props> {
 <doc title="工具栏、刷新与本地化" path="zh/reference/viewer/toolbar-and-locale.md">
 
 # 工具栏、刷新与本地化
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 TopBar 组合视图操作、过滤/面板开关、行密度、刷新、监控、分享、全屏。props 包含 activeView/views/viewerDefinitionId、选中记录、mutation 回调。按钮调用应用回调，保存不是隐式 localStorage 操作。
 
@@ -39704,6 +39844,10 @@ export interface UseLocaleReturn {
 <doc title="Viewer 完整符号索引" path="zh/reference/viewer/symbols.md">
 
 # 完整符号索引
+
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
 
 | 符号                                      | 专题                                                                                   |
 | ----------------------------------------- | -------------------------------------------------------------------------------------- |

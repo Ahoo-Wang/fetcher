@@ -5,6 +5,10 @@ description: '已保存视图面板与持久化回调 — @ahoo-wang/fetcher-vie
 
 # 已保存视图面板与持久化回调
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 已保存视图组件围绕 ViewState 提供 UI。mutation 回调请求持久化，success 回调表示应用已完成；如果关闭编辑器会隐藏保存失败，不要在写入确认前调用 success。
 
 | 组件                     | 契约                                                                                                                                                     |

@@ -34,7 +34,7 @@ features:
     link: /guides/react/
     linkText: Learn more
   - title: Data views
-    details: Choose View Engine with shadcn/Base UI or Ant Design Viewer for tables, filters, and saved views.
+    details: Use View Engine for tables, filters, and saved views. Viewer is deprecated and in maintenance mode.
     link: /start/first-view
     linkText: Learn more
   - title: Architecture and choices

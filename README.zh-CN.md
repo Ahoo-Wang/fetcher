@@ -63,7 +63,8 @@ try {
 | 类型化存储              | `@ahoo-wang/fetcher-storage`     |
 | CoSec 认证              | `@ahoo-wang/fetcher-cosec`       |
 | Wow 命令与查询          | `@ahoo-wang/fetcher-wow`         |
-| 可过滤数据 Viewer       | `@ahoo-wang/fetcher-viewer`      |
+| 数据视图（新项目） | [`@ahoo-wang/fetcher-view-engine`](packages/view-engine/README.zh-CN.md) |
+| 旧版 Viewer（维护期，已弃用） | [`@ahoo-wang/fetcher-viewer`](packages/viewer/README.zh-CN.md) |
 
 [选择包](https://fetcher.ahoo.me/zh/architecture/package-boundaries)说明 peer 依赖和最小可用组合。
 

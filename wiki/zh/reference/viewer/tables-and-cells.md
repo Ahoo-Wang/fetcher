@@ -5,6 +5,10 @@ description: '表格、列与单元格 — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # 表格、列与单元格
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 `ViewTable<RecordType>` 将 FieldDefinition/ViewColumn 映射为 Ant Design 列，接收记录数组，不分页或查询服务端。必填 fields、columns、dataSource、enableRowSelection、viewTableSetting（false 或设置）；attributes 可转发表格 props，tableSize 默认 middle。
 
 ## 渲染与选择
