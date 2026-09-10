@@ -149,19 +149,27 @@ export function ViewInstanceSwitcher({
 }
 
 export function ViewSidebar({
+  title,
   groups,
   selectedId,
   onSelect,
   onManage,
   onCollapse,
-}: NavigationProps & { onCollapse(): void }) {
+  toggleRef,
+}: NavigationProps & {
+  title: string;
+  toggleRef: RefObject<HTMLButtonElement | null>;
+  onCollapse(): void;
+}) {
   return (
     <aside
       aria-label="视图列表"
       className="fve:hidden fve:w-52 fve:shrink-0 fve:flex-col fve:gap-3 fve:border-r fve:pr-3 fve:@min-[64rem]:flex"
     >
       <div className="fve:flex fve:items-center fve:justify-between fve:gap-2">
-        <span className="fve:font-medium">视图</span>
+        <h1 className="fve:min-w-0 fve:truncate fve:font-medium" title={title}>
+          {title}
+        </h1>
         <div className="fve:flex fve:items-center fve:gap-1">
           <Button
             variant="ghost"
@@ -176,6 +184,7 @@ export function ViewSidebar({
             variant="ghost"
             size="icon"
             aria-label="收起视图列表"
+            ref={toggleRef}
             onClick={onCollapse}
           >
             <PanelLeftCloseIcon aria-hidden="true" />
