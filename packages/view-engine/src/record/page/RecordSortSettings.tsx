@@ -114,7 +114,9 @@ export function RecordSortSettings({
             </Button>
           )}
         </div>
-        <PopoverDescription className="fve:m-0">从上到下优先排序，拖动可调整。</PopoverDescription>
+        <PopoverDescription className="fve:m-0">
+          从上到下优先排序，拖动可调整。
+        </PopoverDescription>
         <p id={order.instructionsId} className="fve:sr-only">
           拖动调整顺序，或聚焦手柄后按上、下方向键移动。
         </p>

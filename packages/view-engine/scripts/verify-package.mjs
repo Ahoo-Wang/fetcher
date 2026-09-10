@@ -141,7 +141,11 @@ function verifyTypes(directory) {
     declare const engine: ViewEngine;
     declare const host: ViewHost;
     declare const instance: DeepReadonly<ViewInstance>;
-    engine.setColumns(instance.config.presentation.table.columns);
+    if (instance.config.presentation.layout === 'table') {
+      engine.setColumns(instance.config.presentation.table.columns);
+    } else {
+      engine.setCardConfig(instance.config.presentation.card);
+    }
     void engine.setSort(instance.config.sort);
     engine.setFilterDraft(instance.config.filters);
     void engine.applyFilter();

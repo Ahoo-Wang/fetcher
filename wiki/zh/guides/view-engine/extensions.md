@@ -174,7 +174,6 @@ export function Orders({
 
 CSS 自定义属性别名在继承前解析。派生值应定义在目标主题边界，不能依赖子作用域覆盖后重新计算继承的别名。移除局部变量或主题属性后会回到父级/默认作用域。组件契约见 [组件参考](../../reference/view-engine/components.md)，所有支持变量见包的[公开 API 表](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-view-engine/references/api.md)。
 
-
 ### 自定义卡片内容
 
 在 `ViewPage`、`ViewPageContent`、`RecordView` 或 `RecordCardList` 上使用 `renderCard` 替换单张卡片内容。回调接收只读 record、rowKey、definition、instance、index、selected、defaultContent，以及绑定当前实例的 refresh。返回自有组件可自由安排信息结构，包裹 defaultContent 则保留配置字段。选择、网格、分页和错误隔离仍由库管理。回调不持久化；默认卡片设置仅影响 defaultContent。
@@ -193,7 +192,6 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 ```
 
 展示方式切换统一放在顶部全局工具栏，通过显示当前模式名称的下拉框操作，所有宽度保持一致。记录工具栏保留批量操作和布局设置。
-
 
 卡片预览包含实际的本地订单操作：查看详情、处理单笔订单、批量处理已选订单和创建订单。默认卡片与自定义卡片复用同一行操作组件。处理会修改数据并刷新当前队列，失败反馈和重试沿用已有订单操作 Provider。示例业务数据在刷新页面后重置，可持久化示例独立保存视图配置。
 

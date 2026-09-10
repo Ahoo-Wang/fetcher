@@ -21,7 +21,8 @@ export { ViewPageContent } from './page/ViewPageContent.js';
 export type { ViewPageContentProps } from './page/ViewPageContent.js';
 
 export interface ViewPageProps
-  extends Omit<ViewEngineOptions, 'filterCompilers'>,
+  extends
+    Omit<ViewEngineOptions, 'filterCompilers'>,
     Omit<RecordViewProps, 'engine' | 'toolbarStart'> {
   /** Stable user/tenant/access identity. Changing it creates an isolated session. */
   scopeKey: string;

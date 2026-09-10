@@ -58,11 +58,9 @@ export interface ViewDefinition {
   };
 }
 export type ViewScope =
-  | { type: 'personal' }
-  | { type: 'public'; source: 'system' | 'shared' };
+  { type: 'personal' } | { type: 'public'; source: 'system' | 'shared' };
 export type SaveAsScope =
-  | { type: 'personal' }
-  | { type: 'public'; source: 'shared' };
+  { type: 'personal' } | { type: 'public'; source: 'shared' };
 export type RecordColumnPinning = 'left' | 'right' | false;
 interface RecordColumnBase {
   id: string;
@@ -110,8 +108,7 @@ export interface RecordCardPresentation {
   table?: RecordTableConfig;
 }
 export type RecordPresentation =
-  | RecordTablePresentation
-  | RecordCardPresentation;
+  RecordTablePresentation | RecordCardPresentation;
 export interface RecordViewConfig {
   sort: FieldSort[];
   pagination: { mode: 'paged' | 'cursor'; size: number };
@@ -162,8 +159,7 @@ export interface ViewCapabilities {
 }
 /** Advertise only implemented query modes; at least one record query is required. */
 export type RecordQuerySource = (
-  | Pick<QueryApi<RecordData>, 'paged'>
-  | Pick<QueryApi<RecordData>, 'cursor'>
+  Pick<QueryApi<RecordData>, 'paged'> | Pick<QueryApi<RecordData>, 'cursor'>
 ) &
   Partial<Pick<QueryApi<RecordData>, 'paged' | 'cursor' | 'aggregate'>>;
 export interface ViewEngineOptions {
@@ -199,11 +195,7 @@ export interface RecordSession {
   readonly refreshing: boolean;
   readonly queryError: string | null;
   readonly writeStatus:
-    | 'idle'
-    | 'saving'
-    | 'creating'
-    | 'deleting'
-    | 'renaming';
+    'idle' | 'saving' | 'creating' | 'deleting' | 'renaming';
   readonly writeError: string | null;
   readonly requiresReload: boolean;
 }

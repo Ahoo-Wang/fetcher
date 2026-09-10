@@ -751,8 +751,10 @@ type ViewThemeStyle = React.CSSProperties & {
   [variable: `--fve-${string}`]: string | number | undefined;
 };
 
-interface ViewThemeProps
-  extends Omit<React.ComponentPropsWithRef<'div'>, 'style'> {
+interface ViewThemeProps extends Omit<
+  React.ComponentPropsWithRef<'div'>,
+  'style'
+> {
   theme?: string;
   appearance?: 'light' | 'dark' | 'system';
   density?: 'comfortable' | 'compact';
@@ -1183,7 +1185,6 @@ Card title and summary fields reuse cells. An intrinsic row-key title outside de
 
 Card mode returns no metrics from getRecordSummaryMetrics. It cancels pending aggregate work and ignores late responses. Background record refresh and refreshSummary in card mode do not query aggregate; returning to table recomputes summaries for current data/filter. Only presentation configuration is persisted; computed summaries remain transient.
 
-
 ### Top-level layout switch and custom card content
 
 The global toolbar owns a single layout dropdown labeled with the current layout, at every container width. RecordToolbar retains batch actions and layout settings.
@@ -1206,7 +1207,6 @@ The library retains grid/frame, selection, loading/error/empty states and pagina
 ```
 
 RecordCardSettings explicitly displays “无封面” when no cover is chosen, and disables the add-field control with “已添加全部字段” when all fields are included. Its apply action updates the current view; saving requires the host's existing persistence capability. The RecordCardList Storybook includes custom-content and persisted-config examples.
-
 
 The primary card Storybook preview uses ProductCatalogExample: 12 home/travel products with local SVG covers, category/status/favorite filtering, price/stock sorting, details, favorites and individual/batch publishing. Default cards retain built-in configuration; custom cards emphasize price and stock. View configuration can use LocalStorageViewHost. Catalog writes are in-memory and refresh the same query source in Table and Card. Order action retry regressions remain separate.
 

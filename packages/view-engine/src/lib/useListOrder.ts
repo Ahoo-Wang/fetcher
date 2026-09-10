@@ -41,10 +41,10 @@ export function useListOrder<T extends { id: string }>({
   function canMove(index: number, target: number): boolean {
     return Boolean(
       !disabled &&
-        items[index] &&
-        items[target] &&
-        index !== target &&
-        (!permitsMove || permitsMove(items[index], items[target])),
+      items[index] &&
+      items[target] &&
+      index !== target &&
+      (!permitsMove || permitsMove(items[index], items[target])),
     );
   }
   function move(index: number, target: number) {

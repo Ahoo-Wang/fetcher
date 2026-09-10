@@ -174,7 +174,6 @@ Library portals copy computed public colors, typography, density and effective a
 
 CSS custom-property aliases resolve before inheritance. Define derived values at the target theme boundary instead of expecting a child override to recompute an inherited alias. Removing local variables or a theme attribute returns to the parent/default scope. See the [component reference](../../reference/view-engine/components.md) for component contracts and the package [public API table](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-view-engine/references/api.md) for every supported variable.
 
-
 ### Custom card content
 
 Use `renderCard` on `ViewPage`, `ViewPageContent`, `RecordView` or `RecordCardList` to replace a card's content. The callback receives readonly record, rowKey, definition, instance, index, selected, defaultContent and an instance-bound refresh method. Return your own component for a custom information structure, or wrap defaultContent to keep the configured fields. Selection, grid, paging and error isolation remain library-managed. The callback is not persisted; default card settings affect only defaultContent.
@@ -193,7 +192,6 @@ Use `renderCard` on `ViewPage`, `ViewPageContent`, `RecordView` or `RecordCardLi
 ```
 
 The layout switch is a current-layout dropdown in the global toolbar at every width. The record toolbar keeps batch actions and layout settings.
-
 
 The card preview includes real local order interactions: view details, process an order, batch-process selected orders and create an order. Both default and custom cards reuse the same row-action component. Processing updates the data and refreshes the current queue; failure feedback and retry use the existing order-operation provider. Demo business data resets on page reload; the persisted example saves view configuration separately.
 

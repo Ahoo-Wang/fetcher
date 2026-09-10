@@ -79,8 +79,7 @@ export interface RecordCardPresentation {
   card: RecordCardConfig;
 }
 export type RecordPresentation =
-  | RecordTablePresentation
-  | RecordCardPresentation;
+  RecordTablePresentation | RecordCardPresentation;
 ```
 
 ViewDefinition 增加 defaultPresentation?: RecordPresentationDefaults；RecordViewConfig.presentation 改为 RecordPresentation。内部共用校验函数为 validateRecordTableConfig(value: unknown, definition: DeepReadonly<ViewDefinition>): asserts value is RecordTableConfig，以及 validateRecordCardConfig(value: unknown, definition: DeepReadonly<ViewDefinition>): asserts value is RecordCardConfig。初始化函数实现在 resolveRecordPresentation.ts，从核心导出：
@@ -305,7 +304,6 @@ git diff --check
 - 首版不缓存停用布局的汇总，不新增通用渲染器、操作管理器或配置继承框架。
 - 实现已完成；下面记录实际验证结果，前文保留实施步骤作为设计依据。
 
-
 ## 实施结果（2026-09-10）
 
 - [x] 配置与校验：新增独立的 resolveRecordPresentation、共用展示校验和 table/card 联合；卡片不依赖表格配置，默认输入先校验再选择并返回可编辑副本。
@@ -324,7 +322,6 @@ git diff --check
 - `node --test wiki/test/documentation.test.mjs` 10 项通过，`pnpm --dir wiki build` 通过。
 - 根目录和包版本维持 5.0.0；未改依赖、构建配置，未提交功能代码、推送或发布。
 
-
 收尾复查：独立审查发现的主键标题 renderer 忽略问题已修复；共享 RecordCell 为 intrinsic rowKey 提供最小字段描述，保留显式 renderer，宿主定义不变。另将展示更新的校验置于快照比较前，拒绝 options getter 且不调用它。两项均有失败复现和通过回归。最终 `VITEST_MAX_WORKERS=4 pnpm test:unit` 已重新完整通过（普通/compiled 各 950 项），未放宽断言或修改超时。
 
 ## 顶部切换与自定义内容增量（2026-09-10）
@@ -336,7 +333,6 @@ git diff --check
 - in-app Browser 实际检查顶部切换、自定义内容和窄容器下拉；保存示例切换到表格并保存，浏览器 reload 后保持表格，确认持久化链路。
 - 独立复查未发现确定问题；字段耗尽后删除的焦点疑虑已被真实回归反证，保留测试而未添加冗余焦点逻辑。
 
-
 ## 订单操作示例与统一下拉修订（2026-09-10）
 
 按用户最新要求，顶部展示方式统一下拉，不再按宽度使用分段按钮；删除仅为分段切换存在的 CSS 容器查询。当前规则取代前一增量中的40rem断点方案。
@@ -346,7 +342,6 @@ git diff --check
 已观察主预览中的详情/处理、批量处理、创建及顶部模式下拉。相关3组 Chrome 故事共12项通过，包含旧扩展示例回归；独立只读复查无实质问题。
 
 本轮最终验证：`VITEST_MAX_WORKERS=4 pnpm test:unit` 通过，view-engine 普通与 compiled 各121文件、956项；3组 Chrome 故事共12项通过。包构建、lint、wiki build和差异检查通过；版本保持5.0.0，未提交或发布。
-
 
 ### 展示能力与工具栏验证
 

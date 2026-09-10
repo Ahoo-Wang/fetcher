@@ -1752,7 +1752,6 @@ Library portals copy computed public colors, typography, density and effective a
 
 CSS custom-property aliases resolve before inheritance. Define derived values at the target theme boundary instead of expecting a child override to recompute an inherited alias. Removing local variables or a theme attribute returns to the parent/default scope. See the [component reference](../../reference/view-engine/components.md) for component contracts and the package [public API table](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-view-engine/references/api.md) for every supported variable.
 
-
 ### Custom card content
 
 Use `renderCard` on `ViewPage`, `ViewPageContent`, `RecordView` or `RecordCardList` to replace a card's content. The callback receives readonly record, rowKey, definition, instance, index, selected, defaultContent and an instance-bound refresh method. Return your own component for a custom information structure, or wrap defaultContent to keep the configured fields. Selection, grid, paging and error isolation remain library-managed. The callback is not persisted; default card settings affect only defaultContent.
@@ -1771,7 +1770,6 @@ Use `renderCard` on `ViewPage`, `ViewPageContent`, `RecordView` or `RecordCardLi
 ```
 
 The layout switch is a current-layout dropdown in the global toolbar at every width. The record toolbar keeps batch actions and layout settings.
-
 
 The card preview includes real local order interactions: view details, process an order, batch-process selected orders and create an order. Both default and custom cards reuse the same row-action component. Processing updates the data and refreshes the current queue; failure feedback and retry use the existing order-operation provider. Demo business data resets on page reload; the persisted example saves view configuration separately.
 
@@ -21703,7 +21701,6 @@ export function Orders({
 
 CSS 自定义属性别名在继承前解析。派生值应定义在目标主题边界，不能依赖子作用域覆盖后重新计算继承的别名。移除局部变量或主题属性后会回到父级/默认作用域。组件契约见 [组件参考](../../reference/view-engine/components.md)，所有支持变量见包的[公开 API 表](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-view-engine/references/api.md)。
 
-
 ### 自定义卡片内容
 
 在 `ViewPage`、`ViewPageContent`、`RecordView` 或 `RecordCardList` 上使用 `renderCard` 替换单张卡片内容。回调接收只读 record、rowKey、definition、instance、index、selected、defaultContent，以及绑定当前实例的 refresh。返回自有组件可自由安排信息结构，包裹 defaultContent 则保留配置字段。选择、网格、分页和错误隔离仍由库管理。回调不持久化；默认卡片设置仅影响 defaultContent。
@@ -21722,7 +21719,6 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 ```
 
 展示方式切换统一放在顶部全局工具栏，通过显示当前模式名称的下拉框操作，所有宽度保持一致。记录工具栏保留批量操作和布局设置。
-
 
 卡片预览包含实际的本地订单操作：查看详情、处理单笔订单、批量处理已选订单和创建订单。默认卡片与自定义卡片复用同一行操作组件。处理会修改数据并刷新当前队列，失败反馈和重试沿用已有订单操作 Provider。示例业务数据在刷新页面后重置，可持久化示例独立保存视图配置。
 
