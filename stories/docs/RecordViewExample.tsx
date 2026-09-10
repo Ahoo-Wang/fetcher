@@ -174,17 +174,25 @@ const host: ViewHost = {
   },
 };
 
-export function RecordViewExample({
-  appearance = 'light',
-  layout = 'table',
-  renderCard,
-  persistViews = false,
-}: {
+type RecordViewExampleProps = {
   appearance?: 'light' | 'dark';
   layout?: 'table' | 'card';
   renderCard?(context: RecordCardRenderContext): ReactNode;
   persistViews?: boolean;
-}) {
+};
+
+export function RecordViewExample(props: RecordViewExampleProps) {
+  return (
+    <RecordViewWorkspace key={String(props.persistViews ?? false)} {...props} />
+  );
+}
+
+function RecordViewWorkspace({
+  appearance = 'light',
+  layout = 'table',
+  renderCard,
+  persistViews = false,
+}: RecordViewExampleProps) {
   const [viewHost] = useState(() =>
     persistViews
       ? new LocalStorageViewHost({

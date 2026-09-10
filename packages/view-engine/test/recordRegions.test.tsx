@@ -27,6 +27,7 @@ import { ViewEngine } from '../src/record/ViewEngine.js';
 import { ViewPage, ViewPageContent } from '../src/record/ViewPage.js';
 import type {
   RecordPaginationRenderContext,
+  RecordCardRenderContext,
   RecordToolbarRenderContext,
 } from '../src/record/recordReactTypes.js';
 import type { ViewInstance } from '../src/record/recordModel.js';
@@ -474,4 +475,42 @@ it('ignores delayed layout edits after their rendered instance has been deleted'
     delayed.setCardConfig({ title: { id: 'title', field: 'id' }, fields: [] }),
   ).not.toThrow();
   expect(engine.getSnapshot()).toBe(state);
+});
+
+it('uses the same guarded refresh for retained card and toolbar contexts', async () => {
+  const { host, paged } = setup();
+  host.instance!.delete = vi.fn().mockResolvedValue(undefined);
+  host.permission = { getInstance: () => ({ delete: true }) };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host,
+  });
+  engines.push(engine);
+  await engine.load();
+  engine.setLayout('card');
+  let card!: RecordCardRenderContext;
+  let toolbar!: RecordToolbarRenderContext;
+  render(
+    <RecordView
+      engine={engine}
+      renderCard={context => {
+        card = context;
+        return context.defaultContent;
+      }}
+      renderToolbar={context => {
+        toolbar = context;
+        return context.defaultContent;
+      }}
+    />,
+  );
+  await screen.findByRole('list', { name: '记录卡片' });
+  const delayed = card;
+  expect(card.refresh).toBe(toolbar.refresh);
+  await act(() => delayed.refresh());
+  const reads = paged.mock.calls.length;
+  await act(() => engine.deleteInstance(instance.id));
+  await expect(delayed.refresh()).resolves.toBeUndefined();
+  expect(paged).toHaveBeenCalledTimes(reads);
 });

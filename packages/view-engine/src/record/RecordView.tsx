@@ -110,7 +110,9 @@ export function RecordView({
       });
     }
   }
-  const refresh = () => engine.refresh(id ?? undefined);
+  const refresh = async () => {
+    if (id && engine.getSnapshot().sessions[id]) await engine.refresh(id);
+  };
   const tableHandlers: Required<
     Pick<
       RecordTableProps,
@@ -149,9 +151,7 @@ export function RecordView({
     setColumns(columns: Parameters<ViewEngine['setColumns']>[0]) {
       if (engine.getSnapshot().sessions[id]) engine.setColumns(columns, id);
     },
-    async refresh() {
-      if (engine.getSnapshot().sessions[id]) await engine.refresh(id);
-    },
+    refresh,
   };
   const Result =
     instance.config.presentation.layout === 'table'
