@@ -123,11 +123,12 @@ if (serveOnly) {
     await dialog.getByRole('radio', { name: '公共视图', exact: true }).click();
     server.control.dropNextCreateResponse = true;
     await dialog.getByRole('button', { name: '创建视图', exact: true }).click();
-    await waitUntil(
-      async () =>
-        !(await dialog.isVisible()) ||
-        (await dialog.innerText()).includes('写入结果未知'),
-    );
+    await waitUntil(async () => {
+      const texts = await dialog.allTextContents();
+      return (
+        texts.length === 0 || texts.some(text => text.includes('写入结果未知'))
+      );
+    });
     assert.equal(
       (await list()).instances.filter(item => item.title === '共享 HTTP 视图')
         .length,
