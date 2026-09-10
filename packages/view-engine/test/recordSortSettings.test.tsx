@@ -53,11 +53,22 @@ it('reorders active rules and removes them without persisting drag metadata', as
     { field: 'amount', direction: 'ASC' },
   ]);
   expect(document.activeElement).toBe(handle);
+  fireEvent.click(screen.getByRole('button', { name: '名称排序：降序' }));
+  expect(onChange.mock.lastCall?.[0]).toEqual([
+    { field: 'name', direction: 'ASC' },
+    { field: 'amount', direction: 'ASC' },
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: '名称排序：升序' }));
+
   expect(
-    screen.getByRole('combobox', { name: '金额排序' }).textContent,
+    screen
+      .getByRole('button', { name: '金额排序：升序' })
+      .getAttribute('title'),
   ).toContain('从低到高');
   expect(
-    screen.getByRole('combobox', { name: '名称排序' }).textContent,
+    screen
+      .getByRole('button', { name: '名称排序：降序' })
+      .getAttribute('title'),
   ).toContain('倒序');
   expect(screen.getByRole('combobox', { name: '添加排序' })).toHaveProperty(
     'disabled',
@@ -104,7 +115,7 @@ it('hides sorting when no fields support it and prevents edits while disabled', 
       disabled
     />,
   );
-  expect(screen.getByRole('combobox', { name: '金额排序' })).toHaveProperty(
+  expect(screen.getByRole('button', { name: '金额排序：升序' })).toHaveProperty(
     'disabled',
     true,
   );
@@ -134,8 +145,13 @@ it('offers chronological direction labels and stops adding at the contract limit
   expect(add).toHaveProperty('disabled', true);
   expect(add.textContent).toContain('最多 32 条排序');
   expect(
-    screen.getByRole('combobox', { name: '日期0排序' }).textContent,
+    screen
+      .getByRole('button', { name: '日期0排序：升序' })
+      .getAttribute('title'),
   ).toContain('从早到晚');
-  fireEvent.click(screen.getByRole('combobox', { name: '日期0排序' }));
-  expect(await screen.findByRole('option', { name: '从晚到早' })).toBeTruthy();
+  expect(
+    screen
+      .getByRole('button', { name: '日期0排序：升序' })
+      .getAttribute('title'),
+  ).toContain('点击切换为从晚到早');
 });

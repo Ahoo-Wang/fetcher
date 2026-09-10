@@ -215,7 +215,7 @@ export const SortRules: Story = {
     for (const field of ['售价', '库存']) {
       await userEvent.click(page.getByRole('combobox', { name: '添加排序' }));
       await userEvent.click(await page.findByRole('option', { name: field }));
-      await page.findByRole('combobox', { name: `${field}排序` });
+      await page.findByRole('button', { name: `${field}排序：升序` });
     }
     const handle = page.getByRole('button', { name: '拖动调整售价排序优先级' });
     handle.focus();
@@ -224,10 +224,12 @@ export const SortRules: Story = {
       canvas.getByRole('button', { name: '排序：库存 ↑、售价 ↑' }),
     ).toBeVisible();
     await expect(handle).toHaveFocus();
-    await userEvent.click(page.getByRole('combobox', { name: '售价排序' }));
-    await userEvent.click(
-      await page.findByRole('option', { name: '从高到低' }),
-    );
+    const direction = page.getByRole('button', { name: '售价排序：升序' });
+    direction.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(
+      page.getByRole('button', { name: '售价排序：降序' }),
+    ).toHaveFocus();
     await expect(
       canvas.getByRole('button', { name: '排序：库存 ↑、售价 ↓' }),
     ).toBeVisible();

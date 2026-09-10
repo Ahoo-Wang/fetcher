@@ -420,10 +420,9 @@ it('sorts a card-only view using the shared engine configuration', async () => {
   await waitFor(() =>
     expect(engine.getSnapshot().sessions[saved.id].queryStatus).toBe('success'),
   );
-  fireEvent.click(await screen.findByRole('combobox', { name: '金额排序' }));
-  const descending = await screen.findByRole('option', { name: '从高到低' });
-  fireEvent.pointerDown(descending, { pointerType: 'mouse' });
-  fireEvent.click(descending);
+  fireEvent.click(
+    await screen.findByRole('button', { name: '金额排序：升序' }),
+  );
   await waitFor(() =>
     expect(
       engine.getSnapshot().sessions[saved.id].instance.config.sort,
