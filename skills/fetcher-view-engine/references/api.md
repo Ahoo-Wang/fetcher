@@ -32,12 +32,12 @@ Core imports do not load React, DOM or CSS. Field descriptors define field capab
 
 `createFilterConfiguration` and `isSimpleFilter` accept readonly canonical nodes. `FilterPanel.value`, `defaultValue` and `appliedValue` accept readonly configurations; emitted configurations remain independent editable values.
 
-| Export                                        | Contract                                                                                                                                     |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FILTER_OPERATORS`                            | Complete readonly record of all 50 Wow operators: label, category, input kind and relative-time flag.                                        |
-| `newFilterNode(operator, field?, component?)` | Creates a canonical node with an ID, explicit component (default builtin), unset props, initial container children or ACTIVE deletion state. |
-| `getFieldOperators(field)`                    | Returns operators from field type and explicit field allowlist only; ignores editor defaults.                                                |
-| `isSimpleFilter(root)`                        | Structural eligibility: MATCH_ALL, an ordinary field predicate, or a flat AND of those predicates. Mode changes also check validity.         |
+| Export                                        | Contract                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FILTER_OPERATORS`                            | Complete readonly record of all 50 Wow operators: label, category, input kind and relative-time flag.                                                                                                                                                                                                 |
+| `newFilterNode(operator, field?, component?)` | Creates a canonical node with an ID, explicit component (default builtin), unset props, initial container children or ACTIVE deletion state.                                                                                                                                                          |
+| `getFieldOperators(field)`                    | Returns operators from field type and explicit field allowlist only; ignores editor defaults.                                                                                                                                                                                                         |
+| `isSimpleFilter(root)`                        | Structural eligibility: root MATCH_ALL, field predicates, ELEMENT_MATCH, or a flat AND of these. Each element scope recursively allows fields/elements or their implicit AND, with unique fields per scope. Empty element AND drafts are editable; compilation and mode changes still check validity. |
 
 The persisted contract is:
 
@@ -95,7 +95,7 @@ Configuration is JSON data. An object property with undefined represents an unse
 
 A custom compiler may combine predicates for its bound field, but cannot escape that field or its scope. Logical/element containers remain structural component nodes. Custom compiled outputs must satisfy the declared field capabilities and global operator allowlist. The selected built-in operation is also checked before date-only lowering; its generated range/group operators implement that already-authorized calendar-day condition.
 
-Field uniqueness is a simple-mode editing rule, not a compiler restriction. Advanced AND/OR/NOR groups accept repeated direct field bindings, including within element predicates. Compilation and view-instance validation preserve these conditions. `isSimpleFilter` returns false for repeated-field AND drafts, including unset conditions; a requested simple mode is rendered as advanced until the draft can be represented without losing rules.
+Field uniqueness is a simple-mode editing rule, not a compiler restriction. Advanced AND/OR/NOR groups accept repeated direct field bindings, including within element predicates. Compilation and view-instance validation preserve these conditions. `isSimpleFilter` returns false for repeated-field AND drafts, including unset conditions; simple configurations must satisfy this rule in every scope. Element scopes preserve their predicate tree when switching modes; OR/NOR and nested logical groups require advanced mode.
 
 Fully unset scalar predicates and cleared collections are omitted. An explicitly empty new group is incomplete; a nonempty group whose children are all inactive is omitted. Empty output at the query root becomes MATCH_ALL. Inactive children never become MATCH_ALL inside OR/NOR. A missing part of a bound, collection item or date/time pair blocks compilation. False, zero, explicit null and valid empty strings retain their meaning. ELEMENT_MATCH only accepts element-relative fields and excludes root-only metadata/search/deletion nodes.
 
@@ -139,8 +139,8 @@ Import components from `@ahoo-wang/fetcher-view-engine/react` and compiled style
 `FilterPanelToolbarProps` supplies `panelId: string`, `mode: FilterMode`, readonly
 `options: FilterOption<FilterMode>[]`, `pending: boolean`, `disabled: boolean`, and
 `onModeChange(mode): void`. Use the supplied options and callback for mode controls;
-the callback also rejects transitions while disabled or to simple mode with nested
-or incomplete conditions. `panelId` connects external disclosure `aria-controls`
+the callback also rejects transitions while disabled or to simple mode with unsupported logical groups, repeated fields within a scope
+or incomplete conditions. Recursive ELEMENT_MATCH scopes with implicit AND can switch without rewriting the tree. `panelId` connects external disclosure `aria-controls`
 to the body. `renderToolbar` remains visible when collapsed. The default toolbar
 is unchanged for standalone panels. Add filter aligns left; Undo, Clear and Query
 align right, with Query last.

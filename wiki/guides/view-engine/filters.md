@@ -25,7 +25,7 @@ Options can declare `group`. IDs preserve type: `1` and `'1'` are different. `gr
 
 Typing edits a draft. Query or Enter applies valid input. An unset control remains rendered and contributes no value-dependent predicate; it is not removed from saved configuration. The applied-condition clear button clears that control's value and queries immediately. Removing a control from the editing panel changes the draft instead.
 
-Simple mode has one control per field. Advanced mode can repeat a field and nest AND/OR/NOR or supported element conditions. Existing nested branches are not flattened on a mode switch. The field picker uses grouped checkboxes in a popup; logical groups are added through the separate button-group menu.
+Simple mode has one control per field in each scope. It supports ELEMENT_MATCH, including nested arrays, with an implicit AND inside each “same element satisfies” section. Empty element scopes remain editable but block Query until a child condition is added. Advanced mode can repeat a field and nest AND/OR/NOR. Existing nested branches are not flattened on a mode switch. The field picker uses grouped checkboxes in a popup; logical groups are added through the separate button-group menu.
 
 Persist `ViewInstance.config.filters: FilterConfiguration`, including component name, options, operator and raw `props`. Do not replace it with the compiled Wow `FilterExpression`: an expression cannot restore unset controls, chosen editors or display-only properties. The component registration owns pure `compile` and optional `clear` semantics; the panel coordinates application. See [filter contracts](../../reference/view-engine/filters.md).
 
