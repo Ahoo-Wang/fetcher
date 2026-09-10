@@ -193,9 +193,9 @@ export function ViewSidebar({
       </div>
       {groups.map(group => (
         <section key={group.id} className="fve:flex fve:flex-col fve:gap-1">
-          <h3 className="fve:px-2 fve:py-1 fve:text-xs fve:font-medium fve:text-muted-foreground">
+          <h2 className="fve:px-2 fve:py-1 fve:text-xs fve:font-medium fve:text-muted-foreground">
             {group.label}
-          </h3>
+          </h2>
           {group.sessions.map(session => (
             <Button
               key={session.instance.id}

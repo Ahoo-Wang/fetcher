@@ -149,14 +149,14 @@ export function ViewPageContent({
         />
       </div>
       {session && (
-        <span
+        <h2
           className={cn(
             'fve:text-sm fve:font-medium fve:text-foreground',
             collapsed ? 'fve:hidden' : 'fve:hidden fve:@min-[64rem]:inline',
           )}
         >
           {session.instance.title}
-        </span>
+        </h2>
       )}
       {session && (
         <ViewInstanceActions
