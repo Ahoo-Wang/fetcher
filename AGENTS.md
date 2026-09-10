@@ -11,19 +11,19 @@ TypeScript HTTP-client ecosystem built around `Fetcher`.
 
 ## Repository Map
 
-| Path                                                                 | Responsibility                                       |
-| -------------------------------------------------------------------- | ---------------------------------------------------- |
-| `packages/fetcher/`                                                  | Core HTTP client; no internal dependencies           |
-| `packages/decorator/`, `packages/eventbus/`, `packages/eventstream/` | API decorators, event bus, SSE streams               |
-| `packages/openapi/`, `packages/generator/`                           | OpenAPI types and TypeScript client generation       |
-| `packages/openai/`, `packages/cosec/`                                | OpenAI client and CoSec authentication               |
-| `packages/storage/`                                                  | Cross-environment storage                            |
-| `packages/wow/`                                                      | Wow command/query clients and query DSLs             |
-| `packages/react/`, `packages/viewer/`                                | React hooks and Ant Design viewer components         |
-| `packages/view-engine/`                                             | Independent view engine contracts and shadcn/Base UI components |
-| `stories/`, `.storybook/`                                            | Shared Storybook stories and configuration           |
-| `integration-test/`                                                  | Integration tests; service setup in its README files |
-| `skills/`, `wiki/`                                                   | Agent skills and bilingual VitePress documentation   |
+| Path                                                                 | Responsibility                                                  |
+| -------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `packages/fetcher/`                                                  | Core HTTP client; no internal dependencies                      |
+| `packages/decorator/`, `packages/eventbus/`, `packages/eventstream/` | API decorators, event bus, SSE streams                          |
+| `packages/openapi/`, `packages/generator/`                           | OpenAPI types and TypeScript client generation                  |
+| `packages/openai/`, `packages/cosec/`                                | OpenAI client and CoSec authentication                          |
+| `packages/storage/`                                                  | Cross-environment storage                                       |
+| `packages/wow/`                                                      | Wow command/query clients and query DSLs                        |
+| `packages/react/`, `packages/viewer/`                                | React hooks and Ant Design viewer components                    |
+| `packages/view-engine/`                                              | Independent view engine contracts and shadcn/Base UI components |
+| `stories/`, `.storybook/`                                            | Shared Storybook stories and configuration                      |
+| `integration-test/`                                                  | Integration tests; service setup in its README files            |
+| `skills/`, `wiki/`                                                   | Agent skills and bilingual VitePress documentation              |
 
 ## Commands and Verification
 
