@@ -45,6 +45,7 @@ export interface ViewInstanceService {
 /** Current user's display preferences; never changes shared view content. */
 export interface ViewPreferenceService {
   saveOrder?(definitionId: string, instanceIds: string[]): Promise<void>;
+  saveDefault?(definitionId: string, instanceId: string | null): Promise<void>;
 }
 /** Synchronous UI policy projection plus explicit refresh and change notifications. */
 export interface ViewPermissionService {

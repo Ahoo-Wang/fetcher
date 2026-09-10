@@ -44,6 +44,7 @@ const views = await instance.list('orders');
 | PATCH  | `/instances/{id}/name` | `{title}` 与 If-Match                             |
 | DELETE | `/instances/{id}`      | If-Match                                          |
 | PUT    | `/order`               | `{instanceIds}`，必须完整且不重复                 |
+| PUT    | `/default`             | `{instanceId}`，可见 ID；`null` 表示不自动选择    |
 
 成功响应为 `{data, permissions}`，无返回内容的写入使用 `data: null`。读取实例、创建、保存和改名均返回完整权威实例及版本。错误响应为 `{data: null, error: {code, message}, permissions?}`；可识别身份的失败同时返回最新权限。响应和客户端请求均禁止缓存。
 
@@ -69,6 +70,8 @@ If-Match 版本不匹配使用 412，依据 [RFC 9110](https://www.rfc-editor.or
 `ViewHost.instance.create(input, {requestId, signal?})` 要求每个逻辑创建保留同一个请求 ID。同一用户、同一键和同一规范化正文重放已存回执；正文变化返回 CONFLICT。实例与回执在同一个事务内提交。引擎在结果不明时保留 ID，阻止修改尚未确认请求的内容；原请求重试或显式重载可以核对已创建实例，不会把传输失败当成“肯定未写入”。直接使用客户端的调用者在重试、重建客户端后也必须保留原 ID。测试服务回执保留到管理重置为止。
 
 个人排序采用完整替换，同一用户最后一次成功替换生效；可见 ID 集合必须仍然匹配，不修改其他用户顺序。实例写入使用 revision CAS，两者是明确不同的并发语义。
+
+默认视图偏好仅属于当前认证用户。任一可见视图都可设为默认，无需编辑权限；`null` 表示不自动选择。该替换操作具有幂等性，写入结果未知时可用同一值重试，或重新加载确认结果。
 
 ```bash
 pnpm --filter @ahoo-wang/fetcher-view-engine build

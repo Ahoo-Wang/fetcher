@@ -54,6 +54,7 @@ export function createHost(
     ]),
   );
   let instanceOrder = [...saved.keys()];
+  let defaultInstanceId = initialInstances.defaultInstanceId;
   let failNextDelete = failFirstDelete;
   let nextInstance = 1;
   const createReceipts = new Map<
@@ -107,11 +108,12 @@ export function createHost(
             instances: instanceOrder
               .filter(id => saved.has(id))
               .map(loadInstance),
-            defaultInstanceId: saved.has(
-              initialInstances.defaultInstanceId ?? '',
-            )
-              ? initialInstances.defaultInstanceId
-              : (instanceOrder[0] ?? null),
+            defaultInstanceId:
+              defaultInstanceId === null
+                ? null
+                : saved.has(defaultInstanceId)
+                  ? defaultInstanceId
+                  : (instanceOrder.find(id => saved.has(id)) ?? null),
           };
         },
         async load(id: string) {
@@ -160,6 +162,8 @@ export function createHost(
         }
         saved.delete(id);
         instanceOrder = instanceOrder.filter(value => value !== id);
+        if (defaultInstanceId === id)
+          defaultInstanceId = instanceOrder.find(id => saved.has(id)) ?? null;
         onWrite('delete', structuredClone(previous));
       },
       async save(instance) {
@@ -205,6 +209,15 @@ export function createHost(
       },
     },
     preference: {
+      ...(!local && {
+        async saveDefault(definitionId: string, id: string | null) {
+          await pause();
+          if (definitionId !== definition.id)
+            throw new Error('订单视图定义不存在。');
+          if (id !== null) loadInstance(id);
+          defaultInstanceId = id;
+        },
+      }),
       async saveOrder(definitionId, ids) {
         await pause();
         if (

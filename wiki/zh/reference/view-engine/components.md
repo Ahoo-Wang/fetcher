@@ -17,6 +17,8 @@ description: 选择合适的所有权层级，配置控件、单元格与操作�
 
 ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默认 false）、`autoRefreshPaused`（默认 false）、`className`。ViewPage 还有 `initialSidebarCollapsed`，RecordView 有 `toolbarStart`。RecordTable 单独接收查询/汇总状态与重试回调。
 
+仅当 `getCapabilitiesSnapshot().setDefault` 为 true 时，视图管理器才显示“设为默认/取消默认”操作。标记读取 `state.defaultInstanceId`；修改默认项不会离开当前选中视图。
+
 ## 内置单元格属性
 
 独立单元格均支持 className。配置中的 renderer options 有意小于独立组件的完整 props。

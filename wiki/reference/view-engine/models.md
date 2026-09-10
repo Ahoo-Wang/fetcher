@@ -32,7 +32,7 @@ A `ViewInstance` is a `RecordViewInstance`: `id`, `definitionId`, `title`, optio
 | `pagination`    | `{ mode: 'paged' \| 'cursor', size: number }`   |
 | `presentation`  | `RecordPresentation`                            |
 
-Scope is `{ type: 'personal' }` or `{ type: 'public', source: 'system' | 'shared' }`. Save-as accepts personal or shared scope. `ViewInstanceList` returns the complete visible `instances` and a `defaultInstanceId` string or null.
+Scope is `{ type: 'personal' }` or `{ type: 'public', source: 'system' | 'shared' }`. Save-as accepts personal or shared scope. `ViewInstanceList` requires the complete visible `instances` and `defaultInstanceId: string | null`; a non-null default must name a listed instance. `ViewEngineState.defaultInstanceId` is the independently published default and can differ from `selectedInstanceId`.
 
 A field column has `id`, `kind: 'field'`, `field` and optional `title`, `width`, `visible`, `pinned`, `renderer`, `summary`. An actions column uses `kind: 'actions'` and no field. Explicit width is 64–960 px; helpers export minimum, maximum and default (180 px). Row-key/action mandatory pinning is computed by `getRecordColumnPinning`; `orderRecordColumns` returns display order without rewriting persisted preferences.
 

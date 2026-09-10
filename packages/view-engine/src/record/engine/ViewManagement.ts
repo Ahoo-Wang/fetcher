@@ -24,8 +24,9 @@ import { copy, message, sameJsonState } from '../../lib/snapshot.js';
 import { instanceContent } from './sessionState.js';
 import { permissionsFor } from './instancePermissions.js';
 
-/** Explicit persisted name, deletion and user-order operations. */
+/** Explicit persisted name, deletion and user-preference operations. */
 export class ViewManagement {
+  private defaultWrite?: { version: number; id: string | null };
   constructor(
     private readonly store: SessionStore,
     private readonly scope: EngineScope,
@@ -114,6 +115,51 @@ export class ViewManagement {
     }
   }
 
+  canSetDefaultInstance(): boolean {
+    return (
+      !this.scope.disposed &&
+      typeof this.host.preference?.saveDefault === 'function'
+    );
+  }
+
+  async setDefaultInstance(instanceId: string | null): Promise<void> {
+    if (
+      instanceId !== null &&
+      (typeof instanceId !== 'string' || !instanceId.trim())
+    )
+      throw new Error('默认视图必须是有效实例 ID 或 null');
+    this.store.definition();
+    if (!this.canSetDefaultInstance())
+      throw new Error('宿主未提供默认视图保存接口');
+    if (instanceId !== null)
+      this.work.assertWritable(this.store.session(instanceId));
+    if (this.defaultWrite?.version === this.scope.version)
+      throw new Error('默认视图正在保存');
+    const request = { version: this.scope.version, id: instanceId };
+    this.defaultWrite = request;
+    try {
+      await this.host.preference!.saveDefault!(this.definitionId, instanceId);
+      if (!this.scope.current(request.version) || this.defaultWrite !== request)
+        return;
+      this.defaultWrite = undefined;
+      this.store.publish({
+        defaultInstanceId:
+          instanceId === null || this.store.find(instanceId)
+            ? instanceId
+            : (this.store.getSnapshot().instanceIds[0] ?? null),
+      });
+    } catch (error) {
+      if (!this.scope.current(request.version) || this.defaultWrite !== request)
+        return;
+      throw Object.assign(
+        new Error(`${message(error)}；请重试或重新加载核对默认视图`),
+        { cause: error },
+      );
+    } finally {
+      if (this.defaultWrite === request) this.defaultWrite = undefined;
+    }
+  }
+
   canReorderInstances(): boolean {
     if (
       this.scope.disposed ||
@@ -187,6 +233,11 @@ export class ViewManagement {
     id = session.instance.id;
     if (!this.getPermissions(id).delete)
       throw new Error('系统视图或宿主未授权的视图不能删除');
+    if (
+      this.defaultWrite?.version === this.scope.version &&
+      this.defaultWrite.id === id
+    )
+      throw new Error('默认视图正在保存，请等待操作完成');
     // Repeating the same versioned delete is idempotent; other writes still need reconciliation.
     this.work.assertWritable(session, this.canRetryDeleteInstance(id));
     const lifecycle = this.scope.version;
@@ -224,6 +275,10 @@ export class ViewManagement {
           sessions,
           instanceIds,
           selectedInstanceId: nextId,
+          defaultInstanceId:
+            this.store.getSnapshot().defaultInstanceId === id
+              ? (instanceIds[0] ?? null)
+              : this.store.getSnapshot().defaultInstanceId,
         }),
       );
       void followUp?.().catch(() => {});

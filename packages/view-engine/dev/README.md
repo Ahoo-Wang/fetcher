@@ -36,17 +36,18 @@ const instance = new HttpViewInstanceService(transport);
 const views = await instance.list('orders');
 ```
 
-| Method | Path relative to `/view-service/definitions/{definitionId}` | Body / condition                                         |
-| ------ | ----------------------------------------------------------- | -------------------------------------------------------- |
-| GET    | `/`                                                         | ViewDefinition                                           |
-| GET    | `/instances`                                                | ViewInstanceList                                         |
-| GET    | `/instances/{id}`                                           | ViewInstance                                             |
-| GET    | `/permissions`                                              | ViewPermissionSnapshot                                   |
-| POST   | `/instances`                                                | Instance without id/revision; `Idempotency-Key` required |
-| PUT    | `/instances/{id}`                                           | Complete instance; quoted revision in `If-Match`         |
-| PATCH  | `/instances/{id}/name`                                      | `{title}`; `If-Match`                                    |
-| DELETE | `/instances/{id}`                                           | `If-Match`                                               |
-| PUT    | `/order`                                                    | `{instanceIds}`: complete unique visible order           |
+| Method | Path relative to `/view-service/definitions/{definitionId}` | Body / condition                                            |
+| ------ | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| GET    | `/`                                                         | ViewDefinition                                              |
+| GET    | `/instances`                                                | ViewInstanceList                                            |
+| GET    | `/instances/{id}`                                           | ViewInstance                                                |
+| GET    | `/permissions`                                              | ViewPermissionSnapshot                                      |
+| POST   | `/instances`                                                | Instance without id/revision; `Idempotency-Key` required    |
+| PUT    | `/instances/{id}`                                           | Complete instance; quoted revision in `If-Match`            |
+| PATCH  | `/instances/{id}/name`                                      | `{title}`; `If-Match`                                       |
+| DELETE | `/instances/{id}`                                           | `If-Match`                                                  |
+| PUT    | `/order`                                                    | `{instanceIds}`: complete unique visible order              |
+| PUT    | `/default`                                                  | `{instanceId}`: visible ID, or `null` for no auto-selection |
 
 Definition and instance IDs must be nonblank, valid Unicode strings; the entire
 ID cannot be `.` or `..`. The same rule applies to local metadata and HTTP inputs.
@@ -77,6 +78,8 @@ A permission snapshot is `{revision, reorder, instances: {[id]: {save, rename, d
 `ViewHost.instance.create(input, {requestId, signal?})` requires one ID per logical create. Same user/key and canonical body replay the stored receipt; changed content returns CONFLICT. The view and receipt are committed in the same transaction. ViewEngine retains the ID on unknown failures and blocks changing that pending request's content; retry or explicit reload reconciles the created instance. It never treats a transport failure as proof that a write did not happen. Direct clients must retain their request ID when retrying, including after reconstructing a client. Fixture receipts live until the administrative reset.
 
 Personal ordering is a complete replacement: the last successful replacement for the same user wins. The current visible ID set must match, and no other user's order is modified. Instance writes use revision CAS. These are separate, explicit concurrency semantics.
+
+The default preference is private to the authenticated user. Any visible view can be selected without edit permission; `null` disables automatic selection. The replacement is idempotent, so callers can retry the same value after an unknown write outcome or reload to confirm it.
 
 ```bash
 pnpm --filter @ahoo-wang/fetcher-view-engine build
