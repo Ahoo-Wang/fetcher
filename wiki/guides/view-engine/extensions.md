@@ -1,12 +1,12 @@
 ---
 next: false
 title: Add application extensions
-description: Register global, table, row, filter and cell extensions with explicit ownership.
+description: Register business renderers, compose record regions and select scoped CSS themes.
 ---
 
 # Add application extensions
 
-## Five extension points
+## Registered business extensions
 
 | Need                          | Registration               | Configuration reference                               |
 | ----------------------------- | -------------------------- | ----------------------------------------------------- |
@@ -16,29 +16,164 @@ description: Register global, table, row, filter and cell extensions with explic
 | Filter component and compiler | `extensions.filters`       | Field/editor/operator component reference             |
 | Custom cell                   | `extensions.cells`         | `field.cellRenderer` or `column.renderer`             |
 
-Each reference is `{ name, options? }`; options must be JSON data. Register components, service clients and callbacks in runtime extensions, not persisted JSON. Unknown names and invalid configuration surface an error; they are not silently treated as another component. Start with built-ins before registering a custom implementation.
+Each reference is `{ name, options? }`; options must be JSON data. Register components, service clients and callbacks in runtime extensions, never persisted JSON. Unknown names and invalid configuration surface an error. Start with built-ins before registering a custom implementation.
 
-```ts
-// The values on the right are your application components/registrations.
-const extensions = {
-  globalActions: { 'create-order': CreateOrder },
-  tableActions: { 'process-orders': ProcessSelectedOrders },
-  rowActions: { 'process-order': ProcessOrder },
-  cells: { 'customer-link': CustomerLink },
-  filters: { 'order-status': orderStatusFilter },
-};
+Action props include the readonly definition/instance, applied `filter`, `sort`, options and an instance-bound `refresh()`. Table/global actions also receive `selectedRowKeys` and `querying`; row actions receive `record` and `rowKey`. A null applied filter means query scope is unavailable. The application executes business writes, handles errors and prevents duplicates. Await a write, then refresh the bound instance; if refresh fails after a successful write, retry only the refresh.
+
+A `FilterRegistration` combines a component, pure `compile(props, context)`, supported `modes`, and optional `supports` / `clear`. `onChange` publishes serializable props and does not query. Report incomplete input with `onValidityChange(false, message)`. Prepare filter registrations before creating the engine or mounting `ViewPage`; changing the same page's props cannot add registrations to that engine. Wait for asynchronously loaded registrations before mounting. Remounting resets the session and is not a lossless hot-update mechanism. Cells and action renderers retain their existing update behavior.
+
+## Themes and record regions
+
+Always import `styles.css`. It contains the components and default Neutral appearance. Importing `themes/neutral.css`, `blue.css`, `violet.css`, `green.css`, `orange.css` or `shadcn.css` only makes that theme available; `data-fve-theme` or `ViewTheme.theme` selects it. Import order does not select a theme, and separate `.fve-root` scopes may select different themes.
+
+`ViewTheme` is an optional `/react` wrapper. `theme?: string` accepts built-in or arbitrary user names, `appearance` accepts `light`, `dark` or `system`, and `density` accepts `comfortable` or `compact`. Omitted values inherit. `ViewThemeStyle` accepts React CSS properties plus typed `--fve-*` entries for inline overrides. CSS remains the base API.
+
+`renderTableToolbar` and `renderPagination` are available on `ViewPage`, `ViewPageContent` and `RecordView`. Their readonly contexts provide `defaultContent`, relevant state and instance-bound controlled operations. Return `defaultContent` to keep the standard region, wrap it to add UI, or return `null` to hide it. Render the default node at most once. The callback is a render function, so return a component when Hooks or local state are needed. The library isolates render failures by region; event-handler and async-operation failures still belong to application error handling.
+
+Stable styling hooks are `data-slot="record-view"`, `record-global-toolbar`, `record-table-toolbar`, `record-applied-filters` and `record-pagination`. Internal DOM nesting and utility classes may change. The full global toolbar remains fixed because it owns refresh and expansion lifecycles.
+
+## Four copyable recipes
+
+### 1. Built-in theme
+
+```tsx
+import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
+import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
+import '@ahoo-wang/fetcher-view-engine/themes/blue.css';
+
+export function Orders({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  return (
+    <ViewTheme theme="blue" appearance="system" density="compact">
+      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+    </ViewTheme>
+  );
+}
 ```
 
-## Operations
+### 2. User CSS theme
 
-Action props include the immutable definition/instance, applied `filter`, `sort`, options and an instance-bound `refresh()`. Table/global actions also receive `selectedRowKeys` and `querying`; row actions receive `record` and `rowKey`. A null applied filter means query scope is unavailable: do not start a filter-wide write from it.
+```css
+/* brand.css */
+.fve-root[data-fve-theme='brand'] {
+  --fve-primary: light-dark(#1d4ed8, #93c5fd);
+  --fve-primary-foreground: light-dark(#ffffff, #172554);
+  --fve-ring: light-dark(#1d4ed8, #93c5fd);
+  --fve-radius: 0.5rem;
+}
+```
 
-The application executes business writes, handles their errors and prevents duplicates. Await the write, then refresh the bound instance. If refresh fails after a successful write, retry the refresh instead of repeating the write. Disable or pause conflicting work and pass `autoRefreshPaused` while your business operation is active. Cell renderers only receive display context; do not issue writes during render.
+```tsx
+import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
+import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
+import './brand.css';
 
-## Filters
+export function Orders({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  return (
+    <ViewTheme
+      theme="brand"
+      style={{ '--fve-font-size': '14px', '--fve-control-height': '2.25em' }}
+    >
+      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+    </ViewTheme>
+  );
+}
+```
 
-One `FilterRegistration` combines `component`, pure `compile(props, context)`, required supported `modes`, optional `supports`, and optional `clear`. The default `render: 'value'` composes the editor inside the standard field/operator/remove frame. `render: 'filter'` receives the complete control contract, including labels, operator changes, clearing and removal.
+Partial themes inherit omitted variables. Pair foreground/background colors explicitly; the library does not derive accessible user colors. Use `px` or `rem` for `--fve-font-size`; `em` and `%` compound through the semantic text scale. Other size variables may use `em` relative to the effective font.
 
-`onChange` publishes serializable raw props and does not apply a query. Report incomplete local input through `onValidityChange(false, message)`. Compilation returns `undefined` for an unset value and throws for invalid nonempty input. Clearing preserves unrelated display attributes. Keep the registration stable for an engine lifetime; incompatible saved-prop semantics require a new component name.
+### 3. Host shadcn mapping
 
-The complete implementation is available in **View Engine → 扩展接入 → 公共包**. `packages/view-engine/examples/react/OrderExtensions.tsx` implements all five extension types; `OrderOperations.tsx` coordinates business writes and refresh. The code panels show the actual source, and the regression scenarios exercise writes, failure recovery and JSON restoration. API details: [filters](../../reference/view-engine/filters.md), [components](../../reference/view-engine/components.md).
+```tsx
+import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
+import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
+import '@ahoo-wang/fetcher-view-engine/themes/shadcn.css';
+
+export function Orders({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  return (
+    <ViewTheme theme="shadcn">
+      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+    </ViewTheme>
+  );
+}
+```
+
+The host supplies complete CSS colors such as `oklch(...)`, `hsl(...)` or `#hex`; bare HSL channels are not parsed. Missing tokens use library defaults, while present invalid/cyclic tokens follow CSS invalid-value behavior. The host ThemeProvider owns persistence and `.dark`. A local light scope cannot recreate light tokens when the host only exposes dark values.
+
+### 4. Stateful table-toolbar region
+
+```tsx
+import { useState } from 'react';
+import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
+import {
+  ViewPage,
+  type RecordTableToolbarRenderContext,
+} from '@ahoo-wang/fetcher-view-engine/react';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
+
+function OrdersToolbar({
+  context,
+}: {
+  context: RecordTableToolbarRenderContext;
+}) {
+  const [showHelp, setShowHelp] = useState(false);
+
+  return (
+    <>
+      {context.defaultContent}
+      <button type="button" onClick={() => setShowHelp(value => !value)}>
+        {showHelp ? 'Hide help' : 'Show help'}
+      </button>
+      {showHelp && <span>{context.selectedRowKeys.length} selected</span>}
+    </>
+  );
+}
+
+export function Orders({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  return (
+    <ViewPage
+      host={host}
+      scopeKey={scopeKey}
+      definitionId="orders"
+      selectable
+      renderTableToolbar={context => <OrdersToolbar context={context} />}
+    />
+  );
+}
+```
+
+The toolbar context also provides `definition`, `session`, `appliedFilter`, `querying`, `clearSelection()`, `setColumns()` and `refresh()`. Pagination provides `mode`, page state, availability flags and promise-returning page operations. Operations recheck current engine guards and stay bound to the instance that produced the callback.
+
+## CSS and Portal limits
+
+Unknown or unloaded themes do not throw; CSS inheritance/defaults continue to render. This does not prove that a theme file loaded. User CSS on the same theme root can override low-priority library values without `!important`, but ordinary CSS cascade rules still apply to duplicate theme names and nested explicit values.
+
+Library portals copy computed public colors, typography, density and effective appearance. Variable themes cross the body portal; structural selectors such as `.brand [data-slot=...]` do not. Theme/density attributes, class, inline variables and system preference update an open portal. Arbitrary CSSOM stylesheet replacement without one of those changes is not observed. Third-party portals require their own theme-container mechanism.
+
+CSS custom-property aliases resolve before inheritance. Define derived values at the target theme boundary instead of expecting a child override to recompute an inherited alias. Removing local variables or a theme attribute returns to the parent/default scope. See the [component reference](../../reference/view-engine/components.md) for component contracts and the package [public API table](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-view-engine/references/api.md) for every supported variable.

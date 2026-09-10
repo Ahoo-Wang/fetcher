@@ -24,7 +24,8 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/styles.css",
+    "./themes/*.css": "./dist/themes/*.css"
   },
   "files": [
     "dist",
@@ -43,7 +44,8 @@
     "lint": "eslint . --fix",
     "lint:check": "eslint . --max-warnings 0",
     "clean": "rm -rf dist",
-    "test:no-coverage": "vitest run --coverage.enabled=false && pnpm test:compiled && pnpm test:type"
+    "test:no-coverage": "vitest run --coverage.enabled=false && pnpm test:compiled && pnpm test:type",
+    "test:themes": "node scripts/verify-themes.mjs"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
