@@ -18,6 +18,7 @@ import {
   fireEvent,
   cleanup,
   within,
+  waitFor,
 } from '@testing-library/react';
 import { OrderWorkbench } from '../examples/react/sales-order/OrderWorkbench.js';
 afterEach(cleanup);
@@ -38,5 +39,15 @@ it('opens a business order from cards and creates an order with real quantities'
   fireEvent.click(await screen.findByRole('button', { name: '确认创建' }));
   expect(
     await screen.findByRole('dialog', { name: '订单详情 SO-202609-1019' }),
+  ).toBeTruthy();
+  const close = screen.getByRole('button', {
+    name: '关闭详情',
+  }) as HTMLButtonElement;
+  await waitFor(() => expect(close.disabled).toBe(false));
+  fireEvent.click(close);
+  expect(
+    await within(
+      await screen.findByRole('list', { name: '记录卡片' }),
+    ).findByRole('button', { name: '查看订单 SO-202609-1019' }),
   ).toBeTruthy();
 });
