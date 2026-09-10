@@ -21,8 +21,7 @@ export { ViewPageContent } from './page/ViewPageContent.js';
 export type { ViewPageContentProps } from './page/ViewPageContent.js';
 
 export interface ViewPageProps
-  extends
-    Omit<ViewEngineOptions, 'filterCompilers'>,
+  extends Omit<ViewEngineOptions, 'filterCompilers'>,
     Omit<RecordViewProps, 'engine' | 'toolbarStart'> {
   /** Stable user/tenant/access identity. Changing it creates an isolated session. */
   scopeKey: string;
@@ -116,8 +115,9 @@ function OwnedViewPage(props: ViewPageProps) {
       filterContext={props.filterContext}
       selectable={props.selectable}
       autoRefreshPaused={props.autoRefreshPaused}
-      renderTableToolbar={props.renderTableToolbar}
+      renderToolbar={props.renderToolbar}
       renderPagination={props.renderPagination}
+      renderCard={props.renderCard}
       className={props.className}
       initialSidebarCollapsed={props.initialSidebarCollapsed}
     />

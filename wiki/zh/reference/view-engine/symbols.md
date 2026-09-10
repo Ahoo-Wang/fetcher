@@ -174,7 +174,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `SelectValue`                 | [select.tsx:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L55)                      |
 | `StatusCell`                  | [StatusCell.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L34)               |
 | `StatusCellProps`             | [StatusCell.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L28)               |
-| `TableActionsRendererProps`   | [recordReactTypes.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L44)           |
+| `ToolbarActionsRendererProps` | [recordReactTypes.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L44)           |
 | `TagsCell`                    | [TagsCell.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L36)                   |
 | `TagsCellProps`               | [TagsCell.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L30)                   |
 | `TextCell`                    | [TextCell.tsx:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L80)                   |

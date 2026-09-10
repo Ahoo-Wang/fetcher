@@ -173,7 +173,7 @@ it('supports keyboard reordering on the drag handle without crossing fixed regio
     onChange.mock.lastCall?.[0].map((column: RecordColumn) => column.id),
   ).toEqual(['key', 'amount', 'name', 'actions']);
   expect(document.activeElement).toBe(handle);
-  expect(screen.getByRole('status').textContent).toContain('金额已移至第 2 列');
+  expect(screen.getByRole('status').textContent).toContain('金额已移至第 2 项');
   fireEvent.keyDown(handle, { key: 'ArrowUp' });
   expect(onChange).toHaveBeenCalledTimes(1);
   fireEvent.keyDown(handle, { key: 'ArrowDown' });

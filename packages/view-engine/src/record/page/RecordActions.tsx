@@ -22,7 +22,7 @@ export function RecordActions({
   extensions,
   refresh,
 }: {
-  kind: 'global' | 'table';
+  kind: 'global' | 'toolbar';
   definition: ViewDefinition;
   session: RecordSession;
   extensions?: ViewExtensions;
@@ -34,7 +34,7 @@ export function RecordActions({
   const reference = definition.recordActions?.[kind];
   if (!reference) return null;
   const registry =
-    kind === 'global' ? extensions?.globalActions : extensions?.tableActions;
+    kind === 'global' ? extensions?.globalActions : extensions?.toolbarActions;
   const Actions =
     registry && Object.prototype.hasOwnProperty.call(registry, reference.name)
       ? registry[reference.name]

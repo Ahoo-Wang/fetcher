@@ -44,7 +44,7 @@ Plain YYYY-MM-DD strings retain calendar-date display; timestamp values are form
 
 ## Extension context
 
-`GlobalActionsRendererProps` and `TableActionsRendererProps` provide definition/instance/filter/sort/options/refresh, selectedRowKeys and querying. `RowActionsRendererProps` adds record/rowKey to the common action context. `CellRendererProps` provides value/record/rowKey/index/field/column/definition/instance/options. These inputs are immutable; construct new values for changes. Cell props do not include a business command API.
+`GlobalActionsRendererProps` and `ToolbarActionsRendererProps` provide definition/instance/filter/sort/options/refresh, selectedRowKeys and querying. `RowActionsRendererProps` adds record/rowKey to the common action context. `CellRendererProps` provides value/record/rowKey/index/field/column/definition/instance/options. These inputs are immutable; construct new values for changes. Cell props do not include a business command API.
 
 ## Theme and accessibility
 

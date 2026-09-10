@@ -43,7 +43,10 @@ it('keeps unresolved component scopes null in global and table actions without q
       host={host}
       definition={{
         ...definition,
-        recordActions: { global: { name: 'global' }, table: { name: 'table' } },
+        recordActions: {
+          global: { name: 'global' },
+          toolbar: { name: 'table' },
+        },
       }}
       instances={{
         instances: [
@@ -63,7 +66,7 @@ it('keeps unresolved component scopes null in global and table actions without q
         ],
         defaultInstanceId: instance.id,
       }}
-      extensions={{ globalActions: { global }, tableActions: { table } }}
+      extensions={{ globalActions: { global }, toolbarActions: { table } }}
     />,
   );
   await screen.findByRole('button', { name: '全局等待条件' });
@@ -123,7 +126,10 @@ it('recovers batch actions on selection changes without retrying on unrelated dr
   }
   const engine = new ViewEngine({
     definitionId: definition.id,
-    definition: { ...definition, recordActions: { table: { name: 'batch' } } },
+    definition: {
+      ...definition,
+      recordActions: { toolbar: { name: 'batch' } },
+    },
     host,
   });
   await engine.load();
@@ -131,7 +137,7 @@ it('recovers batch actions on selection changes without retrying on unrelated dr
     <ViewPageContent
       engine={engine}
       selectable
-      extensions={{ tableActions: { batch: Batch } }}
+      extensions={{ toolbarActions: { batch: Batch } }}
     />,
   );
   await act(() => engine.setSelection([0]));
@@ -198,7 +204,7 @@ it('separates global and table actions while sharing the applied query context',
     definitionId: definition.id,
     definition: {
       ...definition,
-      recordActions: { global: { name: 'create' }, table: { name: 'batch' } },
+      recordActions: { global: { name: 'create' }, toolbar: { name: 'batch' } },
     },
     host,
   });
@@ -209,7 +215,7 @@ it('separates global and table actions while sharing the applied query context',
       selectable
       extensions={{
         globalActions: { create: () => <button>新建记录</button> },
-        tableActions: {
+        toolbarActions: {
           batch: props => {
             tableContext = props;
             return <button>批量处理</button>;
@@ -219,7 +225,7 @@ it('separates global and table actions while sharing the applied query context',
     />,
   );
   const global = within(screen.getByRole('group', { name: '全局工具栏' }));
-  const table = within(screen.getByRole('group', { name: '表格工具栏' }));
+  const table = within(screen.getByRole('group', { name: '记录工具栏' }));
   expect(global.getByRole('heading', { name: '订单管理' })).toBeTruthy();
   expect(global.getByRole('button', { name: '新建记录' })).toBeTruthy();
   expect(global.queryByRole('button', { name: '批量处理' })).toBeNull();

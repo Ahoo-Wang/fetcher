@@ -44,7 +44,7 @@ ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默�
 
 ## 扩展上下文
 
-`GlobalActionsRendererProps` / `TableActionsRendererProps` 提供 definition/instance/filter/sort/options/refresh、selectedRowKeys、querying。`RowActionsRendererProps` 在通用操作上下文上增加 record/rowKey。`CellRendererProps` 包含 value/record/rowKey/index/field/column/definition/instance/options。输入不可变，修改时构造新值。单元格 props 不提供业务命令 API。
+`GlobalActionsRendererProps` / `ToolbarActionsRendererProps` 提供 definition/instance/filter/sort/options/refresh、selectedRowKeys、querying。`RowActionsRendererProps` 在通用操作上下文上增加 record/rowKey。`CellRendererProps` 包含 value/record/rowKey/index/field/column/definition/instance/options。输入不可变，修改时构造新值。单元格 props 不提供业务命令 API。
 
 ## 主题与可访问性
 

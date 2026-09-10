@@ -44,21 +44,25 @@ export interface ViewDefinition {
   title: string;
   sourceId: string;
   rowKey: string;
+  allowedLayouts: readonly RecordPresentation['layout'][];
   /** Shared datetime timezone for filters and cells; omitted uses the local runtime timezone. */
   timeZone?: string;
   fields: readonly ViewFieldDefinition[];
+  defaultPresentation?: DeepReadonly<RecordPresentationDefaults>;
   allowedOperators?: readonly FilterOperator[];
   filterEditors?: Partial<Record<FilterOperator, FilterEditorReference>>;
   recordActions?: {
     global?: RendererReference;
-    table?: RendererReference;
+    toolbar?: RendererReference;
     row?: RendererReference;
   };
 }
 export type ViewScope =
-  { type: 'personal' } | { type: 'public'; source: 'system' | 'shared' };
+  | { type: 'personal' }
+  | { type: 'public'; source: 'system' | 'shared' };
 export type SaveAsScope =
-  { type: 'personal' } | { type: 'public'; source: 'shared' };
+  | { type: 'personal' }
+  | { type: 'public'; source: 'shared' };
 export type RecordColumnPinning = 'left' | 'right' | false;
 interface RecordColumnBase {
   id: string;
@@ -78,15 +82,41 @@ export type RecordColumn =
       summary?: readonly RecordSummaryFunction[];
     })
   | (RecordColumnBase & { kind: 'actions' });
+export interface RecordTableConfig {
+  columns: RecordColumn[];
+}
+export type RecordCardFieldConfig = Pick<
+  Extract<RecordColumn, { kind: 'field' }>,
+  'id' | 'field' | 'title' | 'renderer'
+>;
+export interface RecordCardConfig {
+  title: RecordCardFieldConfig;
+  cover?: { field: string };
+  fields: RecordCardFieldConfig[];
+  actions?: { visible?: boolean; renderer?: RendererReference };
+}
+export interface RecordPresentationDefaults {
+  table?: RecordTableConfig;
+  card?: RecordCardConfig;
+}
 export interface RecordTablePresentation {
   layout: 'table';
-  table: { columns: RecordColumn[] };
+  table: RecordTableConfig;
+  card?: RecordCardConfig;
 }
+export interface RecordCardPresentation {
+  layout: 'card';
+  card: RecordCardConfig;
+  table?: RecordTableConfig;
+}
+export type RecordPresentation =
+  | RecordTablePresentation
+  | RecordCardPresentation;
 export interface RecordViewConfig {
   sort: FieldSort[];
   pagination: { mode: 'paged' | 'cursor'; size: number };
   filters: FilterConfiguration;
-  presentation: RecordTablePresentation;
+  presentation: RecordPresentation;
 }
 /** Metadata shared by saved view kinds; query and presentation belong to their kind. */
 export interface ViewInstanceMetadata {
@@ -132,7 +162,8 @@ export interface ViewCapabilities {
 }
 /** Advertise only implemented query modes; at least one record query is required. */
 export type RecordQuerySource = (
-  Pick<QueryApi<RecordData>, 'paged'> | Pick<QueryApi<RecordData>, 'cursor'>
+  | Pick<QueryApi<RecordData>, 'paged'>
+  | Pick<QueryApi<RecordData>, 'cursor'>
 ) &
   Partial<Pick<QueryApi<RecordData>, 'paged' | 'cursor' | 'aggregate'>>;
 export interface ViewEngineOptions {
@@ -168,7 +199,11 @@ export interface RecordSession {
   readonly refreshing: boolean;
   readonly queryError: string | null;
   readonly writeStatus:
-    'idle' | 'saving' | 'creating' | 'deleting' | 'renaming';
+    | 'idle'
+    | 'saving'
+    | 'creating'
+    | 'deleting'
+    | 'renaming';
   readonly writeError: string | null;
   readonly requiresReload: boolean;
 }

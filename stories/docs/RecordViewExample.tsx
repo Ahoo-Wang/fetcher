@@ -11,7 +11,9 @@
  * limitations under the License.
  */
 import {
+  LocalStorageViewHost,
   createFilterConfiguration,
+  resolveRecordPresentation,
   newFilterNode,
   type RecordData,
   type RecordQuerySource,
@@ -19,6 +21,9 @@ import {
   type ViewHost,
   type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
+import { useState } from 'react';
+import type { RecordCardRenderContext } from '@ahoo-wang/fetcher-view-engine/react';
+import type { ReactNode } from 'react';
 import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
 import {
   FilterOperator,
@@ -38,7 +43,17 @@ const definition: ViewDefinition = {
   id: 'first-orders',
   sourceId: 'orders',
   title: '第一个数据视图',
+  allowedLayouts: ['table', 'card'],
   rowKey: 'id',
+  defaultPresentation: {
+    card: {
+      title: { id: 'title', field: 'id' },
+      fields: [
+        { id: 'amount', field: 'amount' },
+        { id: 'status', field: 'status' },
+      ],
+    },
+  },
   allowedOperators: [
     FilterOperator.MATCH_ALL,
     FilterOperator.AND,
@@ -161,9 +176,42 @@ const host: ViewHost = {
 
 export function RecordViewExample({
   appearance = 'light',
+  layout = 'table',
+  renderCard,
+  persistViews = false,
 }: {
   appearance?: 'light' | 'dark';
+  layout?: 'table' | 'card';
+  renderCard?(context: RecordCardRenderContext): ReactNode;
+  persistViews?: boolean;
 }) {
+  const [viewHost] = useState(() =>
+    persistViews
+      ? new LocalStorageViewHost({
+          scopeKey: 'card-example-user',
+          serviceKey: 'card-example',
+          storage: localStorage,
+          lock: (name, operation, signal) =>
+            navigator.locks.request(name, { signal }, operation),
+          definition,
+          instances: {
+            ...instances,
+            instances: instances.instances.map(instance => ({
+              ...instance,
+              config: {
+                ...instance.config,
+                presentation: resolveRecordPresentation(
+                  definition,
+                  layout,
+                  instance.config.presentation,
+                ),
+              },
+            })),
+          },
+          resolveSource: host.resolveSource,
+        })
+      : host,
+  );
   return (
     <div
       className="fve-root"
@@ -174,8 +222,28 @@ export function RecordViewExample({
         scopeKey="docs:orders"
         definitionId={definition.id}
         definition={definition}
-        instances={instances}
-        host={host}
+        instances={
+          persistViews
+            ? undefined
+            : layout === 'table'
+              ? instances
+              : {
+                  ...instances,
+                  instances: instances.instances.map(instance => ({
+                    ...instance,
+                    config: {
+                      ...instance.config,
+                      presentation: resolveRecordPresentation(
+                        definition,
+                        layout,
+                        instance.config.presentation,
+                      ),
+                    },
+                  })),
+                }
+        }
+        host={viewHost}
+        renderCard={renderCard}
         initialSidebarCollapsed
         selectable
       />
