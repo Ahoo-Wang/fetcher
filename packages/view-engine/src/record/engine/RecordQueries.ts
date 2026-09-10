@@ -245,7 +245,10 @@ export class RecordQueries {
 
   async retry(id?: string): Promise<void> {
     const session = this.store.session(id);
-    await this.run(session.instance.id);
+    const retainsRows =
+      session.instance.config.pagination.mode === 'paged' &&
+      session.rows.length > 0;
+    await this.run(session.instance.id, retainsRows ? 'refresh' : 'query');
   }
 
   async refresh(

@@ -199,3 +199,34 @@ it.each(['a', 'b'])(
     }
   },
 );
+
+it.each(['table', 'card'] as const)(
+  'keeps %s rows through a failed refresh and repeated retries',
+  async layout => {
+    const { engine, paged } = setup();
+    try {
+      await engine.load();
+      engine.setLayout(layout);
+      const before = selected(engine).rows;
+      const total = selected(engine).total;
+      paged.mockRejectedValueOnce(new Error('refresh failed'));
+      await expect(engine.refresh()).rejects.toThrow('refresh failed');
+      expect(selected(engine).rows).toEqual(before);
+      const retryResult = deferred<unknown>();
+      paged.mockReturnValueOnce(retryResult.promise);
+      const retry = engine.retryQuery();
+      expect(selected(engine).queryStatus).toBe('loading');
+      expect(selected(engine).rows).toEqual(before);
+      expect(selected(engine).total).toBe(total);
+      const failed = expect(retry).rejects.toThrow('retry failed');
+      retryResult.reject(new Error('retry failed'));
+      await failed;
+      expect(selected(engine).rows).toEqual(before);
+      await engine.retryQuery();
+      expect(selected(engine).queryStatus).toBe('success');
+      expect(selected(engine).queryError).toBeNull();
+    } finally {
+      engine.dispose();
+    }
+  },
+);
