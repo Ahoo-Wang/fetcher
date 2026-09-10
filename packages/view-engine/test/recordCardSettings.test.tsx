@@ -152,3 +152,103 @@ it('drops a summary field at the indicated boundary', async () => {
   fireEvent.click(screen.getByRole('button', { name: '应用设置' }));
   expect(onChange.mock.calls[0][0].fields).toEqual([fields[1], fields[0]]);
 });
+
+async function choose(label: string, name: string) {
+  fireEvent.click(screen.getByRole('combobox', { name: label }));
+  const option = await screen.findByRole('option', { name, exact: true });
+  fireEvent.pointerDown(option, { pointerType: 'mouse' });
+  fireEvent.click(option);
+}
+it('edits title, cover and summary fields as a draft and cancels without writing', async () => {
+  const onChange = vi.fn();
+  const card = { title: { id: 'title', field: 'name' }, fields: [] };
+  render(
+    <RecordCardSettings
+      definition={definition}
+      card={card}
+      onChange={onChange}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '卡片设置' }));
+  await screen.findByRole('combobox', { name: '标题字段' });
+  await choose('标题字段', '金额');
+  await choose('封面字段', '名称');
+  await choose('添加摘要字段', '金额');
+  expect(onChange).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  expect(onChange).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '卡片设置' }));
+  expect(
+    (await screen.findByRole('combobox', { name: '标题字段' })).textContent,
+  ).toContain('名称');
+  expect(
+    screen.getByRole('combobox', { name: '封面字段' }).textContent,
+  ).toContain('无封面');
+  await choose('标题字段', '金额');
+  await choose('封面字段', '名称');
+  await choose('添加摘要字段', '金额');
+  fireEvent.click(screen.getByRole('button', { name: '应用设置' }));
+  const applied = onChange.mock.lastCall?.[0];
+  expect(applied.title).toEqual({ id: 'title', field: 'amount' });
+  expect(applied.cover).toEqual({ field: 'name' });
+  expect(applied.fields).toEqual([{ id: expect.any(String), field: 'amount' }]);
+  expect(card).toEqual({ title: { id: 'title', field: 'name' }, fields: [] });
+  fireEvent.click(screen.getByRole('button', { name: '卡片设置' }));
+  await screen.findByRole('combobox', { name: '封面字段' });
+  await choose('封面字段', '名称');
+  await choose('封面字段', '无封面');
+  fireEvent.click(screen.getByRole('button', { name: '应用设置' }));
+  expect(onChange.mock.lastCall?.[0]).not.toHaveProperty('cover');
+});
+
+it('locks every editable control when disabled after opening and preserves the draft', async () => {
+  const card = {
+    title: { id: 'title', field: 'name' },
+    fields: [{ id: 'amount', field: 'amount' }],
+    actions: { renderer: { name: 'custom' } },
+  };
+  const onChange = vi.fn();
+  const view = render(
+    <RecordCardSettings
+      definition={definition}
+      card={card}
+      onChange={onChange}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '卡片设置' }));
+  await screen.findByRole('combobox', { name: '标题字段' });
+  view.rerender(
+    <RecordCardSettings
+      definition={definition}
+      card={card}
+      onChange={onChange}
+      disabled
+    />,
+  );
+  for (const name of ['标题字段', '封面字段', '添加摘要字段'])
+    expect(screen.getByRole('combobox', { name })).toHaveProperty(
+      'disabled',
+      true,
+    );
+  expect(screen.getByRole('button', { name: '移除摘要 1' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  expect(
+    screen
+      .getByRole('checkbox', { name: '显示操作区' })
+      .getAttribute('aria-disabled'),
+  ).toBe('true');
+  fireEvent.click(screen.getByRole('button', { name: '移除摘要 1' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '显示操作区' }));
+  expect(onChange).not.toHaveBeenCalled();
+  view.rerender(
+    <RecordCardSettings
+      definition={definition}
+      card={card}
+      onChange={onChange}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '应用设置' }));
+  expect(onChange).toHaveBeenCalledWith(card);
+});

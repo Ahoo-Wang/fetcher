@@ -334,7 +334,7 @@ unsubscribe();
 engine.dispose();
 ```
 
-`ViewDefinition` contains `id`, `title`, `sourceId`, `rowKey`, `fields` and optional
+`ViewDefinition` contains `id`, `title`, `sourceId`, `rowKey`, `fields`, required `allowedLayouts` and optional
 `timeZone`, `defaultPresentation`, `allowedOperators`, `filterEditors`, `recordActions: {global?, toolbar?, row?}`. A
 `ViewFieldDefinition` extends `FilterFieldDefinition` with `sortable?: boolean`,
 `cellRenderer?: RendererReference`, `summaryFunctions?: readonly RecordSummaryFunction[]`,

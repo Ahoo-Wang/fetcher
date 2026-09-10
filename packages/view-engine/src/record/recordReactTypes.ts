@@ -73,7 +73,7 @@ export interface GlobalActionsRendererProps extends RecordActionsContext {
   selectedRowKeys: readonly RecordKey[];
   querying: boolean;
 }
-/** Table operations receive the current page selection and the applied query scope. */
+/** Toolbar operations receive the current page selection and the applied query scope. */
 export type ToolbarActionsRendererProps = GlobalActionsRendererProps;
 export interface RowActionsRendererProps extends RecordActionsContext {
   readonly record: DeepReadonly<RecordData>;

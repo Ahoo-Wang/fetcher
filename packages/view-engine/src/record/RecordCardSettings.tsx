@@ -41,11 +41,13 @@ function FieldChoice({
   value,
   options,
   onChange,
+  disabled,
 }: {
   label: string;
   value: string | null;
   options: { value: string; label: string }[];
   onChange(value: string | null): void;
+  disabled?: boolean;
 }) {
   return (
     <div className="fve:flex fve:flex-col fve:gap-1">
@@ -53,8 +55,10 @@ function FieldChoice({
       <Select
         value={value}
         items={options}
-        onValueChange={onChange}
-        disabled={options.length === 0}
+        onValueChange={value => {
+          if (!disabled) onChange(value);
+        }}
+        disabled={disabled || options.length === 0}
       >
         <SelectTrigger aria-label={label}>
           <SelectValue
@@ -144,6 +148,7 @@ export function RecordCardSettings({
           设置标题、封面与摘要字段，拖动手柄调整摘要顺序，应用到当前视图。
         </PopoverDescription>
         <FieldChoice
+          disabled={disabled}
           label="标题字段"
           value={draft.title.field}
           options={titles}
@@ -152,6 +157,7 @@ export function RecordCardSettings({
           }}
         />
         <FieldChoice
+          disabled={disabled}
           label="封面字段"
           value={draft.cover?.field ?? ''}
           options={[
@@ -217,7 +223,9 @@ export function RecordCardSettings({
                 size="icon-sm"
                 variant="ghost"
                 aria-label={`移除摘要 ${index + 1}`}
+                disabled={disabled}
                 onClick={() => {
+                  if (disabled) return;
                   setDraft({
                     ...draft,
                     fields: draft.fields.filter(item => item.id !== field.id),
@@ -234,6 +242,7 @@ export function RecordCardSettings({
         </ol>
         <div ref={addRef}>
           <FieldChoice
+            disabled={disabled}
             label="添加摘要字段"
             value={null}
             options={fields.filter(
@@ -251,12 +260,14 @@ export function RecordCardSettings({
         {(draft.actions || definition.recordActions?.row) && (
           <label className="fve:flex fve:items-center fve:gap-2">
             <Checkbox
+              disabled={disabled}
               checked={
                 draft.actions !== undefined && draft.actions.visible !== false
               }
-              onCheckedChange={visible =>
-                setDraft({ ...draft, actions: { ...draft.actions, visible } })
-              }
+              onCheckedChange={visible => {
+                if (disabled) return;
+                setDraft({ ...draft, actions: { ...draft.actions, visible } });
+              }}
             />
             显示操作区
           </label>

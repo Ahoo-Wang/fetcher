@@ -39,7 +39,7 @@ export function RecordActions({
     registry && Object.prototype.hasOwnProperty.call(registry, reference.name)
       ? registry[reference.name]
       : undefined;
-  const label = kind === 'global' ? '全局操作' : '表格操作';
+  const label = kind === 'global' ? '全局操作' : '工具栏操作';
   return (
     <div
       role="group"

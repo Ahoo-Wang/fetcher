@@ -141,7 +141,7 @@ it('recovers batch actions on selection changes without retrying on unrelated dr
     />,
   );
   await act(() => engine.setSelection([0]));
-  expect(screen.getByText('表格操作渲染失败')).toBeTruthy();
+  expect(screen.getByText('工具栏操作渲染失败')).toBeTruthy();
   const failedAttempts = attempts;
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
     target: { value: '99' },
@@ -149,7 +149,7 @@ it('recovers batch actions on selection changes without retrying on unrelated dr
   expect(attempts).toBe(failedAttempts);
   await act(() => engine.setSelection([1]));
   expect(screen.getByRole('button', { name: '可处理 1' })).toBeTruthy();
-  expect(screen.queryByText('表格操作渲染失败')).toBeNull();
+  expect(screen.queryByText('工具栏操作渲染失败')).toBeNull();
   engine.dispose();
 });
 it('recovers global actions when a pending query finishes', async () => {

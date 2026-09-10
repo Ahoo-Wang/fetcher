@@ -173,3 +173,29 @@ it('keeps paged cards mounted during an explicit refresh of the same query', asy
     engine.dispose();
   }
 });
+
+it.each(['a', 'b'])(
+  'reconciles selections made during refresh against returned key %s',
+  async key => {
+    const { engine, paged } = setup();
+    try {
+      await engine.load();
+      engine.setLayout('card');
+      const pending = deferred<{
+        list: { state: { id: string; amount: number } }[];
+        total: number;
+      }>();
+      paged.mockReturnValueOnce(pending.promise);
+      const refresh = engine.refresh();
+      engine.setSelection(['a']);
+      expect(selected(engine).selectedRowKeys).toEqual(['a']);
+      pending.resolve({ list: [{ state: { id: key, amount: 10 } }], total: 1 });
+      await refresh;
+      expect(selected(engine).selectedRowKeys).toEqual(
+        key === 'a' ? ['a'] : [],
+      );
+    } finally {
+      engine.dispose();
+    }
+  },
+);

@@ -14,6 +14,7 @@
 import { afterEach, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { CellRendererProps } from '../src/record/recordReactTypes.js';
+import { RecordTable } from '../src/record/RecordTable.js';
 import { RecordCardList } from '../src/record/RecordCardList.js';
 import { props } from './fixtures/recordTable.js';
 afterEach(cleanup);
@@ -187,6 +188,109 @@ it('isolates custom card failures without removing sibling cards or selection', 
     expect(screen.getByRole('alert').textContent).toBe('卡片内容渲染失败');
     expect(screen.getByRole('heading', { name: 'B' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '选择记录 a' })).toBeTruthy();
+  } finally {
+    log.mockRestore();
+  }
+});
+
+it('renders configured summary fields and removes only the toggled selection', () => {
+  const base = props();
+  const selection = vi.fn();
+  render(
+    <RecordCardList
+      {...base}
+      selectable
+      selectedRowKeys={['a', 'b']}
+      onSelectionChange={selection}
+      instance={{
+        ...base.instance,
+        config: {
+          ...base.instance.config,
+          presentation: {
+            layout: 'card',
+            card: {
+              title: { id: 'title', field: 'name' },
+              fields: [
+                { id: 'amount', field: 'amount' },
+                { id: 'detail', field: 'detail', title: '说明' },
+              ],
+            },
+          },
+        },
+      }}
+      rows={[
+        { meta: { id: 'a' }, name: '商品 A', amount: 42, detail: '现货' },
+        { meta: { id: 'b' }, name: '商品 B', amount: 0, detail: '预售' },
+      ]}
+    />,
+  );
+  expect(screen.getAllByText('金额')).toHaveLength(2);
+  expect(screen.getAllByText('说明')).toHaveLength(2);
+  expect(screen.getByText('现货')).toBeTruthy();
+  expect(screen.getByText('预售')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '选择记录 a' }));
+  expect(selection).toHaveBeenLastCalledWith(['b']);
+  fireEvent.click(screen.getByRole('checkbox', { name: '选择本页全部记录' }));
+  expect(selection).toHaveBeenLastCalledWith([]);
+});
+it('renders loading, stale-result failure and retry independently from empty results', () => {
+  const base = props();
+  const card = {
+    ...base.instance,
+    config: {
+      ...base.instance.config,
+      presentation: {
+        layout: 'card' as const,
+        card: { title: { id: 'title', field: 'name' }, fields: [] },
+      },
+    },
+  };
+  const retry = vi.fn();
+  const view = render(
+    <RecordCardList {...base} instance={card} rows={[]} querying />,
+  );
+  expect(screen.getByText('正在查询').getAttribute('role')).toBe('status');
+  expect(screen.queryByText('暂无数据')).toBeNull();
+  view.rerender(
+    <RecordCardList
+      {...base}
+      instance={card}
+      rows={[{ meta: { id: 'a' }, name: '缓存结果' }]}
+      queryError="网络中断"
+      onQueryRetry={retry}
+    />,
+  );
+  expect(screen.getByRole('alert').textContent).toContain('显示上次查询结果');
+  expect(screen.getByRole('heading', { name: '缓存结果' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '重试查询' }));
+  expect(retry).toHaveBeenCalledOnce();
+  view.rerender(<RecordCardList {...base} instance={card} rows={[]} />);
+  expect(screen.getByRole('status').textContent).toBe('暂无数据');
+});
+it('rejects mismatched layouts at both standalone renderer boundaries', () => {
+  const base = props();
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    expect(() => render(<RecordCardList {...base} />)).toThrow(
+      '需要 card 布局',
+    );
+    expect(() =>
+      render(
+        <RecordTable
+          {...base}
+          instance={{
+            ...base.instance,
+            config: {
+              ...base.instance.config,
+              presentation: {
+                layout: 'card',
+                card: { title: { id: 'title', field: 'name' }, fields: [] },
+              },
+            },
+          }}
+        />,
+      ),
+    ).toThrow('需要 table 布局');
   } finally {
     log.mockRestore();
   }

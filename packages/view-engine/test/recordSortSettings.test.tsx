@@ -75,3 +75,67 @@ it('reorders active rules and removes them without persisting drag metadata', as
   expect(screen.getByText('尚未设置排序')).toBeTruthy();
   expect(onChange.mock.lastCall?.[0]).toEqual([]);
 });
+
+it('hides sorting when no fields support it and prevents edits while disabled', async () => {
+  const onChange = vi.fn();
+  const sort = [{ field: 'amount', direction: SortDirection.ASC }];
+  const view = render(
+    <RecordSortSettings
+      definition={{ ...definition, fields: [] }}
+      sort={[]}
+      onChange={onChange}
+    />,
+  );
+  expect(screen.queryByRole('button')).toBeNull();
+  view.rerender(
+    <RecordSortSettings
+      definition={definition}
+      sort={sort}
+      onChange={onChange}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '排序：金额 ↑' }));
+  await screen.findByRole('button', { name: '清除全部' });
+  view.rerender(
+    <RecordSortSettings
+      definition={definition}
+      sort={sort}
+      onChange={onChange}
+      disabled
+    />,
+  );
+  expect(screen.getByRole('combobox', { name: '金额排序' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '清除全部' }));
+  fireEvent.click(screen.getByRole('button', { name: '移除金额排序' }));
+  expect(onChange).not.toHaveBeenCalled();
+});
+it('offers chronological direction labels and stops adding at the contract limit', async () => {
+  const fields = Array.from({ length: 33 }, (_, index) => ({
+    field: `date${index}`,
+    label: `日期${index}`,
+    type: 'datetime' as const,
+    sortable: true,
+  }));
+  const sort = fields
+    .slice(0, 32)
+    .map(field => ({ field: field.field, direction: SortDirection.ASC }));
+  render(
+    <RecordSortSettings
+      definition={{ ...definition, fields }}
+      sort={sort}
+      onChange={vi.fn()}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: /^排序：/ }));
+  const add = await screen.findByRole('combobox', { name: '添加排序' });
+  expect(add).toHaveProperty('disabled', true);
+  expect(add.textContent).toContain('最多 32 条排序');
+  expect(
+    screen.getByRole('combobox', { name: '日期0排序' }).textContent,
+  ).toContain('从早到晚');
+  fireEvent.click(screen.getByRole('combobox', { name: '日期0排序' }));
+  expect(await screen.findByRole('option', { name: '从晚到早' })).toBeTruthy();
+});
