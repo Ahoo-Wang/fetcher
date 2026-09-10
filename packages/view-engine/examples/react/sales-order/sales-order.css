@@ -314,23 +314,29 @@
   .sales-workbench {
     padding: 12px;
   }
+
   .sales-header {
     flex-direction: column;
     gap: 16px;
   }
+
   .sales-header h2 {
     font-size: 21px;
   }
+
   .sales-controls {
     width: 100%;
     justify-content: space-between;
   }
+
   .sales-item-form {
     grid-template-columns: 1fr 1fr;
   }
+
   .sales-dialog {
     padding: 20px;
   }
+
   .sales-totals {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -373,6 +379,7 @@
   background: var(--fve-background);
   color: var(--fve-foreground);
 }
+
 .sales-actions {
   margin-bottom: 16px;
   border-bottom: 1px solid var(--fve-border);
@@ -385,10 +392,12 @@
   gap: 12px;
   margin: 16px 0;
 }
+
 .sales-order-context dt {
   font-size: 12px;
   color: var(--fve-muted-foreground);
 }
+
 .sales-order-context dd {
   font-size: 13px;
   margin: 4px 0;
