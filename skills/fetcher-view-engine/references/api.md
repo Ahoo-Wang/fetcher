@@ -404,18 +404,19 @@ MemoryViewHost implements the same contracts with a shared storage transaction.
 To override one operation without dropping its siblings, merge the service:
 `{...host, instance: {...host.instance, save: customSave}}`.
 
-| Host member                                                          | Contract                                                                                                                                                                                         |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `definition.load(id, signal?)`                                       | Async complete definition. Optional when local definition is supplied.                                                                                                                           |
-| `instance.list(definitionId, signal?)`                               | Async `ViewInstanceList`; complete instances and a nullable default ID, no duplicate per-item load. Optional with local list.                                                                    |
-| `instance.load(id, signal?)`                                         | Async full instance, used for an unknown selection or explicit reload.                                                                                                                           |
-| `resolveSource(sourceId)`                                            | Required configured `RecordQuerySource`, or Promise of source; requires at least one of Wow `paged` or `cursor`, with optional `aggregate` for all-record summaries.                             |
-| `permission.getInstance(instance)`                                   | `{save, saveAsPersonal, saveAsShared, delete?, rename?}`; absent means false. Missing write callbacks also disable the corresponding capability.                                                 |
-| `instance.save(instance)`                                            | Async full same instance and submitted content, with a new revision if used.                                                                                                                     |
-| `instance.delete(id, revision?)`                                     | Optional `Promise<void>`; resolve only after deletion, treat already absent as success. Enforce caller access, system-view protection and optimistic revision checks in the host service.        |
-| `instance.rename(id, title, revision?)`                              | Optional `Promise<ViewInstance>`; changes only title and returns the complete persisted instance with its revision. Must preserve config, scope, ID and definition.                              |
-| `preference.saveOrder(definitionId, instanceIds)`                    | Optional `Promise<void>`; saves the fixed current user's complete display order. `instance.list` should subsequently return that order. It does not change shared/public metadata or visibility. |
-| `instance.create(instanceWithoutIdOrRevision, {requestId, signal?})` | Async full newly identified instance with exactly the submitted content.                                                                                                                         |
+| Host member                                                          | Contract                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `definition.load(id, signal?)`                                       | Async complete definition. Optional when local definition is supplied.                                                                                                                                |
+| `instance.list(definitionId, signal?)`                               | Async `ViewInstanceList`; complete instances and a nullable default ID, no duplicate per-item load. Optional with local list.                                                                         |
+| `instance.load(id, signal?)`                                         | Async full instance, used for an unknown selection or explicit reload.                                                                                                                                |
+| `resolveSource(sourceId)`                                            | Required configured `RecordQuerySource`, or Promise of source; requires at least one of Wow `paged` or `cursor`, with optional `aggregate` for all-record summaries.                                  |
+| `permission.getInstance(instance)`                                   | `{save, saveAsPersonal, saveAsShared, delete?, rename?}`; absent means false. Missing write callbacks also disable the corresponding capability.                                                      |
+| `instance.save(instance)`                                            | Async full same instance and submitted content, with a new revision if used.                                                                                                                          |
+| `instance.delete(id, revision?)`                                     | Optional `Promise<ViewDeleteResult>`; resolve only after deletion, treat already absent as success. Enforce caller access, system-view protection and optimistic revision checks in the host service. |
+| `instance.rename(id, title, revision?)`                              | Optional `Promise<ViewInstance>`; changes only title and returns the complete persisted instance with its revision. Must preserve config, scope, ID and definition.                                   |
+| `preference.saveOrder(definitionId, instanceIds)`                    | Optional `Promise<void>`; saves the fixed current user's complete display order. `instance.list` should subsequently return that order. It does not change shared/public metadata or visibility.      |
+| `preference.saveDefault(definitionId, instanceId)`                   | Optional `Promise<void>`; saves the fixed current user's default for that definition. `instanceId` is a currently visible ID or `null`; null explicitly leaves the user without a default.            |
+| `instance.create(instanceWithoutIdOrRevision, {requestId, signal?})` | Async full newly identified instance with exactly the submitted content.                                                                                                                              |
 
 Deletion requires both `delete: true` and `host.instance.delete`; omission disables
 it. System instances (`public/system`) are never deletable or renamable, even if the host
@@ -429,8 +430,26 @@ and queries it; deleting another instance preserves current selection. No
 remaining instances leaves a ready, empty page. Query errors in the replacement
 view do not turn a completed deletion into a failed deletion. A late request
 completion after `load()` or `dispose()` cannot modify the new lifecycle.
-The host owns persisted list/default maintenance, including for local definitions;
-use an updated local instance list when constructing a new engine.
+`instance.delete` returns `ViewDeleteResult`, whose required `defaultInstance` is
+`ViewInstance | null`: the calling user's authoritative default from the deletion
+transaction, including an idempotent repeat of an already completed deletion.
+The engine validates the receipt and takes its default ID instead of inferring one
+from stale local order. It initializes a returned default that is not loaded yet;
+existing sessions and their drafts stay intact. No second list request is needed.
+An invalid receipt requires deletion reconciliation through the same idempotent
+retry, without discarding the local editor. Default writes and deletions are
+mutually exclusive within one engine so an older receipt cannot override a newer
+local default write. The default-save lock survives `load()` until the host request
+settles; lifecycle invalidation only prevents stale responses from publishing.
+
+The host owns persisted list/default maintenance, including for local definitions.
+Deleting a default instance must atomically replace that ID for every affected
+user with the first remaining instance in that user's visible order, or null. A user
+first seen after deletion resolves the seed default against their actual visibility.
+Explicit null and another user's still-visible personal instance with the same ID
+remain unchanged. An inaccessible other-user personal instance is never deleted.
+MemoryViewHost and IndexedDBViewHost implement these rules in one storage
+transaction. Use an updated local instance list when constructing a new engine.
 `ViewPage` exposes a unified Manage views dialog beside the sidebar heading.
 The view switcher dropdown includes a footer action with its icon and label;
 there is no separate management icon beside the switcher trigger. Opening the
@@ -465,6 +484,25 @@ selects a view nor queries data. Failure leaves the previous order intact. If
 membership changes while saving, completion preserves added IDs and never
 resurrects deleted IDs. The host must validate current-user access and persist
 these preferences under that user's identity, including for public/system views.
+
+`canSetDefaultInstance()` reports whether `preference.saveDefault` is available.
+`setDefaultInstance(instanceId: string | null)` accepts a current instance ID or
+explicit null, persists before publishing, and neither selects a view nor queries
+data. It does not save or discard unsaved drafts. Reordering never changes the default. The required snapshot field
+`defaultInstanceId` and required capability field `setDefault` expose the result
+and availability independently from `selectedInstanceId`. Any visible personal,
+shared or system instance can be selected without edit permission. The preference
+is scoped by user and definition; null prevents automatic selection on the next
+entry.
+
+```ts
+if (engine.canSetDefaultInstance()) {
+  await engine.setDefaultInstance('my-view');
+  await engine.setDefaultInstance(null);
+}
+```
+
+`my-view` must come from the current instance list.
 
 Local input uses `new ViewEngine({definitionId,host,definition,instances,filterCompilers})`. Optional `filterCompilers` supplies the React-independent capabilities for this directly owned engine; keep them consistent throughout the engine scope. `ViewPage` does not accept this option and derives the same capabilities solely from `extensions.filters`. Unknown saved components remain in configuration and block queries until their compiler is available.
 An empty list with `defaultInstanceId: null` leaves selection empty without a query.
@@ -525,6 +563,7 @@ Reload keeps editable title/configuration and filter drafts, but always adopts t
 - `setTitle(title,id?)`, `restore(id?)`, `save(id?)`,
   `saveAs({title,scope},id?)`, `deleteInstance(id?)`, `renameInstance(title,id?)`, `getPermissions(id?)`.
 - `canReorderInstances()`, `reorderInstances(instanceIds)` save the current user's navigation order.
+- `canSetDefaultInstance()`, `setDefaultInstance(instanceId)` save or explicitly clear the current user's default.
 
 `filterPending` is derived from compiler errors, local editor validity and equality
 between the compiled draft and `appliedFilter` using `sameFilterQuery`. `setFilterDraft` compiles the
@@ -989,7 +1028,7 @@ default `--fve-border` token; it never resets unrelated host elements.
 
 The published `/react` entry is built with React Compiler using the repository Vite `reactCompilerPreset`. Compiler packages are development dependencies; React 19 supplies `react/compiler-runtime`. Consumers do not configure the compiler. Core runtime imports remain React-free and packed verification enforces both entry boundaries.
 
-`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with `reorder` and `instances[id].{permissions,reload,retryDelete}`; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host or notify permission.subscribe when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit caches remain for the controlled configuration clone and theme capture to stabilize Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.
+`ViewEngine.updateHost(nextHost: ViewHost): void` replaces same-scope callbacks/policy and notifies `subscribe`, preserving sessions and drafts without querying records. `ViewPage` calls it after committing a new host prop. Different user/tenant/access scopes require a new engine. `getCapabilitiesSnapshot(): ViewCapabilities` returns a cached, deeply immutable snapshot with required `reorder`, `setDefault` and `instances[id].{permissions,reload,retryDelete}` fields; consume it with `useSyncExternalStore(engine.subscribe, engine.getCapabilitiesSnapshot, engine.getCapabilitiesSnapshot)` for render-time capability reads. `getPermissions`, `canReorderInstances`, `canSetDefaultInstance`, and `canReloadInstance` remain live imperative checks, not React render subscriptions. Policy callbacks must be pure; replace the host or notify permission.subscribe when external policy inputs change rather than silently mutating closures. Commands still recheck live policy. No component opts out with `use no memo`; pure calculation and render caching is compiler-owned. Explicit caches remain for the controlled configuration clone and theme capture to stabilize Effect dependencies. Error-boundary recovery follows render inputs, not event-handler identity. Package `test` runs the same suite without and with compilation (`test:compiled`), plus type checks; Storybook exercises compiled public exports.
 
 ### View service contracts and development adapters
 
@@ -997,7 +1036,7 @@ The published `/react` entry is built with React Compiler using the repository V
 instance, preference and permission service interfaces. They remain type exports
 from the public package. `recordModel.ts` contains record metadata and engine state.
 
-Core exports MemoryViewHost, MemoryViewHostOptions, ViewCreateContext,
+Core exports MemoryViewHost, MemoryViewHostOptions, ViewCreateContext, ViewDeleteResult,
 ViewPermissionSnapshot, ViewServiceError and ViewServiceErrorCode.
 HttpViewHost, all HTTP resource clients/transport and VIEW_SERVICE_STATUS are **not**
 public exports. They live under `packages/view-engine/dev/http` and are excluded from
@@ -1142,7 +1181,7 @@ Core `formatRecordNumber(value: number, field: Pick<ViewFieldDefinition, 'number
 
 An unconfirmed create retains its original requestId, submitted snapshot and original known IDs until validated completion. A rejected retry does not prove an earlier attempt failed. Full engine load preserves in-flight/unconfirmed requests; replaying the original request remains possible even when ordinary writes are blocked. reloadInstance replays unknown creates through instance.create using the same key/body; it never adopts a new list item based on matching content. A response that explicitly identifies the new instance may instead be checked through instance.load or exact ID lookup in instance.list. Existing independently opened copies keep their own edits and newer baselines. Pending requests are engine-lifetime state, not serialized view configuration. Successful save-as and reconciliation complete independently of the following record request; record failures remain in the selected session query state and can be retried with `retryQuery`, without reissuing creation. Selecting the already-active valid instance clears a prior navigation error without querying or replacing its draft.
 
-Instance validation enforces `definition.allowedOperators` together with field-level operator compatibility before publishing host responses; this structural check preserves opaque component props without running custom compilers. Instance lists must provide `defaultInstanceId: null` or the ID of a member; invalid or omitted defaults are rejected before sessions are published. An optional `revision`, when supplied, must be a nonblank string. MemoryViewHost preserves explicit null default selection and create does not update that preference. A removed previously specified default can fall back to an available instance. Scoped absent deletion is a successful no-op; it never removes a hidden private instance. Existing visible instances retain permission and revision checks.
+Instance validation enforces `definition.allowedOperators` together with field-level operator compatibility before publishing host responses; this structural check preserves opaque component props without running custom compilers. Instance lists must provide `defaultInstanceId: null` or the ID of a member; invalid or omitted defaults are rejected before sessions are published. An optional `revision`, when supplied, must be a nonblank string. MemoryViewHost and IndexedDBViewHost preserve explicit null, never change the default on create or reorder, atomically normalize every affected user's default on deletion, and resolve a later new user's seed default against actual visibility. Scoped absent deletion is a successful no-op; it never removes a hidden private instance. Existing visible instances retain permission and revision checks.
 
 Remote onValueChange uses current candidate labels for newly added/reselected IDs; unchanged IDs preserve their existing saved snapshots, excluding unavailable decorations. Paste replaces the selected text or inserts at the caret before tokenization. Datetime range compilation uses the shared strict scalar validation, so false/0 in the date/time properties cannot become an unset filter. DateTimeCell accepts explicit calendar/clock forms (T/t or whitespace, optional Z/z or numeric offset), rejects unsupported text, and never uses the host timezone to interpret a field-zoned local string.
 

@@ -17,6 +17,8 @@ description: Choose the right ownership layer and configure controls, cells and 
 
 `ViewPage`/`RecordView` accept `extensions`, `filterContext`, `selectable` (default false), `autoRefreshPaused` (default false), and `className`. ViewPage also accepts `initialSidebarCollapsed`; RecordView has `toolbarStart`. RecordTable separately accepts query/summary states and retry callbacks.
 
+The view manager shows a Set default/Clear default action only when `getCapabilitiesSnapshot().setDefault` is true. The marker follows `state.defaultInstanceId`; changing it does not navigate away from the selected view.
+
 ## Built-in cell props
 
 All standalone cells accept `className`. Configured renderer options are intentionally narrower than standalone props.

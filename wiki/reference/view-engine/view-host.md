@@ -15,8 +15,9 @@ description: Definition, instance, preference, permission and query-source respo
 | `instance`   | `create(instanceWithoutIdOrRevision, context)` | Authoritative created instance; context carries requestId and optional signal |
 | `instance`   | `save(instance)`                               | Saved instance with authoritative revision                                    |
 | `instance`   | `rename(instanceId, title, revision?)`         | Renamed instance                                                              |
-| `instance`   | `delete(instanceId, revision?)`                | `Promise<void>`                                                               |
+| `instance`   | `delete(instanceId, revision?)`                | `Promise<ViewDeleteResult>`                                                   |
 | `preference` | `saveOrder(definitionId, instanceIds)`         | Persist the current user's ordering                                           |
+| `preference` | `saveDefault(definitionId, instanceId)`        | Persist the current user's default; `instanceId` is `string \| null`          |
 | `permission` | `getInstance(instance)`                        | Synchronous `ViewInstancePermissions`                                         |
 | `permission` | `getDefinition()`                              | Synchronous `{ reorder }` projection                                          |
 | `permission` | `load(definitionId, signal?)`                  | Initialize getters; resolve a `ViewPermissionSnapshot`                        |
@@ -24,6 +25,8 @@ description: Definition, instance, preference, permission and query-source respo
 | host         | `resolveSource(sourceId)`                      | A `RecordQuerySource` or Promise of one                                       |
 
 Engine loading awaits `permission.load`, falling back to `permission.refresh` when load is absent. Permission initialization failure prevents ready state. A getter must be pure and expose the initialized policy. Notify subsequent changes or replace the host; mutating an invisible closure does not notify React.
+
+`ViewDeleteResult` has the required field `defaultInstance: ViewInstance | null`: the calling user's authoritative default from the deletion transaction. Idempotent repeats also return this receipt; null explicitly means no default. The engine validates and adopts its ID rather than inferring from stale local order or making an extra list request. It initializes a returned default that is not loaded yet, preserving existing sessions and drafts. An invalid receipt retains local edits and requires reconciliation by retrying the original deletion. Deletions and default-preference writes are mutually exclusive within one engine.
 
 ## Writes and uncertainty
 
@@ -37,7 +40,7 @@ After save, rename or delete is dispatched, UNKNOWN_OUTCOME, UNAVAILABLE and unc
 
 ## Browser persistence and in-process services
 
-Use `IndexedDBViewHost` from `/react` for browser persistence and `MemoryViewHost` from the core entry for memory examples and Node HTTP fixtures. They share permission, revision, create-receipt, user-isolation and ordering rules; storage uses native IndexedDB transactions or a Map respectively.
+Use `IndexedDBViewHost` from `/react` for browser persistence and `MemoryViewHost` from the core entry for memory examples and Node HTTP fixtures. They share permission, revision, create-receipt, user-isolation, ordering and default-view rules; storage uses native IndexedDB transactions or a Map respectively.
 
 Required options: `serviceKey`, `scopeKey`, `definition`, `instances`, `resolveSource`. Optional policy callbacks: `instancePermissions`, `canReorder`, `permissionsRevision`. The browser host additionally accepts `databaseName` (default `fve-view-state`); the memory host accepts `store?: Map<string, string | null>`. Memory hosts share state only when explicitly given the same Map.
 
@@ -54,5 +57,7 @@ const host = new IndexedDBViewHost({
 ```
 
 Browser reads, CAS and writes use one readwrite transaction. Success follows commit; failure and cancellation roll back. `reset()` atomically clears the service/definition's user views, ordering and receipts. Business records remain a separate query source. In-memory transactions complete read, validation and update in one synchronous JS call stack.
+
+`saveDefault` stores a preference scoped to the current user and definition. It accepts any currently visible personal, shared or system instance without requiring edit permission, or `null`; null leaves the next entry without automatic selection. Setting a default does not select it or query records, and later ordering changes do not change it. When a default instance is deleted, the host transaction updates every affected user's default to the first remaining instance in that user's visible order, or null. Explicit null and another user's still-visible personal instance with the same ID remain unchanged. A user first seen after that deletion seeds a default resolved against their actual visibility. Deleting an inaccessible personal instance is still a scoped no-op.
 
 After building, run `pnpm verify:view-engine` for packed-package, HTTP, cross-tab CAS, cancellation, reset and real-page checks. Client storage and development services are not production authorization boundaries.

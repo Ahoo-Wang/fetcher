@@ -9,7 +9,7 @@ description: Own engine lifetimes, read immutable snapshots and issue scoped com
 
 `new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers? })` creates a headless runtime. Call `await engine.load()` and eventually `engine.dispose()`. React applications usually let `ViewPage` own this lifecycle. Reusing a disposed engine is invalid.
 
-`getSnapshot()` returns a cached immutable `ViewEngineState`; `subscribe(listener)` returns an unsubscribe function. State has status/error/definition, instance IDs, selected ID and per-instance sessions. `getCapabilitiesSnapshot()` exposes immutable permission/capability projections through the same subscription. Do not mutate snapshots.
+`getSnapshot()` returns a cached immutable `ViewEngineState`; `subscribe(listener)` returns an unsubscribe function. State has status/error/definition, instance IDs, selected ID, `defaultInstanceId` and per-instance sessions. `getCapabilitiesSnapshot()` exposes required `reorder`, `setDefault` and per-instance capability projections through the same subscription. Do not mutate snapshots.
 
 ## Session state
 
@@ -40,6 +40,7 @@ Unless specified otherwise, optional `id` selects an instance; omission uses the
 | `refreshSummary(id?)`                                                                                     | Retry aggregate scope separately                                    |
 | `save(id?)`, `saveAs({ title, scope }, id?)`                                                              | Persist through host services                                       |
 | `renameInstance(title, id?)`, `deleteInstance(id?)`, `reorderInstances(ids)`                              | Manage service-owned views/preferences                              |
+| `canSetDefaultInstance()`, `setDefaultInstance(instanceId)`                                               | Check/save the current user's default; accepts an ID or null        |
 | `restore(id?)`                                                                                            | Restore the saved local baseline and query                          |
 | `reloadInstance(id?)`, `canReloadInstance(id?)`                                                           | Reload/reconcile an instance from the host                          |
 | `getPermissions(id?)`, `canReorderInstances()`                                                            | Check current action policy                                         |
@@ -47,3 +48,5 @@ Unless specified otherwise, optional `id` selects an instance; omission uses the
 | `dispose()`                                                                                               | End subscriptions and cancel owned reads                            |
 
 Do not create an extra engine-level transport protocol. Use the provided source's QueryApi methods, forward AbortController, and keep write authorization and persistence in ViewHost services. Query cancellation and stale-response rejection preserve ownership; they cannot undo completed business writes.
+
+`setDefaultInstance` requires `host.preference.saveDefault`. A non-null ID must belong to the current instance list; edit permission is irrelevant. The command persists before publishing `defaultInstanceId`; it does not change `selectedInstanceId`, query records, or save or discard unsaved drafts. Passing null explicitly clears the default, so the next entry does not auto-select an instance.

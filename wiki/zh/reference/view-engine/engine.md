@@ -9,7 +9,7 @@ description: 管理引擎生命周期，读取不可变快照并执行实例作�
 
 `new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers? })` 创建无头运行时。调用 `await engine.load()`，结束时调用 `engine.dispose()`。React 应用通常交给 `ViewPage` 管理，已释放的引擎不能继续复用。
 
-`getSnapshot()` 返回缓存的不可变 `ViewEngineState`，`subscribe(listener)` 返回取消订阅函数。状态包含 status/error/definition、实例 ID、当前实例与各实例会话。`getCapabilitiesSnapshot()` 通过同一订阅机制提供不可变权限/能力投影。不要直接修改快照。
+`getSnapshot()` 返回缓存的不可变 `ViewEngineState`，`subscribe(listener)` 返回取消订阅函数。状态包含 status/error/definition、实例 ID、当前实例、`defaultInstanceId` 与各实例会话。`getCapabilitiesSnapshot()` 通过同一订阅机制提供必填的 `reorder`、`setDefault` 和每实例能力投影。不要直接修改快照。
 
 ## 会话状态
 
@@ -28,22 +28,25 @@ description: 管理引擎生命周期，读取不可变快照并执行实例作�
 
 下表中可选 `id` 指定实例，省略时使用当前实例。异步操作返回 `Promise<void>`，调用方需处理失败。
 
-| 命令                                                                                                      | 作用                               |
-| --------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `selectInstance(id)`                                                                                      | 导航并加载对应记录                 |
-| `setFilterDraft(configuration, id?, valid?)`、`setFilterValidity(valid, id?)`、`setFilterMode(mode, id?)` | 编辑，不查询                       |
-| `applyFilter(id?)`                                                                                        | 编译当前配置、接受配置并查询       |
-| `setSort(sort, id?)`、`setPage(index, id?)`、`setPageSize(size, id?)`、`nextPage(id?)`                    | 应用记录查询与导航变化             |
-| `setColumns(columns, id?)`                                                                                | 修改展示；汇总指标变化可能发起聚合 |
-| `setSelection(keys, id?)`、`setTitle(title, id?)`                                                         | 修改本地选择或标题                 |
-| `refresh(id?, { background? })`                                                                           | 查询当前已应用范围                 |
-| `refreshSummary(id?)`                                                                                     | 独立重试聚合范围                   |
-| `save(id?)`、`saveAs({ title, scope }, id?)`                                                              | 经宿主服务保存                     |
-| `renameInstance(title, id?)`、`deleteInstance(id?)`、`reorderInstances(ids)`                              | 管理服务端视图与用户偏好           |
-| `restore(id?)`                                                                                            | 恢复本地保存基线并查询             |
-| `reloadInstance(id?)`、`canReloadInstance(id?)`                                                           | 从宿主重载并协调实例               |
-| `getPermissions(id?)`、`canReorderInstances()`                                                            | 检查当前操作权限                   |
-| `updateHost(host)`                                                                                        | 更新同范围回调/策略并保留会话      |
-| `dispose()`                                                                                               | 结束订阅并取消拥有的读取           |
+| 命令                                                                                                      | 作用                                      |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `selectInstance(id)`                                                                                      | 导航并加载对应记录                        |
+| `setFilterDraft(configuration, id?, valid?)`、`setFilterValidity(valid, id?)`、`setFilterMode(mode, id?)` | 编辑，不查询                              |
+| `applyFilter(id?)`                                                                                        | 编译当前配置、接受配置并查询              |
+| `setSort(sort, id?)`、`setPage(index, id?)`、`setPageSize(size, id?)`、`nextPage(id?)`                    | 应用记录查询与导航变化                    |
+| `setColumns(columns, id?)`                                                                                | 修改展示；汇总指标变化可能发起聚合        |
+| `setSelection(keys, id?)`、`setTitle(title, id?)`                                                         | 修改本地选择或标题                        |
+| `refresh(id?, { background? })`                                                                           | 查询当前已应用范围                        |
+| `refreshSummary(id?)`                                                                                     | 独立重试聚合范围                          |
+| `save(id?)`、`saveAs({ title, scope }, id?)`                                                              | 经宿主服务保存                            |
+| `renameInstance(title, id?)`、`deleteInstance(id?)`、`reorderInstances(ids)`                              | 管理服务端视图与用户偏好                  |
+| `canSetDefaultInstance()`、`setDefaultInstance(instanceId)`                                               | 检查并保存当前用户默认项；接受 ID 或 null |
+| `restore(id?)`                                                                                            | 恢复本地保存基线并查询                    |
+| `reloadInstance(id?)`、`canReloadInstance(id?)`                                                           | 从宿主重载并协调实例                      |
+| `getPermissions(id?)`、`canReorderInstances()`                                                            | 检查当前操作权限                          |
+| `updateHost(host)`                                                                                        | 更新同范围回调/策略并保留会话             |
+| `dispose()`                                                                                               | 结束订阅并取消拥有的读取                  |
 
 通过数据源的 QueryApi 方法读取并传递 AbortController，写入授权与持久化留在 ViewHost 服务。请求取消和旧响应丢弃保障结果所有权，不能撤销已经完成的业务写入。
+
+`setDefaultInstance` 要求宿主提供 `preference.saveDefault`。非 null ID 必须属于当前实例列表，与编辑权限无关。命令先持久化，再发布 `defaultInstanceId`；不会改变 `selectedInstanceId`、查询记录，也不会提交或丢弃未保存草稿。传入 null 会明确取消默认项，下次进入时不会自动选择实例。
