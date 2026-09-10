@@ -1,19 +1,28 @@
 name: Pull Request Labeler
+
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
-permissions:
-  contents: read
-  pull-requests: write
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
+
 jobs:
   label:
+    name: Label Pull Request
+    permissions:
+      contents: read
+      pull-requests: write
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       # Reads trusted base configuration; never checks out or executes PR code.
-      - uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6
+      - name: Apply labels
+        uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6
         with:
           sync-labels: false

@@ -1,14 +1,87 @@
-documentation:
-  - changed-files:
-      - any-glob-to-any-file: ['wiki/**', 'docs/**', '**/*.md']
-ci:
-  - changed-files:
-      - any-glob-to-any-file: ['.github/**']
+bug:
+  - head-branch:
+      - '^fix/'
+      - '^bugfix/'
+
+enhancement:
+  - head-branch:
+      - '^feature/'
+      - '^feat/'
+
+performance:
+  - head-branch:
+      - '^perf/'
+
+breaking-change:
+  - head-branch:
+      - '^breaking/'
+
+maintenance:
+  - head-branch:
+      - '^chore/'
+      - '^build/'
+      - '^ci/'
+
 dependencies:
+  - any:
+      - head-branch:
+          - '^renovate/'
+          - '^dependabot/'
+      - changed-files:
+          - any-glob-to-any-file:
+              - '**/package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+
+documentation:
+  - any:
+      - head-branch:
+          - '^docs/'
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'wiki/**'
+              - 'docs/**'
+              - '**/*.md'
+
+'area: ci':
   - changed-files:
       - any-glob-to-any-file:
-          ['**/package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']
-view-engine:
+          - '.github/**'
+
+'area: core':
   - changed-files:
       - any-glob-to-any-file:
-          ['packages/view-engine/**', 'stories/view-engine/**']
+          - 'packages/fetcher/**'
+          - 'packages/decorator/**'
+          - 'packages/storage/**'
+
+'area: events':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/eventbus/**'
+          - 'packages/eventstream/**'
+
+'area: openapi':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/openapi/**'
+          - 'packages/generator/**'
+
+'area: clients':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/openai/**'
+          - 'packages/cosec/**'
+          - 'packages/wow/**'
+
+'area: react':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/react/**'
+          - 'packages/viewer/**'
+
+'area: view-engine':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/view-engine/**'
+          - 'stories/view-engine/**'
