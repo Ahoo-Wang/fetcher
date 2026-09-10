@@ -163,7 +163,9 @@ export class ViewReload {
               ? permissions.saveAsPersonal
               : permissions.saveAsShared)
           )
-            throw new Error('宿主未允许重试此创建操作', { cause: error });
+            throw Object.assign(new Error('宿主未允许重试此创建操作'), {
+              cause: error,
+            });
           const { definitionId, kind, title, scope, config } =
             request.submitted;
           result = await this.host.instance.create(
@@ -182,9 +184,10 @@ export class ViewReload {
               instanceContent(request.submitted),
             )
           )
-            throw new Error('创建回执不符合原样保存契约，仍需核对', {
-              cause: error,
-            });
+            throw Object.assign(
+              new Error('创建回执不符合原样保存契约，仍需核对'),
+              { cause: error },
+            );
         }
       }
       if (
