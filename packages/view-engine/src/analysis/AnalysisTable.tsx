@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { sameJsonState } from '../lib/snapshot.js';
 import { analysisRowKey } from './analysisResult.js';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
@@ -57,8 +57,39 @@ export function AnalysisTable({
     : 0;
   if (!sameQuery || page !== pagination.page)
     setPagination({ query: plan.query, page });
-  const visibleRows = rows.slice(page * 100, (page + 1) * 100);
   const dimensions = plan.schema.filter(column => column.role === 'dimension');
+  // Query status changes do not invalidate the successfully returned cells.
+  const body = useMemo(() => {
+    const dimensions = plan.schema.filter(
+      column => column.role === 'dimension',
+    );
+    return (
+      <TableBody>
+        {rows.length ? (
+          rows.slice(page * 100, (page + 1) * 100).map(row => (
+            <TableRow key={analysisRowKey(row, dimensions)}>
+              {plan.schema.map(column => {
+                const value = row[column.alias];
+                return (
+                  <TableCell key={column.alias}>
+                    <span title={String(value)}>
+                      {formatAnalysisValue(value, column, plan.timeZone)}
+                    </span>
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={plan.schema.length}>
+              没有符合条件的分析结果
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    );
+  }, [rows, page, plan]);
   const displayedSort = stale
     ? (plan.query.sort ?? []).map(item => ({
         alias: item.field,
@@ -142,30 +173,7 @@ export function AnalysisTable({
             })}
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {rows.length ? (
-            visibleRows.map(row => (
-              <TableRow key={analysisRowKey(row, dimensions)}>
-                {plan.schema.map(column => {
-                  const value = row[column.alias];
-                  return (
-                    <TableCell key={column.alias}>
-                      <span title={String(value)}>
-                        {formatAnalysisValue(value, column, plan.timeZone)}
-                      </span>
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={plan.schema.length}>
-                没有符合条件的分析结果
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
+        {body}
       </Table>
       {rows.length > 100 && (
         <nav

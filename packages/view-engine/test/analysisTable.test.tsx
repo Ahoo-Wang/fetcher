@@ -15,6 +15,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { aggregation, SortDirection } from '@ahoo-wang/fetcher-wow';
 import { AnalysisTable } from '../src/analysis/AnalysisTable.js';
+import { formatAnalysisValue } from '../src/analysis/analysisFormatting.js';
+vi.mock('../src/analysis/analysisFormatting.js', { spy: true });
 import type { AnalysisPlan } from '../src/analysis/analysisModel.js';
 afterEach(cleanup);
 const plan: AnalysisPlan = {
@@ -200,4 +202,24 @@ it('formats display labels and count grouping while retaining raw values in titl
   );
   expect(screen.getByText('失败').getAttribute('title')).toBe('FAILED');
   expect(screen.getByText('581,234').getAttribute('title')).toBe('581234');
+});
+
+it('reuses unchanged result cells while query status changes and refreshes replaced rows', () => {
+  const rows = [{ state: 'paid', orders: 2 }];
+  const view = render(<AnalysisTable plan={plan} rows={rows} sort={[]} />);
+  vi.mocked(formatAnalysisValue).mockClear();
+  view.rerender(
+    <AnalysisTable plan={plan} rows={rows} sort={[]} stale querying />,
+  );
+  expect(screen.getByText(/配置已修改/)).toBeTruthy();
+  expect(formatAnalysisValue).not.toHaveBeenCalled();
+  view.rerender(
+    <AnalysisTable
+      plan={plan}
+      rows={[{ state: 'paid', orders: 3 }]}
+      sort={[]}
+    />,
+  );
+  expect(screen.getByText('3')).toBeTruthy();
+  expect(formatAnalysisValue).toHaveBeenCalled();
 });
