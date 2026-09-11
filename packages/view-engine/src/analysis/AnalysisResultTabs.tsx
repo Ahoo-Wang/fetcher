@@ -49,7 +49,15 @@ export function AnalysisResultTabs({
           children
         ) : (
           <div className="fve:flex fve:min-h-64 fve:flex-col fve:items-center fve:justify-center fve:gap-3">
-            <p role="status">{issues.join('；')}</p>
+            <p role="status">
+              {onConfigure ? '当前映射无法绘图' : issues.join('；')}
+            </p>
+            {onConfigure && (
+              <details className="fve:text-sm">
+                <summary className="fve:cursor-pointer">查看原因</summary>
+                <p>{issues.join('；')}</p>
+              </details>
+            )}
             {onConfigure && (
               <Button variant="outline" onClick={onConfigure}>
                 修复配置

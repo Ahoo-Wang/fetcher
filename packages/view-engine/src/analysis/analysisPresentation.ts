@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import type { AnalysisResultColumn } from './analysisModel.js';
 import type { AnalysisVisualizationType } from './analysisVisualizations.js';
 import type { DeepReadonly } from '../lib/types.js';
 
@@ -23,6 +24,23 @@ export interface AnalysisPresentation {
   orientation?: 'vertical' | 'horizontal';
   stacked?: boolean;
   donut?: boolean;
+}
+
+/** Resolve implicit selection before filtering selectable candidates; never hide current intent. */
+export function resolveAnalysisMetricAliases(
+  schema: DeepReadonly<readonly AnalysisResultColumn[]>,
+  value: DeepReadonly<Pick<AnalysisPresentation, 'metrics'>>,
+): string[] {
+  return Array.isArray(value.metrics)
+    ? [...value.metrics]
+    : schema
+        .filter(
+          column =>
+            column.role === 'metric' &&
+            column.valueType === 'number' &&
+            column.aggregation !== 'ANY',
+        )
+        .map(column => column.alias);
 }
 
 /** Retain display preferences; remove only references to outputs that no longer exist. */

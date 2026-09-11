@@ -23,7 +23,7 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisComponentConfig`         | [analysisModel.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L53)                                 |
 | `AnalysisNumericExpression`       | [analysisModel.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L36)                                 |
 | `AnalysisPlan`                    | [analysisModel.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L140)                               |
-| `AnalysisPresentation`            | [analysisPresentation.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisPresentation.ts#L17)                   |
+| `AnalysisPresentation`            | [analysisPresentation.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisPresentation.ts#L18)                   |
 | `AnalysisResultColumn`            | [analysisModel.ts:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L117)                               |
 | `AnalysisResultValidation`        | [analysisModel.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L150)                               |
 | `AnalysisRow`                     | [analysisModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L149)                               |
@@ -80,7 +80,7 @@ These names come from the current public entry exports and declarations. Import 
 | `MemoryViewHostOptions`           | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
 | `newFilterNode`                   | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
 | `orderRecordColumns`              | [recordColumns.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L29)                                   |
-| `projectAnalysis`                 | [analysisProjection.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L109)                     |
+| `projectAnalysis`                 | [analysisProjection.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L114)                     |
 | `readRecordSummaryResult`         | [recordSummary.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L140)                                 |
 | `readRecordValue`                 | [recordData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L18)                              |
 | `RECORD_COLUMN_DEFAULT_WIDTH`     | [recordColumns.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L46)                                   |
@@ -112,7 +112,7 @@ These names come from the current public entry exports and declarations. Import 
 | `resolveRecordPresentation`       | [resolveRecordPresentation.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/resolveRecordPresentation.ts#L27)           |
 | `sameFilterQuery`                 | [filterTree.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTree.ts#L24)                                         |
 | `SaveAsScope`                     | [viewModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L85)                                        |
-| `validateAnalysisPresentation`    | [analysisProjection.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L26)                       |
+| `validateAnalysisPresentation`    | [analysisProjection.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L29)                       |
 | `validateAnalysisResult`          | [analysisResult.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L23)                               |
 | `validateFilterConfiguration`     | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
@@ -153,12 +153,12 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
 | `AnalysisEditor`                  | [AnalysisEditor.tsx:796](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L796)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
-| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L51) |
-| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L39) |
+| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
+| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
-| `AnalysisView`                    | [AnalysisView.tsx:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L96)                             |
-| `AnalysisViewProps`               | [AnalysisView.tsx:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L86)                             |
+| `AnalysisView`                    | [AnalysisView.tsx:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L97)                             |
+| `AnalysisViewProps`               | [AnalysisView.tsx:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L87)                             |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
 | `Calendar`                        | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                                |
 | `CellOption`                      | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                                 |

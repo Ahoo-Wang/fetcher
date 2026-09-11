@@ -31,18 +31,26 @@ export type VisualizationMapping = Pick<
 >;
 
 /** The renderer remains the single authority for field and row compatibility. */
-export function validateMapping(
+function projectMapping(
   type: AnalysisPresentation['layout'],
   mapping: DeepReadonly<VisualizationMapping>,
   result: VisualizationResult,
-): string[] {
+) {
   return projectAnalysis(result.plan, result.rows, {
     layout: type,
     columns: [],
     x: mapping.x,
     series: mapping.series,
     metrics: mapping.metrics ? [...mapping.metrics] : undefined,
-  }).issues;
+  });
+}
+
+export function validateMapping(
+  type: AnalysisPresentation['layout'],
+  mapping: DeepReadonly<VisualizationMapping>,
+  result: VisualizationResult,
+): string[] {
+  return projectMapping(type, mapping, result).issues;
 }
 
 /** A single measure witnesses availability: adding measures cannot repair an invalid mapping. */
@@ -61,6 +69,7 @@ export function resolveMappings(
   );
   const candidates: VisualizationMapping[] = [];
   const reasons = new Set<string>();
+  const summaries = new Set<string>();
   // Supported plots consume every grouping dimension; none may be silently discarded.
   // With >2 dimensions or >500 rows, one renderer check suffices to prove incompatibility.
   const axes =
@@ -86,14 +95,25 @@ export function resolveMappings(
           : {}),
         metrics: [metric.alias],
       };
-      const issues = validateMapping(type, mapping, result);
+      const { issues, issueSummary } = projectMapping(type, mapping, result);
       if (!issues.length) candidates.push(mapping);
-      else issues.forEach(issue => reasons.add(issue));
+      else {
+        issues.forEach(issue => reasons.add(issue));
+        summaries.add(issueSummary ?? issues[0]);
+      }
     }
   }
   if (!candidates.length && !reasons.size)
     validateMapping(type, {}, result).forEach(issue => reasons.add(issue));
-  return { candidates, reasons: candidates.length ? [] : [...reasons] };
+  return {
+    candidates,
+    reasons: candidates.length ? [] : [...reasons],
+    summaries: candidates.length
+      ? []
+      : summaries.size
+        ? [...summaries]
+        : [...reasons],
+  };
 }
 
 export function inferCapabilities(result: VisualizationResult) {

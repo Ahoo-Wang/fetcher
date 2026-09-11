@@ -22,6 +22,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
+import { flushSync } from 'react-dom';
 import {
   PlayIcon,
   Settings2Icon,
@@ -560,7 +561,21 @@ function AnalysisInstanceView({
             key={instance.id}
             value={mode}
             onValueChange={setMode}
-            onConfigure={() => setVisualPanel({ id: instance.id, open: true })}
+            onConfigure={() => {
+              flushSync(() => setVisualPanel({ id: instance.id, open: true }));
+              const panel = containerRef.current?.querySelector(
+                '[aria-label="可视化配置区"]',
+              );
+              const target =
+                panel?.querySelector<HTMLElement>(
+                  '[aria-invalid="true"]:not([aria-disabled="true"]):not(:disabled)',
+                ) ??
+                panel?.querySelector<HTMLElement>(
+                  '[data-slot="analysis-mapping-heading"]',
+                );
+              target?.focus();
+              target?.scrollIntoView?.({ block: 'nearest' });
+            }}
             table={
               table ?? (
                 <p

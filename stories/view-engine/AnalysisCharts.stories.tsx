@@ -239,6 +239,28 @@ const scenarios = {
       { region: '华南', records: 2 },
     ],
   },
+  implicitPie: {
+    title: '默认指标冲突与定位修复',
+    config: {
+      ...base,
+      dimensions: [dimension('region', '地区')],
+      metrics: [
+        revenue,
+        {
+          ...revenue,
+          id: 'average',
+          alias: 'average',
+          title: '客单价',
+          props: { function: AggregationFunction.AVG },
+        },
+      ],
+      presentation: { layout: 'pie', columns: [], x: 'region' },
+    },
+    rows: [
+      { region: '华东', revenue: 1000, average: 100 },
+      { region: '华南', revenue: 500, average: 50 },
+    ],
+  },
   laterMetric: {
     title: '净销售额含负数，按订单数展示占比',
     config: {
@@ -940,8 +962,10 @@ export const MetricRoundTrip: Story = {
       );
       if (layout === '饼图')
         await expect(
-          canvas.getAllByText(/^饼图需要一个维度和一个数值指标/),
-        ).toHaveLength(2);
+          within(
+            canvas.getByRole('region', { name: '可视化配置区' }),
+          ).getByText(/饼图只支持一个指标，当前选择了 2 个/),
+        ).toBeVisible();
       await expect(
         canvas.getByRole('checkbox', { name: '销售额', exact: true }),
       ).toBeChecked();
@@ -1102,7 +1126,7 @@ export const CapabilitySelection: Story = {
     ).toBeNull();
     await expect(canvas.getAllByRole('radio')).toHaveLength(5);
     await expect(canvas.getByRole('radio', { name: '指标卡' })).toBeDisabled();
-    await expect(canvas.getByText(/不可用：指标卡需要无分组/)).toBeVisible();
+    await expect(canvas.getByText(/不可用：仅支持无分组结果/)).toBeVisible();
     const pie = canvas.getByRole('radio', { name: '饼图' });
     await expect(pie).toBeEnabled();
     await userEvent.click(pie);
@@ -1117,6 +1141,41 @@ export const CapabilitySelection: Story = {
     await userEvent.keyboard('{ArrowRight}');
     await expect(pie).toBeChecked();
     await expect(pie).toHaveFocus();
+    await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
+      '查询次数：1',
+    );
+  },
+};
+
+export const ImplicitMetricRepair: Story = {
+  name: '隐式指标冲突：定位并修复，保留结果',
+  args: { scenario: 'implicitPie' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText('当前映射无法绘图')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '修复配置', exact: true }),
+    );
+    const average = canvas.getByRole('checkbox', {
+      name: '客单价',
+      exact: true,
+    });
+    await expect(average).toBeChecked();
+    await expect(average).toHaveFocus();
+    await expect(
+      canvas.getByRole('checkbox', { name: '销售额', exact: true }),
+    ).toBeChecked();
+    await expect(
+      within(canvas.getByRole('region', { name: '可视化配置区' })).getByText(
+        /当前选择了 2 个/,
+      ),
+    ).toBeVisible();
+    await expect(canvas.getByText(/客单价（AVG）不能用于占比/)).toBeVisible();
+    await userEvent.click(average);
+    await expect(await canvas.findByRole('application')).toBeVisible();
+    await expect(
+      canvas.getByRole('radio', { name: '饼图', exact: true }),
+    ).toBeChecked();
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
       '查询次数：1',
     );

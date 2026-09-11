@@ -58,9 +58,8 @@ export function AnalysisVisualizationPicker({
               !capability || capability.status === 'unavailable';
             const Icon = icons[chart.value];
             const reason =
-              capability?.reasons
-                .map(reason => reason.split('，')[0])
-                .join('；') || (!capability ? '先运行查询以获取结果' : '');
+              capability?.summaries.join('；') ||
+              (!capability ? '请先运行查询' : '');
             return (
               <label
                 key={chart.value}
@@ -83,13 +82,18 @@ export function AnalysisVisualizationPicker({
                   onChange={() => onChange(chart.value)}
                   className="fve:sr-only"
                 />
-                <span className="fve:flex fve:items-center fve:justify-between">
-                  <Icon aria-hidden="true" className="fve:size-5" />
+                <span className="fve:flex fve:items-center fve:gap-1.5">
+                  <Icon
+                    aria-hidden="true"
+                    className="fve:size-4 fve:shrink-0"
+                  />
+                  <span className="fve:flex-1 fve:font-medium">
+                    {chart.label}
+                  </span>
                   {value === chart.value && (
                     <CheckIcon aria-hidden="true" className="fve:size-4" />
                   )}
                 </span>
-                <span className="fve:font-medium">{chart.label}</span>
                 <span
                   id={`${id}-${chart.value}`}
                   className="fve:text-xs fve:text-foreground"
@@ -105,6 +109,21 @@ export function AnalysisVisualizationPicker({
           },
         )}
       </div>
+      {capabilities?.some(item => item.status === 'unavailable') && (
+        <details className="fve:mt-3 fve:text-xs">
+          <summary className="fve:cursor-pointer">不可用原因</summary>
+          <dl className="fve:mt-2 fve:space-y-2">
+            {capabilities
+              .filter(item => item.status === 'unavailable')
+              .map(item => (
+                <div key={item.type}>
+                  <dt className="fve:font-medium">{item.label}</dt>
+                  <dd className="fve:m-0">{item.reasons.join('；')}</dd>
+                </div>
+              ))}
+          </dl>
+        </details>
+      )}
     </fieldset>
   );
 }

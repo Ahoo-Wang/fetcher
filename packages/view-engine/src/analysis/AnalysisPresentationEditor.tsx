@@ -24,6 +24,7 @@ import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
 import type { AnalysisPlan, AnalysisRow } from './analysisModel.js';
 import {
   resolveAnalysisAxes,
+  resolveAnalysisMetricAliases,
   pruneAnalysisPresentation,
 } from './analysisPresentation.js';
 import {
@@ -87,6 +88,10 @@ export function AnalysisPresentationEditor({
   const metricAliases = new Set(
     applicable.flatMap(candidate => candidate.metrics ?? []),
   );
+  const resolvedSelection = resolveAnalysisMetricAliases(
+    plan?.schema ?? [],
+    value,
+  );
   const metrics =
     plan?.schema.filter(
       c =>
@@ -95,13 +100,11 @@ export function AnalysisPresentationEditor({
         c.aggregation !== 'ANY' &&
         (!chartOnly ||
           metricAliases.has(c.alias) ||
-          value.metrics?.includes(c.alias)),
+          resolvedSelection.includes(c.alias)),
     ) ?? [];
-  const selected = Array.isArray(value.metrics)
-    ? value.metrics.filter(alias =>
-        metrics.some(metric => metric.alias === alias),
-      )
-    : metrics.map(c => c.alias);
+  const selected = resolvedSelection.filter(alias =>
+    metrics.some(metric => metric.alias === alias),
+  );
   const retained = cloneSnapshot<AnalysisPresentation>(value);
   if (!Array.isArray(retained.columns)) retained.columns = [];
   const staleReferences =
@@ -115,7 +118,9 @@ export function AnalysisPresentationEditor({
   const axes = resolveAnalysisAxes(dimensions, value);
   const x = axes.x?.alias;
   const issues =
-    showIssues && plan ? projectAnalysis(plan, rows, value).issues : [];
+    showIssues && !chartOnly && plan
+      ? projectAnalysis(plan, rows, value).issues
+      : [];
   const options = dimensions
     .filter(c => !chartOnly || axisAliases.has(c.alias))
     .map(c => ({ value: c.alias, label: c.title }));
@@ -168,11 +173,17 @@ export function AnalysisPresentationEditor({
           />
         )}
         {chartOnly && value.layout !== 'table' && (
-          <h3 className="fve:mt-2 fve:text-sm fve:font-medium">数据映射</h3>
+          <h3
+            data-slot="analysis-mapping-heading"
+            tabIndex={-1}
+            className="fve:mt-2 fve:text-sm fve:font-medium"
+          >
+            数据映射
+          </h3>
         )}
         {mappingIssues.length > 0 && (
           <p role="status" className="fve:text-xs fve:text-destructive">
-            {mappingIssues.join('；')}。请修复配置，或查看数据表。
+            {mappingIssues.join('；')}
           </p>
         )}
         {visualization?.axes && (
@@ -276,7 +287,13 @@ export function AnalysisPresentationEditor({
                     id={`${mappingDescriptionId}-${index}`}
                     className="fve:text-xs fve:text-destructive"
                   >
-                    （当前映射不可用）
+                    {result
+                      ? (validateMapping(
+                          value.layout,
+                          { ...value, metrics: [metric.alias] },
+                          result,
+                        )[0] ?? '当前映射不可用')
+                      : '当前映射不可用'}
                   </span>
                 )}
               </label>

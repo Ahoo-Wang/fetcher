@@ -18,7 +18,10 @@ import type {
   AnalysisRow,
   AnalysisResultColumn,
 } from './analysisModel.js';
-import { resolveAnalysisAxes } from './analysisPresentation.js';
+import {
+  resolveAnalysisAxes,
+  resolveAnalysisMetricAliases,
+} from './analysisPresentation.js';
 import type { AnalysisPresentation } from './analysisPresentation.js';
 import { formatAnalysisValue } from './analysisFormatting.js';
 import { analysisRowKey } from './analysisResult.js';
@@ -94,6 +97,8 @@ export function validateAnalysisPresentation(
 export interface AnalysisProjection {
   plan: DeepReadonly<AnalysisPlan>;
   issues: string[];
+  /** Concise capability reason, supplied at the same validation boundary. */
+  issueSummary?: string;
   points: { [key: string]: string | number | null }[];
   series: {
     key: string;
@@ -133,26 +138,23 @@ export function projectAnalysis(
     ],
   };
   if (presentation.layout === 'table') return result;
-  const fail = (issue: string) => {
+  const fail = (issue: string, summary = issue) => {
     issues.push(issue);
+    result.issueSummary = summary;
     return result;
   };
   const dimensions = plan.schema.filter(c => c.role === 'dimension');
-  const metrics =
-    presentation.metrics?.map(alias =>
-      plan.schema.find(c => c.alias === alias)!,
-    ) ??
-    plan.schema.filter(
-      c =>
-        c.role === 'metric' &&
-        c.valueType === 'number' &&
-        c.aggregation !== 'ANY',
-    );
+  const metrics = resolveAnalysisMetricAliases(plan.schema, presentation).map(
+    alias => plan.schema.find(column => column.alias === alias)!,
+  );
   if (
     !metrics.length ||
     metrics.some(c => c.valueType !== 'number' || c.aggregation === 'ANY')
   )
-    return fail('请选择数值聚合指标；ANY 代表值可用于维度标签或表格展示');
+    return fail(
+      '请选择数值聚合指标；ANY 代表值可用于维度标签或表格展示',
+      '缺少数值聚合指标',
+    );
   if (
     presentation.layout !== 'metric' &&
     new Set(
@@ -178,10 +180,16 @@ export function projectAnalysis(
   )
     return fail('堆叠需要可相加的 SUM 或 COUNT 指标，请关闭堆叠或选择其他指标');
   if (rows.length > 500)
-    return fail('图表最多展示 500 个分组，请缩小查询范围或查看表格');
+    return fail(
+      '图表最多展示 500 个分组，请缩小查询范围或查看表格',
+      '超过 500 个分组',
+    );
   if (presentation.layout === 'metric') {
     if (dimensions.length || rows.length > 1)
-      return fail('指标卡需要无分组结果，请移除分组或查看表格');
+      return fail(
+        '指标卡需要无分组结果，请移除分组或查看表格',
+        '仅支持无分组结果',
+      );
     result.series = metrics.map((m, i) => ({
       key: `s${i}`,
       title: m.title,
@@ -200,13 +208,17 @@ export function projectAnalysis(
   if (!x || x === split || dimensions.some(c => c !== x && c !== split))
     return fail(
       '图表需要一个横轴维度及可选的一个系列维度，请调整维度或查看表格',
+      '需要 1–2 个分组维度',
     );
   result.x = x;
   result.continuous =
     visualization.continuous &&
     (x.valueType === 'datetime' || x.valueType === 'number');
   if (visualization.continuous && !result.continuous)
-    return fail('折线和面积图需要连续的数值或时间横轴，请选择柱状图或调整维度');
+    return fail(
+      '折线和面积图需要连续的数值或时间横轴，请选择柱状图或调整维度',
+      '需要时间或数值轴',
+    );
   if (
     result.continuous &&
     rows.some(
@@ -217,9 +229,17 @@ export function projectAnalysis(
           !Number.isFinite(new Date(r[x.alias] as number).getTime())),
     )
   )
-    return fail('连续坐标包含无值或无效日期，请过滤该分组或查看表格');
+    return fail(
+      '连续坐标包含无值或无效日期，请过滤该分组或查看表格',
+      '轴包含无效值',
+    );
   if (presentation.layout === 'pie' && (split || metrics.length !== 1))
-    return fail('饼图需要一个维度和一个数值指标，请调整选择或查看表格');
+    return fail(
+      split
+        ? '饼图仅支持一个分组维度，请调整查询分组'
+        : `饼图只支持一个指标，当前选择了 ${metrics.length} 个，请取消多余指标`,
+      split ? '仅支持单个分组维度' : '仅支持单个指标',
+    );
   if (
     presentation.layout === 'pie' &&
     rows.some(
@@ -228,20 +248,29 @@ export function projectAnalysis(
         (r[metrics[0].alias] as number) < 0,
     )
   )
-    return fail('饼图不支持负数，请使用柱状图或表格');
+    return fail('饼图不支持负数，请使用柱状图或表格', '不支持负数');
   if (
     presentation.layout === 'pie' &&
     rows.some(r => r[metrics[0].alias] === null)
   )
-    return fail('饼图包含无值，无法表达占比，请使用柱状图或表格');
+    return fail(
+      '饼图包含无值，无法表达占比，请使用柱状图或表格',
+      '指标包含空值',
+    );
   if (
     presentation.layout === 'pie' &&
     rows.length > 0 &&
     rows.every(r => r[metrics[0].alias] === 0)
   )
-    return fail('饼图指标全部为零，无法表达占比，请使用柱状图或表格');
+    return fail(
+      '饼图指标全部为零，无法表达占比，请使用柱状图或表格',
+      '指标全部为零',
+    );
   if (presentation.layout === 'pie' && rows.length > 24)
-    return fail('饼图最多展示 24 个扇区，请缩小查询范围或查看表格');
+    return fail(
+      '饼图最多展示 24 个扇区，请缩小查询范围或查看表格',
+      '超过 24 个分组',
+    );
   if (
     presentation.layout === 'pie' &&
     metrics.some(
@@ -251,7 +280,10 @@ export function projectAnalysis(
         c.format !== 'count',
     )
   )
-    return fail('饼图占比需要可相加的 SUM 或 COUNT 指标，请选择柱状图或表格');
+    return fail(
+      `${metrics.map(column => `${column.title}（${column.aggregation ?? '未知聚合'}）`).join('、')}不能用于占比，请选择 SUM 或 COUNT 指标`,
+      '需要可相加指标',
+    );
   // Resolve labels per dimension identity across all series; conflicting names fall back to ID.
   const dimensionLabels = new Map<
     string,
@@ -309,7 +341,10 @@ export function projectAnalysis(
     : [['', null] as const];
   splitValues.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   if (splitValues.length * metrics.length > 12)
-    return fail('图表最多展示 12 个系列，请缩小系列范围或减少指标');
+    return fail(
+      '图表最多展示 12 个系列，请缩小系列范围或减少指标',
+      '超过 12 个系列',
+    );
   for (const [identity, value] of splitValues)
     for (const m of metrics)
       result.series.push({
@@ -328,7 +363,10 @@ export function projectAnalysis(
   for (const row of rows) {
     const tuple = analysisRowKey(row, dimensions);
     if (tuples.has(tuple))
-      return fail('结果包含重复分组，请重新运行查询或查看表格');
+      return fail(
+        '结果包含重复分组，请重新运行查询或查看表格',
+        '结果包含重复分组',
+      );
     tuples.add(tuple);
     const key = analysisRowKey(row, [x]);
     let point = byX.get(key);

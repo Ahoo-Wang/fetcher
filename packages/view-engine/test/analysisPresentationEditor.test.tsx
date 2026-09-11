@@ -475,3 +475,42 @@ it('keeps a selected incompatible measure named and removable without clearing o
   fireEvent.click(selected);
   expect(onChange.mock.calls[0][0]).toEqual({ ...value, metrics: ['m'] });
 });
+
+it('shows the same implicit measures as the renderer and explains how to repair a pie', () => {
+  const resultPlan: AnalysisPlan = {
+    ...plan,
+    schema: [
+      plan.schema[1],
+      { ...plan.schema[2], aggregation: 'SUM' },
+      {
+        ...plan.schema[2],
+        id: 'avg',
+        alias: 'avg',
+        title: '平均额',
+        aggregation: 'AVG',
+      },
+    ],
+  };
+  const onChange = vi.fn();
+  render(
+    <AnalysisPresentationEditor
+      chartOnly
+      value={{ layout: 'pie', columns: [], x: 'region' }}
+      plan={resultPlan}
+      rows={[{ region: 'A', m: 2, avg: 3 }]}
+      onChange={onChange}
+    />,
+  );
+  expect(
+    screen
+      .getByRole('checkbox', { name: '平均额', exact: true })
+      .getAttribute('aria-checked'),
+  ).toBe('true');
+  expect(screen.getByText(/当前选择了 2 个/)).toBeTruthy();
+  expect(screen.getByText(/平均额（AVG）不能用于占比/)).toBeTruthy();
+  expect(onChange).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByRole('checkbox', { name: '平均额', exact: true }),
+  );
+  expect(onChange.mock.calls[0][0].metrics).toEqual(['m']);
+});

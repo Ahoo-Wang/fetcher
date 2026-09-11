@@ -1332,12 +1332,13 @@ it('keeps chart mapping and analysis mode when a new result invalidates its metr
       engine.getSnapshot().sessions.totals.instance.config.presentation,
     ).toEqual(presentation);
     expect(
-      within(screen.getByLabelText('分析结果区')).getByText(
-        /指标 orders 已失效/,
-      ),
+      within(screen.getByLabelText('分析结果区')).getByText('当前映射无法绘图'),
     ).toBeTruthy();
     fireEvent.click(
       screen.getByRole('button', { name: '修复配置', exact: true }),
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole('heading', { name: '数据映射' }),
     );
     expect(
       screen
