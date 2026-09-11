@@ -13,6 +13,7 @@
 
 import { encodeViewResourceId } from '../viewServiceContract.js';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
+import { validateFilterConfigurationStructure } from '../../filter/filterConfigurationValidation.js';
 import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
 import { validateFilterConfiguration } from '../../filter/filterConfiguration.js';
 import {
@@ -105,24 +106,14 @@ export function validateViewInstance(
     }
     return;
   }
-  if (!semantic) {
-    if (
-      !Array.isArray(config.sort) ||
-      !config.pagination ||
-      typeof config.pagination !== 'object' ||
-      !config.presentation ||
-      typeof config.presentation !== 'object' ||
-      !config.filters
-    )
-      throw new Error('记录配置结构无效');
-    return;
-  }
   if ('filter' in config) throw new Error('视图配置必须保存 filters 组件配置');
-  validateFilterConfiguration(
-    config.filters,
-    definition.fields,
-    definition.allowedOperators,
-  );
+  if (semantic)
+    validateFilterConfiguration(
+      config.filters,
+      definition.fields,
+      definition.allowedOperators,
+    );
+  else validateFilterConfigurationStructure(config.filters);
   if (!Array.isArray(config.sort) || config.sort.length > 32)
     throw new Error('排序必须为最多 32 项的数组');
   const sorted = new Set<string>();
@@ -130,6 +121,7 @@ export function validateViewInstance(
     assertObject(sort, '排序');
     assertText(sort.field, '排序字段');
     if (
+      semantic &&
       !definition.fields.some(
         field => field.field === sort.field && field.sortable === true,
       )
@@ -151,7 +143,7 @@ export function validateViewInstance(
     Number(config.pagination.size) <= 0
   )
     throw new Error('分页方式或每页数量无效');
-  validateRecordPresentation(config.presentation, definition);
+  validateRecordPresentation(config.presentation, definition, semantic);
 }
 
 /** Shared list trust boundary for initial loading and uncertain-write reconciliation. */

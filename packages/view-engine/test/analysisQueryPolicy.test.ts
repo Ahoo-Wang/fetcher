@@ -61,7 +61,10 @@ function setup() {
       fields: [],
       analysis: { count: true, fields: [] },
     },
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: {
+      instances: [instance, { ...instance, id: 'other' }],
+      defaultInstanceId: instance.id,
+    },
     host: {
       resolveSource: () => ({ aggregate }),
       instance: {
@@ -191,6 +194,127 @@ it('keeps unresolved remote conflicts out of refresh while allowing an explicit 
     expect(aggregate).toHaveBeenCalledTimes(2);
     expect(engine.getSnapshot().sessions.analysis.conflict).toBeDefined();
   } finally {
+    engine.dispose();
+  }
+});
+
+it('resumes public refresh after navigating away from a pending refresh and returning', async () => {
+  const { engine, aggregate } = setup();
+  let finish: ((rows: { orders: number }[]) => void) | undefined;
+  try {
+    await engine.load();
+    const confirmed = engine.getSnapshot().sessions.analysis.result;
+    aggregate.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        }),
+    );
+    const refresh = engine.analysis(instance.id).refresh();
+    await vi.waitFor(() => expect(aggregate).toHaveBeenCalledTimes(2));
+    await engine.selectInstance('other');
+    await refresh;
+    expect(engine.getSnapshot().sessions.analysis).toMatchObject({
+      queryStatus: 'success',
+      queryError: null,
+      pendingQuery: null,
+      result: confirmed,
+    });
+    await engine.selectInstance(instance.id);
+    expect(aggregate).toHaveBeenCalledTimes(3);
+    aggregate.mockResolvedValueOnce([{ orders: 5 }]);
+    await engine.analysis(instance.id).refresh();
+    expect(engine.getSnapshot().sessions.analysis.result?.rows).toEqual([
+      { orders: 5 },
+    ]);
+    finish?.([{ orders: 99 }]);
+    await Promise.resolve();
+    expect(engine.getSnapshot().sessions.analysis.result?.rows).toEqual([
+      { orders: 5 },
+    ]);
+  } finally {
+    finish?.([]);
+    engine.dispose();
+  }
+});
+
+it('keeps idle when navigating away before the first successful analysis', async () => {
+  const { engine, aggregate } = setup();
+  let finish: ((rows: { orders: number }[]) => void) | undefined;
+  try {
+    aggregate.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        }),
+    );
+    const loading = engine.load();
+    await vi.waitFor(() => expect(aggregate).toHaveBeenCalledOnce());
+    await engine.selectInstance('other');
+    await loading;
+    expect(engine.getSnapshot().sessions.analysis).toMatchObject({
+      queryStatus: 'idle',
+      queryError: null,
+      pendingQuery: null,
+      result: null,
+    });
+    await engine.selectInstance(instance.id);
+    expect(engine.getSnapshot().sessions.analysis.queryStatus).toBe('success');
+  } finally {
+    finish?.([]);
+    engine.dispose();
+  }
+});
+
+it('does not overwrite a replacement query started by an abort listener', async () => {
+  const { engine, aggregate } = setup();
+  let replacement: Promise<void> | undefined;
+  let finish: ((rows: { orders: number }[]) => void) | undefined;
+  let finishReplacement: ((rows: { orders: number }[]) => void) | undefined;
+  try {
+    await engine.load();
+    aggregate.mockImplementationOnce(
+      (_query, _attributes, controller: AbortController) => {
+        controller.signal.addEventListener(
+          'abort',
+          () => {
+            const commands = engine.analysis(instance.id);
+            commands.edit(config => ({ ...config, limit: 50 }));
+            replacement = commands.run();
+          },
+          { once: true },
+        );
+        return new Promise(resolve => {
+          finish = resolve;
+        });
+      },
+    );
+    const refresh = engine.analysis(instance.id).refresh();
+    await vi.waitFor(() => expect(aggregate).toHaveBeenCalledTimes(2));
+    aggregate.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          finishReplacement = resolve;
+        }),
+    );
+    await engine.selectInstance('other');
+    await refresh;
+    expect(engine.getSnapshot().sessions.analysis).toMatchObject({
+      queryStatus: 'loading',
+      pendingQuery: { query: { limit: 50 } },
+    });
+    finishReplacement?.([{ orders: 7 }]);
+    await replacement;
+    finish?.([{ orders: 99 }]);
+    await Promise.resolve();
+    expect(engine.getSnapshot().sessions.analysis).toMatchObject({
+      queryStatus: 'success',
+      pendingQuery: null,
+      result: { rows: [{ orders: 7 }] },
+    });
+  } finally {
+    finish?.([]);
+    finishReplacement?.([]);
     engine.dispose();
   }
 });

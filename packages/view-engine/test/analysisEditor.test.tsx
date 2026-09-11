@@ -882,3 +882,140 @@ it('edits and removes result ordering without changing measure definitions', asy
   expect(changed.mock.lastCall?.[0].sort).toEqual([]);
   expect(changed.mock.lastCall?.[0].metrics).toEqual(initial.metrics);
 });
+
+it.each([
+  { maxSort: 1, sort: [{ alias: 'state', direction: SortDirection.ASC }] },
+  { maxSort: 2, sort: [{ alias: 'orders', direction: SortDirection.DESC }] },
+])(
+  'bounds added sorts including implicit dimensions at maxSort=$maxSort',
+  ({ maxSort, sort }) => {
+    const value: AnalysisViewConfig = {
+      ...initial,
+      dimensions: [
+        {
+          id: 'state',
+          alias: 'state',
+          title: '状态',
+          component: { name: 'terms' },
+          field: 'state',
+          props: {},
+        },
+      ],
+      metrics: [
+        ...initial.metrics,
+        {
+          ...initial.metrics[0],
+          id: 'other',
+          alias: 'other',
+          title: '其他记录数',
+        },
+      ],
+      sort,
+    };
+    const limitedContext: AnalysisCompileContext = {
+      fields: [{ field: 'state', label: '状态', type: 'string' }],
+      capability: {
+        count: true,
+        fields: [
+          {
+            field: 'state',
+            groups: [AggregationGroupType.TERMS],
+            functions: [],
+          },
+        ],
+        limits: { maxSort },
+      },
+    };
+    const changed = vi.fn();
+    function Example() {
+      const [draft, setDraft] = useState(value);
+      return (
+        <AnalysisEditor
+          value={draft}
+          context={limitedContext}
+          onChange={next => {
+            changed(next);
+            setDraft(next);
+          }}
+        />
+      );
+    }
+    render(<Example />);
+    const add = control('button', { name: '添加排序' }) as HTMLButtonElement;
+    if (maxSort === 2) {
+      // Making the implicit dimension explicit consumes no additional slot.
+      expect(add.disabled).toBe(false);
+      fireEvent.click(add);
+      expect(changed.mock.lastCall![0].sort).toEqual([
+        { alias: 'orders', direction: SortDirection.DESC },
+        { alias: 'state', direction: SortDirection.ASC },
+      ]);
+      expect(
+        compileAnalysis(changed.mock.lastCall![0], limitedContext).plan?.query
+          .sort,
+      ).toHaveLength(2);
+    }
+    expect(add.disabled).toBe(true);
+    changed.mockClear();
+    fireEvent.click(add);
+    expect(changed).not.toHaveBeenCalled();
+  },
+);
+
+it('recomputes sort capacity when capability changes and excludes overflowing replacements', async () => {
+  const value: AnalysisViewConfig = {
+    ...initial,
+    dimensions: [
+      {
+        id: 'state',
+        alias: 'state',
+        title: '状态',
+        component: { name: 'terms' },
+        field: 'state',
+        props: {},
+      },
+    ],
+    sort: [{ alias: 'state', direction: SortDirection.ASC }],
+  };
+  const limitedContext: AnalysisCompileContext = {
+    fields: [{ field: 'state', label: '状态', type: 'string' }],
+    capability: {
+      count: true,
+      fields: [
+        { field: 'state', groups: [AggregationGroupType.TERMS], functions: [] },
+      ],
+      limits: { maxSort: 2 },
+    },
+  };
+  const changed = vi.fn();
+  const view = render(
+    <AnalysisEditor
+      value={value}
+      context={limitedContext}
+      onChange={changed}
+    />,
+  );
+  expect(
+    (control('button', { name: '添加排序' }) as HTMLButtonElement).disabled,
+  ).toBe(false);
+  view.rerender(
+    <AnalysisEditor
+      value={value}
+      context={{
+        ...limitedContext,
+        capability: { ...limitedContext.capability, limits: { maxSort: 1 } },
+      }}
+      onChange={changed}
+    />,
+  );
+  expect(
+    (control('button', { name: '添加排序' }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+  fireEvent.click(screen.getByRole('combobox', { name: '排序 1 输出' }));
+  expect(
+    await screen.findByRole('option', { name: '状态', exact: true }),
+  ).toBeTruthy();
+  expect(
+    screen.queryByRole('option', { name: '订单数', exact: true }),
+  ).toBeNull();
+});

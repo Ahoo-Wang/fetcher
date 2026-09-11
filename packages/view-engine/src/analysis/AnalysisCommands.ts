@@ -89,10 +89,11 @@ export class AnalysisCommands {
     this.requests.delete(id);
     request.release();
     request.controller.abort();
-    if (!this.requests.has(id) && this.store.find(id)?.kind === 'analysis')
+    const session = this.store.find(id);
+    if (!this.requests.has(id) && session?.kind === 'analysis')
       this.store.patch(id, {
         kind: 'analysis',
-        queryStatus: 'idle',
+        queryStatus: session.result ? 'success' : 'idle',
         queryError: null,
         pendingQuery: null,
       });

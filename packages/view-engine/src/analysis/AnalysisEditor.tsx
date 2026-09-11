@@ -724,6 +724,23 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
       onChange({ ...cloneSnapshot<AnalysisViewConfig>(value), ...patch });
   }
   const outputs = [...value.dimensions, ...value.metrics];
+  const maxSort = props.context.capability.limits?.maxSort ?? 32;
+  function sortOptions(index = value.sort.length) {
+    const remaining = value.sort.filter((_, i) => i !== index);
+    // The compiler appends every dimension not already explicitly sorted.
+    const effectiveAliases = new Set(
+      [...value.dimensions, ...remaining].map(item => item.alias),
+    );
+    return outputs.filter(
+      output =>
+        output.alias === value.sort[index]?.alias ||
+        (!remaining.some(sort => sort.alias === output.alias) &&
+          effectiveAliases.size +
+            (effectiveAliases.has(output.alias) ? 0 : 1) <=
+            maxSort),
+    );
+  }
+  const nextSortOutput = sortOptions()[0];
   let context: AnalysisCompileContext;
   try {
     context = analysisScopeContext(value, props.context);
@@ -783,16 +800,10 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
                   <Choice
                     label={`排序 ${index + 1} 输出`}
                     value={sort.alias}
-                    options={outputs
-                      .filter(
-                        output =>
-                          output.alias === sort.alias ||
-                          !value.sort.some(sort => sort.alias === output.alias),
-                      )
-                      .map(output => ({
-                        value: output.alias,
-                        label: output.title,
-                      }))}
+                    options={sortOptions(index).map(output => ({
+                      value: output.alias,
+                      label: output.title,
+                    }))}
                     disabled={disabled}
                     onChange={alias =>
                       update({
@@ -836,23 +847,17 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
                 <Button
                   variant="outline"
                   disabled={
-                    disabled ||
-                    !value.dimensions.length ||
-                    !outputs.some(
-                      output =>
-                        !value.sort.some(sort => sort.alias === output.alias),
-                    )
+                    disabled || !value.dimensions.length || !nextSortOutput
                   }
                   onClick={() => {
-                    const output = outputs.find(
-                      output =>
-                        !value.sort.some(sort => sort.alias === output.alias),
-                    );
-                    if (output)
+                    if (nextSortOutput)
                       update({
                         sort: [
                           ...value.sort,
-                          { alias: output.alias, direction: SortDirection.ASC },
+                          {
+                            alias: nextSortOutput.alias,
+                            direction: SortDirection.ASC,
+                          },
                         ],
                       });
                   }}

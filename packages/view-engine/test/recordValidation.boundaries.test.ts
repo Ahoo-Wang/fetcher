@@ -200,3 +200,75 @@ it('keeps malformed host lists out of sessions and recovers after the host fixes
     engine.dispose();
   }
 });
+
+it.each([
+  { pagination: {} },
+  { pagination: [] },
+  { presentation: {} },
+  { presentation: { layout: 'table' } },
+  { presentation: { layout: 'table', table: { columns: [null] } } },
+  { presentation: { layout: 'card', card: { fields: [] } } },
+  {
+    presentation: {
+      layout: 'card',
+      card: { title: { id: 'title', field: 'state.amount' }, fields: null },
+    },
+  },
+  { sort: [null] },
+  { sort: [{ field: 'state.amount' }] },
+])(
+  'rejects structurally unsafe record configuration before recovery publication: %j',
+  patch => {
+    const saved = instance();
+    expect(() =>
+      validateViewInstance(
+        { ...saved, config: { ...saved.config, ...patch } },
+        definition,
+        undefined,
+        false,
+      ),
+    ).toThrow();
+  },
+);
+
+it('retains unknown field references as semantic recovery issues', () => {
+  const saved = instance();
+  saved.config.sort = [{ field: 'removed', direction: SortDirection.ASC }];
+  saved.config.presentation = {
+    layout: 'table',
+    table: { columns: [{ id: 'removed', kind: 'field', field: 'removed' }] },
+  };
+  expect(() =>
+    validateViewInstance(saved, definition, undefined, false),
+  ).not.toThrow();
+  expect(() => validateViewInstance(saved, definition)).toThrow(
+    '字段不支持排序',
+  );
+});
+
+it('does not publish or query a default record with missing layout discriminants', async () => {
+  const saved = instance();
+  const malformed = {
+    ...saved,
+    config: { ...saved.config, pagination: {}, presentation: {} },
+  };
+  const { engine, paged } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () => ({
+          instances: [malformed],
+          defaultInstanceId: saved.id,
+        }),
+      },
+    } as never,
+  });
+  try {
+    await expect(engine.load()).rejects.toThrow();
+    expect(engine.getSnapshot().status).toBe('error');
+    expect(engine.getSnapshot().sessions).toEqual({});
+    expect(paged).not.toHaveBeenCalled();
+  } finally {
+    engine.dispose();
+  }
+});

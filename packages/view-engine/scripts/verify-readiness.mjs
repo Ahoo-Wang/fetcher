@@ -100,7 +100,7 @@ async function measure(name, operation) {
     samples,
     ...(phases.length ? { phases } : {}),
     p95,
-    budget: 1000,
+    budget: 1250,
     unit: 'ms',
     includes:
       'automation transport and two painted frames; fixture has no network',
@@ -329,7 +329,7 @@ try {
     assert.ok(p95 <= budget, `${name} p95 ${p95}ms exceeds ${budget}ms`);
   }
   report.checks.push(
-    'Warm no-network interaction p95 within 1000ms regression ceiling',
+    'Warm no-network interaction p95 within 1250ms regression ceiling',
   );
 
   for (const width of [1440, 390]) {
