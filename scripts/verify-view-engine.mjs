@@ -14,6 +14,7 @@ import { appendFileSync, createWriteStream, mkdirSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { verifyBrowserMatrix } from './verify-browser-matrix.mjs';
 import { spawnOwned, stopOwned } from './owned-process.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -168,13 +169,22 @@ try {
     storybookError = error;
   });
   await waitFor(`${baseUrl}/index.json`);
-  for (const browser of readinessBrowsers)
-    await run(
-      `verify-readiness-${browser}`,
-      process.execPath,
-      ['packages/view-engine/scripts/verify-readiness.mjs'],
-      { ...env, VIEW_ENGINE_BROWSER: browser },
-    );
+  await verifyBrowserMatrix(readinessBrowsers, async browser => {
+    if (cancellation)
+      throw new DOMException('Acceptance cancelled', 'AbortError');
+    try {
+      await run(
+        `verify-readiness-${browser}`,
+        process.execPath,
+        ['packages/view-engine/scripts/verify-readiness.mjs'],
+        { ...env, VIEW_ENGINE_BROWSER: browser },
+      );
+    } catch (error) {
+      if (cancellation)
+        throw new DOMException('Acceptance cancelled', 'AbortError');
+      throw error;
+    }
+  });
 } catch (error) {
   if (!cancellation) {
     console.error(error);

@@ -108,3 +108,41 @@ test(
     await rm(artifacts, { recursive: true, force: true });
   },
 );
+
+// Browser checks must stay sequential so diagnostics do not contaminate timing samples.
+test('collects every browser failure before rejecting the delivery matrix', async () => {
+  const { verifyBrowserMatrix } = await import('./verify-browser-matrix.mjs');
+  const visited = [];
+  await assert.rejects(
+    verifyBrowserMatrix(['chromium', 'firefox', 'webkit'], async name => {
+      visited.push(name);
+      if (name !== 'firefox') throw new Error(`${name} failed`);
+    }),
+    error => error instanceof AggregateError && error.errors.length === 2,
+  );
+  assert.deepEqual(visited, ['chromium', 'firefox', 'webkit']);
+});
+test('passes a successful matrix and stops immediately on cancellation', async () => {
+  const { verifyBrowserMatrix } = await import('./verify-browser-matrix.mjs');
+  const visited = [];
+  await verifyBrowserMatrix(['chromium', 'firefox'], async name => {
+    visited.push(name);
+    await Promise.resolve();
+    visited.push(`${name}:done`);
+  });
+  assert.deepEqual(visited, [
+    'chromium',
+    'chromium:done',
+    'firefox',
+    'firefox:done',
+  ]);
+  const cancelled = [];
+  await assert.rejects(
+    verifyBrowserMatrix(['chromium', 'firefox'], async name => {
+      cancelled.push(name);
+      throw new DOMException('cancelled', 'AbortError');
+    }),
+    { name: 'AbortError' },
+  );
+  assert.deepEqual(cancelled, ['chromium']);
+});
