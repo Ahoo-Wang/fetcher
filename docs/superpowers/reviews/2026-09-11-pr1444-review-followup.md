@@ -38,3 +38,9 @@ Codecov 原报告：patch 91.06399%，236 行未覆盖，project 96.48%。这些
 `c950918f` 远端 Engineering Quality 通过，输入性能仍为 P95 53ms（门槛 50ms），切换 P95 91ms（门槛 100ms）。CPU 剖析定位到每个条件复制完整字段目录，且引擎和 UI 编译各执行一次。内置编译器为内部纯函数，现直接读取字段上下文；自定义扩展仍获取独立冻结快照。新增回归确保内置路径不复制字段目录，扩展的隔离不变。未改性能测量方法、样本数、阈值或覆盖率排除项。
 
 本轮最终验证：全仓 `pnpm test:unit` 通过；view-engine 源码与 React Compiler 各 1284 passed、2 skipped，完整 Storybook 354 passed。完整 `pnpm verify:view-engine` 通过，本地输入 P95 36.6ms、切换 P95 36.3ms，万行取消/迟到响应与可访问性验收通过。独立重跑浏览器套件后，之前的焦点恢复断言通过。lint、公共符号索引、PR 全部变更文件的格式检查通过。
+
+## 跨浏览器性能收敛
+
+`d2cf897a` 复用未变化的结果单元格后，远端 Chromium 输入 P95 39.8ms、切换 P95 74.5ms，满足原门槛。流水线继续进入 Firefox，输入 P95 68ms、切换 P95 126ms 尚不达标；不能将其描述为全部浏览器通过。本地同提交 Firefox 完整验收通过（输入 35ms、切换 48ms），不替代 Linux runner 结果。
+
+进一步消除引擎与界面对相同工作配置的重复编译：`AnalysisSession.compilation` 保存不可变的派生编译结果，AnalysisView 直接消费该结果。回归验证渲染零次编译、一次配置编辑仅编译一次。全仓单测通过，view-engine 源码与 Compiler 各 1286 项、Storybook 354 项通过；公共契约、skill API、中英文文档和符号索引同步，文档测试与构建通过。三浏览器生产验收和最终远端状态单独确认。

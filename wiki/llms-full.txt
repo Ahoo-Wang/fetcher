@@ -15343,7 +15343,7 @@ export function OrderPage({
 
 ### Working content, applied results and saves
 
-Snapshots are immutable. `ViewEngineState.version` increases on publication and each session has an `editVersion` for working edits. `RecordSession.queryAttempt` captures the in-flight query; `RecordSession.result` binds successful rows to its config/filter/page/cursor and receivedAt. `AnalysisSession.pendingQuery` captures the in-flight plan. Render provenance and business actions must use the applicable result/attempt, never infer them from working edits. `ViewSession` is discriminated by `kind`; narrow it before accessing record-only or analysis-only state. Shared fields include `baseline`, current working `instance`, `dirty`, `validation`, `writeStatus`, `writeError`, `requiresReload` and optional `conflict`.
+Snapshots are immutable. `ViewEngineState.version` increases on publication and each session has an `editVersion` for working edits. `RecordSession.queryAttempt` captures the in-flight query; `RecordSession.result` binds successful rows to its config/filter/page/cursor and receivedAt. `AnalysisSession.compilation` contains the immutable compilation of the current working configuration (plan or validation errors), shared by the engine and renderers without recompiling during render. `AnalysisSession.pendingQuery` captures the in-flight plan. Render provenance and business actions must use the applicable result/attempt, never infer them from working edits. `ViewSession` is discriminated by `kind`; narrow it before accessing record-only or analysis-only state. Shared fields include `baseline`, current working `instance`, `dirty`, `validation`, `writeStatus`, `writeError`, `requiresReload` and optional `conflict`.
 
 Record sessions retain `filterDraft`, `filterBaseline`, `appliedFilter`, `filterPending`, page/cursor, rows, summaries and selection. Editing working filters does not change the applied query or records. `filterPending` means the working filter differs from the applied scope; it does not by itself disable Save. Analysis sessions keep an independent successful `result` with query/schema provenance; later edits or failed runs do not relabel those rows as a new result.
 
@@ -15650,9 +15650,9 @@ These names come from the current public entry exports and declarations. Import 
 | `analysisRowKey`               | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
 | `analysisScopeContext`         | [analysisCompiler.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L47)                           |
 | `AnalysisScopeDefinition`      | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
-| `AnalysisSession`              | [viewModel.ts:269](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L269)                                      |
+| `AnalysisSession`              | [viewModel.ts:270](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L270)                                      |
 | `AnalysisViewConfig`           | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
-| `AnalysisViewInstance`         | [viewModel.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L153)                                      |
+| `AnalysisViewInstance`         | [viewModel.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L154)                                      |
 | `AnalysisVisualizationType`    | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
 | `calculateRecordSummary`       | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
 | `clearBuiltinFilterProps`      | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
@@ -15706,62 +15706,62 @@ These names come from the current public entry exports and declarations. Import 
 | `RECORD_COLUMN_MAX_WIDTH`      | [recordColumns.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L44)                                   |
 | `RECORD_COLUMN_MIN_WIDTH`      | [recordColumns.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L42)                                   |
 | `RECORD_SUMMARY_LABELS`        | [recordPresentation.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L47)                         |
-| `RecordCapability`             | [viewModel.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L68)                                        |
-| `RecordCardConfig`             | [viewModel.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L112)                                      |
-| `RecordCardFieldConfig`        | [viewModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L108)                                      |
-| `RecordCardPresentation`       | [viewModel.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L127)                                      |
-| `RecordColumn`                 | [viewModel.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L97)                                        |
-| `RecordColumnPinning`          | [viewModel.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L86)                                        |
-| `RecordData`                   | [viewModel.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L42)                                        |
-| `RecordKey`                    | [viewModel.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L43)                                        |
-| `RecordPresentation`           | [viewModel.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L132)                                      |
-| `RecordPresentationDefaults`   | [viewModel.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L118)                                      |
-| `RecordQuerySnapshot`          | [viewModel.ts:221](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L221)                                      |
-| `RecordQuerySource`            | [viewModel.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L191)                                      |
-| `RecordSession`                | [viewModel.ts:227](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L227)                                      |
-| `RecordSummaryFunction`        | [viewModel.ts:305](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L305)                                      |
-| `RecordSummaryMetric`          | [viewModel.ts:307](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L307)                                      |
-| `RecordSummaryResult`          | [viewModel.ts:312](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L312)                                      |
-| `RecordTableConfig`            | [viewModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L105)                                      |
-| `RecordTablePresentation`      | [viewModel.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L122)                                      |
-| `RecordViewConfig`             | [viewModel.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L134)                                      |
-| `RecordViewDefinition`         | [viewModel.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L78)                                        |
-| `RecordViewInstance`           | [viewModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L149)                                      |
-| `RendererReference`            | [viewModel.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L44)                                        |
+| `RecordCapability`             | [viewModel.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L69)                                        |
+| `RecordCardConfig`             | [viewModel.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L113)                                      |
+| `RecordCardFieldConfig`        | [viewModel.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L109)                                      |
+| `RecordCardPresentation`       | [viewModel.ts:128](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L128)                                      |
+| `RecordColumn`                 | [viewModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L98)                                        |
+| `RecordColumnPinning`          | [viewModel.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L87)                                        |
+| `RecordData`                   | [viewModel.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L43)                                        |
+| `RecordKey`                    | [viewModel.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L44)                                        |
+| `RecordPresentation`           | [viewModel.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L133)                                      |
+| `RecordPresentationDefaults`   | [viewModel.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L119)                                      |
+| `RecordQuerySnapshot`          | [viewModel.ts:222](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L222)                                      |
+| `RecordQuerySource`            | [viewModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L192)                                      |
+| `RecordSession`                | [viewModel.ts:228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L228)                                      |
+| `RecordSummaryFunction`        | [viewModel.ts:308](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L308)                                      |
+| `RecordSummaryMetric`          | [viewModel.ts:310](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L310)                                      |
+| `RecordSummaryResult`          | [viewModel.ts:315](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L315)                                      |
+| `RecordTableConfig`            | [viewModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L106)                                      |
+| `RecordTablePresentation`      | [viewModel.ts:123](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L123)                                      |
+| `RecordViewConfig`             | [viewModel.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L135)                                      |
+| `RecordViewDefinition`         | [viewModel.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L79)                                        |
+| `RecordViewInstance`           | [viewModel.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L150)                                      |
+| `RendererReference`            | [viewModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L45)                                        |
 | `resolveRecordPresentation`    | [resolveRecordPresentation.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/resolveRecordPresentation.ts#L27)           |
 | `sameFilterQuery`              | [filterTree.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTree.ts#L24)                                         |
-| `SaveAsScope`                  | [viewModel.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L84)                                        |
+| `SaveAsScope`                  | [viewModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L85)                                        |
 | `validateAnalysisPresentation` | [analysisProjection.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L26)                       |
 | `validateAnalysisResult`       | [analysisResult.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L23)                               |
 | `validateFilterConfiguration`  | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
 | `validateRecordRows`           | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
 | `validateViewDefinition`       | [definitionValidation.ts:198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L198)        |
 | `validateViewInstance`         | [instanceValidation.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L29)              |
-| `ViewCapabilities`             | [viewModel.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L175)                                      |
+| `ViewCapabilities`             | [viewModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L176)                                      |
 | `ViewCreateContext`            | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L40)                       |
-| `ViewCreateInput`              | [viewModel.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L158)                                      |
-| `ViewDefinition`               | [viewModel.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L63)                                        |
+| `ViewCreateInput`              | [viewModel.ts:159](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L159)                                      |
+| `ViewDefinition`               | [viewModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L64)                                        |
 | `ViewDefinitionService`        | [ViewHost.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L28)                                          |
 | `ViewDeleteResult`             | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
 | `ViewEngine`                   | [ViewEngine.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L63)                                         |
-| `ViewEngineOptions`            | [viewModel.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L201)                                      |
-| `ViewEngineState`              | [viewModel.ts:292](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L292)                                      |
-| `ViewFieldDefinition`          | [viewModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L45)                                        |
+| `ViewEngineOptions`            | [viewModel.ts:202](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L202)                                      |
+| `ViewEngineState`              | [viewModel.ts:295](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L295)                                      |
+| `ViewFieldDefinition`          | [viewModel.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L46)                                        |
 | `ViewHost`                     | [ViewHost.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L66)                                          |
-| `ViewInstance`                 | [viewModel.ts:157](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L157)                                      |
-| `ViewInstanceConflict`         | [viewModel.ts:213](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L213)                                      |
-| `ViewInstanceList`             | [viewModel.ts:161](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L161)                                      |
-| `ViewInstanceMetadata`         | [viewModel.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L141)                                      |
-| `ViewInstancePermissions`      | [viewModel.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L165)                                      |
+| `ViewInstance`                 | [viewModel.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L158)                                      |
+| `ViewInstanceConflict`         | [viewModel.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L214)                                      |
+| `ViewInstanceList`             | [viewModel.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L162)                                      |
+| `ViewInstanceMetadata`         | [viewModel.ts:142](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L142)                                      |
+| `ViewInstancePermissions`      | [viewModel.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L166)                                      |
 | `ViewInstanceService`          | [ViewHost.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L32)                                          |
 | `ViewPermissionService`        | [ViewHost.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L53)                                          |
 | `ViewPermissionSnapshot`       | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
 | `ViewPreferenceService`        | [ViewHost.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L48)                                          |
-| `ViewScope`                    | [viewModel.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L82)                                        |
+| `ViewScope`                    | [viewModel.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L83)                                        |
 | `ViewServiceError`             | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L30)                       |
 | `ViewServiceErrorCode`         | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L19)                       |
-| `ViewSession`                  | [viewModel.ts:291](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L291)                                      |
-| `ViewSource`                   | [viewModel.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L195)                                      |
+| `ViewSession`                  | [viewModel.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L294)                                      |
+| `ViewSource`                   | [viewModel.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L196)                                      |
 | `WowAnalysisSchema`            | [wowAnalysis.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L33)                                     |
 | `WowAnalysisSchemaOptions`     | [wowAnalysis.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L28)                                     |
 
@@ -35635,7 +35635,7 @@ export function OrderPage({
 
 ### 工作配置、已应用结果与保存
 
-快照不可变。`ViewEngineState.version` 随发布递增，会话 `editVersion` 标识工作编辑版本。`RecordSession.queryAttempt` 捕获在途查询，`RecordSession.result` 将成功行绑定到当时的 config/filter/page/cursor 和 receivedAt；`AnalysisSession.pendingQuery` 捕获在途计划。展示来源和业务动作必须使用对应结果/请求快照，不能从工作编辑推断。`ViewSession` 按 kind 区分；访问记录或分析专属字段前先收窄类型。共享字段包括 baseline、当前工作 instance、dirty、validation、writeStatus、writeError、requiresReload，以及可选 conflict。
+快照不可变。`ViewEngineState.version` 随发布递增，会话 `editVersion` 标识工作编辑版本。`RecordSession.queryAttempt` 捕获在途查询，`RecordSession.result` 将成功行绑定到当时的 config/filter/page/cursor 和 receivedAt；`AnalysisSession.compilation` 保存当前工作配置的不可变编译结果（计划或校验错误），供引擎和界面共享，避免渲染时重复编译；`AnalysisSession.pendingQuery` 捕获在途计划。展示来源和业务动作必须使用对应结果/请求快照，不能从工作编辑推断。`ViewSession` 按 kind 区分；访问记录或分析专属字段前先收窄类型。共享字段包括 baseline、当前工作 instance、dirty、validation、writeStatus、writeError、requiresReload，以及可选 conflict。
 
 记录会话保留 filterDraft、filterBaseline、appliedFilter、filterPending、页码/游标、行、汇总与选择。编辑工作筛选不会改变已应用查询或记录。filterPending 表示工作筛选与已应用范围不同，本身不阻止保存。分析会话独立保留成功 result 及查询/schema 来源；后续编辑或执行失败不会把旧行标记为新结果。
 
@@ -35942,9 +35942,9 @@ console.log(compiled.plan.query, result.rows);
 | `analysisRowKey`               | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
 | `analysisScopeContext`         | [analysisCompiler.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L47)                           |
 | `AnalysisScopeDefinition`      | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
-| `AnalysisSession`              | [viewModel.ts:269](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L269)                                      |
+| `AnalysisSession`              | [viewModel.ts:270](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L270)                                      |
 | `AnalysisViewConfig`           | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
-| `AnalysisViewInstance`         | [viewModel.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L153)                                      |
+| `AnalysisViewInstance`         | [viewModel.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L154)                                      |
 | `AnalysisVisualizationType`    | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
 | `calculateRecordSummary`       | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
 | `clearBuiltinFilterProps`      | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
@@ -35998,62 +35998,62 @@ console.log(compiled.plan.query, result.rows);
 | `RECORD_COLUMN_MAX_WIDTH`      | [recordColumns.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L44)                                   |
 | `RECORD_COLUMN_MIN_WIDTH`      | [recordColumns.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L42)                                   |
 | `RECORD_SUMMARY_LABELS`        | [recordPresentation.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L47)                         |
-| `RecordCapability`             | [viewModel.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L68)                                        |
-| `RecordCardConfig`             | [viewModel.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L112)                                      |
-| `RecordCardFieldConfig`        | [viewModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L108)                                      |
-| `RecordCardPresentation`       | [viewModel.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L127)                                      |
-| `RecordColumn`                 | [viewModel.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L97)                                        |
-| `RecordColumnPinning`          | [viewModel.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L86)                                        |
-| `RecordData`                   | [viewModel.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L42)                                        |
-| `RecordKey`                    | [viewModel.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L43)                                        |
-| `RecordPresentation`           | [viewModel.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L132)                                      |
-| `RecordPresentationDefaults`   | [viewModel.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L118)                                      |
-| `RecordQuerySnapshot`          | [viewModel.ts:221](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L221)                                      |
-| `RecordQuerySource`            | [viewModel.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L191)                                      |
-| `RecordSession`                | [viewModel.ts:227](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L227)                                      |
-| `RecordSummaryFunction`        | [viewModel.ts:305](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L305)                                      |
-| `RecordSummaryMetric`          | [viewModel.ts:307](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L307)                                      |
-| `RecordSummaryResult`          | [viewModel.ts:312](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L312)                                      |
-| `RecordTableConfig`            | [viewModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L105)                                      |
-| `RecordTablePresentation`      | [viewModel.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L122)                                      |
-| `RecordViewConfig`             | [viewModel.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L134)                                      |
-| `RecordViewDefinition`         | [viewModel.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L78)                                        |
-| `RecordViewInstance`           | [viewModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L149)                                      |
-| `RendererReference`            | [viewModel.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L44)                                        |
+| `RecordCapability`             | [viewModel.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L69)                                        |
+| `RecordCardConfig`             | [viewModel.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L113)                                      |
+| `RecordCardFieldConfig`        | [viewModel.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L109)                                      |
+| `RecordCardPresentation`       | [viewModel.ts:128](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L128)                                      |
+| `RecordColumn`                 | [viewModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L98)                                        |
+| `RecordColumnPinning`          | [viewModel.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L87)                                        |
+| `RecordData`                   | [viewModel.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L43)                                        |
+| `RecordKey`                    | [viewModel.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L44)                                        |
+| `RecordPresentation`           | [viewModel.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L133)                                      |
+| `RecordPresentationDefaults`   | [viewModel.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L119)                                      |
+| `RecordQuerySnapshot`          | [viewModel.ts:222](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L222)                                      |
+| `RecordQuerySource`            | [viewModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L192)                                      |
+| `RecordSession`                | [viewModel.ts:228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L228)                                      |
+| `RecordSummaryFunction`        | [viewModel.ts:308](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L308)                                      |
+| `RecordSummaryMetric`          | [viewModel.ts:310](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L310)                                      |
+| `RecordSummaryResult`          | [viewModel.ts:315](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L315)                                      |
+| `RecordTableConfig`            | [viewModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L106)                                      |
+| `RecordTablePresentation`      | [viewModel.ts:123](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L123)                                      |
+| `RecordViewConfig`             | [viewModel.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L135)                                      |
+| `RecordViewDefinition`         | [viewModel.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L79)                                        |
+| `RecordViewInstance`           | [viewModel.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L150)                                      |
+| `RendererReference`            | [viewModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L45)                                        |
 | `resolveRecordPresentation`    | [resolveRecordPresentation.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/resolveRecordPresentation.ts#L27)           |
 | `sameFilterQuery`              | [filterTree.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTree.ts#L24)                                         |
-| `SaveAsScope`                  | [viewModel.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L84)                                        |
+| `SaveAsScope`                  | [viewModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L85)                                        |
 | `validateAnalysisPresentation` | [analysisProjection.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L26)                       |
 | `validateAnalysisResult`       | [analysisResult.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L23)                               |
 | `validateFilterConfiguration`  | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
 | `validateRecordRows`           | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
 | `validateViewDefinition`       | [definitionValidation.ts:198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L198)        |
 | `validateViewInstance`         | [instanceValidation.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L29)              |
-| `ViewCapabilities`             | [viewModel.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L175)                                      |
+| `ViewCapabilities`             | [viewModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L176)                                      |
 | `ViewCreateContext`            | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L40)                       |
-| `ViewCreateInput`              | [viewModel.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L158)                                      |
-| `ViewDefinition`               | [viewModel.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L63)                                        |
+| `ViewCreateInput`              | [viewModel.ts:159](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L159)                                      |
+| `ViewDefinition`               | [viewModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L64)                                        |
 | `ViewDefinitionService`        | [ViewHost.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L28)                                          |
 | `ViewDeleteResult`             | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
 | `ViewEngine`                   | [ViewEngine.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L63)                                         |
-| `ViewEngineOptions`            | [viewModel.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L201)                                      |
-| `ViewEngineState`              | [viewModel.ts:292](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L292)                                      |
-| `ViewFieldDefinition`          | [viewModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L45)                                        |
+| `ViewEngineOptions`            | [viewModel.ts:202](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L202)                                      |
+| `ViewEngineState`              | [viewModel.ts:295](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L295)                                      |
+| `ViewFieldDefinition`          | [viewModel.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L46)                                        |
 | `ViewHost`                     | [ViewHost.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L66)                                          |
-| `ViewInstance`                 | [viewModel.ts:157](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L157)                                      |
-| `ViewInstanceConflict`         | [viewModel.ts:213](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L213)                                      |
-| `ViewInstanceList`             | [viewModel.ts:161](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L161)                                      |
-| `ViewInstanceMetadata`         | [viewModel.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L141)                                      |
-| `ViewInstancePermissions`      | [viewModel.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L165)                                      |
+| `ViewInstance`                 | [viewModel.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L158)                                      |
+| `ViewInstanceConflict`         | [viewModel.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L214)                                      |
+| `ViewInstanceList`             | [viewModel.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L162)                                      |
+| `ViewInstanceMetadata`         | [viewModel.ts:142](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L142)                                      |
+| `ViewInstancePermissions`      | [viewModel.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L166)                                      |
 | `ViewInstanceService`          | [ViewHost.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L32)                                          |
 | `ViewPermissionService`        | [ViewHost.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L53)                                          |
 | `ViewPermissionSnapshot`       | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
 | `ViewPreferenceService`        | [ViewHost.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L48)                                          |
-| `ViewScope`                    | [viewModel.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L82)                                        |
+| `ViewScope`                    | [viewModel.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L83)                                        |
 | `ViewServiceError`             | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L30)                       |
 | `ViewServiceErrorCode`         | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L19)                       |
-| `ViewSession`                  | [viewModel.ts:291](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L291)                                      |
-| `ViewSource`                   | [viewModel.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L195)                                      |
+| `ViewSession`                  | [viewModel.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L294)                                      |
+| `ViewSource`                   | [viewModel.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L196)                                      |
 | `WowAnalysisSchema`            | [wowAnalysis.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L33)                                     |
 | `WowAnalysisSchemaOptions`     | [wowAnalysis.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L28)                                     |
 

@@ -378,10 +378,7 @@ export function AnalysisView({
     [definition, engine],
   );
   const config = session?.instance.config;
-  const compiled = useMemo(
-    () => (config && context ? compileAnalysis(config, context) : null),
-    [config, context],
-  );
+  const compiled = session?.compilation ?? null;
   const open = configurationOpen ?? localOpen ?? !compiled?.plan;
   const result = session?.result;
   const querying = session?.queryStatus === 'loading';

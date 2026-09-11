@@ -39,6 +39,7 @@ export function createSession(
     return deriveSession(
       {
         kind: 'analysis',
+        compilation: { errors: [] },
         editVersion: 0,
         filterValid: true,
         pendingQuery: null,
@@ -129,7 +130,7 @@ export function deriveSession(
       previous.instance.config === session.instance.config &&
       previous.filterValid === session.filterValid;
     const compiled = cached
-      ? undefined
+      ? previous.compilation
       : compileAnalysis(session.instance.config, {
           fields: definition.fields,
           capability: definition.analysis!,
@@ -141,6 +142,7 @@ export function deriveSession(
     return {
       ...session,
       editVersion,
+      compilation: compiled,
       validation: cached
         ? previous!.validation
         : [

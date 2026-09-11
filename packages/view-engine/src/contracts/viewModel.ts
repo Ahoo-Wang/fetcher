@@ -26,6 +26,7 @@ import type {
 import type { DeepReadonly } from '../lib/types.js';
 
 import type {
+  AnalysisCompileResult,
   AnalysisCapability,
   AnalysisViewConfig,
   AnalysisCompilerRegistry,
@@ -268,6 +269,8 @@ export interface RecordSession {
 }
 export interface AnalysisSession {
   readonly kind: 'analysis';
+  /** Current working query compilation, shared by the engine and its renderers. */
+  readonly compilation: DeepReadonly<AnalysisCompileResult>;
   readonly editVersion: number;
   readonly filterValid: boolean;
   readonly pendingQuery: DeepReadonly<AnalysisPlan> | null;

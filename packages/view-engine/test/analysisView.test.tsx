@@ -24,6 +24,8 @@ import { AggregationFunction, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { ViewPageContent } from '../src/view/ViewPageContent.js';
 import { AnalysisView } from '../src/analysis/AnalysisView.js';
+import { compileAnalysis } from '../src/analysis/analysisCompiler.js';
+vi.mock('../src/analysis/analysisCompiler.js', { spy: true });
 import type { FilterRegistration } from '../src/filter/filterReactTypes.js';
 import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
 import type {
@@ -787,6 +789,22 @@ it('explains evicted analysis results and restores them with the run action', as
     );
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
     expect(aggregate).toHaveBeenCalledTimes(before + 1);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('renders the engine compilation without recompiling the working query', async () => {
+  const { engine } = setup();
+  try {
+    await engine.load();
+    vi.mocked(compileAnalysis).mockClear();
+    render(<AnalysisView engine={engine} />);
+    expect(compileAnalysis).not.toHaveBeenCalled();
+    act(() =>
+      engine.analysis('totals').edit(config => ({ ...config, limit: 50 })),
+    );
+    expect(compileAnalysis).toHaveBeenCalledTimes(1);
   } finally {
     engine.dispose();
   }
