@@ -14,7 +14,7 @@
 import type {
   CrossTabMessenger,
   CrossTabMessageHandler,
-} from './crossTabMessenger';
+} from './crossTabMessenger.js';
 
 export interface StorageMessengerOptions {
   channelName: string;

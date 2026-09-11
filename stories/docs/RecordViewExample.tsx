@@ -10,6 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { ExampleViewPage } from '../../packages/view-engine/examples/react/ExampleViewPage.js';
 import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
   createFilterConfiguration,
@@ -17,14 +18,13 @@ import {
   newFilterNode,
   type RecordData,
   type RecordQuerySource,
-  type ViewDefinition,
+  type RecordViewDefinition,
   type ViewHost,
   type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
 import { useState } from 'react';
 import type { RecordCardRenderContext } from '@ahoo-wang/fetcher-view-engine/react';
 import type { ReactNode } from 'react';
-import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
 import {
   FilterOperator,
   SortDirection,
@@ -39,19 +39,21 @@ const orders = [
   { id: 'SO-202609-1002', amount: 6000, status: 'confirmed' },
   { id: 'SO-202609-1003', amount: 8000, status: 'confirmed' },
 ];
-const definition: ViewDefinition = {
+const definition: RecordViewDefinition = {
   id: 'first-orders',
   sourceId: 'orders',
   title: '第一个数据视图',
-  allowedLayouts: ['table', 'card'],
-  rowKey: 'id',
-  defaultPresentation: {
-    card: {
-      title: { id: 'title', field: 'id' },
-      fields: [
-        { id: 'amount', field: 'amount' },
-        { id: 'status', field: 'status' },
-      ],
+  record: {
+    allowedLayouts: ['table', 'card'],
+    rowKey: 'id',
+    defaultPresentation: {
+      card: {
+        title: { id: 'title', field: 'id' },
+        fields: [
+          { id: 'amount', field: 'amount' },
+          { id: 'status', field: 'status' },
+        ],
+      },
     },
   },
   allowedOperators: [
@@ -103,6 +105,7 @@ const instances: ViewInstanceList = {
       title: '我的订单',
       kind: 'record',
       scope: { type: 'personal' },
+      revision: '1',
       config: {
         filters: createFilterConfiguration({
           ...newFilterNode(FilterOperator.GTE, 'amount'),
@@ -223,7 +226,7 @@ function RecordViewWorkspace({
       data-theme={appearance}
       style={{ padding: 16, minWidth: 0 }}
     >
-      <ViewPage
+      <ExampleViewPage
         scopeKey="docs:orders"
         definitionId={definition.id}
         definition={definition}

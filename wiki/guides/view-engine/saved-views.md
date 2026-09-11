@@ -9,7 +9,7 @@ description: Separate component configuration, service writes, user preferences 
 
 A saved record instance contains `config.filters`, `sort`, `pagination` and `presentation`. Filters store component attributes. The current page/cursor, rows, selection, loading state, errors, refresh countdown and expanded state are runtime state.
 
-Editing a filter does not query. Query applies it; Save persists the applied configuration. Valid display-only editor properties or an added unset control may be saved without changing the query. Pending query-affecting values require Query or Undo before Save. Reopening should restore component configuration and execute records through the source; it should not deserialize cached records as the current result.
+Editing does not query. Query applies filters; Save independently validates and persists current working configuration. Valid unqueried edits can be saved; invalid raw input must be corrected. Saving leaves the current results unchanged; reopening restores saved configuration and executes it through the source.
 
 ## Connect only the services you implement
 
@@ -37,3 +37,5 @@ Load permissions before exposing synchronous getters. Publish policy changes thr
 Use `IndexedDBViewHost` for persisted browser view configuration. Use `MemoryViewHost` for memory examples and Node services, optionally supplying a shared Map; each host otherwise owns independent memory state. Both hosts implement the same per-user ordering, explicit-null default and deletion-fallback rules, while business records come from a separate source. See [ViewHost](../../reference/view-engine/view-host.md) for options and verification.
 
 Deletion returns an authoritative `ViewDeleteResult`, so the default marker follows the transaction result even when another tab changed the order or default. Existing view drafts are preserved without a full reload.
+
+Conflict recovery requires an explicit reviewed decision: use the latest version, save a copy, or overwrite against the reviewed revision. Unknown create recovery retains its original request ID. See [engine recovery](../../reference/view-engine/engine.md).

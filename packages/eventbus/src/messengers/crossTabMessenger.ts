@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { BroadcastChannelMessenger } from './broadcastChannelMessenger';
-import { StorageMessenger } from './storageMessenger';
+import { BroadcastChannelMessenger } from './broadcastChannelMessenger.js';
+import { StorageMessenger } from './storageMessenger.js';
 
 export type CrossTabMessageHandler = (message: any) => void;
 

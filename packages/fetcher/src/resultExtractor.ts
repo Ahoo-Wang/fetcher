@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { FetchExchange } from './fetchExchange';
+import type { FetchExchange } from './fetchExchange.js';
 
 /**
  * Function interface for extracting results from a FetchExchange.

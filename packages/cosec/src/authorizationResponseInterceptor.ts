@@ -11,19 +11,22 @@
  * limitations under the License.
  */
 
-import { CoSecHeaders, ResponseCodes } from './types';
+import { CoSecHeaders, ResponseCodes } from './types.js';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 import {
   deleteHeader,
   getHeader,
   type ResponseInterceptor,
 } from '@ahoo-wang/fetcher';
-import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor';
-import { assertTokenSession, TOKEN_SESSION_ATTRIBUTE } from './refreshSession';
+import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor.js';
+import {
+  assertTokenSession,
+  TOKEN_SESSION_ATTRIBUTE,
+} from './refreshSession.js';
 import {
   AUTHORIZATION_REQUEST_INTERCEPTOR_NAME,
   type AuthorizationInterceptorOptions,
-} from './authorizationRequestInterceptor';
+} from './authorizationRequestInterceptor.js';
 
 /**
  * The name of the AuthorizationResponseInterceptor.

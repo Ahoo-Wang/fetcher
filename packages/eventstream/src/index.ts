@@ -60,13 +60,13 @@
  * @see {@link TerminateDetector} for termination detection
  */
 
-export * from './eventStreamConverter';
-export * from './jsonServerSentEventTransformStream';
-export * from './eventStreamResultExtractor';
-export * from './responses';
-export * from './serverSentEventTransformStream';
-export * from './textLineTransformStream';
-export * from './readableStreamAsyncIterable';
-export * from './readableStreams';
-export * from './safeTransformer';
-export * from './streamController';
+export * from './eventStreamConverter.js';
+export * from './jsonServerSentEventTransformStream.js';
+export * from './eventStreamResultExtractor.js';
+export * from './responses.js';
+export * from './serverSentEventTransformStream.js';
+export * from './textLineTransformStream.js';
+export * from './readableStreamAsyncIterable.js';
+export * from './readableStreams.js';
+export * from './safeTransformer.js';
+export * from './streamController.js';

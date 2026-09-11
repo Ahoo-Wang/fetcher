@@ -23,12 +23,12 @@ import {
   type ResultExtractorCapable,
   type TimeoutCapable,
 } from '@ahoo-wang/fetcher';
-import { ENDPOINT_METADATA_KEY } from './endpointDecorator';
-import { RequestExecutor } from './requestExecutor';
-import { PARAMETER_METADATA_KEY } from './parameterDecorator';
+import { ENDPOINT_METADATA_KEY } from './endpointDecorator.js';
+import { RequestExecutor } from './requestExecutor.js';
+import { PARAMETER_METADATA_KEY } from './parameterDecorator.js';
 import 'reflect-metadata';
-import { FunctionMetadata } from './functionMetadata';
-import type { EndpointReturnTypeCapable } from './endpointReturnTypeCapable';
+import { FunctionMetadata } from './functionMetadata.js';
+import type { EndpointReturnTypeCapable } from './endpointReturnTypeCapable.js';
 
 /**
  * Metadata for class-level API configuration.

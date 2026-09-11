@@ -11,16 +11,19 @@
  * limitations under the License.
  */
 
-import type { TokenStorage } from './tokenStorage';
-import { CoSecTokenRefresher, type TokenRefresher } from './tokenRefresher';
-import { JwtCompositeToken, type RefreshTokenStatusCapable } from './jwtToken';
+import type { TokenStorage } from './tokenStorage.js';
+import { CoSecTokenRefresher, type TokenRefresher } from './tokenRefresher.js';
+import {
+  JwtCompositeToken,
+  type RefreshTokenStatusCapable,
+} from './jwtToken.js';
 import { FetcherError, type FetchExchange } from '@ahoo-wang/fetcher';
-import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './unauthorizedErrorInterceptor';
+import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './unauthorizedErrorInterceptor.js';
 import {
   assertTokenSession,
   isSameTokenSession,
   TOKEN_SESSION_ATTRIBUTE,
-} from './refreshSession';
+} from './refreshSession.js';
 
 export class RefreshTokenError extends FetcherError {
   constructor(

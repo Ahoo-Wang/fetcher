@@ -1,5 +1,5 @@
 import { HttpMethod, type ResultExtractorCapable } from '@ahoo-wang/fetcher';
-import { type ApiMetadata } from './apiDecorator';
+import { type ApiMetadata } from './apiDecorator.js';
 import 'reflect-metadata';
 
 export interface PathCapable {

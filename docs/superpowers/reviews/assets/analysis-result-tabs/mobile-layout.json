@@ -1,0 +1,15 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "horizontalOverflow": false,
+  "tabList": {
+    "left": 113.484375,
+    "right": 261.5,
+    "top": 804,
+    "bottom": 840
+  },
+  "scenario": "501 returned rows, local page 2, sticky bottom result tabs",
+  "method": "read-only browser DOM geometry"
+}

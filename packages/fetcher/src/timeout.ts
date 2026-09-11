@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { type FetchRequest } from './fetchRequest';
-import { FetcherError } from './fetcherError';
+import { type FetchRequest } from './fetchRequest.js';
+import { FetcherError } from './fetcherError.js';
 
 /**
  * Exception class thrown when an HTTP request times out.

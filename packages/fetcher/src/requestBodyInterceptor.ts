@@ -14,10 +14,10 @@
 import {
   BUILT_IN_INTERCEPTOR_ORDER_STEP,
   type RequestInterceptor,
-} from './interceptor';
-import type { FetchExchange } from './fetchExchange';
-import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest';
-import { deleteHeader, getHeader, setHeader } from './requestHeaders';
+} from './interceptor.js';
+import type { FetchExchange } from './fetchExchange.js';
+import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest.js';
+import { deleteHeader, getHeader, setHeader } from './requestHeaders.js';
 
 /**
  * The name of the RequestBodyInterceptor.

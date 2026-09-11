@@ -14,15 +14,15 @@ description: Definition, instance, preference, permission and query-source respo
 | `instance`   | `load(instanceId, signal?)`                    | `Promise<ViewInstance>`                                                       |
 | `instance`   | `create(instanceWithoutIdOrRevision, context)` | Authoritative created instance; context carries requestId and optional signal |
 | `instance`   | `save(instance)`                               | Saved instance with authoritative revision                                    |
-| `instance`   | `rename(instanceId, title, revision?)`         | Renamed instance                                                              |
-| `instance`   | `delete(instanceId, revision?)`                | `Promise<ViewDeleteResult>`                                                   |
+| `instance`   | `rename(instanceId, title, revision)`          | Renamed instance                                                              |
+| `instance`   | `delete(instanceId, revision)`                 | `Promise<ViewDeleteResult>`                                                   |
 | `preference` | `saveOrder(definitionId, instanceIds)`         | Persist the current user's ordering                                           |
 | `preference` | `saveDefault(definitionId, instanceId)`        | Persist the current user's default; `instanceId` is `string \| null`          |
 | `permission` | `getInstance(instance)`                        | Synchronous `ViewInstancePermissions`                                         |
 | `permission` | `getDefinition()`                              | Synchronous `{ reorder }` projection                                          |
 | `permission` | `load(definitionId, signal?)`                  | Initialize getters; resolve a `ViewPermissionSnapshot`                        |
 | `permission` | `refresh(signal?)`, `subscribe(listener)`      | Refresh grants; return an unsubscribe function from subscribe                 |
-| host         | `resolveSource(sourceId)`                      | A `RecordQuerySource` or Promise of one                                       |
+| host         | `resolveSource(sourceId)`                      | A `ViewSource` or Promise of one; record paging or analysis aggregate         |
 
 Engine loading awaits `permission.load`, falling back to `permission.refresh` when load is absent. Permission initialization failure prevents ready state. A getter must be pure and expose the initialized policy. Notify subsequent changes or replace the host; mutating an invisible closure does not notify React.
 
@@ -61,3 +61,5 @@ Browser reads, CAS and writes use one readwrite transaction. Success follows com
 `saveDefault` stores a preference scoped to the current user and definition. It accepts any currently visible personal, shared or system instance without requiring edit permission, or `null`; null leaves the next entry without automatic selection. Setting a default does not select it or query records, and later ordering changes do not change it. When a default instance is deleted, the host transaction updates every affected user's default to the first remaining instance in that user's visible order, or null. Explicit null and another user's still-visible personal instance with the same ID remain unchanged. A user first seen after that deletion seeds a default resolved against their actual visibility. Deleting an inaccessible personal instance is still a scoped no-op.
 
 After building, run `pnpm verify:view-engine` for packed-package, HTTP, cross-tab CAS, cancellation, reset and real-page checks. Client storage and development services are not production authorization boundaries.
+
+Reload does not automatically overwrite a remote content divergence. Inspect `session.conflict` and explicitly use the remote version or confirm overwrite with the reviewed snapshot. Dispatched write deadlines remain unknown outcomes; read deadlines are independently retryable. See [lifecycle and limits](./engine.md).

@@ -17,12 +17,12 @@ import {
   setHeader,
   type RequestInterceptor,
 } from '@ahoo-wang/fetcher';
-import type { AppIdCapable, DeviceIdStorageCapable } from './types';
-import { CoSecHeaders } from './types';
-import { idGenerator } from './idGenerator';
-import type { SpaceIdProvider } from './spaceIdProvider';
-import { NoneSpaceIdProvider } from './spaceIdProvider';
-import type { DeviceIdStorage } from './deviceIdStorage';
+import type { AppIdCapable, DeviceIdStorageCapable } from './types.js';
+import { CoSecHeaders } from './types.js';
+import { idGenerator } from './idGenerator.js';
+import type { SpaceIdProvider } from './spaceIdProvider.js';
+import { NoneSpaceIdProvider } from './spaceIdProvider.js';
+import type { DeviceIdStorage } from './deviceIdStorage.js';
 
 /**
  * Configuration options for CoSecRequestInterceptor.

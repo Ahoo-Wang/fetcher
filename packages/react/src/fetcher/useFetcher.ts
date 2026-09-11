@@ -22,10 +22,10 @@ import { fetcherRegistrar, getFetcher } from '@ahoo-wang/fetcher';
 import type {
   UseExecutePromiseOptions,
   UseExecutePromiseReturn,
-} from '../core';
-import { useExecutePromise } from '../core';
+} from '../core/index.js';
+import { useExecutePromise } from '../core/index.js';
 import { useCallback, useState, useMemo } from 'react';
-import { useLatest, useMounted, useRequestId } from '../core';
+import { useLatest, useMounted, useRequestId } from '../core/index.js';
 
 /**
  * Configuration options for the useFetcher hook.

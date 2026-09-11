@@ -30,11 +30,14 @@ import {
   type RequestHeaders,
   type UrlParams,
 } from '@ahoo-wang/fetcher';
-import type { ApiMetadata } from './apiDecorator';
-import type { EndpointMetadata } from './endpointDecorator';
-import type { ParameterMetadata, ParameterRequest } from './parameterDecorator';
-import { ParameterType } from './parameterDecorator';
-import { EndpointReturnType } from './endpointReturnTypeCapable';
+import type { ApiMetadata } from './apiDecorator.js';
+import type { EndpointMetadata } from './endpointDecorator.js';
+import type {
+  ParameterMetadata,
+  ParameterRequest,
+} from './parameterDecorator.js';
+import { ParameterType } from './parameterDecorator.js';
+import { EndpointReturnType } from './endpointReturnTypeCapable.js';
 
 /**
  * RFC 6570 `{name}` path-template placeholders, e.g. `{userId}` in

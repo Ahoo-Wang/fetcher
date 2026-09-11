@@ -1,0 +1,293 @@
+{
+  "browser": "chromium",
+  "version": "153.0.8010.37",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M4 Pro",
+  "scale": {
+    "rows": 100,
+    "columns": 30,
+    "filterFields": 100
+  },
+  "checks": [
+    "100 rows/30 columns, nested own paths and built-in link/number/status/tags/date cells",
+    "Enter queries; draft editing leaves applied results and cell commits unchanged",
+    "Warm no-network interaction p95 within 1000ms regression ceiling",
+    "Light/dark 1440/390px: no unreviewed axe WCAG A/AA violations including portaled dialogs; raw findings retained; viewport bounds, checkbox keyboard toggling and Escape focus",
+    "Failure is distinct from empty; retry restores usable records",
+    "Slow query shows Spin/busy rather than empty and resolves to readable rows",
+    "20 mount/dispose cycles cancel pending reads and release every host permission subscription",
+    "Production analysis input/switch budgets and 10,000-row cancellation/input retention"
+  ],
+  "timings": {
+    "refresh": {
+      "samples": [
+        131.72, 134.68, 115.38, 134.65, 133.56, 131.74, 134.62, 133.63, 116.4,
+        115.35
+      ],
+      "phases": [
+        {
+          "observe": 0.5,
+          "click": 96.11,
+          "settle": 3.06,
+          "paint": 32.05
+        },
+        {
+          "observe": 0.41,
+          "click": 100.69,
+          "settle": 0.85,
+          "paint": 32.72
+        },
+        {
+          "observe": 0.48,
+          "click": 97.62,
+          "settle": 0.8,
+          "paint": 16.48
+        },
+        {
+          "observe": 0.44,
+          "click": 101.56,
+          "settle": 0.88,
+          "paint": 31.76
+        },
+        {
+          "observe": 0.67,
+          "click": 97.98,
+          "settle": 0.9,
+          "paint": 34
+        },
+        {
+          "observe": 0.45,
+          "click": 96.71,
+          "settle": 2.99,
+          "paint": 31.59
+        },
+        {
+          "observe": 0.38,
+          "click": 103.33,
+          "settle": 0.93,
+          "paint": 29.98
+        },
+        {
+          "observe": 0.56,
+          "click": 98.22,
+          "settle": 0.86,
+          "paint": 33.97
+        },
+        {
+          "observe": 0.49,
+          "click": 95,
+          "settle": 3.31,
+          "paint": 17.6
+        },
+        {
+          "observe": 0.45,
+          "click": 94.46,
+          "settle": 0.86,
+          "paint": 19.58
+        }
+      ],
+      "p95": 134.68,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    },
+    "selection": {
+      "samples": [
+        99.09, 85.06, 99.5, 83.57, 99.56, 82.58, 99.66, 85.03, 99.88, 100.28
+      ],
+      "p95": 100.28,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    },
+    "fieldPicker": {
+      "samples": [
+        130.92, 133.57, 134.27, 132.75, 134.18, 134.48, 146.71, 134.18, 134.41,
+        132.17
+      ],
+      "phases": [
+        {
+          "click": 41.52,
+          "visible": 10.01,
+          "paintedFrames": 24.9,
+          "escape": 11.41,
+          "hidden": 43.01
+        },
+        {
+          "click": 48.37,
+          "visible": 6.56,
+          "paintedFrames": 22.57,
+          "escape": 11.62,
+          "hidden": 44.43
+        },
+        {
+          "click": 48.1,
+          "visible": 6.7,
+          "paintedFrames": 23.71,
+          "escape": 11.98,
+          "hidden": 43.78
+        },
+        {
+          "click": 48.4,
+          "visible": 6.35,
+          "paintedFrames": 21.74,
+          "escape": 11.79,
+          "hidden": 44.48
+        },
+        {
+          "click": 46.5,
+          "visible": 8.03,
+          "paintedFrames": 22.41,
+          "escape": 11.95,
+          "hidden": 45.28
+        },
+        {
+          "click": 46.46,
+          "visible": 6.75,
+          "paintedFrames": 24.06,
+          "escape": 11.91,
+          "hidden": 45.29
+        },
+        {
+          "click": 53.84,
+          "visible": 8.84,
+          "paintedFrames": 28.06,
+          "escape": 11.51,
+          "hidden": 44.44
+        },
+        {
+          "click": 49.14,
+          "visible": 6.3,
+          "paintedFrames": 22.53,
+          "escape": 11.76,
+          "hidden": 44.45
+        },
+        {
+          "click": 43.41,
+          "visible": 9.66,
+          "paintedFrames": 24.35,
+          "escape": 11.92,
+          "hidden": 45.07
+        },
+        {
+          "click": 46.21,
+          "visible": 7.97,
+          "paintedFrames": 21.99,
+          "escape": 11.57,
+          "hidden": 44.42
+        }
+      ],
+      "p95": 146.71,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    }
+  },
+  "reviewedWarnings": [],
+  "passed": true,
+  "analysis": {
+    "local-performance": {
+      "kind": "performance",
+      "environment": {
+        "build": "production",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "hardwareConcurrency": 14,
+        "visibility": "visible",
+        "timeOrigin": 1789065478418.9,
+        "measuredAt": "2026-09-10T18:38:03.442Z"
+      },
+      "fields": 100,
+      "filters": 20,
+      "returnedRows": 100,
+      "columns": 6,
+      "sampleCount": 30,
+      "warmupCount": 5,
+      "warmup": {
+        "inputMs": [
+          34.09999996423721, 37.700000047683716, 50.30000001192093,
+          50.10000002384186, 30.899999976158142
+        ],
+        "switchMs": [
+          64.59999996423721, 67.19999998807907, 59.80000001192093,
+          66.90000003576279, 67.19999998807907
+        ]
+      },
+      "input": {
+        "samplesMs": [
+          31.19999998807907, 29.19999998807907, 31.600000023841858,
+          30.69999998807907, 29.600000023841858, 33, 31.100000023841858,
+          31.80000001192093, 47.80000001192093, 35.69999998807907,
+          36.09999996423721, 34.09999996423721, 35, 35.80000001192093,
+          35.10000002384186, 33.30000001192093, 36.09999996423721,
+          35.90000003576279, 34.09999996423721, 35.19999998807907, 35.5,
+          35.10000002384186, 33.90000003576279, 35.10000002384186, 35,
+          33.700000047683716, 36, 35.19999998807907, 35.69999998807907, 35
+        ],
+        "p50Ms": 35,
+        "p95Ms": 36.09999996423721,
+        "maxMs": 47.80000001192093
+      },
+      "instanceSwitch": {
+        "samplesMs": [
+          69.40000003576279, 66.69999998807907, 64.30000001192093, 65, 67.5, 68,
+          61.60000002384186, 66.69999998807907, 66.20000004768372, 65, 67.5,
+          68.90000003576279, 65.69999998807907, 68, 66.30000001192093,
+          64.89999997615814, 66.80000001192093, 66.89999997615814,
+          61.60000002384186, 67.69999998807907, 67.40000003576279,
+          67.40000003576279, 68, 66.59999996423721, 64.39999997615814,
+          67.09999996423721, 67.90000003576279, 65.80000001192093, 68.5, 68
+        ],
+        "p50Ms": 66.80000001192093,
+        "p95Ms": 68.90000003576279,
+        "maxMs": 69.40000003576279
+      },
+      "thresholds": {
+        "inputP95Ms": 50,
+        "switchP95Ms": 100
+      },
+      "passed": true,
+      "productionAdmitted": true,
+      "requestsBefore": 2,
+      "requestsAfter": 2,
+      "method": "浏览器内performance.now；合成原生input/click事件分发前至两次requestAnimationFrame回调后；先对齐一帧不计时；断言DOM和引擎状态已提交。每项5热身+30正式样本，最近秩P95，不删除离群点。实例由固定fixture按钮调用公共selectInstance，两实例结果已预热；包含真实ViewPage渲染，无网络、无工具传输时延。"
+    },
+    "large-result-cancellation": {
+      "kind": "stress",
+      "environment": {
+        "build": "production",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "hardwareConcurrency": 14,
+        "visibility": "visible",
+        "timeOrigin": 1789065484133.7,
+        "measuredAt": "2026-09-10T18:38:07.608Z"
+      },
+      "fields": 100,
+      "filters": 20,
+      "returnedRows": 10000,
+      "columns": 21,
+      "renderedDataRows": 100,
+      "input": {
+        "text": "压力验收_中文_ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789",
+        "characters": 45,
+        "preserved": true
+      },
+      "abortObserved": true,
+      "lateResponseIgnored": true,
+      "requests": 3,
+      "passed": true,
+      "scope": "取消由切换实例触发；故意迟到的传输回包不得覆盖旧成功结果或新选择"
+    }
+  },
+  "pageErrors": []
+}

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-export * from './env';
-export * from './keyStorage';
-export * from './inMemoryStorage';
-export * from './serializer';
+export * from './env.js';
+export * from './keyStorage.js';
+export * from './inMemoryStorage.js';
+export * from './serializer.js';

@@ -14,9 +14,9 @@
 import {
   BUILT_IN_INTERCEPTOR_ORDER_STEP,
   type ResponseInterceptor,
-} from './interceptor';
-import type { FetchExchange } from './fetchExchange';
-import { ExchangeError } from './fetcherError';
+} from './interceptor.js';
+import type { FetchExchange } from './fetchExchange.js';
+import { ExchangeError } from './fetcherError.js';
 
 /**
  * Error thrown when response status validation fails.

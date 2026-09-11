@@ -11,11 +11,15 @@
  * limitations under the License.
  */
 
-import type { CoSecJwtPayload, EarlyPeriodCapable, JwtPayload } from './jwts';
-import { isTokenExpired, parseJwtPayload } from './jwts';
-import type { CompositeToken } from './tokenRefresher';
+import type {
+  CoSecJwtPayload,
+  EarlyPeriodCapable,
+  JwtPayload,
+} from './jwts.js';
+import { isTokenExpired, parseJwtPayload } from './jwts.js';
+import type { CompositeToken } from './tokenRefresher.js';
 import type { Serializer } from '@ahoo-wang/fetcher-storage';
-import { idGenerator } from './idGenerator';
+import { idGenerator } from './idGenerator.js';
 
 /**
  * Interface for JWT token with typed payload.

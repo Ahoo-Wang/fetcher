@@ -13,7 +13,7 @@
 
 import { createRef, useCallback, useInsertionEffect, useMemo } from 'react';
 import type { KeyStorage } from '@ahoo-wang/fetcher-storage';
-import { useKeyStorage } from './useKeyStorage';
+import { useKeyStorage } from './useKeyStorage.js';
 import { produce } from 'immer';
 
 function createStorageDefaults<T>(storage: KeyStorage<T>) {

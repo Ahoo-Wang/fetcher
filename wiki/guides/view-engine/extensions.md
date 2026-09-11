@@ -8,13 +8,13 @@ description: Register business renderers, compose record regions and select scop
 
 ## Registered business extensions
 
-| Need                          | Registration                | Configuration reference                               |
-| ----------------------------- | --------------------------- | ----------------------------------------------------- |
-| Global business operation     | `extensions.globalActions`  | `definition.recordActions.global`                     |
-| Batch / table operation       | `extensions.toolbarActions` | `definition.recordActions.toolbar`                    |
-| Per-record action             | `extensions.rowActions`     | `definition.recordActions.row` plus an actions column |
-| Filter component and compiler | `extensions.filters`        | Field/editor/operator component reference             |
-| Custom cell                   | `extensions.cells`          | `field.cellRenderer` or `column.renderer`             |
+| Need                          | Registration                | Configuration reference                                      |
+| ----------------------------- | --------------------------- | ------------------------------------------------------------ |
+| Global business operation     | `extensions.globalActions`  | `definition.record.recordActions.global`                     |
+| Batch / table operation       | `extensions.toolbarActions` | `definition.record.recordActions.toolbar`                    |
+| Per-record action             | `extensions.rowActions`     | `definition.record.recordActions.row` plus an actions column |
+| Filter component and compiler | `extensions.filters`        | Field/editor/operator component reference                    |
+| Custom cell                   | `extensions.cells`          | `field.cellRenderer` or `column.renderer`                    |
 
 Each reference is `{ name, options? }`; options must be JSON data. Register components, service clients and callbacks in runtime extensions, never persisted JSON. Unknown names and invalid configuration surface an error. Start with built-ins before registering a custom implementation.
 
@@ -38,7 +38,11 @@ Stable styling hooks are `data-slot="record-view"`, `record-global-toolbar`, `re
 
 ```tsx
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
-import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import {
+  useViewEngine,
+  ViewPage,
+  ViewTheme,
+} from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 import '@ahoo-wang/fetcher-view-engine/themes/blue.css';
 
@@ -49,9 +53,10 @@ export function Orders({
   host: ViewHost;
   scopeKey: string;
 }) {
+  const binding = useViewEngine({ host, scopeKey, definitionId: 'orders' });
   return (
     <ViewTheme theme="blue" appearance="system" density="compact">
-      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+      <ViewPage {...binding} />
     </ViewTheme>
   );
 }
@@ -71,7 +76,11 @@ export function Orders({
 
 ```tsx
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
-import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import {
+  useViewEngine,
+  ViewPage,
+  ViewTheme,
+} from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 import './brand.css';
 
@@ -82,12 +91,13 @@ export function Orders({
   host: ViewHost;
   scopeKey: string;
 }) {
+  const binding = useViewEngine({ host, scopeKey, definitionId: 'orders' });
   return (
     <ViewTheme
       theme="brand"
       style={{ '--fve-font-size': '14px', '--fve-control-height': '2.25em' }}
     >
-      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+      <ViewPage {...binding} />
     </ViewTheme>
   );
 }
@@ -99,7 +109,11 @@ Partial themes inherit omitted variables. Pair foreground/background colors expl
 
 ```tsx
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
-import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import {
+  useViewEngine,
+  ViewPage,
+  ViewTheme,
+} from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 import '@ahoo-wang/fetcher-view-engine/themes/shadcn.css';
 
@@ -110,9 +124,10 @@ export function Orders({
   host: ViewHost;
   scopeKey: string;
 }) {
+  const binding = useViewEngine({ host, scopeKey, definitionId: 'orders' });
   return (
     <ViewTheme theme="shadcn">
-      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+      <ViewPage {...binding} />
     </ViewTheme>
   );
 }
@@ -126,6 +141,7 @@ The host supplies complete CSS colors such as `oklch(...)`, `hsl(...)` or `#hex`
 import { useState } from 'react';
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
 import {
+  useViewEngine,
   ViewPage,
   type RecordToolbarRenderContext,
 } from '@ahoo-wang/fetcher-view-engine/react';
@@ -152,11 +168,10 @@ export function Orders({
   host: ViewHost;
   scopeKey: string;
 }) {
+  const binding = useViewEngine({ host, scopeKey, definitionId: 'orders' });
   return (
     <ViewPage
-      host={host}
-      scopeKey={scopeKey}
-      definitionId="orders"
+      {...binding}
       selectable
       renderToolbar={context => <OrdersToolbar context={context} />}
     />

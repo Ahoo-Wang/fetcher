@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { Fetcher } from './fetcher';
+import type { Fetcher } from './fetcher.js';
 
 /**
  * Creates a new type by making specified properties of an existing type optional.
@@ -83,9 +83,11 @@ export type RequiredBy<T, K extends keyof T> = Omit<T, K> &
  * }
  */
 export type RemoveReadonlyFields<T> = {
-  [K in keyof T as Equal<Pick<T, K>, Readonly<Pick<T, K>>> extends true
-    ? never
-    : K]: T[K];
+  [
+    K in keyof T as Equal<Pick<T, K>, Readonly<Pick<T, K>>> extends true
+      ? never
+      : K
+  ]: T[K];
 };
 
 /**

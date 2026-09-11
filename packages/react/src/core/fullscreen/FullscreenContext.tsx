@@ -16,8 +16,8 @@ import { createContext, useContext, useRef } from 'react';
 import type {
   UseFullscreenOptions,
   UseFullscreenReturn,
-} from './useFullscreen';
-import { useFullscreen } from './useFullscreen';
+} from './useFullscreen.js';
+import { useFullscreen } from './useFullscreen.js';
 
 export type FullscreenContextValue = UseFullscreenReturn;
 

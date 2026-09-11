@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { type ServerSentEvent } from './serverSentEventTransformStream';
-import type { ServerSentEventStream } from './eventStreamConverter';
-import { SafeTransformer } from './safeTransformer';
+import { type ServerSentEvent } from './serverSentEventTransformStream.js';
+import type { ServerSentEventStream } from './eventStreamConverter.js';
+import { SafeTransformer } from './safeTransformer.js';
 
 /**
  * A function type that determines whether a Server-Sent Event should terminate the stream.

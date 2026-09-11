@@ -11,11 +11,11 @@
  * limitations under the License.
  */
 
-import type { RouteGuardProps } from './RouteGuard';
+import type { RouteGuardProps } from './RouteGuard.js';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect } from 'react';
 import type { JwtTokenManager } from '@ahoo-wang/fetcher-cosec';
-import { useSecurityContext } from './SecurityContext';
+import { useSecurityContext } from './SecurityContext.js';
 
 export interface RefreshableRouteGuardProps extends Omit<
   RouteGuardProps,

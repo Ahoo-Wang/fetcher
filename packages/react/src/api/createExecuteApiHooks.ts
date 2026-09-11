@@ -15,8 +15,8 @@ import { useCallback } from 'react';
 import type {
   UseExecutePromiseReturn,
   UseExecutePromiseOptions,
-} from '../core';
-import { useExecutePromise, useLatest } from '../core';
+} from '../core/index.js';
+import { useExecutePromise, useLatest } from '../core/index.js';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type {
   CreateApiHooksOptions,
@@ -25,8 +25,8 @@ import type {
   FunctionParameters,
   FunctionReturnType,
   OnBeforeExecuteCallback,
-} from './apiHooks';
-import { mapApiHooks } from './mapApiHooks';
+} from './apiHooks.js';
+import { mapApiHooks } from './mapApiHooks.js';
 
 /**
  * Configuration options for createExecuteApiHooks.

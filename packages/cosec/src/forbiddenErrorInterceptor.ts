@@ -12,7 +12,7 @@
  */
 
 import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
-import { ResponseCodes } from './types';
+import { ResponseCodes } from './types.js';
 
 /**
  * The name identifier for the ForbiddenErrorInterceptor.

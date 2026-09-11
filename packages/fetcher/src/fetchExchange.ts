@@ -11,14 +11,14 @@
  * limitations under the License.
  */
 
-import type { Fetcher } from './fetcher';
-import type { FetchRequest, RequestHeaders } from './fetchRequest';
-import { type UrlParams } from './urlBuilder';
-import { type RequiredBy } from './types';
-import type { ResultExtractor } from './resultExtractor';
-import { ResultExtractors } from './resultExtractor';
-import { mergeRecordToMap } from './utils';
-import { ExchangeError } from './fetcherError';
+import type { Fetcher } from './fetcher.js';
+import type { FetchRequest, RequestHeaders } from './fetchRequest.js';
+import { type UrlParams } from './urlBuilder.js';
+import { type RequiredBy } from './types.js';
+import type { ResultExtractor } from './resultExtractor.js';
+import { ResultExtractors } from './resultExtractor.js';
+import { mergeRecordToMap } from './utils.js';
+import { ExchangeError } from './fetcherError.js';
 
 export interface AttributesCapable {
   /**

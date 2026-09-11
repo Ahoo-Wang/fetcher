@@ -12,12 +12,15 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useMounted } from './useMounted';
-import type { PromiseState, UsePromiseStateOptions } from './usePromiseState';
-import { usePromiseState } from './usePromiseState';
-import { useRequestId } from './useRequestId';
+import { useMounted } from './useMounted.js';
+import type {
+  PromiseState,
+  UsePromiseStateOptions,
+} from './usePromiseState.js';
+import { usePromiseState } from './usePromiseState.js';
+import { useRequestId } from './useRequestId.js';
 import type { FetcherError } from '@ahoo-wang/fetcher';
-import { useLatest } from './useLatest';
+import { useLatest } from './useLatest.js';
 
 /**
  * Configuration options for the useExecutePromise hook.

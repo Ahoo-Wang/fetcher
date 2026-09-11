@@ -1,0 +1,31 @@
+{
+  "kind": "stress",
+  "environment": {
+    "build": "production",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 1231,
+      "height": 692,
+      "devicePixelRatio": 1.0399999618530273
+    },
+    "hardwareConcurrency": 14,
+    "visibility": "visible",
+    "timeOrigin": 1789064116596.2,
+    "measuredAt": "2026-09-10T18:15:20.320Z"
+  },
+  "fields": 100,
+  "filters": 20,
+  "returnedRows": 10000,
+  "columns": 21,
+  "renderedDataRows": 100,
+  "input": {
+    "text": "压力验收_中文_ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789",
+    "characters": 45,
+    "preserved": true
+  },
+  "abortObserved": true,
+  "lateResponseIgnored": true,
+  "requests": 3,
+  "passed": true,
+  "scope": "取消由切换实例触发；故意迟到的传输回包不得覆盖旧成功结果或新选择"
+}

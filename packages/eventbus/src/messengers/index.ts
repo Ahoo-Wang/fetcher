@@ -11,6 +11,6 @@
  * limitations under the License.
  */
 
-export * from './crossTabMessenger';
-export * from './broadcastChannelMessenger';
-export * from './storageMessenger';
+export * from './crossTabMessenger.js';
+export * from './broadcastChannelMessenger.js';
+export * from './storageMessenger.js';

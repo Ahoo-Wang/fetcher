@@ -8,13 +8,13 @@ description: 注册业务渲染器、组合记录视图区域并选择局部 CSS
 
 ## 注册式业务扩展
 
-| 需求               | 注册位置                    | 配置引用                                          |
-| ------------------ | --------------------------- | ------------------------------------------------- |
-| 全局业务操作       | `extensions.globalActions`  | `definition.recordActions.global`                 |
-| 批处理 / 表格操作  | `extensions.toolbarActions` | `definition.recordActions.toolbar`                |
-| 单行操作           | `extensions.rowActions`     | `definition.recordActions.row`，并提供 actions 列 |
-| 筛选组件与编译逻辑 | `extensions.filters`        | 字段、操作符或组件配置的编辑器引用                |
-| 自定义单元格       | `extensions.cells`          | `field.cellRenderer` 或 `column.renderer`         |
+| 需求               | 注册位置                    | 配置引用                                                 |
+| ------------------ | --------------------------- | -------------------------------------------------------- |
+| 全局业务操作       | `extensions.globalActions`  | `definition.record.recordActions.global`                 |
+| 批处理 / 表格操作  | `extensions.toolbarActions` | `definition.record.recordActions.toolbar`                |
+| 单行操作           | `extensions.rowActions`     | `definition.record.recordActions.row`，并提供 actions 列 |
+| 筛选组件与编译逻辑 | `extensions.filters`        | 字段、操作符或组件配置的编辑器引用                       |
+| 自定义单元格       | `extensions.cells`          | `field.cellRenderer` 或 `column.renderer`                |
 
 引用统一为 `{ name, options? }`，options 只能包含 JSON 数据。组件、服务客户端和回调注册在运行时 extensions 中，不能写入保存的 JSON。未知名称和无效配置会显式报错。优先使用已有内置组件。
 
@@ -38,7 +38,11 @@ description: 注册业务渲染器、组合记录视图区域并选择局部 CSS
 
 ```tsx
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
-import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import {
+  useViewEngine,
+  ViewPage,
+  ViewTheme,
+} from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 import '@ahoo-wang/fetcher-view-engine/themes/blue.css';
 
@@ -49,9 +53,10 @@ export function Orders({
   host: ViewHost;
   scopeKey: string;
 }) {
+  const binding = useViewEngine({ host, scopeKey, definitionId: 'orders' });
   return (
     <ViewTheme theme="blue" appearance="system" density="compact">
-      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+      <ViewPage {...binding} />
     </ViewTheme>
   );
 }
@@ -71,7 +76,11 @@ export function Orders({
 
 ```tsx
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
-import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import {
+  useViewEngine,
+  ViewPage,
+  ViewTheme,
+} from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 import './brand.css';
 
@@ -82,12 +91,13 @@ export function Orders({
   host: ViewHost;
   scopeKey: string;
 }) {
+  const binding = useViewEngine({ host, scopeKey, definitionId: 'orders' });
   return (
     <ViewTheme
       theme="brand"
       style={{ '--fve-font-size': '14px', '--fve-control-height': '2.25em' }}
     >
-      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+      <ViewPage {...binding} />
     </ViewTheme>
   );
 }
@@ -99,7 +109,11 @@ export function Orders({
 
 ```tsx
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
-import { ViewPage, ViewTheme } from '@ahoo-wang/fetcher-view-engine/react';
+import {
+  useViewEngine,
+  ViewPage,
+  ViewTheme,
+} from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 import '@ahoo-wang/fetcher-view-engine/themes/shadcn.css';
 
@@ -110,9 +124,10 @@ export function Orders({
   host: ViewHost;
   scopeKey: string;
 }) {
+  const binding = useViewEngine({ host, scopeKey, definitionId: 'orders' });
   return (
     <ViewTheme theme="shadcn">
-      <ViewPage host={host} scopeKey={scopeKey} definitionId="orders" />
+      <ViewPage {...binding} />
     </ViewTheme>
   );
 }
@@ -126,6 +141,7 @@ export function Orders({
 import { useState } from 'react';
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
 import {
+  useViewEngine,
   ViewPage,
   type RecordToolbarRenderContext,
 } from '@ahoo-wang/fetcher-view-engine/react';
@@ -152,11 +168,10 @@ export function Orders({
   host: ViewHost;
   scopeKey: string;
 }) {
+  const binding = useViewEngine({ host, scopeKey, definitionId: 'orders' });
   return (
     <ViewPage
-      host={host}
-      scopeKey={scopeKey}
-      definitionId="orders"
+      {...binding}
       selectable
       renderToolbar={context => <OrdersToolbar context={context} />}
     />

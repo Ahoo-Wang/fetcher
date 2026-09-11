@@ -16,19 +16,19 @@ import type {
   FetcherConfigurer,
   FetchExchange,
 } from '@ahoo-wang/fetcher';
-import { AuthorizationRequestInterceptor } from './authorizationRequestInterceptor';
-import { AuthorizationResponseInterceptor } from './authorizationResponseInterceptor';
-import { CoSecRequestInterceptor } from './cosecRequestInterceptor';
-import { DeviceIdStorage } from './deviceIdStorage';
-import { ForbiddenErrorInterceptor } from './forbiddenErrorInterceptor';
-import { JwtTokenManager } from './jwtTokenManager';
-import { ResourceAttributionRequestInterceptor } from './resourceAttributionRequestInterceptor';
-import type { TokenRefresher } from './tokenRefresher';
-import { TokenStorage } from './tokenStorage';
-import { UnauthorizedErrorInterceptor } from './unauthorizedErrorInterceptor';
-import type { AppIdCapable, DeviceIdStorageCapable } from './types';
-import type { SpaceIdProvider } from './spaceIdProvider';
-import { NoneSpaceIdProvider } from './spaceIdProvider';
+import { AuthorizationRequestInterceptor } from './authorizationRequestInterceptor.js';
+import { AuthorizationResponseInterceptor } from './authorizationResponseInterceptor.js';
+import { CoSecRequestInterceptor } from './cosecRequestInterceptor.js';
+import { DeviceIdStorage } from './deviceIdStorage.js';
+import { ForbiddenErrorInterceptor } from './forbiddenErrorInterceptor.js';
+import { JwtTokenManager } from './jwtTokenManager.js';
+import { ResourceAttributionRequestInterceptor } from './resourceAttributionRequestInterceptor.js';
+import type { TokenRefresher } from './tokenRefresher.js';
+import { TokenStorage } from './tokenStorage.js';
+import { UnauthorizedErrorInterceptor } from './unauthorizedErrorInterceptor.js';
+import type { AppIdCapable, DeviceIdStorageCapable } from './types.js';
+import type { SpaceIdProvider } from './spaceIdProvider.js';
+import { NoneSpaceIdProvider } from './spaceIdProvider.js';
 
 /**
  * Configuration interface for CoSec security features.

@@ -1,6 +1,6 @@
-import { getParameterName } from './reflection';
+import { getParameterName } from './reflection.js';
 import 'reflect-metadata';
-import { type PathCapable } from './endpointDecorator';
+import { type PathCapable } from './endpointDecorator.js';
 import type { RequestBodyType } from '@ahoo-wang/fetcher';
 import { type FetchRequestInit } from '@ahoo-wang/fetcher';
 

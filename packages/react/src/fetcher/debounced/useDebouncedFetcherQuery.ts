@@ -12,12 +12,18 @@
  */
 
 import type { FetcherError } from '@ahoo-wang/fetcher';
-import type { DebounceCapable, UseDebouncedCallbackReturn } from '../../core';
-import { useDebouncedCallbackInternal } from '../../core/debounced/useDebouncedCallback';
+import type {
+  DebounceCapable,
+  UseDebouncedCallbackReturn,
+} from '../../core/index.js';
+import { useDebouncedCallbackInternal } from '../../core/debounced/useDebouncedCallback.js';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { dequal } from 'dequal';
-import type { UseFetcherQueryOptions, UseFetcherQueryReturn } from '../index';
-import { useFetcherQuery } from '../index';
+import type {
+  UseFetcherQueryOptions,
+  UseFetcherQueryReturn,
+} from '../index.js';
+import { useFetcherQuery } from '../index.js';
 
 /**
  * Configuration options for the useDebouncedFetcherQuery hook.

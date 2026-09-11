@@ -16,7 +16,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-打开 [View Engine → 开发接入 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal)。展示页面保持初始状态，由你手动操作；断言放在独立回归故事中：
+打开 [View Engine → 入门与业务流程 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal)。展示页面保持初始状态，由你手动操作；断言放在独立回归故事中：
 
 ```bash
 pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx

@@ -11,19 +11,19 @@ description: Persist component configuration and declare record and source capab
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `id`, `title`                         | Shared definition identity and display title                                                         |
 | `sourceId`                            | Local identifier passed to `host.resolveSource`                                                      |
-| `rowKey`                              | Record-relative own-property path to a unique string or finite-number key                            |
+| `record.rowKey`                       | Record-relative own-property path to a unique string or finite-number key                            |
 | `fields`                              | Read-only field definitions with `field`, `label`, optional type/group/options/operators/editor      |
-| `allowedLayouts`                      | Required, nonempty, unique layout array: `table`, `card`, or both. A single layout hides the switch. |
-| `defaultPresentation?`                | Optional `table` / `card` presets used when first initializing an unconfigured layout.               |
+| `record.allowedLayouts`               | Required, nonempty, unique layout array: `table`, `card`, or both. A single layout hides the switch. |
+| `record.defaultPresentation?`         | Optional `table` / `card` presets used when first initializing an unconfigured layout.               |
 | `timeZone?`                           | Shared filter/cell datetime timezone; omission uses local runtime                                    |
 | `allowedOperators?`, `filterEditors?` | Definition-level operator restrictions and editor defaults                                           |
-| `recordActions?`                      | Named global/toolbar/row renderer references                                                         |
+| `record.recordActions?`               | Named global/toolbar/row renderer references                                                         |
 
 `ViewFieldDefinition` also supports `sortable`, `cellRenderer`, `numberFormat` and `summaryFunctions`. `RendererReference` and `FilterEditorReference` are `{ name: string, options?: JSON object }`. Functions belong to runtime registration.
 
 ## ViewInstance and RecordViewConfig
 
-A `ViewInstance` is a `RecordViewInstance`: `id`, `definitionId`, `title`, optional `revision`, `scope`, `kind: 'record'`, and `config`.
+`ViewInstance` is `RecordViewInstance | AnalysisViewInstance`, discriminated by `kind`. Both require `id`, `definitionId`, `title`, nonblank `revision`, `scope` and `config`. Record config is listed below; analysis config contains root filters, optional Elements scope, dimensions, metrics, sort, limit and table/chart presentation.
 
 | Config property | Stored value                                    |
 | --------------- | ----------------------------------------------- |
@@ -41,7 +41,7 @@ A field column has `id`, `kind: 'field'`, `field` and optional `title`, `width`,
 - `{ layout: 'table', table: RecordTableConfig, card?: RecordCardConfig }`
 - `{ layout: 'card', card: RecordCardConfig, table?: RecordTableConfig }`
 
-The active layout must belong to the definition's `allowedLayouts`. Table configuration contains `columns`; card configuration contains `title`, `fields`, and optional `cover` and `actions`. Switching preserves the other layout's configuration; saving/restoring includes both configurations, but never the runtime `renderCard` callback.
+The active layout must belong to the definition's `record.allowedLayouts`. Table configuration contains `columns`; card configuration contains `title`, `fields`, and optional `cover` and `actions`. Switching preserves the other layout's configuration; saving/restoring includes both configurations, but never the runtime `renderCard` callback.
 
 ## RecordQuerySource
 
@@ -52,3 +52,9 @@ Paged results are `{ list, total }`. Cursor results are `{ list, nextCursor }`, 
 `readRecordValue` traverses own properties and canonical dot-separated array indices; a literal dotted own key wins. `getRecordKey` and `validateRecordRows` check stable identities. `validateViewDefinition` and `validateViewInstance` are available at trust boundaries; runtime snapshots use `DeepReadonly`.
 
 `ViewDeleteResult` contains required `defaultInstance: ViewInstance | null`, the authoritative default view from the deletion transaction rather than an ID inferred from local order.
+
+## Mixed capabilities
+
+A definition declares `record?: RecordCapability` and/or `analysis?: AnalysisCapability`; at least one is required. `RecordViewDefinition` requires record capability. Analysis uses `AnalysisViewConfig` and an aggregate-only `ViewSource`, without inventing a row key. See [pure analysis and result validation](./components.md#pure-analysis-compilation).
+
+A dimension owns its display field through `label: { field: "productName", alias: "productName", title: "Product name" }`. The compiler adds an authorized ANY output and marks the result column with `labelFor`. Users configure grouping and display together; names are not listed as measures. Changing this field requires running the query. Group IDs remain unchanged; duplicate names include IDs, missing or conflicting names fall back to IDs. Valid analyses initially show results with collapsed configuration and execution details. Two dimensions automatically map to category and series. `ANALYSIS_VISUALIZATIONS` describes built-in chart capabilities.

@@ -14,9 +14,9 @@
 import {
   BUILT_IN_INTERCEPTOR_ORDER_STEP,
   type RequestInterceptor,
-} from './interceptor';
-import type { FetchExchange } from './fetchExchange';
-import { FETCH_INTERCEPTOR_ORDER } from './fetchInterceptor';
+} from './interceptor.js';
+import type { FetchExchange } from './fetchExchange.js';
+import { FETCH_INTERCEPTOR_ORDER } from './fetchInterceptor.js';
 
 /**
  * The name of the UrlResolveInterceptor.

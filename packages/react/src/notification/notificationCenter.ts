@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { channelRegistry } from './channel';
-import type { ChannelType, Message } from './';
+import { channelRegistry } from './channel/index.js';
+import type { ChannelType, Message } from './index.js';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,

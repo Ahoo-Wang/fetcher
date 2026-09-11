@@ -11,19 +11,19 @@
  * limitations under the License.
  */
 
-export * from './debounced';
-export * from './fullscreen';
-export * from './useExecutePromise';
-export * from './usePromiseState';
-export * from './useRequestId';
-export * from './useLatest';
-export * from './useMounted';
-export * from './useRefs';
-export * from './useForceUpdate';
-export * from './useQuery';
-export { useQueryState, isValidateQuery } from './useQueryState';
+export * from './debounced/index.js';
+export * from './fullscreen/index.js';
+export * from './useExecutePromise.js';
+export * from './usePromiseState.js';
+export * from './useRequestId.js';
+export * from './useLatest.js';
+export * from './useMounted.js';
+export * from './useRefs.js';
+export * from './useForceUpdate.js';
+export * from './useQuery.js';
+export { useQueryState, isValidateQuery } from './useQueryState.js';
 export type {
   QueryOptions,
   UseQueryStateOptions,
   UseQueryStateReturn,
-} from './useQueryState';
+} from './useQueryState.js';
