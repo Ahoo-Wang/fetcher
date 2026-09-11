@@ -526,18 +526,26 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
     </div>
   );
 }
-// Missing-report lookups must not pretty-print the entire measured DOM on each retry.
-function waitForReport(container: HTMLElement) {
-  return waitFor(
-    () => {
+// Observe completion without polling or allocating missing-report errors inside the benchmark.
+function waitForReport(container: HTMLElement): Promise<HTMLElement> {
+  return new Promise((resolve, reject) => {
+    const ready = () => {
       const output = container.querySelector<HTMLElement>(
         '[data-testid="analysis-performance-report"]',
       );
-      if (!output) throw new Error('等待性能验收报告');
-      return output;
-    },
-    { timeout: 30000 },
-  );
+      if (!output) return;
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve(output);
+    };
+    const observer = new MutationObserver(ready);
+    const timer = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error('等待性能验收报告超时'));
+    }, 30000);
+    observer.observe(container, { childList: true, subtree: true });
+    ready();
+  });
 }
 
 const meta = {

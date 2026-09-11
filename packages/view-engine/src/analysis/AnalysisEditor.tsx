@@ -241,16 +241,19 @@ function ComponentList({
                   ? registry[component].component
                   : undefined;
               const capability = capabilityByField.get(item.field ?? '');
-              const fields = context.fields.filter(field => {
-                const allowed = capabilityByField.get(field.field);
-                return component === 'numeric'
-                  ? field.type === 'number' && !!allowed?.functions.length
-                  : component === 'any'
-                    ? !!allowed?.any
-                    : allowed?.groups.some(
-                        group => groupNames[group] === component,
-                      );
-              });
+              const readyToEdit = openedIds.has(item.id);
+              const fields = readyToEdit
+                ? context.fields.filter(field => {
+                    const allowed = capabilityByField.get(field.field);
+                    return component === 'numeric'
+                      ? field.type === 'number' && !!allowed?.functions.length
+                      : component === 'any'
+                        ? !!allowed?.any
+                        : allowed?.groups.some(
+                            group => groupNames[group] === component,
+                          );
+                  })
+                : [];
               return (
                 <li
                   key={item.id}
@@ -351,306 +354,316 @@ function ComponentList({
                             : 'fve:w-80 fve:max-w-[calc(100vw-2rem)] fve:max-h-[75dvh] fve:overflow-y-auto fve:p-4'
                         }
                       >
-                        <PopoverTitle>{title}设置</PopoverTitle>
-                        <div className="fve:grid fve:grid-cols-1 fve:gap-3">
-                          {component !== 'count' &&
-                            !item.expression &&
-                            !CustomEditor && (
+                        {readyToEdit && (
+                          <>
+                            <PopoverTitle>{title}设置</PopoverTitle>
+                            <div className="fve:grid fve:grid-cols-1 fve:gap-3">
+                              {component !== 'count' &&
+                                !item.expression &&
+                                !CustomEditor && (
+                                  <Choice
+                                    label={`${label} 字段`}
+                                    caption={
+                                      kind === 'dimensions'
+                                        ? '分组字段'
+                                        : '统计字段'
+                                    }
+                                    value={item.field}
+                                    options={fields.map(field => ({
+                                      value: field.field,
+                                      label: field.label,
+                                    }))}
+                                    disabled={disabled}
+                                    invalid={issues.length > 0}
+                                    onChange={field =>
+                                      update(index, { field, props: {} })
+                                    }
+                                  />
+                                )}
+                              {kind === 'dimensions' && (
+                                <label className="fve:flex fve:flex-col fve:gap-1 fve:text-sm">
+                                  显示字段
+                                  <FilterSelect
+                                    label={`${label} 显示字段`}
+                                    placeholder="使用分组字段"
+                                    options={context.fields
+                                      .filter(
+                                        field =>
+                                          capabilityByField.get(field.field)
+                                            ?.any,
+                                      )
+                                      .map(field => ({
+                                        value: field.field,
+                                        label: field.label,
+                                      }))}
+                                    value={item.label?.field}
+                                    disabled={disabled}
+                                    onClear={() =>
+                                      update(index, { label: undefined })
+                                    }
+                                    onValueChange={field =>
+                                      update(index, {
+                                        label: {
+                                          field,
+                                          alias:
+                                            item.label?.alias ??
+                                            `${item.alias}_label`,
+                                          title:
+                                            context.fields.find(
+                                              f => f.field === field,
+                                            )?.label ?? field,
+                                        },
+                                      })
+                                    }
+                                  />
+                                </label>
+                              )}
                               <Choice
-                                label={`${label} 字段`}
+                                label={`${label} 类型`}
                                 caption={
                                   kind === 'dimensions'
-                                    ? '分组字段'
-                                    : '统计字段'
+                                    ? '分组方式'
+                                    : '计算方式'
                                 }
-                                value={item.field}
-                                options={fields.map(field => ({
-                                  value: field.field,
-                                  label: field.label,
+                                value={component}
+                                options={choices.map(value => ({
+                                  value,
+                                  label: names[value] ?? value,
                                 }))}
                                 disabled={disabled}
                                 invalid={issues.length > 0}
-                                onChange={field =>
-                                  update(index, { field, props: {} })
-                                }
-                              />
-                            )}
-                          {kind === 'dimensions' && (
-                            <label className="fve:flex fve:flex-col fve:gap-1 fve:text-sm">
-                              显示字段
-                              <FilterSelect
-                                label={`${label} 显示字段`}
-                                placeholder="使用分组字段"
-                                options={context.fields
-                                  .filter(
-                                    field =>
-                                      capabilityByField.get(field.field)?.any,
-                                  )
-                                  .map(field => ({
-                                    value: field.field,
-                                    label: field.label,
-                                  }))}
-                                value={item.label?.field}
-                                disabled={disabled}
-                                onClear={() =>
-                                  update(index, { label: undefined })
-                                }
-                                onValueChange={field =>
+                                onChange={name =>
                                   update(index, {
-                                    label: {
-                                      field,
-                                      alias:
-                                        item.label?.alias ??
-                                        `${item.alias}_label`,
-                                      title:
-                                        context.fields.find(
-                                          f => f.field === field,
-                                        )?.label ?? field,
-                                    },
+                                    component: { name },
+                                    field:
+                                      name === 'count' ? undefined : item.field,
+                                    expression: undefined,
+                                    props: {},
                                   })
                                 }
                               />
-                            </label>
-                          )}
-                          <Choice
-                            label={`${label} 类型`}
-                            caption={
-                              kind === 'dimensions' ? '分组方式' : '计算方式'
-                            }
-                            value={component}
-                            options={choices.map(value => ({
-                              value,
-                              label: names[value] ?? value,
-                            }))}
-                            disabled={disabled}
-                            invalid={issues.length > 0}
-                            onChange={name =>
-                              update(index, {
-                                component: { name },
-                                field:
-                                  name === 'count' ? undefined : item.field,
-                                expression: undefined,
-                                props: {},
-                              })
-                            }
-                          />
-                          {!names[component] && !CustomEditor && (
-                            <p role="status">
-                              未知组件：{component}。请选择可用类型修复或删除。
-                            </p>
-                          )}
-                          {component === 'numeric' &&
-                            context.capability.expressions && (
-                              <Choice
-                                label={`${label} 输入`}
-                                value={item.expression ? 'expression' : 'field'}
-                                options={[
-                                  { value: 'field', label: '字段' },
-                                  { value: 'expression', label: '公式' },
-                                ]}
-                                disabled={disabled}
-                                onChange={mode =>
-                                  update(
-                                    index,
-                                    mode === 'expression'
-                                      ? {
-                                          field: undefined,
-                                          expression: {
-                                            type: AggregationExpressionType.FIELD,
-                                            field: item.field ?? '',
-                                          },
-                                        }
-                                      : {
-                                          expression: undefined,
-                                          field:
-                                            item.expression?.type ===
-                                            AggregationExpressionType.FIELD
-                                              ? item.expression.field
-                                              : undefined,
-                                        },
-                                  )
-                                }
-                              />
-                            )}
-                          {component === 'numeric' && (
-                            <Choice
-                              label={`${label} 函数`}
-                              value={
-                                typeof item.props.function === 'string'
-                                  ? item.props.function
-                                  : undefined
-                              }
-                              options={(item.expression
-                                ? Object.values(AggregationFunction)
-                                : (capability?.functions ?? [])
-                              ).map(value => ({
-                                value,
-                                label:
-                                  (
-                                    {
-                                      SUM: '求和',
-                                      AVG: '平均值',
-                                      MIN: '最小值',
-                                      MAX: '最大值',
-                                    } as Record<string, string>
-                                  )[value] ?? value,
-                              }))}
-                              disabled={disabled}
-                              onChange={fn =>
-                                update(index, {
-                                  props: { ...item.props, function: fn },
-                                })
-                              }
-                            />
-                          )}
-                          {component === 'date-histogram' && (
-                            <Choice
-                              label={`${label} 时间粒度`}
-                              value={
-                                typeof item.props.unit === 'string'
-                                  ? item.props.unit
-                                  : undefined
-                              }
-                              options={(capability?.dateUnits ?? []).map(
-                                value => ({
-                                  value,
-                                  label: dateLabels[value] ?? value,
-                                }),
+                              {!names[component] && !CustomEditor && (
+                                <p role="status">
+                                  未知组件：{component}
+                                  。请选择可用类型修复或删除。
+                                </p>
                               )}
-                              disabled={disabled}
-                              onChange={unit =>
-                                update(index, {
-                                  props: { ...item.props, unit },
-                                })
-                              }
-                            />
-                          )}
-                          {component === 'histogram' && (
-                            <label className="fve:flex fve:min-w-0 fve:max-w-full fve:flex-col fve:gap-1">
-                              桶宽
-                              <Input
+                              {component === 'numeric' &&
+                                context.capability.expressions && (
+                                  <Choice
+                                    label={`${label} 输入`}
+                                    value={
+                                      item.expression ? 'expression' : 'field'
+                                    }
+                                    options={[
+                                      { value: 'field', label: '字段' },
+                                      { value: 'expression', label: '公式' },
+                                    ]}
+                                    disabled={disabled}
+                                    onChange={mode =>
+                                      update(
+                                        index,
+                                        mode === 'expression'
+                                          ? {
+                                              field: undefined,
+                                              expression: {
+                                                type: AggregationExpressionType.FIELD,
+                                                field: item.field ?? '',
+                                              },
+                                            }
+                                          : {
+                                              expression: undefined,
+                                              field:
+                                                item.expression?.type ===
+                                                AggregationExpressionType.FIELD
+                                                  ? item.expression.field
+                                                  : undefined,
+                                            },
+                                      )
+                                    }
+                                  />
+                                )}
+                              {component === 'numeric' && (
+                                <Choice
+                                  label={`${label} 函数`}
+                                  value={
+                                    typeof item.props.function === 'string'
+                                      ? item.props.function
+                                      : undefined
+                                  }
+                                  options={(item.expression
+                                    ? Object.values(AggregationFunction)
+                                    : (capability?.functions ?? [])
+                                  ).map(value => ({
+                                    value,
+                                    label:
+                                      (
+                                        {
+                                          SUM: '求和',
+                                          AVG: '平均值',
+                                          MIN: '最小值',
+                                          MAX: '最大值',
+                                        } as Record<string, string>
+                                      )[value] ?? value,
+                                  }))}
+                                  disabled={disabled}
+                                  onChange={fn =>
+                                    update(index, {
+                                      props: { ...item.props, function: fn },
+                                    })
+                                  }
+                                />
+                              )}
+                              {component === 'date-histogram' && (
+                                <Choice
+                                  label={`${label} 时间粒度`}
+                                  value={
+                                    typeof item.props.unit === 'string'
+                                      ? item.props.unit
+                                      : undefined
+                                  }
+                                  options={(capability?.dateUnits ?? []).map(
+                                    value => ({
+                                      value,
+                                      label: dateLabels[value] ?? value,
+                                    }),
+                                  )}
+                                  disabled={disabled}
+                                  onChange={unit =>
+                                    update(index, {
+                                      props: { ...item.props, unit },
+                                    })
+                                  }
+                                />
+                              )}
+                              {component === 'histogram' && (
+                                <label className="fve:flex fve:min-w-0 fve:max-w-full fve:flex-col fve:gap-1">
+                                  桶宽
+                                  <Input
+                                    disabled={disabled}
+                                    inputMode="decimal"
+                                    aria-label={`${label} 桶宽`}
+                                    aria-invalid={issues.length > 0}
+                                    value={String(item.props.interval ?? '')}
+                                    onChange={event => {
+                                      update(index, {
+                                        props: {
+                                          ...item.props,
+                                          interval: event.target.value,
+                                        },
+                                      });
+                                    }}
+                                  />
+                                </label>
+                              )}
+                              <label className="fve:flex fve:min-w-0 fve:max-w-full fve:flex-col fve:gap-1">
+                                {title}名称
+                                <Input
+                                  disabled={disabled}
+                                  value={item.title}
+                                  aria-label={`${label} 名称`}
+                                  aria-invalid={issues.length > 0}
+                                  onChange={event =>
+                                    update(index, { title: event.target.value })
+                                  }
+                                />
+                              </label>
+                              {CustomEditor && (
+                                <AnalysisEditorBoundary key={component}>
+                                  <CustomEditor
+                                    value={item}
+                                    context={context}
+                                    disabled={disabled}
+                                    errors={issues}
+                                    onChange={next =>
+                                      update(index, {
+                                        ...next,
+                                        id: item.id,
+                                        alias: item.alias,
+                                        component: {
+                                          ...next.component,
+                                          name: component,
+                                        },
+                                      })
+                                    }
+                                  />
+                                </AnalysisEditorBoundary>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 disabled={disabled}
-                                inputMode="decimal"
-                                aria-label={`${label} 桶宽`}
-                                aria-invalid={issues.length > 0}
-                                value={String(item.props.interval ?? '')}
-                                onChange={event => {
-                                  update(index, {
-                                    props: {
-                                      ...item.props,
-                                      interval: event.target.value,
-                                    },
-                                  });
+                                aria-label={`删除${label}`}
+                                onClick={() => {
+                                  const next =
+                                    cloneSnapshot<AnalysisViewConfig>(value);
+                                  next[kind].splice(index, 1);
+                                  next.sort = next.sort.filter(
+                                    sort =>
+                                      sort.alias !== item.alias &&
+                                      sort.alias !== item.label?.alias,
+                                  );
+                                  next.presentation = pruneAnalysisPresentation(
+                                    next.presentation,
+                                    next.dimensions,
+                                    [
+                                      ...next.metrics,
+                                      ...next.dimensions.flatMap(d =>
+                                        d.label ? [d.label] : [],
+                                      ),
+                                    ],
+                                  );
+                                  if (!disabled) {
+                                    setExpandedId(null);
+                                    setOpenedIds(previous => {
+                                      const retained = new Set(previous);
+                                      retained.delete(item.id);
+                                      return retained;
+                                    });
+                                    onChange(next);
+                                  }
                                 }}
-                              />
-                            </label>
-                          )}
-                          <label className="fve:flex fve:min-w-0 fve:max-w-full fve:flex-col fve:gap-1">
-                            {title}名称
-                            <Input
-                              disabled={disabled}
-                              value={item.title}
-                              aria-label={`${label} 名称`}
-                              aria-invalid={issues.length > 0}
-                              onChange={event =>
-                                update(index, { title: event.target.value })
-                              }
-                            />
-                          </label>
-                          {CustomEditor && (
-                            <AnalysisEditorBoundary key={component}>
-                              <CustomEditor
-                                value={item}
+                              >
+                                删除
+                              </Button>
+                            </div>
+                            {component === 'numeric' && item.expression && (
+                              <AnalysisExpressionEditor
+                                value={item.expression}
                                 context={context}
+                                label={`${label} 公式`}
+                                function={
+                                  item.props.function as AggregationFunction
+                                }
                                 disabled={disabled}
-                                errors={issues}
-                                onChange={next =>
-                                  update(index, {
-                                    ...next,
-                                    id: item.id,
-                                    alias: item.alias,
-                                    component: {
-                                      ...next.component,
-                                      name: component,
-                                    },
-                                  })
+                                onChange={expression =>
+                                  update(index, { expression })
                                 }
                               />
-                            </AnalysisEditorBoundary>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={disabled}
-                            aria-label={`删除${label}`}
-                            onClick={() => {
-                              const next =
-                                cloneSnapshot<AnalysisViewConfig>(value);
-                              next[kind].splice(index, 1);
-                              next.sort = next.sort.filter(
-                                sort =>
-                                  sort.alias !== item.alias &&
-                                  sort.alias !== item.label?.alias,
-                              );
-                              next.presentation = pruneAnalysisPresentation(
-                                next.presentation,
-                                next.dimensions,
-                                [
-                                  ...next.metrics,
-                                  ...next.dimensions.flatMap(d =>
-                                    d.label ? [d.label] : [],
-                                  ),
-                                ],
-                              );
-                              if (!disabled) {
-                                setExpandedId(null);
-                                setOpenedIds(previous => {
-                                  const retained = new Set(previous);
-                                  retained.delete(item.id);
-                                  return retained;
-                                });
-                                onChange(next);
-                              }
-                            }}
-                          >
-                            删除
-                          </Button>
-                        </div>
-                        {component === 'numeric' && item.expression && (
-                          <AnalysisExpressionEditor
-                            value={item.expression}
-                            context={context}
-                            label={`${label} 公式`}
-                            function={
-                              item.props.function as AggregationFunction
-                            }
-                            disabled={disabled}
-                            onChange={expression =>
-                              update(index, { expression })
-                            }
-                          />
+                            )}
+                            {component === 'any' && (
+                              <p className="fve:text-xs fve:text-muted-foreground">
+                                代表值不保证固定，不能作为稳定分组或图表数值。
+                              </p>
+                            )}
+                            {capability?.unit && (
+                              <p className="fve:text-xs fve:text-muted-foreground">
+                                单位：{capability.unit}
+                              </p>
+                            )}
+                            {issues.map((error, i) => (
+                              <p role="alert" key={i}>
+                                {error.message}
+                              </p>
+                            ))}
+                            <Button
+                              variant="outline"
+                              onClick={() => setExpandedId(null)}
+                            >
+                              完成编辑
+                            </Button>
+                          </>
                         )}
-                        {component === 'any' && (
-                          <p className="fve:text-xs fve:text-muted-foreground">
-                            代表值不保证固定，不能作为稳定分组或图表数值。
-                          </p>
-                        )}
-                        {capability?.unit && (
-                          <p className="fve:text-xs fve:text-muted-foreground">
-                            单位：{capability.unit}
-                          </p>
-                        )}
-                        {issues.map((error, i) => (
-                          <p role="alert" key={i}>
-                            {error.message}
-                          </p>
-                        ))}
-                        <Button
-                          variant="outline"
-                          onClick={() => setExpandedId(null)}
-                        >
-                          完成编辑
-                        </Button>
                       </PopoverContent>
                     </Popover>
                   </div>

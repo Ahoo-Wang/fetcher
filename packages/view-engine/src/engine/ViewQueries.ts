@@ -68,7 +68,8 @@ export class ViewQueries {
       }
       if (session.validation.some(error => error.id !== 'presentation')) return;
       const generation = this.store.generation(id);
-      if (this.opened.get(id) === generation) return;
+      if (refresh && (session.dirty || session.conflict)) return;
+      if (!refresh && this.opened.get(id) === generation) return;
       this.opened.set(id, generation);
       await this.analysis.run(id);
     };

@@ -85,8 +85,22 @@ export class SessionStore {
         ...patch,
         sessions: Object.fromEntries(
           Object.entries(patch.sessions).map(([id, session]) => {
-            if (this.find(id)?.instance.config === session.instance.config)
-              return [id, session];
+            const previous = this.find(id);
+            if (previous?.instance.config === session.instance.config) {
+              const sizeError = previous.validation.find(
+                issue => issue.id === 'config-size',
+              );
+              return [
+                id,
+                sizeError &&
+                !session.validation.some(issue => issue.id === 'config-size')
+                  ? {
+                      ...session,
+                      validation: [...session.validation, sizeError],
+                    }
+                  : session,
+              ];
+            }
             try {
               assertConfigSize(
                 session.instance.config,

@@ -3,9 +3,10 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may obtain a copy at http://www.apache.org/licenses/LICENSE-2.0
  */
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import {
   aggregation,
+  filter,
   FilterOperator,
   AggregationGroupType,
   AggregationFunction,
@@ -197,6 +198,76 @@ it('snapshots analysis compiler functions rather than retaining mutable entries'
     compiler.compile = () => aggregation.count('changed');
     expect(engine.analysisCompilers.custom.compile).toBe(original);
     expect(Object.isFrozen(engine.analysisCompilers.custom)).toBe(true);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('retains the configuration size error across validity changes and blocks writes', async () => {
+  const save = vi.fn(async () => {
+    throw new Error('unexpected save');
+  });
+  const create = vi.fn(async () => {
+    throw new Error('unexpected create');
+  });
+  const large = {
+    ...instance,
+    config: {
+      ...instance.config,
+      filters: createFilterConfiguration({
+        id: 'all',
+        component: { name: 'large' },
+        operator: FilterOperator.MATCH_ALL,
+        props: { data: 'x'.repeat(2048) },
+      }),
+    },
+  };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [large], defaultInstanceId: large.id },
+    limits: { maxConfigBytes: 1024 },
+    filterCompilers: { large: { compile: () => filter.matchAll() } },
+    host: {
+      resolveSource: () => ({ aggregate: async () => [{ n: 1 }] }),
+      instance: { save, create },
+      permission: {
+        getInstance: () => ({
+          save: true,
+          saveAsPersonal: true,
+          saveAsShared: false,
+        }),
+      },
+    },
+  });
+  try {
+    await engine.load();
+    engine.setTitle('Changed');
+    engine.analysis(large.id).setFilterValidity(false);
+    engine.analysis(large.id).setFilterValidity(true);
+    expect(
+      engine
+        .getSnapshot()
+        .sessions[large.id].validation.some(
+          issue => issue.id === 'config-size',
+        ),
+    ).toBe(true);
+    await expect(engine.save(large.id)).rejects.toThrow();
+    await expect(
+      engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }, large.id),
+    ).rejects.toThrow();
+    expect(save).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+    engine
+      .analysis(large.id)
+      .edit(config => ({ ...config, filters: instance.config.filters }));
+    expect(
+      engine
+        .getSnapshot()
+        .sessions[large.id].validation.some(
+          issue => issue.id === 'config-size',
+        ),
+    ).toBe(false);
   } finally {
     engine.dispose();
   }

@@ -387,3 +387,34 @@ it('retries a first analysis cancelled by navigation when revisiting its instanc
     engine.dispose();
   }
 });
+
+it('refreshes a clean analysis instance after an explicit reload', async () => {
+  const aggregate = vi
+    .fn()
+    .mockResolvedValueOnce([{ orders: 2, total: 30 }])
+    .mockResolvedValue([{ orders: 3, total: 40 }]);
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host: {
+      resolveSource: () => ({ aggregate }),
+      instance: { load: async () => ({ ...instance, revision: '2' }) },
+    },
+  });
+  try {
+    await engine.load();
+    await engine.reloadInstance(instance.id);
+    expect(aggregate).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() =>
+      expect(engine.getSnapshot().sessions[instance.id].queryStatus).toBe(
+        'success',
+      ),
+    );
+    expect(
+      engine.getSnapshot().sessions[instance.id].result?.rows[0].orders,
+    ).toBe(3);
+  } finally {
+    engine.dispose();
+  }
+});
