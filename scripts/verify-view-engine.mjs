@@ -148,7 +148,10 @@ try {
       env,
     );
   await stopOwned(storybook);
-  await run('storybook-build', pnpm, ['build-storybook']);
+  await run('storybook-build', pnpm, ['build-storybook'], {
+    ...process.env,
+    VIEW_ENGINE_ACCEPTANCE: 'true',
+  });
   storybook = start('storybook-preview', pnpm, [
     'exec',
     'vite',

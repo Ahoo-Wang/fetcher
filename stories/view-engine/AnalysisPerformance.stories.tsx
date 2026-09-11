@@ -229,6 +229,9 @@ function statistics(samples: number[]) {
 function environment() {
   return {
     build: import.meta.env.PROD ? 'production' : 'development',
+    storybookHighlight:
+      (globalThis as typeof globalThis & { FEATURES?: { highlight?: boolean } })
+        .FEATURES?.highlight !== false,
     userAgent: navigator.userAgent,
     viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
     hardwareConcurrency: navigator.hardwareConcurrency,

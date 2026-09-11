@@ -491,6 +491,11 @@ try {
     const evidence = JSON.parse(await result.innerText());
     report.analysis[scenario] = evidence;
     assert.equal(
+      evidence.environment.storybookHighlight,
+      false,
+      'Acceptance must exclude the Storybook developer highlighter',
+    );
+    assert.equal(
       evidence.environment.build,
       'production',
       'Analysis admission requires a production build',

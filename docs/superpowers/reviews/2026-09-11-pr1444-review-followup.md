@@ -44,3 +44,9 @@ Codecov 原报告：patch 91.06399%，236 行未覆盖，project 96.48%。这些
 `d2cf897a` 复用未变化的结果单元格后，远端 Chromium 输入 P95 39.8ms、切换 P95 74.5ms，满足原门槛。流水线继续进入 Firefox，输入 P95 68ms、切换 P95 126ms 尚不达标；不能将其描述为全部浏览器通过。本地同提交 Firefox 完整验收通过（输入 35ms、切换 48ms），不替代 Linux runner 结果。
 
 进一步消除引擎与界面对相同工作配置的重复编译：`AnalysisSession.compilation` 保存不可变的派生编译结果，AnalysisView 直接消费该结果。回归验证渲染零次编译、一次配置编辑仅编译一次。全仓单测通过，view-engine 源码与 Compiler 各 1286 项、Storybook 354 项通过；公共契约、skill API、中英文文档和符号索引同步，文档测试与构建通过。三浏览器生产验收和最终远端状态单独确认。
+
+## 排除验收环境的开发工具干扰
+
+`1775bec5` 的远端 Firefox 切换 P95 已降到 96ms，但输入仍有 67ms 尾延迟。本地 CPU 剖析和安装的 Storybook 10.6 `dist/preview/runtime.js` 源码确认：高亮模块在目标集合为空时仍观察 story DOM；每次 DOM 变化重新枚举全页元素并调用 `getComputedStyle`，将开发辅助工具的样式扫描计入产品响应时间。
+
+验收脚本仅为其生产 Storybook 构建设置 `VIEW_ENGINE_ACCEPTANCE=true`，关闭该开发高亮功能。常规 Storybook 默认仍开启；axe、功能测试、相同数据规模、样本数、事件起止点、两次 rAF 和 50/100ms 门槛均保留。性能证据新增 `storybookHighlight` 标志，验收器强制断言为 false，防止测量环境回退。该修改属于测试环境隔离，不应把移除的开发工具开销描述为产品代码自身加速。
