@@ -15635,6 +15635,8 @@ Visualization selection uses five icon/name cards: metric, bar, line, area and p
 
 Implicit measure selection is resolved identically by the editor and projector before filtering selectable candidates. Incompatible current measures remain visible, including implicit selections. Projection failures may provide `issueSummary` for compact capability cards; full reasons remain available in expandable details. Mapping errors identify the selected count and unsupported aggregation where applicable. The central result notice stays concise; “Repair configuration” opens the retained editor and focuses its first invalid enabled control, or its data-mapping heading if there is no field target. This operation changes neither the query nor the presentation.
 
+Dimension-owned display outputs are included in advanced server-sort choices. New display aliases avoid collisions with dimensions, measures and existing display outputs; changing an existing display field retains its alias. Invalid full query configuration pauses automatic refresh. If an analysis result was evicted, the chart empty state offers an explicit rerun when the current query is valid; it does not change automatic loading policy. Unconditional element filters are described as all records in the executed summary.
+
 </doc>
 
 <doc title="View Engine symbol index" path="reference/view-engine/symbols.md">
@@ -15786,7 +15788,7 @@ These names come from the current public entry exports and declarations. Import 
 | Symbol                            | Declaration                                                                                                                                              |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:796](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L796)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:811](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L811)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
@@ -35943,6 +35945,8 @@ console.log(compiled.plan.query, result.rows);
 
 编辑器和投影器在筛选可选候选之前使用一致的隐式指标选择语义；当前不兼容指标仍然可见，包括隐式选中的指标。投影失败可提供 `issueSummary` 作为卡片短原因，完整原因保留在可展开说明中。映射错误按场景指出选中数量与不支持的聚合方式。中央结果提示保持简短；“修复配置”展开保留的编辑器，并聚焦第一个无效且可操作的控件，没有具体字段时聚焦数据映射标题。该操作不改变查询或展示配置。
 
+维度拥有的显示输出参与高级服务端排序选择。新显示字段的 alias 避开所有维度、指标与已有显示输出；切换已有显示字段时保留 alias。完整查询配置无效时暂停自动刷新。分析结果被淘汰后，图表空态在当前查询合法时提供明确的重新运行入口，不改变自动加载策略。执行摘要将无条件元素筛选描述为全部记录。
+
 </doc>
 
 <doc title="View Engine 符号索引" path="zh/reference/view-engine/symbols.md">
@@ -36094,7 +36098,7 @@ console.log(compiled.plan.query, result.rows);
 | 符号                              | 声明                                                                                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:796](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L796)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:811](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L811)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |

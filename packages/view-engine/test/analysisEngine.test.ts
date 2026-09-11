@@ -615,3 +615,82 @@ it('does not implicitly retry a failed manual first run when revisiting the inst
     engine.dispose();
   }
 });
+
+it('rejects clearSort from an editor replaced by remote conflict resolution', async () => {
+  const remote = {
+    ...instance,
+    revision: '2',
+    config: {
+      ...config,
+      sort: [{ alias: 'orders', direction: SortDirection.ASC }],
+    },
+  };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host: {
+      resolveSource: () => ({
+        aggregate: async () => [{ orders: 2, total: 30 }],
+      }),
+      instance: { load: async () => remote },
+    },
+  });
+  try {
+    await engine.load();
+    const old = engine.analysis(instance.id);
+    old.setFilterValidity(false);
+    await engine.reloadInstance(instance.id);
+    await engine.useRemoteInstance(
+      engine.getSnapshot().sessions.analysis.conflict!,
+      instance.id,
+    );
+    expect(() => old.clearSort()).toThrow('编辑会话已重置');
+    expect(engine.getSnapshot().sessions.analysis.instance.config.sort).toEqual(
+      remote.config.sort,
+    );
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('retries initial opening after a shared query budget refuses admission', async () => {
+  let finish!: (rows: { orders: number; total: number }[]) => void;
+  const aggregate = vi.fn().mockResolvedValue([{ orders: 2, total: 30 }]);
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    limits: { maxConcurrentQueries: 1 },
+    instances: {
+      instances: [
+        instance,
+        { ...instance, id: 'other' },
+        { ...instance, id: 'busy' },
+      ],
+      defaultInstanceId: instance.id,
+    },
+    host: { resolveSource: () => ({ aggregate }) },
+  });
+  try {
+    await engine.load();
+    aggregate.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        }),
+    );
+    const pending = engine.analysis('busy').run();
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
+    await expect(engine.selectInstance('other')).rejects.toMatchObject({
+      code: 'BUSY',
+    });
+    expect(engine.getSnapshot().sessions.other.queryStatus).toBe('idle');
+    finish([{ orders: 2, total: 30 }]);
+    await pending;
+    await engine.selectInstance(instance.id);
+    await engine.selectInstance('other');
+    expect(engine.getSnapshot().sessions.other.queryStatus).toBe('success');
+  } finally {
+    engine.dispose();
+  }
+});

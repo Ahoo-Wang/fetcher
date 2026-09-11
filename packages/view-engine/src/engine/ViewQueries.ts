@@ -73,8 +73,10 @@ export class ViewQueries {
       if (!analysisQueryPolicy(session, intent)) return;
       const generation = this.store.generation(id);
       if (!refresh && this.opened.get(id) === generation) return;
-      this.opened.set(id, generation);
-      await this.analysis.run(id, intent);
+      const execution = this.analysis.start(id, intent);
+      if (execution.accepted && this.store.find(id)?.queryStatus !== 'idle')
+        this.opened.set(id, generation);
+      await execution.completion;
     };
   }
 }

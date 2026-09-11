@@ -153,6 +153,14 @@ function Choice({
   );
 }
 
+function analysisOutputs(value: DeepReadonly<AnalysisViewConfig>) {
+  return [
+    ...value.dimensions,
+    ...value.metrics,
+    ...value.dimensions.flatMap(item => (item.label ? [item.label] : [])),
+  ];
+}
+
 function ComponentList({
   kind,
   ...props
@@ -179,11 +187,7 @@ function ComponentList({
       ...cloneSnapshot<AnalysisViewConfig>(value),
       [kind]: cloneSnapshot<AnalysisComponentConfig[]>(next),
     };
-    const outputs = [
-      ...updated.dimensions,
-      ...updated.metrics,
-      ...updated.dimensions.flatMap(d => (d.label ? [d.label] : [])),
-    ];
+    const outputs = analysisOutputs(updated);
     updated.sort = updated.sort.filter(sort =>
       outputs.some(output => output.alias === sort.alias),
     );
@@ -472,12 +476,23 @@ function ComponentList({
                                         metricsUsed >= maxMetrics
                                       )
                                         return;
+                                      const baseAlias = `${item.alias}_label`;
+                                      let alias =
+                                        item.label?.alias ?? baseAlias;
+                                      if (!item.label) {
+                                        const used = new Set(
+                                          analysisOutputs(value).map(
+                                            output => output.alias,
+                                          ),
+                                        );
+                                        let suffix = 2;
+                                        while (used.has(alias))
+                                          alias = `${baseAlias}_${suffix++}`;
+                                      }
                                       update(index, {
                                         label: {
                                           field,
-                                          alias:
-                                            item.label?.alias ??
-                                            `${item.alias}_label`,
+                                          alias,
                                           title:
                                             context.fields.find(
                                               f => f.field === field,
@@ -808,7 +823,7 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
     if (!disabled)
       onChange({ ...cloneSnapshot<AnalysisViewConfig>(value), ...patch });
   }
-  const outputs = [...value.dimensions, ...value.metrics];
+  const outputs = analysisOutputs(value);
   const maxSort =
     props.context.capability.limits?.maxSort ?? ANALYSIS_LIMITS.maxSort;
   function sortOptions(index = value.sort.length) {
@@ -991,7 +1006,11 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
           </div>
         </details>
         {errors
-          .filter(error => !outputs.some(output => output.id === error.id))
+          .filter(
+            error =>
+              !value.dimensions.some(item => item.id === error.id) &&
+              !value.metrics.some(item => item.id === error.id),
+          )
           .map((error, index) => (
             <p role="alert" key={index}>
               {error.message}

@@ -172,7 +172,7 @@ export class ViewReload {
               { requestId: request.requestId, signal: controller.signal },
             ),
           this.store.limits.writeTimeoutMs,
-          new AbortController(),
+          controller,
         );
         if (
           !this.scope.current(lifecycle) ||

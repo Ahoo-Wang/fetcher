@@ -86,13 +86,13 @@ export function AnalysisResultSummary({
           <p key={index}>
             元素 {index + 1}：
             {config.scope?.filters[index]
-              ? describeConfiguredFilter(
+              ? (describeConfiguredFilter(
                   config.scope.filters[index].root,
                   scope?.elements[index]?.fields ?? [],
                   definition.allowedOperators,
                   compilers,
                   plan.timeZone,
-                )?.text
+                )?.text ?? '全部记录')
               : element.path}
           </p>
         ))}

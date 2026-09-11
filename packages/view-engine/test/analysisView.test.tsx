@@ -1355,3 +1355,54 @@ it('keeps chart mapping and analysis mode when a new result invalidates its metr
     engine.dispose();
   }
 });
+
+it('offers a direct retry for an evicted chart result without opening query configuration', async () => {
+  const { engine, aggregate } = setup(true, false, 1);
+  try {
+    await engine.load();
+    engine.analysis('totals').edit(config => ({
+      ...config,
+      presentation: { layout: 'metric', columns: [] },
+    }));
+    await engine.selectInstance('records');
+    await engine.selectInstance('totals');
+    render(<AnalysisView engine={engine} />);
+    expect(screen.getByText('分析结果缓存已释放')).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole('button', { name: '重新运行查询', exact: true }),
+    );
+    await waitFor(() => expect(aggregate).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('reports invalid complete configuration as paused auto refresh', async () => {
+  const { engine } = setup();
+  try {
+    await engine.load();
+    render(<AnalysisView engine={engine} />);
+    fireEvent.click(screen.getByRole('button', { name: '自动刷新设置' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', { name: '每 30 秒' }),
+    );
+    act(() =>
+      engine.analysis('totals').edit(config => ({
+        ...config,
+        metrics: config.metrics.map(metric => ({
+          ...metric,
+          title: 'x'.repeat(270000),
+        })),
+      })),
+    );
+    expect(engine.getSnapshot().sessions.totals.queryValid).toBe(false);
+    const refresh = screen.getByRole('button', { name: '刷新', exact: true });
+    expect(refresh.textContent).toContain('已暂停');
+    expect(refresh.getAttribute('aria-description')).toBe(
+      '查询配置无效，修复后恢复。',
+    );
+  } finally {
+    engine.dispose();
+  }
+});

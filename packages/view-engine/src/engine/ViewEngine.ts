@@ -347,6 +347,8 @@ export class ViewEngine {
       },
       clearSort: () => {
         assert();
+        if (this.store.analysisSession(id).editorEpoch !== editorEpoch)
+          throw new Error('编辑会话已重置');
         this.analysisCommands.edit(id, config => ({ ...config, sort: [] }));
       },
       restore: () => {

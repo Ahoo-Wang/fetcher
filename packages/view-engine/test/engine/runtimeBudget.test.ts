@@ -207,3 +207,33 @@ it('loads an oversized default record as recoverable without auto-querying it', 
     engine.dispose();
   }
 });
+
+it('aborts the host signal when an unknown-create replay times out', async () => {
+  vi.useFakeTimers();
+  let signal: AbortSignal | undefined;
+  const create = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('unknown response'))
+    .mockImplementation((_input, context) => {
+      signal = context.signal;
+      return new Promise(() => {});
+    });
+  const { engine } = setup({
+    limits: { writeTimeoutMs: 10 },
+    host: { instance: { create } } as never,
+  });
+  try {
+    await engine.load();
+    await expect(
+      engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
+    ).rejects.toThrow();
+    const retry = engine.reloadInstance();
+    const rejected = expect(retry).rejects.toMatchObject({ code: 'TIMEOUT' });
+    await vi.advanceTimersByTimeAsync(11);
+    await rejected;
+    expect(signal?.aborted).toBe(true);
+    expect(selected(engine).requiresReload).toBe(true);
+  } finally {
+    engine.dispose();
+  }
+});

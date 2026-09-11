@@ -1337,3 +1337,85 @@ it('offers only aggregation functions authorized for expression fields', async (
   expect(screen.queryByRole('option', { name: '平均值' })).toBeNull();
   expect(screen.queryByRole('option', { name: '最大值' })).toBeNull();
 });
+
+const reviewContext: AnalysisCompileContext = {
+  fields: [
+    { field: 'id', label: 'ID', type: 'string' },
+    { field: 'channel', label: '渠道', type: 'string' },
+    { field: 'name', label: '商品名称', type: 'string' },
+  ],
+  capability: {
+    count: true,
+    fields: [
+      { field: 'id', groups: [AggregationGroupType.TERMS], functions: [] },
+      { field: 'channel', groups: [AggregationGroupType.TERMS], functions: [] },
+      { field: 'name', groups: [], functions: [], any: true },
+    ],
+  },
+};
+const reviewDimension: AnalysisComponentConfig = {
+  id: 'product',
+  alias: 'product',
+  title: '商品',
+  field: 'id',
+  component: { name: 'terms' },
+  props: {},
+};
+it('includes dimension-owned display aliases in advanced sort choices', async () => {
+  render(
+    <AnalysisEditor
+      value={{
+        ...initial,
+        dimensions: [
+          {
+            ...reviewDimension,
+            label: { field: 'name', alias: 'product_label', title: '商品名称' },
+          },
+        ],
+        sort: [{ alias: 'product_label', direction: SortDirection.ASC }],
+      }}
+      context={reviewContext}
+      onChange={() => {}}
+    />,
+  );
+  control('button', { name: '添加排序' });
+  const select = screen.getByRole('combobox', { name: '排序 1 输出' });
+  expect(select.textContent).toContain('商品名称');
+  fireEvent.click(select);
+  expect(
+    await screen.findByRole('option', { name: '商品名称', exact: true }),
+  ).toBeTruthy();
+});
+it('allocates display aliases across dimensions, measures and existing labels', async () => {
+  const changed = vi.fn();
+  render(
+    <AnalysisEditor
+      value={{
+        ...initial,
+        metrics: [{ ...initial.metrics[0], alias: 'product_label' }],
+        dimensions: [
+          reviewDimension,
+          {
+            ...reviewDimension,
+            id: 'channel',
+            alias: 'channel',
+            field: 'channel',
+            label: { field: 'name', alias: 'product_label_2', title: '渠道名' },
+          },
+        ],
+      }}
+      context={reviewContext}
+      onChange={changed}
+    />,
+  );
+  fireEvent.click(control('combobox', { name: '维度 1 显示字段' }));
+  const option = await screen.findByRole('option', {
+    name: '商品名称',
+    exact: true,
+  });
+  fireEvent.pointerDown(option, { pointerType: 'mouse' });
+  fireEvent.click(option);
+  const config = changed.mock.lastCall![0];
+  expect(config.dimensions[0].label.alias).toBe('product_label_3');
+  expect(compileAnalysis(config, reviewContext).errors).toEqual([]);
+});

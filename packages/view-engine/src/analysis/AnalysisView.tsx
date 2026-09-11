@@ -394,11 +394,13 @@ function AnalysisInstanceView({
                     ? '查询失败，重试成功后恢复。'
                     : session.writeStatus !== 'idle'
                       ? '正在保存视图，完成后恢复。'
-                      : stale || !session.filterValid
-                        ? '配置尚未运行，运行或撤销修改后恢复。'
-                        : !result
-                          ? '运行分析后可开启自动刷新。'
-                          : null
+                      : !session.queryValid
+                        ? '查询配置无效，修复后恢复。'
+                        : stale || !session.filterValid
+                          ? '配置尚未运行，运行或撤销修改后恢复。'
+                          : !result
+                            ? '运行分析后可开启自动刷新。'
+                            : null
               }
               manualDisabled={
                 !canRun ||
@@ -625,7 +627,9 @@ function AnalysisInstanceView({
                   {!result
                     ? querying
                       ? '正在获取分析结果…'
-                      : '先配置查询并运行'
+                      : session.queryStatus === 'success'
+                        ? '分析结果缓存已释放'
+                        : '先配置查询并运行'
                     : '先选择报表展示方式'}
                 </p>
                 <Button
@@ -633,10 +637,16 @@ function AnalysisInstanceView({
                   onClick={() =>
                     result
                       ? setVisualPanel({ id: instance.id, open: true })
-                      : toggleConfiguration(true)
+                      : session.queryStatus === 'success' && canRun
+                        ? run(() => commands.run())
+                        : toggleConfiguration(true)
                   }
                 >
-                  {result ? '选择展示方式' : '配置查询'}
+                  {result
+                    ? '选择展示方式'
+                    : session.queryStatus === 'success' && canRun
+                      ? '重新运行查询'
+                      : '配置查询'}
                 </Button>
               </div>
             )}
