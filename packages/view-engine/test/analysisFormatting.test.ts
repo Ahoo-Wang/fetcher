@@ -74,3 +74,19 @@ it('reuses identical numeric formats and respects changed host options', () => {
     create.mockRestore();
   }
 });
+
+it('uses UTC for datetime values when the definition omits its timezone', () => {
+  const formatter = vi.spyOn(Intl, 'DateTimeFormat');
+  try {
+    const dateColumn = { ...column, valueType: 'datetime' as const };
+    const value = Date.UTC(2026, 8, 11, 12);
+    const result = formatAnalysisValue(value, dateColumn);
+    expect(formatter).toHaveBeenLastCalledWith(
+      'zh-CN',
+      expect.objectContaining({ timeZone: 'UTC' }),
+    );
+    expect(result).toBe(formatAnalysisValue(value, dateColumn, 'UTC'));
+  } finally {
+    formatter.mockRestore();
+  }
+});

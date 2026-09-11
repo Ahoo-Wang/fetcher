@@ -219,6 +219,22 @@ it('uses the shared conflict decisions for analysis documents without running on
     config: { ...remote.config, limit: 80 },
   };
   await engine.reloadInstance(instance.id);
+  const commands = engine.analysis(instance.id);
+  commands.edit(value => ({
+    ...value,
+    filters: {
+      ...value.filters,
+      root: { ...value.filters.root, id: 'new-filter' },
+    },
+  }));
+  commands.setFilterValidity(false);
+  const edited = engine.getSnapshot().sessions[instance.id];
+  expect(edited.conflict?.filterDraft).toEqual(edited.instance.config.filters);
+  expect(edited.conflict?.filterValid).toBe(false);
+  commands.setFilterValidity(true);
+  expect(engine.getSnapshot().sessions[instance.id].conflict?.filterValid).toBe(
+    true,
+  );
   await engine.overwriteInstance(
     engine.getSnapshot().sessions[instance.id].conflict!,
     instance.id,

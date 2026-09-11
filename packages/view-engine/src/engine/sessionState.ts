@@ -199,6 +199,8 @@ export function deriveSession(
             conflict: {
               ...session.conflict,
               local: session.instance,
+              filterDraft: session.instance.config.filters,
+              filterValid: session.filterValid,
               editVersion,
             },
           }

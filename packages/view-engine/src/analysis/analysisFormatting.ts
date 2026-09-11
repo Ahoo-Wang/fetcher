@@ -40,7 +40,7 @@ export function formatAnalysisValue(
     if (column?.valueType === 'datetime' && typeof value === 'number') {
       const offset = fixedTimeZoneOffset(timeZone);
       return new Intl.DateTimeFormat('zh-CN', {
-        timeZone: offset === undefined ? timeZone : 'UTC',
+        timeZone: offset === undefined ? (timeZone ?? 'UTC') : 'UTC',
         dateStyle: 'medium',
         timeStyle: 'medium',
       }).format(value + (offset ?? 0) * 60000);

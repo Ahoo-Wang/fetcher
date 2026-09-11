@@ -141,7 +141,7 @@ console.log(compiled.plan.query, result.rows);
 
 ### Elements 范围与数值表达式
 
-`AnalysisCapability.scopes` 保存宿主授权的 `AnalysisScopeDefinition`：`{ id, label, elements: [{ path, fields }], fields, capability }`。`AnalysisViewConfig.scope` 通过 `{ id, filters }` 选择范围，每层元素必须对应一个 `FilterConfiguration`。每层 path 相对上一层范围，过滤字段相对当前元素；最终分组和指标使用该范围的 fields 与 capability。根 `config.filters` 始终使用原始根字段。元素链最多八层。`analysisScopeContext(config, context)` 返回选中范围的字段和能力上下文；范围 ID 未授权或重复时抛错。编辑器切换范围会保留已有查询草稿，供用户检查修复。
+`AnalysisCapability.scopes` 保存宿主授权的 `AnalysisScopeDefinition`：`{ id, label, elements: [{ path, fields }], fields, capability }`。`AnalysisViewConfig.scope` 通过 `{ id, filters }` 选择范围，每层元素必须对应一个 `FilterConfiguration`。每层 path 相对上一层范围，过滤字段相对当前元素；最终分组和指标使用该范围的 fields 与 capability。根 `config.filters` 始终使用原始根字段。元素链最多五层。`analysisScopeContext(config, context)` 返回选中范围的字段和能力上下文；范围 ID 未授权或重复时抛错。编辑器切换范围会保留已有查询草稿，供用户检查修复。
 
 `capability.expressions: true` 授权数值指标使用显式 `component.expression`，此模式应省略 `component.field`。`AnalysisNumericExpression` 使用 Wow 枚举构造 `FIELD`（field）、`CONSTANT`（`value: number | string`）、`BINARY`（operator、left、right）树，运算符为 ADD、SUBTRACT、MULTIPLY、DIVIDE。`compileAnalysisExpression(expression, function, context)` 检查常量有限、每个数值字段与函数已授权、深度不超过 8、节点不超过 256。`1e` 等未完成文本可以保留在草稿中，但不能运行。普通字段模式仍使用 field 与 props.function；histogram 桶宽也保留原始编辑文本。
 
