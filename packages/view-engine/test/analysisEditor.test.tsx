@@ -218,63 +218,66 @@ it('retains incomplete bucket input and reorders stable component identities', (
   fireEvent.click(control('button', { name: '清除排序' }));
   expect(changed.mock.lastCall![0].sort).toEqual([]);
 });
-it('pairs a custom numeric editor with its compiler and preserves stable identity', () => {
-  const changed = vi.fn();
-  const registration: AnalysisRegistration = {
-    compile: value =>
-      aggregation.sum(aggregation.field(value.field!), value.alias),
-    component: ({ value, onChange, disabled }) => (
-      <button
-        disabled={disabled}
-        onClick={() =>
-          onChange({
-            ...cloneSnapshot<AnalysisComponentConfig>(value),
-            id: 'replaced',
-            alias: 'replaced',
-            field: 'amount',
-            props: {},
-          })
-        }
-      >
-        选择自定义金额
-      </button>
-    ),
-  };
-  const scoped: AnalysisCompileContext = {
-    fields: [{ field: 'amount', label: '金额', type: 'number' }],
-    capability: {
-      count: true,
-      fields: [
-        { field: 'amount', groups: [], functions: [AggregationFunction.SUM] },
-      ],
-    },
-    compilers: { money: registration },
-  };
-  const value = {
-    ...initial,
-    metrics: [{ ...initial.metrics[0], component: { name: 'money' } }],
-  };
-  render(
-    <AnalysisEditor
-      value={value}
-      context={scoped}
-      extensions={{ analysis: { money: registration } }}
-      onChange={changed}
-    />,
-  );
-  expect(screen.queryByText(/未知组件/)).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '编辑指标 1' }));
-  fireEvent.click(control('button', { name: '选择自定义金额' }));
-  const next = changed.mock.lastCall![0];
-  expect(next.metrics[0]).toMatchObject({
-    id: 'count',
-    alias: 'orders',
-    field: 'amount',
-  });
-  expect(compileAnalysis(next, scoped).plan?.query.metrics).toEqual([
-    aggregation.sum(aggregation.field('amount'), 'orders'),
-  ]);
-});
+it.each(['money', 'constructor', 'toString', '__proto__'])(
+  'pairs custom editor %s with its compiler and preserves stable identity',
+  name => {
+    const changed = vi.fn();
+    const registration: AnalysisRegistration = {
+      compile: value =>
+        aggregation.sum(aggregation.field(value.field!), value.alias),
+      component: ({ value, onChange, disabled }) => (
+        <button
+          disabled={disabled}
+          onClick={() =>
+            onChange({
+              ...cloneSnapshot<AnalysisComponentConfig>(value),
+              id: 'replaced',
+              alias: 'replaced',
+              field: 'amount',
+              props: {},
+            })
+          }
+        >
+          选择自定义金额
+        </button>
+      ),
+    };
+    const scoped: AnalysisCompileContext = {
+      fields: [{ field: 'amount', label: '金额', type: 'number' }],
+      capability: {
+        count: true,
+        fields: [
+          { field: 'amount', groups: [], functions: [AggregationFunction.SUM] },
+        ],
+      },
+      compilers: { [name]: registration },
+    };
+    const value = {
+      ...initial,
+      metrics: [{ ...initial.metrics[0], component: { name } }],
+    };
+    render(
+      <AnalysisEditor
+        value={value}
+        context={scoped}
+        extensions={{ analysis: { [name]: registration } }}
+        onChange={changed}
+      />,
+    );
+    expect(screen.queryByText(/未知组件/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '编辑指标 1' }));
+    fireEvent.click(control('button', { name: '选择自定义金额' }));
+    const next = changed.mock.lastCall![0];
+    expect(next.metrics[0]).toMatchObject({
+      id: 'count',
+      alias: 'orders',
+      field: 'amount',
+    });
+    expect(compileAnalysis(next, scoped).plan?.query.metrics).toEqual([
+      aggregation.sum(aggregation.field('amount'), 'orders'),
+    ]);
+  },
+);
 it('isolates custom render failure and allows retry and removal', () => {
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});
   let fail = true;

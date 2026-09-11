@@ -190,3 +190,24 @@ it('invalidates a reviewed decision even when later edits return to the same con
   ).toBeGreaterThan(review.editVersion);
   engine.dispose();
 });
+
+it('keeps buffered filter invalidity when accepting remote metadata', async () => {
+  const remote = { ...instance(), title: 'Remote', revision: 'r2' };
+  const { engine } = setup({
+    host: { instance: { load: async () => remote } } as never,
+  });
+  try {
+    await engine.load();
+    engine.record('mine').setFilterValidity(false);
+    await engine.reloadInstance();
+    const review = engine.getSnapshot().sessions.mine.conflict!;
+    expect(review).toBeDefined();
+    await engine.useRemoteInstance(review, 'mine');
+    expect(engine.getSnapshot().sessions.mine.filterValid).toBe(false);
+    expect(engine.getSnapshot().sessions.mine.queryStatus).not.toBe('loading');
+    engine.record('mine').setFilterValidity(true);
+    expect(engine.getSnapshot().sessions.mine.filterValid).toBe(true);
+  } finally {
+    engine.dispose();
+  }
+});

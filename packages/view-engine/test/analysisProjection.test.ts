@@ -16,7 +16,10 @@ import type {
   AnalysisPlan,
   AnalysisResultColumn,
 } from '../src/analysis/analysisModel.js';
-import { projectAnalysis } from '../src/analysis/analysisProjection.js';
+import {
+  projectAnalysis,
+  validateAnalysisPresentation,
+} from '../src/analysis/analysisProjection.js';
 const column = (
   alias: string,
   role: 'dimension' | 'metric',
@@ -333,4 +336,40 @@ it('uses ANY labels without merging IDs and falls back for missing or conflictin
       presentation,
     ).issues,
   ).not.toEqual([]);
+});
+
+it.each([
+  [null, '显示配置无效'],
+  [{ layout: 'unknown', columns: [] }, '有效的图表类型'],
+  [{ layout: 'bar', columns: [{ alias: 'avg', width: -1 }] }, '表格列配置'],
+  [{ layout: 'bar', columns: [], orientation: 'diagonal' }, '图表方向'],
+  [{ layout: 'bar', columns: [], stacked: 'true' }, '图表开关配置'],
+  [{ layout: 'pie', columns: [], donut: 1 }, '图表开关配置'],
+  [{ layout: 'bar', columns: [], x: 42 }, '维度别名'],
+  [{ layout: 'bar', columns: [], series: '' }, '维度别名'],
+  [{ layout: 'bar', columns: [], metrics: ['avg', null] }, '至少选择一个指标'],
+  [
+    { layout: 'table', columns: [{ alias: 'avg' }, { alias: 'avg' }] },
+    '重复别名',
+  ],
+  [{ layout: 'bar', columns: [], metrics: ['avg', 'avg'] }, '重复别名'],
+] as const)(
+  'rejects malformed saved chart configuration %j',
+  (presentation, message) => {
+    expect(
+      validateAnalysisPresentation(presentation, [x, m]).join(';'),
+    ).toContain(message);
+  },
+);
+
+it('rejects duplicate returned groups rather than silently overwriting their metric', () => {
+  const projected = projectAnalysis(
+    plan([x, m]),
+    [
+      { 'a.b': 1, avg: 10 },
+      { 'a.b': 1, avg: 20 },
+    ],
+    { layout: 'bar', columns: [], x: 'a.b', metrics: ['avg'] },
+  );
+  expect(projected.issues.join(';')).toContain('重复分组');
 });

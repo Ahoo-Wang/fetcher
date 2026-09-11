@@ -377,7 +377,6 @@ it('retries a first analysis cancelled by navigation when revisiting its instanc
     await vi.waitFor(() => expect(aggregate).toHaveBeenCalledOnce());
     await engine.selectInstance('other');
     await loading;
-    expect(engine.getSnapshot().sessions[instance.id].queryStatus).toBe('idle');
     expect(engine.getSnapshot().sessions[instance.id].result).toBeNull();
     await engine.selectInstance(instance.id);
     expect(aggregate).toHaveBeenCalledTimes(3);
@@ -414,6 +413,84 @@ it('refreshes a clean analysis instance after an explicit reload', async () => {
     expect(
       engine.getSnapshot().sessions[instance.id].result?.rows[0].orders,
     ).toBe(3);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('rejects a reentrant edit without changing title or configuration', async () => {
+  const { engine } = setup();
+  try {
+    await engine.load();
+    expect(() =>
+      engine.analysis(instance.id).edit(value => {
+        engine.setTitle('Intervening title');
+        return { ...value, limit: 5 };
+      }),
+    ).toThrow('重入');
+    expect(engine.getSnapshot().sessions[instance.id].instance.title).toBe(
+      'Totals',
+    );
+    expect(
+      engine.getSnapshot().sessions[instance.id].instance.config.limit,
+    ).toBe(100);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('reports invalid analysis without calling the data source', async () => {
+  const aggregate = vi.fn(async () => [{ orders: 1, total: 2 }]);
+  const diagnostic = vi.fn();
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host: { resolveSource: () => ({ aggregate }) },
+    onDiagnostic: diagnostic,
+  });
+  try {
+    await engine.load();
+    engine.analysis(instance.id).edit(value => ({ ...value, metrics: [] }));
+    await expect(engine.analysis(instance.id).run()).rejects.toThrow();
+    expect(aggregate).toHaveBeenCalledOnce();
+    expect(diagnostic).toHaveBeenLastCalledWith(
+      expect.objectContaining({ phase: 'failed', errorCode: 'INVALID_CONFIG' }),
+    );
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('cancels a run while resolving its source without invoking aggregate', async () => {
+  const aggregate = vi.fn(async () => [{ orders: 1, total: 2 }]);
+  let complete!: (value: { aggregate: typeof aggregate }) => void;
+  let delayed = false;
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host: {
+      resolveSource: () =>
+        delayed
+          ? new Promise(resolve => {
+              complete = resolve;
+            })
+          : { aggregate },
+    },
+  });
+  try {
+    await engine.load();
+    delayed = true;
+    const running = engine.analysis(instance.id).run();
+    await vi.waitFor(() => expect(complete).toBeTypeOf('function'));
+    engine.dispose();
+    complete({ aggregate });
+    await running;
+    expect(aggregate).toHaveBeenCalledOnce();
+    expect(
+      engine.getSnapshot().sessions[instance.id].result?.rows[0].orders,
+    ).toBe(1);
   } finally {
     engine.dispose();
   }

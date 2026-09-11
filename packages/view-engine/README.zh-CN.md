@@ -539,7 +539,7 @@ console.log(compiled.plan.query, result.rows);
 
 宿主数据源复用 `SnapshotQueryClient` / `EventStreamQueryClient` 与应用已有的鉴权 `Fetcher`。[补偿 dev 示例](examples/react/compensation/README.md) 提供 Schema 发现、真实只读查询、取消、本地视图持久化及显式启用的集成测试。根事件流 COUNT 统计批次，展开 `body` 范围后 COUNT 统计事件条目。Storybook **View Engine → 专项场景 → 分析图表** 提供离线场景，**补偿 API 分析** 在用户主动连接后才访问服务。
 
-可通过 `VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm verify:view-engine` 复现生产验收（或使用已安装的 Playwright 浏览器）。现有验证器构建并服务静态 Storybook，检查宿主与无障碍契约，然后在 100 字段/20 个过滤项/100 行下强制输入 P95 ≤50ms、缓存实例切换 P95 ≤100ms，并检查 10,000 行×21 列时的输入保留与取消。设置 `VIEW_ENGINE_ARTIFACTS` 可保留原始样本和环境信息；开发模式计时不作为生产验收。
+可通过 `VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm verify:view-engine` 复现生产验收（或使用已安装的 Playwright 浏览器）。现有验证器构建并服务静态 Storybook，检查宿主与无障碍契约，然后在 100 字段/20 个过滤项/100 行下强制输入 P95 ≤75ms、缓存实例切换 P95 ≤150ms，并检查 10,000 行×21 列时的输入保留与取消。设置 `VIEW_ENGINE_ARTIFACTS` 可保留原始样本和环境信息；开发模式计时不作为生产验收。
 
 分析配置采用上方查询构建器、下方全宽结果的布局。维度和指标以横向摘要项展示，点击后在保留状态的浮层内编辑，公式使用更宽的编辑区。新增条目自动打开，无效条目标记为待完善。筛选及高级排序/行数独立折叠；收起整个构建器后显示当前查询摘要。视口小于 768px 或分析容器小于 640px 时使用配置对话框。支持方向键和拖动排序，包括横向换行。
 

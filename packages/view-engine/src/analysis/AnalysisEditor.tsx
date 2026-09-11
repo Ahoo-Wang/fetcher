@@ -61,14 +61,14 @@ const groupNames: Record<Group, string> = {
   [Group.HISTOGRAM]: 'histogram',
   [Group.DATE_HISTOGRAM]: 'date-histogram',
 };
-const names: Record<string, string> = {
+const names: Record<string, string> = Object.assign(Object.create(null), {
   terms: '按值分组',
   histogram: '数值分桶',
   'date-histogram': '日期分桶',
   count: '记录数',
   numeric: '数值统计',
   any: '代表值',
-};
+});
 const dateLabels: Record<string, string> = {
   YEAR: '年',
   QUARTER: '季度',

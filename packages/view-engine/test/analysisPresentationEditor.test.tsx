@@ -304,3 +304,57 @@ it('does not materialize defaults when returning to an unchanged layout', async 
   }
   expect(JSON.parse(JSON.stringify(latest))).toEqual(original);
 });
+
+it('updates axes, series, orientation and donut settings without losing metric selection', async () => {
+  let latest: AnalysisPresentation = {
+    layout: 'bar',
+    columns: [],
+    x: 'x',
+    series: 'region',
+    metrics: ['m'],
+  };
+  function Example() {
+    const [value, setValue] = useState(latest);
+    return (
+      <AnalysisPresentationEditor
+        value={value}
+        plan={{
+          ...plan,
+          schema: [
+            ...plan.schema,
+            {
+              ...plan.schema[1],
+              id: 'channel',
+              alias: 'channel',
+              title: '渠道',
+            },
+          ],
+        }}
+        onChange={next => {
+          latest = next;
+          setValue(next);
+        }}
+      />
+    );
+  }
+  async function select(label: string, optionLabel: string) {
+    fireEvent.click(screen.getByRole('combobox', { name: label }));
+    const option = await screen.findByRole('option', { name: optionLabel });
+    fireEvent.pointerDown(option, { pointerType: 'mouse' });
+    fireEvent.click(option);
+  }
+  render(<Example />);
+  await select('横轴维度', '地区');
+  expect(latest.x).toBe('region');
+  expect(latest.series).toBeUndefined();
+  await select('系列维度', '渠道');
+  expect(latest.series).toBe('channel');
+  await select('柱状图方向', '横向');
+  expect(latest.orientation).toBe('horizontal');
+  fireEvent.click(screen.getByRole('checkbox', { name: '堆叠' }));
+  expect(latest.stacked).toBe(true);
+  await select('图表类型', '饼图');
+  fireEvent.click(screen.getByRole('checkbox', { name: '环形' }));
+  expect(latest.donut).toBe(true);
+  expect(latest.metrics).toEqual(['m']);
+});

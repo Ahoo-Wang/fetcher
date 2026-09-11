@@ -80,10 +80,15 @@ export class ViewReload {
       assertConflictReview(this.store.session(session.instance.id), review);
       this.store.patch(session.instance.id, {
         ...restored,
+        filterValid: session.filterValid,
         conflict: undefined,
       });
     };
-    if (session.kind === 'analysis' || restored.validation.length > 0) {
+    if (
+      session.kind === 'analysis' ||
+      !session.filterValid ||
+      restored.validation.length > 0
+    ) {
       this.queries.cancel(session.instance.id);
       update();
       return;

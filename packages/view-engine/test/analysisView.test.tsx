@@ -27,6 +27,8 @@ import {
 } from '@ahoo-wang/fetcher-wow';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { ViewPageContent } from '../src/view/ViewPageContent.js';
+import { AnalysisChart } from '../src/analysis/AnalysisChart.js';
+vi.mock('../src/analysis/AnalysisChart.js', { spy: true });
 import { AnalysisView } from '../src/analysis/AnalysisView.js';
 import { compileAnalysis } from '../src/analysis/analysisCompiler.js';
 vi.mock('../src/analysis/analysisCompiler.js', { spy: true });
@@ -352,212 +354,219 @@ it('automatically queries restored instances even when a presentation alias was 
     engine.dispose();
   }
 });
-it('combines root and element editor validity and releases removed scopes and instances', async () => {
-  let resize: ResizeObserverCallback | undefined;
-  vi.stubGlobal(
-    'ResizeObserver',
-    class {
-      constructor(callback: ResizeObserverCallback) {
-        resize = callback;
-      }
-      observe() {}
-      disconnect() {}
-    },
-  );
-  const { filter } = await import('@ahoo-wang/fetcher-wow');
-  const buffered: FilterRegistration = {
-    modes: ['simple', 'advanced'],
-    compile: (props, context) =>
-      filter.eq(context.field!.field, props.value as number),
-    component: function BufferedEditor({ field, context, onValidityChange }) {
-      const [draft, setDraft] = useState('5');
-      return (
-        <div>
-          <span>
-            {String(context)} {field?.label}
-          </span>
-          <input
-            aria-label={`${field?.label} 草稿`}
-            value={draft}
-            onChange={event => {
-              setDraft(event.target.value);
-              onValidityChange(false);
-            }}
-          />
-          <button
-            onClick={() => {
-              setDraft('-');
-              onValidityChange(false);
-            }}
-          >
-            {field?.label} 无效
-          </button>
-          <button onClick={() => onValidityChange(true)}>
-            {field?.label} 有效
-          </button>
-        </div>
-      );
-    },
-  };
-  const rootFilter = createFilterConfiguration({
-    id: 'root',
-    field: 'amount',
-    component: { name: 'buffered' },
-    operator: FilterOperator.EQ,
-    props: { value: 5 },
-  });
-  const scopedFilter = createFilterConfiguration({
-    id: 'scoped',
-    field: 'amount',
-    component: { name: 'buffered' },
-    operator: FilterOperator.EQ,
-    props: { value: 5 },
-  });
-  const localConfig = {
-    filters: rootFilter,
-    scope: { id: 'lines', filters: [scopedFilter] },
-    dimensions: [],
-    metrics: [
-      {
-        id: 'count',
-        component: { name: 'count' },
-        alias: 'n',
-        title: 'Count',
-        props: {},
+it.each(['lines', 'constructor', 'toString', '__proto__'])(
+  'combines validity and releases removed scope %s and instances',
+  async scopeId => {
+    let resize: ResizeObserverCallback | undefined;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resize = callback;
+        }
+        observe() {}
+        disconnect() {}
       },
-    ],
-    sort: [],
-    limit: 100,
-    presentation: { layout: 'table' as const, columns: [] },
-  };
-  const instance: AnalysisViewInstance = {
-    id: 'a',
-    definitionId: 'd',
-    title: 'A',
-    kind: 'analysis',
-    scope: { type: 'personal' },
-    revision: '1',
-    config: localConfig,
-  };
-  const aggregate = vi.fn(async () => [{ n: 1 }]);
-  const engine = new ViewEngine({
-    definitionId: 'd',
-    definition: {
-      id: 'd',
-      title: 'D',
-      sourceId: 's',
-      fields: [{ field: 'amount', label: '根金额', type: 'number' }],
-      analysis: {
-        fields: [],
-        count: true,
-        scopes: [
+    );
+    const { filter } = await import('@ahoo-wang/fetcher-wow');
+    const buffered: FilterRegistration = {
+      modes: ['simple', 'advanced'],
+      compile: (props, context) =>
+        filter.eq(context.field!.field, props.value as number),
+      component: function BufferedEditor({ field, context, onValidityChange }) {
+        const [draft, setDraft] = useState('5');
+        return (
+          <div>
+            <span>
+              {String(context)} {field?.label}
+            </span>
+            <input
+              aria-label={`${field?.label} 草稿`}
+              value={draft}
+              onChange={event => {
+                setDraft(event.target.value);
+                onValidityChange(false);
+              }}
+            />
+            <button
+              onClick={() => {
+                setDraft('-');
+                onValidityChange(false);
+              }}
+            >
+              {field?.label} 无效
+            </button>
+            <button onClick={() => onValidityChange(true)}>
+              {field?.label} 有效
+            </button>
+          </div>
+        );
+      },
+    };
+    const rootFilter = createFilterConfiguration({
+      id: 'root',
+      field: 'amount',
+      component: { name: 'buffered' },
+      operator: FilterOperator.EQ,
+      props: { value: 5 },
+    });
+    const scopedFilter = createFilterConfiguration({
+      id: 'scoped',
+      field: 'amount',
+      component: { name: 'buffered' },
+      operator: FilterOperator.EQ,
+      props: { value: 5 },
+    });
+    const localConfig = {
+      filters: rootFilter,
+      scope: { id: scopeId, filters: [scopedFilter] },
+      dimensions: [],
+      metrics: [
+        {
+          id: 'count',
+          component: { name: 'count' },
+          alias: 'n',
+          title: 'Count',
+          props: {},
+        },
+      ],
+      sort: [],
+      limit: 100,
+      presentation: { layout: 'table' as const, columns: [] },
+    };
+    const instance: AnalysisViewInstance = {
+      id: 'a',
+      definitionId: 'd',
+      title: 'A',
+      kind: 'analysis',
+      scope: { type: 'personal' },
+      revision: '1',
+      config: localConfig,
+    };
+    const aggregate = vi.fn(async () => [{ n: 1 }]);
+    const engine = new ViewEngine({
+      definitionId: 'd',
+      definition: {
+        id: 'd',
+        title: 'D',
+        sourceId: 's',
+        fields: [{ field: 'amount', label: '根金额', type: 'number' }],
+        analysis: {
+          fields: [],
+          count: true,
+          scopes: [
+            {
+              id: scopeId,
+              label: '明细',
+              fields: [],
+              capability: { fields: [], count: true },
+              elements: [
+                {
+                  path: 'lines',
+                  fields: [
+                    { field: 'amount', label: '明细金额', type: 'number' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      },
+      instances: {
+        instances: [
+          instance,
           {
-            id: 'lines',
-            label: '明细',
-            fields: [],
-            capability: { fields: [], count: true },
-            elements: [
-              {
-                path: 'lines',
-                fields: [
-                  { field: 'amount', label: '明细金额', type: 'number' },
-                ],
-              },
-            ],
+            ...instance,
+            id: 'b',
+            config: { ...localConfig, scope: undefined },
           },
         ],
+        defaultInstanceId: 'a',
       },
-    },
-    instances: {
-      instances: [
-        instance,
-        { ...instance, id: 'b', config: { ...localConfig, scope: undefined } },
-      ],
-      defaultInstanceId: 'a',
-    },
-    filterCompilers: { buffered },
-    host: { resolveSource: () => ({ aggregate }) },
-  });
-  try {
-    await engine.load();
-    render(
-      <AnalysisView
-        engine={engine}
-        extensions={{ filters: { buffered } }}
-        filterContext="宿主上下文"
-      />,
-    );
-    expect(await screen.findByText('宿主上下文 明细金额')).toBeTruthy();
-    fireEvent.click(screen.getByText('明细金额 无效'));
-    await waitFor(() =>
-      expect(engine.getSnapshot().sessions.a.filterValid).toBe(false),
-    );
-    fireEvent.click(screen.getByText('根金额 无效'));
-    fireEvent.click(screen.getByText('根金额 有效'));
-    expect(engine.getSnapshot().sessions.a.filterValid).toBe(false);
-    await expect(engine.analysis('a').run()).rejects.toThrow('筛选输入无效');
-    act(() =>
-      resize!(
-        [{ contentRect: { width: 600 } }] as ResizeObserverEntry[],
-        {} as ResizeObserver,
-      ),
-    );
-    fireEvent.click(
-      screen.getByRole('button', { name: '配置分析', exact: true }),
-    );
-    expect(
-      (
-        screen.getByRole('textbox', {
-          name: '明细金额 草稿',
-        }) as HTMLInputElement
-      ).value,
-    ).toBe('-');
-    expect(engine.getSnapshot().sessions.a.filterValid).toBe(false);
-    fireEvent.click(
-      screen.getByRole('button', { name: '查看结果', exact: true }),
-    );
-    await expect(engine.analysis('a').run()).rejects.toThrow('筛选输入无效');
-    fireEvent.click(
-      screen.getByRole('button', { name: '配置分析', exact: true }),
-    );
-    expect(
-      (
-        screen.getByRole('textbox', {
-          name: '明细金额 草稿',
-        }) as HTMLInputElement
-      ).value,
-    ).toBe('-');
-    act(() =>
-      resize!(
-        [{ contentRect: { width: 1200 } }] as ResizeObserverEntry[],
-        {} as ResizeObserver,
-      ),
-    );
-    expect(
-      (
-        screen.getByRole('textbox', {
-          name: '明细金额 草稿',
-        }) as HTMLInputElement
-      ).value,
-    ).toBe('-');
-    await expect(engine.analysis('a').run()).rejects.toThrow('筛选输入无效');
-    await act(() =>
-      engine.analysis('a').edit(config => ({ ...config, scope: undefined })),
-    );
-    await waitFor(() =>
-      expect(engine.getSnapshot().sessions.a.filterValid).toBe(true),
-    );
-    fireEvent.click(screen.getByText('根金额 无效'));
-    await act(() => engine.selectInstance('b'));
-    await waitFor(() =>
-      expect(engine.getSnapshot().sessions.b.filterValid).toBe(true),
-    );
-  } finally {
-    cleanup();
-    engine.dispose();
-    vi.unstubAllGlobals();
-  }
-});
+      filterCompilers: { buffered },
+      host: { resolveSource: () => ({ aggregate }) },
+    });
+    try {
+      await engine.load();
+      render(
+        <AnalysisView
+          engine={engine}
+          extensions={{ filters: { buffered } }}
+          filterContext="宿主上下文"
+        />,
+      );
+      expect(await screen.findByText('宿主上下文 明细金额')).toBeTruthy();
+      fireEvent.click(screen.getByText('明细金额 无效'));
+      await waitFor(() =>
+        expect(engine.getSnapshot().sessions.a.filterValid).toBe(false),
+      );
+      fireEvent.click(screen.getByText('根金额 无效'));
+      fireEvent.click(screen.getByText('根金额 有效'));
+      expect(engine.getSnapshot().sessions.a.filterValid).toBe(false);
+      await expect(engine.analysis('a').run()).rejects.toThrow('筛选输入无效');
+      act(() =>
+        resize!(
+          [{ contentRect: { width: 600 } }] as ResizeObserverEntry[],
+          {} as ResizeObserver,
+        ),
+      );
+      fireEvent.click(
+        screen.getByRole('button', { name: '配置分析', exact: true }),
+      );
+      expect(
+        (
+          screen.getByRole('textbox', {
+            name: '明细金额 草稿',
+          }) as HTMLInputElement
+        ).value,
+      ).toBe('-');
+      expect(engine.getSnapshot().sessions.a.filterValid).toBe(false);
+      fireEvent.click(
+        screen.getByRole('button', { name: '查看结果', exact: true }),
+      );
+      await expect(engine.analysis('a').run()).rejects.toThrow('筛选输入无效');
+      fireEvent.click(
+        screen.getByRole('button', { name: '配置分析', exact: true }),
+      );
+      expect(
+        (
+          screen.getByRole('textbox', {
+            name: '明细金额 草稿',
+          }) as HTMLInputElement
+        ).value,
+      ).toBe('-');
+      act(() =>
+        resize!(
+          [{ contentRect: { width: 1200 } }] as ResizeObserverEntry[],
+          {} as ResizeObserver,
+        ),
+      );
+      expect(
+        (
+          screen.getByRole('textbox', {
+            name: '明细金额 草稿',
+          }) as HTMLInputElement
+        ).value,
+      ).toBe('-');
+      await expect(engine.analysis('a').run()).rejects.toThrow('筛选输入无效');
+      await act(() =>
+        engine.analysis('a').edit(config => ({ ...config, scope: undefined })),
+      );
+      await waitFor(() =>
+        expect(engine.getSnapshot().sessions.a.filterValid).toBe(true),
+      );
+      fireEvent.click(screen.getByText('根金额 无效'));
+      await act(() => engine.selectInstance('b'));
+      await waitFor(() =>
+        expect(engine.getSnapshot().sessions.b.filterValid).toBe(true),
+      );
+    } finally {
+      cleanup();
+      engine.dispose();
+      vi.unstubAllGlobals();
+    }
+  },
+);
 
 it('keeps display validation visible when the table owns no chart notice', async () => {
   const { engine } = setup();
@@ -885,5 +894,38 @@ it('disables result sorting while an extension holds invalid filter input', asyn
     expect(aggregate).toHaveBeenCalledOnce();
   } finally {
     engine.dispose();
+  }
+});
+
+it('recovers a failed chart after correcting presentation without rerunning', async () => {
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const chart = vi
+    .mocked(AnalysisChart)
+    .mockImplementation(({ presentation }) => {
+      if (presentation.stacked) throw new Error('render failure');
+      return <div>Recovered chart</div>;
+    });
+  const { engine, aggregate } = setup();
+  try {
+    await engine.load();
+    engine.analysis('totals').edit(config => ({
+      ...config,
+      presentation: { layout: 'metric', columns: [], stacked: true },
+    }));
+    render(<AnalysisView engine={engine} />);
+    expect(await screen.findByText(/图表暂时无法显示/)).toBeTruthy();
+    act(() =>
+      engine.analysis('totals').edit(config => ({
+        ...config,
+        presentation: { ...config.presentation, stacked: false },
+      })),
+    );
+    expect(await screen.findByText('Recovered chart')).toBeTruthy();
+    expect(aggregate).toHaveBeenCalledOnce();
+  } finally {
+    cleanup();
+    engine.dispose();
+    chart.mockRestore();
+    error.mockRestore();
   }
 });

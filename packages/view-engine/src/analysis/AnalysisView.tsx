@@ -80,16 +80,16 @@ function AnalysisFilterValidity({
   ): ReactNode;
 }) {
   const [root, setRoot] = useState(true);
-  const [scopes, setScopes] = useState<Record<string, boolean>>({});
-  const valid = root && (scopes[scopeKey] ?? true);
+  const [scopes, setScopes] = useState(() => new Map<string, boolean>());
+  const valid = root && (scopes.get(scopeKey) ?? true);
   useEffect(() => {
     onChange(valid);
   }, [valid, onChange]);
   return children(setRoot, valid =>
     setScopes(previous =>
-      previous[scopeKey] === valid
+      previous.get(scopeKey) === valid
         ? previous
-        : { ...previous, [scopeKey]: valid },
+        : new Map(previous).set(scopeKey, valid),
     ),
   );
 }
@@ -733,7 +733,7 @@ export function AnalysisView({
                 issues={projectedResult?.issues}
               >
                 <ChartBoundary
-                  key={`${instance.id}:${result.receivedAt}:${resultPresentation.layout}`}
+                  key={`${instance.id}:${result.receivedAt}:${JSON.stringify(resultPresentation)}`}
                 >
                   <Suspense
                     fallback={
