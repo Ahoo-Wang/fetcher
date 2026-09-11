@@ -12,13 +12,13 @@
  */
 
 import { useCallback } from 'react';
-import { useKeyStorage } from '../storage';
+import { useKeyStorage } from '../storage/index.js';
 import type {
   TokenStorage,
   CompositeToken,
   CoSecJwtPayload,
 } from '@ahoo-wang/fetcher-cosec';
-import { useLatest } from '../core';
+import { useLatest } from '../core/index.js';
 
 /**
  * Type representing a composite token provider.

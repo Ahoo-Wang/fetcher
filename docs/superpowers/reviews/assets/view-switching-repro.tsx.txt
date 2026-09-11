@@ -1,0 +1,85 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { afterEach, expect, it } from 'vitest';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  createFilterConfiguration,
+  newFilterNode,
+} from '../src/filter/filterCore.js';
+import { ViewEngine } from '../src/record/ViewEngine.js';
+import { ViewPageContent } from '../src/record/ViewPage.js';
+import { definition, instance, setup } from './fixtures/viewPage.js';
+
+afterEach(cleanup);
+
+it('preserves unconfirmed text and invalidity across instance switches', async () => {
+  const { host } = setup();
+  const mine = {
+    ...structuredClone(instance),
+    config: {
+      ...structuredClone(instance.config),
+      filters: createFilterConfiguration({
+        ...newFilterNode(FilterOperator.IN, 'orderNo'),
+        component: { name: 'text-values' },
+        props: { values: ['ORDER-001'] },
+      }),
+    },
+  };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: {
+      ...definition,
+      fields: [
+        ...definition.fields,
+        { field: 'orderNo', label: '订单编号', type: 'string' },
+      ],
+    },
+    instances: {
+      instances: [mine, { ...structuredClone(instance), id: 'other' }],
+      defaultInstanceId: mine.id,
+    },
+    host,
+  });
+  try {
+    await engine.load();
+    render(<ViewPageContent engine={engine} />);
+    fireEvent.change(screen.getByRole('textbox', { name: '订单编号' }), {
+      target: { value: 'ORDER-002' },
+    });
+    await waitFor(() =>
+      expect(engine.getSnapshot().sessions.mine.filterValid).toBe(false),
+    );
+    expect(screen.getByRole('textbox', { name: '订单编号' })).toHaveProperty(
+      'value',
+      'ORDER-002',
+    );
+    await act(() => engine.selectInstance('other'));
+    await act(() => engine.selectInstance('mine'));
+    expect
+      .soft(screen.getByRole('textbox', { name: '订单编号' }))
+      .toHaveProperty('value', 'ORDER-002');
+    expect.soft(engine.getSnapshot().sessions.mine.filterValid).toBe(false);
+    expect.soft(engine.getSnapshot().sessions.mine.filterPending).toBe(true);
+  } finally {
+    engine.dispose();
+  }
+});

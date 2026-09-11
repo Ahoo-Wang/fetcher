@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { collectMethods, methodNameToHookName } from './apiHooks';
-import type { ApiMethod } from './apiHooks';
+import { collectMethods, methodNameToHookName } from './apiHooks.js';
+import type { ApiMethod } from './apiHooks.js';
 
 /** Maps API methods to hooks, resolving accessors on access or enumeration. */
 export function mapApiHooks<Method extends ApiMethod, Hook>(

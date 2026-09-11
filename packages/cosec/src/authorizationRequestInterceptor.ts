@@ -20,10 +20,13 @@ import {
 import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
-} from './cosecRequestInterceptor';
-import type { JwtTokenManagerCapable } from './types';
-import { CoSecHeaders } from './types';
-import { assertTokenSession, TOKEN_SESSION_ATTRIBUTE } from './refreshSession';
+} from './cosecRequestInterceptor.js';
+import type { JwtTokenManagerCapable } from './types.js';
+import { CoSecHeaders } from './types.js';
+import {
+  assertTokenSession,
+  TOKEN_SESSION_ATTRIBUTE,
+} from './refreshSession.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AuthorizationInterceptorOptions extends JwtTokenManagerCapable {}

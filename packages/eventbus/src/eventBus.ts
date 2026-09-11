@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import type { EventHandler, EventType } from './types';
-import type { TypedEventBus } from './typedEventBus';
+import type { EventHandler, EventType } from './types.js';
+import type { TypedEventBus } from './typedEventBus.js';
 
 /**
  * Supplier function for creating TypedEventBus instances by event type

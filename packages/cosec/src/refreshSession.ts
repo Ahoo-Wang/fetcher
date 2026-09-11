@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 import type { FetchExchange } from '@ahoo-wang/fetcher';
-import type { JwtCompositeToken } from './jwtToken';
-import { RefreshSessionChangedError } from './jwtTokenManager';
+import type { JwtCompositeToken } from './jwtToken.js';
+import { RefreshSessionChangedError } from './jwtTokenManager.js';
 
 export const TOKEN_SESSION_ATTRIBUTE = 'CoSec-Token-Session';
 

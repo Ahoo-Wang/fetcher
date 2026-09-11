@@ -475,6 +475,50 @@ try {
   await page.getByRole('button', { name: '挂载视图' }).click();
   await ready();
   assert.deepEqual(errors, []);
+  // Run the same production-only acceptance stories used for interactive measurement.
+  // They measure inside the page, so browser-driver transport is excluded from the 50/100ms budgets.
+  report.analysis = {};
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const scenario of ['local-performance', 'large-result-cancellation']) {
+    await page.goto(
+      new URL(
+        `/iframe.html?id=view-engine-分析性能验收--${scenario}&viewMode=story`,
+        base,
+      ).href,
+    );
+    const result = page.getByTestId('analysis-performance-report');
+    await result.waitFor({ timeout: 60000 });
+    const evidence = JSON.parse(await result.innerText());
+    report.analysis[scenario] = evidence;
+    assert.equal(
+      evidence.environment.build,
+      'production',
+      'Analysis admission requires a production build',
+    );
+    assert.equal(
+      evidence.passed,
+      true,
+      `${scenario}: ${JSON.stringify(evidence)}`,
+    );
+    if (scenario === 'local-performance') {
+      assert.equal(evidence.productionAdmitted, true);
+      assert.ok(evidence.input.p95Ms <= 50, 'Input P95 exceeds 50ms');
+      assert.ok(
+        evidence.instanceSwitch.p95Ms <= 100,
+        'Local switch P95 exceeds 100ms',
+      );
+      assert.equal(evidence.requestsBefore, evidence.requestsAfter);
+    } else {
+      assert.equal(evidence.returnedRows, 10000);
+      assert.equal(evidence.input.preserved, true);
+      assert.equal(evidence.abortObserved, true);
+      assert.equal(evidence.lateResponseIgnored, true);
+    }
+  }
+  report.checks.push(
+    'Production analysis input/switch budgets and 10,000-row cancellation/input retention',
+  );
+  assert.deepEqual(errors, []);
   report.passed = true;
 } catch (error) {
   report.error = error.stack ?? String(error);

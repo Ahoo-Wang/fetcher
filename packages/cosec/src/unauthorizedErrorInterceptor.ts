@@ -11,11 +11,11 @@
  * limitations under the License.
  */
 import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
-import { ResponseCodes } from './types';
+import { ResponseCodes } from './types.js';
 import {
   RefreshSessionChangedError,
   RefreshTokenError,
-} from './jwtTokenManager';
+} from './jwtTokenManager.js';
 
 /**
  * The name identifier for the UnauthorizedErrorInterceptor.

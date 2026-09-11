@@ -17,7 +17,7 @@ import {
   validateViewDefinition,
   validateViewInstance,
 } from '../src/record/recordValidation.js';
-import type { ViewHost } from '../src/record/ViewHost.js';
+import type { ViewHost } from '../src/contracts/ViewHost.js';
 import { definition, instance, setup } from './engine/fixtures.js';
 
 it('accepts typed enum identities, nested fields and explicit operator editor bindings', () => {

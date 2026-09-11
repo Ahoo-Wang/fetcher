@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { idGenerator } from './idGenerator';
+import { idGenerator } from './idGenerator.js';
 import type { KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import {
   KeyStorage,

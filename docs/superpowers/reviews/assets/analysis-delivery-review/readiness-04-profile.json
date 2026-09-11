@@ -1,0 +1,521 @@
+{
+  "browser": "chromium",
+  "version": "153.0.8010.37",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M4 Pro",
+  "scale": {
+    "rows": 100,
+    "columns": 30,
+    "filterFields": 100
+  },
+  "checks": [
+    "100 rows/30 columns, nested own paths and built-in link/number/status/tags/date cells",
+    "Enter queries; draft editing leaves applied results and cell commits unchanged",
+    "Warm no-network interaction p95 within 1000ms regression ceiling",
+    "Light/dark 1440/390px: no unreviewed axe WCAG A/AA violations including portaled dialogs; raw findings retained; viewport bounds, checkbox keyboard toggling and Escape focus",
+    "Failure is distinct from empty; retry restores usable records",
+    "Slow query shows Spin/busy rather than empty and resolves to readable rows",
+    "20 mount/dispose cycles cancel pending reads and release every host permission subscription",
+    "Production analysis input/switch budgets and 10,000-row cancellation/input retention"
+  ],
+  "timings": {
+    "refresh": {
+      "samples": [
+        133.36,
+        132.74,
+        133.74,
+        133.33,
+        133.36,
+        133.25,
+        116.78,
+        116.56,
+        116.63,
+        132.49
+      ],
+      "phases": [
+        {
+          "observe": 0.64,
+          "click": 100.53,
+          "settle": 1.01,
+          "paint": 31.19
+        },
+        {
+          "observe": 0.75,
+          "click": 99.67,
+          "settle": 0.94,
+          "paint": 31.39
+        },
+        {
+          "observe": 0.53,
+          "click": 101.58,
+          "settle": 1,
+          "paint": 30.63
+        },
+        {
+          "observe": 0.58,
+          "click": 99.46,
+          "settle": 2.68,
+          "paint": 30.61
+        },
+        {
+          "observe": 0.53,
+          "click": 99.33,
+          "settle": 1.07,
+          "paint": 32.44
+        },
+        {
+          "observe": 0.5,
+          "click": 108.16,
+          "settle": 1.05,
+          "paint": 23.53
+        },
+        {
+          "observe": 0.53,
+          "click": 97.57,
+          "settle": 1,
+          "paint": 17.67
+        },
+        {
+          "observe": 0.53,
+          "click": 95.98,
+          "settle": 3.2,
+          "paint": 16.84
+        },
+        {
+          "observe": 0.49,
+          "click": 95.05,
+          "settle": 0.87,
+          "paint": 20.21
+        },
+        {
+          "observe": 0.43,
+          "click": 99.05,
+          "settle": 0.94,
+          "paint": 32.06
+        }
+      ],
+      "p95": 133.74,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    },
+    "selection": {
+      "samples": [
+        99.5,
+        83.52,
+        99.11,
+        100.04,
+        99.75,
+        84.61,
+        98.51,
+        84.57,
+        99.95,
+        100.29
+      ],
+      "p95": 100.29,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    },
+    "fieldPicker": {
+      "samples": [
+        134.59,
+        131.09,
+        134.19,
+        133.47,
+        130.95,
+        134.12,
+        132.55,
+        134.81,
+        132.32,
+        132.82
+      ],
+      "phases": [
+        {
+          "click": 46.72,
+          "visible": 8.2,
+          "paintedFrames": 21.53,
+          "escape": 11.82,
+          "hidden": 46.33
+        },
+        {
+          "click": 40.79,
+          "visible": 10.22,
+          "paintedFrames": 23.22,
+          "escape": 12.03,
+          "hidden": 44.83
+        },
+        {
+          "click": 47.69,
+          "visible": 6.83,
+          "paintedFrames": 22.86,
+          "escape": 12.54,
+          "hidden": 44.27
+        },
+        {
+          "click": 48.24,
+          "visible": 7.03,
+          "paintedFrames": 21.31,
+          "escape": 11.97,
+          "hidden": 44.92
+        },
+        {
+          "click": 42.04,
+          "visible": 10.19,
+          "paintedFrames": 23.24,
+          "escape": 11.72,
+          "hidden": 43.76
+        },
+        {
+          "click": 54.23,
+          "visible": 6.66,
+          "paintedFrames": 17.83,
+          "escape": 11.38,
+          "hidden": 44.03
+        },
+        {
+          "click": 47.44,
+          "visible": 6.26,
+          "paintedFrames": 24.33,
+          "escape": 11.41,
+          "hidden": 43.1
+        },
+        {
+          "click": 45.08,
+          "visible": 9.83,
+          "paintedFrames": 23.06,
+          "escape": 11.81,
+          "hidden": 45.03
+        },
+        {
+          "click": 47.52,
+          "visible": 8.06,
+          "paintedFrames": 21.67,
+          "escape": 11.98,
+          "hidden": 43.09
+        },
+        {
+          "click": 44.17,
+          "visible": 10.82,
+          "paintedFrames": 22.39,
+          "escape": 11.75,
+          "hidden": 43.68
+        }
+      ],
+      "p95": 134.81,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    }
+  },
+  "reviewedWarnings": [],
+  "passed": true,
+  "analysis": {
+    "local-performance": {
+      "kind": "performance",
+      "environment": {
+        "build": "production",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "hardwareConcurrency": 14,
+        "visibility": "visible",
+        "timeOrigin": 1789086124623.7,
+        "measuredAt": "2026-09-11T00:22:10.269Z"
+      },
+      "fields": 100,
+      "filters": 20,
+      "returnedRows": 100,
+      "columns": 6,
+      "sampleCount": 30,
+      "warmupCount": 5,
+      "warmup": {
+        "inputMs": [
+          27.80000001192093,
+          48.60000002384186,
+          39.59999996423721,
+          39.10000002384186,
+          37.39999997615814
+        ],
+        "switchMs": [
+          76.90000003576279,
+          78,
+          77.5,
+          78.10000002384186,
+          82.19999998807907
+        ]
+      },
+      "input": {
+        "samplesMs": [
+          38.39999997615814,
+          38.30000001192093,
+          39.10000002384186,
+          39.10000002384186,
+          37.39999997615814,
+          38.40000003576279,
+          39.19999998807907,
+          38.69999998807907,
+          38,
+          37.69999998807907,
+          38.19999998807907,
+          37.5,
+          38.19999998807907,
+          39.10000002384186,
+          37.40000003576279,
+          37.700000047683716,
+          38.30000001192093,
+          38.30000001192093,
+          38.30000001192093,
+          38.299999952316284,
+          38.10000002384186,
+          37.69999998807907,
+          38.39999997615814,
+          39.39999997615814,
+          37.5,
+          37.19999998807907,
+          37.69999998807907,
+          38.40000003576279,
+          39.09999996423721,
+          37.80000001192093
+        ],
+        "p50Ms": 38.299999952316284,
+        "p95Ms": 39.19999998807907,
+        "maxMs": 39.39999997615814
+      },
+      "inputPhases": [
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.899999976158142,
+          "remainingMs": 19.5
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.899999976158142,
+          "remainingMs": 19.30000001192093
+        },
+        {
+          "lookupMs": 0.20000004768371582,
+          "dispatchMs": 18.899999976158142,
+          "remainingMs": 20
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.5,
+          "remainingMs": 20.5
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 19,
+          "remainingMs": 18.399999976158142
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.600000023841858,
+          "remainingMs": 19.80000001192093
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.69999998807907,
+          "remainingMs": 20.399999976158142
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.19999998807907,
+          "remainingMs": 20.399999976158142
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.599999964237213,
+          "remainingMs": 19.400000035762787
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.19999998807907,
+          "remainingMs": 19.399999976158142
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18,
+          "remainingMs": 20.19999998807907
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.299999952316284,
+          "remainingMs": 19.200000047683716
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.099999964237213,
+          "remainingMs": 20.100000023841858
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.30000001192093,
+          "remainingMs": 20.80000001192093
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.100000023841858,
+          "remainingMs": 19.30000001192093
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 17.600000023841858,
+          "remainingMs": 20
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.600000023841858,
+          "remainingMs": 19.69999998807907
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.100000023841858,
+          "remainingMs": 20.19999998807907
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.19999998807907,
+          "remainingMs": 20
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.899999976158142,
+          "remainingMs": 20.399999976158142
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.099999964237213,
+          "remainingMs": 19.900000035762787
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.399999976158142,
+          "remainingMs": 19.30000001192093
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.100000023841858,
+          "remainingMs": 20.299999952316284
+        },
+        {
+          "lookupMs": 0.09999996423721313,
+          "dispatchMs": 17.900000035762787,
+          "remainingMs": 21.399999976158142
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.899999976158142,
+          "remainingMs": 19.600000023841858
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.899999976158142,
+          "remainingMs": 19.30000001192093
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18,
+          "remainingMs": 19.599999964237213
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 17.899999976158142,
+          "remainingMs": 20.400000035762787
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.899999976158142,
+          "remainingMs": 21.19999998807907
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.19999998807907,
+          "remainingMs": 19.600000023841858
+        }
+      ],
+      "instanceSwitch": {
+        "samplesMs": [
+          85.30000001192093,
+          80.69999998807907,
+          77.79999995231628,
+          78.09999996423721,
+          77.5,
+          78.20000004768372,
+          77.20000004768372,
+          78.5,
+          79.69999998807907,
+          79,
+          77.70000004768372,
+          77,
+          78.40000003576279,
+          76.60000002384186,
+          77.69999998807907,
+          76.39999997615814,
+          78.19999998807907,
+          78.39999997615814,
+          78.59999996423721,
+          78.30000001192093,
+          77.19999998807907,
+          78.30000001192093,
+          76.69999998807907,
+          77.80000001192093,
+          77,
+          77.70000004768372,
+          76.5,
+          78,
+          77.39999997615814,
+          76.10000002384186
+        ],
+        "p50Ms": 77.79999995231628,
+        "p95Ms": 80.69999998807907,
+        "maxMs": 85.30000001192093
+      },
+      "thresholds": {
+        "inputP95Ms": 50,
+        "switchP95Ms": 100
+      },
+      "passed": true,
+      "productionAdmitted": true,
+      "requestsBefore": 2,
+      "requestsAfter": 2,
+      "method": "浏览器内performance.now；合成原生input/click事件分发前至两次requestAnimationFrame回调后；先对齐一帧不计时；断言DOM和引擎状态已提交。每项5热身+30正式样本，最近秩P95，不删除离群点。实例由固定fixture按钮调用公共selectInstance，两实例结果已预热；包含真实ViewPage渲染，无网络、无工具传输时延。"
+    },
+    "large-result-cancellation": {
+      "kind": "stress",
+      "environment": {
+        "build": "production",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "hardwareConcurrency": 14,
+        "visibility": "visible",
+        "timeOrigin": 1789086130909,
+        "measuredAt": "2026-09-11T00:22:14.622Z"
+      },
+      "fields": 100,
+      "filters": 20,
+      "returnedRows": 10000,
+      "columns": 21,
+      "renderedDataRows": 100,
+      "input": {
+        "text": "压力验收_中文_ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789",
+        "characters": 45,
+        "preserved": true
+      },
+      "abortObserved": true,
+      "lateResponseIgnored": true,
+      "requests": 3,
+      "passed": true,
+      "scope": "取消由切换实例触发；故意迟到的传输回包不得覆盖旧成功结果或新选择"
+    }
+  },
+  "pageErrors": []
+}

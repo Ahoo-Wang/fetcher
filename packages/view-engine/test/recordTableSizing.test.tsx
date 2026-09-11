@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { RecordTable } from '../src/record/RecordTable.js';
-import type { RecordColumn } from '../src/record/recordModel.js';
+import type { RecordColumn } from '../src/contracts/viewModel.js';
 import {
   cleanupTable,
   columns,
@@ -55,13 +55,14 @@ it('fills available width with automatic business columns and preserves explicit
       <RecordTable
         {...props({
           definition: {
-            ...definition,
-            fields: [
+...definition,
+fields: [
               ...definition.fields,
               { field: 'meta.id', label: '编号', type: 'string' },
             ],
-            recordActions: { row: { name: 'actions' } },
-          },
+record: {...(definition).record,
+recordActions: { row: { name: 'actions' } }}
+},
           instance: {
             ...instance,
             config: {
@@ -177,13 +178,14 @@ it('keeps business fields readable in compact tables and restores saved pinning 
     <RecordTable
       {...props({
         definition: {
-          ...definition,
-          fields: [
+...definition,
+fields: [
             ...definition.fields,
             { field: 'meta.id', label: '编号', type: 'string' },
           ],
-          recordActions: { row: { name: 'actions' } },
-        },
+record: {...(definition).record,
+recordActions: { row: { name: 'actions' } }}
+},
         instance: {
           ...instance,
           config: {

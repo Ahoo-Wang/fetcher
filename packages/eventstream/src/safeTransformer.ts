@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { safeEnqueue, safeError, safeTerminate } from './streamController';
+import { safeEnqueue, safeError, safeTerminate } from './streamController.js';
 
 /**
  * Identifies the lifecycle phase where an error occurred.
@@ -107,7 +107,9 @@ export abstract class SafeTransformer<I, O> implements NonNullable<
    * Marks the transformer as terminated and safely terminates the controller.
    * After calling this, all subsequent chunks are silently dropped.
    */
-  protected terminate(controller: TransformStreamDefaultController<O>): boolean {
+  protected terminate(
+    controller: TransformStreamDefaultController<O>,
+  ): boolean {
     this.terminated = true;
     return safeTerminate(controller);
   }
@@ -131,8 +133,7 @@ export abstract class SafeTransformer<I, O> implements NonNullable<
    * @param error - The error that was caught
    * @param phase - The lifecycle phase where the error occurred
    */
-  protected onError(error: unknown, phase: TransformerPhase): void {
-  }
+  protected onError(error: unknown, phase: TransformerPhase): void {}
 
   /**
    * Transform an input chunk into output chunk(s).

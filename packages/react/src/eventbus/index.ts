@@ -11,4 +11,4 @@
  * limitations under the License.
  */
 
-export * from './useEventSubscription';
+export * from './useEventSubscription.js';

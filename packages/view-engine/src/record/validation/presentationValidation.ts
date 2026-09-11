@@ -20,7 +20,7 @@ import type {
   RecordSummaryFunction,
   ViewDefinition,
   ViewFieldDefinition,
-} from '../recordModel.js';
+} from '../../contracts/viewModel.js';
 import {
   RECORD_COLUMN_MAX_WIDTH,
   RECORD_COLUMN_MIN_WIDTH,
@@ -93,7 +93,7 @@ export function validateRecordTableConfig(
       if (!definition.fields.some(field => field.field === column.field))
         throw new Error(`列引用了未知字段：${String(column.field)}`);
     } else if (column.kind === 'actions') {
-      if (!column.renderer && !definition.recordActions?.row)
+      if (!column.renderer && !definition.record!.recordActions?.row)
         throw new Error('操作列缺少行操作扩展');
     } else throw new Error('列类型不支持');
   }
@@ -110,7 +110,7 @@ export function validateRecordCardConfig(
     assertText(config.id, '卡片字段 ID');
     assertText(config.field, '卡片字段路径');
     if (
-      !(title && config.field === definition.rowKey) &&
+      !(title && config.field === definition.record!.rowKey) &&
       !definition.fields.some(field => field.field === config.field)
     )
       throw new Error(`卡片引用了未知字段：${config.field}`);
@@ -143,7 +143,7 @@ export function validateRecordCardConfig(
     )
       throw new Error('卡片操作 visible 必须为布尔值');
     validateReference(value.actions.renderer);
-    if (!value.actions.renderer && !definition.recordActions?.row)
+    if (!value.actions.renderer && !definition.record!.recordActions?.row)
       throw new Error('卡片操作缺少行操作扩展');
   }
 }
@@ -164,7 +164,7 @@ export function validateRecordPresentation(
   assertObject(value, '展示配置');
   if (value.layout !== 'table' && value.layout !== 'card')
     throw new Error('展示布局必须为 table 或 card');
-  if (!definition.allowedLayouts.includes(value.layout))
+  if (!definition.record!.allowedLayouts.includes(value.layout))
     throw new Error(`视图定义不允许展示布局：${value.layout}`);
   validateRecordPresentationDefaults(value, definition);
   if (value.layout === 'table')

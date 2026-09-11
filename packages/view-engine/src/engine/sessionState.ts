@@ -1,0 +1,385 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { validateViewInstance } from '../record/validation/instanceValidation.js';
+import type { AnalysisCompilerRegistry } from '../analysis/analysisModel.js';
+import { compileAnalysis } from '../analysis/analysisCompiler.js';
+import { validateAnalysisPresentation } from '../analysis/analysisProjection.js';
+import { sameJsonState } from '../lib/snapshot.js';
+import { compileFilterConfiguration } from '../filter/filterConfiguration.js';
+import type { FilterCompilerRegistry } from '../filter/filterModel.js';
+import { sameFilterQuery } from '../filter/filterTree.js';
+import type { DeepReadonly } from '../lib/types.js';
+import type {
+  ViewSession,
+  ViewDefinition,
+  ViewInstance,
+  ViewInstanceConflict,
+} from '../contracts/viewModel.js';
+import { EMPTY_RECORD_SUMMARY } from '../record/recordSummary.js';
+import { getRecordKey } from '../record/validation/recordData.js';
+
+export function createSession(
+  instance: DeepReadonly<ViewInstance>,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
+  analysisCompilers: AnalysisCompilerRegistry = {},
+): ViewSession {
+  if (instance.kind === 'analysis')
+    return deriveSession(
+      {
+        kind: 'analysis',
+        editVersion: 0,
+        filterValid: true,
+        pendingQuery: null,
+        baseline: instance,
+        instance,
+        dirty: false,
+        validation: [],
+        result: null,
+        queryStatus: 'idle',
+        queryError: null,
+        writeStatus: 'idle',
+        writeError: null,
+        requiresReload: false,
+      },
+      definition,
+      compilers,
+      undefined,
+      analysisCompilers,
+    );
+  const filterDraft = instance.config.filters;
+  const compiled = compileFilterConfiguration(
+    instance.config.filters,
+    definition.fields,
+    definition.allowedOperators,
+    compilers,
+    definition.timeZone,
+  );
+  return {
+    kind: 'record',
+    editVersion: 0,
+    validation: recordIssues(instance, definition, compiled.errors),
+    baseline: instance,
+    instance,
+    conflict: undefined,
+    dirty: false,
+    filterDraft,
+    filterBaseline: filterDraft,
+    filterValid: true,
+    filterPending: compiled.errors.length > 0,
+    appliedFilter: compiled.expression ?? null,
+    page: 1,
+    cursor: null,
+    nextCursor: null,
+    result: null,
+    queryAttempt: null,
+    rows: [],
+    total: null,
+    pageSummary: EMPTY_RECORD_SUMMARY,
+    allSummary: EMPTY_RECORD_SUMMARY,
+    selectedRowKeys: [],
+    queryStatus: 'idle',
+    refreshing: false,
+    queryError: null,
+    writeStatus: 'idle',
+    writeError: null,
+    requiresReload: false,
+  };
+}
+
+export function instanceContent({
+  kind,
+  title,
+  scope,
+  config,
+}: DeepReadonly<ViewInstance>) {
+  return { kind, title, scope, config };
+}
+
+export function deriveSession(
+  session: ViewSession,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
+  previous?: ViewSession,
+  analysisCompilers: AnalysisCompilerRegistry = {},
+): ViewSession {
+  const editVersion = previous
+    ? previous.editVersion +
+      Number(
+        !sameJsonState(
+          instanceContent(previous.instance),
+          instanceContent(session.instance),
+        ) || previous.filterValid !== session.filterValid,
+      )
+    : session.editVersion;
+  if (session.kind === 'analysis') {
+    const cached =
+      previous?.kind === 'analysis' &&
+      previous.instance.config === session.instance.config &&
+      previous.filterValid === session.filterValid;
+    const compiled = cached
+      ? undefined
+      : compileAnalysis(session.instance.config, {
+          fields: definition.fields,
+          capability: definition.analysis!,
+          timeZone: definition.timeZone,
+          allowedOperators: definition.allowedOperators,
+          filterCompilers: compilers,
+          compilers: analysisCompilers,
+        });
+    return {
+      ...session,
+      editVersion,
+      validation: cached
+        ? previous!.validation
+        : [
+            ...(!session.filterValid
+              ? [{ id: 'filters', message: '筛选输入无效' }]
+              : []),
+            ...(compiled?.errors ?? []),
+            ...validateAnalysisPresentation(
+              session.instance.config.presentation,
+              compiled?.plan?.schema,
+            ).map(message => ({ id: 'presentation', message })),
+          ],
+      dirty: !sameJsonState(
+        instanceContent(session.instance),
+        instanceContent(session.baseline),
+      ),
+      ...(session.conflict
+        ? {
+            conflict: {
+              ...session.conflict,
+              local: session.instance,
+              editVersion,
+            },
+          }
+        : {}),
+    };
+  }
+  const prior = previous?.kind === 'record' ? previous : undefined;
+  let filterPending = prior?.filterPending;
+  if (
+    !prior ||
+    prior.filterDraft !== session.filterDraft ||
+    prior.filterValid !== session.filterValid ||
+    prior.appliedFilter !== session.appliedFilter
+  ) {
+    const compiled = compileFilterConfiguration(
+      session.filterDraft,
+      definition.fields,
+      definition.allowedOperators,
+      compilers,
+      definition.timeZone,
+    );
+    filterPending =
+      !session.filterValid ||
+      compiled.errors.length > 0 ||
+      !sameFilterQuery(compiled.expression, session.appliedFilter);
+  }
+  let selectedRowKeys = session.selectedRowKeys;
+  if (
+    selectedRowKeys.length &&
+    (!prior ||
+      prior.rows !== session.rows ||
+      prior.selectedRowKeys !== selectedRowKeys)
+  ) {
+    const available = new Set(
+      session.rows.map(row => getRecordKey(row, definition.record!.rowKey)),
+    );
+    if (selectedRowKeys.some(key => !available.has(key)))
+      selectedRowKeys = selectedRowKeys.filter(key => available.has(key));
+  }
+  return {
+    ...session,
+    editVersion,
+    ...(session.conflict
+      ? {
+          conflict: {
+            ...session.conflict,
+            editVersion,
+            local: session.instance,
+            filterDraft: session.filterDraft,
+            filterValid: session.filterValid,
+          },
+        }
+      : {}),
+    validation:
+      prior &&
+      prior.filterDraft === session.filterDraft &&
+      prior.filterValid === session.filterValid &&
+      sameJsonState(prior.instance.config, session.instance.config)
+        ? prior.validation
+        : recordIssues(session.instance, definition, [
+            ...(!session.filterValid
+              ? [{ id: 'filters', message: '筛选输入无效' }]
+              : []),
+            ...compileFilterConfiguration(
+              session.filterDraft,
+              definition.fields,
+              definition.allowedOperators,
+              compilers,
+              definition.timeZone,
+            ).errors,
+          ]),
+    selectedRowKeys,
+    filterPending: filterPending!,
+    dirty:
+      prior &&
+      prior.instance === session.instance &&
+      prior.baseline === session.baseline
+        ? prior.dirty
+        : !sameJsonState(
+            instanceContent(session.instance),
+            instanceContent(session.baseline),
+          ),
+  };
+}
+
+export function isSystemSession(session: ViewSession): boolean {
+  return [session.baseline, session.instance].some(
+    value => value.scope.type === 'public' && value.scope.source === 'system',
+  );
+}
+
+/** Server metadata is authoritative; only locally editable content survives a reload. */
+export function rebaseSession(
+  baseline: ViewInstance,
+  latest: ViewSession,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
+  analysisCompilers: AnalysisCompilerRegistry = {},
+): ViewSession {
+  const editable = ({ title, config }: DeepReadonly<ViewInstance>) => ({
+    title,
+    config,
+  });
+  const locallyEdited =
+    !sameJsonState(editable(latest.instance), editable(latest.baseline)) ||
+    (latest.kind === 'record' &&
+      (!sameJsonState(latest.filterDraft, latest.filterBaseline) ||
+        !latest.filterValid));
+  if (!locallyEdited)
+    return createSession(baseline, definition, compilers, analysisCompilers);
+  const diverged =
+    !sameJsonState(editable(baseline), editable(latest.baseline)) &&
+    !sameJsonState(editable(baseline), editable(latest.instance));
+  const instance = {
+    ...baseline,
+    title: latest.instance.title,
+    config: latest.instance.config,
+    ...(diverged ? { revision: latest.instance.revision } : {}),
+  };
+  return deriveSession(
+    {
+      ...latest,
+      baseline: diverged ? latest.baseline : baseline,
+      instance,
+      conflict: diverged
+        ? {
+            editVersion: latest.editVersion,
+            baseline: latest.baseline,
+            remote: baseline,
+            local: instance,
+            filterDraft:
+              latest.kind === 'record'
+                ? latest.filterDraft
+                : latest.instance.config.filters,
+            filterValid:
+              latest.kind === 'record'
+                ? latest.filterValid
+                : latest.validation.length === 0,
+          }
+        : undefined,
+      writeError: null,
+      requiresReload: false,
+    } as ViewSession,
+    definition,
+    compilers,
+    latest,
+    analysisCompilers,
+  );
+}
+
+/** A new copy carries the originating editor state without confusing its saved baseline. */
+export function inheritEditingSession(
+  baseline: ViewInstance,
+  source: ViewSession,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
+  instance: DeepReadonly<ViewInstance> = {
+    ...baseline,
+    config: source.instance.config,
+  } as DeepReadonly<ViewInstance>,
+  analysisCompilers: AnalysisCompilerRegistry = {},
+): ViewSession {
+  return deriveSession(
+    {
+      ...createSession(baseline, definition, compilers, analysisCompilers),
+      instance,
+      ...(source.kind === 'record'
+        ? {
+            filterDraft: source.filterDraft,
+            filterBaseline: source.filterBaseline,
+            filterValid: source.filterValid,
+            appliedFilter: source.appliedFilter,
+          }
+        : {}),
+    } as ViewSession,
+    definition,
+    compilers,
+    undefined,
+    analysisCompilers,
+  );
+}
+
+export function assertConflictReview(
+  session: ViewSession,
+  review: ViewInstanceConflict,
+): void {
+  if (!session.conflict || !sameJsonState(session.conflict, review))
+    throw new Error('远端版本或本地编辑已变化，请重新确认冲突');
+}
+
+/** Keep server identity/kind and apply only the editable content from the same kind. */
+export function withContent(
+  baseline: DeepReadonly<ViewInstance>,
+  local: DeepReadonly<ViewInstance>,
+): ViewInstance {
+  if (baseline.kind !== local.kind) throw new Error('实例类型不能改变');
+  return structuredClone({
+    ...baseline,
+    title: local.title,
+    config: local.config,
+  }) as ViewInstance;
+}
+
+function recordIssues(
+  instance: DeepReadonly<ViewInstance>,
+  definition: DeepReadonly<ViewDefinition>,
+  issues: readonly { id: string; message: string }[],
+) {
+  try {
+    validateViewInstance(instance, definition);
+    return issues;
+  } catch (error) {
+    return [
+      ...issues,
+      {
+        id: 'config',
+        message: error instanceof Error ? error.message : '配置无效',
+      },
+    ];
+  }
+}

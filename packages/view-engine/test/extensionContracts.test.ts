@@ -24,11 +24,15 @@ it('checks readonly snapshots and component registration boundaries at compile t
     import type { RecordCardRenderContext, CellRendererProps } from './record/recordReactTypes.js';
     import type { FilterEditorProps } from './filter/filterReactTypes.js';
     import type { DeepReadonly } from './lib/types.js';
-    import type { ViewEngine } from './record/ViewEngine.js';
-    import type { ViewPageProps } from './record/ViewPage.js';
+    import type { ViewEngine } from './engine/ViewEngine.js';
+    import type { ViewPageProps } from './view/ViewPage.js';
     import type { FilterRegistration } from './filter/filterReactTypes.js';
-    import type { ViewEngineOptions } from './record/recordModel.js';
-    import type { RecordSession, ViewEngineState } from './record/recordModel.js';
+    import type { ViewDefinition, ViewSource, ViewEngineOptions } from './contracts/viewModel.js';
+    import type { RecordSession, ViewEngineState } from './contracts/viewModel.js';
+    const pureDefinition:ViewDefinition={id:'a',title:'A',sourceId:'a',fields:[],analysis:{count:true,fields:[]}};
+    const aggregateSource:ViewSource={aggregate:async()=>[]};
+    // @ts-expect-error a definition must declare at least one view capability
+    const emptyDefinition:ViewDefinition={id:'a',title:'A',sourceId:'a',fields:[]};
     declare const page: ViewPageProps;
     declare const registration: FilterRegistration;
     const extensions: ViewPageProps['extensions'] = { filters: { custom: registration } };
@@ -57,15 +61,24 @@ it('checks readonly snapshots and component registration boundaries at compile t
     session.filterDraft.root.field = 'other';
     // @ts-expect-error definition metadata is a snapshot
     state.definition!.title = 'changed';
-    engine.setFilterDraft(snapshot.sessions.mine.filterDraft);
-    engine.setSort(snapshot.sessions.mine.instance.config.sort);
-    const presentation = snapshot.sessions.mine.instance.config.presentation;
-    if (presentation.layout === 'table') engine.setColumns(presentation.table.columns);
-    if (presentation.layout === 'card') engine.setCardConfig(presentation.card);
-    engine.setLayout('card');
-    engine.applyFilter('mine');
-    // @ts-expect-error queries compile the canonical configuration rather than accepting expressions
-    engine.applyFilter(snapshot.sessions.mine.appliedFilter);
+    const mine = snapshot.sessions.mine;
+    if(mine.kind === 'record') {
+      const commands=engine.record(mine.instance.id);
+      commands.setFilterDraft(mine.filterDraft);
+      commands.setSort(mine.instance.config.sort);
+      const presentation=mine.instance.config.presentation;
+      if(presentation.layout==='table')commands.setColumns(presentation.table.columns);
+      if(presentation.layout==='card')commands.setCardConfig(presentation.card);
+      commands.setLayout('card');commands.applyFilter();
+      // @ts-expect-error queries compile canonical configuration, never accept expressions
+      commands.applyFilter(mine.appliedFilter);
+    }
+    // @ts-expect-error record operations require an instance-bound command
+    engine.setPage(2);
+    // @ts-expect-error analysis cannot paginate records
+    engine.analysis('analysis').setPage(2);
+    const revision:string=session.baseline.revision;
+    const savedCopy:Promise<string|undefined>=engine.saveAs({title:'Copy',scope:{type:'personal'}},'mine');
     // @ts-expect-error extension records are snapshots
     cell.record.amount = 100;
     // @ts-expect-error instance metadata is a snapshot

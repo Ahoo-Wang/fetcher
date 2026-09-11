@@ -15,30 +15,34 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-Open **View Engine → 开发接入 → 最小接入 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `10000`: the rows stay unchanged until you press Enter or Query, then only `SO-202609-1001` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
+Open **View Engine → 入门与业务流程 → 最小接入 → 第一个数据视图 · 查询、排序与分页**. Change Amount to `10000`: the rows stay unchanged until you press Enter or Query, then only `SO-202609-1001` remains. Clear the applied condition value to restore the full result, then try paging and sorting. The entire component is in [the complete example](../../examples/view-engine.md).
 
 ## Connect four responsibilities
 
-| Part             | Provide                                             | Owns                                                           |
-| ---------------- | --------------------------------------------------- | -------------------------------------------------------------- |
-| `ViewDefinition` | `id`, `sourceId`, `rowKey`, fields and capabilities | Shared metadata                                                |
-| `ViewInstance`   | Identity, scope and `config`                        | One saved filter/column/sort/page-size configuration           |
-| `ViewHost`       | Services plus `resolveSource(sourceId)`             | Metadata, persistence, permissions and the local source bridge |
-| `ViewPage`       | `scopeKey`, `definitionId`, host                    | Engine creation, loading, subscriptions and disposal           |
+| Part             | Provide                                                    | Owns                                                           |
+| ---------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| `ViewDefinition` | `id`, `sourceId`, `record.rowKey`, fields and capabilities | Shared metadata                                                |
+| `ViewInstance`   | Identity, scope and `config`                               | One saved filter/column/sort/page-size configuration           |
+| `ViewHost`       | Services plus `resolveSource(sourceId)`                    | Metadata, persistence, permissions and the local source bridge |
+| `useViewEngine`  | `scopeKey`, `definitionId`, host                           | Engine creation, loading, subscriptions and disposal           |
 
-For local metadata, pass `definition` and `instances: { instances, defaultInstanceId }` directly to `ViewPage`. A query-only host is enough to display the page. Saving, creation, deletion and reordering appear according to the supplied methods and permissions.
+For local metadata, pass `definition` and `instances: { instances, defaultInstanceId }` to `useViewEngine`. A query-only host is enough to display the page. Saving, creation, deletion and reordering appear according to the supplied methods and permissions.
 
 ```tsx
-import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
+import { useViewEngine, ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-// host is your application-provided ViewHost.
-<ViewPage
-  scopeKey="tenant:user:access"
-  definitionId="orders"
-  host={host}
-  selectable
-/>;
+export function OrderPage({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
+  return <ViewPage {...binding} selectable />;
+}
 ```
 
 `scopeKey` is a stable access identity. Change it when user, tenant or authorization scope changes; it is not a server authorization credential. `[scopeKey, definitionId]` owns the engine lifetime. Replacing host callbacks within that scope preserves sessions. Local metadata props initialize that lifetime; change the React key when you intentionally want a fresh initialization.

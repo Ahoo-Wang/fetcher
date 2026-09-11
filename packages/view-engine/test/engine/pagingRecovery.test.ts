@@ -12,7 +12,7 @@
  */
 
 import { afterEach, expect, it, vi } from 'vitest';
-import type { ViewEngine } from '../../src/record/ViewEngine.js';
+import type { ViewEngine } from '../../src/engine/ViewEngine.js';
 import { instance, selected, setup } from './fixtures.js';
 
 const engines: ViewEngine[] = [];
@@ -34,7 +34,7 @@ async function laterPage() {
   await vi.waitFor(() =>
     expect(selected(engine).allSummary.status).toBe('success'),
   );
-  await engine.setPage(5);
+  await engine.record(engine.getSnapshot().selectedInstanceId!).setPage(5);
   paged.mockClear();
   aggregate.mockResolvedValue([{ summary0: 50 }]);
   return { engine, paged, aggregate };
@@ -48,7 +48,9 @@ it.each([false, true])(
     paged
       .mockResolvedValueOnce({ total: 22, list: [] })
       .mockResolvedValueOnce({ total: 22, list: first });
-    await engine.refresh(undefined, { background });
+    await engine
+      .record(engine.getSnapshot().selectedInstanceId!)
+      .refresh({ background });
     expect(paged.mock.calls.map(([query]) => query.pagination.index)).toEqual([
       5, 1,
     ]);
@@ -71,7 +73,7 @@ it.each([false, true])(
 it('bounds correction when the result becomes completely empty', async () => {
   const { engine, paged } = await laterPage();
   paged.mockResolvedValue({ total: 0, list: [] });
-  await engine.refresh();
+  await engine.record(engine.getSnapshot().selectedInstanceId!).refresh();
   expect(paged).toHaveBeenCalledTimes(2);
   expect(selected(engine)).toMatchObject({
     page: 1,
@@ -86,7 +88,9 @@ it('exposes a failed correction and retries the corrected page', async () => {
   paged
     .mockResolvedValueOnce({ total: 22, list: [] })
     .mockRejectedValueOnce(new Error('first page unavailable'));
-  await expect(engine.refresh()).rejects.toThrow('first page unavailable');
+  await expect(
+    engine.record(engine.getSnapshot().selectedInstanceId!).refresh(),
+  ).rejects.toThrow('first page unavailable');
   expect(selected(engine)).toMatchObject({
     page: 1,
     queryStatus: 'error',
@@ -98,7 +102,7 @@ it('exposes a failed correction and retries the corrected page', async () => {
     total: 22,
     list: [{ state: { id: 'first' } }],
   });
-  await engine.retryQuery();
+  await engine.record(engine.getSnapshot().selectedInstanceId!).retryQuery();
   expect(paged.mock.calls.map(([query]) => query.pagination.index)).toEqual([
     5, 1, 1,
   ]);
@@ -117,10 +121,12 @@ it('lets newer navigation supersede a page correction', async () => {
       !newer
     ) {
       unsubscribe();
-      newer = engine.setPage(2);
+      newer = engine
+        .record(engine.getSnapshot().selectedInstanceId!)
+        .setPage(2);
     }
   });
-  await engine.refresh();
+  await engine.record(engine.getSnapshot().selectedInstanceId!).refresh();
   await newer;
   expect(paged.mock.calls.map(([query]) => query.pagination.index)).toEqual([
     5, 2,

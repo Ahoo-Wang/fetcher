@@ -11,26 +11,26 @@
  * limitations under the License.
  */
 
-import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder';
-import { resolveTimeout, type TimeoutCapable } from './timeout';
-import type { AttributesCapable } from './fetchExchange';
-import { FetchExchange } from './fetchExchange';
+import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder.js';
+import { resolveTimeout, type TimeoutCapable } from './timeout.js';
+import type { AttributesCapable } from './fetchExchange.js';
+import { FetchExchange } from './fetchExchange.js';
 import type {
   BaseURLCapable,
   FetchRequest,
   FetchRequestInit,
   RequestHeaders,
   RequestHeadersCapable,
-} from './fetchRequest';
-import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest';
-import { HttpMethod } from './fetchRequest';
-import { InterceptorManager } from './interceptorManager';
-import type { UrlTemplateStyle } from './urlTemplateResolver';
-import type { ResultExtractorCapable } from './resultExtractor';
-import { ResultExtractors } from './resultExtractor';
-import { mergeRequestOptions } from './mergeRequest';
-import { mergeHeaders } from './requestHeaders';
-import type { ValidateStatus } from './validateStatusInterceptor';
+} from './fetchRequest.js';
+import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest.js';
+import { HttpMethod } from './fetchRequest.js';
+import { InterceptorManager } from './interceptorManager.js';
+import type { UrlTemplateStyle } from './urlTemplateResolver.js';
+import type { ResultExtractorCapable } from './resultExtractor.js';
+import { ResultExtractors } from './resultExtractor.js';
+import { mergeRequestOptions } from './mergeRequest.js';
+import { mergeHeaders } from './requestHeaders.js';
+import type { ValidateStatus } from './validateStatusInterceptor.js';
 
 /**
  * Configuration options for the Fetcher client.

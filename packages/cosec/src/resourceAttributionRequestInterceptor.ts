@@ -16,7 +16,7 @@ import {
   DEFAULT_INTERCEPTOR_ORDER_STEP,
   URL_RESOLVE_INTERCEPTOR_ORDER,
 } from '@ahoo-wang/fetcher';
-import type { TokenStorage } from './tokenStorage';
+import type { TokenStorage } from './tokenStorage.js';
 
 const TENANT_ID_PATH_KEY = 'tenantId';
 const OWNER_ID_PATH_KEY = 'ownerId';

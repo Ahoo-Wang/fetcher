@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { RequestHeaders } from './fetchRequest';
+import type { RequestHeaders } from './fetchRequest.js';
 
 /** Reads a header regardless of its spelling. The last matching key wins. */
 export function getHeader(

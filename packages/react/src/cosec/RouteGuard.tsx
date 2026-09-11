@@ -12,7 +12,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { useSecurityContext } from './SecurityContext';
+import { useSecurityContext } from './SecurityContext.js';
 
 /**
  * Props for the RouteGuard component.

@@ -15,7 +15,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { RecordTable } from '../src/record/RecordTable.js';
-import type { RecordColumn, ViewInstance } from '../src/record/recordModel.js';
+import type { RecordColumn, ViewInstance } from '../src/contracts/viewModel.js';
 import type { RowActionsRendererProps } from '../src/record/recordReactTypes.js';
 import {
   cleanupTable,
@@ -101,14 +101,15 @@ it('resolves explicit cells and row actions with complete records and preserved 
         instance: tableInstance,
         refresh,
         definition: {
-          ...definition,
-          fields: [
+...definition,
+fields: [
             { ...definition.fields[0], cellRenderer: { name: 'fallback' } },
           ],
-          recordActions: {
+record: {...(definition).record,
+recordActions: {
             row: { name: 'actions', options: { label: '刷新' } },
-          },
-        },
+          }}
+},
         extensions: {
           cells: {
             explicit: p => (

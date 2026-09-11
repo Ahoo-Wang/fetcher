@@ -12,10 +12,10 @@
  */
 
 import type { FetcherError } from '@ahoo-wang/fetcher';
-import type { UseQueryOptions, UseQueryReturn } from '../index';
-import { useQuery } from '../index';
-import type { DebounceCapable, UseDebouncedCallbackReturn } from '../index';
-import { useDebouncedCallbackInternal } from './useDebouncedCallback';
+import type { UseQueryOptions, UseQueryReturn } from '../index.js';
+import { useQuery } from '../index.js';
+import type { DebounceCapable, UseDebouncedCallbackReturn } from '../index.js';
+import { useDebouncedCallbackInternal } from './useDebouncedCallback.js';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { dequal } from 'dequal';
 

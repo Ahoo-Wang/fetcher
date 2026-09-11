@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { RecordColumn, RecordColumnPinning } from './recordModel.js';
+import type { RecordColumn, RecordColumnPinning } from '../contracts/viewModel.js';
 
 export function getRecordColumnPinning(
   column: RecordColumn,

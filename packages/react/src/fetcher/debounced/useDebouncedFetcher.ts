@@ -11,11 +11,14 @@
  * limitations under the License.
  */
 
-import type { UseFetcherOptions, UseFetcherReturn } from '../useFetcher';
-import { useFetcher } from '../useFetcher';
+import type { UseFetcherOptions, UseFetcherReturn } from '../useFetcher.js';
+import { useFetcher } from '../useFetcher.js';
 import type { FetcherError } from '@ahoo-wang/fetcher';
-import type { DebounceCapable, UseDebouncedCallbackReturn } from '../../core';
-import { useDebouncedCallback } from '../../core';
+import type {
+  DebounceCapable,
+  UseDebouncedCallbackReturn,
+} from '../../core/index.js';
+import { useDebouncedCallback } from '../../core/index.js';
 import { useMemo } from 'react';
 
 /**

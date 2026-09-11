@@ -1,5 +1,5 @@
-import type { NotificationChannel } from './';
-import type { Message, ChannelType } from '../';
+import type { NotificationChannel } from './index.js';
+import type { Message, ChannelType } from '../index.js';
 
 export const BROWSER_NOTIFICATION_TYPE: ChannelType = 'browser';
 

@@ -26,9 +26,11 @@ import {
   createFilterConfiguration,
   newFilterNode,
 } from '../src/filter/filterCore.js';
+import type { CellRendererProps } from '../src/record/recordReactTypes.js';
 import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
-import { ViewEngine } from '../src/record/ViewEngine.js';
-import { ViewPage, ViewPageContent } from '../src/record/ViewPage.js';
+import { ViewEngine } from '../src/engine/ViewEngine.js';
+import { ViewPage } from './fixtures/OwnedViewPage.js';
+import { ViewPageContent } from '../src/view/ViewPage.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
@@ -83,7 +85,7 @@ it('edits record datetime filters in the definition timezone', async () => {
 
 it('preserves results until Query and avoids cell rerenders in compiled builds', async () => {
   const { host, paged } = setup();
-  const Cell = vi.fn(({ value }: { value: unknown }) => (
+  const Cell = vi.fn(({ value }: CellRendererProps) => (
     <span>{String(value)}</span>
   ));
   const extendedDefinition = {
@@ -109,6 +111,9 @@ it('preserves results until Query and avoids cell rerenders in compiled builds',
   });
   await screen.findByText('筛选未生效');
   expect(screen.getByRole('cell', { name: '42' })).toBeTruthy();
+  expect(Cell.mock.lastCall?.[0].instance.config.filters).toEqual(
+    instance.config.filters,
+  );
   // Functional behavior is shared; automatic memoization belongs to the compiled build.
   if (import.meta.env.MODE === 'compiled')
     expect(Cell.mock.calls).toHaveLength(calls);
@@ -190,7 +195,7 @@ it('collapses filters without unmounting editors, applying drafts or clearing se
   expect(
     (screen.getByRole('button', { name: '保存' }) as HTMLButtonElement)
       .disabled,
-  ).toBe(true);
+  ).toBe(false);
   expect(paged).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole('button', { name: '取消选择' }));
   expect(
@@ -265,9 +270,15 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
   await act(() => engine.setTitle('Updated title'));
   fireEvent.click(screen.getByRole('button', { name: '输入不完整金额' }));
   await act(async () => {
-    await expect(engine.applyFilter()).rejects.toThrow(/筛选/);
-    await expect(engine.applyFilter(instance.id)).rejects.toThrow(/筛选/);
-    await expect(engine.save()).rejects.toThrow(/先查询/);
+    await expect(
+      engine.record(engine.getSnapshot().selectedInstanceId!).applyFilter(),
+    ).rejects.toThrow(/筛选/);
+    await expect(
+      engine
+        .record(instance.id ?? engine.getSnapshot().selectedInstanceId!)
+        .applyFilter(),
+    ).rejects.toThrow(/筛选/);
+    await expect(engine.save()).rejects.toThrow(/配置无效/);
   });
   expect(engine.getSnapshot().sessions.mine).toMatchObject({
     filterValid: false,
@@ -293,7 +304,9 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
   expect(paged).toHaveBeenCalledTimes(1);
   expect(host.instance!.save).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: '修正金额' }));
-  await act(() => engine.applyFilter());
+  await act(() =>
+    engine.record(engine.getSnapshot().selectedInstanceId!).applyFilter(),
+  );
   await act(() => engine.save());
   expect(engine.getSnapshot().sessions.mine).toMatchObject({
     filterValid: true,
@@ -338,4 +351,77 @@ it('changes filter mode from the global toolbar and reopens the same pending dra
   expect(
     (screen.getByRole('textbox', { name: '金额值' }) as HTMLInputElement).value,
   ).toBe('99');
+});
+
+it('preserves unconfirmed text and invalidity across instance switches', async () => {
+  const { host } = setup();
+  const mine = {
+    ...structuredClone(instance),
+    config: {
+      ...structuredClone(instance.config),
+      filters: createFilterConfiguration({
+        ...newFilterNode(FilterOperator.IN, 'orderNo'),
+        component: { name: 'text-values' },
+        props: { values: ['ORDER-001'] },
+      }),
+    },
+  };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: {
+      ...definition,
+      fields: [
+        ...definition.fields,
+        { field: 'orderNo', label: '订单编号', type: 'string' },
+      ],
+    },
+    instances: {
+      instances: [mine, { ...structuredClone(instance), id: 'other' }],
+      defaultInstanceId: mine.id,
+    },
+    host,
+  });
+  try {
+    await engine.load();
+    render(<ViewPageContent engine={engine} />);
+    fireEvent.change(screen.getByRole('textbox', { name: '订单编号' }), {
+      target: { value: 'ORDER-002' },
+    });
+    await waitFor(() =>
+      expect(engine.getSnapshot().sessions.mine.filterValid).toBe(false),
+    );
+    expect(screen.getByRole('textbox', { name: '订单编号' })).toHaveProperty(
+      'value',
+      'ORDER-002',
+    );
+    await act(() => engine.selectInstance('other'));
+    await act(() => engine.selectInstance('mine'));
+    expect
+      .soft(screen.getByRole('textbox', { name: '订单编号' }))
+      .toHaveProperty('value', 'ORDER-002');
+    expect.soft(engine.getSnapshot().sessions.mine.filterValid).toBe(false);
+    expect.soft(engine.getSnapshot().sessions.mine.filterPending).toBe(true);
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '订单编号' }), {
+      key: 'Enter',
+    });
+    expect(engine.getSnapshot().sessions.mine.filterValid).toBe(true);
+    expect(screen.getByRole('textbox', { name: '订单编号' })).toHaveProperty(
+      'value',
+      '',
+    );
+    expect(screen.getByRole('button', { name: '移除ORDER-001' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '移除ORDER-002' })).toBeTruthy();
+    fireEvent.change(screen.getByRole('textbox', { name: '订单编号' }), {
+      target: { value: 'ORDER-003' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '清空条件' }));
+    expect(engine.getSnapshot().sessions.mine.filterValid).toBe(true);
+    expect(screen.getByRole('textbox', { name: '订单编号' })).toHaveProperty(
+      'value',
+      '',
+    );
+    expect(screen.queryByRole('button', { name: '移除ORDER-001' })).toBeNull();
+  } finally {
+    engine.dispose();
+  }
 });

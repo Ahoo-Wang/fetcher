@@ -11,19 +11,19 @@
  * limitations under the License.
  */
 
-export * from './authorizationRequestInterceptor';
-export * from './authorizationResponseInterceptor';
-export * from './cosecConfigurer';
-export * from './cosecRequestInterceptor';
-export * from './deviceIdStorage';
-export * from './idGenerator';
-export * from './jwts';
-export * from './jwtToken';
-export * from './jwtTokenManager';
-export * from './resourceAttributionRequestInterceptor';
-export * from './spaceIdProvider';
-export * from './tokenRefresher';
-export * from './tokenStorage';
-export * from './types';
-export * from './unauthorizedErrorInterceptor';
-export * from './forbiddenErrorInterceptor';
+export * from './authorizationRequestInterceptor.js';
+export * from './authorizationResponseInterceptor.js';
+export * from './cosecConfigurer.js';
+export * from './cosecRequestInterceptor.js';
+export * from './deviceIdStorage.js';
+export * from './idGenerator.js';
+export * from './jwts.js';
+export * from './jwtToken.js';
+export * from './jwtTokenManager.js';
+export * from './resourceAttributionRequestInterceptor.js';
+export * from './spaceIdProvider.js';
+export * from './tokenRefresher.js';
+export * from './tokenStorage.js';
+export * from './types.js';
+export * from './unauthorizedErrorInterceptor.js';
+export * from './forbiddenErrorInterceptor.js';

@@ -13,8 +13,12 @@
 
 import { encodeViewResourceId } from '../viewServiceContract.js';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
+import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
 import { validateFilterConfiguration } from '../../filter/filterConfiguration.js';
-import { type ViewDefinition, type ViewInstance } from '../recordModel.js';
+import {
+  type ViewDefinition,
+  type ViewInstance,
+} from '../../contracts/viewModel.js';
 import { validateRecordPresentation } from './presentationValidation.js';
 import { assertObject, assertText } from './validationPrimitives.js';
 
@@ -22,6 +26,7 @@ export function validateViewInstance(
   value: unknown,
   definition: ViewDefinition,
   expectedId?: string,
+  semantic = true,
 ): asserts value is ViewInstance {
   assertObject(value, '视图实例');
   assertText(value.id, '实例 ID');
@@ -31,7 +36,9 @@ export function validateViewInstance(
   if (value.definitionId !== definition.id)
     throw new Error('实例不属于当前视图定义');
   assertText(value.title, '实例名称');
-  if (value.kind !== 'record') throw new Error('当前仅支持 record 视图');
+  if (value.kind !== 'record' && value.kind !== 'analysis')
+    throw new Error('视图类型无效');
+  if (!definition[value.kind]) throw new Error('定义未声明此视图能力');
   assertObject(value.scope, '实例范围');
   if (
     value.scope.type !== 'personal' &&
@@ -41,9 +48,34 @@ export function validateViewInstance(
     )
   )
     throw new Error('实例范围无效');
-  if (value.revision !== undefined) assertText(value.revision, '实例 revision');
+  assertText(value.revision, '实例 revision');
   assertObject(value.config, '实例配置');
   const config = value.config;
+  validateFilterJson(config);
+  if (value.kind === 'analysis') {
+    if (
+      !config.filters ||
+      !Array.isArray(config.dimensions) ||
+      !Array.isArray(config.metrics) ||
+      !Array.isArray(config.sort) ||
+      !config.presentation ||
+      typeof config.presentation !== 'object'
+    )
+      throw new Error('分析配置结构无效');
+    return;
+  }
+  if (!semantic) {
+    if (
+      !Array.isArray(config.sort) ||
+      !config.pagination ||
+      typeof config.pagination !== 'object' ||
+      !config.presentation ||
+      typeof config.presentation !== 'object' ||
+      !config.filters
+    )
+      throw new Error('记录配置结构无效');
+    return;
+  }
   if ('filter' in config) throw new Error('视图配置必须保存 filters 组件配置');
   validateFilterConfiguration(
     config.filters,
@@ -95,7 +127,7 @@ export function readInstanceList(
     throw new Error('实例列表必须包含 instances 数组');
   const seen = new Set<string>();
   for (const instance of value.instances) {
-    validateViewInstance(instance, definition);
+    validateViewInstance(instance, definition, undefined, false);
     if (seen.has(instance.id)) throw new Error(`实例 ID 重复：${instance.id}`);
     seen.add(instance.id);
   }

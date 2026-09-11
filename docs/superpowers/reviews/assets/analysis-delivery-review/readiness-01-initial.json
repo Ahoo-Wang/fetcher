@@ -1,0 +1,338 @@
+{
+  "browser": "chromium",
+  "version": "153.0.8010.37",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M4 Pro",
+  "scale": {
+    "rows": 100,
+    "columns": 30,
+    "filterFields": 100
+  },
+  "checks": [
+    "100 rows/30 columns, nested own paths and built-in link/number/status/tags/date cells",
+    "Enter queries; draft editing leaves applied results and cell commits unchanged",
+    "Warm no-network interaction p95 within 1000ms regression ceiling",
+    "Light/dark 1440/390px: no unreviewed axe WCAG A/AA violations including portaled dialogs; raw findings retained; viewport bounds, checkbox keyboard toggling and Escape focus",
+    "Failure is distinct from empty; retry restores usable records",
+    "Slow query shows Spin/busy rather than empty and resolves to readable rows",
+    "20 mount/dispose cycles cancel pending reads and release every host permission subscription"
+  ],
+  "timings": {
+    "refresh": {
+      "samples": [
+        133.35,
+        134.08,
+        132.91,
+        133,
+        133.91,
+        133.13,
+        132.98,
+        133.97,
+        133.06,
+        133.36
+      ],
+      "phases": [
+        {
+          "observe": 0.69,
+          "click": 106.76,
+          "settle": 1.18,
+          "paint": 24.7
+        },
+        {
+          "observe": 0.55,
+          "click": 106.97,
+          "settle": 1.12,
+          "paint": 25.43
+        },
+        {
+          "observe": 0.68,
+          "click": 102.77,
+          "settle": 1.36,
+          "paint": 28.09
+        },
+        {
+          "observe": 0.51,
+          "click": 101.59,
+          "settle": 1.21,
+          "paint": 29.69
+        },
+        {
+          "observe": 0.52,
+          "click": 106.21,
+          "settle": 0.92,
+          "paint": 26.26
+        },
+        {
+          "observe": 0.72,
+          "click": 98.45,
+          "settle": 2.86,
+          "paint": 31.11
+        },
+        {
+          "observe": 0.53,
+          "click": 108.39,
+          "settle": 1.04,
+          "paint": 23.01
+        },
+        {
+          "observe": 0.74,
+          "click": 104.38,
+          "settle": 1.16,
+          "paint": 27.68
+        },
+        {
+          "observe": 0.65,
+          "click": 97.91,
+          "settle": 2.97,
+          "paint": 31.52
+        },
+        {
+          "observe": 0.54,
+          "click": 98.42,
+          "settle": 1.11,
+          "paint": 33.29
+        }
+      ],
+      "p95": 134.08,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    },
+    "selection": {
+      "samples": [
+        116.74,
+        99.06,
+        100.97,
+        100.23,
+        99.45,
+        100.35,
+        98.65,
+        100.7,
+        100.18,
+        100.56
+      ],
+      "p95": 116.74,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    },
+    "fieldPicker": {
+      "samples": [
+        163.48,
+        131.38,
+        133.72,
+        132.14,
+        133.76,
+        133.16,
+        151.02,
+        132.3,
+        133.44,
+        133.5
+      ],
+      "phases": [
+        {
+          "click": 60.62,
+          "visible": 12.85,
+          "paintedFrames": 29.37,
+          "escape": 13.1,
+          "hidden": 47.53
+        },
+        {
+          "click": 43.12,
+          "visible": 7.65,
+          "paintedFrames": 21.82,
+          "escape": 11.9,
+          "hidden": 46.88
+        },
+        {
+          "click": 46.31,
+          "visible": 6.77,
+          "paintedFrames": 22.08,
+          "escape": 12.39,
+          "hidden": 46.17
+        },
+        {
+          "click": 46.03,
+          "visible": 7.6,
+          "paintedFrames": 21.33,
+          "escape": 11.92,
+          "hidden": 45.25
+        },
+        {
+          "click": 46.86,
+          "visible": 7.5,
+          "paintedFrames": 21.28,
+          "escape": 12.43,
+          "hidden": 45.69
+        },
+        {
+          "click": 46.5,
+          "visible": 8.6,
+          "paintedFrames": 20.51,
+          "escape": 12,
+          "hidden": 45.55
+        },
+        {
+          "click": 56.4,
+          "visible": 8.78,
+          "paintedFrames": 27.28,
+          "escape": 12.82,
+          "hidden": 45.72
+        },
+        {
+          "click": 46.18,
+          "visible": 7.37,
+          "paintedFrames": 21.46,
+          "escape": 12.35,
+          "hidden": 44.93
+        },
+        {
+          "click": 46.39,
+          "visible": 7.56,
+          "paintedFrames": 21.27,
+          "escape": 12.35,
+          "hidden": 45.86
+        },
+        {
+          "click": 47.29,
+          "visible": 8.84,
+          "paintedFrames": 19.64,
+          "escape": 12.65,
+          "hidden": 45.08
+        }
+      ],
+      "p95": 163.48,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    }
+  },
+  "reviewedWarnings": [],
+  "passed": false,
+  "analysis": {
+    "local-performance": {
+      "kind": "performance",
+      "environment": {
+        "build": "production",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "hardwareConcurrency": 14,
+        "visibility": "visible",
+        "timeOrigin": 1789085084948.4,
+        "measuredAt": "2026-09-11T00:04:50.964Z"
+      },
+      "fields": 100,
+      "filters": 20,
+      "returnedRows": 100,
+      "columns": 6,
+      "sampleCount": 30,
+      "warmupCount": 5,
+      "warmup": {
+        "inputMs": [
+          28.099999964237213,
+          48.39999997615814,
+          50.19999998807907,
+          50.10000002384186,
+          48.799999952316284
+        ],
+        "switchMs": [
+          81.30000001192093,
+          76.29999995231628,
+          77.59999996423721,
+          77.39999997615814,
+          77.39999997615814
+        ]
+      },
+      "input": {
+        "samplesMs": [
+          50.10000002384186,
+          40.90000003576279,
+          49.80000001192093,
+          45.09999996423721,
+          52.59999996423721,
+          47.10000002384186,
+          49.69999998807907,
+          37.10000002384186,
+          50.30000001192093,
+          50.10000002384186,
+          49.39999997615814,
+          38.69999998807907,
+          39.60000002384186,
+          38.09999996423721,
+          50.10000002384186,
+          50.10000002384186,
+          49.19999998807907,
+          50.80000001192093,
+          50.200000047683716,
+          50.90000003576279,
+          38.700000047683716,
+          37.80000001192093,
+          38.5,
+          39.30000001192093,
+          39.30000001192093,
+          50.19999998807907,
+          50.10000002384186,
+          48.69999998807907,
+          38.700000047683716,
+          37.59999996423721
+        ],
+        "p50Ms": 48.69999998807907,
+        "p95Ms": 50.90000003576279,
+        "maxMs": 52.59999996423721
+      },
+      "instanceSwitch": {
+        "samplesMs": [
+          78.89999997615814,
+          82,
+          78.19999998807907,
+          77.5,
+          76.80000001192093,
+          78.19999998807907,
+          79,
+          76.40000003576279,
+          78.40000003576279,
+          82.20000004768372,
+          77.40000003576279,
+          77.10000002384186,
+          76.5,
+          78.5,
+          77.60000002384186,
+          76.10000002384186,
+          86,
+          77.70000004768372,
+          77.80000001192093,
+          77.5,
+          76.60000002384186,
+          78.69999998807907,
+          78.60000002384186,
+          76.39999997615814,
+          85.29999995231628,
+          78.5,
+          78.30000001192093,
+          78.19999998807907,
+          77.30000001192093,
+          79.40000003576279
+        ],
+        "p50Ms": 78.19999998807907,
+        "p95Ms": 85.29999995231628,
+        "maxMs": 86
+      },
+      "thresholds": {
+        "inputP95Ms": 50,
+        "switchP95Ms": 100
+      },
+      "passed": false,
+      "productionAdmitted": false,
+      "requestsBefore": 2,
+      "requestsAfter": 2,
+      "method": "浏览器内performance.now；合成原生input/click事件分发前至两次requestAnimationFrame回调后；先对齐一帧不计时；断言DOM和引擎状态已提交。每项5热身+30正式样本，最近秩P95，不删除离群点。实例由固定fixture按钮调用公共selectInstance，两实例结果已预热；包含真实ViewPage渲染，无网络、无工具传输时延。"
+    }
+  },
+  "error": "AssertionError [ERR_ASSERTION]: local-performance: {\"kind\":\"performance\",\"environment\":{\"build\":\"production\",\"userAgent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36\",\"viewport\":{\"width\":1440,\"height\":1000,\"devicePixelRatio\":1},\"hardwareConcurrency\":14,\"visibility\":\"visible\",\"timeOrigin\":1789085084948.4,\"measuredAt\":\"2026-09-11T00:04:50.964Z\"},\"fields\":100,\"filters\":20,\"returnedRows\":100,\"columns\":6,\"sampleCount\":30,\"warmupCount\":5,\"warmup\":{\"inputMs\":[28.099999964237213,48.39999997615814,50.19999998807907,50.10000002384186,48.799999952316284],\"switchMs\":[81.30000001192093,76.29999995231628,77.59999996423721,77.39999997615814,77.39999997615814]},\"input\":{\"samplesMs\":[50.10000002384186,40.90000003576279,49.80000001192093,45.09999996423721,52.59999996423721,47.10000002384186,49.69999998807907,37.10000002384186,50.30000001192093,50.10000002384186,49.39999997615814,38.69999998807907,39.60000002384186,38.09999996423721,50.10000002384186,50.10000002384186,49.19999998807907,50.80000001192093,50.200000047683716,50.90000003576279,38.700000047683716,37.80000001192093,38.5,39.30000001192093,39.30000001192093,50.19999998807907,50.10000002384186,48.69999998807907,38.700000047683716,37.59999996423721],\"p50Ms\":48.69999998807907,\"p95Ms\":50.90000003576279,\"maxMs\":52.59999996423721},\"instanceSwitch\":{\"samplesMs\":[78.89999997615814,82,78.19999998807907,77.5,76.80000001192093,78.19999998807907,79,76.40000003576279,78.40000003576279,82.20000004768372,77.40000003576279,77.10000002384186,76.5,78.5,77.60000002384186,76.10000002384186,86,77.70000004768372,77.80000001192093,77.5,76.60000002384186,78.69999998807907,78.60000002384186,76.39999997615814,85.29999995231628,78.5,78.30000001192093,78.19999998807907,77.30000001192093,79.40000003576279],\"p50Ms\":78.19999998807907,\"p95Ms\":85.29999995231628,\"maxMs\":86},\"thresholds\":{\"inputP95Ms\":50,\"switchP95Ms\":100},\"passed\":false,\"productionAdmitted\":false,\"requestsBefore\":2,\"requestsAfter\":2,\"method\":\"浏览器内performance.now；合成原生input/click事件分发前至两次requestAnimationFrame回调后；先对齐一帧不计时；断言DOM和引擎状态已提交。每项5热身+30正式样本，最近秩P95，不删除离群点。实例由固定fixture按钮调用公共selectInstance，两实例结果已预热；包含真实ViewPage渲染，无网络、无工具传输时延。\"}\n\nfalse !== true\n\n    at file:///Users/ahoo/.codex/worktrees/7646/fetcher/packages/view-engine/scripts/verify-readiness.mjs:498:12",
+  "pageErrors": []
+}

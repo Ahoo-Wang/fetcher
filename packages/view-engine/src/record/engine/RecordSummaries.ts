@@ -11,12 +11,18 @@
  * limitations under the License.
  */
 
+import {
+  withDeadline,
+  validateRuntimeLimits,
+  QueryBudget,
+  type RuntimeLimits,
+} from '../../engine/runtimeLimits.js';
 import type {
-  RecordQuerySource,
+  ViewSource,
   RecordSession,
   RecordSummaryResult,
-} from '../recordModel.js';
-import type { ViewHost } from '../ViewHost.js';
+} from '../../contracts/viewModel.js';
+import type { ViewHost } from '../../contracts/ViewHost.js';
 import {
   calculateRecordSummary,
   createRecordSummaryQuery,
@@ -25,33 +31,41 @@ import {
 } from '../recordSummary.js';
 import { getRecordSummaryMetrics } from '../recordPresentation.js';
 
-import type { EngineScope } from './EngineScope.js';
-import type { SessionStore } from './SessionStore.js';
+import type { EngineScope } from '../../engine/EngineScope.js';
+import type { SessionStore } from '../../engine/SessionStore.js';
 import { copy, message, sameJsonState } from '../../lib/snapshot.js';
 
 /** Independent page/all summary state and cancellable aggregate requests. */
 export class RecordSummaries {
+  private readonly releases = new Map<string, () => void>();
   private readonly requests = new Map<string, AbortController>();
   private readonly keys = new Map<string, string>();
   constructor(
     private readonly store: SessionStore,
     private readonly scope: EngineScope,
     private readonly host: ViewHost,
+    private readonly limits: Readonly<RuntimeLimits> = validateRuntimeLimits(),
+    private readonly budget = new QueryBudget(limits.maxConcurrentQueries),
   ) {}
   hasPending(id: string): boolean {
     return this.requests.has(id);
   }
   reset(): void {
+    this.releases.forEach(release => release());
+    this.releases.clear();
     this.requests.forEach(controller => controller.abort());
     this.requests.clear();
     this.keys.clear();
   }
 
   invalidate(id: string): void {
+    this.releases.get(id)?.();
+    this.releases.delete(id);
     const controller = this.requests.get(id);
     this.requests.delete(id);
     this.keys.delete(id);
-    if (this.store.find(id)?.allSummary.status !== 'idle')
+    const session = this.store.find(id);
+    if (session?.kind === 'record' && session.allSummary.status !== 'idle')
       this.store.patch(id, { allSummary: EMPTY_RECORD_SUMMARY });
     controller?.abort();
   }
@@ -68,7 +82,7 @@ export class RecordSummaries {
   }
 
   updatePage(id: string): void {
-    const session = this.store.session(id);
+    const session = this.store.recordSession(id);
     const metrics = getRecordSummaryMetrics(
       session.instance.config.presentation,
     );
@@ -92,18 +106,18 @@ export class RecordSummaries {
       this.store.patch(id, { pageSummary });
   }
 
-  sync(id: string, source?: RecordQuerySource, request = true): void {
+  sync(id: string, source?: ViewSource, request = true): void {
     if (this.scope.disposed || !this.store.find(id)) return;
     const lifecycle = this.scope.version;
     this.updatePage(id);
     if (!this.scope.current(lifecycle) || !this.store.find(id)) return;
-    const session = this.store.session(id);
+    const session = this.store.recordSession(id);
     if (this.keys.get(id) !== this.key(session)) this.invalidate(id);
     if (request) void this.query(id, source).catch(() => {});
   }
 
-  private async query(id: string, source?: RecordQuerySource): Promise<void> {
-    const session = this.store.session(id);
+  private async query(id: string, source?: ViewSource): Promise<void> {
+    const session = this.store.recordSession(id);
     const key = this.key(session);
     if (
       !key ||
@@ -114,9 +128,12 @@ export class RecordSummaries {
     const lifecycle = this.scope.version;
     this.invalidate(id);
     if (!this.scope.current(lifecycle) || !this.store.find(id)) return;
-    const latest = this.store.session(id);
+    const latest = this.store.recordSession(id);
     if (this.key(latest) !== key || this.keys.get(id) === key) return;
     const controller = new AbortController();
+    const release = this.budget.acquire(`summary:${id}`, controller);
+    this.releases.set(id, release);
+    const deadline = Date.now() + this.limits.queryTimeoutMs;
     this.requests.set(id, controller);
     this.keys.set(id, key);
     const current = () =>
@@ -129,18 +146,26 @@ export class RecordSummaries {
     });
     try {
       if (!current()) return;
-      source ??= await this.host.resolveSource(
-        this.store.definition().sourceId,
+      source ??= await withDeadline(
+        () => this.host.resolveSource(this.store.definition().sourceId),
+        Math.max(1, deadline - Date.now()),
+        controller,
       );
       if (!current()) return;
       if (!source.aggregate)
         throw new Error('数据源未提供 aggregate，无法汇总所有记录');
-      const result = await source.aggregate(
-        createRecordSummaryQuery(session.appliedFilter, metrics),
-        undefined,
+      const result = await withDeadline(
+        () =>
+          source!.aggregate!(
+            createRecordSummaryQuery(session.appliedFilter!, metrics),
+            undefined,
+            controller,
+          ),
+        Math.max(1, deadline - Date.now()),
         controller,
       );
       if (!current()) return;
+      release();
       this.store.patch(id, {
         allSummary: {
           status: 'success',
@@ -150,17 +175,19 @@ export class RecordSummaries {
       });
     } catch (error) {
       if (!current()) return;
+      release();
       this.store.patch(id, {
         allSummary: { status: 'error', values: {}, error: message(error) },
       });
       throw error;
     } finally {
+      release();
       if (this.requests.get(id) === controller) this.requests.delete(id);
     }
   }
 
   async refresh(id?: string): Promise<void> {
-    const session = this.store.session(id);
+    const session = this.store.recordSession(id);
     id = session.instance.id;
     const lifecycle = this.scope.version;
     const request = this.requests.get(id),

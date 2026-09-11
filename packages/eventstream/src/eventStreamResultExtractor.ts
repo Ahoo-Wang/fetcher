@@ -12,8 +12,8 @@
  */
 
 import type { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
-import type { ServerSentEventStream } from './eventStreamConverter';
-import type { JsonServerSentEventStream } from './jsonServerSentEventTransformStream';
+import type { ServerSentEventStream } from './eventStreamConverter.js';
+import type { JsonServerSentEventStream } from './jsonServerSentEventTransformStream.js';
 
 /**
  * ServerSentEventStream result extractor for Fetcher HTTP client.

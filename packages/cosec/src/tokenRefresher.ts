@@ -13,8 +13,8 @@
 
 import type { Fetcher } from '@ahoo-wang/fetcher';
 import { ResultExtractors } from '@ahoo-wang/fetcher';
-import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor';
-import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './unauthorizedErrorInterceptor';
+import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor.js';
+import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './unauthorizedErrorInterceptor.js';
 
 /**
  * Interface representing an access token used for authentication.

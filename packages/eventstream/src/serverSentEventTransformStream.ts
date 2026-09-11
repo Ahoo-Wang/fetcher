@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { SafeTransformer, type TransformerPhase } from './safeTransformer';
+import { SafeTransformer, type TransformerPhase } from './safeTransformer.js';
 
 /**
  * Represents a message sent in an event stream.

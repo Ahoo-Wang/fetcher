@@ -50,7 +50,7 @@ const entries = [
     title: 'View Engine',
     task: '接入视图引擎',
     description:
-      '从销售订单全链路开始，按业务章节、开发接入与专项边界逐步深入。',
+      '从最小接入开始，按引擎、数据视图、分析视图和共享组件分层探索，连接真实 API 验证。',
     href: './?path=/docs/view-engine-全链路体验--docs',
   },
   {

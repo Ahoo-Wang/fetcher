@@ -55,4 +55,4 @@ Date/datetime ranges use a dual-month Date Range Picker by default. Datetime fie
 
 Configure `ViewDefinition.timeZone` once, for example `Asia/Shanghai`; omission uses the local runtime timezone. A standalone `FilterPanel` receives `timeZone` directly. Fields do not override it. Runtime queries use epoch milliseconds; component configuration retains editable date/time values.
 
-Verify **View Engine → 专项场景 → 查询与筛选 → 内置筛选器** for remote paging/retry/restoration, and **专项场景 → 组件与主题 → 日期时间** for the standalone controls.
+Verify **View Engine → 查询与筛选 → 内置筛选器** for remote paging/retry/restoration, and **扩展与组件 → 日期时间** for the standalone controls.

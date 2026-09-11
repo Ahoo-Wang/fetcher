@@ -18,7 +18,7 @@ import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
   type ViewDefinition,
   type ViewFieldDefinition,
-} from '../recordModel.js';
+} from '../../contracts/viewModel.js';
 import { RECORD_SUMMARY_LABELS } from '../recordPresentation.js';
 import { formatRecordNumber } from '../recordValueFormat.js';
 import {
@@ -112,16 +112,33 @@ export function validateViewDefinition(
   encodeViewResourceId(value.id);
   assertText(value.title, '定义名称');
   assertText(value.sourceId, '数据源 ID');
-  assertPath(value.rowKey, '记录主键');
+  if (!value.record && !value.analysis)
+    throw new Error('定义至少需要 record 或 analysis 能力');
+  if (value.record !== undefined) {
+    assertObject(value.record, '记录能力');
+    assertPath(value.record.rowKey, '记录主键');
+  }
+  if (value.analysis !== undefined) {
+    assertObject(value.analysis, '分析能力');
+    if (
+      typeof value.analysis.count !== 'boolean' ||
+      !Array.isArray(value.analysis.fields)
+    )
+      throw new Error('分析能力无效');
+  }
   if (value.timeZone !== undefined) {
     assertText(value.timeZone, '时区');
     validateTimeZone(value.timeZone);
   }
   if (
-    !Array.isArray(value.allowedLayouts) ||
-    !value.allowedLayouts.length ||
-    new Set(value.allowedLayouts).size !== value.allowedLayouts.length ||
-    value.allowedLayouts.some(layout => layout !== 'table' && layout !== 'card')
+    value.record !== undefined &&
+    (!Array.isArray(value.record.allowedLayouts) ||
+      !value.record.allowedLayouts.length ||
+      new Set(value.record.allowedLayouts).size !==
+        value.record.allowedLayouts.length ||
+      value.record.allowedLayouts.some(
+        layout => layout !== 'table' && layout !== 'card',
+      ))
   )
     throw new Error('allowedLayouts 必须为非空且不重复的 table/card 数组');
   validateFields(value.fields);
@@ -141,15 +158,15 @@ export function validateViewDefinition(
       validateReference(editor);
     }
   }
-  if (value.recordActions !== undefined) {
-    assertObject(value.recordActions, '业务操作');
-    validateReference(value.recordActions.global);
-    validateReference(value.recordActions.toolbar);
-    validateReference(value.recordActions.row);
+  if (value.record?.recordActions !== undefined) {
+    assertObject(value.record?.recordActions, '业务操作');
+    validateReference(value.record.recordActions.global);
+    validateReference(value.record.recordActions.toolbar);
+    validateReference(value.record.recordActions.row);
   }
-  if (value.defaultPresentation !== undefined)
+  if (value.record?.defaultPresentation !== undefined)
     validateRecordPresentationDefaults(
-      value.defaultPresentation,
+      value.record?.defaultPresentation,
       value as unknown as ViewDefinition,
     );
 }

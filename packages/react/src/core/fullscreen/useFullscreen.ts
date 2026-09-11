@@ -19,7 +19,7 @@ import {
   exitFullscreen,
   addFullscreenChangeListener,
   removeFullscreenChangeListener,
-} from './utils';
+} from './utils.js';
 
 export interface UseFullscreenOptions {
   /**

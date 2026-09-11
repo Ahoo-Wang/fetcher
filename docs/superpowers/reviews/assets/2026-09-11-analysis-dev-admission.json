@@ -1,0 +1,202 @@
+{
+  "startedAt": "2026-09-10T23:08:04.563915+00:00",
+  "environment": "linyi-k8s/dev service port-forward; bypasses ingress",
+  "authorization": [
+    {
+      "model": "snapshot",
+      "endpoint": "schema",
+      "credential": "deliberately invalid synthetic bearer",
+      "status": 200
+    },
+    {
+      "model": "snapshot",
+      "endpoint": "aggregation",
+      "credential": "deliberately invalid synthetic bearer",
+      "status": 200
+    },
+    {
+      "model": "event",
+      "endpoint": "schema",
+      "credential": "deliberately invalid synthetic bearer",
+      "status": 200
+    },
+    {
+      "model": "event",
+      "endpoint": "aggregation",
+      "credential": "deliberately invalid synthetic bearer",
+      "status": 200
+    }
+  ],
+  "samples": [
+    {
+      "cycle": 0,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 210.7,
+      "records": 584033
+    },
+    {
+      "cycle": 0,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 130.33,
+      "records": 1364820
+    },
+    {
+      "cycle": 1,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 100.71,
+      "records": 584039
+    },
+    {
+      "cycle": 1,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 134.99,
+      "records": 1364830
+    },
+    {
+      "cycle": 2,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 209.44,
+      "records": 584045
+    },
+    {
+      "cycle": 2,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 146.03,
+      "records": 1364836
+    },
+    {
+      "cycle": 3,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 230.83,
+      "records": 584053
+    },
+    {
+      "cycle": 3,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 99.23,
+      "records": 1364844
+    },
+    {
+      "cycle": 4,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 137.29,
+      "records": 584056
+    },
+    {
+      "cycle": 4,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 119.05,
+      "records": 1364890
+    },
+    {
+      "cycle": 5,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 138.2,
+      "records": 584065
+    },
+    {
+      "cycle": 5,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 142.3,
+      "records": 1364909
+    },
+    {
+      "cycle": 6,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 128.69,
+      "records": 584071
+    },
+    {
+      "cycle": 6,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 239.83,
+      "records": 1364915
+    },
+    {
+      "cycle": 7,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 128.85,
+      "records": 584079
+    },
+    {
+      "cycle": 7,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 136.72,
+      "records": 1364938
+    },
+    {
+      "cycle": 8,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 192.31,
+      "records": 584086
+    },
+    {
+      "cycle": 8,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 153.57,
+      "records": 1364946
+    },
+    {
+      "cycle": 9,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 266.66,
+      "records": 584092
+    },
+    {
+      "cycle": 9,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 127.37,
+      "records": 1364987
+    },
+    {
+      "cycle": 10,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 146.21,
+      "records": 584094
+    },
+    {
+      "cycle": 10,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 169.25,
+      "records": 1364999
+    },
+    {
+      "cycle": 11,
+      "model": "snapshot",
+      "status": 200,
+      "elapsedMs": 98.64,
+      "records": 584104
+    },
+    {
+      "cycle": 11,
+      "model": "event",
+      "status": 200,
+      "elapsedMs": 136.36,
+      "records": 1365020
+    }
+  ],
+  "finishedAt": "2026-09-10T23:09:58.982486+00:00",
+  "scope": "24 sequential count queries at 10 second intervals; not load testing or long-running soak"
+}

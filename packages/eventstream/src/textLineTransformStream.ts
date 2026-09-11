@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { SafeTransformer } from './safeTransformer';
+import { SafeTransformer } from './safeTransformer.js';
 
 /**
  * Transformer that splits text into lines.

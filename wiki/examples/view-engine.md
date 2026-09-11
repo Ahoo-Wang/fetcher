@@ -16,7 +16,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-Open [View Engine → 开发接入 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
+Open [View Engine → 入门与业务流程 → 最小接入](http://localhost:6006/?path=/story/view-engine-扩展接入-最小接入--minimal). The displayed page starts unchanged; interactions are manual. Run the separate regression story for assertions:
 
 ```bash
 pnpm exec vitest run --project=storybook stories/view-engine/QuickStart.test.stories.tsx

@@ -14,15 +14,15 @@ description: 定义、实例、偏好、权限与记录查询数据源的职责�
 | `instance`   | `load(instanceId, signal?)`                    | `Promise<ViewInstance>`                                  |
 | `instance`   | `create(instanceWithoutIdOrRevision, context)` | 返回创建后的权威实例，context 含 requestId 和可选 signal |
 | `instance`   | `save(instance)`                               | 返回保存实例及权威 revision                              |
-| `instance`   | `rename(instanceId, title, revision?)`         | 返回改名后的实例                                         |
-| `instance`   | `delete(instanceId, revision?)`                | `Promise<ViewDeleteResult>`                              |
+| `instance`   | `rename(instanceId, title, revision)`          | 返回改名后的实例                                         |
+| `instance`   | `delete(instanceId, revision)`                 | `Promise<ViewDeleteResult>`                              |
 | `preference` | `saveOrder(definitionId, instanceIds)`         | 保存当前用户的排序偏好                                   |
 | `preference` | `saveDefault(definitionId, instanceId)`        | 保存当前用户默认项；`instanceId` 为 `string \| null`     |
 | `permission` | `getInstance(instance)`                        | 同步 `ViewInstancePermissions`                           |
 | `permission` | `getDefinition()`                              | 同步 `{ reorder }` 投影                                  |
 | `permission` | `load(definitionId, signal?)`                  | 初始化 getter，并返回 `ViewPermissionSnapshot`           |
 | `permission` | `refresh(signal?)`、`subscribe(listener)`      | 刷新权限；subscribe 返回取消订阅函数                     |
-| host         | `resolveSource(sourceId)`                      | `RecordQuerySource` 或其 Promise                         |
+| host         | `resolveSource(sourceId)`                      | `ViewSource` 或其 Promise（记录分页或分析聚合）          |
 
 加载引擎时等待 `permission.load`；没有 load 时使用 `permission.refresh`。权限初始化失败不能进入 ready。getter 必须是纯函数，读取已初始化策略。后续变化需要发布通知或替换 host，仅修改不可观察的闭包不会通知 React。
 
@@ -61,3 +61,5 @@ const host = new IndexedDBViewHost({
 `saveDefault` 保存按当前用户和定义隔离的偏好。它接受无需编辑权限的任意当前可见个人、共享或系统实例，也接受 `null`；null 表示下次进入时不自动选择。设置默认项不会切换当前项或查询记录，后续排序也不会改变默认项。删除默认实例时，宿主在同一事务内将每个受影响用户的默认项更新为该用户可见顺序中的首个剩余实例，没有剩余项则为 null。显式 null 和其他用户仍可见的同 ID 个人实例保持不变。删除后才首次出现的用户，其初始默认项也会按实际可见列表解析。删除不可见的他人个人实例仍是当前范围内的空操作。
 
 构建后运行 `pnpm verify:view-engine` 验证独立包、HTTP、跨标签 CAS、取消、重置及真实页面。客户端存储和开发服务不构成生产鉴权边界。
+
+重新加载不会自动覆盖远端内容分歧。检查 session.conflict，明确采用远端或携带已审阅快照确认覆盖。已发出的写入超时仍是未知结果，读取超时可以独立重试。参见[生命周期与上限](./engine.md)。

@@ -25,9 +25,12 @@ import type {
 } from '../../filter/filterModel.js';
 import { replaceFilterNode, sameFilterNode } from '../../filter/filterTree.js';
 import { cloneSnapshot, type DeepReadonly } from '../../lib/types.js';
-import { describeRecordFilter } from '../recordFilterSummary.js';
-import type { RecordSession, ViewDefinition } from '../recordModel.js';
-import type { ViewEngine } from '../ViewEngine.js';
+import { describeFilter } from '../../filter/filterSummary.js';
+import type {
+  RecordSession,
+  RecordViewDefinition,
+} from '../../contracts/viewModel.js';
+import type { ViewEngine } from '../../engine/ViewEngine.js';
 
 export function RecordAppliedFilters({
   engine,
@@ -36,7 +39,7 @@ export function RecordAppliedFilters({
   run,
 }: {
   engine: ViewEngine;
-  definition: ViewDefinition;
+  definition: RecordViewDefinition;
   session: RecordSession;
   run(action: () => void | Promise<void>): void;
 }) {
@@ -53,7 +56,7 @@ export function RecordAppliedFilters({
   function describe(
     node: DeepReadonly<FilterComponentConfig>,
     fields: readonly FilterFieldDefinition[],
-  ): ReturnType<typeof describeRecordFilter> | undefined {
+  ): ReturnType<typeof describeFilter> | undefined {
     const result = compileFilterConfiguration(
       { mode: 'advanced', root: node },
       fields,
@@ -76,7 +79,7 @@ export function RecordAppliedFilters({
         editor.name,
       ) &&
         getBuiltinFilterCompiler(editor.name) !== undefined);
-    return describeRecordFilter(
+    return describeFilter(
       result.expression,
       fields,
       {
@@ -126,6 +129,7 @@ export function RecordAppliedFilters({
       const current = state.sessions[session.instance.id];
       if (
         !current ||
+        current.kind !== 'record' ||
         !state.definition ||
         current.filterPending ||
         current.queryStatus === 'loading'
@@ -161,8 +165,12 @@ export function RecordAppliedFilters({
       if (!result.expression)
         throw new Error(result.errors[0]?.message ?? '无法清空此筛选条件值');
       // Keep every field, operator and editor ID; only values become unset.
-      engine.setFilterDraft(configuration, current.instance.id);
-      const query = engine.applyFilter(current.instance.id);
+      engine
+        .record(current.instance.id ?? engine.getSnapshot().selectedInstanceId!)
+        .setFilterDraft(configuration);
+      const query = engine
+        .record(current.instance.id ?? engine.getSnapshot().selectedInstanceId!)
+        .applyFilter();
       rootRef.current?.focus();
       await query;
     });

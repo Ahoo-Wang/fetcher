@@ -44,6 +44,7 @@ catalog:
   playwright: ^1.63.0
   prettier: ^3.9.6
   react: ^19.2.8
+  recharts: ^3.10.1
   react-compiler-runtime: ^1.0.0
   react-dom: ^19.2.8
   react-day-picker: ^10.0.1

@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken';
-import type { CompositeToken } from './tokenRefresher';
-import type { CoSecJwtPayload, EarlyPeriodCapable } from './jwts';
+import { JwtCompositeToken, JwtCompositeTokenSerializer } from './jwtToken.js';
+import type { CompositeToken } from './tokenRefresher.js';
+import type { CoSecJwtPayload, EarlyPeriodCapable } from './jwts.js';
 import type { KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import {

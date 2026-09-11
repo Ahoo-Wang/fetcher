@@ -62,7 +62,8 @@
     "tailwind-merge": "catalog:",
     "@ahoo-wang/fetcher-wow": "workspace:^",
     "@ahoo-wang/fetcher-react": "workspace:^",
-    "@date-fns/tz": "catalog:"
+    "@date-fns/tz": "catalog:",
+    "recharts": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:",

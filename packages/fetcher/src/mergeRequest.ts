@@ -11,12 +11,12 @@
  * limitations under the License.
  */
 
-import { type FetchRequestInit } from './fetchRequest';
-import { type UrlParams } from './urlBuilder';
-import { mergeRecords } from './utils';
-import { mergeHeaders } from './requestHeaders';
-import type { RequestOptions } from './fetcher';
-import { DEFAULT_REQUEST_OPTIONS } from './fetcher';
+import { type FetchRequestInit } from './fetchRequest.js';
+import { type UrlParams } from './urlBuilder.js';
+import { mergeRecords } from './utils.js';
+import { mergeHeaders } from './requestHeaders.js';
+import type { RequestOptions } from './fetcher.js';
+import { DEFAULT_REQUEST_OPTIONS } from './fetcher.js';
 
 /**
  * Merges two FetcherRequest objects into one.

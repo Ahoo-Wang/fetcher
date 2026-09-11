@@ -21,8 +21,9 @@ import {
   within,
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ViewEngine } from '../src/record/ViewEngine.js';
-import { ViewPage, ViewPageContent } from '../src/record/ViewPage.js';
+import { ViewEngine } from '../src/engine/ViewEngine.js';
+import { ViewPage } from './fixtures/OwnedViewPage.js';
+import { ViewPageContent } from '../src/view/ViewPage.js';
 import type { GlobalActionsRendererProps } from '../src/record/recordReactTypes.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
@@ -42,12 +43,13 @@ it('keeps unresolved component scopes null in global and table actions without q
       definitionId="orders"
       host={host}
       definition={{
-        ...definition,
-        recordActions: {
+...definition,
+record: {...(definition).record,
+recordActions: {
           global: { name: 'global' },
           toolbar: { name: 'table' },
-        },
-      }}
+        }}
+}}
       instances={{
         instances: [
           {
@@ -88,9 +90,10 @@ it('business refresh stays bound to its instance after navigation', async () => 
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition: {
-      ...definition,
-      recordActions: { global: { name: 'actions' } },
-    },
+...definition,
+record: {...(definition).record,
+recordActions: { global: { name: 'actions' } }}
+},
     host,
   });
   await engine.load();
@@ -127,9 +130,10 @@ it('recovers batch actions on selection changes without retrying on unrelated dr
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition: {
-      ...definition,
-      recordActions: { toolbar: { name: 'batch' } },
-    },
+...definition,
+record: {...(definition).record,
+recordActions: { toolbar: { name: 'batch' } }}
+},
     host,
   });
   await engine.load();
@@ -140,14 +144,14 @@ it('recovers batch actions on selection changes without retrying on unrelated dr
       extensions={{ toolbarActions: { batch: Batch } }}
     />,
   );
-  await act(() => engine.setSelection([0]));
+  await act(() => engine.record(engine.getSnapshot().selectedInstanceId!).setSelection([0]));
   expect(screen.getByText('工具栏操作渲染失败')).toBeTruthy();
   const failedAttempts = attempts;
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
     target: { value: '99' },
   });
   expect(attempts).toBe(failedAttempts);
-  await act(() => engine.setSelection([1]));
+  await act(() => engine.record(engine.getSnapshot().selectedInstanceId!).setSelection([1]));
   expect(screen.getByRole('button', { name: '可处理 1' })).toBeTruthy();
   expect(screen.queryByText('工具栏操作渲染失败')).toBeNull();
   engine.dispose();
@@ -162,9 +166,10 @@ it('recovers global actions when a pending query finishes', async () => {
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition: {
-      ...definition,
-      recordActions: { global: { name: 'actions' } },
-    },
+...definition,
+record: {...(definition).record,
+recordActions: { global: { name: 'actions' } }}
+},
     host,
   });
   await engine.load();
@@ -186,7 +191,7 @@ it('recovers global actions when a pending query finishes', async () => {
   );
   let request!: Promise<void>;
   act(() => {
-    request = engine.refresh();
+    request = engine.record(engine.getSnapshot().selectedInstanceId!).refresh();
   });
   await screen.findByText('全局操作渲染失败');
   await act(async () => {
@@ -203,9 +208,10 @@ it('separates global and table actions while sharing the applied query context',
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition: {
-      ...definition,
-      recordActions: { global: { name: 'create' }, toolbar: { name: 'batch' } },
-    },
+...definition,
+record: {...(definition).record,
+recordActions: { global: { name: 'create' }, toolbar: { name: 'batch' } }}
+},
     host,
   });
   await engine.load();

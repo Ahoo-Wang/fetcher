@@ -3,50 +3,58 @@ title: ViewEngine 生命周期与命令
 description: 管理引擎生命周期，读取不可变快照并执行实例作用域命令。
 ---
 
-# ViewEngine 生命周期与命令
+# 记录与分析的共享生命周期
 
-## 生命周期所有权
+```tsx
+import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
+import { useViewEngine, ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-`new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers? })` 创建无头运行时。调用 `await engine.load()`，结束时调用 `engine.dispose()`。React 应用通常交给 `ViewPage` 管理，已释放的引擎不能继续复用。
+export function OrderPage({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
+  return <ViewPage {...binding} selectable />;
+}
+```
 
-`getSnapshot()` 返回缓存的不可变 `ViewEngineState`，`subscribe(listener)` 返回取消订阅函数。状态包含 status/error/definition、实例 ID、当前实例、`defaultInstanceId` 与各实例会话。`getCapabilitiesSnapshot()` 通过同一订阅机制提供必填的 `reorder`、`setDefault` 和每实例能力投影。不要直接修改快照。
+`useViewEngine(options)` 负责创建、加载和释放，包括 React StrictMode。必填的 `scopeKey` 与 `definitionId` 标识生命周期，任一变化都会替换引擎。可选的本地 `definition`/`instances`、`extensions` 中成对的编译器/编辑器注册、`limits`、`onDiagnostic` 用于初始化该生命周期。同范围的 host 更新保留编辑；其他初始化输入需要重新建立时，显式改变 React key。返回的 `ViewEngineBinding` 为 `{ engine: ViewEngine | null, extensions?, error? }`。
 
-## 会话状态
+`ViewPage` 是纯 UI，接收 binding 或调用方持有的 engine，不会自行加载或释放引擎。`ViewPageContent` 要求非 null engine。两者组合导航、共享写入和选中的 `RecordView` 或 `AnalysisView`；后两者只渲染各自类型。无界面调用方创建 `new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`，调用 `load()`，范围结束时调用 `dispose()`。
 
-| 字段                                                            | 含义                                   |
-| --------------------------------------------------------------- | -------------------------------------- |
-| `baseline`、`instance`、`dirty`                                 | 已保存基线、当前实例、待保存差异       |
-| `filterDraft`、`filterBaseline`、`filterPending`、`filterValid` | 编辑树、已应用树、查询差异和本地有效性 |
-| `appliedFilter`                                                 | 编译表达式，查询范围无效时为 null      |
-| `rows`、`total`、`page`、`cursor`、`nextCursor`                 | 当前记录结果与导航                     |
-| `queryStatus`、`refreshing`、`queryError`                       | 读取状态；后台刷新可保留记录           |
-| `pageSummary`、`allSummary`                                     | 独立跟踪的两个汇总范围                 |
-| `writeStatus`、`writeError`、`requiresReload`                   | 写入进度、失败与协调要求               |
-| `selectedRowKeys`                                               | 已加载记录内的选择                     |
+### 定义与已保存实例
 
-## 命令
+`ViewDefinition` 包含 `id`、`title`、`sourceId`、共享 `fields`，以及可选的 `timeZone`、`allowedOperators`、`filterEditors`。至少声明一种能力：
 
-下表中可选 `id` 指定实例，省略时使用当前实例。异步操作返回 `Promise<void>`，调用方需处理失败。
+- `record: { rowKey, allowedLayouts, defaultPresentation?, recordActions? }`。`RecordViewDefinition` 将该能力标记为必需；rowKey 是自有属性路径，allowedLayouts 是非空且不重复的 table/card 列表。
+- `analysis: AnalysisCapability` 授权 COUNT、字段分组、数值函数、时间粒度和上限。仅聚合的数据源不需要记录主键或分页方法。
 
-| 命令                                                                                                      | 作用                                      |
-| --------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `selectInstance(id)`                                                                                      | 导航并加载对应记录                        |
-| `setFilterDraft(configuration, id?, valid?)`、`setFilterValidity(valid, id?)`、`setFilterMode(mode, id?)` | 编辑，不查询                              |
-| `applyFilter(id?)`                                                                                        | 编译当前配置、接受配置并查询              |
-| `setSort(sort, id?)`、`setPage(index, id?)`、`setPageSize(size, id?)`、`nextPage(id?)`                    | 应用记录查询与导航变化                    |
-| `setColumns(columns, id?)`                                                                                | 修改展示；汇总指标变化可能发起聚合        |
-| `setSelection(keys, id?)`、`setTitle(title, id?)`                                                         | 修改本地选择或标题                        |
-| `refresh(id?, { background? })`                                                                           | 查询当前已应用范围                        |
-| `refreshSummary(id?)`                                                                                     | 独立重试聚合范围                          |
-| `save(id?)`、`saveAs({ title, scope }, id?)`                                                              | 经宿主服务保存                            |
-| `renameInstance(title, id?)`、`deleteInstance(id?)`、`reorderInstances(ids)`                              | 管理服务端视图与用户偏好                  |
-| `canSetDefaultInstance()`、`setDefaultInstance(instanceId)`                                               | 检查并保存当前用户默认项；接受 ID 或 null |
-| `restore(id?)`                                                                                            | 恢复本地保存基线并查询                    |
-| `reloadInstance(id?)`、`canReloadInstance(id?)`                                                           | 从宿主重载并协调实例                      |
-| `getPermissions(id?)`、`canReorderInstances()`                                                            | 检查当前操作权限                          |
-| `updateHost(host)`                                                                                        | 更新同范围回调/策略并保留会话             |
-| `dispose()`                                                                                               | 结束订阅并取消拥有的读取                  |
+`ViewInstance` 是 `RecordViewInstance | AnalysisViewInstance` 判别联合。两者都要求非空 `id`、`definitionId`、`title`、`revision` 和 `scope`。`kind: 'record'` 使用 `RecordViewConfig`（filters、sort、pagination、presentation）；`kind: 'analysis'` 使用下文的 `AnalysisViewConfig`。scope 支持个人或公共/系统/共享分类，不代表权限。创建输入只省略 ID 和 revision，由服务回执返回。
 
-通过数据源的 QueryApi 方法读取并传递 AbortController，写入授权与持久化留在 ViewHost 服务。请求取消和旧响应丢弃保障结果所有权，不能撤销已经完成的业务写入。
+`ViewInstanceList` 包含可见实例与 `defaultInstanceId: string | null`，可以混合两类视图。默认偏好与当前选中项独立。结构可读取但当前不可执行的配置仍保留编辑入口，通过 `session.validation` 报错；单个失效实例不会阻断健康实例。
 
-`setDefaultInstance` 要求宿主提供 `preference.saveDefault`。非 null ID 必须属于当前实例列表，与编辑权限无关。命令先持久化，再发布 `defaultInstanceId`；不会改变 `selectedInstanceId`、查询记录，也不会提交或丢弃未保存草稿。传入 null 会明确取消默认项，下次进入时不会自动选择实例。
+### 工作配置、已应用结果与保存
+
+快照不可变。`ViewEngineState.version` 随发布递增，会话 `editVersion` 标识工作编辑版本。`RecordSession.queryAttempt` 捕获在途查询，`RecordSession.result` 将成功行绑定到当时的 config/filter/page/cursor 和 receivedAt；`AnalysisSession.pendingQuery` 捕获在途计划。展示来源和业务动作必须使用对应结果/请求快照，不能从工作编辑推断。`ViewSession` 按 kind 区分；访问记录或分析专属字段前先收窄类型。共享字段包括 baseline、当前工作 instance、dirty、validation、writeStatus、writeError、requiresReload，以及可选 conflict。
+
+记录会话保留 filterDraft、filterBaseline、appliedFilter、filterPending、页码/游标、行、汇总与选择。编辑工作筛选不会改变已应用查询或记录。filterPending 表示工作筛选与已应用范围不同，本身不阻止保存。分析会话独立保留成功 result 及查询/schema 来源；后续编辑或执行失败不会把旧行标记为新结果。
+
+`save(id?)` 校验并保存当前工作内容，不执行查询。无效原始输入阻止保存；有效但未查询的编辑可以保存。回执推进保存基线，同时保留提交后的编辑。`saveAs({ title, scope }, id?)` 返回 `Promise<string | undefined>`：身份已知时返回创建 ID，创建核对可以跨越原选中实例。运行时行、选择、错误和倒计时不会作为配置保存。
+
+### 命令与结果归属
+
+`engine.analysis(id)` 将 `edit(updater)`、`run()`、`clearSort()`、`setFilterValidity(valid)`、`restore()` 绑定到指定分析实例。edit/clearSort/restore 不查询；run 编译并校验完整结果后才发布。`engine.record(id)` 绑定 `edit(updater)`、`refresh()`、`setPage(page)`、`setPageSize(size)`、`applyFilter()`、`restore()`。实例生命周期被替换后，旧命令失效。编辑回调必须纯净，不得重入引擎命令。
+
+记录操作统一通过 `engine.record(id)`：`setFilterDraft(configuration, valid?)`、`setFilterValidity(valid)`、`setFilterMode(mode)`、`applyFilter()`、`setSort(sort)`、`setColumns(columns)`、`setLayout(layout)`、`setCardConfig(card)`、`setPage(index)`、`setPageSize(size)`、`nextPage()`、`setSelection(keys)`、`refresh({ background? }?)`、`retryQuery()`、`refreshSummary()`。门面不再提供直接记录命令。共享操作为 setTitle、save、saveAs、restore、reloadInstance、renameInstance、deleteInstance、setDefaultInstance、reorderInstances。记录还原会恢复基线并查询；分析还原只恢复工作配置，不运行。
+
+### 冲突、未知写入与运行上限
+
+真实分歧在 session.conflict 中保留旧基线、本地编辑及最新远端文档。普通保存不能把旧内容静默附加到新 revision。页面提供使用最新版本、另存配置，以及有权限时覆盖。`useRemoteInstance(review, id?)` 与 `overwriteInstance(review, id?)` 要求确切的已审阅冲突快照；后续本地编辑或远端版本变化使旧确认失效。覆盖仍使用审阅过的远端 revision 做 CAS，远端元数据和当前权限始终有效。
+
+未知写入结果单独处理：请求发出后的超时、网络错误或 UNKNOWN_OUTCOME 保留原操作，通过 reloadInstance 核对。未知创建重用原 requestId 与提交体，换新 requestId 可能产生重复。未知删除保留原身份与 revision。默认偏好、删除回执和跨标签页事务仍由宿主负责。内置内存/浏览器宿主是参考适配器，不是生产授权边界。
+
+limits 默认：加载 15,000 ms，查询/写入 30,000 ms，4 个并发查询，5 份保留结果集，配置 262,144 字节。结果回收不会清除工作草稿或恢复状态。晚到读取不能覆盖新请求或不同结果范围；取消不作为用户查询失败。可选 onDiagnostic 只接收操作身份、类型、阶段、耗时及可选错误码，不携带查询/行内容，回调异常被隔离。部署时仍需核验宿主/后端契约和浏览器流程，具备这些 API 不代表生产验收完成。

@@ -11,6 +11,6 @@
  * limitations under the License.
  */
 
-export * from './debounced';
-export * from './useFetcher';
-export * from './useFetcherQuery';
+export * from './debounced/index.js';
+export * from './useFetcher.js';
+export * from './useFetcherQuery.js';
