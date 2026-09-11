@@ -543,7 +543,7 @@ console.log(compiled.plan.query, result.rows);
 
 宿主数据源复用 `SnapshotQueryClient` / `EventStreamQueryClient` 与应用已有的鉴权 `Fetcher`。[补偿 dev 示例](examples/react/compensation/README.md) 提供 Schema 发现、真实只读查询、取消、本地视图持久化及显式启用的集成测试。根事件流 COUNT 统计批次，展开 `body` 范围后 COUNT 统计事件条目。Storybook **View Engine → 专项场景 → 分析图表** 提供离线场景，**补偿 API 分析** 在用户主动连接后才访问服务。
 
-可通过 `VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm verify:view-engine` 复现生产验收（或使用已安装的 Playwright 浏览器）。现有验证器构建并服务静态 Storybook，检查宿主与无障碍契约，然后在 100 字段/20 个过滤项/100 行下强制输入 P95 ≤75ms、缓存实例切换 P95 ≤150ms，并检查 10,000 行×21 列时的输入保留与取消。设置 `VIEW_ENGINE_ARTIFACTS` 可保留原始样本和环境信息；开发模式计时不作为生产验收。
+可通过 `VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm verify:view-engine` 复现生产验收（或使用已安装的 Playwright 浏览器）。现有验证器构建并服务静态 Storybook，检查宿主与无障碍契约，然后在 100 字段/20 个过滤项/100 行下强制输入 P95 ≤125ms、缓存实例切换 P95 ≤150ms，并检查 10,000 行×21 列时的输入保留与取消。设置 `VIEW_ENGINE_ARTIFACTS` 可保留原始样本和环境信息；开发模式计时不作为生产验收。
 
 分析采用三块区域：右侧查询 Sheet、中间结果区、默认折叠的左侧可视化配置区。查询编辑器在关闭和调整尺寸时保持挂载；关闭保留草稿，不保存也不运行。先选择图表展示方式，再配置字段。未配置图表时默认显示数据表；已保存图表恢复原展示配置。底部“分析 / 数据表”模式始终保留，包括无图表或无结果时，切换不查询、不保存。图表不兼容时在分析模式说明原因，并提供明确的查看数据表操作。维度和指标保留摘要卡片、弹层编辑和键盘排序。
 
