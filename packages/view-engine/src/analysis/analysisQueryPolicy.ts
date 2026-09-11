@@ -12,6 +12,8 @@
  */
 
 import { sameJsonState } from '../lib/snapshot.js';
+import type { AnalysisViewConfig } from './analysisModel.js';
+import type { DeepReadonly } from '../lib/types.js';
 import type { AnalysisSession } from '../contracts/viewModel.js';
 
 export type AnalysisQueryIntent = 'manual' | 'open' | 'reload' | 'auto';
@@ -36,4 +38,25 @@ export function analysisQueryPolicy(
     !!session.result &&
     sameJsonState(session.compilation.plan.query, session.result.plan.query)
   );
+}
+
+export function hasUnrunAnalysisQuery(
+  session: Pick<AnalysisSession, 'result' | 'compilation'>,
+): boolean {
+  return (
+    !!session.result &&
+    (!session.compilation.plan ||
+      !sameJsonState(session.compilation.plan.query, session.result.plan.query))
+  );
+}
+
+export function sameAnalysisQueryDraft(
+  a: DeepReadonly<AnalysisViewConfig>,
+  b: DeepReadonly<AnalysisViewConfig>,
+): boolean {
+  const { presentation: _a, ...queryA } = a,
+    { presentation: _b, ...queryB } = b;
+  void _a;
+  void _b;
+  return sameJsonState(queryA, queryB);
 }

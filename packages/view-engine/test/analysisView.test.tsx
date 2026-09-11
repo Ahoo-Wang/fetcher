@@ -19,6 +19,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import {
   AggregationFunction,
@@ -190,6 +191,11 @@ it('keeps successful results on retry failure and blocks invalid working config'
       expect(screen.getByText('分析查询失败，请重试')).toBeTruthy(),
     );
     expect(screen.getByRole('table')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '配置查询' }));
+    fireEvent.click(screen.getByRole('button', { name: '运行并查看' }));
+    await waitFor(() =>
+      expect(screen.queryByText('分析查询失败，请重试')).toBeNull(),
+    );
     await act(async () =>
       engine.analysis('totals').edit(config => ({ ...config, limit: '' })),
     );
@@ -228,10 +234,9 @@ it('switches kinds in one page and preserves unrun drafts and panel state', asyn
     expect(
       screen.getByRole('textbox', { name: '最多结果行数' }),
     ).toHaveProperty('value', '');
-    expect(screen.getByRole('button', { name: '运行分析' })).toHaveProperty(
-      'disabled',
-      true,
-    );
+    fireEvent.click(screen.getByRole('button', { name: '运行并查看' }));
+    expect(screen.getByRole('dialog', { name: '配置查询' })).toBeTruthy();
+    expect(aggregate).toHaveBeenCalledTimes(calls);
     fireEvent.click(
       screen.getByRole('button', { name: '查看结果', exact: true }),
     );
@@ -586,6 +591,11 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
       await waitFor(() =>
         expect(engine.getSnapshot().sessions.b.filterValid).toBe(true),
       );
+      await act(() => engine.selectInstance('a'));
+      expect(
+        screen.getByRole('textbox', { name: '根金额 草稿' }),
+      ).toHaveProperty('value', '-');
+      expect(engine.getSnapshot().sessions.a.filterValid).toBe(false);
     } finally {
       cleanup();
       engine.dispose();
@@ -644,7 +654,7 @@ it('shows executed display controls for stale results without replacing the draf
     );
     expect(
       screen.getByRole('combobox', { name: '图表类型' }).textContent,
-    ).toContain('请选择展示方式');
+    ).toContain('指标卡');
     aggregate.mockRejectedValueOnce(new Error('offline'));
     await act(async () => {
       await engine
@@ -654,7 +664,7 @@ it('shows executed display controls for stale results without replacing the draf
     });
     expect(
       screen.getByRole('combobox', { name: '图表类型' }).textContent,
-    ).toContain('请选择展示方式');
+    ).toContain('指标卡');
     act(() =>
       engine.analysis('totals').edit(config => ({ ...config, limit: 100 })),
     );
@@ -1109,6 +1119,222 @@ it('starts with table results and a folded visualization panel, and retains the 
     expect(
       screen.getByRole('textbox', { name: '最多结果行数' }),
     ).toHaveProperty('value', '50');
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('closes the Sheet on admission only and leaves a reopened C draft open when B completes', async () => {
+  const { engine, aggregate } = setup();
+  let resolve!: (rows: { orders: number }[]) => void;
+  try {
+    await engine.load();
+    aggregate.mockImplementationOnce(
+      () =>
+        new Promise(done => {
+          resolve = done;
+        }),
+    );
+    render(<AnalysisView engine={engine} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: '配置查询', exact: true }),
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: '最多结果行数' }), {
+      target: { value: '50' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '运行并查看' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: '配置查询', exact: true }),
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: '最多结果行数' }), {
+      target: { value: '25' },
+    });
+    await waitFor(() => expect(resolve).toBeDefined());
+    await act(async () => resolve([{ orders: 3 }]));
+    expect(screen.getByRole('dialog', { name: '配置查询' })).toBeTruthy();
+    expect(
+      screen.getByRole('textbox', { name: '最多结果行数' }),
+    ).toHaveProperty('value', '25');
+    expect(engine.getSnapshot().sessions.totals.result?.config.limit).toBe(50);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('keeps invalid submission open and focuses a problem without issuing a query', async () => {
+  const { engine, aggregate } = setup();
+  try {
+    await engine.load();
+    render(<AnalysisView engine={engine} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: '配置查询', exact: true }),
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: '最多结果行数' }), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '运行并查看' }));
+    expect(screen.getByRole('dialog', { name: '配置查询' })).toBeTruthy();
+    expect(aggregate).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(
+        true,
+      ),
+    );
+    expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
+    const submit = screen.getByRole('button', { name: '运行并查看' });
+    submit.focus();
+    fireEvent.click(submit);
+    await waitFor(() => expect(document.activeElement).not.toBe(submit));
+    expect(aggregate).toHaveBeenCalledOnce();
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('retains failure feedback and the instance mode after revisiting cached results', async () => {
+  const { engine, aggregate } = setup(true);
+  try {
+    await engine.load();
+    render(<ViewPageContent engine={engine} />);
+    fireEvent.click(screen.getByRole('tab', { name: '分析', exact: true }));
+    aggregate.mockRejectedValueOnce(new Error('offline'));
+    await act(async () => {
+      await engine
+        .analysis('totals')
+        .run()
+        .catch(() => {});
+    });
+    await act(() => engine.selectInstance('records'));
+    await act(() => engine.selectInstance('totals'));
+    expect(
+      screen
+        .getByRole('tab', { name: '分析', exact: true })
+        .getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(screen.getByText('分析查询失败，请重试')).toBeTruthy();
+    act(() =>
+      engine.analysis('totals').edit(config => ({ ...config, limit: 50 })),
+    );
+    expect(
+      screen.getByRole('button', { name: '运行当前配置', exact: true }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '重试本次查询' })).toBeNull();
+    expect(aggregate).toHaveBeenCalledTimes(2);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('keeps result schema and captions bound to execution while query titles are edited', async () => {
+  const { engine, aggregate } = setup();
+  try {
+    await engine.load();
+    render(<AnalysisView engine={engine} />);
+    act(() =>
+      engine.analysis('totals').edit(config => ({
+        ...config,
+        metrics: config.metrics.map(metric => ({
+          ...metric,
+          title: '草稿中的新标题',
+        })),
+      })),
+    );
+    expect(screen.getByRole('columnheader', { name: /订单数/ })).toBeTruthy();
+    expect(screen.getByLabelText('执行口径').textContent).not.toContain(
+      '草稿中的新标题',
+    );
+    expect(aggregate).toHaveBeenCalledOnce();
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('configures a new analysis before its first accepted query and shows the data table', async () => {
+  const seed = setup();
+  await seed.engine.load();
+  const { definition, sessions } = seed.engine.getSnapshot();
+  const source = sessions.totals.instance as AnalysisViewInstance;
+  seed.engine.dispose();
+  const aggregate = vi.fn(async (query: { metrics: { alias: string }[] }) => [
+    { [query.metrics[0].alias]: 2 },
+  ]);
+  const engine = new ViewEngine({
+    definitionId: definition!.id,
+    definition: definition!,
+    instances: {
+      instances: [
+        { ...source, id: 'new', config: { ...source.config, metrics: [] } },
+      ],
+      defaultInstanceId: 'new',
+    },
+    host: { resolveSource: () => ({ aggregate: aggregate as never }) },
+  });
+  try {
+    await engine.load();
+    render(<AnalysisView engine={engine} />);
+    expect(screen.getByRole('dialog', { name: '配置查询' })).toBeTruthy();
+    expect(aggregate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '添加指标' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: '完成编辑', exact: true }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: '运行并查看' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() =>
+      expect(screen.getByRole('cell', { name: '2' })).toBeTruthy(),
+    );
+    expect(
+      screen
+        .getByRole('tab', { name: '数据表', exact: true })
+        .getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(aggregate).toHaveBeenCalledOnce();
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('keeps chart mapping and analysis mode when a new result invalidates its metric', async () => {
+  const { engine, aggregate } = setup();
+  try {
+    await engine.load();
+    const presentation = {
+      layout: 'metric' as const,
+      columns: [],
+      metrics: ['orders'],
+    };
+    engine.analysis('totals').edit(config => ({ ...config, presentation }));
+    render(<AnalysisView engine={engine} />);
+    act(() =>
+      engine.analysis('totals').edit(config => ({
+        ...config,
+        metrics: config.metrics.map(item => ({ ...item, alias: 'other' })),
+      })),
+    );
+    expect(
+      within(screen.getByLabelText('分析结果区')).queryByText(
+        /指标 orders 已失效/,
+      ),
+    ).toBeNull();
+    aggregate.mockResolvedValueOnce([{ other: 2 }]);
+    await act(() => engine.analysis('totals').run());
+    expect(
+      screen
+        .getByRole('tab', { name: '分析', exact: true })
+        .getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(
+      engine.getSnapshot().sessions.totals.instance.config.presentation,
+    ).toEqual(presentation);
+    expect(
+      within(screen.getByLabelText('分析结果区')).getByText(
+        /指标 orders 已失效/,
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '查看数据表' }));
+    expect(screen.getByRole('table')).toBeTruthy();
+    expect(aggregate).toHaveBeenCalledTimes(2);
   } finally {
     engine.dispose();
   }

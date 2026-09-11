@@ -263,9 +263,8 @@ export function ViewPageContent({
               session={session}
             />
           )}
-          {session?.kind === 'analysis' ? (
+          {
             <AnalysisView
-              key={id}
               engine={engine}
               extensions={recordProps.extensions}
               filterContext={recordProps.filterContext}
@@ -275,7 +274,8 @@ export function ViewPageContent({
                 setConfigurationPanels(panels => new Map(panels).set(id!, open))
               }
             />
-          ) : session ? (
+          }
+          {session?.kind === 'record' ? (
             <RecordView
               key={id}
               engine={engine}
@@ -286,7 +286,7 @@ export function ViewPageContent({
               }
               toolbarStart={toolbarStart}
             />
-          ) : (
+          ) : !session ? (
             <div className="fve:rounded-lg fve:border fve:border-dashed fve:p-10 fve:text-center fve:text-sm fve:text-muted-foreground">
               {state.openingInstanceId
                 ? '正在打开视图实例…'
@@ -294,7 +294,7 @@ export function ViewPageContent({
                   ? '请选择一个视图实例'
                   : '暂无可用视图，请由宿主配置视图实例'}
             </div>
-          )}
+          ) : null}
         </main>
       </div>
     </ViewExpansionContext.Provider>

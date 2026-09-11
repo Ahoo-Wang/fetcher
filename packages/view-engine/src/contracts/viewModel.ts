@@ -280,6 +280,8 @@ export interface AnalysisSession {
   readonly editVersion: number;
   readonly filterValid: boolean;
   readonly pendingQuery: DeepReadonly<AnalysisPlan> | null;
+  /** Last accepted query, retained on failure to identify what a retry would execute. */
+  readonly queryAttempt: DeepReadonly<AnalysisPlan> | null;
   readonly baseline: DeepReadonly<AnalysisViewInstance>;
   readonly instance: DeepReadonly<AnalysisViewInstance>;
   readonly dirty: boolean;

@@ -75,10 +75,13 @@ export function resolveAnalysisAxes<T extends { readonly alias: string }>(
   dimensions: readonly T[],
   value: DeepReadonly<AnalysisPresentation>,
 ) {
-  const x = dimensions.find(d => d.alias === value.x) ?? dimensions[0];
+  const x =
+    value.x !== undefined
+      ? dimensions.find(d => d.alias === value.x)
+      : dimensions[0];
   const series =
     dimensions.find(d => d.alias === value.series) ??
-    (value.series === undefined && dimensions.length === 2
+    (value.series === undefined && !!x && dimensions.length === 2
       ? dimensions.find(d => d !== x)
       : undefined);
   return { x, series };

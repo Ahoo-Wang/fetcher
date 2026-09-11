@@ -18,13 +18,11 @@ import {
   useCallback,
   useContext,
   useRef,
-  useEffect,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import {
-  ChevronDownIcon,
   PlayIcon,
   Settings2Icon,
   Maximize2Icon,
@@ -34,19 +32,10 @@ import {
 } from 'lucide-react';
 import type { ViewEngine } from '../engine/ViewEngine.js';
 import type { FilterExtensions } from '../filter/filterReactTypes.js';
-import { FilterPanel } from '../filter/FilterPanel.js';
-import { FilterSelect } from '../filter/FilterSelect.js';
 import { describeConfiguredFilter } from '../filter/describeConfiguredFilter.js';
 import { Button } from '../components/ui/button.js';
 import { Badge } from '../components/ui/badge.js';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '../components/ui/dialog.js';
+
 import { ViewRefreshControls } from '../view/ViewRefreshControls.js';
 import {
   useViewExpansion,
@@ -55,9 +44,12 @@ import {
 import { ViewInstanceActions } from '../view/ViewInstanceActions.js';
 import { sameJsonState } from '../lib/snapshot.js';
 import { cn } from '../lib/utils.js';
-import { OverlayScope } from '../lib/OverlayScope.js';
-import { analysisQueryPolicy } from './analysisQueryPolicy.js';
-import { AnalysisEditor } from './AnalysisEditor.js';
+import {
+  analysisQueryPolicy,
+  hasUnrunAnalysisQuery,
+} from './analysisQueryPolicy.js';
+import { AnalysisResultSummary } from './AnalysisResultSummary.js';
+import { AnalysisQuerySheet } from './AnalysisQuerySheet.js';
 import { AnalysisTable } from './AnalysisTable.js';
 import { AnalysisResultTabs } from './AnalysisResultTabs.js';
 import { AnalysisPresentationEditor } from './AnalysisPresentationEditor.js';
@@ -65,34 +57,6 @@ import { projectAnalysis } from './analysisProjection.js';
 import type { AnalysisCompileContext } from './analysisModel.js';
 import type { AnalysisPresentation } from './analysisPresentation.js';
 import type { AnalysisExtensions } from './analysisReactTypes.js';
-
-/** One instance-local validity gate: a valid root cannot overwrite an invalid element. */
-function AnalysisFilterValidity({
-  scopeKey,
-  onChange,
-  children,
-}: {
-  scopeKey: string;
-  onChange(valid: boolean): void;
-  children(
-    root: (valid: boolean) => void,
-    scope: (valid: boolean) => void,
-  ): ReactNode;
-}) {
-  const [root, setRoot] = useState(true);
-  const [scopes, setScopes] = useState(() => new Map<string, boolean>());
-  const valid = root && (scopes.get(scopeKey) ?? true);
-  useEffect(() => {
-    onChange(valid);
-  }, [valid, onChange]);
-  return children(setRoot, valid =>
-    setScopes(previous =>
-      previous.get(scopeKey) === valid
-        ? previous
-        : new Map(previous).set(scopeKey, valid),
-    ),
-  );
-}
 
 const Chart = lazy(() =>
   import('./AnalysisChart.js').then(module => ({
@@ -128,138 +92,62 @@ export interface AnalysisViewProps {
   onConfigurationOpenChange?(open: boolean): void;
   className?: string;
 }
-/** Own editor subscriptions separately from result and dialog presentation. */
-function AnalysisConfiguration({
-  engine,
-  context,
-  extensions,
-  filterContext,
-  visible,
-  filterSummary,
-}: Pick<AnalysisViewProps, 'engine' | 'extensions' | 'filterContext'> & {
-  context: AnalysisCompileContext;
-  visible: boolean;
-  filterSummary: string;
-}) {
+/** Instance-local editors stay mounted for the lifetime of the containing workbench. */
+export function AnalysisView(props: AnalysisViewProps) {
+  const { engine } = props;
   const state = useSyncExternalStore(
     engine.subscribe,
     engine.getSnapshot,
     engine.getSnapshot,
   );
-  const selected = state.selectedInstanceId
-    ? state.sessions[state.selectedInstanceId]
-    : undefined;
-  const session = selected?.kind === 'analysis' ? selected : undefined;
-  const id = session?.instance.id;
-  const commands = useMemo(
-    () =>
-      id && session?.editorEpoch !== undefined ? engine.analysis(id) : null,
-    [engine, id, session?.editorEpoch],
+  const selected =
+    state.selectedInstanceId &&
+    state.sessions[state.selectedInstanceId]?.kind === 'analysis'
+      ? state.selectedInstanceId
+      : null;
+  const [cache, setCache] = useState<{
+    engine: ViewEngine;
+    epoch: number;
+    ids: string[];
+  }>({ engine, epoch: 0, ids: [] });
+  const epoch = cache.engine === engine ? cache.epoch : cache.epoch + 1;
+  const ids = (cache.engine === engine ? cache.ids : []).filter(
+    id => state.sessions[id]?.kind === 'analysis',
   );
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filtersVisited, setFiltersVisited] = useState(false);
-  if (!filtersVisited && (filtersOpen || session?.filterValid === false))
-    setFiltersVisited(true);
-  const definition = state.definition;
-  if (!session || !definition || !commands) return null;
-  const { instance } = session;
-  return (
-    <AnalysisFilterValidity
-      key={`${instance.id}:${session.editorEpoch}`}
-      scopeKey={instance.config.scope?.id ?? 'root'}
-      onChange={commands.setFilterValidity}
-    >
-      {(rootValidity, scopeValidity) => (
-        <div className="fve:[&_p]:m-0 fve:flex fve:min-w-0 fve:flex-col fve:gap-3">
-          <details
-            className="fve:group fve:rounded-lg fve:border"
-            open={filtersOpen || session.filterValid === false}
-          >
-            <summary
-              className="fve:flex fve:cursor-pointer fve:list-none fve:items-center fve:justify-between fve:gap-2 fve:px-3 fve:py-2 fve:text-sm fve:focus-visible:ring-2 fve:focus-visible:ring-ring fve:[&::-webkit-details-marker]:hidden"
-              onClick={event => {
-                event.preventDefault();
-                setFiltersVisited(true);
-                setFiltersOpen(!filtersOpen);
-              }}
-            >
-              <span className="fve:flex fve:min-w-0 fve:items-center fve:gap-3">
-                <span className="fve:font-medium">筛选条件</span>
-                <span
-                  className="fve:truncate fve:text-xs fve:text-muted-foreground"
-                  title={filterSummary}
-                >
-                  {session.filterValid === false ? '条件待完善' : filterSummary}
-                </span>
-              </span>
-              <ChevronDownIcon
-                aria-hidden="true"
-                className="fve:size-4 fve:shrink-0 fve:group-open:rotate-180"
-              />
-            </summary>
-            <div
-              className="fve:border-t fve:p-3"
-              onFocus={() => setFiltersOpen(true)}
-            >
-              {(filtersVisited || filtersOpen || !session.filterValid) && (
-                <FilterPanel
-                  renderToolbar={toolbar => (
-                    <FilterSelect
-                      label="筛选模式"
-                      value={toolbar.mode}
-                      options={toolbar.options}
-                      disabled={toolbar.disabled}
-                      onValueChange={toolbar.onModeChange}
-                    />
-                  )}
-                  value={instance.config.filters}
-                  appliedValue={
-                    (session.result?.config ?? session.baseline.config).filters
-                  }
-                  fields={definition.fields}
-                  timeZone={definition.timeZone}
-                  allowedOperators={definition.allowedOperators}
-                  editors={definition.filterEditors}
-                  extensions={extensions}
-                  context={filterContext}
-                  showQueryAction={false}
-                  onApply={() => commands.run()}
-                  onChange={filters =>
-                    commands.edit(config => ({ ...config, filters }))
-                  }
-                  onValidityChange={rootValidity}
-                />
-              )}
-            </div>
-          </details>
-          <AnalysisEditor
-            key={instance.id}
-            value={instance.config}
-            appliedValue={session.result?.config ?? session.baseline.config}
-            context={context}
-            errors={session.validation}
-            visible={visible}
-            extensions={extensions}
-            filterContext={filterContext}
-            onFilterValidityChange={scopeValidity}
-            onChange={next => commands.edit(() => next)}
-          />
-        </div>
-      )}
-    </AnalysisFilterValidity>
-  );
+  if (selected && !ids.includes(selected)) ids.push(selected);
+  if (
+    cache.engine !== engine ||
+    ids.length !== cache.ids.length ||
+    ids.some((id, index) => id !== cache.ids[index])
+  )
+    setCache({ engine, epoch, ids });
+  return ids.map(id => (
+    <AnalysisInstanceView
+      {...props}
+      key={`${epoch}:${id}`}
+      instanceId={id}
+      active={id === selected}
+      toolbarStart={id === selected ? props.toolbarStart : undefined}
+      configurationOpen={id === selected ? props.configurationOpen : undefined}
+      onConfigurationOpenChange={
+        id === selected ? props.onConfigurationOpenChange : undefined
+      }
+    />
+  ));
 }
 
 /** Query editing and executed results share an instance, not a mutable data meaning. */
-export function AnalysisView({
+function AnalysisInstanceView({
   engine,
+  instanceId,
+  active,
   extensions,
   filterContext,
   toolbarStart,
   configurationOpen,
   onConfigurationOpenChange,
   className,
-}: AnalysisViewProps) {
+}: AnalysisViewProps & { instanceId: string; active: boolean }) {
   const state = useSyncExternalStore(
     engine.subscribe,
     engine.getSnapshot,
@@ -278,19 +166,21 @@ export function AnalysisView({
     id: string;
     mode: 'analysis' | 'table';
   } | null>(null);
+  const [submissionError, setSubmissionError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
   const [localError, setLocalError] = useState<{
     id: string;
     message: string;
   } | null>(null);
-  const current = state.selectedInstanceId
-    ? state.sessions[state.selectedInstanceId]
-    : undefined;
+  const current = state.sessions[instanceId];
   const session = current?.kind === 'analysis' ? current : undefined;
   const id = session?.instance.id;
   const inheritedExpansion = useContext(ViewExpansionContext);
   const localExpansion = useViewExpansion(
     containerRef,
-    !!session && !inheritedExpansion,
+    !!session && active && !inheritedExpansion,
   );
   const expansion = inheritedExpansion ?? localExpansion;
   const autoRefresh = useCallback(async () => {
@@ -323,36 +213,19 @@ export function AnalysisView({
   const open =
     configurationOpen ??
     (queryPanel && queryPanel.id === id ? queryPanel.open : !compiled?.plan);
-  const visualOpen = visualPanel?.id === id && visualPanel?.open === true;
+  const visualPreferred = visualPanel?.id === id && visualPanel?.open === true;
   const result = session?.result;
   const querying = session?.queryStatus === 'loading';
   const samePendingQuery =
     querying &&
     sameJsonState(compiled?.plan?.query, session?.pendingQuery?.query);
-  const stale =
-    !!result &&
-    (!compiled?.plan || !sameJsonState(compiled.plan.query, result.plan.query));
+  const stale = session ? hasUnrunAnalysisQuery(session) : false;
   const presentation =
     config?.presentation && typeof config.presentation === 'object'
       ? config.presentation
       : tablePresentation;
-  const executedPresentation =
-    result?.config.presentation &&
-    typeof result.config.presentation === 'object'
-      ? result.config.presentation
-      : tablePresentation;
-  const resultPresentation =
-    stale || sameJsonState(presentation, executedPresentation)
-      ? executedPresentation
-      : presentation;
-  // Keep unchanged results stable across query-only drafts, including local table pagination.
-  const resultPlan =
-    !stale &&
-    compiled?.plan &&
-    (!sameJsonState(compiled.plan.schema, result?.plan.schema) ||
-      compiled.plan.timeZone !== result?.plan.timeZone)
-      ? compiled.plan
-      : result?.plan;
+  const resultPresentation = presentation;
+  const resultPlan = result?.plan;
   const projectedResult = useMemo(
     () =>
       result && resultPlan
@@ -368,6 +241,7 @@ export function AnalysisView({
     setLocalError(null);
     const failed = () => {
       const current = engine.getSnapshot().sessions[actionId];
+      if (current?.queryError || current?.writeError) return;
       setLocalError({
         id: actionId,
         message:
@@ -380,7 +254,29 @@ export function AnalysisView({
       failed();
     }
   }
+  function submitQuery() {
+    setSubmissionError(null);
+    setLocalError(null);
+    try {
+      const execution = commands!.start();
+      void execution.completion.catch(() => {});
+      if (!execution.accepted) {
+        setSubmissionError({
+          id: instance.id,
+          message: '本次执行未被接纳；相同查询可能正在运行，请查看结果状态。',
+        });
+        return;
+      }
+      toggleConfiguration(false);
+    } catch (error) {
+      setSubmissionError({
+        id: instance.id,
+        message: error instanceof Error ? error.message : '查询配置无效',
+      });
+    }
+  }
   function toggleConfiguration(next: boolean) {
+    if (next) setSubmissionError(null);
     setQueryPanel({ id: instance.id, open: next });
     onConfigurationOpenChange?.(next);
   }
@@ -400,31 +296,25 @@ export function AnalysisView({
         definition.timeZone,
       )?.text ?? '全部记录')
     : '筛选草稿待检查';
-  const editor = (
-    <OverlayScope visible={open}>
-      <AnalysisConfiguration
-        engine={engine}
-        context={context}
-        extensions={extensions}
-        filterContext={filterContext}
-        visible={open}
-        filterSummary={draftFilterSummary}
-      />
-    </OverlayScope>
-  );
   const mode =
     resultMode?.id === instance.id
       ? resultMode.mode
       : resultPresentation.layout === 'table'
         ? 'table'
         : 'analysis';
+  const visualOpen = visualPreferred && mode === 'analysis';
   const setMode = (mode: 'analysis' | 'table') =>
     setResultMode({ id: instance.id, mode });
 
-  const error =
-    session.writeError ||
-    session.queryError ||
-    (localError?.id === instance.id ? localError.message : null);
+  const error = [
+    ...new Set(
+      [
+        session.queryError,
+        session.writeError,
+        localError?.id === instance.id ? localError.message : null,
+      ].filter(Boolean),
+    ),
+  ].join('；');
   const table =
     result && tablePlan ? (
       <AnalysisTable
@@ -439,23 +329,6 @@ export function AnalysisView({
         onSortChange={sort => run(() => commands.setSort(sort))}
       />
     ) : null;
-  const scopeLabel = result?.config.scope
-    ? (definition.analysis?.scopes?.find(
-        scope => scope.id === result.config.scope?.id,
-      )?.label ?? result.config.scope.id)
-    : '根记录';
-  const resultScope = definition.analysis?.scopes?.find(
-    scope => scope.id === result?.config.scope?.id,
-  );
-  const filterSummary = result
-    ? (describeConfiguredFilter(
-        result.config.filters.root,
-        definition.fields,
-        definition.allowedOperators,
-        engine.filterCompilers,
-        result.plan.timeZone,
-      )?.text ?? '全部记录')
-    : '';
   const querySummary = [
     instance.config.scope
       ? (definition.analysis?.scopes?.find(
@@ -477,6 +350,7 @@ export function AnalysisView({
       ref={containerRef}
       aria-label="分析视图"
       data-slot="analysis-view"
+      hidden={!active}
     >
       <header className="fve:flex fve:flex-wrap fve:items-center fve:justify-between fve:gap-3 fve:rounded-xl fve:border fve:bg-background fve:p-3">
         {toolbarStart ?? (
@@ -489,9 +363,10 @@ export function AnalysisView({
           <Button
             variant="outline"
             aria-expanded={visualOpen}
-            onClick={() =>
-              setVisualPanel({ id: instance.id, open: !visualOpen })
-            }
+            onClick={() => {
+              setMode('analysis');
+              setVisualPanel({ id: instance.id, open: true });
+            }}
           >
             <PanelLeftIcon data-icon="inline-start" aria-hidden="true" />
             可视化配置
@@ -504,35 +379,37 @@ export function AnalysisView({
             <Settings2Icon data-icon="inline-start" aria-hidden="true" />
             配置查询
           </Button>
-          <ViewRefreshControls
-            key={`refresh:${instance.id}`}
-            engine={engine}
-            id={instance.id}
-            root={containerRef}
-            querying={querying}
-            pauseReason={
-              session.requiresReload
-                ? '视图已变化，重新加载后恢复。'
-                : session.queryError
-                  ? '查询失败，重试成功后恢复。'
-                  : session.writeStatus !== 'idle'
-                    ? '正在保存视图，完成后恢复。'
-                    : stale || !session.filterValid
-                      ? '配置尚未运行，运行或撤销修改后恢复。'
-                      : !result
-                        ? '运行分析后可开启自动刷新。'
-                        : null
-            }
-            manualDisabled={
-              !canRun ||
-              stale ||
-              !session.filterValid ||
-              session.requiresReload ||
-              session.writeStatus !== 'idle'
-            }
-            onRefresh={() => run(() => commands.run())}
-            onAutoRefresh={autoRefresh}
-          />
+          {active && (
+            <ViewRefreshControls
+              key={`refresh:${instance.id}`}
+              engine={engine}
+              id={instance.id}
+              root={containerRef}
+              querying={querying}
+              pauseReason={
+                session.requiresReload
+                  ? '视图已变化，重新加载后恢复。'
+                  : session.queryError
+                    ? '查询失败，重试成功后恢复。'
+                    : session.writeStatus !== 'idle'
+                      ? '正在保存视图，完成后恢复。'
+                      : stale || !session.filterValid
+                        ? '配置尚未运行，运行或撤销修改后恢复。'
+                        : !result
+                          ? '运行分析后可开启自动刷新。'
+                          : null
+              }
+              manualDisabled={
+                !canRun ||
+                stale ||
+                !session.filterValid ||
+                session.requiresReload ||
+                session.writeStatus !== 'idle'
+              }
+              onRefresh={() => run(() => commands.run())}
+              onAutoRefresh={autoRefresh}
+            />
+          )}
           <Button
             variant="outline"
             size="icon-sm"
@@ -597,13 +474,13 @@ export function AnalysisView({
             showIssues={false}
             value={resultPresentation}
             plan={resultPlan}
-            disabled={!result || stale}
+            rows={result?.rows}
+            disabled={!result}
             onChange={presentation => {
               commands.edit(config => ({ ...config, presentation }));
-              setMode('analysis');
             }}
           />
-          {(!result || stale) && (
+          {!result && (
             <p className="fve:mt-3 fve:text-xs fve:text-muted-foreground">
               先运行当前查询，再配置展示方式。
             </p>
@@ -619,66 +496,36 @@ export function AnalysisView({
               <div className="fve:flex fve:items-center fve:gap-2">
                 {querying && <Badge variant="secondary">正在查询</Badge>}
                 {stale && <Badge variant="outline">配置尚未运行</Badge>}
+                {!session.queryValid && (
+                  <Badge variant="outline">查询配置待修复</Badge>
+                )}
               </div>
             </div>
             {result && (
-              <section
-                aria-label="执行口径"
-                className="fve:flex fve:flex-col fve:gap-1 fve:rounded-md fve:bg-muted/50 fve:p-3 fve:text-xs fve:text-muted-foreground"
-              >
-                <details>
-                  <summary className="fve:cursor-pointer">
-                    已返回 {result.rows.length} 行 · {filterSummary} ·
-                    查看执行口径
-                  </summary>
-                  <p>
-                    来源：{definition.title} · 统计对象：{scopeLabel} ·{' '}
-                    {(result.plan.query.groupBy ?? []).length} 个维度 ·{' '}
-                    {
-                      result.plan.schema.filter(
-                        column => column.role === 'metric' && !column.labelFor,
-                      ).length
-                    }{' '}
-                    个指标
-                  </p>
-                  <p>筛选：{filterSummary}</p>
-                  {result.plan.query.elements?.map(
-                    (element, index) =>
-                      element.filter && (
-                        <p key={index}>
-                          元素 {index + 1}：
-                          {(result.config.scope?.filters[index]
-                            ? describeConfiguredFilter(
-                                result.config.scope.filters[index].root,
-                                resultScope?.elements[index]?.fields ?? [],
-                                definition.allowedOperators,
-                                engine.filterCompilers,
-                                result.plan.timeZone,
-                              )?.text
-                            : undefined) ?? '全部记录'}
-                        </p>
-                      ),
-                  )}
-                  <p>
-                    已返回 {result.rows.length} 行 · 最多{' '}
-                    {result.plan.query.limit ?? 100} 行 · 时区{' '}
-                    {result.plan.timeZone ?? 'UTC'} · 接收于{' '}
-                    {new Date(result.receivedAt).toLocaleString('zh-CN')}
-                  </p>
-                  {!!result.plan.query.groupBy?.length &&
-                    result.rows.length === (result.plan.query.limit ?? 100) && (
-                      <p>结果达到返回上限，可能还有其他分组。</p>
-                    )}
-                </details>
-              </section>
+              <AnalysisResultSummary
+                result={result}
+                definition={definition}
+                compilers={engine.filterCompilers}
+              />
             )}
-            {stale && (
-              <p
-                role="status"
-                className="fve:text-sm fve:text-muted-foreground"
-              >
-                图形和数据仍对应上次运行。运行当前配置后再调整新结果的展示。
-              </p>
+            {(stale || (session.queryError && result)) && (
+              <div className="fve:flex fve:flex-wrap fve:items-center fve:gap-2">
+                <p
+                  role="status"
+                  className="fve:text-sm fve:text-muted-foreground"
+                >
+                  以下仍为上次成功结果。
+                </p>
+                {!session.queryError && (
+                  <Button
+                    variant="outline"
+                    disabled={!canRun}
+                    onClick={() => run(() => commands.run())}
+                  >
+                    运行当前配置
+                  </Button>
+                )}
+              </div>
             )}
           </div>
           {error && (
@@ -693,7 +540,11 @@ export function AnalysisView({
                   disabled={!canRun}
                   onClick={() => run(() => commands.run())}
                 >
-                  重试查询
+                  {session.queryAttempt &&
+                  compiled?.plan &&
+                  sameJsonState(session.queryAttempt.query, compiled.plan.query)
+                    ? '重试本次查询'
+                    : '运行当前配置'}
                 </Button>
               )}
             </div>
@@ -730,23 +581,25 @@ export function AnalysisView({
             }
           >
             {result && resultPlan && resultPresentation.layout !== 'table' ? (
-              <ChartBoundary
-                key={`${instance.id}:${result.receivedAt}:${JSON.stringify(resultPresentation)}`}
-              >
-                <Suspense
-                  fallback={
-                    <p role="status" className="fve:p-8 fve:text-center">
-                      正在加载图表…
-                    </p>
-                  }
+              active && (
+                <ChartBoundary
+                  key={`${instance.id}:${result.receivedAt}:${JSON.stringify(resultPresentation)}`}
                 >
-                  <Chart
-                    plan={resultPlan}
-                    rows={result.rows}
-                    presentation={resultPresentation}
-                  />
-                </Suspense>
-              </ChartBoundary>
+                  <Suspense
+                    fallback={
+                      <p role="status" className="fve:p-8 fve:text-center">
+                        正在加载图表…
+                      </p>
+                    }
+                  >
+                    <Chart
+                      plan={resultPlan}
+                      rows={result.rows}
+                      presentation={resultPresentation}
+                    />
+                  </Suspense>
+                </ChartBoundary>
+              )
             ) : (
               <div
                 role="status"
@@ -774,31 +627,20 @@ export function AnalysisView({
           </AnalysisResultTabs>
         </div>
       </div>
-      <Dialog open={open} onOpenChange={toggleConfiguration}>
-        <DialogContent keepMounted side="right">
-          <DialogHeader>
-            <DialogTitle>配置查询</DialogTitle>
-            <DialogDescription>
-              修改查询配置，关闭后继续查看结果。保存和运行相互独立。
-            </DialogDescription>
-          </DialogHeader>
-          <div
-            aria-label="分析配置面板"
-            className="fve:min-h-0 fve:flex-1 fve:overflow-y-auto"
-          >
-            {editor}
-          </div>
-          <DialogFooter className="fve:rounded-none">
-            <Button
-              variant="outline"
-              onClick={() => toggleConfiguration(false)}
-            >
-              查看结果
-            </Button>
-            {runButton}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AnalysisQuerySheet
+        engine={engine}
+        instanceId={instance.id}
+        context={context}
+        extensions={extensions}
+        filterContext={filterContext}
+        open={active && open}
+        onOpenChange={toggleConfiguration}
+        onRun={submitQuery}
+        error={
+          submissionError?.id === instance.id ? submissionError : undefined
+        }
+        filterSummary={draftFilterSummary}
+      />
     </section>
   );
 }

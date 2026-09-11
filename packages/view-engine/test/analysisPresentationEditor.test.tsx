@@ -85,7 +85,7 @@ it('changes layout through the sole onChange output and preserves valid aliases 
     columns: [{ alias: 'm', width: 220 }],
     x: 'x',
     series: 'region',
-    metrics: ['m'],
+    metrics: ['m', 'gone'],
   });
 });
 it('chooses numeric metric defaults and exposes repairable compatibility issues', () => {
@@ -128,9 +128,9 @@ it('disables configuration without an executed plan or when stale', () => {
   expect(onChange).not.toHaveBeenCalled();
 });
 
-it('repairs stale display aliases when choosing a new chart while retaining valid widths', async () => {
+it('preserves stale aliases on type changes and repairs them only on explicit request', async () => {
   const onChange = vi.fn();
-  render(
+  const view = render(
     <AnalysisPresentationEditor
       value={{
         layout: 'bar',
@@ -150,11 +150,25 @@ it('repairs stale display aliases when choosing a new chart while retaining vali
   const option = await screen.findByRole('option', { name: '饼图' });
   fireEvent.pointerDown(option, { pointerType: 'mouse' });
   fireEvent.click(option);
-  expect(onChange.mock.calls[0][0]).toEqual({
+  expect(onChange.mock.calls[0][0]).toMatchObject({
     layout: 'pie',
+    x: 'gone',
+    metrics: ['gone'],
+  });
+  view.rerender(
+    <AnalysisPresentationEditor
+      value={onChange.mock.calls[0][0]}
+      plan={plan}
+      onChange={onChange}
+    />,
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: '按当前结果修复失效映射' }),
+  );
+  expect(onChange.mock.lastCall![0]).toMatchObject({
     columns: [{ alias: 'm', width: 200 }],
-    x: undefined,
-    metrics: undefined,
+    x: '',
+    metrics: ['m'],
   });
 });
 

@@ -28,7 +28,7 @@ import { deriveSession } from './sessionState.js';
 
 type CommonSessionFields = Omit<
   ViewSession,
-  'kind' | 'instance' | 'baseline' | 'result'
+  'kind' | 'instance' | 'baseline' | 'result' | 'queryAttempt'
 >;
 type CommonSessionPatch = Partial<CommonSessionFields> & {
   [

@@ -67,6 +67,8 @@ export class ViewQueries {
         await record();
         return;
       }
+      // Revisiting a failed query is not an implicit retry, even if its first run was manual.
+      if (!refresh && session.queryStatus === 'error') return;
       const intent = refresh ? 'reload' : 'open';
       if (!analysisQueryPolicy(session, intent)) return;
       const generation = this.store.generation(id);

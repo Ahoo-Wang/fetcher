@@ -562,3 +562,56 @@ it('validates query-producing sort changes before publishing and preserves inval
     engine.dispose();
   }
 });
+
+it('reports admission before completion and isolates accepted B from newer draft C', async () => {
+  let finish!: (rows: { orders: number; total: number }[]) => void;
+  const { engine, aggregate } = setup();
+  await engine.load();
+  aggregate.mockImplementationOnce(
+    () =>
+      new Promise(resolve => {
+        finish = resolve;
+      }),
+  );
+  const commands = engine.analysis(instance.id);
+  commands.edit(value => ({ ...value, limit: 50 }));
+  const execution = commands.start();
+  expect(execution.accepted).toBe(true);
+  expect(engine.getSnapshot().sessions[instance.id].queryStatus).toBe(
+    'loading',
+  );
+  commands.edit(value => ({ ...value, limit: 25 }));
+  await vi.waitFor(() => expect(finish).toBeDefined());
+  finish([{ orders: 3, total: 60 }]);
+  await execution.completion;
+  const session = engine.getSnapshot().sessions[instance.id];
+  expect(session.instance.config.limit).toBe(25);
+  expect(session.result?.config.limit).toBe(50);
+  const before = session.instance;
+  await commands.setSort([]);
+  expect(engine.getSnapshot().sessions[instance.id].instance).toBe(before);
+  commands.setFilterValidity(false);
+  expect(() => commands.start()).toThrow('筛选输入无效');
+  engine.dispose();
+});
+
+it('does not implicitly retry a failed manual first run when revisiting the instance', async () => {
+  const { engine, aggregate } = setup([
+    { ...instance, config: { ...config, metrics: [] } },
+    { ...instance, id: 'other' },
+  ]);
+  try {
+    await engine.load();
+    expect(aggregate).not.toHaveBeenCalled();
+    engine.analysis('analysis').edit(() => config);
+    aggregate.mockRejectedValueOnce(new Error('offline'));
+    await expect(engine.analysis('analysis').run()).rejects.toThrow('offline');
+    await engine.selectInstance('other');
+    const count = aggregate.mock.calls.length;
+    await engine.selectInstance('analysis');
+    expect(aggregate).toHaveBeenCalledTimes(count);
+    expect(engine.getSnapshot().sessions.analysis.queryStatus).toBe('error');
+  } finally {
+    engine.dispose();
+  }
+});

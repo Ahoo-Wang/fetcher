@@ -15605,7 +15605,7 @@ Only nodes with `masked === false` and supported explicit capabilities are publi
 
 `AnalysisPresentation` contains `layout: 'table' | 'metric' | 'bar' | 'line' | 'area' | 'pie'`, required `columns: { alias, width? }[]`, optional `x`, `series`, `metrics` aliases, `orientation: 'vertical' | 'horizontal'`, `stacked` and `donut`. An explicitly empty metrics list is invalid. `compileAnalysis` validates only query configuration and returns schema in query order. `validateAnalysisPresentation(value, schema?)` separately returns display-validation strings. Save validation combines both; Run remains query-only. Display changes consume the executed result and do not issue a query.
 
-Switching to the data table retains the chart axes, series, metric selection and display preferences for the return trip. Deleting an output removes its display references; deleting the last selected metric restores metric defaults, while an explicitly empty user selection remains editable. Selecting an available metric also removes stale aliases. Positive and negative SUM values stack separately around zero in both bar and area charts; null/missing combinations report incompatibility while the data table remains available. Changing the layout never truncates a valid metric selection or replaces an explicitly empty selection. A multi-metric pie request shows its compatibility message until the user explicitly selects one supported metric; returning to the previous layout retains the selection. Optional defaults are resolved when rendering rather than written into the draft, so a layout round trip does not create an otherwise unchanged dirty view.
+Switching to the data table retains the chart axes, series, metric selection and display preferences for the return trip. Editing or deleting query outputs preserves visualization references. Existing results keep their executed schema until a new query succeeds. Invalid mappings are repaired only by explicit user selection or the repair action; ambiguous initial mappings remain unselected. Positive and negative SUM values stack separately around zero in both bar and area charts; null/missing combinations report incompatibility while the data table remains available. Changing the layout never truncates a valid metric selection or replaces an explicitly empty selection. A multi-metric pie request shows its compatibility message until the user explicitly selects one supported metric; returning to the previous layout retains the selection. Optional defaults are resolved when rendering rather than written into the draft, so a layout round trip does not create an otherwise unchanged dirty view.
 
 `projectAnalysis(plan, rows, presentation)` consumes admitted rows and returns `{ plan, issues, points, series, x?, continuous }`. Its projected plan applies column order/width and appends unspecified columns. Incompatible dimensions, units or metric semantics produce actionable issues and a table fallback. Metric cards require an ungrouped result; line/area require a continuous numeric/time axis; pie requires SUM or COUNT, no null/negative values and no series split. Charts allow at most 500 returned groups, 12 series and 24 pie sectors. Projection never recomputes averages, synthesizes zero buckets or claims a full total from limited groups. Typed tuple identities survive duplicate display labels. Analysis tables use fixed column layout with 160px default widths (overridden by column width), horizontal scrolling in narrow containers, and full cell values in native titles when text is clipped. `AnalysisTable.sortDisabled` defaults to false; set it when working inputs cannot run, without marking the displayed result as loading.
 
@@ -15626,6 +15626,10 @@ View-kind icons are consistent in the sidebar, instance selector and view manage
 Analysis views share manual refresh, automatic refresh (off, 30 seconds, 1 minute, 5 minutes) and expand-in-place controls with data views. Automatic refresh pauses for background pages, editing/popups, pending queries, errors, writes and unrun query changes. It never submits a query draft. Escape exits the expanded view without remounting the editor. The refresh interval belongs to the mounted view and is cleared when it unmounts.
 
 `AnalysisPresentationEditor.chartOnly` defaults to false; the full analysis view enables it, keeps table inspection in the bottom mode switch, and shows chart settings only after a chart is selected.
+
+The query Sheet uses “Run and view”: `engine.analysis(id).start()` synchronously validates and captures the query, then returns `{ accepted, completion }`. Validation may throw; refusal returns `accepted: false`. Close the Sheet only on acceptance, and handle `completion` independently. `run()` awaits the same execution pipeline. `AnalysisSession.queryAttempt` retains the last accepted plan, including after failure; `pendingQuery` describes only the active request. Revisiting a failed instance does not implicitly retry it.
+
+The result summary always uses the last successful configuration, schema, rows and local reception time. Reaching a known limit means more groups may exist, not a confirmed truncation or global total. Unrun drafts and failed attempts remain visible alongside old results; header sorting is disabled while the working query differs. Saving and execution remain independent. Instance navigation retains raw editor input, viewing mode and panel preference. Table mode hides the visualization panel without resetting it; the explicit visualization action selects Analysis and expands it. Available existing chart types are checked against successful results; only unique field mappings are initialized, and style controls expand on demand. These display operations never query.
 
 </doc>
 
@@ -15727,9 +15731,9 @@ These names come from the current public entry exports and declarations. Import 
 | `RecordQuerySnapshot`             | [viewModel.ts:222](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L222)                                      |
 | `RecordQuerySource`               | [viewModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L192)                                      |
 | `RecordSession`                   | [viewModel.ts:228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L228)                                      |
-| `RecordSummaryFunction`           | [viewModel.ts:314](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L314)                                      |
-| `RecordSummaryMetric`             | [viewModel.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L316)                                      |
-| `RecordSummaryResult`             | [viewModel.ts:321](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L321)                                      |
+| `RecordSummaryFunction`           | [viewModel.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L316)                                      |
+| `RecordSummaryMetric`             | [viewModel.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L318)                                      |
+| `RecordSummaryResult`             | [viewModel.ts:323](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L323)                                      |
 | `RecordTableConfig`               | [viewModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L106)                                      |
 | `RecordTablePresentation`         | [viewModel.ts:123](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L123)                                      |
 | `RecordViewConfig`                | [viewModel.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L135)                                      |
@@ -15753,7 +15757,7 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewDeleteResult`                | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
 | `ViewEngine`                      | [ViewEngine.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L63)                                         |
 | `ViewEngineOptions`               | [viewModel.ts:202](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L202)                                      |
-| `ViewEngineState`                 | [viewModel.ts:301](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L301)                                      |
+| `ViewEngineState`                 | [viewModel.ts:303](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L303)                                      |
 | `ViewFieldDefinition`             | [viewModel.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L46)                                        |
 | `ViewHost`                        | [ViewHost.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L66)                                          |
 | `ViewInstance`                    | [viewModel.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L158)                                      |
@@ -15768,7 +15772,7 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewScope`                       | [viewModel.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L83)                                        |
 | `ViewServiceError`                | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L30)                       |
 | `ViewServiceErrorCode`            | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L19)                       |
-| `ViewSession`                     | [viewModel.ts:300](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L300)                                      |
+| `ViewSession`                     | [viewModel.ts:302](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L302)                                      |
 | `ViewSource`                      | [viewModel.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L196)                                      |
 | `WowAnalysisSchema`               | [wowAnalysis.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L34)                                     |
 | `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L29)                                     |
@@ -15778,14 +15782,14 @@ These names come from the current public entry exports and declarations. Import 
 | Symbol                            | Declaration                                                                                                                                              |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:810](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L810)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:796](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L796)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
-| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L41) |
-| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L30) |
+| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L48) |
+| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L36) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
-| `AnalysisView`                    | [AnalysisView.tsx:254](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L254)                           |
-| `AnalysisViewProps`               | [AnalysisView.tsx:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L122)                           |
+| `AnalysisView`                    | [AnalysisView.tsx:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L96)                             |
+| `AnalysisViewProps`               | [AnalysisView.tsx:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L86)                             |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
 | `Calendar`                        | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                                |
 | `CellOption`                      | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                                 |
@@ -35905,7 +35909,7 @@ console.log(compiled.plan.query, result.rows);
 
 `AnalysisPresentation` 包含 `layout: 'table' | 'metric' | 'bar' | 'line' | 'area' | 'pie'`、必填 `columns: { alias, width? }[]`、可选 x/series/metrics 别名、`orientation: 'vertical' | 'horizontal'`、stacked 和 donut。显式空 metrics 列表无效。`compileAnalysis` 只校验查询配置，schema 按查询顺序返回。`validateAnalysisPresentation(value, schema?)` 独立返回展示校验错误字符串。保存合并两类校验，运行仅校验查询；修改显示方式消费已执行结果，不发起查询。
 
-切换到数据表时保留图表轴、系列、指标选择和显示偏好，切回后恢复。删除输出会清理对应展示引用；最后一个被选指标被删除时恢复默认指标，用户主动清空的选择仍保留为可编辑状态。重新选择有效指标也会移除失效别名。柱状图与面积图将正负 SUM 值分别堆叠在零轴两侧；null 或缺失组合提示不兼容，数据表仍可查看。 仅切换布局不会截断有效指标选择，也不会替换用户主动清空的选择。多指标切换到饼图时保留选择并提示兼容性问题，直到用户明确选定一个支持的指标；直接切回原布局时保留原有选择。 可选默认值在渲染时解析，不反写进草稿，因此单纯往返切换不会把原本未修改的视图标记为待保存。
+切换到数据表时保留图表轴、系列、指标选择和显示偏好，切回后恢复。编辑或删除查询输出会保留展示引用；新查询成功前，旧结果始终使用执行时的 schema。失效映射仅由用户明确选择或修复操作调整，有歧义的初始映射保持未选择。柱状图与面积图将正负 SUM 值分别堆叠在零轴两侧；null 或缺失组合提示不兼容，数据表仍可查看。 仅切换布局不会截断有效指标选择，也不会替换用户主动清空的选择。多指标切换到饼图时保留选择并提示兼容性问题，直到用户明确选定一个支持的指标；直接切回原布局时保留原有选择。 可选默认值在渲染时解析，不反写进草稿，因此单纯往返切换不会把原本未修改的视图标记为待保存。
 
 `projectAnalysis(plan, rows, presentation)` 接收已校验行，返回 `{ plan, issues, points, series, x?, continuous }`。投影 plan 应用列顺序/宽度并追加未指定列。维度、单位或指标语义不兼容时，返回可操作的错误说明并回退表格。指标卡要求未分组结果；折线/面积图要求连续数值或时间轴；饼图要求 SUM 或 COUNT、无 null/负值且没有系列拆分。图表最多 500 个已返回分组、12 个系列、24 个饼图扇区。投影不会重新计算平均值、补造零桶，也不会把截断分组宣称为全量合计。重复显示标签不会合并带类型的组合身份。分析表格使用固定列布局，默认列宽 160px（可由列宽配置覆盖），窄容器横向滚动；文本截断时通过原生 title 保留完整单元格值。`AnalysisTable.sortDisabled` 默认 false；工作输入不能运行时将其设为 true，不把已显示结果误标为加载中。
 
@@ -35926,6 +35930,10 @@ console.log(compiled.plan.query, result.rows);
 分析视图与数据视图共用手动刷新、自动刷新（关闭、30 秒、1 分钟、5 分钟）和原地全屏展开交互。页面后台、编辑或使用弹层、查询中、查询失败、保存中以及查询配置尚未运行时，自动刷新暂停，不会自动提交草稿。Esc 退出全屏且不重建编辑器。刷新间隔属于当前挂载视图，卸载时清理定时器。
 
 `AnalysisPresentationEditor.chartOnly` 默认 false；完整分析视图开启此选项，数据表由底部模式切换负责，未选择图表时不显示其字段设置。
+
+查询 Sheet 使用“运行并查看”：`engine.analysis(id).start()` 同步校验并捕获查询，返回 `{ accepted, completion }`。校验可能抛错；拒绝执行返回 `accepted: false`。仅在接受执行时关闭 Sheet，独立处理 `completion`。`run()` 等待同一执行流程完成。`AnalysisSession.queryAttempt` 保留最近接纳的计划，包括失败后；`pendingQuery` 仅描述当前请求。切回失败实例不会隐式重试。
+
+结果摘要始终使用最近成功执行的配置、schema、行数据与本地接收时间。达到已知上限只说明可能仍有其他分组，不代表确认截断或全局总量。未运行草稿与失败反馈和旧结果同时保留；工作查询不一致时禁止表头排序。保存与运行保持独立。切换实例保留原始编辑输入、查看模式和面板偏好。数据表模式隐藏可视化面板但不重置它；明确点击可视化配置才切换分析并展开。现有图表类型按成功结果检查兼容性，仅初始化唯一字段映射，样式按需展开。这些展示操作均不查询。
 
 </doc>
 
@@ -36027,9 +36035,9 @@ console.log(compiled.plan.query, result.rows);
 | `RecordQuerySnapshot`             | [viewModel.ts:222](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L222)                                      |
 | `RecordQuerySource`               | [viewModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L192)                                      |
 | `RecordSession`                   | [viewModel.ts:228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L228)                                      |
-| `RecordSummaryFunction`           | [viewModel.ts:314](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L314)                                      |
-| `RecordSummaryMetric`             | [viewModel.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L316)                                      |
-| `RecordSummaryResult`             | [viewModel.ts:321](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L321)                                      |
+| `RecordSummaryFunction`           | [viewModel.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L316)                                      |
+| `RecordSummaryMetric`             | [viewModel.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L318)                                      |
+| `RecordSummaryResult`             | [viewModel.ts:323](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L323)                                      |
 | `RecordTableConfig`               | [viewModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L106)                                      |
 | `RecordTablePresentation`         | [viewModel.ts:123](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L123)                                      |
 | `RecordViewConfig`                | [viewModel.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L135)                                      |
@@ -36053,7 +36061,7 @@ console.log(compiled.plan.query, result.rows);
 | `ViewDeleteResult`                | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
 | `ViewEngine`                      | [ViewEngine.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L63)                                         |
 | `ViewEngineOptions`               | [viewModel.ts:202](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L202)                                      |
-| `ViewEngineState`                 | [viewModel.ts:301](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L301)                                      |
+| `ViewEngineState`                 | [viewModel.ts:303](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L303)                                      |
 | `ViewFieldDefinition`             | [viewModel.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L46)                                        |
 | `ViewHost`                        | [ViewHost.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L66)                                          |
 | `ViewInstance`                    | [viewModel.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L158)                                      |
@@ -36068,7 +36076,7 @@ console.log(compiled.plan.query, result.rows);
 | `ViewScope`                       | [viewModel.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L83)                                        |
 | `ViewServiceError`                | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L30)                       |
 | `ViewServiceErrorCode`            | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L19)                       |
-| `ViewSession`                     | [viewModel.ts:300](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L300)                                      |
+| `ViewSession`                     | [viewModel.ts:302](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L302)                                      |
 | `ViewSource`                      | [viewModel.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L196)                                      |
 | `WowAnalysisSchema`               | [wowAnalysis.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L34)                                     |
 | `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L29)                                     |
@@ -36078,14 +36086,14 @@ console.log(compiled.plan.query, result.rows);
 | 符号                              | 声明                                                                                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:810](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L810)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:796](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L796)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
-| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L41) |
-| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L30) |
+| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L48) |
+| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L36) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
-| `AnalysisView`                    | [AnalysisView.tsx:254](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L254)                           |
-| `AnalysisViewProps`               | [AnalysisView.tsx:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L122)                           |
+| `AnalysisView`                    | [AnalysisView.tsx:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L96)                             |
+| `AnalysisViewProps`               | [AnalysisView.tsx:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L86)                             |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
 | `Calendar`                        | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                                |
 | `CellOption`                      | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                                 |

@@ -43,9 +43,14 @@ export const Mixed: Story = {
     await userEvent.click(query.getByText('高级设置', { exact: true }));
     const limit = query.getByRole('textbox', { name: '最多结果行数' });
     await userEvent.clear(limit);
+    await userEvent.click(query.getByRole('button', { name: '运行并查看' }));
     await expect(
-      query.getByRole('button', { name: '运行分析' }),
-    ).toBeDisabled();
+      query.getByRole('textbox', { name: '最多结果行数' }),
+    ).toHaveFocus();
+    await userEvent.click(query.getByRole('button', { name: '运行并查看' }));
+    await expect(
+      query.getByRole('textbox', { name: '最多结果行数' }),
+    ).toHaveFocus();
     await userEvent.click(
       query.getByRole('button', { name: '查看结果', exact: true }),
     );
@@ -82,10 +87,8 @@ export const Mixed: Story = {
       query.getByRole('textbox', { name: '最多结果行数' }),
       '1',
     );
-    await userEvent.click(query.getByRole('button', { name: '运行分析' }));
-    await userEvent.click(
-      query.getByRole('button', { name: '查看结果', exact: true }),
-    );
+    await userEvent.click(query.getByRole('button', { name: '运行并查看' }));
+    await expect(doc.queryByRole('dialog', { name: '配置查询' })).toBeNull();
     await expect(
       await canvas.findByRole('cell', { name: '华东', exact: true }),
     ).toBeVisible();

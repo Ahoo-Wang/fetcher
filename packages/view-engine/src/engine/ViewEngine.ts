@@ -318,6 +318,12 @@ export class ViewEngine {
           throw new Error('编辑会话已重置');
         this.analysisCommands.edit(id, updater);
       },
+      start: () => {
+        assert();
+        if (this.store.analysisSession(id).editorEpoch !== editorEpoch)
+          throw new Error('编辑会话已重置');
+        return this.analysisCommands.start(id);
+      },
       run: async () => {
         assert();
         await this.analysisCommands.run(id);

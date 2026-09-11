@@ -505,6 +505,8 @@ export const MultiSeries: Story = {
       await expect(settings.getBoundingClientRect().right).toBeLessThanOrEqual(
         result.getBoundingClientRect().left,
       );
+    if (!canvas.getByText('样式设置', { exact: true }).closest('details')?.open)
+      await userEvent.click(canvas.getByText('样式设置', { exact: true }));
     await userEvent.click(canvas.getByRole('combobox', { name: '柱状图方向' }));
     await userEvent.click(await page.findByRole('option', { name: '横向' }));
     for (const label of ['折线图', '柱状图']) {
@@ -607,6 +609,7 @@ export const Donut: Story = {
     await userEvent.click(
       canvas.getByRole('button', { name: '可视化配置', exact: true }),
     );
+    await userEvent.click(canvas.getByText('样式设置', { exact: true }));
     const legend = within(canvas.getByRole('list', { name: '分组数值与占比' }));
     await expect(legend.getByText('300,000', { exact: true })).toBeVisible();
     await expect(legend.getByText('47.6%', { exact: true })).toBeVisible();
@@ -870,6 +873,8 @@ export const SmallCounts: Story = {
       expect(labels.every(value => /^\d+$/.test(value ?? ''))).toBe(true);
     };
     verify('yAxis');
+    if (!canvas.getByText('样式设置', { exact: true }).closest('details')?.open)
+      await userEvent.click(canvas.getByText('样式设置', { exact: true }));
     await userEvent.click(canvas.getByRole('combobox', { name: '柱状图方向' }));
     await userEvent.click(await page.findByRole('option', { name: '横向' }));
     await waitFor(() => verify('xAxis'));
@@ -891,6 +896,8 @@ export const SignedStacks: Story = {
         ...canvasElement.querySelectorAll(`.recharts-${axis}-tick-labels text`),
       ].some(t => Number(t.textContent!.replaceAll(',', '')) < 0);
     await waitFor(() => expect(negativeTicks('yAxis')).toBe(true));
+    if (!canvas.getByText('样式设置', { exact: true }).closest('details')?.open)
+      await userEvent.click(canvas.getByText('样式设置', { exact: true }));
     await userEvent.click(canvas.getByRole('combobox', { name: '柱状图方向' }));
     await userEvent.click(await page.findByRole('option', { name: '横向' }));
     await waitFor(() => expect(negativeTicks('xAxis')).toBe(true));
@@ -1046,6 +1053,10 @@ export const TableFirst: Story = {
     ).toBeNull();
     await userEvent.click(
       await page.findByRole('option', { name: '柱状图', exact: true }),
+    );
+    await userEvent.click(canvas.getByRole('combobox', { name: '横轴维度' }));
+    await userEvent.click(
+      await page.findByRole('option', { name: '地区', exact: true }),
     );
     await expect(await canvas.findByRole('application')).toBeVisible();
     await expect(

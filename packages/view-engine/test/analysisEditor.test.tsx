@@ -604,7 +604,7 @@ it('keeps malformed persisted operands repairable', () => {
   );
 });
 
-it('cleans deleted output references while retaining valid chart preferences', () => {
+it('keeps presentation mappings when query outputs are deleted', () => {
   const changed = vi.fn();
   const value: AnalysisViewConfig = {
     ...initial,
@@ -625,11 +625,10 @@ it('cleans deleted output references while retaining valid chart preferences', (
   expect(
     next.metrics.map((metric: AnalysisComponentConfig) => metric.alias),
   ).toEqual(['other']);
-  expect(next.presentation.metrics).toBeUndefined();
-  expect(next.presentation.columns).toEqual([]);
+  expect(next.presentation).toEqual(value.presentation);
   expect(next.presentation.orientation).toBe('horizontal');
 });
-it('removes a deleted axis and promotes the remaining dimension without a stale series', () => {
+it('preserves old chart axes until the user explicitly repairs their mapping', () => {
   const ctx: AnalysisCompileContext = {
     fields: ['region', 'channel'].map(field => ({
       field,
@@ -667,11 +666,7 @@ it('removes a deleted axis and promotes the remaining dimension without a stale 
   render(<AnalysisEditor value={value} context={ctx} onChange={changed} />);
   fireEvent.click(control('button', { name: '删除维度 1' }));
   const next = changed.mock.calls[0][0];
-  expect(next.presentation).toMatchObject({
-    x: undefined,
-    series: undefined,
-    metrics: ['orders'],
-  });
+  expect(next.presentation).toEqual(value.presentation);
   expect(compileAnalysis(next, ctx).errors).toEqual([]);
 });
 
@@ -770,7 +765,7 @@ it('edits a metric in a retained popover and closes overlays when the surface hi
   expect(screen.queryByRole('listbox')).toBeNull();
 });
 
-it('clears an owned display field together with its sort and table references', async () => {
+it('removes the query display field and sort but retains its presentation mapping', async () => {
   const changed = vi.fn();
   render(
     <AnalysisEditor
@@ -817,7 +812,7 @@ it('clears an owned display field together with its sort and table references', 
   await waitFor(() => expect(changed).toHaveBeenCalled());
   const updated = changed.mock.lastCall![0];
   expect(updated.dimensions[0].label).toBeUndefined();
-  expect(updated.presentation.columns).toEqual([]);
+  expect(updated.presentation.columns).toEqual([{ alias: 'product_name' }]);
   expect(updated.sort).toEqual([]);
   expect(updated.metrics).toEqual(initial.metrics);
 });

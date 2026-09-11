@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { sameAnalysisQueryDraft } from '../analysis/analysisQueryPolicy.js';
 import { configSizeIssues, compileSessionFilter } from './sessionValidation.js';
 import { validateViewInstance } from '../record/validation/instanceValidation.js';
 import type { AnalysisCompilerRegistry } from '../analysis/analysisModel.js';
@@ -48,6 +49,7 @@ export function createSession(
         editVersion: 0,
         filterValid: true,
         pendingQuery: null,
+        queryAttempt: null,
         baseline: instance,
         instance,
         dirty: false,
@@ -160,7 +162,7 @@ export function deriveSession(
   if (session.kind === 'analysis') {
     const cached =
       previous?.kind === 'analysis' &&
-      previous.instance.config === session.instance.config;
+      sameAnalysisQueryDraft(previous.instance.config, session.instance.config);
     const compiled = cached
       ? previous.compilation
       : compileAnalysis(session.instance.config, {

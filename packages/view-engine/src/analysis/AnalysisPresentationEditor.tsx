@@ -16,14 +16,20 @@ import {
   getAnalysisVisualization,
 } from './analysisVisualizations.js';
 import { cn } from '../lib/utils.js';
+import { Button } from '../components/ui/button.js';
 import { Checkbox } from '../components/ui/checkbox.js';
 import { FilterSelect } from '../filter/FilterSelect.js';
-import type { DeepReadonly } from '../lib/types.js';
-import type { AnalysisPlan } from './analysisModel.js';
+import { useMemo } from 'react';
+import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
+import type { AnalysisPlan, AnalysisRow } from './analysisModel.js';
 import {
-  pruneAnalysisPresentation,
   resolveAnalysisAxes,
+  pruneAnalysisPresentation,
 } from './analysisPresentation.js';
+import {
+  initialDisplayMapping,
+  suitableVisualizations,
+} from './analysisDisplaySelection.js';
 import type { AnalysisPresentation } from './analysisPresentation.js';
 import { projectAnalysis } from './analysisProjection.js';
 
@@ -36,6 +42,7 @@ export interface AnalysisPresentationEditorProps {
   showIssues?: boolean;
   /** Table is inspected via the result mode switch; select a chart before configuring it. */
   chartOnly?: boolean;
+  rows?: DeepReadonly<readonly AnalysisRow[]>;
 }
 /** Display-only controls over the executed schema. The host owns querying and stale guards. */
 export function AnalysisPresentationEditor({
@@ -45,8 +52,10 @@ export function AnalysisPresentationEditor({
   disabled,
   showIssues = true,
   chartOnly = false,
+  rows = [],
 }: AnalysisPresentationEditorProps) {
   const visualization = getAnalysisVisualization(value.layout);
+  const StyleContainer = chartOnly ? 'details' : 'div';
   const locked = disabled || !plan;
   const dimensions = plan?.schema.filter(c => c.role === 'dimension') ?? [];
   const metrics =
@@ -61,10 +70,19 @@ export function AnalysisPresentationEditor({
         metrics.some(metric => metric.alias === alias),
       )
     : metrics.map(c => c.alias);
-  const retained = pruneAnalysisPresentation(
-    value,
-    dimensions,
-    plan?.schema.filter(column => column.role === 'metric') ?? [],
+  const retained = cloneSnapshot<AnalysisPresentation>(value);
+  if (!Array.isArray(retained.columns)) retained.columns = [];
+  const staleReferences =
+    !!plan &&
+    [
+      ...retained.columns.map(column => column.alias),
+      ...(value.x ? [value.x] : []),
+      ...(value.series ? [value.series] : []),
+      ...(Array.isArray(value.metrics) ? value.metrics : []),
+    ].some(alias => !plan.schema.some(column => column.alias === alias));
+  const suitable = useMemo(
+    () => (chartOnly && plan ? suitableVisualizations(plan, rows) : []),
+    [chartOnly, plan, rows],
   );
   const axes = resolveAnalysisAxes(dimensions, value);
   const x = axes.x?.alias;
@@ -79,7 +97,12 @@ export function AnalysisPresentationEditor({
       });
   };
   const changeLayout = (layout: AnalysisPresentation['layout']) => {
-    if (!locked) onChange({ ...retained, layout });
+    if (!locked)
+      onChange(
+        chartOnly && value.layout === 'table'
+          ? initialDisplayMapping(value, plan!, layout)
+          : { ...retained, layout },
+      );
   };
   return (
     <div
@@ -113,6 +136,13 @@ export function AnalysisPresentationEditor({
             onValueChange={changeLayout}
           />
         </label>
+        {chartOnly && plan && (
+          <p className="fve:text-xs fve:text-muted-foreground">
+            {suitable.length
+              ? `适合当前结果：${suitable.map(item => item.label).join('、')}`
+              : '当前结果需要调整查询或映射后才能绘图。'}
+          </p>
+        )}
         {visualization?.axes && (
           <>
             <label className="fve:flex fve:min-w-0 fve:flex-col fve:gap-1">
@@ -127,7 +157,13 @@ export function AnalysisPresentationEditor({
                 onValueChange={next =>
                   update({
                     x: next,
-                    series: next === value.series ? undefined : value.series,
+                    series:
+                      value.series && next !== value.series
+                        ? value.series
+                        : dimensions.length === 2
+                          ? dimensions.find(column => column.alias !== next)
+                              ?.alias
+                          : undefined,
                   })
                 }
               />
@@ -154,41 +190,7 @@ export function AnalysisPresentationEditor({
             )}
           </>
         )}
-        {visualization?.orientation && (
-          <label className="fve:flex fve:min-w-0 fve:flex-col fve:gap-1">
-            <span className="fve:text-xs fve:text-muted-foreground">方向</span>
-            <FilterSelect
-              label="柱状图方向"
-              options={[
-                { value: 'vertical', label: '纵向' },
-                { value: 'horizontal', label: '横向' },
-              ]}
-              value={value.orientation ?? 'vertical'}
-              disabled={locked}
-              onValueChange={orientation => update({ orientation })}
-            />
-          </label>
-        )}
-        {visualization?.stacked && (
-          <label className="fve:flex fve:items-center fve:gap-2 fve:text-sm">
-            <Checkbox
-              checked={value.stacked ?? false}
-              disabled={locked}
-              onCheckedChange={stacked => update({ stacked })}
-            />
-            堆叠
-          </label>
-        )}
-        {visualization?.donut && (
-          <label className="fve:flex fve:items-center fve:gap-2 fve:text-sm">
-            <Checkbox
-              checked={value.donut ?? false}
-              disabled={locked}
-              onCheckedChange={donut => update({ donut })}
-            />
-            环形
-          </label>
-        )}
+
         {value.layout !== 'table' && (
           <fieldset
             className="fve:m-0 fve:flex fve:min-w-0 fve:flex-wrap fve:gap-3 fve:border-0 fve:p-0"
@@ -220,7 +222,79 @@ export function AnalysisPresentationEditor({
             ))}
           </fieldset>
         )}
+        {(visualization?.orientation ||
+          visualization?.stacked ||
+          visualization?.donut) && (
+          <StyleContainer>
+            {chartOnly && (
+              <summary className="fve:cursor-pointer fve:text-sm">
+                样式设置
+              </summary>
+            )}
+            <div className="fve:mt-3 fve:flex fve:flex-col fve:gap-3">
+              {' '}
+              {visualization?.orientation && (
+                <label className="fve:flex fve:min-w-0 fve:flex-col fve:gap-1">
+                  <span className="fve:text-xs fve:text-muted-foreground">
+                    方向
+                  </span>
+                  <FilterSelect
+                    label="柱状图方向"
+                    options={[
+                      { value: 'vertical', label: '纵向' },
+                      { value: 'horizontal', label: '横向' },
+                    ]}
+                    value={value.orientation ?? 'vertical'}
+                    disabled={locked}
+                    onValueChange={orientation => update({ orientation })}
+                  />
+                </label>
+              )}
+              {visualization?.stacked && (
+                <label className="fve:flex fve:items-center fve:gap-2 fve:text-sm">
+                  <Checkbox
+                    checked={value.stacked ?? false}
+                    disabled={locked}
+                    onCheckedChange={stacked => update({ stacked })}
+                  />
+                  堆叠
+                </label>
+              )}
+              {visualization?.donut && (
+                <label className="fve:flex fve:items-center fve:gap-2 fve:text-sm">
+                  <Checkbox
+                    checked={value.donut ?? false}
+                    disabled={locked}
+                    onCheckedChange={donut => update({ donut })}
+                  />
+                  环形
+                </label>
+              )}
+            </div>
+          </StyleContainer>
+        )}
       </div>
+      {staleReferences && (
+        <Button
+          variant="outline"
+          disabled={locked}
+          onClick={() => {
+            if (locked) return;
+            const repaired = pruneAnalysisPresentation(
+              value,
+              dimensions,
+              plan!.schema.filter(column => column.role === 'metric'),
+            );
+            onChange(
+              value.layout === 'table'
+                ? repaired
+                : initialDisplayMapping(repaired, plan!, value.layout),
+            );
+          }}
+        >
+          按当前结果修复失效映射
+        </Button>
+      )}
       {issues.length > 0 && (
         <p role="status" className="fve:text-sm fve:text-muted-foreground">
           {issues.join('；')}。数据表仍可查看。

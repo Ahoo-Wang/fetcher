@@ -47,7 +47,6 @@ import {
   compileAnalysisExpression,
 } from './analysisCompiler.js';
 import { AnalysisExpressionEditor } from './AnalysisExpressionEditor.js';
-import { pruneAnalysisPresentation } from './analysisPresentation.js';
 import { AnalysisScopeEditor } from './AnalysisScopeEditor.js';
 import { useListOrder } from '../lib/useListOrder.js';
 import { OverlayScope } from '../lib/OverlayScope.js';
@@ -188,11 +187,7 @@ function ComponentList({
     updated.sort = updated.sort.filter(sort =>
       outputs.some(output => output.alias === sort.alias),
     );
-    updated.presentation = pruneAnalysisPresentation(
-      updated.presentation,
-      updated.dimensions,
-      updated.metrics,
-    );
+
     onChange(updated);
   }
   function update(index: number, patch: Partial<AnalysisComponentConfig>) {
@@ -707,16 +702,7 @@ function ComponentList({
                                       sort.alias !== item.alias &&
                                       sort.alias !== item.label?.alias,
                                   );
-                                  next.presentation = pruneAnalysisPresentation(
-                                    next.presentation,
-                                    next.dimensions,
-                                    [
-                                      ...next.metrics,
-                                      ...next.dimensions.flatMap(d =>
-                                        d.label ? [d.label] : [],
-                                      ),
-                                    ],
-                                  );
+
                                   if (!disabled) {
                                     setExpandedId(null);
                                     setOpenedIds(previous => {

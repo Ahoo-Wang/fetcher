@@ -17,6 +17,7 @@ import type {
 } from './analysisModel.js';
 import {
   analysisQueryPolicy,
+  hasUnrunAnalysisQuery,
   type AnalysisQueryIntent,
 } from './analysisQueryPolicy.js';
 import { compileAnalysis } from './analysisCompiler.js';
@@ -90,7 +91,12 @@ export class AnalysisCommands {
     sort: DeepReadonly<AnalysisViewConfig['sort']>,
   ): Promise<void> {
     const session = this.store.analysisSession(id);
-    if (!analysisQueryPolicy(session, 'manual')) return;
+    if (
+      !analysisQueryPolicy(session, 'manual') ||
+      !session.result ||
+      hasUnrunAnalysisQuery(session)
+    )
+      return;
     const config = { ...session.instance.config, sort };
     assertConfigSize(config, this.limits.maxConfigBytes);
     const compiled = this.compile(config);
@@ -134,8 +140,17 @@ export class AnalysisCommands {
   }
 
   async run(id: string, intent: AnalysisQueryIntent = 'manual'): Promise<void> {
+    await this.start(id, intent).completion;
+  }
+
+  start(
+    id: string,
+    intent: AnalysisQueryIntent = 'manual',
+  ): { accepted: boolean; completion: Promise<void> } {
+    const refused = () => ({ accepted: false, completion: Promise.resolve() });
     const session = this.store.analysisSession(id);
-    if (intent !== 'manual' && !analysisQueryPolicy(session, intent)) return;
+    if (intent !== 'manual' && !analysisQueryPolicy(session, intent))
+      return refused();
     const started = performance.now();
     const operationId = crypto.randomUUID();
     const diagnostic = (
@@ -169,7 +184,7 @@ export class AnalysisCommands {
       throw new Error(compiled.errors.map(value => value.message).join('；'));
     }
     if (!analysisQueryPolicy({ ...session, compilation: compiled }, intent))
-      return;
+      return refused();
     try {
       release = this.budget.acquire(`analysis:${id}`, controller);
     } catch (error) {
@@ -192,77 +207,83 @@ export class AnalysisCommands {
       this.requests.get(id) === request &&
       this.store.find(id)?.kind === 'analysis';
     previous?.controller.abort();
-    try {
-      if (!current()) {
-        diagnostic('superseded');
-        return;
+    let accepted = false;
+    const completion = (async () => {
+      try {
+        if (!current()) {
+          diagnostic('superseded');
+          return;
+        }
+        this.store.patch(id, {
+          kind: 'analysis',
+          queryStatus: 'loading',
+          queryError: null,
+          pendingQuery: plan,
+          queryAttempt: plan,
+        });
+        accepted = true;
+        diagnostic('started');
+        const rows = await withDeadline(
+          async () => {
+            if (!current())
+              throw new RuntimeLimitError('CANCELLED', '操作已取消');
+            const source = await this.host.resolveSource(definition.sourceId);
+            if (!current() || controller.signal.aborted)
+              throw new RuntimeLimitError('CANCELLED', '操作已取消');
+            if (!source.aggregate)
+              throw new Error('数据源不支持 aggregate 分析查询');
+            return source.aggregate(copy(plan.query), undefined, controller);
+          },
+          this.limits.queryTimeoutMs,
+          controller,
+        );
+        if (!current()) {
+          diagnostic('superseded');
+          return;
+        }
+        const result = validateAnalysisResult(rows, plan);
+        if (!result.rows)
+          throw new Error(result.errors.map(value => value.message).join('；'));
+        this.requests.delete(id);
+        release();
+        this.store.patch(id, {
+          kind: 'analysis',
+          queryStatus: 'success',
+          queryError: null,
+          pendingQuery: null,
+          result: {
+            plan,
+            config,
+            rows: copy(result.rows),
+            receivedAt: Date.now(),
+          },
+        });
+        diagnostic('succeeded');
+      } catch (error) {
+        if (!current()) {
+          diagnostic(this.requests.has(id) ? 'superseded' : 'cancelled');
+          return;
+        }
+        this.requests.delete(id);
+        release();
+        this.store.patch(id, {
+          kind: 'analysis',
+          queryStatus: 'error',
+          pendingQuery: null,
+          queryError:
+            error instanceof RuntimeLimitError
+              ? error.message
+              : '分析查询失败，请重试',
+        });
+        diagnostic(
+          'failed',
+          error instanceof RuntimeLimitError ? error.code : 'QUERY_FAILED',
+        );
+        throw error;
+      } finally {
+        release();
       }
-      this.store.patch(id, {
-        kind: 'analysis',
-        queryStatus: 'loading',
-        queryError: null,
-        pendingQuery: plan,
-      });
-      diagnostic('started');
-      const rows = await withDeadline(
-        async () => {
-          if (!current())
-            throw new RuntimeLimitError('CANCELLED', '操作已取消');
-          const source = await this.host.resolveSource(definition.sourceId);
-          if (!current() || controller.signal.aborted)
-            throw new RuntimeLimitError('CANCELLED', '操作已取消');
-          if (!source.aggregate)
-            throw new Error('数据源不支持 aggregate 分析查询');
-          return source.aggregate(copy(plan.query), undefined, controller);
-        },
-        this.limits.queryTimeoutMs,
-        controller,
-      );
-      if (!current()) {
-        diagnostic('superseded');
-        return;
-      }
-      const result = validateAnalysisResult(rows, plan);
-      if (!result.rows)
-        throw new Error(result.errors.map(value => value.message).join('；'));
-      this.requests.delete(id);
-      release();
-      this.store.patch(id, {
-        kind: 'analysis',
-        queryStatus: 'success',
-        queryError: null,
-        pendingQuery: null,
-        result: {
-          plan,
-          config,
-          rows: copy(result.rows),
-          receivedAt: Date.now(),
-        },
-      });
-      diagnostic('succeeded');
-    } catch (error) {
-      if (!current()) {
-        diagnostic(this.requests.has(id) ? 'superseded' : 'cancelled');
-        return;
-      }
-      this.requests.delete(id);
-      release();
-      this.store.patch(id, {
-        kind: 'analysis',
-        queryStatus: 'error',
-        pendingQuery: null,
-        queryError:
-          error instanceof RuntimeLimitError
-            ? error.message
-            : '分析查询失败，请重试',
-      });
-      diagnostic(
-        'failed',
-        error instanceof RuntimeLimitError ? error.code : 'QUERY_FAILED',
-      );
-      throw error;
-    } finally {
-      release();
-    }
+    })();
+    return { accepted, completion };
   }
 }

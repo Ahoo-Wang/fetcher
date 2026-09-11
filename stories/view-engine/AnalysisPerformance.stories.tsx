@@ -265,9 +265,12 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
       if (session?.kind !== 'analysis') throw new Error('未选择分析实例');
       return session;
     };
+    const resultRoot = () =>
+      panel.querySelector('[data-slot="analysis-view"]:not([hidden])') ?? panel;
     const editorScope = () =>
-      document.querySelector<HTMLElement>('[data-slot="sheet-content"]') ??
-      panel;
+      document.querySelector<HTMLElement>(
+        '[data-slot="sheet-content"][data-open]',
+      ) ?? panel;
     const input = (label: string) => {
       const element = (
         label === '维度 1 名称'
@@ -356,7 +359,7 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
           filters: filterCount,
           returnedRows: 10000,
           columns: 21,
-          renderedDataRows: panel.querySelectorAll('tbody tr').length,
+          renderedDataRows: resultRoot().querySelectorAll('tbody tr').length,
           input: { text, characters: text.length, preserved: true },
           abortObserved: true,
           lateResponseIgnored: true,
@@ -431,7 +434,7 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
           const elapsed = performance.now() - start;
           if (
             state().selectedInstanceId !== target ||
-            !panel
+            !resultRoot()
               .querySelector('tbody')
               ?.textContent?.includes(`${target.toUpperCase()}-00000`)
           )
