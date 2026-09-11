@@ -11,6 +11,10 @@
  * limitations under the License.
  */
 
+import {
+  bindRecordPagination,
+  getRecordPaginationPolicy,
+} from '../../src/record/page/recordPaginationPolicy.js';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { ViewEngine } from '../../src/engine/ViewEngine.js';
 import { instance, selected, setup } from './fixtures.js';
@@ -136,3 +140,57 @@ it('lets newer navigation supersede a page correction', async () => {
     rows: [{ state: { id: 'newer' } }],
   });
 });
+
+it.each(['paged', 'cursor'] as const)(
+  'navigates the displayed %s result after an unrun mode edit',
+  async mode => {
+    const { engine, paged, cursor } = setup({
+      instances: {
+        instances: [instance('mine', mode)],
+        defaultInstanceId: 'mine',
+      },
+    });
+    paged.mockResolvedValue({
+      total: 40,
+      list: [{ state: { id: 'a', amount: 10 } }],
+    });
+    cursor.mockImplementation(async query => ({
+      list: [{ state: { id: 'a' } }],
+      nextCursor: query.cursor === null ? 'next' : null,
+    }));
+    try {
+      await engine.load();
+      const pagination = bindRecordPagination(engine, 'mine');
+      engine.record('mine').edit(config => ({
+        ...config,
+        pagination: { mode: mode === 'paged' ? 'cursor' : 'paged', size: 20 },
+      }));
+      expect(getRecordPaginationPolicy(selected(engine) as never).mode).toBe(
+        mode,
+      );
+      await pagination.nextPage();
+      expect(getRecordPaginationPolicy(selected(engine) as never).page).toBe(2);
+      if (mode === 'paged') {
+        await pagination.previousPage();
+        expect(getRecordPaginationPolicy(selected(engine) as never).page).toBe(
+          1,
+        );
+        await pagination.setPage(3);
+        expect(paged.mock.calls.at(-1)![0].pagination).toMatchObject({
+          index: 3,
+          size: 10,
+        });
+        expect(cursor).not.toHaveBeenCalled();
+      } else {
+        expect(cursor.mock.calls.at(-1)![0]).toMatchObject({
+          cursor: 'next',
+          size: 10,
+        });
+        expect(paged).not.toHaveBeenCalled();
+      }
+      expect(selected(engine).instance.config.pagination.size).toBe(20);
+    } finally {
+      engine.dispose();
+    }
+  },
+);

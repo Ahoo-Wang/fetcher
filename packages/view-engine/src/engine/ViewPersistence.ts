@@ -152,6 +152,7 @@ export class ViewPersistence {
           source: session,
         };
         this.work.beginCreate(id, request);
+        const controller = new AbortController();
         try {
           dispatched = true;
           result = await withDeadline(
@@ -164,10 +165,10 @@ export class ViewPersistence {
                   scope,
                   config,
                 }) as ViewCreateInput,
-                { requestId: request.requestId },
+                { requestId: request.requestId, signal: controller.signal },
               ),
             this.store.limits.writeTimeoutMs,
-            new AbortController(),
+            controller,
           );
         } catch (error) {
           if (hasUnknownWriteOutcome(error)) {

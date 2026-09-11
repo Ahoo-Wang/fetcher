@@ -237,3 +237,35 @@ it('aborts the host signal when an unknown-create replay times out', async () =>
     engine.dispose();
   }
 });
+
+it('aborts the first saveAs host request at its deadline and retains uncertain outcome', async () => {
+  vi.useFakeTimers();
+  let signal: AbortSignal | undefined;
+  const pending = deferred<ReturnType<typeof instance>>();
+  const { engine } = setup({
+    limits: { writeTimeoutMs: 10 },
+    host: {
+      instance: {
+        create: (_input, context) => {
+          signal = context.signal;
+          return pending.promise;
+        },
+      },
+    } as never,
+  });
+  try {
+    await engine.load();
+    const failure = expect(
+      engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
+    ).rejects.toMatchObject({ code: 'TIMEOUT' });
+    await vi.advanceTimersByTimeAsync(11);
+    await failure;
+    expect(signal?.aborted).toBe(true);
+    expect(selected(engine).requiresReload).toBe(true);
+    pending.resolve({ ...instance('late'), title: 'Copy' });
+    await Promise.resolve();
+    expect(engine.getSnapshot().instanceIds).not.toContain('late');
+  } finally {
+    engine.dispose();
+  }
+});

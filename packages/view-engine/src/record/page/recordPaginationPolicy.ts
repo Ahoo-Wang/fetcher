@@ -30,8 +30,9 @@ export type RecordPaginationPolicy = Pick<
 export function getRecordPaginationPolicy(
   session: DeepReadonly<RecordSession>,
 ): RecordPaginationPolicy {
-  const { pagination } = session.result?.config ?? session.instance.config;
-  const page = session.result?.page ?? session.page;
+  const scope = session.result ?? session.queryAttempt;
+  const { pagination } = scope?.config ?? session.instance.config;
+  const page = scope?.page ?? session.page;
   const paged = pagination.mode === 'paged';
   const pageCount =
     paged && session.total !== null
@@ -71,13 +72,13 @@ export function bindRecordPagination(
   return {
     setPage(index) {
       const session = current();
-      if (!session || session.instance.config.pagination.mode !== 'paged')
-        return resolved;
+      if (!session) return resolved;
+      const policy = getRecordPaginationPolicy(session);
+      if (policy.mode !== 'paged') return resolved;
       if (!Number.isSafeInteger(index) || index < 1)
         return engine
           .record(id ?? engine.getSnapshot().selectedInstanceId!)
           .setPage(index);
-      const policy = getRecordPaginationPolicy(session);
       if (
         session.queryStatus !== 'success' ||
         session.queryError ||
@@ -98,22 +99,24 @@ export function bindRecordPagination(
     },
     nextPage() {
       const session = current();
-      if (!session || !getRecordPaginationPolicy(session).canNext)
-        return resolved;
-      return session.instance.config.pagination.mode === 'paged'
+      if (!session) return resolved;
+      const policy = getRecordPaginationPolicy(session);
+      if (!policy.canNext) return resolved;
+      return policy.mode === 'paged'
         ? engine
             .record(id ?? engine.getSnapshot().selectedInstanceId!)
-            .setPage(session.page + 1)
+            .setPage(policy.page + 1)
         : engine
             .record(id ?? engine.getSnapshot().selectedInstanceId!)
             .nextPage();
     },
     previousPage() {
       const session = current();
-      return session && getRecordPaginationPolicy(session).canPrevious
+      const policy = session && getRecordPaginationPolicy(session);
+      return policy?.canPrevious
         ? engine
             .record(id ?? engine.getSnapshot().selectedInstanceId!)
-            .setPage(session.page - 1)
+            .setPage(policy.page - 1)
         : resolved;
     },
   };
