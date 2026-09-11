@@ -150,14 +150,17 @@ it('saves edited analysis without running and exposes a single run action', asyn
     render(<AnalysisView engine={engine} />);
     expect(
       screen
-        .getByRole('button', { name: '配置分析' })
+        .getByRole('button', { name: '配置查询' })
         .getAttribute('aria-expanded'),
     ).toBe('false');
-    fireEvent.click(screen.getByRole('button', { name: '配置分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '配置查询' }));
     const before = aggregate.mock.calls.length;
     fireEvent.change(screen.getByRole('textbox', { name: '最多结果行数' }), {
       target: { value: '50' },
     });
+    fireEvent.click(
+      screen.getByRole('button', { name: '查看结果', exact: true }),
+    );
     fireEvent.click(screen.getByRole('button', { name: '保存', exact: true }));
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     expect(aggregate).toHaveBeenCalledTimes(before);
@@ -206,28 +209,31 @@ it('switches kinds in one page and preserves unrun drafts and panel state', asyn
   try {
     await engine.load();
     render(<ViewPageContent engine={engine} />);
-    fireEvent.click(screen.getByRole('button', { name: '配置分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '配置查询' }));
     fireEvent.change(screen.getByRole('textbox', { name: '最多结果行数' }), {
       target: { value: '' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '配置分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '查看结果' }));
     const calls = aggregate.mock.calls.length;
     await act(() => engine.selectInstance('records'));
-    expect(screen.queryByRole('button', { name: '配置分析' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '配置查询' })).toBeNull();
     await act(() => engine.selectInstance('totals'));
     expect(
       screen
-        .getByRole('button', { name: '配置分析' })
+        .getByRole('button', { name: '配置查询' })
         .getAttribute('aria-expanded'),
     ).toBe('false');
     expect(aggregate).toHaveBeenCalledTimes(calls);
-    fireEvent.click(screen.getByRole('button', { name: '配置分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '配置查询' }));
     expect(
       screen.getByRole('textbox', { name: '最多结果行数' }),
     ).toHaveProperty('value', '');
     expect(screen.getByRole('button', { name: '运行分析' })).toHaveProperty(
       'disabled',
       true,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: '查看结果', exact: true }),
     );
     expect(screen.getByRole('table')).toBeTruthy();
   } finally {
@@ -512,11 +518,11 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
       await act(() => engine.useRemoteInstance(review, 'a'));
       if (
         screen
-          .getByRole('button', { name: '配置分析', exact: true })
+          .getByRole('button', { name: '配置查询', exact: true })
           .getAttribute('aria-expanded') === 'false'
       )
         fireEvent.click(
-          screen.getByRole('button', { name: '配置分析', exact: true }),
+          screen.getByRole('button', { name: '配置查询', exact: true }),
         );
       expect(
         screen.getByRole('textbox', { name: '明细金额 草稿' }),
@@ -533,9 +539,6 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
           {} as ResizeObserver,
         ),
       );
-      fireEvent.click(
-        screen.getByRole('button', { name: '配置分析', exact: true }),
-      );
       expect(
         (
           screen.getByRole('textbox', {
@@ -549,7 +552,7 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
       );
       await expect(engine.analysis('a').run()).rejects.toThrow('筛选输入无效');
       fireEvent.click(
-        screen.getByRole('button', { name: '配置分析', exact: true }),
+        screen.getByRole('button', { name: '配置查询', exact: true }),
       );
       expect(
         (
@@ -602,7 +605,7 @@ it('keeps display validation visible when the table owns no chart notice', async
         presentation: { layout: 'table', columns: [], x: 'missing' },
       })),
     );
-    expect(screen.getByLabelText('图表设置').textContent).toContain(
+    expect(screen.getByLabelText('分析结果区').textContent).toContain(
       '横轴维度已失效',
     );
     act(() =>
@@ -624,6 +627,9 @@ it('shows executed display controls for stale results without replacing the draf
   try {
     await engine.load();
     render(<AnalysisView engine={engine} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: '可视化配置', exact: true }),
+    );
     act(() =>
       engine.analysis('totals').edit(config => ({
         ...config,
@@ -638,7 +644,7 @@ it('shows executed display controls for stale results without replacing the draf
     );
     expect(
       screen.getByRole('combobox', { name: '图表类型' }).textContent,
-    ).toContain('数据表');
+    ).toContain('请选择展示方式');
     aggregate.mockRejectedValueOnce(new Error('offline'));
     await act(async () => {
       await engine
@@ -648,7 +654,7 @@ it('shows executed display controls for stale results without replacing the draf
     });
     expect(
       screen.getByRole('combobox', { name: '图表类型' }).textContent,
-    ).toContain('数据表');
+    ).toContain('请选择展示方式');
     act(() =>
       engine.analysis('totals').edit(config => ({ ...config, limit: 100 })),
     );
@@ -685,9 +691,9 @@ it('uses the configuration dialog when its container is narrow inside a wide pag
       ),
     );
     fireEvent.click(
-      screen.getByRole('button', { name: '配置分析', exact: true }),
+      screen.getByRole('button', { name: '配置查询', exact: true }),
     );
-    expect(screen.getByRole('dialog', { name: '配置分析' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: '配置查询' })).toBeTruthy();
   } finally {
     cleanup();
     engine.dispose();
@@ -707,7 +713,7 @@ it('mounts the configuration on a page that starts narrow', async () => {
     await engine.load();
     render(<AnalysisView engine={engine} />);
     fireEvent.click(
-      screen.getByRole('button', { name: '配置分析', exact: true }),
+      screen.getByRole('button', { name: '配置查询', exact: true }),
     );
     expect(await screen.findByText('高级设置')).toBeTruthy();
   } finally {
@@ -987,7 +993,7 @@ it('undoes filter edits to the last successful execution rather than the saved c
     commands.edit(config => ({ ...config, filters: filterB }));
     await commands.run();
     render(<AnalysisView engine={engine} />);
-    fireEvent.click(screen.getByRole('button', { name: '配置分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '配置查询' }));
     fireEvent.click(screen.getByText('筛选条件', { exact: true }));
     expect(
       (
@@ -1058,7 +1064,7 @@ it.each(['constructor', 'toString', '__proto__'])(
     try {
       await engine.load();
       render(<ViewPageContent engine={engine} />);
-      const button = screen.getByRole('button', { name: '配置分析' });
+      const button = screen.getByRole('button', { name: '配置查询' });
       expect(button.getAttribute('aria-expanded')).toBe('false');
       fireEvent.click(button);
       expect(button.getAttribute('aria-expanded')).toBe('true');
@@ -1069,3 +1075,41 @@ it.each(['constructor', 'toString', '__proto__'])(
     }
   },
 );
+
+it('starts with table results and a folded visualization panel, and retains the query Sheet draft', async () => {
+  const { engine, aggregate } = setup();
+  try {
+    await engine.load();
+    render(<AnalysisView engine={engine} />);
+    expect(
+      screen.getByRole('tab', { name: '数据表', exact: true }),
+    ).toHaveProperty('ariaSelected', 'true');
+    expect(screen.queryByRole('combobox', { name: '图表类型' })).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: '可视化配置', exact: true }),
+    );
+    expect(screen.getByRole('combobox', { name: '图表类型' })).toBeTruthy();
+    expect(screen.queryByText('显示指标')).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: '配置查询', exact: true }),
+    );
+    const dialog = screen.getByRole('dialog', { name: '配置查询' });
+    expect(dialog.getAttribute('data-slot')).toBe('sheet-content');
+    fireEvent.change(screen.getByRole('textbox', { name: '最多结果行数' }), {
+      target: { value: '50' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: '查看结果', exact: true }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(aggregate).toHaveBeenCalledOnce();
+    fireEvent.click(
+      screen.getByRole('button', { name: '配置查询', exact: true }),
+    );
+    expect(
+      screen.getByRole('textbox', { name: '最多结果行数' }),
+    ).toHaveProperty('value', '50');
+  } finally {
+    engine.dispose();
+  }
+});

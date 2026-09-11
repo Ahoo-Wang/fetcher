@@ -41,10 +41,10 @@ export const AnyRepresentative: Story = {
       }),
     ).toBeVisible();
     await userEvent.click(
-      canvas.getByRole('button', { name: '配置分析', exact: true }),
+      canvas.getByRole('button', { name: '配置查询', exact: true }),
     );
-    await expect(canvas.queryByLabelText('编辑指标 2')).toBeNull();
-    await userEvent.click(canvas.getByLabelText('编辑维度 1'));
+    await expect(page.queryByLabelText('编辑指标 2')).toBeNull();
+    await userEvent.click(page.getByLabelText('编辑维度 1'));
     await expect(
       await page.findByRole('combobox', { name: '维度 1 显示字段' }),
     ).toHaveTextContent('商品名称');
@@ -53,6 +53,9 @@ export const AnyRepresentative: Story = {
     await userEvent.type(name, '商品销售');
     await userEvent.click(
       page.getByRole('button', { name: '完成编辑', exact: true }),
+    );
+    await userEvent.click(
+      page.getByRole('button', { name: '查看结果', exact: true }),
     );
     await userEvent.click(
       canvas.getByRole('button', { name: '保存', exact: true }),
@@ -76,9 +79,6 @@ export const AnyRepresentative: Story = {
     ).toBeVisible();
     await userEvent.click(
       canvas.getByRole('tab', { name: '分析', exact: true }),
-    );
-    await userEvent.click(
-      canvas.getByRole('button', { name: '配置分析', exact: true }),
     );
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
       '查询次数：1',

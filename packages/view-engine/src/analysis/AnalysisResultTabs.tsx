@@ -21,30 +21,38 @@ export function AnalysisResultTabs({
   children,
   table,
   issues = [],
+  value,
+  onValueChange,
 }: {
   children: ReactNode;
   table: ReactNode;
   issues?: readonly string[];
+  value: 'analysis' | 'table';
+  onValueChange(value: 'analysis' | 'table'): void;
 }) {
-  const [tab, setTab] = useState<'analysis' | 'table'>('analysis');
   const [tableVisited, setTableVisited] = useState(false);
   const available = issues.length === 0;
+  if (value === 'table' && !tableVisited) setTableVisited(true);
   return (
     <Tabs.Root
-      value={available ? tab : 'table'}
+      value={value}
       onValueChange={value => {
-        if (value === 'analysis' || value === 'table') setTab(value);
+        if (value === 'analysis' || value === 'table') onValueChange(value);
         if (value === 'table') setTableVisited(true);
       }}
       className="fve-root fve:flex fve:min-w-0 fve:flex-col fve:gap-3"
     >
-      {!available && (
-        <p role="status" className="fve:text-sm fve:text-muted-foreground">
-          {issues.join('；')}
-        </p>
-      )}
       <Tabs.Panel value="analysis" className="fve:min-w-0 fve:outline-none">
-        {available && children}
+        {available ? (
+          children
+        ) : (
+          <div className="fve:flex fve:min-h-64 fve:flex-col fve:items-center fve:justify-center fve:gap-3">
+            <p role="status">{issues.join('；')}</p>
+            <Button variant="outline" onClick={() => onValueChange('table')}>
+              查看数据表
+            </Button>
+          </div>
+        )}
       </Tabs.Panel>
       <Tabs.Panel
         value="table"
@@ -61,7 +69,6 @@ export function AnalysisResultTabs({
         >
           <Tabs.Tab
             value="analysis"
-            disabled={!available}
             render={
               <Button
                 variant="ghost"

@@ -23,13 +23,14 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import {
   ChevronDownIcon,
   PlayIcon,
   Settings2Icon,
   Maximize2Icon,
   Minimize2Icon,
+  PanelLeftIcon,
+  PanelLeftCloseIcon,
 } from 'lucide-react';
 import type { ViewEngine } from '../engine/ViewEngine.js';
 import type { FilterExtensions } from '../filter/filterReactTypes.js';
@@ -114,20 +115,6 @@ class ChartBoundary extends Component<
     );
   }
 }
-const narrowQuery = '(max-width: 767px)';
-function subscribeNarrow(listener: () => void) {
-  const query =
-    typeof window.matchMedia === 'function'
-      ? window.matchMedia(narrowQuery)
-      : undefined;
-  query?.addEventListener('change', listener);
-  return () => query?.removeEventListener('change', listener);
-}
-const narrowSnapshot = () =>
-  typeof window !== 'undefined' &&
-  typeof window.matchMedia === 'function' &&
-  window.matchMedia(narrowQuery).matches;
-const serverNarrow = () => false;
 const tablePresentation: AnalysisPresentation = {
   layout: 'table',
   columns: [],
@@ -147,12 +134,10 @@ function AnalysisConfiguration({
   context,
   extensions,
   filterContext,
-  narrow,
   visible,
   filterSummary,
 }: Pick<AnalysisViewProps, 'engine' | 'extensions' | 'filterContext'> & {
   context: AnalysisCompileContext;
-  narrow: boolean;
   visible: boolean;
   filterSummary: string;
 }) {
@@ -186,14 +171,6 @@ function AnalysisConfiguration({
     >
       {(rootValidity, scopeValidity) => (
         <div className="fve:[&_p]:m-0 fve:flex fve:min-w-0 fve:flex-col fve:gap-3">
-          {!narrow && (
-            <div className="fve:flex fve:flex-wrap fve:items-baseline fve:gap-x-3 fve:gap-y-1">
-              <h2 className="fve:font-semibold">查询配置</h2>
-              <p className="fve:text-xs fve:text-muted-foreground">
-                修改后运行以更新结果；保存仅保存配置。
-              </p>
-            </div>
-          )}
           <details
             className="fve:group fve:rounded-lg fve:border"
             open={filtersOpen || session.filterValid === false}
@@ -288,29 +265,19 @@ export function AnalysisView({
     engine.getSnapshot,
     engine.getSnapshot,
   );
-  const viewportNarrow = useSyncExternalStore(
-    subscribeNarrow,
-    narrowSnapshot,
-    serverNarrow,
-  );
   const containerRef = useRef<HTMLElement>(null);
-  const [editorElement] = useState(() =>
-    typeof document === 'undefined' ? null : document.createElement('div'),
-  );
-  // Move only the stable portal container; React keeps extension-local drafts mounted.
-  const attachEditor = (target: HTMLDivElement | null, active: boolean) => {
-    if (
-      active &&
-      target &&
-      editorElement &&
-      editorElement.parentNode !== target
-    )
-      target.appendChild(editorElement);
-  };
-  const [containerNarrow, setContainerNarrow] = useState(false);
-  const narrow = viewportNarrow || containerNarrow;
-  const [localOpen, setLocalOpen] = useState<boolean>();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [queryPanel, setQueryPanel] = useState<{
+    id: string;
+    open: boolean;
+  } | null>(null);
+  const [visualPanel, setVisualPanel] = useState<{
+    id: string;
+    open: boolean;
+  } | null>(null);
+  const [resultMode, setResultMode] = useState<{
+    id: string;
+    mode: 'analysis' | 'table';
+  } | null>(null);
   const [localError, setLocalError] = useState<{
     id: string;
     message: string;
@@ -330,16 +297,6 @@ export function AnalysisView({
     if (id) await engine.analysis(id).refresh();
   }, [engine, id]);
 
-  useEffect(() => {
-    const element = containerRef.current;
-    if (!element || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(entries => {
-      const width = entries[0]?.contentRect.width;
-      if (width > 0) setContainerNarrow(width < 640);
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [id]);
   const commands = useMemo(
     () =>
       id && session?.editorEpoch !== undefined ? engine.analysis(id) : null,
@@ -362,7 +319,11 @@ export function AnalysisView({
   );
   const config = session?.instance.config;
   const compiled = session?.compilation ?? null;
-  const open = configurationOpen ?? localOpen ?? !compiled?.plan;
+  if (id && queryPanel?.id !== id) setQueryPanel({ id, open: !compiled?.plan });
+  const open =
+    configurationOpen ??
+    (queryPanel && queryPanel.id === id ? queryPanel.open : !compiled?.plan);
+  const visualOpen = visualPanel?.id === id && visualPanel?.open === true;
   const result = session?.result;
   const querying = session?.queryStatus === 'loading';
   const samePendingQuery =
@@ -420,8 +381,7 @@ export function AnalysisView({
     }
   }
   function toggleConfiguration(next: boolean) {
-    if (narrow) setMobileOpen(next);
-    setLocalOpen(next);
+    setQueryPanel({ id: instance.id, open: next });
     onConfigurationOpenChange?.(next);
   }
   const canRun = analysisQueryPolicy(session, 'manual');
@@ -441,18 +401,25 @@ export function AnalysisView({
       )?.text ?? '全部记录')
     : '筛选草稿待检查';
   const editor = (
-    <OverlayScope visible={narrow ? mobileOpen : open}>
+    <OverlayScope visible={open}>
       <AnalysisConfiguration
         engine={engine}
         context={context}
         extensions={extensions}
         filterContext={filterContext}
-        narrow={narrow}
-        visible={narrow ? mobileOpen : open}
+        visible={open}
         filterSummary={draftFilterSummary}
       />
     </OverlayScope>
   );
+  const mode =
+    resultMode?.id === instance.id
+      ? resultMode.mode
+      : resultPresentation.layout === 'table'
+        ? 'table'
+        : 'analysis';
+  const setMode = (mode: 'analysis' | 'table') =>
+    setResultMode({ id: instance.id, mode });
 
   const error =
     session.writeError ||
@@ -518,14 +485,24 @@ export function AnalysisView({
             <ViewInstanceActions engine={engine} session={session} run={run} />
           </div>
         )}
-        <div className="fve:flex fve:items-center fve:gap-2">
+        <div className="fve:flex fve:flex-wrap fve:items-center fve:gap-2">
           <Button
             variant="outline"
-            aria-expanded={narrow ? mobileOpen : open}
-            onClick={() => toggleConfiguration(!(narrow ? mobileOpen : open))}
+            aria-expanded={visualOpen}
+            onClick={() =>
+              setVisualPanel({ id: instance.id, open: !visualOpen })
+            }
+          >
+            <PanelLeftIcon data-icon="inline-start" aria-hidden="true" />
+            可视化配置
+          </Button>
+          <Button
+            variant="outline"
+            aria-expanded={open}
+            onClick={() => toggleConfiguration(!open)}
           >
             <Settings2Icon data-icon="inline-start" aria-hidden="true" />
-            配置分析
+            配置查询
           </Button>
           <ViewRefreshControls
             key={`refresh:${instance.id}`}
@@ -574,7 +551,7 @@ export function AnalysisView({
           {runButton}
         </div>
       </header>
-      {(narrow || !open) && (
+      {!open && (
         <Button
           variant="outline"
           aria-label="展开查询配置"
@@ -593,15 +570,45 @@ export function AnalysisView({
           </span>
         </Button>
       )}
-      <div className="fve:flex fve:min-w-0 fve:flex-col fve:gap-4">
-        {!narrow && (
-          <div
-            ref={node => attachEditor(node, !narrow)}
-            hidden={!open}
-            aria-label="分析配置面板"
-            className="fve:min-w-0 fve:rounded-xl fve:border fve:bg-background fve:p-4"
-          />
+      <div
+        className={cn(
+          'fve:grid fve:min-w-0 fve:gap-4 fve:items-start',
+          visualOpen && 'fve:@min-[48rem]:grid-cols-[18rem_minmax(0,1fr)]',
         )}
+      >
+        <section
+          hidden={!visualOpen}
+          aria-label="可视化配置区"
+          className="fve:min-w-0 fve:rounded-xl fve:border fve:bg-background fve:p-4"
+        >
+          <div className="fve:mb-4 fve:flex fve:items-center fve:justify-between fve:gap-2">
+            <h2 className="fve:font-semibold">可视化配置</h2>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="折叠可视化配置"
+              onClick={() => setVisualPanel({ id: instance.id, open: false })}
+            >
+              <PanelLeftCloseIcon />
+            </Button>
+          </div>
+          <AnalysisPresentationEditor
+            chartOnly
+            showIssues={false}
+            value={resultPresentation}
+            plan={resultPlan}
+            disabled={!result || stale}
+            onChange={presentation => {
+              commands.edit(config => ({ ...config, presentation }));
+              setMode('analysis');
+            }}
+          />
+          {(!result || stale) && (
+            <p className="fve:mt-3 fve:text-xs fve:text-muted-foreground">
+              先运行当前查询，再配置展示方式。
+            </p>
+          )}
+        </section>
         <div
           aria-label="分析结果区"
           className="fve:flex fve:min-w-0 fve:flex-col fve:gap-4 fve:rounded-xl fve:border fve:bg-background fve:p-4"
@@ -674,15 +681,6 @@ export function AnalysisView({
               </p>
             )}
           </div>
-          <AnalysisPresentationEditor
-            showIssues={!result || resultPresentation.layout === 'table'}
-            value={resultPresentation}
-            plan={resultPlan}
-            disabled={!result || stale}
-            onChange={presentation =>
-              commands.edit(config => ({ ...config, presentation }))
-            }
-          />
           {error && (
             <div
               role="alert"
@@ -700,72 +698,97 @@ export function AnalysisView({
               )}
             </div>
           )}
-          {result && resultPlan ? (
-            resultPresentation.layout === 'table' ? (
-              table
-            ) : (
-              <AnalysisResultTabs
-                key={instance.id}
-                table={table}
-                issues={projectedResult?.issues}
-              >
-                <ChartBoundary
-                  key={`${instance.id}:${result.receivedAt}:${JSON.stringify(resultPresentation)}`}
+          {resultPresentation.layout === 'table' &&
+            !!projectedResult?.issues.length && (
+              <p role="status">
+                {projectedResult.issues.join('；')}
+                。请选择展示方式或修复展示配置。
+              </p>
+            )}
+          <AnalysisResultTabs
+            key={instance.id}
+            value={mode}
+            onValueChange={setMode}
+            table={
+              table ?? (
+                <p
+                  role="status"
+                  className="fve:min-h-64 fve:p-8 fve:text-center"
                 >
-                  <Suspense
-                    fallback={
-                      <p role="status" className="fve:p-8 fve:text-center">
-                        正在加载图表…
-                      </p>
-                    }
-                  >
-                    <Chart
-                      plan={resultPlan}
-                      rows={result.rows}
-                      presentation={resultPresentation}
-                    />
-                  </Suspense>
-                </ChartBoundary>
-              </AnalysisResultTabs>
-            )
-          ) : (
-            <div
-              role="status"
-              className="fve:flex fve:min-h-64 fve:flex-col fve:items-center fve:justify-center fve:gap-2 fve:text-center fve:text-muted-foreground"
-            >
-              <p>
-                {querying
-                  ? '正在获取分析结果…'
-                  : session.queryStatus === 'success'
-                    ? '分析结果缓存已释放'
-                    : '从一个业务问题开始'}
-              </p>
-              <p className="fve:text-sm">
-                {session.queryStatus === 'success'
-                  ? '查询配置仍已保留，点击上方“运行分析”重新获取结果。'
-                  : '选择统计对象、维度和指标，然后运行分析。'}
-              </p>
-            </div>
-          )}
+                  {querying
+                    ? '正在获取分析结果…'
+                    : session.queryStatus === 'success'
+                      ? '分析结果缓存已释放'
+                      : '配置查询并运行后，在此查看聚合数据。'}
+                </p>
+              )
+            }
+            issues={
+              resultPresentation.layout === 'table'
+                ? []
+                : projectedResult?.issues
+            }
+          >
+            {result && resultPlan && resultPresentation.layout !== 'table' ? (
+              <ChartBoundary
+                key={`${instance.id}:${result.receivedAt}:${JSON.stringify(resultPresentation)}`}
+              >
+                <Suspense
+                  fallback={
+                    <p role="status" className="fve:p-8 fve:text-center">
+                      正在加载图表…
+                    </p>
+                  }
+                >
+                  <Chart
+                    plan={resultPlan}
+                    rows={result.rows}
+                    presentation={resultPresentation}
+                  />
+                </Suspense>
+              </ChartBoundary>
+            ) : (
+              <div
+                role="status"
+                className="fve:flex fve:min-h-64 fve:flex-col fve:items-center fve:justify-center fve:gap-3 fve:text-center"
+              >
+                <p>
+                  {!result
+                    ? querying
+                      ? '正在获取分析结果…'
+                      : '先配置查询并运行'
+                    : '先选择报表展示方式'}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    result
+                      ? setVisualPanel({ id: instance.id, open: true })
+                      : toggleConfiguration(true)
+                  }
+                >
+                  {result ? '选择展示方式' : '配置查询'}
+                </Button>
+              </div>
+            )}
+          </AnalysisResultTabs>
         </div>
       </div>
-      <Dialog open={narrow && mobileOpen} onOpenChange={toggleConfiguration}>
-        <DialogContent
-          keepMounted
-          className="fve:flex fve:max-h-[90dvh] fve:flex-col"
-        >
+      <Dialog open={open} onOpenChange={toggleConfiguration}>
+        <DialogContent keepMounted side="right">
           <DialogHeader>
-            <DialogTitle>配置分析</DialogTitle>
+            <DialogTitle>配置查询</DialogTitle>
             <DialogDescription>
               修改查询配置，关闭后继续查看结果。保存和运行相互独立。
             </DialogDescription>
           </DialogHeader>
           <div
-            ref={node => attachEditor(node, narrow)}
-            className="fve:min-h-0 fve:overflow-y-auto"
-          />
-          {editorElement && createPortal(editor, editorElement)}
-          <DialogFooter>
+            aria-label="分析配置面板"
+            className="fve:min-h-0 fve:flex-1 fve:overflow-y-auto"
+          >
+            {editor}
+          </div>
+          <DialogFooter className="fve:rounded-none">
             <Button
               variant="outline"
               onClick={() => toggleConfiguration(false)}

@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { useState, type ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ChartContainer } from '../src/components/ui/chart.js';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -22,9 +23,20 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { AnalysisChart } from '../src/analysis/AnalysisChart.js';
-import { AnalysisResultTabs } from '../src/analysis/AnalysisResultTabs.js';
+import { AnalysisResultTabs as ControlledResultTabs } from '../src/analysis/AnalysisResultTabs.js';
 import { AnalysisTable } from '../src/analysis/AnalysisTable.js';
 import type { AnalysisPlan } from '../src/analysis/analysisModel.js';
+function AnalysisResultTabs(
+  props: Omit<
+    ComponentProps<typeof ControlledResultTabs>,
+    'value' | 'onValueChange'
+  >,
+) {
+  const [mode, setMode] = useState<'analysis' | 'table'>('analysis');
+  return (
+    <ControlledResultTabs {...props} value={mode} onValueChange={setMode} />
+  );
+}
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();

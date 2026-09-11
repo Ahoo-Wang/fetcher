@@ -15,6 +15,7 @@ import {
   ANALYSIS_VISUALIZATIONS,
   getAnalysisVisualization,
 } from './analysisVisualizations.js';
+import { cn } from '../lib/utils.js';
 import { Checkbox } from '../components/ui/checkbox.js';
 import { FilterSelect } from '../filter/FilterSelect.js';
 import type { DeepReadonly } from '../lib/types.js';
@@ -33,6 +34,8 @@ export interface AnalysisPresentationEditorProps {
   disabled?: boolean;
   /** Show notices for standalone editors; a surrounding result view can own them instead. */
   showIssues?: boolean;
+  /** Table is inspected via the result mode switch; select a chart before configuring it. */
+  chartOnly?: boolean;
 }
 /** Display-only controls over the executed schema. The host owns querying and stale guards. */
 export function AnalysisPresentationEditor({
@@ -41,6 +44,7 @@ export function AnalysisPresentationEditor({
   onChange,
   disabled,
   showIssues = true,
+  chartOnly = false,
 }: AnalysisPresentationEditorProps) {
   const visualization = getAnalysisVisualization(value.layout);
   const locked = disabled || !plan;
@@ -82,13 +86,29 @@ export function AnalysisPresentationEditor({
       className="fve:flex fve:min-w-0 fve:flex-col fve:gap-3"
       aria-label="图表设置"
     >
-      <div className="fve:flex fve:flex-wrap fve:items-end fve:gap-3">
+      <div
+        className={cn(
+          'fve:gap-3',
+          chartOnly
+            ? 'fve:grid fve:grid-cols-1'
+            : 'fve:flex fve:flex-wrap fve:items-end',
+        )}
+      >
         <label className="fve:flex fve:min-w-0 fve:flex-col fve:gap-1">
-          <span className="fve:text-xs fve:text-muted-foreground">图表</span>
+          <span className="fve:text-xs fve:text-muted-foreground">
+            {chartOnly ? '报表展示方式' : '图表'}
+          </span>
           <FilterSelect
             label="图表类型"
-            options={ANALYSIS_VISUALIZATIONS}
-            value={value.layout}
+            options={
+              chartOnly
+                ? ANALYSIS_VISUALIZATIONS.filter(item => item.value !== 'table')
+                : ANALYSIS_VISUALIZATIONS
+            }
+            value={
+              chartOnly && value.layout === 'table' ? undefined : value.layout
+            }
+            placeholder="请选择展示方式"
             disabled={locked}
             onValueChange={changeLayout}
           />

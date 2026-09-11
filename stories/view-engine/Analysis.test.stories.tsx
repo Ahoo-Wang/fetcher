@@ -33,15 +33,22 @@ export const Mixed: Story = {
       await canvas.findByRole('cell', { name: '1,800', exact: true }),
     ).toBeVisible();
     await userEvent.click(
-      canvas.getByRole('button', { name: '配置分析', exact: true }),
+      canvas.getByRole('button', { name: '配置查询', exact: true }),
     );
-    await userEvent.click(canvas.getByText('高级设置', { exact: true }));
-    const limit = canvas.getByRole('textbox', { name: '最多结果行数' });
+    let query = within(
+      await within(canvasElement.ownerDocument.body).findByRole('dialog', {
+        name: '配置查询',
+      }),
+    );
+    await userEvent.click(query.getByText('高级设置', { exact: true }));
+    const limit = query.getByRole('textbox', { name: '最多结果行数' });
     await userEvent.clear(limit);
     await expect(
-      canvas.getByRole('button', { name: '运行分析' }),
+      query.getByRole('button', { name: '运行分析' }),
     ).toBeDisabled();
-    await userEvent.click(canvas.getByRole('button', { name: '配置分析' }));
+    await userEvent.click(
+      query.getByRole('button', { name: '查看结果', exact: true }),
+    );
     const doc = within(canvasElement.ownerDocument.body);
     const switchTo = async (title: string) => {
       const sidebar = canvas.queryByRole('button', {
@@ -61,20 +68,24 @@ export const Mixed: Story = {
     await expect(await canvas.findByText('SO-001')).toBeVisible();
     await switchTo('地区销售分析');
     await expect(
-      canvas.getByRole('button', { name: '配置分析' }),
+      canvas.getByRole('button', { name: '配置查询' }),
     ).toHaveAttribute('aria-expanded', 'false');
     await expect(
       canvas.getByRole('cell', { name: '1,800', exact: true }),
     ).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: '配置分析' }));
+    await userEvent.click(canvas.getByRole('button', { name: '配置查询' }));
+    query = within(await doc.findByRole('dialog', { name: '配置查询' }));
     await expect(
-      canvas.getByRole('textbox', { name: '最多结果行数' }),
+      query.getByRole('textbox', { name: '最多结果行数' }),
     ).toHaveValue('');
     await userEvent.type(
-      canvas.getByRole('textbox', { name: '最多结果行数' }),
+      query.getByRole('textbox', { name: '最多结果行数' }),
       '1',
     );
-    await userEvent.click(canvas.getByRole('button', { name: '运行分析' }));
+    await userEvent.click(query.getByRole('button', { name: '运行分析' }));
+    await userEvent.click(
+      query.getByRole('button', { name: '查看结果', exact: true }),
+    );
     await expect(
       await canvas.findByRole('cell', { name: '华东', exact: true }),
     ).toBeVisible();

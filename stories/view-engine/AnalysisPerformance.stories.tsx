@@ -265,15 +265,18 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
       if (session?.kind !== 'analysis') throw new Error('未选择分析实例');
       return session;
     };
+    const editorScope = () =>
+      document.querySelector<HTMLElement>('[data-slot="sheet-content"]') ??
+      panel;
     const input = (label: string) => {
       const element = (
         label === '维度 1 名称'
           ? document.getElementById(
-              panel
+              editorScope()
                 .querySelector('[aria-label="编辑维度 1"]')
                 ?.getAttribute('aria-controls') ?? '',
             )
-          : panel
+          : editorScope()
       )?.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
       if (!element || !element.getBoundingClientRect().height)
         throw new Error(`请在宽屏下打开配置面板：${label}`);
@@ -300,12 +303,14 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
         );
       const configuration = [
         ...panel.querySelectorAll<HTMLButtonElement>('button'),
-      ].find(button => button.textContent?.trim() === '配置分析');
+      ].find(button => button.textContent?.trim() === '配置查询');
       if (configuration?.getAttribute('aria-expanded') !== 'true')
         configuration?.click();
       await paint();
       if (stress) {
-        panel.querySelector<HTMLElement>('[aria-label="编辑维度 1"]')?.click();
+        editorScope()
+          .querySelector<HTMLElement>('[aria-label="编辑维度 1"]')
+          ?.click();
         await paint();
         const before = current().result!;
         runtime.defer();
@@ -370,8 +375,14 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
         click('switch-a');
         await until(() => state().selectedInstanceId === 'a');
         await paint();
-        const advanced = [...panel.querySelectorAll('summary')].find(element =>
-          element.textContent?.includes('高级设置'),
+        const queryButton = [
+          ...panel.querySelectorAll<HTMLButtonElement>('button'),
+        ].find(button => button.textContent?.trim() === '配置查询');
+        if (queryButton?.getAttribute('aria-expanded') !== 'true')
+          queryButton?.click();
+        await paint();
+        const advanced = [...editorScope().querySelectorAll('summary')].find(
+          element => element.textContent?.includes('高级设置'),
         );
         advanced?.click();
         await paint();

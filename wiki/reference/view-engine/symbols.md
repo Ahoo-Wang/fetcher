@@ -153,12 +153,12 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
 | `AnalysisEditor`                  | [AnalysisEditor.tsx:810](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L810)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
-| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L38) |
-| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L29) |
+| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L41) |
+| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L30) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
-| `AnalysisView`                    | [AnalysisView.tsx:277](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L277)                           |
-| `AnalysisViewProps`               | [AnalysisView.tsx:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L135)                           |
+| `AnalysisView`                    | [AnalysisView.tsx:254](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L254)                           |
+| `AnalysisViewProps`               | [AnalysisView.tsx:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L122)                           |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
 | `Calendar`                        | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                                |
 | `CellOption`                      | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                                 |

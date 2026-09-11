@@ -375,17 +375,28 @@ function OfflineCharts({
   scenario = 'multi',
   appearance = 'light',
   reloadable = false,
+  startWithTable = false,
   title,
 }: {
   scenario?: keyof typeof scenarios;
   appearance?: 'light' | 'dark';
   reloadable?: boolean;
+  startWithTable?: boolean;
   title?: string;
 }) {
   const [generation, setGeneration] = useState(0);
   const [requests, setRequests] = useState(0);
   const [host] = useState(() => {
-    const fixture = scenarios[scenario];
+    const source = scenarios[scenario];
+    const fixture = startWithTable
+      ? {
+          ...source,
+          config: {
+            ...source.config,
+            presentation: { layout: 'table' as const, columns: [] },
+          },
+        }
+      : source;
     const compiled = compileAnalysis(fixture.config, {
       fields: definition.fields,
       capability: definition.analysis!,
@@ -466,7 +477,9 @@ const meta = {
   title: 'View Engine/分析视图/图表与结果',
   component: OfflineCharts,
   parameters: { layout: 'fullscreen' },
-  render: args => <OfflineCharts key={args.scenario} {...args} />,
+  render: args => (
+    <OfflineCharts key={`${args.scenario}:${args.startWithTable}`} {...args} />
+  ),
 } satisfies Meta<typeof OfflineCharts>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -477,30 +490,24 @@ export const MultiSeries: Story = {
     const canvas = within(canvasElement),
       page = within(canvasElement.ownerDocument.body);
     await expect(await canvas.findByRole('application')).toBeVisible();
-    const count = canvas.getByTestId('chart-requests').textContent;
-    await userEvent.click(
-      canvas.getByRole('button', { name: '配置分析', exact: true }),
-    );
-    const configuration = canvas.getByLabelText('分析配置面板');
+    const count = canvas.getByTestId('chart-requests').textContent!;
+    const visual = canvas.getByRole('button', {
+      name: '可视化配置',
+      exact: true,
+    });
+    await expect(visual).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(visual);
+    const settings = canvas.getByRole('region', {
+      name: '可视化配置区',
+    });
     const result = canvas.getByLabelText('分析结果区');
-    await expect(configuration.getBoundingClientRect().bottom).toBeLessThan(
-      result.getBoundingClientRect().top,
-    );
-    await expect(configuration.getBoundingClientRect().width).toBe(
-      result.getBoundingClientRect().width,
-    );
-    const configurationHeight = configuration.getBoundingClientRect().height;
-    if (canvas.queryByRole('complementary', { name: '视图列表' })) {
-      await expect(
-        within(canvas.getByRole('main')).queryByRole('heading', { level: 1 }),
-      ).toBeNull();
-    }
+    if (result.getBoundingClientRect().width > 450)
+      await expect(settings.getBoundingClientRect().right).toBeLessThanOrEqual(
+        result.getBoundingClientRect().left,
+      );
     await userEvent.click(canvas.getByRole('combobox', { name: '柱状图方向' }));
     await userEvent.click(await page.findByRole('option', { name: '横向' }));
-    await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
-      count!,
-    );
-    for (const label of ['数据表', '柱状图']) {
+    for (const label of ['折线图', '柱状图']) {
       await userEvent.click(canvas.getByRole('combobox', { name: '图表类型' }));
       await userEvent.click(
         await page.findByRole('option', { name: label, exact: true }),
@@ -512,63 +519,66 @@ export const MultiSeries: Story = {
     await expect(
       canvas.getByRole('combobox', { name: '柱状图方向' }),
     ).toHaveTextContent('横向');
-    await expect(canvas.getByRole('application')).toBeVisible();
-    await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
-      count!,
-    );
     await userEvent.click(
       canvas.getByRole('tab', { name: '数据表', exact: true }),
     );
     await expect(canvas.getByRole('table')).toBeVisible();
-    await waitFor(() => expect(canvas.queryByRole('application')).toBeNull());
     const tabs = canvas
       .getByRole('tablist', { name: '分析结果展示方式' })
       .getBoundingClientRect();
-    const resultBounds = result.getBoundingClientRect();
+    const bounds = result.getBoundingClientRect();
     await expect(
-      Math.abs(
-        (tabs.left + tabs.right) / 2 -
-          (resultBounds.left + resultBounds.right) / 2,
-      ),
+      Math.abs((tabs.left + tabs.right - bounds.left - bounds.right) / 2),
     ).toBeLessThan(2);
     await userEvent.keyboard('{ArrowLeft}');
     await expect(
       canvas.getByRole('tab', { name: '分析', exact: true }),
     ).toHaveAttribute('aria-selected', 'true');
-    await waitFor(() => expect(canvas.getByRole('application')).toBeVisible());
-    await waitFor(() => expect(canvas.queryByRole('table')).toBeNull());
-    await userEvent.keyboard('{ArrowRight}');
-    await expect(canvas.getByRole('table')).toBeVisible();
-    const summary = canvas.getByLabelText('编辑维度 1');
-    await expect(summary).toHaveAttribute('aria-expanded', 'false');
+    await expect(await canvas.findByRole('application')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '配置查询', exact: true }),
+    );
+    const sheet = await page.findByRole('dialog', { name: '配置查询' });
+    await expect(sheet).toHaveAttribute('data-slot', 'sheet-content');
+    await expect(
+      Math.abs(
+        sheet.getBoundingClientRect().right -
+          canvasElement.ownerDocument.documentElement.clientWidth,
+      ),
+    ).toBeLessThan(2);
+    const query = within(sheet);
+    const summary = query.getByLabelText('编辑维度 1');
     await userEvent.click(summary);
     const title = page.getByRole('textbox', { name: '维度 1 名称' });
-    await expect(title).toBeVisible();
-    await expect(configuration.getBoundingClientRect().height).toBe(
-      configurationHeight,
-    );
     await userEvent.clear(title);
     await userEvent.type(title, '销售地区');
-    await userEvent.click(summary);
-    await waitFor(() => expect(title).not.toBeVisible());
-    await expect(summary).toHaveTextContent('销售地区');
-    await userEvent.click(summary);
-    await expect(title).toHaveValue('销售地区');
+    await userEvent.click(
+      page.getByRole('button', { name: '完成编辑', exact: true }),
+    );
+    await userEvent.click(
+      query.getByRole('button', { name: '查看结果', exact: true }),
+    );
+    await expect(
+      canvas.getByRole('button', { name: '展开查询配置' }),
+    ).toHaveTextContent('销售地区');
+    await userEvent.click(canvas.getByRole('button', { name: '展开查询配置' }));
+    await userEvent.click(query.getByLabelText('编辑维度 1'));
+    await expect(
+      page.getByRole('textbox', { name: '维度 1 名称' }),
+    ).toHaveValue('销售地区');
     await userEvent.clear(title);
     await userEvent.type(title, '地区');
-    await userEvent.click(summary);
-    await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
-      count!,
-    );
-    await userEvent.click(canvas.getByRole('button', { name: '配置分析' }));
-    await expect(configuration).not.toBeVisible();
-    const querySummary = canvas.getByRole('button', { name: '展开查询配置' });
-    await expect(querySummary).toHaveTextContent('按 地区、销售渠道 分组');
-    await userEvent.click(querySummary);
-    await expect(configuration).toBeVisible();
     await userEvent.click(
-      canvas.getByRole('tab', { name: '分析', exact: true }),
+      page.getByRole('button', { name: '完成编辑', exact: true }),
     );
+    await userEvent.click(
+      query.getByRole('button', { name: '查看结果', exact: true }),
+    );
+    await userEvent.click(
+      canvas.getByRole('button', { name: '折叠可视化配置' }),
+    );
+    await expect(visual).toHaveAttribute('aria-expanded', 'false');
+    await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(count);
   },
 };
 export const TimeTrend: Story = {
@@ -594,6 +604,9 @@ export const Donut: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(await canvas.findByRole('application')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '可视化配置', exact: true }),
+    );
     const legend = within(canvas.getByRole('list', { name: '分组数值与占比' }));
     await expect(legend.getByText('300,000', { exact: true })).toBeVisible();
     await expect(legend.getByText('47.6%', { exact: true })).toBeVisible();
@@ -640,6 +653,9 @@ export const ExtraDimensions: Story = {
   args: { scenario: 'dimensions' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole('tab', { name: '数据表', exact: true }),
+    );
     await expect(
       await canvas.findByRole('cell', { name: '订阅' }),
     ).toBeVisible();
@@ -651,9 +667,15 @@ export const MixedUnits: Story = {
   args: { scenario: 'units' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole('tab', { name: '数据表', exact: true }),
+    );
     await expect(
       await canvas.findByRole('cell', { name: '500' }),
     ).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('tab', { name: '分析', exact: true }),
+    );
     await expect(canvas.getAllByText(/指标单位不兼容/).length).toBeGreaterThan(
       0,
     );
@@ -664,24 +686,42 @@ export const BoundedTable: Story = {
   args: { scenario: 'limit' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole('tab', { name: '数据表', exact: true }),
+    );
     await expect(
       await canvas.findByRole('cell', { name: 'SKU-001' }),
     ).toBeVisible();
     await expect(canvas.getAllByRole('row')).toHaveLength(101);
     await userEvent.click(canvas.getByRole('button', { name: '下一页' }));
-    await expect(canvas.getByRole('cell', { name: 'SKU-101' })).toBeVisible();
+    await expect(
+      canvas.getByRole('cell', { name: 'SKU-101', hidden: true }),
+    ).toHaveTextContent('SKU-101');
     await userEvent.click(
-      canvas.getByRole('button', { name: '配置分析', exact: true }),
+      canvas.getByRole('button', { name: '配置查询', exact: true }),
     );
-    await userEvent.click(canvas.getByText('高级设置', { exact: true }));
-    const limit = canvas.getByRole('textbox', { name: '最多结果行数' });
+    const query = within(
+      await within(canvasElement.ownerDocument.body).findByRole('dialog', {
+        name: '配置查询',
+      }),
+    );
+    await userEvent.click(query.getByText('高级设置', { exact: true }));
+    const limit = query.getByRole('textbox', { name: '最多结果行数' });
     await userEvent.clear(limit);
     await userEvent.type(limit, '601');
-    await expect(canvas.getByRole('cell', { name: 'SKU-101' })).toBeVisible();
+    await expect(
+      canvas.getByRole('cell', { name: 'SKU-101', hidden: true }),
+    ).toHaveTextContent('SKU-101');
     await userEvent.clear(limit);
     await userEvent.type(limit, '600');
-    await expect(canvas.getByRole('cell', { name: 'SKU-101' })).toBeVisible();
+    await expect(
+      canvas.getByRole('cell', { name: 'SKU-101', hidden: true }),
+    ).toHaveTextContent('SKU-101');
 
+    await userEvent.click(
+      query.getByRole('button', { name: '查看结果', exact: true }),
+    );
+    await expect(canvas.getByRole('cell', { name: 'SKU-101' })).toBeVisible();
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
       '查询次数：1',
     );
@@ -721,6 +761,9 @@ export const SavedLayout: Story = {
     const canvas = within(canvasElement),
       page = within(canvasElement.ownerDocument.body);
     await expect(await canvas.findByRole('application')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '可视化配置', exact: true }),
+    );
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
       '查询次数：1',
     );
@@ -748,6 +791,9 @@ export const SavedLayout: Story = {
       ),
     );
     await expect(await canvas.findByRole('application')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '可视化配置', exact: true }),
+    );
     await expect(
       canvas.getByRole('combobox', { name: '图表类型' }),
     ).toHaveTextContent('面积图');
@@ -785,7 +831,7 @@ export const ZoomedLongTitle: Story = {
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
       window.innerWidth + 1,
     );
-    for (const name of ['配置分析', '运行分析']) {
+    for (const name of ['配置查询', '运行分析']) {
       const button = canvas.getByRole('button', { name, exact: true });
       await expect(button).toBeVisible();
       const box = button.getBoundingClientRect();
@@ -810,6 +856,9 @@ export const SmallCounts: Story = {
     const canvas = within(canvasElement),
       page = within(canvasElement.ownerDocument.body);
     await expect(await canvas.findByRole('application')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '可视化配置', exact: true }),
+    );
     const verify = (axis: string) => {
       const labels = [
         ...canvasElement.querySelectorAll(
@@ -834,6 +883,9 @@ export const SignedStacks: Story = {
     const canvas = within(canvasElement),
       page = within(canvasElement.ownerDocument.body);
     await expect(await canvas.findByRole('application')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '可视化配置', exact: true }),
+    );
     const negativeTicks = (axis: string) =>
       [
         ...canvasElement.querySelectorAll(`.recharts-${axis}-tick-labels text`),
@@ -859,6 +911,9 @@ export const MetricRoundTrip: Story = {
     const canvas = within(canvasElement),
       page = within(canvasElement.ownerDocument.body);
     await expect(await canvas.findByRole('application')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '可视化配置', exact: true }),
+    );
     for (const layout of ['饼图', '柱状图']) {
       await userEvent.click(canvas.getByRole('combobox', { name: '图表类型' }));
       await userEvent.click(
@@ -901,12 +956,12 @@ export const EmbeddedConfiguration: Story = {
       page = within(canvasElement.ownerDocument.body);
     await expect(await canvas.findByRole('application')).toBeVisible();
     const trigger = canvas.getByRole('button', {
-      name: '配置分析',
+      name: '配置查询',
       exact: true,
     });
     await userEvent.click(trigger);
     const dialog = within(
-      await page.findByRole('dialog', { name: '配置分析' }),
+      await page.findByRole('dialog', { name: '配置查询' }),
     );
     const summary = dialog.getByLabelText('编辑维度 1');
     await userEvent.click(summary);
@@ -927,11 +982,11 @@ export const EmbeddedConfiguration: Story = {
     const container = canvas.getByTestId('embedded-analysis-container');
     container.style.width = '100%';
     await waitFor(() =>
-      expect(canvas.getByLabelText('分析配置面板')).toBeInTheDocument(),
+      expect(page.getByLabelText('分析配置面板')).toBeInTheDocument(),
     );
     await userEvent.click(trigger);
-    await expect(canvas.getByLabelText('分析配置面板')).toBeVisible();
-    await userEvent.click(canvas.getByLabelText('编辑指标 1'));
+    await expect(page.getByLabelText('分析配置面板')).toBeVisible();
+    await userEvent.click(page.getByLabelText('编辑指标 1'));
     await waitFor(() =>
       expect(
         page
@@ -943,9 +998,14 @@ export const EmbeddedConfiguration: Story = {
     await expect(await page.findByRole('listbox')).toBeVisible();
     // Resize without a pointer event: outside-click dismissal cannot hide an orphaned menu for us.
     container.style.width = '600px';
-    await waitFor(() => expect(page.queryByRole('listbox')).toBeNull());
+    await expect(page.getByRole('listbox')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.keyboard('{Escape}');
     await waitFor(() =>
       expect(page.queryByRole('dialog', { name: '指标设置' })).toBeNull(),
+    );
+    await userEvent.click(
+      page.getByRole('button', { name: '查看结果', exact: true }),
     );
     await userEvent.click(trigger);
     await userEvent.click(page.getByLabelText('编辑指标 1'));
@@ -959,4 +1019,48 @@ export const EmbeddedConfiguration: Story = {
 export const AnyRepresentative: Story = {
   name: '商品销售：按 ID 分组，以名称展示',
   args: { scenario: 'representative' },
+};
+
+export const TableFirst: Story = {
+  name: '默认数据表 → 选择展示方式',
+  args: { scenario: 'multi', startWithTable: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement),
+      page = within(canvasElement.ownerDocument.body);
+    await expect(await canvas.findByRole('table')).toBeVisible();
+    await expect(
+      canvas.getByRole('tab', { name: '数据表', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await expect(
+      canvas.queryByRole('combobox', { name: '图表类型' }),
+    ).toBeNull();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '可视化配置', exact: true }),
+    );
+    await expect(
+      canvas.queryByRole('combobox', { name: '横轴维度' }),
+    ).toBeNull();
+    await userEvent.click(canvas.getByRole('combobox', { name: '图表类型' }));
+    await expect(
+      page.queryByRole('option', { name: '数据表', exact: true }),
+    ).toBeNull();
+    await userEvent.click(
+      await page.findByRole('option', { name: '柱状图', exact: true }),
+    );
+    await expect(await canvas.findByRole('application')).toBeVisible();
+    await expect(
+      canvas.getByRole('combobox', { name: '横轴维度' }),
+    ).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('tab', { name: '数据表', exact: true }),
+    );
+    await expect(canvas.getByRole('table')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('tab', { name: '分析', exact: true }),
+    );
+    await expect(await canvas.findByRole('application')).toBeVisible();
+    await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
+      '查询次数：1',
+    );
+  },
 };
