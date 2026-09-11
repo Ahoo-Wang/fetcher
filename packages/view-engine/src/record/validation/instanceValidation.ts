@@ -71,9 +71,12 @@ export function validateViewInstance(
     if (typeof config.limit !== 'number' && typeof config.limit !== 'string')
       throw new Error('分析结果行数必须是数字或文本草稿');
     assertObject(config.presentation, '分析展示配置');
+    const componentIds = new Set<string>();
     for (const item of [...config.dimensions, ...config.metrics]) {
       assertObject(item, '分析组件');
       assertText(item.id, '组件 ID');
+      if (componentIds.has(item.id)) throw new Error('组件 ID 重复');
+      componentIds.add(item.id);
       if (typeof item.alias !== 'string' || typeof item.title !== 'string')
         throw new Error('分析组件名称结构无效');
       assertObject(item.component, '分析组件引用');

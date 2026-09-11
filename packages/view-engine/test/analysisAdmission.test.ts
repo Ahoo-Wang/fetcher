@@ -293,3 +293,14 @@ it.each(
       }),
   ).toThrow(/roles/);
 });
+
+it.each(['metrics', 'dimensions'] as const)(
+  'rejects duplicate component identities across %s at structural admission',
+  kind => {
+    const value = structuredClone(instance);
+    value.config[kind].push({ ...value.config.metrics[0], alias: 'other' });
+    expect(() =>
+      validateViewInstance(value, definition, undefined, false),
+    ).toThrow(/ID.*重复/);
+  },
+);

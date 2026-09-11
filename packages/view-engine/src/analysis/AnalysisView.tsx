@@ -237,7 +237,9 @@ function AnalysisConfiguration({
                     />
                   )}
                   value={instance.config.filters}
-                  appliedValue={session.baseline.config.filters}
+                  appliedValue={
+                    (session.result?.config ?? session.baseline.config).filters
+                  }
                   fields={definition.fields}
                   timeZone={definition.timeZone}
                   allowedOperators={definition.allowedOperators}
@@ -257,6 +259,7 @@ function AnalysisConfiguration({
           <AnalysisEditor
             key={instance.id}
             value={instance.config}
+            appliedValue={session.result?.config ?? session.baseline.config}
             context={context}
             errors={session.validation}
             visible={visible}

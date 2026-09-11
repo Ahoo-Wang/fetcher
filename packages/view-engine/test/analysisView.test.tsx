@@ -951,3 +951,47 @@ it('recovers a failed chart after correcting presentation without rerunning', as
     error.mockRestore();
   }
 });
+
+it('undoes filter edits to the last successful execution rather than the saved configuration', async () => {
+  const { engine } = setup();
+  try {
+    await engine.load();
+    const commands = engine.analysis('totals');
+    const filterB = createFilterConfiguration({
+      id: 'b',
+      component: { name: 'builtin' },
+      operator: FilterOperator.GT,
+      field: 'amount',
+      props: { value: 10 },
+    });
+    commands.edit(config => ({ ...config, filters: filterB }));
+    await commands.run();
+    render(<AnalysisView engine={engine} />);
+    fireEvent.click(screen.getByRole('button', { name: '配置分析' }));
+    fireEvent.click(screen.getByText('筛选条件', { exact: true }));
+    expect(
+      (
+        screen.getByRole('button', {
+          name: '撤销筛选修改',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    act(() =>
+      commands.edit(config => ({
+        ...config,
+        filters: createFilterConfiguration({
+          id: 'c',
+          component: { name: 'builtin' },
+          operator: FilterOperator.MATCH_ALL,
+          props: {},
+        }),
+      })),
+    );
+    fireEvent.click(screen.getByRole('button', { name: '撤销筛选修改' }));
+    expect(
+      engine.getSnapshot().sessions.totals.instance.config.filters,
+    ).toEqual(filterB);
+  } finally {
+    engine.dispose();
+  }
+});

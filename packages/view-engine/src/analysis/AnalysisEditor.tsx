@@ -18,7 +18,14 @@ import {
   AggregationExpressionType,
   SortDirection,
 } from '@ahoo-wang/fetcher-wow';
-import { Component, useId, useState, type ReactNode } from 'react';
+import {
+  Component,
+  useId,
+  useState,
+  useRef,
+  useLayoutEffect,
+  type ReactNode,
+} from 'react';
 import type { FilterExtensions } from '../filter/filterReactTypes.js';
 import type { AnalysisExtensions } from './analysisReactTypes.js';
 import { ChevronDownIcon, GripVerticalIcon, PlusIcon } from 'lucide-react';
@@ -46,6 +53,8 @@ import type {
 } from './analysisModel.js';
 export interface AnalysisEditorProps {
   value: DeepReadonly<AnalysisViewConfig>;
+  /** Last successfully applied configuration; used as the element filter undo baseline. */
+  appliedValue?: DeepReadonly<AnalysisViewConfig>;
   context: AnalysisCompileContext;
   onChange(value: AnalysisViewConfig): void;
   disabled?: boolean;
@@ -190,10 +199,40 @@ function ComponentList({
     orientation: 'horizontal',
     disabled,
   });
+  const latest = useRef<{
+    items: typeof items;
+    change: typeof change;
+    disabled: typeof disabled;
+  } | null>(null);
+  useLayoutEffect(() => {
+    latest.current = { items, change, disabled };
+    return () => {
+      latest.current = null;
+    };
+  });
+  function supportsGroup(
+    field: AnalysisCompileContext['fields'][number],
+    group: Group,
+  ) {
+    if (group === Group.TERMS)
+      return ['string', 'number', 'boolean'].includes(field.type ?? '');
+    if (group === Group.HISTOGRAM) return field.type === 'number';
+    return (
+      (field.type === 'date' || field.type === 'datetime') &&
+      !!context.timeZone &&
+      !!capabilityByField.get(field.field)?.dateUnits?.length
+    );
+  }
   const choices =
     kind === 'dimensions'
       ? [
-          ...new Set(context.capability.fields.flatMap(field => field.groups)),
+          ...new Set(
+            context.fields.flatMap(field =>
+              (capabilityByField.get(field.field)?.groups ?? []).filter(group =>
+                supportsGroup(field, group),
+              ),
+            ),
+          ),
         ].map(group => groupNames[group])
       : [
           ...(context.capability.count ? ['count'] : []),
@@ -267,7 +306,9 @@ function ComponentList({
                       : component === 'any'
                         ? !!allowed?.any
                         : allowed?.groups.some(
-                            group => groupNames[group] === component,
+                            group =>
+                              groupNames[group] === component &&
+                              supportsGroup(field, group),
                           );
                   })
                 : [];
@@ -600,17 +641,33 @@ function ComponentList({
                                     context={{ ...context, role }}
                                     disabled={disabled}
                                     errors={issues}
-                                    onChange={next =>
-                                      update(index, {
-                                        ...next,
-                                        id: item.id,
-                                        alias: item.alias,
-                                        component: {
-                                          ...next.component,
-                                          name: component,
-                                        },
-                                      })
-                                    }
+                                    onChange={next => {
+                                      const current = latest.current;
+                                      if (!current || current.disabled) return;
+                                      const target = current.items.find(
+                                        candidate => candidate.id === item.id,
+                                      );
+                                      if (
+                                        !target ||
+                                        target.component.name !== component
+                                      )
+                                        return;
+                                      current.change(
+                                        current.items.map(candidate =>
+                                          candidate.id === item.id
+                                            ? {
+                                                ...next,
+                                                id: target.id,
+                                                alias: target.alias,
+                                                component: {
+                                                  ...next.component,
+                                                  name: component,
+                                                },
+                                              }
+                                            : candidate,
+                                        ),
+                                      );
+                                    }}
                                   />
                                 </AnalysisEditorBoundary>
                               )}

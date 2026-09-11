@@ -22,6 +22,7 @@ import type { AnalysisEditorProps } from './AnalysisEditor.js';
 import type { AnalysisViewConfig } from './analysisModel.js';
 export function AnalysisScopeEditor({
   value,
+  appliedValue,
   context,
   onChange,
   disabled,
@@ -104,6 +105,11 @@ export function AnalysisScopeEditor({
           {value.scope?.filters[index] ? (
             <FilterPanel
               value={value.scope.filters[index]}
+              appliedValue={
+                appliedValue?.scope?.id === scope.id
+                  ? appliedValue.scope.filters[index]
+                  : undefined
+              }
               fields={element.fields}
               timeZone={context.timeZone}
               allowedOperators={context.allowedOperators}

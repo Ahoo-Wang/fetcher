@@ -1165,3 +1165,143 @@ it('reserves automatic sort slots before adding a dimension', () => {
     true,
   );
 });
+
+it.each([
+  { type: 'datetime', group: AggregationGroupType.DATE_HISTOGRAM },
+  { type: 'string', group: AggregationGroupType.HISTOGRAM },
+  { type: 'datetime', group: AggregationGroupType.TERMS },
+] as const)(
+  'does not offer impossible builtin grouping: %j',
+  ({ type, group }) => {
+    render(
+      <AnalysisEditor
+        value={initial}
+        onChange={vi.fn()}
+        context={{
+          fields: [{ field: 'x', label: 'X', type }],
+          capability: {
+            fields: [{ field: 'x', groups: [group], functions: [] }],
+            count: true,
+          },
+        }}
+      />,
+    );
+    expect(
+      (screen.getByRole('button', { name: '添加维度' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  },
+);
+
+it('targets delayed custom changes by live identity and discards removed or replaced targets', () => {
+  let delayed: (() => void) | undefined;
+  const changed = vi.fn();
+  const registration: AnalysisRegistration = {
+    roles: ['metric'],
+    compile: value => aggregation.count(value.alias),
+    component: ({ value, onChange }) => (
+      <button
+        onClick={() => {
+          delayed = () =>
+            onChange({
+              ...cloneSnapshot<AnalysisComponentConfig>(value),
+              title: 'Updated',
+            });
+        }}
+      >
+        delay
+      </button>
+    ),
+  };
+  const first = { ...initial.metrics[0], component: { name: 'custom' } };
+  const second = { ...first, id: 'second', alias: 'second', title: 'Second' };
+  const props = {
+    context,
+    extensions: { analysis: { custom: registration } },
+    onChange: changed,
+  };
+  const view = render(
+    <AnalysisEditor
+      {...props}
+      value={{ ...initial, metrics: [first, second] }}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '编辑指标 1' }));
+  fireEvent.click(screen.getByRole('button', { name: 'delay' }));
+  view.rerender(
+    <AnalysisEditor
+      {...props}
+      value={{ ...initial, limit: 25, metrics: [second, first] }}
+    />,
+  );
+  delayed!();
+  expect(changed.mock.lastCall![0]).toMatchObject({
+    limit: 25,
+    metrics: [
+      { id: 'second', title: 'Second' },
+      { id: 'count', title: 'Updated' },
+    ],
+  });
+  changed.mockClear();
+  view.rerender(
+    <AnalysisEditor {...props} value={{ ...initial, metrics: [second] }} />,
+  );
+  delayed!();
+  expect(changed).not.toHaveBeenCalled();
+  view.rerender(<AnalysisEditor {...props} value={initial} />);
+  delayed!();
+  expect(changed).not.toHaveBeenCalled();
+  view.unmount();
+  delayed!();
+  expect(changed).not.toHaveBeenCalled();
+});
+
+it('uses the matching executed element filter as its undo baseline', () => {
+  const changed = vi.fn();
+  const applied = {
+    ...initial,
+    scope: { id: 'lines', filters: [initial.filters] },
+  };
+  const value = {
+    ...applied,
+    scope: {
+      id: 'lines',
+      filters: [
+        {
+          ...initial.filters,
+          root: {
+            ...initial.filters.root,
+            id: 'changed',
+            operator: FilterOperator.MATCH_NONE,
+          },
+        },
+      ],
+    },
+  };
+  render(
+    <AnalysisEditor
+      value={value}
+      appliedValue={applied}
+      onChange={changed}
+      context={{
+        ...context,
+        capability: {
+          ...context.capability,
+          scopes: [
+            {
+              id: 'lines',
+              label: 'Lines',
+              fields: [],
+              capability: context.capability,
+              elements: [{ path: 'lines', fields: [] }],
+            },
+          ],
+        },
+      }}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '撤销筛选修改' }));
+  expect(changed.mock.lastCall![0].scope.filters).toEqual(
+    applied.scope.filters,
+  );
+});
