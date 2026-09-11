@@ -526,6 +526,20 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
     </div>
   );
 }
+// Missing-report lookups must not pretty-print the entire measured DOM on each retry.
+function waitForReport(container: HTMLElement) {
+  return waitFor(
+    () => {
+      const output = container.querySelector<HTMLElement>(
+        '[data-testid="analysis-performance-report"]',
+      );
+      if (!output) throw new Error('等待性能验收报告');
+      return output;
+    },
+    { timeout: 30000 },
+  );
+}
+
 const meta = {
   id: 'view-engine-分析性能验收',
   title: 'View Engine/分析视图/性能验收',
@@ -547,11 +561,7 @@ export const LocalPerformance: Story = {
       { timeout: 15000 },
     );
     await userEvent.click(canvas.getByRole('button', { name: '开始性能验收' }));
-    const output = await canvas.findByTestId(
-      'analysis-performance-report',
-      {},
-      { timeout: 30000 },
-    );
+    const output = await waitForReport(canvasElement);
     const report = JSON.parse(output.textContent!);
     console.info('analysis-performance-report', JSON.stringify(report));
     await expect(report.error).toBeUndefined();
@@ -576,11 +586,7 @@ export const LargeResultCancellation: Story = {
       { timeout: 15000 },
     );
     await userEvent.click(canvas.getByRole('button', { name: '开始压力验收' }));
-    const output = await canvas.findByTestId(
-      'analysis-performance-report',
-      {},
-      { timeout: 30000 },
-    );
+    const output = await waitForReport(canvasElement);
     const report = JSON.parse(output.textContent!);
     console.info('analysis-performance-report', JSON.stringify(report));
     await expect(report.error).toBeUndefined();

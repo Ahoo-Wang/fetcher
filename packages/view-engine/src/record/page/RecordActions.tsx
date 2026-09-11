@@ -32,12 +32,20 @@ export function RecordActions({
   extensions?: ViewExtensions;
   refresh(): Promise<void>;
 }) {
-  const { baseline, result } = session;
+  const { id, definitionId, title, scope, revision } = session.instance;
+  const config = session.result?.config ?? session.instance.config;
   const instance = useMemo(
-    () => ({ ...baseline, config: result?.config ?? baseline.config }),
-    [baseline, result?.config],
+    () => ({
+      id,
+      definitionId,
+      title,
+      scope,
+      revision,
+      kind: 'record' as const,
+      config,
+    }),
+    [id, definitionId, title, scope, revision, config],
   );
-  const id = instance.id;
   const querying = session.queryStatus === 'loading';
   const reference = definition.record.recordActions?.[kind];
   if (!reference) return null;

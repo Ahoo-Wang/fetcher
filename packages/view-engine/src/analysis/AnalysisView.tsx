@@ -485,8 +485,11 @@ export function AnalysisView({
         sort={instance.config.sort}
         stale={stale}
         querying={querying}
+        sortDisabled={!session.filterValid}
         onSortChange={sort =>
           run(async () => {
+            if (!engine.getSnapshot().sessions[instance.id]?.filterValid)
+              return;
             commands.edit(config => ({ ...config, sort }));
             await commands.run();
           })

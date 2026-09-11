@@ -154,7 +154,7 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L38) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L29) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
-| `AnalysisTable`                   | [AnalysisTable.tsx:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L43)                           |
+| `AnalysisTable`                   | [AnalysisTable.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L45)                           |
 | `AnalysisView`                    | [AnalysisView.tsx:274](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L274)                           |
 | `AnalysisViewProps`               | [AnalysisView.tsx:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L136)                           |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |

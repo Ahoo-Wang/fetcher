@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { filter, FilterOperator, SortDirection } from '@ahoo-wang/fetcher-wow';
 import {
   act,
   cleanup,
@@ -26,7 +26,10 @@ import {
   createFilterConfiguration,
   newFilterNode,
 } from '../src/filter/filterCore.js';
-import type { CellRendererProps } from '../src/record/recordReactTypes.js';
+import type {
+  CellRendererProps,
+  GlobalActionsRendererProps,
+} from '../src/record/recordReactTypes.js';
 import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { ViewPage } from './fixtures/OwnedViewPage.js';
@@ -421,6 +424,64 @@ it('preserves unconfirmed text and invalidity across instance switches', async (
       '',
     );
     expect(screen.queryByRole('button', { name: '移除ORDER-001' })).toBeNull();
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('keeps live record titles in renderers while retaining the executed query config', async () => {
+  const { host, paged } = setup();
+  const Cell = vi.fn(({ value }: CellRendererProps) => (
+    <span>{String(value)}</span>
+  ));
+  const Actions = vi.fn(({ instance }: GlobalActionsRendererProps) => (
+    <span>{instance.title} Actions</span>
+  ));
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: {
+      ...definition,
+      fields: definition.fields.map(field => ({
+        ...field,
+        cellRenderer: { name: 'inspect' },
+      })),
+      record: {
+        ...definition.record!,
+        recordActions: {
+          global: { name: 'inspect' },
+          toolbar: { name: 'inspect' },
+        },
+      },
+    },
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host,
+  });
+  try {
+    await engine.load();
+    render(
+      <ViewPageContent
+        engine={engine}
+        extensions={{
+          cells: { inspect: Cell },
+          globalActions: { inspect: Actions },
+          toolbarActions: { inspect: Actions },
+        }}
+      />,
+    );
+    await screen.findByRole('cell', { name: '42' });
+    act(() => {
+      engine.record(instance.id).edit(config => ({
+        ...config,
+        sort: [{ field: 'amount', direction: SortDirection.DESC }],
+      }));
+      engine.setTitle('当前名称');
+    });
+    expect(screen.getByRole('table', { name: '当前名称' })).toBeTruthy();
+    expect(Cell.mock.lastCall?.[0].instance.title).toBe('当前名称');
+    expect(Cell.mock.lastCall?.[0].instance.config.sort).toEqual([]);
+    expect(Actions.mock.lastCall?.[0].instance.title).toBe('当前名称');
+    expect(Actions.mock.lastCall?.[0].instance.config.sort).toEqual([]);
+    expect(paged).toHaveBeenCalledOnce();
   } finally {
     engine.dispose();
   }

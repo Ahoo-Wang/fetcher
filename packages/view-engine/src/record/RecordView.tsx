@@ -104,19 +104,38 @@ export function RecordView({
   const current = id ? state.sessions[id] : undefined;
   const session = current?.kind === 'record' ? current : undefined;
   const selectionCount = session?.selectedRowKeys.length ?? 0;
-  const baseline = session?.baseline;
-  const resultConfig = session?.result?.config;
+  const {
+    id: instanceId,
+    definitionId,
+    title,
+    scope,
+    revision,
+  } = session?.instance ?? {};
+  const queryConfig = session?.result?.config ?? session?.instance.config;
   const presentation = session?.instance.config.presentation;
-  // Data renderers consume the executed scope; presentation edits remain immediate.
+  // Keep live metadata without invalidating rendered records for query-only drafts.
   const resultInstance = useMemo(
     () =>
-      baseline && presentation
+      instanceId !== undefined && queryConfig && presentation
         ? {
-            ...baseline,
-            config: { ...(resultConfig ?? baseline.config), presentation },
+            id: instanceId,
+            definitionId: definitionId!,
+            title: title!,
+            scope: scope!,
+            revision: revision!,
+            kind: 'record' as const,
+            config: { ...queryConfig, presentation },
           }
         : undefined,
-    [baseline, resultConfig, presentation],
+    [
+      instanceId,
+      definitionId,
+      title,
+      scope,
+      revision,
+      queryConfig,
+      presentation,
+    ],
   );
   useEffect(() => {
     if (!selectable && id && selectionCount)

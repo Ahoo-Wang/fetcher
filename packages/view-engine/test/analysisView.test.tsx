@@ -20,7 +20,11 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { AggregationFunction, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  AggregationFunction,
+  AggregationGroupType,
+  FilterOperator,
+} from '@ahoo-wang/fetcher-wow';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { ViewPageContent } from '../src/view/ViewPageContent.js';
 import { AnalysisView } from '../src/analysis/AnalysisView.js';
@@ -805,6 +809,80 @@ it('renders the engine compilation without recompiling the working query', async
       engine.analysis('totals').edit(config => ({ ...config, limit: 50 })),
     );
     expect(compileAnalysis).toHaveBeenCalledTimes(1);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('disables result sorting while an extension holds invalid filter input', async () => {
+  const definition: ViewDefinition = {
+    id: 'grouped',
+    title: 'Grouped',
+    sourceId: 'orders',
+    fields: [{ field: 'state', label: '状态', type: 'string' }],
+    analysis: {
+      count: true,
+      fields: [
+        { field: 'state', groups: [AggregationGroupType.TERMS], functions: [] },
+      ],
+    },
+  };
+  const instance: AnalysisViewInstance = {
+    id: 'grouped',
+    definitionId: definition.id,
+    title: 'Grouped',
+    kind: 'analysis',
+    revision: '1',
+    scope: { type: 'personal' },
+    config: {
+      filters: createFilterConfiguration({
+        id: 'all',
+        component: { name: 'builtin' },
+        operator: FilterOperator.MATCH_ALL,
+        props: {},
+      }),
+      dimensions: [
+        {
+          id: 'state',
+          alias: 'state',
+          title: '状态',
+          field: 'state',
+          component: { name: 'terms' },
+          props: {},
+        },
+      ],
+      metrics: [
+        {
+          id: 'n',
+          alias: 'n',
+          title: '数量',
+          component: { name: 'count' },
+          props: {},
+        },
+      ],
+      sort: [],
+      limit: 100,
+      presentation: { layout: 'table', columns: [] },
+    },
+  };
+  const aggregate = vi.fn().mockResolvedValue([{ state: 'paid', n: 2 }]);
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host: { resolveSource: () => ({ aggregate }) },
+  });
+  try {
+    await engine.load();
+    render(<AnalysisView engine={engine} />);
+    act(() => engine.analysis(instance.id).setFilterValidity(false));
+    const sort = screen.getByRole('button', { name: '排序数量' });
+    expect((sort as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(sort);
+    expect(
+      engine.getSnapshot().sessions[instance.id].instance.config.sort,
+    ).toEqual([]);
+    expect(aggregate).toHaveBeenCalledOnce();
   } finally {
     engine.dispose();
   }

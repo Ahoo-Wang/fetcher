@@ -195,6 +195,29 @@ async function axe(name) {
   }
 }
 try {
+  // Diagnostic only: distinguish runner frame cadence from an idle rendered application.
+  report.browserIdleFrames = await page.evaluate(() =>
+    Promise.race([
+      (async () => {
+        const frame = () =>
+          new Promise(resolve => requestAnimationFrame(resolve));
+        const samplesMs = [];
+        for (let index = 0; index < 30; index++) {
+          await frame();
+          const start = performance.now();
+          await frame();
+          await frame();
+          samplesMs.push(performance.now() - start);
+        }
+        const sorted = [...samplesMs].sort((a, b) => a - b);
+        return {
+          samplesMs,
+          p95Ms: sorted[Math.ceil(sorted.length * 0.95) - 1],
+        };
+      })(),
+      new Promise(resolve => setTimeout(() => resolve(null), 5000)),
+    ]),
+  );
   const base = process.env.VIEW_ENGINE_E2E_BASE_URL ?? 'http://127.0.0.1:6006';
   await page.goto(
     new URL(

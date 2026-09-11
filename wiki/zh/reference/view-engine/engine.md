@@ -39,7 +39,7 @@ export function OrderPage({
 
 ### 工作配置、已应用结果与保存
 
-快照不可变。`ViewEngineState.version` 随发布递增，会话 `editVersion` 标识工作编辑版本。`RecordSession.queryAttempt` 捕获在途查询，`RecordSession.result` 将成功行绑定到当时的 config/filter/page/cursor 和 receivedAt；`AnalysisSession.compilation` 保存当前工作配置的不可变编译结果（计划或校验错误），供引擎和界面共享，避免渲染时重复编译；`AnalysisSession.pendingQuery` 捕获在途计划。展示来源和业务动作必须使用对应结果/请求快照，不能从工作编辑推断。`ViewSession` 按 kind 区分；访问记录或分析专属字段前先收窄类型。共享字段包括 baseline、当前工作 instance、dirty、validation、writeStatus、writeError、requiresReload，以及可选 conflict。
+快照不可变。`ViewEngineState.version` 随发布递增，会话 `editVersion` 标识工作编辑版本。`RecordSession.queryAttempt` 捕获在途查询，`RecordSession.result` 将成功行绑定到当时的 config/filter/page/cursor 和 receivedAt；`AnalysisSession.compilation` 保存当前工作配置的不可变编译结果（计划或校验错误），供引擎和界面共享，避免渲染时重复编译；`AnalysisSession.pendingQuery` 捕获在途计划。展示来源和业务动作必须使用对应结果/请求快照，不能从工作编辑推断查询范围。渲染器和操作扩展使用当前实例元数据（包括未保存标题），查询配置仍绑定已执行结果。`ViewSession` 按 kind 区分；访问记录或分析专属字段前先收窄类型。共享字段包括 baseline、当前工作 instance、dirty、validation、writeStatus、writeError、requiresReload，以及可选 conflict。
 
 记录会话保留 filterDraft、filterBaseline、appliedFilter、filterPending、页码/游标、行、汇总与选择。编辑工作筛选不会改变已应用查询或记录。filterPending 表示工作筛选与已应用范围不同，本身不阻止保存。分析会话独立保留成功 result 及查询/schema 来源；后续编辑或执行失败不会把旧行标记为新结果。
 

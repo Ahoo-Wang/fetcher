@@ -39,6 +39,8 @@ export interface AnalysisTableProps {
   receivedAt?: number;
   stale?: boolean;
   querying?: boolean;
+  /** Disable query-producing sort actions while the working input is invalid. */
+  sortDisabled?: boolean;
 }
 export function AnalysisTable({
   plan,
@@ -48,6 +50,7 @@ export function AnalysisTable({
   receivedAt,
   stale,
   querying,
+  sortDisabled = false,
 }: AnalysisTableProps) {
   const [pagination, setPagination] = useState({ query: plan.query, page: 0 });
   const pageCount = Math.ceil(rows.length / 100);
@@ -100,7 +103,11 @@ export function AnalysisTable({
       }))
     : sort;
   const sortEnabled =
-    !!onSortChange && dimensions.length > 0 && !stale && !querying;
+    !!onSortChange &&
+    dimensions.length > 0 &&
+    !stale &&
+    !querying &&
+    !sortDisabled;
   function toggle(alias: string) {
     if (!sortEnabled) return;
     const current = sort.find(item => item.alias === alias);
