@@ -31,12 +31,11 @@ import {
   Maximize2Icon,
   Minimize2Icon,
 } from 'lucide-react';
-import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import type { ViewEngine } from '../engine/ViewEngine.js';
 import type { FilterExtensions } from '../filter/filterReactTypes.js';
 import { FilterPanel } from '../filter/FilterPanel.js';
 import { FilterSelect } from '../filter/FilterSelect.js';
-import { describeFilter } from '../filter/filterSummary.js';
+import { describeConfiguredFilter } from '../filter/describeConfiguredFilter.js';
 import { Button } from '../components/ui/button.js';
 import { Badge } from '../components/ui/badge.js';
 import {
@@ -433,14 +432,13 @@ export function AnalysisView({
     </Button>
   );
   const draftFilterSummary = compiled?.plan
-    ? describeFilter(
-        compiled.plan.query.filter ?? { op: FilterOperator.MATCH_ALL },
+    ? (describeConfiguredFilter(
+        instance.config.filters.root,
         definition.fields,
-        {
-          node: instance.config.filters.root,
-          timeZone: definition.timeZone,
-        },
-      ).text
+        definition.allowedOperators,
+        engine.filterCompilers,
+        definition.timeZone,
+      )?.text ?? '全部记录')
     : '筛选草稿待检查';
   const editor = (
     <OverlayScope visible={narrow ? mobileOpen : open}>
@@ -490,11 +488,13 @@ export function AnalysisView({
     scope => scope.id === result?.config.scope?.id,
   );
   const filterSummary = result
-    ? describeFilter(
-        result.plan.query.filter ?? { op: FilterOperator.MATCH_ALL },
+    ? (describeConfiguredFilter(
+        result.config.filters.root,
         definition.fields,
-        { node: result.config.filters.root, timeZone: result.plan.timeZone },
-      ).text
+        definition.allowedOperators,
+        engine.filterCompilers,
+        result.plan.timeZone,
+      )?.text ?? '全部记录')
     : '';
   const querySummary = [
     instance.config.scope
@@ -647,16 +647,15 @@ export function AnalysisView({
                       element.filter && (
                         <p key={index}>
                           元素 {index + 1}：
-                          {
-                            describeFilter(
-                              element.filter,
-                              resultScope?.elements[index]?.fields ?? [],
-                              {
-                                node: result.config.scope?.filters[index]?.root,
-                                timeZone: result.plan.timeZone,
-                              },
-                            ).text
-                          }
+                          {(result.config.scope?.filters[index]
+                            ? describeConfiguredFilter(
+                                result.config.scope.filters[index].root,
+                                resultScope?.elements[index]?.fields ?? [],
+                                definition.allowedOperators,
+                                engine.filterCompilers,
+                                result.plan.timeZone,
+                              )?.text
+                            : undefined) ?? '全部记录'}
                         </p>
                       ),
                   )}

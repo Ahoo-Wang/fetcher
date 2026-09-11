@@ -239,11 +239,7 @@ export class ViewLoader {
     const current = () =>
       this.scope.current(lifecycle) && this.scope.selection === selection;
     if (!this.store.find(id)) {
-      const previousId = this.store.getSnapshot().selectedInstanceId;
-      if (previousId !== null) this.queries.cancel(previousId);
-      if (!current()) return;
       this.store.publish({
-        selectedInstanceId: null,
         openingInstanceId: id,
         error: null,
       });
@@ -281,7 +277,9 @@ export class ViewLoader {
     const previousId = this.store.getSnapshot().selectedInstanceId;
     if (previousId === id) {
       if (this.store.getSnapshot().error !== null)
-        this.store.publish({ error: null });
+        this.store.publish({ error: null, openingInstanceId: null });
+      else if (this.store.getSnapshot().openingInstanceId !== null)
+        this.store.publish({ openingInstanceId: null });
       return;
     }
     if (previousId !== null) {

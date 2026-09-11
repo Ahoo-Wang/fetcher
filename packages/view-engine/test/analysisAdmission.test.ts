@@ -3,6 +3,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may obtain a copy at http://www.apache.org/licenses/LICENSE-2.0
  */
+import { compileAnalysis } from '../src/analysis/analysisCompiler.js';
 import { expect, it, vi } from 'vitest';
 import {
   aggregation,
@@ -302,5 +303,41 @@ it.each(['metrics', 'dimensions'] as const)(
     expect(() =>
       validateViewInstance(value, definition, undefined, false),
     ).toThrow(/ID.*重复/);
+  },
+);
+
+it.each([5, 6])(
+  'enforces the backend element limit at definition and compilation: %i',
+  depth => {
+    const scope = {
+      id: 'nested',
+      label: 'Nested',
+      fields: [],
+      capability: { fields: [], count: true },
+      elements: Array.from({ length: depth }, () => ({
+        path: 'lines',
+        fields: [],
+      })),
+    };
+    const capability = { ...definition.analysis!, scopes: [scope] };
+    const validate = () =>
+      validateViewDefinition({ ...definition, analysis: capability });
+    const result = compileAnalysis(
+      {
+        ...instance.config,
+        scope: {
+          id: scope.id,
+          filters: scope.elements.map(() => instance.config.filters),
+        },
+      },
+      { fields: definition.fields, capability },
+    );
+    if (depth === 5) {
+      expect(validate).not.toThrow();
+      expect(result.plan).toBeDefined();
+    } else {
+      expect(validate).toThrow();
+      expect(result.plan).toBeUndefined();
+    }
   },
 );

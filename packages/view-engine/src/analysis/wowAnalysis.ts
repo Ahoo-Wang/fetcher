@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { MAX_ANALYSIS_ELEMENTS } from './analysisModel.js';
 import {
   AggregationDateUnit,
   AggregationFunction,
@@ -120,7 +121,7 @@ export function adaptWowAnalysisSchema(
           caps.includes('ELEMENT_SCOPE') &&
           items?.kind === 'OBJECT' &&
           items.masked === false &&
-          chain.length < 8
+          chain.length < MAX_ANALYSIS_ELEMENTS
         )
           arrays.push({ node: items, path, absolute: fullPath });
         return;

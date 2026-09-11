@@ -161,3 +161,22 @@ it('maps the real scalar enumValues shape with typed values and leaves invalid e
   expect(result.fields[3].options).toBeUndefined();
   expect(result.fields[4].options).toBeUndefined();
 });
+
+it('limits nested element scopes to the backend five-element chain', () => {
+  let nested: Record<string, unknown> = object({
+    state: scalar(['STRING'], ['AGGREGATE_TERMS']),
+  });
+  for (let i = 0; i < 7; i++)
+    nested = object({
+      lines: {
+        kind: 'ARRAY',
+        masked: false,
+        capabilities: ['ELEMENT_SCOPE'],
+        items: nested,
+      },
+    });
+  const result = adaptWowAnalysisSchema({ model: 'SNAPSHOT', root: nested });
+  expect(result.capability.scopes?.map(scope => scope.elements.length)).toEqual(
+    [1, 2, 3, 4, 5],
+  );
+});

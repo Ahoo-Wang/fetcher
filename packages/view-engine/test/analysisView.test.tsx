@@ -995,3 +995,38 @@ it('undoes filter edits to the last successful execution rather than the saved c
     engine.dispose();
   }
 });
+
+it('uses child option labels in both draft and executed compound filter summaries', async () => {
+  const { engine } = setup();
+  try {
+    await engine.load();
+    engine.analysis('totals').edit(config => ({
+      ...config,
+      filters: createFilterConfiguration({
+        id: 'and',
+        component: { name: 'builtin' },
+        operator: FilterOperator.AND,
+        props: {},
+        operands: [
+          {
+            id: 'child',
+            component: { name: 'remote-select', options: { source: 'states' } },
+            operator: FilterOperator.EQ,
+            field: 'amount',
+            props: {
+              value: 10,
+              selectedOptions: [{ value: 10, label: '已就绪' }],
+            },
+          },
+        ],
+      }),
+    }));
+    await engine.analysis('totals').run();
+    render(<AnalysisView engine={engine} />);
+    expect(
+      screen.getAllByText(/金额 等于 已就绪/).length,
+    ).toBeGreaterThanOrEqual(2);
+  } finally {
+    engine.dispose();
+  }
+});

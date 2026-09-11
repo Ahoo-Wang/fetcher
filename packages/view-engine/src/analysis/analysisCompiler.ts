@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { MAX_ANALYSIS_ELEMENTS } from './analysisModel.js';
 import {
   aggregation,
   AggregationGroupType as Group,
@@ -266,7 +267,7 @@ export function compileAnalysis(
       )!;
       requireValue(
         scope.elements.length > 0 &&
-          scope.elements.length <= 8 &&
+          scope.elements.length <= MAX_ANALYSIS_ELEMENTS &&
           Array.isArray(config.scope.filters) &&
           config.scope.filters.length === scope.elements.length,
         'Elements 范围过滤配置无效',

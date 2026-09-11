@@ -90,7 +90,7 @@ it('rejects a definition returned for another resource and permits a corrected l
   expect(paged).toHaveBeenCalledOnce();
 });
 
-it('hides stale actions during failed remote selection while retaining its session for retry', async () => {
+it('retains the workspace during failed remote selection and allows retry', async () => {
   const load = vi
     .fn()
     .mockRejectedValueOnce(new Error('instance offline'))
@@ -105,7 +105,7 @@ it('hides stale actions during failed remote selection while retaining its sessi
     'instance offline',
   );
   expect(engine.getSnapshot().error).toBe('instance offline');
-  expect(engine.getSnapshot().selectedInstanceId).toBeNull();
+  expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
   expect(selected(engine, 'mine')).toBe(before);
   expect(engine.getSnapshot().instanceIds).not.toContain('remote');
   expect(paged).toHaveBeenCalledOnce();

@@ -159,7 +159,7 @@ it('clears failed navigation when the current valid instance is selected without
   await engine.selectInstance('mine');
   expect(engine.getSnapshot().error).toBeNull();
   expect(selected(engine).instance).toBe(session.instance);
-  expect(paged).toHaveBeenCalledTimes(2);
+  expect(paged).toHaveBeenCalledOnce();
 });
 
 it.each([undefined, '', '   '])(

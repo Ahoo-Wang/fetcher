@@ -92,7 +92,8 @@ it('does not let save-as completion cancel a newer pending navigation', async ()
   const navigating = engine.selectInstance('remote');
   write.resolve({ ...instance('created'), title: 'Copy' });
   await saving;
-  expect(engine.getSnapshot().selectedInstanceId).toBeNull();
+  expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+  expect(engine.getSnapshot().openingInstanceId).toBe('remote');
   read.resolve(instance('remote'));
   await navigating;
   expect(engine.getSnapshot().selectedInstanceId).toBe('remote');

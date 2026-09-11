@@ -67,7 +67,7 @@ it.each(['loaded', 'pending'] as const)(
       await saving;
       expect(redirected).toBeDefined();
       expect(engine.getSnapshot().selectedInstanceId).toBe(
-        navigation === 'loaded' ? 'third' : null,
+        navigation === 'loaded' ? 'third' : 'mine',
       );
       expect(engine.getSnapshot().sessions.created.queryStatus).toBe('idle');
       destination.resolve(instance('third'));

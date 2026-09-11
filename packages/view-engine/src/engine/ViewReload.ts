@@ -214,6 +214,7 @@ export class ViewReload {
         if (unverified.knownIds.has(baseline.id))
           throw new Error('另存结果没有新的实例 ID，仍需核对');
         let selectCopy =
+          this.store.getSnapshot().openingInstanceId === null &&
           this.store.getSnapshot().selectedInstanceId === id &&
           this.scope.selection === selection;
         if (selectCopy) {

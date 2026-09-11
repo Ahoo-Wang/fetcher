@@ -202,3 +202,24 @@ it('keeps the reload started synchronously by abort as the current owner', async
   first.resolve(instance());
   await initial;
 });
+
+it('retains the workspace and its in-flight query when an unknown selection fails', async () => {
+  const pending = deferred<ViewInstance>();
+  const { engine, paged } = setup({
+    host: { instance: { load: () => pending.promise } } as unknown as ViewHost,
+  });
+  await engine.load();
+  const queryResult = deferred<unknown>();
+  paged.mockImplementationOnce(() => queryResult.promise);
+  const query = engine.record('mine').refresh();
+  const opening = engine.selectInstance('missing');
+  const rejected = expect(opening).rejects.toThrow('unavailable');
+  expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+  pending.reject(new Error('unavailable'));
+  await rejected;
+  expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+  queryResult.resolve({ total: 1, list: [{ state: { id: 'retained' } }] });
+  await query;
+  expect(selected(engine).rows).toEqual([{ state: { id: 'retained' } }]);
+  engine.dispose();
+});

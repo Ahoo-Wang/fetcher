@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { MAX_ANALYSIS_ELEMENTS } from '../../analysis/analysisModel.js';
 import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
 import { validateRecordPresentationDefaults } from './presentationValidation.js';
 import { encodeViewResourceId } from '../viewServiceContract.js';
@@ -181,7 +182,7 @@ function validateAnalysisCapability(value: unknown, scoped = false) {
       if (
         !Array.isArray(scope.elements) ||
         !scope.elements.length ||
-        scope.elements.length > 8
+        scope.elements.length > MAX_ANALYSIS_ELEMENTS
       )
         throw new Error('分析范围元素链无效');
       for (const element of scope.elements) {

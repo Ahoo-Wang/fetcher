@@ -12,7 +12,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 
 | 符号                              | 声明                                                                                                                                                         |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `adaptWowAnalysisSchema`          | [wowAnalysis.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L62)                                     |
+| `adaptWowAnalysisSchema`          | [wowAnalysis.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L63)                                     |
 | `ANALYSIS_VISUALIZATIONS`         | [analysisVisualizations.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L15)               |
 | `AnalysisCapability`              | [analysisModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L64)                                 |
 | `AnalysisCompileContext`          | [analysisModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L106)                               |
@@ -28,7 +28,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `AnalysisResultValidation`        | [analysisModel.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L150)                               |
 | `AnalysisRow`                     | [analysisModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L149)                               |
 | `analysisRowKey`                  | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
-| `analysisScopeContext`            | [analysisCompiler.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L48)                           |
+| `analysisScopeContext`            | [analysisCompiler.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L49)                           |
 | `AnalysisScopeDefinition`         | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
 | `AnalysisSession`                 | [viewModel.ts:272](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L272)                                      |
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
@@ -37,8 +37,8 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `calculateRecordSummary`          | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
 | `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
 | `clearFilterValues`               | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
-| `compileAnalysis`                 | [analysisCompiler.ts:208](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L208)                         |
-| `compileAnalysisExpression`       | [analysisCompiler.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L66)                           |
+| `compileAnalysis`                 | [analysisCompiler.ts:209](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L209)                         |
+| `compileAnalysisExpression`       | [analysisCompiler.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L67)                           |
 | `compileBuiltinFilter`            | [filterBuiltinCompiler.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L172)                 |
 | `compileFilterConfiguration`      | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
 | `createFilterConfiguration`       | [filterConfigurationState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationState.ts#L42)             |
@@ -75,6 +75,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `getRecordSummaryFunctions`       | [recordPresentation.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L54)                         |
 | `getRecordSummaryMetrics`         | [recordPresentation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L21)                         |
 | `isSimpleFilter`                  | [filterNodes.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L40)                                       |
+| `MAX_ANALYSIS_ELEMENTS`           | [analysisModel.ts:156](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L156)                               |
 | `MemoryViewHost`                  | [MemoryViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L27)                                 |
 | `MemoryViewHostOptions`           | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
 | `newFilterNode`                   | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
@@ -115,7 +116,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `validateAnalysisResult`          | [analysisResult.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L23)                               |
 | `validateFilterConfiguration`     | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
-| `validateViewDefinition`          | [definitionValidation.ts:198](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L198)        |
+| `validateViewDefinition`          | [definitionValidation.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L199)        |
 | `validateViewInstance`            | [instanceValidation.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L30)              |
 | `ViewCapabilities`                | [viewModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L176)                                      |
 | `ViewCreateContext`               | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L40)                       |
@@ -142,8 +143,8 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `ViewServiceErrorCode`            | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L19)                       |
 | `ViewSession`                     | [viewModel.ts:300](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L300)                                      |
 | `ViewSource`                      | [viewModel.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L196)                                      |
-| `WowAnalysisSchema`               | [wowAnalysis.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L33)                                     |
-| `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L28)                                     |
+| `WowAnalysisSchema`               | [wowAnalysis.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L34)                                     |
+| `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L29)                                     |
 
 ## `@ahoo-wang/fetcher-view-engine/react`
 
@@ -156,8 +157,8 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L29) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L48)                           |
-| `AnalysisView`                    | [AnalysisView.tsx:278](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L278)                           |
-| `AnalysisViewProps`               | [AnalysisView.tsx:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L136)                           |
+| `AnalysisView`                    | [AnalysisView.tsx:277](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L277)                           |
+| `AnalysisViewProps`               | [AnalysisView.tsx:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L135)                           |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
 | `Calendar`                        | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                                |
 | `CellOption`                      | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                                 |

@@ -151,3 +151,6 @@ export interface AnalysisResultValidation {
   rows?: AnalysisRow[];
   errors: FilterValidationError[];
 }
+
+/** Wow aggregation contract: ordered element expansion chain limit. */
+export const MAX_ANALYSIS_ELEMENTS = 5;
