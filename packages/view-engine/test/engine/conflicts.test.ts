@@ -211,6 +211,24 @@ it('starts a new editing lifecycle when accepting remote metadata', async () => 
     expect(() => oldEditor.edit(config => ({ ...config, sort: [] }))).toThrow(
       '编辑会话已重置',
     );
+    engine.setTitle('New local edit');
+    const before = engine.getSnapshot().sessions.mine.instance;
+    for (const action of [
+      () => oldEditor.setFilterMode('advanced'),
+      () => oldEditor.setSort([]),
+      () => oldEditor.setLayout('table'),
+      () => oldEditor.setCardConfig({}),
+      () => oldEditor.setColumns([]),
+      () => oldEditor.setPageSize(20),
+      () => oldEditor.applyFilter(),
+      () => oldEditor.setPage(1),
+      () => oldEditor.nextPage(),
+      () => oldEditor.restore(),
+    ])
+      await expect(Promise.resolve().then(action)).rejects.toThrow(
+        '编辑会话已重置',
+      );
+    expect(engine.getSnapshot().sessions.mine.instance).toEqual(before);
     expect(engine.getSnapshot().sessions.mine.filterValid).toBe(true);
     expect(engine.getSnapshot().sessions.mine.queryStatus).not.toBe('loading');
     engine.record('mine').setFilterValidity(true);

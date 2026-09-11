@@ -228,7 +228,14 @@ export function compileAnalysis(
       '分析配置列表无效',
     );
     const defaults = ANALYSIS_LIMITS;
-    const limits = { ...defaults, ...context.capability.limits };
+    const limits = {
+      ...defaults,
+      ...Object.fromEntries(
+        Object.entries(context.capability.limits ?? {}).filter(
+          ([, value]) => value !== undefined,
+        ),
+      ),
+    };
     for (const name of Object.keys(defaults) as (keyof typeof defaults)[])
       requireValue(
         Number.isSafeInteger(limits[name]) &&
@@ -408,8 +415,8 @@ export function compileAnalysis(
                 'ANY 需要授权的标量字段',
               );
               valueType =
-                field.type === 'date' || field.type === 'datetime'
-                  ? 'datetime'
+                field.type === 'date'
+                  ? 'string'
                   : (field.type as AnalysisResultColumn['valueType']);
               result = aggregation.any(output.field, item.alias);
               break;
@@ -510,9 +517,11 @@ export function compileAnalysis(
       );
       const label = dimension.label;
       const before = schema.length;
+      let labelId = `${dimension.id}:label`;
+      while (ids.has(labelId)) labelId += ':label';
       compile(
         {
-          id: `${dimension.id}:label`,
+          id: labelId,
           component: { name: 'any' },
           field: label.field,
           alias: label.alias,

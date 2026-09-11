@@ -46,7 +46,9 @@ export function validateRuntimeLimits(
     maxConcurrentQueries: 4,
     maxRetainedResults: 5,
     maxConfigBytes: 262144,
-    ...input,
+    ...Object.fromEntries(
+      Object.entries(input).filter(([, value]) => value !== undefined),
+    ),
   };
   for (const [key, value] of Object.entries(limits))
     if (

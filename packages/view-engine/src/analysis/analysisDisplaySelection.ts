@@ -152,7 +152,16 @@ export function initialDisplayMapping(
   layout: AnalysisPresentation['layout'],
   rows: VisualizationResult['rows'] = [],
 ): AnalysisPresentation {
-  const chart = ANALYSIS_VISUALIZATIONS.find(item => item.value === layout)!;
+  const chart = ANALYSIS_VISUALIZATIONS.find(item => item.value === layout);
+  if (!chart)
+    return {
+      ...value,
+      layout,
+      columns: Array.isArray(value.columns)
+        ? value.columns.map(column => ({ ...column }))
+        : [],
+      metrics: value.metrics ? [...value.metrics] : undefined,
+    };
   const { candidates } = resolveMappings(layout, { plan, rows });
   const unique = (values: (string | undefined)[]) => {
     const aliases = [

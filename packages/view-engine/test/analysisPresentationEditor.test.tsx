@@ -514,3 +514,28 @@ it('shows the same implicit measures as the renderer and explains how to repair 
   );
   expect(onChange.mock.calls[0][0].metrics).toEqual(['m']);
 });
+
+it('repairs stale mappings without replacing an unknown chart type or crashing', () => {
+  const onChange = vi.fn();
+  render(
+    <AnalysisPresentationEditor
+      chartOnly
+      value={{
+        layout: 'unknown' as never,
+        columns: [{ alias: 'gone' }],
+        x: 'gone',
+        metrics: ['gone'],
+      }}
+      plan={plan}
+      onChange={onChange}
+    />,
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: '按当前结果修复失效映射' }),
+  );
+  expect(onChange).toHaveBeenCalledOnce();
+  expect(onChange.mock.lastCall![0]).toMatchObject({
+    layout: 'unknown',
+    columns: [],
+  });
+});

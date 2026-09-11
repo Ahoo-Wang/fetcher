@@ -22,6 +22,7 @@ import {
   SortDirection,
 } from '@ahoo-wang/fetcher-wow';
 import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
+import { validateAnalysisResult } from '../src/analysis/analysisResult.js';
 import { compileAnalysis } from '../src/analysis/analysisCompiler.js';
 import type {
   AnalysisViewConfig,
@@ -691,3 +692,107 @@ it.each([1, 2, 3])(
     }
   },
 );
+
+it('uses default analysis limits for explicit undefined overrides', () => {
+  expect(
+    compileAnalysis(config, {
+      ...context,
+      capability: { ...context.capability, limits: { maxGroups: undefined } },
+    }),
+  ).toEqual(compileAnalysis(config, context));
+});
+
+it.each([false, true])(
+  'accepts date-only ANY output as a string (dimension label: %s)',
+  label => {
+    const date = {
+      id: 'date',
+      component: { name: 'any' },
+      field: 'day',
+      alias: 'day',
+      title: 'Day',
+      props: {},
+    };
+    const result = compileAnalysis(
+      {
+        ...config,
+        dimensions: label
+          ? [
+              {
+                id: 'state',
+                component: { name: 'terms' },
+                field: 'state',
+                alias: 'state',
+                title: 'State',
+                props: {},
+                label: { field: 'day', alias: 'day', title: 'Day' },
+              },
+            ]
+          : [],
+        metrics: label ? config.metrics : [...config.metrics, date],
+      },
+      {
+        ...context,
+        fields: [
+          ...context.fields,
+          { field: 'day', label: 'Day', type: 'date' },
+        ],
+        capability: {
+          ...context.capability,
+          fields: [...context.capability.fields, { field: 'day', any: true }],
+        },
+      },
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.plan!.schema.find(c => c.alias === 'day')?.valueType).toBe(
+      'string',
+    );
+    expect(
+      validateAnalysisResult(
+        [
+          {
+            ...(label ? { state: 'ok' } : {}),
+            orders: 1,
+            total: 2,
+            day: '2026-09-12',
+          },
+        ],
+        result.plan!,
+      ).errors,
+    ).toEqual([]);
+  },
+);
+
+it('allocates dimension label IDs without colliding with real component IDs', () => {
+  const result = compileAnalysis(
+    {
+      ...config,
+      dimensions: [
+        {
+          id: 'state',
+          component: { name: 'terms' },
+          field: 'state',
+          alias: 'state',
+          title: 'State',
+          props: {},
+          label: { field: 'state', alias: 'name', title: 'Name' },
+        },
+      ],
+      metrics: config.metrics.map((m, i) => ({
+        ...m,
+        id: i ? 'state:label:label' : 'state:label',
+      })),
+    },
+    {
+      ...context,
+      capability: {
+        ...context.capability,
+        fields: context.capability.fields.map(f => ({ ...f, any: true })),
+      },
+    },
+  );
+  expect(result.errors).toEqual([]);
+  expect(new Set(result.plan!.schema.map(c => c.id)).size).toBe(
+    result.plan!.schema.length,
+  );
+});

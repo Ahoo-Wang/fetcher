@@ -315,3 +315,13 @@ it('re-evaluates final validation when the same snapshot is checked under a diff
     expect.objectContaining({ id: 'config-size' }),
   );
 });
+
+it('treats undefined runtime overrides as omitted without accepting null or zero', () => {
+  expect(validateRuntimeLimits({ queryTimeoutMs: undefined })).toEqual(
+    validateRuntimeLimits(),
+  );
+  for (const queryTimeoutMs of [null, 0, -1])
+    expect(() =>
+      validateRuntimeLimits({ queryTimeoutMs: queryTimeoutMs as never }),
+    ).toThrow();
+});

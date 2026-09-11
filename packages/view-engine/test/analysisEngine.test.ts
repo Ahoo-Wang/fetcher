@@ -646,6 +646,11 @@ it('rejects clearSort from an editor replaced by remote conflict resolution', as
       instance.id,
     );
     expect(() => old.clearSort()).toThrow('编辑会话已重置');
+    engine.setTitle('New local edit', instance.id);
+    expect(() => old.restore()).toThrow('编辑会话已重置');
+    expect(engine.getSnapshot().sessions.analysis.instance.title).toBe(
+      'New local edit',
+    );
     expect(engine.getSnapshot().sessions.analysis.instance.config.sort).toEqual(
       remote.config.sort,
     );

@@ -299,13 +299,15 @@ export class ViewEngine {
     const editorEpoch = this.store.analysisSession(id).editorEpoch;
     const version = this.scope.version,
       generation = this.store.generation(id);
-    const assert = () => {
+    const assert = (editing = true) => {
       if (
         !this.scope.current(version) ||
         this.store.generation(id) !== generation
       )
         throw new Error('实例命令已失效');
-      this.store.analysisSession(id);
+      const session = this.store.analysisSession(id);
+      if (editing && session.editorEpoch !== editorEpoch)
+        throw new Error('编辑会话已重置');
     };
     return {
       edit: (
@@ -314,22 +316,18 @@ export class ViewEngine {
         ) => DeepReadonly<AnalysisViewConfig>,
       ) => {
         assert();
-        if (this.store.analysisSession(id).editorEpoch !== editorEpoch)
-          throw new Error('编辑会话已重置');
         this.analysisCommands.edit(id, updater);
       },
       start: () => {
         assert();
-        if (this.store.analysisSession(id).editorEpoch !== editorEpoch)
-          throw new Error('编辑会话已重置');
         return this.analysisCommands.start(id);
       },
       run: async () => {
-        assert();
+        assert(false);
         await this.analysisCommands.run(id);
       },
       refresh: async () => {
-        assert();
+        assert(false);
         await this.analysisCommands.refresh(id);
       },
       setFilterValidity: (valid: boolean) => {
@@ -341,14 +339,10 @@ export class ViewEngine {
       },
       setSort: async (sort: DeepReadonly<AnalysisViewConfig['sort']>) => {
         assert();
-        if (this.store.analysisSession(id).editorEpoch !== editorEpoch)
-          throw new Error('编辑会话已重置');
         await this.analysisCommands.setSort(id, sort);
       },
       clearSort: () => {
         assert();
-        if (this.store.analysisSession(id).editorEpoch !== editorEpoch)
-          throw new Error('编辑会话已重置');
         this.analysisCommands.edit(id, config => ({ ...config, sort: [] }));
       },
       restore: () => {
@@ -362,14 +356,16 @@ export class ViewEngine {
     const editorEpoch = this.store.find(id)?.editorEpoch;
     const version = this.scope.version,
       generation = this.store.generation(id);
-    const assert = () => {
+    const assert = (editing = true) => {
       this.scope.assertReady();
       if (
         !this.scope.current(version) ||
         this.store.generation(id) !== generation
       )
         throw new Error('实例命令已失效');
-      this.store.recordSession(id);
+      const session = this.store.recordSession(id);
+      if (editing && session.editorEpoch !== editorEpoch)
+        throw new Error('编辑会话已重置');
     };
     return {
       edit: (
@@ -379,8 +375,6 @@ export class ViewEngine {
       ) => {
         assert();
         const session = this.store.recordSession(id);
-        if (session.editorEpoch !== editorEpoch)
-          throw new Error('编辑会话已重置');
         const config = this.scope.update(() =>
           updater(session.instance.config),
         );
@@ -392,7 +386,7 @@ export class ViewEngine {
         });
       },
       refreshSummary: async () => {
-        assert();
+        assert(false);
         await this.summaries.refresh(id);
       },
       applyFilter: async () => {
@@ -404,8 +398,6 @@ export class ViewEngine {
         valid?: boolean,
       ) => {
         assert();
-        if (this.store.recordSession(id).editorEpoch !== editorEpoch)
-          throw new Error('编辑会话已重置');
         this.edits.setFilterDraft(draft, id, valid);
       },
       setFilterValidity: (valid: boolean) => {
@@ -446,15 +438,15 @@ export class ViewEngine {
         await this.edits.nextPage(id);
       },
       setSelection: (keys: RecordKey[]) => {
-        assert();
+        assert(false);
         this.edits.setSelection(keys, id);
       },
       refresh: async (options?: { background?: boolean }) => {
-        assert();
+        assert(false);
         await this.queries.refresh(id, options);
       },
       retryQuery: async () => {
-        assert();
+        assert(false);
         await this.queries.retry(id);
       },
       restore: async () => {

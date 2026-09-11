@@ -236,3 +236,12 @@ it('does not infer a mapping from incompatible fields or combine metrics to chan
     inferCapabilities(temporal).find(item => item.type === 'bar')?.status,
   ).toBe('available');
 });
+
+it('preserves an unregistered layout during explicit mapping repair', () => {
+  const value = {
+    layout: 'unknown' as never,
+    columns: [],
+    metrics: ['amount'],
+  };
+  expect(initialDisplayMapping(value, plan, value.layout)).toEqual(value);
+});
