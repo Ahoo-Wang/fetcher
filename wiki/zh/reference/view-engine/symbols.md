@@ -153,8 +153,8 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
 | `AnalysisEditor`                  | [AnalysisEditor.tsx:796](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L796)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
-| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L48) |
-| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L36) |
+| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L51) |
+| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L39) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
 | `AnalysisView`                    | [AnalysisView.tsx:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L96)                             |

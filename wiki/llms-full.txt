@@ -15631,6 +15631,8 @@ The query Sheet uses “Run and view”: `engine.analysis(id).start()` synchrono
 
 The result summary always uses the last successful configuration, schema, rows and local reception time. Reaching a known limit means more groups may exist, not a confirmed truncation or global total. Unrun drafts and failed attempts remain visible alongside old results; header sorting is disabled while the working query differs. Saving and execution remain independent. Instance navigation retains raw editor input, viewing mode and panel preference. Table mode hides the visualization panel without resetting it; the explicit visualization action selects Analysis and expands it. Available existing chart types are checked against successful results; only unique field mappings are initialized, and style controls expand on demand. These display operations never query.
 
+Visualization selection uses five icon/name cards: metric, bar, line, area and pie. All remain visible; unavailable types include reasons. Availability means at least one legal mapping exists over the last successful result schema and rows, not that a default mapping happens to work. Pure capability inference checks all supported axis/single-measure candidates through the existing projection validator; additional measures cannot repair a failing single-measure mapping. Recommendation is deterministic: ungrouped metrics, otherwise time trends, otherwise category comparisons. It never selects a type. The chosen type exposes data mappings below the cards, followed by collapsed style settings; no wizard or business phase is stored. Ambiguous mappings remain unselected. A saved type or selected measure that becomes incompatible remains visible and unchanged until explicit repair. Standalone editors without `chartOnly` retain the general presentation selector including table; the analysis workbench excludes table from the cards because inspection belongs to the bottom mode switch.
+
 </doc>
 
 <doc title="View Engine symbol index" path="reference/view-engine/symbols.md">
@@ -15784,8 +15786,8 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
 | `AnalysisEditor`                  | [AnalysisEditor.tsx:796](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L796)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
-| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L48) |
-| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L36) |
+| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L51) |
+| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L39) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
 | `AnalysisView`                    | [AnalysisView.tsx:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L96)                             |
@@ -35935,6 +35937,8 @@ console.log(compiled.plan.query, result.rows);
 
 结果摘要始终使用最近成功执行的配置、schema、行数据与本地接收时间。达到已知上限只说明可能仍有其他分组，不代表确认截断或全局总量。未运行草稿与失败反馈和旧结果同时保留；工作查询不一致时禁止表头排序。保存与运行保持独立。切换实例保留原始编辑输入、查看模式和面板偏好。数据表模式隐藏可视化面板但不重置它；明确点击可视化配置才切换分析并展开。现有图表类型按成功结果检查兼容性，仅初始化唯一字段映射，样式按需展开。这些展示操作均不查询。
 
+展示方式使用五张图标与名称卡片：指标卡、柱状图、折线图、面积图、饼图。所有类型始终显示，不可用项说明原因。可用表示最近成功结果的 schema 与行数据存在至少一个合法映射，不要求默认映射恰好可用。纯能力推断通过已有投影校验器检查所有受支持的轴与单指标候选；增加指标不能修复已失败的单指标映射。推荐采用确定规则：无分组指标，其次时间趋势，其次分类比较，不自动选择类型。选定后在卡片下方展示数据映射，再提供默认折叠的样式设置；不增加向导或业务阶段状态。有歧义的映射保持未选择。已保存类型或选中指标变得不兼容时仍显示并保留，直到用户明确修复。未启用 `chartOnly` 的独立编辑器保留包含数据表的通用展示选择器；分析工作台卡片不包含数据表，其核对入口仍在底部双模式。
+
 </doc>
 
 <doc title="View Engine 符号索引" path="zh/reference/view-engine/symbols.md">
@@ -36088,8 +36092,8 @@ console.log(compiled.plan.query, result.rows);
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
 | `AnalysisEditor`                  | [AnalysisEditor.tsx:796](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L796)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
-| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L48) |
-| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L36) |
+| `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L51) |
+| `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L39) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
 | `AnalysisView`                    | [AnalysisView.tsx:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L96)                             |

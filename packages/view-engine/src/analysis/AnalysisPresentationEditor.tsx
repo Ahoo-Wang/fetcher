@@ -19,7 +19,7 @@ import { cn } from '../lib/utils.js';
 import { Button } from '../components/ui/button.js';
 import { Checkbox } from '../components/ui/checkbox.js';
 import { FilterSelect } from '../filter/FilterSelect.js';
-import { useMemo } from 'react';
+import { useMemo, useId } from 'react';
 import { cloneSnapshot, type DeepReadonly } from '../lib/types.js';
 import type { AnalysisPlan, AnalysisRow } from './analysisModel.js';
 import {
@@ -28,10 +28,13 @@ import {
 } from './analysisPresentation.js';
 import {
   initialDisplayMapping,
-  suitableVisualizations,
+  inferCapabilities,
+  resolveMappings,
+  validateMapping,
 } from './analysisDisplaySelection.js';
 import type { AnalysisPresentation } from './analysisPresentation.js';
 import { projectAnalysis } from './analysisProjection.js';
+import { AnalysisVisualizationPicker } from './AnalysisVisualizationPicker.js';
 
 export interface AnalysisPresentationEditorProps {
   value: DeepReadonly<AnalysisPresentation>;
@@ -54,16 +57,45 @@ export function AnalysisPresentationEditor({
   chartOnly = false,
   rows = [],
 }: AnalysisPresentationEditorProps) {
+  const mappingDescriptionId = useId();
   const visualization = getAnalysisVisualization(value.layout);
   const StyleContainer = chartOnly ? 'details' : 'div';
   const locked = disabled || !plan;
+  const result = useMemo(
+    () => (plan ? { plan, rows } : undefined),
+    [plan, rows],
+  );
+  const capabilities = useMemo(
+    () => (chartOnly && result ? inferCapabilities(result) : undefined),
+    [chartOnly, result],
+  );
+  const mappings = useMemo(
+    () =>
+      chartOnly
+        ? capabilities?.find(item => item.type === value.layout)
+        : result
+          ? resolveMappings(value.layout, result)
+          : undefined,
+    [chartOnly, capabilities, value.layout, result],
+  );
   const dimensions = plan?.schema.filter(c => c.role === 'dimension') ?? [];
+  const candidates = mappings?.candidates ?? [];
+  const axisAliases = new Set(candidates.map(candidate => candidate.x));
+  const applicable = value.x
+    ? candidates.filter(candidate => candidate.x === value.x)
+    : candidates;
+  const metricAliases = new Set(
+    applicable.flatMap(candidate => candidate.metrics ?? []),
+  );
   const metrics =
     plan?.schema.filter(
       c =>
         c.role === 'metric' &&
         c.valueType === 'number' &&
-        c.aggregation !== 'ANY',
+        c.aggregation !== 'ANY' &&
+        (!chartOnly ||
+          metricAliases.has(c.alias) ||
+          value.metrics?.includes(c.alias)),
     ) ?? [];
   const selected = Array.isArray(value.metrics)
     ? value.metrics.filter(alias =>
@@ -80,15 +112,17 @@ export function AnalysisPresentationEditor({
       ...(value.series ? [value.series] : []),
       ...(Array.isArray(value.metrics) ? value.metrics : []),
     ].some(alias => !plan.schema.some(column => column.alias === alias));
-  const suitable = useMemo(
-    () => (chartOnly && plan ? suitableVisualizations(plan, rows) : []),
-    [chartOnly, plan, rows],
-  );
   const axes = resolveAnalysisAxes(dimensions, value);
   const x = axes.x?.alias;
   const issues =
-    showIssues && plan ? projectAnalysis(plan, [], value).issues : [];
-  const options = dimensions.map(c => ({ value: c.alias, label: c.title }));
+    showIssues && plan ? projectAnalysis(plan, rows, value).issues : [];
+  const options = dimensions
+    .filter(c => !chartOnly || axisAliases.has(c.alias))
+    .map(c => ({ value: c.alias, label: c.title }));
+  const mappingIssues =
+    chartOnly && result && value.layout !== 'table'
+      ? validateMapping(value.layout, value, result)
+      : [];
   const update = (patch: Partial<AnalysisPresentation>) => {
     if (!locked)
       onChange({
@@ -100,7 +134,7 @@ export function AnalysisPresentationEditor({
     if (!locked)
       onChange(
         chartOnly && value.layout === 'table'
-          ? initialDisplayMapping(value, plan!, layout)
+          ? initialDisplayMapping(value, plan!, layout, rows)
           : { ...retained, layout },
       );
   };
@@ -117,37 +151,35 @@ export function AnalysisPresentationEditor({
             : 'fve:flex fve:flex-wrap fve:items-end',
         )}
       >
-        <label className="fve:flex fve:min-w-0 fve:flex-col fve:gap-1">
-          <span className="fve:text-xs fve:text-muted-foreground">
-            {chartOnly ? '报表展示方式' : '图表'}
-          </span>
+        {chartOnly ? (
+          <AnalysisVisualizationPicker
+            value={value.layout}
+            capabilities={capabilities}
+            disabled={locked}
+            onChange={changeLayout}
+          />
+        ) : (
           <FilterSelect
             label="图表类型"
-            options={
-              chartOnly
-                ? ANALYSIS_VISUALIZATIONS.filter(item => item.value !== 'table')
-                : ANALYSIS_VISUALIZATIONS
-            }
-            value={
-              chartOnly && value.layout === 'table' ? undefined : value.layout
-            }
-            placeholder="请选择展示方式"
+            options={ANALYSIS_VISUALIZATIONS}
+            value={value.layout}
             disabled={locked}
             onValueChange={changeLayout}
           />
-        </label>
-        {chartOnly && plan && (
-          <p className="fve:text-xs fve:text-muted-foreground">
-            {suitable.length
-              ? `适合当前结果：${suitable.map(item => item.label).join('、')}`
-              : '当前结果需要调整查询或映射后才能绘图。'}
+        )}
+        {chartOnly && value.layout !== 'table' && (
+          <h3 className="fve:mt-2 fve:text-sm fve:font-medium">数据映射</h3>
+        )}
+        {mappingIssues.length > 0 && (
+          <p role="status" className="fve:text-xs fve:text-destructive">
+            {mappingIssues.join('；')}。请修复配置，或查看数据表。
           </p>
         )}
         {visualization?.axes && (
           <>
             <label className="fve:flex fve:min-w-0 fve:flex-col fve:gap-1">
               <span className="fve:text-xs fve:text-muted-foreground">
-                分类轴
+                {visualization.continuous ? '连续轴' : '分类'}
               </span>
               <FilterSelect
                 label="横轴维度"
@@ -176,7 +208,16 @@ export function AnalysisPresentationEditor({
                 <FilterSelect
                   label="系列维度"
                   placeholder="不拆分系列"
-                  options={options.filter(c => c.value !== x)}
+                  options={dimensions
+                    .filter(
+                      c =>
+                        c.alias !== x &&
+                        (!chartOnly ||
+                          applicable.some(
+                            candidate => candidate.series === c.alias,
+                          )),
+                    )
+                    .map(c => ({ value: c.alias, label: c.title }))}
                   value={axes.series?.alias}
                   disabled={locked}
                   onClear={
@@ -199,14 +240,25 @@ export function AnalysisPresentationEditor({
             <legend className="fve:mb-1 fve:text-xs fve:text-muted-foreground">
               显示指标
             </legend>
-            {metrics.map(metric => (
+            {metrics.map((metric, index) => (
               <label
                 key={metric.alias}
                 className="fve:flex fve:items-center fve:gap-2 fve:text-sm"
               >
                 <Checkbox
+                  aria-describedby={
+                    chartOnly && !metricAliases.has(metric.alias)
+                      ? `${mappingDescriptionId}-${index}`
+                      : undefined
+                  }
+                  aria-invalid={chartOnly && !metricAliases.has(metric.alias)}
                   checked={selected.includes(metric.alias)}
-                  disabled={locked}
+                  disabled={
+                    locked ||
+                    (chartOnly &&
+                      !metricAliases.has(metric.alias) &&
+                      !selected.includes(metric.alias))
+                  }
                   onCheckedChange={checked =>
                     update({
                       metrics: checked
@@ -218,6 +270,15 @@ export function AnalysisPresentationEditor({
                   }
                 />
                 {metric.title}
+                {chartOnly && !metricAliases.has(metric.alias) && (
+                  <span
+                    aria-hidden="true"
+                    id={`${mappingDescriptionId}-${index}`}
+                    className="fve:text-xs fve:text-destructive"
+                  >
+                    （当前映射不可用）
+                  </span>
+                )}
               </label>
             ))}
           </fieldset>
@@ -288,7 +349,7 @@ export function AnalysisPresentationEditor({
             onChange(
               value.layout === 'table'
                 ? repaired
-                : initialDisplayMapping(repaired, plan!, value.layout),
+                : initialDisplayMapping(repaired, plan!, value.layout, rows),
             );
           }}
         >

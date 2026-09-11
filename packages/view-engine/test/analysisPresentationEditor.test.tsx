@@ -168,7 +168,7 @@ it('preserves stale aliases on type changes and repairs them only on explicit re
   expect(onChange.mock.lastCall![0]).toMatchObject({
     columns: [{ alias: 'm', width: 200 }],
     x: '',
-    metrics: ['m'],
+    metrics: [],
   });
 });
 
@@ -371,4 +371,107 @@ it('updates axes, series, orientation and donut settings without losing metric s
   fireEvent.click(screen.getByRole('checkbox', { name: '环形' }));
   expect(latest.donut).toBe(true);
   expect(latest.metrics).toEqual(['m']);
+});
+
+it('shows all five visualization cards with reasons, and selects before exposing mappings', () => {
+  const onChange = vi.fn();
+  const { rerender } = render(
+    <AnalysisPresentationEditor
+      chartOnly
+      value={{ layout: 'table', columns: [] }}
+      plan={plan}
+      rows={[{ x: 0, region: 'A', m: 1, any: 0 }]}
+      onChange={onChange}
+    />,
+  );
+  expect(screen.queryByRole('combobox', { name: '图表类型' })).toBeNull();
+  expect(screen.getAllByRole('radio')).toHaveLength(5);
+  expect(screen.getByRole('radio', { name: '指标卡' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  expect(screen.getByText(/指标卡需要无分组/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('radio', { name: '柱状图' }));
+  const next = onChange.mock.calls[0][0];
+  expect(next).toMatchObject({ layout: 'bar', x: '', metrics: ['m'] });
+  rerender(
+    <AnalysisPresentationEditor
+      chartOnly
+      value={next}
+      plan={plan}
+      rows={[{ x: 0, region: 'A', m: 1, any: 0 }]}
+      onChange={onChange}
+    />,
+  );
+  expect(screen.getByText('数据映射')).toBeTruthy();
+  expect(screen.getByText('样式设置').closest('details')?.open).toBe(false);
+});
+
+it('does not alter an unavailable saved type or mappings when result data changes', () => {
+  const onChange = vi.fn();
+  const value: AnalysisPresentation = {
+    layout: 'pie',
+    columns: [],
+    x: 'x',
+    metrics: ['m'],
+  };
+  render(
+    <AnalysisPresentationEditor
+      chartOnly
+      value={value}
+      plan={plan}
+      rows={[]}
+      onChange={onChange}
+    />,
+  );
+  expect(screen.getByRole('radio', { name: '饼图' })).toHaveProperty(
+    'checked',
+    true,
+  );
+  expect(screen.getByRole('radio', { name: '饼图' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+it('keeps a selected incompatible measure named and removable without clearing other intent', () => {
+  const resultPlan: AnalysisPlan = {
+    ...plan,
+    schema: [
+      plan.schema[1],
+      plan.schema[2],
+      {
+        ...plan.schema[2],
+        id: 'avg',
+        alias: 'avg',
+        title: '平均额',
+        aggregation: 'AVG',
+      },
+    ],
+  };
+  const value: AnalysisPresentation = {
+    layout: 'pie',
+    columns: [],
+    x: 'region',
+    metrics: ['m', 'avg'],
+  };
+  const onChange = vi.fn();
+  render(
+    <AnalysisPresentationEditor
+      chartOnly
+      value={value}
+      plan={resultPlan}
+      rows={[{ region: 'A', m: 2, avg: 3 }]}
+      onChange={onChange}
+    />,
+  );
+  const selected = screen.getByRole('checkbox', {
+    name: '平均额',
+    exact: true,
+  });
+  expect(selected.getAttribute('aria-invalid')).toBe('true');
+  expect(onChange).not.toHaveBeenCalled();
+  fireEvent.click(selected);
+  expect(onChange.mock.calls[0][0]).toEqual({ ...value, metrics: ['m'] });
 });

@@ -8,7 +8,9 @@ import { aggregation, AggregationFunction } from '@ahoo-wang/fetcher-wow';
 import type { AnalysisPlan } from '../src/analysis/analysisModel.js';
 import {
   initialDisplayMapping,
-  suitableVisualizations,
+  inferCapabilities,
+  resolveMappings,
+  validateMapping,
 } from '../src/analysis/analysisDisplaySelection.js';
 import { projectAnalysis } from '../src/analysis/analysisProjection.js';
 const plan: AnalysisPlan = {
@@ -56,11 +58,15 @@ it('leaves ambiguous axes unselected while identifying usable chart types withou
   );
   expect(next).toMatchObject({ x: '', series: '', metrics: ['amount'] });
   expect(projectAnalysis(plan, rows, next).issues.length).toBeGreaterThan(0);
-  expect(suitableVisualizations(plan, rows).map(item => item.value)).toContain(
-    'bar',
-  );
   expect(
-    suitableVisualizations(plan, rows).map(item => item.value),
+    inferCapabilities({ plan, rows })
+      .filter(item => item.status !== 'unavailable')
+      .map(item => item.type),
+  ).toContain('bar');
+  expect(
+    inferCapabilities({ plan, rows })
+      .filter(item => item.status !== 'unavailable')
+      .map(item => item.type),
   ).not.toContain('pie');
   expect(rows).toEqual([{ product: 'P1', channel: 'web', amount: 3 }]);
 });
@@ -90,4 +96,143 @@ it('initializes only unique mappings and preserves an explicit saved selection',
       'bar',
     ).metrics,
   ).toEqual(['other']);
+});
+
+it('allows pie through a later positive SUM candidate without selecting an ambiguous metric', () => {
+  const result = {
+    plan: {
+      ...plan,
+      schema: [
+        plan.schema[0],
+        plan.schema[2],
+        { ...plan.schema[2], id: 'profit', alias: 'profit' },
+      ],
+    },
+    rows: [{ product: 'P1', amount: -3, profit: 5 }],
+  };
+  const pie = inferCapabilities(result).find(item => item.type === 'pie')!;
+  expect(pie.status).not.toBe('unavailable');
+  expect(
+    resolveMappings('pie', result).candidates.map(item => item.metrics),
+  ).toEqual([['profit']]);
+  expect(
+    validateMapping('pie', { x: 'product', metrics: ['amount'] }, result)
+      .length,
+  ).toBeGreaterThan(0);
+  expect(result.rows[0].amount).toBe(-3);
+});
+
+it('finds an axis swap when the first split exceeds twelve series', () => {
+  const result = {
+    plan,
+    rows: Array.from({ length: 13 }, (_, i) => ({
+      product: 'P1',
+      channel: String(i),
+      amount: 1,
+    })),
+  };
+  const mappings = resolveMappings('bar', result);
+  expect(mappings.candidates).toEqual([
+    { x: 'channel', series: 'product', metrics: ['amount'] },
+  ]);
+  expect(
+    inferCapabilities(result).find(item => item.type === 'bar')?.status,
+  ).toBe('recommended');
+});
+
+it('keeps ambiguous mappings selectable and returns explicit reasons for unsupported types', () => {
+  const result = { plan, rows: [{ product: 'P1', channel: 'web', amount: 1 }] };
+  expect(resolveMappings('bar', result).candidates).toHaveLength(2);
+  const caps = inferCapabilities(result);
+  expect(caps.find(item => item.type === 'bar')?.status).not.toBe(
+    'unavailable',
+  );
+  expect(caps.find(item => item.type === 'line')).toMatchObject({
+    status: 'unavailable',
+  });
+  expect(caps.find(item => item.type === 'line')?.reasons.join()).toContain(
+    '连续',
+  );
+  expect(caps.map(item => item.type)).toEqual([
+    'metric',
+    'bar',
+    'line',
+    'area',
+    'pie',
+  ]);
+});
+
+it('retains identity, checks actual rows, and never edits a saved incompatible mapping', () => {
+  const result = {
+    plan: {
+      ...plan,
+      schema: [
+        { ...plan.schema[0], valueType: 'datetime' as const },
+        plan.schema[2],
+      ],
+    },
+    rows: [{ product: null, amount: 2 }],
+  };
+  expect(
+    inferCapabilities(result).find(item => item.type === 'line')?.status,
+  ).toBe('unavailable');
+  const mapping = { x: 'missing', metrics: ['amount'] };
+  expect(validateMapping('bar', mapping, result).join()).toContain('missing');
+  expect(mapping).toEqual({ x: 'missing', metrics: ['amount'] });
+  const duplicate = {
+    ...result,
+    rows: [
+      { product: 1, amount: 2 },
+      { product: 1, amount: 3 },
+    ],
+  };
+  expect(
+    inferCapabilities(duplicate)
+      .find(item => item.type === 'bar')
+      ?.reasons.join(),
+  ).toContain('重复分组');
+});
+
+it('does not infer a mapping from incompatible fields or combine metrics to change their meaning', () => {
+  const result = {
+    plan: {
+      ...plan,
+      schema: [
+        plan.schema[0],
+        { ...plan.schema[2], aggregation: AggregationFunction.AVG },
+      ],
+    },
+    rows: [{ product: 'P1', amount: 3 }],
+  };
+  expect(
+    inferCapabilities(result).find(item => item.type === 'pie')?.status,
+  ).toBe('unavailable');
+  expect(
+    inferCapabilities(result).find(item => item.type === 'bar')?.status,
+  ).toBe('recommended');
+  expect(
+    initialDisplayMapping(
+      { layout: 'table', columns: [] },
+      result.plan,
+      'pie',
+      result.rows,
+    ).metrics,
+  ).toEqual([]);
+  const temporal = {
+    ...result,
+    plan: {
+      ...result.plan,
+      schema: [
+        { ...plan.schema[0], valueType: 'datetime' as const },
+        plan.schema[2],
+      ],
+    },
+    rows: [{ product: 1, amount: 3 }],
+  };
+  expect(
+    inferCapabilities(temporal).find(item => item.type === 'line')?.status,
+  ).toBe('recommended');
+  expect(
+    inferCapabilities(temporal).find(item => item.type === 'bar')?.status,
+  ).toBe('available');
 });

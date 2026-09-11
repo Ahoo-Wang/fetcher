@@ -79,12 +79,12 @@ export function validateAnalysisPresentation(
       p.x !== undefined &&
       !schema.some(s => s.alias === p.x && s.role === 'dimension')
     )
-      issues.push('横轴维度已失效，请重新选择');
+      issues.push(`横轴维度已失效，请重新选择（${p.x}）`);
     if (
       p.series !== undefined &&
       !schema.some(s => s.alias === p.series && s.role === 'dimension')
     )
-      issues.push('系列维度已失效，请重新选择');
+      issues.push(`系列维度已失效，请重新选择（${p.series}）`);
     for (const m of metrics ?? [])
       if (!schema.some(s => s.alias === m && s.role === 'metric'))
         issues.push(`指标 ${m} 已失效，请重新选择`);

@@ -624,7 +624,7 @@ it('keeps display validation visible when the table owns no chart notice', async
         presentation: { ...config.presentation, layout: 'bar' },
       })),
     );
-    expect(screen.getByLabelText('图表设置').textContent).not.toContain(
+    expect(screen.getByLabelText('图表设置').textContent).toContain(
       '横轴维度已失效',
     );
   } finally {
@@ -646,15 +646,17 @@ it('shows executed display controls for stale results without replacing the draf
         presentation: { ...config.presentation, layout: 'metric' },
       })),
     );
-    expect(
-      screen.getByRole('combobox', { name: '图表类型' }).textContent,
-    ).toContain('指标卡');
+    expect(screen.getByRole('radio', { name: '指标卡' })).toHaveProperty(
+      'checked',
+      true,
+    );
     act(() =>
       engine.analysis('totals').edit(config => ({ ...config, limit: 50 })),
     );
-    expect(
-      screen.getByRole('combobox', { name: '图表类型' }).textContent,
-    ).toContain('指标卡');
+    expect(screen.getByRole('radio', { name: '指标卡' })).toHaveProperty(
+      'checked',
+      true,
+    );
     aggregate.mockRejectedValueOnce(new Error('offline'));
     await act(async () => {
       await engine
@@ -662,15 +664,17 @@ it('shows executed display controls for stale results without replacing the draf
         .run()
         .catch(() => {});
     });
-    expect(
-      screen.getByRole('combobox', { name: '图表类型' }).textContent,
-    ).toContain('指标卡');
+    expect(screen.getByRole('radio', { name: '指标卡' })).toHaveProperty(
+      'checked',
+      true,
+    );
     act(() =>
       engine.analysis('totals').edit(config => ({ ...config, limit: 100 })),
     );
-    expect(
-      screen.getByRole('combobox', { name: '图表类型' }).textContent,
-    ).toContain('指标卡');
+    expect(screen.getByRole('radio', { name: '指标卡' })).toHaveProperty(
+      'checked',
+      true,
+    );
   } finally {
     engine.dispose();
   }
@@ -1098,7 +1102,7 @@ it('starts with table results and a folded visualization panel, and retains the 
     fireEvent.click(
       screen.getByRole('button', { name: '可视化配置', exact: true }),
     );
-    expect(screen.getByRole('combobox', { name: '图表类型' })).toBeTruthy();
+    expect(screen.getAllByRole('radio')).toHaveLength(5);
     expect(screen.queryByText('显示指标')).toBeNull();
     fireEvent.click(
       screen.getByRole('button', { name: '配置查询', exact: true }),
@@ -1332,6 +1336,17 @@ it('keeps chart mapping and analysis mode when a new result invalidates its metr
         /指标 orders 已失效/,
       ),
     ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole('button', { name: '修复配置', exact: true }),
+    );
+    expect(
+      screen
+        .getByRole('button', { name: '可视化配置', exact: true })
+        .getAttribute('aria-expanded'),
+    ).toBe('true');
+    expect(
+      engine.getSnapshot().sessions.totals.instance.config.presentation,
+    ).toEqual(presentation);
     fireEvent.click(screen.getByRole('button', { name: '查看数据表' }));
     expect(screen.getByRole('table')).toBeTruthy();
     expect(aggregate).toHaveBeenCalledTimes(2);

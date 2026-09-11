@@ -239,6 +239,19 @@ const scenarios = {
       { region: '华南', records: 2 },
     ],
   },
+  laterMetric: {
+    title: '净销售额含负数，按订单数展示占比',
+    config: {
+      ...base,
+      dimensions: [dimension('region', '地区')],
+      metrics: [revenue, orders],
+      presentation: { layout: 'table', columns: [] },
+    },
+    rows: [
+      { region: '华东', revenue: -300, orders: 5 },
+      { region: '华南', revenue: 200, orders: 3 },
+    ],
+  },
   multi: { title: '地区与渠道销售额', config: base, rows: regionalRows },
   trend: {
     title: '连续时间趋势与空值',
@@ -509,12 +522,12 @@ export const MultiSeries: Story = {
       await userEvent.click(canvas.getByText('样式设置', { exact: true }));
     await userEvent.click(canvas.getByRole('combobox', { name: '柱状图方向' }));
     await userEvent.click(await page.findByRole('option', { name: '横向' }));
-    for (const label of ['折线图', '柱状图']) {
-      await userEvent.click(canvas.getByRole('combobox', { name: '图表类型' }));
-      await userEvent.click(
-        await page.findByRole('option', { name: label, exact: true }),
-      );
-    }
+    await expect(
+      canvas.getByRole('radio', { name: '折线图', exact: true }),
+    ).toBeDisabled();
+    await userEvent.click(
+      canvas.getByRole('radio', { name: '柱状图', exact: true }),
+    );
     await expect(
       canvas.getByRole('combobox', { name: '系列维度' }),
     ).toHaveTextContent('销售渠道');
@@ -761,8 +774,7 @@ export const SavedLayout: Story = {
   name: '保存后重建引擎恢复图表',
   args: { scenario: 'trend', reloadable: true },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement),
-      page = within(canvasElement.ownerDocument.body);
+    const canvas = within(canvasElement);
     await expect(await canvas.findByRole('application')).toBeVisible();
     await userEvent.click(
       canvas.getByRole('button', { name: '可视化配置', exact: true }),
@@ -770,11 +782,12 @@ export const SavedLayout: Story = {
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
       '查询次数：1',
     );
-    await userEvent.click(canvas.getByRole('combobox', { name: '图表类型' }));
-    await userEvent.click(await page.findByRole('option', { name: '面积图' }));
+    await userEvent.click(
+      canvas.getByRole('radio', { name: '面积图', exact: true }),
+    );
     await expect(
-      canvas.getByRole('combobox', { name: '图表类型' }),
-    ).toHaveTextContent('面积图');
+      canvas.getByRole('radio', { name: '面积图', exact: true }),
+    ).toBeChecked();
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
       '查询次数：1',
     );
@@ -798,8 +811,8 @@ export const SavedLayout: Story = {
       canvas.getByRole('button', { name: '可视化配置', exact: true }),
     );
     await expect(
-      canvas.getByRole('combobox', { name: '图表类型' }),
-    ).toHaveTextContent('面积图');
+      canvas.getByRole('radio', { name: '面积图', exact: true }),
+    ).toBeChecked();
     await expect(
       canvas.getByRole('combobox', { name: '横轴维度' }),
     ).toHaveTextContent('成交日期');
@@ -901,8 +914,9 @@ export const SignedStacks: Story = {
     await userEvent.click(canvas.getByRole('combobox', { name: '柱状图方向' }));
     await userEvent.click(await page.findByRole('option', { name: '横向' }));
     await waitFor(() => expect(negativeTicks('xAxis')).toBe(true));
-    await userEvent.click(canvas.getByRole('combobox', { name: '图表类型' }));
-    await userEvent.click(await page.findByRole('option', { name: '面积图' }));
+    await userEvent.click(
+      canvas.getByRole('radio', { name: '面积图', exact: true }),
+    );
     await waitFor(() => expect(negativeTicks('yAxis')).toBe(true));
     await expect(canvasElement.querySelector('.recharts-area')).not.toBeNull();
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
@@ -915,21 +929,19 @@ export const MetricRoundTrip: Story = {
   name: '切换饼图不丢失多指标',
   args: { scenario: 'multiMetric' },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement),
-      page = within(canvasElement.ownerDocument.body);
+    const canvas = within(canvasElement);
     await expect(await canvas.findByRole('application')).toBeVisible();
     await userEvent.click(
       canvas.getByRole('button', { name: '可视化配置', exact: true }),
     );
     for (const layout of ['饼图', '柱状图']) {
-      await userEvent.click(canvas.getByRole('combobox', { name: '图表类型' }));
       await userEvent.click(
-        await page.findByRole('option', { name: layout, exact: true }),
+        canvas.getByRole('radio', { name: layout, exact: true }),
       );
       if (layout === '饼图')
         await expect(
           canvas.getAllByText(/^饼图需要一个维度和一个数值指标/),
-        ).toHaveLength(1);
+        ).toHaveLength(2);
       await expect(
         canvas.getByRole('checkbox', { name: '销售额', exact: true }),
       ).toBeChecked();
@@ -1047,12 +1059,12 @@ export const TableFirst: Story = {
     await expect(
       canvas.queryByRole('combobox', { name: '横轴维度' }),
     ).toBeNull();
-    await userEvent.click(canvas.getByRole('combobox', { name: '图表类型' }));
+    await expect(canvas.getAllByRole('radio')).toHaveLength(5);
     await expect(
-      page.queryByRole('option', { name: '数据表', exact: true }),
+      canvas.queryByRole('radio', { name: '数据表', exact: true }),
     ).toBeNull();
     await userEvent.click(
-      await page.findByRole('option', { name: '柱状图', exact: true }),
+      canvas.getByRole('radio', { name: '柱状图', exact: true }),
     );
     await userEvent.click(canvas.getByRole('combobox', { name: '横轴维度' }));
     await userEvent.click(
@@ -1070,6 +1082,41 @@ export const TableFirst: Story = {
       canvas.getByRole('tab', { name: '分析', exact: true }),
     );
     await expect(await canvas.findByRole('application')).toBeVisible();
+    await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
+      '查询次数：1',
+    );
+  },
+};
+
+export const CapabilitySelection: Story = {
+  name: '展示方式卡片：后续合法指标与键盘选择',
+  args: { scenario: 'laterMetric' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByRole('table')).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '可视化配置', exact: true }),
+    );
+    await expect(
+      canvas.queryByRole('combobox', { name: '图表类型' }),
+    ).toBeNull();
+    await expect(canvas.getAllByRole('radio')).toHaveLength(5);
+    await expect(canvas.getByRole('radio', { name: '指标卡' })).toBeDisabled();
+    await expect(canvas.getByText(/不可用：指标卡需要无分组/)).toBeVisible();
+    const pie = canvas.getByRole('radio', { name: '饼图' });
+    await expect(pie).toBeEnabled();
+    await userEvent.click(pie);
+    await expect(await canvas.findByRole('application')).toBeVisible();
+    await expect(
+      canvas.getByRole('checkbox', { name: '订单数', exact: true }),
+    ).toBeChecked();
+    await expect(
+      canvas.getByText('样式设置').closest('details'),
+    ).not.toHaveAttribute('open');
+    await userEvent.click(canvas.getByRole('radio', { name: '柱状图' }));
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(pie).toBeChecked();
+    await expect(pie).toHaveFocus();
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent(
       '查询次数：1',
     );

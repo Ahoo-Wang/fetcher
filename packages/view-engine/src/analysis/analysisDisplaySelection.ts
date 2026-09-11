@@ -17,87 +17,159 @@ import type { AnalysisPresentation } from './analysisPresentation.js';
 import { ANALYSIS_VISUALIZATIONS } from './analysisVisualizations.js';
 import { projectAnalysis } from './analysisProjection.js';
 
+export type VisualizationType = Exclude<
+  AnalysisPresentation['layout'],
+  'table'
+>;
+export type VisualizationResult = DeepReadonly<{
+  plan: AnalysisPlan;
+  rows: readonly AnalysisRow[];
+}>;
+export type VisualizationMapping = Pick<
+  AnalysisPresentation,
+  'x' | 'series' | 'metrics'
+>;
+
+/** The renderer remains the single authority for field and row compatibility. */
+export function validateMapping(
+  type: AnalysisPresentation['layout'],
+  mapping: DeepReadonly<VisualizationMapping>,
+  result: VisualizationResult,
+): string[] {
+  return projectAnalysis(result.plan, result.rows, {
+    layout: type,
+    columns: [],
+    x: mapping.x,
+    series: mapping.series,
+    metrics: mapping.metrics ? [...mapping.metrics] : undefined,
+  }).issues;
+}
+
+/** A single measure witnesses availability: adding measures cannot repair an invalid mapping. */
+export function resolveMappings(
+  type: AnalysisPresentation['layout'],
+  result: VisualizationResult,
+) {
+  const dimensions = result.plan.schema.filter(
+    column => column.role === 'dimension',
+  );
+  const metrics = result.plan.schema.filter(
+    column =>
+      column.role === 'metric' &&
+      column.valueType === 'number' &&
+      column.aggregation !== 'ANY',
+  );
+  const candidates: VisualizationMapping[] = [];
+  const reasons = new Set<string>();
+  // Supported plots consume every grouping dimension; none may be silently discarded.
+  // With >2 dimensions or >500 rows, one renderer check suffices to prove incompatibility.
+  const axes =
+    type === 'metric' || !dimensions.length
+      ? [undefined]
+      : dimensions.length > 2 || result.rows.length > 500
+        ? [dimensions[0]]
+        : dimensions;
+  const measures =
+    result.rows.length > 500 || dimensions.length > 2
+      ? metrics.slice(0, 1)
+      : metrics;
+  for (const x of axes) {
+    for (const metric of measures) {
+      const mapping: VisualizationMapping = {
+        ...(x
+          ? {
+              x: x.alias,
+              ...(dimensions.length === 2
+                ? { series: dimensions.find(column => column !== x)!.alias }
+                : {}),
+            }
+          : {}),
+        metrics: [metric.alias],
+      };
+      const issues = validateMapping(type, mapping, result);
+      if (!issues.length) candidates.push(mapping);
+      else issues.forEach(issue => reasons.add(issue));
+    }
+  }
+  if (!candidates.length && !reasons.size)
+    validateMapping(type, {}, result).forEach(issue => reasons.add(issue));
+  return { candidates, reasons: candidates.length ? [] : [...reasons] };
+}
+
+export function inferCapabilities(result: VisualizationResult) {
+  const capabilities = ANALYSIS_VISUALIZATIONS.filter(
+    chart => chart.value !== 'table',
+  ).map(chart => ({
+    type: chart.value as VisualizationType,
+    label: chart.label,
+    ...resolveMappings(chart.value, result),
+  }));
+  const available = (type: VisualizationType) =>
+    capabilities.some(item => item.type === type && item.candidates.length);
+  const temporal = result.plan.schema.some(
+    column => column.role === 'dimension' && column.valueType === 'datetime',
+  );
+  const preferred = available('metric')
+    ? 'metric'
+    : temporal && available('line')
+      ? 'line'
+      : available('bar')
+        ? 'bar'
+        : undefined;
+  return capabilities.map(item => ({
+    ...item,
+    status: !item.candidates.length
+      ? ('unavailable' as const)
+      : item.type === preferred
+        ? ('recommended' as const)
+        : ('available' as const),
+  }));
+}
+
 export function initialDisplayMapping(
   value: DeepReadonly<AnalysisPresentation>,
   plan: DeepReadonly<AnalysisPlan>,
   layout: AnalysisPresentation['layout'],
+  rows: VisualizationResult['rows'] = [],
 ): AnalysisPresentation {
   const chart = ANALYSIS_VISUALIZATIONS.find(item => item.value === layout)!;
-  const dimensions = plan.schema.filter(column => column.role === 'dimension');
-  const axes = chart.continuous
-    ? dimensions.filter(
-        column =>
-          column.valueType === 'datetime' || column.valueType === 'number',
-      )
-    : dimensions;
-  const metrics = plan.schema.filter(
-    column =>
-      column.role === 'metric' &&
-      column.valueType === 'number' &&
-      column.aggregation !== 'ANY',
+  const { candidates } = resolveMappings(layout, { plan, rows });
+  const unique = (values: (string | undefined)[]) => {
+    const aliases = [
+      ...new Set(
+        values.filter((value): value is string => value !== undefined),
+      ),
+    ];
+    return aliases.length === 1 ? aliases[0] : '';
+  };
+  const x = value.x ?? unique(candidates.map(candidate => candidate.x));
+  const compatible = x
+    ? candidates.filter(candidate => candidate.x === x)
+    : candidates;
+  const metrics = unique(
+    compatible.flatMap(candidate => candidate.metrics ?? []),
   );
-  const x = value.x ?? (axes.length === 1 ? axes[0].alias : '');
-  const others = dimensions.filter(column => column.alias !== x);
   return {
     ...value,
-    columns: value.columns.map(column => ({ ...column })),
+    columns: Array.isArray(value.columns)
+      ? value.columns.map(column => ({ ...column }))
+      : [],
     layout,
     ...(chart.axes
       ? {
           x,
-          ...(dimensions.length > 1
+          ...(plan.schema.filter(column => column.role === 'dimension').length >
+          1
             ? {
                 series:
                   value.series ??
-                  (x && others.length === 1 ? others[0].alias : ''),
+                  (x
+                    ? unique(compatible.map(candidate => candidate.series))
+                    : ''),
               }
             : {}),
         }
       : {}),
-    metrics: value.metrics
-      ? [...value.metrics]
-      : metrics.length === 1
-        ? [metrics[0].alias]
-        : [],
+    metrics: value.metrics ? [...value.metrics] : metrics ? [metrics] : [],
   };
-}
-
-export function suitableVisualizations(
-  plan: DeepReadonly<AnalysisPlan>,
-  rows: DeepReadonly<readonly AnalysisRow[]>,
-) {
-  const dimensions = plan.schema.filter(column => column.role === 'dimension');
-  const metrics = plan.schema.filter(
-    column =>
-      column.role === 'metric' &&
-      column.valueType === 'number' &&
-      column.aggregation !== 'ANY',
-  );
-  return ANALYSIS_VISUALIZATIONS.filter(chart => {
-    if (chart.value === 'table') return false;
-    const x = chart.continuous
-      ? dimensions.find(
-          column =>
-            column.valueType === 'number' || column.valueType === 'datetime',
-        )
-      : dimensions[0];
-    const metric =
-      chart.value === 'pie'
-        ? metrics.find(
-            column =>
-              column.aggregation === 'COUNT' || column.aggregation === 'SUM',
-          )
-        : metrics[0];
-    const sample: AnalysisPresentation = {
-      layout: chart.value,
-      columns: [],
-      x: x?.alias,
-      series:
-        dimensions.length === 2
-          ? dimensions.find(column => column !== x)?.alias
-          : undefined,
-      metrics: metric ? [metric.alias] : [],
-    };
-    return projectAnalysis(plan, rows, sample).issues.length === 0;
-  });
 }

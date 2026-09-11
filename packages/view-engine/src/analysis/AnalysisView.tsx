@@ -560,6 +560,7 @@ function AnalysisInstanceView({
             key={instance.id}
             value={mode}
             onValueChange={setMode}
+            onConfigure={() => setVisualPanel({ id: instance.id, open: true })}
             table={
               table ?? (
                 <p

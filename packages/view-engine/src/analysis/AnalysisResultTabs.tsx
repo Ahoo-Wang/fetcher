@@ -23,12 +23,14 @@ export function AnalysisResultTabs({
   issues = [],
   value,
   onValueChange,
+  onConfigure,
 }: {
   children: ReactNode;
   table: ReactNode;
   issues?: readonly string[];
   value: 'analysis' | 'table';
   onValueChange(value: 'analysis' | 'table'): void;
+  onConfigure?(): void;
 }) {
   const [tableVisited, setTableVisited] = useState(false);
   const available = issues.length === 0;
@@ -48,6 +50,11 @@ export function AnalysisResultTabs({
         ) : (
           <div className="fve:flex fve:min-h-64 fve:flex-col fve:items-center fve:justify-center fve:gap-3">
             <p role="status">{issues.join('；')}</p>
+            {onConfigure && (
+              <Button variant="outline" onClick={onConfigure}>
+                修复配置
+              </Button>
+            )}
             <Button variant="outline" onClick={() => onValueChange('table')}>
               查看数据表
             </Button>
