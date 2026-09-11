@@ -29,12 +29,21 @@ const source = `
   import type { FilterRegistration } from './filter/filterReactTypes.js';
   import type { ViewDefinition, ViewSource, ViewEngineOptions } from './contracts/viewModel.js';
   import type { SessionStore } from './engine/SessionStore.js';
+  import type { AnalysisCompiler, AnalysisComponentCompileContext } from './analysis/analysisModel.js';
   import type { AnalysisSession } from './contracts/viewModel.js';
   import type { RecordSession, ViewEngineState } from './contracts/viewModel.js';
   const pureDefinition:ViewDefinition={id:'a',title:'A',sourceId:'a',fields:[],analysis:{count:true,fields:[]}};
   const aggregateSource:ViewSource={aggregate:async()=>[]};
   // @ts-expect-error a definition must declare at least one view capability
   const emptyDefinition:ViewDefinition={id:'a',title:'A',sourceId:'a',fields:[]};
+  declare const customAnalysis: AnalysisCompiler;
+  declare const componentContext: AnalysisComponentCompileContext;
+  // @ts-expect-error custom analysis registrations require explicit roles
+  const missingRoles: AnalysisCompiler = { compile: customAnalysis.compile };
+  // @ts-expect-error role declarations are immutable
+  customAnalysis.roles.push('metric');
+  // @ts-expect-error the actual component role cannot be changed
+  componentContext.role = 'dimension';
   declare const page: ViewPageProps;
   declare const registration: FilterRegistration;
   const extensions: ViewPageProps['extensions'] = { filters: { custom: registration } };

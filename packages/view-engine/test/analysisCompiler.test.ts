@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import {
   aggregation,
   AggregationFunction as Fn,
@@ -190,6 +190,7 @@ it('bounds custom contributions by capability and binding', () => {
       ...context,
       compilers: {
         custom: {
+          roles: ['metric'],
           compile: () => aggregation.sum(aggregation.field('amount'), 'total'),
         },
       },
@@ -204,7 +205,7 @@ it('bounds custom contributions by capability and binding', () => {
     expect(
       compileAnalysis(customConfig, {
         ...context,
-        compilers: { custom: { compile: () => output } },
+        compilers: { custom: { roles: ['metric'], compile: () => output } },
       }).plan,
     ).toBeUndefined();
 });
@@ -277,6 +278,7 @@ it('rejects an unknown numeric function even when external capability and custom
     },
     compilers: {
       custom: {
+        roles: ['metric'] as const,
         compile: () => ({
           ...aggregation.sum(aggregation.field('amount'), 'total'),
           function: unknown,
@@ -572,4 +574,55 @@ it('owns a display field on its dimension and compiles authorized ANY without ad
       capability: { ...ctx.capability, limits: { maxMetrics: 2 } },
     }).errors.length,
   ).toBeGreaterThan(0);
+});
+
+it('rejects unsupported custom roles before invoking the compiler', () => {
+  const compile = vi.fn(value => aggregation.count(value.alias));
+  const result = compileAnalysis(
+    {
+      ...config,
+      metrics: [{ ...config.metrics[0], component: { name: 'custom' } }],
+    },
+    {
+      ...context,
+      compilers: { custom: { roles: ['dimension'], compile } },
+    },
+  );
+  expect(result.plan).toBeUndefined();
+  expect(result.errors[0].message).toContain('角色');
+  expect(compile).not.toHaveBeenCalled();
+});
+it('passes the actual role to a declared dual-role compiler', () => {
+  const roles: string[] = [];
+  const result = compileAnalysis(
+    {
+      ...config,
+      dimensions: [
+        {
+          ...config.metrics[0],
+          id: 'state',
+          alias: 'state',
+          field: 'state',
+          component: { name: 'custom' },
+        },
+      ],
+      metrics: [{ ...config.metrics[0], component: { name: 'custom' } }],
+    },
+    {
+      ...context,
+      compilers: {
+        custom: {
+          roles: ['dimension', 'metric'],
+          compile(value, context) {
+            roles.push(context.role);
+            return context.role === 'dimension'
+              ? aggregation.terms(value.field!, value.alias)
+              : aggregation.count(value.alias);
+          },
+        },
+      },
+    },
+  );
+  expect(result.errors).toEqual([]);
+  expect(roles).toEqual(['dimension', 'metric']);
 });

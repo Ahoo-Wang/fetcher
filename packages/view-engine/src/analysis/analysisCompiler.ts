@@ -36,6 +36,7 @@ import type {
   AnalysisComponentConfig,
   AnalysisNumericExpression,
   AnalysisCompileContext,
+  AnalysisComponentCompileContext,
   AnalysisCompileResult,
   AnalysisResultColumn,
   AnalysisViewConfig,
@@ -146,7 +147,7 @@ function expressionUnit(
 }
 function builtin(
   item: DeepReadonly<AnalysisComponentConfig>,
-  context: AnalysisCompileContext,
+  context: AnalysisComponentCompileContext,
 ): AggregationGroup | AggregationMetric {
   const { field, alias, props } = item;
   switch (item.component.name) {
@@ -195,10 +196,12 @@ function builtin(
           ),
         '未知分析组件',
       );
-      return context.compilers[item.component.name].compile(
-        copy(item),
-        context,
+      const compiler = context.compilers[item.component.name];
+      requireValue(
+        Array.isArray(compiler.roles) && compiler.roles.includes(context.role),
+        '分析组件不支持当前角色',
       );
+      return compiler.compile(copy(item), context);
     }
   }
 }
@@ -292,7 +295,7 @@ export function compileAnalysis(
     const metrics: AggregationMetric[] = [];
     const compile = (
       item: DeepReadonly<AnalysisComponentConfig>,
-      role: 'dimension' | 'metric',
+      role: AnalysisResultColumn['role'],
       errorId?: string,
     ) => {
       try {
@@ -321,7 +324,7 @@ export function compileAnalysis(
           role === 'dimension' || item.label === undefined,
           '显示字段只能绑定维度',
         );
-        const output = builtin(item, scoped);
+        const output = builtin(item, { ...scoped, role });
         requireValue(
           output &&
             typeof output === 'object' &&

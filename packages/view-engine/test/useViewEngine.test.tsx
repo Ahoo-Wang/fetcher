@@ -48,7 +48,11 @@ it('owns one same-scope engine, updates host and isolates scope and definition c
 it('freezes paired registrations for a lifecycle and refreshes them only on a new scope', async () => {
   const { host } = setup();
   const compile = vi.fn(value => aggregation.count(value.alias));
-  const registration = { compile, component: () => null };
+  const registration = {
+    roles: ['metric' as const],
+    compile,
+    component: () => null,
+  };
   const extensions = { analysis: { custom: registration } };
   const view = renderHook(
     ({ scopeKey }) =>
@@ -56,6 +60,7 @@ it('freezes paired registrations for a lifecycle and refreshes them only on a ne
     { initialProps: { scopeKey: 'one' } },
   );
   await waitFor(() => expect(view.result.current.engine).toBeTruthy());
+  registration.roles.length = 0;
   registration.compile = vi.fn(value => aggregation.count(value.alias));
   view.rerender({ scopeKey: 'one' });
   expect(view.result.current.extensions?.analysis?.custom.compile).toBe(
@@ -67,6 +72,16 @@ it('freezes paired registrations for a lifecycle and refreshes them only on a ne
   expect(
     Object.isFrozen(view.result.current.extensions?.analysis?.custom),
   ).toBe(true);
+  expect(view.result.current.extensions?.analysis?.custom.roles).toEqual([
+    'metric',
+  ]);
+  expect(
+    Object.isFrozen(view.result.current.extensions?.analysis?.custom.roles),
+  ).toBe(true);
+  expect(view.result.current.engine?.analysisCompilers.custom.roles).toEqual([
+    'metric',
+  ]);
+  registration.roles.push('metric');
   view.rerender({ scopeKey: 'two' });
   expect(view.result.current.extensions?.analysis?.custom.compile).toBe(
     registration.compile,
@@ -90,3 +105,46 @@ it('supports StrictMode replay and rejects missing access scope without loading'
   expect(invalid.result.current.engine).toBeNull();
   expect(invalid.result.current.error).toContain('scopeKey');
 });
+
+it.each(
+  [undefined, [], ['unknown'], ['metric', 'metric'], 'metric'].map(roles => [
+    roles,
+  ]),
+)('reports invalid analysis roles through binding error: %j', async roles => {
+  const { host } = setup();
+  const view = renderHook(() =>
+    useViewEngine({
+      scopeKey: 'invalid',
+      definitionId: 'orders',
+      host,
+      extensions: {
+        analysis: {
+          custom: {
+            roles,
+            compile: () => aggregation.count('n'),
+            component: () => null,
+          },
+        },
+      } as never,
+    }),
+  );
+  await waitFor(() => expect(view.result.current.error).toMatch(/roles/));
+  expect(view.result.current.engine).toBeNull();
+});
+
+it.each([null, undefined])(
+  'reports an empty analysis registration through binding.error: %s',
+  async registration => {
+    const { host } = setup();
+    const view = renderHook(() =>
+      useViewEngine({
+        scopeKey: 'empty-registration',
+        definitionId: 'orders',
+        host,
+        extensions: { analysis: { custom: registration } } as never,
+      }),
+    );
+    await waitFor(() => expect(view.result.current.error).toMatch(/compiler/i));
+    expect(view.result.current.engine).toBeNull();
+  },
+);

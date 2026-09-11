@@ -16,12 +16,12 @@ import type { DeepReadonly } from '../lib/types.js';
 import type { FilterValidationError } from '../filter/filterModel.js';
 import type {
   AnalysisComponentConfig,
-  AnalysisCompileContext,
+  AnalysisComponentCompileContext,
   AnalysisCompiler,
 } from './analysisModel.js';
 export interface AnalysisComponentEditorProps {
   value: DeepReadonly<AnalysisComponentConfig>;
-  context: AnalysisCompileContext;
+  context: DeepReadonly<AnalysisComponentCompileContext>;
   onChange(value: AnalysisComponentConfig): void;
   disabled?: boolean;
   errors?: readonly FilterValidationError[];

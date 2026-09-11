@@ -55,3 +55,13 @@ AnalysisEditor 仍是较大的 UI 组合组件；本轮通过移出自动查询�
 远端 WebKit 记录刷新综合口径：be14b179 为 989.05ms，a3c3cf03 为 1042.06ms（相同 AMD EPYC 7763 型号，包含 Playwright click 和绘制等待）。旧 1000ms 仅有约 11ms 余量；依据用户此前授权，将刷新/选择/字段面板的综合回归上限统一改为 1250ms，保留各 10 个样本及阶段数据。这个调整不证明差异全来自噪声，也不代表产品代码加速；分析页面内 75/150ms 预算不变。
 
 后续三项修复的完整 `pnpm test:unit` 通过，view-engine 源码与 Compiler 各 1344 项（既定 2 项跳过）；lint、类型、文档构建/测试与全 PR 格式检查通过。完整浏览器验收与新提交 CI 继续执行，结果在 PR 中更新。
+
+## 扩展角色与容量契约
+
+确认 3987438109：用户指标与维度显示字段生成的 ANY 共用 maxMetrics，新增指标与新增显示字段都按合计数量限制；已存在的显示字段在容量用尽时仍可替换或清空。另检查了新增维度隐式增加排序槽位的同族边界，与新增/替换排序共用有效别名计数。
+
+确认 3987438120：AnalysisCompiler/AnalysisRegistration 必填只读 roles，支持 dimension、metric 或两者；AnalysisComponentCompileContext.role 告知当前编译/编辑角色。引擎验证并冻结角色元数据，UI 只提供匹配角色的自定义类型，编译器在调用扩展前阻止角色不符。双角色扩展可根据 context.role 明确产生不同贡献。调用者及 API/中英文档同步更新，没有保留未声明角色的兼容路径。
+
+独立复审发现并修复了空注册条目在 hook capture 阶段读取 roles 导致 render 抛错的问题；现在经引擎校验返回 binding.error。相关回归先失败后通过。完整 pnpm test:unit 通过，view-engine 源码与 Compiler 各 1361 项（既定 2 项跳过）；类型、lint 和文档检查通过。浏览器及远端 CI 继续验证。
+
+本批完整 Storybook 354 项通过，包构建及全 PR 格式检查通过。自定义编译器角色声明为未发布 API 的显式契约变更；保存的实例仍按 component.name 引用，不向 Wow 请求添加角色字段。

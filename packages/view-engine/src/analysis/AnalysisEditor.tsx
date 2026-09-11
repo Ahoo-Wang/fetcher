@@ -136,6 +136,13 @@ function Choice({
     </label>
   );
 }
+function effectiveSortAliases(
+  dimensions: readonly { readonly alias: string }[],
+  sort: readonly { readonly alias: string }[],
+) {
+  return new Set([...dimensions, ...sort].map(item => item.alias));
+}
+
 function ComponentList({
   kind,
   ...props
@@ -143,6 +150,10 @@ function ComponentList({
   const { value, context, onChange, disabled, errors = [] } = props;
   const title = kind === 'dimensions' ? '维度' : '指标';
   const items = value[kind];
+  const role = kind === 'dimensions' ? 'dimension' : 'metric';
+  const metricsUsed =
+    value.metrics.length + value.dimensions.filter(item => item.label).length;
+  const maxMetrics = context.capability.limits?.maxMetrics ?? 64;
   const capabilityByField = new Map(
     context.capability.fields.map(field => [field.field, field]),
   );
@@ -200,9 +211,19 @@ function ComponentList({
         ];
   choices.push(
     ...Object.keys(props.extensions?.analysis ?? {}).filter(
-      name => !names[name],
+      name =>
+        !names[name] &&
+        props.extensions?.analysis?.[name]?.roles?.includes(role),
     ),
   );
+  const canAdd =
+    !disabled &&
+    choices.length > 0 &&
+    (kind === 'dimensions'
+      ? items.length < (context.capability.limits?.maxGroups ?? 32) &&
+        effectiveSortAliases(value.dimensions, value.sort).size <
+          (context.capability.limits?.maxSort ?? 32)
+      : metricsUsed < maxMetrics);
   return (
     <fieldset
       disabled={disabled}
@@ -237,7 +258,8 @@ function ComponentList({
               const CustomEditor =
                 !names[component] &&
                 registry &&
-                Object.prototype.hasOwnProperty.call(registry, component)
+                Object.prototype.hasOwnProperty.call(registry, component) &&
+                registry[component]?.roles?.includes(role)
                   ? registry[component].component
                   : undefined;
               const capability = capabilityByField.get(item.field ?? '');
@@ -397,11 +419,19 @@ function ComponentList({
                                         label: field.label,
                                       }))}
                                     value={item.label?.field}
-                                    disabled={disabled}
+                                    disabled={
+                                      disabled ||
+                                      (!item.label && metricsUsed >= maxMetrics)
+                                    }
                                     onClear={() =>
                                       update(index, { label: undefined })
                                     }
-                                    onValueChange={field =>
+                                    onValueChange={field => {
+                                      if (
+                                        !item.label &&
+                                        metricsUsed >= maxMetrics
+                                      )
+                                        return;
                                       update(index, {
                                         label: {
                                           field,
@@ -413,8 +443,8 @@ function ComponentList({
                                               f => f.field === field,
                                             )?.label ?? field,
                                         },
-                                      })
-                                    }
+                                      });
+                                    }}
                                   />
                                 </label>
                               )}
@@ -572,7 +602,7 @@ function ComponentList({
                                 <AnalysisEditorBoundary key={component}>
                                   <CustomEditor
                                     value={item}
-                                    context={context}
+                                    context={{ ...context, role }}
                                     disabled={disabled}
                                     errors={issues}
                                     onChange={next =>
@@ -677,15 +707,9 @@ function ComponentList({
           <Button
             variant="outline"
             className="fve:mt-2"
-            disabled={
-              disabled ||
-              !choices.length ||
-              items.length >=
-                (kind === 'dimensions'
-                  ? (context.capability.limits?.maxGroups ?? 32)
-                  : (context.capability.limits?.maxMetrics ?? 64))
-            }
+            disabled={!canAdd}
             onClick={() => {
+              if (!canAdd) return;
               const id = crypto.randomUUID();
               setOpenedIds(previous => new Set([...previous, id]));
               setExpandedId(id);
@@ -728,9 +752,7 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
   function sortOptions(index = value.sort.length) {
     const remaining = value.sort.filter((_, i) => i !== index);
     // The compiler appends every dimension not already explicitly sorted.
-    const effectiveAliases = new Set(
-      [...value.dimensions, ...remaining].map(item => item.alias),
-    );
+    const effectiveAliases = effectiveSortAliases(value.dimensions, remaining);
     return outputs.filter(
       output =>
         output.alias === value.sort[index]?.alias ||

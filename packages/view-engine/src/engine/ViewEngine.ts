@@ -111,10 +111,28 @@ export class ViewEngine {
     this.analysisCompilers = Object.freeze(
       Object.fromEntries(
         Object.entries(options.analysisCompilers ?? {}).map(
-          ([name, compiler]) => [
-            name,
-            Object.freeze({ compile: compiler.compile }),
-          ],
+          ([name, compiler]) => {
+            if (!compiler || typeof compiler.compile !== 'function')
+              throw new Error(`Analysis compiler ${name} must provide compile`);
+            if (
+              !Array.isArray(compiler.roles) ||
+              compiler.roles.length === 0 ||
+              new Set(compiler.roles).size !== compiler.roles.length ||
+              [...compiler.roles].some(
+                role => role !== 'dimension' && role !== 'metric',
+              )
+            )
+              throw new Error(
+                `Analysis compiler ${name} roles must be nonempty, unique dimension/metric values`,
+              );
+            return [
+              name,
+              Object.freeze({
+                roles: Object.freeze([...compiler.roles]),
+                compile: compiler.compile,
+              }),
+            ];
+          },
         ),
       ),
     );

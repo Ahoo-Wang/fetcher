@@ -121,7 +121,7 @@ console.log(compiled.plan.query, result.rows);
 
 `AnalysisViewConfig` 保存 `filters`、`dimensions`、`metrics`、基于 alias 的 `sort`、`limit`、可选 Elements `scope` 与 `presentation`。每个组件都有稳定的 `id`、可持久化的 `component` 引用、可选 `field`、输出 `alias`、展示 `title` 和原始 JSON `props`。不完整文本可以保留在配置中，但编译会返回错误，不产生可执行计划。
 
-`AnalysisCompileContext` 提供筛选 `fields`、明确的 `capability`，以及可选 `timeZone`、`allowedOperators`、`filterCompilers` 和自定义分析 `compilers`。能力分别授权 COUNT、字段分组、数值函数和时间粒度。内置组件为 `terms`、`histogram`（`props.interval`）、`date-histogram`（`props.unit`）、`count`、`any`、`numeric`（`props.function`）。日期分组必须明确时区。自定义 `AnalysisCompiler.compile` 返回单个分组或指标，核心校验其字段、alias 和能力后才接受。
+`AnalysisCompileContext` 提供筛选 `fields`、明确的 `capability`，以及可选 `timeZone`、`allowedOperators`、`filterCompilers` 和自定义分析 `compilers`。能力分别授权 COUNT、字段分组、数值函数和时间粒度。内置组件为 `terms`、`histogram`（`props.interval`）、`date-histogram`（`props.unit`）、`count`、`any`、`numeric`（`props.function`）。日期分组必须明确时区。自定义 `AnalysisCompiler` 注册必须声明非空且不重复的 `roles`（`['dimension']`、`['metric']` 或两者）。`AnalysisComponentCompileContext` 在 `AnalysisCompileContext` 上增加实际的只读 `role`，供自定义编译器和编辑器分支处理。不支持的角色会在调用编译器前被拒绝。`compile` 返回单个分组或指标，核心校验其字段、alias 和能力后才接受。引擎与 React 适配器在每个生命周期内复制并冻结角色元数据。
 
 `compileAnalysis` 返回 `{ plan?, errors }`；成功的 `AnalysisPlan` 包含 Wow `query`、匹配的 `schema` 和可选 `timeZone`。排序中未指定的分组 alias 会追加为升序，确保顺序稳定。默认上限为 32 个分组、64 个指标、32 个有效排序项和 10,000 行，能力限制可以进一步收紧。至少需要一个指标。不分组的分析不支持排序，结果最多一行。
 

@@ -50,7 +50,12 @@ function capture(options: UseViewEngineOptions, identity: string) {
           Object.entries(options.extensions.analysis).map(
             ([name, registration]) => [
               name,
-              Object.freeze({ ...registration }),
+              Object.freeze({
+                ...registration,
+                roles: Array.isArray(registration?.roles)
+                  ? Object.freeze([...registration.roles])
+                  : registration?.roles,
+              }),
             ],
           ),
         ),
@@ -70,7 +75,7 @@ function capture(options: UseViewEngineOptions, identity: string) {
         ? Object.fromEntries(
             Object.entries(analysis).map(([name, registration]) => [
               name,
-              { compile: registration.compile },
+              { roles: registration?.roles, compile: registration.compile },
             ]),
           )
         : undefined,

@@ -223,6 +223,7 @@ it.each(['money', 'constructor', 'toString', '__proto__'])(
   name => {
     const changed = vi.fn();
     const registration: AnalysisRegistration = {
+      roles: ['metric'],
       compile: value =>
         aggregation.sum(aggregation.field(value.field!), value.alias),
       component: ({ value, onChange, disabled }) => (
@@ -282,6 +283,7 @@ it('isolates custom render failure and allows retry and removal', () => {
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});
   let fail = true;
   const registration: AnalysisRegistration = {
+    roles: ['metric'],
     compile: value => aggregation.count(value.alias),
     component: () => {
       if (fail) throw new Error('broken editor');
@@ -1018,4 +1020,148 @@ it('recomputes sort capacity when capability changes and excludes overflowing re
   expect(
     screen.queryByRole('option', { name: '订单数', exact: true }),
   ).toBeNull();
+});
+
+it('counts owned ANY display fields in the metric budget and preserves replacement/clear at capacity', async () => {
+  const scoped: AnalysisCompileContext = {
+    fields: [
+      { field: 'id', label: '商品 ID', type: 'string' },
+      { field: 'name', label: '商品名称', type: 'string' },
+    ],
+    capability: {
+      count: true,
+      limits: { maxMetrics: 1 },
+      fields: [
+        { field: 'id', groups: [AggregationGroupType.TERMS], functions: [] },
+        { field: 'name', groups: [], functions: [], any: true },
+      ],
+    },
+  };
+  const value: AnalysisViewConfig = {
+    ...initial,
+    dimensions: [
+      {
+        id: 'product',
+        alias: 'product',
+        title: '商品',
+        field: 'id',
+        component: { name: 'terms' },
+        props: {},
+      },
+    ],
+  };
+  const changed = vi.fn();
+  const view = render(
+    <AnalysisEditor value={value} context={scoped} onChange={changed} />,
+  );
+  expect(control('combobox', { name: '维度 1 显示字段' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  expect(changed).not.toHaveBeenCalled();
+  const labeled: AnalysisViewConfig = {
+    ...value,
+    dimensions: [
+      {
+        ...value.dimensions[0],
+        label: { field: 'name', alias: 'product_name', title: '名称' },
+      },
+    ],
+  };
+  const expanded = {
+    ...scoped,
+    capability: { ...scoped.capability, limits: { maxMetrics: 2 } },
+  };
+  view.rerender(
+    <AnalysisEditor value={labeled} context={expanded} onChange={changed} />,
+  );
+  expect(screen.getByRole('button', { name: '添加指标' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  expect(control('combobox', { name: '维度 1 显示字段' })).toHaveProperty(
+    'disabled',
+    false,
+  );
+  fireEvent.click(control('combobox', { name: '维度 1 显示字段' }));
+  const clear = screen.getByRole('option', { name: '清空选择' });
+  fireEvent.pointerDown(clear, { pointerType: 'mouse' });
+  fireEvent.click(clear);
+  await waitFor(() => expect(changed).toHaveBeenCalled());
+  const next = changed.mock.lastCall![0] as AnalysisViewConfig;
+  view.rerender(
+    <AnalysisEditor value={next} context={expanded} onChange={changed} />,
+  );
+  expect(screen.getByRole('button', { name: '添加指标' })).toHaveProperty(
+    'disabled',
+    false,
+  );
+  expect(compileAnalysis(next, expanded).plan?.query.metrics).toHaveLength(1);
+});
+
+it('offers a custom numeric compiler only as a metric and supplies its role to the editor', () => {
+  const numeric: AnalysisRegistration = {
+    roles: ['metric'],
+    compile: value => aggregation.count(value.alias),
+    component: ({ context }) => <span>编辑角色 {context.role}</span>,
+  };
+  const scoped = { ...context, compilers: { custom: numeric } };
+  render(
+    <AnalysisEditor
+      value={initial}
+      context={scoped}
+      extensions={{ analysis: { custom: numeric } }}
+      onChange={() => {}}
+    />,
+  );
+  expect(screen.getByRole('button', { name: '添加维度' })).toHaveProperty(
+    'disabled',
+    true,
+  );
+  cleanup();
+  render(
+    <AnalysisEditor
+      value={{
+        ...initial,
+        metrics: [{ ...initial.metrics[0], component: { name: 'custom' } }],
+      }}
+      context={scoped}
+      extensions={{ analysis: { custom: numeric } }}
+      onChange={() => {}}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '编辑指标 1' }));
+  expect(screen.getByText('编辑角色 metric')).toBeTruthy();
+});
+
+it('reserves automatic sort slots before adding a dimension', () => {
+  const scoped: AnalysisCompileContext = {
+    fields: [{ field: 'id', label: 'ID', type: 'string' }],
+    capability: {
+      count: true,
+      limits: { maxGroups: 3, maxSort: 1 },
+      fields: [
+        { field: 'id', groups: [AggregationGroupType.TERMS], functions: [] },
+      ],
+    },
+  };
+  const value: AnalysisViewConfig = {
+    ...initial,
+    dimensions: [
+      {
+        id: 'id',
+        alias: 'id',
+        title: 'ID',
+        field: 'id',
+        component: { name: 'terms' },
+        props: {},
+      },
+    ],
+  };
+  render(<AnalysisEditor value={value} context={scoped} onChange={() => {}} />);
+  expect(compileAnalysis(value, scoped).plan).toBeDefined();
+  expect(screen.getByRole('button', { name: '添加维度' })).toHaveProperty(
+    'disabled',
+    true,
+  );
 });

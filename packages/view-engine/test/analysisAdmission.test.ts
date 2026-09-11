@@ -187,7 +187,7 @@ it('keeps structurally valid incomplete drafts recoverable', () => {
 });
 it('snapshots analysis compiler functions rather than retaining mutable entries', () => {
   const original = () => aggregation.count('n');
-  const compiler = { compile: original };
+  const compiler = { roles: ['metric' as const], compile: original };
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
@@ -196,6 +196,9 @@ it('snapshots analysis compiler functions rather than retaining mutable entries'
   });
   try {
     compiler.compile = () => aggregation.count('changed');
+    compiler.roles.length = 0;
+    expect(engine.analysisCompilers.custom.roles).toEqual(['metric']);
+    expect(Object.isFrozen(engine.analysisCompilers.custom.roles)).toBe(true);
     expect(engine.analysisCompilers.custom.compile).toBe(original);
     expect(Object.isFrozen(engine.analysisCompilers.custom)).toBe(true);
   } finally {
@@ -271,4 +274,22 @@ it('retains the configuration size error across validity changes and blocks writ
   } finally {
     engine.dispose();
   }
+});
+
+it.each(
+  [undefined, [], ['unknown'], ['metric', 'metric'], 'metric'].map(roles => [
+    roles,
+  ]),
+)('rejects invalid custom analysis roles at engine admission: %j', roles => {
+  expect(
+    () =>
+      new ViewEngine({
+        definitionId: definition.id,
+        definition,
+        host: {},
+        analysisCompilers: {
+          custom: { roles, compile: () => aggregation.count('n') },
+        } as never,
+      }),
+  ).toThrow(/roles/);
 });

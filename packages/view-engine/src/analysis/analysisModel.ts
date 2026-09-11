@@ -94,9 +94,10 @@ export interface AnalysisViewConfig {
 }
 /** Custom compilers return exactly one contribution. Core reconstructs and validates it. */
 export interface AnalysisCompiler {
+  readonly roles: readonly AnalysisResultColumn['role'][];
   compile(
     config: DeepReadonly<AnalysisComponentConfig>,
-    context: DeepReadonly<AnalysisCompileContext>,
+    context: DeepReadonly<AnalysisComponentCompileContext>,
   ): AggregationGroup | AggregationMetric;
 }
 export type AnalysisCompilerRegistry = Readonly<
@@ -109,6 +110,9 @@ export interface AnalysisCompileContext {
   allowedOperators?: readonly FilterOperator[];
   filterCompilers?: FilterCompilerRegistry;
   compilers?: AnalysisCompilerRegistry;
+}
+export interface AnalysisComponentCompileContext extends AnalysisCompileContext {
+  readonly role: AnalysisResultColumn['role'];
 }
 export interface AnalysisResultColumn {
   id: string;
