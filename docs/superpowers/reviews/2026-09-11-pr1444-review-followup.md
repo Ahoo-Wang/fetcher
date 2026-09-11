@@ -24,3 +24,9 @@
 Codecov 原报告：patch 91.06399%，236 行未覆盖，project 96.48%。这些是原提交的远端指标。
 
 新增边界准入、可恢复配置、编译器冻结、公式/范围编辑、排序编辑、提示框/图例、键盘图表提示和筛选延迟挂载测试。最终本地 view-engine 行覆盖率 97.50%（此前 96.87%），分支 91.10%（此前 89.96%）；源码及 React Compiler 各 1274 passed、2 skipped。全仓 `pnpm test:unit` 与完整 Storybook 354 项通过。新的 Codecov patch/project 数值以本次提交的远端报告为准，未调整覆盖率阈值或排除文件。
+
+## 远端复检与第二轮输入优化
+
+`8fe7cbb9` 的 Codacy 与 Engineering Quality 通过。Codecov 重新计算 patch 为 94.00444%（162 行未覆盖），project 为 96.91%，均高于初始报告。GitHub runner 的实例切换 P95 从 231.4ms 降到 73.1ms；输入 P95 为 52.7ms，尚超 50ms 门槛。
+
+进一步定位到每个筛选条件反复构造时区校验器，以及 JSON 比较过程中的排序/对象分配。现在缓存最多 64 个已验证 IANA 时区，失败不缓存；JSON DTO 直接比较，保留 key 顺序无关、undefined 属性忽略及稀疏数组 null 槽语义。新增对应回归。第二轮本地生产验收输入 P95 34.3ms、切换 P95 40.5ms；最终远端状态以 PR 检查为准。所有性能与覆盖率阈值保持不变。
