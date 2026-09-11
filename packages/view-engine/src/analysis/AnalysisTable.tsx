@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { effectiveSortAliases } from './analysisSort.js';
 import { useMemo, useState } from 'react';
 import { sameJsonState } from '../lib/snapshot.js';
 import { analysisRowKey } from './analysisResult.js';
@@ -41,6 +42,8 @@ export interface AnalysisTableProps {
   querying?: boolean;
   /** Disable query-producing sort actions while the working input is invalid. */
   sortDisabled?: boolean;
+  /** Maximum explicit and implicit dimension sorts combined. Defaults to 32. */
+  maxSort?: number;
 }
 export function AnalysisTable({
   plan,
@@ -51,6 +54,7 @@ export function AnalysisTable({
   stale,
   querying,
   sortDisabled = false,
+  maxSort = 32,
 }: AnalysisTableProps) {
   const [pagination, setPagination] = useState({ query: plan.query, page: 0 });
   const pageCount = Math.ceil(rows.length / 100);
@@ -108,8 +112,15 @@ export function AnalysisTable({
     !stale &&
     !querying &&
     !sortDisabled;
+  const effectiveAliases = effectiveSortAliases(dimensions, sort);
+  function canSort(alias: string) {
+    return (
+      sortEnabled &&
+      (effectiveAliases.has(alias) || effectiveAliases.size < maxSort)
+    );
+  }
   function toggle(alias: string) {
-    if (!sortEnabled) return;
+    if (!canSort(alias)) return;
     const current = sort.find(item => item.alias === alias);
     onSortChange?.(
       current?.direction === SortDirection.DESC
@@ -178,7 +189,7 @@ export function AnalysisTable({
                       variant="ghost"
                       size="sm"
                       className="fve:max-w-full"
-                      disabled={!sortEnabled}
+                      disabled={!canSort(column.alias)}
                       aria-label={`排序${column.title}`}
                       onClick={() => toggle(column.alias)}
                     >

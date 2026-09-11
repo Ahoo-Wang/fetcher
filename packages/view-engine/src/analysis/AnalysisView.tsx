@@ -467,6 +467,7 @@ export function AnalysisView({
         stale={stale}
         querying={querying}
         sortDisabled={!session.filterValid}
+        maxSort={definition.analysis?.limits?.maxSort}
         onSortChange={sort =>
           run(async () => {
             if (!engine.getSnapshot().sessions[instance.id]?.filterValid)

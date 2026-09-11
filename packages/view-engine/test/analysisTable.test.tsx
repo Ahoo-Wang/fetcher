@@ -223,3 +223,50 @@ it('reuses unchanged result cells while query status changes and refreshes repla
   expect(screen.getByText('3')).toBeTruthy();
   expect(formatAnalysisValue).toHaveBeenCalled();
 });
+
+it('reserves implicit dimension sort capacity while retaining existing sort actions', () => {
+  const change = vi.fn();
+  const view = render(
+    <AnalysisTable
+      plan={plan}
+      rows={[]}
+      sort={[]}
+      maxSort={1}
+      onSortChange={change}
+    />,
+  );
+  const metric = screen.getByRole('button', {
+    name: '排序订单数',
+  }) as HTMLButtonElement;
+  expect(metric.disabled).toBe(true);
+  fireEvent.click(metric);
+  expect(change).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '排序状态' }));
+  expect(change).toHaveBeenLastCalledWith([
+    { alias: 'state', direction: SortDirection.ASC },
+  ]);
+  view.rerender(
+    <AnalysisTable
+      plan={plan}
+      rows={[]}
+      sort={[{ alias: 'orders', direction: SortDirection.ASC }]}
+      maxSort={2}
+      onSortChange={change}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '排序订单数' }));
+  expect(change).toHaveBeenLastCalledWith([
+    { alias: 'orders', direction: SortDirection.DESC },
+  ]);
+  view.rerender(
+    <AnalysisTable
+      plan={plan}
+      rows={[]}
+      sort={[{ alias: 'orders', direction: SortDirection.DESC }]}
+      maxSort={2}
+      onSortChange={change}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '排序订单数' }));
+  expect(change).toHaveBeenLastCalledWith([]);
+});

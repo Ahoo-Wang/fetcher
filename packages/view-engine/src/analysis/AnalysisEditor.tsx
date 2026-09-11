@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { effectiveSortAliases } from './analysisSort.js';
 import {
   AggregationGroupType as Group,
   AggregationFunction,
@@ -135,12 +136,6 @@ function Choice({
       />
     </label>
   );
-}
-function effectiveSortAliases(
-  dimensions: readonly { readonly alias: string }[],
-  sort: readonly { readonly alias: string }[],
-) {
-  return new Set([...dimensions, ...sort].map(item => item.alias));
 }
 
 function ComponentList({
