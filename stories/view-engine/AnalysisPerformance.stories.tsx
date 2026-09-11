@@ -427,6 +427,13 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
             throw new Error('切换后结果未渲染');
           (index < warmupCount ? warmupSwitch : switchSamples).push(elapsed);
         }
+        const idleFrames: number[] = [];
+        for (let index = 0; index < sampleCount; index++) {
+          await frame();
+          const start = performance.now();
+          await paint();
+          idleFrames.push(performance.now() - start);
+        }
         if (runtime.requests() !== requestsBefore)
           throw new Error('纯本地测量期间发生额外aggregate');
         const inputResult = statistics(inputSamples),
@@ -444,6 +451,7 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
           warmup: { inputMs: warmupInput, switchMs: warmupSwitch },
           input: inputResult,
           inputPhases,
+          idleFrames: statistics(idleFrames),
           instanceSwitch: switchResult,
           thresholds: { inputP95Ms: 50, switchP95Ms: 100 },
           passed,

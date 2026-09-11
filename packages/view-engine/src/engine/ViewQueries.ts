@@ -31,6 +31,13 @@ export class ViewQueries {
     this.analysis.reset();
   }
   cancel(id: string): void {
+    const session = this.store.find(id);
+    if (
+      session?.kind === 'analysis' &&
+      session.queryStatus === 'loading' &&
+      !session.result
+    )
+      this.opened.delete(id);
     this.record.cancel(id);
     this.analysis.cancel(id);
   }

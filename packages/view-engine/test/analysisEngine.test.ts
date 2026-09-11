@@ -329,3 +329,61 @@ it('preserves invalid analysis editor input across reloads without a JSON change
     engine.dispose();
   }
 });
+
+it('does not clear an invalid extension draft when restoring configuration', async () => {
+  const { engine, aggregate } = setup();
+  try {
+    await engine.load();
+    const commands = engine.analysis(instance.id);
+    commands.edit(value => ({ ...value, limit: 50 }));
+    commands.setFilterValidity(false);
+    commands.restore();
+    expect(
+      engine.getSnapshot().sessions[instance.id].instance.config.limit,
+    ).toBe(100);
+    expect(engine.getSnapshot().sessions[instance.id].filterValid).toBe(false);
+    await expect(commands.run()).rejects.toThrow('筛选输入无效');
+    expect(aggregate).toHaveBeenCalledOnce();
+    commands.setFilterValidity(true);
+    await commands.run();
+    expect(aggregate).toHaveBeenCalledTimes(2);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('retries a first analysis cancelled by navigation when revisiting its instance', async () => {
+  let finish: ((rows: { orders: number; total: number }[]) => void) | undefined;
+  const aggregate = vi
+    .fn()
+    .mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        }),
+    )
+    .mockResolvedValue([{ orders: 2, total: 30 }]);
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: {
+      instances: [instance, { ...instance, id: 'other' }],
+      defaultInstanceId: instance.id,
+    },
+    host: { resolveSource: () => ({ aggregate }) },
+  });
+  try {
+    const loading = engine.load();
+    await vi.waitFor(() => expect(aggregate).toHaveBeenCalledOnce());
+    await engine.selectInstance('other');
+    await loading;
+    expect(engine.getSnapshot().sessions[instance.id].queryStatus).toBe('idle');
+    expect(engine.getSnapshot().sessions[instance.id].result).toBeNull();
+    await engine.selectInstance(instance.id);
+    expect(aggregate).toHaveBeenCalledTimes(3);
+    expect(engine.getSnapshot().sessions[instance.id].result).not.toBeNull();
+  } finally {
+    finish?.([]);
+    engine.dispose();
+  }
+});

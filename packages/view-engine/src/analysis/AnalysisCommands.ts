@@ -73,7 +73,6 @@ export class AnalysisCommands {
     this.work.assertWritable(session);
     this.store.patch(id, {
       instance: session.baseline,
-      filterValid: true,
       writeError: null,
     });
   }

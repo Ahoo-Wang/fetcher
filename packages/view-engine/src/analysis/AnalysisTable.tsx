@@ -72,7 +72,10 @@ export function AnalysisTable({
                 const value = row[column.alias];
                 return (
                   <TableCell key={column.alias}>
-                    <span title={String(value)}>
+                    <span
+                      className="fve:block fve:truncate"
+                      title={String(value)}
+                    >
                       {formatAnalysisValue(value, column, plan.timeZone)}
                     </span>
                   </TableCell>
@@ -126,7 +129,20 @@ export function AnalysisTable({
           ? ` · 接收于 ${new Date(receivedAt).toLocaleString('zh-CN')}`
           : ''}
       </p>
-      <Table>
+      <Table
+        className="fve:table-fixed"
+        style={{
+          minWidth: plan.schema.reduce(
+            (width, column) => width + (column.width ?? 160),
+            0,
+          ),
+        }}
+      >
+        <colgroup>
+          {plan.schema.map(column => (
+            <col key={column.alias} style={{ width: column.width ?? 160 }} />
+          ))}
+        </colgroup>
         <TableHeader>
           <TableRow>
             {plan.schema.map(column => {
@@ -154,6 +170,7 @@ export function AnalysisTable({
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="fve:max-w-full"
                       disabled={!sortEnabled}
                       aria-label={`排序${column.title}`}
                       onClick={() => toggle(column.alias)}

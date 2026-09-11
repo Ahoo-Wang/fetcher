@@ -245,13 +245,16 @@ it('times out an aggregate that ignores abort and emits only one terminal event'
   ]);
   expect(vi.getTimerCount()).toBe(0);
 });
-it('restoring analysis resets invalid editor validity with the baseline', () => {
+it('restoring analysis preserves invalid editor validity until recovery is reported', () => {
   const { commands, store } = setup(() => ({
     aggregate: async () => [{ n: 1 }],
   }));
   store.patch('a', { filterValid: false });
   expect(store.analysisSession('a').validation.length).toBeGreaterThan(0);
   commands.restore('a');
-  expect(store.analysisSession('a').filterValid).toBe(true);
-  expect(store.analysisSession('a').validation).toEqual([]);
+  expect(store.analysisSession('a').filterValid).toBe(false);
+  expect(store.analysisSession('a').validation).toContainEqual({
+    id: 'filters',
+    message: '筛选输入无效',
+  });
 });
