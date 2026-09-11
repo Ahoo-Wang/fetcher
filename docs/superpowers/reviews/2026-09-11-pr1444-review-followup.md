@@ -50,3 +50,7 @@ Codecov 原报告：patch 91.06399%，236 行未覆盖，project 96.48%。这些
 `1775bec5` 的远端 Firefox 切换 P95 已降到 96ms，但输入仍有 67ms 尾延迟。本地 CPU 剖析和安装的 Storybook 10.6 `dist/preview/runtime.js` 源码确认：高亮模块在目标集合为空时仍观察 story DOM；每次 DOM 变化重新枚举全页元素并调用 `getComputedStyle`，将开发辅助工具的样式扫描计入产品响应时间。
 
 验收脚本仅为其生产 Storybook 构建设置 `VIEW_ENGINE_ACCEPTANCE=true`，关闭该开发高亮功能。常规 Storybook 默认仍开启；axe、功能测试、相同数据规模、样本数、事件起止点、两次 rAF 和 50/100ms 门槛均保留。性能证据新增 `storybookHighlight` 标志，验收器强制断言为 false，防止测量环境回退。该修改属于测试环境隔离，不应把移除的开发工具开销描述为产品代码自身加速。
+
+## 字段能力索引
+
+隔离高亮后，`17f1c6c9` 远端 Chromium 输入 P95 为 50.2ms，仍超 50ms，不能以仅超 0.2ms 为由放行。生产包 CPU 剖析（3 倍 CPU 节流用于定位，不用于验收数值）显示主要剩余 JS 热点为 AnalysisEditor 的字段选择与 ANY 标签字段选择：对每个候选字段反复 find/some 整个能力列表。改用每次渲染构造一次的 Map，将重复的平方级扫描改为线性索引及常数时间查找；未引入跨渲染缓存、未修改授权选项或 React Compiler 规则。定向编辑器/视图测试、全仓单测及最终受影响包源码/编译模式/类型检查通过，符号索引和双语文档生成同步。

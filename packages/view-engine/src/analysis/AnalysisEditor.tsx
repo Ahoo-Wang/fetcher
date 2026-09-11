@@ -143,6 +143,9 @@ function ComponentList({
   const { value, context, onChange, disabled, errors = [] } = props;
   const title = kind === 'dimensions' ? '维度' : '指标';
   const items = value[kind];
+  const capabilityByField = new Map(
+    context.capability.fields.map(field => [field.field, field]),
+  );
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [openedIds, setOpenedIds] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -237,13 +240,9 @@ function ComponentList({
                 Object.prototype.hasOwnProperty.call(registry, component)
                   ? registry[component].component
                   : undefined;
-              const capability = context.capability.fields.find(
-                field => field.field === item.field,
-              );
+              const capability = capabilityByField.get(item.field ?? '');
               const fields = context.fields.filter(field => {
-                const allowed = context.capability.fields.find(
-                  item => item.field === field.field,
-                );
+                const allowed = capabilityByField.get(field.field);
                 return component === 'numeric'
                   ? field.type === 'number' && !!allowed?.functions.length
                   : component === 'any'
@@ -383,11 +382,9 @@ function ComponentList({
                                 label={`${label} 显示字段`}
                                 placeholder="使用分组字段"
                                 options={context.fields
-                                  .filter(field =>
-                                    context.capability.fields.some(
-                                      cap =>
-                                        cap.field === field.field && cap.any,
-                                    ),
+                                  .filter(
+                                    field =>
+                                      capabilityByField.get(field.field)?.any,
                                   )
                                   .map(field => ({
                                     value: field.field,
