@@ -134,6 +134,11 @@ it('admits scoped numeric capabilities with formatting and tightened limits', ()
   ).not.toThrow();
 });
 it.each([
+  { filters: 'bad' },
+  { filters: { mode: 'simple', root: null } },
+  { limit: {} },
+  { limit: null },
+  { scope: { id: 'items', filters: ['bad'] } },
   { dimensions: [null] },
   { metrics: ['bad'] },
   { metrics: [{ id: 'x', alias: 'x', title: 'X', props: {} }] },

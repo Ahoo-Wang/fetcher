@@ -306,3 +306,26 @@ it('deduplicates the same pending plan and lets changed configuration replace it
   }
   engine.dispose();
 });
+
+it('preserves invalid analysis editor input across reloads without a JSON change', async () => {
+  const aggregate = vi.fn().mockResolvedValue([{ orders: 2, total: 30 }]);
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host: {
+      resolveSource: () => ({ aggregate }),
+      instance: { load: async () => ({ ...instance, revision: '2' }) },
+    },
+  });
+  try {
+    await engine.load();
+    engine.analysis(instance.id).setFilterValidity(false);
+    await engine.reloadInstance(instance.id);
+    expect(engine.getSnapshot().sessions[instance.id].filterValid).toBe(false);
+    await expect(engine.analysis(instance.id).run()).rejects.toThrow();
+    expect(aggregate).toHaveBeenCalledOnce();
+  } finally {
+    engine.dispose();
+  }
+});

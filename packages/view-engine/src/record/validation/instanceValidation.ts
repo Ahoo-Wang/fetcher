@@ -66,6 +66,9 @@ export function validateViewInstance(
       typeof config.presentation !== 'object'
     )
       throw new Error('分析配置结构无效');
+    validateFilterConfiguration(config.filters);
+    if (typeof config.limit !== 'number' && typeof config.limit !== 'string')
+      throw new Error('分析结果行数必须是数字或文本草稿');
     assertObject(config.presentation, '分析展示配置');
     for (const item of [...config.dimensions, ...config.metrics]) {
       assertObject(item, '分析组件');
@@ -97,6 +100,8 @@ export function validateViewInstance(
       assertText(config.scope.id, '分析范围 ID');
       if (!Array.isArray(config.scope.filters))
         throw new Error('分析范围筛选结构无效');
+      for (const filter of config.scope.filters)
+        validateFilterConfiguration(filter);
     }
     return;
   }

@@ -32,7 +32,11 @@ import type {
 } from '../src/contracts/viewModel.js';
 
 afterEach(cleanup);
-function setup(mixed = false, damagedPresentation = false) {
+function setup(
+  mixed = false,
+  damagedPresentation = false,
+  maxRetainedResults = 20,
+) {
   const definition: ViewDefinition = {
     id: 'orders',
     title: '订单分析',
@@ -87,6 +91,7 @@ function setup(mixed = false, damagedPresentation = false) {
   const engine = new ViewEngine({
     definitionId: 'orders',
     definition,
+    limits: { maxRetainedResults },
     instances: {
       instances: mixed
         ? [
@@ -100,7 +105,12 @@ function setup(mixed = false, damagedPresentation = false) {
                 filters: instance.config.filters,
                 sort: [],
                 pagination: { mode: 'paged', size: 10 },
-                presentation: { layout: 'table', table: { columns: [] } },
+                presentation: {
+                  layout: 'table',
+                  table: {
+                    columns: [{ id: 'amount', kind: 'field', field: 'amount' }],
+                  },
+                },
               },
             },
           ]
@@ -757,6 +767,27 @@ it('mounts root filters on first expansion and retains them when collapsed', asy
     expect(aggregate).toHaveBeenCalledTimes(1);
   } finally {
     cleanup();
+    engine.dispose();
+  }
+});
+
+it('explains evicted analysis results and restores them with the run action', async () => {
+  const { engine, aggregate } = setup(true, false, 1);
+  try {
+    await engine.load();
+    await engine.selectInstance('records');
+    await engine.selectInstance('totals');
+    expect(engine.getSnapshot().sessions.totals.result).toBeNull();
+    render(<AnalysisView engine={engine} />);
+    expect(screen.getByText('分析结果缓存已释放')).toBeTruthy();
+    expect(screen.queryByText('从一个业务问题开始')).toBeNull();
+    const before = aggregate.mock.calls.length;
+    fireEvent.click(
+      screen.getByRole('button', { name: '运行分析', exact: true }),
+    );
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+    expect(aggregate).toHaveBeenCalledTimes(before + 1);
+  } finally {
     engine.dispose();
   }
 });

@@ -756,9 +756,17 @@ export function AnalysisView({
               role="status"
               className="fve:flex fve:min-h-64 fve:flex-col fve:items-center fve:justify-center fve:gap-2 fve:text-center fve:text-muted-foreground"
             >
-              <p>{querying ? '正在获取分析结果…' : '从一个业务问题开始'}</p>
+              <p>
+                {querying
+                  ? '正在获取分析结果…'
+                  : session.queryStatus === 'success'
+                    ? '分析结果缓存已释放'
+                    : '从一个业务问题开始'}
+              </p>
               <p className="fve:text-sm">
-                选择统计对象、维度和指标，然后运行分析。
+                {session.queryStatus === 'success'
+                  ? '查询配置仍已保留，点击上方“运行分析”重新获取结果。'
+                  : '选择统计对象、维度和指标，然后运行分析。'}
               </p>
             </div>
           )}

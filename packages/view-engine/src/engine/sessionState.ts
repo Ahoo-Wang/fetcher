@@ -267,9 +267,9 @@ export function rebaseSession(
   });
   const locallyEdited =
     !sameJsonState(editable(latest.instance), editable(latest.baseline)) ||
+    !latest.filterValid ||
     (latest.kind === 'record' &&
-      (!sameJsonState(latest.filterDraft, latest.filterBaseline) ||
-        !latest.filterValid));
+      !sameJsonState(latest.filterDraft, latest.filterBaseline));
   if (!locallyEdited)
     return createSession(baseline, definition, compilers, analysisCompilers);
   const diverged =
