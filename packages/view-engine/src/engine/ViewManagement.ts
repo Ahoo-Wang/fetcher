@@ -87,16 +87,26 @@ export class ViewManagement {
         throw new Error('改名结果修改了其他视图配置，请重新加载核对');
       const baseline = copy(result);
       const latest = this.store.session(id);
+      const local = {
+        ...latest.instance,
+        title:
+          latest.instance.title === session.instance.title
+            ? title
+            : latest.instance.title,
+      };
       this.work.finishWrite(id, token, () =>
         this.store.patch(id, {
-          baseline,
-          instance: withContent(baseline, {
-            ...latest.instance,
-            title:
-              latest.instance.title === session.instance.title
-                ? title
-                : latest.instance.title,
-          }),
+          ...(baseline.kind === 'record'
+            ? {
+                kind: 'record',
+                baseline,
+                instance: withContent(baseline, local),
+              }
+            : {
+                kind: 'analysis',
+                baseline,
+                instance: withContent(baseline, local),
+              }),
           writeStatus: 'idle',
           writeError: null,
         }),

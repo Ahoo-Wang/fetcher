@@ -56,7 +56,7 @@ import { ViewInstanceActions } from '../view/ViewInstanceActions.js';
 import { sameJsonState } from '../lib/snapshot.js';
 import { cn } from '../lib/utils.js';
 import { OverlayScope } from '../lib/OverlayScope.js';
-import { compileAnalysis } from './analysisCompiler.js';
+import { analysisQueryPolicy } from './analysisQueryPolicy.js';
 import { AnalysisEditor } from './AnalysisEditor.js';
 import { AnalysisTable } from './AnalysisTable.js';
 import { AnalysisResultTabs } from './AnalysisResultTabs.js';
@@ -168,8 +168,9 @@ function AnalysisConfiguration({
   const session = selected?.kind === 'analysis' ? selected : undefined;
   const id = session?.instance.id;
   const commands = useMemo(
-    () => (id ? engine.analysis(id) : null),
-    [engine, id],
+    () =>
+      id && session?.editorEpoch !== undefined ? engine.analysis(id) : null,
+    [engine, id, session?.editorEpoch],
   );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filtersVisited, setFiltersVisited] = useState(false);
@@ -180,7 +181,7 @@ function AnalysisConfiguration({
   const { instance } = session;
   return (
     <AnalysisFilterValidity
-      key={instance.id}
+      key={`${instance.id}:${session.editorEpoch}`}
       scopeKey={instance.config.scope?.id ?? 'root'}
       onChange={commands.setFilterValidity}
     >
@@ -324,28 +325,7 @@ export function AnalysisView({
   );
   const expansion = inheritedExpansion ?? localExpansion;
   const autoRefresh = useCallback(async () => {
-    if (!id) return;
-    const current = engine.getSnapshot().sessions[id];
-    if (
-      current?.kind !== 'analysis' ||
-      current.queryStatus !== 'success' ||
-      current.requiresReload ||
-      current.writeStatus !== 'idle' ||
-      !current.filterValid
-    )
-      return;
-    const definition = engine.getSnapshot().definition;
-    if (!definition?.analysis || !current.result) return;
-    const compiled = compileAnalysis(current.instance.config, {
-      fields: definition.fields,
-      capability: definition.analysis,
-      timeZone: definition.timeZone,
-      allowedOperators: definition.allowedOperators,
-      filterCompilers: engine.filterCompilers,
-      compilers: engine.analysisCompilers,
-    });
-    if (!sameJsonState(compiled.plan?.query, current.result.plan.query)) return;
-    await engine.analysis(id).run();
+    if (id) await engine.analysis(id).refresh();
   }, [engine, id]);
 
   useEffect(() => {
@@ -359,8 +339,9 @@ export function AnalysisView({
     return () => observer.disconnect();
   }, [id]);
   const commands = useMemo(
-    () => (id ? engine.analysis(id) : null),
-    [engine, id],
+    () =>
+      id && session?.editorEpoch !== undefined ? engine.analysis(id) : null,
+    [engine, id, session?.editorEpoch],
   );
   const definition = state.definition;
   const context = useMemo<AnalysisCompileContext | null>(
@@ -441,7 +422,7 @@ export function AnalysisView({
     setLocalOpen(next);
     onConfigurationOpenChange?.(next);
   }
-  const canRun = !samePendingQuery && !!compiled?.plan && session.filterValid;
+  const canRun = analysisQueryPolicy(session, 'manual');
   const runButton = (
     <Button disabled={!canRun} onClick={() => run(() => commands.run())}>
       <PlayIcon data-icon="inline-start" aria-hidden="true" />

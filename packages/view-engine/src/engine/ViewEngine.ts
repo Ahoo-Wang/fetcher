@@ -278,7 +278,7 @@ export class ViewEngine {
   };
 
   analysis(id: string) {
-    this.store.analysisSession(id);
+    const editorEpoch = this.store.analysisSession(id).editorEpoch;
     const version = this.scope.version,
       generation = this.store.generation(id);
     const assert = () => {
@@ -296,13 +296,20 @@ export class ViewEngine {
         ) => DeepReadonly<AnalysisViewConfig>,
       ) => {
         assert();
+        if (this.store.analysisSession(id).editorEpoch !== editorEpoch)
+          throw new Error('编辑会话已重置');
         this.analysisCommands.edit(id, updater);
       },
       run: async () => {
         assert();
         await this.analysisCommands.run(id);
       },
+      refresh: async () => {
+        assert();
+        await this.analysisCommands.refresh(id);
+      },
       setFilterValidity: (valid: boolean) => {
+        if (this.store.find(id)?.editorEpoch !== editorEpoch) return;
         assert();
         if (typeof valid !== 'boolean')
           throw new Error('筛选有效性必须是布尔值');
@@ -320,6 +327,7 @@ export class ViewEngine {
   }
 
   record(id: string) {
+    const editorEpoch = this.store.find(id)?.editorEpoch;
     const version = this.scope.version,
       generation = this.store.generation(id);
     const assert = () => {
@@ -339,11 +347,14 @@ export class ViewEngine {
       ) => {
         assert();
         const session = this.store.recordSession(id);
+        if (session.editorEpoch !== editorEpoch)
+          throw new Error('编辑会话已重置');
         const config = this.scope.update(() =>
           updater(session.instance.config),
         );
         validateFilterJson(config);
         this.store.patch(id, {
+          kind: 'record',
           instance: { ...session.instance, config: copy(config) },
           filterDraft: copy(config.filters),
         });
@@ -361,9 +372,12 @@ export class ViewEngine {
         valid?: boolean,
       ) => {
         assert();
+        if (this.store.recordSession(id).editorEpoch !== editorEpoch)
+          throw new Error('编辑会话已重置');
         this.edits.setFilterDraft(draft, id, valid);
       },
       setFilterValidity: (valid: boolean) => {
+        if (this.store.find(id)?.editorEpoch !== editorEpoch) return;
         assert();
         this.edits.setFilterValidity(valid, id);
       },
@@ -449,9 +463,12 @@ export class ViewEngine {
     if (isSystemSession(session)) throw new Error('系统视图不能编辑名称');
     if (typeof title !== 'string' || !title.trim())
       throw new Error('实例名称不能为空');
-    this.store.patch(session.instance.id, {
-      instance: { ...session.instance, title },
-    });
+    this.store.patch(
+      session.instance.id,
+      session.kind === 'record'
+        ? { kind: 'record', instance: { ...session.instance, title } }
+        : { kind: 'analysis', instance: { ...session.instance, title } },
+    );
   }
 
   async restore(id?: string): Promise<void> {

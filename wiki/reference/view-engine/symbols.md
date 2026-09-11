@@ -29,7 +29,7 @@ These names come from the current public entry exports and declarations. Import 
 | `analysisRowKey`               | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
 | `analysisScopeContext`         | [analysisCompiler.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L47)                           |
 | `AnalysisScopeDefinition`      | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
-| `AnalysisSession`              | [viewModel.ts:270](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L270)                                      |
+| `AnalysisSession`              | [viewModel.ts:272](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L272)                                      |
 | `AnalysisViewConfig`           | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
 | `AnalysisViewInstance`         | [viewModel.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L154)                                      |
 | `AnalysisVisualizationType`    | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
@@ -98,9 +98,9 @@ These names come from the current public entry exports and declarations. Import 
 | `RecordQuerySnapshot`          | [viewModel.ts:222](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L222)                                      |
 | `RecordQuerySource`            | [viewModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L192)                                      |
 | `RecordSession`                | [viewModel.ts:228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L228)                                      |
-| `RecordSummaryFunction`        | [viewModel.ts:308](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L308)                                      |
-| `RecordSummaryMetric`          | [viewModel.ts:310](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L310)                                      |
-| `RecordSummaryResult`          | [viewModel.ts:315](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L315)                                      |
+| `RecordSummaryFunction`        | [viewModel.ts:314](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L314)                                      |
+| `RecordSummaryMetric`          | [viewModel.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L316)                                      |
+| `RecordSummaryResult`          | [viewModel.ts:321](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L321)                                      |
 | `RecordTableConfig`            | [viewModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L106)                                      |
 | `RecordTablePresentation`      | [viewModel.ts:123](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L123)                                      |
 | `RecordViewConfig`             | [viewModel.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L135)                                      |
@@ -124,7 +124,7 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewDeleteResult`             | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
 | `ViewEngine`                   | [ViewEngine.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L63)                                         |
 | `ViewEngineOptions`            | [viewModel.ts:202](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L202)                                      |
-| `ViewEngineState`              | [viewModel.ts:295](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L295)                                      |
+| `ViewEngineState`              | [viewModel.ts:301](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L301)                                      |
 | `ViewFieldDefinition`          | [viewModel.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L46)                                        |
 | `ViewHost`                     | [ViewHost.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L66)                                          |
 | `ViewInstance`                 | [viewModel.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L158)                                      |
@@ -139,7 +139,7 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewScope`                    | [viewModel.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L83)                                        |
 | `ViewServiceError`             | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L30)                       |
 | `ViewServiceErrorCode`         | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L19)                       |
-| `ViewSession`                  | [viewModel.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L294)                                      |
+| `ViewSession`                  | [viewModel.ts:300](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L300)                                      |
 | `ViewSource`                   | [viewModel.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L196)                                      |
 | `WowAnalysisSchema`            | [wowAnalysis.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L33)                                     |
 | `WowAnalysisSchemaOptions`     | [wowAnalysis.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L28)                                     |
@@ -155,7 +155,7 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L29) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L45)                           |
-| `AnalysisView`                    | [AnalysisView.tsx:274](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L274)                           |
+| `AnalysisView`                    | [AnalysisView.tsx:275](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L275)                           |
 | `AnalysisViewProps`               | [AnalysisView.tsx:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L136)                           |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
 | `Calendar`                        | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                                |

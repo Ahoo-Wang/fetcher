@@ -66,7 +66,10 @@ export class RecordSummaries {
     this.keys.delete(id);
     const session = this.store.find(id);
     if (session?.kind === 'record' && session.allSummary.status !== 'idle')
-      this.store.patch(id, { allSummary: EMPTY_RECORD_SUMMARY });
+      this.store.patch(id, {
+        kind: 'record',
+        allSummary: EMPTY_RECORD_SUMMARY,
+      });
     controller?.abort();
   }
 
@@ -103,7 +106,7 @@ export class RecordSummaries {
       }
     }
     if (!sameJsonState(session.pageSummary, pageSummary))
-      this.store.patch(id, { pageSummary });
+      this.store.patch(id, { kind: 'record', pageSummary });
   }
 
   sync(id: string, source?: ViewSource, request = true): void {
@@ -142,6 +145,7 @@ export class RecordSummaries {
       session.instance.config.presentation,
     );
     this.store.patch(id, {
+      kind: 'record',
       allSummary: { status: 'loading', values: {}, error: null },
     });
     try {
@@ -167,6 +171,7 @@ export class RecordSummaries {
       if (!current()) return;
       release();
       this.store.patch(id, {
+        kind: 'record',
         allSummary: {
           status: 'success',
           values: copy(readRecordSummaryResult(result, metrics)),
@@ -177,6 +182,7 @@ export class RecordSummaries {
       if (!current()) return;
       release();
       this.store.patch(id, {
+        kind: 'record',
         allSummary: { status: 'error', values: {}, error: message(error) },
       });
       throw error;

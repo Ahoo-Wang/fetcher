@@ -103,6 +103,15 @@ export function RecordView({
   const id = state.selectedInstanceId;
   const current = id ? state.sessions[id] : undefined;
   const session = current?.kind === 'record' ? current : undefined;
+  const recordId = session?.instance.id;
+  const editorEpoch = session?.editorEpoch;
+  const filterCommands = useMemo(
+    () =>
+      recordId && editorEpoch !== undefined
+        ? engine.record(recordId)
+        : undefined,
+    [engine, recordId, editorEpoch],
+  );
   const selectionCount = session?.selectedRowKeys.length ?? 0;
   const {
     id: instanceId,
@@ -241,14 +250,14 @@ export function RecordView({
       data-slot="record-view"
     >
       <FilterPanel
-        key={`filter:${id}`}
+        key={`filter:${id}:${session.editorEpoch}`}
         value={session.filterDraft}
         fields={definition.fields}
         timeZone={definition.timeZone}
         onApply={() => engine.record(id!).applyFilter()}
         appliedValue={session.filterBaseline}
-        onChange={draft => engine.record(id!).setFilterDraft(draft)}
-        onValidityChange={valid => engine.record(id!).setFilterValidity(valid)}
+        onChange={draft => filterCommands!.setFilterDraft(draft)}
+        onValidityChange={valid => filterCommands!.setFilterValidity(valid)}
         allowedOperators={definition.allowedOperators}
         editors={definition.filterEditors}
         extensions={extensions}

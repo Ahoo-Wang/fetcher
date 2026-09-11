@@ -125,6 +125,7 @@ export class RecordEdits {
       );
     } else
       this.store.patch(session.instance.id, {
+        kind: 'record',
         ...patch,
         instance: {
           ...session.instance,
@@ -219,7 +220,7 @@ export class RecordEdits {
     await this.queries.change(
       session.instance.id,
       () => {
-        this.store.patch(session.instance.id, { page: index });
+        this.store.patch(session.instance.id, { kind: 'record', page: index });
       },
       false,
       'scope',
@@ -259,6 +260,7 @@ export class RecordEdits {
       session.instance.id,
       () => {
         this.store.patch(session.instance.id, {
+          kind: 'record',
           page: session.page + 1,
           cursor: session.nextCursor,
         });
@@ -280,6 +282,7 @@ export class RecordEdits {
     if (session.refreshing && keys.length)
       this.queries.cancel(session.instance.id);
     this.store.patch(session.instance.id, {
+      kind: 'record',
       selectedRowKeys: [...new Set(keys)],
     });
   }
@@ -300,6 +303,7 @@ export class RecordEdits {
       session.instance.id,
       () => {
         this.store.patch(session.instance.id, {
+          kind: 'record',
           instance: session.baseline,
           filterDraft,
           filterBaseline: filterDraft,

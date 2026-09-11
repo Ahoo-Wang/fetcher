@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { analysisQueryPolicy } from '../analysis/analysisQueryPolicy.js';
 import type { RecordQueries } from '../record/engine/RecordQueries.js';
 import type { AnalysisCommands } from '../analysis/AnalysisCommands.js';
 import type { SessionStore } from './SessionStore.js';
@@ -66,12 +67,12 @@ export class ViewQueries {
         await record();
         return;
       }
-      if (session.validation.some(error => error.id !== 'presentation')) return;
+      const intent = refresh ? 'reload' : 'open';
+      if (!analysisQueryPolicy(session, intent)) return;
       const generation = this.store.generation(id);
-      if (refresh && (session.dirty || session.conflict)) return;
       if (!refresh && this.opened.get(id) === generation) return;
       this.opened.set(id, generation);
-      await this.analysis.run(id);
+      await this.analysis.run(id, intent);
     };
   }
 }

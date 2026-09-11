@@ -484,7 +484,12 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
         defaultInstanceId: 'a',
       },
       filterCompilers: { buffered },
-      host: { resolveSource: () => ({ aggregate }) },
+      host: {
+        resolveSource: () => ({ aggregate }),
+        instance: {
+          load: async () => ({ ...instance, title: 'Remote', revision: '2' }),
+        },
+      },
     });
     try {
       await engine.load();
@@ -500,6 +505,23 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
       await waitFor(() =>
         expect(engine.getSnapshot().sessions.a.filterValid).toBe(false),
       );
+      await act(() => engine.reloadInstance('a'));
+      const review = engine.getSnapshot().sessions.a.conflict!;
+      expect(review).toBeDefined();
+      await act(() => engine.useRemoteInstance(review, 'a'));
+      if (
+        screen
+          .getByRole('button', { name: '配置分析', exact: true })
+          .getAttribute('aria-expanded') === 'false'
+      )
+        fireEvent.click(
+          screen.getByRole('button', { name: '配置分析', exact: true }),
+        );
+      expect(
+        screen.getByRole('textbox', { name: '明细金额 草稿' }),
+      ).toHaveProperty('value', '5');
+      expect(engine.getSnapshot().sessions.a.filterValid).toBe(true);
+      fireEvent.click(screen.getByText('明细金额 无效'));
       fireEvent.click(screen.getByText('根金额 无效'));
       fireEvent.click(screen.getByText('根金额 有效'));
       expect(engine.getSnapshot().sessions.a.filterValid).toBe(false);

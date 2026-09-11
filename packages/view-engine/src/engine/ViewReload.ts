@@ -29,7 +29,7 @@ import type { ViewQueries } from './ViewQueries.js';
 import { copy, message, sameJsonState } from '../lib/snapshot.js';
 import {
   rebaseSession,
-  createSession,
+  resetEditingSession,
   withContent,
   assertConflictReview,
   inheritEditingSession,
@@ -70,25 +70,22 @@ export class ViewReload {
     const session = this.store.session(id);
     this.work.assertWritable(session, false, true);
     assertConflictReview(session, review);
-    const restored = createSession(
+    const restored = resetEditingSession(
+      session,
       copy(review.remote),
       this.store.definition(),
       this.store.filterCompilers,
       this.store.analysisCompilers,
+      this.store.limits.maxConfigBytes,
     );
     const update = () => {
       assertConflictReview(this.store.session(session.instance.id), review);
       this.store.patch(session.instance.id, {
         ...restored,
-        filterValid: session.filterValid,
         conflict: undefined,
       });
     };
-    if (
-      session.kind === 'analysis' ||
-      !session.filterValid ||
-      restored.validation.length > 0
-    ) {
+    if (session.kind === 'analysis' || restored.validation.length > 0) {
       this.queries.cancel(session.instance.id);
       update();
       return;

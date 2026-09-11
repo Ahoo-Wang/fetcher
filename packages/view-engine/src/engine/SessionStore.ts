@@ -11,20 +11,14 @@
  * limitations under the License.
  */
 
-import {
-  assertConfigSize,
-  validateRuntimeLimits,
-  type RuntimeLimits,
-} from './runtimeLimits.js';
+import { validateRuntimeLimits, type RuntimeLimits } from './runtimeLimits.js';
 import type { AnalysisCompilerRegistry } from '../analysis/analysisModel.js';
 import type { FilterCompilerRegistry } from '../filter/filterModel.js';
-import type { DeepReadonly } from '../lib/types.js';
 import type {
   RecordSession,
   AnalysisSession,
   ViewSession,
   ViewEngineState,
-  ViewInstance,
 } from '../contracts/viewModel.js';
 import { validateViewInstance } from '../record/recordValidation.js';
 import type { EngineScope } from './EngineScope.js';
@@ -32,15 +26,30 @@ import { EMPTY_RECORD_SUMMARY } from '../record/recordSummary.js';
 import { copy, freeze } from '../lib/snapshot.js';
 import { deriveSession } from './sessionState.js';
 
-type SessionPatch = Partial<
-  Omit<RecordSession, 'kind' | 'baseline' | 'instance' | 'result'> &
-    Omit<AnalysisSession, 'kind' | 'baseline' | 'instance' | 'result'> & {
-      kind: 'record' | 'analysis';
-      result: RecordSession['result'] | AnalysisSession['result'];
-      baseline: DeepReadonly<ViewInstance>;
-      instance: DeepReadonly<ViewInstance>;
-    }
+type CommonSessionFields = Omit<
+  ViewSession,
+  'kind' | 'instance' | 'baseline' | 'result'
 >;
+type CommonSessionPatch = Partial<CommonSessionFields> & {
+  [
+    K in Exclude<
+      keyof RecordSession | keyof AnalysisSession,
+      keyof CommonSessionFields
+    >
+  ]?: never;
+};
+type RecordSessionPatch = { kind: 'record' } & Partial<
+  Omit<RecordSession, 'kind'>
+> & {
+    [K in Exclude<keyof AnalysisSession, keyof RecordSession>]?: never;
+  };
+type AnalysisSessionPatch = { kind: 'analysis' } & Partial<
+  Omit<AnalysisSession, 'kind'>
+> & {
+    [K in Exclude<keyof RecordSession, keyof AnalysisSession>]?: never;
+  };
+type SessionPatch =
+  CommonSessionPatch | RecordSessionPatch | AnalysisSessionPatch;
 
 /** Sole owner of published immutable session state and subscriptions. */
 export class SessionStore {
@@ -80,56 +89,37 @@ export class SessionStore {
 
   publish(patch: Partial<ViewEngineState>): void {
     if (this.scope.disposed) return;
-    if (patch.sessions)
-      patch = {
-        ...patch,
-        sessions: Object.fromEntries(
-          Object.entries(patch.sessions).map(([id, session]) => {
-            const previous = this.find(id);
-            if (previous?.instance.config === session.instance.config) {
-              const sizeError = previous.validation.find(
-                issue => issue.id === 'config-size',
-              );
-              return [
-                id,
-                sizeError &&
-                !session.validation.some(issue => issue.id === 'config-size')
-                  ? {
-                      ...session,
-                      validation: [...session.validation, sizeError],
-                    }
-                  : session,
-              ];
-            }
-            try {
-              assertConfigSize(
-                session.instance.config,
-                this.limits.maxConfigBytes,
-              );
-              return [id, session];
-            } catch (error) {
-              return [
-                id,
-                {
-                  ...session,
-                  validation: [
-                    ...session.validation.filter(
-                      issue => issue.id !== 'config-size',
-                    ),
-                    {
-                      id: 'config-size',
-                      message:
-                        error instanceof Error
-                          ? error.message
-                          : '配置超过资源限制',
-                    },
-                  ],
-                },
-              ];
-            }
+    const definition =
+      patch.definition === undefined ? this.state.definition : patch.definition;
+    if (definition) {
+      for (const target of ['sessions', 'pendingCreates'] as const) {
+        const incoming = patch[target];
+        if (!incoming) continue;
+        const finalized = Object.fromEntries(
+          Object.entries(incoming).map(([id, session]) => {
+            const previous =
+              definition === this.state.definition &&
+              Object.prototype.hasOwnProperty.call(this.state[target], id)
+                ? this.state[target][id]
+                : undefined;
+            return [
+              id,
+              session === previous
+                ? session
+                : deriveSession(
+                    session,
+                    definition,
+                    this.filterCompilers,
+                    previous,
+                    this.analysisCompilers,
+                    this.limits.maxConfigBytes,
+                  ),
+            ];
           }),
-        ),
-      };
+        );
+        patch = { ...patch, [target]: finalized };
+      }
+    }
     if (patch.sessions)
       for (const id of Object.keys(patch.sessions))
         if (!this.find(id)) this.generations.set(id, this.generation(id) + 1);
@@ -193,16 +183,23 @@ export class SessionStore {
     const target = this.find(id) ? 'sessions' : 'pendingCreates';
     const definition = this.state.definition;
     if (!session || !definition || this.scope.disposed) return;
+    let next: ViewSession;
+    if (patch.kind === undefined) {
+      next =
+        session.kind === 'record'
+          ? { ...session, ...patch, kind: 'record' }
+          : { ...session, ...patch, kind: 'analysis' };
+    } else if (session.kind === 'record' && patch.kind === 'record') {
+      next = { ...session, ...patch };
+    } else if (session.kind === 'analysis' && patch.kind === 'analysis') {
+      next = { ...session, ...patch };
+    } else {
+      throw new Error('实例类型不能改变');
+    }
     this.publish({
       [target]: {
         ...this.state[target],
-        [id]: deriveSession(
-          { ...session, ...patch } as ViewSession,
-          definition,
-          this.filterCompilers,
-          session,
-          this.analysisCompilers,
-        ),
+        [id]: next,
       },
     });
   }
@@ -260,15 +257,16 @@ export class SessionStore {
   }
 
   updateInstance(
-    session: ViewSession,
-    instance: DeepReadonly<ViewInstance>,
-    patch: SessionPatch = {},
+    session: RecordSession,
+    instance: RecordSession['instance'],
+    patch: Omit<RecordSessionPatch, 'kind' | 'instance'> = {},
   ): void {
     validateViewInstance(instance, this.definition(), session.instance.id);
     this.patch(session.instance.id, {
       ...patch,
+      kind: 'record',
       instance: copy(instance),
-    } as SessionPatch);
+    });
   }
 
   dispose(): void {

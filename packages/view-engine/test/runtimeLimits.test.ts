@@ -23,7 +23,7 @@ import { AnalysisCommands } from '../src/analysis/AnalysisCommands.js';
 import { SessionStore } from '../src/engine/SessionStore.js';
 import { EngineScope } from '../src/engine/EngineScope.js';
 import { InstanceWork } from '../src/engine/InstanceWork.js';
-import { createSession } from '../src/engine/sessionState.js';
+import { createSession, deriveSession } from '../src/engine/sessionState.js';
 import type {
   ViewDefinition,
   AnalysisViewInstance,
@@ -257,4 +257,61 @@ it('restoring analysis preserves invalid editor validity until recovery is repor
     id: 'filters',
     message: '筛选输入无效',
   });
+});
+
+it('derives resource and query validity for pending-create recovery as well as active sessions', () => {
+  const { store } = setup(() => ({ aggregate: async () => [] }), {
+    maxConfigBytes: 1024,
+  });
+  const large = createSession(
+    {
+      ...instance,
+      id: 'pending',
+      config: {
+        ...instance.config,
+        metrics: [{ ...instance.config.metrics[0], title: 'x'.repeat(2048) }],
+      },
+    },
+    definition,
+    {},
+  );
+  store.publish({ pendingCreates: { pending: large } });
+  expect(store.findPendingCreate('pending')?.validation).toContainEqual(
+    expect.objectContaining({ id: 'config-size' }),
+  );
+  store.patch('pending', { filterValid: false });
+  store.patch('pending', { filterValid: true });
+  const pending = store.findPendingCreate('pending');
+  expect(pending?.kind === 'analysis' && pending.queryValid).toBe(false);
+});
+
+it('separates presentation admission from query validity at the published boundary', () => {
+  const { store } = setup(() => ({ aggregate: async () => [] }));
+  const session = store.analysisSession('a');
+  store.patch('a', {
+    instance: {
+      ...session.instance,
+      config: {
+        ...session.instance.config,
+        presentation: { layout: 'table', columns: [{ alias: 'missing' }] },
+      },
+    },
+  });
+  expect(store.analysisSession('a').validation.length).toBeGreaterThan(0);
+  expect(store.analysisSession('a').queryValid).toBe(true);
+  store.patch('a', { filterValid: false });
+  expect(store.analysisSession('a').queryValid).toBe(false);
+});
+
+it('re-evaluates final validation when the same snapshot is checked under a different resource budget', () => {
+  const base = createSession(instance, definition, {});
+  const relaxed = deriveSession(base, definition, {}, undefined, {}, 4096);
+  const strict = deriveSession(relaxed, definition, {}, relaxed, {}, 10);
+  expect(strict.validation).toContainEqual(
+    expect.objectContaining({ id: 'config-size' }),
+  );
+  const recovered = deriveSession(strict, definition, {}, strict, {}, 4096);
+  expect(recovered.validation).not.toContainEqual(
+    expect.objectContaining({ id: 'config-size' }),
+  );
 });

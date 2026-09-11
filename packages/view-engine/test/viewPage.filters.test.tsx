@@ -382,7 +382,13 @@ it('preserves unconfirmed text and invalidity across instance switches', async (
       instances: [mine, { ...structuredClone(instance), id: 'other' }],
       defaultInstanceId: mine.id,
     },
-    host,
+    host: {
+      ...host,
+      instance: {
+        ...host.instance,
+        load: async () => ({ ...mine, title: 'Remote', revision: '2' }),
+      },
+    },
   });
   try {
     await engine.load();
@@ -404,6 +410,19 @@ it('preserves unconfirmed text and invalidity across instance switches', async (
       .toHaveProperty('value', 'ORDER-002');
     expect.soft(engine.getSnapshot().sessions.mine.filterValid).toBe(false);
     expect.soft(engine.getSnapshot().sessions.mine.filterPending).toBe(true);
+    // Remote changes only metadata; identical filter node IDs/values must still discard local text.
+    await act(() => engine.reloadInstance('mine'));
+    const review = engine.getSnapshot().sessions.mine.conflict!;
+    expect(review).toBeDefined();
+    await act(() => engine.useRemoteInstance(review, 'mine'));
+    expect(screen.getByRole('textbox', { name: '订单编号' })).toHaveProperty(
+      'value',
+      '',
+    );
+    expect(engine.getSnapshot().sessions.mine.filterValid).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: '订单编号' }), {
+      target: { value: 'ORDER-002' },
+    });
     fireEvent.keyDown(screen.getByRole('textbox', { name: '订单编号' }), {
       key: 'Enter',
     });

@@ -11,12 +11,12 @@
  * limitations under the License.
  */
 
+import { configSizeIssues, compileSessionFilter } from './sessionValidation.js';
 import { validateViewInstance } from '../record/validation/instanceValidation.js';
 import type { AnalysisCompilerRegistry } from '../analysis/analysisModel.js';
 import { compileAnalysis } from '../analysis/analysisCompiler.js';
 import { validateAnalysisPresentation } from '../analysis/analysisProjection.js';
 import { sameJsonState } from '../lib/snapshot.js';
-import { compileFilterConfiguration } from '../filter/filterConfiguration.js';
 import type { FilterCompilerRegistry } from '../filter/filterModel.js';
 import { sameFilterQuery } from '../filter/filterTree.js';
 import type { DeepReadonly } from '../lib/types.js';
@@ -25,6 +25,8 @@ import type {
   ViewDefinition,
   ViewInstance,
   ViewInstanceConflict,
+  RecordViewInstance,
+  AnalysisViewInstance,
 } from '../contracts/viewModel.js';
 import { EMPTY_RECORD_SUMMARY } from '../record/recordSummary.js';
 import { getRecordKey } from '../record/validation/recordData.js';
@@ -34,12 +36,15 @@ export function createSession(
   definition: DeepReadonly<ViewDefinition>,
   compilers: FilterCompilerRegistry,
   analysisCompilers: AnalysisCompilerRegistry = {},
+  maxConfigBytes?: number,
 ): ViewSession {
   if (instance.kind === 'analysis')
     return deriveSession(
       {
         kind: 'analysis',
+        editorEpoch: 0,
         compilation: { errors: [] },
+        queryValid: false,
         editVersion: 0,
         filterValid: true,
         pendingQuery: null,
@@ -58,19 +63,24 @@ export function createSession(
       compilers,
       undefined,
       analysisCompilers,
+      maxConfigBytes,
     );
   const filterDraft = instance.config.filters;
-  const compiled = compileFilterConfiguration(
+  const compiled = compileSessionFilter(
     instance.config.filters,
-    definition.fields,
-    definition.allowedOperators,
+    definition,
     compilers,
-    definition.timeZone,
   );
   return {
     kind: 'record',
+    editorEpoch: 0,
     editVersion: 0,
-    validation: recordIssues(instance, definition, compiled.errors),
+    validation: recordIssues(
+      instance,
+      definition,
+      compiled.errors,
+      maxConfigBytes,
+    ),
     baseline: instance,
     instance,
     conflict: undefined,
@@ -99,6 +109,28 @@ export function createSession(
   };
 }
 
+/** Explicitly accepting remote content discards editor-local buffers as one transition. */
+export function resetEditingSession(
+  previous: ViewSession,
+  remote: DeepReadonly<ViewInstance>,
+  definition: DeepReadonly<ViewDefinition>,
+  compilers: FilterCompilerRegistry,
+  analysisCompilers: AnalysisCompilerRegistry,
+  maxConfigBytes: number,
+): ViewSession {
+  if (previous.kind !== remote.kind) throw new Error('实例类型不能改变');
+  return {
+    ...createSession(
+      remote,
+      definition,
+      compilers,
+      analysisCompilers,
+      maxConfigBytes,
+    ),
+    editorEpoch: previous.editorEpoch + 1,
+  };
+}
+
 export function instanceContent({
   kind,
   title,
@@ -114,6 +146,7 @@ export function deriveSession(
   compilers: FilterCompilerRegistry,
   previous?: ViewSession,
   analysisCompilers: AnalysisCompilerRegistry = {},
+  maxConfigBytes?: number,
 ): ViewSession {
   const editVersion = previous
     ? previous.editVersion +
@@ -127,8 +160,7 @@ export function deriveSession(
   if (session.kind === 'analysis') {
     const cached =
       previous?.kind === 'analysis' &&
-      previous.instance.config === session.instance.config &&
-      previous.filterValid === session.filterValid;
+      previous.instance.config === session.instance.config;
     const compiled = cached
       ? previous.compilation
       : compileAnalysis(session.instance.config, {
@@ -143,18 +175,21 @@ export function deriveSession(
       ...session,
       editVersion,
       compilation: compiled,
-      validation: cached
-        ? previous!.validation
-        : [
-            ...(!session.filterValid
-              ? [{ id: 'filters', message: '筛选输入无效' }]
-              : []),
-            ...(compiled?.errors ?? []),
-            ...validateAnalysisPresentation(
-              session.instance.config.presentation,
-              compiled?.plan?.schema,
-            ).map(message => ({ id: 'presentation', message })),
-          ],
+      queryValid:
+        session.filterValid &&
+        !!compiled.plan &&
+        configSizeIssues(session.instance.config, maxConfigBytes).length === 0,
+      validation: [
+        ...(!session.filterValid
+          ? [{ id: 'filters', message: '筛选输入无效' }]
+          : []),
+        ...(compiled?.errors ?? []),
+        ...configSizeIssues(session.instance.config, maxConfigBytes),
+        ...validateAnalysisPresentation(
+          session.instance.config.presentation,
+          compiled?.plan?.schema,
+        ).map(message => ({ id: 'presentation', message })),
+      ],
       dirty: !sameJsonState(
         instanceContent(session.instance),
         instanceContent(session.baseline),
@@ -171,25 +206,15 @@ export function deriveSession(
     };
   }
   const prior = previous?.kind === 'record' ? previous : undefined;
-  let filterPending = prior?.filterPending;
-  if (
-    !prior ||
-    prior.filterDraft !== session.filterDraft ||
-    prior.filterValid !== session.filterValid ||
-    prior.appliedFilter !== session.appliedFilter
-  ) {
-    const compiled = compileFilterConfiguration(
-      session.filterDraft,
-      definition.fields,
-      definition.allowedOperators,
-      compilers,
-      definition.timeZone,
-    );
-    filterPending =
-      !session.filterValid ||
-      compiled.errors.length > 0 ||
-      !sameFilterQuery(compiled.expression, session.appliedFilter);
-  }
+  const compiled = compileSessionFilter(
+    session.filterDraft,
+    definition,
+    compilers,
+  );
+  const filterPending =
+    !session.filterValid ||
+    compiled.errors.length > 0 ||
+    !sameFilterQuery(compiled.expression, session.appliedFilter);
   let selectedRowKeys = session.selectedRowKeys;
   if (
     selectedRowKeys.length &&
@@ -217,24 +242,17 @@ export function deriveSession(
           },
         }
       : {}),
-    validation:
-      prior &&
-      prior.filterDraft === session.filterDraft &&
-      prior.filterValid === session.filterValid &&
-      sameJsonState(prior.instance.config, session.instance.config)
-        ? prior.validation
-        : recordIssues(session.instance, definition, [
-            ...(!session.filterValid
-              ? [{ id: 'filters', message: '筛选输入无效' }]
-              : []),
-            ...compileFilterConfiguration(
-              session.filterDraft,
-              definition.fields,
-              definition.allowedOperators,
-              compilers,
-              definition.timeZone,
-            ).errors,
-          ]),
+    validation: recordIssues(
+      session.instance,
+      definition,
+      [
+        ...(!session.filterValid
+          ? [{ id: 'filters', message: '筛选输入无效' }]
+          : []),
+        ...compiled.errors,
+      ],
+      maxConfigBytes,
+    ),
     selectedRowKeys,
     filterPending: filterPending!,
     dirty:
@@ -273,7 +291,10 @@ export function rebaseSession(
     (latest.kind === 'record' &&
       !sameJsonState(latest.filterDraft, latest.filterBaseline));
   if (!locallyEdited)
-    return createSession(baseline, definition, compilers, analysisCompilers);
+    return {
+      ...createSession(baseline, definition, compilers, analysisCompilers),
+      editorEpoch: latest.editorEpoch,
+    };
   const diverged =
     !sameJsonState(editable(baseline), editable(latest.baseline)) &&
     !sameJsonState(editable(baseline), editable(latest.instance));
@@ -356,28 +377,52 @@ export function assertConflictReview(
 
 /** Keep server identity/kind and apply only the editable content from the same kind. */
 export function withContent(
+  baseline: DeepReadonly<RecordViewInstance>,
+  local: DeepReadonly<ViewInstance>,
+): DeepReadonly<RecordViewInstance>;
+export function withContent(
+  baseline: DeepReadonly<AnalysisViewInstance>,
+  local: DeepReadonly<ViewInstance>,
+): DeepReadonly<AnalysisViewInstance>;
+export function withContent(
   baseline: DeepReadonly<ViewInstance>,
   local: DeepReadonly<ViewInstance>,
-): ViewInstance {
-  if (baseline.kind !== local.kind) throw new Error('实例类型不能改变');
-  return structuredClone({
-    ...baseline,
-    title: local.title,
-    config: local.config,
-  }) as ViewInstance;
+): DeepReadonly<ViewInstance>;
+export function withContent(
+  baseline: DeepReadonly<ViewInstance>,
+  local: DeepReadonly<ViewInstance>,
+): DeepReadonly<ViewInstance> {
+  if (baseline.kind === 'record' && local.kind === 'record')
+    return structuredClone({
+      ...baseline,
+      title: local.title,
+      config: local.config,
+    });
+  if (baseline.kind === 'analysis' && local.kind === 'analysis')
+    return structuredClone({
+      ...baseline,
+      title: local.title,
+      config: local.config,
+    });
+  throw new Error('实例类型不能改变');
 }
 
 function recordIssues(
   instance: DeepReadonly<ViewInstance>,
   definition: DeepReadonly<ViewDefinition>,
   issues: readonly { id: string; message: string }[],
+  maxConfigBytes?: number,
 ) {
+  const allIssues = [
+    ...issues,
+    ...configSizeIssues(instance.config, maxConfigBytes),
+  ];
   try {
     validateViewInstance(instance, definition);
-    return issues;
+    return allIssues;
   } catch (error) {
     return [
-      ...issues,
+      ...allIssues,
       {
         id: 'config',
         message: error instanceof Error ? error.message : '配置无效',

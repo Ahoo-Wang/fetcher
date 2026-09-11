@@ -28,6 +28,8 @@ const source = `
   import type { ViewPageProps } from './view/ViewPage.js';
   import type { FilterRegistration } from './filter/filterReactTypes.js';
   import type { ViewDefinition, ViewSource, ViewEngineOptions } from './contracts/viewModel.js';
+  import type { SessionStore } from './engine/SessionStore.js';
+  import type { AnalysisSession } from './contracts/viewModel.js';
   import type { RecordSession, ViewEngineState } from './contracts/viewModel.js';
   const pureDefinition:ViewDefinition={id:'a',title:'A',sourceId:'a',fields:[],analysis:{count:true,fields:[]}};
   const aggregateSource:ViewSource={aggregate:async()=>[]};
@@ -52,6 +54,32 @@ const source = `
   declare const engine: ViewEngine;
   declare const session: RecordSession;
   declare const state: ViewEngineState;
+  declare const store: SessionStore;
+  declare const analysis: AnalysisSession;
+  store.patch('mine', { filterValid: false });
+  store.patch('mine', { kind: 'record', page: 2, instance: session.instance, baseline: session.baseline, result: session.result });
+  store.patch('analysis', { kind: 'analysis', instance: analysis.instance, result: analysis.result });
+  // @ts-expect-error kind-specific updates require a discriminator
+  store.patch('mine', { page: 2 });
+  // @ts-expect-error analysis sessions cannot paginate
+  store.patch('analysis', { kind: 'analysis', page: 2 });
+  // @ts-expect-error record sessions cannot carry aggregate query plans
+  store.patch('mine', { kind: 'record', pendingQuery: analysis.pendingQuery });
+  // @ts-expect-error result must match the session kind
+  store.patch('analysis', { kind: 'analysis', result: session.result });
+  // @ts-expect-error instance configuration must match the session kind
+  store.patch('mine', { kind: 'record', instance: analysis.instance });
+  const mixed = { filterValid: false, page: 2 };
+  // @ts-expect-error variable patches also require kind for non-common fields
+  store.patch('mine', mixed);
+  const crossed = { kind: 'analysis' as const, page: 2 };
+  // @ts-expect-error variable patches cannot smuggle fields of the other kind
+  store.patch('analysis', crossed);
+  // @ts-expect-error record updates cannot accept an analysis configuration
+  store.updateInstance(session, analysis.instance);
+  // @ts-expect-error baseline must match the session kind
+  store.patch('analysis', { kind: 'analysis', baseline: session.baseline });
+
   const snapshot = engine.getSnapshot();
   // @ts-expect-error core instance metadata is a snapshot
   snapshot.sessions.mine.instance.title = 'changed';

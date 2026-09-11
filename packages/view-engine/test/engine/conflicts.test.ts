@@ -12,6 +12,7 @@
  */
 
 import { expect, it, vi } from 'vitest';
+import { filter } from '@ahoo-wang/fetcher-wow';
 import { ViewServiceError } from '../../src/record/viewServiceContract.js';
 import type { ViewInstance } from '../../src/contracts/viewModel.js';
 import { instance, setup } from './fixtures.js';
@@ -191,22 +192,55 @@ it('invalidates a reviewed decision even when later edits return to the same con
   engine.dispose();
 });
 
-it('keeps buffered filter invalidity when accepting remote metadata', async () => {
+it('starts a new editing lifecycle when accepting remote metadata', async () => {
   const remote = { ...instance(), title: 'Remote', revision: 'r2' };
   const { engine } = setup({
     host: { instance: { load: async () => remote } } as never,
   });
   try {
     await engine.load();
-    engine.record('mine').setFilterValidity(false);
+    const oldEditor = engine.record('mine');
+    const epoch = engine.getSnapshot().sessions.mine.editorEpoch;
+    oldEditor.setFilterValidity(false);
     await engine.reloadInstance();
     const review = engine.getSnapshot().sessions.mine.conflict!;
     expect(review).toBeDefined();
     await engine.useRemoteInstance(review, 'mine');
-    expect(engine.getSnapshot().sessions.mine.filterValid).toBe(false);
+    expect(engine.getSnapshot().sessions.mine.editorEpoch).toBe(epoch + 1);
+    oldEditor.setFilterValidity(false);
+    expect(() => oldEditor.edit(config => ({ ...config, sort: [] }))).toThrow(
+      '编辑会话已重置',
+    );
+    expect(engine.getSnapshot().sessions.mine.filterValid).toBe(true);
     expect(engine.getSnapshot().sessions.mine.queryStatus).not.toBe('loading');
     engine.record('mine').setFilterValidity(true);
     expect(engine.getSnapshot().sessions.mine.filterValid).toBe(true);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('uses the host resource budget when adopting and refreshing a large valid remote record', async () => {
+  const remote = instance();
+  remote.title = 'Remote';
+  remote.revision = 'r2';
+  remote.config.filters.root.component = { name: 'large' };
+  remote.config.filters.root.props = { opaque: 'x'.repeat(270000) };
+  const { engine, paged } = setup({
+    limits: { maxConfigBytes: 400000 },
+    filterCompilers: { large: { compile: () => filter.matchAll() } },
+    host: { instance: { load: async () => remote } } as never,
+  });
+  try {
+    await engine.load();
+    engine.setTitle('Local');
+    await engine.reloadInstance('mine');
+    const review = engine.getSnapshot().sessions.mine.conflict!;
+    expect(review).toBeDefined();
+    const before = paged.mock.calls.length;
+    await engine.useRemoteInstance(review, 'mine');
+    expect(engine.getSnapshot().sessions.mine.validation).toEqual([]);
+    expect(paged).toHaveBeenCalledTimes(before + 1);
   } finally {
     engine.dispose();
   }

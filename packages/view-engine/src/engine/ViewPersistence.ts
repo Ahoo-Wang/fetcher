@@ -284,9 +284,18 @@ export class ViewPersistence {
       } else
         this.work.finishWrite(id, token, () =>
           this.store.patch(id, {
-            baseline: saved,
+            ...(saved.kind === 'record'
+              ? {
+                  kind: 'record',
+                  baseline: saved,
+                  instance: withContent(saved, latest.instance),
+                }
+              : {
+                  kind: 'analysis',
+                  baseline: saved,
+                  instance: withContent(saved, latest.instance),
+                }),
             conflict: undefined,
-            instance: withContent(saved, latest.instance),
             writeStatus: 'idle',
             writeError: null,
           }),

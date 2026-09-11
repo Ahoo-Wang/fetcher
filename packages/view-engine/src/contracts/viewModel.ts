@@ -227,6 +227,8 @@ export interface RecordQuerySnapshot {
 }
 export interface RecordSession {
   readonly kind: 'record';
+  /** Changes only when local editor buffers must be discarded. */
+  readonly editorEpoch: number;
   readonly editVersion: number;
   readonly validation: readonly FilterValidationError[];
   readonly conflict?: ViewInstanceConflict;
@@ -269,6 +271,10 @@ export interface RecordSession {
 }
 export interface AnalysisSession {
   readonly kind: 'analysis';
+  /** Changes only when local editor buffers must be discarded. */
+  readonly editorEpoch: number;
+  /** Derived query admission; presentation-only errors do not block execution. */
+  readonly queryValid: boolean;
   /** Current working query compilation, shared by the engine and its renderers. */
   readonly compilation: DeepReadonly<AnalysisCompileResult>;
   readonly editVersion: number;

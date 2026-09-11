@@ -81,6 +81,7 @@ export class RecordQueries {
       (session.queryStatus === 'loading' || session.refreshing)
     )
       this.store.patch(id, {
+        kind: 'record',
         refreshing: false,
         ...(session.queryStatus === 'loading' ? { queryStatus: 'idle' } : {}),
       });
@@ -175,8 +176,9 @@ export class RecordQueries {
     this.store.patch(
       id,
       background
-        ? { refreshing: true, queryError: null, queryAttempt }
+        ? { kind: 'record', refreshing: true, queryError: null, queryAttempt }
         : {
+            kind: 'record',
             queryAttempt,
             rows:
               (mode === 'refresh' || mode === 'retry') &&
@@ -263,6 +265,7 @@ export class RecordQueries {
           if (background) this.summaries.invalidate(id);
           if (!current()) return;
           this.store.patch(id, {
+            kind: 'record',
             page: 1,
             rows: [],
             selectedRowKeys: [],
@@ -304,6 +307,7 @@ export class RecordQueries {
       }
       release();
       this.store.patch(id, {
+        kind: 'record',
         result: {
           config: copy(config),
           filter: copy(filter),
@@ -326,6 +330,7 @@ export class RecordQueries {
       if (!current()) return;
       release();
       this.store.patch(id, {
+        kind: 'record',
         queryStatus: 'error',
         queryError: message(error),
         refreshing: false,
@@ -372,7 +377,11 @@ export class RecordQueries {
             session.instance.config
           ).pagination.mode === 'cursor'
         )
-          this.store.patch(session.instance.id, { page: 1, cursor: null });
+          this.store.patch(session.instance.id, {
+            kind: 'record',
+            page: 1,
+            cursor: null,
+          });
       },
       true,
       'refresh',

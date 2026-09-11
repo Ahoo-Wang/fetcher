@@ -15,10 +15,14 @@ import type {
   AnalysisViewConfig,
   AnalysisCompilerRegistry,
 } from './analysisModel.js';
+import {
+  analysisQueryPolicy,
+  type AnalysisQueryIntent,
+} from './analysisQueryPolicy.js';
 import { compileAnalysis } from './analysisCompiler.js';
 import { validateAnalysisResult } from './analysisResult.js';
 import type { DeepReadonly } from '../lib/types.js';
-import { copy, sameJsonState } from '../lib/snapshot.js';
+import { copy } from '../lib/snapshot.js';
 import { validateFilterJson } from '../filter/filterConfigurationValidation.js';
 import type { SessionStore } from '../engine/SessionStore.js';
 import type { EngineScope } from '../engine/EngineScope.js';
@@ -64,6 +68,7 @@ export class AnalysisCommands {
     if (this.store.find(id) !== session)
       throw new Error('编辑回调不能重入引擎命令');
     this.store.patch(id, {
+      kind: 'analysis',
       instance: { ...session.instance, config: copy(config) },
     });
   }
@@ -72,6 +77,7 @@ export class AnalysisCommands {
     const session = this.store.analysisSession(id);
     this.work.assertWritable(session);
     this.store.patch(id, {
+      kind: 'analysis',
       instance: session.baseline,
       writeError: null,
     });
@@ -85,6 +91,7 @@ export class AnalysisCommands {
     request.controller.abort();
     if (!this.requests.has(id) && this.store.find(id)?.kind === 'analysis')
       this.store.patch(id, {
+        kind: 'analysis',
         queryStatus: 'idle',
         queryError: null,
         pendingQuery: null,
@@ -94,7 +101,13 @@ export class AnalysisCommands {
     for (const id of [...this.requests.keys()]) this.cancel(id);
   }
 
-  async run(id: string): Promise<void> {
+  refresh(id: string): Promise<void> {
+    return this.run(id, 'auto');
+  }
+
+  async run(id: string, intent: AnalysisQueryIntent = 'manual'): Promise<void> {
+    const session = this.store.analysisSession(id);
+    if (intent !== 'manual' && !analysisQueryPolicy(session, intent)) return;
     const started = performance.now();
     const operationId = crypto.randomUUID();
     const diagnostic = (
@@ -109,7 +122,6 @@ export class AnalysisCommands {
         elapsedMs: performance.now() - started,
         ...(errorCode ? { errorCode } : {}),
       });
-    const session = this.store.analysisSession(id);
     let release: () => void;
     const controller = new AbortController();
     try {
@@ -135,10 +147,7 @@ export class AnalysisCommands {
       diagnostic('failed', 'INVALID_CONFIG');
       throw new Error(compiled.errors.map(value => value.message).join('；'));
     }
-    if (
-      this.requests.has(id) &&
-      sameJsonState(session.pendingQuery?.query, compiled.plan.query)
-    )
+    if (!analysisQueryPolicy({ ...session, compilation: compiled }, intent))
       return;
     try {
       release = this.budget.acquire(`analysis:${id}`, controller);
@@ -168,6 +177,7 @@ export class AnalysisCommands {
         return;
       }
       this.store.patch(id, {
+        kind: 'analysis',
         queryStatus: 'loading',
         queryError: null,
         pendingQuery: plan,
@@ -197,6 +207,7 @@ export class AnalysisCommands {
       this.requests.delete(id);
       release();
       this.store.patch(id, {
+        kind: 'analysis',
         queryStatus: 'success',
         queryError: null,
         pendingQuery: null,
@@ -216,6 +227,7 @@ export class AnalysisCommands {
       this.requests.delete(id);
       release();
       this.store.patch(id, {
+        kind: 'analysis',
         queryStatus: 'error',
         pendingQuery: null,
         queryError:
