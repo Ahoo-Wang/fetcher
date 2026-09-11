@@ -188,3 +188,22 @@ it('reports load, record queries and writes as metadata even when the observer t
   );
   engine.dispose();
 });
+
+it('loads an oversized default record as recoverable without auto-querying it', async () => {
+  const oversized = instance();
+  oversized.config.filters.root.props = { large: 'x'.repeat(2048) };
+  const { engine, paged } = setup({
+    limits: { maxConfigBytes: 1024 },
+    instances: { instances: [oversized], defaultInstanceId: oversized.id },
+  });
+  try {
+    await expect(engine.load()).resolves.toBeUndefined();
+    expect(engine.getSnapshot().status).toBe('ready');
+    expect(
+      selected(engine).validation.some(error => error.id === 'config-size'),
+    ).toBe(true);
+    expect(paged).not.toHaveBeenCalled();
+  } finally {
+    engine.dispose();
+  }
+});

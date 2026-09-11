@@ -816,3 +816,66 @@ it('clears an owned display field together with its sort and table references', 
   expect(updated.sort).toEqual([]);
   expect(updated.metrics).toEqual(initial.metrics);
 });
+
+it('edits and removes result ordering without changing measure definitions', async () => {
+  const changed = vi.fn();
+  function Example() {
+    const [value, setValue] = useState<AnalysisViewConfig>({
+      ...initial,
+      dimensions: [
+        {
+          id: 'state',
+          alias: 'state',
+          title: '状态',
+          component: { name: 'terms' },
+          field: 'state',
+          props: {},
+        },
+      ],
+    });
+    return (
+      <AnalysisEditor
+        value={value}
+        context={{
+          fields: [{ field: 'state', label: '状态', type: 'string' }],
+          capability: {
+            count: true,
+            fields: [
+              {
+                field: 'state',
+                groups: [AggregationGroupType.TERMS],
+                functions: [],
+              },
+            ],
+          },
+        }}
+        onChange={next => {
+          changed(next);
+          setValue(next);
+        }}
+      />
+    );
+  }
+  async function choose(name: string, label: string) {
+    fireEvent.click(control('combobox', { name }));
+    const option = await screen.findByRole('option', {
+      name: label,
+      exact: true,
+    });
+    fireEvent.pointerDown(option, { pointerType: 'mouse' });
+    fireEvent.click(option);
+  }
+  render(<Example />);
+  fireEvent.click(control('button', { name: '添加排序' }));
+  await choose('排序 1 输出', '订单数');
+  await choose('排序 1 方向', '降序');
+  expect(changed.mock.lastCall?.[0].sort).toEqual([
+    { alias: 'orders', direction: SortDirection.DESC },
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: '删除排序 1' }));
+  expect(changed.mock.lastCall?.[0].sort).toEqual([]);
+  fireEvent.click(screen.getByRole('button', { name: '添加排序' }));
+  fireEvent.click(screen.getByRole('button', { name: '清除排序' }));
+  expect(changed.mock.lastCall?.[0].sort).toEqual([]);
+  expect(changed.mock.lastCall?.[0].metrics).toEqual(initial.metrics);
+});

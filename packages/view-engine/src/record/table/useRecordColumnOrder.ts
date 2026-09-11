@@ -26,9 +26,14 @@ export function useRecordColumnOrder({
   onChange,
   disabled,
 }: RecordColumnSettingsProps) {
-  const columns = orderRecordColumns(configuredColumns, definition.record.rowKey);
+  const columns = orderRecordColumns(
+    configuredColumns,
+    definition.record.rowKey,
+  );
   function isLocked(column: RecordColumn): boolean {
-    return column.kind === 'actions' || column.field === definition.record.rowKey;
+    return (
+      column.kind === 'actions' || column.field === definition.record.rowKey
+    );
   }
   function titleOf(column: RecordColumn): string {
     return (

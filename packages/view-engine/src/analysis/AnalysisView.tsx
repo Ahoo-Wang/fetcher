@@ -172,6 +172,9 @@ function AnalysisConfiguration({
     [engine, id],
   );
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersVisited, setFiltersVisited] = useState(false);
+  if (!filtersVisited && (filtersOpen || session?.filterValid === false))
+    setFiltersVisited(true);
   const definition = state.definition;
   if (!session || !definition || !commands) return null;
   const { instance } = session;
@@ -199,6 +202,7 @@ function AnalysisConfiguration({
               className="fve:flex fve:cursor-pointer fve:list-none fve:items-center fve:justify-between fve:gap-2 fve:px-3 fve:py-2 fve:text-sm fve:focus-visible:ring-2 fve:focus-visible:ring-ring fve:[&::-webkit-details-marker]:hidden"
               onClick={event => {
                 event.preventDefault();
+                setFiltersVisited(true);
                 setFiltersOpen(!filtersOpen);
               }}
             >
@@ -220,31 +224,33 @@ function AnalysisConfiguration({
               className="fve:border-t fve:p-3"
               onFocus={() => setFiltersOpen(true)}
             >
-              <FilterPanel
-                renderToolbar={toolbar => (
-                  <FilterSelect
-                    label="筛选模式"
-                    value={toolbar.mode}
-                    options={toolbar.options}
-                    disabled={toolbar.disabled}
-                    onValueChange={toolbar.onModeChange}
-                  />
-                )}
-                value={instance.config.filters}
-                appliedValue={session.baseline.config.filters}
-                fields={definition.fields}
-                timeZone={definition.timeZone}
-                allowedOperators={definition.allowedOperators}
-                editors={definition.filterEditors}
-                extensions={extensions}
-                context={filterContext}
-                showQueryAction={false}
-                onApply={() => commands.run()}
-                onChange={filters =>
-                  commands.edit(config => ({ ...config, filters }))
-                }
-                onValidityChange={rootValidity}
-              />
+              {(filtersVisited || filtersOpen || !session.filterValid) && (
+                <FilterPanel
+                  renderToolbar={toolbar => (
+                    <FilterSelect
+                      label="筛选模式"
+                      value={toolbar.mode}
+                      options={toolbar.options}
+                      disabled={toolbar.disabled}
+                      onValueChange={toolbar.onModeChange}
+                    />
+                  )}
+                  value={instance.config.filters}
+                  appliedValue={session.baseline.config.filters}
+                  fields={definition.fields}
+                  timeZone={definition.timeZone}
+                  allowedOperators={definition.allowedOperators}
+                  editors={definition.filterEditors}
+                  extensions={extensions}
+                  context={filterContext}
+                  showQueryAction={false}
+                  onApply={() => commands.run()}
+                  onChange={filters =>
+                    commands.edit(config => ({ ...config, filters }))
+                  }
+                  onValidityChange={rootValidity}
+                />
+              )}
             </div>
           </details>
           <AnalysisEditor

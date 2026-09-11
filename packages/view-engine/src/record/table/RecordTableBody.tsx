@@ -108,7 +108,10 @@ export function RecordTableBody({
                   <RecordCell
                     column={column}
                     record={row.original}
-                    rowKey={getRecordKey(row.original, definition.record.rowKey)}
+                    rowKey={getRecordKey(
+                      row.original,
+                      definition.record.rowKey,
+                    )}
                     index={row.index}
                     definition={definition}
                     instance={instance}

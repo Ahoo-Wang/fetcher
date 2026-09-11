@@ -133,7 +133,10 @@ export abstract class SafeTransformer<I, O> implements NonNullable<
    * @param error - The error that was caught
    * @param phase - The lifecycle phase where the error occurred
    */
-  protected onError(error: unknown, phase: TransformerPhase): void {}
+  protected onError(error: unknown, phase: TransformerPhase): void {
+    void error;
+    void phase;
+  }
 
   /**
    * Transform an input chunk into output chunk(s).

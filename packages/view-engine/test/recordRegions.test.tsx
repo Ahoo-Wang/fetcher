@@ -346,7 +346,9 @@ it.each(['renderToolbar', 'renderPagination'] as const)(
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: '区域状态 0' }));
-    await act(() => engine.record(engine.getSnapshot().selectedInstanceId!).refresh());
+    await act(() =>
+      engine.record(engine.getSnapshot().selectedInstanceId!).refresh(),
+    );
     expect(screen.getByRole('button', { name: '区域状态 1' })).toBeTruthy();
     await act(() => engine.selectInstance('other'));
     expect(screen.getByRole('button', { name: '区域状态 0' })).toBeTruthy();
@@ -399,10 +401,9 @@ it('hides layout switching when the definition allows only one layout', () => {
 it('sorts a card-only view using the shared engine configuration', async () => {
   const { host, paged } = setup();
   const onlyCard = {
-...definition,
-record: {...(definition).record,
-allowedLayouts: ['card'] as const}
-};
+    ...definition,
+    record: { ...definition.record, allowedLayouts: ['card'] as const },
+  };
   const saved = structuredClone(instance);
   saved.config.presentation = {
     layout: 'card',

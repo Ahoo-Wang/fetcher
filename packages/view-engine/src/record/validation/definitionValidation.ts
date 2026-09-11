@@ -11,10 +11,16 @@
  * limitations under the License.
  */
 
+import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
 import { validateRecordPresentationDefaults } from './presentationValidation.js';
 import { encodeViewResourceId } from '../viewServiceContract.js';
 import { validateTimeZone } from '../../lib/timeZone.js';
-import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import {
+  FilterOperator,
+  AggregationGroupType,
+  AggregationFunction,
+  AggregationDateUnit,
+} from '@ahoo-wang/fetcher-wow';
 import {
   type ViewDefinition,
   type ViewFieldDefinition,
@@ -104,6 +110,91 @@ function validateFields(value: unknown) {
   }
 }
 
+function enumList(value: unknown, allowed: readonly string[], label: string) {
+  if (
+    !Array.isArray(value) ||
+    new Set(value).size !== value.length ||
+    value.some(item => typeof item !== 'string' || !allowed.includes(item))
+  )
+    throw new Error(`${label}无效`);
+}
+function validateAnalysisCapability(value: unknown, scoped = false) {
+  assertObject(value, '分析能力');
+  if (typeof value.count !== 'boolean' || !Array.isArray(value.fields))
+    throw new Error('分析能力无效');
+  if (value.expressions !== undefined && typeof value.expressions !== 'boolean')
+    throw new Error('表达式能力必须为布尔值');
+  const paths = new Set<string>();
+  for (const field of value.fields) {
+    assertObject(field, '分析字段');
+    assertPath(field.field, '分析字段路径');
+    if (paths.has(field.field as string)) throw new Error('分析字段重复');
+    paths.add(field.field as string);
+    enumList(field.groups, Object.values(AggregationGroupType), '分组能力');
+    enumList(
+      field.functions,
+      Object.values(AggregationFunction),
+      '数值函数能力',
+    );
+    if (field.dateUnits !== undefined)
+      enumList(field.dateUnits, Object.values(AggregationDateUnit), '时间粒度');
+    if (field.any !== undefined && typeof field.any !== 'boolean')
+      throw new Error('代表值能力必须为布尔值');
+    if (field.unit !== undefined) assertText(field.unit, '指标单位');
+    if (field.numberFormat !== undefined) {
+      assertObject(field.numberFormat, '分析数值格式');
+      if (field.numberFormat.locale !== undefined)
+        assertText(field.numberFormat.locale, '分析数值区域设置');
+      formatRecordNumber(0, { numberFormat: field.numberFormat });
+    }
+  }
+  if (value.limits !== undefined) {
+    assertObject(value.limits, '分析限制');
+    const maxima: Record<string, number> = {
+      maxGroups: 32,
+      maxMetrics: 64,
+      maxSort: 32,
+      defaultLimit: 100,
+      maxLimit: 10000,
+    };
+    for (const [name, limit] of Object.entries(value.limits)) {
+      if (
+        limit !== undefined &&
+        (typeof limit !== 'number' ||
+          !Number.isSafeInteger(limit) ||
+          limit <= 0 ||
+          !Object.prototype.hasOwnProperty.call(maxima, name) ||
+          limit > maxima[name])
+      )
+        throw new Error('分析限制无效');
+    }
+  }
+  if (value.scopes !== undefined) {
+    if (scoped || !Array.isArray(value.scopes)) throw new Error('分析范围无效');
+    const ids = new Set<string>();
+    for (const scope of value.scopes) {
+      assertObject(scope, '分析范围');
+      assertText(scope.id, '分析范围 ID');
+      assertText(scope.label, '分析范围名称');
+      if (ids.has(scope.id)) throw new Error('分析范围重复');
+      ids.add(scope.id);
+      if (
+        !Array.isArray(scope.elements) ||
+        !scope.elements.length ||
+        scope.elements.length > 8
+      )
+        throw new Error('分析范围元素链无效');
+      for (const element of scope.elements) {
+        assertObject(element, '范围元素');
+        assertPath(element.path, '元素路径');
+        validateFields(element.fields);
+      }
+      validateFields(scope.fields);
+      validateAnalysisCapability(scope.capability, true);
+    }
+  }
+}
+
 export function validateViewDefinition(
   value: unknown,
 ): asserts value is ViewDefinition {
@@ -119,12 +210,8 @@ export function validateViewDefinition(
     assertPath(value.record.rowKey, '记录主键');
   }
   if (value.analysis !== undefined) {
-    assertObject(value.analysis, '分析能力');
-    if (
-      typeof value.analysis.count !== 'boolean' ||
-      !Array.isArray(value.analysis.fields)
-    )
-      throw new Error('分析能力无效');
+    validateFilterJson(value.analysis);
+    validateAnalysisCapability(value.analysis);
   }
   if (value.timeZone !== undefined) {
     assertText(value.timeZone, '时区');

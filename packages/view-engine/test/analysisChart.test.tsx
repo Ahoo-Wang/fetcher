@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ChartContainer } from '../src/components/ui/chart.js';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   cleanup,
@@ -128,6 +130,13 @@ it.each(['bar', 'line', 'area', 'pie'] as const)(
     );
     expect(screen.getByRole('application')).toBeTruthy();
     expect(document.querySelector('[data-slot="chart"]')).toBeTruthy();
+    fireEvent.focus(screen.getByRole('application'));
+    fireEvent.keyDown(screen.getByRole('application'), { key: 'ArrowRight' });
+    await waitFor(() =>
+      expect(
+        document.querySelector('.recharts-tooltip-wrapper span[title="5"]'),
+      ).not.toBeNull(),
+    );
     fireEvent.click(screen.getByRole('tab', { name: '数据表', exact: true }));
     expect(screen.getByRole('table')).toBeTruthy();
     expect(screen.queryByRole('application')).toBeNull();
@@ -243,4 +252,17 @@ it('exposes pie values and returned-group shares without overflowing their total
   expect(legend.textContent).toContain('0%');
   expect(screen.getByText(/占比仅基于已返回分组/)).toBeTruthy();
   expect(legend.querySelector('[title="1e+308"]')).toBeTruthy();
+});
+
+it('keeps chart colors in escaped style attributes instead of injected style HTML', () => {
+  const html = renderToStaticMarkup(
+    <ChartContainer
+      config={{ s0: { color: 'red</style><script>alert(1)</script>' } }}
+    >
+      <div />
+    </ChartContainer>,
+  );
+  expect(html).not.toContain('<script>');
+  expect(html).not.toContain('<style');
+  expect(html).toContain('--color-s0:');
 });

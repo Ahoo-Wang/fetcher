@@ -1076,7 +1076,6 @@ Switching to the data table retains the chart axes, series, metric selection and
 
 View-kind icons are consistent in the sidebar, instance selector and view manager, with accessible type descriptions. Chart and metric results use centered bottom Analysis/Data table tabs. Switching tabs is local, does not query or save, and retains the returned-table page after its first opening. Unsupported chart configurations show their reason and select the data table; the Analysis tab is disabled until the configuration supports a chart.
 
-
 Dimensions accept `label?: { field: string; alias: string; title: string }`. The compiler emits an authorized ANY metric and marks its schema column with `labelFor: dimension.alias`. Display fields are owned by dimensions and do not occupy a user measure slot; they still count against backend metric limits. Names shared by different IDs include IDs; missing/conflicting names fall back to IDs. Changing a display field changes the query and requires Run. The former presentation-level label binding has been removed.
 
 `ANALYSIS_VISUALIZATIONS` and `AnalysisVisualizationType` describe built-in visualization capabilities shared by controls, projection validation and rendering. With two dimensions, the first is the category axis and the other the series unless explicitly mapped. Valid saved analyses initially collapse query configuration; invalid/incomplete configurations open it. Execution details expand on demand.

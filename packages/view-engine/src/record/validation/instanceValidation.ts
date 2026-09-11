@@ -20,7 +20,11 @@ import {
   type ViewInstance,
 } from '../../contracts/viewModel.js';
 import { validateRecordPresentation } from './presentationValidation.js';
-import { assertObject, assertText } from './validationPrimitives.js';
+import {
+  assertObject,
+  assertText,
+  validateReference,
+} from './validationPrimitives.js';
 
 export function validateViewInstance(
   value: unknown,
@@ -62,6 +66,38 @@ export function validateViewInstance(
       typeof config.presentation !== 'object'
     )
       throw new Error('分析配置结构无效');
+    assertObject(config.presentation, '分析展示配置');
+    for (const item of [...config.dimensions, ...config.metrics]) {
+      assertObject(item, '分析组件');
+      assertText(item.id, '组件 ID');
+      if (typeof item.alias !== 'string' || typeof item.title !== 'string')
+        throw new Error('分析组件名称结构无效');
+      assertObject(item.component, '分析组件引用');
+      validateReference(item.component);
+      assertObject(item.props, '分析组件属性');
+      if (item.field !== undefined && typeof item.field !== 'string')
+        throw new Error('分析字段结构无效');
+      if (item.label !== undefined) {
+        assertObject(item.label, '维度显示字段');
+        for (const key of ['field', 'alias', 'title'])
+          if (typeof item.label[key] !== 'string')
+            throw new Error('维度显示字段结构无效');
+      }
+    }
+    for (const item of config.sort) {
+      assertObject(item, '分析排序');
+      if (
+        typeof item.alias !== 'string' ||
+        !Object.values(SortDirection).includes(item.direction as SortDirection)
+      )
+        throw new Error('分析排序结构无效');
+    }
+    if (config.scope !== undefined) {
+      assertObject(config.scope, '分析范围');
+      assertText(config.scope.id, '分析范围 ID');
+      if (!Array.isArray(config.scope.filters))
+        throw new Error('分析范围筛选结构无效');
+    }
     return;
   }
   if (!semantic) {

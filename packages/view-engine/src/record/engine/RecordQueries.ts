@@ -118,7 +118,9 @@ export class RecordQueries {
       if (session.kind !== 'record') return;
       if (
         session.appliedFilter === null ||
-        session.validation.some(issue => issue.id === 'config')
+        session.validation.some(
+          issue => issue.id === 'config' || issue.id === 'config-size',
+        )
       )
         return;
       await (refresh ? this.refresh(id) : this.run(id, 'scope'));

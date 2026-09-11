@@ -108,7 +108,16 @@ export class ViewEngine {
         ),
       ),
     );
-    this.analysisCompilers = Object.freeze({ ...options.analysisCompilers });
+    this.analysisCompilers = Object.freeze(
+      Object.fromEntries(
+        Object.entries(options.analysisCompilers ?? {}).map(
+          ([name, compiler]) => [
+            name,
+            Object.freeze({ compile: compiler.compile }),
+          ],
+        ),
+      ),
+    );
     this.store = new SessionStore(
       this.scope,
       this.filterCompilers,

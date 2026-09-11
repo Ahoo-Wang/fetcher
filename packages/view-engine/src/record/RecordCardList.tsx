@@ -77,7 +77,9 @@ export function RecordCardList(props: RecordCardListProps) {
   if (presentation.layout !== 'card')
     throw new Error('RecordCardList 需要 card 布局');
   const { card } = presentation;
-  const keys = rows.map(record => getRecordKey(record, definition.record.rowKey));
+  const keys = rows.map(record =>
+    getRecordKey(record, definition.record.rowKey),
+  );
   const selected = keys.filter(key => selectedRowKeys.includes(key));
   return (
     <div

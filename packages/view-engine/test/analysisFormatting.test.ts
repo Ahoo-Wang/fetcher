@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { formatAnalysisValue } from '../src/analysis/analysisFormatting.js';
 import type { AnalysisResultColumn } from '../src/analysis/analysisModel.js';
 const column: AnalysisResultColumn = {
@@ -53,4 +53,24 @@ it('applies typed labels and contains malformed Intl configuration errors', () =
   expect(
     formatAnalysisValue(0, { ...column, valueType: 'datetime' }, '+08:00'),
   ).toContain('08:00:00');
+});
+
+it('reuses identical numeric formats and respects changed host options', () => {
+  const create = vi.spyOn(Intl, 'NumberFormat');
+  try {
+    const options = {
+      locale: 'de-DE',
+      minimumFractionDigits: 17,
+      maximumFractionDigits: 17,
+    };
+    const configured = { ...column, numberFormat: options };
+    formatAnalysisValue(1, configured);
+    formatAnalysisValue(2, configured);
+    expect(create).toHaveBeenCalledTimes(1);
+    options.maximumFractionDigits = 18;
+    formatAnalysisValue(3, configured);
+    expect(create).toHaveBeenCalledTimes(2);
+  } finally {
+    create.mockRestore();
+  }
 });

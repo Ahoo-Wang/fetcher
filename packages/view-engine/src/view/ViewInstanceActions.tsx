@@ -61,9 +61,9 @@ export function ViewInstanceActions({
   const canSaveAs = permissions.saveAsPersonal || permissions.saveAsShared;
   const canRestore = session.dirty;
   const writing = session.writeStatus !== 'idle';
-  const blocked = writing || session.validation.length > 0 || session.requiresReload;
-  const showSaved =
-    saved && !session.dirty && !writing;
+  const blocked =
+    writing || session.validation.length > 0 || session.requiresReload;
+  const showSaved = saved && !session.dirty && !writing;
   // Move focus after React removes the restore-only menu and disables Save.
   useLayoutEffect(() => {
     if (restoreFocus.current && !canRestore) {

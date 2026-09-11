@@ -112,7 +112,8 @@ export function useRecordTable({
     features: recordTableFeatures,
     columns: columnDefs,
     data: rows,
-    getRowId: record => JSON.stringify(getRecordKey(record, definition.record.rowKey)),
+    getRowId: record =>
+      JSON.stringify(getRecordKey(record, definition.record.rowKey)),
     manualSorting: true,
     sortDescFirst: false,
     enableMultiSort: true,

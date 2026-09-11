@@ -44,17 +44,17 @@ const definition: RecordViewDefinition = {
   sourceId: 'orders',
   title: '第一个数据视图',
   record: {
-  allowedLayouts: ['table', 'card'],
-  rowKey: 'id',
-  defaultPresentation: {
-    card: {
-      title: { id: 'title', field: 'id' },
-      fields: [
-        { id: 'amount', field: 'amount' },
-        { id: 'status', field: 'status' },
-      ],
+    allowedLayouts: ['table', 'card'],
+    rowKey: 'id',
+    defaultPresentation: {
+      card: {
+        title: { id: 'title', field: 'id' },
+        fields: [
+          { id: 'amount', field: 'amount' },
+          { id: 'status', field: 'status' },
+        ],
+      },
     },
-  },
   },
   allowedOperators: [
     FilterOperator.MATCH_ALL,

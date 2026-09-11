@@ -111,11 +111,16 @@ export function RecordColumnSettings({
               ? getRecordSummaryFunctions(field)
               : [];
             const title = titleOf(column);
-            const pinned = getRecordColumnPinning(column, definition.record.rowKey);
+            const pinned = getRecordColumnPinning(
+              column,
+              definition.record.rowKey,
+            );
             const locked = isLocked(column);
             const neighbors = [columns[index - 1], columns[index + 1]]
               .filter((item): item is RecordColumn => item !== undefined)
-              .map(item => getRecordColumnPinning(item, definition.record.rowKey))
+              .map(item =>
+                getRecordColumnPinning(item, definition.record.rowKey),
+              )
               .filter(side => side !== false);
             const pinSide = neighbors.length === 1 ? neighbors[0] : undefined;
             const pinDisabled = disabled || locked || (!pinned && !pinSide);

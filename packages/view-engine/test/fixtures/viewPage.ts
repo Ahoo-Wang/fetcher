@@ -22,12 +22,11 @@ import type {
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
 
 export const definition: ViewDefinition = {
-id: 'orders',
-sourceId: 'orders',
-title: '订单管理',
-fields: [{ field: 'amount', label: '金额', type: 'number', sortable: true }],
-record: {allowedLayouts: ['table', 'card'],
-rowKey: 'id'}
+  id: 'orders',
+  sourceId: 'orders',
+  title: '订单管理',
+  fields: [{ field: 'amount', label: '金额', type: 'number', sortable: true }],
+  record: { allowedLayouts: ['table', 'card'], rowKey: 'id' },
 };
 export const instance: ViewInstance = {
   revision: 'initial',

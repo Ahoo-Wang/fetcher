@@ -49,6 +49,7 @@ export function message(error: unknown): string {
 
 /** Compare JSON snapshots independent of object key order; absent and undefined properties agree. */
 export function sameJsonState(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
   function canonical(value: unknown): unknown {
     if (Array.isArray(value)) return value.map(canonical);
     if (value && typeof value === 'object')

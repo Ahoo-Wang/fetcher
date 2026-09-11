@@ -101,15 +101,17 @@ it('resolves explicit cells and row actions with complete records and preserved 
         instance: tableInstance,
         refresh,
         definition: {
-...definition,
-fields: [
+          ...definition,
+          fields: [
             { ...definition.fields[0], cellRenderer: { name: 'fallback' } },
           ],
-record: {...(definition).record,
-recordActions: {
-            row: { name: 'actions', options: { label: '刷新' } },
-          }}
-},
+          record: {
+            ...definition.record,
+            recordActions: {
+              row: { name: 'actions', options: { label: '刷新' } },
+            },
+          },
+        },
         extensions: {
           cells: {
             explicit: p => (

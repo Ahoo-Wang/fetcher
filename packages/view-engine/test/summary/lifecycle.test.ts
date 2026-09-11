@@ -36,11 +36,16 @@ it('refreshes changed metric sets, ignores stale results and disables empty sele
     .mockReturnValueOnce(stale.promise)
     .mockResolvedValueOnce([{ summary0: 9, summary1: 30 }]);
   const setMetrics = (summary: RecordSummaryFunction[]) =>
-    engine.record(engine.getSnapshot().selectedInstanceId!).setColumns(session(engine).instance.config.presentation.table.columns.map(column =>
-        column.kind === 'field' && column.id === 'amount'
-          ? { ...column, summary }
-          : column,
-      ));
+    engine
+      .record(engine.getSnapshot().selectedInstanceId!)
+      .setColumns(
+        session(engine).instance.config.presentation.table.columns.map(
+          column =>
+            column.kind === 'field' && column.id === 'amount'
+              ? { ...column, summary }
+              : column,
+        ),
+      );
   setMetrics(['SUM', 'AVG']);
   expect(session(engine).pageSummary.values.amount).toEqual({
     SUM: 5,
@@ -89,15 +94,21 @@ it('loads page and all summaries together, preserving totals across page and pre
     metrics: [aggregation.sum(aggregation.field('amount'), 'summary0')],
   });
   const configured = session(engine).instance.config.presentation.table.columns;
-  engine.record(engine.getSnapshot().selectedInstanceId!).setColumns([...configured]
-      .reverse()
-      .map(column => ({ ...column, width: 90, visible: column.id === 'id' })));
+  engine
+    .record(engine.getSnapshot().selectedInstanceId!)
+    .setColumns(
+      [...configured]
+        .reverse()
+        .map(column => ({ ...column, width: 90, visible: column.id === 'id' })),
+    );
   await engine.record(engine.getSnapshot().selectedInstanceId!).setPage(2);
   expect(source.aggregate).toHaveBeenCalledTimes(1);
-  engine.record(engine.getSnapshot().selectedInstanceId!).setFilterDraft(createFilterConfiguration({
+  engine.record(engine.getSnapshot().selectedInstanceId!).setFilterDraft(
+    createFilterConfiguration({
       ...newFilterNode(FilterOperator.GTE, 'amount'),
       props: { value: 2 },
-    }));
+    }),
+  );
   await engine.record(engine.getSnapshot().selectedInstanceId!).applyFilter();
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(2));
   expect(source.aggregate.mock.calls[1][0].filter).toEqual(
@@ -116,10 +127,12 @@ it('ignores old aggregate responses after filtering, removing summaries and disp
     .mockReturnValueOnce(second.promise)
     .mockReturnValueOnce(third.promise);
   await engine.load();
-  engine.record(engine.getSnapshot().selectedInstanceId!).setFilterDraft(createFilterConfiguration({
+  engine.record(engine.getSnapshot().selectedInstanceId!).setFilterDraft(
+    createFilterConfiguration({
       ...newFilterNode(FilterOperator.GTE, 'amount'),
       props: { value: 10 },
-    }));
+    }),
+  );
   await engine.record(engine.getSnapshot().selectedInstanceId!).applyFilter();
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(2));
   expect(source.aggregate.mock.calls[0][2].signal.aborted).toBe(true);
@@ -130,12 +143,16 @@ it('ignores old aggregate responses after filtering, removing summaries and disp
   first.resolve([{ summary0: 999 }]);
   await Promise.resolve();
   expect(session(engine).allSummary.values.amount?.SUM).toBe(20);
-  const refresh = engine.record(engine.getSnapshot().selectedInstanceId!).refreshSummary();
+  const refresh = engine
+    .record(engine.getSnapshot().selectedInstanceId!)
+    .refreshSummary();
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(3));
-  engine.record(engine.getSnapshot().selectedInstanceId!).setColumns(session(engine).instance.config.presentation.table.columns.map(column => ({
+  engine.record(engine.getSnapshot().selectedInstanceId!).setColumns(
+    session(engine).instance.config.presentation.table.columns.map(column => ({
       ...column,
       summary: undefined,
-    })));
+    })),
+  );
   expect(source.aggregate.mock.calls[2][2].signal.aborted).toBe(true);
   expect(session(engine).pageSummary.status).toBe('idle');
   expect(session(engine).allSummary.status).toBe('idle');
@@ -153,9 +170,13 @@ it('refreshes changed summary bindings but preserves totals on presentation chan
     expect(session(engine).allSummary.status).toBe('success'),
   );
   const cols = session(engine).instance.config.presentation.table.columns;
-  engine.record(engine.getSnapshot().selectedInstanceId!).setColumns(cols.map(column =>
-      column.id === 'amount' ? { ...column, id: 'amount2' } : column,
-    ));
+  engine
+    .record(engine.getSnapshot().selectedInstanceId!)
+    .setColumns(
+      cols.map(column =>
+        column.id === 'amount' ? { ...column, id: 'amount2' } : column,
+      ),
+    );
   await vi.waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(2));
   await vi.waitFor(() =>
     expect(session(engine).allSummary.values.amount2?.SUM).toBe(30),
@@ -182,7 +203,9 @@ it('refreshes changed page and all totals manually but reuses all totals on pagi
     source.aggregate.mockResolvedValue([{ summary0: 50 }]);
 
     await engine.record(engine.getSnapshot().selectedInstanceId!).setPage(2);
-    await engine.record(engine.getSnapshot().selectedInstanceId!).setSort([{ field: 'amount', direction: SortDirection.DESC }]);
+    await engine
+      .record(engine.getSnapshot().selectedInstanceId!)
+      .setSort([{ field: 'amount', direction: SortDirection.DESC }]);
     expect(session(engine).pageSummary.values.amount?.SUM).toBe(7);
     expect(session(engine).allSummary.values.amount?.SUM).toBe(30);
     expect(source.aggregate).toHaveBeenCalledTimes(1);

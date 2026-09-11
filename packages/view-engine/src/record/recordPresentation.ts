@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-import type { RecordSummaryMetric, RecordPresentation } from '../contracts/viewModel.js';
+import type {
+  RecordSummaryMetric,
+  RecordPresentation,
+} from '../contracts/viewModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 
 /** Maps the implemented presentation to query requirements; visibility and widths do not affect metrics. */

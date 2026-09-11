@@ -110,9 +110,9 @@ const noRevision: AnalysisInstance = {
 
 const entry = engine.getSnapshot().entries.x;
 if (entry.status === 'loaded' && entry.session.kind === 'analysis') {
-  entry.session.working.config.metrics;
+  void entry.session.working.config.metrics;
   // @ts-expect-error A narrowed analysis session has no record pagination config.
-  entry.session.working.config.pagination;
+  void entry.session.working.config.pagination;
 }
 void [
   mixed,

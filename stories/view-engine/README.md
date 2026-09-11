@@ -17,7 +17,6 @@ View Engine
 
 真实 API 默认地址为 `http://compensation-service.dev.svc.cluster.local/`，点击连接才发起请求。数据入口使用快照分页查询，分析入口使用聚合查询；个人配置保存在 IndexedDB，业务记录只读。自动回归使用固定数据，真实服务验收单独执行并记录。
 
-
 开发验证承载持久化、HTTP 与独立包验收。CSF 的 `title` 决定层级，显式 `id` 保持书签与脚本地址稳定；回归必须有独立 id，不能直接继承展示故事的 id。
 
 | 要修改的内容               | 唯一维护入口                                                                             |

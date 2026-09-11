@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-import type { ViewInstance, ViewInstancePermissions } from '../contracts/viewModel.js';
+import type {
+  ViewInstance,
+  ViewInstancePermissions,
+} from '../contracts/viewModel.js';
 
 export type ViewServiceErrorCode =
   | 'INVALID_ARGUMENT'

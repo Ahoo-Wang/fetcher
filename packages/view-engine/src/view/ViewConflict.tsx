@@ -21,7 +21,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../components/ui/dialog.js';
-import type { ViewSession, ViewInstanceConflict } from '../contracts/viewModel.js';
+import type {
+  ViewSession,
+  ViewInstanceConflict,
+} from '../contracts/viewModel.js';
 import type { ViewEngine } from '../engine/ViewEngine.js';
 import { SaveAsForm } from './SaveAsForm.js';
 import { useViewPermissions } from './useViewCapabilities.js';
@@ -124,13 +127,31 @@ export function ViewConflict({
                     {instance.kind === 'record' ? (
                       <>
                         <p>每页 {instance.config.pagination.size} 条</p>
-                        <p>{instance.config.presentation.layout === 'table' ? '表格' : '卡片'} · {instance.config.presentation.table?.columns.length ?? 0} 列 · {instance.config.sort.length} 项排序</p>
+                        <p>
+                          {instance.config.presentation.layout === 'table'
+                            ? '表格'
+                            : '卡片'}{' '}
+                          ·{' '}
+                          {instance.config.presentation.table?.columns.length ??
+                            0}{' '}
+                          列 · {instance.config.sort.length} 项排序
+                        </p>
                       </>
                     ) : (
                       <>
-                        <p>{instance.config.dimensions.length} 个维度 · {instance.config.metrics.length} 个指标</p>
-                        <p>{instance.config.metrics.map(metric => metric.title).join('、')}</p>
-                        <p>最多 {instance.config.limit} 行 · {instance.config.sort.length} 项排序</p>
+                        <p>
+                          {instance.config.dimensions.length} 个维度 ·{' '}
+                          {instance.config.metrics.length} 个指标
+                        </p>
+                        <p>
+                          {instance.config.metrics
+                            .map(metric => metric.title)
+                            .join('、')}
+                        </p>
+                        <p>
+                          最多 {instance.config.limit} 行 ·{' '}
+                          {instance.config.sort.length} 项排序
+                        </p>
                       </>
                     )}
                   </section>

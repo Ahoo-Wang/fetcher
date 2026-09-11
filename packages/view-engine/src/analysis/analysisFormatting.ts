@@ -14,6 +14,19 @@
 import { fixedTimeZoneOffset } from '../lib/timeZone.js';
 import type { DeepReadonly } from '../lib/types.js';
 import type { AnalysisResultColumn } from './analysisModel.js';
+// Bound retention when host-defined formats vary; reuse expensive Intl instances across cells.
+const numberFormats = new Map<string, Intl.NumberFormat>();
+function numberFormat(locale: string, options: Intl.NumberFormatOptions) {
+  const key = JSON.stringify([locale, options]);
+  let formatter = numberFormats.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale, options);
+    if (numberFormats.size >= 64)
+      numberFormats.delete(numberFormats.keys().next().value!);
+    numberFormats.set(key, formatter);
+  }
+  return formatter;
+}
 /** Display-only formatting. Keep the original value for titles, sorting and tuple keys. */
 export function formatAnalysisValue(
   value: unknown,
@@ -35,11 +48,11 @@ export function formatAnalysisValue(
     if (typeof value === 'number') {
       const { locale = 'zh-CN', ...options } = column?.numberFormat ?? {};
       if (column?.aggregation === 'COUNT' || column?.format === 'count')
-        return new Intl.NumberFormat(locale, {
+        return numberFormat(locale, {
           useGrouping: true,
           maximumFractionDigits: 0,
         }).format(value);
-      return new Intl.NumberFormat(
+      return numberFormat(
         locale,
         Object.keys(options).length
           ? options

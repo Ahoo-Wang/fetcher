@@ -55,14 +55,16 @@ it('fills available width with automatic business columns and preserves explicit
       <RecordTable
         {...props({
           definition: {
-...definition,
-fields: [
+            ...definition,
+            fields: [
               ...definition.fields,
               { field: 'meta.id', label: '编号', type: 'string' },
             ],
-record: {...(definition).record,
-recordActions: { row: { name: 'actions' } }}
-},
+            record: {
+              ...definition.record,
+              recordActions: { row: { name: 'actions' } },
+            },
+          },
           instance: {
             ...instance,
             config: {
@@ -178,14 +180,16 @@ it('keeps business fields readable in compact tables and restores saved pinning 
     <RecordTable
       {...props({
         definition: {
-...definition,
-fields: [
+          ...definition,
+          fields: [
             ...definition.fields,
             { field: 'meta.id', label: '编号', type: 'string' },
           ],
-record: {...(definition).record,
-recordActions: { row: { name: 'actions' } }}
-},
+          record: {
+            ...definition.record,
+            recordActions: { row: { name: 'actions' } },
+          },
+        },
         instance: {
           ...instance,
           config: {

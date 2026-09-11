@@ -27,10 +27,12 @@ afterEach(cleanup);
 function sample(extensions: ViewExtensions) {
   const reference = { name: 'toString' };
   const model = {
-...definition,
-record: {...(definition).record,
-recordActions: { global: reference, table: reference, row: reference }}
-};
+    ...definition,
+    record: {
+      ...definition.record,
+      recordActions: { global: reference, table: reference, row: reference },
+    },
+  };
   const saved = instance();
   const session = createSession(saved, model, {});
   const props = {

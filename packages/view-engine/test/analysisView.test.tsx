@@ -724,3 +724,39 @@ it('expands the shared page from analysis and exits with Escape without rerunnin
     engine.dispose();
   }
 });
+
+it('mounts root filters on first expansion and retains them when collapsed', async () => {
+  const { engine, aggregate } = setup();
+  try {
+    await engine.load();
+    engine.analysis('totals').edit(config => ({
+      ...config,
+      filters: createFilterConfiguration({
+        id: 'amount',
+        field: 'amount',
+        component: { name: 'builtin' },
+        operator: FilterOperator.EQ,
+        props: { value: 5 },
+      }),
+    }));
+    render(<AnalysisView engine={engine} configurationOpen />);
+    expect(
+      screen.queryByRole('textbox', { name: '金额值', hidden: true }),
+    ).toBeNull();
+    const summary = screen
+      .getByText('筛选条件', { exact: true })
+      .closest('summary')!;
+    fireEvent.click(summary);
+    const editor = screen.getByRole('textbox', { name: '金额值' });
+    fireEvent.click(summary);
+    expect(screen.getByRole('textbox', { name: '金额值', hidden: true })).toBe(
+      editor,
+    );
+    fireEvent.click(summary);
+    expect(screen.getByRole('textbox', { name: '金额值' })).toBe(editor);
+    expect(aggregate).toHaveBeenCalledTimes(1);
+  } finally {
+    cleanup();
+    engine.dispose();
+  }
+});
