@@ -602,13 +602,27 @@ export const Donut: Story = {
     await userEvent.click(
       canvas.getByRole('checkbox', { name: '环形', exact: true }),
     );
-    await expect(legend.getByText('47.6%', { exact: true })).toBeVisible();
+    await waitFor(() =>
+      expect(
+        canvas.getByRole('checkbox', { name: '环形', exact: true }),
+      ).not.toBeChecked(),
+    );
+    await waitFor(() =>
+      expect(
+        within(canvas.getByRole('list', { name: '分组数值与占比' })).getByText(
+          '47.6%',
+          { exact: true },
+        ),
+      ).toBeVisible(),
+    );
     await userEvent.click(
       canvas.getByRole('checkbox', { name: '环形', exact: true }),
     );
-    await expect(
-      canvas.getByRole('checkbox', { name: '环形', exact: true }),
-    ).toBeChecked();
+    await waitFor(() =>
+      expect(
+        canvas.getByRole('checkbox', { name: '环形', exact: true }),
+      ).toBeChecked(),
+    );
     await expect(canvas.getByTestId('chart-requests')).toHaveTextContent('1');
   },
 };
@@ -905,8 +919,11 @@ export const EmbeddedConfiguration: Story = {
     ).toBeVisible();
     await expect(summary).toHaveAttribute('aria-expanded', 'false');
     await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(dialog.getByLabelText('编辑维度 2')).toHaveFocus(),
+    );
     await userEvent.keyboard('{Escape}');
-    await expect(trigger).toHaveFocus();
+    await waitFor(() => expect(trigger).toHaveFocus());
     const container = canvas.getByTestId('embedded-analysis-container');
     container.style.width = '100%';
     await waitFor(() =>
