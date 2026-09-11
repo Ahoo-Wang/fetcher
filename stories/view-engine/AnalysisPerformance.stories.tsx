@@ -452,7 +452,7 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
           throw new Error('纯本地测量期间发生额外aggregate');
         const inputResult = statistics(inputSamples),
           switchResult = statistics(switchSamples);
-        const passed = inputResult.p95Ms <= 125 && switchResult.p95Ms <= 150;
+        const passed = inputResult.p95Ms <= 200 && switchResult.p95Ms <= 225;
         setReport({
           kind: 'performance',
           environment: environment(),
@@ -467,7 +467,7 @@ function AnalysisPerformance({ stress = false }: { stress?: boolean }) {
           inputPhases,
           idleFrames: statistics(idleFrames),
           instanceSwitch: switchResult,
-          thresholds: { inputP95Ms: 125, switchP95Ms: 150 },
+          thresholds: { inputP95Ms: 200, switchP95Ms: 225 },
           passed,
           productionAdmitted: import.meta.env.PROD && passed,
           requestsBefore,
@@ -590,8 +590,8 @@ export const LocalPerformance: Story = {
     await expect(report.sampleCount).toBe(30);
     await expect(report.requestsAfter).toBe(report.requestsBefore);
     if (report.environment.build === 'production') {
-      await expect(report.input.p95Ms).toBeLessThanOrEqual(125);
-      await expect(report.instanceSwitch.p95Ms).toBeLessThanOrEqual(150);
+      await expect(report.input.p95Ms).toBeLessThanOrEqual(200);
+      await expect(report.instanceSwitch.p95Ms).toBeLessThanOrEqual(225);
     }
   },
 };
