@@ -17,3 +17,14 @@ export function effectiveSortAliases(
 ) {
   return new Set([...dimensions, ...sort].map(item => item.alias));
 }
+
+/** Adding an explicit dimension sort consumes no new effective sort slot. */
+export function canAddAnalysisSort(
+  dimensions: readonly { readonly alias: string }[],
+  sort: readonly { readonly alias: string }[],
+  alias: string,
+  maxSort: number,
+): boolean {
+  const effective = effectiveSortAliases(dimensions, sort);
+  return effective.has(alias) || effective.size < maxSort;
+}

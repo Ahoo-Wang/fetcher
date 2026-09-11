@@ -73,6 +73,33 @@ export class AnalysisCommands {
     });
   }
 
+  private compile(config: DeepReadonly<AnalysisViewConfig>) {
+    const definition = this.store.definition();
+    return compileAnalysis(config, {
+      fields: definition.fields,
+      capability: definition.analysis!,
+      timeZone: definition.timeZone,
+      allowedOperators: definition.allowedOperators,
+      filterCompilers: this.store.filterCompilers,
+      compilers: this.compilers,
+    });
+  }
+
+  async setSort(
+    id: string,
+    sort: DeepReadonly<AnalysisViewConfig['sort']>,
+  ): Promise<void> {
+    const session = this.store.analysisSession(id);
+    if (!analysisQueryPolicy(session, 'manual')) return;
+    const config = { ...session.instance.config, sort };
+    assertConfigSize(config, this.limits.maxConfigBytes);
+    const compiled = this.compile(config);
+    if (!compiled.plan)
+      throw new Error(compiled.errors.map(error => error.message).join('；'));
+    this.edit(id, () => config);
+    await this.run(id);
+  }
+
   restore(id: string): void {
     const session = this.store.analysisSession(id);
     this.work.assertWritable(session);
@@ -136,14 +163,7 @@ export class AnalysisCommands {
       throw error;
     }
     const definition = this.store.definition();
-    const compiled = compileAnalysis(session.instance.config, {
-      fields: definition.fields,
-      capability: definition.analysis!,
-      timeZone: definition.timeZone,
-      allowedOperators: definition.allowedOperators,
-      filterCompilers: this.store.filterCompilers,
-      compilers: this.compilers,
-    });
+    const compiled = this.compile(session.instance.config);
     if (!compiled.plan) {
       diagnostic('failed', 'INVALID_CONFIG');
       throw new Error(compiled.errors.map(value => value.message).join('；'));

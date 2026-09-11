@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { ANALYSIS_LIMITS } from '../../analysis/analysisCapabilities.js';
 import { MAX_ANALYSIS_ELEMENTS } from '../../analysis/analysisModel.js';
 import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
 import { validateRecordPresentationDefaults } from './presentationValidation.js';
@@ -151,13 +152,7 @@ function validateAnalysisCapability(value: unknown, scoped = false) {
   }
   if (value.limits !== undefined) {
     assertObject(value.limits, '分析限制');
-    const maxima: Record<string, number> = {
-      maxGroups: 32,
-      maxMetrics: 64,
-      maxSort: 32,
-      defaultLimit: 100,
-      maxLimit: 10000,
-    };
+    const maxima: Record<string, number> = ANALYSIS_LIMITS;
     for (const [name, limit] of Object.entries(value.limits)) {
       if (
         limit !== undefined &&

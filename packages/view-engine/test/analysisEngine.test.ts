@@ -17,6 +17,7 @@ import {
   AggregationGroupType as Group,
   AggregationDateUnit as Unit,
   FilterOperator,
+  SortDirection,
 } from '@ahoo-wang/fetcher-wow';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
@@ -507,6 +508,56 @@ it('cancels a run while resolving its source without invoking aggregate', async 
     expect(
       engine.getSnapshot().sessions[instance.id].result?.rows[0].orders,
     ).toBe(1);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it('validates query-producing sort changes before publishing and preserves invalid drafts', async () => {
+  const grouped = {
+    ...instance,
+    config: {
+      ...config,
+      dimensions: [
+        {
+          id: 'state',
+          alias: 'state',
+          title: 'State',
+          field: 'state',
+          component: { name: 'terms' },
+          props: {},
+        },
+      ],
+    },
+  };
+  const aggregate = vi
+    .fn()
+    .mockResolvedValue([{ state: 'ready', orders: 2, total: 30 }]);
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: {
+      ...definition,
+      analysis: { ...definition.analysis!, limits: { maxSort: 1 } },
+    },
+    instances: { instances: [grouped], defaultInstanceId: grouped.id },
+    host: { resolveSource: () => ({ aggregate }) },
+  });
+  try {
+    await engine.load();
+    const command = engine.analysis(grouped.id);
+    const before = engine.getSnapshot().sessions[grouped.id].instance;
+    await expect(
+      command.setSort([{ alias: 'orders', direction: SortDirection.ASC }]),
+    ).rejects.toThrow('有效排序数量超限');
+    expect(engine.getSnapshot().sessions[grouped.id].instance).toBe(before);
+    expect(aggregate).toHaveBeenCalledOnce();
+    await command.setSort([{ alias: 'state', direction: SortDirection.DESC }]);
+    expect(aggregate).toHaveBeenCalledTimes(2);
+    command.setFilterValidity(false);
+    const draft = engine.getSnapshot().sessions[grouped.id].instance;
+    await command.setSort([]);
+    expect(engine.getSnapshot().sessions[grouped.id].instance).toBe(draft);
+    expect(aggregate).toHaveBeenCalledTimes(2);
   } finally {
     engine.dispose();
   }

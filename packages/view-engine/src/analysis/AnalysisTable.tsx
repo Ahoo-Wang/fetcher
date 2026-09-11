@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { effectiveSortAliases } from './analysisSort.js';
+import { ANALYSIS_LIMITS } from './analysisCapabilities.js';
+import { canAddAnalysisSort } from './analysisSort.js';
 import { useMemo, useState } from 'react';
 import { sameJsonState } from '../lib/snapshot.js';
 import { analysisRowKey } from './analysisResult.js';
@@ -54,7 +55,7 @@ export function AnalysisTable({
   stale,
   querying,
   sortDisabled = false,
-  maxSort = 32,
+  maxSort = ANALYSIS_LIMITS.maxSort,
 }: AnalysisTableProps) {
   const [pagination, setPagination] = useState({ query: plan.query, page: 0 });
   const pageCount = Math.ceil(rows.length / 100);
@@ -112,12 +113,8 @@ export function AnalysisTable({
     !stale &&
     !querying &&
     !sortDisabled;
-  const effectiveAliases = effectiveSortAliases(dimensions, sort);
   function canSort(alias: string) {
-    return (
-      sortEnabled &&
-      (effectiveAliases.has(alias) || effectiveAliases.size < maxSort)
-    );
+    return sortEnabled && canAddAnalysisSort(dimensions, sort, alias, maxSort);
   }
   function toggle(alias: string) {
     if (!canSort(alias)) return;

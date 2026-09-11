@@ -15653,7 +15653,7 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisResultValidation`        | [analysisModel.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L150)                               |
 | `AnalysisRow`                     | [analysisModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L149)                               |
 | `analysisRowKey`                  | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
-| `analysisScopeContext`            | [analysisCompiler.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L49)                           |
+| `analysisScopeContext`            | [analysisCompiler.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L54)                           |
 | `AnalysisScopeDefinition`         | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
 | `AnalysisSession`                 | [viewModel.ts:272](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L272)                                      |
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
@@ -15662,8 +15662,8 @@ These names come from the current public entry exports and declarations. Import 
 | `calculateRecordSummary`          | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
 | `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
 | `clearFilterValues`               | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
-| `compileAnalysis`                 | [analysisCompiler.ts:209](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L209)                         |
-| `compileAnalysisExpression`       | [analysisCompiler.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L67)                           |
+| `compileAnalysis`                 | [analysisCompiler.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L214)                         |
+| `compileAnalysisExpression`       | [analysisCompiler.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L72)                           |
 | `compileBuiltinFilter`            | [filterBuiltinCompiler.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L172)                 |
 | `compileFilterConfiguration`      | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
 | `createFilterConfiguration`       | [filterConfigurationState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationState.ts#L42)             |
@@ -15741,7 +15741,7 @@ These names come from the current public entry exports and declarations. Import 
 | `validateAnalysisResult`          | [analysisResult.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L23)                               |
 | `validateFilterConfiguration`     | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
-| `validateViewDefinition`          | [definitionValidation.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L199)        |
+| `validateViewDefinition`          | [definitionValidation.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L194)        |
 | `validateViewInstance`            | [instanceValidation.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L30)              |
 | `ViewCapabilities`                | [viewModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L176)                                      |
 | `ViewCreateContext`               | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L40)                       |
@@ -15776,12 +15776,12 @@ These names come from the current public entry exports and declarations. Import 
 | Symbol                            | Declaration                                                                                                                                              |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:804](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L804)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:810](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L810)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L38) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L29) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
-| `AnalysisTable`                   | [AnalysisTable.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L48)                           |
+| `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
 | `AnalysisView`                    | [AnalysisView.tsx:277](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L277)                           |
 | `AnalysisViewProps`               | [AnalysisView.tsx:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L135)                           |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
@@ -35951,7 +35951,7 @@ console.log(compiled.plan.query, result.rows);
 | `AnalysisResultValidation`        | [analysisModel.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L150)                               |
 | `AnalysisRow`                     | [analysisModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L149)                               |
 | `analysisRowKey`                  | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
-| `analysisScopeContext`            | [analysisCompiler.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L49)                           |
+| `analysisScopeContext`            | [analysisCompiler.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L54)                           |
 | `AnalysisScopeDefinition`         | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
 | `AnalysisSession`                 | [viewModel.ts:272](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L272)                                      |
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
@@ -35960,8 +35960,8 @@ console.log(compiled.plan.query, result.rows);
 | `calculateRecordSummary`          | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
 | `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
 | `clearFilterValues`               | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
-| `compileAnalysis`                 | [analysisCompiler.ts:209](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L209)                         |
-| `compileAnalysisExpression`       | [analysisCompiler.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L67)                           |
+| `compileAnalysis`                 | [analysisCompiler.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L214)                         |
+| `compileAnalysisExpression`       | [analysisCompiler.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L72)                           |
 | `compileBuiltinFilter`            | [filterBuiltinCompiler.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L172)                 |
 | `compileFilterConfiguration`      | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
 | `createFilterConfiguration`       | [filterConfigurationState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationState.ts#L42)             |
@@ -36039,7 +36039,7 @@ console.log(compiled.plan.query, result.rows);
 | `validateAnalysisResult`          | [analysisResult.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L23)                               |
 | `validateFilterConfiguration`     | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
-| `validateViewDefinition`          | [definitionValidation.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L199)        |
+| `validateViewDefinition`          | [definitionValidation.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L194)        |
 | `validateViewInstance`            | [instanceValidation.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L30)              |
 | `ViewCapabilities`                | [viewModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L176)                                      |
 | `ViewCreateContext`               | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L40)                       |
@@ -36074,12 +36074,12 @@ console.log(compiled.plan.query, result.rows);
 | 符号                              | 声明                                                                                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:804](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L804)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:810](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L810)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L38) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L29) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
-| `AnalysisTable`                   | [AnalysisTable.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L48)                           |
+| `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
 | `AnalysisView`                    | [AnalysisView.tsx:277](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L277)                           |
 | `AnalysisViewProps`               | [AnalysisView.tsx:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L135)                           |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |

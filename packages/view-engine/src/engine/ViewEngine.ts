@@ -333,6 +333,12 @@ export class ViewEngine {
           throw new Error('筛选有效性必须是布尔值');
         this.store.patch(id, { filterValid: valid });
       },
+      setSort: async (sort: DeepReadonly<AnalysisViewConfig['sort']>) => {
+        assert();
+        if (this.store.analysisSession(id).editorEpoch !== editorEpoch)
+          throw new Error('编辑会话已重置');
+        await this.analysisCommands.setSort(id, sort);
+      },
       clearSort: () => {
         assert();
         this.analysisCommands.edit(id, config => ({ ...config, sort: [] }));

@@ -11,6 +11,11 @@
  * limitations under the License.
  */
 
+import { effectiveSortAliases } from './analysisSort.js';
+import {
+  ANALYSIS_LIMITS,
+  analysisGroupValueType,
+} from './analysisCapabilities.js';
 import { MAX_ANALYSIS_ELEMENTS } from './analysisModel.js';
 import {
   aggregation,
@@ -222,13 +227,7 @@ export function compileAnalysis(
         Array.isArray(config.sort),
       '分析配置列表无效',
     );
-    const defaults = {
-      maxGroups: 32,
-      maxMetrics: 64,
-      maxSort: 32,
-      defaultLimit: 100,
-      maxLimit: 10000,
-    };
+    const defaults = ANALYSIS_LIMITS;
     const limits = { ...defaults, ...context.capability.limits };
     for (const name of Object.keys(defaults) as (keyof typeof defaults)[])
       requireValue(
@@ -348,19 +347,20 @@ export function compileAnalysis(
             cap.groups.includes(output.type as Group),
             '未授权的分组方式',
           );
+          const groupValueType = analysisGroupValueType(
+            field.type,
+            output.type as Group,
+            context.timeZone,
+            cap.dateUnits,
+          );
           switch (output.type) {
             case Group.TERMS:
-              requireValue(
-                field.type === 'string' ||
-                  field.type === 'number' ||
-                  field.type === 'boolean',
-                'terms 需要标量字段',
-              );
-              valueType = field.type;
+              requireValue(groupValueType, 'terms 需要标量字段');
+              valueType = groupValueType;
               result = aggregation.terms(output.field, item.alias);
               break;
             case Group.HISTOGRAM:
-              requireValue(field.type === 'number', 'histogram 需要数值字段');
+              requireValue(groupValueType, 'histogram 需要数值字段');
               result = aggregation.histogram(output.field, {
                 alias: item.alias,
                 interval: output.interval,
@@ -368,9 +368,7 @@ export function compileAnalysis(
               break;
             case Group.DATE_HISTOGRAM:
               requireValue(
-                (field.type === 'date' || field.type === 'datetime') &&
-                  context.timeZone &&
-                  output.timeZone === context.timeZone,
+                groupValueType && output.timeZone === context.timeZone,
                 '日期分桶需要一致的明确时区',
               );
               requireValue(
@@ -551,7 +549,10 @@ export function compileAnalysis(
     for (const group of groups)
       if (!sort.some(item => item.field === group.alias))
         sort.push({ field: group.alias, direction: SortDirection.ASC });
-    requireValue(sort.length <= limits.maxSort, '有效排序数量超限');
+    requireValue(
+      effectiveSortAliases(groups, config.sort).size <= limits.maxSort,
+      '有效排序数量超限',
+    );
     if (errors.length) return { errors };
     const query: AggregationQuery = {
       filter: filterResult.expression,

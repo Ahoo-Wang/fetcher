@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 
-import { effectiveSortAliases } from './analysisSort.js';
+import {
+  ANALYSIS_LIMITS,
+  analysisGroupValueType,
+} from './analysisCapabilities.js';
+import { effectiveSortAliases, canAddAnalysisSort } from './analysisSort.js';
 import {
   AggregationGroupType as Group,
   AggregationFunction,
@@ -160,7 +164,8 @@ function ComponentList({
   const role = kind === 'dimensions' ? 'dimension' : 'metric';
   const metricsUsed =
     value.metrics.length + value.dimensions.filter(item => item.label).length;
-  const maxMetrics = context.capability.limits?.maxMetrics ?? 64;
+  const maxMetrics =
+    context.capability.limits?.maxMetrics ?? ANALYSIS_LIMITS.maxMetrics;
   const capabilityByField = new Map(
     context.capability.fields.map(field => [field.field, field]),
   );
@@ -217,13 +222,13 @@ function ComponentList({
     field: AnalysisCompileContext['fields'][number],
     group: Group,
   ) {
-    if (group === Group.TERMS)
-      return ['string', 'number', 'boolean'].includes(field.type ?? '');
-    if (group === Group.HISTOGRAM) return field.type === 'number';
     return (
-      (field.type === 'date' || field.type === 'datetime') &&
-      !!context.timeZone &&
-      !!capabilityByField.get(field.field)?.dateUnits?.length
+      analysisGroupValueType(
+        field.type,
+        group,
+        context.timeZone,
+        capabilityByField.get(field.field)?.dateUnits,
+      ) !== undefined
     );
   }
   const choices =
@@ -257,9 +262,10 @@ function ComponentList({
     !disabled &&
     choices.length > 0 &&
     (kind === 'dimensions'
-      ? items.length < (context.capability.limits?.maxGroups ?? 32) &&
+      ? items.length <
+          (context.capability.limits?.maxGroups ?? ANALYSIS_LIMITS.maxGroups) &&
         effectiveSortAliases(value.dimensions, value.sort).size <
-          (context.capability.limits?.maxSort ?? 32)
+          (context.capability.limits?.maxSort ?? ANALYSIS_LIMITS.maxSort)
       : metricsUsed < maxMetrics);
   return (
     <fieldset
@@ -805,7 +811,8 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
   const { value, onChange, disabled, errors = [] } = props;
   const limitHintId = useId();
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const maxLimit = props.context.capability.limits?.maxLimit ?? 10000;
+  const maxLimit =
+    props.context.capability.limits?.maxLimit ?? ANALYSIS_LIMITS.maxLimit;
   const invalidLimit =
     typeof value.limit !== 'number' ||
     !Number.isSafeInteger(value.limit) ||
@@ -816,18 +823,21 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
       onChange({ ...cloneSnapshot<AnalysisViewConfig>(value), ...patch });
   }
   const outputs = [...value.dimensions, ...value.metrics];
-  const maxSort = props.context.capability.limits?.maxSort ?? 32;
+  const maxSort =
+    props.context.capability.limits?.maxSort ?? ANALYSIS_LIMITS.maxSort;
   function sortOptions(index = value.sort.length) {
     const remaining = value.sort.filter((_, i) => i !== index);
     // The compiler appends every dimension not already explicitly sorted.
-    const effectiveAliases = effectiveSortAliases(value.dimensions, remaining);
     return outputs.filter(
       output =>
         output.alias === value.sort[index]?.alias ||
         (!remaining.some(sort => sort.alias === output.alias) &&
-          effectiveAliases.size +
-            (effectiveAliases.has(output.alias) ? 0 : 1) <=
-            maxSort),
+          canAddAnalysisSort(
+            value.dimensions,
+            remaining,
+            output.alias,
+            maxSort,
+          )),
     );
   }
   const nextSortOutput = sortOptions()[0];

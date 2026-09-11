@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { canAddAnalysisSort } from '../src/analysis/analysisSort.js';
 import { expect, it, vi } from 'vitest';
 import {
   aggregation,
@@ -660,3 +661,33 @@ it.each(['', '   '])('rejects blank output titles: %j', title => {
     ).toBe(true);
   }
 });
+
+it.each([1, 2, 3])(
+  'keeps editor/table sort capacity consistent with compilation at limit %i',
+  maxSort => {
+    const dimensions = [
+      {
+        id: 'state',
+        alias: 'state',
+        title: 'State',
+        field: 'state',
+        component: { name: 'terms' },
+        props: {},
+      },
+    ];
+    for (const alias of ['state', 'orders', 'total']) {
+      const proposed = {
+        ...config,
+        dimensions,
+        sort: [{ alias, direction: SortDirection.ASC }],
+      };
+      const compiled = compileAnalysis(proposed, {
+        ...context,
+        capability: { ...context.capability, limits: { maxSort } },
+      });
+      expect(canAddAnalysisSort(dimensions, [], alias, maxSort)).toBe(
+        !!compiled.plan,
+      );
+    }
+  },
+);

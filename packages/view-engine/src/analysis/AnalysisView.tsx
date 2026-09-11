@@ -469,14 +469,7 @@ export function AnalysisView({
         querying={querying}
         sortDisabled={!session.queryValid}
         maxSort={definition.analysis?.limits?.maxSort}
-        onSortChange={sort =>
-          run(async () => {
-            const current = engine.getSnapshot().sessions[instance.id];
-            if (current?.kind !== 'analysis' || !current.queryValid) return;
-            commands.edit(config => ({ ...config, sort }));
-            await commands.run();
-          })
-        }
+        onSortChange={sort => run(() => commands.setSort(sort))}
       />
     ) : null;
   const scopeLabel = result?.config.scope
