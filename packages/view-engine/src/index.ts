@@ -82,6 +82,7 @@ export type {
 export { resolveRecordPresentation } from './record/resolveRecordPresentation.js';
 
 export type * from './analysis/analysisModel.js';
+export { MAX_ANALYSIS_ELEMENTS } from './analysis/analysisModel.js';
 export { compileAnalysis } from './analysis/analysisCompiler.js';
 export {
   validateAnalysisResult,

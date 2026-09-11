@@ -626,3 +626,37 @@ it('passes the actual role to a declared dual-role compiler', () => {
   expect(result.errors).toEqual([]);
   expect(roles).toEqual(['dimension', 'metric']);
 });
+
+it.each(['', '   '])('rejects blank output titles: %j', title => {
+  for (const role of ['dimension', 'metric', 'label']) {
+    const scoped = {
+      ...context,
+      capability: {
+        ...context.capability,
+        fields: context.capability.fields.map(field => ({
+          ...field,
+          any: true,
+        })),
+      },
+    };
+    const value = structuredClone(config);
+    value.dimensions = [
+      {
+        id: 'state',
+        alias: 'state',
+        title: 'State',
+        field: 'state',
+        component: { name: 'terms' },
+        props: {},
+      },
+    ];
+    if (role === 'dimension') value.dimensions[0].title = title;
+    else if (role === 'metric') value.metrics[0].title = title;
+    else value.dimensions[0].label = { field: 'state', alias: 'label', title };
+    const result = compileAnalysis(value, scoped);
+    expect(result.plan).toBeUndefined();
+    expect(
+      result.errors.some(error => error.message.includes('输出名称')),
+    ).toBe(true);
+  }
+});

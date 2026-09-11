@@ -307,6 +307,7 @@ export function compileAnalysis(
         ids.add(item.id);
         requireValue(
           typeof item.title === 'string' &&
+            item.title.trim().length > 0 &&
             typeof item.alias === 'string' &&
             !aliases.has(item.alias),
           '输出名称无效或重复',

@@ -15,7 +15,8 @@ import { expect, it } from 'vitest';
 import { SessionStore } from '../../src/engine/SessionStore.js';
 import { EngineScope } from '../../src/engine/EngineScope.js';
 import { createSession } from '../../src/engine/sessionState.js';
-import { definition, instance } from './fixtures.js';
+import * as publicApi from '../../src/index.js';
+import { definition, instance, setup, selected } from './fixtures.js';
 
 it.each([
   ['sessions', 'record'],
@@ -74,3 +75,21 @@ it.each([
     expect(store.getSnapshot()[target].mine.kind).toBe(kind);
   },
 );
+
+it('exports the documented backend element limit as a runtime value', () => {
+  expect(Reflect.get(publicApi, 'MAX_ANALYSIS_ELEMENTS')).toBe(5);
+});
+it('prunes result recency metadata when the instance is removed from published sessions', async () => {
+  const { engine } = setup();
+  try {
+    await engine.load();
+    const store = new SessionStore(new EngineScope(), {});
+    store.publish({ definition, sessions: { mine: selected(engine) } });
+    const access = Reflect.get(store, 'resultAccess') as Map<string, number>;
+    expect(access.has('mine')).toBe(true);
+    store.publish({ sessions: {} });
+    expect(access.size).toBe(0);
+  } finally {
+    engine.dispose();
+  }
+});

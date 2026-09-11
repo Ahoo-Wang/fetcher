@@ -38,7 +38,10 @@ import {
 } from '../components/ui/popover.js';
 import { Input } from '../components/ui/input.js';
 import { FilterSelect } from '../filter/FilterSelect.js';
-import { analysisScopeContext } from './analysisCompiler.js';
+import {
+  analysisScopeContext,
+  compileAnalysisExpression,
+} from './analysisCompiler.js';
 import { AnalysisExpressionEditor } from './AnalysisExpressionEditor.js';
 import { pruneAnalysisPresentation } from './analysisPresentation.js';
 import { AnalysisScopeEditor } from './AnalysisScopeEditor.js';
@@ -558,7 +561,20 @@ function ComponentList({
                                       : undefined
                                   }
                                   options={(item.expression
-                                    ? Object.values(AggregationFunction)
+                                    ? Object.values(AggregationFunction).filter(
+                                        fn => {
+                                          try {
+                                            compileAnalysisExpression(
+                                              item.expression!,
+                                              fn,
+                                              context,
+                                            );
+                                            return true;
+                                          } catch {
+                                            return false;
+                                          }
+                                        },
+                                      )
                                     : (capability?.functions ?? [])
                                   ).map(value => ({
                                     value,

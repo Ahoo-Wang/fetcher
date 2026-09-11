@@ -44,6 +44,7 @@ function setup(
   mixed = false,
   damagedPresentation = false,
   maxRetainedResults = 20,
+  analysisId = 'totals',
 ) {
   const definition: ViewDefinition = {
     id: 'orders',
@@ -59,7 +60,7 @@ function setup(
     },
   };
   const instance: AnalysisViewInstance = {
-    id: 'totals',
+    id: analysisId,
     definitionId: 'orders',
     kind: 'analysis',
     title: '订单统计',
@@ -123,7 +124,7 @@ function setup(
             },
           ]
         : [instance],
-      defaultInstanceId: 'totals',
+      defaultInstanceId: analysisId,
     },
     host: {
       resolveSource: () => ({
@@ -845,79 +846,98 @@ it('renders the engine compilation without recompiling the working query', async
   }
 });
 
-it('disables result sorting while an extension holds invalid filter input', async () => {
-  const definition: ViewDefinition = {
-    id: 'grouped',
-    title: 'Grouped',
-    sourceId: 'orders',
-    fields: [{ field: 'state', label: '状态', type: 'string' }],
-    analysis: {
-      count: true,
-      fields: [
-        { field: 'state', groups: [AggregationGroupType.TERMS], functions: [] },
-      ],
-    },
-  };
-  const instance: AnalysisViewInstance = {
-    id: 'grouped',
-    definitionId: definition.id,
-    title: 'Grouped',
-    kind: 'analysis',
-    revision: '1',
-    scope: { type: 'personal' },
-    config: {
-      filters: createFilterConfiguration({
-        id: 'all',
-        component: { name: 'builtin' },
-        operator: FilterOperator.MATCH_ALL,
-        props: {},
-      }),
-      dimensions: [
-        {
-          id: 'state',
-          alias: 'state',
-          title: '状态',
-          field: 'state',
-          component: { name: 'terms' },
+it.each(['filter', 'size'])(
+  'disables result sorting for invalid %s input',
+  async reason => {
+    const definition: ViewDefinition = {
+      id: 'grouped',
+      title: 'Grouped',
+      sourceId: 'orders',
+      fields: [{ field: 'state', label: '状态', type: 'string' }],
+      analysis: {
+        count: true,
+        fields: [
+          {
+            field: 'state',
+            groups: [AggregationGroupType.TERMS],
+            functions: [],
+          },
+        ],
+      },
+    };
+    const instance: AnalysisViewInstance = {
+      id: 'grouped',
+      definitionId: definition.id,
+      title: 'Grouped',
+      kind: 'analysis',
+      revision: '1',
+      scope: { type: 'personal' },
+      config: {
+        filters: createFilterConfiguration({
+          id: 'all',
+          component: { name: 'builtin' },
+          operator: FilterOperator.MATCH_ALL,
           props: {},
-        },
-      ],
-      metrics: [
-        {
-          id: 'n',
-          alias: 'n',
-          title: '数量',
-          component: { name: 'count' },
-          props: {},
-        },
-      ],
-      sort: [],
-      limit: 100,
-      presentation: { layout: 'table', columns: [] },
-    },
-  };
-  const aggregate = vi.fn().mockResolvedValue([{ state: 'paid', n: 2 }]);
-  const engine = new ViewEngine({
-    definitionId: definition.id,
-    definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
-    host: { resolveSource: () => ({ aggregate }) },
-  });
-  try {
-    await engine.load();
-    render(<AnalysisView engine={engine} />);
-    act(() => engine.analysis(instance.id).setFilterValidity(false));
-    const sort = screen.getByRole('button', { name: '排序数量' });
-    expect((sort as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(sort);
-    expect(
-      engine.getSnapshot().sessions[instance.id].instance.config.sort,
-    ).toEqual([]);
-    expect(aggregate).toHaveBeenCalledOnce();
-  } finally {
-    engine.dispose();
-  }
-});
+        }),
+        dimensions: [
+          {
+            id: 'state',
+            alias: 'state',
+            title: '状态',
+            field: 'state',
+            component: { name: 'terms' },
+            props: {},
+          },
+        ],
+        metrics: [
+          {
+            id: 'n',
+            alias: 'n',
+            title: '数量',
+            component: { name: 'count' },
+            props: {},
+          },
+        ],
+        sort: [],
+        limit: 100,
+        presentation: { layout: 'table', columns: [] },
+      },
+    };
+    const aggregate = vi.fn().mockResolvedValue([{ state: 'paid', n: 2 }]);
+    const engine = new ViewEngine({
+      definitionId: definition.id,
+      definition,
+      limits: { maxConfigBytes: 2000 },
+      instances: { instances: [instance], defaultInstanceId: instance.id },
+      host: { resolveSource: () => ({ aggregate }) },
+    });
+    try {
+      await engine.load();
+      render(<AnalysisView engine={engine} />);
+      act(() => {
+        if (reason === 'filter')
+          engine.analysis(instance.id).setFilterValidity(false);
+        else
+          engine.analysis(instance.id).edit(config => ({
+            ...config,
+            dimensions: config.dimensions.map(item => ({
+              ...item,
+              title: 'x'.repeat(3000),
+            })),
+          }));
+      });
+      const sort = screen.getByRole('button', { name: '排序数量' });
+      expect((sort as HTMLButtonElement).disabled).toBe(true);
+      fireEvent.click(sort);
+      expect(
+        engine.getSnapshot().sessions[instance.id].instance.config.sort,
+      ).toEqual([]);
+      expect(aggregate).toHaveBeenCalledOnce();
+    } finally {
+      engine.dispose();
+    }
+  },
+);
 
 it('recovers a failed chart after correcting presentation without rerunning', async () => {
   const error = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -1030,3 +1050,22 @@ it('uses child option labels in both draft and executed compound filter summarie
     engine.dispose();
   }
 });
+
+it.each(['constructor', 'toString', '__proto__'])(
+  'keeps default panel state for legal instance ID %s',
+  async id => {
+    const { engine } = setup(false, false, 20, id);
+    try {
+      await engine.load();
+      render(<ViewPageContent engine={engine} />);
+      const button = screen.getByRole('button', { name: '配置分析' });
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.click(button);
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      fireEvent.click(button);
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      engine.dispose();
+    }
+  },
+);

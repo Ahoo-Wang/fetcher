@@ -1305,3 +1305,40 @@ it('uses the matching executed element filter as its undo baseline', () => {
     applied.scope.filters,
   );
 });
+
+it('offers only aggregation functions authorized for expression fields', async () => {
+  render(
+    <AnalysisEditor
+      value={{
+        ...initial,
+        metrics: [
+          {
+            ...initial.metrics[0],
+            component: { name: 'numeric' },
+            expression: aggregation.field('amount'),
+            props: { function: AggregationFunction.SUM },
+          },
+        ],
+      }}
+      context={{
+        fields: [{ field: 'amount', label: 'Amount', type: 'number' }],
+        capability: {
+          count: true,
+          expressions: true,
+          fields: [
+            {
+              field: 'amount',
+              groups: [],
+              functions: [AggregationFunction.SUM],
+            },
+          ],
+        },
+      }}
+      onChange={vi.fn()}
+    />,
+  );
+  fireEvent.click(control('combobox', { name: '指标 1 函数' }));
+  expect(await screen.findByRole('option', { name: '求和' })).toBeTruthy();
+  expect(screen.queryByRole('option', { name: '平均值' })).toBeNull();
+  expect(screen.queryByRole('option', { name: '最大值' })).toBeNull();
+});

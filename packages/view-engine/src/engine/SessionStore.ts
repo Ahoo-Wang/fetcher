@@ -125,6 +125,9 @@ export class SessionStore {
         if (!this.find(id)) this.generations.set(id, this.generation(id) + 1);
     let next = { ...this.state, ...patch };
     const sessions = { ...next.sessions };
+    for (const id of this.resultAccess.keys())
+      if (!Object.prototype.hasOwnProperty.call(sessions, id))
+        this.resultAccess.delete(id);
     for (const [id, session] of Object.entries(sessions)) {
       if (
         session.result &&

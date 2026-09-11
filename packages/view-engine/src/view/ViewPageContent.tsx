@@ -70,9 +70,9 @@ export function ViewPageContent({
     instanceId: string | null;
     message: string;
   } | null>(null);
-  const [configurationPanels, setConfigurationPanels] = useState<
-    Record<string, boolean>
-  >({});
+  const [configurationPanels, setConfigurationPanels] = useState(
+    () => new Map<string, boolean>(),
+  );
   const id = state.selectedInstanceId;
   const session = id ? state.sessions[id] : undefined;
   function run(action: () => void | Promise<void>) {
@@ -270,9 +270,9 @@ export function ViewPageContent({
               extensions={recordProps.extensions}
               filterContext={recordProps.filterContext}
               toolbarStart={toolbarStart}
-              configurationOpen={configurationPanels[id!]}
+              configurationOpen={configurationPanels.get(id!)}
               onConfigurationOpenChange={open =>
-                setConfigurationPanels(panels => ({ ...panels, [id!]: open }))
+                setConfigurationPanels(panels => new Map(panels).set(id!, open))
               }
             />
           ) : session ? (
@@ -280,9 +280,9 @@ export function ViewPageContent({
               key={id}
               engine={engine}
               {...recordProps}
-              configurationOpen={configurationPanels[id!] ?? true}
+              configurationOpen={configurationPanels.get(id!) ?? true}
               onConfigurationOpenChange={open =>
-                setConfigurationPanels(panels => ({ ...panels, [id!]: open }))
+                setConfigurationPanels(panels => new Map(panels).set(id!, open))
               }
               toolbarStart={toolbarStart}
             />
