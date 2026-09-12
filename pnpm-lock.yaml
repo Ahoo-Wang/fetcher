@@ -109,8 +109,8 @@ catalogs:
       specifier: ^29.1.1
       version: 29.1.1
     lucide-react:
-      specifier: ^1.41.0
-      version: 1.41.0
+      specifier: ^1.45.0
+      version: 1.45.0
     msw:
       specifier: ^2.15.0
       version: 2.15.0
@@ -925,7 +925,7 @@ importers:
         version: 2.1.1
       lucide-react:
         specifier: 'catalog:'
-        version: 1.41.0(react@19.2.8)
+        version: 1.45.0(react@19.2.8)
       react-day-picker:
         specifier: 'catalog:'
         version: 10.0.1(@types/react@19.2.18)(react@19.2.8)
@@ -5035,8 +5035,8 @@ packages:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
 
-  lucide-react@1.41.0:
-    resolution: {integrity: sha512-6lksP35l6KszDKUeRTi4LV7i6DEe0Yzl2ALJm9j4c5xEYN91GdW1xGsawGMOg2mgjF5GHBVX8pKX9kP+cWsP3Q==}
+  lucide-react@1.45.0:
+    resolution: {integrity: sha512-yH1ubCAduho9UR7oJhRXIQXogksRILBiTuZC4/bQIGeB9JOkxMlSuEHyyZpo1Z3S0yWJO2KTSUZbjiNvVxeOUw==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -9934,7 +9934,7 @@ snapshots:
       yallist: 4.0.0
     optional: true
 
-  lucide-react@1.41.0(react@19.2.8):
+  lucide-react@1.45.0(react@19.2.8):
     dependencies:
       react: 19.2.8
 
