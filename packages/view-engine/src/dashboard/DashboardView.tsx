@@ -12,6 +12,13 @@
  */
 
 import { lazy, Suspense, useState, useSyncExternalStore } from 'react';
+import {
+  SearchIcon,
+  RefreshCwIcon,
+  SlidersHorizontalIcon,
+  LayoutDashboardIcon,
+  CheckIcon,
+} from 'lucide-react';
 import { Button } from '../components/ui/button.js';
 import { Badge } from '../components/ui/badge.js';
 import { cn } from '../lib/utils.js';
@@ -47,6 +54,7 @@ export function DashboardView({
     runtime.getSnapshot,
     runtime.getSnapshot,
   );
+  const [addToolbar, setAddToolbar] = useState<HTMLDivElement | null>(null);
   type Panels = readonly DeepReadonly<DashboardPanel>[];
   const [layoutEdit, setLayoutEdit] = useState<{
     id: string;
@@ -122,6 +130,7 @@ export function DashboardView({
             disabled={invalid || !snapshot.active}
             onClick={() => run(() => runtime.apply())}
           >
+            <SearchIcon aria-hidden="true" />
             查询
           </Button>
           <Button
@@ -129,15 +138,18 @@ export function DashboardView({
             disabled={!snapshot.active}
             onClick={() => run(() => runtime.refresh())}
           >
+            <RefreshCwIcon aria-hidden="true" />
             刷新全部
           </Button>
           {snapshot.editable && (
             <>
+              <div ref={setAddToolbar} />
               <Button
                 variant="outline"
                 aria-pressed={configuring}
                 onClick={() => setConfiguring(value => !value)}
               >
+                <SlidersHorizontalIcon aria-hidden="true" />
                 全局筛选设置
               </Button>
               <Button
@@ -156,6 +168,11 @@ export function DashboardView({
                   )
                 }
               >
+                {editing ? (
+                  <CheckIcon aria-hidden="true" />
+                ) : (
+                  <LayoutDashboardIcon aria-hidden="true" />
+                )}
                 {editing ? '完成布局' : '编辑布局'}
               </Button>
             </>
@@ -245,6 +262,7 @@ export function DashboardView({
         runtime={runtime}
         snapshot={snapshot}
         editing={editing}
+        toolbar={addToolbar}
       />
       {!snapshot.config.panels.length && (
         <div className="fve:rounded-lg fve:border fve:border-dashed fve:p-8 fve:text-center">

@@ -41,7 +41,10 @@ export const CreateAndBind: Story = {
     );
     await userEvent.click(page.getByRole('button', { name: '创建草稿' }));
     await userEvent.click(
-      await canvas.findByRole('button', { name: '添加面板' }),
+      await canvas.findByRole('button', { name: '添加', exact: true }),
+    );
+    await userEvent.click(
+      await within(document.body).findByRole('menuitem', { name: '添加面板' }),
     );
     await userEvent.click(
       await page.findByRole('button', { name: /订单明细/ }),
@@ -148,10 +151,18 @@ export const ContentEditing: Story = {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
     await canvas.findByRole('heading', { name: '本周经营提示' });
+    await userEvent.click(
+      canvas.getByRole('button', { name: '添加', exact: true }),
+    );
+    await page.findByRole('menuitem', { name: '添加Markdown' });
     await expect(
-      canvas.queryByRole('button', { name: '添加面板', exact: true }),
+      page.queryByRole('menuitem', { name: '添加面板' }),
     ).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: '添加Markdown' }));
+    await userEvent.click(
+      await within(document.body).findByRole('menuitem', {
+        name: '添加Markdown',
+      }),
+    );
     await userEvent.type(
       page.getByRole('textbox', { name: '标题' }),
       '经营备注',
@@ -166,7 +177,12 @@ export const ContentEditing: Story = {
     await expect(
       canvas.queryByRole('heading', { name: '经营备注' }),
     ).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: '添加链接' }));
+    await userEvent.click(
+      canvas.getByRole('button', { name: '添加', exact: true }),
+    );
+    await userEvent.click(
+      await within(document.body).findByRole('menuitem', { name: '添加链接' }),
+    );
     await userEvent.type(
       page.getByRole('textbox', { name: '标题' }),
       '帮助中心',

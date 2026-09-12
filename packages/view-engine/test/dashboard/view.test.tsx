@@ -37,6 +37,10 @@ vi.hoisted(() => {
   );
 });
 afterEach(cleanup);
+async function addCard(name: string) {
+  fireEvent.click(screen.getByRole('button', { name: '添加', exact: true }));
+  fireEvent.click(await screen.findByRole('menuitem', { name, exact: true }));
+}
 it('shows the dashboard through the page, keeps layout changes query-free, and refreshes one panel', async () => {
   const { engine, paged } = dashboardSetup();
   await engine.load();
@@ -73,8 +77,11 @@ it('explains an empty dashboard without discovery and never takes lifecycle owne
   const dispose = vi.spyOn(runtime, 'dispose');
   const rendered = render(<DashboardView runtime={runtime} />);
   expect(screen.getByText(/添加 Markdown、链接或图片/)).toBeTruthy();
-  expect(screen.getByRole('button', { name: '添加Markdown' })).toBeTruthy();
-  expect(screen.queryByRole('button', { name: '添加面板' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '添加', exact: true }));
+  expect(
+    await screen.findByRole('menuitem', { name: '添加Markdown' }),
+  ).toBeTruthy();
+  expect(screen.queryByRole('menuitem', { name: '添加面板' })).toBeNull();
   rendered.unmount();
   expect(dispose).not.toHaveBeenCalled();
   engine.dispose();
@@ -129,7 +136,7 @@ it('creates the first dashboard, discovers a panel, and saves only the dashboard
     target: { value: '销售概览' },
   });
   fireEvent.click(screen.getByRole('button', { name: '创建草稿' }));
-  fireEvent.click(await screen.findByRole('button', { name: '添加面板' }));
+  await addCard('添加面板');
   fireEvent.click(await screen.findByRole('button', { name: /订单视图/ }));
   await waitFor(() => expect(paged).toHaveBeenCalledTimes(1));
   expect(create).not.toHaveBeenCalled();
@@ -169,7 +176,7 @@ it('aborts candidate requests when search changes or closes, and exposes retry',
   );
   await engine.load();
   render(<DashboardView runtime={engine.dashboard('dashboard')} />);
-  fireEvent.click(screen.getByRole('button', { name: '添加面板' }));
+  await addCard('添加面板');
   fireEvent.change(await screen.findByRole('textbox', { name: '搜索视图' }), {
     target: { value: 'order' },
   });
@@ -213,7 +220,7 @@ it('retries failed discovery and appends paginated candidates without losing the
   );
   await engine.load();
   render(<DashboardView runtime={engine.dashboard('dashboard')} />);
-  fireEvent.click(screen.getByRole('button', { name: '添加面板' }));
+  await addCard('添加面板');
   expect(await screen.findByText('候选服务暂不可用')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '重试搜索' }));
   fireEvent.click(await screen.findByRole('button', { name: '加载更多视图' }));
@@ -335,11 +342,9 @@ it.each([true, false])(
     expect(engine.dashboard('dashboard').getSnapshot().config.panels).toEqual(
       [],
     );
-    if (discovery)
-      expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: '添加面板' }),
-      );
-    else expect(document.activeElement?.getAttribute('tabindex')).toBe('-1');
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: '添加', exact: true }),
+    );
     expect(paged).not.toHaveBeenCalled();
     cleanup();
     engine.dispose();
@@ -418,7 +423,7 @@ it('keeps candidate selection open after panel-limit rejection and permits cance
   );
   await engine.load();
   render(<DashboardView runtime={engine.dashboard('dashboard')} />);
-  fireEvent.click(screen.getByRole('button', { name: '添加面板' }));
+  await addCard('添加面板');
   fireEvent.click(await screen.findByRole('button', { name: /销售分析/ }));
   expect(screen.getByRole('dialog', { name: '添加面板' })).toBeTruthy();
   expect(
@@ -498,7 +503,9 @@ it('explains who can configure an empty read-only dashboard even when discovery 
   await engine.load();
   render(<DashboardView runtime={engine.dashboard('dashboard')} />);
   expect(screen.getByText('请联系视图维护者添加面板。')).toBeTruthy();
-  expect(screen.queryByRole('button', { name: '添加面板' })).toBeNull();
+  expect(
+    screen.queryByRole('button', { name: '添加', exact: true }),
+  ).toBeNull();
   expect(search).not.toHaveBeenCalled();
   cleanup();
   engine.dispose();
@@ -599,7 +606,7 @@ it('updates standalone dashboard discovery and original-view actions after host 
   const runtime = engine.dashboard('dashboard');
   render(<DashboardView runtime={runtime} />);
   await waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
-  expect(screen.queryByRole('button', { name: '添加面板' })).toBeNull();
+  expect(screen.queryByRole('menuitem', { name: '添加面板' })).toBeNull();
   expect(screen.queryByRole('button', { name: '编辑原视图' })).toBeNull();
   const session = runtime.getSnapshot().session;
   act(() =>
@@ -611,12 +618,15 @@ it('updates standalone dashboard discovery and original-view actions after host 
       },
     }),
   );
-  expect(screen.getByRole('button', { name: '添加面板' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '添加', exact: true }));
+  expect(
+    await screen.findByRole('menuitem', { name: '添加面板' }),
+  ).toBeTruthy();
   expect(screen.getAllByRole('button', { name: '编辑原视图' })).toHaveLength(2);
   expect(runtime.getSnapshot().session).toBe(session);
   expect(paged).toHaveBeenCalledTimes(2);
   act(() => engine.updateHost(host));
-  expect(screen.queryByRole('button', { name: '添加面板' })).toBeNull();
+  expect(screen.queryByRole('menuitem', { name: '添加面板' })).toBeNull();
   expect(screen.queryByRole('button', { name: '编辑原视图' })).toBeNull();
   expect(paged).toHaveBeenCalledTimes(2);
   cleanup();

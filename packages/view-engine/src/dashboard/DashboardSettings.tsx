@@ -12,6 +12,21 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  PlusIcon,
+  ChevronDownIcon,
+  FileTextIcon,
+  LinkIcon,
+  ImageIcon,
+  PanelsTopLeftIcon,
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '../components/ui/dropdown-menu.js';
 import { Button } from '../components/ui/button.js';
 import { Input } from '../components/ui/input.js';
 import {
@@ -34,10 +49,12 @@ export function DashboardSettings({
   runtime,
   snapshot,
   editing,
+  toolbar,
 }: {
   runtime: DashboardRuntime;
   snapshot: DashboardSnapshot;
   editing: boolean;
+  toolbar: HTMLDivElement | null;
 }) {
   const [selection, setSelection] = useState<{ panelId?: string } | null>(null);
   const [content, setContent] = useState<DashboardContentPanel | null>(null);
@@ -53,6 +70,7 @@ export function DashboardSettings({
   const [error, setError] = useState<string | null>(null);
   const controls = useRef<HTMLDivElement>(null);
   const addRef = useRef<HTMLButtonElement>(null);
+  const dialogFocus = useRef<HTMLElement | null>(null);
   const opened = selection !== null;
   useEffect(() => {
     if (!opened) return;
@@ -83,6 +101,10 @@ export function DashboardSettings({
     return () => controller.abort();
   }, [runtime, opened, query, cursor, retry]);
   function choose(panelId?: string) {
+    dialogFocus.current =
+      panelId && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : addRef.current;
     setSelection({ panelId });
     setQuery('');
     setCursor(undefined);
@@ -132,6 +154,10 @@ export function DashboardSettings({
     }
   }
   function editContent(panel: DashboardContentPanel, existing = true) {
+    dialogFocus.current =
+      existing && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : addRef.current;
     setOriginalContent(existing ? panel : null);
     setContent({ ...panel });
     setContentError(null);
@@ -163,28 +189,44 @@ export function DashboardSettings({
   }
   if (!snapshot.editable) return null;
   return (
-    <div
-      className="fve:flex fve:flex-col fve:gap-3"
-      ref={controls}
-      tabIndex={-1}
-    >
-      <div className="fve:flex fve:flex-wrap fve:gap-2">
-        {(['markdown', 'link', 'image'] as const).map(kind => (
-          <Button key={kind} variant="outline" onClick={() => addContent(kind)}>
-            添加{{ markdown: 'Markdown', link: '链接', image: '图片' }[kind]}
-          </Button>
-        ))}
-        {runtime.canDiscover && (
-          <Button
-            ref={addRef}
-            variant="outline"
-            className="fve:self-start"
-            onClick={() => choose()}
-          >
-            添加面板
-          </Button>
+    <div className="fve:contents" ref={controls} tabIndex={-1}>
+      {toolbar &&
+        createPortal(
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button ref={addRef} variant="outline" />}
+            >
+              <PlusIcon aria-hidden="true" />
+              添加
+              <ChevronDownIcon aria-hidden="true" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="fve:min-w-48"
+              finalFocus={!opened && content === null}
+            >
+              {runtime.canDiscover && (
+                <DropdownMenuItem onClick={() => choose()}>
+                  <PanelsTopLeftIcon aria-hidden="true" />
+                  添加面板
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => addContent('markdown')}>
+                <FileTextIcon aria-hidden="true" />
+                添加Markdown
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addContent('link')}>
+                <LinkIcon aria-hidden="true" />
+                添加链接
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addContent('image')}>
+                <ImageIcon aria-hidden="true" />
+                添加图片
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>,
+          toolbar,
         )}
-      </div>
       {editing &&
         snapshot.config.panels.map((panel, index) => (
           <div
@@ -254,7 +296,7 @@ export function DashboardSettings({
           if (!open) setContent(null);
         }}
       >
-        <DialogContent>
+        <DialogContent finalFocus={dialogFocus}>
           <DialogHeader>
             <DialogTitle>
               {content &&
@@ -419,7 +461,7 @@ export function DashboardSettings({
           if (!open) setSelection(null);
         }}
       >
-        <DialogContent className="fve:sm:max-w-xl">
+        <DialogContent className="fve:sm:max-w-xl" finalFocus={dialogFocus}>
           <DialogHeader>
             <DialogTitle>
               {selection?.panelId ? '替换面板引用' : '添加面板'}

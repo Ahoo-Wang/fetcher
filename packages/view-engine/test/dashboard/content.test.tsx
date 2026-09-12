@@ -34,6 +34,10 @@ vi.hoisted(() =>
   ),
 );
 afterEach(cleanup);
+async function addCard(name: string) {
+  fireEvent.click(screen.getByRole('button', { name: '添加', exact: true }));
+  fireEvent.click(await screen.findByRole('menuitem', { name, exact: true }));
+}
 
 it.each([
   ['markdown', 'Markdown', 'Markdown 内容', '**重点**'],
@@ -50,13 +54,17 @@ it.each([
     await engine.load();
     const runtime = engine.dashboard('dashboard');
     render(<DashboardView runtime={runtime} />);
-    fireEvent.click(screen.getByRole('button', { name: `添加${label}` }));
+    const add = screen.getByRole('button', { name: '添加', exact: true });
+    expect(add.closest('header')).not.toBeNull();
+    expect(add.querySelector('svg')).not.toBeNull();
+    await addCard(`添加${label}`);
     fireEvent.change(screen.getByRole('textbox', { name: '标题' }), {
       target: { value: '取消的草稿' },
     });
     fireEvent.click(screen.getByRole('button', { name: '取消', exact: true }));
+    await waitFor(() => expect(document.activeElement).toBe(add));
     expect(runtime.getSnapshot().session.dirty).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: `添加${label}` }));
+    await addCard(`添加${label}`);
     fireEvent.change(screen.getByRole('textbox', { name: '标题' }), {
       target: { value: '说明卡片' },
     });
@@ -182,13 +190,15 @@ it('readonly content renders without editing controls and rejects unsafe draft U
   await read.engine.load();
   render(<DashboardView runtime={read.engine.dashboard('dashboard')} />);
   await screen.findByRole('link', { name: '指南' });
-  expect(screen.queryByRole('button', { name: '添加链接' })).toBeNull();
+  expect(
+    screen.queryByRole('button', { name: '添加', exact: true }),
+  ).toBeNull();
   cleanup();
   read.engine.dispose();
   const edit = dashboardSetup({ schemaVersion: 1, panels: [], filters: [] });
   await edit.engine.load();
   render(<DashboardView runtime={edit.engine.dashboard('dashboard')} />);
-  fireEvent.click(screen.getByRole('button', { name: '添加链接' }));
+  await addCard('添加链接');
   fireEvent.change(screen.getByRole('textbox', { name: '标题' }), {
     target: { value: '危险' },
   });
@@ -214,7 +224,7 @@ it('discards content dialogs across runtime switches and editor restoration', as
   const view = render(
     <DashboardView runtime={first.engine.dashboard('dashboard')} />,
   );
-  fireEvent.click(screen.getByRole('button', { name: '添加Markdown' }));
+  await addCard('添加Markdown');
   fireEvent.change(screen.getByRole('textbox', { name: '标题' }), {
     target: { value: '旧仪表盘草稿' },
   });
@@ -225,7 +235,7 @@ it('discards content dialogs across runtime switches and editor restoration', as
   expect(
     second.engine.dashboard('dashboard').getSnapshot().config.panels,
   ).toHaveLength(0);
-  fireEvent.click(screen.getByRole('button', { name: '添加Markdown' }));
+  await addCard('添加Markdown');
   fireEvent.change(screen.getByRole('textbox', { name: '标题' }), {
     target: { value: '恢复前草稿' },
   });
@@ -324,14 +334,14 @@ it('cancels with Escape and appends content below existing data without querying
   const position = runtime.getSnapshot().panels.a.position;
   paged.mockClear();
   render(<DashboardView runtime={runtime} />);
-  fireEvent.click(screen.getByRole('button', { name: '添加Markdown' }));
+  await addCard('添加Markdown');
   fireEvent.change(screen.getByRole('textbox', { name: '标题' }), {
     target: { value: '取消草稿' },
   });
   fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   expect(runtime.getSnapshot().session.dirty).toBe(false);
-  fireEvent.click(screen.getByRole('button', { name: '添加Markdown' }));
+  await addCard('添加Markdown');
   fireEvent.change(screen.getByRole('textbox', { name: '标题' }), {
     target: { value: '工作说明' },
   });
