@@ -25,7 +25,7 @@ import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import { hasUnknownWriteOutcome, type InstanceWork } from './InstanceWork.js';
 import type { ViewQueries } from './ViewQueries.js';
-import { copy, message, sameJsonState } from '../lib/snapshot.js';
+import { copy, sameJsonState } from '../lib/snapshot.js';
 import {
   createSession,
   assertConflictReview,
@@ -33,6 +33,7 @@ import {
   instanceContent,
   baselinePatch,
 } from './sessionState.js';
+import { reconcileWriteFailure, writeFailurePatch } from './writeRecovery.js';
 import { ViewServiceError } from '../contracts/viewServiceContract.js';
 import { permissionsFor } from './instancePermissions.js';
 
@@ -299,18 +300,17 @@ export class ViewPersistence {
         if (this.scope.current(lifecycle)) throw error;
         return;
       }
-      this.work.finishWrite(id, token, () =>
-        this.store.patch(id, {
-          writeError: message(error),
-          writeStatus: 'idle',
-          ...(received ||
-          this.work.unverifiedCreate(id) ||
-          (dispatched && hasUnknownWriteOutcome(error))
-            ? { requiresReload: true }
-            : {}),
-        }),
-      );
-      throw error;
+      reconcileWriteFailure(error, {
+        finish: onSettled => this.work.finishWrite(id, token, onSettled),
+        patch: writeFailurePatch(
+          this.store,
+          id,
+          error,
+          received ||
+            Boolean(this.work.unverifiedCreate(id)) ||
+            (dispatched && hasUnknownWriteOutcome(error)),
+        ),
+      });
     } finally {
       this.work.finishWrite(id, token);
     }

@@ -30,6 +30,7 @@ import {
   instanceContent,
   baselinePatch,
 } from './sessionState.js';
+import { reconcileWriteFailure, writeFailurePatch } from './writeRecovery.js';
 import { permissionsFor } from './instancePermissions.js';
 
 /** 类型保持的数组守卫：Array.isArray 的 any[] 谓词会把 readonly 数组退化为 any[]。 */
@@ -112,16 +113,15 @@ export class ViewManagement {
       );
     } catch (error) {
       if (!current()) return;
-      this.work.finishWrite(id, token, () =>
-        this.store.patch(id, {
-          writeStatus: 'idle',
-          writeError: message(error),
-          ...(received || (dispatched && hasUnknownWriteOutcome(error))
-            ? { requiresReload: true }
-            : {}),
-        }),
-      );
-      throw error;
+      reconcileWriteFailure(error, {
+        finish: onSettled => this.work.finishWrite(id, token, onSettled),
+        patch: writeFailurePatch(
+          this.store,
+          id,
+          error,
+          received || (dispatched && hasUnknownWriteOutcome(error)),
+        ),
+      });
     } finally {
       this.work.finishWrite(id, token);
     }
@@ -324,18 +324,14 @@ export class ViewManagement {
       void followUp?.().catch(() => {});
     } catch (error) {
       if (!current()) return;
-      if (dispatched && hasUnknownWriteOutcome(error))
-        this.work.markDeleteUnverified(id, session.baseline.revision);
-      this.work.finishWrite(id, token, () =>
-        this.store.patch(id, {
-          writeStatus: 'idle',
-          writeError: message(error),
-          ...(dispatched && hasUnknownWriteOutcome(error)
-            ? { requiresReload: true }
-            : {}),
-        }),
-      );
-      throw error;
+      const unknownOutcome = dispatched && hasUnknownWriteOutcome(error);
+      reconcileWriteFailure(error, {
+        finish: onSettled => this.work.finishWrite(id, token, onSettled),
+        beforePatch: unknownOutcome
+          ? () => this.work.markDeleteUnverified(id, session.baseline.revision)
+          : undefined,
+        patch: writeFailurePatch(this.store, id, error, unknownOutcome),
+      });
     } finally {
       this.work.finishWrite(id, token);
     }

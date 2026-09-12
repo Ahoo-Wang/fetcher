@@ -35,6 +35,7 @@ import {
   inheritEditingSession,
   instanceContent,
 } from './sessionState.js';
+import { reconcileWriteFailure } from './writeRecovery.js';
 
 /** Reload and uncertain-save-as reconciliation; never silently discards local edits. */
 export class ViewReload {
@@ -321,10 +322,10 @@ export class ViewReload {
         (started && this.work.reloadToken(id) !== controller)
       )
         return;
-      this.work.finishReload(id, controller, () =>
-        this.store.patch(id, { writeError: message(error) }),
-      );
-      throw error;
+      reconcileWriteFailure(error, {
+        finish: onSettled => this.work.finishReload(id, controller, onSettled),
+        patch: () => this.store.patch(id, { writeError: message(error) }),
+      });
     } finally {
       this.work.finishReload(id, controller);
     }
