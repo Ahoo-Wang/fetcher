@@ -32,6 +32,20 @@ export function permissionsFor(
   host: ViewHost,
   session?: ViewSession,
 ): ViewInstancePermissions {
+  if (session?.kind === 'dashboard' && !session.persisted) {
+    const grants = host.permission?.getDefinition?.();
+    const available = typeof host.instance?.create === 'function';
+    return {
+      ...deniedPermissions,
+      save:
+        available &&
+        (session.instance.scope.type === 'personal'
+          ? grants?.createPersonal === true
+          : grants?.createShared === true),
+      saveAsPersonal: available && grants?.createPersonal === true,
+      saveAsShared: available && grants?.createShared === true,
+    };
+  }
   if (
     !session ||
     session.positionId !== session.instance.id ||

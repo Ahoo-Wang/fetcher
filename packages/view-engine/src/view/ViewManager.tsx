@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { CreateDashboardButton } from './CreateDashboardButton.js';
 import { useRef, useState } from 'react';
 import { Button } from '../components/ui/button.js';
 import {
@@ -106,6 +107,10 @@ export function ViewManager({
             />
           ))}
         </div>
+        <CreateDashboardButton
+          engine={engine}
+          onCreated={() => onOpenChange(false)}
+        />
         <DialogFooter>
           <div className="fve:flex fve:justify-end">
             <DialogClose render={<Button variant="outline" disabled={busy} />}>

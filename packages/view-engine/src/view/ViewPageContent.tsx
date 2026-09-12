@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { DashboardView } from '../dashboard/DashboardView.js';
+import { CreateDashboardButton } from './CreateDashboardButton.js';
 import { AnalysisView } from '../analysis/AnalysisView.js';
 import { PanelLeftOpenIcon } from 'lucide-react';
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -180,9 +182,14 @@ export function ViewPageContent({
           {session.instance.title}
         </h2>
       )}
+      <CreateDashboardButton engine={engine} />
       {session && (
         <ViewInstanceActions
-          key={session.instance.id}
+          key={
+            session.kind === 'dashboard'
+              ? engine.dashboard(session.instance.id).identity
+              : session.instance.id
+          }
           engine={engine}
           session={session}
           run={run}
@@ -290,6 +297,15 @@ export function ViewPageContent({
               }
             />
           }
+          {session?.kind === 'dashboard' && (
+            <DashboardView
+              key={engine.dashboard(session.instance.id).identity}
+              runtime={engine.dashboard(session.instance.id)}
+              extensions={extensions}
+              filterContext={filterContext}
+              toolbarStart={toolbarStart}
+            />
+          )}
           {session?.kind === 'record' ? (
             <RecordView
               key={id}

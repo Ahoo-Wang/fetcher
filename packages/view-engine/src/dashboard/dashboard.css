@@ -1,0 +1,161 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* Dashboard RGL adapter. Geometry stays in the library; styles stay inside the engine root. */
+.fve-root .fve-dashboard-grid {
+  container-type: inline-size;
+}
+.fve-root .fve-dashboard-grid .react-grid-layout {
+  position: relative;
+}
+.fve-root .fve-dashboard-grid[data-editing='true'] .react-grid-layout {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--fve-primary) 9%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--fve-primary) 9%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: calc((100% + 16px) / 12) 48px;
+}
+.fve-root .fve-dashboard-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.fve-root .fve-dashboard-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border-radius: inherit;
+}
+.fve-root .fve-dashboard-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--fve-border);
+  flex-shrink: 0;
+}
+.fve-root .fve-dashboard-controls[hidden] {
+  display: none;
+}
+.fve-root .fve-dashboard-drag {
+  cursor: grab;
+}
+.fve-root .fve-dashboard-geometry {
+  margin-left: auto;
+  font-size: 12px;
+}
+.fve-root .fve-dashboard-geometry summary {
+  cursor: pointer;
+  padding: 8px;
+}
+.fve-root .fve-dashboard-geometry > div {
+  position: absolute;
+  z-index: 5;
+  right: 8px;
+  top: 44px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 220px;
+  padding: 12px;
+  border: 1px solid var(--fve-border);
+  border-radius: 8px;
+  background: var(--fve-background);
+  box-shadow: 0 4px 12px #0002;
+}
+.fve-root .fve-dashboard-geometry label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fve-root .fve-dashboard-geometry input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--fve-border);
+  border-radius: 4px;
+  background: var(--fve-background);
+}
+.fve-root .fve-dashboard-grid .react-grid-item {
+  transition:
+    transform 150ms ease,
+    width 150ms ease,
+    height 150ms ease;
+}
+.fve-root .fve-dashboard-grid .react-grid-item.resizing,
+.fve-root .fve-dashboard-grid .react-draggable-dragging {
+  transition: none;
+  z-index: 3;
+}
+.fve-root .fve-dashboard-grid .react-grid-placeholder {
+  border: 2px dashed var(--fve-primary);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fve-primary) 12%, transparent);
+  opacity: 0.6;
+  z-index: 2;
+  pointer-events: none;
+}
+.fve-root .fve-dashboard-grid .react-resizable-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  height: 32px;
+  cursor: se-resize;
+  touch-action: none;
+}
+.fve-root .fve-dashboard-grid .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--fve-muted-foreground);
+  border-bottom: 2px solid var(--fve-muted-foreground);
+}
+.fve-root .fve-dashboard-grid .react-resizable-hide > .react-resizable-handle {
+  display: none;
+}
+@container (max-width: 639px) {
+  .fve-root .fve-dashboard-grid .react-grid-layout {
+    height: auto !important;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .fve-root .fve-dashboard-grid .react-grid-item {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 320px;
+    transform: none !important;
+    top: auto !important;
+    left: auto !important;
+  }
+  .fve-root .fve-dashboard-body {
+    overflow: auto;
+    max-height: 640px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fve-root .fve-dashboard-grid .react-grid-item {
+    transition: none;
+  }
+}

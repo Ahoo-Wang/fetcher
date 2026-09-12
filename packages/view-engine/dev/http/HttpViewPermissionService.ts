@@ -41,7 +41,11 @@ export class HttpViewPermissionService implements ViewPermissionService {
         };
   };
   readonly getDefinition = () => {
-    return { reorder: this.permissionSnapshot.reorder };
+    return {
+      reorder: this.permissionSnapshot.reorder,
+      createPersonal: this.permissionSnapshot.createPersonal === true,
+      createShared: this.permissionSnapshot.createShared === true,
+    };
   };
   readonly subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -97,6 +101,10 @@ export class HttpViewPermissionService implements ViewPermissionService {
       !Number.isSafeInteger(next.revision) ||
       next.revision < 0 ||
       typeof next.reorder !== 'boolean' ||
+      (next.createPersonal !== undefined &&
+        typeof next.createPersonal !== 'boolean') ||
+      (next.createShared !== undefined &&
+        typeof next.createShared !== 'boolean') ||
       !next.instances ||
       typeof next.instances !== 'object' ||
       Array.isArray(next.instances)

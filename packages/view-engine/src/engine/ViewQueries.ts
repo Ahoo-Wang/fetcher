@@ -67,7 +67,7 @@ export class ViewQueries {
       )
         return;
       const session = this.store.find(id);
-      if (!session) return;
+      if (!session || session.kind === 'dashboard') return;
       if (session.kind === 'record') {
         await record();
         return;
@@ -79,7 +79,10 @@ export class ViewQueries {
       const generation = this.store.generation(id);
       if (!refresh && this.opened.get(id) === generation) return;
       const execution = this.analysis.start(id, intent);
-      if (execution.accepted && this.store.find(id)?.queryStatus !== 'idle')
+      if (
+        execution.accepted &&
+        this.store.analysisSession(id).queryStatus !== 'idle'
+      )
         this.opened.set(id, generation);
       await execution.completion;
     };

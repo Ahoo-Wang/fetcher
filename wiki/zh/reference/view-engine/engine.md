@@ -33,7 +33,7 @@ export function OrderPage({
 - `record: { rowKey, allowedLayouts, defaultPresentation?, recordActions? }`。`RecordViewDefinition` 将该能力标记为必需；rowKey 是自有属性路径，allowedLayouts 是非空且不重复的 table/card 列表。
 - `analysis: AnalysisCapability` 授权 COUNT、字段分组、数值函数、时间粒度和上限。仅聚合的数据源不需要记录主键或分页方法。
 
-`ViewInstance` 是 `RecordViewInstance | AnalysisViewInstance` 判别联合。两者都要求非空 `id`、`definitionId`、`title`、`revision` 和 `scope`。`kind: 'record'` 使用 `RecordViewConfig`（filters、sort、pagination、presentation）；`kind: 'analysis'` 使用下文的 `AnalysisViewConfig`。scope 支持个人或公共/系统/共享分类，不代表权限。创建输入只省略 ID 和 revision，由服务回执返回。
+`ViewInstance` 是 `RecordViewInstance | AnalysisViewInstance | DashboardViewInstance` 判别联合。两者都要求非空 `id`、`definitionId`、`title`、`revision` 和 `scope`。`kind: 'record'` 使用 `RecordViewConfig`（filters、sort、pagination、presentation）；`kind: 'analysis'` 使用下文的 `AnalysisViewConfig`。scope 支持个人或公共/系统/共享分类，不代表权限。创建输入只省略 ID 和 revision，由服务回执返回。
 
 `ViewInstanceList` 包含可见实例与 `defaultInstanceId: string | null`，可以混合两类视图。默认偏好与当前选中项独立。结构可读取但当前不可执行的配置仍保留编辑入口，通过 `session.validation` 报错；单个失效实例不会阻断健康实例。
 
@@ -70,3 +70,62 @@ limits 默认：加载 15,000 ms，查询/写入 30,000 ms，4 个并发查询�
 引擎加载后，`engine.openPosition(instance, definition)` 创建独立的记录或分析运行位置。每次打开的 `identity.id` 不同，`identity.instanceId` 保留保存身份。使用 `getSnapshot()` 读取状态、`subscribe(listener)` 订阅，记录通过 `commands.refresh()` 查询，分析首次执行通过 `commands.run()`。分析的 `refresh()` 保留既有安全自动刷新策略。打开位置本身不查询。
 
 各位置使用自己的定义，重复引用同一保存实例时也有独立的分页、选择和结果。位置不加入实例导航，不占用普通历史结果缓存预算。所在界面关闭时调用 `dispose()`，旧命令随后拒绝执行。位置会话暴露 `positionId`，该值不持久化。`engine.save(identity.id)` 不允许保存运行位置；持久化配置应编辑原来的受管理实例。
+
+## 仪表盘组合
+
+定义声明 `dashboard: true` 后可保存 `DashboardViewInstance`。纯仪表盘定义不需要 `sourceId`；记录/分析能力仍要求数据源。`config` 为 `{ schemaVersion: 1, panels, filters }`。面板保存 `{ id, instanceId, layout: { x, y, w, h } }`：稳定面板 ID 与整数网格坐标/尺寸。网格为 12 列，x/y 非负，w 为 1–12，x+w ≤ 12，h 为 1–100，y+h ≤ 10000。引用必须解析为记录或分析实例；重复引用有独立运行位置。
+
+```ts
+const definition = {
+  id: 'overview',
+  title: '业务概览',
+  fields: [],
+  dashboard: true as const,
+};
+const engine = new ViewEngine({
+  definitionId: definition.id,
+  definition,
+  host,
+});
+await engine.load();
+const draftId = engine.createDashboard({
+  title: '销售概览',
+  scope: { type: 'personal' },
+});
+const dashboard = engine.dashboard(draftId);
+dashboard.edit(config => ({
+  ...config,
+  panels: [
+    {
+      id: 'orders-panel',
+      instanceId: 'saved-orders',
+      layout: { x: 0, y: 0, w: 12, h: 18 },
+    },
+  ],
+}));
+await engine.save(draftId); // 首次真实创建，由宿主提供保存身份与 revision。
+```
+
+`permission.getDefinition()` 必须明确授予 `createPersonal` / `createShared`，缺省拒绝。未保存会话标记 `persisted: false`，不会进入权威 `instanceIds`；创建草稿不写入。保存、另存、版本冲突及未知创建核对复用统一实例服务，只保存仪表盘配置，不保存引用的子配置。
+
+`engine.dashboard(id)` 返回 `DashboardRuntime`，提供稳定的 `getSnapshot` / `subscribe`，以及 `edit`、`setFilter`、`setEditorValidity`、`apply`、`refresh(panelId?)`、`reloadReference(panelId)`、`suspend`、`resume`、`dispose`。引擎负责导航暂停/恢复与释放。`DashboardView` 只展示调用方拥有的运行对象；`ViewPage` 将其接入既有导航与保存操作。`RecordContent` 通过会话、定义和绑定命令复用表格、卡片、业务操作与分页，不依赖页面导航。
+
+快照分别保存 `config` 草稿和 `applied` 已应用配置，并提供 `pending`、包含 dirty/写入状态的 `session`、`editable`、校验及逐面板状态。查询应用全局草稿；刷新沿用已应用快照；保存不查询。暂停释放运行位置/结果，返回时重新授权并使用保留的子版本；显式重载引用才采用最新保存配置。布局调整保留位置身份，不发查询。
+
+每个全局项保存 `{ id, filters: FilterConfiguration, bindings, excludedPanelIds }`，每个面板必须恰好绑定一次或明确不参与。字段绑定为 `{ panelId, kind: 'fields', fields, semanticCompatibility: true }`，元素完整路径与 SEARCH 字段列表必须全部映射。转换绑定为 `{ panelId, kind: 'transform', name, options? }`；在 `ViewEngineOptions.dashboardTransforms` 注册同步纯函数，接收只读 `{ expression, source, target, instance, options }`。转换缺失或无效时阻断整个受影响面板，不删去 OR 分支。最终作用域为原子视图条件 AND 所有参与的全局条件。
+
+可选 `host.dashboard.search({ query, cursor? }, signal?)` 返回 `{ items: [{ id, definitionId, title, kind }], nextCursor }`，每次最多 100 个候选。使用前重新加载并授权；未提供 search 时隐藏添加/替换入口。`host.dashboard.openOriginal({ instanceId, definitionId })` 提供原视图导航。`extensions.dashboard.transforms[name]` 提供 `label`、可选 `applicable`、`hasOptions`，以及接受 `value`、`onChange`、`onValidityChange` 的受控 `Editor`；执行仍在核心注册表。`useViewEngine` 在访问生命周期开始时捕获配对注册表。未知扩展保留展示，不静默改写。
+
+布局采用 react-grid-layout，支持二维移动与宽高缩放。手势结束才提交预览，Escape 取消当前手势。布局撤销、重做和取消仅影响几何配置；有标签控件提供非拖拽等效操作。窄容器单列堆叠且不回写桌面坐标。布局变化保留查询位置且不发起取数；原子视图的配置编辑与保存仍在面板外完成。
+
+### 预算与兼容
+
+`RuntimeLimits` 默认：`maxDashboardPanels=12`、`maxDashboardFilters=32`、`maxDashboardResultRows=12000`、`maxDashboardResultBytes=16777216`、`maxDashboardMetadataBytes=127926272`（每引擎 122 MiB）。结果行数/字节在发布前累计当前仪表盘所有面板；元数据接纳按整个引擎保留的配置/引用 JSON 字节计数。`scripts/verify-dashboard-budget.mjs` 实测 1/6/20 个仪表盘 × 12 面板、重复/不同引用及 262144 字节子配置；默认值取最坏测量负载向上取整至 MiB 后的两倍，不代表传输或堆内存上限。
+
+仪表盘数据请求共享引擎并发预算和 48 项 FIFO 等待队列；独立记录/分析入口仍保持即时 BUSY。引用加载独立并发 4、等待 24，每次真实实例/定义/数据源加载分别计执行期限。等待会话使用 `queryStatus: 'waiting'`；诊断 queued/started/终态分开报告等待与执行耗时，不含筛选值或记录。全局和合并表达式分别限制深度 32、节点 512；传输响应体上限仍由宿主保障。
+
+Stateful/Memory/Local 与示例 HTTP 宿主接受 `supportedFormats: { record: true, analysis: true, dashboard: 1 }`，缺省表示旧客户端；HTTP 适配器发送 `X-View-Formats`。所有实例响应统一投影：隐藏的仪表盘默认项返回 null 而不改变真实偏好，删除回执可重放，旧客户端排序保留隐藏位置；不支持的单实例读写在变更前拒绝。先部署宿主格式投影，再允许创建仪表盘；客户端回退时保留投影。
+
+本地测试、模拟实例服务持久化与只读 Wow 查询是不同证据。真实触摸、读屏、业务用户走查及生产宿主授权/回退准入仍需在消费应用验证。
+
+动作渲染器提供可选的 `isCurrent()`。异步写入前应立即检查：位置、结果快照、已应用口径和批量选择可能已经过期。应用不同口径会卸载旧结果的动作扩展及其对话框；同口径刷新失败仍保留恢复操作。

@@ -67,9 +67,9 @@ interface AnalysisResultProps {
   onRun(): void;
   onSortChange(sort: AnalysisViewConfig['sort']): void;
   onModeChange(mode: 'analysis' | 'table'): void;
-  onConfigure(): void;
-  onChoosePresentation(): void;
-  onOpenQuery(): void;
+  onConfigure?(): void;
+  onChoosePresentation?(): void;
+  onOpenQuery?(): void;
 }
 
 /** Executed-result projection and inspection never subscribe to the engine. */
@@ -89,7 +89,8 @@ export function AnalysisResult({
   onOpenQuery,
 }: AnalysisResultProps) {
   const { instance, result } = session;
-  const querying = session.queryStatus === 'loading';
+  const querying =
+    session.queryStatus === 'loading' || session.queryStatus === 'waiting';
   const stale = hasUnrunAnalysisQuery(session);
   const presentation =
     instance.config.presentation &&
@@ -237,22 +238,26 @@ export function AnalysisResult({
                     : '先配置查询并运行'
                 : '先选择报表展示方式'}
             </p>
-            <Button
-              variant="outline"
-              onClick={() =>
-                result
-                  ? onChoosePresentation()
+            {(onChoosePresentation ||
+              onOpenQuery ||
+              (session.queryStatus === 'success' && canRun)) && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  result
+                    ? onChoosePresentation?.()
+                    : session.queryStatus === 'success' && canRun
+                      ? onRun()
+                      : onOpenQuery?.()
+                }
+              >
+                {result
+                  ? '选择展示方式'
                   : session.queryStatus === 'success' && canRun
-                    ? onRun()
-                    : onOpenQuery()
-              }
-            >
-              {result
-                ? '选择展示方式'
-                : session.queryStatus === 'success' && canRun
-                  ? '重新运行查询'
-                  : '配置查询'}
-            </Button>
+                    ? '重新运行查询'
+                    : '配置查询'}
+              </Button>
+            )}
           </div>
         )}
       </AnalysisResultTabs>

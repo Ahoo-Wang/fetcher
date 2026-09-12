@@ -111,11 +111,13 @@ export function ViewInstanceSwitcher({
         ref={triggerRef}
         aria-label="选择视图实例"
         aria-description={
-          selected?.kind === 'analysis'
-            ? '分析视图'
-            : selected
-              ? '数据视图'
-              : undefined
+          selected?.kind === 'dashboard'
+            ? '仪表盘'
+            : selected?.kind === 'analysis'
+              ? '分析视图'
+              : selected
+                ? '数据视图'
+                : undefined
         }
       >
         <SelectValue placeholder="选择视图">
@@ -156,7 +158,11 @@ export function ViewInstanceSwitcher({
                 key={session.instance.id}
                 value={session.instance.id}
                 aria-description={
-                  session.kind === 'analysis' ? '分析视图' : '数据视图'
+                  session.kind === 'dashboard'
+                    ? '仪表盘'
+                    : session.kind === 'analysis'
+                      ? '分析视图'
+                      : '数据视图'
                 }
               >
                 <ViewInstanceLabel
@@ -231,7 +237,11 @@ export function ViewSidebar({
                 selectedId === session.instance.id ? 'page' : undefined
               }
               aria-description={
-                session.kind === 'analysis' ? '分析视图' : '数据视图'
+                session.kind === 'dashboard'
+                  ? '仪表盘'
+                  : session.kind === 'analysis'
+                    ? '分析视图'
+                    : '数据视图'
               }
               onClick={() => onSelect(session.instance.id)}
             >

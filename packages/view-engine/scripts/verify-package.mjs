@@ -115,6 +115,12 @@ function verifyTypes(directory) {
     `
     import { ViewEngine, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance, type RecordViewInstance, type RecordQuerySource } from '${manifest.name}';
     import { FilterPanel, ViewPage, useViewEngine, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
+    import type { DashboardConfig, DashboardTransform } from '${manifest.name}';
+    import { DashboardView } from '${manifest.name}/react';
+    export const dashboard: DashboardConfig = {schemaVersion:1,panels:[],filters:[]};
+    import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+    export const transform: DashboardTransform = () => ({op:FilterOperator.MATCH_ALL});
+    void DashboardView;
     import { OrderWorkbench } from './examples/react/sales-order/OrderWorkbench.js';
     import type { FilterOptionSource, FilterFieldDefinition, ViewDefinition } from '${manifest.name}';
     import { FilterRemoteSelect, FilterMultiSelect, FilterDateTimeRange } from '${manifest.name}/react';
@@ -397,6 +403,8 @@ try {
     assert.equal(fileURLToPath(import.meta.resolve(${JSON.stringify(manifest.name)})), ${JSON.stringify(resolve(packed, manifest.exports['.'].import))});
     assert.equal(fileURLToPath(import.meta.resolve(${JSON.stringify(manifest.name + '/react')})), ${JSON.stringify(resolve(packed, manifest.exports['./react'].import))});
     assert.equal(typeof core.ViewEngine, 'function');
+    assert.equal(typeof react.DashboardView, 'function');
+    assert.equal(core.projectSupportedInstance({kind:'dashboard',config:{schemaVersion:1}}),null);
     assert.deepEqual(Object.keys(core).filter(name => name.startsWith('HttpView') || name === 'VIEW_SERVICE_STATUS'), [], 'Experimental HTTP API leaked into the package');
     assert.equal(typeof react.ViewPage, 'function');
     for (const name of ['FilterMultiSelect','FilterRemoteSelect','FilterTextValues','FilterDateTimeRange','TextCell','TagsCell','StatusCell','LinkCell','DateTimeCell','NumberCell']) assert.equal(typeof react[name], 'function', name);

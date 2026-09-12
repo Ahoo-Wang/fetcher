@@ -1,6 +1,6 @@
 # View Engine API
 
-Package: `@ahoo-wang/fetcher-view-engine`, version `5.0.0`. The filter layer and RecordView are implemented: headless compilation and view engine, definitions/instances with host persistence, and React filter/table/card/page components. AnalysisView includes table, metric, bar, line, area and pie presentations; DashboardView remains separate work.
+Package: `@ahoo-wang/fetcher-view-engine`, version `5.0.0`. The filter layer and RecordView are implemented: headless compilation and view engine, definitions/instances with host persistence, and React filter/table/card/page components. AnalysisView includes table, metric, bar, line, area and pie presentations; DashboardView composes cross-definition record/analysis positions, explicit global scopes and saved grid layouts.
 
 Library acceptance: after workspace build, `pnpm verify:view-engine` verifies the packed public API, owns an isolated Storybook process, runs local/HTTP host recovery, and checks the 100-row/30-column/100-filter fixture. `VIEW_ENGINE_BROWSERS=chromium,firefox,webkit` selects the readiness matrix; `VIEW_ENGINE_BROWSER_CHANNEL=chrome` optionally selects installed Chrome for Chromium; `VIEW_ENGINE_ARTIFACTS` retains stage logs, screenshots and JSON. Install matching Playwright browsers first. The CI job uses this same entry point; full unit validation uses `VITEST_MAX_WORKERS=4 pnpm test:unit`.
 
@@ -14,7 +14,7 @@ The readiness gate keeps raw axe findings and permits only the documented WebKit
 
 `engine.openPosition(instance, definition)` opens a caller-owned record or analysis position after the engine is loaded. It returns a discriminated `kind`, an immutable `identity` (`id`, `instanceId`, `definitionId`), `getSnapshot`, `subscribe`, type-specific `commands`, and an idempotent `dispose`. Opening does not query; invoke `commands.refresh()` for a record position or `commands.run()` for an analysis position. Analysis `refresh()` retains its existing safe automatic-refresh policy and does not run an unqueried position. Repeated instances receive independent position IDs, pagination, selection and results, and use the provided definition's source.
 
-Position sessions expose `positionId`; persisted `instance.id` is unchanged. Positions are not inserted into the managed instance navigation list and cannot be saved through `engine.save(position.identity.id)`. Edit the original managed instance for persistence. Dispose positions when their containing UI closes; commands from a disposed position reject instead of affecting a replacement. Active positions do not consume the managed history-result budget. Dashboard orchestration and its aggregate resource budget remain separate implementation work.
+Position sessions expose `positionId`; persisted `instance.id` is unchanged. Positions are not inserted into the managed instance navigation list and cannot be saved through `engine.save(position.identity.id)`. Edit the original managed instance for persistence. Dispose positions when their containing UI closes; commands from a disposed position reject instead of affecting a replacement. Active positions do not consume the managed history-result budget. DashboardRuntime owns orchestration and per-dashboard result budgets; see the dashboard contract below.
 
 `src/index.ts` exports the headless compiler and JSON-friendly field/configuration contracts. The basic display contracts remain:
 
@@ -1115,3 +1115,62 @@ Implicit measure selection is resolved identically by the editor and projector b
 Dimension-owned display outputs are included in advanced server-sort choices. New display aliases avoid collisions with dimensions, measures and existing display outputs; changing an existing display field retains its alias. Invalid full query configuration pauses automatic refresh. If an analysis result was evicted, the chart empty state offers an explicit rerun when the current query is valid; it does not change automatic loading policy. Unconditional element filters are described as all records in the executed summary.
 
 `ViewPage` / `ViewPageContent` accept shared `engine`, `extensions`, `filterContext`, `className` and `initialSidebarCollapsed` props (`ViewPage` also accepts binding `error`). Put record-only `selectable`, `autoRefreshPaused`, `renderToolbar`, `renderCard` and `renderPagination` options inside `record`; these do not affect analysis views. Standalone `RecordView` still accepts them directly. The page owns configuration-panel visibility. `ViewExtensions` composes `RecordExtensions` and `AnalysisExtensions` at the page layer.
+
+## Dashboard composition
+
+Declare `dashboard: true` on a definition to enable saved `DashboardViewInstance` values. A pure dashboard definition needs no `sourceId`; record/analysis capabilities still require one. Its `config` is `{ schemaVersion: 1, panels, filters }`. Each panel is `{ id, instanceId, layout: { x, y, w, h } }`: stable panel IDs and integer grid coordinates/sizes. The grid has 12 columns; x/y are nonnegative, w is 1–12, x+w ≤ 12, h is 1–100, and y+h ≤ 10000. References must resolve to record or analysis instances; duplicate references get independent runtime positions.
+
+```ts
+const definition = {
+  id: 'overview',
+  title: 'Overview',
+  fields: [],
+  dashboard: true as const,
+};
+const engine = new ViewEngine({
+  definitionId: definition.id,
+  definition,
+  host,
+});
+await engine.load();
+const draftId = engine.createDashboard({
+  title: 'Sales overview',
+  scope: { type: 'personal' },
+});
+const dashboard = engine.dashboard(draftId);
+dashboard.edit(config => ({
+  ...config,
+  panels: [
+    {
+      id: 'orders-panel',
+      instanceId: 'saved-orders',
+      layout: { x: 0, y: 0, w: 12, h: 18 },
+    },
+  ],
+}));
+await engine.save(draftId); // First real create; the host supplies saved identity/revision.
+```
+
+`permission.getDefinition()` explicitly grants `createPersonal` / `createShared`; missing grants deny creation. A local dashboard session has `persisted: false` and is excluded from authoritative `instanceIds` until saved. Creating a draft does not write. `save`, `saveAs`, revision conflicts and unknown-create reconciliation use the shared instance service; only the dashboard configuration is saved, never referenced child configurations.
+
+`engine.dashboard(id)` returns a `DashboardRuntime` with stable `getSnapshot` / `subscribe`, `edit`, `setFilter`, `setEditorValidity`, `apply`, `refresh(panelId?)`, `reloadReference(panelId)`, `suspend`, `resume` and `dispose`. The engine owns navigation suspension/resumption and disposal. `DashboardView` renders a caller-owned runtime; it does not own that lifecycle. `ViewPage` integrates it with existing instance navigation and save controls. `RecordContent` reuses the record table/card/actions/pagination from a session, definition and bound commands without a navigation dependency.
+
+A snapshot separates `config` (draft) from `applied`, with `pending`, `session` (including dirty/write state), `editable`, validation and per-panel snapshots. Query applies global drafts; refresh uses the previous applied snapshot; save does not query. Suspension releases positions/results and reauthorizes retained reference versions on resume. Explicit reference reload accepts the latest saved child configuration. Layout edits preserve position identity and do not query.
+
+Each global item stores `{ id, filters: FilterConfiguration, bindings, excludedPanelIds }`. Every panel needs exactly one binding or an explicit exclusion. A fields binding is `{ panelId, kind: 'fields', fields, semanticCompatibility: true }`; full element paths and SEARCH field lists must all map. A transform binding is `{ panelId, kind: 'transform', name, options? }`; provide a synchronous pure implementation in `ViewEngineOptions.dashboardTransforms`. Its readonly input is `{ expression, source, target, instance, options }`. Invalid/missing conversion blocks the whole affected panel scope, never drops an OR branch. The final scope ANDs the original child filter with all participating global conditions.
+
+Optional `host.dashboard.search({ query, cursor? }, signal?)` returns `{ items: [{ id, definitionId, title, kind }], nextCursor }` (at most 100 candidates per response). Candidates are loaded and authorized again before use. Without search, the add/replace entry is hidden. `host.dashboard.openOriginal({ instanceId, definitionId })` enables source navigation. `extensions.dashboard.transforms[name]` supplies `label`, optional `applicable`, `hasOptions`, and a controlled `Editor` with `value`, `onChange`, `onValidityChange`; execution stays in the core registry. `useViewEngine` captures the paired registries for the access lifetime. Unknown extensions remain visible and cannot be silently rewritten.
+
+The layout uses react-grid-layout for two-dimensional movement and width/height resizing. Editing previews commit only when the gesture finishes; Escape cancels a gesture. Layout undo/redo and cancel affect geometry only. Labeled controls provide non-drag alternatives. Narrow containers stack cards without writing desktop coordinates. Layout changes preserve query positions and do not fetch data; original child editing/saving remains outside panels.
+
+### Dashboard limits and compatibility
+
+Defaults in `RuntimeLimits`: `maxDashboardPanels=12`, `maxDashboardFilters=32`, `maxDashboardResultRows=12000`, `maxDashboardResultBytes=16777216`, and `maxDashboardMetadataBytes=127926272` (122 MiB per engine). Retained result rows/bytes count all panels of each dashboard before publication. Metadata admission counts retained configuration/reference JSON bytes across the engine; `scripts/verify-dashboard-budget.mjs` measures 1/6/20 dashboards × 12 panels with repeated/distinct references and 262144-byte child configs. The default is twice the worst measured retained payload rounded up to MiB; it is not a transport or heap-size guarantee.
+
+Data reads share the engine's concurrency budget and a 48-entry FIFO waiting queue; standalone record/analysis calls retain immediate BUSY behavior. Reference loading has independent concurrency 4 and queue 24. Every actual instance/definition/source load has its own load deadline. Queued sessions expose `queryStatus: 'waiting'`; diagnostic queued/started/terminal events report waiting/execution durations without values or records. Each global/merged expression is bounded to depth 32 and 512 nodes. Transport response-size limits remain the host's responsibility.
+
+Stateful/Memory/Local and example HTTP hosts accept `supportedFormats: { record: true, analysis: true, dashboard: 1 }`; omission represents a legacy client. The HTTP adapter sends `X-View-Formats`. All instance response surfaces use the same projection: hidden dashboard defaults return null without changing stored preference, deletes remain replayable, and old-client ordering preserves hidden slots. Unsupported single-instance reads/writes reject before mutation. Deploy host format projection before enabling dashboard creation; keep that projection during client rollback.
+
+Local tests, simulated view-service persistence and read-only Wow queries are separate evidence. Real touch devices, screen readers, business-user walkthroughs, and production-host authorization/rollback admission must be verified in the consuming application.
+
+Action renderer contexts expose optional `isCurrent()`: asynchronous host actions must check it immediately before a deferred write. It rejects expired positions, result snapshots, applied scopes, and (for bulk actions) selections. While displayed results belong to an older scope, action extensions are unmounted, including their dialogs; same-scope loading or failed refresh alone does not disable creation or recovery. `querying` includes queued `waiting` requests.
