@@ -213,7 +213,7 @@ function EmbeddedExample({
 
 const meta = {
   id: 'view-engine-embedded-view',
-  title: 'View Engine/数据视图/嵌入视图',
+  title: 'View Engine/引擎与宿主/嵌入视图',
   component: EmbeddedExample,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof EmbeddedExample>;

@@ -304,7 +304,7 @@ function DashboardExample({
 }
 const meta = {
   id: 'view-engine-dashboard',
-  title: 'View Engine/数据视图/仪表盘',
+  title: 'View Engine/仪表盘视图/业务仪表盘',
   component: DashboardExample,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof DashboardExample>;
