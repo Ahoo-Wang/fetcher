@@ -47,6 +47,7 @@ export function DashboardView({
   extensions,
   filterContext,
   toolbarStart,
+  title,
   className,
 }: DashboardViewProps) {
   const snapshot = useSyncExternalStore(
@@ -120,7 +121,7 @@ export function DashboardView({
       <header className="fve:flex fve:flex-wrap fve:items-center fve:justify-between fve:gap-3">
         {toolbarStart ?? (
           <h1 className="fve:min-w-0 fve:break-words fve:text-lg fve:font-semibold">
-            {snapshot.session.instance.title}
+            {title ?? snapshot.session.instance.title}
           </h1>
         )}
         <div className="fve:flex fve:flex-wrap fve:items-center fve:gap-2">
@@ -221,9 +222,6 @@ export function DashboardView({
           </span>
         </div>
       )}
-      <p className="fve:text-xs fve:text-muted-foreground">
-        查询应用全局筛选草稿；刷新全部使用已应用条件；保存只保存仪表盘配置。各面板独立取数。
-      </p>
       {(snapshot.validation.length > 0 || error || snapshot.error) && (
         <div
           role="alert"
@@ -244,12 +242,8 @@ export function DashboardView({
           )}
         </div>
       )}
-      {!snapshot.editable && (
-        <p className="fve:text-xs fve:text-muted-foreground">
-          你可以调整临时筛选；布局和绑定需保存或另存权限。引用或绑定错误请联系视图维护者。
-        </p>
-      )}
       <DashboardFilterSettings
+        label={title ? `${title}全局筛选` : undefined}
         runtime={runtime}
         snapshot={snapshot}
         extensions={extensions}
@@ -284,9 +278,11 @@ export function DashboardView({
             onCommit={panels => run(() => commitLayout(panels))}
             title={id => {
               const panel = snapshot.config.panels.find(item => item.id === id);
-              return panel?.kind === 'view'
-                ? (snapshot.panels[id]?.instance?.title ?? panel.instanceId)
-                : (panel?.title ?? '面板');
+              const panelTitle =
+                panel?.kind === 'view'
+                  ? (snapshot.panels[id]?.instance?.title ?? panel.instanceId)
+                  : (panel?.title ?? '面板');
+              return title ? `${title} · ${panelTitle}` : panelTitle;
             }}
           >
             {panel =>
@@ -343,7 +339,7 @@ export function DashboardView({
                         </div>
                       }
 
-                      positionLabel={`面板 ${[...snapshot.config.panels].sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x).findIndex(item => item.id === panel.id) + 1}：${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}`}
+                      positionLabel={`${title ? `${title} · ` : ''}面板 ${[...snapshot.config.panels].sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x).findIndex(item => item.id === panel.id) + 1}：${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}`}
                       extensions={extensions}
                       compilers={runtime.filterCompilers}
                       onRefresh={() => runtime.refresh(panel.id)}

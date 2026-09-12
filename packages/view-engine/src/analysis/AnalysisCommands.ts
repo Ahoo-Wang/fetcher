@@ -24,7 +24,8 @@ import {
 import { compileScopedAnalysis } from './analysisSession.js';
 import { validateAnalysisResult } from './analysisResult.js';
 import type { DeepReadonly } from '../lib/types.js';
-import { copy } from '../lib/snapshot.js';
+import { copy, message } from '../lib/snapshot.js';
+import type { AnalysisSession } from '../contracts/viewModel.js';
 import { validateFilterJson } from '../filter/filterConfigurationValidation.js';
 import type { SessionStore } from '../engine/SessionStore.js';
 import type { EngineScope } from '../engine/EngineScope.js';
@@ -150,6 +151,19 @@ export class AnalysisCommands {
     await this.start(id, intent).completion;
   }
 
+  private publishRejected(
+    id: string,
+    session: AnalysisSession,
+    error: unknown,
+  ): void {
+    if (this.requests.has(id) || this.store.find(id) !== session) return;
+    this.store.patch(id, {
+      kind: 'analysis',
+      queryStatus: 'error',
+      queryError: message(error),
+    });
+  }
+
   start(
     id: string,
     intent: AnalysisQueryIntent = 'manual',
@@ -164,6 +178,7 @@ export class AnalysisCommands {
       assertConfigSize(session.instance.config, this.limits.maxConfigBytes);
       if (!session.filterValid) throw new Error('筛选输入无效');
     } catch (error) {
+      this.publishRejected(id, session, error);
       diagnostic(
         'failed',
         error instanceof RuntimeLimitError ? error.code : 'INVALID_CONFIG',
@@ -173,8 +188,12 @@ export class AnalysisCommands {
     const definition = this.store.definition(id);
     const compiled = this.compile(session.instance.config, id);
     if (!compiled.plan) {
+      const error = new Error(
+        compiled.errors.map(value => value.message).join('；'),
+      );
+      this.publishRejected(id, session, error);
       diagnostic('failed', 'INVALID_CONFIG');
-      throw new Error(compiled.errors.map(value => value.message).join('；'));
+      throw error;
     }
     if (!analysisQueryPolicy({ ...session, compilation: compiled }, intent))
       return refused();
@@ -243,6 +262,7 @@ export class AnalysisCommands {
         if (previous) this.requests.set(id, previous);
         else this.requests.delete(id);
       }
+      this.publishRejected(id, session, error);
       diagnostic(
         'failed',
         error instanceof RuntimeLimitError ? error.code : 'QUERY_FAILED',

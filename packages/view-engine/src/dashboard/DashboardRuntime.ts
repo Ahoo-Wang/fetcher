@@ -12,7 +12,7 @@
  */
 
 import { filter, type FilterExpression } from '@ahoo-wang/fetcher-wow';
-import type { ViewEngine } from '../engine/ViewEngine.js';
+import type { ViewEngine, DataViewPosition } from '../engine/ViewEngine.js';
 import type { SessionStore } from '../engine/SessionStore.js';
 import type { DashboardCandidate, ViewHost } from '../contracts/ViewHost.js';
 import type {
@@ -47,7 +47,6 @@ import type {
   DashboardTransforms,
 } from './dashboardModel.js';
 
-export type DashboardPosition = ReturnType<ViewEngine['openPosition']>;
 export interface DashboardPanelSnapshot {
   readonly panelId: string;
   readonly status: 'loading' | 'ready' | 'blocked' | 'error' | 'suspended';
@@ -58,7 +57,7 @@ export interface DashboardPanelSnapshot {
     Exclude<ViewInstance, { kind: 'dashboard' }>
   >;
   readonly definition?: DeepReadonly<ViewDefinition>;
-  readonly position?: DashboardPosition;
+  readonly position?: DataViewPosition;
   readonly scopeVersion: number;
   readonly referenceVersion: number;
   readonly filterId?: string;
@@ -82,7 +81,7 @@ interface PanelState {
   instance?: DashboardPanelSnapshot['instance'];
   definition?: DashboardPanelSnapshot['definition'];
   source?: (controller: AbortController) => Promise<ViewSource>;
-  position?: DashboardPosition;
+  position?: DataViewPosition;
   scope?: FilterExpression;
   scopeVersion: number;
   referenceVersion: number;
@@ -208,6 +207,7 @@ export class DashboardRuntime {
     this.session();
   }
   private editable(): boolean {
+    if (this.store.isPosition(this.id)) return false;
     const session = this.session();
     if (!session.persisted) {
       const permissions = this.host.permission?.getDefinition?.();
@@ -223,7 +223,7 @@ export class DashboardRuntime {
     );
   }
   get definition(): DeepReadonly<ViewDefinition> {
-    return this.store.definition();
+    return this.store.definition(this.id);
   }
   get filterCompilers() {
     return this.engine.filterCompilers;
@@ -356,7 +356,7 @@ export class DashboardRuntime {
         maxPanels: this.store.limits.maxDashboardPanels,
         maxFilters: this.store.limits.maxDashboardFilters,
       });
-      const definition = this.store.definition();
+      const definition = this.store.definition(this.id);
       const errors = config.filters.flatMap(item => {
         const compiled = compileFilterConfiguration(
           item.filters,
@@ -410,7 +410,7 @@ export class DashboardRuntime {
             status: queryError ? ('error' as const) : entry.status,
             loading: entry.status === 'loading' || !!queryLoading,
             blocked: entry.status === 'blocked',
-            error: entry.error ?? queryError,
+            error: entry.error,
             instance: entry.instance,
             definition: entry.definition,
             position: entry.position,
@@ -814,7 +814,7 @@ export class DashboardRuntime {
           return compileDashboardScope(
             item,
             entry.panel,
-            this.store.definition(),
+            this.store.definition(this.id),
             entry.definition!,
             entry.instance!,
             this.transforms,
@@ -856,12 +856,17 @@ export class DashboardRuntime {
       if (position.kind === 'record') await position.commands.refresh();
       else await position.commands.run();
     } catch (error) {
-      if (entry.position === position && this.active && !this.disposed) {
-        entry.error = message(error);
-        this.publish();
-      }
+      // Published query errors belong to the result; unexpected failures must reach the caller.
+      if (
+        entry.position === position &&
+        this.active &&
+        !this.disposed &&
+        position.getSnapshot().queryStatus !== 'error'
+      )
+        throw error;
     }
   }
+
   private async commit(
     config: DeepReadonly<DashboardConfig>,
     apply: boolean,

@@ -72,8 +72,9 @@ export class ViewQueries {
         await record();
         return;
       }
-      // Revisiting a failed query is not an implicit retry, even if its first run was manual.
-      if (!refresh && session.queryStatus === 'error') return;
+      // A refused admission has no attempt; revisiting may still perform its first query.
+      if (!refresh && session.queryStatus === 'error' && session.queryAttempt)
+        return;
       const intent = refresh ? 'reload' : 'open';
       if (!analysisQueryPolicy(session, intent)) return;
       const generation = this.store.generation(id);

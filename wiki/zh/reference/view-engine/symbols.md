@@ -33,6 +33,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `AnalysisSession`                 | [viewModel.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L294)                                      |
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
 | `AnalysisViewInstance`            | [viewModel.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L168)                                      |
+| `AnalysisViewPosition`            | [ViewEngine.ts:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L96)                                         |
 | `AnalysisVisualizationType`       | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
 | `calculateRecordSummary`          | [recordSummary.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L70)                                   |
 | `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:324](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L324)                 |
@@ -51,16 +52,17 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `DashboardFilter`                 | [dashboardModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L64)                              |
 | `DashboardHost`                   | [ViewHost.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L74)                                          |
 | `DashboardPanel`                  | [dashboardModel.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L49)                              |
-| `DashboardPanelSnapshot`          | [DashboardRuntime.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L51)                          |
-| `DashboardPosition`               | [DashboardRuntime.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L50)                          |
-| `DashboardRuntime`                | [DashboardRuntime.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L106)                        |
+| `DashboardPanelSnapshot`          | [DashboardRuntime.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L50)                          |
+| `DashboardRuntime`                | [DashboardRuntime.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L105)                        |
 | `DashboardSession`                | [dashboardModel.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L79)                              |
-| `DashboardSnapshot`               | [DashboardRuntime.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L66)                          |
+| `DashboardSnapshot`               | [DashboardRuntime.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L65)                          |
 | `DashboardTransform`              | [dashboardModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L105)                            |
 | `DashboardTransformContext`       | [dashboardModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L98)                              |
 | `DashboardTransforms`             | [dashboardModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L108)                            |
 | `DashboardViewInstance`           | [dashboardModel.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L75)                              |
 | `DashboardViewPanel`              | [dashboardModel.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L33)                              |
+| `DashboardViewPosition`           | [ViewEngine.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L101)                                       |
+| `DataViewPosition`                | [ViewEngine.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L106)                                       |
 | `DeepReadonly`                    | [types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/lib/types.ts#L15)                                                      |
 | `FILTER_OPERATORS`                | [filterOperators.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L19)                               |
 | `FilterApplyResult`               | [filterModel.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L124)                                     |
@@ -128,6 +130,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `RecordViewConfig`                | [viewModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L149)                                      |
 | `RecordViewDefinition`            | [viewModel.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L92)                                        |
 | `RecordViewInstance`              | [viewModel.ts:164](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L164)                                      |
+| `RecordViewPosition`              | [ViewEngine.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L91)                                         |
 | `RendererReference`               | [viewModel.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L48)                                        |
 | `requireSupportedInstance`        | [viewServiceContract.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L98)                    |
 | `resolveRecordPresentation`       | [resolveRecordPresentation.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/resolveRecordPresentation.ts#L27)           |
@@ -148,7 +151,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `ViewDefinition`                  | [viewModel.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L68)                                        |
 | `ViewDefinitionService`           | [ViewHost.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L28)                                          |
 | `ViewDeleteResult`                | [viewServiceContract.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L46)                    |
-| `ViewEngine`                      | [ViewEngine.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L72)                                         |
+| `ViewEngine`                      | [ViewEngine.ts:110](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L110)                                       |
 | `ViewEngineOptions`               | [viewModel.ts:220](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L220)                                      |
 | `ViewEngineState`                 | [viewModel.ts:328](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L328)                                      |
 | `ViewFieldDefinition`             | [viewModel.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L49)                                        |
@@ -161,6 +164,8 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `ViewInstanceService`             | [ViewHost.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L32)                                          |
 | `ViewPermissionService`           | [ViewHost.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L53)                                          |
 | `ViewPermissionSnapshot`          | [viewServiceContract.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L49)                    |
+| `ViewPosition`                    | [ViewEngine.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L107)                                       |
+| `ViewPositionOptions`             | [ViewEngine.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L76)                                         |
 | `ViewPreferenceService`           | [ViewHost.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L48)                                          |
 | `ViewScope`                       | [viewModel.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L97)                                        |
 | `ViewServiceError`                | [viewServiceContract.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L31)                    |
@@ -180,7 +185,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
-| `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
+| `AnalysisTable`                   | [AnalysisTable.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L51)                           |
 | `AnalysisView`                    | [AnalysisView.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L69)                             |
 | `AnalysisViewProps`               | [AnalysisView.tsx:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L59)                             |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
@@ -197,6 +202,8 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `DashboardViewProps`              | [dashboardReactTypes.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L39)                |
 | `DateTimeCell`                    | [DateTimeCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L26)                         |
 | `DateTimeCellProps`               | [DateTimeCell.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L20)                         |
+| `EmbeddedView`                    | [EmbeddedView.tsx:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/EmbeddedView.tsx#L55)                                 |
+| `EmbeddedViewProps`               | [EmbeddedView.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/EmbeddedView.tsx#L42)                                 |
 | `FieldFilter`                     | [FieldFilter.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FieldFilter.tsx#L35)                                 |
 | `FieldFilterProps`                | [FieldFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FieldFilter.tsx#L25)                                 |
 | `FilterComponentProps`            | [filterReactTypes.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterReactTypes.ts#L51)                         |

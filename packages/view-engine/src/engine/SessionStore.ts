@@ -205,12 +205,13 @@ export class SessionStore {
               Object.prototype.hasOwnProperty.call(this.state[target], id)
                 ? this.state[target][id]
                 : undefined;
-            const derived =
+            const localDefinition = this.positions.get(id) ?? definition;
+            let derived =
               session === previous
                 ? session
                 : deriveSession(
                     session,
-                    this.positions.get(id) ?? definition,
+                    localDefinition,
                     this.filterCompilers,
                     previous,
                     this.analysisCompilers,
@@ -220,16 +221,18 @@ export class SessionStore {
                       maxFilters: this.limits.maxDashboardFilters,
                     },
                   );
+            if (this.positions.has(id) && derived.dirty)
+              derived = { ...derived, dirty: false };
             if (derived === previous) return [id, derived];
             if (derived.kind === 'dashboard') {
               const errors = derived.instance.config.filters.flatMap(
                 item =>
                   compileFilterConfiguration(
                     item.filters,
-                    definition.fields,
-                    definition.allowedOperators,
+                    localDefinition.fields,
+                    localDefinition.allowedOperators,
                     this.filterCompilers,
-                    definition.timeZone,
+                    localDefinition.timeZone,
                   ).errors,
               );
               if (errors.length)

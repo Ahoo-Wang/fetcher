@@ -63,15 +63,57 @@ export function OrderPage({
 
 limits 默认：加载 15,000 ms，查询/写入 30,000 ms，4 个并发查询，5 份保留结果集，配置 262,144 字节。结果回收不会清除工作草稿或恢复状态。晚到读取不能覆盖新请求或不同结果范围；取消不作为用户查询失败。可选 onDiagnostic 只接收操作身份、类型、阶段、耗时及可选错误码，不携带查询/行内容，回调异常被隔离。部署时仍需核验宿主/后端契约和浏览器流程，具备这些 API 不代表生产验收完成。
 
+## 嵌入浏览
+
+React 入口的 `EmbeddedView` 将已保存的仪表盘、记录或分析视图嵌入首页或业务页面。`EmbeddedViewProps` 扩展 `ViewEngineBinding`，增加必填 `instanceId`，以及可选 `filterContext`、`className`、`onOpenView({ instanceId, definitionId }): void | Promise<void>`。提供回调后显示“打开完整视图”，导航由宿主负责。
+
+可选 `title` 用于场景化的展示标题和分页标签；同一个保存视图嵌入多次时，应为各实例提供不同标题，使区域及分页控件可以区分。
+
+组件读取已加载受管理实例的保存基线 `baseline`，创建自己的运行位置，挂载时查询，卸载或身份变化时释放该位置。它不会选中实例，也不会释放调用方的引擎。同一实例的多个嵌入拥有独立筛选、排序、分页和结果；完整视图尚未保存的编辑不会成为嵌入基线。
+
+嵌入浏览隐藏管理、新建、保存、列配置和布局编辑，保留筛选、刷新、排序与记录分页。浏览变更仅保留在运行位置，维持 `dirty: false`，不会改变受管理实例或保存配置，有保存权限的用户也遵循相同语义。数据访问仍由宿主授权；隐藏编辑控件不是权限边界。
+
+```tsx
+import type { ViewHost, ViewInstance } from '@ahoo-wang/fetcher-view-engine';
+import {
+  EmbeddedView,
+  useViewEngine,
+} from '@ahoo-wang/fetcher-view-engine/react';
+
+function BusinessDashboardPage({
+  host,
+  savedViews,
+  scopeKey,
+  onOpenView,
+}: {
+  host: ViewHost;
+  savedViews: ViewInstance[];
+  scopeKey: string;
+  onOpenView(identity: { instanceId: string; definitionId: string }): void;
+}) {
+  const binding = useViewEngine({
+    scopeKey,
+    definitionId: 'orders',
+    host,
+    instances: { instances: savedViews, defaultInstanceId: null },
+  });
+  return (
+    <EmbeddedView {...binding} instanceId="overview" onOpenView={onOpenView} />
+  );
+}
+```
+
+仅用于首页的引擎应传入 `instances.defaultInstanceId: null`，避免额外自动选中并查询工作台视图。`savedViews` 必须属于加载的定义并包含 `overview`；替换为任意已保存记录或分析 ID 即可复用同一组件。宿主需启用仪表盘格式支持。Storybook 入口为 **View Engine → 数据视图 → 嵌入视图**：`view-engine-embedded-view--dashboard`、`--record`、`--analysis`、`--independent`。
+
 ## 独立运行位置
 
-`commands.restore()` 恢复位置本地基线，不保存受管理实例。记录恢复会刷新自己的查询，分析恢复不执行查询。释放位置也会清除其查询元数据。
+记录/分析位置的 `commands.restore()` 恢复位置本地基线，不保存受管理实例。记录恢复会刷新自己的查询，分析恢复不执行查询。释放位置也会清除其查询元数据。
 
-引擎加载后，`engine.openPosition(instance, definition)` 创建独立的记录或分析运行位置。每次打开的 `identity.id` 不同，`identity.instanceId` 保留保存身份。使用 `getSnapshot()` 读取状态、`subscribe(listener)` 订阅，记录通过 `commands.refresh()` 查询，分析首次执行通过 `commands.run()`。分析的 `refresh()` 保留既有安全自动刷新策略。打开位置本身不查询。
+引擎加载后，`engine.openPosition(instance, definition)` 创建独立的记录、分析或顶层仪表盘运行位置。每次打开的 `identity.id` 不同，`identity.instanceId` 保留保存身份。使用 `getSnapshot()` 读取状态、`subscribe(listener)` 订阅，记录通过 `commands.refresh()` 查询，分析首次执行通过 `commands.run()`。分析的 `refresh()` 保留既有安全自动刷新策略。打开位置本身不查询。
 
-仪表盘实例会在注册运行位置之前被拒绝。可选第三参数接受 `queryPolicy: 'reject' | 'queue'` 和 `source: ViewSource | ((controller: AbortController) => ViewSource | Promise<ViewSource>)`。源工厂在每次查询时解析，包括分析和记录汇总；异步解析应关注 controller 的取消状态。`updateHost` 后仪表盘位置使用当前宿主数据源，保留分页且不自动查询。
+仪表盘句柄通过 `runtime.resume()` 启动面板，`getSnapshot()` 返回 `DashboardSnapshot`；数据视图句柄返回各自的会话快照和命令。核心入口导出可判别联合 `ViewPosition` 及其数据视图子集 `DataViewPosition`，以及 `RecordViewPosition`、`AnalysisViewPosition`、`DashboardViewPosition`、`ViewPositionOptions`。仪表盘的数据引用面板仍禁止嵌套仪表盘。可选第三参数接受 `queryPolicy: 'reject' | 'queue'` 和 `source: ViewSource | ((controller: AbortController) => ViewSource | Promise<ViewSource>)`。源工厂在每次查询时解析，包括分析和记录汇总；异步解析应关注 controller 的取消状态。`updateHost` 后仪表盘子位置使用当前宿主数据源，保留分页且不自动查询。
 
-各位置使用自己的定义，重复引用同一保存实例时也有独立的分页、选择和结果。位置不加入实例导航，不占用普通历史结果缓存预算。所在界面关闭时调用 `dispose()`，旧命令随后拒绝执行。位置会话暴露 `positionId`，该值不持久化。`engine.save(identity.id)` 不允许保存运行位置；持久化配置应编辑原来的受管理实例。
+各位置使用自己的定义，重复引用同一保存实例时也有独立的分页、选择和结果。位置不加入实例导航，不占用普通历史结果缓存预算。所在界面关闭时调用 `dispose()`，旧命令随后拒绝执行。所有位置会话维持 `dirty: false`；记录与分析会话暴露 `positionId`，该值不持久化。`engine.save(identity.id)` 不允许保存运行位置；持久化配置应编辑原来的受管理实例。
 
 ## 仪表盘组合
 

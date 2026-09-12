@@ -49,6 +49,7 @@ import type { DashboardBinding, DashboardFilter } from './dashboardModel.js';
 
 export function DashboardFilterSettings({
   runtime,
+  label,
   snapshot,
   extensions,
   filterContext,
@@ -56,6 +57,7 @@ export function DashboardFilterSettings({
   repair,
 }: {
   runtime: DashboardRuntime;
+  label?: string;
   snapshot: DashboardSnapshot;
   extensions?: ViewExtensions;
   filterContext?: unknown;
@@ -74,13 +76,13 @@ export function DashboardFilterSettings({
   const definition = runtime.definition;
   return (
     <section
-      aria-label="全局筛选"
+      aria-label={label ?? '全局筛选'}
       className="fve:flex fve:min-w-0 fve:flex-col fve:gap-3"
     >
       {snapshot.config.filters.map((item, index) => (
         <section
           key={`${runtime.identity}:${item.id}:${snapshot.session.editorEpoch}`}
-          aria-label={`全局筛选${index + 1}`}
+          aria-label={`${label ?? '全局筛选'}${index + 1}`}
           className="fve:min-w-0 fve:rounded-lg fve:border fve:p-3"
         >
           <div className="fve:mb-2 fve:flex fve:items-center fve:justify-between fve:gap-2">
@@ -107,6 +109,7 @@ export function DashboardFilterSettings({
             )}
           </div>
           <FilterPanel
+            ariaLabel={label ? `${label}${index + 1}筛选器` : undefined}
             value={item.filters}
             appliedValue={
               snapshot.applied.filters.find(filter => filter.id === item.id)

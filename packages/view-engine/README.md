@@ -4,7 +4,7 @@ View Engine owns further data-view development. `@ahoo-wang/fetcher-viewer` is d
 
 [Task guides](../../wiki/guides/view-engine/index.md) · [API reference](../../wiki/reference/view-engine/index.md) · [Shared runnable example](../../wiki/examples/view-engine.md)
 
-Independent `@ahoo-wang/fetcher-view-engine` package with headless Wow filter compilation and validation, a complete `FilterPanel`, structured value editors, and shadcn/Base UI controls. It also provides a headless ViewEngine and a complete RecordView page with host-managed definitions, instances and persistence. Record table/card views and analysis tables/charts share the same engine; dashboards are outside this scope.
+Independent `@ahoo-wang/fetcher-view-engine` package with headless Wow filter compilation and validation, a complete `FilterPanel`, structured value editors, and shadcn/Base UI controls. It also provides a headless ViewEngine and a complete RecordView page with host-managed definitions, instances and persistence. Record table/card views, analysis tables/charts and dashboards share the same engine, with isolated embedded browsing for all three kinds.
 
 ## Module responsibilities
 
@@ -84,6 +84,46 @@ export function OrderPage({
 `useViewEngine(options)` owns creation, loading and disposal, including React StrictMode. Its required `scopeKey` and `definitionId` identify the lifetime; changing either replaces the engine. Optional local `definition`/`instances`, paired compiler/editor registrations in `extensions`, `limits` and `onDiagnostic` initialize that lifetime. Same-scope host updates preserve edits. Change the React key to explicitly reinitialize other inputs. The hook returns `ViewEngineBinding`: `{ engine: ViewEngine | null, extensions?, error? }`.
 
 `ViewPage` is pure UI: pass the binding, or a caller-owned engine. It never loads or disposes that engine. `ViewPageContent` requires a non-null engine. Both compose navigation, shared writes and the selected `RecordView`, `AnalysisView` or `DashboardView`. `RecordView` and `AnalysisView` render only their own kind. A headless caller creates `new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`, calls `load()`, then `dispose()` when its scope ends.
+
+### Embedded browsing
+
+`EmbeddedView` from the React entry embeds a saved dashboard, record or analysis view in a home page or another business screen. `EmbeddedViewProps` extends `ViewEngineBinding` with required `instanceId` and optional `filterContext`, `className`, and `onOpenView({ instanceId, definitionId }): void | Promise<void>`. The callback enables “open full view”; the host owns navigation.
+
+The component reads the saved `baseline` of an already loaded managed instance, creates its own position, starts querying on mount, and releases that position on unmount or identity changes. It never selects an instance or disposes the caller's engine. Repeated embeds of the same instance have independent filters, sorting, pagination and results. Working edits in the full view are not used as the embedded baseline.
+
+Embedded browsing hides management, creation, saving, column configuration and layout editing, while keeping filters, refresh, sorting and record pagination. These changes remain in the browsing position, keep `dirty: false`, and never alter the managed instance or saved configuration, including for users with save permission. The host still enforces data access; hiding editing controls is not an authorization boundary.
+
+```tsx
+import type { ViewHost, ViewInstance } from '@ahoo-wang/fetcher-view-engine';
+import {
+  EmbeddedView,
+  useViewEngine,
+} from '@ahoo-wang/fetcher-view-engine/react';
+
+function BusinessDashboardPage({
+  host,
+  savedViews,
+  scopeKey,
+  onOpenView,
+}: {
+  host: ViewHost;
+  savedViews: ViewInstance[];
+  scopeKey: string;
+  onOpenView(identity: { instanceId: string; definitionId: string }): void;
+}) {
+  const binding = useViewEngine({
+    scopeKey,
+    definitionId: 'orders',
+    host,
+    instances: { instances: savedViews, defaultInstanceId: null },
+  });
+  return (
+    <EmbeddedView {...binding} instanceId="overview" onOpenView={onOpenView} />
+  );
+}
+```
+
+Provide `instances.defaultInstanceId: null` for a home-page-only engine to avoid automatically selecting and querying a separate workbench view. `savedViews` must belong to the loaded definition and include `overview`; use any saved record or analysis ID with the same component. Enable dashboard format support on the host. In Storybook, open **View Engine → 数据视图 → 嵌入视图**: `view-engine-embedded-view--dashboard`, `--record`, `--analysis`, and `--independent`.
 
 ### Definitions and saved instances
 

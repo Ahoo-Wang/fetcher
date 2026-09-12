@@ -134,3 +134,13 @@ CI导航门禁通过归入现有“数据视图”章节修复，故事ID不变�
 TransformEditorSession沿用既有Filter EditorSession的已提交代次/生命周期检查，回调只调用当前已提交编辑器的处理器；卸载、替换编辑器再切回时旧回调无效。全局筛选section key纳入runtime.identity，避免跨仪表盘复用本地编辑器。ViewManagerRow使用与导航一致的三类aria-description。修复后36项定向测试通过，包含新增编辑器A→B→A反例；包构建、ESLint及公开符号索引检查通过。
 
 本轮最终全仓串行单测通过（源码/编译各1572通过、3跳过），368项Chrome故事通过，未改覆盖率或超时门槛；未重复真实服务或完整生产fixture验证。
+
+## 三类型 EmbeddedView 与架构整理
+
+EmbeddedView支持保存的dashboard、record、analysis，拥有独立浏览位置，宿主仍拥有engine。基于保存baseline初始化，不修改工作台选择；临时筛选、分页与排序不写保存会话，管理员也保持位置dirty=false。仪表盘嵌入用于“业务仪表盘”场景，示例ID为view-engine-embedded-view--dashboard；记录、分析及三类型的同实例独立展示均有故事。
+
+架构审查与修订见[EmbeddedView架构记录](2026-09-12-embedded-view-architecture.md)。已拆开保存实例/运行位置、引用错误/查询错误；DataViewContent共享记录/分析结果呈现；全局预算继续覆盖所有嵌入。旧DashboardPosition别名由DataViewPosition统一。
+
+独立审查曾发现并发受理拒绝静默，现共享查询边界保留旧请求和结果并发布可重试错误；初次分析失败也能从刷新恢复。浏览器还发现同名嵌入的landmark重复，现由可选展示title传递上下文名称到面板、筛选和分页；重复嵌入由宿主提供有区分的标题。独立复审PASS，6个嵌入故事（含双记录展开筛选、双分析、双仪表盘）可访问性验证通过。
+
+EmbeddedView最终检查全部通过：源码/编译各1601通过、3跳过，全仓串行单测通过；374项Chrome故事通过；完整verify:view-engine（Chromium）包含公共类型、457个dist文件逐字节一致、2个core运行模块、HTTP/IndexedDB宿主、生产导航及性能/可访问性fixture；文档站构建20.32s通过。最终tgz SHA256：7dae87724d956978a2be8bc369251ab49e1c098228321d042357898ad7f2c1e8。源码格式与文档生成检查通过。真实业务服务未重跑，生产准入边界维持上文记录。

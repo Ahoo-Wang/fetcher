@@ -258,10 +258,14 @@ it('clears a prior query failure after a successful local refresh', async () => 
   await vi.waitFor(() => expect(paged).toHaveBeenCalledOnce());
   paged.mockRejectedValueOnce(new Error('unavailable'));
   await runtime.refresh('a');
-  expect(runtime.getSnapshot().panels.a.error).toBeTruthy();
+  const position = runtime.getSnapshot().panels.a.position!;
+  expect(position.getSnapshot().queryError).toBe('unavailable');
+  expect(runtime.getSnapshot().panels.a.error).toBeNull();
+  expect(runtime.getSnapshot().panels.a.status).toBe('error');
   await runtime.refresh('a');
   expect(runtime.getSnapshot().panels.a.error).toBeNull();
   expect(runtime.getSnapshot().panels.a.status).toBe('ready');
+  expect(position.getSnapshot().queryError).toBeNull();
   engine.dispose();
 });
 it('keeps exposed browsing drafts and applied configurations immutable', async () => {

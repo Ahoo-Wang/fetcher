@@ -237,10 +237,15 @@ describe('dashboard composition runtime', () => {
     );
     expect(Math.max(...retainedCounts)).toBe(1);
     expect(
-      Object.values(runtime.getSnapshot().panels).find(
-        panel => panel.status === 'error',
-      )!.error,
+      Object.values(runtime.getSnapshot().panels)
+        .find(panel => panel.status === 'error')!
+        .position!.getSnapshot().queryError,
     ).toContain('预算');
+    expect(
+      Object.values(runtime.getSnapshot().panels).every(
+        panel => panel.error === null,
+      ),
+    ).toBe(true);
     engine.dispose();
   });
   it('blocks bad transform output only on its panel and rejects overwriting its configuration', async () => {

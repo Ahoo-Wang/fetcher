@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-import { DashboardRuntime } from '../dashboard/DashboardRuntime.js';
+import {
+  DashboardRuntime,
+  type DashboardSnapshot,
+} from '../dashboard/DashboardRuntime.js';
 import type { DashboardTransforms } from '../dashboard/dashboardModel.js';
 import { createDashboardSession } from '../dashboard/dashboardSession.js';
 import type {
@@ -27,6 +30,8 @@ import type {
 import type { DeepReadonly } from '../lib/types.js';
 import type {
   ViewDefinition,
+  RecordSession,
+  AnalysisSession,
   ViewSource,
   ViewInstance,
   RecordColumn,
@@ -67,6 +72,39 @@ import { ViewPersistence } from './ViewPersistence.js';
 import { ViewServiceError } from '../contracts/viewServiceContract.js';
 import { isSystemSession } from './sessionState.js';
 import { ViewManagement } from './ViewManagement.js';
+
+export interface ViewPositionOptions {
+  queryPolicy?: 'reject' | 'queue';
+  source?:
+    | ViewSource
+    | ((controller: AbortController) => ViewSource | Promise<ViewSource>);
+}
+interface PositionHandle {
+  readonly identity: Readonly<{
+    id: string;
+    instanceId: string;
+    definitionId: string;
+  }>;
+  readonly subscribe: (listener: () => void) => () => void;
+  readonly dispose: () => void;
+}
+export interface RecordViewPosition extends PositionHandle {
+  readonly kind: 'record';
+  readonly getSnapshot: () => RecordSession;
+  readonly commands: ReturnType<ViewEngine['record']>;
+}
+export interface AnalysisViewPosition extends PositionHandle {
+  readonly kind: 'analysis';
+  readonly getSnapshot: () => AnalysisSession;
+  readonly commands: ReturnType<ViewEngine['analysis']>;
+}
+export interface DashboardViewPosition extends PositionHandle {
+  readonly kind: 'dashboard';
+  readonly runtime: DashboardRuntime;
+  readonly getSnapshot: () => DashboardSnapshot;
+}
+export type DataViewPosition = RecordViewPosition | AnalysisViewPosition;
+export type ViewPosition = DataViewPosition | DashboardViewPosition;
 
 /** Fixed-scope public facade. Internal services own state, reads and durable writes. */
 export class ViewEngine {
@@ -566,18 +604,17 @@ export class ViewEngine {
     };
   }
 
-  openPosition(
-    instance: Exclude<ViewInstance, { kind: 'dashboard' }>,
+  /** Creates independent browsing state without selecting an instance or starting requests. */
+  openPosition<T extends ViewInstance>(
+    instance: T,
     definition: ViewDefinition,
-    options: {
-      queryPolicy?: 'reject' | 'queue';
-      source?:
-        | ViewSource
-        | ((controller: AbortController) => ViewSource | Promise<ViewSource>);
-    } = {},
-  ) {
-    if ((instance as ViewInstance).kind === 'dashboard')
-      throw new Error('运行位置仅支持记录或分析视图');
+    options?: ViewPositionOptions,
+  ): Extract<ViewPosition, { kind: T['kind'] }>;
+  openPosition(
+    instance: ViewInstance,
+    definition: ViewDefinition,
+    options: ViewPositionOptions = {},
+  ): ViewPosition {
     const id = this.store.openPosition(instance, definition, options);
     const identity = Object.freeze({
       id,
@@ -593,6 +630,22 @@ export class ViewEngine {
       this.store.closePosition(id);
       this.viewQueries.forget(id);
     };
+    if (instance.kind === 'dashboard') {
+      try {
+        const runtime = this.dashboard(id);
+        return {
+          kind: 'dashboard',
+          identity,
+          runtime,
+          getSnapshot: runtime.getSnapshot,
+          subscribe: runtime.subscribe,
+          dispose,
+        };
+      } catch (error) {
+        dispose();
+        throw error;
+      }
+    }
     const shared = { identity, subscribe: this.subscribe, dispose };
     return instance.kind === 'record'
       ? {
@@ -821,8 +874,10 @@ export class ViewEngine {
   private assertDashboardSavable(id?: string): void {
     const selected = id ?? this.store.getSnapshot().selectedInstanceId;
     const session = selected ? this.store.find(selected) : undefined;
+    if (selected && this.store.isPosition(selected))
+      throw new Error('运行位置不能通过实例管理接口写入，请编辑原视图');
     if (session?.kind === 'dashboard')
-      this.dashboard(session.instance.id).assertSavable();
+      this.dashboard(session.positionId).assertSavable();
   }
 
   dispose(): void {

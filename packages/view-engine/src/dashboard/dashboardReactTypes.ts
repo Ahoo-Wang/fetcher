@@ -41,5 +41,7 @@ export interface DashboardViewProps {
   extensions?: ViewExtensions;
   filterContext?: unknown;
   toolbarStart?: ReactNode;
+  /** Contextual title and landmark prefix when composed into another page. */
+  title?: string;
   className?: string;
 }

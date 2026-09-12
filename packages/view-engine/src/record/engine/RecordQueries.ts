@@ -21,7 +21,10 @@ import {
 } from '../../lib/runtimeLimits.js';
 import { RequestRunner } from '../../engine/RequestRunner.js';
 import { sameFilterQuery } from '../../filter/filterTree.js';
-import type { RecordQuerySource } from '../../contracts/viewModel.js';
+import type {
+  RecordQuerySource,
+  RecordSession,
+} from '../../contracts/viewModel.js';
 import type { ViewHost } from '../../contracts/ViewHost.js';
 import { validateRecordRows } from '../recordValidation.js';
 import { getRecordRefreshBlockReason } from '../recordRefreshPolicy.js';
@@ -142,6 +145,19 @@ export class RecordQueries {
     };
   }
 
+  private publishRejected(
+    id: string,
+    session: RecordSession,
+    error: unknown,
+  ): void {
+    if (this.queries.has(id) || this.store.find(id) !== session) return;
+    this.store.patch(id, {
+      kind: 'record',
+      queryStatus: 'error',
+      queryError: message(error),
+    });
+  }
+
   async run(
     id: string,
     mode: 'query' | 'refresh' | 'background' | 'scope' | 'retry' = 'query',
@@ -168,6 +184,7 @@ export class RecordQueries {
     try {
       assertConfigSize(config, this.limits.maxConfigBytes);
     } catch (error) {
+      this.publishRejected(id, session, error);
       diagnostic('failed', 'RESOURCE_LIMIT');
       throw error;
     }
@@ -281,6 +298,7 @@ export class RecordQueries {
         },
       }).completion;
     } catch (error) {
+      this.publishRejected(id, session, error);
       diagnostic(
         'failed',
         error instanceof RuntimeLimitError ? error.code : 'QUERY_FAILED',

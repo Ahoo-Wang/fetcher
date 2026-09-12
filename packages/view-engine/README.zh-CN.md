@@ -4,7 +4,7 @@ View Engine 承担数据视图能力的后续演进。`@ahoo-wang/fetcher-viewer
 
 [任务指南](../../wiki/zh/guides/view-engine/index.md) · [API 参考](../../wiki/zh/reference/view-engine/index.md) · [共享可运行示例](../../wiki/zh/examples/view-engine.md)
 
-独立的 `@ahoo-wang/fetcher-view-engine` 包，提供可独立使用的 Wow 过滤器编译与校验、完整 `FilterPanel`、结构化值编辑器和 shadcn/Base UI 控件。同时提供不依赖 React 的 ViewEngine 和完整 RecordView 页面，定义、实例与保存接口由宿主管理。记录表格/卡片与分析表格、图表共享同一引擎；本次不包含仪表盘。
+独立的 `@ahoo-wang/fetcher-view-engine` 包，提供可独立使用的 Wow 过滤器编译与校验、完整 `FilterPanel`、结构化值编辑器和 shadcn/Base UI 控件。同时提供不依赖 React 的 ViewEngine 和完整 RecordView 页面，定义、实例与保存接口由宿主管理。记录表格/卡片、分析表格/图表与仪表盘共享同一引擎，三种视图均支持独立嵌入浏览。
 
 ## 模块职责
 
@@ -84,6 +84,46 @@ export function OrderPage({
 `useViewEngine(options)` 负责创建、加载和释放，包括 React StrictMode。必填的 `scopeKey` 与 `definitionId` 标识生命周期，任一变化都会替换引擎。可选的本地 `definition`/`instances`、`extensions` 中成对的编译器/编辑器注册、`limits`、`onDiagnostic` 用于初始化该生命周期。同范围的 host 更新保留编辑；其他初始化输入需要重新建立时，显式改变 React key。返回的 `ViewEngineBinding` 为 `{ engine: ViewEngine | null, extensions?, error? }`。
 
 `ViewPage` 是纯 UI，接收 binding 或调用方持有的 engine，不会自行加载或释放引擎。`ViewPageContent` 要求非 null engine。两者组合导航、共享写入和选中的 `RecordView` 或 `AnalysisView`；后两者只渲染各自类型。无界面调用方创建 `new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`，调用 `load()`，范围结束时调用 `dispose()`。
+
+### 嵌入浏览
+
+React 入口的 `EmbeddedView` 将已保存的仪表盘、记录或分析视图嵌入首页或业务页面。`EmbeddedViewProps` 扩展 `ViewEngineBinding`，增加必填 `instanceId`，以及可选 `filterContext`、`className`、`onOpenView({ instanceId, definitionId }): void | Promise<void>`。提供回调后显示“打开完整视图”，导航由宿主负责。
+
+组件读取已加载受管理实例的保存基线 `baseline`，创建自己的运行位置，挂载时查询，卸载或身份变化时释放该位置。它不会选中实例，也不会释放调用方的引擎。同一实例的多个嵌入拥有独立筛选、排序、分页和结果；完整视图尚未保存的编辑不会成为嵌入基线。
+
+嵌入浏览隐藏管理、新建、保存、列配置和布局编辑，保留筛选、刷新、排序与记录分页。浏览变更仅保留在运行位置，维持 `dirty: false`，不会改变受管理实例或保存配置，有保存权限的用户也遵循相同语义。数据访问仍由宿主授权；隐藏编辑控件不是权限边界。
+
+```tsx
+import type { ViewHost, ViewInstance } from '@ahoo-wang/fetcher-view-engine';
+import {
+  EmbeddedView,
+  useViewEngine,
+} from '@ahoo-wang/fetcher-view-engine/react';
+
+function BusinessDashboardPage({
+  host,
+  savedViews,
+  scopeKey,
+  onOpenView,
+}: {
+  host: ViewHost;
+  savedViews: ViewInstance[];
+  scopeKey: string;
+  onOpenView(identity: { instanceId: string; definitionId: string }): void;
+}) {
+  const binding = useViewEngine({
+    scopeKey,
+    definitionId: 'orders',
+    host,
+    instances: { instances: savedViews, defaultInstanceId: null },
+  });
+  return (
+    <EmbeddedView {...binding} instanceId="overview" onOpenView={onOpenView} />
+  );
+}
+```
+
+仅用于首页的引擎应传入 `instances.defaultInstanceId: null`，避免额外自动选中并查询工作台视图。`savedViews` 必须属于加载的定义并包含 `overview`；替换为任意已保存记录或分析 ID 即可复用同一组件。宿主需启用仪表盘格式支持。Storybook 入口为 **View Engine → 数据视图 → 嵌入视图**：`view-engine-embedded-view--dashboard`、`--record`、`--analysis`、`--independent`。
 
 ### 定义与已保存实例
 

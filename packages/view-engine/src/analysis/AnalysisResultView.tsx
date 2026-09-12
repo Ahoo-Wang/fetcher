@@ -57,6 +57,7 @@ const tablePresentation: AnalysisPresentation = {
 };
 
 interface AnalysisResultProps {
+  label?: string;
   active: boolean;
   compact?: boolean;
   session: DeepReadonly<AnalysisSession>;
@@ -75,6 +76,7 @@ interface AnalysisResultProps {
 
 /** Executed-result projection and inspection never subscribe to the engine. */
 export function AnalysisResult({
+  label,
   active,
   compact = false,
   session,
@@ -115,6 +117,7 @@ export function AnalysisResult({
   const table =
     result && projected?.plan ? (
       <AnalysisTable
+        label={label}
         key={instance.id}
         plan={projected.plan}
         rows={result.rows}

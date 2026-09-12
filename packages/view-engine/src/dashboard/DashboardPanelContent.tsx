@@ -31,12 +31,12 @@ import {
   DialogDescription,
 } from '../components/ui/dialog.js';
 import { AnalysisResultSummary } from '../analysis/AnalysisResultSummary.js';
-import { AnalysisResult } from '../analysis/AnalysisResultView.js';
-import { RecordContent } from '../record/RecordContent.js';
+import {
+  DataViewContent,
+  useDataViewSession,
+} from '../view/DataViewContent.js';
 import { Button } from '../components/ui/button.js';
-import { Badge } from '../components/ui/badge.js';
 import { describeFilter } from '../filter/filterSummary.js';
-import { sameFilterQuery } from '../filter/filterTree.js';
 import type { FilterCompilerRegistry } from '../filter/filterModel.js';
 import type { ViewExtensions } from '../view/viewReactTypes.js';
 import type { DashboardPanelSnapshot } from './DashboardRuntime.js';
@@ -90,7 +90,6 @@ export function DashboardPanelContent({
 }) {
   const menuRef = useRef<HTMLButtonElement>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [mode, setMode] = useState<'analysis' | 'table' | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   function run(action: () => void | Promise<void>) {
     setLocalError(null);
@@ -103,20 +102,10 @@ export function DashboardPanelContent({
     }
   }
   const position = panel.position;
-  const session = position?.getSnapshot();
+  const session = useDataViewSession(position);
   const definition = panel.definition;
   const title = panel.instance?.title ?? '视图面板';
-  const querying =
-    session?.queryStatus === 'loading' || session?.queryStatus === 'waiting';
-  const stale =
-    !!session?.result &&
-    (session.queryStatus === 'error' ||
-      (session.kind === 'record'
-        ? !sameFilterQuery(session.result.filter, session.appliedFilter)
-        : !sameFilterQuery(
-            session.result.plan.query.filter,
-            session.compilation.plan?.query.filter,
-          )));
+  const querying = panel.loading;
   const resultFilter =
     session?.kind === 'record'
       ? session.result?.filter
@@ -140,13 +129,6 @@ export function DashboardPanelContent({
               筛选 {filterCount}
             </Button>
           )}
-          {session?.queryStatus === 'waiting' && (
-            <Badge variant="secondary">等待查询</Badge>
-          )}
-          {session?.queryStatus === 'loading' && (
-            <Badge variant="secondary">正在查询</Badge>
-          )}
-          {stale && <Badge variant="outline">上次成功结果</Badge>}
           {position && (
             <Button
               variant="ghost"
@@ -261,47 +243,16 @@ export function DashboardPanelContent({
           面板待配置，请完成筛选绑定后查询。
         </p>
       )}
-      {session?.kind === 'record' &&
-        position?.kind === 'record' &&
-        definition?.record && (
-          <RecordContent
-            paginationLabel={`${positionLabel ?? title}记录分页`}
-            session={session}
-            definition={{ ...definition, record: definition.record }}
-            commands={position.commands}
-            getSnapshot={() => {
-              try {
-                return position.getSnapshot();
-              } catch {
-                return undefined;
-              }
-            }}
-            extensions={extensions}
-            selectable={false}
-            configurable={false}
-          />
-        )}
-      {session?.kind === 'analysis' &&
-        position?.kind === 'analysis' &&
-        definition && (
-          <AnalysisResult
-            compact
-            active
-            session={session}
-            definition={definition}
-            compilers={compilers}
-            mode={
-              mode ??
-              (session.instance.config.presentation.layout === 'table'
-                ? 'table'
-                : 'analysis')
-            }
-            canRun={!querying && session.queryValid}
-            onRun={() => run(onRefresh)}
-            onSortChange={sort => run(() => position.commands.setSort(sort))}
-            onModeChange={setMode}
-          />
-        )}
+      {position && definition && (
+        <DataViewContent
+          key={position.identity.id}
+          position={position}
+          definition={definition}
+          extensions={extensions}
+          compilers={compilers}
+          label={positionLabel ?? title}
+        />
+      )}
     </>
   );
 }

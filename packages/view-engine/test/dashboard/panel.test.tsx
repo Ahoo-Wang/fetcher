@@ -11,7 +11,13 @@
  * limitations under the License.
  */
 import { afterEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import {
   DashboardPanelBoundary,
   DashboardPanelContent,
@@ -24,6 +30,9 @@ vi.mock('../../src/analysis/AnalysisResultView.js', () => ({
   AnalysisResult: (props: ComponentProps<typeof AnalysisResult>) => (
     <div>
       <span>{props.mode}</span>
+      {(props.localError || props.session.queryError) && (
+        <p role="alert">{props.localError ?? props.session.queryError}</p>
+      )}
       <button onClick={props.onRun}>Run analysis</button>
       <button onClick={() => props.onSortChange([])}>Sort analysis</button>
       <button onClick={() => props.onModeChange('analysis')}>Chart mode</button>
@@ -139,7 +148,7 @@ it('connects analysis inspection, explicit run and failed sort to existing posit
   fireEvent.click(screen.getByRole('button', { name: 'Chart mode' }));
   expect(screen.getByText('analysis')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'Run analysis' }));
-  expect(refresh).toHaveBeenCalledOnce();
+  await waitFor(() => expect(aggregate).toHaveBeenCalledTimes(2));
   aggregate.mockRejectedValueOnce(new Error('sort offline'));
   fireEvent.click(screen.getByRole('button', { name: 'Sort analysis' }));
   expect(await screen.findByText('sort offline')).toBeTruthy();

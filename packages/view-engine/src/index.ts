@@ -31,6 +31,14 @@ export {
 export type * from './contracts/viewModel.js';
 export type * from './contracts/ViewHost.js';
 export { ViewEngine } from './engine/ViewEngine.js';
+export type {
+  ViewPosition,
+  DataViewPosition,
+  RecordViewPosition,
+  AnalysisViewPosition,
+  DashboardViewPosition,
+  ViewPositionOptions,
+} from './engine/ViewEngine.js';
 export { getRecordSummaryMetrics } from './record/recordPresentation.js';
 export {
   RECORD_SUMMARY_LABELS,
@@ -123,7 +131,6 @@ export {
   DashboardRuntime,
   type DashboardSnapshot,
   type DashboardPanelSnapshot,
-  type DashboardPosition,
 } from './dashboard/DashboardRuntime.js';
 export {
   compileDashboardScope,

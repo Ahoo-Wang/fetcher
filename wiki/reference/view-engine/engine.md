@@ -63,15 +63,57 @@ Unknown write outcomes are separate: after a dispatched timeout, network failure
 
 Default `limits` are load 15,000 ms, query/write 30,000 ms, 4 concurrent queries, 5 retained result sets and 262,144 configuration bytes. Result eviction does not evict working drafts or recovery state. Late reads cannot overwrite a newer request or result scope; cancellation is not a user-facing query failure. Optional `onDiagnostic` receives operation identity, kind, phase, elapsed time and optional error code, without query/row payloads; callback failures are isolated. Verify the host/backend contract and browser flows for your deployment; these APIs alone do not establish production readiness.
 
+## Embedded browsing
+
+`EmbeddedView` from the React entry embeds a saved dashboard, record or analysis view in a home page or another business screen. `EmbeddedViewProps` extends `ViewEngineBinding` with required `instanceId` and optional `filterContext`, `className`, and `onOpenView({ instanceId, definitionId }): void | Promise<void>`. The callback enables “open full view”; the host owns navigation.
+
+Use the optional `title` for context-specific display and pagination labels. When embedding the same saved view more than once, give each embedding a distinct title so its regions and navigation controls remain distinguishable.
+
+The component reads the saved `baseline` of an already loaded managed instance, creates its own position, starts querying on mount, and releases that position on unmount or identity changes. It never selects an instance or disposes the caller's engine. Repeated embeds of the same instance have independent filters, sorting, pagination and results. Working edits in the full view are not used as the embedded baseline.
+
+Embedded browsing hides management, creation, saving, column configuration and layout editing, while keeping filters, refresh, sorting and record pagination. These changes remain in the browsing position, keep `dirty: false`, and never alter the managed instance or saved configuration, including for users with save permission. The host still enforces data access; hiding editing controls is not an authorization boundary.
+
+```tsx
+import type { ViewHost, ViewInstance } from '@ahoo-wang/fetcher-view-engine';
+import {
+  EmbeddedView,
+  useViewEngine,
+} from '@ahoo-wang/fetcher-view-engine/react';
+
+function BusinessDashboardPage({
+  host,
+  savedViews,
+  scopeKey,
+  onOpenView,
+}: {
+  host: ViewHost;
+  savedViews: ViewInstance[];
+  scopeKey: string;
+  onOpenView(identity: { instanceId: string; definitionId: string }): void;
+}) {
+  const binding = useViewEngine({
+    scopeKey,
+    definitionId: 'orders',
+    host,
+    instances: { instances: savedViews, defaultInstanceId: null },
+  });
+  return (
+    <EmbeddedView {...binding} instanceId="overview" onOpenView={onOpenView} />
+  );
+}
+```
+
+Provide `instances.defaultInstanceId: null` for a home-page-only engine to avoid automatically selecting and querying a separate workbench view. `savedViews` must belong to the loaded definition and include `overview`; use any saved record or analysis ID with the same component. Enable dashboard format support on the host. In Storybook, open **View Engine → 数据视图 → 嵌入视图**: `view-engine-embedded-view--dashboard`, `--record`, `--analysis`, and `--independent`.
+
 ## Independent runtime positions
 
-`commands.restore()` restores the local baseline without saving the managed instance. Record restore refreshes its own query; analysis restore does not execute a query. Disposal releases per-position query metadata.
+For record/analysis positions, `commands.restore()` restores the local baseline without saving the managed instance. Record restore refreshes its own query; analysis restore does not execute a query. Disposal releases per-position query metadata.
 
-After loading the engine, `engine.openPosition(instance, definition)` creates an independent record or analysis position. Its returned `identity.id` differs for every opening, while `identity.instanceId` retains the saved identity. Read `getSnapshot()`, subscribe with `subscribe(listener)`, and use `commands.refresh()` for records or `commands.run()` for initial analysis execution. Analysis `refresh()` keeps its safe automatic-refresh policy. Opening itself does not query.
+After loading the engine, `engine.openPosition(instance, definition)` creates an independent record, analysis or top-level dashboard position. Its returned `identity.id` differs for every opening, while `identity.instanceId` retains the saved identity. Read `getSnapshot()`, subscribe with `subscribe(listener)`, and use `commands.refresh()` for records or `commands.run()` for initial analysis execution. Analysis `refresh()` keeps its safe automatic-refresh policy. Opening itself does not query.
 
-Dashboard instances are rejected before a position is registered. The optional third argument accepts `queryPolicy: 'reject' | 'queue'` and `source: ViewSource | ((controller: AbortController) => ViewSource | Promise<ViewSource>)`. Source factories resolve on each query, including analysis and record summaries; observe the controller when performing asynchronous resolution. Dashboard positions use the current host source after `updateHost` without resetting pagination or issuing a query automatically.
+Dashboard handles expose `runtime.resume()` to start their panels and `getSnapshot(): DashboardSnapshot`; data handles expose their own session snapshots and commands. The core exports the discriminated `ViewPosition` union and its `DataViewPosition` subset, plus `RecordViewPosition`, `AnalysisViewPosition`, `DashboardViewPosition` and `ViewPositionOptions`. Dashboard data-reference panels still reject nested dashboards. The optional third argument accepts `queryPolicy: 'reject' | 'queue'` and `source: ViewSource | ((controller: AbortController) => ViewSource | Promise<ViewSource>)`. Source factories resolve on each query, including analysis and record summaries; observe the controller when performing asynchronous resolution. Dashboard child positions use the current host source after `updateHost` without resetting pagination or issuing a query automatically.
 
-Positions use their own definitions and keep independent pagination, selection and results, even when referencing the same saved instance. They do not enter managed instance navigation or consume the managed history-result budget. Call `dispose()` when the containing UI closes; old commands then reject. Position sessions expose `positionId`, which is not persisted. Saving a position through `engine.save(identity.id)` is rejected; edit the original managed instance to persist configuration.
+Positions use their own definitions and keep independent pagination, selection and results, even when referencing the same saved instance. They do not enter managed instance navigation or consume the managed history-result budget. Call `dispose()` when the containing UI closes; old commands then reject. All position sessions remain `dirty: false`; record and analysis sessions expose `positionId`, which is not persisted. Saving a position through `engine.save(identity.id)` is rejected; edit the original managed instance to persist configuration.
 
 ## Dashboard composition
 
