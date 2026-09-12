@@ -14,7 +14,7 @@
 import { expect, it, vi } from 'vitest';
 import type { ViewInstance } from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
-import { ViewServiceError } from '../../src/record/viewServiceContract.js';
+import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
 import {
   deferred,
   instance,

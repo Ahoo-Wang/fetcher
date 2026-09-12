@@ -33,7 +33,7 @@ import {
   inheritEditingSession,
   instanceContent,
 } from './sessionState.js';
-import { ViewServiceError } from '../record/viewServiceContract.js';
+import { ViewServiceError } from '../contracts/viewServiceContract.js';
 import { permissionsFor } from './instancePermissions.js';
 
 /** Saved configuration writes and their immutable response reconciliation. */

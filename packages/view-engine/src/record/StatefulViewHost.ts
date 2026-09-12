@@ -32,7 +32,7 @@ import {
   encodeViewResourceId,
   type ViewCreateContext,
   type ViewPermissionSnapshot,
-} from './viewServiceContract.js';
+} from '../contracts/viewServiceContract.js';
 import type {
   ViewDefinition,
   ViewInstance,

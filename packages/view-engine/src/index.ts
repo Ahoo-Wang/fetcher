@@ -65,13 +65,13 @@ export {
   type MemoryViewHostOptions,
 } from './record/MemoryViewHost.js';
 
-export { ViewServiceError } from './record/viewServiceContract.js';
+export { ViewServiceError } from './contracts/viewServiceContract.js';
 export type {
   ViewServiceErrorCode,
   ViewCreateContext,
   ViewDeleteResult,
   ViewPermissionSnapshot,
-} from './record/viewServiceContract.js';
+} from './contracts/viewServiceContract.js';
 
 export type {
   FilterOptionSource,

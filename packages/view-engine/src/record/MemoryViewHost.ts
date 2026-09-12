@@ -15,7 +15,7 @@ import {
   StatefulViewHost,
   type StatefulViewHostOptions,
 } from './StatefulViewHost.js';
-import { ViewServiceError } from './viewServiceContract.js';
+import { ViewServiceError } from '../contracts/viewServiceContract.js';
 import { message } from '../lib/snapshot.js';
 
 export interface MemoryViewHostOptions extends StatefulViewHostOptions {

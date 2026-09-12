@@ -55,7 +55,7 @@ import { RecordEdits } from '../record/engine/RecordEdits.js';
 import { ViewLoader } from './ViewLoader.js';
 import { ViewReload } from './ViewReload.js';
 import { ViewPersistence } from './ViewPersistence.js';
-import { ViewServiceError } from '../record/viewServiceContract.js';
+import { ViewServiceError } from '../contracts/viewServiceContract.js';
 import { isSystemSession } from './sessionState.js';
 import { ViewManagement } from './ViewManagement.js';
 

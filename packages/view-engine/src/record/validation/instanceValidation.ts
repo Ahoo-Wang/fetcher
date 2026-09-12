@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { encodeViewResourceId } from '../viewServiceContract.js';
+import { encodeViewResourceId } from '../../contracts/viewServiceContract.js';
 import { SortDirection } from '@ahoo-wang/fetcher-wow';
 import { validateFilterConfigurationStructure } from '../../filter/filterConfigurationValidation.js';
 import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';

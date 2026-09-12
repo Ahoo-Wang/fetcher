@@ -15,7 +15,7 @@ import { ANALYSIS_LIMITS } from '../../analysis/analysisCapabilities.js';
 import { MAX_ANALYSIS_ELEMENTS } from '../../analysis/analysisModel.js';
 import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
 import { validateRecordPresentationDefaults } from './presentationValidation.js';
-import { encodeViewResourceId } from '../viewServiceContract.js';
+import { encodeViewResourceId } from '../../contracts/viewServiceContract.js';
 import { validateTimeZone } from '../../lib/timeZone.js';
 import {
   FilterOperator,
