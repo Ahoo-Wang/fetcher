@@ -77,7 +77,8 @@ it('surfaces async refresh/reload failures and synchronous source navigation err
   expect(await screen.findByText('refresh offline')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '重新加载引用' }));
   expect(await screen.findByText('操作失败')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: '编辑原视图' }));
+  fireEvent.click(screen.getByRole('button', { name: 'child面板选项' }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: '编辑原视图' }));
   expect(await screen.findByText('navigation offline')).toBeTruthy();
   engine.dispose();
 });
@@ -131,6 +132,10 @@ it('connects analysis inspection, explicit run and failed sort to existing posit
       onReload={() => {}}
     />,
   );
+  fireEvent.click(screen.getByRole('button', { name: /面板选项$/ }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: '数据详情' }));
+  expect(await screen.findByRole('region', { name: '执行口径' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '关闭' }));
   fireEvent.click(screen.getByRole('button', { name: 'Chart mode' }));
   expect(screen.getByText('analysis')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'Run analysis' }));

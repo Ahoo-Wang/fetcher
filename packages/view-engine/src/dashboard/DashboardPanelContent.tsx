@@ -10,7 +10,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Component, useState, type ReactNode } from 'react';
+import { Component, useRef, useState, type ReactNode } from 'react';
+import {
+  RefreshCwIcon,
+  MoreHorizontalIcon,
+  InfoIcon,
+  ExternalLinkIcon,
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '../components/ui/dropdown-menu.js';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../components/ui/dialog.js';
+import { AnalysisResultSummary } from '../analysis/AnalysisResultSummary.js';
 import { AnalysisResult } from '../analysis/AnalysisResultView.js';
 import { RecordContent } from '../record/RecordContent.js';
 import { Button } from '../components/ui/button.js';
@@ -48,6 +68,8 @@ export class DashboardPanelBoundary extends Component<
 export function DashboardPanelContent({
   panel,
   positionLabel,
+  filterDetails,
+  filterCount = 0,
   extensions,
   compilers,
   onRefresh,
@@ -57,6 +79,8 @@ export function DashboardPanelContent({
 }: {
   panel: DashboardPanelSnapshot;
   positionLabel?: string;
+  filterDetails?: ReactNode;
+  filterCount?: number;
   extensions?: ViewExtensions;
   compilers: FilterCompilerRegistry;
   onRefresh(): void | Promise<void>;
@@ -64,6 +88,8 @@ export function DashboardPanelContent({
   onRepair?(): void;
   onOpenOriginal?(): void | Promise<void>;
 }) {
+  const menuRef = useRef<HTMLButtonElement>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [mode, setMode] = useState<'analysis' | 'table' | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   function run(action: () => void | Promise<void>) {
@@ -97,22 +123,23 @@ export function DashboardPanelContent({
       : session?.result?.plan.query.filter;
   return (
     <>
-      <header className="fve:flex fve:flex-wrap fve:items-start fve:justify-between fve:gap-3 fve:p-4">
-        <div className="fve:min-w-0 fve:flex-1">
-          <h2 className="fve:break-words fve:font-semibold">{title}</h2>
-          {definition && (
-            <p className="fve:break-words fve:text-xs fve:text-muted-foreground">
-              {definition.title}
-            </p>
+      <header className="fve:flex fve:items-center fve:justify-between fve:gap-2 fve:px-4 fve:py-2">
+        <h2
+          className="fve:min-w-0 fve:flex-1 fve:truncate fve:font-semibold"
+          title={title}
+        >
+          {title}
+        </h2>
+        <div className="fve:flex fve:shrink-0 fve:items-center fve:gap-1">
+          {filterCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDetailsOpen(true)}
+            >
+              筛选 {filterCount}
+            </Button>
           )}
-          {session?.result && (
-            <p className="fve:text-xs fve:text-muted-foreground">
-              本地接收：
-              {new Date(session.result.receivedAt).toLocaleString('zh-CN')}
-            </p>
-          )}
-        </div>
-        <div className="fve:flex fve:flex-wrap fve:items-center fve:gap-2">
           {session?.queryStatus === 'waiting' && (
             <Badge variant="secondary">等待查询</Badge>
           )}
@@ -122,31 +149,90 @@ export function DashboardPanelContent({
           {stale && <Badge variant="outline">上次成功结果</Badge>}
           {position && (
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon-sm"
               disabled={querying}
               onClick={() => run(onRefresh)}
               aria-label={`刷新${title}`}
+              title="刷新"
             >
-              刷新
+              <RefreshCwIcon aria-hidden="true" />
             </Button>
           )}
-          {onOpenOriginal && panel.instance && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => run(onOpenOriginal)}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  ref={menuRef}
+                  aria-label={`${title}面板选项`}
+                  title="面板选项"
+                />
+              }
             >
-              编辑原视图
-            </Button>
-          )}
+              <MoreHorizontalIcon aria-hidden="true" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              finalFocus={!detailsOpen}
+              className="fve:min-w-40"
+            >
+              <DropdownMenuItem onClick={() => setDetailsOpen(true)}>
+                <InfoIcon aria-hidden="true" />
+                数据详情
+              </DropdownMenuItem>
+              {onOpenOriginal && panel.instance && (
+                <DropdownMenuItem onClick={() => run(onOpenOriginal)}>
+                  <ExternalLinkIcon aria-hidden="true" />
+                  编辑原视图
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
-      {resultFilter && definition && (
-        <p className="fve:mx-4 fve:mb-3 fve:break-words fve:text-xs fve:text-muted-foreground">
-          结果筛选口径：{describeFilter(resultFilter, definition.fields).text}
-        </p>
-      )}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent
+          finalFocus={menuRef}
+          className="fve:max-h-[80dvh] fve:overflow-y-auto"
+        >
+          <DialogHeader>
+            <DialogTitle>{title} · 数据详情</DialogTitle>
+            <DialogDescription>
+              查看当前结果的数据来源和实际查询口径。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="fve:flex fve:flex-col fve:gap-3 fve:text-sm">
+            {definition && <p>数据来源：{definition.title}</p>}
+            {session?.kind === 'analysis' && session.result && definition ? (
+              <AnalysisResultSummary
+                result={session.result}
+                definition={definition}
+                compilers={compilers}
+              />
+            ) : (
+              <>
+                {session?.result && (
+                  <p>
+                    本地接收：
+                    {new Date(session.result.receivedAt).toLocaleString(
+                      'zh-CN',
+                    )}
+                  </p>
+                )}
+              </>
+            )}
+            {resultFilter && definition && (
+              <p>
+                结果筛选口径：
+                {describeFilter(resultFilter, definition.fields).text}
+              </p>
+            )}
+            {filterDetails}
+          </div>
+        </DialogContent>
+      </Dialog>
       {panel.status === 'loading' && (
         <p role="status" className="fve:p-4">
           正在加载视图引用…
@@ -191,7 +277,7 @@ export function DashboardPanelContent({
               }
             }}
             extensions={extensions}
-            selectable
+            selectable={false}
             configurable={false}
           />
         )}
@@ -199,6 +285,7 @@ export function DashboardPanelContent({
         position?.kind === 'analysis' &&
         definition && (
           <AnalysisResult
+            compact
             active
             session={session}
             definition={definition}

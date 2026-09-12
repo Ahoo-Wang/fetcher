@@ -115,6 +115,8 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 `isDisposed` 表示运行对象是否已释放。显式调用 `dispose()` 后，再次调用 `engine.dashboard(id)` 会创建替代对象；自行管理生命周期时调用 `resume()` 激活它。运行对象会跳过无关位置的通知，但权限变化仍更新可编辑状态。只读筛选草稿及编辑器有效性仅保留在运行对象中，不会把持久会话标为未保存，也不会在权限变化后阻断其独立配置的保存。转换器适用性检查失败只隐藏故障注册项；编辑器渲染失败显示局部重试入口，并阻止保存直至修复绑定。
 
+仪表盘卡片使用紧凑标题与操作栏，记录表格默认不显示行选择。面板菜单提供数据详情（来源、接收时间、实际筛选及分析口径）和原视图入口；查看详情不会发起查询。已应用筛选以数量快捷入口显示，加载、错误和旧结果提示仍保持可见。独立记录、分析视图保留现有展示方式。
+
 快照分别保存 `config` 草稿和 `applied` 已应用配置，并提供 `pending`、包含 dirty/写入状态的 `session`、`editable`、校验及逐面板状态。查询应用全局草稿；刷新沿用已应用快照；保存不查询。暂停释放运行位置/结果，返回时重新授权并使用保留的子版本；显式重载引用才采用最新保存配置。布局调整保留位置身份，不发查询。
 
 每个全局项保存 `{ id, filters: FilterConfiguration, bindings, excludedPanelIds }`，每个 `kind: 'view'` 数据面板必须恰好绑定一次或明确不参与。字段绑定为 `{ panelId, kind: 'fields', fields, semanticCompatibility: true }`，元素完整路径与 SEARCH 字段列表必须全部映射。转换绑定为 `{ panelId, kind: 'transform', name, options? }`；在 `ViewEngineOptions.dashboardTransforms` 注册同步纯函数，接收只读 `{ expression, source, target, instance, options }`。转换缺失或无效时阻断整个受影响面板，不删去 OR 分支。最终作用域为原子视图条件 AND 所有参与的全局条件。

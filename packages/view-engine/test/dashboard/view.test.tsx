@@ -473,12 +473,13 @@ it('opens the original saved view through the host without changing or refreshin
   await engine.load();
   render(<DashboardView runtime={engine.dashboard('dashboard')} />);
   await waitFor(() =>
-    expect(screen.getAllByRole('button', { name: '编辑原视图' })).toHaveLength(
-      2,
-    ),
+    expect(
+      screen.getAllByRole('button', { name: 'child面板选项' }),
+    ).toHaveLength(2),
   );
   paged.mockClear();
-  fireEvent.click(screen.getAllByRole('button', { name: '编辑原视图' })[1]);
+  fireEvent.click(screen.getAllByRole('button', { name: 'child面板选项' })[1]);
+  fireEvent.click(await screen.findByRole('menuitem', { name: '编辑原视图' }));
   expect(openOriginal).toHaveBeenCalledWith({
     instanceId: 'child',
     definitionId: 'orders',
@@ -610,7 +611,7 @@ it('updates standalone dashboard discovery and original-view actions after host 
   render(<DashboardView runtime={runtime} />);
   await waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
   expect(screen.queryByRole('menuitem', { name: '添加面板' })).toBeNull();
-  expect(screen.queryByRole('button', { name: '编辑原视图' })).toBeNull();
+  expect(screen.queryByRole('menuitem', { name: '编辑原视图' })).toBeNull();
   const session = runtime.getSnapshot().session;
   act(() =>
     engine.updateHost({
@@ -625,13 +626,48 @@ it('updates standalone dashboard discovery and original-view actions after host 
   expect(
     await screen.findByRole('menuitem', { name: '添加面板' }),
   ).toBeTruthy();
-  expect(screen.getAllByRole('button', { name: '编辑原视图' })).toHaveLength(2);
+  fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+  fireEvent.click(screen.getAllByRole('button', { name: 'child面板选项' })[0]);
+  expect(
+    await screen.findByRole('menuitem', { name: '编辑原视图' }),
+  ).toBeTruthy();
   expect(runtime.getSnapshot().session).toBe(session);
   expect(paged).toHaveBeenCalledTimes(2);
   act(() => engine.updateHost(host));
   expect(screen.queryByRole('menuitem', { name: '添加面板' })).toBeNull();
-  expect(screen.queryByRole('button', { name: '编辑原视图' })).toBeNull();
+  expect(screen.queryByRole('menuitem', { name: '编辑原视图' })).toBeNull();
   expect(paged).toHaveBeenCalledTimes(2);
+  cleanup();
+  engine.dispose();
+});
+
+it('keeps dashboard cards compact and selection-free while retaining executed metadata on demand', async () => {
+  const { engine, paged } = dashboardSetup();
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  render(<DashboardView runtime={runtime} />);
+  await waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+  expect(screen.queryByRole('checkbox')).toBeNull();
+  expect(screen.queryByText(/本地接收/)).toBeNull();
+  expect(screen.queryByText('已应用全局筛选：无')).toBeNull();
+  const before = runtime.getSnapshot().panels.a.position;
+  const menu = screen.getAllByRole('button', { name: 'child面板选项' })[0];
+  fireEvent.click(menu);
+  fireEvent.click(await screen.findByRole('menuitem', { name: '数据详情' }));
+  const dialog = await screen.findByRole('dialog', {
+    name: 'child · 数据详情',
+  });
+  expect(within(dialog).getByText(/本地接收/)).toBeTruthy();
+  expect(within(dialog).getByText(/结果筛选口径/)).toBeTruthy();
+  fireEvent.click(within(dialog).getByRole('button', { name: '关闭' }));
+  await waitFor(() => expect(document.activeElement).toBe(menu));
+  act(() => runtime.edit(config => ({ ...config, filters: [globalFilter()] })));
+  await act(() => runtime.apply());
+  const calls = paged.mock.calls.length;
+  fireEvent.click(screen.getAllByRole('button', { name: '筛选 1' })[0]);
+  await screen.findByRole('dialog', { name: 'child · 数据详情' });
+  expect(runtime.getSnapshot().panels.a.position).toBe(before);
+  expect(paged).toHaveBeenCalledTimes(calls);
   cleanup();
   engine.dispose();
 });

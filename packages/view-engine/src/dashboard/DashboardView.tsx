@@ -294,44 +294,55 @@ export function DashboardView({
                 <DashboardContent panel={panel} />
               ) : (
                 <DashboardPanelBoundary panelId={panel.id}>
-                  <div
-                    className="fve:px-4 fve:pt-3 fve:text-xs fve:text-muted-foreground"
-                    aria-label="已应用全局筛选"
-                  >
-                    {!snapshot.applied.filters.length
-                      ? '已应用全局筛选：无'
-                      : snapshot.applied.filters.map((item, index) => (
-                          <p key={item.id} className="fve:break-words">
-                            筛选 {index + 1}：
-                            {!snapshot.applied.panels.some(
-                              applied =>
-                                applied.kind === 'view' &&
-                                applied.id === panel.id &&
-                                applied.instanceId === panel.instanceId,
-                            )
-                              ? '尚未应用到此引用'
-                              : item.excludedPanelIds.includes(panel.id)
-                                ? '不参与'
-                                : item.bindings.some(
-                                      binding => binding.panelId === panel.id,
-                                    )
-                                  ? (describeConfiguredFilter(
-                                      item.filters.root,
-                                      runtime.definition.fields,
-                                      runtime.definition.allowedOperators,
-                                      runtime.filterCompilers,
-                                      runtime.definition.timeZone,
-                                    )?.text ?? '已应用条件')
-                                  : '尚未应用到此面板'}
-                          </p>
-                        ))}
-                    {snapshot.pending && (
-                      <p>新草稿尚未应用，当前结果仍使用上次查询口径。</p>
-                    )}
-                  </div>
                   {snapshot.panels[panel.id] && (
                     <DashboardPanelContent
                       panel={snapshot.panels[panel.id]}
+                      filterCount={
+                        snapshot.applied.filters.filter(item =>
+                          item.bindings.some(
+                            binding => binding.panelId === panel.id,
+                          ),
+                        ).length
+                      }
+                      filterDetails={
+                        <div
+                          className="fve:text-xs fve:text-muted-foreground"
+                          aria-label="已应用全局筛选"
+                        >
+                          {!snapshot.applied.filters.length
+                            ? '已应用全局筛选：无'
+                            : snapshot.applied.filters.map((item, index) => (
+                                <p key={item.id} className="fve:break-words">
+                                  筛选 {index + 1}：
+                                  {!snapshot.applied.panels.some(
+                                    applied =>
+                                      applied.kind === 'view' &&
+                                      applied.id === panel.id &&
+                                      applied.instanceId === panel.instanceId,
+                                  )
+                                    ? '尚未应用到此引用'
+                                    : item.excludedPanelIds.includes(panel.id)
+                                      ? '不参与'
+                                      : item.bindings.some(
+                                            binding =>
+                                              binding.panelId === panel.id,
+                                          )
+                                        ? (describeConfiguredFilter(
+                                            item.filters.root,
+                                            runtime.definition.fields,
+                                            runtime.definition.allowedOperators,
+                                            runtime.filterCompilers,
+                                            runtime.definition.timeZone,
+                                          )?.text ?? '已应用条件')
+                                        : '尚未应用到此面板'}
+                                </p>
+                              ))}
+                          {snapshot.pending && (
+                            <p>新草稿尚未应用，当前结果仍使用上次查询口径。</p>
+                          )}
+                        </div>
+                      }
+
                       positionLabel={`面板 ${[...snapshot.config.panels].sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x).findIndex(item => item.id === panel.id) + 1}：${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}`}
                       extensions={extensions}
                       compilers={runtime.filterCompilers}

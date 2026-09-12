@@ -58,6 +58,7 @@ const tablePresentation: AnalysisPresentation = {
 
 interface AnalysisResultProps {
   active: boolean;
+  compact?: boolean;
   session: DeepReadonly<AnalysisSession>;
   definition: DeepReadonly<ViewDefinition>;
   compilers: FilterCompilerRegistry;
@@ -75,6 +76,7 @@ interface AnalysisResultProps {
 /** Executed-result projection and inspection never subscribe to the engine. */
 export function AnalysisResult({
   active,
+  compact = false,
   session,
   definition,
   compilers,
@@ -128,39 +130,52 @@ export function AnalysisResult({
   return (
     <div
       aria-label="分析结果区"
-      className="fve:flex fve:min-w-0 fve:flex-col fve:gap-4 fve:rounded-xl fve:border fve:bg-background fve:p-4"
+      className={
+        compact
+          ? 'fve:flex fve:min-w-0 fve:flex-col fve:gap-4 fve:px-4 fve:pb-4'
+          : 'fve:flex fve:min-w-0 fve:flex-col fve:gap-4 fve:rounded-xl fve:border fve:bg-background fve:p-4'
+      }
     >
-      <div className="fve:flex fve:flex-col fve:gap-3">
-        <div className="fve:flex fve:flex-wrap fve:items-center fve:justify-between fve:gap-2">
-          <h2 className="fve:font-semibold">分析结果</h2>
-          <div className="fve:flex fve:items-center fve:gap-2">
-            {querying && <Badge variant="secondary">正在查询</Badge>}
-            {stale && <Badge variant="outline">配置尚未运行</Badge>}
-            {!session.queryValid && (
-              <Badge variant="outline">查询配置待修复</Badge>
-            )}
+      {(!compact ||
+        querying ||
+        stale ||
+        !session.queryValid ||
+        (session.queryError && result)) && (
+        <div className="fve:flex fve:flex-col fve:gap-3">
+          <div className="fve:flex fve:flex-wrap fve:items-center fve:justify-between fve:gap-2">
+            {!compact && <h2 className="fve:font-semibold">分析结果</h2>}
+            <div className="fve:flex fve:items-center fve:gap-2">
+              {querying && <Badge variant="secondary">正在查询</Badge>}
+              {stale && <Badge variant="outline">配置尚未运行</Badge>}
+              {!session.queryValid && (
+                <Badge variant="outline">查询配置待修复</Badge>
+              )}
+            </div>
           </div>
+          {!compact && result && (
+            <AnalysisResultSummary
+              result={result}
+              definition={definition}
+              compilers={compilers}
+            />
+          )}
+          {(stale || (session.queryError && result)) && (
+            <div className="fve:flex fve:flex-wrap fve:items-center fve:gap-2">
+              <p
+                role="status"
+                className="fve:text-sm fve:text-muted-foreground"
+              >
+                以下仍为上次成功结果。
+              </p>
+              {!session.queryError && (
+                <Button variant="outline" disabled={!canRun} onClick={onRun}>
+                  运行当前配置
+                </Button>
+              )}
+            </div>
+          )}
         </div>
-        {result && (
-          <AnalysisResultSummary
-            result={result}
-            definition={definition}
-            compilers={compilers}
-          />
-        )}
-        {(stale || (session.queryError && result)) && (
-          <div className="fve:flex fve:flex-wrap fve:items-center fve:gap-2">
-            <p role="status" className="fve:text-sm fve:text-muted-foreground">
-              以下仍为上次成功结果。
-            </p>
-            {!session.queryError && (
-              <Button variant="outline" disabled={!canRun} onClick={onRun}>
-                运行当前配置
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+      )}
       {error && (
         <div
           role="alert"
