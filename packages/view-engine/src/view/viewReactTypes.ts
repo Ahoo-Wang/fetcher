@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-export {
-  readRecordValue,
-  getRecordKey,
-  validateRecordRows,
-} from './validation/recordData.js';
+import type { RecordExtensions } from '../record/recordReactTypes.js';
+import type { AnalysisExtensions } from '../analysis/analysisReactTypes.js';
+
+/** Page-level composition; each view kind consumes only its own extensions. */
+export interface ViewExtensions extends RecordExtensions, AnalysisExtensions {}

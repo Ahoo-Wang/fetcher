@@ -77,7 +77,7 @@ export function OrderPage({
   scopeKey: string;
 }) {
   const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
-  return <ViewPage {...binding} selectable />;
+  return <ViewPage {...binding} record={{ selectable: true }} />;
 }
 ```
 
@@ -189,7 +189,7 @@ HTTP 脚本启动隔离的本地服务，以相同的 MemoryViewHost 逻辑、�
 错误、隐藏页面、正在编辑或使用弹层时暂停，游标查询第二页起也暂停。
 所有汇总完成后才开始下一次后台读取；刷新失败保留记录，等待手动重试。
 宿主业务操作期间可向 `ViewPage`、`ViewPageContent` 或 `RecordView` 传入
-`autoRefreshPaused`。切换实例后自动刷新恢复关闭。
+`record.autoRefreshPaused`（独立 `RecordView` 使用 `autoRefreshPaused`）。切换实例后自动刷新恢复关闭。
 
 刷新按钮显示所选周期及 `分:秒` 倒计时（例如 `30 秒 · 00:29`），按实际截止时间
 计算。暂停时显示“已暂停”，请求期间显示“刷新中”；恢复、切换周期或刷新完成后
@@ -317,7 +317,7 @@ Select、下拉菜单与 Popover 面板默认 Portal 到 body，避免被有裁�
 
 变量主题会传入库自己的 Portal；`.brand [data-slot=...]` 一类结构选择器不会跨越 body Portal，任意 CSSOM 样式表替换若没有属性、class 或行内样式变化也不会被监听。第三方 Portal 必须采用其组件自己的主题容器机制。别名和派生值应定义在目标主题边界：CSS 自定义属性引用在继承前解析，不能假设子作用域修改基础变量后会重算继承的派生值。`--fve-primary` 与 `--fve-primary-foreground` 等配对颜色应一起修改。完整公开变量表与区域回调契约见 [API 参考](../../skills/fetcher-view-engine/references/api.md)。
 
-`ViewPage`、`ViewPageContent` 与 `RecordView` 支持 `renderToolbar` 和 `renderPagination`。每个回调收到只读状态、默认区域节点和绑定实例的受控操作。返回默认节点可保留它，包裹节点可组合 UI，返回 `null` 可隐藏区域。扩展需要 Hook 或局部状态时应返回一个组件。
+`ViewPage`、`ViewPageContent` 通过 `record.renderToolbar` 和 `record.renderPagination` 接入区域回调；`RecordView` 直接接收 `renderToolbar` 和 `renderPagination`。每个回调收到只读状态、默认区域节点和绑定实例的受控操作。返回默认节点可保留它，包裹节点可组合 UI，返回 `null` 可隐藏区域。扩展需要 Hook 或局部状态时应返回一个组件。
 
 `FilterDatePicker` 使用中文 shadcn Calendar，受控值为 `Date | undefined`。`FilterTimeInput` 组合文本输入与时、分、秒 Select，保留未完成输入，接受 `HH:mm` 或 `HH:mm:ss`，最多精确到秒；已有小数秒时间在显示或编辑时截到秒。两者均支持 `inline`，可放入 `FieldFilter`。时区转换和查询生效时机由宿主管理。未设置值合法：保留编辑器，点击查询时不生成需要值的对应谓词；没有剩余条件时使用 `filter.matchAll()`。日期和时间均为空才算未设置，只填一项时提示补全；时间下拉保留其他已填写片段。已填写但格式错误时仍提示错误；无需值的操作与显式 null / 零 / false 保留 Wow 语义。
 
@@ -550,3 +550,5 @@ console.log(compiled.plan.query, result.rows);
 分析配置在桌面/对话框切换及关闭时保留同一编辑子树，保存扩展本地草稿与有效性。`DialogContent.keepMounted` 默认 `false`，需要时可保留关闭后隐藏的内容。饼图/环形图常驻显示分组数值和已返回分组内占比；原始值不变，占比先归一化再求和，避免溢出。
 
 侧栏、实例选择器和管理视图统一使用图标区分分析视图与数据视图，并提供可访问的类型说明。图表与指标结果通过底部居中的“分析 / 数据表”标签切换；切换只影响本地展示，不发起查询或保存，数据表首次打开后保留当前页。图表配置不支持绘制时在分析模式显示原因，并提供“查看数据表”操作，不自动切换模式或覆盖图表配置。
+
+`ViewPage` / `ViewPageContent` 的公共参数为 `engine`、`extensions`、`filterContext`、`className` 和 `initialSidebarCollapsed`（`ViewPage` 还接收绑定的 `error`）。记录专用选项 `selectable`、`autoRefreshPaused`、`renderToolbar`、`renderCard`、`renderPagination` 统一放在 `record` 对象内，只作用于记录视图；独立 `RecordView` 仍直接接收这些参数。页面统一管理配置面板开关。`ViewExtensions` 在页面层组合 `RecordExtensions` 与 `AnalysisExtensions`。

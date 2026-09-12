@@ -1,6 +1,6 @@
 # Fetcher Wiki — Full Content
 
-> All documentation pages inlined for LLM consumption. Generated 2026-09-11.
+> All documentation pages inlined for LLM consumption. Generated 2026-09-12.
 
 ## Overview
 
@@ -1397,7 +1397,7 @@ export function OrderPage({
   scopeKey: string;
 }) {
   const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
-  return <ViewPage {...binding} selectable />;
+  return <ViewPage {...binding} record={{ selectable: true }} />;
 }
 ```
 
@@ -1518,7 +1518,7 @@ A numeric column can select several of SUM/AVG/MIN/MAX, subject to `summaryFunct
 
 ## Global runtime controls
 
-Manual refresh, automatic refresh and page expansion are in the global toolbar. Automatic refresh offers 30 seconds, 1 minute and 5 minutes with a countdown; it does not change saved query configuration. Pause external business work through `autoRefreshPaused`. Hidden-page and active-work guards prevent overlapping automatic reads.
+Manual refresh, automatic refresh and page expansion are in the global toolbar. Automatic refresh offers 30 seconds, 1 minute and 5 minutes with a countdown; it does not change saved query configuration. Pause external business work through `record.autoRefreshPaused` on pages (`autoRefreshPaused` on standalone `RecordView`). Hidden-page and active-work guards prevent overlapping automatic reads.
 
 Expansion fills the page area and exits with Escape; it is not the browser Fullscreen API. Query errors, summary errors and action errors retain their own recovery positions. During background refresh, the last successful rows remain usable; first load uses Spin and empty results use an icon.
 
@@ -1619,7 +1619,7 @@ Always import `styles.css`. It contains the components and default Neutral appea
 
 `ViewTheme` is an optional `/react` wrapper. `theme?: string` accepts built-in or arbitrary user names, `appearance` accepts `light`, `dark` or `system`, and `density` accepts `comfortable` or `compact`. Omitted values inherit. `ViewThemeStyle` accepts React CSS properties plus typed `--fve-*` entries for inline overrides. CSS remains the base API.
 
-`renderToolbar` and `renderPagination` are available on `ViewPage`, `ViewPageContent` and `RecordView`. Their readonly contexts provide `defaultContent`, relevant state and instance-bound controlled operations. Return `defaultContent` to keep the standard region, wrap it to add UI, or return `null` to hide it. Render the default node at most once. The callback is a render function, so return a component when Hooks or local state are needed. The library isolates render failures by region; event-handler and async-operation failures still belong to application error handling.
+`renderToolbar` and `renderPagination` are passed inside `record` on `ViewPage`/`ViewPageContent`, and directly on `RecordView`. Their readonly contexts provide `defaultContent`, relevant state and instance-bound controlled operations. Return `defaultContent` to keep the standard region, wrap it to add UI, or return `null` to hide it. Render the default node at most once. The callback is a render function, so return a component when Hooks or local state are needed. The library isolates render failures by region; event-handler and async-operation failures still belong to application error handling.
 
 Stable styling hooks are `data-slot="record-view"`, `record-global-toolbar`, `record-toolbar`, `record-applied-filters` and `record-pagination`. Internal DOM nesting and utility classes may change. The full global toolbar remains fixed because it owns refresh and expansion lifecycles.
 
@@ -1763,8 +1763,10 @@ export function Orders({
   return (
     <ViewPage
       {...binding}
-      selectable
-      renderToolbar={context => <OrdersToolbar context={context} />}
+      record={{
+        selectable: true,
+        renderToolbar: context => <OrdersToolbar context={context} />,
+      }}
     />
   );
 }
@@ -1782,18 +1784,20 @@ CSS custom-property aliases resolve before inheritance. Define derived values at
 
 ### Custom card content
 
-Use `renderCard` on `ViewPage`, `ViewPageContent`, `RecordView` or `RecordCardList` to replace a card's content. The callback receives readonly record, rowKey, definition, instance, index, selected, defaultContent and an instance-bound refresh method. Return your own component for a custom information structure, or wrap defaultContent to keep the configured fields. Selection, grid, paging and error isolation remain library-managed. The callback is not persisted; default card settings affect only defaultContent.
+Use `record.renderCard` on `ViewPage`/`ViewPageContent`, or `renderCard` on standalone `RecordView`/`RecordCardList` to replace a card's content. The callback receives readonly record, rowKey, definition, instance, index, selected, defaultContent and an instance-bound refresh method. Return your own component for a custom information structure, or wrap defaultContent to keep the configured fields. Selection, grid, paging and error isolation remain library-managed. The callback is not persisted; default card settings affect only defaultContent.
 
 ```tsx
 <ViewPage
   {...pageProps}
-  renderCard={({ record, rowKey, selected }) => (
-    <article>
-      <h2>{String(rowKey)}</h2>
-      <p>{String(record.amount)}</p>
-      {selected && <span>Selected</span>}
-    </article>
-  )}
+  record={{
+    renderCard: ({ record, rowKey, selected }) => (
+      <article>
+        <h2>{String(rowKey)}</h2>
+        <p>{String(record.amount)}</p>
+        {selected && <span>Selected</span>}
+      </article>
+    ),
+  }}
 />
 ```
 
@@ -15322,7 +15326,7 @@ export function OrderPage({
   scopeKey: string;
 }) {
   const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
-  return <ViewPage {...binding} selectable />;
+  return <ViewPage {...binding} record={{ selectable: true }} />;
 }
 ```
 
@@ -15463,7 +15467,6 @@ For pure COUNT/SUM compilation with these same filter configurations, see [Pure 
 | `RecordTable`          | definition, instance, appliedFilter, rows, selection/column/sort callbacks, refresh | Controlled table; caller owns requests and state        |
 | `RecordColumnSettings` | definition, columns, onChange                                                       | Controlled column configuration                         |
 
-`ViewPage`/`RecordView` accept `extensions`, `filterContext`, `selectable` (default false), `autoRefreshPaused` (default false), and `className`. ViewPage also accepts `initialSidebarCollapsed`; RecordView has `toolbarStart`. RecordTable separately accepts query/summary states and retry callbacks.
 
 The view manager shows a Set default/Clear default action only when `getCapabilitiesSnapshot().setDefault` is true. The marker follows `state.defaultInstanceId`; changing it does not navigate away from the selected view.
 
@@ -15637,6 +15640,8 @@ Implicit measure selection is resolved identically by the editor and projector b
 
 Dimension-owned display outputs are included in advanced server-sort choices. New display aliases avoid collisions with dimensions, measures and existing display outputs; changing an existing display field retains its alias. Invalid full query configuration pauses automatic refresh. If an analysis result was evicted, the chart empty state offers an explicit rerun when the current query is valid; it does not change automatic loading policy. Unconditional element filters are described as all records in the executed summary.
 
+`ViewPage` / `ViewPageContent` accept shared `engine`, `extensions`, `filterContext`, `className` and `initialSidebarCollapsed` props (`ViewPage` also accepts binding `error`). Put record-only `selectable`, `autoRefreshPaused`, `renderToolbar`, `renderCard` and `renderPagination` options inside `record`; these do not affect analysis views. Standalone `RecordView` still accepts them directly. The page owns configuration-panel visibility. `ViewExtensions` composes `RecordExtensions` and `AnalysisExtensions` at the page layer.
+
 </doc>
 
 <doc title="View Engine symbol index" path="reference/view-engine/symbols.md">
@@ -15647,8 +15652,8 @@ These names come from the current public entry exports and declarations. Import 
 
 ## `@ahoo-wang/fetcher-view-engine`
 
-| Symbol                            | Declaration                                                                                                                                                  |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Symbol                            | Declaration                                                                                                                                              |
+| --- | --- |
 | `adaptWowAnalysisSchema`          | [wowAnalysis.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L63)                                     |
 | `ANALYSIS_VISUALIZATIONS`         | [analysisVisualizations.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L15)               |
 | `AnalysisCapability`              | [analysisModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L64)                                 |
@@ -15671,15 +15676,15 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
 | `AnalysisViewInstance`            | [viewModel.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L154)                                      |
 | `AnalysisVisualizationType`       | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
-| `calculateRecordSummary`          | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
-| `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
+| `calculateRecordSummary` | [recordSummary.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L70) |
+| `clearBuiltinFilterProps` | [filterBuiltinCompiler.ts:324](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L324) |
 | `clearFilterValues`               | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
 | `compileAnalysis`                 | [analysisCompiler.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L214)                         |
 | `compileAnalysisExpression`       | [analysisCompiler.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L72)                           |
-| `compileBuiltinFilter`            | [filterBuiltinCompiler.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L172)                 |
+| `compileBuiltinFilter` | [filterBuiltinCompiler.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L178) |
 | `compileFilterConfiguration`      | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
 | `createFilterConfiguration`       | [filterConfigurationState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationState.ts#L42)             |
-| `createRecordSummaryQuery`        | [recordSummary.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L112)                                 |
+| `createRecordSummaryQuery` | [recordSummary.ts:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L117) |
 | `DeepReadonly`                    | [types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/lib/types.ts#L15)                                                      |
 | `FILTER_OPERATORS`                | [filterOperators.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L19)                               |
 | `FilterApplyResult`               | [filterModel.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L124)                                     |
@@ -15705,20 +15710,20 @@ These names come from the current public entry exports and declarations. Import 
 | `FilterScalarDraftValue`          | [filterModel.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L58)                                       |
 | `FilterValidationError`           | [filterModel.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L76)                                       |
 | `formatAnalysisValue`             | [analysisFormatting.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisFormatting.ts#L31)                       |
-| `formatRecordNumber`              | [recordValueFormat.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordValueFormat.ts#L97)                           |
+| `formatRecordNumber` | [recordValueFormat.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordValueFormat.ts#L99) |
 | `getFieldOperators`               | [filterOperators.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L184)                             |
 | `getRecordColumnPinning`          | [recordColumns.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L19)                                   |
 | `getRecordKey`                    | [recordData.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L32)                              |
 | `getRecordSummaryFunctions`       | [recordPresentation.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L54)                         |
 | `getRecordSummaryMetrics`         | [recordPresentation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L21)                         |
-| `isSimpleFilter`                  | [filterNodes.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L40)                                       |
+| `isSimpleFilter` | [filterNodes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L45) |
 | `MAX_ANALYSIS_ELEMENTS`           | [analysisModel.ts:156](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L156)                               |
 | `MemoryViewHost`                  | [MemoryViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L27)                                 |
 | `MemoryViewHostOptions`           | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
-| `newFilterNode`                   | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
+| `newFilterNode` | [filterNodes.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L26) |
 | `orderRecordColumns`              | [recordColumns.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L29)                                   |
-| `projectAnalysis`                 | [analysisProjection.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L114)                     |
-| `readRecordSummaryResult`         | [recordSummary.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L140)                                 |
+| `projectAnalysis` | [analysisProjection.ts:115](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L115) |
+| `readRecordSummaryResult` | [recordSummary.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L145) |
 | `readRecordValue`                 | [recordData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L18)                              |
 | `RECORD_COLUMN_DEFAULT_WIDTH`     | [recordColumns.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L46)                                   |
 | `RECORD_COLUMN_MAX_WIDTH`         | [recordColumns.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L44)                                   |
@@ -15749,18 +15754,18 @@ These names come from the current public entry exports and declarations. Import 
 | `resolveRecordPresentation`       | [resolveRecordPresentation.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/resolveRecordPresentation.ts#L27)           |
 | `sameFilterQuery`                 | [filterTree.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTree.ts#L24)                                         |
 | `SaveAsScope`                     | [viewModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L85)                                        |
-| `validateAnalysisPresentation`    | [analysisProjection.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L29)                       |
+| `validateAnalysisPresentation` | [analysisProjection.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L30) |
 | `validateAnalysisResult`          | [analysisResult.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L23)                               |
-| `validateFilterConfiguration`     | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
+| `validateFilterConfiguration` | [filterConfigurationValidation.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L120) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
-| `validateViewDefinition`          | [definitionValidation.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L194)        |
-| `validateViewInstance`            | [instanceValidation.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L30)              |
+| `validateViewDefinition` | [definitionValidation.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/definitionValidation.ts#L196) |
+| `validateViewInstance` | [instanceValidation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/instanceValidation.ts#L21) |
 | `ViewCapabilities`                | [viewModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L176)                                      |
-| `ViewCreateContext`               | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L40)                       |
+| `ViewCreateContext` | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L40) |
 | `ViewCreateInput`                 | [viewModel.ts:159](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L159)                                      |
 | `ViewDefinition`                  | [viewModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L64)                                        |
 | `ViewDefinitionService`           | [ViewHost.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L28)                                          |
-| `ViewDeleteResult`                | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
+| `ViewDeleteResult` | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L45) |
 | `ViewEngine`                      | [ViewEngine.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L63)                                         |
 | `ViewEngineOptions`               | [viewModel.ts:202](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L202)                                      |
 | `ViewEngineState`                 | [viewModel.ts:303](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L303)                                      |
@@ -15773,11 +15778,11 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewInstancePermissions`         | [viewModel.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L166)                                      |
 | `ViewInstanceService`             | [ViewHost.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L32)                                          |
 | `ViewPermissionService`           | [ViewHost.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L53)                                          |
-| `ViewPermissionSnapshot`          | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
+| `ViewPermissionSnapshot` | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L48) |
 | `ViewPreferenceService`           | [ViewHost.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L48)                                          |
 | `ViewScope`                       | [viewModel.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L83)                                        |
-| `ViewServiceError`                | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L30)                       |
-| `ViewServiceErrorCode`            | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L19)                       |
+| `ViewServiceError` | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L30) |
+| `ViewServiceErrorCode` | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L19) |
 | `ViewSession`                     | [viewModel.ts:302](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L302)                                      |
 | `ViewSource`                      | [viewModel.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L196)                                      |
 | `WowAnalysisSchema`               | [wowAnalysis.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L34)                                     |
@@ -15786,20 +15791,20 @@ These names come from the current public entry exports and declarations. Import 
 ## `@ahoo-wang/fetcher-view-engine/react`
 
 | Symbol                            | Declaration                                                                                                                                              |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --- | --- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:811](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L811)                       |
+| `AnalysisEditor` | [AnalysisEditor.tsx:726](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L726) |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
-| `AnalysisView`                    | [AnalysisView.tsx:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L97)                             |
-| `AnalysisViewProps`               | [AnalysisView.tsx:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L87)                             |
+| `AnalysisView` | [AnalysisView.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L69) |
+| `AnalysisViewProps` | [AnalysisView.tsx:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L59) |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
 | `Calendar`                        | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                                |
 | `CellOption`                      | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                                 |
-| `CellRendererProps`               | [recordReactTypes.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L83)                         |
+| `CellRendererProps` | [recordReactTypes.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L82) |
 | `CellStatusTone`                  | [StatusCell.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L24)                             |
 | `CellTone`                        | [StatusCell.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L23)                             |
 | `CellValue`                       | [cellValue.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L14)                                 |
@@ -15832,9 +15837,9 @@ These names come from the current public entry exports and declarations. Import 
 | `FilterTextValuesProps`           | [FilterTextValues.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTextValues.tsx#L20)                       |
 | `FilterTimeInput`                 | [FilterTimeInput.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTimeInput.tsx#L51)                         |
 | `FilterTimeInputProps`            | [FilterTimeInput.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTimeInput.tsx#L41)                         |
-| `FilterValueEditor`               | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)                     |
-| `FilterValueEditorProps`          | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)                     |
-| `GlobalActionsRendererProps`      | [recordReactTypes.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L73)                         |
+| `FilterValueEditor` | [FilterValueEditor.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L49) |
+| `FilterValueEditorProps` | [FilterValueEditor.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L37) |
+| `GlobalActionsRendererProps` | [recordReactTypes.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L72) |
 | `IndexedDBViewHost`               | [IndexedDBViewHost.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L25)                       |
 | `IndexedDBViewHostOptions`        | [IndexedDBViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L21)                       |
 | `InputGroup`                      | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)                          |
@@ -15850,21 +15855,22 @@ These names come from the current public entry exports and declarations. Import 
 | `PopoverContent`                  | [popover.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L61)                                  |
 | `PopoverTitle`                    | [popover.tsx:115](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L115)                                |
 | `PopoverTrigger`                  | [popover.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L57)                                  |
-| `RecordActionsContext`            | [recordReactTypes.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L63)                         |
+| `RecordActionsContext` | [recordReactTypes.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L62) |
 | `RecordCardList`                  | [RecordCardList.tsx:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardList.tsx#L62)                           |
-| `RecordCardListProps`             | [recordReactTypes.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L145)                       |
-| `RecordCardRenderContext`         | [recordReactTypes.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L134)                       |
+| `RecordCardListProps` | [recordReactTypes.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L144) |
+| `RecordCardRenderContext` | [recordReactTypes.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L133) |
 | `RecordCardSettings`              | [RecordCardSettings.tsx:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardSettings.tsx#L84)                   |
-| `RecordCardSettingsProps`         | [recordReactTypes.ts:161](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L161)                       |
+| `RecordCardSettingsProps` | [recordReactTypes.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L160) |
 | `RecordColumnSettings`            | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46)               |
-| `RecordColumnSettingsProps`       | [recordReactTypes.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L127)                       |
-| `RecordPaginationRenderContext`   | [recordReactTypes.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L46)                         |
+| `RecordColumnSettingsProps` | [recordReactTypes.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L126) |
+| `RecordExtensions` | [recordReactTypes.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L93) |
+| `RecordPaginationRenderContext` | [recordReactTypes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L45) |
 | `RecordTable`                     | [RecordTable.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordTable.tsx#L23)                                 |
-| `RecordTableProps`                | [recordReactTypes.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L104)                       |
-| `RecordToolbarRenderContext`      | [recordReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L33)                         |
+| `RecordTableProps` | [recordReactTypes.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L103) |
+| `RecordToolbarRenderContext` | [recordReactTypes.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L32) |
 | `RecordView`                      | [RecordView.tsx:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordView.tsx#L77)                                   |
 | `RecordViewProps`                 | [RecordView.tsx:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordView.tsx#L60)                                   |
-| `RowActionsRendererProps`         | [recordReactTypes.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L79)                         |
+| `RowActionsRendererProps` | [recordReactTypes.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L78) |
 | `Select`                          | [select.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L24)                                    |
 | `SelectContent`                   | [select.tsx:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L104)                                  |
 | `SelectGroup`                     | [select.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L56)                                    |
@@ -15876,16 +15882,16 @@ These names come from the current public entry exports and declarations. Import 
 | `StatusCellProps`                 | [StatusCell.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L28)                             |
 | `TagsCell`                        | [TagsCell.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L36)                                 |
 | `TagsCellProps`                   | [TagsCell.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L30)                                 |
-| `TextCell`                        | [TextCell.tsx:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L80)                                 |
+| `TextCell` | [TextCell.tsx:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L83) |
 | `TextCellProps`                   | [TextCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L26)                                 |
-| `ToolbarActionsRendererProps`     | [recordReactTypes.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L78)                         |
-| `useViewEngine`                   | [useViewEngine.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L88)                                |
-| `UseViewEngineOptions`            | [useViewEngine.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L19)                                |
-| `ViewEngineBinding`               | [useViewEngine.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L26)                                |
-| `ViewExtensions`                  | [recordReactTypes.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L94)                         |
+| `ToolbarActionsRendererProps` | [recordReactTypes.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L77) |
+| `useViewEngine` | [useViewEngine.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L87) |
+| `UseViewEngineOptions` | [useViewEngine.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L18) |
+| `ViewEngineBinding` | [useViewEngine.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L25) |
+| `ViewExtensions` | [viewReactTypes.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/viewReactTypes.ts#L18) |
 | `ViewPage`                        | [ViewPage.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPage.tsx#L26)                                         |
-| `ViewPageContent`                 | [ViewPageContent.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L39)                           |
-| `ViewPageContentProps`            | [ViewPageContent.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L32)                           |
+| `ViewPageContent` | [ViewPageContent.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L52) |
+| `ViewPageContentProps` | [ViewPageContent.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L35) |
 | `ViewPageProps`                   | [ViewPage.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPage.tsx#L21)                                         |
 | `ViewTheme`                       | [ViewTheme.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/theme/ViewTheme.tsx#L33)                                      |
 | `ViewThemeProps`                  | [ViewTheme.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/theme/ViewTheme.tsx#L20)                                      |
@@ -21720,7 +21726,7 @@ export function OrderPage({
   scopeKey: string;
 }) {
   const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
-  return <ViewPage {...binding} selectable />;
+  return <ViewPage {...binding} record={{ selectable: true }} />;
 }
 ```
 
@@ -21841,7 +21847,7 @@ const column: RecordColumn = {
 
 ## 全局运行时工具
 
-手动刷新、自动刷新与页面展开放在顶部全局工具栏。自动刷新提供 30 秒、1 分钟、5 分钟和倒计时，不会修改已保存的查询配置。业务写入期间可传入 `autoRefreshPaused`；页面不可见或已有工作时，运行时会阻止重叠的自动查询。
+手动刷新、自动刷新与页面展开放在顶部全局工具栏。自动刷新提供 30 秒、1 分钟、5 分钟和倒计时，不会修改已保存的查询配置。业务写入期间在页面上可传入 `record.autoRefreshPaused`（独立 `RecordView` 使用 `autoRefreshPaused`）；页面不可见或已有工作时，运行时会阻止重叠的自动查询。
 
 展开覆盖页面区域，Escape 退出，不调用浏览器原生 Fullscreen API。查询、汇总和操作错误各自保留对应恢复入口。后台刷新期间保留最近一次成功记录，首次加载使用 Spin，空结果使用图标。
 
@@ -21942,7 +21948,7 @@ if (engine.canSetDefaultInstance()) {
 
 `ViewTheme` 是 `/react` 提供的可选包装。`theme?: string` 接受内置或任意用户主题名；`appearance` 接受 `light`、`dark` 或 `system`；`density` 接受 `comfortable` 或 `compact`。省略时继承。`ViewThemeStyle` 接受 React CSS 属性以及有类型的 `--fve-*` 行内变量。CSS 仍是基础接口。
 
-`ViewPage`、`ViewPageContent` 与 `RecordView` 支持 `renderToolbar` 和 `renderPagination`。只读上下文提供 `defaultContent`、相关状态以及绑定实例的受控操作。返回 `defaultContent` 可保留默认区域，包裹它可追加 UI，返回 `null` 可隐藏区域；默认节点最多渲染一次。回调是渲染函数，需要 Hook 或局部状态时应返回自有组件。库按区域隔离渲染错误；事件处理与异步操作错误仍由应用处理。
+`ViewPage`、`ViewPageContent` 通过 `record.renderToolbar` 和 `record.renderPagination` 接入区域回调；`RecordView` 直接接收 `renderToolbar` 和 `renderPagination`。只读上下文提供 `defaultContent`、相关状态以及绑定实例的受控操作。返回 `defaultContent` 可保留默认区域，包裹它可追加 UI，返回 `null` 可隐藏区域；默认节点最多渲染一次。回调是渲染函数，需要 Hook 或局部状态时应返回自有组件。库按区域隔离渲染错误；事件处理与异步操作错误仍由应用处理。
 
 稳定样式钩子为 `data-slot="record-view"`、`record-global-toolbar`、`record-toolbar`、`record-applied-filters` 与 `record-pagination`。内部 DOM 层级和工具类可能变化。完整全局工具栏继续固定，因为它负责刷新与展开生命周期。
 
@@ -22086,8 +22092,10 @@ export function Orders({
   return (
     <ViewPage
       {...binding}
-      selectable
-      renderToolbar={context => <OrdersToolbar context={context} />}
+      record={{
+        selectable: true,
+        renderToolbar: context => <OrdersToolbar context={context} />,
+      }}
     />
   );
 }
@@ -22105,18 +22113,20 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 
 ### 自定义卡片内容
 
-在 `ViewPage`、`ViewPageContent`、`RecordView` 或 `RecordCardList` 上使用 `renderCard` 替换单张卡片内容。回调接收只读 record、rowKey、definition、instance、index、selected、defaultContent，以及绑定当前实例的 refresh。返回自有组件可自由安排信息结构，包裹 defaultContent 则保留配置字段。选择、网格、分页和错误隔离仍由库管理。回调不持久化；默认卡片设置仅影响 defaultContent。
+在 `ViewPage`、`ViewPageContent` 上使用 `record.renderCard`，或在独立 `RecordView`、`RecordCardList` 上使用 `renderCard` 替换单张卡片内容。回调接收只读 record、rowKey、definition、instance、index、selected、defaultContent，以及绑定当前实例的 refresh。返回自有组件可自由安排信息结构，包裹 defaultContent 则保留配置字段。选择、网格、分页和错误隔离仍由库管理。回调不持久化；默认卡片设置仅影响 defaultContent。
 
 ```tsx
 <ViewPage
   {...pageProps}
-  renderCard={({ record, rowKey, selected }) => (
-    <article>
-      <h2>{String(rowKey)}</h2>
-      <p>{String(record.amount)}</p>
-      {selected && <span>已选择</span>}
-    </article>
-  )}
+  record={{
+    renderCard: ({ record, rowKey, selected }) => (
+      <article>
+        <h2>{String(rowKey)}</h2>
+        <p>{String(record.amount)}</p>
+        {selected && <span>已选择</span>}
+      </article>
+    ),
+  }}
 />
 ```
 
@@ -35632,7 +35642,7 @@ export function OrderPage({
   scopeKey: string;
 }) {
   const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
-  return <ViewPage {...binding} selectable />;
+  return <ViewPage {...binding} record={{ selectable: true }} />;
 }
 ```
 
@@ -35773,7 +35783,7 @@ interface FilterOptionSource {
 | `RecordTable`          | definition、instance、appliedFilter、rows、选择/列/排序回调、refresh | 受控表格，请求和状态由调用方拥有       |
 | `RecordColumnSettings` | definition、columns、onChange                                        | 受控列配置                             |
 
-ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默认 false）、`autoRefreshPaused`（默认 false）、`className`。ViewPage 还有 `initialSidebarCollapsed`，RecordView 有 `toolbarStart`。RecordTable 单独接收查询/汇总状态与重试回调。
+`ViewPage` / `ViewPageContent` 的公共参数为 `engine`、`extensions`、`filterContext`、`className` 和 `initialSidebarCollapsed`（`ViewPage` 还接收绑定的 `error`）。记录专用选项 `selectable`、`autoRefreshPaused`、`renderToolbar`、`renderCard`、`renderPagination` 统一放在 `record` 对象内，只作用于记录视图；独立 `RecordView` 仍直接接收这些参数。页面统一管理配置面板开关。`ViewExtensions` 在页面层组合 `RecordExtensions` 与 `AnalysisExtensions`。
 
 仅当 `getCapabilitiesSnapshot().setDefault` 为 true 时，视图管理器才显示“设为默认/取消默认”操作。标记读取 `state.defaultInstanceId`；修改默认项不会离开当前选中视图。
 
@@ -35957,8 +35967,8 @@ console.log(compiled.plan.query, result.rows);
 
 ## `@ahoo-wang/fetcher-view-engine`
 
-| 符号                              | 声明                                                                                                                                                         |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 符号                              | 声明                                                                                                                                                     |
+| --- | --- |
 | `adaptWowAnalysisSchema`          | [wowAnalysis.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L63)                                     |
 | `ANALYSIS_VISUALIZATIONS`         | [analysisVisualizations.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L15)               |
 | `AnalysisCapability`              | [analysisModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L64)                                 |
@@ -35981,15 +35991,15 @@ console.log(compiled.plan.query, result.rows);
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
 | `AnalysisViewInstance`            | [viewModel.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L154)                                      |
 | `AnalysisVisualizationType`       | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
-| `calculateRecordSummary`          | [recordSummary.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L65)                                   |
-| `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L318)                 |
+| `calculateRecordSummary` | [recordSummary.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L70) |
+| `clearBuiltinFilterProps` | [filterBuiltinCompiler.ts:324](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L324) |
 | `clearFilterValues`               | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
 | `compileAnalysis`                 | [analysisCompiler.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L214)                         |
 | `compileAnalysisExpression`       | [analysisCompiler.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L72)                           |
-| `compileBuiltinFilter`            | [filterBuiltinCompiler.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L172)                 |
+| `compileBuiltinFilter` | [filterBuiltinCompiler.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L178) |
 | `compileFilterConfiguration`      | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
 | `createFilterConfiguration`       | [filterConfigurationState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationState.ts#L42)             |
-| `createRecordSummaryQuery`        | [recordSummary.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L112)                                 |
+| `createRecordSummaryQuery` | [recordSummary.ts:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L117) |
 | `DeepReadonly`                    | [types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/lib/types.ts#L15)                                                      |
 | `FILTER_OPERATORS`                | [filterOperators.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L19)                               |
 | `FilterApplyResult`               | [filterModel.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L124)                                     |
@@ -36015,20 +36025,20 @@ console.log(compiled.plan.query, result.rows);
 | `FilterScalarDraftValue`          | [filterModel.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L58)                                       |
 | `FilterValidationError`           | [filterModel.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L76)                                       |
 | `formatAnalysisValue`             | [analysisFormatting.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisFormatting.ts#L31)                       |
-| `formatRecordNumber`              | [recordValueFormat.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordValueFormat.ts#L97)                           |
+| `formatRecordNumber` | [recordValueFormat.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordValueFormat.ts#L99) |
 | `getFieldOperators`               | [filterOperators.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L184)                             |
 | `getRecordColumnPinning`          | [recordColumns.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L19)                                   |
 | `getRecordKey`                    | [recordData.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L32)                              |
 | `getRecordSummaryFunctions`       | [recordPresentation.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L54)                         |
 | `getRecordSummaryMetrics`         | [recordPresentation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L21)                         |
-| `isSimpleFilter`                  | [filterNodes.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L40)                                       |
+| `isSimpleFilter` | [filterNodes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L45) |
 | `MAX_ANALYSIS_ELEMENTS`           | [analysisModel.ts:156](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L156)                               |
 | `MemoryViewHost`                  | [MemoryViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L27)                                 |
 | `MemoryViewHostOptions`           | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
-| `newFilterNode`                   | [filterNodes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L21)                                       |
+| `newFilterNode` | [filterNodes.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L26) |
 | `orderRecordColumns`              | [recordColumns.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L29)                                   |
-| `projectAnalysis`                 | [analysisProjection.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L114)                     |
-| `readRecordSummaryResult`         | [recordSummary.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L140)                                 |
+| `projectAnalysis` | [analysisProjection.ts:115](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L115) |
+| `readRecordSummaryResult` | [recordSummary.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L145) |
 | `readRecordValue`                 | [recordData.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L18)                              |
 | `RECORD_COLUMN_DEFAULT_WIDTH`     | [recordColumns.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L46)                                   |
 | `RECORD_COLUMN_MAX_WIDTH`         | [recordColumns.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordColumns.ts#L44)                                   |
@@ -36059,18 +36069,18 @@ console.log(compiled.plan.query, result.rows);
 | `resolveRecordPresentation`       | [resolveRecordPresentation.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/resolveRecordPresentation.ts#L27)           |
 | `sameFilterQuery`                 | [filterTree.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterTree.ts#L24)                                         |
 | `SaveAsScope`                     | [viewModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L85)                                        |
-| `validateAnalysisPresentation`    | [analysisProjection.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L29)                       |
+| `validateAnalysisPresentation` | [analysisProjection.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisProjection.ts#L30) |
 | `validateAnalysisResult`          | [analysisResult.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L23)                               |
-| `validateFilterConfiguration`     | [filterConfigurationValidation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L118) |
+| `validateFilterConfiguration` | [filterConfigurationValidation.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L120) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
-| `validateViewDefinition`          | [definitionValidation.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/definitionValidation.ts#L194)        |
-| `validateViewInstance`            | [instanceValidation.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/instanceValidation.ts#L30)              |
+| `validateViewDefinition` | [definitionValidation.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/definitionValidation.ts#L196) |
+| `validateViewInstance` | [instanceValidation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/instanceValidation.ts#L21) |
 | `ViewCapabilities`                | [viewModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L176)                                      |
-| `ViewCreateContext`               | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L40)                       |
+| `ViewCreateContext` | [viewServiceContract.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L40) |
 | `ViewCreateInput`                 | [viewModel.ts:159](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L159)                                      |
 | `ViewDefinition`                  | [viewModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L64)                                        |
 | `ViewDefinitionService`           | [ViewHost.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L28)                                          |
-| `ViewDeleteResult`                | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L45)                       |
+| `ViewDeleteResult` | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L45) |
 | `ViewEngine`                      | [ViewEngine.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L63)                                         |
 | `ViewEngineOptions`               | [viewModel.ts:202](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L202)                                      |
 | `ViewEngineState`                 | [viewModel.ts:303](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L303)                                      |
@@ -36083,11 +36093,11 @@ console.log(compiled.plan.query, result.rows);
 | `ViewInstancePermissions`         | [viewModel.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L166)                                      |
 | `ViewInstanceService`             | [ViewHost.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L32)                                          |
 | `ViewPermissionService`           | [ViewHost.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L53)                                          |
-| `ViewPermissionSnapshot`          | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L48)                       |
+| `ViewPermissionSnapshot` | [viewServiceContract.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L48) |
 | `ViewPreferenceService`           | [ViewHost.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L48)                                          |
 | `ViewScope`                       | [viewModel.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L83)                                        |
-| `ViewServiceError`                | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L30)                       |
-| `ViewServiceErrorCode`            | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/viewServiceContract.ts#L19)                       |
+| `ViewServiceError` | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L30) |
+| `ViewServiceErrorCode` | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L19) |
 | `ViewSession`                     | [viewModel.ts:302](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L302)                                      |
 | `ViewSource`                      | [viewModel.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L196)                                      |
 | `WowAnalysisSchema`               | [wowAnalysis.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L34)                                     |
@@ -36096,20 +36106,20 @@ console.log(compiled.plan.query, result.rows);
 ## `@ahoo-wang/fetcher-view-engine/react`
 
 | 符号                              | 声明                                                                                                                                                     |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --- | --- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:811](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L811)                       |
+| `AnalysisEditor` | [AnalysisEditor.tsx:726](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L726) |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
 | `AnalysisRegistration`            | [analysisReactTypes.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L30)                   |
 | `AnalysisTable`                   | [AnalysisTable.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisTable.tsx#L49)                           |
-| `AnalysisView`                    | [AnalysisView.tsx:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L97)                             |
-| `AnalysisViewProps`               | [AnalysisView.tsx:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L87)                             |
+| `AnalysisView` | [AnalysisView.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L69) |
+| `AnalysisViewProps` | [AnalysisView.tsx:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisView.tsx#L59) |
 | `Button`                          | [button.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/button.tsx#L56)                                    |
 | `Calendar`                        | [calendar.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/calendar.tsx#L32)                                |
 | `CellOption`                      | [cellValue.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L15)                                 |
-| `CellRendererProps`               | [recordReactTypes.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L83)                         |
+| `CellRendererProps` | [recordReactTypes.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L82) |
 | `CellStatusTone`                  | [StatusCell.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L24)                             |
 | `CellTone`                        | [StatusCell.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L23)                             |
 | `CellValue`                       | [cellValue.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/cellValue.ts#L14)                                 |
@@ -36142,9 +36152,9 @@ console.log(compiled.plan.query, result.rows);
 | `FilterTextValuesProps`           | [FilterTextValues.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTextValues.tsx#L20)                       |
 | `FilterTimeInput`                 | [FilterTimeInput.tsx:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTimeInput.tsx#L51)                         |
 | `FilterTimeInputProps`            | [FilterTimeInput.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterTimeInput.tsx#L41)                         |
-| `FilterValueEditor`               | [FilterValueEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L52)                     |
-| `FilterValueEditorProps`          | [FilterValueEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L40)                     |
-| `GlobalActionsRendererProps`      | [recordReactTypes.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L73)                         |
+| `FilterValueEditor` | [FilterValueEditor.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L49) |
+| `FilterValueEditorProps` | [FilterValueEditor.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/FilterValueEditor.tsx#L37) |
+| `GlobalActionsRendererProps` | [recordReactTypes.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L72) |
 | `IndexedDBViewHost`               | [IndexedDBViewHost.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L25)                       |
 | `IndexedDBViewHostOptions`        | [IndexedDBViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/IndexedDBViewHost.ts#L21)                       |
 | `InputGroup`                      | [input-group.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/input-group.tsx#L23)                          |
@@ -36160,21 +36170,22 @@ console.log(compiled.plan.query, result.rows);
 | `PopoverContent`                  | [popover.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L61)                                  |
 | `PopoverTitle`                    | [popover.tsx:115](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L115)                                |
 | `PopoverTrigger`                  | [popover.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/popover.tsx#L57)                                  |
-| `RecordActionsContext`            | [recordReactTypes.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L63)                         |
+| `RecordActionsContext` | [recordReactTypes.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L62) |
 | `RecordCardList`                  | [RecordCardList.tsx:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardList.tsx#L62)                           |
-| `RecordCardListProps`             | [recordReactTypes.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L145)                       |
-| `RecordCardRenderContext`         | [recordReactTypes.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L134)                       |
+| `RecordCardListProps` | [recordReactTypes.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L144) |
+| `RecordCardRenderContext` | [recordReactTypes.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L133) |
 | `RecordCardSettings`              | [RecordCardSettings.tsx:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardSettings.tsx#L84)                   |
-| `RecordCardSettingsProps`         | [recordReactTypes.ts:161](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L161)                       |
+| `RecordCardSettingsProps` | [recordReactTypes.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L160) |
 | `RecordColumnSettings`            | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46)               |
-| `RecordColumnSettingsProps`       | [recordReactTypes.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L127)                       |
-| `RecordPaginationRenderContext`   | [recordReactTypes.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L46)                         |
+| `RecordColumnSettingsProps` | [recordReactTypes.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L126) |
+| `RecordExtensions` | [recordReactTypes.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L93) |
+| `RecordPaginationRenderContext` | [recordReactTypes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L45) |
 | `RecordTable`                     | [RecordTable.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordTable.tsx#L23)                                 |
-| `RecordTableProps`                | [recordReactTypes.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L104)                       |
-| `RecordToolbarRenderContext`      | [recordReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L33)                         |
+| `RecordTableProps` | [recordReactTypes.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L103) |
+| `RecordToolbarRenderContext` | [recordReactTypes.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L32) |
 | `RecordView`                      | [RecordView.tsx:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordView.tsx#L77)                                   |
 | `RecordViewProps`                 | [RecordView.tsx:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordView.tsx#L60)                                   |
-| `RowActionsRendererProps`         | [recordReactTypes.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L79)                         |
+| `RowActionsRendererProps` | [recordReactTypes.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L78) |
 | `Select`                          | [select.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L24)                                    |
 | `SelectContent`                   | [select.tsx:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L104)                                  |
 | `SelectGroup`                     | [select.tsx:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/components/ui/select.tsx#L56)                                    |
@@ -36186,16 +36197,16 @@ console.log(compiled.plan.query, result.rows);
 | `StatusCellProps`                 | [StatusCell.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/StatusCell.tsx#L28)                             |
 | `TagsCell`                        | [TagsCell.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L36)                                 |
 | `TagsCellProps`                   | [TagsCell.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TagsCell.tsx#L30)                                 |
-| `TextCell`                        | [TextCell.tsx:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L80)                                 |
+| `TextCell` | [TextCell.tsx:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L83) |
 | `TextCellProps`                   | [TextCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/TextCell.tsx#L26)                                 |
-| `ToolbarActionsRendererProps`     | [recordReactTypes.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L78)                         |
-| `useViewEngine`                   | [useViewEngine.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L88)                                |
-| `UseViewEngineOptions`            | [useViewEngine.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L19)                                |
-| `ViewEngineBinding`               | [useViewEngine.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L26)                                |
-| `ViewExtensions`                  | [recordReactTypes.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L94)                         |
+| `ToolbarActionsRendererProps` | [recordReactTypes.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L77) |
+| `useViewEngine` | [useViewEngine.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L87) |
+| `UseViewEngineOptions` | [useViewEngine.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L18) |
+| `ViewEngineBinding` | [useViewEngine.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L25) |
+| `ViewExtensions` | [viewReactTypes.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/viewReactTypes.ts#L18) |
 | `ViewPage`                        | [ViewPage.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPage.tsx#L26)                                         |
-| `ViewPageContent`                 | [ViewPageContent.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L39)                           |
-| `ViewPageContentProps`            | [ViewPageContent.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L32)                           |
+| `ViewPageContent` | [ViewPageContent.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L52) |
+| `ViewPageContentProps` | [ViewPageContent.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L35) |
 | `ViewPageProps`                   | [ViewPage.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPage.tsx#L21)                                         |
 | `ViewTheme`                       | [ViewTheme.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/theme/ViewTheme.tsx#L33)                                      |
 | `ViewThemeProps`                  | [ViewTheme.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/theme/ViewTheme.tsx#L20)                                      |

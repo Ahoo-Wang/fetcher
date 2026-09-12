@@ -40,7 +40,7 @@ import type {
   RecordViewDefinition,
   RecordPresentation,
 } from '../../contracts/viewModel.js';
-import type { ViewExtensions } from '../recordReactTypes.js';
+import type { RecordExtensions } from '../recordReactTypes.js';
 import { RecordRefreshControls } from '../RecordRefreshControls.js';
 import type { ViewEngine } from '../../engine/ViewEngine.js';
 import type { useViewExpansion } from '../../view/viewExpansion.js';
@@ -66,7 +66,7 @@ export function RecordGlobalToolbar({
   engine: ViewEngine;
   definition: RecordViewDefinition;
   session: RecordSession;
-  extensions?: ViewExtensions;
+  extensions?: RecordExtensions;
   toolbarStart?: ReactNode;
   filterToolbar: FilterPanelToolbarProps;
   filtersOpen: boolean;

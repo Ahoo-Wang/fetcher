@@ -46,9 +46,9 @@ export {
   createRecordSummaryQuery,
   readRecordSummaryResult,
 } from './record/recordSummary.js';
+export { validateViewDefinition } from './contracts/validation/definitionValidation.js';
+export { validateViewInstance } from './contracts/validation/instanceValidation.js';
 export {
-  validateViewDefinition,
-  validateViewInstance,
   readRecordValue,
   getRecordKey,
   validateRecordRows,

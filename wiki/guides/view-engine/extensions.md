@@ -28,7 +28,7 @@ Always import `styles.css`. It contains the components and default Neutral appea
 
 `ViewTheme` is an optional `/react` wrapper. `theme?: string` accepts built-in or arbitrary user names, `appearance` accepts `light`, `dark` or `system`, and `density` accepts `comfortable` or `compact`. Omitted values inherit. `ViewThemeStyle` accepts React CSS properties plus typed `--fve-*` entries for inline overrides. CSS remains the base API.
 
-`renderToolbar` and `renderPagination` are available on `ViewPage`, `ViewPageContent` and `RecordView`. Their readonly contexts provide `defaultContent`, relevant state and instance-bound controlled operations. Return `defaultContent` to keep the standard region, wrap it to add UI, or return `null` to hide it. Render the default node at most once. The callback is a render function, so return a component when Hooks or local state are needed. The library isolates render failures by region; event-handler and async-operation failures still belong to application error handling.
+`renderToolbar` and `renderPagination` are passed inside `record` on `ViewPage`/`ViewPageContent`, and directly on `RecordView`. Their readonly contexts provide `defaultContent`, relevant state and instance-bound controlled operations. Return `defaultContent` to keep the standard region, wrap it to add UI, or return `null` to hide it. Render the default node at most once. The callback is a render function, so return a component when Hooks or local state are needed. The library isolates render failures by region; event-handler and async-operation failures still belong to application error handling.
 
 Stable styling hooks are `data-slot="record-view"`, `record-global-toolbar`, `record-toolbar`, `record-applied-filters` and `record-pagination`. Internal DOM nesting and utility classes may change. The full global toolbar remains fixed because it owns refresh and expansion lifecycles.
 
@@ -172,8 +172,10 @@ export function Orders({
   return (
     <ViewPage
       {...binding}
-      selectable
-      renderToolbar={context => <OrdersToolbar context={context} />}
+      record={{
+        selectable: true,
+        renderToolbar: context => <OrdersToolbar context={context} />,
+      }}
     />
   );
 }
@@ -191,18 +193,20 @@ CSS custom-property aliases resolve before inheritance. Define derived values at
 
 ### Custom card content
 
-Use `renderCard` on `ViewPage`, `ViewPageContent`, `RecordView` or `RecordCardList` to replace a card's content. The callback receives readonly record, rowKey, definition, instance, index, selected, defaultContent and an instance-bound refresh method. Return your own component for a custom information structure, or wrap defaultContent to keep the configured fields. Selection, grid, paging and error isolation remain library-managed. The callback is not persisted; default card settings affect only defaultContent.
+Use `record.renderCard` on `ViewPage`/`ViewPageContent`, or `renderCard` on standalone `RecordView`/`RecordCardList` to replace a card's content. The callback receives readonly record, rowKey, definition, instance, index, selected, defaultContent and an instance-bound refresh method. Return your own component for a custom information structure, or wrap defaultContent to keep the configured fields. Selection, grid, paging and error isolation remain library-managed. The callback is not persisted; default card settings affect only defaultContent.
 
 ```tsx
 <ViewPage
   {...pageProps}
-  renderCard={({ record, rowKey, selected }) => (
-    <article>
-      <h2>{String(rowKey)}</h2>
-      <p>{String(record.amount)}</p>
-      {selected && <span>Selected</span>}
-    </article>
-  )}
+  record={{
+    renderCard: ({ record, rowKey, selected }) => (
+      <article>
+        <h2>{String(rowKey)}</h2>
+        <p>{String(record.amount)}</p>
+        {selected && <span>Selected</span>}
+      </article>
+    ),
+  }}
 />
 ```
 

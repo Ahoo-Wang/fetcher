@@ -17,7 +17,7 @@ import type {
   ViewInstancePermissions,
 } from '../contracts/viewModel.js';
 import type { ViewHost } from '../contracts/ViewHost.js';
-import { validateViewInstance } from '../record/recordValidation.js';
+import { validateViewInstance } from '../contracts/validation/instanceValidation.js';
 
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';

@@ -21,11 +21,9 @@ import {
 } from './localViewState.js';
 import { copy, message, sameJsonState } from '../lib/snapshot.js';
 
-import {
-  validateViewDefinition,
-  validateViewInstance,
-} from './recordValidation.js';
-import { readInstanceList } from './validation/instanceValidation.js';
+import { validateViewDefinition } from '../contracts/validation/definitionValidation.js';
+import { validateViewInstance } from '../contracts/validation/instanceValidation.js';
+import { readInstanceList } from '../contracts/validation/instanceValidation.js';
 import {
   ViewServiceError,
   type ViewDeleteResult,

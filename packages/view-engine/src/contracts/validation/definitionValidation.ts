@@ -14,8 +14,8 @@
 import { ANALYSIS_LIMITS } from '../../analysis/analysisCapabilities.js';
 import { MAX_ANALYSIS_ELEMENTS } from '../../analysis/analysisModel.js';
 import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
-import { validateRecordPresentationDefaults } from './presentationValidation.js';
-import { encodeViewResourceId } from '../../contracts/viewServiceContract.js';
+import { validateRecordPresentationDefaults } from '../../record/validation/presentationValidation.js';
+import { encodeViewResourceId } from '../viewServiceContract.js';
 import { validateTimeZone } from '../../lib/timeZone.js';
 import {
   FilterOperator,
@@ -23,9 +23,9 @@ import {
   AggregationFunction,
   AggregationDateUnit,
 } from '@ahoo-wang/fetcher-wow';
-import { type ViewDefinition } from '../../contracts/viewModel.js';
-import { RECORD_SUMMARY_LABELS } from '../recordPresentation.js';
-import { formatRecordNumber } from '../recordValueFormat.js';
+import { type ViewDefinition } from '../viewModel.js';
+import { RECORD_SUMMARY_LABELS } from '../../record/recordPresentation.js';
+import { formatRecordNumber } from '../../record/recordValueFormat.js';
 import {
   assertObject,
   assertText,

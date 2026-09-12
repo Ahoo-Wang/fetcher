@@ -19,8 +19,8 @@ import type {
 } from '../contracts/viewModel.js';
 import type { ViewCreateInput } from '../contracts/viewModel.js';
 import type { ViewHost } from '../contracts/ViewHost.js';
-import { validateViewInstance } from '../record/recordValidation.js';
-import { readInstanceList } from '../record/validation/instanceValidation.js';
+import { validateViewInstance } from '../contracts/validation/instanceValidation.js';
+import { readInstanceList } from '../contracts/validation/instanceValidation.js';
 
 import { permissionsFor } from './instancePermissions.js';
 import type { EngineScope } from './EngineScope.js';
@@ -149,8 +149,11 @@ export class ViewReload {
     try {
       const gate = this.beginReloadGate(ctx);
       if (gate === RELOAD_ABORT) return;
+      const result = await this.fetchReloadResult(gate, session, ctx);
+      // Obsolete receipts must not clear the current delete-recovery marker.
+      if (stale()) return;
       const baseline = this.validateReloadResult(
-        await this.fetchReloadResult(gate, session, ctx),
+        result,
         session,
         gate.unverified,
       );

@@ -28,7 +28,7 @@ description: 注册业务渲染器、组合记录视图区域并选择局部 CSS
 
 `ViewTheme` 是 `/react` 提供的可选包装。`theme?: string` 接受内置或任意用户主题名；`appearance` 接受 `light`、`dark` 或 `system`；`density` 接受 `comfortable` 或 `compact`。省略时继承。`ViewThemeStyle` 接受 React CSS 属性以及有类型的 `--fve-*` 行内变量。CSS 仍是基础接口。
 
-`ViewPage`、`ViewPageContent` 与 `RecordView` 支持 `renderToolbar` 和 `renderPagination`。只读上下文提供 `defaultContent`、相关状态以及绑定实例的受控操作。返回 `defaultContent` 可保留默认区域，包裹它可追加 UI，返回 `null` 可隐藏区域；默认节点最多渲染一次。回调是渲染函数，需要 Hook 或局部状态时应返回自有组件。库按区域隔离渲染错误；事件处理与异步操作错误仍由应用处理。
+`ViewPage`、`ViewPageContent` 通过 `record.renderToolbar` 和 `record.renderPagination` 接入区域回调；`RecordView` 直接接收 `renderToolbar` 和 `renderPagination`。只读上下文提供 `defaultContent`、相关状态以及绑定实例的受控操作。返回 `defaultContent` 可保留默认区域，包裹它可追加 UI，返回 `null` 可隐藏区域；默认节点最多渲染一次。回调是渲染函数，需要 Hook 或局部状态时应返回自有组件。库按区域隔离渲染错误；事件处理与异步操作错误仍由应用处理。
 
 稳定样式钩子为 `data-slot="record-view"`、`record-global-toolbar`、`record-toolbar`、`record-applied-filters` 与 `record-pagination`。内部 DOM 层级和工具类可能变化。完整全局工具栏继续固定，因为它负责刷新与展开生命周期。
 
@@ -172,8 +172,10 @@ export function Orders({
   return (
     <ViewPage
       {...binding}
-      selectable
-      renderToolbar={context => <OrdersToolbar context={context} />}
+      record={{
+        selectable: true,
+        renderToolbar: context => <OrdersToolbar context={context} />,
+      }}
     />
   );
 }
@@ -191,18 +193,20 @@ CSS 自定义属性别名在继承前解析。派生值应定义在目标主题�
 
 ### 自定义卡片内容
 
-在 `ViewPage`、`ViewPageContent`、`RecordView` 或 `RecordCardList` 上使用 `renderCard` 替换单张卡片内容。回调接收只读 record、rowKey、definition、instance、index、selected、defaultContent，以及绑定当前实例的 refresh。返回自有组件可自由安排信息结构，包裹 defaultContent 则保留配置字段。选择、网格、分页和错误隔离仍由库管理。回调不持久化；默认卡片设置仅影响 defaultContent。
+在 `ViewPage`、`ViewPageContent` 上使用 `record.renderCard`，或在独立 `RecordView`、`RecordCardList` 上使用 `renderCard` 替换单张卡片内容。回调接收只读 record、rowKey、definition、instance、index、selected、defaultContent，以及绑定当前实例的 refresh。返回自有组件可自由安排信息结构，包裹 defaultContent 则保留配置字段。选择、网格、分页和错误隔离仍由库管理。回调不持久化；默认卡片设置仅影响 defaultContent。
 
 ```tsx
 <ViewPage
   {...pageProps}
-  renderCard={({ record, rowKey, selected }) => (
-    <article>
-      <h2>{String(rowKey)}</h2>
-      <p>{String(record.amount)}</p>
-      {selected && <span>已选择</span>}
-    </article>
-  )}
+  record={{
+    renderCard: ({ record, rowKey, selected }) => (
+      <article>
+        <h2>{String(rowKey)}</h2>
+        <p>{String(record.amount)}</p>
+        {selected && <span>已选择</span>}
+      </article>
+    ),
+  }}
 />
 ```
 

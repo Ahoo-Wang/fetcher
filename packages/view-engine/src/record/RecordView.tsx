@@ -38,7 +38,7 @@ import type {
   RecordPaginationRenderContext,
   RecordTableProps,
   RecordToolbarRenderContext,
-  ViewExtensions,
+  RecordExtensions,
   RecordCardRenderContext,
 } from './recordReactTypes.js';
 import {
@@ -59,7 +59,7 @@ function hasRecordCapability(
 
 export interface RecordViewProps {
   engine: ViewEngine;
-  extensions?: ViewExtensions;
+  extensions?: RecordExtensions;
   filterContext?: unknown;
   selectable?: boolean;
   /** Pause periodic reads while the host performs an external business action. */

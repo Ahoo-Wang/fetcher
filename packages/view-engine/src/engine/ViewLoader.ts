@@ -21,11 +21,9 @@ import type {
 } from '../contracts/viewModel.js';
 import { cloneSnapshot } from '../lib/types.js';
 import type { ViewHost } from '../contracts/ViewHost.js';
-import {
-  validateViewDefinition,
-  validateViewInstance,
-} from '../record/recordValidation.js';
-import { readInstanceList } from '../record/validation/instanceValidation.js';
+import { validateViewDefinition } from '../contracts/validation/definitionValidation.js';
+import { validateViewInstance } from '../contracts/validation/instanceValidation.js';
+import { readInstanceList } from '../contracts/validation/instanceValidation.js';
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import type { InstanceWork } from './InstanceWork.js';

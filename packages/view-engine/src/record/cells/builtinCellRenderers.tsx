@@ -19,7 +19,7 @@ import {
   assertObject,
   assertText,
   assertPath,
-} from '../validation/validationPrimitives.js';
+} from '../../contracts/validation/validationPrimitives.js';
 import { TextCell } from './TextCell.js';
 import { TagsCell } from './TagsCell.js';
 import { isCellValue } from './cellValue.js';

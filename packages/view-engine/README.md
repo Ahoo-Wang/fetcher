@@ -77,7 +77,7 @@ export function OrderPage({
   scopeKey: string;
 }) {
   const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
-  return <ViewPage {...binding} selectable />;
+  return <ViewPage {...binding} record={{ selectable: true }} />;
 }
 ```
 
@@ -221,7 +221,7 @@ until success and do not overlap. Automatic refresh pauses for pending filters,
 selected records, active writes, errors, hidden documents or focused editors and
 popups; later cursor pages also pause. It waits for all-record summaries before
 reading again. Failed reads retain records for manual retry. Pass
-`autoRefreshPaused` to `ViewPage`, `ViewPageContent` or `RecordView` to pause during
+`record.autoRefreshPaused` to `ViewPage`/`ViewPageContent`, or `autoRefreshPaused` to `RecordView` to pause during
 host-owned business operations. Switching instances resets the interval.
 
 The refresh button shows the selected interval and a `mm:ss` countdown computed
@@ -358,7 +358,7 @@ Select menus, dropdown menus and Popover panels use a body portal so clipping an
 
 Variable themes propagate to library portals. Structural selectors such as `.brand [data-slot=...]` do not cross a body portal, and arbitrary CSSOM stylesheet replacement without an attribute/class/inline-style change is not observed. Third-party portals must use that component's own theme-container support. Define aliases and derived values at the target theme boundary: CSS custom-property references are resolved before inheritance, so a child cannot be assumed to recompute an inherited derived value after changing its inputs. Change paired colors such as `--fve-primary` and `--fve-primary-foreground` together. The complete public variable table and region callback contracts are in the [API reference](../../skills/fetcher-view-engine/references/api.md).
 
-`ViewPage`, `ViewPageContent` and `RecordView` accept `renderToolbar` and `renderPagination`. Each callback receives readonly state, the default region node and instance-bound controlled operations. Return the default node to preserve it, wrap it to compose UI, or return `null` to hide it. Return a component when the extension needs Hooks or local state.
+`ViewPage` and `ViewPageContent` accept `record.renderToolbar` and `record.renderPagination`; standalone `RecordView` accepts `renderToolbar` and `renderPagination` directly. Each callback receives readonly state, the default region node and instance-bound controlled operations. Return the default node to preserve it, wrap it to compose UI, or return `null` to hide it. Return a component when the extension needs Hooks or local state.
 
 `FilterDatePicker` uses the shadcn Calendar with a Chinese locale and a controlled `Date | undefined`. `FilterTimeInput` combines a text input with hour/minute/second Select controls; it preserves incomplete input and accepts `HH:mm` or `HH:mm:ss`, with whole-second precision at most. Restored fractional clock values are truncated to seconds when displayed or edited. Both accept `inline` for composition inside `FieldFilter`. The host owns timezone conversion and applying the query. Unset values are valid: keep the editor visible and omit its value-dependent predicate on Query. If no predicates remain, apply `filter.matchAll()`. A date/time pair is unset only when both parts are empty; partial values require completion. Clock selectors preserve the other typed segments during partial input. Malformed nonempty input remains invalid; value-free operators and explicit null/zero/false literals retain their Wow semantics.
 
@@ -600,3 +600,5 @@ Analysis uses three regions: a right-side query Sheet, central results, and a le
 Analysis configuration keeps a single mounted editor subtree across desktop/dialog placement and dialog closure, preserving extension-local drafts and validity. `DialogContent.keepMounted` (default `false`) retains hidden dialog content when needed. Pie/donut charts include persistent per-group values and shares of returned groups; values remain unchanged and ratios are normalized before summation to avoid overflow.
 
 View-kind icons are consistent in the sidebar, instance selector and view manager, with accessible type descriptions. Chart and metric results use centered bottom Analysis/Data table tabs. Switching tabs is local, does not query or save, and retains the returned-table page after its first opening. Unsupported chart configurations show their reason in Analysis mode and offer an explicit action to view the data table; neither mode is disabled or selected implicitly.
+
+`ViewPage` / `ViewPageContent` accept shared `engine`, `extensions`, `filterContext`, `className` and `initialSidebarCollapsed` props (`ViewPage` also accepts binding `error`). Put record-only `selectable`, `autoRefreshPaused`, `renderToolbar`, `renderCard` and `renderPagination` options inside `record`; these do not affect analysis views. Standalone `RecordView` still accepts them directly. The page owns configuration-panel visibility. `ViewExtensions` composes `RecordExtensions` and `AnalysisExtensions` at the page layer.

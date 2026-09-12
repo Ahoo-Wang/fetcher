@@ -32,7 +32,7 @@ import {
   assertObject,
   assertText,
   validateReference,
-} from './validationPrimitives.js';
+} from '../../contracts/validation/validationPrimitives.js';
 
 export function validateRecordTableConfig(
   value: unknown,
