@@ -62,3 +62,9 @@ export function OrderPage({
 未知写入结果单独处理：请求发出后的超时、网络错误或 UNKNOWN_OUTCOME 保留原操作，通过 reloadInstance 核对。未知创建重用原 requestId 与提交体，换新 requestId 可能产生重复。未知删除保留原身份与 revision。默认偏好、删除回执和跨标签页事务仍由宿主负责。内置内存/浏览器宿主是参考适配器，不是生产授权边界。
 
 limits 默认：加载 15,000 ms，查询/写入 30,000 ms，4 个并发查询，5 份保留结果集，配置 262,144 字节。结果回收不会清除工作草稿或恢复状态。晚到读取不能覆盖新请求或不同结果范围；取消不作为用户查询失败。可选 onDiagnostic 只接收操作身份、类型、阶段、耗时及可选错误码，不携带查询/行内容，回调异常被隔离。部署时仍需核验宿主/后端契约和浏览器流程，具备这些 API 不代表生产验收完成。
+
+## 独立运行位置
+
+引擎加载后，`engine.openPosition(instance, definition)` 创建独立的记录或分析运行位置。每次打开的 `identity.id` 不同，`identity.instanceId` 保留保存身份。使用 `getSnapshot()` 读取状态、`subscribe(listener)` 订阅，记录通过 `commands.refresh()` 查询，分析首次执行通过 `commands.run()`。分析的 `refresh()` 保留既有安全自动刷新策略。打开位置本身不查询。
+
+各位置使用自己的定义，重复引用同一保存实例时也有独立的分页、选择和结果。位置不加入实例导航，不占用普通历史结果缓存预算。所在界面关闭时调用 `dispose()`，旧命令随后拒绝执行。位置会话暴露 `positionId`，该值不持久化。`engine.save(identity.id)` 不允许保存运行位置；持久化配置应编辑原来的受管理实例。
