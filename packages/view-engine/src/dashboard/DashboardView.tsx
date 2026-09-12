@@ -21,6 +21,7 @@ import {
   DashboardPanelBoundary,
   DashboardPanelContent,
 } from './DashboardPanelContent.js';
+import { DashboardContent } from './DashboardContent.js';
 import { DashboardSettings } from './DashboardSettings.js';
 import { DashboardFilterSettings } from './DashboardFilterSettings.js';
 import { restorePanelLayouts } from './dashboardLayout.js';
@@ -199,7 +200,7 @@ export function DashboardView({
             取消布局编辑
           </Button>
           <span className="fve:text-xs fve:text-muted-foreground">
-            拖动卡片移动，右下角调整宽高；Escape取消当前拖动。方向键或“位置与尺寸”也可调整。
+            拖动卡片移动，右下角调整宽高；Escape取消当前拖动。聚焦移动或尺寸按钮后，可用方向键调整。
           </span>
         </div>
       )}
@@ -240,6 +241,7 @@ export function DashboardView({
         repair={repair}
       />
       <DashboardSettings
+        key={`${runtime.identity}:${snapshot.session.editorEpoch}`}
         runtime={runtime}
         snapshot={snapshot}
         editing={editing}
@@ -248,11 +250,11 @@ export function DashboardView({
         <div className="fve:rounded-lg fve:border fve:border-dashed fve:p-8 fve:text-center">
           <h2 className="fve:font-medium">仪表盘还没有面板</h2>
           <p className="fve:mt-2 fve:text-sm fve:text-muted-foreground">
-            {runtime.canDiscover
-              ? snapshot.editable
-                ? '添加已保存的视图，组成你的业务概览。'
-                : '请联系视图维护者添加面板。'
-              : '宿主尚未提供视图候选，暂时无法添加面板。'}
+            {snapshot.editable
+              ? runtime.canDiscover
+                ? '添加已保存的视图、Markdown、链接或图片，组成你的业务概览。'
+                : '添加 Markdown、链接或图片，组成你的业务概览。'
+              : '请联系视图维护者添加面板。'}
           </p>
         </div>
       )}
@@ -262,78 +264,83 @@ export function DashboardView({
             panels={snapshot.config.panels}
             enabled={editing && snapshot.editable}
             onCommit={panels => run(() => commitLayout(panels))}
-            title={id =>
-              snapshot.panels[id]?.instance?.title ??
-              snapshot.config.panels.find(panel => panel.id === id)
-                ?.instanceId ??
-              '视图面板'
-            }
+            title={id => {
+              const panel = snapshot.config.panels.find(item => item.id === id);
+              return panel?.kind === 'view'
+                ? (snapshot.panels[id]?.instance?.title ?? panel.instanceId)
+                : (panel?.title ?? '面板');
+            }}
           >
-            {panel => (
-              <DashboardPanelBoundary panelId={panel.id}>
-                <div
-                  className="fve:px-4 fve:pt-3 fve:text-xs fve:text-muted-foreground"
-                  aria-label="已应用全局筛选"
-                >
-                  {!snapshot.applied.filters.length
-                    ? '已应用全局筛选：无'
-                    : snapshot.applied.filters.map((item, index) => (
-                        <p key={item.id} className="fve:break-words">
-                          筛选 {index + 1}：
-                          {!snapshot.applied.panels.some(
-                            applied =>
-                              applied.id === panel.id &&
-                              applied.instanceId === panel.instanceId,
-                          )
-                            ? '尚未应用到此引用'
-                            : item.excludedPanelIds.includes(panel.id)
-                              ? '不参与'
-                              : item.bindings.some(
-                                    binding => binding.panelId === panel.id,
-                                  )
-                                ? (describeConfiguredFilter(
-                                    item.filters.root,
-                                    runtime.definition.fields,
-                                    runtime.definition.allowedOperators,
-                                    runtime.filterCompilers,
-                                    runtime.definition.timeZone,
-                                  )?.text ?? '已应用条件')
-                                : '尚未应用到此面板'}
-                        </p>
-                      ))}
-                  {snapshot.pending && (
-                    <p>新草稿尚未应用，当前结果仍使用上次查询口径。</p>
+            {panel =>
+              panel.kind !== 'view' ? (
+                <DashboardContent panel={panel} />
+              ) : (
+                <DashboardPanelBoundary panelId={panel.id}>
+                  <div
+                    className="fve:px-4 fve:pt-3 fve:text-xs fve:text-muted-foreground"
+                    aria-label="已应用全局筛选"
+                  >
+                    {!snapshot.applied.filters.length
+                      ? '已应用全局筛选：无'
+                      : snapshot.applied.filters.map((item, index) => (
+                          <p key={item.id} className="fve:break-words">
+                            筛选 {index + 1}：
+                            {!snapshot.applied.panels.some(
+                              applied =>
+                                applied.kind === 'view' &&
+                                applied.id === panel.id &&
+                                applied.instanceId === panel.instanceId,
+                            )
+                              ? '尚未应用到此引用'
+                              : item.excludedPanelIds.includes(panel.id)
+                                ? '不参与'
+                                : item.bindings.some(
+                                      binding => binding.panelId === panel.id,
+                                    )
+                                  ? (describeConfiguredFilter(
+                                      item.filters.root,
+                                      runtime.definition.fields,
+                                      runtime.definition.allowedOperators,
+                                      runtime.filterCompilers,
+                                      runtime.definition.timeZone,
+                                    )?.text ?? '已应用条件')
+                                  : '尚未应用到此面板'}
+                          </p>
+                        ))}
+                    {snapshot.pending && (
+                      <p>新草稿尚未应用，当前结果仍使用上次查询口径。</p>
+                    )}
+                  </div>
+                  {snapshot.panels[panel.id] && (
+                    <DashboardPanelContent
+                      panel={snapshot.panels[panel.id]}
+                      positionLabel={`面板 ${[...snapshot.config.panels].sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x).findIndex(item => item.id === panel.id) + 1}：${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}`}
+                      extensions={extensions}
+                      compilers={runtime.filterCompilers}
+                      onRefresh={() => runtime.refresh(panel.id)}
+                      onReload={() => runtime.reloadReference(panel.id)}
+                      onRepair={
+                        snapshot.editable
+                          ? () => {
+                              setConfiguring(true);
+                              setRepair(value => ({
+                                panelId: panel.id,
+                                filterId: snapshot.panels[panel.id]?.filterId,
+                                version: (value?.version ?? 0) + 1,
+                              }));
+                            }
+                          : undefined
+                      }
+                      onOpenOriginal={
+                        runtime.canOpenOriginal
+                          ? () => runtime.openOriginal(panel.id)
+                          : undefined
+                      }
+                    />
                   )}
-                </div>
-                {snapshot.panels[panel.id] && (
-                  <DashboardPanelContent
-                    panel={snapshot.panels[panel.id]}
-                    positionLabel={`面板 ${[...snapshot.config.panels].sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x).findIndex(item => item.id === panel.id) + 1}：${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}`}
-                    extensions={extensions}
-                    compilers={runtime.filterCompilers}
-                    onRefresh={() => runtime.refresh(panel.id)}
-                    onReload={() => runtime.reloadReference(panel.id)}
-                    onRepair={
-                      snapshot.editable
-                        ? () => {
-                            setConfiguring(true);
-                            setRepair(value => ({
-                              panelId: panel.id,
-                              filterId: snapshot.panels[panel.id]?.filterId,
-                              version: (value?.version ?? 0) + 1,
-                            }));
-                          }
-                        : undefined
-                    }
-                    onOpenOriginal={
-                      runtime.canOpenOriginal
-                        ? () => runtime.openOriginal(panel.id)
-                        : undefined
-                    }
-                  />
-                )}
-              </DashboardPanelBoundary>
-            )}
+                </DashboardPanelBoundary>
+              )
+            }
           </DashboardLayout>
         </Suspense>
       )}

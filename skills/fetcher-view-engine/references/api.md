@@ -1118,7 +1118,7 @@ Dimension-owned display outputs are included in advanced server-sort choices. Ne
 
 ## Dashboard composition
 
-Declare `dashboard: true` on a definition to enable saved `DashboardViewInstance` values. A pure dashboard definition needs no `sourceId`; record/analysis capabilities still require one. Its `config` is `{ schemaVersion: 1, panels, filters }`. Each panel is `{ id, instanceId, layout: { x, y, w, h } }`: stable panel IDs and integer grid coordinates/sizes. The grid has 12 columns; x/y are nonnegative, w is 1–12, x+w ≤ 12, h is 1–100, and y+h ≤ 10000. References must resolve to record or analysis instances; duplicate references get independent runtime positions.
+Declare `dashboard: true` on a definition to enable saved `DashboardViewInstance` values. A pure dashboard definition needs no `sourceId`; record/analysis capabilities still require one. Its `config` is `{ schemaVersion: 1, panels, filters }`. A data-reference panel is `{ kind: 'view', id, instanceId, layout: { x, y, w, h } }`: stable panel IDs and integer grid coordinates/sizes. The grid has 12 columns; x/y are nonnegative, w is 1–12, x+w ≤ 12, h is 1–100, and y+h ≤ 10000. References must resolve to record or analysis instances; duplicate references get independent runtime positions.
 
 ```ts
 const definition = {
@@ -1142,6 +1142,7 @@ dashboard.edit(config => ({
   ...config,
   panels: [
     {
+      kind: 'view',
       id: 'orders-panel',
       instanceId: 'saved-orders',
       layout: { x: 0, y: 0, w: 12, h: 18 },
@@ -1157,11 +1158,11 @@ await engine.save(draftId); // First real create; the host supplies saved identi
 
 A snapshot separates `config` (draft) from `applied`, with `pending`, `session` (including dirty/write state), `editable`, validation and per-panel snapshots. Query applies global drafts; refresh uses the previous applied snapshot; save does not query. Suspension releases positions/results and reauthorizes retained reference versions on resume. Explicit reference reload accepts the latest saved child configuration. Layout edits preserve position identity and do not query.
 
-Each global item stores `{ id, filters: FilterConfiguration, bindings, excludedPanelIds }`. Every panel needs exactly one binding or an explicit exclusion. A fields binding is `{ panelId, kind: 'fields', fields, semanticCompatibility: true }`; full element paths and SEARCH field lists must all map. A transform binding is `{ panelId, kind: 'transform', name, options? }`; provide a synchronous pure implementation in `ViewEngineOptions.dashboardTransforms`. Its readonly input is `{ expression, source, target, instance, options }`. Invalid/missing conversion blocks the whole affected panel scope, never drops an OR branch. The final scope ANDs the original child filter with all participating global conditions.
+Each global item stores `{ id, filters: FilterConfiguration, bindings, excludedPanelIds }`. Every `kind: 'view'` panel needs exactly one binding or an explicit exclusion. A fields binding is `{ panelId, kind: 'fields', fields, semanticCompatibility: true }`; full element paths and SEARCH field lists must all map. A transform binding is `{ panelId, kind: 'transform', name, options? }`; provide a synchronous pure implementation in `ViewEngineOptions.dashboardTransforms`. Its readonly input is `{ expression, source, target, instance, options }`. Invalid/missing conversion blocks the whole affected panel scope, never drops an OR branch. The final scope ANDs the original child filter with all participating global conditions.
 
-Optional `host.dashboard.search({ query, cursor? }, signal?)` returns `{ items: [{ id, definitionId, title, kind }], nextCursor }` (at most 100 candidates per response). Candidates are loaded and authorized again before use. Without search, the add/replace entry is hidden. `host.dashboard.openOriginal({ instanceId, definitionId })` enables source navigation. `extensions.dashboard.transforms[name]` supplies `label`, optional `applicable`, `hasOptions`, and a controlled `Editor` with `value`, `onChange`, `onValidityChange`; execution stays in the core registry. `useViewEngine` captures the paired registries for the access lifetime. Unknown extensions remain visible and cannot be silently rewritten.
+Optional `host.dashboard.search({ query, cursor? }, signal?)` returns `{ items: [{ id, definitionId, title, kind }], nextCursor }` (at most 100 candidates per response). Candidates are loaded and authorized again before use. Without search, data-reference add/replace is hidden; content cards can still be added. `host.dashboard.openOriginal({ instanceId, definitionId })` enables source navigation. `extensions.dashboard.transforms[name]` supplies `label`, optional `applicable`, `hasOptions`, and a controlled `Editor` with `value`, `onChange`, `onValidityChange`; execution stays in the core registry. `useViewEngine` captures the paired registries for the access lifetime. Unknown extensions remain visible and cannot be silently rewritten.
 
-The layout uses react-grid-layout for two-dimensional movement and width/height resizing. Editing previews commit only when the gesture finishes; Escape cancels a gesture. Layout undo/redo and cancel affect geometry only. Labeled controls provide non-drag alternatives. Narrow containers stack cards without writing desktop coordinates. Layout changes preserve query positions and do not fetch data; original child editing/saving remains outside panels.
+The layout uses react-grid-layout for two-dimensional movement and width/height resizing. Editing previews commit only when the gesture finishes; Escape cancels a gesture. Layout undo/redo and cancel affect geometry only. Keyboard handles provide non-drag alternatives; numeric position/size controls are not shown. Narrow containers stack cards without writing desktop coordinates. Layout changes preserve query positions and do not fetch data; original child editing/saving remains outside panels.
 
 ### Dashboard limits and compatibility
 
@@ -1176,3 +1177,7 @@ Local tests, simulated view-service persistence and read-only Wow queries are se
 Action renderer contexts expose optional `isCurrent()`: asynchronous host actions must check it immediately before a deferred write. It rejects expired positions, result snapshots, applied scopes, and (for bulk actions) selections. While displayed results belong to an older scope, action extensions are unmounted, including their dialogs; same-scope loading or failed refresh alone does not disable creation or recovery. `querying` includes queued `waiting` requests.
 
 Local dashboard drafts appear in a separate unsaved group in navigation and the manager. They remain outside authoritative `instanceIds` and cannot participate in saved-view ordering or defaults. `createDashboard()` requires both creation permission and a host `instance.create` service before creating local state.
+
+Content cards share `id` and `layout`: `{ kind: 'markdown', title, content }`, `{ kind: 'link', title, href, description? }`, or `{ kind: 'image', title, src, alt, caption? }`. Markdown uses CommonMark with a 64 KiB UTF-8 content limit and raw HTML disabled. Links accept HTTP(S), mailto, tel and relative addresses; images accept HTTP(S) and relative addresses. `alt` is a string (empty for decorative images). Images use URLs; no upload service is provided. All cards count toward configuration/panel limits.
+
+Content is edited in a local dialog and committed explicitly; cancel preserves the dashboard draft. Content cards do not resolve sources, create query positions or receive filter bindings/exclusions. Editing content does not query other panels. `DashboardSnapshot.panels` contains only data-reference runtime snapshots; content cards render from `config.panels`.

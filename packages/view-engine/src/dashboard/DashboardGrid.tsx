@@ -155,7 +155,7 @@ export function DashboardLayout(props: Props) {
     >
       {props.enabled && mobile && (
         <p className="fve:text-sm fve:text-muted-foreground">
-          窄屏按顺序阅读；使用“位置与尺寸”调整桌面布局。
+          窄屏按顺序阅读；聚焦移动或尺寸按钮后，使用方向键调整桌面布局。
         </p>
       )}
       <GridLayout
@@ -248,46 +248,6 @@ export function DashboardLayout(props: Props) {
                   >
                     <ScalingIcon aria-hidden="true" />
                   </Button>
-                  <details className="fve-dashboard-geometry">
-                    <summary>位置与尺寸</summary>
-                    <div>
-                      {(['x', 'y', 'w', 'h'] as const).map(field => (
-                        <label key={field}>
-                          {
-                            { x: '列位置', y: '行位置', w: '宽度', h: '高度' }[
-                              field
-                            ]
-                          }
-                          <input
-                            type="number"
-                            aria-label={`${props.title(panel.id)}${{ x: '列位置', y: '行位置', w: '宽度', h: '高度' }[field]}`}
-                            min={field === 'w' || field === 'h' ? 1 : 0}
-                            max={
-                              {
-                                x: 12 - panel.layout.w,
-                                y: 10000 - panel.layout.h,
-                                w: 12 - panel.layout.x,
-                                h: Math.min(100, 10000 - panel.layout.y),
-                              }[field]
-                            }
-                            key={`${field}:${panel.layout[field]}`}
-                            defaultValue={panel.layout[field]}
-                            onBlur={event => {
-                              if (event.target.value !== '')
-                                change(panel, {
-                                  [field]: Number(event.target.value),
-                                });
-                              event.target.value = String(panel.layout[field]);
-                            }}
-                            onKeyDown={event => {
-                              if (event.key === 'Enter')
-                                event.currentTarget.blur();
-                            }}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </details>
                 </div>
                 <div className="fve-dashboard-body">
                   {props.children(panel)}

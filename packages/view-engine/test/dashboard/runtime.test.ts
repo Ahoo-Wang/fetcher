@@ -45,7 +45,12 @@ describe('dashboard composition runtime', () => {
     const { engine, paged } = dashboardSetup({
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
       ],
       filters: [
         { ...globalFilter(), bindings: globalFilter().bindings.slice(0, 1) },
@@ -58,7 +63,12 @@ describe('dashboard composition runtime', () => {
       ...config,
       panels: [
         ...config.panels,
-        { id: 'b', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'b',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
       ],
     }));
     await vi.waitFor(() =>
@@ -95,8 +105,18 @@ describe('dashboard composition runtime', () => {
     const { engine, paged } = dashboardSetup({
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
-        { id: 'b', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
+        {
+          kind: 'view' as const,
+          id: 'b',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
       ],
       filters: [globalFilter(10, ['b'])],
     });
@@ -127,7 +147,12 @@ describe('dashboard composition runtime', () => {
     const { engine, paged } = dashboardSetup({
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 12, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 12, h: 18 },
+        },
       ],
       filters: [
         { ...globalFilter(), bindings: globalFilter().bindings.slice(0, 1) },
@@ -154,8 +179,18 @@ describe('dashboard composition runtime', () => {
     const { engine, paged } = dashboardSetup({
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
-        { id: 'b', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
+        {
+          kind: 'view' as const,
+          id: 'b',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
       ],
       filters: [globalFilter()],
     });
@@ -212,8 +247,18 @@ describe('dashboard composition runtime', () => {
     const config = {
       schemaVersion: 1 as const,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
-        { id: 'b', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
+        {
+          kind: 'view' as const,
+          id: 'b',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
       ],
       filters: [
         {
@@ -242,8 +287,18 @@ describe('dashboard composition runtime', () => {
     const { engine, paged } = dashboardSetup({
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
-        { id: 'b', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
+        {
+          kind: 'view' as const,
+          id: 'b',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
       ],
       filters: [globalFilter()],
     });
@@ -361,6 +416,7 @@ it('keeps child positions and pagination when the first draft save acquires a sa
     ...config,
     panels: [
       {
+        kind: 'view' as const,
         id: 'new-panel',
         instanceId: 'child',
         layout: { x: 0, y: 0, w: 12, h: 18 },

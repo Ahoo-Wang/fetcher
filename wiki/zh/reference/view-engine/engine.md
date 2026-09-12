@@ -73,7 +73,7 @@ limits 默认：加载 15,000 ms，查询/写入 30,000 ms，4 个并发查询�
 
 ## 仪表盘组合
 
-定义声明 `dashboard: true` 后可保存 `DashboardViewInstance`。纯仪表盘定义不需要 `sourceId`；记录/分析能力仍要求数据源。`config` 为 `{ schemaVersion: 1, panels, filters }`。面板保存 `{ id, instanceId, layout: { x, y, w, h } }`：稳定面板 ID 与整数网格坐标/尺寸。网格为 12 列，x/y 非负，w 为 1–12，x+w ≤ 12，h 为 1–100，y+h ≤ 10000。引用必须解析为记录或分析实例；重复引用有独立运行位置。
+定义声明 `dashboard: true` 后可保存 `DashboardViewInstance`。纯仪表盘定义不需要 `sourceId`；记录/分析能力仍要求数据源。`config` 为 `{ schemaVersion: 1, panels, filters }`。数据引用面板保存 `{ kind: 'view', id, instanceId, layout: { x, y, w, h } }`：稳定面板 ID 与整数网格坐标/尺寸。网格为 12 列，x/y 非负，w 为 1–12，x+w ≤ 12，h 为 1–100，y+h ≤ 10000。引用必须解析为记录或分析实例；重复引用有独立运行位置。
 
 ```ts
 const definition = {
@@ -97,6 +97,7 @@ dashboard.edit(config => ({
   ...config,
   panels: [
     {
+      kind: 'view',
       id: 'orders-panel',
       instanceId: 'saved-orders',
       layout: { x: 0, y: 0, w: 12, h: 18 },
@@ -112,11 +113,11 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 快照分别保存 `config` 草稿和 `applied` 已应用配置，并提供 `pending`、包含 dirty/写入状态的 `session`、`editable`、校验及逐面板状态。查询应用全局草稿；刷新沿用已应用快照；保存不查询。暂停释放运行位置/结果，返回时重新授权并使用保留的子版本；显式重载引用才采用最新保存配置。布局调整保留位置身份，不发查询。
 
-每个全局项保存 `{ id, filters: FilterConfiguration, bindings, excludedPanelIds }`，每个面板必须恰好绑定一次或明确不参与。字段绑定为 `{ panelId, kind: 'fields', fields, semanticCompatibility: true }`，元素完整路径与 SEARCH 字段列表必须全部映射。转换绑定为 `{ panelId, kind: 'transform', name, options? }`；在 `ViewEngineOptions.dashboardTransforms` 注册同步纯函数，接收只读 `{ expression, source, target, instance, options }`。转换缺失或无效时阻断整个受影响面板，不删去 OR 分支。最终作用域为原子视图条件 AND 所有参与的全局条件。
+每个全局项保存 `{ id, filters: FilterConfiguration, bindings, excludedPanelIds }`，每个 `kind: 'view'` 数据面板必须恰好绑定一次或明确不参与。字段绑定为 `{ panelId, kind: 'fields', fields, semanticCompatibility: true }`，元素完整路径与 SEARCH 字段列表必须全部映射。转换绑定为 `{ panelId, kind: 'transform', name, options? }`；在 `ViewEngineOptions.dashboardTransforms` 注册同步纯函数，接收只读 `{ expression, source, target, instance, options }`。转换缺失或无效时阻断整个受影响面板，不删去 OR 分支。最终作用域为原子视图条件 AND 所有参与的全局条件。
 
-可选 `host.dashboard.search({ query, cursor? }, signal?)` 返回 `{ items: [{ id, definitionId, title, kind }], nextCursor }`，每次最多 100 个候选。使用前重新加载并授权；未提供 search 时隐藏添加/替换入口。`host.dashboard.openOriginal({ instanceId, definitionId })` 提供原视图导航。`extensions.dashboard.transforms[name]` 提供 `label`、可选 `applicable`、`hasOptions`，以及接受 `value`、`onChange`、`onValidityChange` 的受控 `Editor`；执行仍在核心注册表。`useViewEngine` 在访问生命周期开始时捕获配对注册表。未知扩展保留展示，不静默改写。
+可选 `host.dashboard.search({ query, cursor? }, signal?)` 返回 `{ items: [{ id, definitionId, title, kind }], nextCursor }`，每次最多 100 个候选。使用前重新加载并授权；未提供 search 时隐藏数据引用的添加/替换入口，仍可添加内容卡片。`host.dashboard.openOriginal({ instanceId, definitionId })` 提供原视图导航。`extensions.dashboard.transforms[name]` 提供 `label`、可选 `applicable`、`hasOptions`，以及接受 `value`、`onChange`、`onValidityChange` 的受控 `Editor`；执行仍在核心注册表。`useViewEngine` 在访问生命周期开始时捕获配对注册表。未知扩展保留展示，不静默改写。
 
-布局采用 react-grid-layout，支持二维移动与宽高缩放。手势结束才提交预览，Escape 取消当前手势。布局撤销、重做和取消仅影响几何配置；有标签控件提供非拖拽等效操作。窄容器单列堆叠且不回写桌面坐标。布局变化保留查询位置且不发起取数；原子视图的配置编辑与保存仍在面板外完成。
+布局采用 react-grid-layout，支持二维移动与宽高缩放。手势结束才提交预览，Escape 取消当前手势。布局撤销、重做和取消仅影响几何配置；键盘手柄提供非拖拽等效操作，不再显示位置/尺寸数字控件。窄容器单列堆叠且不回写桌面坐标。布局变化保留查询位置且不发起取数；原子视图的配置编辑与保存仍在面板外完成。
 
 ### 预算与兼容
 
@@ -131,3 +132,7 @@ Stateful/Memory/Local 与示例 HTTP 宿主接受 `supportedFormats: { record: t
 动作渲染器提供可选的 `isCurrent()`。异步写入前应立即检查：位置、结果快照、已应用口径和批量选择可能已经过期。应用不同口径会卸载旧结果的动作扩展及其对话框；同口径刷新失败仍保留恢复操作。
 
 本地仪表盘草稿在导航与管理器中显示为独立的未保存分组，仍不进入权威 `instanceIds`，不参与已保存视图的排序或默认设置。`createDashboard()` 在创建本地状态前同时检查创建授权和宿主 `instance.create` 服务。
+
+内容卡片共用 `id` 与 `layout`：`{ kind: 'markdown', title, content }`、`{ kind: 'link', title, href, description? }` 或 `{ kind: 'image', title, src, alt, caption? }`。Markdown 使用 CommonMark，内容限制为 UTF-8 64 KiB，不执行原始 HTML。链接接受 HTTP(S)、mailto、tel 和相对地址；图片接受 HTTP(S) 和相对地址。`alt` 为字符串，装饰性图片可以留空。图片使用 URL，不提供文件上传服务。所有卡片均计入配置字节和面板数量预算。
+
+内容在本地对话框中编辑，明确提交才修改仪表盘草稿，取消保留原草稿。内容卡片不解析数据源、不创建查询位置，也不接收筛选绑定或排除配置。编辑内容不查询其它面板。`DashboardSnapshot.panels` 只包含数据引用的运行快照，内容卡片从 `config.panels` 渲染。

@@ -19,6 +19,7 @@ it('honors a raised panel limit consistently at load, edit and save admission', 
     schemaVersion: 1 as const,
     filters: [],
     panels: Array.from({ length: 13 }, (_, i) => ({
+      kind: 'view' as const,
       id: String(i),
       instanceId: 'child',
       layout: { x: 0, y: 0, w: 6, h: 18 },
@@ -44,7 +45,12 @@ it('supports all 32 configured global items without artificial nested AND depth'
   const config = {
     schemaVersion: 1 as const,
     panels: [
-      { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 12, h: 18 } },
+      {
+        kind: 'view' as const,
+        id: 'a',
+        instanceId: 'child',
+        layout: { x: 0, y: 0, w: 12, h: 18 },
+      },
     ],
     filters: Array.from({ length: 32 }, (_, i) => ({
       ...globalFilter(i),
@@ -104,11 +110,13 @@ it('rejects reference metadata above the budget without discarding the dashboard
 it('releases cleared reference metadata even when the reload fails', async () => {
   const { instance, definition } = await import('../engine/fixtures.js');
   const a = {
+    kind: 'view' as const,
     id: 'a',
     instanceId: 'child',
     layout: { x: 0, y: 0, w: 6, h: 18 },
   };
   const b = {
+    kind: 'view' as const,
     id: 'b',
     instanceId: 'other',
     layout: { x: 6, y: 0, w: 6, h: 18 },

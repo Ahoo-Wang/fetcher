@@ -19,6 +19,7 @@ import {
   restorePanelLayouts,
 } from '../../src/dashboard/dashboardLayout.js';
 const panels = ['a', 'b'].map((id, index) => ({
+  kind: 'view' as const,
   id,
   instanceId: id,
   layout: { x: index * 6, y: 0, w: 6, h: 5 },
@@ -47,6 +48,7 @@ it('rejects invalid geometry and restores geometry without reverting reference c
     updatePanelLayout(panels, 'unknown', panels[0].layout),
   ).toThrow();
   const updated = panels.map(panel => ({
+    kind: 'view' as const,
     ...panel,
     instanceId: 'replacement',
     layout: { ...panel.layout, h: 9 },

@@ -26,7 +26,9 @@ import type {
   DashboardRuntime,
   DashboardSnapshot,
 } from './DashboardRuntime.js';
-import { message } from '../lib/snapshot.js';
+import type { DashboardContentPanel } from './dashboardModel.js';
+import { safeUrl } from '../lib/safeUrl.js';
+import { message, sameJsonState } from '../lib/snapshot.js';
 
 export function DashboardSettings({
   runtime,
@@ -38,6 +40,10 @@ export function DashboardSettings({
   editing: boolean;
 }) {
   const [selection, setSelection] = useState<{ panelId?: string } | null>(null);
+  const [content, setContent] = useState<DashboardContentPanel | null>(null);
+  const [originalContent, setOriginalContent] =
+    useState<DashboardContentPanel | null>(null);
+  const [contentError, setContentError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState<string>();
   const [retry, setRetry] = useState(0);
@@ -92,13 +98,19 @@ export function DashboardSettings({
         panels: selection?.panelId
           ? config.panels.map(panel =>
               panel.id === selection.panelId
-                ? { ...panel, instanceId: candidate.id }
+                ? {
+                    id: panel.id,
+                    kind: 'view' as const,
+                    layout: panel.layout,
+                    instanceId: candidate.id,
+                  }
                 : panel,
             )
           : [
               ...config.panels,
               {
                 id: crypto.randomUUID(),
+                kind: 'view',
                 instanceId: candidate.id,
                 layout: {
                   x: 0,
@@ -119,6 +131,36 @@ export function DashboardSettings({
       setError(message(reason));
     }
   }
+  function editContent(panel: DashboardContentPanel, existing = true) {
+    setOriginalContent(existing ? panel : null);
+    setContent({ ...panel });
+    setContentError(null);
+  }
+  function addContent(kind: DashboardContentPanel['kind']) {
+    const base = {
+      id: crypto.randomUUID(),
+      title: '',
+      layout: {
+        x: 0,
+        y: Math.max(
+          0,
+          ...snapshot.config.panels.map(
+            panel => panel.layout.y + panel.layout.h,
+          ),
+        ),
+        w: 6,
+        h: 8,
+      },
+    };
+    editContent(
+      kind === 'markdown'
+        ? { ...base, kind, content: '' }
+        : kind === 'link'
+          ? { ...base, kind, href: '', description: '' }
+          : { ...base, kind, src: '', alt: '', caption: '' },
+      false,
+    );
+  }
   if (!snapshot.editable) return null;
   return (
     <div
@@ -126,16 +168,23 @@ export function DashboardSettings({
       ref={controls}
       tabIndex={-1}
     >
-      {runtime.canDiscover && (
-        <Button
-          ref={addRef}
-          variant="outline"
-          className="fve:self-start"
-          onClick={() => choose()}
-        >
-          添加面板
-        </Button>
-      )}
+      <div className="fve:flex fve:flex-wrap fve:gap-2">
+        {(['markdown', 'link', 'image'] as const).map(kind => (
+          <Button key={kind} variant="outline" onClick={() => addContent(kind)}>
+            添加{{ markdown: 'Markdown', link: '链接', image: '图片' }[kind]}
+          </Button>
+        ))}
+        {runtime.canDiscover && (
+          <Button
+            ref={addRef}
+            variant="outline"
+            className="fve:self-start"
+            onClick={() => choose()}
+          >
+            添加面板
+          </Button>
+        )}
+      </div>
       {editing &&
         snapshot.config.panels.map((panel, index) => (
           <div
@@ -143,10 +192,22 @@ export function DashboardSettings({
             className="fve:flex fve:min-w-0 fve:flex-wrap fve:items-center fve:gap-2"
           >
             <span className="fve:min-w-0 fve:flex-1 fve:break-words fve:text-sm">
-              {snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId} ·{' '}
-              {snapshot.panels[panel.id]?.definition?.title ?? '引用尚未加载'}
+              {panel.kind === 'view'
+                ? (snapshot.panels[panel.id]?.instance?.title ??
+                  panel.instanceId)
+                : panel.title}
             </span>
-            {runtime.canDiscover && (
+            {panel.kind !== 'view' && (
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label={`编辑面板${index + 1}`}
+                onClick={() => editContent(panel)}
+              >
+                编辑内容
+              </Button>
+            )}
+            {panel.kind === 'view' && runtime.canDiscover && (
               <Button
                 variant="outline"
                 size="sm"
@@ -187,6 +248,171 @@ export function DashboardSettings({
           </div>
         ))}
       {error && !opened && <p role="alert">{error}</p>}
+      <Dialog
+        open={content !== null}
+        onOpenChange={open => {
+          if (!open) setContent(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {content &&
+                { markdown: 'Markdown', link: '链接', image: '图片' }[
+                  content.kind
+                ]}
+              面板
+            </DialogTitle>
+            <DialogDescription>
+              编辑内容后确认添加或更新；取消不会修改仪表盘。
+            </DialogDescription>
+          </DialogHeader>
+          {content && (
+            <form
+              className="fve:flex fve:flex-col fve:gap-3"
+              onSubmit={event => {
+                event.preventDefault();
+                try {
+                  if (!content.title.trim()) throw new Error('请填写标题');
+                  if (content.kind === 'link' && !safeUrl(content.href))
+                    throw new Error('请输入有效链接地址');
+                  if (
+                    content.kind === 'image' &&
+                    !safeUrl(content.src, ['http:', 'https:'])
+                  )
+                    throw new Error('请输入有效图片地址（HTTP 或 HTTPS）');
+                  runtime.edit(config => {
+                    const current = config.panels.find(
+                      panel => panel.id === content.id,
+                    );
+                    if (
+                      originalContent
+                        ? !current ||
+                          !sameJsonState(
+                            { ...current, layout: null },
+                            { ...originalContent, layout: null },
+                          )
+                        : current
+                    ) {
+                      throw new Error(
+                        '面板已被移除或内容已更改，请取消并重新打开编辑。',
+                      );
+                    }
+                    return {
+                      ...config,
+                      panels: originalContent
+                        ? config.panels.map(panel =>
+                            panel.id === content.id
+                              ? { ...content, layout: panel.layout }
+                              : panel,
+                          )
+                        : [...config.panels, content],
+                    };
+                  });
+                  setContent(null);
+                } catch (reason) {
+                  setContentError(message(reason));
+                }
+              }}
+            >
+              <label>
+                标题
+                <Input
+                  required
+                  value={content.title}
+                  onChange={event =>
+                    setContent({ ...content, title: event.target.value })
+                  }
+                />
+              </label>
+              {content.kind === 'markdown' && (
+                <label>
+                  Markdown 内容
+                  <textarea
+                    className="fve:w-full fve:rounded-md fve:border fve:p-2"
+                    rows={8}
+                    value={content.content}
+                    onChange={event =>
+                      setContent({ ...content, content: event.target.value })
+                    }
+                  />
+                </label>
+              )}
+              {content.kind === 'link' && (
+                <>
+                  <label>
+                    链接地址
+                    <Input
+                      required
+                      value={content.href}
+                      onChange={event =>
+                        setContent({ ...content, href: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    说明（可选）
+                    <Input
+                      value={content.description ?? ''}
+                      onChange={event =>
+                        setContent({
+                          ...content,
+                          description: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                </>
+              )}
+              {content.kind === 'image' && (
+                <>
+                  <label>
+                    图片地址
+                    <Input
+                      required
+                      value={content.src}
+                      onChange={event =>
+                        setContent({ ...content, src: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    替代文字
+                    <Input
+                      value={content.alt}
+                      onChange={event =>
+                        setContent({ ...content, alt: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    图注（可选）
+                    <Input
+                      value={content.caption ?? ''}
+                      onChange={event =>
+                        setContent({ ...content, caption: event.target.value })
+                      }
+                    />
+                  </label>
+                </>
+              )}
+              {contentError && <p role="alert">{contentError}</p>}
+              <div className="fve:flex fve:justify-end fve:gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setContent(null)}
+                >
+                  取消
+                </Button>
+                <Button type="submit">
+                  {originalContent ? '更新内容' : '添加内容'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={opened}
         onOpenChange={open => {

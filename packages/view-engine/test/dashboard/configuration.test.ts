@@ -16,6 +16,7 @@ import { validateDashboardConfig } from '../../src/dashboard/dashboardValidation
 import { instance } from '../engine/fixtures.js';
 
 const panel = {
+  kind: 'view' as const,
   id: 'a',
   instanceId: 'orders',
   layout: { x: 0, y: 0, w: 6, h: 18 },

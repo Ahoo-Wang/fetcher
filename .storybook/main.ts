@@ -58,7 +58,10 @@ const config: StorybookConfig = {
     mergeConfig(config, {
       // The dashboard loads this dependency lazily; optimize it before tests start.
       optimizeDeps: {
-        include: ['@ahoo-wang/fetcher-view-engine > react-grid-layout'],
+        include: [
+          '@ahoo-wang/fetcher-view-engine > react-grid-layout',
+          '@ahoo-wang/fetcher-view-engine > react-markdown',
+        ],
       },
       server: { watch: { ignored: ['**/coverage/**'] } },
       resolve: {

@@ -42,7 +42,12 @@ it('pairs a fixed dashboard transform and editor registry with the access lifeti
     config: {
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 12, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 12, h: 18 },
+        },
       ],
       filters: [
         {

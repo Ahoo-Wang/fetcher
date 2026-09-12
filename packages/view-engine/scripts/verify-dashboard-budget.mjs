@@ -60,6 +60,7 @@ for (const count of [1, 6, 20]) {
             },
           });
           return {
+            kind: 'view',
             id: `panel-${p}`,
             instanceId: id,
             layout: { x: 0, y: 0, w: 6, h: 18 },

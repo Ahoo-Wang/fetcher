@@ -21,6 +21,7 @@ import {
   assertPath,
   validateReference,
 } from '../contracts/validation/validationPrimitives.js';
+import { safeUrl } from '../lib/safeUrl.js';
 import { encodeViewResourceId } from '../contracts/viewServiceContract.js';
 import type { DashboardConfig } from './dashboardModel.js';
 
@@ -74,11 +75,44 @@ export function validateDashboardConfig(
   )
     throw new Error('仪表盘全局筛选数量无效');
   const panels = new Set<string>();
+  const viewPanels = new Set<string>();
   for (const panel of value.panels) {
     assertObject(panel, '面板');
-    keys(panel, ['id', 'instanceId', 'layout']);
     assertText(panel.id, '面板 ID');
-    encodeViewResourceId(panel.instanceId);
+    if (panel.kind === 'view') {
+      keys(panel, ['kind', 'id', 'instanceId', 'layout']);
+      encodeViewResourceId(panel.instanceId);
+      viewPanels.add(panel.id);
+    } else if (panel.kind === 'markdown') {
+      keys(panel, ['kind', 'id', 'title', 'content', 'layout']);
+      assertText(panel.title, '卡片标题');
+      if (
+        typeof panel.content !== 'string' ||
+        new TextEncoder().encode(panel.content).byteLength > 65536
+      )
+        throw new Error('Markdown内容必须是最多64KiB的文本');
+    } else if (panel.kind === 'link' || panel.kind === 'image') {
+      const image = panel.kind === 'image';
+      keys(
+        panel,
+        image
+          ? ['kind', 'id', 'title', 'src', 'alt', 'caption', 'layout']
+          : ['kind', 'id', 'title', 'href', 'description', 'layout'],
+      );
+      assertText(panel.title, '卡片标题');
+      if (
+        !safeUrl(
+          image ? panel.src : panel.href,
+          image ? ['http:', 'https:'] : undefined,
+        )
+      )
+        throw new Error('卡片地址无效或使用了不支持的协议');
+      if (image && typeof panel.alt !== 'string')
+        throw new Error('图片替代文字必须是文本');
+      const description = image ? panel.caption : panel.description;
+      if (description !== undefined && typeof description !== 'string')
+        throw new Error('卡片说明必须是文本');
+    } else throw new Error('未知仪表盘卡片类型');
     if (panels.has(panel.id)) throw new Error('面板 ID 重复');
     panels.add(panel.id);
     assertObject(panel.layout, '面板布局');
@@ -119,7 +153,7 @@ export function validateDashboardConfig(
       throw new Error('筛选绑定必须是数组');
     const decided = new Set<string>();
     const decide = (id: unknown) => {
-      if (typeof id !== 'string' || !panels.has(id) || decided.has(id))
+      if (typeof id !== 'string' || !viewPanels.has(id) || decided.has(id))
         throw new Error('筛选绑定重复或引用未知面板');
       decided.add(id);
     };
@@ -141,7 +175,7 @@ export function validateDashboardConfig(
         validateReference(binding);
       } else throw new Error('未知筛选绑定类型');
     }
-    if (complete && decided.size !== panels.size)
+    if (complete && decided.size !== viewPanels.size)
       throw new Error('请为每个面板绑定筛选或明确排除');
   }
   validateFilterJson(value);

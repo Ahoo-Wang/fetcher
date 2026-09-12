@@ -39,7 +39,7 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
-it('keyboard and numeric geometry preserve the mounted body and stable visual reading order', () => {
+it('keyboard geometry preserve the mounted body and stable visual reading order', () => {
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
     width: 1200,
     height: 500,
@@ -57,6 +57,7 @@ it('keyboard and numeric geometry preserve the mounted body and stable visual re
     >(
       ['a', 'b'].map((id, index) => ({
         id,
+        kind: 'view' as const,
         instanceId: id,
         layout: { x: index * 6, y: 0, w: 6, h: 5 },
       })),
@@ -83,10 +84,10 @@ it('keyboard and numeric geometry preserve the mounted body and stable visual re
     screen.getAllByRole('textbox').map(node => node.getAttribute('aria-label')),
   ).toEqual(['b备注', 'a备注']);
   expect(screen.getByRole('textbox', { name: 'a备注' })).toBe(input);
-  fireEvent.click(screen.getAllByText('位置与尺寸')[1]);
-  const height = screen.getByRole('spinbutton', { name: 'a高度' });
-  fireEvent.change(height, { target: { value: '8' } });
-  fireEvent.blur(height);
+  fireEvent.keyDown(screen.getByRole('button', { name: '调整a尺寸' }), {
+    key: 'ArrowDown',
+  });
+  expect(screen.queryByRole('spinbutton')).toBeNull();
   expect((input as HTMLInputElement).value).toBe('keep');
   expect(screen.getByRole('textbox', { name: 'a备注' })).toBe(input);
 });
@@ -157,6 +158,7 @@ it.each(['drag', 'resize'])(
       >(
         ['a', 'b'].map((id, index) => ({
           id,
+          kind: 'view' as const,
           instanceId: id,
           layout: { x: index * 6, y: 0, w: 6, h: 5 },
         })),

@@ -107,16 +107,19 @@ it.runIf(Boolean(process.env.FETCHER_DASHBOARD_REAL_BASE_URL))(
           schemaVersion: 1,
           panels: [
             {
+              kind: 'view' as const,
               id: 'left',
               instanceId: records.id,
               layout: { x: 0, y: 0, w: 4, h: 18 },
             },
             {
+              kind: 'view' as const,
               id: 'right',
               instanceId: records.id,
               layout: { x: 0, y: 0, w: 4, h: 18 },
             },
             {
+              kind: 'view' as const,
               id: 'analysis',
               instanceId: overview.id,
               layout: { x: 0, y: 0, w: 4, h: 18 },

@@ -63,9 +63,26 @@ describe('dashboard persistence through public engine', () => {
     expect(engine.getSnapshot().instanceIds).toEqual([]);
     expect(draft(engine, id)).toMatchObject({ persisted: false, dirty: true });
     expect((await memory.instance.list('dashboards')).instances).toEqual([]);
+    engine
+      .dashboard(id)
+      .edit(config => ({
+        ...config,
+        panels: [
+          {
+            kind: 'markdown',
+            id: 'notes',
+            title: 'Notes',
+            content: '# Saved notes',
+            layout: { x: 0, y: 0, w: 6, h: 4 },
+          },
+        ],
+      }));
     await engine.save(id);
     const savedId = engine.getSnapshot().selectedInstanceId!;
     expect(savedId).not.toBe(id);
+    expect((await memory.instance.load(savedId)).config).toMatchObject({
+      panels: [{ kind: 'markdown', content: '# Saved notes' }],
+    });
     expect(draft(engine, savedId)).toMatchObject({
       persisted: true,
       dirty: false,

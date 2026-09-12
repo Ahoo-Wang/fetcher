@@ -44,7 +44,12 @@ afterEach(cleanup);
 const empty = {
   schemaVersion: 1 as const,
   panels: [
-    { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+    {
+      kind: 'view' as const,
+      id: 'a',
+      instanceId: 'child',
+      layout: { x: 0, y: 0, w: 6, h: 18 },
+    },
   ],
   filters: [],
 };

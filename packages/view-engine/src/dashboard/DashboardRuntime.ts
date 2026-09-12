@@ -42,7 +42,7 @@ import {
 } from './dashboardFilters.js';
 import type {
   DashboardConfig,
-  DashboardPanel,
+  DashboardViewPanel,
   DashboardSession,
   DashboardTransforms,
 } from './dashboardModel.js';
@@ -75,7 +75,7 @@ export interface DashboardSnapshot {
   readonly panels: Readonly<Record<string, DashboardPanelSnapshot>>;
 }
 interface PanelState {
-  panel: DeepReadonly<DashboardPanel>;
+  panel: DeepReadonly<DashboardViewPanel>;
   retainedBytes?: number;
   definitionBytes?: number;
   retained?: DeepReadonly<Exclude<ViewInstance, { kind: 'dashboard' }>>;
@@ -158,6 +158,7 @@ export class DashboardRuntime {
       if (
         !config.panels.some(
           panel =>
+            panel.kind === 'view' &&
             panel.id === entry.panel.id &&
             panel.instanceId === entry.panel.instanceId,
         )
@@ -406,8 +407,10 @@ export class DashboardRuntime {
         !sameJsonState(this.config.filters, this.applied.filters) ||
         this.config.panels.some(
           panel =>
+            panel.kind === 'view' &&
             !this.applied.panels.some(
               applied =>
+                applied.kind === 'view' &&
                 applied.id === panel.id &&
                 applied.instanceId === panel.instanceId,
             ),
@@ -467,7 +470,12 @@ export class DashboardRuntime {
       next.panels
         .filter(panel =>
           this.config.panels.some(
-            old => old.id === panel.id && old.instanceId !== panel.instanceId,
+            old =>
+              old.id === panel.id &&
+              (old.kind !== panel.kind ||
+                (old.kind === 'view' &&
+                  panel.kind === 'view' &&
+                  old.instanceId !== panel.instanceId)),
           ),
         )
         .map(panel => panel.id),
@@ -563,7 +571,11 @@ export class DashboardRuntime {
   private reconcile(): void {
     for (const [id, entry] of this.panels) {
       const panel = this.config.panels.find(item => item.id === id);
-      if (!panel || panel.instanceId !== entry.panel.instanceId) {
+      if (
+        !panel ||
+        panel.kind !== 'view' ||
+        panel.instanceId !== entry.panel.instanceId
+      ) {
         this.panels.delete(id);
         this.close(entry);
         this.applied = copy({
@@ -580,6 +592,7 @@ export class DashboardRuntime {
       }
     }
     for (const panel of this.config.panels) {
+      if (panel.kind !== 'view') continue;
       const entry = this.panels.get(panel.id);
       if (entry) entry.panel = panel;
       else
@@ -722,6 +735,7 @@ export class DashboardRuntime {
     if (
       !config.panels.some(
         panel =>
+          panel.kind === 'view' &&
           panel.id === entry.panel.id &&
           panel.instanceId === entry.panel.instanceId,
       )

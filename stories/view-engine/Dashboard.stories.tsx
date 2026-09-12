@@ -10,6 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import logoUrl from '../../wiki/public/fetcher-logo.png?url';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -135,21 +136,25 @@ const dashboard: DashboardViewInstance = {
     panels: [
       {
         id: 'orders',
+        kind: 'view',
         instanceId: 'saved-0',
         layout: { x: 0, y: 0, w: 6, h: 18 },
       },
       {
         id: 'customers',
+        kind: 'view',
         instanceId: 'saved-1',
         layout: { x: 6, y: 0, w: 6, h: 18 },
       },
       {
         id: 'stock',
+        kind: 'view',
         instanceId: 'saved-2',
         layout: { x: 0, y: 18, w: 6, h: 18 },
       },
       {
         id: 'analysis',
+        kind: 'view',
         instanceId: 'regional-total',
         layout: { x: 6, y: 18, w: 6, h: 18 },
       },
@@ -162,11 +167,13 @@ function DashboardExample({
   readOnly = false,
   saveAsOnly = false,
   missingReference = false,
+  contentOnly = false,
 }: {
   empty?: boolean;
   readOnly?: boolean;
   saveAsOnly?: boolean;
   missingReference?: boolean;
+  contentOnly?: boolean;
 }) {
   const [host] = useState<ViewHost>(() => {
     const source = createOrderSource(() =>
@@ -179,7 +186,46 @@ function DashboardExample({
     const memory = new MemoryViewHost({
       definition: root,
       instances: {
-        instances: empty ? [] : [dashboard],
+        instances: empty
+          ? []
+          : [
+              contentOnly
+                ? {
+                    ...dashboard,
+                    config: {
+                      ...dashboard.config,
+                      panels: [
+                        {
+                          id: 'notes',
+                          kind: 'markdown' as const,
+                          title: '本周经营提示',
+                          content:
+                            '## 关注重点\n\n- 跟进重点客户\n- 检查库存预警\n\n**口径**：以已确认订单为准。',
+                          layout: { x: 0, y: 0, w: 6, h: 8 },
+                        },
+                        {
+                          id: 'link',
+                          kind: 'link' as const,
+                          title: '业务操作手册',
+                          href: 'https://example.com/handbook',
+                          description: '查看流程与数据口径说明。',
+                          layout: { x: 6, y: 0, w: 6, h: 8 },
+                        },
+                        {
+                          id: 'image',
+                          kind: 'image' as const,
+                          title: 'Fetcher 标志',
+                          src: logoUrl,
+                          alt: 'Fetcher 项目标志',
+                          caption:
+                            '图片由项目资源加载，可编辑为自己的图片地址。',
+                          layout: { x: 0, y: 8, w: 12, h: 8 },
+                        },
+                      ],
+                    },
+                  }
+                : dashboard,
+            ],
         defaultInstanceId: empty ? null : dashboard.id,
       },
       serviceKey: 'dashboard-story',
@@ -222,28 +268,31 @@ function DashboardExample({
         },
       },
       resolveSource: () => source,
-      dashboard: {
-        search: ({ query, cursor }) => {
-          const matches = children.filter(instance =>
-            instance.title.includes(query),
-          );
-          const start = Number(cursor ?? 0);
-          return Promise.resolve({
-            items: matches.slice(start, start + 2).map(instance => ({
-              id: instance.id,
-              definitionId: instance.definitionId,
-              title: instance.title,
-              kind: instance.kind as 'record' | 'analysis',
-            })),
-            nextCursor: start + 2 < matches.length ? String(start + 2) : null,
-          });
-        },
-        openOriginal: reference => {
-          window.alert(
-            `宿主编辑入口：${reference.definitionId} / ${reference.instanceId}`,
-          );
-        },
-      },
+      dashboard: contentOnly
+        ? undefined
+        : {
+            search: ({ query, cursor }) => {
+              const matches = children.filter(instance =>
+                instance.title.includes(query),
+              );
+              const start = Number(cursor ?? 0);
+              return Promise.resolve({
+                items: matches.slice(start, start + 2).map(instance => ({
+                  id: instance.id,
+                  definitionId: instance.definitionId,
+                  title: instance.title,
+                  kind: instance.kind as 'record' | 'analysis',
+                })),
+                nextCursor:
+                  start + 2 < matches.length ? String(start + 2) : null,
+              });
+            },
+            openOriginal: reference => {
+              window.alert(
+                `宿主编辑入口：${reference.definitionId} / ${reference.instanceId}`,
+              );
+            },
+          },
     };
   });
   const binding = useViewEngine({
@@ -284,4 +333,9 @@ export const Dark: Story = {
       </div>
     ),
   ],
+};
+
+export const ContentCards: Story = {
+  name: '内容卡片（无需视图发现）',
+  args: { contentOnly: true },
 };

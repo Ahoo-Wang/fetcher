@@ -26,11 +26,28 @@ import type {
   ViewInstanceConflict,
 } from '../contracts/viewModel.js';
 
-export interface DashboardPanel {
+interface DashboardPanelBase {
   id: string;
-  instanceId: string;
   layout: { x: number; y: number; w: number; h: number };
 }
+export interface DashboardViewPanel extends DashboardPanelBase {
+  kind: 'view';
+  instanceId: string;
+}
+export type DashboardContentPanel = DashboardPanelBase &
+  (
+    | { kind: 'markdown'; title: string; content: string }
+    | { kind: 'link'; title: string; href: string; description?: string }
+    | {
+        kind: 'image';
+        title: string;
+        src: string;
+        alt: string;
+        caption?: string;
+      }
+  );
+export type DashboardPanel = DashboardViewPanel | DashboardContentPanel;
+
 export type DashboardBinding =
   | {
       panelId: string;

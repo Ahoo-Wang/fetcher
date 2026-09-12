@@ -16,6 +16,7 @@ import displayMeta, {
   FirstDashboard as Empty,
   Overview as Loaded,
   MissingReference as Broken,
+  ContentCards as Content,
 } from './Dashboard.stories.js';
 const meta = {
   ...displayMeta,
@@ -64,11 +65,9 @@ export const CreateAndBind: Story = {
       canvas.getByRole('button', { name: '查询', exact: true }),
     );
     await userEvent.click(canvas.getByRole('button', { name: '编辑布局' }));
-    await userEvent.click(canvas.getAllByText('位置与尺寸')[0]);
-    const width = canvas.getByRole('spinbutton', { name: '订单明细宽度' });
-    await userEvent.clear(width);
-    await userEvent.type(width, '12');
-    await userEvent.tab();
+    canvas.getByRole('button', { name: '调整订单明细尺寸' }).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(canvas.queryByRole('spinbutton')).not.toBeInTheDocument();
     await userEvent.click(
       canvas.getByRole('button', { name: '保存', exact: true }),
     );
@@ -106,11 +105,9 @@ export const LayoutAndPaging: Story = {
     await userEvent.click(canvas.getByRole('button', { name: '编辑布局' }));
     canvas.getByRole('button', { name: '移动订单明细' }).focus();
     await userEvent.keyboard('{ArrowRight}');
-    await userEvent.click(canvas.getAllByText('位置与尺寸')[0]);
-    const width = canvas.getByRole('spinbutton', { name: '订单明细宽度' });
-    await userEvent.clear(width);
-    await userEvent.type(width, '12');
-    await userEvent.tab();
+    canvas.getByRole('button', { name: '调整订单明细尺寸' }).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(canvas.queryByRole('spinbutton')).not.toBeInTheDocument();
     await expect(
       within(
         canvas.getByRole('table', { name: '订单明细', exact: true }),
@@ -141,5 +138,69 @@ export const ReplaceReference: Story = {
     await expect(
       canvas.getAllByRole('table', { name: '订单明细', exact: true }),
     ).toHaveLength(2);
+  },
+};
+
+export const ContentEditing: Story = {
+  ...Content,
+  tags: ['!dev', '!autodocs', 'test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole('heading', { name: '本周经营提示' });
+    await expect(
+      canvas.queryByRole('button', { name: '添加面板', exact: true }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: '添加Markdown' }));
+    await userEvent.type(
+      page.getByRole('textbox', { name: '标题' }),
+      '经营备注',
+    );
+    await userEvent.type(
+      page.getByRole('textbox', { name: 'Markdown 内容' }),
+      '**本周关注**',
+    );
+    await userEvent.click(
+      page.getByRole('button', { name: '取消', exact: true }),
+    );
+    await expect(
+      canvas.queryByRole('heading', { name: '经营备注' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: '添加链接' }));
+    await userEvent.type(
+      page.getByRole('textbox', { name: '标题' }),
+      '帮助中心',
+    );
+    await userEvent.type(
+      page.getByRole('textbox', { name: '链接地址' }),
+      'https://example.com/help',
+    );
+    await userEvent.click(page.getByRole('button', { name: '添加内容' }));
+    await expect(
+      await canvas.findByRole('link', { name: '帮助中心' }),
+    ).toHaveAttribute('rel', 'noopener noreferrer');
+    await userEvent.click(canvas.getByRole('button', { name: '编辑布局' }));
+    await userEvent.click(canvas.getByRole('button', { name: '编辑面板4' }));
+    await userEvent.clear(page.getByRole('textbox', { name: '标题' }));
+    await userEvent.type(
+      page.getByRole('textbox', { name: '标题' }),
+      '业务帮助',
+    );
+    await userEvent.click(page.getByRole('button', { name: '更新内容' }));
+    await expect(
+      await canvas.findByRole('link', { name: '业务帮助' }),
+    ).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole('button', { name: '保存', exact: true }),
+    );
+    await waitFor(() =>
+      expect(
+        canvas.getByRole('status', { name: '保存状态' }),
+      ).toHaveTextContent('视图已保存'),
+    );
+    await userEvent.click(canvas.getByRole('button', { name: '移除面板4' }));
+    await expect(
+      canvas.queryByRole('link', { name: '业务帮助' }),
+    ).not.toBeInTheDocument();
   },
 };

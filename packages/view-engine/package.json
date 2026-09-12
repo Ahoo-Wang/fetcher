@@ -63,6 +63,7 @@
     "lucide-react": "catalog:",
     "react-day-picker": "catalog:",
     "react-grid-layout": "catalog:",
+    "react-markdown": "catalog:",
     "recharts": "catalog:",
     "tailwind-merge": "catalog:"
   },

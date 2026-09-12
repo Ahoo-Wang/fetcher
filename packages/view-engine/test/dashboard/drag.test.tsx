@@ -41,6 +41,7 @@ afterEach(() => {
 });
 const panels = ['a', 'b'].map((id, index) => ({
   id,
+  kind: 'view' as const,
   instanceId: id,
   layout: { x: index * 6, y: 0, w: 6, h: 5 },
 }));
@@ -108,7 +109,7 @@ it('Escape closes gesture without commit or mutating library callback values', a
   expect(rgl.props.layout![0].h).toBe(5);
   expect(screen.getByRole('status').textContent).toMatch(/已取消/);
 });
-it('readonly disables interaction; mobile keeps explicit numeric editing without emitting responsive changes', () => {
+it('readonly disables interaction; mobile keeps keyboard editing without emitting responsive changes', () => {
   const read = setup(false);
   expect(rgl.props.dragConfig?.enabled).toBe(false);
   expect(rgl.props.resizeConfig?.enabled).toBe(false);
@@ -118,27 +119,9 @@ it('readonly disables interaction; mobile keeps explicit numeric editing without
   const { commit } = setup();
   expect(rgl.props.dragConfig?.enabled).toBe(false);
   expect(commit).not.toHaveBeenCalled();
-  fireEvent.click(screen.getAllByText('位置与尺寸')[0]);
-  const input = screen.getByRole('spinbutton', { name: 'a高度' });
-  fireEvent.change(input, { target: { value: '9' } });
-  expect(commit).not.toHaveBeenCalled();
-  fireEvent.blur(input);
-  expect(commit.mock.calls[0][0][0].layout.h).toBe(9);
-});
-
-it('commits numeric editing with Enter and rejects out-of-grid dimensions', () => {
-  const { commit } = setup();
-  fireEvent.click(screen.getAllByText('位置与尺寸')[0]);
-  const input = screen.getByRole('spinbutton', { name: 'a高度' });
-  act(() => input.focus());
-  fireEvent.change(input, { target: { value: '9' } });
-  expect(commit).not.toHaveBeenCalled();
-  fireEvent.keyDown(input, { key: 'Enter' });
-  expect(commit.mock.calls[0][0][0].layout.h).toBe(9);
-  commit.mockClear();
-  act(() => input.focus());
-  fireEvent.change(input, { target: { value: '101' } });
-  fireEvent.keyDown(input, { key: 'Enter' });
-  expect(commit).not.toHaveBeenCalled();
-  expect(screen.getByRole('status').textContent).toContain('超出允许范围');
+  fireEvent.keyDown(screen.getByRole('button', { name: '调整a尺寸' }), {
+    key: 'ArrowDown',
+  });
+  expect(commit.mock.calls[0][0][0].layout.h).toBe(6);
+  expect(screen.queryByRole('spinbutton')).toBeNull();
 });

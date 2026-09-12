@@ -48,13 +48,11 @@ it('shows the dashboard through the page, keeps layout changes query-free, and r
   );
   paged.mockClear();
   fireEvent.click(screen.getByRole('button', { name: '编辑布局' }));
-  fireEvent.change(
-    screen.getAllByRole('spinbutton', { name: 'child宽度', hidden: true })[0],
-    { target: { value: '12' } },
-  );
-  fireEvent.blur(
-    screen.getAllByRole('spinbutton', { name: 'child宽度', hidden: true })[0],
-  );
+  for (let i = 0; i < 6; i++)
+    fireEvent.keyDown(
+      screen.getAllByRole('button', { name: '调整child尺寸' })[0],
+      { key: 'ArrowRight' },
+    );
   expect(
     engine.dashboard('dashboard').getSnapshot().config.panels[0].layout.w,
   ).toBe(12);
@@ -74,7 +72,8 @@ it('explains an empty dashboard without discovery and never takes lifecycle owne
   const runtime = engine.dashboard('dashboard');
   const dispose = vi.spyOn(runtime, 'dispose');
   const rendered = render(<DashboardView runtime={runtime} />);
-  expect(screen.getByText(/宿主尚未提供视图候选/)).toBeTruthy();
+  expect(screen.getByText(/添加 Markdown、链接或图片/)).toBeTruthy();
+  expect(screen.getByRole('button', { name: '添加Markdown' })).toBeTruthy();
   expect(screen.queryByRole('button', { name: '添加面板' })).toBeNull();
   rendered.unmount();
   expect(dispose).not.toHaveBeenCalled();
@@ -234,7 +233,12 @@ it('replacing a filtered reference preserves its position but requires a fresh b
     {
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 8, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 8, h: 18 },
+        },
       ],
       filters: [item],
     },
@@ -272,6 +276,7 @@ it('replacing a filtered reference preserves its position but requires a fresh b
   );
   const config = engine.dashboard('dashboard').getSnapshot().config;
   expect(config.panels[0]).toEqual({
+    kind: 'view' as const,
     id: 'a',
     instanceId: 'replacement',
     layout: { x: 0, y: 0, w: 8, h: 18 },
@@ -300,6 +305,7 @@ it.each([true, false])(
       {
         schemaVersion: 1,
         panels: ['a', 'b', 'c'].map(id => ({
+          kind: 'view' as const,
           id,
           instanceId: 'child',
           layout: { x: 0, y: 0, w: 4, h: 18 },
@@ -347,7 +353,12 @@ it('read-only browsing can query temporary global values and refresh them withou
     {
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
       ],
       filters: [item],
     },
@@ -379,7 +390,12 @@ it('keeps candidate selection open after panel-limit rejection and permits cance
     {
       schemaVersion: 1,
       panels: [
-        { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 6, h: 18 } },
+        {
+          kind: 'view' as const,
+          id: 'a',
+          instanceId: 'child',
+          layout: { x: 0, y: 0, w: 6, h: 18 },
+        },
       ],
       filters: [],
     },

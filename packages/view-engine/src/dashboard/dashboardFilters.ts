@@ -36,7 +36,7 @@ import type {
 import { validateDashboardFilterBudget } from './dashboardValidation.js';
 import type {
   DashboardFilter,
-  DashboardPanel,
+  DashboardViewPanel,
   DashboardTransforms,
 } from './dashboardModel.js';
 
@@ -118,7 +118,7 @@ export function validateDashboardExpression(
 /** Returns the complete bound expression; any missing branch rejects the panel scope. */
 export function compileDashboardScope(
   item: DeepReadonly<DashboardFilter>,
-  panel: DeepReadonly<DashboardPanel>,
+  panel: DeepReadonly<DashboardViewPanel>,
   source: DeepReadonly<ViewDefinition>,
   target: DeepReadonly<ViewDefinition>,
   instance: DeepReadonly<ViewInstance>,

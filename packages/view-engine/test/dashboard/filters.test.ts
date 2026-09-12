@@ -57,6 +57,7 @@ const target = {
   ],
 };
 const panel = {
+  kind: 'view' as const,
   id: 'orders',
   instanceId: 'mine',
   layout: { x: 0, y: 0, w: 6, h: 18 },

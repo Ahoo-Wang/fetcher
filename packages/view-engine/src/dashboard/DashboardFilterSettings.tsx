@@ -120,26 +120,35 @@ export function DashboardFilterSettings({
             className="fve:mt-3 fve:flex fve:flex-col fve:gap-3"
           >
             <p className="fve:text-sm fve:text-muted-foreground">
-              为每个面板明确选择字段映射、宿主转换或不参与。关闭设置保留草稿；点击查询才应用。
+              为每个数据面板明确选择字段映射、宿主转换或不参与。关闭设置保留草稿；点击查询才应用。
             </p>
-            {snapshot.config.panels.map((panel, panelIndex) => (
-              <BindingRow
-                key={`${panel.id}:${panel.instanceId}`}
-                runtime={runtime}
-                item={item}
-                panelId={panel.id}
-                title={`${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}（面板 ${panelIndex + 1}）`}
-                target={snapshot.panels[panel.id]?.definition}
-                extensions={extensions}
-                focus={
-                  repair?.panelId === panel.id &&
-                  (repair.filterId ? repair.filterId === item.id : index === 0)
-                    ? repair.version
-                    : undefined
-                }
-                run={run}
-              />
-            ))}
+            {[...snapshot.config.panels]
+              .sort(
+                (a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x,
+              )
+              .map(
+                (panel, panelIndex) =>
+                  panel.kind === 'view' && (
+                    <BindingRow
+                      key={`${panel.id}:${panel.instanceId}`}
+                      runtime={runtime}
+                      item={item}
+                      panelId={panel.id}
+                      title={`${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}（面板 ${panelIndex + 1}）`}
+                      target={snapshot.panels[panel.id]?.definition}
+                      extensions={extensions}
+                      focus={
+                        repair?.panelId === panel.id &&
+                        (repair.filterId
+                          ? repair.filterId === item.id
+                          : index === 0)
+                          ? repair.version
+                          : undefined
+                      }
+                      run={run}
+                    />
+                  ),
+              )}
           </div>
         </section>
       ))}

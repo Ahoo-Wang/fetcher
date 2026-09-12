@@ -20,7 +20,12 @@ import { dashboardSetup, globalFilter } from './runtimeFixtures.js';
 const configured = () => ({
   schemaVersion: 1 as const,
   panels: [
-    { id: 'a', instanceId: 'child', layout: { x: 0, y: 0, w: 12, h: 18 } },
+    {
+      kind: 'view' as const,
+      id: 'a',
+      instanceId: 'child',
+      layout: { x: 0, y: 0, w: 12, h: 18 },
+    },
   ],
   filters: [
     { ...globalFilter(10), bindings: globalFilter().bindings.slice(0, 1) },
@@ -152,6 +157,7 @@ describe('dashboard lifetime and recovery', () => {
         schemaVersion: 1,
         filters: [],
         panels: Array.from({ length: 8 }, (_, index) => ({
+          kind: 'view' as const,
           id: `panel${index}`,
           instanceId: `child${index}`,
           layout: { x: 0, y: 0, w: 6, h: 18 },

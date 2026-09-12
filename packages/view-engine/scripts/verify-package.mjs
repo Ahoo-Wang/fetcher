@@ -117,7 +117,11 @@ function verifyTypes(directory) {
     import { FilterPanel, ViewPage, useViewEngine, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
     import type { DashboardConfig, DashboardTransform } from '${manifest.name}';
     import { DashboardView } from '${manifest.name}/react';
-    export const dashboard: DashboardConfig = {schemaVersion:1,panels:[],filters:[]};
+    export const dashboard: DashboardConfig = {schemaVersion:1,panels:[
+      {kind:'markdown',id:'notes',title:'Notes',content:'# Hello',layout:{x:0,y:0,w:6,h:4}},
+      {kind:'link',id:'docs',title:'Docs',href:'/docs',layout:{x:6,y:0,w:6,h:4}},
+      {kind:'image',id:'logo',title:'Logo',src:'/logo.png',alt:'Logo',layout:{x:0,y:4,w:6,h:4}}
+    ],filters:[]};
     import { FilterOperator } from '@ahoo-wang/fetcher-wow';
     export const transform: DashboardTransform = () => ({op:FilterOperator.MATCH_ALL});
     void DashboardView;
