@@ -671,3 +671,18 @@ it('keeps dashboard cards compact and selection-free while retaining executed me
   cleanup();
   engine.dispose();
 });
+
+it('describes persisted dashboards correctly in the view manager', async () => {
+  const { engine } = dashboardSetup();
+  await engine.load();
+  render(<ViewPageContent engine={engine} />);
+  fireEvent.click(screen.getByRole('button', { name: '管理视图' }));
+  const dialog = await screen.findByRole('dialog', { name: '管理视图' });
+  expect(
+    within(dialog)
+      .getByRole('listitem', { name: 'Dashboard' })
+      .getAttribute('aria-description'),
+  ).toBe('仪表盘');
+  cleanup();
+  engine.dispose();
+});

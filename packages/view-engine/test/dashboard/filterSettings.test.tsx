@@ -21,6 +21,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPageContent } from '../../src/view/ViewPageContent.js';
+import type { DashboardTransformEditorProps } from '../../src/dashboard/dashboardReactTypes.js';
 import { DashboardView } from '../../src/dashboard/DashboardView.js';
 import { ViewEngine } from '../../src/engine/ViewEngine.js';
 import { definition, instance } from '../engine/fixtures.js';
@@ -800,6 +801,103 @@ it('contains transformer editor crashes, blocks saving and recovers by choosing 
   ).toEqual({});
   expect(screen.queryByRole('button', { name: '重试转换器编辑器' })).toBeNull();
   consoleError.mockRestore();
+  cleanup();
+  engine.dispose();
+});
+
+it.each(['excluded', 'other', 'unmount'] as const)(
+  'ignores late transformer callbacks after %s',
+  async change => {
+    const item = {
+      ...globalFilter(),
+      bindings: [{ panelId: 'a', kind: 'transform' as const, name: 'delayed' }],
+    };
+    const { engine } = dashboardSetup({ ...empty, filters: [item] });
+    await engine.load();
+    let retained: DashboardTransformEditorProps;
+    const runtime = engine.dashboard('dashboard');
+    const view = render(
+      <DashboardView
+        runtime={runtime}
+        extensions={{
+          dashboard: {
+            transforms: {
+              delayed: {
+                label: '延迟转换器',
+                Editor: props => {
+                  retained = props;
+                  return <p>延迟参数</p>;
+                },
+              },
+              other: { label: '其他转换器' },
+            },
+          },
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '全局筛选设置' }));
+    await screen.findByText('延迟参数');
+    const late = retained!;
+    if (change === 'unmount') view.unmount();
+    else if (change === 'excluded')
+      fireEvent.change(screen.getByRole('combobox', { name: /绑定方式/ }), {
+        target: { value: 'excluded' },
+      });
+    else
+      fireEvent.change(screen.getByRole('combobox', { name: /宿主转换器/ }), {
+        target: { value: 'other' },
+      });
+    const before = runtime.getSnapshot().session;
+    act(() => {
+      late.onChange({ stale: true });
+      late.onValidityChange(false);
+    });
+    expect(runtime.getSnapshot().session).toBe(before);
+    cleanup();
+    engine.dispose();
+  },
+);
+
+it('invalidates callbacks when an editor registration changes away and back', async () => {
+  const item = {
+    ...globalFilter(),
+    bindings: [{ panelId: 'a', kind: 'transform' as const, name: 'delayed' }],
+  };
+  const { engine } = dashboardSetup({ ...empty, filters: [item] });
+  await engine.load();
+  let retained: DashboardTransformEditorProps;
+  const Editor = (props: DashboardTransformEditorProps) => {
+    retained = props;
+    return <p>参数编辑</p>;
+  };
+  const Replacement = () => <p>新编辑器</p>;
+  const runtime = engine.dashboard('dashboard');
+  const element = (editor: typeof Editor | typeof Replacement) => (
+    <DashboardView
+      runtime={runtime}
+      extensions={{
+        dashboard: {
+          transforms: { delayed: { label: '延迟转换器', Editor: editor } },
+        },
+      }}
+    />
+  );
+  const view = render(element(Editor));
+  fireEvent.click(screen.getByRole('button', { name: '全局筛选设置' }));
+  await screen.findByText('参数编辑');
+  const old = retained!;
+  view.rerender(element(Replacement));
+  view.rerender(element(Editor));
+  act(() => retained!.onChange({ fresh: true }));
+  const current = runtime.getSnapshot().session;
+  act(() => {
+    old.onChange({ stale: true });
+    old.onValidityChange(false);
+  });
+  expect(runtime.getSnapshot().session).toBe(current);
+  expect(current.instance.config.filters[0].bindings[0]).toMatchObject({
+    options: { fresh: true },
+  });
   cleanup();
   engine.dispose();
 });

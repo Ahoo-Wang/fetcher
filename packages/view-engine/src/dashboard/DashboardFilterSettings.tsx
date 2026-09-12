@@ -14,11 +14,13 @@
 import {
   Component,
   type ReactNode,
+  type ComponentType,
   useEffect,
   useId,
   useRef,
   useState,
 } from 'react';
+import type { DashboardTransformEditorProps } from './dashboardReactTypes.js';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { Button } from '../components/ui/button.js';
 import { Checkbox } from '../components/ui/checkbox.js';
@@ -77,7 +79,7 @@ export function DashboardFilterSettings({
     >
       {snapshot.config.filters.map((item, index) => (
         <section
-          key={`${item.id}:${snapshot.session.editorEpoch}`}
+          key={`${runtime.identity}:${item.id}:${snapshot.session.editorEpoch}`}
           aria-label={`全局筛选${index + 1}`}
           className="fve:min-w-0 fve:rounded-lg fve:border fve:p-3"
         >
@@ -541,7 +543,8 @@ function BindingRow({
                 )
               }
             >
-              <Editor
+              <TransformEditorSession
+                editor={Editor}
                 value={binding.options ?? {}}
                 onChange={options => run(() => update({ ...binding, options }))}
                 onValidityChange={valid =>
@@ -558,6 +561,54 @@ function BindingRow({
       )}
     </fieldset>
   );
+}
+
+/** Retained host callbacks belong to one committed editor lifetime. */
+class TransformEditorSession extends Component<
+  DashboardTransformEditorProps & {
+    editor: ComponentType<DashboardTransformEditorProps>;
+  }
+> {
+  private active = true;
+  state = { editor: this.props.editor, generation: {} };
+  private committed = { props: this.props, generation: this.state.generation };
+  static getDerivedStateFromProps(
+    props: TransformEditorSession['props'],
+    state: TransformEditorSession['state'],
+  ) {
+    return props.editor === state.editor
+      ? null
+      : { editor: props.editor, generation: {} };
+  }
+  getSnapshotBeforeUpdate() {
+    this.committed = { props: this.props, generation: this.state.generation };
+    return null;
+  }
+  componentDidUpdate() {}
+  componentDidMount() {
+    this.active = true;
+    this.committed = { props: this.props, generation: this.state.generation };
+  }
+  componentWillUnmount() {
+    this.active = false;
+  }
+  render() {
+    const { editor: Editor, value } = this.props;
+    const generation = this.state.generation;
+    const current = () =>
+      this.active && this.committed.generation === generation;
+    return (
+      <Editor
+        value={value}
+        onChange={options => {
+          if (current()) this.committed.props.onChange(options);
+        }}
+        onValidityChange={valid => {
+          if (current()) this.committed.props.onValidityChange(valid);
+        }}
+      />
+    );
+  }
 }
 
 class TransformEditorBoundary extends Component<
