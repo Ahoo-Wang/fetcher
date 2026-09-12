@@ -25,7 +25,11 @@ import { hasUnknownWriteOutcome, type InstanceWork } from './InstanceWork.js';
 import type { ViewQueries } from './ViewQueries.js';
 import type { RecordSummaries } from '../record/engine/RecordSummaries.js';
 import { copy, message, sameJsonState } from '../lib/snapshot.js';
-import { createSession, instanceContent, withContent } from './sessionState.js';
+import {
+  createSession,
+  instanceContent,
+  baselinePatch,
+} from './sessionState.js';
 import { permissionsFor } from './instancePermissions.js';
 
 /** 类型保持的数组守卫：Array.isArray 的 any[] 谓词会把 readonly 数组退化为 any[]。 */
@@ -101,17 +105,7 @@ export class ViewManagement {
       };
       this.work.finishWrite(id, token, () =>
         this.store.patch(id, {
-          ...(baseline.kind === 'record'
-            ? {
-                kind: 'record',
-                baseline,
-                instance: withContent(baseline, local),
-              }
-            : {
-                kind: 'analysis',
-                baseline,
-                instance: withContent(baseline, local),
-              }),
+          ...baselinePatch(baseline, local),
           writeStatus: 'idle',
           writeError: null,
         }),

@@ -411,6 +411,60 @@ export function withContent(
   throw new Error('实例类型不能改变');
 }
 
+/** A persisted result replaces the baseline; the discriminated union keeps store.patch narrowing. */
+export function baselinePatch(
+  baseline: DeepReadonly<RecordViewInstance> | RecordViewInstance,
+  local: DeepReadonly<ViewInstance>,
+): {
+  kind: 'record';
+  baseline: DeepReadonly<RecordViewInstance>;
+  instance: DeepReadonly<RecordViewInstance>;
+};
+export function baselinePatch(
+  baseline: DeepReadonly<AnalysisViewInstance> | AnalysisViewInstance,
+  local: DeepReadonly<ViewInstance>,
+): {
+  kind: 'analysis';
+  baseline: DeepReadonly<AnalysisViewInstance>;
+  instance: DeepReadonly<AnalysisViewInstance>;
+};
+export function baselinePatch(
+  baseline: DeepReadonly<ViewInstance>,
+  local: DeepReadonly<ViewInstance>,
+):
+  | {
+      kind: 'record';
+      baseline: DeepReadonly<RecordViewInstance>;
+      instance: DeepReadonly<RecordViewInstance>;
+    }
+  | {
+      kind: 'analysis';
+      baseline: DeepReadonly<AnalysisViewInstance>;
+      instance: DeepReadonly<AnalysisViewInstance>;
+    };
+export function baselinePatch(
+  baseline: DeepReadonly<ViewInstance>,
+  local: DeepReadonly<ViewInstance>,
+):
+  | {
+      kind: 'record';
+      baseline: DeepReadonly<RecordViewInstance>;
+      instance: DeepReadonly<RecordViewInstance>;
+    }
+  | {
+      kind: 'analysis';
+      baseline: DeepReadonly<AnalysisViewInstance>;
+      instance: DeepReadonly<AnalysisViewInstance>;
+    } {
+  if (baseline.kind === 'record')
+    return { kind: 'record', baseline, instance: withContent(baseline, local) };
+  return {
+    kind: 'analysis',
+    baseline,
+    instance: withContent(baseline, local),
+  };
+}
+
 function recordIssues(
   instance: DeepReadonly<ViewInstance>,
   definition: DeepReadonly<ViewDefinition>,

@@ -28,10 +28,10 @@ import type { ViewQueries } from './ViewQueries.js';
 import { copy, message, sameJsonState } from '../lib/snapshot.js';
 import {
   createSession,
-  withContent,
   assertConflictReview,
   inheritEditingSession,
   instanceContent,
+  baselinePatch,
 } from './sessionState.js';
 import { ViewServiceError } from '../contracts/viewServiceContract.js';
 import { permissionsFor } from './instancePermissions.js';
@@ -285,17 +285,7 @@ export class ViewPersistence {
       } else
         this.work.finishWrite(id, token, () =>
           this.store.patch(id, {
-            ...(saved.kind === 'record'
-              ? {
-                  kind: 'record',
-                  baseline: saved,
-                  instance: withContent(saved, latest.instance),
-                }
-              : {
-                  kind: 'analysis',
-                  baseline: saved,
-                  instance: withContent(saved, latest.instance),
-                }),
+            ...baselinePatch(saved, latest.instance),
             conflict: undefined,
             writeStatus: 'idle',
             writeError: null,
