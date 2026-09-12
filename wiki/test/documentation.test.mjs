@@ -12,6 +12,7 @@
  */
 
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 import { createMarkdownRenderer, resolveConfig } from 'vitepress';
@@ -344,4 +345,16 @@ test('repository and package README links target current documentation routes', 
       }
     }
   }
+});
+
+test('View Engine symbol indexes match public exports and declaration locations', () => {
+  execFileSync(
+    process.execPath,
+    [
+      fileURLToPath(
+        new URL('../scripts/view-engine-symbols.mjs', import.meta.url),
+      ),
+    ],
+    { stdio: 'pipe' },
+  );
 });

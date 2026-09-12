@@ -20,7 +20,7 @@ test('Storybook production build is owned by the delivery verifier, not duplicat
   );
   assert.match(
     verifier,
-    /await run\('storybook-build', pnpm, \['build-storybook'\]\)/,
+    /await run\('storybook-build', pnpm, \['build-storybook'\](?:,|\))/,
   );
 });
 

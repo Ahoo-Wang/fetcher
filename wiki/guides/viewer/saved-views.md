@@ -5,6 +5,10 @@ description: Implement view mutation callbacks and report success only after the
 
 # Save and restore view state
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 ## Prerequisites
 
 Start with the [complete local Viewer example](../../examples/viewer.md). It uses React memory as its explicit persistence owner, so you can verify saving without a server. Decide separately whether your application needs reload persistence, user sharing, or server authorization.

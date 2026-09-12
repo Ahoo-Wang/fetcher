@@ -1,0 +1,444 @@
+{
+  "browser": "chromium",
+  "version": "153.0.8010.37",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M4 Pro",
+  "scale": {
+    "rows": 100,
+    "columns": 30,
+    "filterFields": 100
+  },
+  "checks": [
+    "100 rows/30 columns, nested own paths and built-in link/number/status/tags/date cells",
+    "Enter queries; draft editing leaves applied results and cell commits unchanged",
+    "Warm no-network interaction p95 within 1000ms regression ceiling",
+    "Light/dark 1440/390px: no unreviewed axe WCAG A/AA violations including portaled dialogs; raw findings retained; viewport bounds, checkbox keyboard toggling and Escape focus",
+    "Failure is distinct from empty; retry restores usable records",
+    "Slow query shows Spin/busy rather than empty and resolves to readable rows",
+    "20 mount/dispose cycles cancel pending reads and release every host permission subscription",
+    "Production analysis input/switch budgets and 10,000-row cancellation/input retention"
+  ],
+  "timings": {
+    "refresh": {
+      "samples": [
+        132.77, 133.97, 133.68, 133.39, 132.95, 133.43, 133.61, 116.4, 116.81,
+        115.97
+      ],
+      "phases": [
+        {
+          "observe": 0.68,
+          "click": 103.51,
+          "settle": 1.04,
+          "paint": 27.54
+        },
+        {
+          "observe": 0.51,
+          "click": 101.41,
+          "settle": 1.01,
+          "paint": 31.05
+        },
+        {
+          "observe": 0.53,
+          "click": 99.12,
+          "settle": 0.89,
+          "paint": 33.14
+        },
+        {
+          "observe": 0.68,
+          "click": 97.5,
+          "settle": 0.97,
+          "paint": 34.23
+        },
+        {
+          "observe": 0.52,
+          "click": 101.88,
+          "settle": 0.78,
+          "paint": 29.78
+        },
+        {
+          "observe": 0.53,
+          "click": 98.09,
+          "settle": 2.87,
+          "paint": 31.94
+        },
+        {
+          "observe": 0.55,
+          "click": 104.05,
+          "settle": 0.96,
+          "paint": 28.05
+        },
+        {
+          "observe": 0.89,
+          "click": 96.82,
+          "settle": 0.88,
+          "paint": 17.8
+        },
+        {
+          "observe": 0.55,
+          "click": 96.14,
+          "settle": 3.22,
+          "paint": 16.9
+        },
+        {
+          "observe": 0.46,
+          "click": 96.07,
+          "settle": 0.97,
+          "paint": 18.46
+        }
+      ],
+      "p95": 133.97,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    },
+    "selection": {
+      "samples": [
+        99.42, 83.7, 99.1, 100.96, 99.51, 82.38, 100.24, 83.35, 100.61, 100.28
+      ],
+      "p95": 100.96,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    },
+    "fieldPicker": {
+      "samples": [
+        132.95, 131.56, 135.53, 132.67, 131.89, 133.9, 149.99, 133.56, 132.51,
+        133.05
+      ],
+      "phases": [
+        {
+          "click": 45.38,
+          "visible": 8.72,
+          "paintedFrames": 21.89,
+          "escape": 12.08,
+          "hidden": 44.88
+        },
+        {
+          "click": 46.78,
+          "visible": 6.99,
+          "paintedFrames": 21.91,
+          "escape": 11.81,
+          "hidden": 44.06
+        },
+        {
+          "click": 48.35,
+          "visible": 6.96,
+          "paintedFrames": 22.84,
+          "escape": 12.49,
+          "hidden": 44.89
+        },
+        {
+          "click": 46.2,
+          "visible": 6.81,
+          "paintedFrames": 22.9,
+          "escape": 11.76,
+          "hidden": 45
+        },
+        {
+          "click": 42.3,
+          "visible": 10.37,
+          "paintedFrames": 22.95,
+          "escape": 11.88,
+          "hidden": 44.38
+        },
+        {
+          "click": 48.22,
+          "visible": 7.87,
+          "paintedFrames": 21.98,
+          "escape": 11.84,
+          "hidden": 43.98
+        },
+        {
+          "click": 53.17,
+          "visible": 8.89,
+          "paintedFrames": 32.08,
+          "escape": 11.98,
+          "hidden": 43.86
+        },
+        {
+          "click": 47.39,
+          "visible": 6.92,
+          "paintedFrames": 23.13,
+          "escape": 11.74,
+          "hidden": 44.38
+        },
+        {
+          "click": 42.44,
+          "visible": 9.7,
+          "paintedFrames": 24.22,
+          "escape": 11.73,
+          "hidden": 44.41
+        },
+        {
+          "click": 47.91,
+          "visible": 8.06,
+          "paintedFrames": 22.07,
+          "escape": 11.47,
+          "hidden": 43.54
+        }
+      ],
+      "p95": 149.99,
+      "budget": 1000,
+      "unit": "ms",
+      "includes": "automation transport and two painted frames; fixture has no network"
+    }
+  },
+  "reviewedWarnings": [],
+  "passed": true,
+  "analysis": {
+    "local-performance": {
+      "kind": "performance",
+      "environment": {
+        "build": "production",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "hardwareConcurrency": 14,
+        "visibility": "visible",
+        "timeOrigin": 1789089368853,
+        "measuredAt": "2026-09-11T01:16:13.900Z"
+      },
+      "fields": 100,
+      "filters": 20,
+      "returnedRows": 100,
+      "columns": 6,
+      "sampleCount": 30,
+      "warmupCount": 5,
+      "warmup": {
+        "inputMs": [34, 32.69999998807907, 33.80000001192093, 33, 33.5],
+        "switchMs": [
+          66.59999996423721, 66.09999996423721, 67, 66.59999996423721,
+          65.80000001192093
+        ]
+      },
+      "input": {
+        "samplesMs": [
+          33.39999997615814, 33.299999952316284, 33.39999997615814,
+          33.30000001192093, 33.40000003576279, 32.90000003576279, 35, 28.5,
+          32.299999952316284, 33.09999996423721, 33.39999997615814,
+          33.40000003576279, 33.39999997615814, 33.39999997615814,
+          33.10000002384186, 34, 33.299999952316284, 33.39999997615814, 33.5,
+          33.5, 32.69999998807907, 33.39999997615814, 32.89999997615814,
+          33.299999952316284, 33.30000001192093, 33.89999997615814,
+          34.10000002384186, 33.19999998807907, 45.5, 33.5
+        ],
+        "p50Ms": 33.39999997615814,
+        "p95Ms": 35,
+        "maxMs": 45.5
+      },
+      "inputPhases": [
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.399999976158142,
+          "remainingMs": 15
+        },
+        {
+          "lookupMs": 0.09999996423721313,
+          "dispatchMs": 18,
+          "remainingMs": 15.199999988079071
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 18.19999998807907,
+          "remainingMs": 15.199999988079071
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.19999998807907,
+          "remainingMs": 15
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.600000023841858,
+          "remainingMs": 15.800000011920929
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.5,
+          "remainingMs": 15.400000035762787
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 18.5,
+          "remainingMs": 16.399999976158142
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 17.599999964237213,
+          "remainingMs": 10.800000011920929
+        },
+        {
+          "lookupMs": 0.5,
+          "dispatchMs": 17.099999964237213,
+          "remainingMs": 14.699999988079071
+        },
+        {
+          "lookupMs": 0.09999996423721313,
+          "dispatchMs": 17.80000001192093,
+          "remainingMs": 15.199999988079071
+        },
+        {
+          "lookupMs": 0.09999996423721313,
+          "dispatchMs": 17,
+          "remainingMs": 16.30000001192093
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 17.5,
+          "remainingMs": 15.800000011920929
+        },
+        {
+          "lookupMs": 0.09999996423721313,
+          "dispatchMs": 17,
+          "remainingMs": 16.30000001192093
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.099999964237213,
+          "remainingMs": 16.30000001192093
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.400000035762787,
+          "remainingMs": 15.699999988079071
+        },
+        {
+          "lookupMs": 0.09999996423721313,
+          "dispatchMs": 17.400000035762787,
+          "remainingMs": 16.5
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.69999998807907,
+          "remainingMs": 15.599999964237213
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.799999952316284,
+          "remainingMs": 15.600000023841858
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.30000001192093,
+          "remainingMs": 16.19999998807907
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.5,
+          "remainingMs": 16
+        },
+        {
+          "lookupMs": 0.09999996423721313,
+          "dispatchMs": 17.600000023841858,
+          "remainingMs": 15
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.299999952316284,
+          "remainingMs": 16.100000023841858
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.19999998807907,
+          "remainingMs": 15.699999988079071
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.5,
+          "remainingMs": 15.799999952316284
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.30000001192093,
+          "remainingMs": 16
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.299999952316284,
+          "remainingMs": 16.600000023841858
+        },
+        {
+          "lookupMs": 0.10000002384185791,
+          "dispatchMs": 16.80000001192093,
+          "remainingMs": 17.19999998807907
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.399999976158142,
+          "remainingMs": 15.800000011920929
+        },
+        {
+          "lookupMs": 0,
+          "dispatchMs": 17.899999976158142,
+          "remainingMs": 27.600000023841858
+        },
+        {
+          "lookupMs": 0.09999996423721313,
+          "dispatchMs": 16.900000035762787,
+          "remainingMs": 16.5
+        }
+      ],
+      "instanceSwitch": {
+        "samplesMs": [
+          67.30000001192093, 66.5, 70, 66.69999998807907, 66.5,
+          65.89999997615814, 66.79999995231628, 66.60000002384186,
+          67.10000002384186, 66.89999997615814, 66.69999998807907, 69,
+          66.10000002384186, 66, 66.59999996423721, 67.39999997615814, 67,
+          67.69999998807907, 66.59999996423721, 67.30000001192093,
+          66.80000001192093, 66.69999998807907, 66.40000003576279,
+          66.70000004768372, 67.10000002384186, 65.69999998807907,
+          66.60000002384186, 67.10000002384186, 65.80000001192093,
+          66.69999998807907
+        ],
+        "p50Ms": 66.69999998807907,
+        "p95Ms": 69,
+        "maxMs": 70
+      },
+      "thresholds": {
+        "inputP95Ms": 50,
+        "switchP95Ms": 100
+      },
+      "passed": true,
+      "productionAdmitted": true,
+      "requestsBefore": 2,
+      "requestsAfter": 2,
+      "method": "浏览器内performance.now；合成原生input/click事件分发前至两次requestAnimationFrame回调后；先对齐一帧不计时；断言DOM和引擎状态已提交。每项5热身+30正式样本，最近秩P95，不删除离群点。实例由固定fixture按钮调用公共selectInstance，两实例结果已预热；包含真实ViewPage渲染，无网络、无工具传输时延。"
+    },
+    "large-result-cancellation": {
+      "kind": "stress",
+      "environment": {
+        "build": "production",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "hardwareConcurrency": 14,
+        "visibility": "visible",
+        "timeOrigin": 1789089374536.8,
+        "measuredAt": "2026-09-11T01:16:17.919Z"
+      },
+      "fields": 100,
+      "filters": 20,
+      "returnedRows": 10000,
+      "columns": 21,
+      "renderedDataRows": 100,
+      "input": {
+        "text": "压力验收_中文_ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789",
+        "characters": 45,
+        "preserved": true
+      },
+      "abortObserved": true,
+      "lateResponseIgnored": true,
+      "requests": 3,
+      "passed": true,
+      "scope": "取消由切换实例触发；故意迟到的传输回包不得覆盖旧成功结果或新选择"
+    }
+  },
+  "pageErrors": []
+}

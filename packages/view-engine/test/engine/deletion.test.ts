@@ -12,9 +12,9 @@
  */
 
 import { expect, it, vi } from 'vitest';
-import type { ViewInstance } from '../../src/record/recordModel.js';
-import type { ViewHost } from '../../src/record/ViewHost.js';
-import { ViewServiceError } from '../../src/record/viewServiceContract.js';
+import type { ViewInstance } from '../../src/contracts/viewModel.js';
+import type { ViewHost } from '../../src/contracts/ViewHost.js';
+import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
 import {
   deferred,
   instance,
@@ -23,8 +23,48 @@ import {
   setup,
 } from './fixtures.js';
 
+it.each([
+  undefined,
+  null,
+  true,
+  [],
+  {},
+  { defaultInstance: undefined },
+  { defaultInstance: instance() },
+  { defaultInstance: { ...instance('foreign'), definitionId: 'foreign' } },
+])(
+  'requires an idempotent retry after an invalid deletion receipt %j',
+  async result => {
+    const remove = vi
+      .fn()
+      .mockResolvedValueOnce(result)
+      .mockResolvedValue({ defaultInstance: instance('shared') });
+    const { engine } = setup({
+      host: {
+        instance: { delete: remove },
+        permission: { getInstance: permissions },
+      } as unknown as ViewHost,
+    });
+    await engine.load();
+    engine.setTitle('Retained draft');
+    await expect(engine.deleteInstance()).rejects.toThrow();
+    expect(selected(engine)).toMatchObject({
+      requiresReload: true,
+      instance: { title: 'Retained draft' },
+    });
+    expect(engine.getCapabilitiesSnapshot().instances.mine.retryDelete).toBe(
+      true,
+    );
+    await engine.deleteInstance();
+    expect(remove.mock.calls[1]).toEqual(remove.mock.calls[0]);
+    expect(engine.getSnapshot().defaultInstanceId).toBe('shared');
+    expect(engine.getSnapshot().sessions.mine).toBeUndefined();
+    engine.dispose();
+  },
+);
+
 it('removes only after host success, then selects a remaining instance or leaves an empty page', async () => {
-  const response = deferred<void>();
+  const response = deferred<{ defaultInstance: null }>();
   const deleteInstance = vi.fn(() => response.promise);
   const { engine } = setup({
     host: {
@@ -38,7 +78,7 @@ it('removes only after host success, then selects a remaining instance or leaves
   expect(selected(engine).writeStatus).toBe('deleting');
   expect(engine.getSnapshot().instanceIds).toEqual(['mine', 'shared']);
   expect(deleteInstance).toHaveBeenCalledWith('mine', 'r1');
-  response.resolve();
+  response.resolve({ defaultInstance: null });
   await deleting;
   expect(engine.getSnapshot().selectedInstanceId).toBe('shared');
   expect(engine.getSnapshot().sessions.mine).toBeUndefined();
@@ -55,7 +95,7 @@ it('removes only after host success, then selects a remaining instance or leaves
 it.each(['missing-permission', 'missing-callback', 'system'] as const)(
   'denies deletion for %s before calling the host',
   async restriction => {
-    const deleteInstance = vi.fn().mockResolvedValue(undefined);
+    const deleteInstance = vi.fn().mockResolvedValue({ defaultInstance: null });
     const value = instance();
     if (restriction === 'system')
       value.scope = { type: 'public', source: 'system' };
@@ -82,11 +122,11 @@ it.each(['missing-permission', 'missing-callback', 'system'] as const)(
 );
 
 it('retains drafts on failure and blocks concurrent saves or repeated deletion', async () => {
-  const response = deferred<void>();
+  const response = deferred<{ defaultInstance: null }>();
   const deleteInstance = vi
     .fn()
     .mockReturnValueOnce(response.promise)
-    .mockResolvedValue(undefined);
+    .mockResolvedValue({ defaultInstance: null });
   const { engine } = setup({
     host: {
       instance: { delete: deleteInstance },
@@ -114,7 +154,7 @@ it('retains drafts on failure and blocks concurrent saves or repeated deletion',
 });
 
 it('keeps a pending navigation when deleting its previously selected instance', async () => {
-  const response = deferred<void>();
+  const response = deferred<{ defaultInstance: null }>();
   const loading = deferred<ViewInstance>();
   const { engine } = setup({
     host: {
@@ -125,7 +165,7 @@ it('keeps a pending navigation when deleting its previously selected instance', 
   await engine.load();
   const deleting = engine.deleteInstance();
   const navigating = engine.selectInstance('remote');
-  response.resolve();
+  response.resolve({ defaultInstance: null });
   await deleting;
   loading.resolve(instance('remote'));
   await navigating;
@@ -137,7 +177,7 @@ it('keeps a pending navigation when deleting its previously selected instance', 
 it('does not report deletion as failed when the next view query fails', async () => {
   const { engine, paged } = setup({
     host: {
-      instance: { delete: async () => {} },
+      instance: { delete: async () => ({ defaultInstance: null }) },
       permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
@@ -157,13 +197,15 @@ it('ignores a late query response after its view is deleted', async () => {
   }>();
   const { engine, paged } = setup({
     host: {
-      instance: { delete: async () => {} },
+      instance: { delete: async () => ({ defaultInstance: null }) },
       permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
   paged.mockReturnValueOnce(response.promise);
-  const refreshing = engine.refresh();
+  const refreshing = engine
+    .record(engine.getSnapshot().selectedInstanceId!)
+    .refresh();
   await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
   await engine.deleteInstance();
   response.resolve({
@@ -182,7 +224,7 @@ it('ignores a late query response after its view is deleted', async () => {
 it.each(['load', 'dispose'] as const)(
   'preserves the pending deletion lifecycle when %s is requested',
   async operation => {
-    const response = deferred<void>();
+    const response = deferred<{ defaultInstance: null }>();
     const { engine } = setup({
       host: {
         instance: { delete: () => response.promise },
@@ -196,7 +238,7 @@ it.each(['load', 'dispose'] as const)(
       await expect(engine.load()).rejects.toThrow('实例正在写入');
     else engine.dispose();
     expect(engine.getSnapshot()).toBe(snapshot);
-    response.resolve();
+    response.resolve({ defaultInstance: null });
     await deleting;
     if (operation === 'load') {
       expect(engine.getSnapshot().sessions.mine).toBeUndefined();
@@ -206,3 +248,45 @@ it.each(['load', 'dispose'] as const)(
     engine.dispose();
   },
 );
+
+it('retains delete retry when a superseded reload settles before its replacement fails', async () => {
+  const first = deferred<ViewInstance>();
+  const second = deferred<ViewInstance>();
+  const load = vi
+    .fn()
+    .mockReturnValueOnce(first.promise)
+    .mockReturnValueOnce(second.promise);
+  const { engine } = setup({
+    host: {
+      instance: {
+        load,
+        delete: vi.fn().mockRejectedValue(new Error('network failure')),
+      },
+      permission: { getInstance: permissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  try {
+    await expect(engine.deleteInstance()).rejects.toThrow('network failure');
+    expect(engine.getCapabilitiesSnapshot().instances.mine.retryDelete).toBe(
+      true,
+    );
+    const obsolete = engine.reloadInstance();
+    let replacement!: Promise<void>;
+    const replaced = first.promise.then(() => {
+      replacement = engine.reloadInstance();
+    });
+    first.resolve(instance());
+    await replaced;
+    await obsolete;
+    const failed = expect(replacement).rejects.toThrow('reload failure');
+    second.reject(new Error('reload failure'));
+    await failed;
+    expect(selected(engine).requiresReload).toBe(true);
+    expect(engine.getCapabilitiesSnapshot().instances.mine.retryDelete).toBe(
+      true,
+    );
+  } finally {
+    engine.dispose();
+  }
+});

@@ -11,13 +11,13 @@
  * limitations under the License.
  */
 
+import { ExampleViewPage } from '../../../packages/view-engine/examples/react/ExampleViewPage.js';
 import { useMemo, useState } from 'react';
 import type { AggregationQuery } from '@ahoo-wang/fetcher-wow';
 import { readRecordValue } from '@ahoo-wang/fetcher-view-engine';
 import {
   Button,
   TagsCell,
-  ViewPage,
   type CellRendererProps,
   type GlobalActionsRendererProps,
   type RowActionsRendererProps,
@@ -164,7 +164,7 @@ export function Scenario({
           />
         ),
       },
-      tableActions: {
+      toolbarActions: {
         'order-table-actions': props => (
           <OrderActions
             {...props}
@@ -206,7 +206,7 @@ export function Scenario({
         padding: 16,
       }}
     >
-      <ViewPage
+      <ExampleViewPage
         scopeKey={currentUserId}
         definitionId={definition.id}
         host={runtime.host}
@@ -214,7 +214,7 @@ export function Scenario({
         instances={options.local ? runtime.initialInstances : undefined}
         extensions={extensions}
         initialSidebarCollapsed={options.sidebarCollapsed}
-        selectable
+        record={{ selectable: true }}
       />
       <div
         role="status"

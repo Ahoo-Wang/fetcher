@@ -5,6 +5,10 @@ description: '注册表、输入与全屏按钮 — @ahoo-wang/fetcher-viewer 5.
 
 # 注册表、输入与全屏按钮
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 `TypedComponentRegistry<Type,Props>` 按类型键存储 React FunctionComponent；create(entries = []) 创建并注册。register 遇到重复键抛错，get 缺失时 undefined，unregister 缺失键无操作，clear 清空。types/entries 返回数组，size/has 查询当前状态。注册表可变且不响应式，渲染后注册不会自动重渲染；扩展在渲染前注册一次，只退注册自己拥有的项。
 
 单例 filterRegistry/cellRegistry 使用相同契约。TypedFilter 选择 filterRegistry 并提供回退，typedCellRender 使用 cellRegistry，缺失返回 undefined。替换已有项需要先 unregister 再 register；清空单例会移除所有消费者的内置项。自定义过滤器需保留 FilterRef/getValue/getState/reset 契约，不能只画输入框。

@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { type NamedCapable } from './types';
-import { type OrderedCapable, toSorted } from './orderedCapable';
-import type { FetchExchange } from './fetchExchange';
+import { type NamedCapable } from './types.js';
+import { type OrderedCapable, toSorted } from './orderedCapable.js';
+import type { FetchExchange } from './fetchExchange.js';
 
 export const DEFAULT_INTERCEPTOR_ORDER_STEP = 1000;
 

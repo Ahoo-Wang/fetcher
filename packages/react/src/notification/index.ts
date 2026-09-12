@@ -1,3 +1,3 @@
-export * from './types';
-export * from './channel';
-export * from './notificationCenter';
+export * from './types.js';
+export * from './channel/index.js';
+export * from './notificationCenter.js';

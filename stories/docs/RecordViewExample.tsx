@@ -10,16 +10,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { ExampleViewPage } from '../../packages/view-engine/examples/react/ExampleViewPage.js';
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import {
   createFilterConfiguration,
+  resolveRecordPresentation,
   newFilterNode,
   type RecordData,
   type RecordQuerySource,
-  type ViewDefinition,
+  type RecordViewDefinition,
   type ViewHost,
   type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
-import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import { useState } from 'react';
+import type { RecordCardRenderContext } from '@ahoo-wang/fetcher-view-engine/react';
+import type { ReactNode } from 'react';
 import {
   FilterOperator,
   SortDirection,
@@ -30,15 +35,27 @@ import {
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 const orders = [
-  { id: 'ORDER-001', amount: 120, status: 'pending' },
-  { id: 'ORDER-002', amount: 250, status: 'done' },
-  { id: 'ORDER-003', amount: 80, status: 'pending' },
+  { id: 'SO-202609-1001', amount: 12000, status: 'confirmed' },
+  { id: 'SO-202609-1002', amount: 6000, status: 'confirmed' },
+  { id: 'SO-202609-1003', amount: 8000, status: 'confirmed' },
 ];
-const definition: ViewDefinition = {
+const definition: RecordViewDefinition = {
   id: 'first-orders',
   sourceId: 'orders',
   title: '第一个数据视图',
-  rowKey: 'id',
+  record: {
+    allowedLayouts: ['table', 'card'],
+    rowKey: 'id',
+    defaultPresentation: {
+      card: {
+        title: { id: 'title', field: 'id' },
+        fields: [
+          { id: 'amount', field: 'amount' },
+          { id: 'status', field: 'status' },
+        ],
+      },
+    },
+  },
   allowedOperators: [
     FilterOperator.MATCH_ALL,
     FilterOperator.AND,
@@ -69,12 +86,12 @@ const definition: ViewDefinition = {
       type: 'string',
       operators: [],
       options: [
-        { value: 'pending', label: '待处理' },
-        { value: 'done', label: '已完成' },
+        { value: 'draft', label: '草稿' },
+        { value: 'confirmed', label: '已确认' },
       ],
       cellRenderer: {
         name: 'status',
-        options: { tones: [{ value: 'done', tone: 'success' }] },
+        options: { tones: [{ value: 'confirmed', tone: 'success' }] },
       },
     },
   ],
@@ -88,6 +105,7 @@ const instances: ViewInstanceList = {
       title: '我的订单',
       kind: 'record',
       scope: { type: 'personal' },
+      revision: '1',
       config: {
         filters: createFilterConfiguration({
           ...newFilterNode(FilterOperator.GTE, 'amount'),
@@ -159,25 +177,82 @@ const host: ViewHost = {
   },
 };
 
-export function RecordViewExample({
-  appearance = 'light',
-}: {
+type RecordViewExampleProps = {
   appearance?: 'light' | 'dark';
-}) {
+  layout?: 'table' | 'card';
+  renderCard?(context: RecordCardRenderContext): ReactNode;
+  persistViews?: boolean;
+};
+
+export function RecordViewExample(props: RecordViewExampleProps) {
+  return (
+    <RecordViewWorkspace key={String(props.persistViews ?? false)} {...props} />
+  );
+}
+
+function RecordViewWorkspace({
+  appearance = 'light',
+  layout = 'table',
+  renderCard,
+  persistViews = false,
+}: RecordViewExampleProps) {
+  const [viewHost] = useState(() =>
+    persistViews
+      ? new IndexedDBViewHost({
+          scopeKey: 'card-example-user',
+          serviceKey: 'card-example',
+          definition,
+          instances: {
+            ...instances,
+            instances: instances.instances.map(instance => ({
+              ...instance,
+              config: {
+                ...instance.config,
+                presentation: resolveRecordPresentation(
+                  definition,
+                  layout,
+                  instance.config.presentation,
+                ),
+              },
+            })),
+          },
+          resolveSource: host.resolveSource,
+        })
+      : host,
+  );
   return (
     <div
       className="fve-root"
       data-theme={appearance}
       style={{ padding: 16, minWidth: 0 }}
     >
-      <ViewPage
+      <ExampleViewPage
         scopeKey="docs:orders"
         definitionId={definition.id}
         definition={definition}
-        instances={instances}
-        host={host}
+        instances={
+          persistViews
+            ? undefined
+            : layout === 'table'
+              ? instances
+              : {
+                  ...instances,
+                  instances: instances.instances.map(instance => ({
+                    ...instance,
+                    config: {
+                      ...instance.config,
+                      presentation: resolveRecordPresentation(
+                        definition,
+                        layout,
+                        instance.config.presentation,
+                      ),
+                    },
+                  })),
+                }
+        }
+        host={viewHost}
+        record={{ selectable: true, renderCard }}
         initialSidebarCollapsed
-        selectable
       />
     </div>
   );

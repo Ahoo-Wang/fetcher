@@ -16,13 +16,13 @@ import type {
   UseExecutePromiseOptions,
   PromiseSupplier,
   QueryOptions,
-} from './index';
-import { useExecutePromise, useLatest, isValidateQuery } from './index';
+} from './index.js';
+import { useExecutePromise, useLatest, isValidateQuery } from './index.js';
 import { useCallback, useMemo } from 'react';
 import type { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
-import type { UseQueryStateReturn } from './useQueryState';
-import { useCancellableQueryState } from './useQueryState';
-import type { AutoExecuteCapable } from '../types';
+import type { UseQueryStateReturn } from './useQueryState.js';
+import { useCancellableQueryState } from './useQueryState.js';
+import type { AutoExecuteCapable } from '../types.js';
 
 /**
  * Configuration options for the useQuery hook

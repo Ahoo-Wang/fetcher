@@ -11,10 +11,10 @@
  * limitations under the License.
  */
 
-import type { TypedEventBus } from './typedEventBus';
-import type { EventHandler, EventType } from './types';
-import type { CrossTabMessenger } from './messengers';
-import { createCrossTabMessenger } from './messengers';
+import type { TypedEventBus } from './typedEventBus.js';
+import type { EventHandler, EventType } from './types.js';
+import type { CrossTabMessenger } from './messengers/index.js';
+import { createCrossTabMessenger } from './messengers/index.js';
 
 /**
  * Configuration options for BroadcastTypedEventBus

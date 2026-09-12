@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import type { Serializer } from './serializer';
-import { jsonSerializer } from './serializer';
+import type { Serializer } from './serializer.js';
+import { jsonSerializer } from './serializer.js';
 import type {
   BroadcastTypedEventBus,
   EventHandler,
@@ -22,7 +22,7 @@ import {
   nameGenerator,
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
-import { getStorage } from './env';
+import { getStorage } from './env.js';
 
 export interface StorageEvent<Deserialized> {
   newValue?: Deserialized | null;

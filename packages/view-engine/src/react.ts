@@ -62,11 +62,12 @@ export type { FilterValueEditorProps } from './filter/FilterValueEditor.js';
 
 export { RecordView } from './record/RecordView.js';
 export type { RecordViewProps } from './record/RecordView.js';
-export { ViewPage, ViewPageContent } from './record/ViewPage.js';
-export type { ViewPageProps, ViewPageContentProps } from './record/ViewPage.js';
+export { ViewPage, ViewPageContent } from './view/ViewPage.js';
+export type { ViewPageProps, ViewPageContentProps } from './view/ViewPage.js';
 export { RecordTable } from './record/RecordTable.js';
 export { RecordColumnSettings } from './record/RecordColumnSettings.js';
 export type * from './record/recordReactTypes.js';
+export type { ViewExtensions } from './view/viewReactTypes.js';
 export { Button } from './components/ui/button.js';
 
 export { FilterMultiSelect } from './filter/FilterMultiSelect.js';
@@ -98,3 +99,26 @@ export type { NumberCellProps } from './record/cells/NumberCell.js';
 
 export { ViewTheme } from './theme/ViewTheme.js';
 export type { ViewThemeProps, ViewThemeStyle } from './theme/ViewTheme.js';
+
+export { RecordCardList } from './record/RecordCardList.js';
+export { RecordCardSettings } from './record/RecordCardSettings.js';
+
+export {
+  IndexedDBViewHost,
+  type IndexedDBViewHostOptions,
+} from './record/IndexedDBViewHost.js';
+
+export { AnalysisView } from './analysis/AnalysisView.js';
+export type { AnalysisViewProps } from './analysis/AnalysisView.js';
+export { AnalysisEditor } from './analysis/AnalysisEditor.js';
+export { AnalysisTable } from './analysis/AnalysisTable.js';
+export type * from './analysis/analysisReactTypes.js';
+
+export { useViewEngine } from './react/useViewEngine.js';
+export type {
+  UseViewEngineOptions,
+  ViewEngineBinding,
+} from './react/useViewEngine.js';
+
+export { AnalysisPresentationEditor } from './analysis/AnalysisPresentationEditor.js';
+export type { AnalysisPresentationEditorProps } from './analysis/AnalysisPresentationEditor.js';

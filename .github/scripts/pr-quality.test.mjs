@@ -17,6 +17,15 @@ test('validates metadata as data, including dependency updates and breaking chan
   assert.throws(() => validate('fix: correct query', '  '));
 });
 
+test('accepts the title shape rendered from the repository renovate config', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { commitMessagePrefix } = JSON.parse(
+    readFileSync(new URL('../../renovate.json', import.meta.url), 'utf8'),
+  );
+  const title = `${commitMessagePrefix} Update yaml to ^2.9.1`;
+  assert.doesNotThrow(() => validate(title, 'Reason and validation'));
+});
+
 test('rejects an unchanged PR template but accepts filled-in content', async () => {
   const { readFileSync } = await import('node:fs');
   const template = readFileSync(

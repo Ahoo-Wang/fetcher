@@ -14,8 +14,8 @@
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import type { Condition } from '@ahoo-wang/fetcher-wow';
 import { fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
-import { notificationCenter } from '../notification/notificationCenter';
-import { dataMonitorEventBus } from './useDataMonitorEventBus';
+import { notificationCenter } from '../notification/notificationCenter.js';
+import { dataMonitorEventBus } from './useDataMonitorEventBus.js';
 
 export interface DataMonitorNotificationConfig {
   title: string;

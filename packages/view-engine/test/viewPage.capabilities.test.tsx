@@ -20,7 +20,7 @@ import {
   within,
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ViewPage } from '../src/record/ViewPage.js';
+import { ViewPage } from './fixtures/OwnedViewPage.js';
 import { instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
@@ -92,7 +92,7 @@ it('refreshes open management and delete controls when host capabilities change'
     id,
     title,
   }));
-  host.instance!.delete = vi.fn(async () => {});
+  host.instance!.delete = vi.fn(async () => ({ defaultInstance: null }));
   host.preference!.saveOrder = vi.fn(async () => {});
   const view = render(
     <ViewPage

@@ -11,11 +11,11 @@
  * limitations under the License.
  */
 
-import { TextLineTransformStream } from './textLineTransformStream';
+import { TextLineTransformStream } from './textLineTransformStream.js';
 import {
   type ServerSentEvent,
   ServerSentEventTransformStream,
-} from './serverSentEventTransformStream';
+} from './serverSentEventTransformStream.js';
 import { FetcherError } from '@ahoo-wang/fetcher';
 
 /**

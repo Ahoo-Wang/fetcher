@@ -12,16 +12,16 @@
  */
 
 import { useCallback } from 'react';
-import type { UseQueryReturn, UseQueryOptions } from '../core';
-import { useQuery, useLatest } from '../core';
+import type { UseQueryReturn, UseQueryOptions } from '../core/index.js';
+import { useQuery, useLatest } from '../core/index.js';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type {
   CreateApiHooksOptions,
   HookName,
   QueryMethod,
   OnBeforeExecuteCallback,
-} from './apiHooks';
-import { mapApiHooks } from './mapApiHooks';
+} from './apiHooks.js';
+import { mapApiHooks } from './mapApiHooks.js';
 
 /**
  * Configuration options for createQueryApiHooks.

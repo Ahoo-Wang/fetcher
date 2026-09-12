@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { InMemoryStorage } from './inMemoryStorage';
+import { InMemoryStorage } from './inMemoryStorage.js';
 
 /**
  * Checks if the current environment is a browser.

@@ -4,7 +4,7 @@ import type { Condition } from '@ahoo-wang/fetcher-wow';
 import {
   dataMonitorService,
   type DataMonitorNotificationConfig,
-} from './DataMonitorService';
+} from './DataMonitorService.js';
 
 export interface UseDataMonitorOptions {
   viewId: string;

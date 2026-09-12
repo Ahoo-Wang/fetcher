@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-export * from './SecurityContext';
-export * from './useSecurity';
-export * from './RouteGuard';
-export * from './RefreshableRouteGuard';
+export * from './SecurityContext.js';
+export * from './useSecurity.js';
+export * from './RouteGuard.js';
+export * from './RefreshableRouteGuard.js';

@@ -18,7 +18,7 @@ import {
 } from '../src/filter/filterCore.js';
 import { dateTimeValue } from '../src/filter/filterDateTimeValue.js';
 import { formatRecordDateTime } from '../src/record/recordValueFormat.js';
-import { validateViewDefinition } from '../src/record/recordValidation.js';
+import { validateViewDefinition } from '../src/contracts/validation/definitionValidation.js';
 import type { FilterFieldDefinition } from '../src/filter/filterModel.js';
 
 const field: FilterFieldDefinition = {
@@ -50,7 +50,7 @@ it.each([
         id: 'dates',
         title: 'Dates',
         sourceId: 'dates',
-        rowKey: 'created',
+        record: { rowKey: 'created', allowedLayouts: ['table'] },
         fields: [field],
         timeZone,
       }),

@@ -5,6 +5,10 @@ description: 'Toolbar, refresh and locale — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # Toolbar, refresh and locale
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 TopBar combines view actions, filter/panel toggles, row density, refresh, monitor, share and fullscreen controls. Its props include activeView/views/viewerDefinitionId, selected records and mutation callbacks. Buttons use application callbacks; saving is not an implicit local-storage operation.
 
 | API                 | Behavior / defaults                                                                                                                                |

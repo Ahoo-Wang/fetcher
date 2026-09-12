@@ -11,12 +11,12 @@
  * limitations under the License.
  */
 
-export * from './eventBus';
-export * from './abstractTypedEventBus';
-export * from './parallelTypedEventBus';
-export * from './serialTypedEventBus';
-export * from './typedEventBus';
-export * from './broadcastTypedEventBus';
-export * from './types';
-export * from './nameGenerator';
-export * from './messengers';
+export * from './eventBus.js';
+export * from './abstractTypedEventBus.js';
+export * from './parallelTypedEventBus.js';
+export * from './serialTypedEventBus.js';
+export * from './typedEventBus.js';
+export * from './broadcastTypedEventBus.js';
+export * from './types.js';
+export * from './nameGenerator.js';
+export * from './messengers/index.js';

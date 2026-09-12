@@ -23,7 +23,7 @@ pageClass: reference-index-page
 | [cosec](./cosec/index.md)             | 认证与刷新                          | 3      |
 | [react](./react/index.md)             | 组件请求状态                        | 8      |
 | [wow](./wow/index.md)                 | 命令与查询                          | 9      |
-| [viewer](./viewer/index.md)           | 数据视图与持久化                    | 8      |
+| [viewer（已弃用）](./viewer/index.md)           | 数据视图与持久化                    | 8      |
 | [view-engine](./view-engine/index.md) | 无头引擎、组件配置与 shadcn/Base UI | 5      |
 
 ## 如何使用参考

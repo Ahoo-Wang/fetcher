@@ -15,7 +15,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine... build
 pnpm storybook
 ```
 
-打开 **View Engine → 快速开始 → 第一个数据视图 · 查询、排序与分页**。金额改为 `200` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `ORDER-002`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
+打开 **View Engine → 入门与业务流程 → 最小接入 → 第一个数据视图 · 查询、排序与分页**。金额改为 `10000` 时，表格保持原结果；按 Enter 或点击查询后，只剩 `SO-202609-1001`。清空已应用条件值可恢复全部结果，再尝试分页与排序。完整组件见[可运行示例](../../examples/view-engine.md)。
 
 ## 连接四个职责
 
@@ -24,21 +24,25 @@ pnpm storybook
 | `ViewDefinition` | `id`、`sourceId`、`rowKey`、字段与能力 | 多个实例共用的元数据                   |
 | `ViewInstance`   | 身份、范围与 `config`                  | 一份保存的筛选、列、排序和每页条数配置 |
 | `ViewHost`       | 服务及 `resolveSource(sourceId)`       | 元数据、持久化、权限与本地数据源连接   |
-| `ViewPage`       | `scopeKey`、`definitionId`、host       | 创建、加载、订阅和释放引擎             |
+| `useViewEngine`  | `scopeKey`、`definitionId`、host       | 创建、加载、订阅和释放引擎             |
 
-本地元数据可通过 `definition` 和 `instances: { instances, defaultInstanceId }` 直接传入 `ViewPage`。只有查询数据源也能展示页面；保存、创建、删除、排序等能力根据宿主方法和权限启用。
+本地元数据可通过 `definition` 和 `instances: { instances, defaultInstanceId }` 传入 `useViewEngine`。只有查询数据源也能展示页面；保存、创建、删除、排序等能力根据宿主方法和权限启用。
 
 ```tsx
-import { ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';
+import { useViewEngine, ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-// host 由应用提供，满足 ViewHost 契约。
-<ViewPage
-  scopeKey="tenant:user:access"
-  definitionId="orders"
-  host={host}
-  selectable
-/>;
+export function OrderPage({
+  host,
+  scopeKey,
+}: {
+  host: ViewHost;
+  scopeKey: string;
+}) {
+  const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
+  return <ViewPage {...binding} record={{ selectable: true }} />;
+}
 ```
 
 `scopeKey` 标识稳定的访问范围。用户、租户或授权范围变化时必须改变它，它不能替代服务端鉴权。引擎生命周期由 `[scopeKey, definitionId]` 决定；同一范围内更换宿主回调会保留会话。本地元数据只用于初始化该生命周期；需要重新初始化时显式更换 React key。

@@ -20,15 +20,18 @@ import {
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { RecordActions } from '../src/record/page/RecordActions.js';
 import { RecordCell } from '../src/record/table/RecordCell.js';
-import { createSession } from '../src/record/engine/sessionState.js';
+import { createSession } from '../src/engine/sessionState.js';
 import { definition, instance } from './engine/fixtures.js';
-import type { ViewExtensions } from '../src/record/recordReactTypes.js';
+import type { RecordExtensions } from '../src/record/recordReactTypes.js';
 afterEach(cleanup);
-function sample(extensions: ViewExtensions) {
+function sample(extensions: RecordExtensions) {
   const reference = { name: 'toString' };
   const model = {
     ...definition,
-    recordActions: { global: reference, table: reference, row: reference },
+    record: {
+      ...definition.record,
+      recordActions: { global: reference, table: reference, row: reference },
+    },
   };
   const saved = instance();
   const session = createSession(saved, model, {});
@@ -36,6 +39,7 @@ function sample(extensions: ViewExtensions) {
     definition: model,
     instance: saved,
     record: { state: { id: 'row', amount: 1 } },
+    allowedLayouts: ['table', 'card'],
     rowKey: 'row',
     index: 0,
     appliedFilter: session.appliedFilter,
@@ -73,7 +77,12 @@ function sample(extensions: ViewExtensions) {
 }
 it('does not resolve inherited names from empty action or cell registries', () => {
   render(
-    sample({ cells: {}, globalActions: {}, tableActions: {}, rowActions: {} }),
+    sample({
+      cells: {},
+      globalActions: {},
+      toolbarActions: {},
+      rowActions: {},
+    }),
   );
   expect(screen.getAllByRole('alert')).toHaveLength(4);
   expect(screen.queryByText('[object Undefined]')).toBeNull();
@@ -85,7 +94,7 @@ it('allows explicitly registered names even if they match Object.prototype', () 
     sample({
       cells: registry,
       globalActions: registry,
-      tableActions: registry,
+      toolbarActions: registry,
       rowActions: registry,
     }),
   );

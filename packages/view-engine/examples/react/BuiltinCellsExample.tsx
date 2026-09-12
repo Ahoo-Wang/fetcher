@@ -11,18 +11,20 @@
  * limitations under the License.
  */
 
+import { ExampleViewPage } from './ExampleViewPage.js';
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import { useState } from 'react';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import {
-  LocalStorageViewHost,
+  MemoryViewHost,
+  type MemoryViewHostOptions,
   createFilterConfiguration,
   type RecordData,
-  type ViewDefinition,
+  type RecordViewDefinition,
   type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
 import {
   Button,
-  ViewPage,
   TextCell,
   TagsCell,
   StatusCell,
@@ -32,11 +34,10 @@ import {
 } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
-const definition: ViewDefinition = {
+const definition: RecordViewDefinition = {
   id: 'builtin-cells',
   title: '内置单元格',
   sourceId: 'cell-examples',
-  rowKey: 'id',
   timeZone: 'Asia/Shanghai',
   allowedOperators: [FilterOperator.MATCH_ALL],
   fields: [
@@ -78,6 +79,7 @@ const definition: ViewDefinition = {
       numberFormat: { style: 'percent', maximumFractionDigits: 1 },
     },
   ],
+  record: { allowedLayouts: ['table', 'card'], rowKey: 'id' },
 };
 const instances: ViewInstanceList = {
   defaultInstanceId: 'mine',
@@ -230,18 +232,7 @@ function CellSession({
   const [generation, setGeneration] = useState(0);
   const [saved, setSaved] = useState('');
   const [createHost] = useState(() => {
-    const memory = new Map<string, string>();
-    const storage = persist
-      ? localStorage
-      : {
-          getItem: (key: string) => memory.get(key) ?? null,
-          setItem: (key: string, value: string) => {
-            memory.set(key, value);
-          },
-          removeItem: (key: string) => {
-            memory.delete(key);
-          },
-        };
+    const store = new Map<string, string | null>();
     const rows = invalidData
       ? [
           {
@@ -255,22 +246,22 @@ function CellSession({
           },
         ]
       : records;
-    return () =>
-      new LocalStorageViewHost({
-        serviceKey: 'builtin-cell-demo',
-        scopeKey,
-        storage,
-        definition,
-        instances,
-        lock: (name, operation, signal) =>
-          navigator.locks.request(name, { signal }, operation),
-        resolveSource: () => ({
-          paged: async <T extends Partial<RecordData> = RecordData>() => ({
-            list: structuredClone(rows) as T[],
-            total: rows.length,
-          }),
+    const configuration: MemoryViewHostOptions = {
+      serviceKey: 'builtin-cell-demo',
+      scopeKey,
+      definition,
+      instances,
+      resolveSource: () => ({
+        paged: async <T extends Partial<RecordData> = RecordData>() => ({
+          list: structuredClone(rows) as T[],
+          total: rows.length,
         }),
-      });
+      }),
+    };
+    return () =>
+      persist
+        ? new IndexedDBViewHost(configuration)
+        : new MemoryViewHost({ ...configuration, store });
   });
   const [host, setHost] = useState(createHost);
   return (
@@ -312,7 +303,7 @@ function CellSession({
           重置示例
         </Button>
       </div>
-      <ViewPage
+      <ExampleViewPage
         key={generation}
         definitionId={definition.id}
         host={host}

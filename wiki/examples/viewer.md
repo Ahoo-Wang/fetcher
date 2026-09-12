@@ -5,6 +5,10 @@ description: Filter, sort, page and save a local data view with application-owne
 
 # Local Viewer example
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 This browser example uses four users and no backend. The application filters and sorts the full dataset, then slices the requested page. `Viewer` receives the resulting `{ list, total }`; it does not transform the supplied rows for you.
 
 ## Run in your application

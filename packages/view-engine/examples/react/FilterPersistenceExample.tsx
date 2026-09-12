@@ -11,32 +11,48 @@
  * limitations under the License.
  */
 
+import { ExampleViewPage } from './ExampleViewPage.js';
 import { useState } from 'react';
 import {
   createFilterConfiguration,
   newFilterNode,
-  type ViewDefinition,
+  type RecordViewDefinition,
   type ViewHost,
   type ViewInstance,
 } from '@ahoo-wang/fetcher-view-engine';
-import { Button, ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import { Button } from '@ahoo-wang/fetcher-view-engine/react';
 import { FilterOperator, type FilterExpression } from '@ahoo-wang/fetcher-wow';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
-import { orderDefinition, orderViews } from './orders.js';
-import { orderExtensions } from './OrderExtensions.js';
-import { createOrderService } from './orderService.js';
+import { orderDefinition, createProtocolViews } from './sales-order/views.js';
+import { orderExtensions } from './sales-order/OrderExtensions.js';
+import { createOrderSource } from './sales-order/querySource.js';
+import { createOrderService } from './sales-order/service.js';
 
-const definition: ViewDefinition = {
+const orderViews = createProtocolViews();
+const definition: RecordViewDefinition = {
   id: orderDefinition.id,
   title: '筛选配置持久化',
   sourceId: orderDefinition.sourceId,
-  rowKey: orderDefinition.rowKey,
-  fields: orderDefinition.fields,
+  fields: orderDefinition.fields
+    .filter(f =>
+      ['aggregateId', 'state.totalAmount', 'state.lifecycle'].includes(f.field),
+    )
+    .map(f =>
+      f.field === 'state.lifecycle'
+        ? {
+            ...f,
+            editor: { name: 'order-status' },
+            operators: [FilterOperator.EQ],
+          }
+        : f,
+    ),
   allowedOperators: orderDefinition.allowedOperators,
+  record: { rowKey: orderDefinition.record.rowKey, allowedLayouts: ['table'] },
 };
 const initial: ViewInstance = {
   ...orderViews.instances[0],
   title: '我的筛选配置',
+  scope: { type: 'personal' },
   revision: '1',
   config: {
     ...orderViews.instances[0].config,
@@ -44,16 +60,17 @@ const initial: ViewInstance = {
     presentation: {
       layout: 'table',
       table: {
-        columns:
-          orderViews.instances[0].config.presentation.table.columns.filter(
-            column => column.kind === 'field',
-          ),
+        columns: definition.fields.map(field => ({
+          id: field.field,
+          field: field.field,
+          kind: 'field',
+        })),
       },
     },
   },
 };
 
-/** A new ViewPage creates a new engine and restores the JSON, including opaque display props. */
+/** A new ExampleViewPage creates a new engine and restores the JSON, including opaque display props. */
 export function FilterPersistenceExample({
   appearance = 'light',
 }: {
@@ -65,14 +82,15 @@ export function FilterPersistenceExample({
   const [savedJson, setSavedJson] = useState(() => JSON.stringify(initial));
   const [host] = useState<ViewHost>(() => {
     let stored = savedJson;
-    const service = createOrderService({
-      onEvent: event => {
-        if (event.type === 'query')
-          setQueries(value => [...value, event.filter]);
+    const service = createOrderService();
+    const source = createOrderSource(service.read, {
+      onQuery: (_method, request) => {
+        if ('filter' in request)
+          setQueries(value => [...value, request.filter]);
       },
     });
     return {
-      resolveSource: service.host.resolveSource,
+      resolveSource: () => source,
       definition: { load: async () => structuredClone(definition) },
       instance: {
         list: async () => ({
@@ -123,7 +141,7 @@ export function FilterPersistenceExample({
         查询 <span data-testid="persistence-query-count">{queries.length}</span>{' '}
         次 · 保存 <span data-testid="persistence-save-count">{writes}</span> 次
       </p>
-      <ViewPage
+      <ExampleViewPage
         key={generation}
         definitionId={definition.id}
         scopeKey="local-user:filter-persistence"

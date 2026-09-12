@@ -21,7 +21,7 @@ import {
 } from '@testing-library/react';
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ViewPage } from '../src/record/ViewPage.js';
+import { ViewPage } from './fixtures/OwnedViewPage.js';
 import { setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
@@ -30,6 +30,12 @@ it('navigation collapse retains the filter buffer and does not query', async () 
   const { host, paged } = setup();
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
+  expect(
+    within(screen.getByRole('complementary')).getByRole('heading', {
+      name: '订单管理',
+      level: 1,
+    }),
+  ).toBeTruthy();
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
     target: { value: '99' },
   });
@@ -38,8 +44,49 @@ it('navigation collapse retains the filter buffer and does not query', async () 
   expect(
     (screen.getByRole('textbox', { name: '金额值' }) as HTMLInputElement).value,
   ).toBe('99');
+  const title = screen.getByRole('heading', { name: '订单管理', level: 1 });
+  expect(title.previousElementSibling).toBe(
+    screen.getByRole('button', { name: '展开视图列表' }),
+  );
+  fireEvent.click(screen.getByRole('button', { name: '展开视图列表' }));
+  expect(
+    within(screen.getByRole('complementary')).getByRole('heading', {
+      name: '订单管理',
+      level: 1,
+    }),
+  ).toBeTruthy();
   expect(paged).toHaveBeenCalledTimes(1);
 });
+it.each([false, true])(
+  'keeps focus on the sidebar toggle after each transition (initially collapsed: %s)',
+  async collapsed => {
+    const { host, paged } = setup();
+    render(
+      <ViewPage
+        scopeKey="test-user"
+        definitionId="orders"
+        host={host}
+        initialSidebarCollapsed={collapsed}
+      />,
+    );
+    await screen.findByRole('cell', { name: '42' });
+    expect(document.activeElement).toBe(document.body);
+    for (let index = 0; index < 2; index++) {
+      const current = screen.getByRole('button', {
+        name: collapsed ? '展开视图列表' : '收起视图列表',
+      });
+      current.focus();
+      fireEvent.click(current);
+      collapsed = !collapsed;
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', {
+          name: collapsed ? '展开视图列表' : '收起视图列表',
+        }),
+      );
+    }
+    expect(paged).toHaveBeenCalledTimes(1);
+  },
+);
 it.each([false, true])(
   'restores each pending filter after navigating through the grouped view picker (collapsed: %s)',
   async collapsed => {
@@ -97,7 +144,7 @@ it.each([false, true])(
     expect(
       (screen.getByRole('button', { name: '保存' }) as HTMLButtonElement)
         .disabled,
-    ).toBe(true);
+    ).toBe(false);
     await select('所有订单');
     expect(
       (screen.getByRole('textbox', { name: '金额值' }) as HTMLInputElement)

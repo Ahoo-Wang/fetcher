@@ -15,12 +15,12 @@ import {
   EventStreamConvertError,
   type ServerSentEventStream,
   toServerSentEventStream,
-} from './eventStreamConverter';
+} from './eventStreamConverter.js';
 import {
   type JsonServerSentEventStream,
   type TerminateDetector,
   toJsonServerSentEventStream,
-} from './jsonServerSentEventTransformStream';
+} from './jsonServerSentEventTransformStream.js';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';
 
 declare global {

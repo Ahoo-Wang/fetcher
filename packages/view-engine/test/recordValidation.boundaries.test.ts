@@ -13,11 +13,9 @@
 
 import { FilterOperator, SortDirection } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
-import {
-  validateViewDefinition,
-  validateViewInstance,
-} from '../src/record/recordValidation.js';
-import type { ViewHost } from '../src/record/ViewHost.js';
+import { validateViewDefinition } from '../src/contracts/validation/definitionValidation.js';
+import { validateViewInstance } from '../src/contracts/validation/instanceValidation.js';
+import type { ViewHost } from '../src/contracts/ViewHost.js';
 import { definition, instance, setup } from './engine/fixtures.js';
 
 it('accepts typed enum identities, nested fields and explicit operator editor bindings', () => {
@@ -131,7 +129,7 @@ it.each([
   [{ pagination: { mode: 'offset', size: 10 } }, '分页方式'],
   [{ pagination: { mode: 'paged', size: 0 } }, '每页数量'],
   [{ pagination: { mode: 'paged', size: 1.5 } }, '每页数量'],
-  [{ presentation: { layout: 'grid', table: { columns: [] } } }, 'table 布局'],
+  [{ presentation: { layout: 'grid', table: { columns: [] } } }, '展示布局'],
 ])(
   'rejects saved query configuration that cannot be executed %j',
   (patch, message) => {
@@ -196,6 +194,78 @@ it('keeps malformed host lists out of sessions and recovers after the host fixes
       selectedInstanceId: 'mine',
     });
     expect(paged).toHaveBeenCalledOnce();
+  } finally {
+    engine.dispose();
+  }
+});
+
+it.each([
+  { pagination: {} },
+  { pagination: [] },
+  { presentation: {} },
+  { presentation: { layout: 'table' } },
+  { presentation: { layout: 'table', table: { columns: [null] } } },
+  { presentation: { layout: 'card', card: { fields: [] } } },
+  {
+    presentation: {
+      layout: 'card',
+      card: { title: { id: 'title', field: 'state.amount' }, fields: null },
+    },
+  },
+  { sort: [null] },
+  { sort: [{ field: 'state.amount' }] },
+])(
+  'rejects structurally unsafe record configuration before recovery publication: %j',
+  patch => {
+    const saved = instance();
+    expect(() =>
+      validateViewInstance(
+        { ...saved, config: { ...saved.config, ...patch } },
+        definition,
+        undefined,
+        false,
+      ),
+    ).toThrow();
+  },
+);
+
+it('retains unknown field references as semantic recovery issues', () => {
+  const saved = instance();
+  saved.config.sort = [{ field: 'removed', direction: SortDirection.ASC }];
+  saved.config.presentation = {
+    layout: 'table',
+    table: { columns: [{ id: 'removed', kind: 'field', field: 'removed' }] },
+  };
+  expect(() =>
+    validateViewInstance(saved, definition, undefined, false),
+  ).not.toThrow();
+  expect(() => validateViewInstance(saved, definition)).toThrow(
+    '字段不支持排序',
+  );
+});
+
+it('does not publish or query a default record with missing layout discriminants', async () => {
+  const saved = instance();
+  const malformed = {
+    ...saved,
+    config: { ...saved.config, pagination: {}, presentation: {} },
+  };
+  const { engine, paged } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () => ({
+          instances: [malformed],
+          defaultInstanceId: saved.id,
+        }),
+      },
+    } as never,
+  });
+  try {
+    await expect(engine.load()).rejects.toThrow();
+    expect(engine.getSnapshot().status).toBe('error');
+    expect(engine.getSnapshot().sessions).toEqual({});
+    expect(paged).not.toHaveBeenCalled();
   } finally {
     engine.dispose();
   }

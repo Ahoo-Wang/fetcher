@@ -11,10 +11,11 @@
  * limitations under the License.
  */
 
-import { expect, it, vi } from 'vitest';
-import type { ViewInstance } from '../../src/record/recordModel.js';
-import type { ViewHost } from '../../src/record/ViewHost.js';
-import { ViewServiceError } from '../../src/record/viewServiceContract.js';
+import { describe, expect, it, vi } from 'vitest';
+import type { ViewInstance } from '../../src/contracts/viewModel.js';
+import type { ViewHost } from '../../src/contracts/ViewHost.js';
+import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
+import { reconcileWriteFailure } from '../../src/engine/writeRecovery.js';
 import {
   deferred,
   instance,
@@ -39,7 +40,9 @@ it.each(['save', 'rename', 'delete'] as const)(
         ...instance(id),
         title,
       }));
-      host.instance!.delete = vi.fn().mockResolvedValue(undefined);
+      host.instance!.delete = vi
+        .fn()
+        .mockResolvedValue({ defaultInstance: null });
       host.instance![operation] = vi.fn().mockRejectedValue(failure);
       host.instance!.load = vi.fn(async () => ({
         ...instance(),
@@ -113,9 +116,11 @@ it.each(['save', 'rename'] as const)(
       await expect(
         operation === 'save' ? engine.save() : engine.renameInstance('Rename'),
       ).rejects.toBe(failure);
-      engine.setColumns([
-        { id: 'amount', kind: 'field', field: 'state.amount', width: 321 },
-      ]);
+      engine
+        .record(engine.getSnapshot().selectedInstanceId!)
+        .setColumns([
+          { id: 'amount', kind: 'field', field: 'state.amount', width: 321 },
+        ]);
       const draft = selected(engine).instance.config;
       expect(engine.canReloadInstance()).toBe(true);
       expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
@@ -123,8 +128,9 @@ it.each(['save', 'rename'] as const)(
       expect(list).toHaveBeenCalledWith('orders', expect.any(AbortSignal));
       expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
       expect(selected(engine)).toMatchObject({
-        baseline: persisted,
-        instance: { title: 'Local title', config: draft, revision: 'r2' },
+        baseline: instance(),
+        conflict: { remote: persisted },
+        instance: { title: 'Local title', config: draft, revision: 'r1' },
         requiresReload: false,
         writeError: null,
         dirty: true,
@@ -133,7 +139,10 @@ it.each(['save', 'rename'] as const)(
         ...value,
         revision: 'r3',
       }));
-      await engine.save();
+      await expect(engine.save()).rejects.toThrow('冲突');
+      expect(host.instance!.save).not.toHaveBeenCalled();
+      await engine.overwriteInstance(selected(engine).conflict!, 'mine');
+      expect(selected(engine).conflict).toBeUndefined();
       expect(host.instance!.save).toHaveBeenCalledWith(
         expect.objectContaining({
           revision: 'r2',
@@ -195,6 +204,7 @@ it.each(['save', 'rename', 'delete'] as const)(
       host.instance!.rename = vi.fn(() => response.promise);
       host.instance!.delete = vi.fn(async () => {
         await response.promise;
+        return { defaultInstance: null };
       });
       await engine.load();
       engine.setTitle('Submitted');
@@ -240,3 +250,32 @@ it.each(['save', 'rename', 'delete'] as const)(
     }
   },
 );
+
+describe('reconcileWriteFailure', () => {
+  it('runs beforePatch, then patch inside finish, then rethrows the original error', () => {
+    const order: string[] = [];
+    const error = new Error('写入失败');
+    expect(() =>
+      reconcileWriteFailure(error, {
+        finish: onSettled => {
+          order.push('finish');
+          onSettled();
+        },
+        patch: () => order.push('patch'),
+        beforePatch: () => order.push('beforePatch'),
+      }),
+    ).toThrow(error);
+    expect(order).toEqual(['beforePatch', 'finish', 'patch']);
+  });
+
+  it('works without beforePatch and always rethrows', () => {
+    const finish = vi.fn(onSettled => onSettled());
+    expect(() =>
+      reconcileWriteFailure('boom', {
+        finish,
+        patch: () => {},
+      }),
+    ).toThrow('boom');
+    expect(finish).toHaveBeenCalledOnce();
+  });
+});

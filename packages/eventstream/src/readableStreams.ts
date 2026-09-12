@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { ReadableStreamAsyncIterable } from './readableStreamAsyncIterable';
+import { ReadableStreamAsyncIterable } from './readableStreamAsyncIterable.js';
 
 /**
  * Checks if the current environment natively supports async iteration on ReadableStream.

@@ -12,8 +12,8 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { useMounted } from './useMounted';
-import { useLatest } from './useLatest';
+import { useMounted } from './useMounted.js';
+import { useLatest } from './useLatest.js';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 
 /**

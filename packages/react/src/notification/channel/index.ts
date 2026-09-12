@@ -1,3 +1,3 @@
-export * from './notificationChannel';
-export * from './notificationChannelRegistry';
-export * from './browserNotification';
+export * from './notificationChannel.js';
+export * from './notificationChannelRegistry.js';
+export * from './browserNotification.js';

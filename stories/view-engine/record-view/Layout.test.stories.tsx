@@ -28,7 +28,8 @@ import type { Story } from './demoTypes.js';
 
 const meta = {
   ...displayMeta,
-  title: 'View Engine/Record View/布局与主题/回归',
+  id: 'view-engine-专项场景-record-view-布局与主题-回归',
+  title: 'View Engine/数据视图/布局与主题/回归',
   tags: ['!dev', '!autodocs', 'test'],
 };
 

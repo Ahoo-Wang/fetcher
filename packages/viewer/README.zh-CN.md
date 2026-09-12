@@ -1,5 +1,9 @@
 # `@ahoo-wang/fetcher-viewer`
 
+> **维护期（已弃用）**
+>
+> `@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/README.zh-CN.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+
 面向过滤器、表格、保存视图和远程数据工作流的 React + Ant Design 组件。应用自己
 负责加载与持久化时从 `Viewer` 开始；只有对接匹配的 Viewer 后端契约时才使用
 `FetcherViewer`。

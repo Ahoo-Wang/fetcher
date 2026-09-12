@@ -19,7 +19,8 @@ import displayMeta, {
 } from './BuiltinCells.stories.js';
 const meta = {
   ...displayMeta,
-  title: 'View Engine/单元格/内置组件/回归',
+  id: 'view-engine-专项场景-单元格-内置组件-回归',
+  title: 'View Engine/扩展与组件/内置单元格/回归',
   tags: ['!dev', '!autodocs', 'test'],
 };
 export default meta;

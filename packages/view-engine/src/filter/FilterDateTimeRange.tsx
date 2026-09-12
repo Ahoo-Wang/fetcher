@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { useOverlayOpen } from '../lib/OverlayScope.js';
 import { sameJsonState } from '../lib/snapshot.js';
 import type {
   FilterFieldDefinition,
@@ -66,7 +67,7 @@ export function FilterDateTimeRange({
   onValidityChange,
   disabled,
 }: FilterDateTimeRangeProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useOverlayOpen();
   const [draft, setDraft] = useState(value);
   const [draftError, setDraftError] = useState<string>();
   const draftErrorId = useId();
@@ -91,6 +92,8 @@ export function FilterDateTimeRange({
       ? dateTimeValue(timed ? dateTimeToSeconds(bound) : bound, timeZone)
       : {
           date:
+            // 草稿值可为任意已保存 JSON，故意 ToString 以保持既有输入框回显不变。
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
             bound === undefined || bound === null ? undefined : String(bound),
         };
   const lower = parts(value.lowerBound);

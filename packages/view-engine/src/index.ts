@@ -28,9 +28,9 @@ export {
   FILTER_OPERATORS,
 } from './filter/filterCore.js';
 
-export type * from './record/recordModel.js';
-export type * from './record/ViewHost.js';
-export { ViewEngine } from './record/ViewEngine.js';
+export type * from './contracts/viewModel.js';
+export type * from './contracts/ViewHost.js';
+export { ViewEngine } from './engine/ViewEngine.js';
 export { getRecordSummaryMetrics } from './record/recordPresentation.js';
 export {
   RECORD_SUMMARY_LABELS,
@@ -46,9 +46,9 @@ export {
   createRecordSummaryQuery,
   readRecordSummaryResult,
 } from './record/recordSummary.js';
+export { validateViewDefinition } from './contracts/validation/definitionValidation.js';
+export { validateViewInstance } from './contracts/validation/instanceValidation.js';
 export {
-  validateViewDefinition,
-  validateViewInstance,
   readRecordValue,
   getRecordKey,
   validateRecordRows,
@@ -61,20 +61,50 @@ export {
 export { sameFilterQuery } from './filter/filterTree.js';
 
 export {
-  LocalStorageViewHost,
-  type LocalStorageViewHostOptions,
-} from './record/LocalStorageViewHost.js';
+  MemoryViewHost,
+  type MemoryViewHostOptions,
+} from './record/MemoryViewHost.js';
 
-export { ViewServiceError } from './record/viewServiceContract.js';
+export { ViewServiceError } from './contracts/viewServiceContract.js';
 export type {
   ViewServiceErrorCode,
   ViewCreateContext,
+  ViewDeleteResult,
   ViewPermissionSnapshot,
-  ViewStorageLock,
-} from './record/viewServiceContract.js';
+} from './contracts/viewServiceContract.js';
 
 export type {
   FilterOptionSource,
   FilterOptionValue,
   FilterOptionItem,
 } from './filter/filterOptionSource.js';
+
+export { resolveRecordPresentation } from './record/resolveRecordPresentation.js';
+
+export type * from './analysis/analysisModel.js';
+export { MAX_ANALYSIS_ELEMENTS } from './analysis/analysisModel.js';
+export { compileAnalysis } from './analysis/analysisCompiler.js';
+export {
+  validateAnalysisResult,
+  analysisRowKey,
+} from './analysis/analysisResult.js';
+
+export {
+  analysisScopeContext,
+  compileAnalysisExpression,
+} from './analysis/analysisCompiler.js';
+export { adaptWowAnalysisSchema } from './analysis/wowAnalysis.js';
+export type {
+  WowAnalysisSchema,
+  WowAnalysisSchemaOptions,
+} from './analysis/wowAnalysis.js';
+export type { AnalysisPresentation } from './analysis/analysisPresentation.js';
+export {
+  projectAnalysis,
+  validateAnalysisPresentation,
+} from './analysis/analysisProjection.js';
+
+export { formatAnalysisValue } from './analysis/analysisFormatting.js';
+
+export { ANALYSIS_VISUALIZATIONS } from './analysis/analysisVisualizations.js';
+export type { AnalysisVisualizationType } from './analysis/analysisVisualizations.js';

@@ -21,14 +21,17 @@ import {
 } from '@testing-library/react';
 import { useState, type ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { RecordLayoutSwitch } from '../src/record/page/RecordLayoutSwitch.js';
 import { RecordView } from '../src/record/RecordView.js';
-import { ViewEngine } from '../src/record/ViewEngine.js';
-import { ViewPage, ViewPageContent } from '../src/record/ViewPage.js';
+import { ViewEngine } from '../src/engine/ViewEngine.js';
+import { ViewPage } from './fixtures/OwnedViewPage.js';
+import { ViewPageContent } from '../src/view/ViewPage.js';
 import type {
   RecordPaginationRenderContext,
-  RecordTableToolbarRenderContext,
+  RecordCardRenderContext,
+  RecordToolbarRenderContext,
 } from '../src/record/recordReactTypes.js';
-import type { ViewInstance } from '../src/record/recordModel.js';
+import type { ViewInstance } from '../src/contracts/viewModel.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 const engines: ViewEngine[] = [];
@@ -53,29 +56,31 @@ function StatefulRegion({ children }: { children: ReactNode }) {
 
 it('forwards record regions through ViewPage and composes each default region once', async () => {
   const { host } = setup();
-  const tableContexts: RecordTableToolbarRenderContext[] = [];
+  const tableContexts: RecordToolbarRenderContext[] = [];
   const paginationContexts: RecordPaginationRenderContext[] = [];
   const page = render(
     <ViewPage
       scopeKey="regions"
       definitionId="orders"
       host={host}
-      renderTableToolbar={context => {
-        tableContexts.push(context);
-        return (
-          <div aria-label="自定义表格工具栏">{context.defaultContent}</div>
-        );
-      }}
-      renderPagination={context => {
-        paginationContexts.push(context);
-        return <StatefulRegion>{context.defaultContent}</StatefulRegion>;
+      record={{
+        renderToolbar: context => {
+          tableContexts.push(context);
+          return (
+            <div aria-label="自定义记录工具栏">{context.defaultContent}</div>
+          );
+        },
+        renderPagination: context => {
+          paginationContexts.push(context);
+          return <StatefulRegion>{context.defaultContent}</StatefulRegion>;
+        },
       }}
     />,
   );
 
   expect(await screen.findByRole('cell', { name: '42' })).toBeTruthy();
-  expect(screen.getByLabelText('自定义表格工具栏')).toBeTruthy();
-  expect(screen.getAllByRole('group', { name: '表格工具栏' })).toHaveLength(1);
+  expect(screen.getByLabelText('自定义记录工具栏')).toBeTruthy();
+  expect(screen.getAllByRole('group', { name: '记录工具栏' })).toHaveLength(1);
   expect(screen.getAllByRole('navigation', { name: '记录分页' })).toHaveLength(
     1,
   );
@@ -89,12 +94,14 @@ it('forwards record regions through ViewPage and composes each default region on
       scopeKey="regions"
       definitionId="orders"
       host={{ ...host }}
-      renderTableToolbar={context => (
-        <div aria-label="自定义表格工具栏">{context.defaultContent}</div>
-      )}
-      renderPagination={context => (
-        <StatefulRegion>{context.defaultContent}</StatefulRegion>
-      )}
+      record={{
+        renderToolbar: context => (
+          <div aria-label="自定义记录工具栏">{context.defaultContent}</div>
+        ),
+        renderPagination: context => (
+          <StatefulRegion>{context.defaultContent}</StatefulRegion>
+        ),
+      }}
     />,
   );
   expect(screen.getByRole('button', { name: '区域状态 1' })).toBeTruthy();
@@ -115,19 +122,21 @@ it('binds ViewPageContent region operations to their rendered instance', async (
   });
   engines.push(engine);
   await engine.load();
-  let table!: RecordTableToolbarRenderContext;
+  let table!: RecordToolbarRenderContext;
   let pagination!: RecordPaginationRenderContext;
   render(
     <ViewPageContent
       engine={engine}
-      selectable
-      renderTableToolbar={context => {
-        if (context.session.instance.id === instance.id) table = context;
-        return context.defaultContent;
-      }}
-      renderPagination={context => {
-        if (context.session.instance.id === instance.id) pagination = context;
-        return context.defaultContent;
+      record={{
+        selectable: true,
+        renderToolbar: context => {
+          if (context.session.instance.id === instance.id) table = context;
+          return context.defaultContent;
+        },
+        renderPagination: context => {
+          if (context.session.instance.id === instance.id) pagination = context;
+          return context.defaultContent;
+        },
       }}
     />,
   );
@@ -280,25 +289,25 @@ it('isolates region rendering failures and preserves stateful sibling regions', 
   const view = render(
     <RecordView
       engine={engine}
-      renderTableToolbar={() => <BrokenChild />}
+      renderToolbar={() => <BrokenChild />}
       renderPagination={context => (
         <StatefulRegion>{context.defaultContent}</StatefulRegion>
       )}
     />,
   );
-  expect(screen.getByText('表格工具栏渲染失败')).toBeTruthy();
+  expect(screen.getByText('记录工具栏渲染失败')).toBeTruthy();
   expect(screen.getByRole('cell', { name: '42' })).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '区域状态 0' }));
   view.rerender(
     <RecordView
       engine={engine}
-      renderTableToolbar={context => context.defaultContent}
+      renderToolbar={context => context.defaultContent}
       renderPagination={context => (
         <StatefulRegion>{context.defaultContent}</StatefulRegion>
       )}
     />,
   );
-  expect(screen.getByRole('group', { name: '表格工具栏' })).toBeTruthy();
+  expect(screen.getByRole('group', { name: '记录工具栏' })).toBeTruthy();
   expect(screen.getByRole('button', { name: '区域状态 1' })).toBeTruthy();
   expect(consoleError).toHaveBeenCalled();
 });
@@ -311,14 +320,14 @@ it('exposes stable slots for record semantic regions', async () => {
   expect(root.getAttribute('data-slot')).toBe('record-view');
   for (const slot of [
     'record-global-toolbar',
-    'record-table-toolbar',
+    'record-toolbar',
     'record-applied-filters',
     'record-pagination',
   ])
     expect(root.querySelectorAll(`[data-slot="${slot}"]`)).toHaveLength(1);
 });
 
-it.each(['renderTableToolbar', 'renderPagination'] as const)(
+it.each(['renderToolbar', 'renderPagination'] as const)(
   'isolates %s local state per instance in standalone RecordView',
   async region => {
     const { host } = setup();
@@ -343,9 +352,179 @@ it.each(['renderTableToolbar', 'renderPagination'] as const)(
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: '区域状态 0' }));
-    await act(() => engine.refresh());
+    await act(() =>
+      engine.record(engine.getSnapshot().selectedInstanceId!).refresh(),
+    );
     expect(screen.getByRole('button', { name: '区域状态 1' })).toBeTruthy();
     await act(() => engine.selectInstance('other'));
     expect(screen.getByRole('button', { name: '区域状态 0' })).toBeTruthy();
   },
 );
+
+it('places layout switching in the global toolbar and forwards custom cards from ViewPage', async () => {
+  const { host } = setup();
+  render(
+    <ViewPage
+      scopeKey="custom-card"
+      definitionId="orders"
+      host={host}
+      record={{
+        renderCard: ({ record }) => <div>业务卡片 {String(record.amount)}</div>,
+      }}
+    />,
+  );
+  await screen.findByRole('cell', { name: '42' });
+  const global = screen.getByRole('group', { name: '全局工具栏' });
+  expect(screen.getByRole('button', { name: '收起筛选' }).parentElement).toBe(
+    screen.getByRole('group', { name: '筛选控制' }),
+  );
+  const switcher = screen.getByRole('group', { name: '展示方式' });
+  expect(global.contains(switcher)).toBe(true);
+  expect(
+    screen.queryByRole('button', { name: '卡片', exact: true }),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '展示方式：表格' }));
+  fireEvent.click(
+    await screen.findByRole('menuitemradio', { name: '卡片', exact: true }),
+  );
+  expect(await screen.findByText('业务卡片 42')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: '卡片设置' })).toBeNull();
+  expect(screen.queryByRole('table')).toBeNull();
+});
+
+it('hides layout switching when the definition allows only one layout', () => {
+  for (const layout of ['table', 'card'] as const) {
+    const view = render(
+      <RecordLayoutSwitch
+        layout={layout}
+        allowedLayouts={[layout]}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('group', { name: '展示方式' })).toBeNull();
+    view.unmount();
+  }
+});
+
+it('sorts a card-only view using the shared engine configuration', async () => {
+  const { host, paged } = setup();
+  const onlyCard = {
+    ...definition,
+    record: { ...definition.record, allowedLayouts: ['card'] as const },
+  };
+  const saved = structuredClone(instance);
+  saved.config.presentation = {
+    layout: 'card',
+    card: { title: { id: 'title', field: 'id' }, fields: [] },
+  };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition: onlyCard,
+    instances: { instances: [saved], defaultInstanceId: saved.id },
+    host,
+  });
+  engines.push(engine);
+  await engine.load();
+  render(<RecordView engine={engine} />);
+  expect(screen.queryByRole('group', { name: '展示方式' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '排序：默认' }));
+  fireEvent.click(await screen.findByRole('combobox', { name: '添加排序' }));
+  const amount = await screen.findByRole('option', { name: '金额' });
+  fireEvent.pointerDown(amount, { pointerType: 'mouse' });
+  fireEvent.click(amount);
+  await waitFor(() =>
+    expect(engine.getSnapshot().sessions[saved.id].queryStatus).toBe('success'),
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: '金额排序：升序' }),
+  );
+  await waitFor(() =>
+    expect(
+      engine.getSnapshot().sessions[saved.id].instance.config.sort,
+    ).toEqual([{ field: 'amount', direction: 'DESC' }]),
+  );
+  expect(paged.mock.lastCall?.[0].sort).toEqual([
+    { field: 'amount', direction: 'DESC' },
+  ]);
+  expect(screen.getByRole('button', { name: '排序：金额 ↓' })).toBeTruthy();
+  await waitFor(() =>
+    expect(engine.getSnapshot().sessions[saved.id].queryStatus).toBe('success'),
+  );
+  fireEvent.click(screen.getByRole('button', { name: '清除全部' }));
+  await waitFor(() =>
+    expect(
+      engine.getSnapshot().sessions[saved.id].instance.config.sort,
+    ).toEqual([]),
+  );
+});
+
+it('ignores delayed layout edits after their rendered instance has been deleted', async () => {
+  const { host } = setup();
+  host.instance!.delete = vi.fn().mockResolvedValue({ defaultInstance: null });
+  host.permission = { getInstance: () => ({ delete: true }) };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host,
+  });
+  engines.push(engine);
+  await engine.load();
+  let captured!: RecordToolbarRenderContext;
+  render(
+    <RecordView
+      engine={engine}
+      renderToolbar={context => {
+        captured = context;
+        return context.defaultContent;
+      }}
+    />,
+  );
+  await screen.findByRole('cell', { name: '42' });
+  const delayed = captured;
+  await act(() => engine.deleteInstance(instance.id));
+  const state = engine.getSnapshot();
+  expect(() => delayed.setLayout('card')).not.toThrow();
+  expect(() =>
+    delayed.setCardConfig({ title: { id: 'title', field: 'id' }, fields: [] }),
+  ).not.toThrow();
+  expect(engine.getSnapshot()).toBe(state);
+});
+
+it('uses the same guarded refresh for retained card and toolbar contexts', async () => {
+  const { host, paged } = setup();
+  host.instance!.delete = vi.fn().mockResolvedValue({ defaultInstance: null });
+  host.permission = { getInstance: () => ({ delete: true }) };
+  const engine = new ViewEngine({
+    definitionId: definition.id,
+    definition,
+    instances: { instances: [instance], defaultInstanceId: instance.id },
+    host,
+  });
+  engines.push(engine);
+  await engine.load();
+  engine.record(engine.getSnapshot().selectedInstanceId!).setLayout('card');
+  let card!: RecordCardRenderContext;
+  let toolbar!: RecordToolbarRenderContext;
+  render(
+    <RecordView
+      engine={engine}
+      renderCard={context => {
+        card = context;
+        return context.defaultContent;
+      }}
+      renderToolbar={context => {
+        toolbar = context;
+        return context.defaultContent;
+      }}
+    />,
+  );
+  await screen.findByRole('list', { name: '记录卡片' });
+  const delayed = card;
+  expect(card.refresh).toBe(toolbar.refresh);
+  await act(() => delayed.refresh());
+  const reads = paged.mock.calls.length;
+  await act(() => engine.deleteInstance(instance.id));
+  await expect(delayed.refresh()).resolves.toBeUndefined();
+  expect(paged).toHaveBeenCalledTimes(reads);
+});

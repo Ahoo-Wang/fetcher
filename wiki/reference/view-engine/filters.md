@@ -70,3 +70,11 @@ interface FilterOptionSource {
 ```
 
 The actual search query uses `Pick<CursorQuery, 'cursor' | 'size'>` plus search; follow its exported types when implementing. Values are strings or finite numbers. Resolve must classify each requested ID once, preserving number/string identity. Search, pagination and label hydration have separate error recovery; a failed next page retains prior candidates. Saved labels do not replace authorization or source revalidation.
+
+## Recoverable text values
+
+`FilterTextValues` accepts `value?: readonly string[]`, optional controlled `rawText?: string`, `onRawTextChange?(text)` for raw typing, and `onValueChange(values, rawText)`. Without `rawText` it owns a local input buffer. Enter/paste commits the new value collection with an empty buffer in one callback; removing a chip returns the remaining values with the current buffer. A controlled caller must update both values and rawText from that callback. IME confirmation does not submit a token or query.
+
+The registered `text-values` editor serializes every raw edit in `props.rawText`, so unconfirmed input survives instance navigation. Nonempty trimmed rawText prevents pure compilation; a non-string rawText is invalid. Confirmation removes rawText while retaining confirmed values; clearing removes both values and rawText. Whitespace-only input contributes no unconfirmed value. Standalone `onValidityChange(valid, message?)` remains optional; registered validity comes from compilation.
+
+For pure COUNT/SUM compilation with these same filter configurations, see [Pure analysis compilation](./components.md#pure-analysis-compilation).

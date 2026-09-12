@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { ExampleViewPage } from './ExampleViewPage.js';
+import { IndexedDBViewHost } from '@ahoo-wang/fetcher-view-engine/react';
 import { useState } from 'react';
 import {
   Fetcher,
@@ -22,14 +24,15 @@ import {
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
 import {
-  LocalStorageViewHost,
+  MemoryViewHost,
+  type MemoryViewHostOptions,
   createFilterConfiguration,
   type FilterComponentConfig,
   type FilterOptionSource,
-  type ViewDefinition,
+  type RecordViewDefinition,
   type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
-import { Button, ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
+import { Button } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 const candidates = [
@@ -38,11 +41,10 @@ const candidates = [
   { value: 'u3', label: '用户丙', group: '运营' },
   { value: 'u4', label: '用户丁', group: '运营' },
 ];
-const definition: ViewDefinition = {
+const definition: RecordViewDefinition = {
   id: 'builtin-filters',
   title: '内置筛选器',
   sourceId: 'query-echo',
-  rowKey: 'id',
   timeZone: 'Asia/Shanghai',
   fields: [
     { field: 'id', label: '编号', type: 'string' },
@@ -92,6 +94,7 @@ const definition: ViewDefinition = {
       editor: { name: 'datetime-range' },
     },
   ],
+  record: { allowedLayouts: ['table', 'card'], rowKey: 'id' },
 };
 const draft: FilterComponentConfig = {
   id: 'all',
@@ -194,18 +197,7 @@ function ExampleSession({
   const [generation, setGeneration] = useState(0);
   const [saved, setSaved] = useState('');
   const [runtime] = useState(() => {
-    const memory = new Map<string, string>();
-    const storage = persist
-      ? localStorage
-      : {
-          getItem: (key: string) => memory.get(key) ?? null,
-          setItem: (key: string, value: string) => {
-            memory.set(key, value);
-          },
-          removeItem: (key: string) => {
-            memory.delete(key);
-          },
-        };
+    const store = new Map<string, string | null>();
     const client = new Fetcher();
     // Only this deterministic data-URL fixture bypasses HTTP URL-template resolution.
     client.interceptors.request.eject(URL_RESOLVE_INTERCEPTOR_NAME);
@@ -250,24 +242,24 @@ function ExampleSession({
         );
       },
     };
+    const configuration: MemoryViewHostOptions = {
+      serviceKey: 'builtin-filter-demo',
+      scopeKey,
+      definition,
+      instances,
+      resolveSource: () => ({
+        paged: async query => {
+          if (!('filter' in query))
+            throw new Error('示例仅支持 Filter 查询协议');
+          setQueries(previous => [...previous, query.filter]);
+          return { list: [], total: 0 };
+        },
+      }),
+    };
     const createHost = () =>
-      new LocalStorageViewHost({
-        serviceKey: 'builtin-filter-demo',
-        scopeKey,
-        storage,
-        definition,
-        instances,
-        lock: (name, operation, signal) =>
-          navigator.locks.request(name, { signal }, operation),
-        resolveSource: () => ({
-          paged: async query => {
-            if (!('filter' in query))
-              throw new Error('示例仅支持 Filter 查询协议');
-            setQueries(previous => [...previous, query.filter]);
-            return { list: [], total: 0 };
-          },
-        }),
-      });
+      persist
+        ? new IndexedDBViewHost(configuration)
+        : new MemoryViewHost({ ...configuration, store });
     return { source, createHost };
   });
   const [host, setHost] = useState(runtime.createHost);
@@ -279,7 +271,8 @@ function ExampleSession({
     >
       <p>
         候选使用确定性本地数据，经 Fetcher
-        读取；记录查询仅回显表达式。视图配置由 LocalStorageViewHost 保存。
+        读取；记录查询仅回显表达式。视图配置由 MemoryViewHost /
+        IndexedDBViewHost 保存。
       </p>
       <div className="fve:mb-3 fve:flex fve:flex-wrap fve:gap-2">
         <Button
@@ -310,7 +303,7 @@ function ExampleSession({
           重置示例
         </Button>
       </div>
-      <ViewPage
+      <ExampleViewPage
         key={generation}
         definitionId={definition.id}
         host={host}

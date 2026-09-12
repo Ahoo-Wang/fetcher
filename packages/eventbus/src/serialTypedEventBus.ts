@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import type { EventHandler, EventType } from './types';
+import type { EventHandler, EventType } from './types.js';
 import { toSorted } from '@ahoo-wang/fetcher';
-import { AbstractTypedEventBus } from './abstractTypedEventBus';
+import { AbstractTypedEventBus } from './abstractTypedEventBus.js';
 
 /**
  * Serial implementation of TypedEventBus

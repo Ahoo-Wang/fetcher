@@ -5,6 +5,10 @@ description: 使用完整定义、初始视图和应用拥有的数据构建无�
 
 # 用 Viewer 渲染本地行
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 ## 前提
 
 使用[完整本地 Viewer 示例](../../examples/viewer.md)，其中提供消费者安装、入口文件和维护中的 `LocalViewer.tsx`。它运行于具备 Viewer peer 依赖的 React 环境，不需要 Wow 服务。保持铃铛形数据监控关闭：该独立功能需要真实 count 端点。

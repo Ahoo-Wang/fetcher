@@ -5,6 +5,10 @@ description: 先按条件过滤和排序，再按从 1 开始的页码切片。
 
 # 让分页与排序真正改变行
 
+::: warning 维护期（已弃用）
+`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+:::
+
 ## 前提
 
 先完成[本地行](./local-data.md)，运行完整 [LocalViewer 实现](../../examples/viewer.md)。四个用户、每页两行，便于观察翻页。替换成服务请求前，先理解这个已经工作的适配层。

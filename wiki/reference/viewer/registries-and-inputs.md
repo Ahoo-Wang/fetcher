@@ -5,6 +5,10 @@ description: 'Registries, inputs and fullscreen button — @ahoo-wang/fetcher-vi
 
 # Registries, inputs and fullscreen button
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 `TypedComponentRegistry<Type,Props>` stores React FunctionComponents by a type key. `create(entries = [])` constructs and registers entries. register throws for duplicates; get returns undefined when missing, unregister is a no-op for missing keys, clear empties the registry. types/entries return arrays and size/has inspect current state. Registries are mutable nonreactive objects; registering after a component renders does not itself force a rerender. Register application extensions once before rendering and unregister only registrations you own.
 
 The singleton filterRegistry and cellRegistry share this contract. TypedFilter chooses filterRegistry and a fallback; typedCellRender uses cellRegistry and returns undefined on a miss. Replacing an existing registration requires unregister then register. Clearing a singleton removes built-ins for all consumers. Custom filter components must preserve FilterRef/getValue/getState/reset, not only draw an input.

@@ -11,6 +11,6 @@
  * limitations under the License.
  */
 
-export * from './useFullscreen';
-export * from './FullscreenContext';
-export * from './utils';
+export * from './useFullscreen.js';
+export * from './FullscreenContext.js';
+export * from './utils.js';

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { RecordSession } from './recordModel.js';
+import type { RecordSession } from '../contracts/viewModel.js';
 
 /** Domain guards shared by the query command and its React controls. */
 export function getRecordRefreshBlockReason(session: RecordSession) {
@@ -21,7 +21,11 @@ export function getRecordRefreshBlockReason(session: RecordSession) {
   if (session.filterPending) return 'filter';
   if (session.selectedRowKeys.length) return 'selection';
   if (session.queryStatus !== 'success') return 'query';
-  if (session.allSummary.status === 'loading') return 'summary';
+  if (
+    session.instance.config.presentation.layout === 'table' &&
+    session.allSummary.status === 'loading'
+  )
+    return 'summary';
   if (session.instance.config.pagination.mode === 'cursor' && session.page > 1)
     return 'cursor';
   if (session.refreshing) return 'refresh';

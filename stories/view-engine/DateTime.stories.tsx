@@ -21,7 +21,8 @@ import {
 } from './DateTimeExamples.js';
 
 const meta = {
-  title: 'View Engine/基础组件/日期时间',
+  id: 'view-engine-专项场景-基础组件-日期时间',
+  title: 'View Engine/扩展与组件/日期时间',
   args: { appearance: 'light', disabled: false },
   argTypes: {
     appearance: { control: 'inline-radio', options: ['light', 'dark'] },

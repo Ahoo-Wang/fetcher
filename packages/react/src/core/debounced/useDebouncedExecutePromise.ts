@@ -14,13 +14,13 @@
 import type {
   UseExecutePromiseOptions,
   UseExecutePromiseReturn,
-} from '../useExecutePromise';
-import { useExecutePromise } from '../useExecutePromise';
+} from '../useExecutePromise.js';
+import { useExecutePromise } from '../useExecutePromise.js';
 import type {
   UseDebouncedCallbackOptions,
   UseDebouncedCallbackReturn,
-} from './useDebouncedCallback';
-import { useDebouncedCallback } from './useDebouncedCallback';
+} from './useDebouncedCallback.js';
+import { useDebouncedCallback } from './useDebouncedCallback.js';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import { useMemo } from 'react';
 

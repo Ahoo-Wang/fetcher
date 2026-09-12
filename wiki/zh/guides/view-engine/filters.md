@@ -55,4 +55,4 @@ const customerField: ViewFieldDefinition = {
 
 时区统一设置在 `ViewDefinition.timeZone`，例如 `Asia/Shanghai`；省略时使用运行环境本地时区。独立 `FilterPanel` 直接接收 `timeZone`，字段不覆盖全局设置。查询使用毫秒时间戳，组件配置保留可编辑的日期时间值。
 
-在 **View Engine → 过滤器 → 内置组件** 验证远程分页、重试与恢复，在 **基础组件 → 日期时间** 验证独立日期控件。
+在 **View Engine → 查询与筛选 → 内置筛选器** 验证远程分页、重试与恢复，在 **扩展与组件 → 日期时间** 验证独立日期控件。

@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { type NamedCapable } from './types';
-import { DEFAULT_OPTIONS, Fetcher, type FetcherOptions } from './fetcher';
-import { DEFAULT_FETCHER_NAME, fetcherRegistrar } from './fetcherRegistrar';
+import { type NamedCapable } from './types.js';
+import { DEFAULT_OPTIONS, Fetcher, type FetcherOptions } from './fetcher.js';
+import { DEFAULT_FETCHER_NAME, fetcherRegistrar } from './fetcherRegistrar.js';
 
 /**
  * NamedFetcher is an extension of the Fetcher class that automatically registers

@@ -1,0 +1,257 @@
+[
+  {
+    "kind": "performance",
+    "environment": {
+      "build": "development",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "viewport": {
+        "width": 1200,
+        "height": 900,
+        "devicePixelRatio": 1
+      },
+      "hardwareConcurrency": 14,
+      "visibility": "visible",
+      "timeOrigin": 1789088632432.2,
+      "measuredAt": "2026-09-11T01:04:02.783Z"
+    },
+    "fields": 100,
+    "filters": 20,
+    "returnedRows": 100,
+    "columns": 6,
+    "sampleCount": 30,
+    "warmupCount": 5,
+    "warmup": {
+      "inputMs": [
+        33.19999998807907, 68.59999996423721, 50.799999952316284,
+        49.89999997615814, 50
+      ],
+      "switchMs": [
+        134.80000001192093, 163.39999997615814, 84.60000002384186, 83,
+        83.59999996423721
+      ]
+    },
+    "input": {
+      "samplesMs": [
+        50.09999996423721, 50.40000003576279, 50.5, 99.30000001192093,
+        99.69999998807907, 66.69999998807907, 49.69999998807907, 50,
+        49.89999997615814, 51, 50.5, 49.80000001192093, 50.89999997615814,
+        51.09999996423721, 50.39999997615814, 50.09999996423721,
+        100.39999997615814, 116.5, 54, 50.60000002384186, 49.5,
+        50.10000002384186, 49.69999998807907, 49.89999997615814, 50,
+        49.30000001192093, 49.80000001192093, 49.90000003576279, 49.5,
+        50.89999997615814
+      ],
+      "p50Ms": 50.10000002384186,
+      "p95Ms": 100.39999997615814,
+      "maxMs": 116.5
+    },
+    "inputPhases": [
+      {
+        "lookupMs": 0.09999996423721313,
+        "dispatchMs": 31.200000047683716,
+        "remainingMs": 18.799999952316284
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 30,
+        "remainingMs": 20.30000001192093
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 34.30000001192093,
+        "remainingMs": 16.19999998807907
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 80.10000002384186,
+        "remainingMs": 19.099999964237213
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 75.80000001192093,
+        "remainingMs": 23.899999976158142
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 39.59999996423721,
+        "remainingMs": 27.100000023841858
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 29.899999976158142,
+        "remainingMs": 19.80000001192093
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 29.80000001192093,
+        "remainingMs": 20.099999964237213
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 31.19999998807907,
+        "remainingMs": 18.69999998807907
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 30.099999964237213,
+        "remainingMs": 20.80000001192093
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 30.599999964237213,
+        "remainingMs": 19.80000001192093
+      },
+      {
+        "lookupMs": 0.19999998807907104,
+        "dispatchMs": 31.30000001192093,
+        "remainingMs": 18.30000001192093
+      },
+      {
+        "lookupMs": 0.09999996423721313,
+        "dispatchMs": 29.5,
+        "remainingMs": 21.30000001192093
+      },
+      {
+        "lookupMs": 0.09999996423721313,
+        "dispatchMs": 31.100000023841858,
+        "remainingMs": 19.899999976158142
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 30,
+        "remainingMs": 20.299999952316284
+      },
+      {
+        "lookupMs": 0.09999996423721313,
+        "dispatchMs": 30.80000001192093,
+        "remainingMs": 19.19999998807907
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 80.39999997615814,
+        "remainingMs": 20
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 92.89999997615814,
+        "remainingMs": 23.5
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 38.59999996423721,
+        "remainingMs": 15.300000011920929
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 29.899999976158142,
+        "remainingMs": 20.600000023841858
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 30,
+        "remainingMs": 19.5
+      },
+      {
+        "lookupMs": 0.19999998807907104,
+        "dispatchMs": 31.5,
+        "remainingMs": 18.400000035762787
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 28.899999976158142,
+        "remainingMs": 20.69999998807907
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 29.100000023841858,
+        "remainingMs": 20.799999952316284
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 30.799999952316284,
+        "remainingMs": 19.200000047683716
+      },
+      {
+        "lookupMs": 0.09999996423721313,
+        "dispatchMs": 30.600000023841858,
+        "remainingMs": 18.600000023841858
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 29.600000023841858,
+        "remainingMs": 20.099999964237213
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 31.399999976158142,
+        "remainingMs": 18.400000035762787
+      },
+      {
+        "lookupMs": 0,
+        "dispatchMs": 29.30000001192093,
+        "remainingMs": 20.19999998807907
+      },
+      {
+        "lookupMs": 0.10000002384185791,
+        "dispatchMs": 30.599999964237213,
+        "remainingMs": 20.19999998807907
+      }
+    ],
+    "instanceSwitch": {
+      "samplesMs": [
+        83.80000001192093, 83, 83.79999995231628, 103.30000001192093,
+        133.10000002384186, 83.19999998807907, 83.10000002384186,
+        83.10000002384186, 83.09999996423721, 83.10000002384186,
+        83.09999996423721, 83.69999998807907, 83.19999998807907,
+        121.60000002384186, 119.09999996423721, 80.90000003576279,
+        83.39999997615814, 83.39999997615814, 82.89999997615814, 72.5,
+        83.39999997615814, 83.39999997615814, 116.5, 117, 82.39999997615814,
+        83.19999998807907, 83.40000003576279, 83.09999996423721,
+        83.30000001192093, 83.19999998807907
+      ],
+      "p50Ms": 83.19999998807907,
+      "p95Ms": 121.60000002384186,
+      "maxMs": 133.10000002384186
+    },
+    "thresholds": {
+      "inputP95Ms": 50,
+      "switchP95Ms": 100
+    },
+    "passed": false,
+    "productionAdmitted": false,
+    "requestsBefore": 2,
+    "requestsAfter": 2,
+    "method": "浏览器内performance.now；合成原生input/click事件分发前至两次requestAnimationFrame回调后；先对齐一帧不计时；断言DOM和引擎状态已提交。每项5热身+30正式样本，最近秩P95，不删除离群点。实例由固定fixture按钮调用公共selectInstance，两实例结果已预热；包含真实ViewPage渲染，无网络、无工具传输时延。"
+  },
+  {
+    "kind": "stress",
+    "environment": {
+      "build": "development",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "viewport": {
+        "width": 1200,
+        "height": 900,
+        "devicePixelRatio": 1
+      },
+      "hardwareConcurrency": 14,
+      "visibility": "visible",
+      "timeOrigin": 1789088632432.2,
+      "measuredAt": "2026-09-11T01:04:08.304Z"
+    },
+    "fields": 100,
+    "filters": 20,
+    "returnedRows": 10000,
+    "columns": 21,
+    "renderedDataRows": 100,
+    "input": {
+      "text": "压力验收_中文_ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789",
+      "characters": 45,
+      "preserved": true
+    },
+    "abortObserved": true,
+    "lateResponseIgnored": true,
+    "requests": 3,
+    "passed": true,
+    "scope": "取消由切换实例触发；故意迟到的传输回包不得覆盖旧成功结果或新选择"
+  }
+]

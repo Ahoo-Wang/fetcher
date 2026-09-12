@@ -1,0 +1,72 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { expect, it, vi } from 'vitest';
+import { SortDirection } from '@ahoo-wang/fetcher-wow';
+import { ViewServiceError } from '../../src/record/viewServiceContract.js';
+import type { ViewInstance } from '../../src/record/recordModel.js';
+import { instance, setup } from './fixtures.js';
+
+it('does not revert a collaborator config change when the local user only changed title', async () => {
+  const remote = instance();
+  remote.revision = 'r2';
+  remote.config.pagination.size = 50;
+  const save = vi
+    .fn<(value: ViewInstance) => Promise<ViewInstance>>()
+    .mockRejectedValueOnce(
+      new ViewServiceError('REVISION_CONFLICT', 'Version changed'),
+    )
+    .mockImplementation(async value => ({ ...value, revision: 'r3' }));
+  const runtime = setup({
+    host: {
+      resolveSource: () => ({
+        paged: async () => ({
+          list: [{ state: { id: 'a', amount: 10 } }],
+          total: 1,
+        }),
+      }),
+      instance: { load: async () => remote, save },
+    },
+  });
+  try {
+    await runtime.engine.load();
+    runtime.engine.setTitle('Only my title changed');
+    await expect(runtime.engine.save()).rejects.toThrow('Version changed');
+    await runtime.engine.reloadInstance();
+    const session = runtime.engine.getSnapshot().sessions.mine;
+    expect(session.baseline.config.pagination.size).toBe(50);
+    await runtime.engine.save();
+    expect(save.mock.lastCall![0].revision).toBe('r2');
+    expect(save.mock.lastCall![0].config.pagination.size).toBe(50);
+  } finally {
+    runtime.engine.dispose();
+  }
+});
+
+it('keeps a healthy instance usable when a sibling references a retired sortable field', async () => {
+  const healthy = instance('healthy');
+  const stale = instance('stale');
+  stale.config.sort = [
+    { field: 'state.retiredAmount', direction: SortDirection.ASC },
+  ];
+  const { engine } = setup({
+    instances: { instances: [healthy, stale], defaultInstanceId: 'healthy' },
+  });
+  try {
+    await expect.soft(engine.load()).resolves.toBeUndefined();
+    expect.soft(engine.getSnapshot().status).toBe('ready');
+    expect.soft(engine.getSnapshot().sessions.healthy).toBeDefined();
+  } finally {
+    engine.dispose();
+  }
+});

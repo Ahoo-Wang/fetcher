@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import type { UseSecurityOptions, UseSecurityReturn } from './useSecurity';
-import { useSecurity } from './useSecurity';
+import type { UseSecurityOptions, UseSecurityReturn } from './useSecurity.js';
+import { useSecurity } from './useSecurity.js';
 import type { ReactNode } from 'react';
 import { createContext, useContext } from 'react';
 import type { TokenStorage } from '@ahoo-wang/fetcher-cosec';

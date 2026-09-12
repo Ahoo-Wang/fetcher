@@ -5,6 +5,10 @@ description: Build a backend-free table with a complete definition, initial view
 
 # Render local rows in a Viewer
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 ## Prerequisites
 
 Use [the complete local Viewer example](../../examples/viewer.md), which includes the consumer installation, entry file, and maintained `LocalViewer.tsx`. It runs in React with Viewer peers and does not need a Wow server. Leave the bell-shaped data monitor disabled: that separate feature needs a real count endpoint.

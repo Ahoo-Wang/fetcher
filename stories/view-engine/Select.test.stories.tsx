@@ -20,7 +20,8 @@ import type { StoryObj as RegressionStoryObj } from '@storybook/react-vite';
 
 const meta = {
   ...displayMeta,
-  title: 'View Engine/基础组件/Select/回归',
+  id: 'view-engine-专项场景-基础组件-select-回归',
+  title: 'View Engine/扩展与组件/Select/回归',
   tags: ['!dev', '!autodocs', 'test'],
 };
 

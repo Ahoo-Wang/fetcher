@@ -14,9 +14,9 @@
 import {
   BUILT_IN_INTERCEPTOR_ORDER_STEP,
   type RequestInterceptor,
-} from './interceptor';
-import { timeoutFetch } from './timeout';
-import type { FetchExchange } from './fetchExchange';
+} from './interceptor.js';
+import { timeoutFetch } from './timeout.js';
+import type { FetchExchange } from './fetchExchange.js';
 
 /**
  * The name of the FetchInterceptor.

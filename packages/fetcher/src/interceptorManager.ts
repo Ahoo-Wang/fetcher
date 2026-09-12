@@ -1,13 +1,13 @@
-import { UrlResolveInterceptor } from './urlResolveInterceptor';
-import { RequestBodyInterceptor } from './requestBodyInterceptor';
-import { FetchInterceptor } from './fetchInterceptor';
-import type { FetchExchange } from './fetchExchange';
-import { ExchangeError } from './fetcherError';
-import { InterceptorRegistry } from './interceptor';
+import { UrlResolveInterceptor } from './urlResolveInterceptor.js';
+import { RequestBodyInterceptor } from './requestBodyInterceptor.js';
+import { FetchInterceptor } from './fetchInterceptor.js';
+import type { FetchExchange } from './fetchExchange.js';
+import { ExchangeError } from './fetcherError.js';
+import { InterceptorRegistry } from './interceptor.js';
 import {
   ValidateStatusInterceptor,
   type ValidateStatus,
-} from './validateStatusInterceptor';
+} from './validateStatusInterceptor.js';
 
 /**
  * Collection of interceptor managers for the Fetcher client.

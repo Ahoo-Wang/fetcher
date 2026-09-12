@@ -70,3 +70,11 @@ interface FilterOptionSource {
 ```
 
 实际 search 类型为 `Pick<CursorQuery, 'cursor' | 'size'>` 加 search，实现时以导出类型为准。值只允许字符串或有限数字，resolve 必须保留字符串/数字身份并将每个请求 ID 唯一归类。搜索、分页和标签回填分别恢复错误；后续页失败保留已有候选。保存的标签不能替代权限判断和来源校验。
+
+## 可恢复的多值文本
+
+`FilterTextValues` 接收 `value?: readonly string[]`、可选受控 `rawText?: string`、报告原始键入的 `onRawTextChange?(text)` 和 `onValueChange(values, rawText)`。未提供 rawText 时由组件保存本地输入缓冲。回车或粘贴确认时，通过一次回调返回新值集合和空缓冲；移除标签时返回剩余值及当前缓冲。受控调用方应在该回调中同时更新 values 和 rawText。输入法确认不会提交值或发起查询。
+
+注册的 `text-values` 编辑器将每次原始编辑保存到 `props.rawText`，未确认输入可跨实例切换恢复。去除首尾空白后非空的 rawText 阻止纯编译，非字符串 rawText 无效。确认会移除 rawText 并保留已确认值；清空同时移除 values 和 rawText。仅空白输入不产生未确认值。独立控件仍可使用可选 `onValidityChange(valid, message?)`，注册组件的有效性由编译结果决定。
+
+使用同一筛选配置进行纯 COUNT/SUM 编译，参见[纯分析编译](./components.md#纯分析编译)。

@@ -11,7 +11,7 @@
 - [Choose your starting point](/start/) — Start with HTTP, a React request, or a local data table according to your existing application.
 - [Install Fetcher](/start/installation) — Create an independent ESM project and install the core HTTP client.
 - [Your first request](/start/first-request) — Run a typed JSON request and verify the HTTP 404 failure path.
-- [Your first data view](/start/first-view) — Run a local Viewer and understand where data and saved state belong.
+- [Your first data view](/start/first-view) — Start with View Engine; maintain existing Viewer integrations.
 - [Choose your next task](/start/next-steps) — Extend the first successful request or table with one concrete application capability.
 
 ## guides

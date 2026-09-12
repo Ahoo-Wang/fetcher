@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import { Fetcher } from './fetcher';
-import { fetcherRegistrar } from './fetcherRegistrar';
+import { Fetcher } from './fetcher.js';
+import { fetcherRegistrar } from './fetcherRegistrar.js';
 
 /**
  * Interface that defines a capability for objects that can have a fetcher.

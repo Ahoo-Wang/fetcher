@@ -11,13 +11,13 @@
  * limitations under the License.
  */
 
-import { combineURLs } from './urls';
-import type { BaseURLCapable, FetchRequest } from './fetchRequest';
-import type { UrlTemplateStyle } from './urlTemplateResolver';
+import { combineURLs } from './urls.js';
+import type { BaseURLCapable, FetchRequest } from './fetchRequest.js';
+import type { UrlTemplateStyle } from './urlTemplateResolver.js';
 import {
   getUrlTemplateResolver,
   type UrlTemplateResolver,
-} from './urlTemplateResolver';
+} from './urlTemplateResolver.js';
 
 /**
  * Container for URL parameters including path and query parameters.

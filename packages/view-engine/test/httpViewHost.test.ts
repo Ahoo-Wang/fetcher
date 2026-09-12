@@ -15,7 +15,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
-  LocalStorageViewHost,
+  MemoryViewHost,
   ViewEngine,
   ViewServiceError,
 } from '@ahoo-wang/fetcher-view-engine';
@@ -32,7 +32,7 @@ import { definition, instance, setup } from './fixtures/viewPage.js';
 let server: Awaited<ReturnType<typeof startViewService>>;
 beforeEach(async () => {
   server = await startViewService({
-    Host: LocalStorageViewHost,
+    Host: MemoryViewHost,
     ServiceError: ViewServiceError,
     statuses: VIEW_SERVICE_STATUS,
     definition,
@@ -52,6 +52,32 @@ function client(token = 'alice-token', timeoutMs = 1000) {
     resolveSource: setup().host.resolveSource,
   });
 }
+it('returns the authoritative default through DELETE after another client reorders views', async () => {
+  const host = client();
+  const other = client();
+  const first = await other.instance.create(
+    { ...instance, title: 'First' },
+    { requestId: 'first' },
+  );
+  const second = await other.instance.create(
+    { ...instance, title: 'Second' },
+    { requestId: 'second' },
+  );
+  const engine = new ViewEngine({ definitionId: definition.id, host });
+  await engine.load();
+  const revision = engine.getSnapshot().sessions[instance.id].baseline.revision;
+  await other.preference.saveOrder(definition.id, [
+    instance.id,
+    second.id,
+    first.id,
+  ]);
+  await engine.deleteInstance(instance.id);
+  expect(engine.getSnapshot().defaultInstanceId).toBe(second.id);
+  expect(
+    (await host.instance.delete(instance.id, revision)).defaultInstance,
+  ).toEqual(second);
+  engine.dispose();
+});
 it('allows only the configured browser origin before preflight or writes', async () => {
   const endpoint = `${server.baseUrl}definitions/${definition.id}/instances`;
   for (const method of ['OPTIONS', 'POST']) {
@@ -145,6 +171,35 @@ it('does not trust posted ownership, and stores each users order independently',
     (await alice.instance!.list(definition.id)).instances.map(item => item.id),
   ).toEqual(before);
   expect(order).toContain(shared.id);
+});
+it('round trips a private default preference over HTTP', async () => {
+  const alice = client();
+  const bob = client('bob-token');
+  await alice.preference.saveDefault(definition.id, null);
+  expect(
+    (await client().instance.list(definition.id)).defaultInstanceId,
+  ).toBeNull();
+  expect((await bob.instance.list(definition.id)).defaultInstanceId).toBe(
+    instance.id,
+  );
+  await alice.preference.saveDefault(definition.id, instance.id);
+  expect((await client().instance.list(definition.id)).defaultInstanceId).toBe(
+    instance.id,
+  );
+  const shared = await alice.instance.create(
+    { ...instance, scope: { type: 'public', source: 'shared' } },
+    { requestId: 'shared-default' },
+  );
+  expect(
+    bob.permission.getInstance(await bob.instance.load(shared.id)).save,
+  ).toBe(false);
+  await bob.preference.saveDefault(definition.id, shared.id);
+  expect((await bob.instance.list(definition.id)).defaultInstanceId).toBe(
+    shared.id,
+  );
+  await expect(
+    alice.preference.saveDefault(definition.id, 'unknown'),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 });
 it('retries a response-lost create through the real engine with the same idempotency key', async () => {
   const host = client();
@@ -250,10 +305,14 @@ it.each(['save', 'rename', 'delete'] as const)(
         await expect(engine.deleteInstance()).rejects.toThrow('核对');
         await engine.reloadInstance();
         expect(session().requiresReload).toBe(false);
-        expect(session().baseline.revision).not.toBe(revision);
+        if (operation === 'rename')
+          expect(session().conflict?.remote.revision).not.toBe(revision);
+        else expect(session().baseline.revision).not.toBe(revision);
         expect(session().instance.title).toBe('本地编辑');
         engine.setTitle('核对后的编辑');
-        await engine.save();
+        if (session().conflict)
+          await engine.overwriteInstance(session().conflict!);
+        else await engine.save();
         expect((await client().instance.load(instance.id)).title).toBe(
           '核对后的编辑',
         );
@@ -419,6 +478,37 @@ it('returns stable protocol errors for malformed inputs and missing precondition
   );
   expect(missing.status).toBe(428);
   expect((await missing.json()).error.code).toBe('PRECONDITION_REQUIRED');
+
+  const endpoint = `${server.baseUrl}definitions/${definition.id}/default`;
+  for (const [body, status, code] of [
+    ['{}', 400, 'INVALID_ARGUMENT'],
+    ['{"instanceId":1}', 400, 'INVALID_ARGUMENT'],
+  ] as const) {
+    const mutations = server.control.mutations;
+    const invalid = await fetch(endpoint, { method: 'PUT', headers, body });
+    expect(invalid.status).toBe(status);
+    expect((await invalid.json()).error.code).toBe(code);
+    expect(server.control.mutations).toBe(mutations);
+  }
+
+  const bobPrivate = await client('bob-token').instance.create(
+    { ...instance, title: 'Bob private' },
+    { requestId: 'bob-private-default' },
+  );
+  for (const [token, instanceId, status, code] of [
+    ['alice-token', bobPrivate.id, 404, 'NOT_FOUND'],
+    ['invalid-token', instance.id, 401, 'UNAUTHENTICATED'],
+  ] as const) {
+    const mutations = server.control.mutations;
+    const rejected = await fetch(endpoint, {
+      method: 'PUT',
+      headers: { ...headers, Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ instanceId }),
+    });
+    expect(rejected.status).toBe(status);
+    expect((await rejected.json()).error.code).toBe(code);
+    expect(server.control.mutations).toBe(mutations);
+  }
 });
 
 it('composes independently supplied definition, instance and policy services', async () => {
@@ -564,6 +654,7 @@ it.each(['', ' ', '.', '..', '\ud800', null, 1])(
       host.instance.list(id),
       host.definition.load(id),
       host.preference.saveOrder(id, []),
+      host.preference.saveDefault(id, null),
       host.permission.load(id),
     ]);
     expect(
@@ -595,8 +686,13 @@ it('encodes valid resource IDs exactly once without changing the requested resou
       resolveSource: setup().host.resolveSource,
     });
     expect((await host.instance.load(id)).id).toBe(id);
-    const url = request.mock.calls[0][0] as string;
-    const expected = `/view-service/definitions/${encodeURIComponent(id)}/instances/${encodeURIComponent(id)}`;
-    expect(new URL(url).pathname).toBe(expected);
+    await host.preference.saveDefault(id, null);
+    const root = `/view-service/definitions/${encodeURIComponent(id)}`;
+    expect(new URL(request.mock.calls[0][0] as string).pathname).toBe(
+      `${root}/instances/${encodeURIComponent(id)}`,
+    );
+    expect(new URL(request.mock.calls[1][0] as string).pathname).toBe(
+      `${root}/default`,
+    );
   }
 });

@@ -6,6 +6,10 @@ description: 'Viewer entry selection, installation and behavior contracts'
 
 # Viewer
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 Viewer supplies Ant Design filter, table and saved-view UI. Begin with the component matching who owns the rows and saved views. A local table does not require a Wow backend; FetcherViewer requires the defined remote protocol.
 
 ## Choose an entry

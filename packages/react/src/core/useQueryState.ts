@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { dequal } from 'dequal';
-import type { AutoExecuteCapable } from '../types';
+import type { AutoExecuteCapable } from '../types.js';
 
 export interface QueryOptions<Q> {
   /** The initial query parameters to be stored and managed */

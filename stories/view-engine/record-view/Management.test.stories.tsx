@@ -21,7 +21,8 @@ import type { Story } from './demoTypes.js';
 
 const meta = {
   ...displayMeta,
-  title: 'View Engine/Record View/视图管理/回归',
+  id: 'view-engine-专项场景-record-view-视图管理-回归',
+  title: 'View Engine/引擎与宿主/视图管理/回归',
   tags: ['!dev', '!autodocs', 'test'],
 };
 

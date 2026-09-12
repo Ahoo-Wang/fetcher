@@ -6,6 +6,10 @@ description: 'Viewer symbol index — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # Complete symbol index
 
+::: warning Maintenance mode (deprecated)
+`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+:::
+
 | Symbol                                    | Topic                                                                                                |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `ACTIONS_CELL_TYPE`                       | [Tables, columns and cells](./tables-and-cells#api-ACTIONS_CELL_TYPE)                                |

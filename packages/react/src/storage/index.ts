@@ -11,5 +11,5 @@
  * limitations under the License.
  */
 
-export * from './useKeyStorage';
-export * from './useImmerKeyStorage';
+export * from './useKeyStorage.js';
+export * from './useImmerKeyStorage.js';

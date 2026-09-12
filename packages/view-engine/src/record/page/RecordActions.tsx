@@ -11,8 +11,12 @@
  * limitations under the License.
  */
 
-import type { RecordSession, ViewDefinition } from '../recordModel.js';
-import type { ViewExtensions } from '../recordReactTypes.js';
+import { useMemo } from 'react';
+import type {
+  RecordSession,
+  RecordViewDefinition,
+} from '../../contracts/viewModel.js';
+import type { RecordExtensions } from '../recordReactTypes.js';
 import { RecordRendererBoundary } from '../RecordRendererBoundary.js';
 
 export function RecordActions({
@@ -22,24 +26,36 @@ export function RecordActions({
   extensions,
   refresh,
 }: {
-  kind: 'global' | 'table';
-  definition: ViewDefinition;
+  kind: 'global' | 'toolbar';
+  definition: RecordViewDefinition;
   session: RecordSession;
-  extensions?: ViewExtensions;
+  extensions?: RecordExtensions;
   refresh(): Promise<void>;
 }) {
-  const { instance } = session;
-  const id = instance.id;
+  const { id, definitionId, title, scope, revision } = session.instance;
+  const config = session.result?.config ?? session.instance.config;
+  const instance = useMemo(
+    () => ({
+      id,
+      definitionId,
+      title,
+      scope,
+      revision,
+      kind: 'record' as const,
+      config,
+    }),
+    [id, definitionId, title, scope, revision, config],
+  );
   const querying = session.queryStatus === 'loading';
-  const reference = definition.recordActions?.[kind];
+  const reference = definition.record.recordActions?.[kind];
   if (!reference) return null;
   const registry =
-    kind === 'global' ? extensions?.globalActions : extensions?.tableActions;
+    kind === 'global' ? extensions?.globalActions : extensions?.toolbarActions;
   const Actions =
     registry && Object.prototype.hasOwnProperty.call(registry, reference.name)
       ? registry[reference.name]
       : undefined;
-  const label = kind === 'global' ? '全局操作' : '表格操作';
+  const label = kind === 'global' ? '全局操作' : '工具栏操作';
   return (
     <div
       role="group"
