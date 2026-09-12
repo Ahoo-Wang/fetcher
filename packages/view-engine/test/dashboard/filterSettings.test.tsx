@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { dashboardEditorKey } from '../../src/dashboard/dashboardEditorKey.js';
 import {
   act,
   cleanup,
@@ -235,7 +236,9 @@ it('invalid local transform options disable query and save even though the last 
     target: { value: '-' },
   });
   expect(
-    runtime.getSnapshot().session.editorValidity['transform:amount:a'],
+    runtime.getSnapshot().session.editorValidity[
+      dashboardEditorKey('amount', 'a')
+    ],
   ).toBe(false);
   expect(
     (screen.getByRole('button', { name: '查询' }) as HTMLButtonElement)
@@ -781,7 +784,7 @@ it('contains transformer editor crashes, blocks saving and recovers by choosing 
   ).toBeTruthy();
   expect(
     engine.dashboard('dashboard').getSnapshot().session.editorValidity[
-      'transform:amount:a'
+      dashboardEditorKey('amount', 'a')
     ],
   ).toBe(false);
   await expect(engine.save('dashboard')).rejects.toThrow();
@@ -789,7 +792,7 @@ it('contains transformer editor crashes, blocks saving and recovers by choosing 
   fireEvent.click(screen.getByRole('button', { name: '重试转换器编辑器' }));
   expect(
     engine.dashboard('dashboard').getSnapshot().session.editorValidity[
-      'transform:amount:a'
+      dashboardEditorKey('amount', 'a')
     ],
   ).toBe(true);
   expect(screen.getByText('已恢复转换编辑器')).toBeTruthy();
@@ -898,6 +901,124 @@ it('invalidates callbacks when an editor registration changes away and back', as
   expect(current.instance.config.filters[0].bindings[0]).toMatchObject({
     options: { fresh: true },
   });
+  cleanup();
+  engine.dispose();
+});
+
+it('keeps transform validity independent when filter and panel IDs contain colons', async () => {
+  const base = dashboardSetup();
+  const filters = [
+    {
+      ...globalFilter(),
+      id: 'a:b',
+      bindings: [
+        {
+          kind: 'transform' as const,
+          panelId: 'c',
+          name: 'same',
+          options: { label: 'left' },
+        },
+      ],
+      excludedPanelIds: ['b:c'],
+    },
+    {
+      ...globalFilter(),
+      id: 'a',
+      bindings: [
+        {
+          kind: 'transform' as const,
+          panelId: 'b:c',
+          name: 'same',
+          options: { label: 'right' },
+        },
+      ],
+      excludedPanelIds: ['c'],
+    },
+  ];
+  const engine = new ViewEngine({
+    definitionId: 'root',
+    definition: {
+      id: 'root',
+      title: 'Root',
+      fields: definition.fields,
+      dashboard: true,
+    },
+    instances: {
+      instances: [
+        {
+          id: 'dashboard',
+          definitionId: 'root',
+          title: 'Dashboard',
+          kind: 'dashboard',
+          scope: { type: 'personal' },
+          revision: 'r1',
+          config: {
+            schemaVersion: 1,
+            panels: ['c', 'b:c'].map(id => ({
+              kind: 'view',
+              id,
+              instanceId: 'child',
+              layout: { x: 0, y: 0, w: 6, h: 18 },
+            })),
+            filters,
+          },
+        },
+      ],
+      defaultInstanceId: 'dashboard',
+    },
+    host: base.host,
+    dashboardTransforms: { same: () => filter.eq('state.amount', 10) },
+  });
+  base.engine.dispose();
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  await waitFor(() => expect(base.paged).toHaveBeenCalledTimes(2));
+  render(
+    <ViewPageContent
+      engine={engine}
+      extensions={{
+        dashboard: {
+          transforms: {
+            same: {
+              label: 'Transform',
+              hasOptions: true,
+              Editor: ({ value, onValidityChange }) => (
+                <input
+                  aria-label={String((value as { label: string }).label)}
+                  onChange={event =>
+                    onValidityChange(event.target.value !== 'invalid')
+                  }
+                />
+              ),
+            },
+          },
+        },
+      }}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '全局筛选设置' }));
+  fireEvent.change(screen.getByRole('textbox', { name: 'left' }), {
+    target: { value: 'invalid' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: 'right' }), {
+    target: { value: 'invalid' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: 'right' }), {
+    target: { value: 'valid' },
+  });
+  expect(() => runtime.assertSavable()).toThrow('编辑输入无效');
+  expect(
+    (screen.getByRole('button', { name: '查询' }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  expect(
+    (screen.getByRole('button', { name: '保存' }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  fireEvent.change(screen.getByRole('textbox', { name: 'left' }), {
+    target: { value: 'valid' },
+  });
+  expect(() => runtime.assertSavable()).not.toThrow();
   cleanup();
   engine.dispose();
 });

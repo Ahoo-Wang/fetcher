@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { dashboardEditorKey } from './dashboardEditorKey.js';
 import {
   Component,
   type ReactNode,
@@ -124,7 +125,7 @@ export function DashboardFilterSettings({
             onApply={() => {}}
             onChange={filters => run(() => runtime.setFilter(item.id, filters))}
             onValidityChange={valid =>
-              runtime.setEditorValidity(`filter:${item.id}`, valid)
+              runtime.setEditorValidity(dashboardEditorKey(item.id), valid)
             }
           />
           <div
@@ -496,7 +497,7 @@ function BindingRow({
                     name ? { panelId, kind: 'transform', name } : undefined,
                   );
                   runtime.setEditorValidity(
-                    `transform:${item.id}:${panelId}`,
+                    dashboardEditorKey(item.id, panelId),
                     !name ||
                       !transforms.find(([key]) => key === name)?.[1].hasOptions,
                   );
@@ -535,13 +536,13 @@ function BindingRow({
               onRecover={() => {
                 if (!registration?.hasOptions)
                   runtime.setEditorValidity(
-                    `transform:${item.id}:${panelId}`,
+                    dashboardEditorKey(item.id, panelId),
                     true,
                   );
               }}
               onError={() =>
                 runtime.setEditorValidity(
-                  `transform:${item.id}:${panelId}`,
+                  dashboardEditorKey(item.id, panelId),
                   false,
                 )
               }
@@ -552,7 +553,7 @@ function BindingRow({
                 onChange={options => run(() => update({ ...binding, options }))}
                 onValidityChange={valid =>
                   runtime.setEditorValidity(
-                    `transform:${item.id}:${panelId}`,
+                    dashboardEditorKey(item.id, panelId),
                     valid,
                   )
                 }

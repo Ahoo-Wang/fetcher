@@ -118,6 +118,7 @@ export { ANALYSIS_VISUALIZATIONS } from './analysis/analysisVisualizations.js';
 export type { AnalysisVisualizationType } from './analysis/analysisVisualizations.js';
 
 export type * from './dashboard/dashboardModel.js';
+export { dashboardEditorKey } from './dashboard/dashboardEditorKey.js';
 export { validateDashboardConfig } from './dashboard/dashboardValidation.js';
 
 export {

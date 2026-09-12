@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { dashboardEditorKey } from './dashboardEditorKey.js';
 import { filter, type FilterExpression } from '@ahoo-wang/fetcher-wow';
 import type { ViewEngine, DataViewPosition } from '../engine/ViewEngine.js';
 import type { SessionStore } from '../engine/SessionStore.js';
@@ -29,6 +30,7 @@ import { compileFilterConfiguration } from '../filter/filterConfigurationCompile
 import { withQueryScope } from '../filter/filterScope.js';
 import { copy, sameJsonState, message } from '../lib/snapshot.js';
 import { RequestRunner } from '../engine/RequestRunner.js';
+import { RuntimeLimitError } from '../lib/runtimeLimits.js';
 import {
   ViewServiceError,
   encodeViewResourceId,
@@ -119,6 +121,7 @@ export class DashboardRuntime {
   private readonly unsubscribe: () => void;
   private snapshot!: DashboardSnapshot;
   private error: string | null = null;
+  private metadataError: RuntimeLimitError | null = null;
   private lifetime = 0;
   private applying = 0;
   private preparing = 0;
@@ -205,9 +208,13 @@ export class DashboardRuntime {
   private assert(): void {
     if (this.disposed) throw new Error('仪表盘运行已释放');
     this.session();
+    if (this.metadataError) {
+      this.changed(true);
+      if (this.metadataError) throw this.metadataError;
+    }
   }
   private editable(): boolean {
-    if (this.store.isPosition(this.id)) return false;
+    if (this.metadataError || this.store.isPosition(this.id)) return false;
     const permissions = this.engine.getPermissions(this.id);
     return (
       permissions.save || permissions.saveAsPersonal || permissions.saveAsShared
@@ -304,11 +311,11 @@ export class DashboardRuntime {
     const session = this.session();
     const known = this.config.filters.some(
       item =>
-        key === `filter:${item.id}` ||
+        key === dashboardEditorKey(item.id) ||
         item.bindings.some(
           binding =>
             binding.kind === 'transform' &&
-            key === `transform:${item.id}:${binding.panelId}`,
+            key === dashboardEditorKey(item.id, binding.panelId),
         ),
     );
     if (!known) {
@@ -449,7 +456,7 @@ export class DashboardRuntime {
       }
     }
   }
-  private changed(): void {
+  private changed(retrying = false): void {
     if (
       this.disposed ||
       !this.store.find(this.id) ||
@@ -461,6 +468,7 @@ export class DashboardRuntime {
     this.observedState = state;
     const session = this.session();
     if (
+      !this.metadataError &&
       session === this.snapshot.session &&
       state.definition === previous.definition &&
       this.editable() === this.snapshot.editable &&
@@ -475,22 +483,38 @@ export class DashboardRuntime {
         ))
     )
       return;
-    if (session.instance.config !== this.sessionConfig) {
-      if (!sameJsonState(session.instance.config, this.sessionConfig)) {
-        this.config = session.instance.config;
-        this.temporaryValidity = {};
-        this.reconcile();
-      }
-      this.sessionConfig = session.instance.config;
-    }
     const restored = session.editorEpoch !== this.editorEpoch;
-    if (restored) {
-      this.config = session.instance.config;
+    const next =
+      restored ||
+      (session.instance.config !== this.sessionConfig &&
+        !sameJsonState(session.instance.config, this.sessionConfig))
+        ? session.instance.config
+        : this.config;
+    if (next !== this.config || restored || this.metadataError) {
+      const applied = this.reconciledApplied(next);
+      try {
+        // Reserve the complete prospective footprint before releasing or adopting anything.
+        this.reserveMetadata(next, applied);
+      } catch (error) {
+        if (!(error instanceof RuntimeLimitError)) throw error;
+        this.metadataError = error;
+        this.error = error.message;
+        this.publish();
+        return;
+      }
+      if (this.metadataError) this.error = null;
+      this.metadataError = null;
+      this.config = next;
+      this.applied = applied;
       this.temporaryValidity = {};
+      this.sessionConfig = session.instance.config;
+      this.editorEpoch = session.editorEpoch;
+      this.reconcile();
     }
+    this.sessionConfig = session.instance.config;
     this.editorEpoch = session.editorEpoch;
     this.publish();
-    if (restored)
+    if (restored && !retrying)
       void this.apply().catch(error => {
         this.error = message(error);
         this.publish();
@@ -563,7 +587,7 @@ export class DashboardRuntime {
     config: DeepReadonly<DashboardConfig>,
     persist: boolean,
   ): void {
-    this.reserveMetadata(config);
+    this.reserveMetadata(config, this.reconciledApplied(config));
     this.config = config;
     if (persist) {
       this.sessionConfig = config;
@@ -575,11 +599,11 @@ export class DashboardRuntime {
         }).filter(([key]) =>
           config.filters.some(
             item =>
-              key === `filter:${item.id}` ||
+              key === dashboardEditorKey(item.id) ||
               item.bindings.some(
                 binding =>
                   binding.kind === 'transform' &&
-                  key === `transform:${item.id}:${binding.panelId}`,
+                  key === dashboardEditorKey(item.id, binding.panelId),
               ),
           ),
         ),
@@ -610,7 +634,36 @@ export class DashboardRuntime {
     entry.source = undefined;
     position?.dispose();
   }
+  private reconciledApplied(
+    config: DeepReadonly<DashboardConfig>,
+  ): DeepReadonly<DashboardConfig> {
+    let applied = this.applied;
+    for (const [id, entry] of this.panels) {
+      const panel = config.panels.find(item => item.id === id);
+      if (
+        !panel ||
+        panel.kind !== 'view' ||
+        panel.instanceId !== entry.panel.instanceId
+      ) {
+        applied = copy({
+          ...applied,
+          panels: applied.panels.filter(item => item.id !== id),
+          filters: applied.filters.map(item => ({
+            ...item,
+            bindings: item.bindings.filter(binding => binding.panelId !== id),
+            excludedPanelIds: item.excludedPanelIds.filter(
+              value => value !== id,
+            ),
+          })),
+        });
+      }
+    }
+    if (!config.filters.length && !applied.filters.length)
+      applied = copy({ ...applied, panels: config.panels });
+    return applied;
+  }
   private reconcile(): void {
+    this.applied = this.reconciledApplied(this.config);
     for (const [id, entry] of this.panels) {
       const panel = this.config.panels.find(item => item.id === id);
       if (
@@ -620,17 +673,6 @@ export class DashboardRuntime {
       ) {
         this.panels.delete(id);
         this.close(entry);
-        this.applied = copy({
-          ...this.applied,
-          panels: this.applied.panels.filter(item => item.id !== id),
-          filters: this.applied.filters.map(item => ({
-            ...item,
-            bindings: item.bindings.filter(binding => binding.panelId !== id),
-            excludedPanelIds: item.excludedPanelIds.filter(
-              value => value !== id,
-            ),
-          })),
-        });
       }
     }
     for (const panel of this.config.panels) {
@@ -647,8 +689,6 @@ export class DashboardRuntime {
           error: null,
         });
     }
-    if (!this.config.filters.length && !this.applied.filters.length)
-      this.applied = copy({ ...this.applied, panels: this.config.panels });
   }
   private current(entry: PanelState, generation: number): boolean {
     return (

@@ -154,3 +154,154 @@ it('releases cleared reference metadata even when the reload fails', async () =>
   );
   engine.dispose();
 });
+
+const contentConfig = (length: number) => ({
+  schemaVersion: 1 as const,
+  panels: length
+    ? [
+        {
+          kind: 'markdown' as const,
+          id: 'note',
+          title: 'Note',
+          content: 'x'.repeat(length),
+          layout: { x: 0, y: 0, w: 6, h: 8 },
+        },
+      ]
+    : [],
+  filters: [],
+});
+const rootDefinition = {
+  id: 'root',
+  title: 'Root',
+  fields: [],
+  dashboard: true as const,
+};
+
+it('accounts for growing and shrinking content configurations received by reload', async () => {
+  const { engine, host } = dashboardSetup(
+    contentConfig(0),
+    {},
+    { maxDashboardMetadataBytes: 900 },
+  );
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  const baseline = runtime.getSnapshot().session.baseline;
+  let remote = contentConfig(200);
+  host.instance!.load = async () => ({
+    ...baseline,
+    revision: 'remote',
+    config: remote,
+  });
+  await engine.reloadInstance('dashboard');
+  expect(runtime.getSnapshot().config).toEqual(remote);
+  expect(() =>
+    engine.openPosition(
+      { ...baseline, id: 'probe', config: contentConfig(100) },
+      rootDefinition,
+    ),
+  ).toThrow('元数据');
+  remote = contentConfig(0);
+  await engine.reloadInstance('dashboard');
+  const probe = engine.openPosition(
+    { ...baseline, id: 'probe', config: contentConfig(100) },
+    rootDefinition,
+  );
+  probe.dispose();
+  engine.dispose();
+});
+
+it('releases removed reference metadata when a remote reload replaces it with content', async () => {
+  const { instance, definition } = await import('../engine/fixtures.js');
+  const config = {
+    schemaVersion: 1 as const,
+    panels: [
+      {
+        kind: 'view' as const,
+        id: 'a',
+        instanceId: 'child',
+        layout: { x: 0, y: 0, w: 6, h: 18 },
+      },
+    ],
+    filters: [],
+  };
+  const bytes = (value: unknown) =>
+    new TextEncoder().encode(JSON.stringify(value)).byteLength;
+  const { engine, host } = dashboardSetup(
+    config,
+    {},
+    {
+      maxDashboardMetadataBytes:
+        bytes(config) * 2 + bytes(instance('child')) + bytes(definition) + 32,
+    },
+  );
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  await vi.waitFor(() =>
+    expect(runtime.getSnapshot().panels.a.status).toBe('ready'),
+  );
+  const baseline = runtime.getSnapshot().session.baseline;
+  host.instance!.load = async () => ({
+    ...baseline,
+    revision: 'remote',
+    config: contentConfig(0),
+  });
+  await engine.reloadInstance('dashboard');
+  const probe = engine.openPosition(
+    { ...baseline, id: 'probe', config: contentConfig(0) },
+    rootDefinition,
+  );
+  probe.dispose();
+  engine.dispose();
+});
+
+it('keeps the admitted runtime configuration on an oversized reload and retries after budget release', async () => {
+  const { engine, host } = dashboardSetup(
+    contentConfig(0),
+    {},
+    { maxDashboardMetadataBytes: 900 },
+  );
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  const before = runtime.getSnapshot().config;
+  const baseline = runtime.getSnapshot().session.baseline;
+  const held = engine.openPosition(
+    { ...baseline, id: 'held', config: contentConfig(100) },
+    rootDefinition,
+  );
+  host.instance!.load = async () => ({
+    ...baseline,
+    revision: 'remote',
+    config: contentConfig(200),
+  });
+  await engine.reloadInstance('dashboard');
+  expect(runtime.getSnapshot().error).toContain('元数据');
+  expect(runtime.getSnapshot().config).toBe(before);
+  expect(runtime.getSnapshot().editable).toBe(false);
+  expect(() => runtime.edit(config => ({ ...config, panels: [] }))).toThrow(
+    '元数据',
+  );
+  held.dispose();
+  await runtime.apply();
+  expect(runtime.getSnapshot().config).toEqual(contentConfig(200));
+  expect(runtime.getSnapshot().error).toBeNull();
+  expect(runtime.getSnapshot().editable).toBe(true);
+  engine.dispose();
+});
+
+it('clears temporary invalid input on restore even when the saved configuration identity is unchanged', async () => {
+  const { engine } = dashboardSetup(
+    {
+      schemaVersion: 1,
+      panels: [],
+      filters: [{ ...globalFilter(), bindings: [] }],
+    },
+    { permission: { getInstance: () => ({ save: false }) } },
+  );
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  runtime.setEditorValidity('filter:amount', false);
+  expect(runtime.getSnapshot().validation.length).toBeGreaterThan(0);
+  await engine.restore('dashboard');
+  expect(runtime.getSnapshot().validation).toEqual([]);
+  engine.dispose();
+});

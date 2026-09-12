@@ -15464,6 +15464,12 @@ Layout editing ends when editing permission is lost, saving or reloading changes
 
 Saving validates structure, editor validity, registered transforms and bindings against currently available reference metadata. It does not wait for reference loading or query success: an unavailable reference remains in the saved configuration, and its panel stays blocked until access or configuration is repaired. This permits saving layout changes without deleting inaccessible panels. Once reference metadata is available, invalid field mappings block saving. Saved references never grant access or bypass query authorization.
 
+Use the exported `dashboardEditorKey(filterId, panelId?)` to report editor validity: `runtime.setEditorValidity(dashboardEditorKey(filterId, panelId), false)`. Omit `panelId` for the filter editor. Treat these keys as opaque; transform IDs are encoded as a tuple, so IDs containing colons cannot share validity state. Do not construct transform keys by concatenating IDs.
+
+`RecordContent.getSnapshot` remains optional. Action guards use the latest committed props when it is absent; a supplied live reader additionally detects engine changes before React commits. Result/scope/selection changes and unmount invalidate the corresponding retained action callbacks, including when an older result object is later displayed again. Bound view commands such as refresh and column configuration retain their originating instance and engine lifetime; the business-action guard does not retarget or disable those explicit commands.
+
+Remote dashboard configuration changes must reserve the complete projected runtime metadata footprint before adoption. A failed reservation leaves the admitted runtime configuration intact, exposes a resource error and disables editing; the authoritative reloaded session remains available. After budget is released, retrying `apply`, `refresh` or `resume` attempts admission again. Removed references release their reservation on successful reconciliation.
+
 `engine.dashboard(id)` returns a `DashboardRuntime` with stable `getSnapshot` / `subscribe`, `edit`, `setFilter`, `setEditorValidity`, `apply`, `refresh(panelId?)`, `reloadReference(panelId)`, `suspend`, `resume` and `dispose`. The engine owns navigation suspension/resumption and disposal. `DashboardView` renders a caller-owned runtime; it does not own that lifecycle. `ViewPage` integrates it with existing instance navigation and save controls. `RecordContent` reuses the record table/card/actions/pagination from a session, definition and bound commands without a navigation dependency.
 
 `isDisposed` reports whether the runtime has been released. After explicit `dispose()`, a later `engine.dashboard(id)` creates a replacement; call `resume()` to activate it when managing the lifecycle yourself. Runtime notifications ignore unrelated position changes, while permission changes still update editability. Read-only filter drafts and their editor validity stay local to the runtime; they never mark the persisted session dirty or block saving its separate configuration after a permission change. Transformer applicability failures hide only the failed registration; editor render failures show a local retry action and block saving until the binding is repaired.
@@ -15815,13 +15821,14 @@ These names come from the current public entry exports and declarations. Import 
 | `DashboardCandidate`              | [ViewHost.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L68)                                          |
 | `DashboardConfig`                 | [dashboardModel.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L70)                              |
 | `DashboardContentPanel`           | [dashboardModel.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L37)                              |
+| `dashboardEditorKey`              | [dashboardEditorKey.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardEditorKey.ts#L15)                      |
 | `DashboardFilter`                 | [dashboardModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L64)                              |
 | `DashboardHost`                   | [ViewHost.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L74)                                          |
 | `DashboardPanel`                  | [dashboardModel.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L49)                              |
-| `DashboardPanelSnapshot`          | [DashboardRuntime.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L50)                          |
-| `DashboardRuntime`                | [DashboardRuntime.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L105)                        |
+| `DashboardPanelSnapshot`          | [DashboardRuntime.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L52)                          |
+| `DashboardRuntime`                | [DashboardRuntime.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L107)                        |
 | `DashboardSession`                | [dashboardModel.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L79)                              |
-| `DashboardSnapshot`               | [DashboardRuntime.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L65)                          |
+| `DashboardSnapshot`               | [DashboardRuntime.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L67)                          |
 | `DashboardTransform`              | [dashboardModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L105)                            |
 | `DashboardTransformContext`       | [dashboardModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L98)                              |
 | `DashboardTransforms`             | [dashboardModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L108)                            |
@@ -16023,8 +16030,8 @@ These names come from the current public entry exports and declarations. Import 
 | `RecordCardSettingsProps`         | [recordReactTypes.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L166)                       |
 | `RecordColumnSettings`            | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46)               |
 | `RecordColumnSettingsProps`       | [recordReactTypes.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L130)                       |
-| `RecordContent`                   | [RecordContent.tsx:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L54)                             |
-| `RecordContentProps`              | [RecordContent.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L39)                             |
+| `RecordContent`                   | [RecordContent.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L61)                             |
+| `RecordContentProps`              | [RecordContent.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L46)                             |
 | `RecordExtensions`                | [recordReactTypes.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L95)                         |
 | `RecordPaginationRenderContext`   | [recordReactTypes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L45)                         |
 | `RecordTable`                     | [RecordTable.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordTable.tsx#L23)                                 |
@@ -35940,6 +35947,12 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 保存验证结构、编辑器有效性、已注册转换器，以及当前引用元数据可验证的绑定；不等待引用加载或查询成功。不可访问的引用保留在保存配置中，对应面板在权限或配置修复前保持阻断，因此保存布局无需删除失效面板。引用元数据可用后，无效字段映射会阻止保存。保存引用不会授予访问权，也不会绕过查询授权。
 
+使用导出的 `dashboardEditorKey(filterId, panelId?)` 上报编辑器有效性：`runtime.setEditorValidity(dashboardEditorKey(filterId, panelId), false)`。筛选编辑器省略 `panelId`。键应视为不透明标识；转换器的两个 ID 使用元组编码，含冒号的 ID 不会共享有效性状态，不要手工拼接转换器键。
+
+`RecordContent.getSnapshot` 仍可省略；缺省时操作守卫读取最近已提交的 props，提供实时读取器则还能在 React 提交前检测引擎变化。结果、作用域、选择变化及卸载会使对应的旧操作回调失效，重新显示旧结果对象也不会使旧回调复活。刷新、列配置等显式视图命令仍绑定原实例并遵循引擎生命周期，业务操作守卫不会将这些命令改绑或禁用。
+
+远端仪表盘配置在接纳前预留完整的运行时元数据预算。预留失败时保留已接纳的运行配置、显示资源错误并禁止编辑，已重新加载的权威会话仍保留。释放预算后，可通过 `apply`、`refresh` 或 `resume` 重试接纳；成功协调后，被移除引用的额度立即释放。
+
 `engine.dashboard(id)` 返回 `DashboardRuntime`，提供稳定的 `getSnapshot` / `subscribe`，以及 `edit`、`setFilter`、`setEditorValidity`、`apply`、`refresh(panelId?)`、`reloadReference(panelId)`、`suspend`、`resume`、`dispose`。引擎负责导航暂停/恢复与释放。`DashboardView` 只展示调用方拥有的运行对象；`ViewPage` 将其接入既有导航与保存操作。`RecordContent` 通过会话、定义和绑定命令复用表格、卡片、业务操作与分页，不依赖页面导航。
 
 `isDisposed` 表示运行对象是否已释放。显式调用 `dispose()` 后，再次调用 `engine.dashboard(id)` 会创建替代对象；自行管理生命周期时调用 `resume()` 激活它。运行对象会跳过无关位置的通知，但权限变化仍更新可编辑状态。只读筛选草稿及编辑器有效性仅保留在运行对象中，不会把持久会话标为未保存，也不会在权限变化后阻断其独立配置的保存。转换器适用性检查失败只隐藏故障注册项；编辑器渲染失败显示局部重试入口，并阻止保存直至修复绑定。
@@ -36291,13 +36304,14 @@ console.log(compiled.plan.query, result.rows);
 | `DashboardCandidate`              | [ViewHost.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L68)                                          |
 | `DashboardConfig`                 | [dashboardModel.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L70)                              |
 | `DashboardContentPanel`           | [dashboardModel.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L37)                              |
+| `dashboardEditorKey`              | [dashboardEditorKey.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardEditorKey.ts#L15)                      |
 | `DashboardFilter`                 | [dashboardModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L64)                              |
 | `DashboardHost`                   | [ViewHost.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L74)                                          |
 | `DashboardPanel`                  | [dashboardModel.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L49)                              |
-| `DashboardPanelSnapshot`          | [DashboardRuntime.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L50)                          |
-| `DashboardRuntime`                | [DashboardRuntime.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L105)                        |
+| `DashboardPanelSnapshot`          | [DashboardRuntime.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L52)                          |
+| `DashboardRuntime`                | [DashboardRuntime.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L107)                        |
 | `DashboardSession`                | [dashboardModel.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L79)                              |
-| `DashboardSnapshot`               | [DashboardRuntime.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L65)                          |
+| `DashboardSnapshot`               | [DashboardRuntime.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L67)                          |
 | `DashboardTransform`              | [dashboardModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L105)                            |
 | `DashboardTransformContext`       | [dashboardModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L98)                              |
 | `DashboardTransforms`             | [dashboardModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L108)                            |
@@ -36499,8 +36513,8 @@ console.log(compiled.plan.query, result.rows);
 | `RecordCardSettingsProps`         | [recordReactTypes.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L166)                       |
 | `RecordColumnSettings`            | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46)               |
 | `RecordColumnSettingsProps`       | [recordReactTypes.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L130)                       |
-| `RecordContent`                   | [RecordContent.tsx:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L54)                             |
-| `RecordContentProps`              | [RecordContent.tsx:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L39)                             |
+| `RecordContent`                   | [RecordContent.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L61)                             |
+| `RecordContentProps`              | [RecordContent.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L46)                             |
 | `RecordExtensions`                | [recordReactTypes.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L95)                         |
 | `RecordPaginationRenderContext`   | [recordReactTypes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L45)                         |
 | `RecordTable`                     | [RecordTable.tsx:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordTable.tsx#L23)                                 |

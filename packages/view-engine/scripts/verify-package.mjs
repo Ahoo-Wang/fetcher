@@ -113,10 +113,11 @@ function verifyTypes(directory) {
   writeFileSync(
     probe,
     `
-    import { ViewEngine, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance, type RecordViewInstance, type RecordQuerySource } from '${manifest.name}';
+    import { ViewEngine, dashboardEditorKey, compileBuiltinFilter, clearBuiltinFilterProps, type DeepReadonly, type ViewHost, type ViewInstance, type RecordViewInstance, type RecordQuerySource } from '${manifest.name}';
     import { EmbeddedView, type EmbeddedViewProps, FilterPanel, ViewPage, useViewEngine, type CellRendererProps, type FilterEditorProps, type FilterExtensions } from '${manifest.name}/react';
     import type { DashboardConfig, DashboardTransform, ViewPosition, DataViewPosition } from '${manifest.name}';
     import { DashboardView } from '${manifest.name}/react';
+    export const validityKey: string = dashboardEditorKey('filter:a', 'panel:b');
     export const dashboard: DashboardConfig = {schemaVersion:1,panels:[
       {kind:'markdown',id:'notes',title:'Notes',content:'# Hello',layout:{x:0,y:0,w:6,h:4}},
       {kind:'link',id:'docs',title:'Docs',href:'/docs',layout:{x:6,y:0,w:6,h:4}},
@@ -421,6 +422,8 @@ try {
     assert.equal(fileURLToPath(import.meta.resolve(${JSON.stringify(manifest.name)})), ${JSON.stringify(resolve(packed, manifest.exports['.'].import))});
     assert.equal(fileURLToPath(import.meta.resolve(${JSON.stringify(manifest.name + '/react')})), ${JSON.stringify(resolve(packed, manifest.exports['./react'].import))});
     assert.equal(typeof core.ViewEngine, 'function');
+    assert.notEqual(core.dashboardEditorKey('a:b', 'c'), core.dashboardEditorKey('a', 'b:c'));
+    assert.equal(core.dashboardEditorKey('a:b'), 'filter:a:b');
     assert.equal(typeof react.DashboardView, 'function');
     assert.equal(core.projectSupportedInstance({kind:'dashboard',config:{schemaVersion:1}}),null);
     assert.deepEqual(Object.keys(core).filter(name => name.startsWith('HttpView') || name === 'VIEW_SERVICE_STATUS'), [], 'Experimental HTTP API leaked into the package');

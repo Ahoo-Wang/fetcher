@@ -11,7 +11,14 @@
  * limitations under the License.
  */
 
-import { useMemo, useEffect, useState, type ReactNode } from 'react';
+import {
+  useMemo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { ViewEngine } from '../engine/ViewEngine.js';
 import type {
   RecordSession,
@@ -66,12 +73,41 @@ export function RecordContent({
   renderPagination,
 }: RecordContentProps) {
   const id = session.positionId;
+  const actionToken = useMemo(
+    () => ({
+      id,
+      appliedFilter: session.appliedFilter,
+      result: session.result,
+    }),
+    [id, session.appliedFilter, session.result],
+  );
+  const selectionToken = useMemo(
+    () => ({ actionToken, selectedRowKeys: session.selectedRowKeys }),
+    [actionToken, session.selectedRowKeys],
+  );
+  const committed = useRef<{
+    session: RecordSession;
+    getSnapshot?: RecordContentProps['getSnapshot'];
+    actionToken: object;
+    selectionToken: object;
+  } | null>({ session, getSnapshot, actionToken, selectionToken });
+  useLayoutEffect(() => {
+    committed.current = { session, getSnapshot, actionToken, selectionToken };
+    return () => {
+      committed.current = null;
+    };
+  }, [session, getSnapshot, actionToken, selectionToken]);
+  const readCurrent = () => {
+    const latest = committed.current;
+    return latest?.getSnapshot ? latest.getSnapshot() : latest?.session;
+  };
   const { instance } = session;
   const [localError, setLocalError] = useState<string | null>(null);
   const displayedFilter = session.result?.filter ?? session.appliedFilter;
   const scopeCurrent = () => {
-    const latest = getSnapshot ? getSnapshot() : session;
+    const latest = readCurrent();
     return (
+      committed.current?.actionToken === actionToken &&
       !!latest &&
       latest.positionId === id &&
       latest.appliedFilter === session.appliedFilter &&
@@ -79,13 +115,13 @@ export function RecordContent({
     );
   };
   const actionsCurrent = () => {
-    const latest = getSnapshot ? getSnapshot() : session;
+    const latest = readCurrent();
     return scopeCurrent() && latest?.result === session.result;
   };
   const selectionCurrent = () =>
+    committed.current?.selectionToken === selectionToken &&
     actionsCurrent() &&
-    (getSnapshot ? getSnapshot()?.selectedRowKeys : session.selectedRowKeys) ===
-      session.selectedRowKeys;
+    readCurrent()?.selectedRowKeys === session.selectedRowKeys;
   const stale = !sameFilterQuery(displayedFilter, session.appliedFilter);
   const querying =
     session.queryStatus === 'loading' || session.queryStatus === 'waiting';
@@ -103,6 +139,7 @@ export function RecordContent({
       setLocalError(error instanceof Error ? error.message : '操作失败');
     }
   }
+  // View commands remain bound to their instance; business writes use the committed guards above.
   const current = () => !getSnapshot || getSnapshot()?.positionId === id;
   const refresh = async () => {
     if (current()) await commands.refresh();
@@ -126,10 +163,21 @@ export function RecordContent({
     onSortChange: sort => run(() => commands.setSort(sort)),
   };
   const paginationPolicy = getRecordPaginationPolicy(session);
-  const paginationOperations = bindRecordPaginationCommands(
-    getSnapshot ?? (() => session),
-    () => commands,
-  );
+  const paginationCommands = () =>
+    bindRecordPaginationCommands(
+      getSnapshot ??
+        (() => {
+          const latest = readCurrent();
+          return latest?.positionId === id ? latest : undefined;
+        }),
+      () => commands,
+    );
+  const paginationOperations = {
+    setPage: (index: number) => paginationCommands().setPage(index),
+    setPageSize: (size: number) => paginationCommands().setPageSize(size),
+    nextPage: () => paginationCommands().nextPage(),
+    previousPage: () => paginationCommands().previousPage(),
+  };
   const tableOperations = {
     setLayout: (layout: Parameters<typeof commands.setLayout>[0]) => {
       if (configurable && current()) commands.setLayout(layout);
