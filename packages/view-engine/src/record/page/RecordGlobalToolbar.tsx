@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu.js';
 import type { FilterPanelToolbarProps } from '../../filter/filterReactTypes.js';
+import type { FilterMode } from '../../filter/filterModel.js';
 import type {
   RecordSession,
   RecordViewDefinition,
@@ -146,7 +147,8 @@ export function RecordGlobalToolbar({
                     if (next !== 'simple' && next !== 'advanced') return;
                     if (options.find(option => option.value === next)?.disabled)
                       return;
-                    onModeChange(next);
+                    // 前置比较已过滤出合法模式；包装组件回调参数为 any，收窄仅为类型表达。
+                    onModeChange(next as FilterMode);
                     onFiltersOpenChange(true);
                   }}
                 >

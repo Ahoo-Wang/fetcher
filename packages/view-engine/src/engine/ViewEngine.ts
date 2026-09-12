@@ -91,8 +91,11 @@ export class ViewEngine {
     const host = new Proxy({} as ViewHost, {
       get: (_target, property) => {
         const current = this.host;
-        const value = Reflect.get(current, property, current);
-        return typeof value === 'function' ? value.bind(current) : value;
+        // Reflect.get 返回 any；收窄为 unknown 后按运行时形态分别处理，消除不安全调用。
+        const value = Reflect.get(current, property, current) as unknown;
+        return typeof value === 'function'
+          ? (value as (...args: unknown[]) => unknown).bind(current)
+          : value;
       },
     });
     this.filterCompilers = Object.freeze(

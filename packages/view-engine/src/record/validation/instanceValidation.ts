@@ -174,5 +174,6 @@ export function readInstanceList(
         !seen.has(value.defaultInstanceId)))
   )
     throw new Error('默认视图必须为当前列表中的实例 ID 或 null');
-  return value.instances;
+  // 每个实例已经 validateViewInstance 校验，这里收窄为契约返回类型。
+  return value.instances as ViewInstance[];
 }

@@ -258,7 +258,7 @@ export function deriveSession(
       maxConfigBytes,
     ),
     selectedRowKeys,
-    filterPending: filterPending!,
+    filterPending,
     dirty:
       prior &&
       prior.instance === session.instance &&

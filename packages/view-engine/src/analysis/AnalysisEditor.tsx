@@ -396,12 +396,12 @@ function ComponentList({
                                     MIN: '最小值',
                                     MAX: '最大值',
                                   } as Record<string, string>
-                                )[String(item.props.function)] ??
+                                )[item.props.function as string] ??
                                 '选择统计方式')
                               : component === 'date-histogram'
-                                ? `按${dateLabels[String(item.props.unit)] ?? '未选粒度'}分组`
+                                ? `按${dateLabels[item.props.unit as string] ?? '未选粒度'}分组`
                                 : component === 'histogram'
-                                  ? `每 ${item.props.interval ?? '未设桶宽'} 分桶`
+                                  ? `每 ${(item.props.interval as string | number | undefined) ?? '未设桶宽'} 分桶`
                                   : (names[component] ?? component)}
                             {issues.length > 0 && ' · 待完善'}
                           </span>
@@ -642,7 +642,10 @@ function ComponentList({
                                     inputMode="decimal"
                                     aria-label={`${label} 桶宽`}
                                     aria-invalid={issues.length > 0}
-                                    value={String(item.props.interval ?? '')}
+                                    value={String(
+                                      (item.props.interval as
+                                        string | number | undefined) ?? '',
+                                    )}
                                     onChange={event => {
                                       update(index, {
                                         props: {

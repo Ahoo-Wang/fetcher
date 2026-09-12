@@ -28,6 +28,11 @@ import { copy, message, sameJsonState } from '../lib/snapshot.js';
 import { createSession, instanceContent, withContent } from './sessionState.js';
 import { permissionsFor } from './instancePermissions.js';
 
+/** 类型保持的数组守卫：Array.isArray 的 any[] 谓词会把 readonly 数组退化为 any[]。 */
+function isReadonlyArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+
 /** Explicit persisted name, deletion and user-preference operations. */
 export class ViewManagement {
   private defaultWrite?: { version: number };
@@ -198,7 +203,8 @@ export class ViewManagement {
     if (this.work.ordering) throw new Error('视图顺序正在保存');
     const known = new Set(this.store.getSnapshot().instanceIds);
     if (
-      !Array.isArray(instanceIds) ||
+      // 类型保持守卫，避免 Array.isArray 把 readonly 参数退化为 any[]。
+      !isReadonlyArray(instanceIds) ||
       instanceIds.length !== known.size ||
       new Set(instanceIds).size !== known.size ||
       instanceIds.some(id => !known.has(id))

@@ -99,6 +99,8 @@ export class ViewLoader {
     let defaultId: string | null = null;
     let followUp: (() => Promise<void>) | undefined;
     try {
+      // 原样重抛已暂存的历史错误，包装会改变下游捕获到的错误类型。
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       if (this.inputError) throw this.inputError;
       const [definition, list] = await withDeadline(
         () =>
