@@ -56,11 +56,8 @@ export class RequestRunner {
     for (const value of [maxConcurrent, maxQueued, maxTimeoutMs])
       if (!Number.isSafeInteger(value) || value <= 0)
         throw new TypeError('请求预算必须为正整数');
-    if (
-      (Math.ceil(maxQueued / maxConcurrent) + 1) * maxTimeoutMs + 1000 >
-      2147483647
-    )
-      throw new TypeError('请求等待期限超出定时器范围');
+    if (maxTimeoutMs > 2147483647)
+      throw new TypeError('请求超时超出定时器范围');
     this.maximum = maxConcurrent;
     this.queuedMaximum = maxQueued;
     this.maximumTimeout = maxTimeoutMs;
@@ -145,8 +142,12 @@ export class RequestRunner {
           () => reject(new RuntimeLimitError('TIMEOUT', '查询等待超时')),
           true,
         ),
-      (Math.ceil(this.queuedMaximum / this.maximum) + 1) * this.maximumTimeout +
-        1000,
+      Math.min(
+        2147483647,
+        (Math.ceil(this.queuedMaximum / this.maximum) + 1) *
+          this.maximumTimeout +
+          1000,
+      ),
     );
     controller.signal.addEventListener('abort', entry.cancel, { once: true });
     previous?.cancel();

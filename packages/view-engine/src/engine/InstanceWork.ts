@@ -177,6 +177,11 @@ export class InstanceWork {
     this.deleted.delete(id);
   }
 
+  assertRestorable(session: ViewSession): void {
+    if (session.positionId === session.instance.id)
+      this.assertWritable(session);
+  }
+
   assertWritable(
     session: ViewSession,
     replayingWrite = false,

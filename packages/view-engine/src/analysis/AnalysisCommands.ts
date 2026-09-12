@@ -111,7 +111,7 @@ export class AnalysisCommands {
 
   restore(id: string): void {
     const session = this.store.analysisSession(id);
-    this.work.assertWritable(session);
+    this.work.assertRestorable(session);
     this.store.patch(id, {
       kind: 'analysis',
       instance: session.baseline,

@@ -62,6 +62,13 @@ export class RecordQueries {
     this.replaceController(id);
   }
 
+  forget(id: string): void {
+    this.cancel(id);
+    this.intents.delete(id);
+    this.consumedCursors.delete(id);
+    this.summaries.invalidate(id);
+  }
+
   private replaceController(id: string, next?: AbortController): void {
     this.intents.set(id, Symbol());
     const previous = this.queries.get(id);
@@ -99,9 +106,14 @@ export class RecordQueries {
 
   private captureIntent(id: string): () => boolean {
     const intent = this.intents.get(id),
-      lifecycle = this.scope.version;
+      lifecycle = this.scope.version,
+      generation = this.store.isPosition(id)
+        ? this.store.generation(id)
+        : undefined;
     return () =>
-      this.scope.current(lifecycle) && this.intents.get(id) === intent;
+      this.scope.current(lifecycle) &&
+      (generation === undefined || this.store.generation(id) === generation) &&
+      this.intents.get(id) === intent;
   }
 
   /** Automatic follow-ups additionally require the instance to remain selected. */

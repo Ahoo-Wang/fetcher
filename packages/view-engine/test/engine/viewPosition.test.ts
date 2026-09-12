@@ -183,8 +183,23 @@ it('runs an analysis position independently of the selected record definition', 
     expect(host.resolveSource).toHaveBeenCalledWith('count-source');
     expect(position.getSnapshot().result?.rows).toEqual([{ n: 3 }]);
     expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+    position.commands.edit(config => ({ ...config, limit: 50 }));
+    position.commands.restore();
+    expect(position.getSnapshot().instance.config.limit).toBe(100);
+    engine
+      .analysis(position.identity.id)
+      .edit(config => ({ ...config, limit: 25 }));
+    await engine.restore(position.identity.id);
+    expect(position.getSnapshot().instance.config.limit).toBe(100);
+    expect(aggregate).toHaveBeenCalledOnce();
+    expect(host.instance!.save).not.toHaveBeenCalled();
     position.dispose();
     await expect(position.commands.run()).rejects.toThrow('失效');
+    expect(
+      Reflect.get(Reflect.get(engine, 'queries'), 'intents').has(
+        position.identity.id,
+      ),
+    ).toBe(false);
   } finally {
     position.dispose();
     engine.dispose();
@@ -258,3 +273,68 @@ it('invalidates a position before cancellation can reenter its commands', async 
     engine.dispose();
   }
 });
+
+it('restores a record position locally without writing its saved instance', async () => {
+  const { engine, host, paged } = setup();
+  await engine.load();
+  const position = engine.openPosition(instance(), definition);
+  if (position.kind !== 'record') throw new Error('record expected');
+  try {
+    await position.commands.setPageSize(20);
+    await position.commands.restore();
+    expect(position.getSnapshot().instance).toEqual(
+      position.getSnapshot().baseline,
+    );
+    expect(position.getSnapshot().dirty).toBe(false);
+    expect(
+      engine.getSnapshot().sessions.mine.instance.config.pagination.size,
+    ).toBe(10);
+    expect(paged).toHaveBeenCalledTimes(3);
+    expect(host.instance!.save).not.toHaveBeenCalled();
+  } finally {
+    position.dispose();
+    engine.dispose();
+  }
+});
+
+it('releases metadata after repeatedly closing cursor positions', async () => {
+  const { engine } = setup();
+  await engine.load();
+  const store = Reflect.get(engine, 'store');
+  const queries = Reflect.get(engine, 'queries');
+  const sizes = () => [
+    Reflect.get(store, 'generations').size,
+    Reflect.get(queries, 'intents').size,
+    Reflect.get(queries, 'consumedCursors').size,
+    Reflect.get(Reflect.get(engine, 'viewQueries'), 'opened').size,
+    Reflect.get(Reflect.get(engine, 'summaries'), 'keys').size,
+  ];
+  const before = sizes();
+  try {
+    for (let index = 0; index < 10; index++) {
+      const position = engine.openPosition(
+        instance('mine', 'cursor'),
+        definition,
+      );
+      if (position.kind !== 'record') throw new Error('record expected');
+      await position.commands.refresh();
+      position.dispose();
+      await expect(position.commands.refresh()).rejects.toThrow('失效');
+    }
+    expect(sizes()).toEqual(before);
+  } finally {
+    engine.dispose();
+  }
+});
+
+it.each([200000000, 2147483647])(
+  'accepts the public query timeout %i',
+  async queryTimeoutMs => {
+    const { engine } = setup({ limits: { queryTimeoutMs } });
+    try {
+      await engine.load();
+    } finally {
+      engine.dispose();
+    }
+  },
+);

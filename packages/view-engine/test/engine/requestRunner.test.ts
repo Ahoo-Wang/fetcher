@@ -325,3 +325,40 @@ it.each([12, 24])(
     runner.dispose();
   },
 );
+
+it('caps long queue deadlines within the native timer range', async () => {
+  vi.useFakeTimers();
+  const timer = vi.spyOn(globalThis, 'setTimeout');
+  const runner = new RequestRunner({
+    maxConcurrent: 1,
+    maxQueued: 48,
+    maxTimeoutMs: 2147483647,
+  });
+  const first = deferred<number>();
+  const a = runner.submit({
+    key: 'a',
+    policy: 'queue',
+    timeoutMs: 2147483647,
+    run: () => first.promise,
+  });
+  const run = vi.fn(async () => 2);
+  const b = runner.submit({
+    key: 'b',
+    policy: 'queue',
+    timeoutMs: 2147483647,
+    run,
+  });
+  try {
+    expect(timer.mock.calls.every(([, delay]) => delay! <= 2147483647)).toBe(
+      true,
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(run).not.toHaveBeenCalled();
+    first.resolve(1);
+    await expect(a.completion).resolves.toBe(1);
+    await expect(b.completion).resolves.toBe(2);
+  } finally {
+    runner.dispose();
+    timer.mockRestore();
+  }
+});

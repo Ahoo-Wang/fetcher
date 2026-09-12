@@ -74,6 +74,7 @@ export class SessionStore {
   private readonly positions = new Map<string, ViewDefinition>();
   private readonly resultAccess = new Map<string, number>();
   private accessVersion = 0;
+  private nextGeneration = 0;
   private readonly generations = new Map<string, number>();
   generation(id: string): number {
     return this.generations.get(id) ?? 0;
@@ -96,7 +97,10 @@ export class SessionStore {
 
   publish(patch: Partial<ViewEngineState>): void {
     if (this.scope.disposed) return;
-    if (patch.status === 'loading') this.positions.clear();
+    if (patch.status === 'loading') {
+      for (const id of this.positions.keys()) this.generations.delete(id);
+      this.positions.clear();
+    }
     const definition =
       patch.definition === undefined ? this.state.definition : patch.definition;
     if (definition) {
@@ -130,7 +134,7 @@ export class SessionStore {
     }
     if (patch.sessions)
       for (const id of Object.keys(patch.sessions))
-        if (!this.find(id)) this.generations.set(id, this.generation(id) + 1);
+        if (!this.find(id)) this.generations.set(id, ++this.nextGeneration);
     let next = { ...this.state, ...patch };
     const sessions = { ...next.sessions };
     for (const id of this.resultAccess.keys())
@@ -309,10 +313,12 @@ export class SessionStore {
     if (!this.positions.delete(id)) return;
     const sessions = { ...this.state.sessions };
     delete sessions[id];
-    this.generations.set(id, this.generation(id) + 1);
+    this.generations.delete(id);
     this.publish({ sessions });
   }
   dispose(): void {
+    this.generations.clear();
+    this.resultAccess.clear();
     this.positions.clear();
     this.listeners.clear();
   }

@@ -65,6 +65,8 @@ Default `limits` are load 15,000 ms, query/write 30,000 ms, 4 concurrent queries
 
 ## Independent runtime positions
 
+`commands.restore()` restores the local baseline without saving the managed instance. Record restore refreshes its own query; analysis restore does not execute a query. Disposal releases per-position query metadata.
+
 After loading the engine, `engine.openPosition(instance, definition)` creates an independent record or analysis position. Its returned `identity.id` differs for every opening, while `identity.instanceId` retains the saved identity. Read `getSnapshot()`, subscribe with `subscribe(listener)`, and use `commands.refresh()` for records or `commands.run()` for initial analysis execution. Analysis `refresh()` keeps its safe automatic-refresh policy. Opening itself does not query.
 
 Positions use their own definitions and keep independent pagination, selection and results, even when referencing the same saved instance. They do not enter managed instance navigation or consume the managed history-result budget. Call `dispose()` when the containing UI closes; old commands then reject. Position sessions expose `positionId`, which is not persisted. Saving a position through `engine.save(identity.id)` is rejected; edit the original managed instance to persist configuration.

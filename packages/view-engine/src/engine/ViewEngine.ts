@@ -479,8 +479,7 @@ export class ViewEngine {
       closed = true;
       // Invalidate bound commands before cancellation can notify observers.
       this.store.closePosition(id);
-      this.viewQueries.cancel(id);
-      this.summaries.invalidate(id);
+      this.viewQueries.forget(id);
     };
     const shared = { identity, subscribe: this.subscribe, dispose };
     return instance.kind === 'record'
@@ -539,11 +538,12 @@ export class ViewEngine {
   }
 
   async restore(id?: string): Promise<void> {
-    this.work.assertWritable(this.store.session(id));
-    if (this.store.session(id).conflict)
+    const session = this.store.session(id);
+    this.work.assertRestorable(session);
+    if (session.conflict)
       return Promise.reject(new Error('视图存在冲突，请明确选择使用最新版本'));
-    if (this.store.session(id).kind === 'analysis') {
-      this.analysisCommands.restore(this.store.session(id).instance.id);
+    if (session.kind === 'analysis') {
+      this.analysisCommands.restore(session.positionId);
       return Promise.resolve();
     }
     return this.edits.restore(id);
