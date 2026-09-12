@@ -20,7 +20,7 @@ import displayMeta, {
 const meta = {
   ...displayMeta,
   id: 'view-engine-dashboard-regression',
-  title: 'View Engine/仪表盘/业务概览/回归',
+  title: 'View Engine/数据视图/仪表盘/回归',
   tags: ['!dev', '!autodocs', 'test'],
 };
 export default meta;

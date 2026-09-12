@@ -460,14 +460,11 @@ function BindingRow({
                   update(
                     name ? { panelId, kind: 'transform', name } : undefined,
                   );
-                  if (
-                    name &&
-                    transforms.find(([key]) => key === name)?.[1].hasOptions
-                  )
-                    runtime.setEditorValidity(
-                      `transform:${item.id}:${panelId}`,
-                      false,
-                    );
+                  runtime.setEditorValidity(
+                    `transform:${item.id}:${panelId}`,
+                    !name ||
+                      !transforms.find(([key]) => key === name)?.[1].hasOptions,
+                  );
                 })
               }
             >

@@ -1174,3 +1174,5 @@ Stateful/Memory/Local and example HTTP hosts accept `supportedFormats: { record:
 Local tests, simulated view-service persistence and read-only Wow queries are separate evidence. Real touch devices, screen readers, business-user walkthroughs, and production-host authorization/rollback admission must be verified in the consuming application.
 
 Action renderer contexts expose optional `isCurrent()`: asynchronous host actions must check it immediately before a deferred write. It rejects expired positions, result snapshots, applied scopes, and (for bulk actions) selections. While displayed results belong to an older scope, action extensions are unmounted, including their dialogs; same-scope loading or failed refresh alone does not disable creation or recovery. `querying` includes queued `waiting` requests.
+
+Local dashboard drafts appear in a separate unsaved group in navigation and the manager. They remain outside authoritative `instanceIds` and cannot participate in saved-view ordering or defaults. `createDashboard()` requires both creation permission and a host `instance.create` service before creating local state.

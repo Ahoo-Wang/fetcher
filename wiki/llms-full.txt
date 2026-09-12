@@ -15437,6 +15437,8 @@ Local tests, simulated view-service persistence and read-only Wow queries are se
 
 Action renderers receive optional `isCurrent()`. Check it immediately before an asynchronous write: positions, result snapshots, applied scopes and bulk selections can expire. Applying a different scope unmounts stale action extensions and their dialogs; same-scope refresh failures keep recovery controls available.
 
+Local dashboard drafts appear in a separate unsaved group in navigation and the manager. They remain outside authoritative `instanceIds` and cannot participate in saved-view ordering or defaults. `createDashboard()` requires both creation permission and a host `instance.create` service before creating local state.
+
 </doc>
 
 <doc title="Filter configuration and components" path="reference/view-engine/filters.md">
@@ -35846,6 +35848,8 @@ Stateful/Memory/Local 与示例 HTTP 宿主接受 `supportedFormats: { record: t
 本地测试、模拟实例服务持久化与只读 Wow 查询是不同证据。真实触摸、读屏、业务用户走查及生产宿主授权/回退准入仍需在消费应用验证。
 
 动作渲染器提供可选的 `isCurrent()`。异步写入前应立即检查：位置、结果快照、已应用口径和批量选择可能已经过期。应用不同口径会卸载旧结果的动作扩展及其对话框；同口径刷新失败仍保留恢复操作。
+
+本地仪表盘草稿在导航与管理器中显示为独立的未保存分组，仍不进入权威 `instanceIds`，不参与已保存视图的排序或默认设置。`createDashboard()` 在创建本地状态前同时检查创建授权和宿主 `instance.create` 服务。
 
 </doc>
 

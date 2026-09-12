@@ -939,6 +939,8 @@ export class DashboardRuntime {
     if (!entry) throw new Error('面板不存在');
     this.close(entry);
     entry.instance = entry.definition = entry.retained = undefined;
+    entry.retainedBytes = entry.definitionBytes = 0;
+    this.reserveMetadata();
     entry.scope = undefined;
     if (!this.active) {
       entry.status = 'suspended';

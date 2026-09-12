@@ -684,6 +684,7 @@ export class ViewEngine {
       (options.scope?.type === 'public' && options.scope.source === 'shared')
     ))
       throw new Error('新建仅支持个人或共享范围');
+    if (!this.host.instance?.create) throw new Error('宿主未提供创建服务');
     const grants = this.host.permission?.getDefinition?.();
     if (
       (options.scope.type === 'personal'

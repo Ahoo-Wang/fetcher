@@ -15,9 +15,11 @@
 .fve-root .fve-dashboard-grid {
   container-type: inline-size;
 }
+
 .fve-root .fve-dashboard-grid .react-grid-layout {
   position: relative;
 }
+
 .fve-root .fve-dashboard-grid[data-editing='true'] .react-grid-layout {
   background-image:
     linear-gradient(
@@ -32,17 +34,20 @@
     );
   background-size: calc((100% + 16px) / 12) 48px;
 }
+
 .fve-root .fve-dashboard-panel {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
+
 .fve-root .fve-dashboard-body {
   flex: 1;
   min-height: 0;
   overflow: auto;
   border-radius: inherit;
 }
+
 .fve-root .fve-dashboard-controls {
   display: flex;
   align-items: center;
@@ -51,20 +56,25 @@
   border-bottom: 1px solid var(--fve-border);
   flex-shrink: 0;
 }
+
 .fve-root .fve-dashboard-controls[hidden] {
   display: none;
 }
+
 .fve-root .fve-dashboard-drag {
   cursor: grab;
 }
+
 .fve-root .fve-dashboard-geometry {
   margin-left: auto;
   font-size: 12px;
 }
+
 .fve-root .fve-dashboard-geometry summary {
   cursor: pointer;
   padding: 8px;
 }
+
 .fve-root .fve-dashboard-geometry > div {
   position: absolute;
   z-index: 5;
@@ -80,11 +90,13 @@
   background: var(--fve-background);
   box-shadow: 0 4px 12px #0002;
 }
+
 .fve-root .fve-dashboard-geometry label {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
+
 .fve-root .fve-dashboard-geometry input {
   width: 100%;
   padding: 6px;
@@ -92,17 +104,20 @@
   border-radius: 4px;
   background: var(--fve-background);
 }
+
 .fve-root .fve-dashboard-grid .react-grid-item {
   transition:
     transform 150ms ease,
     width 150ms ease,
     height 150ms ease;
 }
+
 .fve-root .fve-dashboard-grid .react-grid-item.resizing,
 .fve-root .fve-dashboard-grid .react-draggable-dragging {
   transition: none;
   z-index: 3;
 }
+
 .fve-root .fve-dashboard-grid .react-grid-placeholder {
   border: 2px dashed var(--fve-primary);
   border-radius: 12px;
@@ -111,6 +126,7 @@
   z-index: 2;
   pointer-events: none;
 }
+
 .fve-root .fve-dashboard-grid .react-resizable-handle {
   position: absolute;
   right: 0;
@@ -120,6 +136,7 @@
   cursor: se-resize;
   touch-action: none;
 }
+
 .fve-root .fve-dashboard-grid .react-resizable-handle::after {
   content: '';
   position: absolute;
@@ -130,9 +147,11 @@
   border-right: 2px solid var(--fve-muted-foreground);
   border-bottom: 2px solid var(--fve-muted-foreground);
 }
+
 .fve-root .fve-dashboard-grid .react-resizable-hide > .react-resizable-handle {
   display: none;
 }
+
 @container (max-width: 639px) {
   .fve-root .fve-dashboard-grid .react-grid-layout {
     height: auto !important;
@@ -154,6 +173,7 @@
     max-height: 640px;
   }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .fve-root .fve-dashboard-grid .react-grid-item {
     transition: none;

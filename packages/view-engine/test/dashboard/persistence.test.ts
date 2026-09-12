@@ -212,3 +212,30 @@ describe('dashboard persistence through public engine', () => {
     engine.dispose();
   });
 });
+
+it('rejects dashboard creation without a create service before changing selection', async () => {
+  const engine = new ViewEngine({
+    definitionId: 'root',
+    definition: { id: 'root', title: 'Root', fields: [], dashboard: true },
+    instances: { instances: [], defaultInstanceId: null },
+    host: {
+      resolveSource: () => {
+        throw new Error('unused');
+      },
+      permission: {
+        getDefinition: () => ({ createPersonal: true, createShared: true }),
+      },
+    },
+  });
+  await engine.load();
+  const before = engine.getSnapshot();
+  for (const scope of [
+    { type: 'personal' },
+    { type: 'public', source: 'shared' },
+  ] as const)
+    expect(() => engine.createDashboard({ title: 'Draft', scope })).toThrow(
+      '创建服务',
+    );
+  expect(engine.getSnapshot()).toBe(before);
+  engine.dispose();
+});

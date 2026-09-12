@@ -12,6 +12,8 @@
  */
 
 import {
+  act,
+  within,
   cleanup,
   fireEvent,
   render,
@@ -482,6 +484,52 @@ it('explains who can configure an empty read-only dashboard even when discovery 
   expect(screen.getByText('请联系视图维护者添加面板。')).toBeTruthy();
   expect(screen.queryByRole('button', { name: '添加面板' })).toBeNull();
   expect(search).not.toHaveBeenCalled();
+  cleanup();
+  engine.dispose();
+});
+
+it('keeps local dashboards reachable after navigating away without adding authoritative IDs', async () => {
+  const { engine } = dashboardSetup(undefined, {
+    instance: { create: vi.fn() },
+    permission: {
+      getDefinition: () => ({ createPersonal: true, createShared: false }),
+    },
+  });
+  await engine.load();
+  let draftId = '';
+  act(() => {
+    draftId = engine.createDashboard({
+      title: '未保存的分析台',
+      scope: { type: 'personal' },
+    });
+  });
+  render(<ViewPageContent engine={engine} />);
+  const sidebar = screen.getByRole('complementary', { name: '视图列表' });
+  fireEvent.click(within(sidebar).getByRole('button', { name: 'Dashboard' }));
+  await waitFor(() =>
+    expect(engine.getSnapshot().selectedInstanceId).toBe('dashboard'),
+  );
+  expect(engine.getSnapshot().instanceIds).toEqual(['dashboard']);
+  fireEvent.click(
+    within(sidebar).getByRole('button', { name: /未保存的分析台/ }),
+  );
+  await waitFor(() =>
+    expect(engine.getSnapshot().selectedInstanceId).toBe(draftId),
+  );
+  expect(engine.getSnapshot().sessions[draftId].instance.title).toBe(
+    '未保存的分析台',
+  );
+  fireEvent.click(within(sidebar).getByRole('button', { name: 'Dashboard' }));
+  await waitFor(() =>
+    expect(engine.getSnapshot().selectedInstanceId).toBe('dashboard'),
+  );
+  fireEvent.click(within(sidebar).getByRole('button', { name: '管理视图' }));
+  fireEvent.click(
+    await screen.findByRole('button', { name: '继续编辑：未保存的分析台' }),
+  );
+  await waitFor(() =>
+    expect(engine.getSnapshot().selectedInstanceId).toBe(draftId),
+  );
   cleanup();
   engine.dispose();
 });

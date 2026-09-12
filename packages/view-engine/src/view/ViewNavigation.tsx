@@ -57,18 +57,24 @@ function ViewInstanceLabel({
 }
 
 export type InstanceGroup = {
-  id: 'personal' | 'public';
+  id: 'personal' | 'public' | 'draft';
   label: string;
   sessions: ViewSession[];
 };
 
 export function groupViewInstances(state: ViewEngineState): InstanceGroup[] {
-  return GROUPS.map(group => ({
+  const groups: InstanceGroup[] = GROUPS.map(group => ({
     ...group,
     sessions: state.instanceIds
       .map(id => state.sessions[id])
       .filter(session => session.instance.scope.type === group.id),
   })).filter(group => group.sessions.length);
+  const drafts = Object.values(state.sessions).filter(
+    session => session.kind === 'dashboard' && !session.persisted,
+  );
+  if (drafts.length)
+    groups.unshift({ id: 'draft', label: '未保存草稿', sessions: drafts });
+  return groups;
 }
 
 interface NavigationProps {

@@ -193,7 +193,10 @@ it('invalid local transform options disable query and save even though the last 
       defaultInstanceId: 'dashboard',
     },
     host: base.host,
-    dashboardTransforms: { legacy: () => filter.eq('state.amount', 10) },
+    dashboardTransforms: {
+      legacy: () => filter.eq('state.amount', 10),
+      simple: () => filter.eq('state.amount', 10),
+    },
   });
   base.engine.dispose();
   await engine.load();
@@ -204,6 +207,7 @@ it('invalid local transform options disable query and save even though the last 
       extensions={{
         dashboard: {
           transforms: {
+            simple: { label: '无参数转换', hasOptions: false },
             legacy: {
               label: '区域转换',
               hasOptions: true,
@@ -236,6 +240,18 @@ it('invalid local transform options disable query and save even though the last 
       .disabled,
   ).toBe(true);
   await expect(engine.save('dashboard')).rejects.toThrow();
+  fireEvent.change(
+    screen.getByRole('combobox', { name: 'child（面板 1）宿主转换器' }),
+    { target: { value: 'simple' } },
+  );
+  expect(
+    Object.values(runtime.getSnapshot().session.editorValidity),
+  ).not.toContain(false);
+  expect(
+    (screen.getByRole('button', { name: '查询' }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(false);
+  await expect(engine.save('dashboard')).resolves.toBeUndefined();
   await act(() => engine.restore('dashboard'));
   expect(runtime.getSnapshot().session.editorValidity).toEqual({});
   cleanup();

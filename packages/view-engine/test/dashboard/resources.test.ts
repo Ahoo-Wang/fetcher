@@ -100,3 +100,49 @@ it('rejects reference metadata above the budget without discarding the dashboard
   expect(paged).not.toHaveBeenCalled();
   engine.dispose();
 });
+
+it('releases cleared reference metadata even when the reload fails', async () => {
+  const { instance, definition } = await import('../engine/fixtures.js');
+  const a = {
+    id: 'a',
+    instanceId: 'child',
+    layout: { x: 0, y: 0, w: 6, h: 18 },
+  };
+  const b = {
+    id: 'b',
+    instanceId: 'other',
+    layout: { x: 6, y: 0, w: 6, h: 18 },
+  };
+  const config = { schemaVersion: 1 as const, panels: [a], filters: [] };
+  const bytes = (value: unknown) =>
+    new TextEncoder().encode(JSON.stringify(value)).byteLength;
+  const { engine, load } = dashboardSetup(
+    config,
+    {},
+    {
+      maxDashboardMetadataBytes:
+        bytes({ ...config, panels: [a, b] }) * 2 +
+        bytes(instance('other')) +
+        bytes(definition),
+    },
+  );
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  await vi.waitFor(() =>
+    expect(runtime.getSnapshot().panels.a.status).toBe('ready'),
+  );
+  load.mockImplementation(async () => {
+    throw new Error('temporary failure');
+  });
+  await runtime.reloadReference('a');
+  expect(runtime.getSnapshot().panels.a.instance).toBeUndefined();
+  load.mockImplementation(async (...args: unknown[]) => {
+    if (args[0] === 'child') throw new Error('temporary failure');
+    return instance('other');
+  });
+  runtime.edit(current => ({ ...current, panels: [a, b] }));
+  await vi.waitFor(() =>
+    expect(runtime.getSnapshot().panels.b.status).toBe('ready'),
+  );
+  engine.dispose();
+});
