@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { withDeadline } from './runtimeLimits.js';
+import { withDeadline } from '../lib/runtimeLimits.js';
 import type {
   ViewSession,
   ViewInstancePermissions,

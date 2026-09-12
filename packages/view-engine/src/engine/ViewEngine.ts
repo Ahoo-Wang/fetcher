@@ -38,7 +38,7 @@ import {
   QueryBudget,
   beginDiagnostic,
   RuntimeLimitError,
-} from './runtimeLimits.js';
+} from '../lib/runtimeLimits.js';
 import { AnalysisCommands } from '../analysis/AnalysisCommands.js';
 import type { RecordViewConfig } from '../contracts/viewModel.js';
 import { validateFilterJson } from '../filter/filterConfigurationValidation.js';

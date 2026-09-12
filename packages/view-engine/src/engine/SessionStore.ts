@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { validateRuntimeLimits, type RuntimeLimits } from './runtimeLimits.js';
+import { validateRuntimeLimits, type RuntimeLimits } from '../lib/runtimeLimits.js';
 import type { AnalysisCompilerRegistry } from '../analysis/analysisModel.js';
 import type { FilterCompilerRegistry } from '../filter/filterModel.js';
 import type {
