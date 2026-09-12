@@ -609,9 +609,8 @@ git commit -m "refactor(view-engine): unify write failure reconciliation"
 | 基线行 | 去向 |
 | --- | --- |
 | 72-83（session 解析、flags、current 闭包） | 留在 `write()` 编排 |
-| 85-126（validation/assertWritable/review/权限/scope/submitted/knownIds/beginWrite/状态 patch） | `prepareWrite` → 返回 `{ submitted, knownIds }` |
-| 131（`if (!current()) return;`） | `dispatchWrite` 内 |
-| 132（二次 assertConflictReview） | `dispatchWrite` 内 |
+| 85-125（validation/assertWritable/review/权限/scope/submitted 构建/validateViewInstance/knownIds） | `prepareWrite` → 返回 `{ submitted, knownIds }` |
+| 126-132（beginWrite、状态 patch、`if (!current()) return;`、二次 assertConflictReview） | `dispatchWrite` 内 |
 | 134-199（create/save 两条 withDeadline 分发 + UNKNOWN_OUTCOME + 失败 finishCreate 分支） | `dispatchWrite` → 返回 `ViewInstance` |
 | 200-201（`if (!current()) return; received = true;`） | 留在编排（`received` 是编排层 flag） |
 | 202-284（create 对账：receipt/ID/契约校验、选区迁移、isDeleted 短路、publish） | `reconcileCreate` → 返回 `string \| typeof WRITE_ABORT`（正常返回 createdId） |
