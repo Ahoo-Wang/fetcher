@@ -50,7 +50,7 @@ A numeric column can select several of SUM/AVG/MIN/MAX, subject to `summaryFunct
 
 ## Global runtime controls
 
-Manual refresh, automatic refresh and page expansion are in the global toolbar. Automatic refresh offers 30 seconds, 1 minute and 5 minutes with a countdown; it does not change saved query configuration. Pause external business work through `autoRefreshPaused`. Hidden-page and active-work guards prevent overlapping automatic reads.
+Manual refresh, automatic refresh and page expansion are in the global toolbar. Automatic refresh offers 30 seconds, 1 minute and 5 minutes with a countdown; it does not change saved query configuration. Pause external business work through `record.autoRefreshPaused` on pages (`autoRefreshPaused` on standalone `RecordView`). Hidden-page and active-work guards prevent overlapping automatic reads.
 
 Expansion fills the page area and exits with Escape; it is not the browser Fullscreen API. Query errors, summary errors and action errors retain their own recovery positions. During background refresh, the last successful rows remain usable; first load uses Spin and empty results use an icon.
 

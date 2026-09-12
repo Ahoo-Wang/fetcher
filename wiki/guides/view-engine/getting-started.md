@@ -41,7 +41,7 @@ export function OrderPage({
   scopeKey: string;
 }) {
   const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
-  return <ViewPage {...binding} selectable />;
+  return <ViewPage {...binding} record={{ selectable: true }} />;
 }
 ```
 

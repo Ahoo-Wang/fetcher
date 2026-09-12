@@ -326,7 +326,7 @@ export function OrderPage({
   scopeKey: string;
 }) {
   const binding = useViewEngine({ scopeKey, definitionId: 'orders', host });
-  return <ViewPage {...binding} selectable />;
+  return <ViewPage {...binding} record={{ selectable: true }} />;
 }
 ```
 
@@ -569,7 +569,7 @@ Library portals copy the scope's computed public variables and effective appeara
 
 ### React composition and business extensions
 
-`useViewEngine` owns the engine lifecycle and pairs filter/analysis compiler registrations with editors. Spread its `ViewEngineBinding` into pure `ViewPage`. `ViewPageContent` requires a non-null caller-owned engine. UI options include `extensions`, `filterContext`, `selectable`, `autoRefreshPaused`, `className`, and `initialSidebarCollapsed`; engine options belong to the hook. `RecordView` renders record sessions and `AnalysisView` renders analysis sessions. Controlled `RecordTable`, `RecordCardList`, column and card settings remain available.
+`useViewEngine` owns the engine lifecycle and pairs filter/analysis compiler registrations with editors. Spread its `ViewEngineBinding` into pure `ViewPage`. `ViewPageContent` requires a non-null caller-owned engine. Shared page options include `extensions`, `filterContext`, `className` and `initialSidebarCollapsed`. Record-only options (`selectable`, `autoRefreshPaused`, `renderToolbar`, `renderCard`, `renderPagination`) belong inside `record`; engine options belong to the hook. `RecordView` renders record sessions and `AnalysisView` renders analysis sessions. Controlled `RecordTable`, `RecordCardList`, column and card settings remain available.
 
 The published record table relies on React Compiler to cache derived values, callbacks and JSX; unsubmitted draft edits do not rerender record cells in the compiled build. Uncompiled source tests verify the same functional behavior without promising identical render counts. Its widths,
 effective pinning, filler and summary-label region are computed in a pure internal
@@ -633,7 +633,7 @@ refresh and page expansion before host global actions. Automatic refresh options
 are off (default), 30 seconds, 1 minute or 5 minutes. The next interval begins after the previous read
 finishes. Automatic refresh checks document visibility and skips focused editors
 or popups in addition to the engine guards above. Hosts can set
-`autoRefreshPaused` on `ViewPage`, `ViewPageContent` or `RecordView` while their
+`record.autoRefreshPaused` on `ViewPage`/`ViewPageContent`, or `autoRefreshPaused` on `RecordView` while their
 own business operation is active. The interval resets when switching instances
 and is not saved in view configuration.
 
@@ -651,12 +651,12 @@ Escape closes an active popup first, then exits expansion; the toolbar also
 provides Collapse. Expansion is transient and restores body scrolling on exit
 or unmount. In an iframe it expands within that frame.
 
-`ViewExtensions` extends `FilterExtensions` with `cells`, `globalActions`, `toolbarActions` and
+`RecordExtensions` extends `FilterExtensions` with `cells`, `globalActions`, `toolbarActions` and
 `rowActions`, each a local name-to-React-component map. Custom components may use
 any React UI. Explicit missing names and renderer failures are visible and
 isolated per rendering area.
 
-`RecordViewProps`, `ViewPageContentProps` and `ViewPageProps` also accept two finite region callbacks:
+`RecordViewProps` accepts the following region callbacks directly; `ViewPageContentProps` and `ViewPageProps` accept them inside `record`:
 
 ```ts
 renderToolbar?: (context: RecordToolbarRenderContext) => ReactNode;
@@ -934,20 +934,22 @@ Card mode returns no metrics from getRecordSummaryMetrics. It cancels pending ag
 
 The global toolbar owns a single layout dropdown labeled with the current layout, at every container width. RecordToolbar retains batch actions and layout settings.
 
-`RecordViewProps.renderCard?: (context: RecordCardRenderContext) => ReactNode` is also forwarded by ViewPage/ViewPageContent and supported directly by RecordCardList. The context provides readonly definition, instance, record, rowKey, index (within the current page), selected and defaultContent, plus instance-bound refresh(): Promise<void>. It exposes no engine internals. Return custom JSX or wrap defaultContent; return a component when Hooks are needed. The callback and any component it returns run inside the existing per-card error boundary. A failed card does not remove sibling cards or library-managed selection controls.
+`RecordViewProps.renderCard?: (context: RecordCardRenderContext) => ReactNode` is forwarded through `record.renderCard` by ViewPage/ViewPageContent and supported directly by RecordCardList. The context provides readonly definition, instance, record, rowKey, index (within the current page), selected and defaultContent, plus instance-bound refresh(): Promise<void>. It exposes no engine internals. Return custom JSX or wrap defaultContent; return a component when Hooks are needed. The callback and any component it returns run inside the existing per-card error boundary. A failed card does not remove sibling cards or library-managed selection controls.
 
 The library retains grid/frame, selection, loading/error/empty states and pagination. Custom content owns the title, cover, fields and action arrangement. Card settings affect the built-in defaultContent; entirely custom content may ignore them. renderCard is runtime-only and is never persisted or selected through a new registry.
 
 ```tsx
 <ViewPage
   {...pageProps}
-  renderCard={({ record, rowKey, selected }) => (
-    <article>
-      <h2>{String(rowKey)}</h2>
-      <p>{String(record.amount)}</p>
-      {selected && <span>Selected</span>}
-    </article>
-  )}
+  record={{
+    renderCard: ({ record, rowKey, selected }) => (
+      <article>
+        <h2>{String(rowKey)}</h2>
+        <p>{String(record.amount)}</p>
+        {selected && <span>Selected</span>}
+      </article>
+    ),
+  }}
 />
 ```
 
@@ -1103,3 +1105,5 @@ Visualization selection uses five icon/name cards: metric, bar, line, area and p
 Implicit measure selection is resolved identically by the editor and projector before filtering selectable candidates. Incompatible current measures remain visible, including implicit selections. Projection failures may provide `issueSummary` for compact capability cards; full reasons remain available in expandable details. Mapping errors identify the selected count and unsupported aggregation where applicable. The central result notice stays concise; “Repair configuration” opens the retained editor and focuses its first invalid enabled control, or its data-mapping heading if there is no field target. This operation changes neither the query nor the presentation.
 
 Dimension-owned display outputs are included in advanced server-sort choices. New display aliases avoid collisions with dimensions, measures and existing display outputs; changing an existing display field retains its alias. Invalid full query configuration pauses automatic refresh. If an analysis result was evicted, the chart empty state offers an explicit rerun when the current query is valid; it does not change automatic loading policy. Unconditional element filters are described as all records in the executed summary.
+
+`ViewPage` / `ViewPageContent` accept shared `engine`, `extensions`, `filterContext`, `className` and `initialSidebarCollapsed` props (`ViewPage` also accepts binding `error`). Put record-only `selectable`, `autoRefreshPaused`, `renderToolbar`, `renderCard` and `renderPagination` options inside `record`; these do not affect analysis views. Standalone `RecordView` still accepts them directly. The page owns configuration-panel visibility. `ViewExtensions` composes `RecordExtensions` and `AnalysisExtensions` at the page layer.

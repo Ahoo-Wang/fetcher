@@ -15,7 +15,7 @@ description: 选择合适的所有权层级，配置控件、单元格与操作�
 | `RecordTable`          | definition、instance、appliedFilter、rows、选择/列/排序回调、refresh | 受控表格，请求和状态由调用方拥有       |
 | `RecordColumnSettings` | definition、columns、onChange                                        | 受控列配置                             |
 
-ViewPage/RecordView 支持 `extensions`、`filterContext`、`selectable`（默认 false）、`autoRefreshPaused`（默认 false）、`className`。ViewPage 还有 `initialSidebarCollapsed`，RecordView 有 `toolbarStart`。RecordTable 单独接收查询/汇总状态与重试回调。
+`ViewPage` / `ViewPageContent` 的公共参数为 `engine`、`extensions`、`filterContext`、`className` 和 `initialSidebarCollapsed`（`ViewPage` 还接收绑定的 `error`）。记录专用选项 `selectable`、`autoRefreshPaused`、`renderToolbar`、`renderCard`、`renderPagination` 统一放在 `record` 对象内，只作用于记录视图；独立 `RecordView` 仍直接接收这些参数。页面统一管理配置面板开关。`ViewExtensions` 在页面层组合 `RecordExtensions` 与 `AnalysisExtensions`。
 
 仅当 `getCapabilitiesSnapshot().setDefault` 为 true 时，视图管理器才显示“设为默认/取消默认”操作。标记读取 `state.defaultInstanceId`；修改默认项不会离开当前选中视图。
 

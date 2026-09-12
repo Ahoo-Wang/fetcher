@@ -251,9 +251,8 @@ function RecordViewWorkspace({
                 }
         }
         host={viewHost}
-        renderCard={renderCard}
+        record={{ selectable: true, renderCard }}
         initialSidebarCollapsed
-        selectable
       />
     </div>
   );
