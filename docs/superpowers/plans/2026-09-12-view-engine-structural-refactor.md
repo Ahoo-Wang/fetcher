@@ -26,9 +26,11 @@
 ### Task 1: coverage thresholds 护栏
 
 **Files:**
+
 - Modify: `packages/view-engine/vitest.config.ts`（coverage 段，现仅 `include: ['src/**/*.{ts,tsx}']`）
 
 **Interfaces:**
+
 - Consumes: 无
 - Produces: thresholds 常驻生效；后续所有任务的 `vitest run --coverage` 都受其约束
 
@@ -65,9 +67,11 @@ git commit -m "test(view-engine): enforce coverage thresholds at measured baseli
 ### Task 2: eslint 类型检查收紧（src 域）
 
 **Files:**
+
 - Modify: `packages/view-engine/eslint.config.js`
 
 **Interfaces:**
+
 - Consumes: 无
 - Produces: `src/**` 永久受 strictTypeChecked 约束；test/ 不在 tsconfig 项目内，保持 recommended（不加测试 tsconfig，避免动构建配置）
 
@@ -80,7 +84,11 @@ export default tseslint.config(
   { ignores: ['dist/**', 'node_modules/**', 'coverage/**'] },
   {
     // test/、dev/、examples/ 不在 tsconfig 项目内，保持非类型检查规则。
-    files: ['test/**/*.{ts,tsx}', 'dev/**/*.{ts,tsx}', 'examples/**/*.{ts,tsx}'],
+    files: [
+      'test/**/*.{ts,tsx}',
+      'dev/**/*.{ts,tsx}',
+      'examples/**/*.{ts,tsx}',
+    ],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     ...reactLintConfig,
     languageOptions: {
@@ -116,6 +124,7 @@ export default tseslint.config(
 - [ ] **Step 2: 统计发现项并按规格决策**
 
 Run: `cd packages/view-engine && npx eslint src --max-warnings 0 2>&1 | tail -3`
+
 - 若问题数 **≤ 50**：逐条就地修复（行为中性）或对该行精确 `// eslint-disable-next-line <rule>` 并附一句原因；**禁止文件级 disable**。
 - 若问题数 **> 50**：将 src 块的 `strictTypeChecked` 降级为 `recommendedTypeChecked`，并在 rules 中追加：
 
@@ -141,10 +150,12 @@ git commit -m "refactor(view-engine): enable type-aware lint for src"
 ### Task 3: viewServiceContract 归位 contracts/
 
 **Files:**
+
 - Move: `packages/view-engine/src/record/viewServiceContract.ts` → `packages/view-engine/src/contracts/viewServiceContract.ts`
 - Modify（import 路径）: `src/index.ts`、`src/contracts/ViewHost.ts`、`src/engine/{ViewEngine,InstanceWork,ViewPersistence}.ts`、`src/record/{StatefulViewHost,IndexedDBViewHost,MemoryViewHost}.ts`、`src/record/validation/{instanceValidation,definitionValidation}.ts`
 
 **Interfaces:**
+
 - Consumes: 无
 - Produces: 公共导出面不变（`src/index.ts:68,74` 的 re-export 名单不动，仅路径改 `./contracts/viewServiceContract.js`）
 
@@ -156,12 +167,12 @@ git mv packages/view-engine/src/record/viewServiceContract.ts packages/view-engi
 
 按引用方位置替换路径（共 11 处文件，用 `grep -rn "viewServiceContract" packages/view-engine/src --include='*.ts*'` 复核无遗漏）：
 
-| 原写法（所在文件） | 改为 |
-| --- | --- |
-| `./viewServiceContract.js`（record/ 三个 host、StatefulViewHost） | `../contracts/viewServiceContract.js` |
-| `../viewServiceContract.js`（record/validation/ 两个文件） | `../../contracts/viewServiceContract.js` |
+| 原写法（所在文件）                                                          | 改为                                                                                         |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `./viewServiceContract.js`（record/ 三个 host、StatefulViewHost）           | `../contracts/viewServiceContract.js`                                                        |
+| `../viewServiceContract.js`（record/validation/ 两个文件）                  | `../../contracts/viewServiceContract.js`                                                     |
 | `../record/viewServiceContract.js`（contracts/ViewHost.ts、engine/ 三文件） | `./viewServiceContract.js`（ViewHost.ts）或 `../contracts/viewServiceContract.js`（engine/） |
-| `./record/viewServiceContract.js`（src/index.ts 两处） | `./contracts/viewServiceContract.js` |
+| `./record/viewServiceContract.js`（src/index.ts 两处）                      | `./contracts/viewServiceContract.js`                                                         |
 
 - [ ] **Step 2: 验证**
 
@@ -180,10 +191,12 @@ git commit -m "refactor(view-engine): move viewServiceContract to contracts laye
 ### Task 4: runtimeLimits 下沉 lib/（解除 contracts→engine 倒置）
 
 **Files:**
+
 - Move: `packages/view-engine/src/engine/runtimeLimits.ts` → `packages/view-engine/src/lib/runtimeLimits.ts`
 - Modify（import 路径）: `src/contracts/viewModel.ts`、`src/engine/{SessionStore,ViewEngine,ViewLoader,ViewReload,ViewManagement,ViewPersistence,sessionValidation}.ts`、`src/record/engine/{RecordQueries,RecordSummaries}.ts`、`src/analysis/AnalysisCommands.ts`、`test/runtimeLimits.test.ts`、`test/engine/runtimeBudget.test.ts`
 
 **Interfaces:**
+
 - Consumes: 无
 - Produces: `contracts/viewModel.ts` 不再 import `engine/*`（倒置清零，规格 §8 验收项）
 
@@ -195,12 +208,12 @@ git mv packages/view-engine/src/engine/runtimeLimits.ts packages/view-engine/src
 
 替换规则（用 `grep -rn "runtimeLimits" packages/view-engine/src packages/view-engine/test --include='*.ts*'` 复核）：
 
-| 原写法（所在位置） | 改为 |
-| --- | --- |
-| `./runtimeLimits.js`（engine/ 各文件、sessionValidation.ts） | `../lib/runtimeLimits.js` |
-| `../engine/runtimeLimits.js`（contracts/viewModel.ts、analysis/AnalysisCommands.ts） | `../lib/runtimeLimits.js` |
-| `../../engine/runtimeLimits.js`（record/engine/ 两文件） | `../../lib/runtimeLimits.js` |
-| `../engine/runtimeLimits.js` 或 `../../engine/runtimeLimits.js`（两个测试文件，按其目录层级） | 对应 `../|../../lib/runtimeLimits.js` |
+| 原写法（所在位置）                                                                            | 改为                         |
+| --------------------------------------------------------------------------------------------- | ---------------------------- |
+| `./runtimeLimits.js`（engine/ 各文件、sessionValidation.ts）                                  | `../lib/runtimeLimits.js`    |
+| `../engine/runtimeLimits.js`（contracts/viewModel.ts、analysis/AnalysisCommands.ts）          | `../lib/runtimeLimits.js`    |
+| `../../engine/runtimeLimits.js`（record/engine/ 两文件）                                      | `../../lib/runtimeLimits.js` |
+| `../engine/runtimeLimits.js` 或 `../../engine/runtimeLimits.js`（两个测试文件，按其目录层级） | 对应 `../                    | ../../lib/runtimeLimits.js` |
 
 - [ ] **Step 2: 验证倒置清零**
 
@@ -219,10 +232,12 @@ git commit -m "refactor(view-engine): move runtimeLimits to lib, fix contracts i
 ### Task 5: sessionValidation 更名消除双门面混淆
 
 **Files:**
+
 - Move: `packages/view-engine/src/engine/sessionValidation.ts` → `packages/view-engine/src/engine/sessionValidationCache.ts`
 - Modify: 所有 `./sessionValidation.js` 引用（先 `grep -rn "sessionValidation" packages/view-engine/src` 确认清单；已知 `src/engine/sessionState.ts:15`）
 
 **Interfaces:**
+
 - Consumes: Task 4 的路径状态
 - Produces: 导出名不变（`compileSessionFilter`/`configSizeIssues`），仅文件名变化；公共 API 不含该文件
 
@@ -250,11 +265,13 @@ git commit -m "refactor(view-engine): rename sessionValidation to sessionValidat
 ### Task 6: baselinePatch 帮助函数（TDD）
 
 **Files:**
+
 - Modify: `packages/view-engine/src/engine/sessionState.ts`（新增导出）
 - Modify: `packages/view-engine/src/engine/ViewPersistence.ts:288-298`、`packages/view-engine/src/engine/ViewManagement.ts:99-109`
 - Test: `packages/view-engine/test/engine/baselinePatch.test.ts`（新建）
 
 **Interfaces:**
+
 - Consumes: `withContent`（sessionState.ts 现有三重载，同文件）
 - Produces: `baselinePatch(baseline: ViewInstance, local: DeepReadonly<ViewInstance>): RecordBaselinePatch | AnalysisBaselinePatch`——返回类型是**判别联合**（展开进 `store.patch` 时按分支分发，匹配 `SessionStore` 的 `RecordSessionPatch | AnalysisSessionPatch`）
 
@@ -371,13 +388,13 @@ Run: `npx vitest run --coverage.enabled=false test/engine/baselinePatch.test.ts 
 调用点 2 — `ViewManagement.ts`（原 97-113，`local` 定义保持不变）：
 
 ```ts
-      this.work.finishWrite(id, token, () =>
-        this.store.patch(id, {
-          ...baselinePatch(baseline, local),
-          writeStatus: 'idle',
-          writeError: null,
-        }),
-      );
+this.work.finishWrite(id, token, () =>
+  this.store.patch(id, {
+    ...baselinePatch(baseline, local),
+    writeStatus: 'idle',
+    writeError: null,
+  }),
+);
 ```
 
 两文件顶部 import 增加 `baselinePatch`（sessionState.js 的既有 import 语句内追加）。
@@ -397,11 +414,13 @@ git commit -m "refactor(view-engine): extract baselinePatch session helper"
 ### Task 7: reconcileWriteFailure 统一失败恢复（TDD）
 
 **Files:**
+
 - Create: `packages/view-engine/src/engine/writeRecovery.ts`
 - Modify: `ViewPersistence.ts`（catch，304-323）、`ViewManagement.ts`（rename catch 114-125、delete catch 325-338）、`ViewReload.ts`（catch 318-327）
 - Test: `packages/view-engine/test/engine/writeRecovery.test.ts`（新建）
 
 **Interfaces:**
+
 - Consumes: `message()`（lib/snapshot.js）、`SessionStore.patch`、`InstanceWork.finishWrite/finishReload`
 - Produces:
 
@@ -598,24 +617,26 @@ git commit -m "refactor(view-engine): unify write failure reconciliation"
 ### Task 8: 分解 ViewPersistence.write（编排 ≤60 行）
 
 **Files:**
+
 - Modify: `packages/view-engine/src/engine/ViewPersistence.ts`
 
 **Interfaces:**
+
 - Consumes: Task 6/7 的 `baselinePatch`/`reconcileWriteFailure`
 - Produces: 私有方法（不加导出）：`prepareWrite`、`dispatchWrite`、`reconcileCreate`、`reconcileSave`；模块级哨兵 `const WRITE_ABORT = Symbol()`；公共 `save/overwriteInstance/saveAs` 签名不变
 
 **基线行号 → 目标方法映射（逐字搬运，仅以下粘合点新写）：**
 
-| 基线行 | 去向 |
-| --- | --- |
-| 72-83（session 解析、flags、current 闭包） | 留在 `write()` 编排 |
-| 85-125（validation/assertWritable/review/权限/scope/submitted 构建/validateViewInstance/knownIds） | `prepareWrite` → 返回 `{ submitted, knownIds }` |
-| 126-132（beginWrite、状态 patch、`if (!current()) return;`、二次 assertConflictReview） | `dispatchWrite` 内 |
-| 134-199（create/save 两条 withDeadline 分发 + UNKNOWN_OUTCOME + 失败 finishCreate 分支） | `dispatchWrite` → 返回 `ViewInstance` |
-| 200-201（`if (!current()) return; received = true;`） | 留在编排（`received` 是编排层 flag） |
-| 202-284（create 对账：receipt/ID/契约校验、选区迁移、isDeleted 短路、publish） | `reconcileCreate` → 返回 `string \| typeof WRITE_ABORT`（正常返回 createdId） |
-| 285-303（save 对账：Task 6 已改写为 baselinePatch 版本） | `reconcileSave` |
-| 304-327（catch/finally/return createdId） | 留在编排（Task 7 已改写 catch） |
+| 基线行                                                                                             | 去向                                                                          |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 72-83（session 解析、flags、current 闭包）                                                         | 留在 `write()` 编排                                                           |
+| 85-125（validation/assertWritable/review/权限/scope/submitted 构建/validateViewInstance/knownIds） | `prepareWrite` → 返回 `{ submitted, knownIds }`                               |
+| 126-132（beginWrite、状态 patch、`if (!current()) return;`、二次 assertConflictReview）            | `dispatchWrite` 内                                                            |
+| 134-199（create/save 两条 withDeadline 分发 + UNKNOWN_OUTCOME + 失败 finishCreate 分支）           | `dispatchWrite` → 返回 `ViewInstance`                                         |
+| 200-201（`if (!current()) return; received = true;`）                                              | 留在编排（`received` 是编排层 flag）                                          |
+| 202-284（create 对账：receipt/ID/契约校验、选区迁移、isDeleted 短路、publish）                     | `reconcileCreate` → 返回 `string \| typeof WRITE_ABORT`（正常返回 createdId） |
+| 285-303（save 对账：Task 6 已改写为 baselinePatch 版本）                                           | `reconcileSave`                                                               |
+| 304-327（catch/finally/return createdId）                                                          | 留在编排（Task 7 已改写 catch）                                               |
 
 - [ ] **Step 1: 按映射搬运并新写编排体**
 
@@ -686,6 +707,7 @@ git commit -m "refactor(view-engine): unify write failure reconciliation"
 （catch 块 = Task 7 Step 4 中 ViewPersistence catch 的最终版本，逐字保留于此。）
 
 粘合规则：
+
 - 模块级 `const WRITE_ABORT = Symbol();`（与 Task 9 的 `RELOAD_ABORT` 同模式，各自文件独立声明）。
 - `dispatchWrite` 内原 156 行起的 `dispatched = true` 改为 `ctx.setDispatched()`；其余逐字。
 - `reconcileCreate` 内原 218 行 `createdId = saved.id;` 变为局部 `const createdId = saved.id;`；原 234/236/240-242 的早退 `return` 改为 `return WRITE_ABORT`；方法末尾 `return createdId;`。原 253-262 的 isDeleted 分支返回 `WRITE_ABORT`。
@@ -709,9 +731,11 @@ git commit -m "refactor(view-engine): decompose ViewPersistence.write into phase
 ### Task 9: 分解 ViewReload.reloadInstance（编排 ≤60 行）
 
 **Files:**
+
 - Modify: `packages/view-engine/src/engine/ViewReload.ts`
 
 **Interfaces:**
+
 - Consumes: Task 7 的失败恢复
 - Produces: 私有方法 `beginReloadGate`、`fetchReloadResult`、`validateReloadResult`、`reconcileUnverifiedCreate`、`reconcileReloadedInstance`；模块级哨兵 `const RELOAD_ABORT = Symbol()`；`canReloadInstance`/`useRemoteInstance` 不变
 
@@ -720,24 +744,23 @@ git commit -m "refactor(view-engine): decompose ViewPersistence.write into phase
 - 编排层新写货币闭包并对齐九处内联检查（语义相同者才收敛，规格 §5.2）：
 
 ```ts
-    const stale = () =>
-      !this.scope.current(lifecycle) ||
-      this.work.reloadToken(id) !== controller;
+const stale = () =>
+  !this.scope.current(lifecycle) || this.work.reloadToken(id) !== controller;
 ```
 
 基线 120、122-126、139-142、177-181、197-201、222-226 六处的 `!this.scope.current(lifecycle) || this.work.reloadToken(id) !== controller` 改为 `stale()`；**catch 守卫（318-323 的 `started &&` 变体）不收敛**，Task 7 版本原样保留。
 
 **基线行号 → 目标方法映射：**
 
-| 基线行 | 去向 |
-| --- | --- |
-| 97-105（session/lifecycle/controller/flags/selection） | 留在编排 |
-| 107-126（unverified/existingBaseline/canReload/writeToken 冲突/beginReload/previous.abort/stale/queries.cancel） | `beginReloadGate` → 返回 `{ unverified, existingBaseline }` |
-| 127-196（list 查找 / create 原请求重放 / 直接 load） | `fetchReloadResult` → 返回 `ViewInstance` |
-| 197-201（stale 检查留编排体；validateViewInstance/kind 断言/copy/clearDelete） | `validateReloadResult`（202-211 逐字）→ 返回 `ViewInstance`（baseline） |
-| 213-302（selectCopy 双查、rebase-or-inherit、pendingCreates 摘除、publish） | `reconcileUnverifiedCreate` → `string \| typeof RELOAD_ABORT`（返回 queryId 供编排触发 followUp） |
-| 303-317（followUp + rebaseSession patch） | `reconcileReloadedInstance` → 返回 followUp |
-| 318-331（catch（Task 7 版）/finally/`void followUp?.()`） | 留在编排（followUp 尾触发原时序：成功路径尾部、finally 之后） |
+| 基线行                                                                                                           | 去向                                                                                              |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 97-105（session/lifecycle/controller/flags/selection）                                                           | 留在编排                                                                                          |
+| 107-126（unverified/existingBaseline/canReload/writeToken 冲突/beginReload/previous.abort/stale/queries.cancel） | `beginReloadGate` → 返回 `{ unverified, existingBaseline }`                                       |
+| 127-196（list 查找 / create 原请求重放 / 直接 load）                                                             | `fetchReloadResult` → 返回 `ViewInstance`                                                         |
+| 197-201（stale 检查留编排体；validateViewInstance/kind 断言/copy/clearDelete）                                   | `validateReloadResult`（202-211 逐字）→ 返回 `ViewInstance`（baseline）                           |
+| 213-302（selectCopy 双查、rebase-or-inherit、pendingCreates 摘除、publish）                                      | `reconcileUnverifiedCreate` → `string \| typeof RELOAD_ABORT`（返回 queryId 供编排触发 followUp） |
+| 303-317（followUp + rebaseSession patch）                                                                        | `reconcileReloadedInstance` → 返回 followUp                                                       |
+| 318-331（catch（Task 7 版）/finally/`void followUp?.()`）                                                        | 留在编排（followUp 尾触发原时序：成功路径尾部、finally 之后）                                     |
 
 - [ ] **Step 1: 按映射搬运并新写编排体**
 
@@ -811,6 +834,7 @@ git commit -m "refactor(view-engine): decompose ViewPersistence.write into phase
 ```
 
 粘合规则：
+
 - 模块级 `const RELOAD_ABORT = Symbol();`；`reconcileUnverifiedCreate` 内原 226/234/239 的早退 `return` 改为 `return RELOAD_ABORT`；原 275 行 `followUp = this.queries.followUp(queryId, true)` 改为 `return ctx.createFollowUp()`（其 `queryId` 经原 271 行 `ctx.setQueryId(baseline.id)` 回写）；原 276-302 的 `finishReload(id, controller, () => store.publish(...))` 原样保留在方法内。
 - `beginReloadGate(ctx)`：原 107-118 逐字（其中 118 行 `started = true;` 改为 `ctx.markStarted();`），原 120 与 122-126 的内联货币检查改为 `if (ctx.stale()) return RELOAD_ABORT;`，成功返回 `{ unverified, existingBaseline }`。
 - `fetchReloadResult(gate, session, ctx)`：原 127-196 逐字；其中 139-142、177-181 的内联货币检查改为 `if (ctx.stale()) return RELOAD_ABORT;`（await 之后的早退同样走哨兵）。
@@ -836,11 +860,13 @@ git commit -m "refactor(view-engine): decompose reloadInstance into phases"
 ### Task 10: 提取 analysisEditorLabels 与共享原子（Choice/Boundary）
 
 **Files:**
+
 - Create: `packages/view-engine/src/analysis/analysisEditorLabels.ts`
 - Create: `packages/view-engine/src/analysis/AnalysisComponentChoice.tsx`
 - Modify: `packages/view-engine/src/analysis/AnalysisEditor.tsx`
 
 **Interfaces:**
+
 - Produces（后 Task 11-13 复用，精确签名）:
   - `analysisEditorLabels.ts`: `export const groupNames: Record<Group, string>`、`export const names: Record<string, string>`、`export const dateLabels: Record<string, string>`、`export function analysisOutputs(value: DeepReadonly<AnalysisViewConfig>)`（基线 75-97、156-162 逐字，补必要 import）
   - `AnalysisComponentChoice.tsx`: `export function Choice(props: {label: string; caption?: string; value?: string; options: {value: string; label: string}[]; onChange(value: string): void; disabled?: boolean; invalid?: boolean})`（基线 122-154 逐字）与 `export class AnalysisEditorBoundary extends Component<{children: ReactNode}, {failed: boolean}>`（基线 98-121 逐字）
@@ -863,10 +889,12 @@ git commit -m "refactor(view-engine): extract analysis editor labels and choice 
 ### Task 11: 提取 AnalysisSortEditor
 
 **Files:**
+
 - Create: `packages/view-engine/src/analysis/AnalysisSortEditor.tsx`
 - Modify: `packages/view-engine/src/analysis/AnalysisEditor.tsx`
 
 **Interfaces:**
+
 - Produces:
 
 ```tsx
@@ -877,22 +905,23 @@ export function AnalysisSortEditor(props: {
   /** 父层持有 invalidLimit，供 details 的 open 计算使用；此处仅用于 aria-invalid。 */
   invalidLimit: boolean;
   update(patch: Partial<AnalysisViewConfig>): void;
-}): ReactNode
+}): ReactNode;
 ```
 
 - [ ] **Step 1: 搬运**基线 896-1005（排序 fieldset + 最多结果行数 label）到新组件；`sortOptions`/`nextSortOutput`（基线 825-841）与 `maxSort`/`maxLimit` 计算（817-816 一带）一并移入；`useId` 的 `limitHintId` 在组件内部生成。原 JSX 位置替换为：
 
 ```tsx
-              <AnalysisSortEditor
-                value={value}
-                context={props.context}
-                disabled={disabled}
-                invalidLimit={invalidLimit}
-                update={update}
-              />
+<AnalysisSortEditor
+  value={value}
+  context={props.context}
+  disabled={disabled}
+  invalidLimit={invalidLimit}
+  update={update}
+/>
 ```
 
 `invalidLimit`（818-823）与 `update`（826-828）留在 AnalysisEditor.tsx（details 的 `open={advancedOpen || invalidLimit}` 依赖前者）。
+
 - [ ] **Step 2: 验证并提交**
 
 Run: `npx vitest run --coverage.enabled=false test/analysisEditor.test.tsx 2>&1 | tail -3`（重点覆盖 `edits and removes result ordering`/`recomputes sort capacity` 等用例）
@@ -907,10 +936,12 @@ git commit -m "refactor(view-engine): extract AnalysisSortEditor"
 ### Task 12: 提取 AnalysisComponentForm（展开态编辑表单）
 
 **Files:**
+
 - Create: `packages/view-engine/src/analysis/AnalysisComponentForm.tsx`
 - Modify: `packages/view-engine/src/analysis/AnalysisEditor.tsx`
 
 **Interfaces:**
+
 - Consumes: Task 10 的 `Choice`/`AnalysisEditorBoundary`/标签常量
 - Produces:
 
@@ -940,7 +971,7 @@ export function AnalysisComponentForm(props: {
   onRemove(): void;
   onClose(): void;
   onCustomChange(next: AnalysisComponentConfig): void;
-}): ReactNode
+}): ReactNode;
 ```
 
 - [ ] **Step 1: 搬运**基线 PopoverContent 的 `readyToEdit && (<>…</>)` 内块（423-771）到新组件：`update(index, …)` → `props.onUpdate(…)`；删除按钮 onClick 体（706-733 的 splice/sort 过滤/setExpandedId(null)/setOpenedIds 回收）→ `props.onRemove()`（该闭包留在 List，因为要动 `expandedId/openedIds` 状态与 `value`）；"完成编辑"按钮 → `props.onClose()`；CustomEditor 的 onChange 定靶逻辑（676-702，依赖 `latest.current`）→ `props.onCustomChange(next)`（闭包留在 List）。
@@ -986,6 +1017,7 @@ export function AnalysisComponentForm(props: {
 ```
 
 （表单后部的 ExpressionEditor/提示/issues/完成按钮不属表单域，留在 List——保持与基线 JSX 结构一一对应。）
+
 - [ ] **Step 3: 验证并提交**
 
 Run: `npx vitest run --coverage.enabled=false test/analysisEditor.test.tsx test/analysisControls.test.tsx test/analysisPresentationEditor.test.tsx 2>&1 | tail -3`
@@ -1000,16 +1032,18 @@ git commit -m "refactor(view-engine): extract AnalysisComponentForm"
 ### Task 13: 提取 AnalysisComponentList（收尾 ≤400 行）
 
 **Files:**
+
 - Create: `packages/view-engine/src/analysis/AnalysisComponentList.tsx`
 - Modify: `packages/view-engine/src/analysis/AnalysisEditor.tsx`
 
 **Interfaces:**
+
 - Produces:
 
 ```tsx
 export function AnalysisComponentList(
   props: AnalysisEditorProps & { kind: 'dimensions' | 'metrics' },
-): ReactNode
+): ReactNode;
 ```
 
 `AnalysisEditorProps` 移至 `analysisReactTypes.ts`（或新建 `analysisEditorTypes.ts`）并 re-export，避免 List↔Editor 循环 import；`src/analysis/analysisReactTypes.ts` 已有 `AnalysisExtensions`，优先放此处（内部类型，不进公共入口）。
@@ -1032,11 +1066,13 @@ git commit -m "refactor(view-engine): extract AnalysisComponentList, slim editor
 ### Task 14: 增量 API——命令命名类型导出 + 文档同步
 
 **Files:**
+
 - Modify: `packages/view-engine/src/engine/ViewEngine.ts`（新增两个 interface + 两处返回类型标注）
 - Modify: `packages/view-engine/src/index.ts`（`export type` 两行）
 - Modify: `skills/fetcher-view-engine/references/api.md`、`wiki/reference/view-engine/symbols.md`、`wiki/zh/reference/view-engine/symbols.md`
 
 **Interfaces:**
+
 - Produces（纯增量；方法签名必须与现对象字面量逐字一致——来源 `ViewEngine.ts:312-352` 与 `370-456`）:
 
 ```ts
@@ -1056,10 +1092,17 @@ export interface AnalysisInstanceCommands {
 }
 
 export interface RecordInstanceCommands {
-  edit(updater: (config: DeepReadonly<RecordViewConfig>) => DeepReadonly<RecordViewConfig>): void;
+  edit(
+    updater: (
+      config: DeepReadonly<RecordViewConfig>,
+    ) => DeepReadonly<RecordViewConfig>,
+  ): void;
   refreshSummary(): Promise<void>;
   applyFilter(): Promise<void>;
-  setFilterDraft(draft: DeepReadonly<FilterConfiguration>, valid?: boolean): void;
+  setFilterDraft(
+    draft: DeepReadonly<FilterConfiguration>,
+    valid?: boolean,
+  ): void;
   setFilterValidity(valid: boolean): void;
   setFilterMode(mode: FilterMode): void;
   setSort(sort: DeepReadonly<FieldSort[]>): Promise<void>;
@@ -1117,6 +1160,7 @@ Expected: coverage（含 thresholds）+ compiled + type 三段全过。
 - [ ] **Step 2: 结构目标核对（规格 §8）**
 
 Run:
+
 ```bash
 awk '/private async write/,/^  }$/' packages/view-engine/src/engine/ViewPersistence.ts | wc -l
 awk '/async reloadInstance/,/^  }$/' packages/view-engine/src/engine/ViewReload.ts | wc -l
@@ -1124,6 +1168,7 @@ wc -l packages/view-engine/src/analysis/AnalysisEditor.tsx
 grep -rn "from '.*engine/" packages/view-engine/src/contracts/ | wc -l
 git diff 891f441a --stat -- packages/view-engine/test | tail -2
 ```
+
 Expected: write ≤60；reloadInstance ≤60；AnalysisEditor ≤400；contracts→engine 导入 = 0；test 目录 diff 仅含新增文件（`baselinePatch.test.ts`、`writeRecovery.test.ts`），**零断言修改**。
 
 - [ ] **Step 3: lint 与根测试**

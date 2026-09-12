@@ -16,13 +16,13 @@
 
 ## 2. 范围
 
-| 阶段 | 内容 | 风险 |
-| --- | --- | --- |
-| A 质量护栏 | coverage thresholds 基线 + eslint 类型检查收紧 | 无（只加约束） |
-| B 分层修正 | viewServiceContract → contracts/；runtimeLimits → lib/ | 低（纯移动） |
-| C 写路径分解 | write/reloadInstance 三段化 + 失败恢复去重 | 中（核心不变量） |
-| D 编辑器拆分 | AnalysisEditor 按编辑域拆文件 | 中（渲染时序） |
-| E 增量 API | 导出命令命名类型 + 文档同步 | 低 |
+| 阶段         | 内容                                                   | 风险             |
+| ------------ | ------------------------------------------------------ | ---------------- |
+| A 质量护栏   | coverage thresholds 基线 + eslint 类型检查收紧         | 无（只加约束）   |
+| B 分层修正   | viewServiceContract → contracts/；runtimeLimits → lib/ | 低（纯移动）     |
+| C 写路径分解 | write/reloadInstance 三段化 + 失败恢复去重             | 中（核心不变量） |
+| D 编辑器拆分 | AnalysisEditor 按编辑域拆文件                          | 中（渲染时序）   |
+| E 增量 API   | 导出命令命名类型 + 文档同步                            | 低               |
 
 范围外：i18n、wiki 指南漂移修复、viewer 迁移指南（按路线图分别推迟到发布后）；仪表盘、view-engine-server（后续子项目）；一切行为调整。
 
@@ -45,13 +45,13 @@
 
 按既有骨架拆为私有函数（不新增导出，不改类结构）：
 
-| 函数 | 承载现行为（基线行号） |
-| --- | --- |
-| `prepareWrite(session, options, review)` | 85-126：validation、assertWritable、conflict review、权限、scope 限制、submitted 构建与 validateViewInstance |
-| `dispatchWrite(submitted, options)` | 127-199：beginWrite、状态 patch、create（UNKNOWN_OUTCOME 检查、beginCreate、receipt 重放语义）与 save 两条 withDeadline 分发 |
-| `reconcileCreate(saved, …)` | 202-284：receipt/ID/原样保存契约校验、选区迁移（advanceSelection 双查）、isDeleted 短路、publish |
-| `reconcileSave(saved, latest)` | 285-303：baseline patch |
-| `reconcileWriteFailure(error, ctx)` | 304-323 catch：货币守卫 → finishWrite → patch{writeError, writeStatus idle, 条件 requiresReload} → rethrow |
+| 函数                                     | 承载现行为（基线行号）                                                                                                       |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `prepareWrite(session, options, review)` | 85-126：validation、assertWritable、conflict review、权限、scope 限制、submitted 构建与 validateViewInstance                 |
+| `dispatchWrite(submitted, options)`      | 127-199：beginWrite、状态 patch、create（UNKNOWN_OUTCOME 检查、beginCreate、receipt 重放语义）与 save 两条 withDeadline 分发 |
+| `reconcileCreate(saved, …)`              | 202-284：receipt/ID/原样保存契约校验、选区迁移（advanceSelection 双查）、isDeleted 短路、publish                             |
+| `reconcileSave(saved, latest)`           | 285-303：baseline patch                                                                                                      |
+| `reconcileWriteFailure(error, ctx)`      | 304-323 catch：货币守卫 → finishWrite → patch{writeError, writeStatus idle, 条件 requiresReload} → rethrow                   |
 
 约束：
 
@@ -61,14 +61,14 @@
 
 ### 5.2 ViewReload.reloadInstance（236 行 → 编排 ≤60 行）
 
-| 函数 | 承载现行为（基线行号） |
-| --- | --- |
-| `beginReloadGate(id, controller)` | 97-126：sessionForReload、canReloadInstance、writeToken 冲突、beginReload、previous.abort、queries.cancel |
-| `fetchReloadResult(unverified, session, controller)` | 127-196：list 查找 / create 原请求重放 / 直接 load 三种分发模式（含重放前权限复查） |
-| `validateReloadResult(result, session, unverified)` | 197-211：validateViewInstance、kind 不变断言、copy |
-| `reconcileUnverifiedCreate(baseline, …)` | 213-302：selectCopy 迁移、rebase-or-inherit、pendingCreates 摘除与 publish |
-| `reconcileReloadedInstance(baseline, latest)` | 303-317：followUp + rebaseSession patch |
-| 失败恢复 | 318-330：与 5.1 共享骨架（finishReload 参数化） |
+| 函数                                                 | 承载现行为（基线行号）                                                                                    |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `beginReloadGate(id, controller)`                    | 97-126：sessionForReload、canReloadInstance、writeToken 冲突、beginReload、previous.abort、queries.cancel |
+| `fetchReloadResult(unverified, session, controller)` | 127-196：list 查找 / create 原请求重放 / 直接 load 三种分发模式（含重放前权限复查）                       |
+| `validateReloadResult(result, session, unverified)`  | 197-211：validateViewInstance、kind 不变断言、copy                                                        |
+| `reconcileUnverifiedCreate(baseline, …)`             | 213-302：selectCopy 迁移、rebase-or-inherit、pendingCreates 摘除与 publish                                |
+| `reconcileReloadedInstance(baseline, latest)`        | 303-317：followUp + rebaseSession patch                                                                   |
+| 失败恢复                                             | 318-330：与 5.1 共享骨架（finishReload 参数化）                                                           |
 
 - 内联 9 处 `!this.scope.current(lifecycle) || this.work.reloadToken(id) !== controller` 收敛为单一 `currency()` 闭包（对齐 ViewPersistence 的 `current()` 模式）；收敛只允许发生在语义完全相同的检查点。
 - 行 331 `void followUp?.().catch(() => {})` 的"成功路径尾部触发"时序原样保留（不得移入 finally 或 publish 回调）。
@@ -82,13 +82,13 @@
 
 保持公共面不变：`AnalysisEditor` 仍自 `./AnalysisEditor.js` 导出，`react.ts` 不动。按编辑域拆分：
 
-| 新文件 | 内容 | 现行位置（基线行号） |
-| --- | --- | --- |
-| `analysisEditorLabels.ts` | groupNames/names/dateLabels/analysisOutputs（纯数据与函数） | 75-121, 156-163 |
-| `AnalysisComponentList.tsx` | 列表容器：useListOrder、增删与预算、折叠摘要 chips、expandedId/openedIds 状态所有者 | 164-810 的容器职责 |
-| `AnalysisComponentForm.tsx` | 展开态单项编辑表单（字段/分组/函数/表达式/桶宽/别名/标题/删除），受控于 List 的 expandedId | 240-810 主体 |
-| `AnalysisSortEditor.tsx` | 高级设置 fieldset（排序编辑 + limit） | 约 865-1022 |
-| `AnalysisEditor.tsx`（保留） | 顶层组合、scope 上下文 try/catch、OverlayScope | 811-872 |
+| 新文件                       | 内容                                                                                       | 现行位置（基线行号） |
+| ---------------------------- | ------------------------------------------------------------------------------------------ | -------------------- |
+| `analysisEditorLabels.ts`    | groupNames/names/dateLabels/analysisOutputs（纯数据与函数）                                | 75-121, 156-163      |
+| `AnalysisComponentList.tsx`  | 列表容器：useListOrder、增删与预算、折叠摘要 chips、expandedId/openedIds 状态所有者        | 164-810 的容器职责   |
+| `AnalysisComponentForm.tsx`  | 展开态单项编辑表单（字段/分组/函数/表达式/桶宽/别名/标题/删除），受控于 List 的 expandedId | 240-810 主体         |
+| `AnalysisSortEditor.tsx`     | 高级设置 fieldset（排序编辑 + limit）                                                      | 约 865-1022          |
+| `AnalysisEditor.tsx`（保留） | 顶层组合、scope 上下文 try/catch、OverlayScope                                             | 811-872              |
 
 约束：
 
@@ -112,12 +112,12 @@
 
 ## 9. 风险与缓解
 
-| 风险 | 缓解 |
-| --- | --- |
+| 风险                                         | 缓解                                                                                           |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | 写路径拆分移动隐式时序（token/货币检查次序） | 拆分以"逐行搬运 + 命名"为默认手法；检查点相对次序不变列入审查清单；32 个行为分组测试为回归规格 |
-| 严格 lint 发现项超预期 | 预设降级策略（Stage A 第 2 条），不阻塞阶段推进 |
-| AnalysisEditor 拆分引入渲染差异 | 每拆一个文件即跑 25 用例；渲染期 setState 与 OverlayScope 行为原样保留；compiled 模式测试兜底 |
-| coverage 基线恰逢波动文件 | thresholds 取基线留 -1% 容差；排除清单仅限测试夹具与类型声明 |
+| 严格 lint 发现项超预期                       | 预设降级策略（Stage A 第 2 条），不阻塞阶段推进                                                |
+| AnalysisEditor 拆分引入渲染差异              | 每拆一个文件即跑 25 用例；渲染期 setState 与 OverlayScope 行为原样保留；compiled 模式测试兜底  |
+| coverage 基线恰逢波动文件                    | thresholds 取基线留 -1% 容差；排除清单仅限测试夹具与类型声明                                   |
 
 ## 10. 设计自审
 

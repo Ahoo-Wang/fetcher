@@ -15,7 +15,6 @@ description: Choose the right ownership layer and configure controls, cells and 
 | `RecordTable`          | definition, instance, appliedFilter, rows, selection/column/sort callbacks, refresh | Controlled table; caller owns requests and state        |
 | `RecordColumnSettings` | definition, columns, onChange                                                       | Controlled column configuration                         |
 
-
 The view manager shows a Set default/Clear default action only when `getCapabilitiesSnapshot().setDefault` is true. The marker follows `state.defaultInstanceId`; changing it does not navigate away from the selected view.
 
 ## Built-in cell props
