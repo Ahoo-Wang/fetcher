@@ -8,6 +8,14 @@ The readiness gate keeps raw axe findings and permits only the documented WebKit
 
 ## Core entry
 
+### Independent runtime positions
+
+`commands.restore()` restores the position’s local baseline without saving the managed instance. Record restore refreshes its own query; analysis restore does not execute a query. Disposal also releases per-position query metadata.
+
+`engine.openPosition(instance, definition)` opens a caller-owned record or analysis position after the engine is loaded. It returns a discriminated `kind`, an immutable `identity` (`id`, `instanceId`, `definitionId`), `getSnapshot`, `subscribe`, type-specific `commands`, and an idempotent `dispose`. Opening does not query; invoke `commands.refresh()` for a record position or `commands.run()` for an analysis position. Analysis `refresh()` retains its existing safe automatic-refresh policy and does not run an unqueried position. Repeated instances receive independent position IDs, pagination, selection and results, and use the provided definition's source.
+
+Position sessions expose `positionId`; persisted `instance.id` is unchanged. Positions are not inserted into the managed instance navigation list and cannot be saved through `engine.save(position.identity.id)`. Edit the original managed instance for persistence. Dispose positions when their containing UI closes; commands from a disposed position reject instead of affecting a replacement. Active positions do not consume the managed history-result budget. Dashboard orchestration and its aggregate resource budget remain separate implementation work.
+
 `src/index.ts` exports the headless compiler and JSON-friendly field/configuration contracts. The basic display contracts remain:
 
 ```ts

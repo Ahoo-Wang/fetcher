@@ -30,7 +30,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `analysisRowKey`                  | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
 | `analysisScopeContext`            | [analysisCompiler.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L54)                           |
 | `AnalysisScopeDefinition`         | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
-| `AnalysisSession`                 | [viewModel.ts:269](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L269)                                      |
+| `AnalysisSession`                 | [viewModel.ts:270](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L270)                                      |
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
 | `AnalysisViewInstance`            | [viewModel.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L151)                                      |
 | `AnalysisVisualizationType`       | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
@@ -100,9 +100,9 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `RecordQuerySnapshot`             | [viewModel.ts:219](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L219)                                      |
 | `RecordQuerySource`               | [viewModel.ts:189](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L189)                                      |
 | `RecordSession`                   | [viewModel.ts:225](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L225)                                      |
-| `RecordSummaryFunction`           | [viewModel.ts:313](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L313)                                      |
-| `RecordSummaryMetric`             | [viewModel.ts:315](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L315)                                      |
-| `RecordSummaryResult`             | [viewModel.ts:320](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L320)                                      |
+| `RecordSummaryFunction`           | [viewModel.ts:315](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L315)                                      |
+| `RecordSummaryMetric`             | [viewModel.ts:317](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L317)                                      |
+| `RecordSummaryResult`             | [viewModel.ts:322](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L322)                                      |
 | `RecordTableConfig`               | [viewModel.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L103)                                      |
 | `RecordTablePresentation`         | [viewModel.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L120)                                      |
 | `RecordViewConfig`                | [viewModel.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L132)                                      |
@@ -124,9 +124,9 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `ViewDefinition`                  | [viewModel.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L61)                                        |
 | `ViewDefinitionService`           | [ViewHost.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L28)                                          |
 | `ViewDeleteResult`                | [viewServiceContract.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L45)                    |
-| `ViewEngine`                      | [ViewEngine.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L63)                                         |
+| `ViewEngine`                      | [ViewEngine.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L65)                                         |
 | `ViewEngineOptions`               | [viewModel.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L199)                                      |
-| `ViewEngineState`                 | [viewModel.ts:300](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L300)                                      |
+| `ViewEngineState`                 | [viewModel.ts:302](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L302)                                      |
 | `ViewFieldDefinition`             | [viewModel.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L43)                                        |
 | `ViewHost`                        | [ViewHost.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L66)                                          |
 | `ViewInstance`                    | [viewModel.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L155)                                      |
@@ -141,7 +141,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `ViewScope`                       | [viewModel.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L80)                                        |
 | `ViewServiceError`                | [viewServiceContract.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L30)                    |
 | `ViewServiceErrorCode`            | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L19)                    |
-| `ViewSession`                     | [viewModel.ts:299](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L299)                                      |
+| `ViewSession`                     | [viewModel.ts:301](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L301)                                      |
 | `ViewSource`                      | [viewModel.ts:193](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L193)                                      |
 | `WowAnalysisSchema`               | [wowAnalysis.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L34)                                     |
 | `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L29)                                     |
