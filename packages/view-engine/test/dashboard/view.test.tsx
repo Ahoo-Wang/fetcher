@@ -584,12 +584,15 @@ it('normalizes an open creation dialog to the currently allowed scope', async ()
     permissionsChanged();
   });
   expect(
-    (
-      screen.getByRole('combobox', {
-        name: '新仪表盘可见范围',
-      }) as HTMLSelectElement
-    ).value,
-  ).toBe('shared');
+    screen
+      .getByRole('radio', { name: '公共视图' })
+      .getAttribute('aria-checked'),
+  ).toBe('true');
+  expect(
+    screen
+      .getByRole('radio', { name: '个人视图' })
+      .getAttribute('aria-disabled'),
+  ).toBe('true');
   fireEvent.click(screen.getByRole('button', { name: '创建草稿' }));
   const selected = engine.getSnapshot().selectedInstanceId!;
   expect(engine.getSnapshot().sessions[selected].instance.scope).toEqual({

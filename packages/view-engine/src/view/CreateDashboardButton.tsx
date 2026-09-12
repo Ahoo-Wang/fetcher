@@ -14,6 +14,7 @@ import { useState } from 'react';
 import type { ViewEngine } from '../engine/ViewEngine.js';
 import { useViewCapabilities } from './useViewCapabilities.js';
 import { Button } from '../components/ui/button.js';
+import { ViewScopeField } from './ViewScopeField.js';
 import { Input } from '../components/ui/input.js';
 import {
   Dialog,
@@ -88,22 +89,12 @@ export function CreateDashboardButton({
                   maxLength={200}
                 />
               </label>
-              <label className="fve:flex fve:flex-col fve:gap-2 fve:text-sm">
-                可见范围
-                <select
-                  className="fve:h-9 fve:rounded-md fve:border fve:bg-background fve:px-2"
-                  aria-label="新仪表盘可见范围"
-                  value={useShared ? 'shared' : 'personal'}
-                  onChange={event => setShared(event.target.value === 'shared')}
-                >
-                  {capabilities.createPersonal && (
-                    <option value="personal">个人</option>
-                  )}
-                  {capabilities.createShared && (
-                    <option value="shared">共享</option>
-                  )}
-                </select>
-              </label>
+              <ViewScopeField
+                value={useShared ? 'shared' : 'personal'}
+                onValueChange={value => setShared(value === 'shared')}
+                personal={capabilities.createPersonal}
+                shared={capabilities.createShared}
+              />
               {error && <p role="alert">{error}</p>}
             </div>
             <DialogFooter>
