@@ -17,19 +17,19 @@ import {
 } from './analysisCapabilities.js';
 import { effectiveSortAliases, canAddAnalysisSort } from './analysisSort.js';
 import {
-  AggregationGroupType as Group,
+  analysisOutputs,
+  dateLabels,
+  groupNames,
+  names,
+} from './analysisEditorLabels.js';
+import { AnalysisEditorBoundary, Choice } from './AnalysisComponentChoice.js';
+import type { AggregationGroupType as Group } from '@ahoo-wang/fetcher-wow';
+import {
   AggregationFunction,
   AggregationExpressionType,
   SortDirection,
 } from '@ahoo-wang/fetcher-wow';
-import {
-  Component,
-  useId,
-  useState,
-  useRef,
-  useLayoutEffect,
-  type ReactNode,
-} from 'react';
+import { useId, useState, useRef, useLayoutEffect } from 'react';
 import type { FilterExtensions } from '../filter/filterReactTypes.js';
 import type { AnalysisExtensions } from './analysisReactTypes.js';
 import { ChevronDownIcon, GripVerticalIcon, PlusIcon } from 'lucide-react';
@@ -71,94 +71,6 @@ export interface AnalysisEditorProps {
   filterContext?: unknown;
   /** Combined validity of currently mounted element-scope filter editors. */
   onFilterValidityChange?(valid: boolean): void;
-}
-const groupNames: Record<Group, string> = {
-  [Group.TERMS]: 'terms',
-  [Group.HISTOGRAM]: 'histogram',
-  [Group.DATE_HISTOGRAM]: 'date-histogram',
-};
-const names: Record<string, string> = Object.assign(Object.create(null), {
-  terms: '按值分组',
-  histogram: '数值分桶',
-  'date-histogram': '日期分桶',
-  count: '记录数',
-  numeric: '数值统计',
-  any: '代表值',
-});
-const dateLabels: Record<string, string> = {
-  YEAR: '年',
-  QUARTER: '季度',
-  MONTH: '月',
-  WEEK: '周',
-  DAY: '日',
-  HOUR: '小时',
-  MINUTE: '分钟',
-  SECOND: '秒',
-};
-class AnalysisEditorBoundary extends Component<
-  { children: ReactNode },
-  { failed: boolean }
-> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? (
-      <div role="alert">
-        编辑器无法显示，请重试或切换类型。
-        <Button
-          variant="outline"
-          onClick={() => this.setState({ failed: false })}
-        >
-          重试编辑器
-        </Button>
-      </div>
-    ) : (
-      this.props.children
-    );
-  }
-}
-function Choice({
-  label,
-  caption,
-  value,
-  options,
-  onChange,
-  disabled,
-  invalid,
-}: {
-  label: string;
-  caption?: string;
-  value?: string;
-  options: { value: string; label: string }[];
-  onChange(value: string): void;
-  disabled?: boolean;
-  invalid?: boolean;
-}) {
-  return (
-    <label className="fve:flex fve:min-w-0 fve:max-w-full fve:flex-col fve:gap-1">
-      {caption ?? label.replace(/^(维度|指标|排序) \d+ /, '')}
-      <FilterSelect
-        label={label}
-        value={value}
-        options={options}
-        disabled={disabled || !options.length}
-        invalid={invalid}
-        onValueChange={next => {
-          if (!disabled) onChange(next);
-        }}
-      />
-    </label>
-  );
-}
-
-function analysisOutputs(value: DeepReadonly<AnalysisViewConfig>) {
-  return [
-    ...value.dimensions,
-    ...value.metrics,
-    ...value.dimensions.flatMap(item => (item.label ? [item.label] : [])),
-  ];
 }
 
 function ComponentList({
