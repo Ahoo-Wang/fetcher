@@ -12,7 +12,7 @@
  */
 
 import { sameAnalysisQueryDraft } from '../analysis/analysisQueryPolicy.js';
-import { configSizeIssues, compileSessionFilter } from './sessionValidation.js';
+import { configSizeIssues, compileSessionFilter } from './sessionValidationCache.js';
 import { validateViewInstance } from '../record/validation/instanceValidation.js';
 import type { AnalysisCompilerRegistry } from '../analysis/analysisModel.js';
 import { compileAnalysis } from '../analysis/analysisCompiler.js';
