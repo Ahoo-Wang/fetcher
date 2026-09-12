@@ -309,3 +309,26 @@ it('gives each actual reference request its own execution deadline', async () =>
     vi.useRealTimers();
   }
 });
+
+it('ignores a cancelled source resolver FORBIDDEN after a replacement scope succeeds', async () => {
+  const gate = deferred<never>();
+  const source = { paged: vi.fn().mockResolvedValue({ total: 0, list: [] }) };
+  const resolveSource = vi
+    .fn()
+    .mockResolvedValue(source)
+    .mockImplementationOnce(() => gate.promise);
+  const { engine } = dashboardSetup(configured(), { resolveSource });
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  await vi.waitFor(() => expect(resolveSource).toHaveBeenCalledTimes(1));
+  runtime.setFilter('amount', globalFilter(20).filters);
+  await runtime.apply();
+  const position = runtime.getSnapshot().panels.a.position!;
+  expect(position.getSnapshot().queryStatus).toBe('success');
+  gate.reject(new ViewServiceError('FORBIDDEN', 'obsolete source credentials'));
+  await new Promise(resolve => setTimeout(resolve, 10));
+  expect(runtime.getSnapshot().panels.a.position).toBe(position);
+  expect(runtime.getSnapshot().panels.a.blocked).toBe(false);
+  expect(position.getSnapshot().queryStatus).toBe('success');
+  engine.dispose();
+});

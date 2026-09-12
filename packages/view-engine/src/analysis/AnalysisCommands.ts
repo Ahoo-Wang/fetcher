@@ -225,9 +225,12 @@ export class AnalysisCommands {
           if (!current())
             throw new RuntimeLimitError('CANCELLED', '操作已取消');
           if (!definition.sourceId) throw new Error('查询定义缺少数据源');
+          const positionSource = this.store.source(id);
           const source =
-            this.store.source(id) ??
-            (await this.host.resolveSource(definition.sourceId));
+            typeof positionSource === 'function'
+              ? await positionSource(controller)
+              : (positionSource ??
+                (await this.host.resolveSource(definition.sourceId)));
           if (!current() || controller.signal.aborted)
             throw new RuntimeLimitError('CANCELLED', '操作已取消');
           if (!source.aggregate)

@@ -668,3 +668,138 @@ it('recovers from the filter budget by removing a draft item before adding a rep
   cleanup();
   engine.dispose();
 });
+
+it('refreshes binding controls from a remote baseline without a new editor epoch', async () => {
+  const item = {
+    ...globalFilter(),
+    bindings: globalFilter().bindings.slice(0, 1),
+  };
+  const { engine, paged, host } = dashboardSetup({ ...empty, filters: [item] });
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  render(<DashboardView runtime={runtime} />);
+  await waitFor(() => expect(paged).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole('button', { name: '全局筛选设置' }));
+  const epoch = runtime.getSnapshot().session.editorEpoch;
+  expect(
+    (screen.getByRole('combobox', { name: /绑定方式/ }) as HTMLSelectElement)
+      .value,
+  ).toBe('fields');
+  host.instance!.load = async id =>
+    id === 'dashboard'
+      ? {
+          ...runtime.getSnapshot().session.baseline,
+          revision: 'remote2',
+          config: {
+            ...empty,
+            filters: [{ ...item, bindings: [], excludedPanelIds: ['a'] }],
+          },
+        }
+      : instance('child');
+  await act(() => engine.reloadInstance('dashboard'));
+  expect(runtime.getSnapshot().session.editorEpoch).toBe(epoch);
+  expect(
+    (screen.getByRole('combobox', { name: /绑定方式/ }) as HTMLSelectElement)
+      .value,
+  ).toBe('excluded');
+  expect(
+    screen.queryByRole('combobox', { name: /映射state.amount/ }),
+  ).toBeNull();
+  cleanup();
+  engine.dispose();
+});
+
+it('isolates applicable failures and keeps working transformer choices available', async () => {
+  const item = {
+    ...globalFilter(),
+    bindings: [{ panelId: 'a', kind: 'transform' as const, name: 'broken' }],
+  };
+  const { engine } = dashboardSetup({ ...empty, filters: [item] });
+  await engine.load();
+  render(
+    <DashboardView
+      runtime={engine.dashboard('dashboard')}
+      extensions={{
+        dashboard: {
+          transforms: {
+            broken: {
+              label: '故障转换器',
+              applicable: () => {
+                throw new Error('plugin configuration');
+              },
+            },
+            healthy: { label: '正常转换器' },
+          },
+        },
+      }}
+    />,
+  );
+  await waitFor(() =>
+    expect(
+      engine.dashboard('dashboard').getSnapshot().panels.a.definition,
+    ).toBeTruthy(),
+  );
+  fireEvent.click(screen.getByRole('button', { name: '全局筛选设置' }));
+  expect(screen.getByRole('option', { name: '正常转换器' })).toBeTruthy();
+  expect(screen.queryByRole('option', { name: '故障转换器' })).toBeNull();
+  expect(screen.getByText(/宿主未提供此转换配置的编辑支持/)).toBeTruthy();
+  cleanup();
+  engine.dispose();
+});
+
+it('contains transformer editor crashes, blocks saving and recovers by choosing another binding', async () => {
+  const item = {
+    ...globalFilter(),
+    bindings: [{ panelId: 'a', kind: 'transform' as const, name: 'broken' }],
+  };
+  const { engine } = dashboardSetup({ ...empty, filters: [item] });
+  await engine.load();
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  let broken = true;
+  render(
+    <DashboardView
+      runtime={engine.dashboard('dashboard')}
+      extensions={{
+        dashboard: {
+          transforms: {
+            broken: {
+              label: '故障编辑器',
+              Editor: () => {
+                if (broken) throw new Error('render failed');
+                return <p>已恢复转换编辑器</p>;
+              },
+            },
+          },
+        },
+      }}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '全局筛选设置' }));
+  expect(
+    await screen.findByRole('button', { name: '重试转换器编辑器' }),
+  ).toBeTruthy();
+  expect(
+    engine.dashboard('dashboard').getSnapshot().session.editorValidity[
+      'transform:amount:a'
+    ],
+  ).toBe(false);
+  await expect(engine.save('dashboard')).rejects.toThrow();
+  broken = false;
+  fireEvent.click(screen.getByRole('button', { name: '重试转换器编辑器' }));
+  expect(
+    engine.dashboard('dashboard').getSnapshot().session.editorValidity[
+      'transform:amount:a'
+    ],
+  ).toBe(true);
+  expect(screen.getByText('已恢复转换编辑器')).toBeTruthy();
+  fireEvent.change(screen.getByRole('combobox', { name: /绑定方式/ }), {
+    target: { value: 'excluded' },
+  });
+  expect(
+    engine.dashboard('dashboard').getSnapshot().session.editorValidity,
+  ).toEqual({});
+  expect(screen.queryByRole('button', { name: '重试转换器编辑器' })).toBeNull();
+  consoleError.mockRestore();
+  cleanup();
+  engine.dispose();
+});

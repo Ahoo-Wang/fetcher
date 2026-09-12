@@ -147,8 +147,17 @@ export class SessionStore {
     this.dashboardMetadata.delete(id);
   }
   private readonly positions = new Map<string, ViewDefinition>();
-  private readonly positionSources = new Map<string, ViewSource>();
-  source(id: string): ViewSource | undefined {
+  private readonly positionSources = new Map<
+    string,
+    | ViewSource
+    | ((controller: AbortController) => ViewSource | Promise<ViewSource>)
+  >();
+  source(
+    id: string,
+  ):
+    | ViewSource
+    | ((controller: AbortController) => ViewSource | Promise<ViewSource>)
+    | undefined {
     return this.positionSources.get(id);
   }
   private readonly resultAccess = new Map<string, number>();
@@ -412,7 +421,12 @@ export class SessionStore {
   openPosition(
     instance: ViewInstance,
     definition: ViewDefinition,
-    options: { queryPolicy?: 'reject' | 'queue'; source?: ViewSource } = {},
+    options: {
+      queryPolicy?: 'reject' | 'queue';
+      source?:
+        | ViewSource
+        | ((controller: AbortController) => ViewSource | Promise<ViewSource>);
+    } = {},
   ): string {
     this.scope.assertReady();
     validateViewDefinition(definition);

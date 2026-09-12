@@ -240,7 +240,7 @@ export class ViewEngine {
   dashboard(id: string): DashboardRuntime {
     this.scope.assertReady();
     let runtime = this.dashboards.get(id);
-    if (!runtime) {
+    if (!runtime || runtime.isDisposed) {
       runtime = new DashboardRuntime(
         this,
         id,
@@ -289,7 +289,10 @@ export class ViewEngine {
       const id = state.selectedInstanceId;
       const selected =
         id && state.sessions[id]?.kind === 'dashboard' ? id : null;
-      if (selected !== this.selectedDashboard) {
+      if (
+        selected !== this.selectedDashboard ||
+        (selected && this.dashboards.get(selected)?.isDisposed)
+      ) {
         if (this.selectedDashboard)
           this.dashboards.get(this.selectedDashboard)?.suspend();
         this.selectedDashboard = selected;
@@ -564,10 +567,17 @@ export class ViewEngine {
   }
 
   openPosition(
-    instance: ViewInstance,
+    instance: Exclude<ViewInstance, { kind: 'dashboard' }>,
     definition: ViewDefinition,
-    options: { queryPolicy?: 'reject' | 'queue'; source?: ViewSource } = {},
+    options: {
+      queryPolicy?: 'reject' | 'queue';
+      source?:
+        | ViewSource
+        | ((controller: AbortController) => ViewSource | Promise<ViewSource>);
+    } = {},
   ) {
+    if ((instance as ViewInstance).kind === 'dashboard')
+      throw new Error('运行位置仅支持记录或分析视图');
     const id = this.store.openPosition(instance, definition, options);
     const identity = Object.freeze({
       id,

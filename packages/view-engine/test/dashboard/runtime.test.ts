@@ -441,3 +441,119 @@ it('keeps child positions and pagination when the first draft save acquires a sa
   expect(paged).toHaveBeenCalledTimes(before);
   engine.dispose();
 });
+
+it('resolves replacement host sources without resetting panel positions or pagination', async () => {
+  const { engine, paged, host } = dashboardSetup();
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+  const position = runtime.getSnapshot().panels.a.position!;
+  if (position.kind !== 'record') throw new Error('record');
+  await position.commands.setPage(2);
+  const replacement = vi.fn().mockResolvedValue({ total: 30, list: [] });
+  const resolveSource = vi.fn(async () => ({ paged: replacement }));
+  engine.updateHost({ ...host, resolveSource });
+  expect(runtime.getSnapshot().panels.a.position).toBe(position);
+  expect(replacement).not.toHaveBeenCalled();
+  await runtime.refresh('a');
+  expect(resolveSource).toHaveBeenCalled();
+  expect(replacement).toHaveBeenCalledTimes(1);
+  expect(position.getSnapshot().page).toBe(2);
+  expect(paged).toHaveBeenCalledTimes(3);
+  engine.updateHost({
+    ...host,
+    resolveSource: async () => ({ aggregate: vi.fn() }),
+  });
+  await runtime.refresh('a');
+  expect(position.getSnapshot().queryStatus).toBe('error');
+  expect(position.getSnapshot().queryError).toContain('paged');
+  expect(runtime.getSnapshot().panels.a.position).toBe(position);
+  engine.updateHost({ ...host, resolveSource });
+  await runtime.refresh('a');
+  expect(position.getSnapshot().queryStatus).toBe('success');
+  expect(position.getSnapshot().page).toBe(2);
+  engine.dispose();
+});
+
+it('skips unrelated position notifications while active and suspended, but observes permission changes', async () => {
+  let editable = true;
+  let permissionsChanged = () => {};
+  const { engine, paged } = dashboardSetup(undefined, {
+    permission: {
+      getInstance: () => ({ save: editable }),
+      subscribe: listener => {
+        permissionsChanged = listener;
+        return () => {};
+      },
+    },
+  });
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+  const notified = vi.fn();
+  runtime.subscribe(notified);
+  const unrelated = engine.openPosition(instance(), definition);
+  await unrelated.commands.refresh();
+  expect(notified).not.toHaveBeenCalled();
+  editable = false;
+  permissionsChanged();
+  expect(runtime.getSnapshot().editable).toBe(false);
+  expect(notified).toHaveBeenCalledTimes(1);
+  runtime.suspend();
+  notified.mockClear();
+  await unrelated.commands.refresh();
+  expect(notified).not.toHaveBeenCalled();
+  unrelated.dispose();
+  engine.dispose();
+});
+
+it('recreates explicitly disposed runtimes and resumes their saved references', async () => {
+  const { engine, paged } = dashboardSetup();
+  await engine.load();
+  const previous = engine.dashboard('dashboard');
+  await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+  previous.dispose();
+  const next = engine.dashboard('dashboard');
+  expect(next).not.toBe(previous);
+  expect(previous.isDisposed).toBe(true);
+  await next.resume();
+  await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(4));
+  expect(next.getSnapshot().panels.a.position).toBeTruthy();
+  engine.dispose();
+});
+
+it.each([false, true])(
+  'keeps temporary editor validity outside saved sessions across permission changes (config changed: %s)',
+  async changedConfig => {
+    let editable = false;
+    let permissionsChanged = () => {};
+    const item = { ...globalFilter(), bindings: [] };
+    const { engine } = dashboardSetup(
+      { schemaVersion: 1, panels: [], filters: [item] },
+      {
+        permission: {
+          getInstance: () => ({ save: editable }),
+          subscribe: listener => {
+            permissionsChanged = listener;
+            return () => {};
+          },
+        },
+      },
+    );
+    await engine.load();
+    const runtime = engine.dashboard('dashboard');
+    const session = engine.getSnapshot().sessions.dashboard;
+    if (changedConfig) runtime.setFilter('amount', globalFilter(20).filters);
+    runtime.setEditorValidity('filter:amount', false);
+    expect(engine.getSnapshot().sessions.dashboard).toBe(session);
+    expect(runtime.getSnapshot().session.dirty).toBe(false);
+    await expect(runtime.apply()).rejects.toThrow('编辑输入无效');
+    editable = true;
+    permissionsChanged();
+    expect(() => runtime.assertSavable()).not.toThrow();
+    runtime.setEditorValidity('filter:amount', true);
+    expect(runtime.getSnapshot().validation).toEqual([]);
+    expect(runtime.getSnapshot().session.editorValidity).toEqual({});
+    engine.dispose();
+  },
+);

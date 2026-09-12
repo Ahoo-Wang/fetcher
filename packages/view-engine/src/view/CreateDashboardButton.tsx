@@ -36,6 +36,8 @@ export function CreateDashboardButton({
   const [title, setTitle] = useState('');
   const [shared, setShared] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const useShared =
+    capabilities.createShared && (shared || !capabilities.createPersonal);
   if (!capabilities.createPersonal && !capabilities.createShared) return null;
   return (
     <>
@@ -57,7 +59,7 @@ export function CreateDashboardButton({
               try {
                 engine.createDashboard({
                   title,
-                  scope: shared
+                  scope: useShared
                     ? { type: 'public', source: 'shared' }
                     : { type: 'personal' },
                 });
@@ -91,7 +93,7 @@ export function CreateDashboardButton({
                 <select
                   className="fve:h-9 fve:rounded-md fve:border fve:bg-background fve:px-2"
                   aria-label="新仪表盘可见范围"
-                  value={shared ? 'shared' : 'personal'}
+                  value={useShared ? 'shared' : 'personal'}
                   onChange={event => setShared(event.target.value === 'shared')}
                 >
                   {capabilities.createPersonal && (

@@ -69,6 +69,8 @@ limits 默认：加载 15,000 ms，查询/写入 30,000 ms，4 个并发查询�
 
 引擎加载后，`engine.openPosition(instance, definition)` 创建独立的记录或分析运行位置。每次打开的 `identity.id` 不同，`identity.instanceId` 保留保存身份。使用 `getSnapshot()` 读取状态、`subscribe(listener)` 订阅，记录通过 `commands.refresh()` 查询，分析首次执行通过 `commands.run()`。分析的 `refresh()` 保留既有安全自动刷新策略。打开位置本身不查询。
 
+仪表盘实例会在注册运行位置之前被拒绝。可选第三参数接受 `queryPolicy: 'reject' | 'queue'` 和 `source: ViewSource | ((controller: AbortController) => ViewSource | Promise<ViewSource>)`。源工厂在每次查询时解析，包括分析和记录汇总；异步解析应关注 controller 的取消状态。`updateHost` 后仪表盘位置使用当前宿主数据源，保留分页且不自动查询。
+
 各位置使用自己的定义，重复引用同一保存实例时也有独立的分页、选择和结果。位置不加入实例导航，不占用普通历史结果缓存预算。所在界面关闭时调用 `dispose()`，旧命令随后拒绝执行。位置会话暴露 `positionId`，该值不持久化。`engine.save(identity.id)` 不允许保存运行位置；持久化配置应编辑原来的受管理实例。
 
 ## 仪表盘组合
@@ -110,6 +112,8 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 `permission.getDefinition()` 必须明确授予 `createPersonal` / `createShared`，缺省拒绝。未保存会话标记 `persisted: false`，不会进入权威 `instanceIds`；创建草稿不写入。保存、另存、版本冲突及未知创建核对复用统一实例服务，只保存仪表盘配置，不保存引用的子配置。
 
 `engine.dashboard(id)` 返回 `DashboardRuntime`，提供稳定的 `getSnapshot` / `subscribe`，以及 `edit`、`setFilter`、`setEditorValidity`、`apply`、`refresh(panelId?)`、`reloadReference(panelId)`、`suspend`、`resume`、`dispose`。引擎负责导航暂停/恢复与释放。`DashboardView` 只展示调用方拥有的运行对象；`ViewPage` 将其接入既有导航与保存操作。`RecordContent` 通过会话、定义和绑定命令复用表格、卡片、业务操作与分页，不依赖页面导航。
+
+`isDisposed` 表示运行对象是否已释放。显式调用 `dispose()` 后，再次调用 `engine.dashboard(id)` 会创建替代对象；自行管理生命周期时调用 `resume()` 激活它。运行对象会跳过无关位置的通知，但权限变化仍更新可编辑状态。只读筛选草稿及编辑器有效性仅保留在运行对象中，不会把持久会话标为未保存，也不会在权限变化后阻断其独立配置的保存。转换器适用性检查失败只隐藏故障注册项；编辑器渲染失败显示局部重试入口，并阻止保存直至修复绑定。
 
 快照分别保存 `config` 草稿和 `applied` 已应用配置，并提供 `pending`、包含 dirty/写入状态的 `session`、`editable`、校验及逐面板状态。查询应用全局草稿；刷新沿用已应用快照；保存不查询。暂停释放运行位置/结果，返回时重新授权并使用保留的子版本；显式重载引用才采用最新保存配置。布局调整保留位置身份，不发查询。
 

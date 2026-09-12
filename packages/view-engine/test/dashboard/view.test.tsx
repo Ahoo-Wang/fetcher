@@ -549,3 +549,76 @@ it('keeps local dashboards reachable after navigating away without adding author
   cleanup();
   engine.dispose();
 });
+
+it('normalizes an open creation dialog to the currently allowed scope', async () => {
+  let sharedOnly = false;
+  let permissionsChanged = () => {};
+  const { engine } = dashboardSetup(undefined, {
+    permission: {
+      getDefinition: () => ({
+        createPersonal: !sharedOnly,
+        createShared: sharedOnly,
+      }),
+      subscribe: listener => {
+        permissionsChanged = listener;
+        return () => {};
+      },
+    },
+    instance: { load: async () => instance('child'), create: vi.fn() },
+  });
+  await engine.load();
+  render(<ViewPageContent engine={engine} />);
+  fireEvent.click(screen.getByRole('button', { name: '新建仪表盘' }));
+  fireEvent.change(await screen.findByRole('textbox', { name: '名称' }), {
+    target: { value: 'Shared overview' },
+  });
+  act(() => {
+    sharedOnly = true;
+    permissionsChanged();
+  });
+  expect(
+    (
+      screen.getByRole('combobox', {
+        name: '新仪表盘可见范围',
+      }) as HTMLSelectElement
+    ).value,
+  ).toBe('shared');
+  fireEvent.click(screen.getByRole('button', { name: '创建草稿' }));
+  const selected = engine.getSnapshot().selectedInstanceId!;
+  expect(engine.getSnapshot().sessions[selected].instance.scope).toEqual({
+    type: 'public',
+    source: 'shared',
+  });
+  cleanup();
+  engine.dispose();
+});
+
+it('updates standalone dashboard discovery and original-view actions after host capabilities change', async () => {
+  const { engine, paged, host } = dashboardSetup();
+  await engine.load();
+  const runtime = engine.dashboard('dashboard');
+  render(<DashboardView runtime={runtime} />);
+  await waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+  expect(screen.queryByRole('button', { name: '添加面板' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '编辑原视图' })).toBeNull();
+  const session = runtime.getSnapshot().session;
+  act(() =>
+    engine.updateHost({
+      ...host,
+      dashboard: {
+        search: async () => ({ items: [], nextCursor: null }),
+        openOriginal: vi.fn(),
+      },
+    }),
+  );
+  expect(screen.getByRole('button', { name: '添加面板' })).toBeTruthy();
+  expect(screen.getAllByRole('button', { name: '编辑原视图' })).toHaveLength(2);
+  expect(runtime.getSnapshot().session).toBe(session);
+  expect(paged).toHaveBeenCalledTimes(2);
+  act(() => engine.updateHost(host));
+  expect(screen.queryByRole('button', { name: '添加面板' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '编辑原视图' })).toBeNull();
+  expect(paged).toHaveBeenCalledTimes(2);
+  cleanup();
+  engine.dispose();
+});

@@ -11,7 +11,14 @@
  * limitations under the License.
  */
 
-import { useEffect, useId, useRef, useState } from 'react';
+import {
+  Component,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { Button } from '../components/ui/button.js';
 import { Checkbox } from '../components/ui/checkbox.js';
@@ -130,7 +137,18 @@ export function DashboardFilterSettings({
                 (panel, panelIndex) =>
                   panel.kind === 'view' && (
                     <BindingRow
-                      key={`${panel.id}:${panel.instanceId}`}
+                      key={JSON.stringify([
+                        panel.id,
+                        panel.instanceId,
+                        snapshot.session.baseline.config.filters
+                          .find(filter => filter.id === item.id)
+                          ?.bindings.find(
+                            binding => binding.panelId === panel.id,
+                          ),
+                        snapshot.session.baseline.config.filters
+                          .find(filter => filter.id === item.id)
+                          ?.excludedPanelIds.includes(panel.id),
+                      ])}
                       runtime={runtime}
                       item={item}
                       panelId={panel.id}
@@ -319,10 +337,13 @@ function BindingRow({
   }
   const transforms = Object.entries(
     extensions?.dashboard?.transforms ?? {},
-  ).filter(
-    ([, value]) =>
-      !value.applicable || (target && value.applicable(source, target)),
-  );
+  ).filter(([, value]) => {
+    try {
+      return !value.applicable || (target && value.applicable(source, target));
+    } catch {
+      return false;
+    }
+  });
   const registration =
     binding?.kind === 'transform'
       ? transforms.find(([name]) => name === binding.name)?.[1]
@@ -504,21 +525,75 @@ function BindingRow({
               </p>
             )}
           {binding?.kind === 'transform' && Editor && (
-            <Editor
+            <TransformEditorBoundary
               key={binding.name}
-              value={binding.options ?? {}}
-              onChange={options => run(() => update({ ...binding, options }))}
-              onValidityChange={valid =>
+              onRecover={() => {
+                if (!registration?.hasOptions)
+                  runtime.setEditorValidity(
+                    `transform:${item.id}:${panelId}`,
+                    true,
+                  );
+              }}
+              onError={() =>
                 runtime.setEditorValidity(
                   `transform:${item.id}:${panelId}`,
-                  valid,
+                  false,
                 )
               }
-            />
+            >
+              <Editor
+                value={binding.options ?? {}}
+                onChange={options => run(() => update({ ...binding, options }))}
+                onValidityChange={valid =>
+                  runtime.setEditorValidity(
+                    `transform:${item.id}:${panelId}`,
+                    valid,
+                  )
+                }
+              />
+            </TransformEditorBoundary>
           )}
           {!transforms.length && <p>宿主尚未提供可用转换器。</p>}
         </div>
       )}
     </fieldset>
   );
+}
+
+class TransformEditorBoundary extends Component<
+  {
+    children: ReactNode;
+    onError(): void;
+    onRecover(): void;
+  },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onError();
+  }
+  componentDidUpdate(
+    _previousProps: TransformEditorBoundary['props'],
+    previousState: TransformEditorBoundary['state'],
+  ) {
+    if (previousState.failed && !this.state.failed) this.props.onRecover();
+  }
+  render() {
+    return this.state.failed ? (
+      <div role="alert">
+        转换器编辑器无法显示，请重试或选择其他绑定。
+        <Button
+          variant="outline"
+          onClick={() => this.setState({ failed: false })}
+        >
+          重试转换器编辑器
+        </Button>
+      </div>
+    ) : (
+      this.props.children
+    );
+  }
 }

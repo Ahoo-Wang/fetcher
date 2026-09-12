@@ -15376,6 +15376,8 @@ Default `limits` are load 15,000 ms, query/write 30,000 ms, 4 concurrent queries
 
 After loading the engine, `engine.openPosition(instance, definition)` creates an independent record or analysis position. Its returned `identity.id` differs for every opening, while `identity.instanceId` retains the saved identity. Read `getSnapshot()`, subscribe with `subscribe(listener)`, and use `commands.refresh()` for records or `commands.run()` for initial analysis execution. Analysis `refresh()` keeps its safe automatic-refresh policy. Opening itself does not query.
 
+Dashboard instances are rejected before a position is registered. The optional third argument accepts `queryPolicy: 'reject' | 'queue'` and `source: ViewSource | ((controller: AbortController) => ViewSource | Promise<ViewSource>)`. Source factories resolve on each query, including analysis and record summaries; observe the controller when performing asynchronous resolution. Dashboard positions use the current host source after `updateHost` without resetting pagination or issuing a query automatically.
+
 Positions use their own definitions and keep independent pagination, selection and results, even when referencing the same saved instance. They do not enter managed instance navigation or consume the managed history-result budget. Call `dispose()` when the containing UI closes; old commands then reject. Position sessions expose `positionId`, which is not persisted. Saving a position through `engine.save(identity.id)` is rejected; edit the original managed instance to persist configuration.
 
 ## Dashboard composition
@@ -15417,6 +15419,8 @@ await engine.save(draftId); // First real create; the host supplies saved identi
 `permission.getDefinition()` explicitly grants `createPersonal` / `createShared`; missing grants deny creation. A local dashboard session has `persisted: false` and is excluded from authoritative `instanceIds` until saved. Creating a draft does not write. `save`, `saveAs`, revision conflicts and unknown-create reconciliation use the shared instance service; only the dashboard configuration is saved, never referenced child configurations.
 
 `engine.dashboard(id)` returns a `DashboardRuntime` with stable `getSnapshot` / `subscribe`, `edit`, `setFilter`, `setEditorValidity`, `apply`, `refresh(panelId?)`, `reloadReference(panelId)`, `suspend`, `resume` and `dispose`. The engine owns navigation suspension/resumption and disposal. `DashboardView` renders a caller-owned runtime; it does not own that lifecycle. `ViewPage` integrates it with existing instance navigation and save controls. `RecordContent` reuses the record table/card/actions/pagination from a session, definition and bound commands without a navigation dependency.
+
+`isDisposed` reports whether the runtime has been released. After explicit `dispose()`, a later `engine.dashboard(id)` creates a replacement; call `resume()` to activate it when managing the lifecycle yourself. Runtime notifications ignore unrelated position changes, while permission changes still update editability. Read-only filter drafts and their editor validity stay local to the runtime; they never mark the persisted session dirty or block saving its separate configuration after a permission change. Transformer applicability failures hide only the failed registration; editor render failures show a local retry action and block saving until the binding is repaired.
 
 A snapshot separates `config` (draft) from `applied`, with `pending`, `session` (including dirty/write state), `editable`, validation and per-panel snapshots. Query applies global drafts; refresh uses the previous applied snapshot; save does not query. Suspension releases positions/results and reauthorizes retained reference versions on resume. Explicit reference reload accepts the latest saved child configuration. Layout edits preserve position identity and do not query.
 
@@ -35795,6 +35799,8 @@ limits 默认：加载 15,000 ms，查询/写入 30,000 ms，4 个并发查询�
 
 引擎加载后，`engine.openPosition(instance, definition)` 创建独立的记录或分析运行位置。每次打开的 `identity.id` 不同，`identity.instanceId` 保留保存身份。使用 `getSnapshot()` 读取状态、`subscribe(listener)` 订阅，记录通过 `commands.refresh()` 查询，分析首次执行通过 `commands.run()`。分析的 `refresh()` 保留既有安全自动刷新策略。打开位置本身不查询。
 
+仪表盘实例会在注册运行位置之前被拒绝。可选第三参数接受 `queryPolicy: 'reject' | 'queue'` 和 `source: ViewSource | ((controller: AbortController) => ViewSource | Promise<ViewSource>)`。源工厂在每次查询时解析，包括分析和记录汇总；异步解析应关注 controller 的取消状态。`updateHost` 后仪表盘位置使用当前宿主数据源，保留分页且不自动查询。
+
 各位置使用自己的定义，重复引用同一保存实例时也有独立的分页、选择和结果。位置不加入实例导航，不占用普通历史结果缓存预算。所在界面关闭时调用 `dispose()`，旧命令随后拒绝执行。位置会话暴露 `positionId`，该值不持久化。`engine.save(identity.id)` 不允许保存运行位置；持久化配置应编辑原来的受管理实例。
 
 ## 仪表盘组合
@@ -35836,6 +35842,8 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 `permission.getDefinition()` 必须明确授予 `createPersonal` / `createShared`，缺省拒绝。未保存会话标记 `persisted: false`，不会进入权威 `instanceIds`；创建草稿不写入。保存、另存、版本冲突及未知创建核对复用统一实例服务，只保存仪表盘配置，不保存引用的子配置。
 
 `engine.dashboard(id)` 返回 `DashboardRuntime`，提供稳定的 `getSnapshot` / `subscribe`，以及 `edit`、`setFilter`、`setEditorValidity`、`apply`、`refresh(panelId?)`、`reloadReference(panelId)`、`suspend`、`resume`、`dispose`。引擎负责导航暂停/恢复与释放。`DashboardView` 只展示调用方拥有的运行对象；`ViewPage` 将其接入既有导航与保存操作。`RecordContent` 通过会话、定义和绑定命令复用表格、卡片、业务操作与分页，不依赖页面导航。
+
+`isDisposed` 表示运行对象是否已释放。显式调用 `dispose()` 后，再次调用 `engine.dashboard(id)` 会创建替代对象；自行管理生命周期时调用 `resume()` 激活它。运行对象会跳过无关位置的通知，但权限变化仍更新可编辑状态。只读筛选草稿及编辑器有效性仅保留在运行对象中，不会把持久会话标为未保存，也不会在权限变化后阻断其独立配置的保存。转换器适用性检查失败只隐藏故障注册项；编辑器渲染失败显示局部重试入口，并阻止保存直至修复绑定。
 
 快照分别保存 `config` 草稿和 `applied` 已应用配置，并提供 `pending`、包含 dirty/写入状态的 `session`、`editable`、校验及逐面板状态。查询应用全局草稿；刷新沿用已应用快照；保存不查询。暂停释放运行位置/结果，返回时重新授权并使用保留的子版本；显式重载引用才采用最新保存配置。布局调整保留位置身份，不发查询。
 

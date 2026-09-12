@@ -81,7 +81,7 @@ interface PanelState {
   retained?: DeepReadonly<Exclude<ViewInstance, { kind: 'dashboard' }>>;
   instance?: DashboardPanelSnapshot['instance'];
   definition?: DashboardPanelSnapshot['definition'];
-  source?: ViewSource;
+  source?: (controller: AbortController) => Promise<ViewSource>;
   position?: DashboardPosition;
   scope?: FilterExpression;
   scopeVersion: number;
@@ -110,6 +110,10 @@ export class DashboardRuntime {
   private editorEpoch: number;
   private active = false;
   private disposed = false;
+  private observedCanDiscover = false;
+  private observedCanOpenOriginal = false;
+  private observedState: ReturnType<SessionStore['getSnapshot']>;
+  private temporaryValidity: Record<string, boolean> = {};
   private readonly panels = new Map<string, PanelState>();
   private readonly listeners = new Set<() => void>();
   private readonly loads: RequestRunner;
@@ -130,6 +134,7 @@ export class DashboardRuntime {
     private readonly transforms: DashboardTransforms,
     private readonly update: <T>(updater: () => T) => T,
   ) {
+    this.observedState = store.getSnapshot();
     const session = this.session();
     this.config = this.applied = this.sessionConfig = session.instance.config;
     this.editorEpoch = session.editorEpoch;
@@ -170,6 +175,9 @@ export class DashboardRuntime {
           : (entry.retainedBytes ?? 0) + (entry.definitionBytes ?? 0);
     }
     this.store.reserveDashboardMetadata(this.id, bytes);
+  }
+  get isDisposed(): boolean {
+    return this.disposed;
   }
   readonly identity = crypto.randomUUID();
   get id(): string {
@@ -316,6 +324,16 @@ export class DashboardRuntime {
       if (valid) return;
       throw new Error('编辑器已经移除');
     }
+    if (
+      Object.prototype.hasOwnProperty.call(this.temporaryValidity, key) ||
+      !this.editable() ||
+      !sameJsonState(this.config, session.instance.config)
+    ) {
+      if ((this.temporaryValidity[key] ?? true) === valid) return;
+      this.temporaryValidity = { ...this.temporaryValidity, [key]: valid };
+      this.publish();
+      return;
+    }
     if ((session.editorValidity[key] ?? true) === valid) return;
     this.store.patch(this.id, {
       kind: 'dashboard',
@@ -353,7 +371,11 @@ export class DashboardRuntime {
       });
       return [
         ...errors,
-        ...Object.entries(includeEditors ? this.session().editorValidity : {})
+        ...Object.entries(
+          includeEditors
+            ? { ...this.session().editorValidity, ...this.temporaryValidity }
+            : {},
+        )
           .filter(([, valid]) => !valid)
           .map(([id]) => ({ id, message: '编辑输入无效' })),
       ];
@@ -363,6 +385,8 @@ export class DashboardRuntime {
   }
   private publish(): void {
     if (this.disposed || this.batching) return;
+    this.observedCanDiscover = this.canDiscover;
+    this.observedCanOpenOriginal = this.canOpenOriginal;
     const panels = Object.fromEntries(
       [...this.panels].map(([id, entry]) => {
         const session = entry.position
@@ -441,15 +465,38 @@ export class DashboardRuntime {
       this.store.getSnapshot().status !== 'ready'
     )
       return;
+    const state = this.store.getSnapshot();
+    const previous = this.observedState;
+    this.observedState = state;
     const session = this.session();
+    if (
+      session === this.snapshot.session &&
+      state.definition === previous.definition &&
+      this.editable() === this.snapshot.editable &&
+      this.canDiscover === this.observedCanDiscover &&
+      this.canOpenOriginal === this.observedCanOpenOriginal &&
+      (!this.active ||
+        [...this.panels.values()].every(
+          entry =>
+            !entry.position ||
+            state.sessions[entry.position.identity.id] ===
+              previous.sessions[entry.position.identity.id],
+        ))
+    )
+      return;
     if (session.instance.config !== this.sessionConfig) {
       if (!sameJsonState(session.instance.config, this.sessionConfig)) {
         this.config = session.instance.config;
+        this.temporaryValidity = {};
         this.reconcile();
       }
       this.sessionConfig = session.instance.config;
     }
     const restored = session.editorEpoch !== this.editorEpoch;
+    if (restored) {
+      this.config = session.instance.config;
+      this.temporaryValidity = {};
+    }
     this.editorEpoch = session.editorEpoch;
     this.publish();
     if (restored)
@@ -531,7 +578,10 @@ export class DashboardRuntime {
       this.sessionConfig = config;
       const session = this.session();
       const editorValidity = Object.fromEntries(
-        Object.entries(session.editorValidity).filter(([key]) =>
+        Object.entries({
+          ...session.editorValidity,
+          ...this.temporaryValidity,
+        }).filter(([key]) =>
           config.filters.some(
             item =>
               key === `filter:${item.id}` ||
@@ -543,6 +593,7 @@ export class DashboardRuntime {
           ),
         ),
       );
+      this.temporaryValidity = {};
       this.store.patch(this.id, {
         kind: 'dashboard',
         instance: { ...session.instance, config },
@@ -560,7 +611,7 @@ export class DashboardRuntime {
   }
   private close(entry: PanelState): void {
     entry.generation++;
-    for (const stage of ['instance', 'definition', 'source'])
+    for (const stage of ['instance', 'definition'])
       this.loads.cancel(`panel:${entry.panel.id}:${stage}`);
     entry.loading = undefined;
     const position = entry.position;
@@ -670,10 +721,6 @@ export class DashboardRuntime {
       const instance = reload || !entry.retained ? loaded : entry.retained;
       validateViewInstance(instance, definition, entry.panel.instanceId);
       if (!definition.sourceId) throw new Error('引用缺少查询源');
-      const source = await request('source', () =>
-        this.host.resolveSource(definition.sourceId!),
-      );
-      if (!this.current(entry, generation)) return;
       const retainedBytes = this.jsonBytes(instance),
         definitionBytes = this.jsonBytes(definition);
       this.reserveMetadata(this.config, this.applied, {
@@ -685,29 +732,48 @@ export class DashboardRuntime {
       if (reload || !entry.retained) entry.referenceVersion++;
       entry.instance = entry.retained = copy(instance);
       entry.definition = copy(definition);
-      entry.source = new Proxy(source, {
-        get: (target, key) => {
-          const value: unknown = Reflect.get(target, key, target);
-          if (typeof value !== 'function') return value;
-          return (...args: unknown[]) =>
-            Promise.resolve()
-              .then(() =>
-                (value as (...args: unknown[]) => unknown).apply(target, args),
-              )
-              .catch((error: unknown) => {
-                if (
-                  !(
-                    args[2] instanceof AbortController && args[2].signal.aborted
-                  ) &&
-                  this.current(entry, generation) &&
-                  error instanceof ViewServiceError &&
-                  error.code === 'FORBIDDEN'
+      entry.source = async controller => {
+        let source: ViewSource;
+        try {
+          source = await this.host.resolveSource(definition.sourceId!);
+        } catch (error) {
+          if (
+            !controller.signal.aborted &&
+            this.current(entry, generation) &&
+            error instanceof ViewServiceError &&
+            error.code === 'FORBIDDEN'
+          )
+            this.block(entry, error, true);
+          throw error;
+        }
+        return new Proxy(source, {
+          get: (target, key) => {
+            const value: unknown = Reflect.get(target, key, target);
+            if (typeof value !== 'function') return value;
+            return (...args: unknown[]) =>
+              Promise.resolve()
+                .then(() =>
+                  (value as (...args: unknown[]) => unknown).apply(
+                    target,
+                    args,
+                  ),
                 )
-                  this.block(entry, error, true);
-                throw error;
-              });
-        },
-      });
+                .catch((error: unknown) => {
+                  if (
+                    !(
+                      args[2] instanceof AbortController &&
+                      args[2].signal.aborted
+                    ) &&
+                    this.current(entry, generation) &&
+                    error instanceof ViewServiceError &&
+                    error.code === 'FORBIDDEN'
+                  )
+                    this.block(entry, error, true);
+                  throw error;
+                });
+          },
+        });
+      };
       entry.status = 'ready';
     });
     entry.loading = operation
@@ -895,10 +961,16 @@ export class DashboardRuntime {
   }
   assertSavable(): void {
     this.assert();
-    const issues = this.validation();
+    const config = this.session().instance.config;
+    const issues = this.validation(config, false);
+    issues.push(
+      ...Object.entries(this.session().editorValidity)
+        .filter(([, valid]) => !valid)
+        .map(([id]) => ({ id, message: '编辑输入无效' })),
+    );
     if (issues.length)
       throw new Error(issues.map(issue => issue.message).join('；'));
-    for (const item of this.config.filters)
+    for (const item of config.filters)
       for (const binding of item.bindings) {
         if (
           binding.kind === 'transform' &&
@@ -907,7 +979,7 @@ export class DashboardRuntime {
           throw new Error(`缺少筛选转换器：${binding.name}`);
       }
     for (const entry of this.panels.values())
-      if (entry.instance && entry.definition) this.scope(entry, this.config);
+      if (entry.instance && entry.definition) this.scope(entry, config);
   }
   async apply(): Promise<void> {
     this.assert();

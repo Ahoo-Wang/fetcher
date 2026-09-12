@@ -52,3 +52,20 @@ it('queues actual position reads, applies scope before any request and cancels w
     engine.dispose();
   }
 });
+
+it('rejects dashboard positions before allocating a session', async () => {
+  const { engine } = setup();
+  await engine.load();
+  const before = engine.getSnapshot();
+  const dashboard = {
+    ...instance(),
+    kind: 'dashboard' as const,
+    config: { schemaVersion: 1 as const, panels: [], filters: [] },
+  };
+  // @ts-expect-error Dashboard positions are rejected by the public contract as well as at runtime.
+  expect(() => engine.openPosition(dashboard, definition)).toThrow(
+    '运行位置仅支持记录或分析视图',
+  );
+  expect(engine.getSnapshot()).toBe(before);
+  engine.dispose();
+});

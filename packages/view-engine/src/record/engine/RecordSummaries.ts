@@ -173,8 +173,13 @@ export class RecordSummaries {
           if (!current()) throw new Error('汇总请求已失效');
           const sourceId = this.store.definition(session.positionId).sourceId;
           if (!sourceId) throw new Error('查询定义缺少数据源');
-          source ??=
-            this.store.source(id) ?? (await this.host.resolveSource(sourceId));
+          if (!source) {
+            const positionSource = this.store.source(id);
+            source =
+              typeof positionSource === 'function'
+                ? await positionSource(controller)
+                : (positionSource ?? (await this.host.resolveSource(sourceId)));
+          }
           if (!current()) throw new Error('汇总请求已失效');
           if (!source.aggregate)
             throw new Error('数据源未提供 aggregate，无法汇总所有记录');

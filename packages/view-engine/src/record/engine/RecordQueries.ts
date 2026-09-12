@@ -240,9 +240,12 @@ export class RecordQueries {
           if (filter === null)
             throw new Error('筛选组件配置无法编译，请先修正筛选');
           if (!definition.sourceId) throw new Error('查询定义缺少数据源');
+          const positionSource = this.store.source(id);
           source =
-            this.store.source(id) ??
-            (await this.host.resolveSource(definition.sourceId));
+            typeof positionSource === 'function'
+              ? await positionSource(controller)
+              : (positionSource ??
+                (await this.host.resolveSource(definition.sourceId)));
           if (!current())
             throw new RuntimeLimitError('CANCELLED', '操作已取消');
           const { sort, pagination } = config;
