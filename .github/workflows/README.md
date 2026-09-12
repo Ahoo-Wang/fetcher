@@ -5,19 +5,19 @@ PR updates cancel superseded runs; pushes to main and releases are not cancelled
 Jobs have explicit timeouts (5 minutes for scope/labels, 20 for quality/service
 tests, 30 for browser acceptance and 45 for the Node test matrix).
 
-| Workflow                                         | Responsibility                                                                                                                                                                                            |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                                         | Build packages and run all package tests on Node 20/22/24. Node 24 collects and uploads coverage; Node 20/22 run the same assertions, compiler/type checks and timeouts without coverage instrumentation. |
-| `quality.yml`                                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                         |
-| `pr-quality.yml`                                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                     |
-| `changes.yml`                                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                             |
-| `build-storybook.yml`                            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build.                                            |
-| `integration-test.yml`                           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                         |
-| `generator-test.yml`                             | Verify generation against both supported Wow versions.                                                                                                                                                    |
-| `pr-labeler.yml`                                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                  |
-| `deploy-wiki.yml`                                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                        |
-| `release.yml`                                    | Admit the checked-out SHA against successful full CI and trusted quality checks before build/publish.                                                                                                     |
-| `gitee-sync.yml`, `renovate.yml`, `opencode.yml` | Existing repository automation; unchanged.                                                                                                                                                                |
+| Workflow                         | Responsibility                                                                                                                                                                                            |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                         | Build packages and run all package tests on Node 20/22/24. Node 24 collects and uploads coverage; Node 20/22 run the same assertions, compiler/type checks and timeouts without coverage instrumentation. |
+| `quality.yml`                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                         |
+| `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                     |
+| `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                             |
+| `build-storybook.yml`            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build.                                            |
+| `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                         |
+| `generator-test.yml`             | Verify generation against both supported Wow versions.                                                                                                                                                    |
+| `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                  |
+| `deploy-wiki.yml`                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                        |
+| `release.yml`                    | Admit the checked-out SHA against successful full CI and trusted quality checks before build/publish.                                                                                                     |
+| `gitee-sync.yml`, `renovate.yml` | Existing repository automation; unchanged.                                                                                                                                                                |
 
 ## Scope and gates
 
@@ -92,8 +92,8 @@ passes. Distinguish source-repository/network failures from code defects.
 
 ## Secrets
 
-Codecov, npm, optional LLM integration, mirroring and assistant secrets stay in
-GitHub settings. Do not print them. No PR code is executed by the privileged
+Codecov, npm, optional LLM integration and mirroring secrets stay in GitHub
+settings. Do not print them. No PR code is executed by the privileged
 labeler. Coverage uploader failures fail Node 24 CI rather than being hidden.
 
 Third-party pnpm/Codecov/labeler actions are pinned to verified commit SHAs.
