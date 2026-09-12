@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { lazy, Suspense, useState, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
+import { DashboardLayoutBoundary } from './DashboardLayoutBoundary.js';
 import {
   SearchIcon,
   RefreshCwIcon,
@@ -36,11 +37,6 @@ import type { DashboardPanel } from './dashboardModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 import type { DashboardViewProps } from './dashboardReactTypes.js';
 
-const DashboardLayout = lazy(() =>
-  import('./DashboardGrid.js').then(module => ({
-    default: module.DashboardLayout,
-  })),
-);
 /** A caller-owned runtime controls navigation and queries independently of this presentation. */
 export function DashboardView({
   runtime,
@@ -55,6 +51,8 @@ export function DashboardView({
     runtime.getSnapshot,
     runtime.getSnapshot,
   );
+  const [failedLayout, setFailedLayout] = useState<string | null>(null);
+  const layoutUnavailable = failedLayout === runtime.identity;
   const [addToolbar, setAddToolbar] = useState<HTMLDivElement | null>(null);
   type Panels = readonly DeepReadonly<DashboardPanel>[];
   const [layoutEdit, setLayoutEdit] = useState<{
@@ -69,7 +67,8 @@ export function DashboardView({
     layoutEdit?.id === runtime.identity &&
     layoutEdit.baseline === snapshot.session.baseline &&
     layoutEdit.editorEpoch === snapshot.session.editorEpoch &&
-    snapshot.editable;
+    snapshot.editable &&
+    !layoutUnavailable;
   if (layoutEdit && !editing) setLayoutEdit(null);
   function commitLayout(panels: Panels) {
     if (!editing || !layoutEdit || panels === snapshot.config.panels) return;
@@ -163,6 +162,7 @@ export function DashboardView({
               <Button
                 variant="outline"
                 aria-pressed={editing}
+                disabled={layoutUnavailable}
                 onClick={() =>
                   setLayoutEdit(
                     editing
@@ -280,109 +280,111 @@ export function DashboardView({
         </div>
       )}
       {!!snapshot.config.panels.length && (
-        <Suspense fallback={<p role="status">正在加载仪表盘布局…</p>}>
-          <DashboardLayout
-            panels={snapshot.config.panels}
-            enabled={editing && snapshot.editable}
-            onCommit={panels => run(() => commitLayout(panels))}
-            title={id => {
-              const panel = snapshot.config.panels.find(item => item.id === id);
-              const panelTitle =
-                panel?.kind === 'view'
-                  ? (snapshot.panels[id]?.instance?.title ?? panel.instanceId)
-                  : (panel?.title ?? '面板');
-              return title ? `${title} · ${panelTitle}` : panelTitle;
-            }}
-          >
-            {panel =>
-              panel.kind !== 'view' ? (
-                <DashboardContent panel={panel} />
-              ) : (
-                <DashboardPanelBoundary
-                  key={JSON.stringify([
-                    runtime.identity,
-                    panel.instanceId,
-                    snapshot.panels[panel.id]?.referenceVersion,
-                  ])}
-                >
-                  {snapshot.panels[panel.id] && (
-                    <DashboardPanelContent
-                      panel={snapshot.panels[panel.id]}
-                      filterCount={
-                        snapshot.applied.filters.filter(item =>
-                          item.bindings.some(
-                            binding => binding.panelId === panel.id,
-                          ),
-                        ).length
-                      }
-                      filterDetails={
-                        <div
-                          className="fve:text-xs fve:text-muted-foreground"
-                          aria-label="已应用全局筛选"
-                        >
-                          {!snapshot.applied.filters.length
-                            ? '已应用全局筛选：无'
-                            : snapshot.applied.filters.map((item, index) => (
-                                <p key={item.id} className="fve:break-words">
-                                  筛选 {index + 1}：
-                                  {!snapshot.applied.panels.some(
-                                    applied =>
-                                      applied.kind === 'view' &&
-                                      applied.id === panel.id &&
-                                      applied.instanceId === panel.instanceId,
-                                  )
-                                    ? '尚未应用到此引用'
-                                    : item.excludedPanelIds.includes(panel.id)
-                                      ? '不参与'
-                                      : item.bindings.some(
-                                            binding =>
-                                              binding.panelId === panel.id,
-                                          )
-                                        ? (describeConfiguredFilter(
-                                            item.filters.root,
-                                            runtime.definition.fields,
-                                            runtime.definition.allowedOperators,
-                                            runtime.filterCompilers,
-                                            runtime.definition.timeZone,
-                                          )?.text ?? '已应用条件')
-                                        : '尚未应用到此面板'}
-                                </p>
-                              ))}
-                          {snapshot.pending && (
-                            <p>新草稿尚未应用，当前结果仍使用上次查询口径。</p>
-                          )}
-                        </div>
-                      }
+        <DashboardLayoutBoundary
+          key={runtime.identity}
+          onAvailabilityChange={available =>
+            setFailedLayout(available ? null : runtime.identity)
+          }
+          panels={snapshot.config.panels}
+          enabled={editing && snapshot.editable}
+          onCommit={panels => run(() => commitLayout(panels))}
+          title={id => {
+            const panel = snapshot.config.panels.find(item => item.id === id);
+            const panelTitle =
+              panel?.kind === 'view'
+                ? (snapshot.panels[id]?.instance?.title ?? panel.instanceId)
+                : (panel?.title ?? '面板');
+            return title ? `${title} · ${panelTitle}` : panelTitle;
+          }}
+        >
+          {panel =>
+            panel.kind !== 'view' ? (
+              <DashboardContent panel={panel} />
+            ) : (
+              <DashboardPanelBoundary
+                key={JSON.stringify([
+                  runtime.identity,
+                  panel.instanceId,
+                  snapshot.panels[panel.id]?.referenceVersion,
+                ])}
+              >
+                {snapshot.panels[panel.id] && (
+                  <DashboardPanelContent
+                    panel={snapshot.panels[panel.id]}
+                    filterCount={
+                      snapshot.applied.filters.filter(item =>
+                        item.bindings.some(
+                          binding => binding.panelId === panel.id,
+                        ),
+                      ).length
+                    }
+                    filterDetails={
+                      <div
+                        className="fve:text-xs fve:text-muted-foreground"
+                        aria-label="已应用全局筛选"
+                      >
+                        {!snapshot.applied.filters.length
+                          ? '已应用全局筛选：无'
+                          : snapshot.applied.filters.map((item, index) => (
+                              <p key={item.id} className="fve:break-words">
+                                筛选 {index + 1}：
+                                {!snapshot.applied.panels.some(
+                                  applied =>
+                                    applied.kind === 'view' &&
+                                    applied.id === panel.id &&
+                                    applied.instanceId === panel.instanceId,
+                                )
+                                  ? '尚未应用到此引用'
+                                  : item.excludedPanelIds.includes(panel.id)
+                                    ? '不参与'
+                                    : item.bindings.some(
+                                          binding =>
+                                            binding.panelId === panel.id,
+                                        )
+                                      ? (describeConfiguredFilter(
+                                          item.filters.root,
+                                          runtime.definition.fields,
+                                          runtime.definition.allowedOperators,
+                                          runtime.filterCompilers,
+                                          runtime.definition.timeZone,
+                                        )?.text ?? '已应用条件')
+                                      : '尚未应用到此面板'}
+                              </p>
+                            ))}
+                        {snapshot.pending && (
+                          <p>新草稿尚未应用，当前结果仍使用上次查询口径。</p>
+                        )}
+                      </div>
+                    }
 
-                      positionLabel={`${title ? `${title} · ` : ''}面板 ${[...snapshot.config.panels].sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x).findIndex(item => item.id === panel.id) + 1}：${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}`}
-                      extensions={extensions}
-                      compilers={runtime.filterCompilers}
-                      onRefresh={() => runtime.refresh(panel.id)}
-                      onReload={() => runtime.reloadReference(panel.id)}
-                      onRepair={
-                        snapshot.editable
-                          ? () => {
-                              setConfiguring(true);
-                              setRepair(value => ({
-                                panelId: panel.id,
-                                filterId: snapshot.panels[panel.id]?.filterId,
-                                version: (value?.version ?? 0) + 1,
-                              }));
-                            }
-                          : undefined
-                      }
-                      onOpenOriginal={
-                        runtime.canOpenOriginal
-                          ? () => runtime.openOriginal(panel.id)
-                          : undefined
-                      }
-                    />
-                  )}
-                </DashboardPanelBoundary>
-              )
-            }
-          </DashboardLayout>
-        </Suspense>
+                    positionLabel={`${title ? `${title} · ` : ''}面板 ${[...snapshot.config.panels].sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x).findIndex(item => item.id === panel.id) + 1}：${snapshot.panels[panel.id]?.instance?.title ?? panel.instanceId}`}
+                    extensions={extensions}
+                    compilers={runtime.filterCompilers}
+                    onRefresh={() => runtime.refresh(panel.id)}
+                    onReload={() => runtime.reloadReference(panel.id)}
+                    onRepair={
+                      snapshot.editable
+                        ? () => {
+                            setConfiguring(true);
+                            setRepair(value => ({
+                              panelId: panel.id,
+                              filterId: snapshot.panels[panel.id]?.filterId,
+                              version: (value?.version ?? 0) + 1,
+                            }));
+                          }
+                        : undefined
+                    }
+                    onOpenOriginal={
+                      runtime.canOpenOriginal
+                        ? () => runtime.openOriginal(panel.id)
+                        : undefined
+                    }
+                  />
+                )}
+              </DashboardPanelBoundary>
+            )
+          }
+        </DashboardLayoutBoundary>
       )}
     </div>
   );

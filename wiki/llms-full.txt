@@ -15470,6 +15470,8 @@ Use the exported `dashboardEditorKey(filterId, panelId?)` to report editor valid
 
 Remote dashboard configuration changes must reserve the complete projected runtime metadata footprint before adoption. A failed reservation leaves the admitted runtime configuration intact, exposes a resource error and disables editing; the authoritative reloaded session remains available. After budget is released, retrying `apply`, `refresh` or `resume` attempts admission again. Removed references release their reservation on successful reconciliation.
 
+If the optional layout module fails, DashboardView preserves navigation, panel data and draft configuration in a simple layout. Drag editing is unavailable until retry succeeds. Retry creates a fresh lazy resource and returns focus to the panel area; if the resource remains unavailable, save configuration before reloading the page.
+
 `engine.dashboard(id)` returns a `DashboardRuntime` with stable `getSnapshot` / `subscribe`, `edit`, `setFilter`, `setEditorValidity`, `apply`, `refresh(panelId?)`, `reloadReference(panelId)`, `suspend`, `resume` and `dispose`. The engine owns navigation suspension/resumption and disposal. `DashboardView` renders a caller-owned runtime; it does not own that lifecycle. `ViewPage` integrates it with existing instance navigation and save controls. `RecordContent` reuses the record table/card/actions/pagination from a session, definition and bound commands without a navigation dependency.
 
 `isDisposed` reports whether the runtime has been released. After explicit `dispose()`, a later `engine.dashboard(id)` creates a replacement; call `resume()` to activate it when managing the lifecycle yourself. Runtime notifications ignore unrelated position changes, while permission changes still update editability. Read-only filter drafts and their editor validity stay local to the runtime; they never mark the persisted session dirty or block saving its separate configuration after a permission change. Transformer applicability failures hide only the failed registration; editor render failures show a local retry action and block saving until the binding is repaired.
@@ -15971,7 +15973,7 @@ These names come from the current public entry exports and declarations. Import 
 | `DashboardExtensions`             | [dashboardReactTypes.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L36)                |
 | `DashboardTransformEditorProps`   | [dashboardReactTypes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L21)                |
 | `DashboardTransformRegistration`  | [dashboardReactTypes.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L26)                |
-| `DashboardView`                   | [DashboardView.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardView.tsx#L45)                          |
+| `DashboardView`                   | [DashboardView.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardView.tsx#L41)                          |
 | `DashboardViewProps`              | [dashboardReactTypes.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L39)                |
 | `DateTimeCell`                    | [DateTimeCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L26)                         |
 | `DateTimeCellProps`               | [DateTimeCell.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L20)                         |
@@ -35953,6 +35955,8 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 远端仪表盘配置在接纳前预留完整的运行时元数据预算。预留失败时保留已接纳的运行配置、显示资源错误并禁止编辑，已重新加载的权威会话仍保留。释放预算后，可通过 `apply`、`refresh` 或 `resume` 重试接纳；成功协调后，被移除引用的额度立即释放。
 
+布局模块加载失败时，DashboardView 以简洁布局保留导航、面板数据和配置草稿，拖动编辑暂不可用。重试会重新创建懒加载资源，并将焦点移回面板区域；资源仍不可用时，应先保存配置，再刷新页面。
+
 `engine.dashboard(id)` 返回 `DashboardRuntime`，提供稳定的 `getSnapshot` / `subscribe`，以及 `edit`、`setFilter`、`setEditorValidity`、`apply`、`refresh(panelId?)`、`reloadReference(panelId)`、`suspend`、`resume`、`dispose`。引擎负责导航暂停/恢复与释放。`DashboardView` 只展示调用方拥有的运行对象；`ViewPage` 将其接入既有导航与保存操作。`RecordContent` 通过会话、定义和绑定命令复用表格、卡片、业务操作与分页，不依赖页面导航。
 
 `isDisposed` 表示运行对象是否已释放。显式调用 `dispose()` 后，再次调用 `engine.dashboard(id)` 会创建替代对象；自行管理生命周期时调用 `resume()` 激活它。运行对象会跳过无关位置的通知，但权限变化仍更新可编辑状态。只读筛选草稿及编辑器有效性仅保留在运行对象中，不会把持久会话标为未保存，也不会在权限变化后阻断其独立配置的保存。转换器适用性检查失败只隐藏故障注册项；编辑器渲染失败显示局部重试入口，并阻止保存直至修复绑定。
@@ -36454,7 +36458,7 @@ console.log(compiled.plan.query, result.rows);
 | `DashboardExtensions`             | [dashboardReactTypes.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L36)                |
 | `DashboardTransformEditorProps`   | [dashboardReactTypes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L21)                |
 | `DashboardTransformRegistration`  | [dashboardReactTypes.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L26)                |
-| `DashboardView`                   | [DashboardView.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardView.tsx#L45)                          |
+| `DashboardView`                   | [DashboardView.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardView.tsx#L41)                          |
 | `DashboardViewProps`              | [dashboardReactTypes.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L39)                |
 | `DateTimeCell`                    | [DateTimeCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L26)                         |
 | `DateTimeCellProps`               | [DateTimeCell.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L20)                         |

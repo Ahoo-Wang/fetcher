@@ -12,7 +12,9 @@
  */
 
 // @vitest-environment node
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
+import { ViewEngine } from '../../src/engine/ViewEngine.js';
+import type { ViewHost } from '../../src/contracts/ViewHost.js';
 import { MemoryViewHost } from '../../src/record/MemoryViewHost.js';
 import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
 import { HttpViewHost, VIEW_SERVICE_STATUS } from '../../dev/http/index.js';
@@ -80,5 +82,136 @@ it('negotiates dashboard format across real HTTP list, order, single and deletio
     ).toBe('New name');
   } finally {
     await server.close();
+  }
+});
+
+it('composes definition-scoped HTTP clients for cross-definition dashboards without mixing permissions or writes', async () => {
+  const root = {
+    id: 'overview',
+    title: 'Overview',
+    fields: [],
+    dashboard: true as const,
+  };
+  const dashboard: DashboardViewInstance = {
+    id: 'dashboard',
+    definitionId: root.id,
+    title: 'Dashboard',
+    kind: 'dashboard',
+    scope: { type: 'personal' },
+    revision: 'r1',
+    config: {
+      schemaVersion: 1,
+      panels: [
+        {
+          kind: 'view',
+          id: 'orders',
+          instanceId: 'saved-orders',
+          layout: { x: 0, y: 0, w: 12, h: 18 },
+        },
+      ],
+      filters: [],
+    },
+  };
+  const source = {
+    paged: vi.fn(async () => ({
+      total: 1,
+      list: [{ state: { id: 'one', amount: 42 } }],
+    })),
+  };
+  const servers = await Promise.all([
+    startViewService({
+      Host: MemoryViewHost,
+      ServiceError: ViewServiceError,
+      statuses: VIEW_SERVICE_STATUS,
+      definition: root,
+      instances: { instances: [dashboard], defaultInstanceId: dashboard.id },
+      source,
+    }),
+    startViewService({
+      Host: MemoryViewHost,
+      ServiceError: ViewServiceError,
+      statuses: VIEW_SERVICE_STATUS,
+      definition,
+      instances: {
+        instances: [instance('saved-orders')],
+        defaultInstanceId: 'saved-orders',
+      },
+      source,
+    }),
+  ]);
+  let engine: ViewEngine | undefined;
+  try {
+    servers[0].setWriter('alice-token', false);
+    servers[1].setWriter('alice-token', false);
+    servers[1].setWriter('alice-token', true);
+    const clients = servers.map(
+      (server, index) =>
+        new HttpViewHost({
+          baseUrl: server.baseUrl,
+          definitionId: index === 0 ? root.id : definition.id,
+          headers: () => ({ Authorization: 'Bearer alice-token' }),
+          supportedFormats: { record: true, analysis: true, dashboard: 1 },
+          resolveSource: () => source,
+        }),
+    );
+    const [overview, orders] = clients;
+    await expect(overview.instance.load('saved-orders')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    await expect(overview.definition.load(definition.id)).rejects.toMatchObject(
+      { code: 'NOT_FOUND' },
+    );
+    const definitions = new Map([
+      [root.id, overview],
+      [definition.id, orders],
+    ]);
+    const owners = new Map([
+      [dashboard.id, overview],
+      ['saved-orders', orders],
+    ]);
+    const clientFor = (registry: Map<string, HttpViewHost>, id: string) => {
+      const client = registry.get(id);
+      if (!client)
+        throw new ViewServiceError('NOT_FOUND', 'Resource not registered');
+      return client;
+    };
+    const host: ViewHost = {
+      definition: {
+        load: (id, signal) =>
+          clientFor(definitions, id).definition.load(id, signal),
+      },
+      instance: {
+        list: overview.instance.list,
+        load: (id, signal) => clientFor(owners, id).instance.load(id, signal),
+        create: overview.instance.create,
+        save: overview.instance.save,
+        rename: overview.instance.rename,
+        delete: overview.instance.delete,
+      },
+      permission: overview.permission,
+      preference: overview.preference,
+      resolveSource: overview.resolveSource,
+    };
+    engine = new ViewEngine({ definitionId: root.id, host });
+    await engine.load();
+    const runtime = engine.dashboard(dashboard.id);
+    await vi.waitFor(() =>
+      expect(
+        runtime.getSnapshot().panels.orders.position?.getSnapshot().queryStatus,
+      ).toBe('success'),
+    );
+    expect(runtime.getSnapshot().panels.orders.definition?.id).toBe(
+      definition.id,
+    );
+    expect(orders.permission.getDefinition().createShared).toBe(true);
+    expect(engine.getCapabilitiesSnapshot().createShared).toBe(false);
+    engine.setTitle('Updated overview', dashboard.id);
+    await engine.save(dashboard.id);
+    expect(servers[0].control.mutations).toBe(1);
+    expect(servers[1].control.mutations).toBe(0);
+    expect(source.paged).toHaveBeenCalledTimes(1);
+  } finally {
+    engine?.dispose();
+    await Promise.all(servers.map(server => server.close()));
   }
 });

@@ -169,6 +169,12 @@ try {
     storybookError = error;
   });
   await waitFor(`${baseUrl}/index.json`);
+  await run(
+    'verify-dashboard-layout',
+    process.execPath,
+    ['packages/view-engine/scripts/verify-dashboard-layout.mjs'],
+    env,
+  );
   await verifyBrowserMatrix(readinessBrowsers, async browser => {
     if (cancellation)
       throw new DOMException('Acceptance cancelled', 'AbortError');

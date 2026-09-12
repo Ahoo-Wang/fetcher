@@ -302,11 +302,7 @@ export class DashboardRuntime {
   }
   setEditorValidity(key: string, valid: boolean): void {
     this.assert();
-    if (
-      typeof valid !== 'boolean' ||
-      !/^(filter|transform):/.test(key) ||
-      key.length > 4096
-    )
+    if (typeof valid !== 'boolean' || !/^(filter|transform):/.test(key))
       throw new Error('编辑器状态无效');
     const session = this.session();
     const known = this.config.filters.some(

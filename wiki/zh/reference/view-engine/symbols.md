@@ -199,7 +199,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `DashboardExtensions`             | [dashboardReactTypes.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L36)                |
 | `DashboardTransformEditorProps`   | [dashboardReactTypes.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L21)                |
 | `DashboardTransformRegistration`  | [dashboardReactTypes.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L26)                |
-| `DashboardView`                   | [DashboardView.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardView.tsx#L45)                          |
+| `DashboardView`                   | [DashboardView.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardView.tsx#L41)                          |
 | `DashboardViewProps`              | [dashboardReactTypes.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardReactTypes.ts#L39)                |
 | `DateTimeCell`                    | [DateTimeCell.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L26)                         |
 | `DateTimeCellProps`               | [DateTimeCell.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/cells/DateTimeCell.tsx#L20)                         |

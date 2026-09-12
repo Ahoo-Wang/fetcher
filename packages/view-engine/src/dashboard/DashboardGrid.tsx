@@ -27,7 +27,7 @@ import {
 } from './dashboardLayout.js';
 
 type Panels = readonly DeepReadonly<DashboardPanel>[];
-interface Props {
+export interface DashboardLayoutProps {
   panels: Panels;
   enabled: boolean;
   onCommit(panels: Panels): void;
@@ -35,7 +35,7 @@ interface Props {
   children(panel: DeepReadonly<DashboardPanel>): ReactNode;
 }
 /** RGL owns geometry and gesture preview; only completed gestures reach the runtime. */
-export function DashboardLayout(props: Props) {
+export function DashboardLayout(props: DashboardLayoutProps) {
   const { width, containerRef } = useContainerWidth({ initialWidth: 1200 });
   const mobile = width < 640;
   const enabled = props.enabled && !mobile;

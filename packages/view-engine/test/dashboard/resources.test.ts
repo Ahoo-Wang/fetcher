@@ -305,3 +305,48 @@ it('clears temporary invalid input on restore even when the saved configuration 
   expect(runtime.getSnapshot().validation).toEqual([]);
   engine.dispose();
 });
+
+it.each(['filter', 'transform'] as const)(
+  'accepts a valid configuration with a long %s editor key',
+  async kind => {
+    const { dashboardEditorKey } =
+      await import('../../src/dashboard/dashboardEditorKey.js');
+    const id = 'f'.repeat(5000);
+    const panelId = 'p'.repeat(1000);
+    const item = {
+      ...globalFilter(),
+      id,
+      bindings:
+        kind === 'filter'
+          ? []
+          : [{ kind: 'transform' as const, panelId, name: 'custom' }],
+      excludedPanelIds: [],
+    };
+    const { engine } = dashboardSetup({
+      schemaVersion: 1,
+      panels:
+        kind === 'filter'
+          ? []
+          : [
+              {
+                kind: 'view',
+                id: panelId,
+                instanceId: 'child',
+                layout: { x: 0, y: 0, w: 6, h: 18 },
+              },
+            ],
+      filters: [item],
+    });
+    await engine.load();
+    const runtime = engine.dashboard('dashboard');
+    const key = dashboardEditorKey(
+      id,
+      kind === 'transform' ? panelId : undefined,
+    );
+    expect(key.length).toBeGreaterThan(4096);
+    expect(() => runtime.setEditorValidity(key, false)).not.toThrow();
+    expect(runtime.getSnapshot().session.editorValidity[key]).toBe(false);
+    await expect(engine.save('dashboard')).rejects.toThrow('编辑输入无效');
+    engine.dispose();
+  },
+);
