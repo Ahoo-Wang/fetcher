@@ -214,6 +214,10 @@ export const ContentEditing: Story = {
         canvas.getByRole('status', { name: '保存状态' }),
       ).toHaveTextContent('视图已保存'),
     );
+    await expect(
+      canvas.queryByRole('button', { name: '取消布局编辑' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: '编辑布局' }));
     await userEvent.click(canvas.getByRole('button', { name: '移除面板4' }));
     await expect(
       canvas.queryByRole('link', { name: '业务帮助' }),

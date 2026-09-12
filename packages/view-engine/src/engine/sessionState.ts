@@ -170,7 +170,9 @@ export function rebaseSession(
   });
   const locallyEdited =
     !sameJsonState(editable(latest.instance), editable(latest.baseline)) ||
-    (latest.kind !== 'dashboard' && !latest.filterValid) ||
+    (latest.kind === 'dashboard'
+      ? Object.values(latest.editorValidity).some(valid => !valid)
+      : !latest.filterValid) ||
     (latest.kind === 'record' &&
       !sameJsonState(latest.filterDraft, latest.filterBaseline));
   if (!locallyEdited)

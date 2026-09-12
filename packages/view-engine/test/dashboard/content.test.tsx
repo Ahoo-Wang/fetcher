@@ -107,6 +107,8 @@ it.each([
     expect(vi.mocked(host.instance.save).mock.calls[0][0]).toMatchObject({
       config: { panels: [{ kind, title: '更新卡片' }] },
     });
+    expect(screen.queryByRole('button', { name: '取消布局编辑' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '编辑布局' }));
     fireEvent.click(screen.getByRole('button', { name: '移除面板1' }));
     expect(runtime.getSnapshot().config.panels).toHaveLength(0);
     expect(paged).not.toHaveBeenCalled();

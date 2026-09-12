@@ -59,11 +59,18 @@ export function DashboardView({
   type Panels = readonly DeepReadonly<DashboardPanel>[];
   const [layoutEdit, setLayoutEdit] = useState<{
     id: string;
+    baseline: typeof snapshot.session.baseline;
+    editorEpoch: number;
     initial: Panels;
     past: Panels[];
     future: Panels[];
   } | null>(null);
-  const editing = layoutEdit?.id === runtime.identity && snapshot.editable;
+  const editing =
+    layoutEdit?.id === runtime.identity &&
+    layoutEdit.baseline === snapshot.session.baseline &&
+    layoutEdit.editorEpoch === snapshot.session.editorEpoch &&
+    snapshot.editable;
+  if (layoutEdit && !editing) setLayoutEdit(null);
   function commitLayout(panels: Panels) {
     if (!editing || !layoutEdit || panels === snapshot.config.panels) return;
     runtime.edit(config => ({ ...config, panels }));
@@ -162,6 +169,8 @@ export function DashboardView({
                       ? null
                       : {
                           id: runtime.identity,
+                          baseline: snapshot.session.baseline,
+                          editorEpoch: snapshot.session.editorEpoch,
                           initial: snapshot.config.panels,
                           past: [],
                           future: [],
@@ -289,7 +298,13 @@ export function DashboardView({
               panel.kind !== 'view' ? (
                 <DashboardContent panel={panel} />
               ) : (
-                <DashboardPanelBoundary panelId={panel.id}>
+                <DashboardPanelBoundary
+                  key={JSON.stringify([
+                    runtime.identity,
+                    panel.instanceId,
+                    snapshot.panels[panel.id]?.referenceVersion,
+                  ])}
+                >
                   {snapshot.panels[panel.id] && (
                     <DashboardPanelContent
                       panel={snapshot.panels[panel.id]}

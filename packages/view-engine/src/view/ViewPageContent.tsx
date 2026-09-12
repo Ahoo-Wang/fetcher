@@ -18,6 +18,7 @@ import { PanelLeftOpenIcon } from 'lucide-react';
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../components/ui/button.js';
 import { cn } from '../lib/utils.js';
+import { message } from '../lib/snapshot.js';
 import { RecordView, type RecordViewProps } from '../record/RecordView.js';
 import { useViewExpansion, ViewExpansionContext } from './viewExpansion.js';
 import { ViewManager } from './ViewManager.js';
@@ -81,6 +82,10 @@ export function ViewPageContent({
     setCollapsed(value => !value);
   }
   const [managerOpen, setManagerOpen] = useState(false);
+  const [recoveredDashboard, setRecoveredDashboard] = useState<{
+    engine: ViewEngine;
+    runtime: ReturnType<ViewEngine['dashboard']>;
+  }>();
   const switcherTrigger = useRef<HTMLButtonElement>(null);
   const managerReturnFocus = useRef<HTMLElement>(null);
   const [actionError, setActionError] = useState<{
@@ -124,6 +129,20 @@ export function ViewPageContent({
         </Button>
       </div>
     );
+  let dashboard: ReturnType<ViewEngine['dashboard']> | undefined;
+  let dashboardError: string | undefined;
+  if (session?.kind === 'dashboard') {
+    try {
+      dashboard =
+        recoveredDashboard?.engine === engine &&
+        recoveredDashboard.runtime.id === session.instance.id &&
+        !recoveredDashboard.runtime.isDisposed
+          ? recoveredDashboard.runtime
+          : engine.dashboard(session.instance.id);
+    } catch (error) {
+      dashboardError = message(error);
+    }
+  }
   const currentActionError =
     actionError?.instanceId === id ? actionError.message : null;
   const groups = groupViewInstances(state);
@@ -185,11 +204,7 @@ export function ViewPageContent({
       <CreateDashboardButton engine={engine} />
       {session && (
         <ViewInstanceActions
-          key={
-            session.kind === 'dashboard'
-              ? engine.dashboard(session.instance.id).identity
-              : session.instance.id
-          }
+          key={dashboard?.identity ?? session.instance.id}
           engine={engine}
           session={session}
           run={run}
@@ -297,14 +312,54 @@ export function ViewPageContent({
               }
             />
           }
-          {session?.kind === 'dashboard' && (
+          {dashboard && (
             <DashboardView
-              key={engine.dashboard(session.instance.id).identity}
-              runtime={engine.dashboard(session.instance.id)}
+              key={dashboard.identity}
+              runtime={dashboard}
               extensions={extensions}
               filterContext={filterContext}
               toolbarStart={toolbarStart}
             />
+          )}
+          {dashboardError && session?.kind === 'dashboard' && (
+            <>
+              <header>{toolbarStart}</header>
+              <div
+                role="alert"
+                className="fve:flex fve:flex-col fve:items-start fve:gap-3 fve:p-4"
+              >
+                <p>{dashboardError}</p>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    run(async () => {
+                      const runtime = engine.dashboard(session.instance.id);
+                      await runtime.resume();
+                      setRecoveredDashboard({ engine, runtime });
+                    })
+                  }
+                >
+                  重试加载仪表盘
+                </Button>
+                {capabilities.instances[session.instance.id]?.reload && (
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      run(async () => {
+                        await engine.reloadInstance(session.instance.id);
+                        if (
+                          engine.getSnapshot().selectedInstanceId ===
+                          session.instance.id
+                        )
+                          await engine.dashboard(session.instance.id).resume();
+                      })
+                    }
+                  >
+                    重新加载仪表盘
+                  </Button>
+                )}
+              </div>
+            </>
           )}
           {session?.kind === 'record' ? (
             <RecordView

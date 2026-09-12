@@ -72,6 +72,7 @@ import { ViewPersistence } from './ViewPersistence.js';
 import { ViewServiceError } from '../contracts/viewServiceContract.js';
 import { isSystemSession } from './sessionState.js';
 import { ViewManagement } from './ViewManagement.js';
+import { definitionPermissionsFor } from './instancePermissions.js';
 
 export interface ViewPositionOptions {
   queryPolicy?: 'reject' | 'queue';
@@ -406,15 +407,16 @@ export class ViewEngine {
   getCapabilitiesSnapshot = (): ViewCapabilities => {
     const state = this.store.getSnapshot();
     if (this.capabilities?.state === state) return this.capabilities.value;
+    const grants = definitionPermissionsFor(this.host);
     const value: ViewCapabilities = freeze({
       createPersonal:
         !!state.definition?.dashboard &&
         !!this.host.instance?.create &&
-        this.host.permission?.getDefinition?.().createPersonal === true,
+        grants?.createPersonal === true,
       createShared:
         !!state.definition?.dashboard &&
         !!this.host.instance?.create &&
-        this.host.permission?.getDefinition?.().createShared === true,
+        grants?.createShared === true,
       reorder: this.canReorderInstances(),
       setDefault: this.canSetDefaultInstance(),
       instances: Object.fromEntries(
@@ -806,6 +808,7 @@ export class ViewEngine {
       this.store.patch(session.positionId, {
         kind: 'dashboard',
         instance: session.baseline,
+        writeError: null,
         editorValidity: {},
         editorEpoch: session.editorEpoch + 1,
       });

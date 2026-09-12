@@ -28,12 +28,21 @@ export const deniedPermissions = Object.freeze({
   rename: false,
 });
 
+/** Policy outages deny UI capabilities without interrupting rendering. */
+export function definitionPermissionsFor(host: ViewHost) {
+  try {
+    return host.permission?.getDefinition?.();
+  } catch {
+    return undefined;
+  }
+}
+
 export function permissionsFor(
   host: ViewHost,
   session?: ViewSession,
 ): ViewInstancePermissions {
   if (session?.kind === 'dashboard' && !session.persisted) {
-    const grants = host.permission?.getDefinition?.();
+    const grants = definitionPermissionsFor(host);
     const available = typeof host.instance?.create === 'function';
     return {
       ...deniedPermissions,

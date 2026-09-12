@@ -15460,6 +15460,10 @@ await engine.save(draftId); // First real create; the host supplies saved identi
 
 `permission.getDefinition()` explicitly grants `createPersonal` / `createShared`; missing grants deny creation. A local dashboard session has `persisted: false` and is excluded from authoritative `instanceIds` until saved. Creating a draft does not write. `save`, `saveAs`, revision conflicts and unknown-create reconciliation use the shared instance service; only the dashboard configuration is saved, never referenced child configurations.
 
+Layout editing ends when editing permission is lost, saving or reloading changes the baseline, or restoration changes the editor epoch. Re-entering layout editing uses the current configuration; cancel cannot restore coordinates from an obsolete session.
+
+Saving validates structure, editor validity, registered transforms and bindings against currently available reference metadata. It does not wait for reference loading or query success: an unavailable reference remains in the saved configuration, and its panel stays blocked until access or configuration is repaired. This permits saving layout changes without deleting inaccessible panels. Once reference metadata is available, invalid field mappings block saving. Saved references never grant access or bypass query authorization.
+
 `engine.dashboard(id)` returns a `DashboardRuntime` with stable `getSnapshot` / `subscribe`, `edit`, `setFilter`, `setEditorValidity`, `apply`, `refresh(panelId?)`, `reloadReference(panelId)`, `suspend`, `resume` and `dispose`. The engine owns navigation suspension/resumption and disposal. `DashboardView` renders a caller-owned runtime; it does not own that lifecycle. `ViewPage` integrates it with existing instance navigation and save controls. `RecordContent` reuses the record table/card/actions/pagination from a session, definition and bound commands without a navigation dependency.
 
 `isDisposed` reports whether the runtime has been released. After explicit `dispose()`, a later `engine.dashboard(id)` creates a replacement; call `resume()` to activate it when managing the lifecycle yourself. Runtime notifications ignore unrelated position changes, while permission changes still update editability. Read-only filter drafts and their editor validity stay local to the runtime; they never mark the persisted session dirty or block saving its separate configuration after a permission change. Transformer applicability failures hide only the failed registration; editor render failures show a local retry action and block saving until the binding is repaired.
@@ -15795,7 +15799,7 @@ These names come from the current public entry exports and declarations. Import 
 | `AnalysisSession`                 | [viewModel.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L294)                                      |
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
 | `AnalysisViewInstance`            | [viewModel.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L168)                                      |
-| `AnalysisViewPosition`            | [ViewEngine.ts:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L96)                                         |
+| `AnalysisViewPosition`            | [ViewEngine.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L97)                                         |
 | `AnalysisVisualizationType`       | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
 | `calculateRecordSummary`          | [recordSummary.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L70)                                   |
 | `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:324](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L324)                 |
@@ -15823,8 +15827,8 @@ These names come from the current public entry exports and declarations. Import 
 | `DashboardTransforms`             | [dashboardModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L108)                            |
 | `DashboardViewInstance`           | [dashboardModel.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L75)                              |
 | `DashboardViewPanel`              | [dashboardModel.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L33)                              |
-| `DashboardViewPosition`           | [ViewEngine.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L101)                                       |
-| `DataViewPosition`                | [ViewEngine.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L106)                                       |
+| `DashboardViewPosition`           | [ViewEngine.ts:102](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L102)                                       |
+| `DataViewPosition`                | [ViewEngine.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L107)                                       |
 | `DeepReadonly`                    | [types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/lib/types.ts#L15)                                                      |
 | `FILTER_OPERATORS`                | [filterOperators.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L19)                               |
 | `FilterApplyResult`               | [filterModel.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L124)                                     |
@@ -15892,7 +15896,7 @@ These names come from the current public entry exports and declarations. Import 
 | `RecordViewConfig`                | [viewModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L149)                                      |
 | `RecordViewDefinition`            | [viewModel.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L92)                                        |
 | `RecordViewInstance`              | [viewModel.ts:164](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L164)                                      |
-| `RecordViewPosition`              | [ViewEngine.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L91)                                         |
+| `RecordViewPosition`              | [ViewEngine.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L92)                                         |
 | `RendererReference`               | [viewModel.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L48)                                        |
 | `requireSupportedInstance`        | [viewServiceContract.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L98)                    |
 | `resolveRecordPresentation`       | [resolveRecordPresentation.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/resolveRecordPresentation.ts#L27)           |
@@ -15913,7 +15917,7 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewDefinition`                  | [viewModel.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L68)                                        |
 | `ViewDefinitionService`           | [ViewHost.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L28)                                          |
 | `ViewDeleteResult`                | [viewServiceContract.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L46)                    |
-| `ViewEngine`                      | [ViewEngine.ts:110](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L110)                                       |
+| `ViewEngine`                      | [ViewEngine.ts:111](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L111)                                       |
 | `ViewEngineOptions`               | [viewModel.ts:220](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L220)                                      |
 | `ViewEngineState`                 | [viewModel.ts:328](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L328)                                      |
 | `ViewFieldDefinition`             | [viewModel.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L49)                                        |
@@ -15926,8 +15930,8 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewInstanceService`             | [ViewHost.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L32)                                          |
 | `ViewPermissionService`           | [ViewHost.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L53)                                          |
 | `ViewPermissionSnapshot`          | [viewServiceContract.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L49)                    |
-| `ViewPosition`                    | [ViewEngine.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L107)                                       |
-| `ViewPositionOptions`             | [ViewEngine.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L76)                                         |
+| `ViewPosition`                    | [ViewEngine.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L108)                                       |
+| `ViewPositionOptions`             | [ViewEngine.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L77)                                         |
 | `ViewPreferenceService`           | [ViewHost.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L48)                                          |
 | `ViewScope`                       | [viewModel.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L97)                                        |
 | `ViewServiceError`                | [viewServiceContract.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L31)                    |
@@ -16048,8 +16052,8 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewEngineBinding`               | [useViewEngine.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L25)                                |
 | `ViewExtensions`                  | [viewReactTypes.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/viewReactTypes.ts#L20)                               |
 | `ViewPage`                        | [ViewPage.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPage.tsx#L26)                                         |
-| `ViewPageContent`                 | [ViewPageContent.tsx:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L54)                           |
-| `ViewPageContentProps`            | [ViewPageContent.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L37)                           |
+| `ViewPageContent`                 | [ViewPageContent.tsx:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L55)                           |
+| `ViewPageContentProps`            | [ViewPageContent.tsx:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L38)                           |
 | `ViewPageProps`                   | [ViewPage.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPage.tsx#L21)                                         |
 | `ViewTheme`                       | [ViewTheme.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/theme/ViewTheme.tsx#L33)                                      |
 | `ViewThemeProps`                  | [ViewTheme.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/theme/ViewTheme.tsx#L20)                                      |
@@ -35934,6 +35938,8 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 `permission.getDefinition()` 必须明确授予 `createPersonal` / `createShared`，缺省拒绝。未保存会话标记 `persisted: false`，不会进入权威 `instanceIds`；创建草稿不写入。保存、另存、版本冲突及未知创建核对复用统一实例服务，只保存仪表盘配置，不保存引用的子配置。
 
+保存验证结构、编辑器有效性、已注册转换器，以及当前引用元数据可验证的绑定；不等待引用加载或查询成功。不可访问的引用保留在保存配置中，对应面板在权限或配置修复前保持阻断，因此保存布局无需删除失效面板。引用元数据可用后，无效字段映射会阻止保存。保存引用不会授予访问权，也不会绕过查询授权。
+
 `engine.dashboard(id)` 返回 `DashboardRuntime`，提供稳定的 `getSnapshot` / `subscribe`，以及 `edit`、`setFilter`、`setEditorValidity`、`apply`、`refresh(panelId?)`、`reloadReference(panelId)`、`suspend`、`resume`、`dispose`。引擎负责导航暂停/恢复与释放。`DashboardView` 只展示调用方拥有的运行对象；`ViewPage` 将其接入既有导航与保存操作。`RecordContent` 通过会话、定义和绑定命令复用表格、卡片、业务操作与分页，不依赖页面导航。
 
 `isDisposed` 表示运行对象是否已释放。显式调用 `dispose()` 后，再次调用 `engine.dashboard(id)` 会创建替代对象；自行管理生命周期时调用 `resume()` 激活它。运行对象会跳过无关位置的通知，但权限变化仍更新可编辑状态。只读筛选草稿及编辑器有效性仅保留在运行对象中，不会把持久会话标为未保存，也不会在权限变化后阻断其独立配置的保存。转换器适用性检查失败只隐藏故障注册项；编辑器渲染失败显示局部重试入口，并阻止保存直至修复绑定。
@@ -35946,7 +35952,7 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 可选 `host.dashboard.search({ query, cursor? }, signal?)` 返回 `{ items: [{ id, definitionId, title, kind }], nextCursor }`，每次最多 100 个候选。使用前重新加载并授权；未提供 search 时隐藏数据引用的添加/替换入口，仍可添加内容卡片。`host.dashboard.openOriginal({ instanceId, definitionId })` 提供原视图导航。`extensions.dashboard.transforms[name]` 提供 `label`、可选 `applicable`、`hasOptions`，以及接受 `value`、`onChange`、`onValidityChange` 的受控 `Editor`；执行仍在核心注册表。`useViewEngine` 在访问生命周期开始时捕获配对注册表。未知扩展保留展示，不静默改写。
 
-布局采用 react-grid-layout，支持二维移动与宽高缩放。手势结束才提交预览，Escape 取消当前手势。布局撤销、重做和取消仅影响几何配置；键盘手柄提供非拖拽等效操作，不再显示位置/尺寸数字控件。窄容器单列堆叠且不回写桌面坐标。布局变化保留查询位置且不发起取数；原子视图的配置编辑与保存仍在面板外完成。
+布局采用 react-grid-layout，支持二维移动与宽高缩放。权限中断、保存或重载更新基线、还原改变编辑代次时，旧布局编辑会话结束；再次编辑使用当前配置，取消不会恢复旧坐标。手势结束才提交预览，Escape 取消当前手势。布局撤销、重做和取消仅影响几何配置；键盘手柄提供非拖拽等效操作，不再显示位置/尺寸数字控件。窄容器单列堆叠且不回写桌面坐标。布局变化保留查询位置且不发起取数；原子视图的配置编辑与保存仍在面板外完成。
 
 ### 预算与兼容
 
@@ -36269,7 +36275,7 @@ console.log(compiled.plan.query, result.rows);
 | `AnalysisSession`                 | [viewModel.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L294)                                      |
 | `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
 | `AnalysisViewInstance`            | [viewModel.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L168)                                      |
-| `AnalysisViewPosition`            | [ViewEngine.ts:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L96)                                         |
+| `AnalysisViewPosition`            | [ViewEngine.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L97)                                         |
 | `AnalysisVisualizationType`       | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
 | `calculateRecordSummary`          | [recordSummary.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L70)                                   |
 | `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:324](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L324)                 |
@@ -36297,8 +36303,8 @@ console.log(compiled.plan.query, result.rows);
 | `DashboardTransforms`             | [dashboardModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L108)                            |
 | `DashboardViewInstance`           | [dashboardModel.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L75)                              |
 | `DashboardViewPanel`              | [dashboardModel.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L33)                              |
-| `DashboardViewPosition`           | [ViewEngine.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L101)                                       |
-| `DataViewPosition`                | [ViewEngine.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L106)                                       |
+| `DashboardViewPosition`           | [ViewEngine.ts:102](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L102)                                       |
+| `DataViewPosition`                | [ViewEngine.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L107)                                       |
 | `DeepReadonly`                    | [types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/lib/types.ts#L15)                                                      |
 | `FILTER_OPERATORS`                | [filterOperators.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterOperators.ts#L19)                               |
 | `FilterApplyResult`               | [filterModel.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterModel.ts#L124)                                     |
@@ -36366,7 +36372,7 @@ console.log(compiled.plan.query, result.rows);
 | `RecordViewConfig`                | [viewModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L149)                                      |
 | `RecordViewDefinition`            | [viewModel.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L92)                                        |
 | `RecordViewInstance`              | [viewModel.ts:164](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L164)                                      |
-| `RecordViewPosition`              | [ViewEngine.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L91)                                         |
+| `RecordViewPosition`              | [ViewEngine.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L92)                                         |
 | `RendererReference`               | [viewModel.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L48)                                        |
 | `requireSupportedInstance`        | [viewServiceContract.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L98)                    |
 | `resolveRecordPresentation`       | [resolveRecordPresentation.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/resolveRecordPresentation.ts#L27)           |
@@ -36387,7 +36393,7 @@ console.log(compiled.plan.query, result.rows);
 | `ViewDefinition`                  | [viewModel.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L68)                                        |
 | `ViewDefinitionService`           | [ViewHost.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L28)                                          |
 | `ViewDeleteResult`                | [viewServiceContract.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L46)                    |
-| `ViewEngine`                      | [ViewEngine.ts:110](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L110)                                       |
+| `ViewEngine`                      | [ViewEngine.ts:111](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L111)                                       |
 | `ViewEngineOptions`               | [viewModel.ts:220](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L220)                                      |
 | `ViewEngineState`                 | [viewModel.ts:328](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L328)                                      |
 | `ViewFieldDefinition`             | [viewModel.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L49)                                        |
@@ -36400,8 +36406,8 @@ console.log(compiled.plan.query, result.rows);
 | `ViewInstanceService`             | [ViewHost.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L32)                                          |
 | `ViewPermissionService`           | [ViewHost.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L53)                                          |
 | `ViewPermissionSnapshot`          | [viewServiceContract.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L49)                    |
-| `ViewPosition`                    | [ViewEngine.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L107)                                       |
-| `ViewPositionOptions`             | [ViewEngine.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L76)                                         |
+| `ViewPosition`                    | [ViewEngine.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L108)                                       |
+| `ViewPositionOptions`             | [ViewEngine.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L77)                                         |
 | `ViewPreferenceService`           | [ViewHost.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L48)                                          |
 | `ViewScope`                       | [viewModel.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L97)                                        |
 | `ViewServiceError`                | [viewServiceContract.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L31)                    |
@@ -36522,8 +36528,8 @@ console.log(compiled.plan.query, result.rows);
 | `ViewEngineBinding`               | [useViewEngine.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/react/useViewEngine.ts#L25)                                |
 | `ViewExtensions`                  | [viewReactTypes.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/viewReactTypes.ts#L20)                               |
 | `ViewPage`                        | [ViewPage.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPage.tsx#L26)                                         |
-| `ViewPageContent`                 | [ViewPageContent.tsx:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L54)                           |
-| `ViewPageContentProps`            | [ViewPageContent.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L37)                           |
+| `ViewPageContent`                 | [ViewPageContent.tsx:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L55)                           |
+| `ViewPageContentProps`            | [ViewPageContent.tsx:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPageContent.tsx#L38)                           |
 | `ViewPageProps`                   | [ViewPage.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/view/ViewPage.tsx#L21)                                         |
 | `ViewTheme`                       | [ViewTheme.tsx:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/theme/ViewTheme.tsx#L33)                                      |
 | `ViewThemeProps`                  | [ViewTheme.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/theme/ViewTheme.tsx#L20)                                      |

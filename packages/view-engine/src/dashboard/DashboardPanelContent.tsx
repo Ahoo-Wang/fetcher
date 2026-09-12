@@ -42,7 +42,7 @@ import type { ViewExtensions } from '../view/viewReactTypes.js';
 import type { DashboardPanelSnapshot } from './DashboardRuntime.js';
 
 export class DashboardPanelBoundary extends Component<
-  { children: ReactNode; panelId: string },
+  { children: ReactNode },
   { error: boolean }
 > {
   state = { error: false };

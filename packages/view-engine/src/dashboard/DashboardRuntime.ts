@@ -208,15 +208,6 @@ export class DashboardRuntime {
   }
   private editable(): boolean {
     if (this.store.isPosition(this.id)) return false;
-    const session = this.session();
-    if (!session.persisted) {
-      const permissions = this.host.permission?.getDefinition?.();
-      return (
-        (session.instance.scope.type === 'personal'
-          ? permissions?.createPersonal
-          : permissions?.createShared) === true
-      );
-    }
     const permissions = this.engine.getPermissions(this.id);
     return (
       permissions.save || permissions.saveAsPersonal || permissions.saveAsShared

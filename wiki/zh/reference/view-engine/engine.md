@@ -153,6 +153,8 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 `permission.getDefinition()` 必须明确授予 `createPersonal` / `createShared`，缺省拒绝。未保存会话标记 `persisted: false`，不会进入权威 `instanceIds`；创建草稿不写入。保存、另存、版本冲突及未知创建核对复用统一实例服务，只保存仪表盘配置，不保存引用的子配置。
 
+保存验证结构、编辑器有效性、已注册转换器，以及当前引用元数据可验证的绑定；不等待引用加载或查询成功。不可访问的引用保留在保存配置中，对应面板在权限或配置修复前保持阻断，因此保存布局无需删除失效面板。引用元数据可用后，无效字段映射会阻止保存。保存引用不会授予访问权，也不会绕过查询授权。
+
 `engine.dashboard(id)` 返回 `DashboardRuntime`，提供稳定的 `getSnapshot` / `subscribe`，以及 `edit`、`setFilter`、`setEditorValidity`、`apply`、`refresh(panelId?)`、`reloadReference(panelId)`、`suspend`、`resume`、`dispose`。引擎负责导航暂停/恢复与释放。`DashboardView` 只展示调用方拥有的运行对象；`ViewPage` 将其接入既有导航与保存操作。`RecordContent` 通过会话、定义和绑定命令复用表格、卡片、业务操作与分页，不依赖页面导航。
 
 `isDisposed` 表示运行对象是否已释放。显式调用 `dispose()` 后，再次调用 `engine.dashboard(id)` 会创建替代对象；自行管理生命周期时调用 `resume()` 激活它。运行对象会跳过无关位置的通知，但权限变化仍更新可编辑状态。只读筛选草稿及编辑器有效性仅保留在运行对象中，不会把持久会话标为未保存，也不会在权限变化后阻断其独立配置的保存。转换器适用性检查失败只隐藏故障注册项；编辑器渲染失败显示局部重试入口，并阻止保存直至修复绑定。
@@ -165,7 +167,7 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 可选 `host.dashboard.search({ query, cursor? }, signal?)` 返回 `{ items: [{ id, definitionId, title, kind }], nextCursor }`，每次最多 100 个候选。使用前重新加载并授权；未提供 search 时隐藏数据引用的添加/替换入口，仍可添加内容卡片。`host.dashboard.openOriginal({ instanceId, definitionId })` 提供原视图导航。`extensions.dashboard.transforms[name]` 提供 `label`、可选 `applicable`、`hasOptions`，以及接受 `value`、`onChange`、`onValidityChange` 的受控 `Editor`；执行仍在核心注册表。`useViewEngine` 在访问生命周期开始时捕获配对注册表。未知扩展保留展示，不静默改写。
 
-布局采用 react-grid-layout，支持二维移动与宽高缩放。手势结束才提交预览，Escape 取消当前手势。布局撤销、重做和取消仅影响几何配置；键盘手柄提供非拖拽等效操作，不再显示位置/尺寸数字控件。窄容器单列堆叠且不回写桌面坐标。布局变化保留查询位置且不发起取数；原子视图的配置编辑与保存仍在面板外完成。
+布局采用 react-grid-layout，支持二维移动与宽高缩放。权限中断、保存或重载更新基线、还原改变编辑代次时，旧布局编辑会话结束；再次编辑使用当前配置，取消不会恢复旧坐标。手势结束才提交预览，Escape 取消当前手势。布局撤销、重做和取消仅影响几何配置；键盘手柄提供非拖拽等效操作，不再显示位置/尺寸数字控件。窄容器单列堆叠且不回写桌面坐标。布局变化保留查询位置且不发起取数；原子视图的配置编辑与保存仍在面板外完成。
 
 ### 预算与兼容
 
