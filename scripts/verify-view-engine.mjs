@@ -170,6 +170,12 @@ try {
   });
   await waitFor(`${baseUrl}/index.json`);
   await run(
+    'verify-list-order',
+    process.execPath,
+    ['packages/view-engine/scripts/verify-list-order.mjs'],
+    env,
+  );
+  await run(
     'verify-dashboard-layout',
     process.execPath,
     ['packages/view-engine/scripts/verify-dashboard-layout.mjs'],
