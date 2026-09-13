@@ -63,16 +63,16 @@ scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shar
 
 `AnalysisCapability.features` 显式声明服务支持：`distinctCount`、`percentile`、`metricFilters`、`derived`、`having`、`missingKey`、`dense`；未声明时关闭。字段能力另有 `distinctCount`、`percentile`，两层条件必须同时满足。`adaptWowAnalysisSchema(schema, { features })` 只投影字段并传入宿主能力，不探测数据库版本；明细作用域使用自己的字段，服务能力和请求限制继续来自根定义。
 
-| 配置                                               | 语义                                                                                                                     |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `component.name: 'distinct-count'`                 | 字段或公式的非空贡献值去重计数。字符串客户 ID 可直接使用；算术公式只允许数值字段。                                       |
-| `component.name: 'percentile'`，`props.percentile` | 百分位参数为严格介于 0 与 100 之间的有限数值；50 表示中位数。                                                            |
-| 指标 `filters?: FilterConfiguration`               | 非派生指标的独立统计条件，仅使用当前聚合作用域的标量字段；禁止 SEARCH/ELEMENT_MATCH 和数组字段。                         |
-| `component.name: 'derived'`，`derivedExpression`   | 引用前置非 ANY 指标进行四则运算，引用持久化为 `metricId`，编译时转换为 alias。可引用前置派生指标；不能自引用或向后引用。 |
-| 派生指标 `props.displayFormat`                     | `number`（默认）或 `percent`；百分比仅适用于无明确物理单位的结果，通过 Intl 格式化，不修改原数值。                       |
-| `AnalysisViewConfig.having`                        | 通过 `metricId` 引用非 ANY 指标，支持比较、BETWEEN、IN、IS_NULL、AND/OR；必须有分组，在服务端排序和 limit 之前执行。     |
-| TERMS `props.missingKey`                           | 单值字符串的缺失值/null 桶键，必须非空白；与真实同名桶合并，不是单纯的显示标签。                                         |
-| DATE_HISTOGRAM `props.dense`                       | 仅允许唯一日期分组，补齐服务端结果范围内部的日期缺口；无数据不生成完整日期范围，结果筛选可能再次移除空桶。               |
+| 配置                                               | 语义                                                                                                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `component.name: 'distinct-count'`                 | 字段或公式的非空贡献值去重计数。字符串客户 ID 可直接使用；算术公式只允许数值字段。                                                                           |
+| `component.name: 'percentile'`，`props.percentile` | 百分位参数为严格介于 0 与 100 之间的有限数值；50 表示中位数。                                                                                                |
+| 指标 `filters?: FilterConfiguration`               | 非派生指标的独立统计条件，仅使用当前聚合作用域的标量字段；禁止 SEARCH/ELEMENT_MATCH 和数组字段。                                                             |
+| `component.name: 'derived'`，`derivedExpression`   | 引用前置非 ANY 指标进行四则运算，引用持久化为 `metricId`，编译时转换为 alias。可引用前置派生指标；不能自引用或向后引用。                                     |
+| 派生指标 `props.displayFormat`                     | `number`（默认）或 `percent`；百分比仅适用于已证明无量纲的结果（常量、计数、同一已知单位的比值），未知或不兼容单位会被拒绝，通过 Intl 格式化，不修改原数值。 |
+| `AnalysisViewConfig.having`                        | 通过 `metricId` 引用非 ANY 指标，支持比较、BETWEEN、IN、IS_NULL、AND/OR；必须有分组，在服务端排序和 limit 之前执行。                                         |
+| TERMS `props.missingKey`                           | 单值字符串的缺失值/null 桶键，必须非空白；与真实同名桶合并，不是单纯的显示标签。                                                                             |
+| DATE_HISTOGRAM `props.dense`                       | 仅允许唯一日期分组，补齐服务端结果范围内部的日期缺口；无数据不生成完整日期范围，结果筛选可能再次移除空桶。                                                   |
 
 派生与结果筛选使用稳定 ID，改标题/alias 不改变引用对象。删除后保留失效引用并阻止查询，即使新指标复用同名 alias 也不会重新绑定。数字文本可以作为未完成草稿保存和重开，但无效数值、公式、引用或能力不能发起查询。
 

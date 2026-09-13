@@ -18,6 +18,7 @@ import {
 import { effectiveSortAliases } from './analysisSort.js';
 import {
   analysisOutputs,
+  referenceableAnalysisMetrics,
   dateLabels,
   groupNames,
   names,
@@ -77,6 +78,7 @@ function ComponentList({
   ...props
 }: AnalysisEditorProps & {
   kind: 'dimensions' | 'metrics';
+  referenceMetrics?: DeepReadonly<readonly AnalysisComponentConfig[]>;
   onMetricFilterValidityChange?(
     id: string,
     rootId: string,
@@ -484,9 +486,15 @@ function ComponentList({
                                         }
                                         value={item}
                                         context={context}
-                                        previousMetrics={value.metrics.slice(
-                                          0,
-                                          index,
+                                        previousMetrics={(
+                                          props.referenceMetrics ?? []
+                                        ).filter(metric =>
+                                          value.metrics
+                                            .slice(0, index)
+                                            .some(
+                                              previous =>
+                                                previous.id === metric.id,
+                                            ),
                                         )}
                                         label={label}
                                         disabled={disabled}
@@ -787,6 +795,14 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
       capability: { fields: [], count: false },
     };
   }
+  const needsReferences =
+    context.capability.features?.derived ||
+    context.capability.features?.having ||
+    value.having ||
+    value.metrics.some(metric => metric.component.name === 'derived');
+  const referenceMetrics = needsReferences
+    ? referenceableAnalysisMetrics(value.metrics, context)
+    : [];
   return (
     <OverlayScope visible={props.visible !== false}>
       <section
@@ -803,6 +819,7 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
           {...props}
           context={context}
           kind="metrics"
+          referenceMetrics={referenceMetrics}
           onMetricFilterValidityChange={(id, rootId, valid) =>
             setMetricValidity(previous =>
               previous[`${id}:${rootId}`] === valid
@@ -814,7 +831,7 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
         {(context.capability.features?.having || value.having) && (
           <AnalysisHavingEditor
             value={value.having}
-            metrics={value.metrics}
+            metrics={referenceMetrics}
             errors={errors}
             disabled={disabled}
             onChange={having => update({ having })}

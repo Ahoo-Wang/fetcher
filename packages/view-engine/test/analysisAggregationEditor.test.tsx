@@ -682,3 +682,81 @@ it('uses definition-level editor mappings when adding a metric filter', async ()
     : root.operands.find((node: { field?: string }) => node.field === 'amount');
   expect(node.component).toEqual({ name: 'remote-amount' });
 });
+
+it('excludes custom ANY contributions from derived and result-filter choices', async () => {
+  const { AnalysisEditor } = await import('../src/analysis/AnalysisEditor.js');
+  const { aggregation, FilterOperator: Op } =
+    await import('@ahoo-wang/fetcher-wow');
+  const value: AnalysisViewConfig = {
+    filters: {
+      mode: 'simple',
+      root: {
+        id: 'all',
+        component: { name: 'builtin' },
+        operator: Op.MATCH_ALL,
+        props: {},
+      },
+    },
+    dimensions: [],
+    metrics: [
+      {
+        id: 'representative',
+        alias: 'sample',
+        title: '代表客户',
+        component: { name: 'custom-any' },
+        field: 'customer',
+        props: {},
+      },
+      metrics[0],
+      {
+        id: 'derived',
+        alias: 'derived',
+        title: '计算指标',
+        component: { name: 'derived' },
+        props: {},
+        derivedExpression: { type: D.METRIC_REF, metricId: 'count' },
+      },
+    ],
+    sort: [],
+    limit: 10,
+    presentation: { layout: 'table', columns: [] },
+    having: {
+      id: 'h',
+      type: H.CONDITION,
+      metricId: 'count',
+      operator: C.GTE,
+      value: 1,
+    },
+  };
+  const context: AnalysisCompileContext = {
+    fields: [{ field: 'customer', label: '客户', type: 'string' }],
+    capability: {
+      count: true,
+      features: { derived: true, having: true },
+      fields: [{ field: 'customer', groups: [], functions: [], any: true }],
+    },
+    compilers: {
+      'custom-any': {
+        roles: ['metric'],
+        compile: () => aggregation.any('customer', 'sample'),
+      },
+    },
+  };
+  const view = render(
+    <AnalysisEditor value={value} context={context} onChange={() => {}} />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '编辑指标 3' }));
+  await choose('指标 3 公式 指标', '订单数');
+  fireEvent.click(screen.getByRole('combobox', { name: '指标 3 公式 指标' }));
+  expect(
+    screen.queryByRole('option', { name: '代表客户', exact: true }),
+  ).toBeNull();
+  view.unmount();
+  render(
+    <AnalysisEditor value={value} context={context} onChange={() => {}} />,
+  );
+  fireEvent.click(screen.getByRole('combobox', { name: '结果筛选 h 指标' }));
+  expect(
+    screen.queryByRole('option', { name: '代表客户', exact: true }),
+  ).toBeNull();
+});

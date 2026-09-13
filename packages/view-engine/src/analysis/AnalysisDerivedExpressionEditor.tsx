@@ -91,9 +91,7 @@ export function AnalysisDerivedExpressionEditor({
           label={`${label} 指标`}
           value={value.metricId}
           disabled={disabled}
-          options={metrics
-            .filter(m => m.component.name !== 'any')
-            .map(m => ({ value: m.id, label: m.title }))}
+          options={metrics.map(m => ({ value: m.id, label: m.title }))}
           onValueChange={metricId => change({ type: D.METRIC_REF, metricId })}
         />
       )}

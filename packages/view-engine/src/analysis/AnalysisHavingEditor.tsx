@@ -129,9 +129,7 @@ export function AnalysisHavingEditor({
           label={`${label} 指标`}
           value={metricId}
           disabled={disabled}
-          options={metrics
-            .filter(m => m.component.name !== 'any')
-            .map(m => ({ value: m.id, label: m.title }))}
+          options={metrics.map(m => ({ value: m.id, label: m.title }))}
           onValueChange={id => change({ ...value, metricId: id })}
         />
       )}

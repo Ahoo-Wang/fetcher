@@ -197,29 +197,29 @@ function derived(
   }
   return visit(expression, 1);
 }
+/** null proves dimensionless; undefined means unknown/incompatible, never a percentage. */
+export type AnalysisUnit = string | null | undefined;
 export function combineAnalysisUnits(
-  left: string | undefined,
-  right: string | undefined,
+  left: AnalysisUnit,
+  right: AnalysisUnit,
   op: O,
-): string | undefined {
+): AnalysisUnit {
+  if (left === undefined || right === undefined) return undefined;
   if (op === O.ADD || op === O.SUBTRACT)
     return left === right ? left : undefined;
   if (op === O.MULTIPLY)
     return left && right ? `${left}·${right}` : (left ?? right);
-  return right
-    ? left === right
-      ? undefined
-      : `${left ?? '1'}/${right}`
-    : left;
+  if (left === right) return null;
+  return right ? `${left ?? '1'}/(${right})` : left;
 }
 export function expressionUnit(
   expression: AggregationExpression,
   context: AnalysisCompileContext,
-): string | undefined {
+): AnalysisUnit {
   if (expression.type === E.FIELD)
     return context.capability.fields.find(f => f.field === expression.field)
       ?.unit;
-  if (expression.type === E.CONSTANT) return undefined;
+  if (expression.type === E.CONSTANT) return null;
   return combineAnalysisUnits(
     expressionUnit(expression.left, context),
     expressionUnit(expression.right, context),
@@ -228,10 +228,10 @@ export function expressionUnit(
 }
 export function derivedUnit(
   expression: DerivedExpression,
-  units: ReadonlyMap<string, string | undefined>,
-): string | undefined {
+  units: ReadonlyMap<string, AnalysisUnit>,
+): AnalysisUnit {
   if (expression.type === D.METRIC_REF) return units.get(expression.metric);
-  if (expression.type === D.CONSTANT) return undefined;
+  if (expression.type === D.CONSTANT) return null;
   return combineAnalysisUnits(
     derivedUnit(expression.left, units),
     derivedUnit(expression.right, units),

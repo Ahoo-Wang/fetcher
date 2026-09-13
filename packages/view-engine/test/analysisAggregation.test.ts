@@ -896,3 +896,168 @@ it('removes root metric operations from an element editing context', async () =>
     Op.ID,
   );
 });
+
+it('allows percentages only when units are proven dimensionless', () => {
+  const money = {
+    ...count,
+    component: { name: 'numeric' },
+    field: 'amount',
+    props: { function: F.SUM },
+  };
+  const formula = (
+    operator: O,
+    right: typeof derived.derivedExpression,
+  ): AnalysisComponentConfig => ({
+    ...derived,
+    props: { displayFormat: 'percent' },
+    derivedExpression: {
+      type: D.BINARY,
+      operator,
+      left: { type: D.METRIC_REF, metricId: 'count' },
+      right: right!,
+    },
+  });
+  expect(
+    compile([money, formula(O.ADD, { type: D.CONSTANT, value: 1 })]).plan,
+  ).toBeUndefined();
+  expect(
+    compile([money, formula(O.SUBTRACT, { type: D.CONSTANT, value: 1 })]).plan,
+  ).toBeUndefined();
+  expect(
+    compile([
+      money,
+      formula(O.DIVIDE, { type: D.METRIC_REF, metricId: 'count' }),
+    ]).errors,
+  ).toEqual([]);
+  const unknown = {
+    ...context,
+    capability: {
+      ...context.capability,
+      fields: context.capability.fields.map(f => ({ ...f, unit: undefined })),
+    },
+  };
+  expect(
+    compileAnalysis(
+      {
+        ...config,
+        metrics: [money, formula(O.DIVIDE, { type: D.CONSTANT, value: 2 })],
+      },
+      unknown,
+    ).plan,
+  ).toBeUndefined();
+  expect(
+    compile([count, formula(O.DIVIDE, { type: D.CONSTANT, value: 2 })]).errors,
+  ).toEqual([]);
+});
+
+it('keeps custom numeric references and excludes unknown or invalid contributions', async () => {
+  const { referenceableAnalysisMetrics } =
+    await import('../src/analysis/analysisEditorLabels.js');
+  const metric = (name: string) => ({
+    ...count,
+    id: name,
+    alias: name,
+    component: { name },
+  });
+  const result = referenceableAnalysisMetrics(
+    [
+      'customCount',
+      'customAny',
+      'broken',
+      'group',
+      'missing',
+      'wrongAlias',
+      'wrongRole',
+    ].map(metric),
+    {
+      ...context,
+      compilers: {
+        customCount: {
+          roles: ['metric'],
+          compile: item => aggregation.count(item.alias),
+        },
+        customAny: {
+          roles: ['metric'],
+          compile: item => aggregation.any('customer', item.alias),
+        },
+        broken: {
+          roles: ['metric'],
+          compile: () => {
+            throw new Error('invalid draft');
+          },
+        },
+        group: {
+          roles: ['metric'],
+          compile: item => aggregation.terms('customer', item.alias),
+        },
+        wrongAlias: {
+          roles: ['metric'],
+          compile: () => aggregation.count('other'),
+        },
+        wrongRole: {
+          roles: ['dimension'],
+          compile: item => aggregation.count(item.alias),
+        },
+      },
+    },
+  );
+  expect(result.map(metric => metric.id)).toEqual(['customCount']);
+});
+
+it('does not cancel different compound units with the same unparenthesized spelling', () => {
+  const ctx = {
+    ...context,
+    fields: [
+      ...context.fields,
+      { field: 'duration', label: '时长', type: 'number' as const },
+    ],
+    capability: {
+      ...context.capability,
+      fields: [
+        ...context.capability.fields,
+        { field: 'duration', groups: [], functions: [F.SUM], unit: 's' },
+      ],
+    },
+  };
+  const ref = (metricId: string) => ({ type: D.METRIC_REF as const, metricId });
+  const divide = (
+    left: ReturnType<typeof ref> | AnalysisComponentConfig['derivedExpression'],
+    right:
+      ReturnType<typeof ref> | AnalysisComponentConfig['derivedExpression'],
+  ) => ({
+    type: D.BINARY as const,
+    operator: O.DIVIDE,
+    left: left!,
+    right: right!,
+  });
+  const money = {
+    ...count,
+    component: { name: 'numeric' },
+    field: 'amount',
+    props: { function: F.SUM },
+  };
+  const time = { ...money, id: 'time', alias: 'time', field: 'duration' };
+  const a = {
+    ...derived,
+    id: 'a',
+    alias: 'a',
+    derivedExpression: divide(ref('count'), divide(ref('time'), ref('count'))),
+  };
+  const b = {
+    ...derived,
+    id: 'b',
+    alias: 'b',
+    derivedExpression: divide(divide(ref('count'), ref('time')), ref('count')),
+  };
+  const percent = {
+    ...derived,
+    props: { displayFormat: 'percent' },
+    derivedExpression: divide(ref('a'), ref('b')),
+  };
+  const result = compileAnalysis(
+    { ...config, metrics: [money, time, a, b, percent] },
+    ctx,
+  );
+  expect(result.plan).toBeUndefined();
+  expect(result.errors[0].id).toBe('ratio');
+});

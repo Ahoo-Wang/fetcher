@@ -19,6 +19,7 @@ import {
   analysisNumber,
   expressionUnit,
   derivedUnit,
+  type AnalysisUnit,
 } from './analysisExpressions.js';
 export { compileAnalysisExpression } from './analysisExpressions.js';
 import { compileAnalysisHaving } from './analysisHaving.js';
@@ -269,7 +270,7 @@ export function compileAnalysis(
     const metricsByAlias = new Map<string, AggregationMetric>();
     const valueBudget = { nodes: 0 },
       derivedBudget = { nodes: 0 };
-    const metricUnits = new Map<string, string | undefined>();
+    const metricUnits = new Map<string, AnalysisUnit>();
     const compile = (
       item: DeepReadonly<AnalysisComponentConfig>,
       role: AnalysisResultColumn['role'],
@@ -568,11 +569,12 @@ export function compileAnalysis(
           scoped.capability.fields.find(
             field => field.field === formatField,
           )?.numberFormat;
-        let unit = cap?.unit;
+        let unit: AnalysisUnit =
+          result.type === Metric.COUNT ? null : cap?.unit;
         if (valueExpression)
           unit =
             result.type === Metric.DISTINCT_COUNT
-              ? undefined
+              ? null
               : expressionUnit(valueExpression, scoped);
         if (
           result.type === Metric.COUNT ||
@@ -583,7 +585,7 @@ export function compileAnalysis(
           result.type === Metric.NUMERIC &&
           result.function === AggregationFunction.VARIANCE
         ) {
-          unit = unit ? `${unit}·${unit}` : undefined;
+          unit = unit ? `${unit}·${unit}` : unit;
           if (numberFormat) {
             numberFormat = { ...numberFormat };
             delete numberFormat.style;
@@ -603,8 +605,8 @@ export function compileAnalysis(
             '派生指标展示格式无效',
           );
           requireValue(
-            item.props.displayFormat !== 'percent' || unit === undefined,
-            '有物理单位的指标不能显示为百分比',
+            item.props.displayFormat !== 'percent' || unit === null,
+            '只有已确认无量纲的指标才能显示为百分比',
           );
           numberFormat =
             item.props.displayFormat === 'percent'
@@ -620,7 +622,7 @@ export function compileAnalysis(
           valueType,
           nullable,
           numberFormat,
-          unit,
+          unit: unit ?? undefined,
           ...((role === 'dimension' || result.type === Metric.ANY) &&
           field?.options
             ? {
