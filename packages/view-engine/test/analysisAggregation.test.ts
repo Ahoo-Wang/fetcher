@@ -844,3 +844,55 @@ it('locates a failed having predicate instead of marking its parent group', () =
   });
   expect(result.errors[0].id).toBe('invalid');
 });
+
+it('revalidates and normalizes scalar values supplied by analysis compilers', () => {
+  const run = (value: string | number, local = context) =>
+    compileAnalysis(
+      { ...config, metrics: [{ ...count, component: { name: 'custom' } }] },
+      {
+        ...local,
+        compilers: {
+          custom: {
+            roles: ['metric'],
+            compile: () =>
+              aggregation.count('orders', {
+                op: Op.EQ,
+                field: 'amount',
+                value,
+              }),
+          },
+        },
+      },
+    );
+  expect(run('oops').plan).toBeUndefined();
+  expect(run('10').plan).toBeUndefined();
+  expect(run(10).plan?.query.metrics[0]).toHaveProperty('filter', {
+    op: Op.EQ,
+    field: 'amount',
+    value: 10,
+  });
+  expect(
+    run(20, {
+      ...context,
+      fields: context.fields.map(f =>
+        f.field === 'amount'
+          ? { ...f, options: [{ value: 10, label: '十' }] }
+          : f,
+      ),
+    }).plan,
+  ).toBeUndefined();
+});
+
+it('removes root metric operations from an element editing context', async () => {
+  const { analysisMetricFilterContext } =
+    await import('../src/analysis/analysisMetricFilter.js');
+  const element = analysisMetricFilterContext(context, true);
+  expect(element.allowedOperators).not.toContain(Op.ID);
+  expect(element.allowedOperators).not.toContain(Op.TENANT_ID);
+  expect(element.allowedOperators).not.toContain(Op.DELETION);
+  expect(element.allowedOperators).toContain(Op.MATCH_ALL);
+  expect(element.allowedOperators).toContain(Op.MATCH_NONE);
+  expect(analysisMetricFilterContext(context).allowedOperators).toContain(
+    Op.ID,
+  );
+});

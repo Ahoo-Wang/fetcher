@@ -15,21 +15,23 @@ import {
   FilterOperator as Op,
   type FilterExpression,
 } from '@ahoo-wang/fetcher-wow';
+import { compileProtocolNode } from '../filter/filterBuiltinCompiler.js';
 import { definition } from '../filter/filterOperators.js';
-import {
-  parseFilterOutput,
-  type ProtocolNode,
-} from '../filter/filterProtocol.js';
-import {
-  validateFilterJson,
-  validateFilterNodeContext,
-} from '../filter/filterConfigurationValidation.js';
+import { parseFilterOutput } from '../filter/filterProtocol.js';
+import { validateFilterJson } from '../filter/filterConfigurationValidation.js';
 import type { AnalysisCompileContext } from './analysisModel.js';
 export function analysisMetricFilterContext(
   context: AnalysisCompileContext,
+  element = false,
 ): AnalysisCompileContext {
   const allowed = Object.values(Op).filter(
-    op => op !== Op.SEARCH && op !== Op.ELEMENT_MATCH,
+    op =>
+      op !== Op.SEARCH &&
+      op !== Op.ELEMENT_MATCH &&
+      (!element ||
+        definition(op).category !== 'root' ||
+        op === Op.MATCH_ALL ||
+        op === Op.MATCH_NONE),
   );
   return {
     ...context,
@@ -43,23 +45,21 @@ export function analysisMetricFilterContext(
     ),
   };
 }
-export function validateAnalysisMetricFilter(
+export function compileAnalysisMetricFilter(
   expression: FilterExpression,
   context: AnalysisCompileContext,
   element = false,
-): void {
+): FilterExpression {
   validateFilterJson(expression);
-  const scoped = analysisMetricFilterContext(context);
-  function visit(node: ProtocolNode) {
-    validateFilterNodeContext(
-      node.op,
-      node.field,
-      scoped.fields,
-      scoped.allowedOperators,
-      element,
-    );
-    if (definition(node.op).category === 'logical')
-      node.operands!.forEach(visit);
-  }
-  visit(parseFilterOutput(expression));
+  const scoped = analysisMetricFilterContext(context, element);
+  const draft = parseFilterOutput(expression);
+  const compiled = compileProtocolNode(
+    draft,
+    scoped.fields,
+    scoped.allowedOperators,
+    scoped.timeZone,
+  );
+  if (compiled.errors.length)
+    throw new TypeError(compiled.errors.map(error => error.message).join('；'));
+  return compiled.expression!;
 }

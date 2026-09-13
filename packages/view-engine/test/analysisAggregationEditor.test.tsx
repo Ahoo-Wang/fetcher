@@ -577,3 +577,108 @@ it('does not offer terms-only numeric identifiers as arithmetic fields', () => {
     screen.queryByRole('option', { name: '客户编号', exact: true }),
   ).toBeNull();
 });
+
+it('undoes metric filters to the latest executed metric with the same ID', async () => {
+  const { AnalysisEditor } = await import('../src/analysis/AnalysisEditor.js');
+  const { FilterOperator: Op } = await import('@ahoo-wang/fetcher-wow');
+  const filter = (value: number) => ({
+    mode: 'simple' as const,
+    root: {
+      id: 'amount',
+      component: { name: 'builtin' },
+      operator: Op.EQ,
+      field: 'amount',
+      props: { value },
+    },
+  });
+  const config: AnalysisViewConfig = {
+    filters: filter(0),
+    dimensions: [],
+    metrics: [{ ...metrics[0], filters: filter(1) }],
+    sort: [],
+    limit: 10,
+    presentation: { layout: 'table', columns: [] },
+  };
+  const context: AnalysisCompileContext = {
+    fields: [
+      { field: 'amount', label: '金额', type: 'number', operators: [Op.EQ] },
+    ],
+    capability: { count: true, features: { metricFilters: true }, fields: [] },
+  };
+  const changed = vi.fn();
+  const view = render(
+    <AnalysisEditor
+      value={config}
+      appliedValue={config}
+      context={context}
+      onChange={changed}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '编辑指标 1' }));
+  fireEvent.click(screen.getByText('统计条件', { exact: true }));
+  const applied = {
+    ...config,
+    metrics: [
+      { ...metrics[0], id: 'other' },
+      { ...metrics[0], filters: filter(2) },
+    ],
+  };
+  view.rerender(
+    <AnalysisEditor
+      value={{ ...config, metrics: [{ ...metrics[0], filters: filter(3) }] }}
+      appliedValue={applied}
+      context={context}
+      onChange={changed}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '撤销筛选修改' }));
+  expect(changed.mock.lastCall![0].metrics[0].filters).toEqual(filter(2));
+});
+
+it('uses definition-level editor mappings when adding a metric filter', async () => {
+  const { AnalysisEditor } = await import('../src/analysis/AnalysisEditor.js');
+  const { FilterOperator: Op } = await import('@ahoo-wang/fetcher-wow');
+  const all = {
+    mode: 'simple' as const,
+    root: {
+      id: 'all',
+      component: { name: 'builtin' },
+      operator: Op.MATCH_ALL,
+      props: {},
+    },
+  };
+  const config: AnalysisViewConfig = {
+    filters: all,
+    dimensions: [],
+    metrics: [{ ...metrics[0], filters: all }],
+    sort: [],
+    limit: 10,
+    presentation: { layout: 'table', columns: [] },
+  };
+  const context: AnalysisCompileContext = {
+    fields: [
+      { field: 'amount', label: '金额', type: 'number', operators: [Op.EQ] },
+    ],
+    capability: { count: true, features: { metricFilters: true }, fields: [] },
+  };
+  const changed = vi.fn();
+  render(
+    <AnalysisEditor
+      value={config}
+      context={context}
+      filterEditors={{ [Op.EQ]: { name: 'remote-amount' } }}
+      onChange={changed}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '编辑指标 1' }));
+  fireEvent.click(screen.getByText('统计条件', { exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '添加筛选' }));
+  fireEvent.click(
+    await screen.findByRole('checkbox', { name: '金额', exact: true }),
+  );
+  const root = changed.mock.lastCall![0].metrics[0].filters.root;
+  const node = root.field
+    ? root
+    : root.operands.find((node: { field?: string }) => node.field === 'amount');
+  expect(node.component).toEqual({ name: 'remote-amount' });
+});

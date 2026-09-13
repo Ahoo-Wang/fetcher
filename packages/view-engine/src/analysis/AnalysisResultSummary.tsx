@@ -17,7 +17,58 @@ import type {
 import type { FilterCompilerRegistry } from '../filter/filterModel.js';
 import type { DeepReadonly } from '../lib/types.js';
 import { describeConfiguredFilter } from '../filter/describeConfiguredFilter.js';
-import { SortDirection } from '@ahoo-wang/fetcher-wow';
+import {
+  SortDirection,
+  HavingExpressionType as H,
+  ComparisonOperator as C,
+  FilterOperator as Op,
+  type FilterExpression,
+  type HavingExpression,
+} from '@ahoo-wang/fetcher-wow';
+import { describeFilter } from '../filter/filterSummary.js';
+
+// HAVING uses the existing filter vocabulary only for display, never for execution.
+function havingDisplayFilter(
+  value: DeepReadonly<HavingExpression>,
+): FilterExpression {
+  switch (value.type) {
+    case H.CONDITION:
+      return {
+        op: (
+          {
+            [C.EQ]: Op.EQ,
+            [C.NE]: Op.NE,
+            [C.GT]: Op.GT,
+            [C.GTE]: Op.GTE,
+            [C.LT]: Op.LT,
+            [C.LTE]: Op.LTE,
+          } as const
+        )[value.operator],
+        field: value.metric,
+        value: value.value,
+      };
+    case H.BETWEEN:
+      return {
+        op: Op.BETWEEN,
+        field: value.metric,
+        lowerBound: value.lower,
+        upperBound: value.upper,
+      };
+    case H.IN:
+      return { op: Op.IN, field: value.metric, values: [...value.values] };
+    case H.IS_NULL:
+      return {
+        op: value.negated ? Op.IS_NOT_NULL : Op.IS_NULL,
+        field: value.metric,
+      };
+    case H.AND:
+    case H.OR:
+      return {
+        op: value.type === H.AND ? Op.AND : Op.OR,
+        operands: value.operands.map(havingDisplayFilter),
+      };
+  }
+}
 
 /** All labels and values describe the successful execution, never the working query. */
 export function AnalysisResultSummary({
@@ -102,6 +153,42 @@ export function AnalysisResultSummary({
               : element.path}
           </p>
         ))}
+        {plan.query.metrics.map(metric =>
+          'filter' in metric && metric.filter ? (
+            <p key={metric.alias}>
+              {plan.schema.find(column => column.alias === metric.alias)
+                ?.title ?? metric.alias}{' '}
+              统计条件：
+              {
+                describeFilter(
+                  metric.filter,
+                  scope?.fields ?? definition.fields,
+                  { timeZone: plan.timeZone },
+                  false,
+                ).text
+              }
+            </p>
+          ) : null,
+        )}
+        {plan.query.having && (
+          <p>
+            结果筛选：
+            {
+              describeFilter(
+                havingDisplayFilter(plan.query.having),
+                plan.schema
+                  .filter(column => column.role === 'metric')
+                  .map(column => ({
+                    field: column.alias,
+                    label: column.title,
+                    type: 'number',
+                  })),
+                {},
+                false,
+              ).text
+            }
+          </p>
+        )}
         <p>
           服务端排序：
           {plan.query.sort

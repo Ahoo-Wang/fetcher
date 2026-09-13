@@ -194,3 +194,5 @@ Dimension-owned display outputs are included in advanced server-sort choices. Ne
 The analysis query editor offers distinct counts, percentile presets P50/P95/P99 and custom values, independent metric filters, derived formulas, and result filters when the host enables them. Derived formulas select earlier metrics by business title and persist stable IDs. Use the explicit number/percent display choice for derived values. Dimension settings expose missing-value grouping and single-dimension date gap filling.
 
 All controls retain incomplete drafts, respect disabled states, and keep invalid references visible for repair. Filters on element-scoped metrics count/filter element records, not root orders. See [models](./models.md#extended-aggregation-analysis) for capabilities, limits, and statistical semantics.
+
+`AnalysisEditorProps.filterEditors` forwards definition-level filter editor mappings to metric and element filters. Metric-filter undo uses the last executed same-scope metric configuration by ID, rather than its first mounted value. The execution summary includes each metric predicate and HAVING from the retained query plan.

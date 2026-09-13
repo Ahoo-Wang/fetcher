@@ -24,7 +24,7 @@ export { compileAnalysisExpression } from './analysisExpressions.js';
 import { compileAnalysisHaving } from './analysisHaving.js';
 import {
   analysisMetricFilterContext,
-  validateAnalysisMetricFilter,
+  compileAnalysisMetricFilter,
 } from './analysisMetricFilter.js';
 import { sameJsonState } from '../lib/snapshot.js';
 import { effectiveSortAliases } from './analysisSort.js';
@@ -514,7 +514,10 @@ export function compileAnalysis(
                 scoped.capability.features?.metricFilters === true,
                 '指标筛选能力未授权',
               );
-              const filterContext = analysisMetricFilterContext(scoped);
+              const filterContext = analysisMetricFilterContext(
+                scoped,
+                !!config.scope,
+              );
               const compiled =
                 item.filters === undefined
                   ? undefined
@@ -530,17 +533,22 @@ export function compileAnalysis(
                 compiled?.errors.map(error => error.message).join('；') ??
                   '指标条件无效',
               );
-              if (supplied !== undefined)
-                validateAnalysisMetricFilter(supplied, scoped, !!config.scope);
+              const normalized =
+                supplied === undefined
+                  ? undefined
+                  : compileAnalysisMetricFilter(
+                      supplied,
+                      scoped,
+                      !!config.scope,
+                    );
               requireValue(
                 supplied === undefined ||
                   !compiled ||
-                  sameJsonState(supplied, compiled.expression),
+                  sameJsonState(normalized, compiled.expression),
                 '组件指标条件与配置冲突',
               );
-              const predicate = compiled?.expression ?? supplied;
+              const predicate = compiled?.expression ?? normalized;
               requireValue(predicate !== undefined, '指标条件无效');
-              validateAnalysisMetricFilter(predicate, scoped, !!config.scope);
               result = { ...result, filter: predicate };
             }
           }

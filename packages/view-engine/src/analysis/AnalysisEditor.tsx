@@ -26,7 +26,10 @@ import { AnalysisEditorBoundary, Choice } from './AnalysisComponentChoice.js';
 import type { AggregationGroupType as Group } from '@ahoo-wang/fetcher-wow';
 import { DerivedExpressionType } from '@ahoo-wang/fetcher-wow';
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
-import type { FilterExtensions } from '../filter/filterReactTypes.js';
+import type {
+  FilterExtensions,
+  FilterPanelProps,
+} from '../filter/filterReactTypes.js';
 import type { AnalysisExtensions } from './analysisReactTypes.js';
 import { ChevronDownIcon, GripVerticalIcon, PlusIcon } from 'lucide-react';
 import { Button } from '../components/ui/button.js';
@@ -54,7 +57,7 @@ import type {
 } from './analysisModel.js';
 export interface AnalysisEditorProps {
   value: DeepReadonly<AnalysisViewConfig>;
-  /** Last successfully applied configuration; used as the element filter undo baseline. */
+  /** Last successfully applied configuration; used as scope and metric filter undo baselines. */
   appliedValue?: DeepReadonly<AnalysisViewConfig>;
   context: AnalysisCompileContext;
   onChange(value: AnalysisViewConfig): void;
@@ -64,7 +67,8 @@ export interface AnalysisEditorProps {
   errors?: readonly FilterValidationError[];
   extensions?: AnalysisExtensions & FilterExtensions;
   filterContext?: unknown;
-  /** Combined validity of currently mounted element-scope filter editors. */
+  filterEditors?: FilterPanelProps['editors'];
+  /** Combined validity of scope and metric filter editors, retained while hidden. */
   onFilterValidityChange?(valid: boolean): void;
 }
 
@@ -469,6 +473,15 @@ function ComponentList({
                                     )}
                                     {kind === 'metrics' && names[component] && (
                                       <AnalysisMetricEditor
+                                        elementScope={value.scope !== undefined}
+                                        appliedValue={
+                                          props.appliedValue?.scope?.id ===
+                                          value.scope?.id
+                                            ? props.appliedValue?.metrics.find(
+                                                metric => metric.id === item.id,
+                                              )?.filters
+                                            : undefined
+                                        }
                                         value={item}
                                         context={context}
                                         previousMetrics={value.metrics.slice(
@@ -479,6 +492,7 @@ function ComponentList({
                                         disabled={disabled}
                                         extensions={props.extensions}
                                         filterContext={props.filterContext}
+                                        editors={props.filterEditors}
                                         onFilterValidityChange={valid =>
                                           props.onMetricFilterValidityChange?.(
                                             item.id,

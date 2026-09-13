@@ -32,9 +32,13 @@ import type {
   AnalysisComponentConfig,
   AnalysisCompileContext,
 } from './analysisModel.js';
-import type { FilterExtensions } from '../filter/filterReactTypes.js';
+import type {
+  FilterExtensions,
+  FilterPanelProps,
+} from '../filter/filterReactTypes.js';
 interface Props {
   value: DeepReadonly<AnalysisComponentConfig>;
+  appliedValue?: FilterPanelProps['appliedValue'];
   context: AnalysisCompileContext;
   previousMetrics: DeepReadonly<readonly AnalysisComponentConfig[]>;
   onChange(value: AnalysisComponentConfig): void;
@@ -42,10 +46,13 @@ interface Props {
   disabled?: boolean;
   extensions?: FilterExtensions;
   filterContext?: unknown;
+  elementScope?: boolean;
+  editors?: FilterPanelProps['editors'];
   onFilterValidityChange?(valid: boolean): void;
 }
 export function AnalysisMetricEditor({
   value: item,
+  appliedValue,
   context,
   previousMetrics,
   onChange,
@@ -53,6 +60,8 @@ export function AnalysisMetricEditor({
   disabled,
   extensions,
   filterContext,
+  elementScope = false,
+  editors,
   onFilterValidityChange,
 }: Props) {
   const component = item.component.name;
@@ -101,7 +110,7 @@ export function AnalysisMetricEditor({
             })),
           },
         };
-  const metricContext = analysisMetricFilterContext(context);
+  const metricContext = analysisMetricFilterContext(context, elementScope);
   return (
     <div className="fve:flex fve:min-w-0 fve:flex-col fve:gap-3">
       {component !== 'count' && component !== 'derived' && !item.expression && (
@@ -281,11 +290,13 @@ export function AnalysisMetricEditor({
               <>
                 <FilterPanel
                   value={item.filters}
+                  appliedValue={appliedValue}
                   fields={metricContext.fields}
                   allowedOperators={metricContext.allowedOperators}
                   timeZone={metricContext.timeZone}
                   disabled={disabled}
                   extensions={extensions}
+                  editors={editors}
                   context={filterContext}
                   onValidityChange={onFilterValidityChange}
                   showQueryAction={false}
