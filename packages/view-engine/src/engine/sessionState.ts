@@ -243,6 +243,9 @@ export function inheritEditingSession(
         ? { createdFromDraft: source.positionId }
         : {}),
       instance,
+      ...(source.kind === 'dashboard'
+        ? { editorValidity: source.editorValidity }
+        : {}),
       ...(source.kind === 'record'
         ? {
             filterDraft: source.filterDraft,

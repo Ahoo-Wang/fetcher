@@ -260,13 +260,15 @@ export function DashboardView({
         configuring={configuring}
         repair={repair}
       />
-      <DashboardSettings
-        key={`${runtime.identity}:${snapshot.session.editorEpoch}`}
-        runtime={runtime}
-        snapshot={snapshot}
-        editing={editing}
-        toolbar={addToolbar}
-      />
+      {snapshot.editable && (
+        <DashboardSettings
+          key={`${runtime.identity}:${snapshot.session.editorEpoch}`}
+          runtime={runtime}
+          snapshot={snapshot}
+          editing={editing}
+          toolbar={addToolbar}
+        />
+      )}
       {!snapshot.config.panels.length && (
         <div className="fve:rounded-lg fve:border fve:border-dashed fve:p-8 fve:text-center">
           <h2 className="fve:font-medium">仪表盘还没有面板</h2>

@@ -12,17 +12,19 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { definition as dataDefinition } from '../engine/fixtures.js';
+import { globalFilter } from './runtimeFixtures.js';
 import { ViewEngine } from '../../src/engine/ViewEngine.js';
 import { MemoryViewHost } from '../../src/record/MemoryViewHost.js';
 import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
 import type { DashboardSession } from '../../src/dashboard/dashboardModel.js';
 
-function setup() {
+function setup(withFields = false) {
   const definition = {
     id: 'dashboards',
     title: 'Dashboards',
-    fields: [],
+    fields: withFields ? dataDefinition.fields : [],
     dashboard: true as const,
   };
   const memory = new MemoryViewHost({
@@ -254,3 +256,53 @@ it('rejects dashboard creation without a create service before changing selectio
   expect(engine.getSnapshot()).toBe(before);
   engine.dispose();
 });
+
+it.each([false, true])(
+  'preserves editor validity changed during dashboard creation (lost receipt: %s)',
+  async lost => {
+    const { engine, create, memory } = setup(true);
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    create.mockImplementationOnce(async (input, context) => {
+      const saved = await memory.instance.create(input, context);
+      await gate;
+      if (lost) throw new ViewServiceError('UNKNOWN_OUTCOME', 'lost');
+      return saved;
+    });
+    await engine.load();
+    const id = engine.createDashboard({
+      title: 'Draft',
+      scope: { type: 'personal' },
+    });
+    const runtime = engine.dashboard(id);
+    runtime.edit(config => ({
+      ...config,
+      filters: [{ ...globalFilter(), bindings: [], excludedPanelIds: [] }],
+    }));
+    const saving = engine.save(id);
+    await vi.waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+    runtime.setEditorValidity('filter:amount', false);
+    release();
+    if (lost) {
+      await expect(saving).rejects.toThrow('lost');
+      await engine.reloadInstance(id);
+    } else await saving;
+    const savedId = engine.getSnapshot().selectedInstanceId!;
+    expect(savedId).not.toBe(id);
+    expect(draft(engine, savedId)).toMatchObject({
+      editorValidity: { 'filter:amount': false },
+      dirty: true,
+    });
+    await expect(engine.save(savedId)).rejects.toThrow();
+    const savedRuntime = engine.dashboard(savedId);
+    expect(savedRuntime.getSnapshot().validation).toContainEqual({
+      id: 'filter:amount',
+      message: '编辑输入无效',
+    });
+    savedRuntime.setEditorValidity('filter:amount', true);
+    expect(draft(engine, savedId).validation).toEqual([]);
+    engine.dispose();
+  },
+);

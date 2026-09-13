@@ -298,8 +298,10 @@ export abstract class StatefulViewHost implements ViewHost {
       return {
         reorder: this.options.canReorder?.() ?? true,
         createPersonal:
+          this.formats.dashboard === 1 &&
           this.options.definitionPermissions?.().createPersonal === true,
         createShared:
+          this.formats.dashboard === 1 &&
           this.options.definitionPermissions?.().createShared === true,
       };
     },

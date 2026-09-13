@@ -41,7 +41,11 @@ import type {
   DashboardRuntime,
   DashboardSnapshot,
 } from './DashboardRuntime.js';
-import type { DashboardContentPanel } from './dashboardModel.js';
+import type {
+  DashboardContentPanel,
+  DashboardPanel,
+} from './dashboardModel.js';
+import type { DeepReadonly } from '../lib/types.js';
 import { safeUrl } from '../lib/safeUrl.js';
 import { message, sameJsonState } from '../lib/snapshot.js';
 
@@ -56,7 +60,9 @@ export function DashboardSettings({
   editing: boolean;
   toolbar: HTMLDivElement | null;
 }) {
-  const [selection, setSelection] = useState<{ panelId?: string } | null>(null);
+  const [selection, setSelection] = useState<{
+    panel?: DeepReadonly<DashboardPanel>;
+  } | null>(null);
   const [content, setContent] = useState<DashboardContentPanel | null>(null);
   const [originalContent, setOriginalContent] =
     useState<DashboardContentPanel | null>(null);
@@ -100,12 +106,12 @@ export function DashboardSettings({
     );
     return () => controller.abort();
   }, [runtime, opened, query, cursor, retry]);
-  function choose(panelId?: string) {
+  function choose(panel?: DeepReadonly<DashboardPanel>) {
     dialogFocus.current =
-      panelId && document.activeElement instanceof HTMLElement
+      panel && document.activeElement instanceof HTMLElement
         ? document.activeElement
         : addRef.current;
-    setSelection({ panelId });
+    setSelection({ panel });
     setQuery('');
     setCursor(undefined);
     setItems([]);
@@ -115,39 +121,54 @@ export function DashboardSettings({
   }
   function select(candidate: DashboardCandidate) {
     try {
-      runtime.edit(config => ({
-        ...config,
-        panels: selection?.panelId
-          ? config.panels.map(panel =>
-              panel.id === selection.panelId
-                ? {
-                    id: panel.id,
-                    kind: 'view' as const,
-                    layout: panel.layout,
-                    instanceId: candidate.id,
-                  }
-                : panel,
+      if (!selection) return;
+      const original = selection.panel;
+      runtime.edit(config => {
+        if (original) {
+          const current = config.panels.find(panel => panel.id === original.id);
+          if (
+            !current ||
+            !sameJsonState(
+              { ...current, layout: null },
+              { ...original, layout: null },
             )
-          : [
-              ...config.panels,
-              {
-                id: crypto.randomUUID(),
-                kind: 'view',
-                instanceId: candidate.id,
-                layout: {
-                  x: 0,
-                  y: Math.max(
-                    0,
-                    ...config.panels.map(
-                      panel => panel.layout.y + panel.layout.h,
+          )
+            throw new Error('面板已被移除或引用已更改，请取消并重新打开选择。');
+        }
+        return {
+          ...config,
+          panels: original
+            ? config.panels.map(panel =>
+                panel.id === original.id
+                  ? {
+                      id: panel.id,
+                      kind: 'view' as const,
+                      layout: panel.layout,
+                      instanceId: candidate.id,
+                    }
+                  : panel,
+              )
+            : [
+                ...config.panels,
+                {
+                  id: crypto.randomUUID(),
+                  kind: 'view',
+                  instanceId: candidate.id,
+                  layout: {
+                    x: 0,
+                    y: Math.max(
+                      0,
+                      ...config.panels.map(
+                        panel => panel.layout.y + panel.layout.h,
+                      ),
                     ),
-                  ),
-                  w: 6,
-                  h: 18,
+                    w: 6,
+                    h: 18,
+                  },
                 },
-              },
-            ],
-      }));
+              ],
+        };
+      });
       setSelection(null);
     } catch (reason) {
       setError(message(reason));
@@ -253,7 +274,7 @@ export function DashboardSettings({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => choose(panel.id)}
+                onClick={() => choose(panel)}
                 aria-label={`替换面板${index + 1}`}
               >
                 替换引用
@@ -464,7 +485,7 @@ export function DashboardSettings({
         <DialogContent className="fve:sm:max-w-xl" finalFocus={dialogFocus}>
           <DialogHeader>
             <DialogTitle>
-              {selection?.panelId ? '替换面板引用' : '添加面板'}
+              {selection?.panel ? '替换面板引用' : '添加面板'}
             </DialogTitle>
             <DialogDescription>
               选择已保存的记录或分析视图。替换引用后需要重新确认全局筛选绑定。

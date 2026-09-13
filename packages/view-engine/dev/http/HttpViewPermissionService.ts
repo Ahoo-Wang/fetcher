@@ -43,8 +43,12 @@ export class HttpViewPermissionService implements ViewPermissionService {
   readonly getDefinition = () => {
     return {
       reorder: this.permissionSnapshot.reorder,
-      createPersonal: this.permissionSnapshot.createPersonal === true,
-      createShared: this.permissionSnapshot.createShared === true,
+      createPersonal:
+        this.transport.supportedFormats.dashboard === 1 &&
+        this.permissionSnapshot.createPersonal === true,
+      createShared:
+        this.transport.supportedFormats.dashboard === 1 &&
+        this.permissionSnapshot.createShared === true,
     };
   };
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -77,7 +81,7 @@ export class HttpViewPermissionService implements ViewPermissionService {
         'UNAVAILABLE',
         '权限响应已过期或与当前授权不一致，请重试',
       );
-    return copy(this.permissionSnapshot);
+    return copy({ ...this.permissionSnapshot, ...this.getDefinition() });
   };
   /** Clear cached grants after an HTTP session rejection; keep the authority version. */
   clear(): void {

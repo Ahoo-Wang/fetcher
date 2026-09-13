@@ -686,3 +686,143 @@ it('describes persisted dashboards correctly in the view manager', async () => {
   cleanup();
   engine.dispose();
 });
+
+it.each(['reference', 'content', 'remove', 'layout'] as const)(
+  'checks the original reference before replacing after a concurrent %s change',
+  async change => {
+    const { engine } = dashboardSetup(undefined, {
+      instance: {
+        load: async id => instance(id),
+        save: async value => ({ ...value, revision: 'r2' }),
+      },
+      dashboard: {
+        search: async () => ({
+          items: [
+            {
+              id: 'replacement',
+              definitionId: 'orders',
+              title: '新版订单',
+              kind: 'record',
+            },
+          ],
+          nextCursor: null,
+        }),
+      },
+    });
+    await engine.load();
+    const runtime = engine.dashboard('dashboard');
+    render(<DashboardView runtime={runtime} />);
+    fireEvent.click(screen.getByRole('button', { name: '编辑布局' }));
+    fireEvent.click(screen.getByRole('button', { name: '替换面板1' }));
+    const candidate = await screen.findByRole('button', { name: /新版订单/ });
+    act(() =>
+      runtime.edit(config => ({
+        ...config,
+        panels:
+          change === 'remove'
+            ? config.panels.filter(panel => panel.id !== 'a')
+            : config.panels.map(panel =>
+                panel.id !== 'a'
+                  ? panel
+                  : change === 'content'
+                    ? {
+                        id: panel.id,
+                        kind: 'markdown',
+                        title: 'External',
+                        content: 'Keep me',
+                        layout: panel.layout,
+                      }
+                    : change === 'reference'
+                      ? {
+                          ...panel,
+                          kind: 'view',
+                          instanceId: 'external',
+                        }
+                      : { ...panel, layout: { ...panel.layout, w: 12 } },
+              ),
+      })),
+    );
+    const concurrent = runtime.getSnapshot().config;
+    fireEvent.click(candidate);
+    if (change === 'layout') {
+      expect(runtime.getSnapshot().config.panels[0]).toMatchObject({
+        instanceId: 'replacement',
+        layout: { w: 12 },
+      });
+    } else {
+      expect(runtime.getSnapshot().config).toEqual(concurrent);
+      expect((await screen.findByRole('alert')).textContent).toContain(
+        '请取消并重新打开',
+      );
+    }
+    cleanup();
+    engine.dispose();
+  },
+);
+
+it.each([false, true])(
+  'discards discovery state on permission loss (pending: %s)',
+  async pending => {
+    let editable = true;
+    let notifyPermissions = () => {};
+    let resolveSearch!: (value: {
+      items: {
+        id: string;
+        definitionId: string;
+        title: string;
+        kind: 'record';
+      }[];
+      nextCursor: null;
+    }) => void;
+    let signal!: AbortSignal;
+    const candidates = {
+      items: [
+        {
+          id: 'old',
+          definitionId: 'orders',
+          title: '旧候选',
+          kind: 'record' as const,
+        },
+      ],
+      nextCursor: null,
+    };
+    const search = vi.fn((_input, searchSignal: AbortSignal) => {
+      signal = searchSignal;
+      return new Promise<typeof candidates>(resolve => {
+        resolveSearch = resolve;
+      });
+    });
+    const { engine } = dashboardSetup(undefined, {
+      dashboard: { search },
+      permission: {
+        getInstance: () => ({ save: editable }),
+        subscribe: listener => {
+          notifyPermissions = listener;
+          return () => {};
+        },
+      },
+    });
+    await engine.load();
+    render(<DashboardView runtime={engine.dashboard('dashboard')} />);
+    await addCard('添加面板');
+    await waitFor(() => expect(search).toHaveBeenCalledTimes(1));
+    if (!pending) await act(async () => resolveSearch(candidates));
+    await act(async () => {
+      editable = false;
+      notifyPermissions();
+    });
+    if (pending) expect(signal.aborted).toBe(true);
+    if (pending) await act(async () => resolveSearch(candidates));
+    await act(async () => {
+      editable = true;
+      notifyPermissions();
+    });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('button', { name: /旧候选/ })).toBeNull();
+    await addCard('添加面板');
+    await waitFor(() => expect(search).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('button', { name: /旧候选/ })).toBeNull();
+    cleanup();
+    engine.dispose();
+  },
+);
