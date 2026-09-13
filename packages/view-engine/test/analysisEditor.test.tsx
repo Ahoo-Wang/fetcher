@@ -1418,3 +1418,35 @@ it('allocates display aliases across dimensions, measures and existing labels', 
   expect(config.dimensions[0].label.alias).toBe('product_label_3');
   expect(compileAnalysis(config, reviewContext).errors).toEqual([]);
 });
+
+it('cancels ordering when a kept-mounted editor becomes hidden', async () => {
+  const changed = vi.fn();
+  const value: AnalysisViewConfig = {
+    ...initial,
+    metrics: [
+      initial.metrics[0],
+      { ...initial.metrics[0], id: 'second', alias: 'second', title: '第二项' },
+    ],
+  };
+  const view = render(
+    <AnalysisEditor value={value} context={context} onChange={changed} />,
+  );
+  await keyboardOrder(
+    screen.getByRole('button', { name: '排序指标 1' }),
+    'ArrowDown',
+    false,
+    () => {
+      view.rerender(
+        <AnalysisEditor
+          value={value}
+          context={context}
+          onChange={changed}
+          visible={false}
+        />,
+      );
+    },
+  );
+  fireEvent.keyDown(document, { key: ' ', code: 'Space' });
+  expect(changed).not.toHaveBeenCalled();
+  expect(document.querySelector('[data-dnd-dragging]')).toBeNull();
+});

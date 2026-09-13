@@ -278,6 +278,51 @@ try {
     },
     { hasTouch: true, isMobile: true },
   );
+  const analysis = await browser.newPage({
+    viewport: { width: 1440, height: 1000 },
+  });
+  try {
+    await analysis.goto(
+      `${origin}/iframe.html?id=${encodeURIComponent('view-engine-分析视图--mixed')}&viewMode=story`,
+    );
+    await analysis
+      .getByRole('button', { name: '配置查询', exact: true })
+      .click();
+    const editor = analysis.getByRole('dialog', { name: '配置查询' });
+    const labels = () =>
+      editor.getByRole('button', { name: /^编辑指标/ }).allTextContents();
+    const before = await labels();
+    await editor
+      .getByRole('button', { name: '排序指标 1', exact: true })
+      .press('Space');
+    await analysis.waitForSelector('[data-dnd-dragging]');
+    await analysis.keyboard.press('ArrowRight');
+    await analysis.waitForSelector('[data-drop-target]');
+    await editor.getByRole('button', { name: '查看结果', exact: true }).click();
+    await editor.waitFor({ state: 'hidden' });
+    await analysis.waitForFunction(
+      () => !document.querySelector('[data-dnd-dragging]'),
+    );
+    await analysis.keyboard.press('Space');
+    if (!(await editor.isVisible()))
+      await analysis
+        .getByRole('button', { name: '配置查询', exact: true })
+        .click();
+    assert.deepEqual(
+      await labels(),
+      before,
+      'Closing a kept-mounted editor must cancel its ordering',
+    );
+    results.push({ name: 'analysis-hidden-cancel', status: 'passed' });
+    console.log('analysis-hidden-cancel: passed');
+  } catch (error) {
+    await analysis.screenshot({
+      path: join(artifacts, 'list-order-analysis-hidden-cancel.png'),
+    });
+    throw error;
+  } finally {
+    await analysis.close();
+  }
   await writeFile(
     join(artifacts, 'list-order.json'),
     JSON.stringify(results, null, 2) + '\n',

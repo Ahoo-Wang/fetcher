@@ -24,7 +24,7 @@ The `ResizeObserver` shim is restricted to jsdom test setup. Geometry and browse
 
 ## Maintained source measurement
 
-Count nonblank physical lines containing TypeScript tokens, excluding comments, in every changed production TS/TSX file plus new files; deleted files contribute their baseline size. Tests, documentation, generated artifacts and third-party code are excluded.
+Collect the file set with `git diff --no-renames --name-only <baseline>` plus new source files so rename origins are counted as deletions. Count nonblank physical lines containing TypeScript tokens, excluding comments, in every changed production TS/TSX file plus new files; deleted files contribute their baseline size. Tests, documentation, generated artifacts and third-party code are excluded.
 
 **2,317 → 2,312 lines, net −5.** This is a small reduction, not a claim of dramatic code shrinkage. The architectural benefit is eliminating two handwritten drag implementations and sharing one mechanism across five business entry points while adding native keyboard and touch support.
 
@@ -49,24 +49,26 @@ A temporary consumer bundles all exports from `dist/index.js` and `dist/react.js
 | Entry | Before JS bytes | After JS bytes | Before gzip | After gzip |
 | ----- | --------------: | -------------: | ----------: | ---------: |
 | core  |         307,738 |        307,738 |      76,194 |     76,194 |
-| React |       2,439,468 |      2,582,612 |     607,085 |    646,930 |
+| React |       2,439,468 |      2,582,646 |     607,085 |    646,947 |
 
-React JS gzip increases by **39,845 bytes (38.9 KiB, 6.6%)**. This is the cost of delegating general interaction behavior, not a bundle-size optimization. The package gate verified 463 identical packed dist files, 11 public targets and 2 core runtime modules. Core retains no React or DnD runtime dependency. Archive SHA-256: `845ad4ee64069a90c177547564b7cd7978260f2887ff53b0ddaf0e1dd9fe4cc3`.
+React JS gzip increases by **39,862 bytes (38.9 KiB, 6.6%)**. This is the cost of delegating general interaction behavior, not a bundle-size optimization. The package gate verified 463 identical packed dist files, 11 public targets and 2 core runtime modules. Core retains no React or DnD runtime dependency. Archive SHA-256: `60de39011ef7144d8cf1ebe7841a436820cbeebdfc4f7a0ee4828403e0d305b2`.
 
 ## Verification
 
-- Root `npm_config_workspace_concurrency=1 pnpm test:unit`: passed across all 13 package projects. View-engine source and React Compiler modes each passed 1,650 tests, with 3 existing skips.
+- Root `npm_config_workspace_concurrency=1 pnpm test:unit`: passed across all 13 package projects. View-engine source and React Compiler modes each passed 1,651 tests, with 3 existing skips.
 - View-engine coverage: statements 95.59%, branches 91.55%, functions 97.21%, lines 97.41%; existing thresholds unchanged.
 - Affected package/dependency builds, public type contracts and `pnpm lint:view-engine`: passed.
 - `VIEW_ENGINE_BROWSER_CHANNEL=chrome pnpm test:storybook`: 381 tests passed (94 files passed, 2 files skipped).
 - `VIEW_ENGINE_BROWSER_CHANNEL=chrome VIEW_ENGINE_BROWSERS=chromium VIEW_ENGINE_ARTIFACTS=/tmp/fve-sorting-acceptance pnpm verify:view-engine`: passed on the production build.
-- Native sorting verifier: 18 scenarios passed, including pointer, wrapping, locked targets, both keyboard activation keys, Escape, owner/permission/member/order changes, removed-source focus, concurrent title update, asynchronous success/failure, modal interactions, auto-scroll and Chromium touch input simulation.
+- Native sorting verifier: 19 scenarios passed, including pointer, wrapping, locked targets, both keyboard activation keys, Escape, owner/permission/member/order changes, removed-source focus, concurrent title update, asynchronous success/failure, modal interactions, auto-scroll Chromium touch input simulation, and closing a kept-mounted analysis sheet during keyboard sorting.
 - IndexedDB: 50 cross-tab CAS races, receipts, rollback, cancellation and durable reset; local and HTTP hosts preserve saved ordering and isolation after reload.
 - Dashboard lazy chunk fault: navigation, panel data, draft edits, retry and save remain usable.
-- Existing Chromium performance/axe/lifecycle gates passed: 100 rows, 30 columns, 100 filter fields; light/dark and 1440/390px; no unreviewed WCAG A/AA findings. Warm interaction p95 refresh 134.33 ms, selection 100.85 ms, field picker 133.82 ms, all below the existing 1,250 ms ceiling. These are fixed no-network fixtures and include automation plus two painted frames; no speedup over baseline is claimed.
+- Existing Chromium performance/axe/lifecycle gates passed: 100 rows, 30 columns, 100 filter fields; light/dark and 1440/390px; no unreviewed WCAG A/AA findings. Warm interaction p95 refresh 134.05 ms, selection 84.33 ms, field picker 140.33 ms, all below the existing 1,250 ms ceiling. These are fixed no-network fixtures and include automation plus two painted frames; no speedup over baseline is claimed.
 - Documentation generation, symbol index verification, documentation tests and bilingual wiki build: passed.
 
 Native sensor assertions are retained in `packages/view-engine/scripts/verify-list-order.mjs` and are part of `verify:view-engine`; component tests do not substitute for them. Local browser and production-build acceptance does not establish real-device touch, manual screen-reader usability or real production-service admission. CI and PR review remain separate merge gates.
+
+Independent read-only review identified the hidden-sheet lifecycle issue above; its regression failed before the fix and passed afterward. The follow-up review found no remaining blocking issue. Browser story helpers wait for the library drop target before releasing a valid move, avoiding an automation timing race without changing product behavior or acceptance budgets.
 
 ## References
 

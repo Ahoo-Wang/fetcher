@@ -116,7 +116,11 @@ export const playManageViews: RecordViewPlay = async ({ canvasElement }) => {
   await waitFor(() => expect(labels()).toEqual(['团队重点订单', '全部订单']));
   await waitFor(() => expect(handle).toHaveFocus());
   const personalList = manager.getByRole('list', { name: '个人视图顺序' });
-  await pointerOrder(handle, within(personalList).getAllByRole('listitem')[0]);
+  await pointerOrder(
+    handle,
+    within(personalList).getAllByRole('listitem')[0],
+    false,
+  );
   await expect(canvas.getByTestId('record-order-count')).toHaveTextContent(
     /^1$/,
   );

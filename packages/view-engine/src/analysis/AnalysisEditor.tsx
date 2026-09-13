@@ -194,7 +194,7 @@ function ComponentList({
           <ListOrder
             items={items}
             owner={context.capability}
-            disabled={disabled}
+            disabled={disabled || props.visible === false}
             titleOf={item => item.title}
             onChange={change}
           >

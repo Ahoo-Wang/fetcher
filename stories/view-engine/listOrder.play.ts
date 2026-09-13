@@ -33,7 +33,11 @@ export async function keyboardOrder(handle: HTMLElement, key: string) {
   );
   await waitFor(() => expect(handle).toHaveFocus());
 }
-export async function pointerOrder(handle: HTMLElement, target: HTMLElement) {
+export async function pointerOrder(
+  handle: HTMLElement,
+  target: HTMLElement,
+  allowed = true,
+) {
   const pointer = userEvent.setup();
   const origin = handle.getBoundingClientRect(),
     destination = target.getBoundingClientRect();
@@ -62,6 +66,8 @@ export async function pointerOrder(handle: HTMLElement, target: HTMLElement) {
       y: destination.top + destination.height / 2,
     },
   });
+  if (allowed)
+    await waitFor(() => expect(target).toHaveAttribute('data-drop-target'));
   await pointer.pointer({ keys: '[/MouseLeft]' });
   await waitFor(() =>
     expect(
