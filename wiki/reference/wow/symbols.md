@@ -58,6 +58,7 @@ description: 'Wow symbol index — @ahoo-wang/fetcher-wow 5.0.0'
 | `CommandUrlParams`                     | [Commands and wait results](./commands#api-CommandUrlParams)                                    |
 | `ComparableFilterLiteral`              | [Filter expressions and legacy conditions](./filters#api-ComparableFilterLiteral)               |
 | `ComparisonFilter`                     | [Filter expressions and legacy conditions](./filters#api-ComparisonFilter)                      |
+| `ComparisonOperator`                   | [Aggregation builders](./aggregations#api-ComparisonOperator)                                   |
 | `CompensationTarget`                   | [Commands and wait results](./commands#api-CompensationTarget)                                  |
 | `Condition`                            | [Filter expressions and legacy conditions](./filters#api-Condition)                             |
 | `ConditionCapable`                     | [Filter expressions and legacy conditions](./filters#api-ConditionCapable)                      |
@@ -80,7 +81,11 @@ description: 'Wow symbol index — @ahoo-wang/fetcher-wow 5.0.0'
 | `DeletedCapable`                       | [Message payloads and state metadata](./messages-and-state#api-DeletedCapable)                  |
 | `DeletionFilter`                       | [Filter expressions and legacy conditions](./filters#api-DeletionFilter)                        |
 | `DeletionState`                        | [Filter expressions and legacy conditions](./filters#api-DeletionState)                         |
+| `DerivedAggregationMetric`             | [Aggregation builders](./aggregations#api-DerivedAggregationMetric)                             |
+| `DerivedExpression`                    | [Aggregation builders](./aggregations#api-DerivedExpression)                                    |
+| `DerivedExpressionType`                | [Aggregation builders](./aggregations#api-DerivedExpressionType)                                |
 | `DescriptionCapable`                   | [Identity and resource attribution](./identity-and-attribution#api-DescriptionCapable)          |
+| `DistinctCountAggregationMetric`       | [Aggregation builders](./aggregations#api-DistinctCountAggregationMetric)                       |
 | `DomainEvent`                          | [Events and historical state](./events-and-history#api-DomainEvent)                             |
 | `DomainEventStream`                    | [Events and historical state](./events-and-history#api-DomainEventStream)                       |
 | `DomainEventStreamHeader`              | [Events and historical state](./events-and-history#api-DomainEventStreamHeader)                 |
@@ -118,6 +123,8 @@ description: 'Wow symbol index — @ahoo-wang/fetcher-wow 5.0.0'
 | `FunctionInfo`                         | [Message payloads and state metadata](./messages-and-state#api-FunctionInfo)                    |
 | `FunctionInfoCapable`                  | [Message payloads and state metadata](./messages-and-state#api-FunctionInfoCapable)             |
 | `FunctionKind`                         | [Message payloads and state metadata](./messages-and-state#api-FunctionKind)                    |
+| `HavingExpression`                     | [Aggregation builders](./aggregations#api-HavingExpression)                                     |
+| `HavingExpressionType`                 | [Aggregation builders](./aggregations#api-HavingExpressionType)                                 |
 | `HistogramAggregationGroup`            | [Aggregation builders](./aggregations#api-HistogramAggregationGroup)                            |
 | `HistogramAggregationOptions`          | [Aggregation builders](./aggregations#api-HistogramAggregationOptions)                          |
 | `Identifier`                           | [Identity and resource attribution](./identity-and-attribution#api-Identifier)                  |
@@ -152,6 +159,7 @@ description: 'Wow symbol index — @ahoo-wang/fetcher-wow 5.0.0'
 | `PagedQuery`                           | [Projection, sorting and pagination](./query-options#api-PagedQuery)                            |
 | `PagedQueryRequest`                    | [Projection, sorting and pagination](./query-options#api-PagedQueryRequest)                     |
 | `Pagination`                           | [Projection, sorting and pagination](./query-options#api-Pagination)                            |
+| `PercentileAggregationMetric`          | [Aggregation builders](./aggregations#api-PercentileAggregationMetric)                          |
 | `Projection`                           | [Projection, sorting and pagination](./query-options#api-Projection)                            |
 | `ProjectionCapable`                    | [Projection, sorting and pagination](./query-options#api-ProjectionCapable)                     |
 | `QueryApi`                             | [Snapshot queries](./snapshot-queries#api-QueryApi)                                             |

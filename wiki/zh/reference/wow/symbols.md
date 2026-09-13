@@ -58,6 +58,7 @@ description: 'Wow 完整符号索引 — @ahoo-wang/fetcher-wow 5.0.0'
 | `CommandUrlParams`                     | [命令与等待结果](./commands#api-CommandUrlParams)                               |
 | `ComparableFilterLiteral`              | [过滤表达式与旧条件](./filters#api-ComparableFilterLiteral)                     |
 | `ComparisonFilter`                     | [过滤表达式与旧条件](./filters#api-ComparisonFilter)                            |
+| `ComparisonOperator`                   | [聚合构造器](./aggregations#api-ComparisonOperator)                             |
 | `CompensationTarget`                   | [命令与等待结果](./commands#api-CompensationTarget)                             |
 | `Condition`                            | [过滤表达式与旧条件](./filters#api-Condition)                                   |
 | `ConditionCapable`                     | [过滤表达式与旧条件](./filters#api-ConditionCapable)                            |
@@ -80,7 +81,11 @@ description: 'Wow 完整符号索引 — @ahoo-wang/fetcher-wow 5.0.0'
 | `DeletedCapable`                       | [消息载荷与状态元数据](./messages-and-state#api-DeletedCapable)                 |
 | `DeletionFilter`                       | [过滤表达式与旧条件](./filters#api-DeletionFilter)                              |
 | `DeletionState`                        | [过滤表达式与旧条件](./filters#api-DeletionState)                               |
+| `DerivedAggregationMetric`             | [聚合构造器](./aggregations#api-DerivedAggregationMetric)                       |
+| `DerivedExpression`                    | [聚合构造器](./aggregations#api-DerivedExpression)                              |
+| `DerivedExpressionType`                | [聚合构造器](./aggregations#api-DerivedExpressionType)                          |
 | `DescriptionCapable`                   | [身份与资源归属](./identity-and-attribution#api-DescriptionCapable)             |
+| `DistinctCountAggregationMetric`       | [聚合构造器](./aggregations#api-DistinctCountAggregationMetric)                 |
 | `DomainEvent`                          | [事件与历史状态](./events-and-history#api-DomainEvent)                          |
 | `DomainEventStream`                    | [事件与历史状态](./events-and-history#api-DomainEventStream)                    |
 | `DomainEventStreamHeader`              | [事件与历史状态](./events-and-history#api-DomainEventStreamHeader)              |
@@ -118,6 +123,8 @@ description: 'Wow 完整符号索引 — @ahoo-wang/fetcher-wow 5.0.0'
 | `FunctionInfo`                         | [消息载荷与状态元数据](./messages-and-state#api-FunctionInfo)                   |
 | `FunctionInfoCapable`                  | [消息载荷与状态元数据](./messages-and-state#api-FunctionInfoCapable)            |
 | `FunctionKind`                         | [消息载荷与状态元数据](./messages-and-state#api-FunctionKind)                   |
+| `HavingExpression`                     | [聚合构造器](./aggregations#api-HavingExpression)                               |
+| `HavingExpressionType`                 | [聚合构造器](./aggregations#api-HavingExpressionType)                           |
 | `HistogramAggregationGroup`            | [聚合构造器](./aggregations#api-HistogramAggregationGroup)                      |
 | `HistogramAggregationOptions`          | [聚合构造器](./aggregations#api-HistogramAggregationOptions)                    |
 | `Identifier`                           | [身份与资源归属](./identity-and-attribution#api-Identifier)                     |
@@ -152,6 +159,7 @@ description: 'Wow 完整符号索引 — @ahoo-wang/fetcher-wow 5.0.0'
 | `PagedQuery`                           | [投影、排序与分页](./query-options#api-PagedQuery)                              |
 | `PagedQueryRequest`                    | [投影、排序与分页](./query-options#api-PagedQueryRequest)                       |
 | `Pagination`                           | [投影、排序与分页](./query-options#api-Pagination)                              |
+| `PercentileAggregationMetric`          | [聚合构造器](./aggregations#api-PercentileAggregationMetric)                    |
 | `Projection`                           | [投影、排序与分页](./query-options#api-Projection)                              |
 | `ProjectionCapable`                    | [投影、排序与分页](./query-options#api-ProjectionCapable)                       |
 | `QueryApi`                             | [快照查询](./snapshot-queries#api-QueryApi)                                     |

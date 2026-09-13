@@ -759,6 +759,7 @@ these fields:
 - `metrics: [AggregationMetric<AGGREGATION_FIELDS>, ...AggregationMetric<AGGREGATION_FIELDS>[]]` (non-empty)
 - `sort?: FieldSort[]`
 - `limit?: number`
+- `having?: HavingExpression`
 
 Each `AggregationElement` has a `path` and optional `filter`.
 `elements[].filter` is an `ElementFilterExpression`.
@@ -768,17 +769,22 @@ to the current innermost element.
 
 `AggregationGroup` is one of:
 
-- `TERMS`: `field`, `alias`
+- `TERMS`: `field`, `alias`, optional `missingKey`
 - `HISTOGRAM`: `field`, `alias`, `interval`
-- `DATE_HISTOGRAM`: `field`, `alias`, `unit`, optional `timeZone`
+- `DATE_HISTOGRAM`: `field`, `alias`, `unit`, optional `timeZone` and `dense`
 
 `AggregationMetric` is one of:
 
 - `COUNT`: `alias`
 - `NUMERIC`: `function`, `expression`, `alias`
 - `ANY`: `field`, `alias`
+- `DISTINCT_COUNT`: `expression`, `alias`
+- `PERCENTILE`: `expression`, `percentile`, `alias`
+- `DERIVED`: `expression: DerivedExpression`, `alias`
 
-`AggregationFunction` values are `SUM`, `AVG`, `MIN`, and `MAX`.
+All non-derived metrics accept optional `filter: FilterExpression<AGGREGATION_FIELDS>`.
+
+`AggregationFunction` values are `SUM`, `AVG`, `MIN`, `MAX`, `STDDEV`, and `VARIANCE`.
 `AggregationDateUnit` values are `YEAR`, `QUARTER`, `MONTH`, `WEEK`, `DAY`,
 `HOUR`, `MINUTE`, and `SECOND`. Aggregation expressions use these
 discriminators:
@@ -798,15 +804,20 @@ aggregation.add(left, right);
 aggregation.subtract(left, right);
 aggregation.multiply(left, right);
 aggregation.divide(left, right);
-aggregation.terms(field, alias);
+aggregation.terms(field, alias, missingKey?);
 aggregation.histogram(field, { interval, alias });
-aggregation.dateHistogram(field, { unit, alias, timeZone }); // timeZone defaults to UTC
-aggregation.any(field, alias);
-aggregation.count(alias);
-aggregation.sum(expression, alias);
-aggregation.avg(expression, alias);
-aggregation.min(expression, alias);
-aggregation.max(expression, alias);
+aggregation.dateHistogram(field, { unit, alias, timeZone, dense }); // timeZone defaults to UTC
+aggregation.any(field, alias, predicate?);
+aggregation.count(alias, predicate?);
+aggregation.sum(expression, alias, predicate?);
+aggregation.avg(expression, alias, predicate?);
+aggregation.min(expression, alias, predicate?);
+aggregation.max(expression, alias, predicate?);
+aggregation.stddev(expression, alias, predicate?);
+aggregation.variance(expression, alias, predicate?);
+aggregation.distinctCount(expression, alias, predicate?);
+aggregation.percentile(expression, percentile, alias, predicate?);
+aggregation.derived(expression, alias);
 ```
 
 `ANY` is a metric, not a group. It returns one non-null scalar from the current
@@ -820,6 +831,52 @@ Wow validates the complete aggregation's field capabilities, cardinality,
 aliases, sort fields, and expression depth on the server. Fetcher only validates
 field-path and alias syntax that can be known locally. The `Row` generic describes
 aggregation result rows only; Fetcher does not perform runtime decoding.
+
+### Derived metrics, HAVING and group options
+
+Aligned with Wow `main` at `fd1b3cd46`. Existing builder calls keep their JSON shape; optional metric filters, `missingKey`, and `dense` are omitted unless supplied.
+
+- `aggregation.distinctCount(expression, alias, predicate?)` counts distinct non-null contributions; `aggregation.percentile(expression, percentile, alias, predicate?)` accepts finite values strictly between 0 and 100 (use 50 for the median). `stddev` and `variance` compute population statistics. Percentiles are approximate on both backends; Elasticsearch distinct counts may be approximate, while MongoDB counts distinct values exactly.
+- Non-derived metrics accept an optional `FilterExpression` in the current aggregation scope. It affects only that metric. The backend validates scalar fields and rejects unsupported filter operators.
+- `aggregation.derived(expression, alias)` uses a `DerivedExpression` tree (`METRIC_REF`, `CONSTANT`, `BINARY`). References must name earlier metrics and cannot reference `ANY`. Derived metrics have no record filter; filter the referenced metrics instead. Null operands or division by zero produce null.
+- `having?: HavingExpression` supports `CONDITION`, `BETWEEN`, `IN`, `IS_NULL`, `AND`, and `OR`, using metric aliases, not field paths. `ComparisonOperator` contains `EQ`, `NE`, `GT`, `GTE`, `LT`, `LTE`. HAVING requires grouping and cannot reference `ANY`; it runs before sorting and limit. Non-empty sets/operands are enforced by tuple types; finite values, bounds, references and depth are validated by the server.
+- `terms(field, alias, missingKey?)` optionally merges missing/null values into a nonblank string bucket key; the backend validates string field support. `dateHistogram(field, { unit, alias, timeZone?, dense? })` fills interior date gaps when `dense` is true; it requires the only group dimension. No rows means no generated date range.
+
+Backend requirements still apply (MongoDB 5.1+ for dense groups, 7.0+ for percentiles); the client performs no backend capability probing. Raw typed expression objects are not runtime validators.
+
+```ts
+import {
+  aggregation,
+  AggregationExpressionOperator,
+  ComparisonOperator,
+  DerivedExpressionType,
+  HavingExpressionType,
+  type AggregationQuery,
+} from '@ahoo-wang/fetcher-wow';
+
+const query: AggregationQuery = {
+  groupBy: [aggregation.terms('state.status', 'status', 'Unknown')],
+  metrics: [
+    aggregation.count('orders'),
+    aggregation.sum(aggregation.field('state.amount'), 'revenue'),
+    aggregation.derived(
+      {
+        type: DerivedExpressionType.BINARY,
+        operator: AggregationExpressionOperator.DIVIDE,
+        left: { type: DerivedExpressionType.METRIC_REF, metric: 'revenue' },
+        right: { type: DerivedExpressionType.METRIC_REF, metric: 'orders' },
+      },
+      'averageOrderValue',
+    ),
+  ],
+  having: {
+    type: HavingExpressionType.CONDITION,
+    metric: 'averageOrderValue',
+    operator: ComparisonOperator.GTE,
+    value: 100,
+  },
+};
+```
 
 ## Query DSL Conditions (Deprecated)
 

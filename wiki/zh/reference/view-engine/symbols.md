@@ -144,7 +144,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | `validateDashboardExpression`     | [dashboardFilters.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardFilters.ts#L91)                          |
 | `validateFilterConfiguration`     | [filterConfigurationValidation.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L120) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
-| `validateViewDefinition`          | [definitionValidation.ts:196](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/definitionValidation.ts#L196)     |
+| `validateViewDefinition`          | [definitionValidation.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/definitionValidation.ts#L195)     |
 | `validateViewInstance`            | [instanceValidation.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/instanceValidation.ts#L22)           |
 | `ViewCapabilities`                | [viewModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L192)                                      |
 | `ViewCreateContext`               | [viewServiceContract.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L41)                    |
@@ -181,7 +181,7 @@ description: 全部公开核心与 React 导出名称及源码声明。
 | 符号                              | 声明                                                                                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:739](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L739)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:743](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L743)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
