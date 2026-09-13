@@ -159,3 +159,127 @@ it('describes executed metric filters and HAVING even when supplied by a compile
   ])
     expect(nestedHtml).toContain(text);
 });
+
+it('describes executed percentile and formula parameters rather than same-title drafts', () => {
+  const result = {
+    config: {
+      filters: {
+        mode: 'simple',
+        root: {
+          id: 'all',
+          component: { name: 'builtin' },
+          operator: FilterOperator.MATCH_ALL,
+          props: {},
+        },
+      },
+      dimensions: [],
+      metrics: [
+        {
+          id: 'p',
+          alias: 'p',
+          title: '分位数',
+          component: { name: 'percentile' },
+          props: { percentile: 99 },
+        },
+        {
+          id: 'r',
+          alias: 'r',
+          title: '计算值',
+          component: { name: 'derived' },
+          props: {},
+          derivedExpression: { type: 'CONSTANT', value: 999 },
+        },
+      ],
+      sort: [],
+      limit: 10,
+      presentation: { layout: 'table', columns: [] },
+    },
+    plan: {
+      query: {
+        metrics: [
+          {
+            type: 'PERCENTILE',
+            alias: 'p',
+            percentile: 95,
+            expression: { type: 'FIELD', field: 'amount' },
+          },
+          {
+            type: 'DERIVED',
+            alias: 'r',
+            expression: {
+              type: 'BINARY',
+              operator: 'DIVIDE',
+              left: { type: 'METRIC_REF', metric: 'p' },
+              right: {
+                type: 'BINARY',
+                operator: 'SUBTRACT',
+                left: { type: 'CONSTANT', value: 3 },
+                right: { type: 'CONSTANT', value: 1 },
+              },
+            },
+          },
+        ],
+      },
+      schema: [
+        {
+          id: 'p',
+          alias: 'p',
+          title: '分位数',
+          role: 'metric',
+          valueType: 'number',
+          nullable: true,
+          aggregation: 'PERCENTILE',
+        },
+        {
+          id: 'r',
+          alias: 'r',
+          title: '计算值',
+          role: 'metric',
+          valueType: 'number',
+          nullable: true,
+          aggregation: 'DERIVED',
+        },
+      ],
+    },
+    rows: [],
+    receivedAt: 0,
+  } as unknown as NonNullable<AnalysisSession['result']>;
+  const definition = {
+    id: 'd',
+    title: 'D',
+    sourceId: 's',
+    fields: [{ field: 'amount', label: '金额', type: 'number' as const }],
+  };
+  const html = renderToStaticMarkup(
+    <AnalysisResultSummary
+      result={result}
+      definition={definition}
+      compilers={{}}
+    />,
+  );
+  expect(html).toContain('分位数 P95：金额');
+  expect(html).toContain('计算值 公式：(分位数 ÷ (3 − 1))');
+  expect(html).not.toContain('P99');
+  expect(html).not.toContain('999');
+  const changed = {
+    ...result,
+    plan: {
+      ...result.plan,
+      query: {
+        ...result.plan.query,
+        metrics: result.plan.query.metrics.map(metric =>
+          metric.type === 'PERCENTILE' ? { ...metric, percentile: 50 } : metric,
+        ),
+      },
+    },
+  };
+  const next = renderToStaticMarkup(
+    <AnalysisResultSummary
+      result={changed}
+      definition={definition}
+      compilers={{}}
+    />,
+  );
+  expect(next).toContain('分位数 P50：金额');
+  expect(next).not.toBe(html);
+});

@@ -19,11 +19,16 @@ import type { DeepReadonly } from '../lib/types.js';
 import { describeConfiguredFilter } from '../filter/describeConfiguredFilter.js';
 import {
   SortDirection,
+  AggregationMetricType as M,
+  AggregationExpressionType as E,
+  DerivedExpressionType as D,
   HavingExpressionType as H,
   ComparisonOperator as C,
   FilterOperator as Op,
   type FilterExpression,
   type HavingExpression,
+  type AggregationExpression,
+  type DerivedExpression,
 } from '@ahoo-wang/fetcher-wow';
 import { describeFilter } from '../filter/filterSummary.js';
 
@@ -67,6 +72,25 @@ function havingDisplayFilter(
         op: value.type === H.AND ? Op.AND : Op.OR,
         operands: value.operands.map(havingDisplayFilter),
       };
+  }
+}
+
+function describeExpression(
+  expression: DeepReadonly<AggregationExpression | DerivedExpression>,
+  fieldLabel: (field: string) => string,
+  metricLabel: (alias: string) => string,
+): string {
+  switch (expression.type) {
+    case E.FIELD:
+      return fieldLabel(expression.field);
+    case D.METRIC_REF:
+      return metricLabel(expression.metric);
+    case E.CONSTANT:
+    case D.CONSTANT:
+      return String(expression.value);
+    case E.BINARY:
+    case D.BINARY:
+      return `(${describeExpression(expression.left, fieldLabel, metricLabel)} ${{ ADD: '+', SUBTRACT: '−', MULTIPLY: '×', DIVIDE: '÷' }[expression.operator]} ${describeExpression(expression.right, fieldLabel, metricLabel)})`;
   }
 }
 
@@ -153,6 +177,22 @@ export function AnalysisResultSummary({
               : element.path}
           </p>
         ))}
+        {plan.query.metrics.map(metric =>
+          'expression' in metric ? (
+            <p key={metric.alias} className="fve:break-words">
+              {`${plan.schema.find(column => column.alias === metric.alias)?.title ?? metric.alias} ${metric.type === M.PERCENTILE ? `P${metric.percentile}` : metric.type === M.DERIVED ? '公式' : '统计表达式'}：${describeExpression(
+                metric.expression,
+                field =>
+                  (scope?.fields ?? definition.fields).find(
+                    item => item.field === field,
+                  )?.label ?? field,
+                alias =>
+                  plan.schema.find(column => column.alias === alias)?.title ??
+                  alias,
+              )}`}
+            </p>
+          ) : null,
+        )}
         {plan.query.metrics.map(metric =>
           'filter' in metric && metric.filter ? (
             <p key={metric.alias}>

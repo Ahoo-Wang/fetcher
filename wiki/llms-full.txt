@@ -16033,7 +16033,7 @@ The analysis query editor offers distinct counts, percentile presets P50/P95/P99
 
 All controls retain incomplete drafts, respect disabled states, and keep invalid references visible for repair. Filters on element-scoped metrics count/filter element records, not root orders. See [models](./models.md#extended-aggregation-analysis) for capabilities, limits, and statistical semantics.
 
-`AnalysisEditorProps.filterEditors` forwards definition-level filter editor mappings to metric and element filters. Metric-filter undo uses the last executed same-scope metric configuration by ID, rather than its first mounted value. The execution summary includes each metric predicate and HAVING from the retained query plan.
+`AnalysisEditorProps.filterEditors` forwards definition-level filter editor mappings to metric and element filters. Metric-filter undo uses the last executed same-scope metric configuration by ID, rather than its first mounted value. The execution summary includes each metric predicate, percentile parameter, metric expression, derived formula, and HAVING from the retained query plan.
 
 </doc>
 
@@ -36782,7 +36782,7 @@ console.log(compiled.plan.query, result.rows);
 
 控件保留未完成草稿、遵守禁用状态，并保留失效引用以便修复。明细作用域内的指标统计/筛选明细记录，不能解释为根订单数。能力、限制和统计语义参见[模型](./models.md#扩展聚合分析)。
 
-`AnalysisEditorProps.filterEditors` 将定义级筛选编辑器映射传给指标与元素筛选。指标筛选撤销以同一作用域内、同 ID 指标最近执行的配置为基线，而非首次挂载值。执行口径包含已保留查询计划中的各指标谓词和 HAVING。
+`AnalysisEditorProps.filterEditors` 将定义级筛选编辑器映射传给指标与元素筛选。指标筛选撤销以同一作用域内、同 ID 指标最近执行的配置为基线，而非首次挂载值。执行口径包含已保留查询计划中的各指标谓词、百分位参数、统计表达式、派生公式和 HAVING。
 
 </doc>
 
