@@ -1115,7 +1115,7 @@ Distinct counts are nonnegative safe integers; accuracy depends on the backend (
 
 Sources still use `aggregate(query, options, controller)`. Retained results after failures use their executed plan/config, not the new draft's filters or units. The Storybook channel payment example uses fixed protocol fixture responses and does not establish support in a deployed Mongo/ES service.
 
-`AnalysisEditorProps.filterEditors` forwards definition-level filter editor mappings to metric and element panels. `appliedValue` supplies the last executed, same-scope metric filter by component ID for undo. Execution summaries describe metric predicates, percentile parameters, metric expressions, derived formulas, and HAVING from the retained query plan.
+`AnalysisEditorProps.filterEditors` forwards definition-level filter editor mappings to metric and element panels. `appliedValue` supplies the last executed, same-scope metric filter by component ID for undo. Execution summaries describe bucket parameters (missing keys, histogram intervals, date units/timezones and dense filling), metric predicates, percentile parameters, metric expressions, derived formulas, and HAVING from the retained query plan.
 
 ### Elements scopes and numeric expressions
 

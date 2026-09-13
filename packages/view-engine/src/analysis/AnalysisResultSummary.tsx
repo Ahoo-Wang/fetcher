@@ -19,6 +19,7 @@ import type { DeepReadonly } from '../lib/types.js';
 import { describeConfiguredFilter } from '../filter/describeConfiguredFilter.js';
 import {
   SortDirection,
+  AggregationGroupType as G,
   AggregationMetricType as M,
   AggregationExpressionType as E,
   DerivedExpressionType as D,
@@ -175,6 +176,19 @@ export function AnalysisResultSummary({
                   plan.timeZone,
                 )?.text ?? '全部记录')
               : element.path}
+          </p>
+        ))}
+        {plan.query.groupBy?.map(group => (
+          <p key={group.alias}>
+            {`${plan.schema.find(column => column.alias === group.alias)?.title ?? group.alias} ${
+              group.type === G.TERMS
+                ? group.missingKey === undefined
+                  ? '缺失值：不参与分组'
+                  : `缺失值归入：${group.missingKey}`
+                : group.type === G.HISTOGRAM
+                  ? `分桶间隔：${group.interval}`
+                  : `日期单位：${group.unit} · 时区：${group.timeZone ?? plan.timeZone ?? 'UTC'} · 日期空桶补齐：${group.dense ? '开启' : '关闭'}`
+            }`}
           </p>
         ))}
         {plan.query.metrics.map(metric =>

@@ -979,3 +979,33 @@ it('preserves percentile when changing to another compatible field', async () =>
   await choose('指标 1 字段', 'b');
   expect(change).toHaveBeenCalledWith({ ...value, field: 'b' });
 });
+
+it('offers scalar distinct-count fields but excludes declared array fields', async () => {
+  render(
+    <AnalysisMetricEditor
+      label="指标 1"
+      previousMetrics={[]}
+      onChange={() => {}}
+      value={{ ...metrics[0], component: { name: 'distinct-count' } }}
+      context={{
+        fields: [
+          { field: 'tags', label: '标签数组', type: 'array' },
+          { field: 'customer', label: '客户编号', type: 'string' },
+        ],
+        capability: {
+          count: true,
+          features: { distinctCount: true },
+          fields: ['tags', 'customer'].map(field => ({
+            field,
+            groups: [],
+            functions: [],
+            distinctCount: true,
+          })),
+        },
+      }}
+    />,
+  );
+  fireEvent.click(screen.getByRole('combobox', { name: '指标 1 字段' }));
+  expect(await screen.findByRole('option', { name: '客户编号' })).toBeDefined();
+  expect(screen.queryByRole('option', { name: '标签数组' })).toBeNull();
+});

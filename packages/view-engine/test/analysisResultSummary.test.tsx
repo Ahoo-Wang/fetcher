@@ -283,3 +283,119 @@ it('describes executed percentile and formula parameters rather than same-title 
   expect(next).toContain('分位数 P50：金额');
   expect(next).not.toBe(html);
 });
+
+it('describes bucket options from the executed plan rather than dimension drafts', () => {
+  const result = {
+    config: {
+      filters: {
+        mode: 'simple',
+        root: {
+          id: 'all',
+          component: { name: 'builtin' },
+          operator: FilterOperator.MATCH_ALL,
+          props: {},
+        },
+      },
+      dimensions: [
+        {
+          id: 'g',
+          alias: 'g',
+          title: '分组',
+          component: { name: 'terms' },
+          props: { missingKey: '草稿' },
+        },
+      ],
+      metrics: [],
+      sort: [],
+      limit: 10,
+      presentation: { layout: 'table', columns: [] },
+    },
+    plan: {
+      query: {
+        metrics: [],
+        groupBy: [
+          { type: 'TERMS', field: 'channel', alias: 'g', missingKey: '未知' },
+        ],
+      },
+      schema: [{ alias: 'g', title: '渠道' }],
+    },
+    rows: [],
+    receivedAt: 0,
+  } as unknown as NonNullable<AnalysisSession['result']>;
+  const definition = { id: 'd', title: 'D', sourceId: 's', fields: [] };
+  const html = renderToStaticMarkup(
+    <AnalysisResultSummary
+      result={result}
+      definition={definition}
+      compilers={{}}
+    />,
+  );
+  expect(html).toContain('渠道 缺失值归入：未知');
+  expect(html).not.toContain('草稿');
+  const excluded = {
+    ...result,
+    plan: {
+      ...result.plan,
+      query: {
+        metrics: [],
+        groupBy: [{ type: 'TERMS', field: 'channel', alias: 'g' }],
+      },
+    },
+  } as unknown as typeof result;
+  expect(
+    renderToStaticMarkup(
+      <AnalysisResultSummary
+        result={excluded}
+        definition={definition}
+        compilers={{}}
+      />,
+    ),
+  ).toContain('缺失值：不参与分组');
+
+  const date = {
+    ...result,
+    plan: {
+      ...result.plan,
+      query: {
+        metrics: [],
+        groupBy: [
+          {
+            type: 'DATE_HISTOGRAM',
+            field: 'createdAt',
+            alias: 'g',
+            unit: 'DAY',
+            timeZone: 'UTC',
+            dense: true,
+          },
+        ],
+      },
+    },
+  } as unknown as typeof result;
+  const dense = renderToStaticMarkup(
+    <AnalysisResultSummary
+      result={date}
+      definition={definition}
+      compilers={{}}
+    />,
+  );
+  expect(dense).toContain('日期空桶补齐：开启');
+  const sparse = {
+    ...date,
+    plan: {
+      ...date.plan,
+      query: {
+        ...date.plan.query,
+        groupBy: [{ ...date.plan.query.groupBy![0], dense: false }],
+      },
+    },
+  } as unknown as typeof result;
+  expect(
+    renderToStaticMarkup(
+      <AnalysisResultSummary
+        result={sparse}
+        definition={definition}
+        compilers={{}}
+      />,
+    ),
+  ).toContain('日期空桶补齐：关闭');
+});

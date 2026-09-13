@@ -77,7 +77,11 @@ export function AnalysisMetricEditor({
     return component === 'numeric'
       ? f.type === 'number' && !!cap?.functions.length
       : component === 'distinct-count'
-        ? cap?.distinctCount === true
+        ? supportsAnalysisValueField(
+            f.field,
+            { kind: 'distinct-count' },
+            context,
+          )
         : component === 'percentile'
           ? f.type === 'number' && cap?.percentile === true
           : component === 'any'
