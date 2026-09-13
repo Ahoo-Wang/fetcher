@@ -196,3 +196,9 @@ Local dashboard drafts appear in a separate unsaved group in navigation and the 
 Content cards share `id` and `layout`: `{ kind: 'markdown', title, content }`, `{ kind: 'link', title, href, description? }`, or `{ kind: 'image', title, src, alt, caption? }`. Markdown uses CommonMark with a 64 KiB UTF-8 content limit and raw HTML disabled. Links accept HTTP(S), mailto, tel and relative addresses; images accept HTTP(S) and relative addresses. `alt` is a string (empty for decorative images). Images use URLs; no upload service is provided. All cards count toward configuration/panel limits.
 
 Content is edited in a local dialog and committed explicitly; cancel preserves the dashboard draft. Content cards do not resolve sources, create query positions or receive filter bindings/exclusions. Editing content does not query other panels. `DashboardSnapshot.panels` contains only data-reference runtime snapshots; content cards render from `config.panels`.
+
+### List ordering
+
+Column settings, card summary fields, sort priorities, analysis outputs and view management share dnd-kit list ordering. Drag the handle to preview a destination; releasing commits once. For keyboard use, focus the handle, press Space or Enter to pick up, use arrow keys to move, then Space or Enter to drop. Escape cancels the gesture before dismissing its popup. Ordinary arrow keys do not commit changes.
+
+Ordering preserves pinned regions, locked items and view groups. Editing permission, instance identity or list membership changes cancel an active gesture. A canceled gesture never restores an old data snapshot, and a failed asynchronous save keeps the authoritative order. Reordering configuration does not execute a query. Dashboard's two-dimensional layout continues to use react-grid-layout.

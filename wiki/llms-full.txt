@@ -15504,6 +15504,12 @@ Content cards share `id` and `layout`: `{ kind: 'markdown', title, content }`, `
 
 Content is edited in a local dialog and committed explicitly; cancel preserves the dashboard draft. Content cards do not resolve sources, create query positions or receive filter bindings/exclusions. Editing content does not query other panels. `DashboardSnapshot.panels` contains only data-reference runtime snapshots; content cards render from `config.panels`.
 
+### List ordering
+
+Column settings, card summary fields, sort priorities, analysis outputs and view management share dnd-kit list ordering. Drag the handle to preview a destination; releasing commits once. For keyboard use, focus the handle, press Space or Enter to pick up, use arrow keys to move, then Space or Enter to drop. Escape cancels the gesture before dismissing its popup. Ordinary arrow keys do not commit changes.
+
+Ordering preserves pinned regions, locked items and view groups. Editing permission, instance identity or list membership changes cancel an active gesture. A canceled gesture never restores an old data snapshot, and a failed asynchronous save keeps the authoritative order. Reordering configuration does not execute a query. Dashboard's two-dimensional layout continues to use react-grid-layout.
+
 </doc>
 
 <doc title="Filter configuration and components" path="reference/view-engine/filters.md">
@@ -15955,7 +15961,7 @@ These names come from the current public entry exports and declarations. Import 
 | Symbol                            | Declaration                                                                                                                                              |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:726](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L726)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:739](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L739)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
@@ -16028,9 +16034,9 @@ These names come from the current public entry exports and declarations. Import 
 | `RecordCardList`                  | [RecordCardList.tsx:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardList.tsx#L62)                           |
 | `RecordCardListProps`             | [recordReactTypes.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L148)                       |
 | `RecordCardRenderContext`         | [recordReactTypes.ts:137](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L137)                       |
-| `RecordCardSettings`              | [RecordCardSettings.tsx:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardSettings.tsx#L84)                   |
+| `RecordCardSettings`              | [RecordCardSettings.tsx:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardSettings.tsx#L83)                   |
 | `RecordCardSettingsProps`         | [recordReactTypes.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L166)                       |
-| `RecordColumnSettings`            | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46)               |
+| `RecordColumnSettings`            | [RecordColumnSettings.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L47)               |
 | `RecordColumnSettingsProps`       | [recordReactTypes.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L130)                       |
 | `RecordContent`                   | [RecordContent.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L61)                             |
 | `RecordContentProps`              | [RecordContent.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L46)                             |
@@ -35989,6 +35995,12 @@ Stateful/Memory/Local 与示例 HTTP 宿主接受 `supportedFormats: { record: t
 
 内容在本地对话框中编辑，明确提交才修改仪表盘草稿，取消保留原草稿。内容卡片不解析数据源、不创建查询位置，也不接收筛选绑定或排除配置。编辑内容不查询其它面板。`DashboardSnapshot.panels` 只包含数据引用的运行快照，内容卡片从 `config.panels` 渲染。
 
+### 列表排序
+
+列设置、卡片摘要字段、排序优先级、分析输出与视图管理共用 dnd-kit 列表排序。拖动手柄预览落点，松开后提交一次。键盘操作为：聚焦手柄，按空格或 Enter 拾起，方向键移动，再按空格或 Enter 放下。Escape 优先取消手势，不同时关闭所在弹窗。未拾起时按方向键不会提交修改。
+
+排序保留固定区域、锁定项目与视图分组约束。编辑权限、实例身份或列表成员变化时取消当前手势。取消不会恢复旧数据快照，异步保存失败时显示权威数据的顺序。配置排序不会触发查询。仪表盘二维布局继续使用 react-grid-layout。
+
 </doc>
 
 <doc title="筛选配置与组件契约" path="zh/reference/view-engine/filters.md">
@@ -36440,7 +36452,7 @@ console.log(compiled.plan.query, result.rows);
 | 符号                              | 声明                                                                                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:726](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L726)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:739](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L739)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
@@ -36513,9 +36525,9 @@ console.log(compiled.plan.query, result.rows);
 | `RecordCardList`                  | [RecordCardList.tsx:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardList.tsx#L62)                           |
 | `RecordCardListProps`             | [recordReactTypes.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L148)                       |
 | `RecordCardRenderContext`         | [recordReactTypes.ts:137](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L137)                       |
-| `RecordCardSettings`              | [RecordCardSettings.tsx:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardSettings.tsx#L84)                   |
+| `RecordCardSettings`              | [RecordCardSettings.tsx:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardSettings.tsx#L83)                   |
 | `RecordCardSettingsProps`         | [recordReactTypes.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L166)                       |
-| `RecordColumnSettings`            | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46)               |
+| `RecordColumnSettings`            | [RecordColumnSettings.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L47)               |
 | `RecordColumnSettingsProps`       | [recordReactTypes.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L130)                       |
 | `RecordContent`                   | [RecordContent.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L61)                             |
 | `RecordContentProps`              | [RecordContent.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L46)                             |

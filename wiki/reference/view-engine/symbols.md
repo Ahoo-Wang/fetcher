@@ -181,7 +181,7 @@ These names come from the current public entry exports and declarations. Import 
 | Symbol                            | Declaration                                                                                                                                              |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:726](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L726)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:739](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L739)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
@@ -254,9 +254,9 @@ These names come from the current public entry exports and declarations. Import 
 | `RecordCardList`                  | [RecordCardList.tsx:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardList.tsx#L62)                           |
 | `RecordCardListProps`             | [recordReactTypes.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L148)                       |
 | `RecordCardRenderContext`         | [recordReactTypes.ts:137](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L137)                       |
-| `RecordCardSettings`              | [RecordCardSettings.tsx:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardSettings.tsx#L84)                   |
+| `RecordCardSettings`              | [RecordCardSettings.tsx:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordCardSettings.tsx#L83)                   |
 | `RecordCardSettingsProps`         | [recordReactTypes.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L166)                       |
-| `RecordColumnSettings`            | [RecordColumnSettings.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L46)               |
+| `RecordColumnSettings`            | [RecordColumnSettings.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordColumnSettings.tsx#L47)               |
 | `RecordColumnSettingsProps`       | [recordReactTypes.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordReactTypes.ts#L130)                       |
 | `RecordContent`                   | [RecordContent.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L61)                             |
 | `RecordContentProps`              | [RecordContent.tsx:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/RecordContent.tsx#L46)                             |

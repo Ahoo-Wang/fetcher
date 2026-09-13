@@ -194,3 +194,9 @@ Stateful/Memory/Local 与示例 HTTP 宿主接受 `supportedFormats: { record: t
 内容卡片共用 `id` 与 `layout`：`{ kind: 'markdown', title, content }`、`{ kind: 'link', title, href, description? }` 或 `{ kind: 'image', title, src, alt, caption? }`。Markdown 使用 CommonMark，内容限制为 UTF-8 64 KiB，不执行原始 HTML。链接接受 HTTP(S)、mailto、tel 和相对地址；图片接受 HTTP(S) 和相对地址。`alt` 为字符串，装饰性图片可以留空。图片使用 URL，不提供文件上传服务。所有卡片均计入配置字节和面板数量预算。
 
 内容在本地对话框中编辑，明确提交才修改仪表盘草稿，取消保留原草稿。内容卡片不解析数据源、不创建查询位置，也不接收筛选绑定或排除配置。编辑内容不查询其它面板。`DashboardSnapshot.panels` 只包含数据引用的运行快照，内容卡片从 `config.panels` 渲染。
+
+### 列表排序
+
+列设置、卡片摘要字段、排序优先级、分析输出与视图管理共用 dnd-kit 列表排序。拖动手柄预览落点，松开后提交一次。键盘操作为：聚焦手柄，按空格或 Enter 拾起，方向键移动，再按空格或 Enter 放下。Escape 优先取消手势，不同时关闭所在弹窗。未拾起时按方向键不会提交修改。
+
+排序保留固定区域、锁定项目与视图分组约束。编辑权限、实例身份或列表成员变化时取消当前手势。取消不会恢复旧数据快照，异步保存失败时显示权威数据的顺序。配置排序不会触发查询。仪表盘二维布局继续使用 react-grid-layout。
