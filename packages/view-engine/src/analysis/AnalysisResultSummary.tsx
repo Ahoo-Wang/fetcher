@@ -63,6 +63,9 @@ export function AnalysisResultSummary({
               STDDEV: '标准差',
               VARIANCE: '方差',
               COUNT: '计数',
+              DISTINCT_COUNT: '去重计数（精确性取决于后端）',
+              PERCENTILE: '百分位（近似）',
+              DERIVED: '指标公式',
               ANY: '代表值',
             };
             return `${item.title}${aggregation ? `（${labels[aggregation] ?? aggregation}）` : ''}`;

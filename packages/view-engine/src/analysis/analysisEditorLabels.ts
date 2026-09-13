@@ -28,6 +28,9 @@ export const names: Record<string, string> = Object.assign(
     'date-histogram': '日期分桶',
     count: '记录数',
     numeric: '数值统计',
+    'distinct-count': '去重计数',
+    percentile: '百分位',
+    derived: '指标公式',
     any: '代表值',
   },
 );
