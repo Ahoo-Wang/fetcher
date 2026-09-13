@@ -15465,6 +15465,29 @@ A definition declares `record?: RecordCapability` and/or `analysis?: AnalysisCap
 
 A dimension owns its display field through `label: { field: "productName", alias: "productName", title: "Product name" }`. The compiler adds an authorized ANY output and marks the result column with `labelFor`. Users configure grouping and display together; names are not listed as measures. Changing this field requires running the query. Group IDs remain unchanged; duplicate names include IDs, missing or conflicting names fall back to IDs. Valid analyses initially show results with collapsed configuration and execution details. Two dimensions automatically map to category and series. `ANALYSIS_VISUALIZATIONS` describes built-in chart capabilities.
 
+## Extended aggregation analysis
+
+`AnalysisCapability.features` explicitly declares service support for `distinctCount`, `percentile`, `metricFilters`, `derived`, `having`, `missingKey`, and `dense`; omitted features are disabled. Field capabilities separately declare `distinctCount` and `percentile`, and both layers must permit the operation. `adaptWowAnalysisSchema(schema, { features })` projects fields and forwards host capabilities without probing database versions. Element scopes use their own fields while inheriting service features and request limits from the root definition.
+
+| Configuration                                      | Semantics                                                                                                                                                                                                                                  |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `component.name: 'distinct-count'`                 | Count distinct non-null contributions from a field or expression. String customer IDs are valid direct fields; arithmetic requires numeric fields.                                                                                         |
+| `component.name: 'percentile'`, `props.percentile` | A finite percentile strictly between 0 and 100; 50 denotes the median.                                                                                                                                                                     |
+| Metric `filters?: FilterConfiguration`             | Independent filters on non-derived metrics using scalar fields in the current aggregation scope. SEARCH/ELEMENT_MATCH and array fields are prohibited.                                                                                     |
+| `component.name: 'derived'`, `derivedExpression`   | Arithmetic on preceding non-ANY metrics. Persist references as `metricId` and compile them to aliases. Earlier derived metrics are allowed; self/forward references are rejected.                                                          |
+| Derived metric `props.displayFormat`               | `number` (default) or `percent`. Percent requires proven dimensionless units (constants, counts, or a ratio of matching known units); unknown or incompatible units are rejected and uses Intl formatting without modifying the raw value. |
+| `AnalysisViewConfig.having`                        | Reference non-ANY metrics by `metricId` using comparisons, BETWEEN, IN, IS_NULL, AND/OR. Requires grouping; the server applies it before sorting and limit.                                                                                |
+| TERMS `props.missingKey`                           | A nonblank bucket key for missing/null single-valued strings. It merges with an actual equal key, rather than merely relabeling output.                                                                                                    |
+| DATE_HISTOGRAM `props.dense`                       | Requires the sole dimension to be a date group. Fills internal gaps in the server result range; no data means no invented full date range. Result filters may remove filled buckets.                                                       |
+
+Derived and result-filter references use stable IDs. Changing a title/alias preserves identity. Deleting a referenced metric leaves a repairable invalid reference and blocks queries; reusing its alias does not rebind it. Incomplete numeric text can survive saving and reopening, but invalid values, expressions, references, or capabilities cannot execute.
+
+Ordinary metric expressions share a 256-node request budget; derived expressions share a separate 256-node budget. Both have maximum depth 8. HAVING has a server depth limit of 8 and an additional frontend editing budget of 256 nodes. ANY metrics generated for dimension labels count toward the 64-metric limit. Hosts may only tighten protocol limits.
+
+Distinct counts are nonnegative safe integers; accuracy depends on the backend (current Wow Mongo is exact, ES may be approximate). Percentiles are approximate. Empty buckets contain zero for COUNT/distinct count and null for numeric metrics including SUM and percentiles. Derived results follow server null propagation and division-by-zero semantics. Population standard deviation retains the input unit; population variance uses the squared unit. Distinct counts, percentiles, and derived metrics cannot be used for shares or stacking. `format: 'count'` controls formatting and does not imply additivity.
+
+Sources still use `aggregate(query, options, controller)`. Retained results after failures use their executed plan/config, not the new draft's filters or units. The Storybook channel payment example uses fixed protocol fixture responses and does not establish support in a deployed Mongo/ES service.
+
 </doc>
 
 <doc title="ViewHost and service boundaries" path="reference/view-engine/view-host.md">
@@ -16004,6 +16027,16 @@ Dimension-owned display outputs are included in advanced server-sort choices. Ne
 
 `ViewPage` / `ViewPageContent` accept shared `engine`, `extensions`, `filterContext`, `className` and `initialSidebarCollapsed` props (`ViewPage` also accepts binding `error`). Put record-only `selectable`, `autoRefreshPaused`, `renderToolbar`, `renderCard` and `renderPagination` options inside `record`; these do not affect analysis views. Standalone `RecordView` still accepts them directly. The page owns configuration-panel visibility. `ViewExtensions` composes `RecordExtensions` and `AnalysisExtensions` at the page layer.
 
+## Extended metric editors
+
+The analysis query editor offers distinct counts, percentile presets P50/P95/P99 and custom values, independent metric filters, derived formulas, and result filters when the host enables them. Derived formulas select earlier metrics by business title and persist stable IDs. Use the explicit number/percent display choice for derived values. Dimension settings expose missing-value grouping and single-dimension date gap filling.
+
+All controls retain incomplete drafts, respect disabled states, and keep invalid references visible for repair. Filters on element-scoped metrics count/filter element records, not root orders. See [models](./models.md#extended-aggregation-analysis) for capabilities, limits, and statistical semantics.
+
+`AnalysisEditorProps.filterEditors` forwards definition-level filter editor mappings to metric and element filters. Metric-filter undo uses the last executed same-scope metric configuration by ID, rather than its first mounted value. The execution summary includes bucket parameters (missing keys, histogram intervals, date units/timezones and dense filling), each metric predicate, percentile parameter, metric expression, derived formula, and HAVING from the retained query plan.
+
+Shared chart axes require compatible units and matching number-format styles; percent and decimal metrics cannot share an axis. Metric cards and tables retain independent formatting per metric.
+
 </doc>
 
 <doc title="View Engine symbol index" path="reference/view-engine/symbols.md">
@@ -16016,34 +16049,37 @@ These names come from the current public entry exports and declarations. Import 
 
 | Symbol                            | Declaration                                                                                                                                                  |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `adaptWowAnalysisSchema`          | [wowAnalysis.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L63)                                     |
+| `adaptWowAnalysisSchema`          | [wowAnalysis.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L65)                                     |
 | `ANALYSIS_VISUALIZATIONS`         | [analysisVisualizations.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L15)               |
-| `AnalysisCapability`              | [analysisModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L64)                                 |
-| `AnalysisCompileContext`          | [analysisModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L106)                               |
-| `AnalysisCompiler`                | [analysisModel.ts:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L96)                                 |
-| `AnalysisCompileResult`           | [analysisModel.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L145)                               |
-| `AnalysisCompilerRegistry`        | [analysisModel.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L103)                               |
-| `AnalysisComponentCompileContext` | [analysisModel.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L114)                               |
-| `AnalysisComponentConfig`         | [analysisModel.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L53)                                 |
-| `AnalysisNumericExpression`       | [analysisModel.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L36)                                 |
-| `AnalysisPlan`                    | [analysisModel.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L140)                               |
+| `AnalysisCapability`              | [analysisModel.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L119)                               |
+| `AnalysisCompileContext`          | [analysisModel.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L165)                               |
+| `AnalysisCompiler`                | [analysisModel.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L155)                               |
+| `AnalysisCompileResult`           | [analysisModel.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L210)                               |
+| `AnalysisCompilerRegistry`        | [analysisModel.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L162)                               |
+| `AnalysisComponentCompileContext` | [analysisModel.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L173)                               |
+| `AnalysisComponentConfig`         | [analysisModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L106)                               |
+| `AnalysisDerivedExpression`       | [analysisModel.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L57)                                 |
+| `AnalysisFeatures`                | [analysisModel.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L48)                                 |
+| `AnalysisHavingExpression`        | [analysisModel.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L66)                                 |
+| `AnalysisNumericExpression`       | [analysisModel.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L39)                                 |
+| `AnalysisPlan`                    | [analysisModel.ts:205](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L205)                               |
 | `AnalysisPresentation`            | [analysisPresentation.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisPresentation.ts#L18)                   |
-| `AnalysisResultColumn`            | [analysisModel.ts:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L117)                               |
-| `AnalysisResultValidation`        | [analysisModel.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L150)                               |
-| `AnalysisRow`                     | [analysisModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L149)                               |
-| `analysisRowKey`                  | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
-| `analysisScopeContext`            | [analysisCompiler.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L54)                           |
-| `AnalysisScopeDefinition`         | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
+| `AnalysisResultColumn`            | [analysisModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L176)                               |
+| `AnalysisResultValidation`        | [analysisModel.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L215)                               |
+| `AnalysisRow`                     | [analysisModel.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L214)                               |
+| `analysisRowKey`                  | [analysisResult.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L89)                               |
+| `analysisScopeContext`            | [analysisCompiler.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L71)                           |
+| `AnalysisScopeDefinition`         | [analysisModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L98)                                 |
 | `AnalysisSession`                 | [viewModel.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L294)                                      |
-| `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
+| `AnalysisViewConfig`              | [analysisModel.ts:143](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L143)                               |
 | `AnalysisViewInstance`            | [viewModel.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L168)                                      |
 | `AnalysisViewPosition`            | [ViewEngine.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L97)                                         |
 | `AnalysisVisualizationType`       | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
 | `calculateRecordSummary`          | [recordSummary.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L70)                                   |
 | `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:324](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L324)                 |
 | `clearFilterValues`               | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
-| `compileAnalysis`                 | [analysisCompiler.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L214)                         |
-| `compileAnalysisExpression`       | [analysisCompiler.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L72)                           |
+| `compileAnalysis`                 | [analysisCompiler.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L179)                         |
+| `compileAnalysisExpression`       | [analysisExpressions.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisExpressions.ts#L134)                   |
 | `compileBuiltinFilter`            | [filterBuiltinCompiler.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L178)                 |
 | `compileDashboardScope`           | [dashboardFilters.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardFilters.ts#L119)                        |
 | `compileFilterConfiguration`      | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
@@ -16057,10 +16093,10 @@ These names come from the current public entry exports and declarations. Import 
 | `DashboardFilter`                 | [dashboardModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L64)                              |
 | `DashboardHost`                   | [ViewHost.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L74)                                          |
 | `DashboardPanel`                  | [dashboardModel.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L49)                              |
-| `DashboardPanelSnapshot`          | [DashboardRuntime.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L52)                          |
-| `DashboardRuntime`                | [DashboardRuntime.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L107)                        |
+| `DashboardPanelSnapshot`          | [DashboardPanelRuntime.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardPanelRuntime.ts#L32)                |
+| `DashboardRuntime`                | [DashboardRuntime.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L68)                          |
 | `DashboardSession`                | [dashboardModel.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L79)                              |
-| `DashboardSnapshot`               | [DashboardRuntime.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L67)                          |
+| `DashboardSnapshot`               | [DashboardRuntime.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L47)                          |
 | `DashboardTransform`              | [dashboardModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L105)                            |
 | `DashboardTransformContext`       | [dashboardModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L98)                              |
 | `DashboardTransforms`             | [dashboardModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L108)                            |
@@ -16101,7 +16137,7 @@ These names come from the current public entry exports and declarations. Import 
 | `getRecordSummaryMetrics`         | [recordPresentation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L21)                         |
 | `isSimpleFilter`                  | [filterNodes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L45)                                       |
 | `LEGACY_VIEW_FORMATS`             | [viewServiceContract.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L85)                    |
-| `MAX_ANALYSIS_ELEMENTS`           | [analysisModel.ts:156](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L156)                               |
+| `MAX_ANALYSIS_ELEMENTS`           | [analysisModel.ts:221](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L221)                               |
 | `MemoryViewHost`                  | [MemoryViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L27)                                 |
 | `MemoryViewHostOptions`           | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
 | `newFilterNode`                   | [filterNodes.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L26)                                       |
@@ -16148,7 +16184,7 @@ These names come from the current public entry exports and declarations. Import 
 | `validateDashboardExpression`     | [dashboardFilters.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardFilters.ts#L91)                          |
 | `validateFilterConfiguration`     | [filterConfigurationValidation.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L120) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
-| `validateViewDefinition`          | [definitionValidation.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/definitionValidation.ts#L195)     |
+| `validateViewDefinition`          | [definitionValidation.ts:216](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/definitionValidation.ts#L216)     |
 | `validateViewInstance`            | [instanceValidation.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/instanceValidation.ts#L22)           |
 | `ViewCapabilities`                | [viewModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L192)                                      |
 | `ViewCreateContext`               | [viewServiceContract.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L41)                    |
@@ -16177,15 +16213,15 @@ These names come from the current public entry exports and declarations. Import 
 | `ViewServiceErrorCode`            | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L19)                    |
 | `ViewSession`                     | [viewModel.ts:327](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L327)                                      |
 | `ViewSource`                      | [viewModel.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L214)                                      |
-| `WowAnalysisSchema`               | [wowAnalysis.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L34)                                     |
-| `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L29)                                     |
+| `WowAnalysisSchema`               | [wowAnalysis.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L36)                                     |
+| `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L30)                                     |
 
 ## `@ahoo-wang/fetcher-view-engine/react`
 
 | Symbol                            | Declaration                                                                                                                                              |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:743](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L743)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:799](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L799)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |
@@ -36182,6 +36218,29 @@ scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shar
 
 维度通过 `label: { field: "productName", alias: "productName", title: "商品名称" }` 声明自己的显示字段。编译器自动添加授权的 ANY 输出，并在结果列记录 `labelFor`。用户在同一维度中配置分组与展示，名称不再列为统计指标；变更显示字段后需要运行查询。分组 ID 不变，同名追加 ID，缺失或冲突名称回退为 ID。有效分析默认展示结果并收起配置及执行详情，两个维度自动映射为分类轴与系列。`ANALYSIS_VISUALIZATIONS` 定义内置图表能力。
 
+## 扩展聚合分析
+
+`AnalysisCapability.features` 显式声明服务支持：`distinctCount`、`percentile`、`metricFilters`、`derived`、`having`、`missingKey`、`dense`；未声明时关闭。字段能力另有 `distinctCount`、`percentile`，两层条件必须同时满足。`adaptWowAnalysisSchema(schema, { features })` 只投影字段并传入宿主能力，不探测数据库版本；明细作用域使用自己的字段，服务能力和请求限制继续来自根定义。
+
+| 配置                                               | 语义                                                                                                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `component.name: 'distinct-count'`                 | 字段或公式的非空贡献值去重计数。字符串客户 ID 可直接使用；算术公式只允许数值字段。                                                                           |
+| `component.name: 'percentile'`，`props.percentile` | 百分位参数为严格介于 0 与 100 之间的有限数值；50 表示中位数。                                                                                                |
+| 指标 `filters?: FilterConfiguration`               | 非派生指标的独立统计条件，仅使用当前聚合作用域的标量字段；禁止 SEARCH/ELEMENT_MATCH 和数组字段。                                                             |
+| `component.name: 'derived'`，`derivedExpression`   | 引用前置非 ANY 指标进行四则运算，引用持久化为 `metricId`，编译时转换为 alias。可引用前置派生指标；不能自引用或向后引用。                                     |
+| 派生指标 `props.displayFormat`                     | `number`（默认）或 `percent`；百分比仅适用于已证明无量纲的结果（常量、计数、同一已知单位的比值），未知或不兼容单位会被拒绝，通过 Intl 格式化，不修改原数值。 |
+| `AnalysisViewConfig.having`                        | 通过 `metricId` 引用非 ANY 指标，支持比较、BETWEEN、IN、IS_NULL、AND/OR；必须有分组，在服务端排序和 limit 之前执行。                                         |
+| TERMS `props.missingKey`                           | 单值字符串的缺失值/null 桶键，必须非空白；与真实同名桶合并，不是单纯的显示标签。                                                                             |
+| DATE_HISTOGRAM `props.dense`                       | 仅允许唯一日期分组，补齐服务端结果范围内部的日期缺口；无数据不生成完整日期范围，结果筛选可能再次移除空桶。                                                   |
+
+派生与结果筛选使用稳定 ID，改标题/alias 不改变引用对象。删除后保留失效引用并阻止查询，即使新指标复用同名 alias 也不会重新绑定。数字文本可以作为未完成草稿保存和重开，但无效数值、公式、引用或能力不能发起查询。
+
+普通指标公式整请求累计最多 256 个节点，派生公式单独累计最多 256；深度都为 8。HAVING 的后端限制是深度 8，前端另设 256 节点编辑预算。维度显示字段生成的 ANY 计入 64 个指标的上限；宿主只能收紧协议预算。
+
+去重计数为非负安全整数，精确性取决于后端（当前 Wow 的 Mongo 精确，ES 可能近似）；百分位为近似统计。空桶 COUNT/去重为 0，SUM 等数值指标及百分位为 null，派生值遵循服务端空值传播和除零为 null 的规则。总体标准差保持原单位，总体方差使用平方单位。去重、百分位和派生指标不能用于占比或堆叠；`format: 'count'` 只影响格式，不赋予可加性。
+
+数据源仍使用 `aggregate(query, options, controller)`。失败时保留的旧结果使用当次 plan/config，不会被新草稿的筛选或单位重新解释。Storybook“渠道支付分析”为固定协议模拟响应，不证明真实 Mongo/ES 部署支持。
+
 </doc>
 
 <doc title="ViewHost 与服务边界" path="zh/reference/view-engine/view-host.md">
@@ -36719,6 +36778,16 @@ console.log(compiled.plan.query, result.rows);
 
 维度拥有的显示输出参与高级服务端排序选择。新显示字段的 alias 避开所有维度、指标与已有显示输出；切换已有显示字段时保留 alias。完整查询配置无效时暂停自动刷新。分析结果被淘汰后，图表空态在当前查询合法时提供明确的重新运行入口，不改变自动加载策略。执行摘要将无条件元素筛选描述为全部记录。
 
+## 扩展指标编辑器
+
+宿主启用后，分析查询编辑器提供去重计数、P50/P95/P99 与自定义百分位、指标独立筛选、派生公式和结果筛选。派生公式按业务标题选择前置指标，并持久化稳定 ID；派生值使用明确的数字/百分比展示选项。维度设置提供缺失值归组及单维日期缺口补齐。
+
+控件保留未完成草稿、遵守禁用状态，并保留失效引用以便修复。明细作用域内的指标统计/筛选明细记录，不能解释为根订单数。能力、限制和统计语义参见[模型](./models.md#扩展聚合分析)。
+
+`AnalysisEditorProps.filterEditors` 将定义级筛选编辑器映射传给指标与元素筛选。指标筛选撤销以同一作用域内、同 ID 指标最近执行的配置为基线，而非首次挂载值。执行口径包含已保留查询计划中的分桶参数（缺失值归桶、数值间隔、日期单位/时区及空桶补齐）、各指标谓词、百分位参数、统计表达式、派生公式和 HAVING。
+
+共享坐标轴要求指标单位和数值格式一致；百分比与普通数字不能混用。指标卡和表格仍可分别格式化各指标。
+
 </doc>
 
 <doc title="View Engine 符号索引" path="zh/reference/view-engine/symbols.md">
@@ -36731,34 +36800,37 @@ console.log(compiled.plan.query, result.rows);
 
 | 符号                              | 声明                                                                                                                                                         |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `adaptWowAnalysisSchema`          | [wowAnalysis.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L63)                                     |
+| `adaptWowAnalysisSchema`          | [wowAnalysis.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L65)                                     |
 | `ANALYSIS_VISUALIZATIONS`         | [analysisVisualizations.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L15)               |
-| `AnalysisCapability`              | [analysisModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L64)                                 |
-| `AnalysisCompileContext`          | [analysisModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L106)                               |
-| `AnalysisCompiler`                | [analysisModel.ts:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L96)                                 |
-| `AnalysisCompileResult`           | [analysisModel.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L145)                               |
-| `AnalysisCompilerRegistry`        | [analysisModel.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L103)                               |
-| `AnalysisComponentCompileContext` | [analysisModel.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L114)                               |
-| `AnalysisComponentConfig`         | [analysisModel.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L53)                                 |
-| `AnalysisNumericExpression`       | [analysisModel.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L36)                                 |
-| `AnalysisPlan`                    | [analysisModel.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L140)                               |
+| `AnalysisCapability`              | [analysisModel.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L119)                               |
+| `AnalysisCompileContext`          | [analysisModel.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L165)                               |
+| `AnalysisCompiler`                | [analysisModel.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L155)                               |
+| `AnalysisCompileResult`           | [analysisModel.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L210)                               |
+| `AnalysisCompilerRegistry`        | [analysisModel.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L162)                               |
+| `AnalysisComponentCompileContext` | [analysisModel.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L173)                               |
+| `AnalysisComponentConfig`         | [analysisModel.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L106)                               |
+| `AnalysisDerivedExpression`       | [analysisModel.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L57)                                 |
+| `AnalysisFeatures`                | [analysisModel.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L48)                                 |
+| `AnalysisHavingExpression`        | [analysisModel.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L66)                                 |
+| `AnalysisNumericExpression`       | [analysisModel.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L39)                                 |
+| `AnalysisPlan`                    | [analysisModel.ts:205](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L205)                               |
 | `AnalysisPresentation`            | [analysisPresentation.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisPresentation.ts#L18)                   |
-| `AnalysisResultColumn`            | [analysisModel.ts:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L117)                               |
-| `AnalysisResultValidation`        | [analysisModel.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L150)                               |
-| `AnalysisRow`                     | [analysisModel.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L149)                               |
-| `analysisRowKey`                  | [analysisResult.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L87)                               |
-| `analysisScopeContext`            | [analysisCompiler.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L54)                           |
-| `AnalysisScopeDefinition`         | [analysisModel.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L45)                                 |
+| `AnalysisResultColumn`            | [analysisModel.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L176)                               |
+| `AnalysisResultValidation`        | [analysisModel.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L215)                               |
+| `AnalysisRow`                     | [analysisModel.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L214)                               |
+| `analysisRowKey`                  | [analysisResult.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisResult.ts#L89)                               |
+| `analysisScopeContext`            | [analysisCompiler.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L71)                           |
+| `AnalysisScopeDefinition`         | [analysisModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L98)                                 |
 | `AnalysisSession`                 | [viewModel.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L294)                                      |
-| `AnalysisViewConfig`              | [analysisModel.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L85)                                 |
+| `AnalysisViewConfig`              | [analysisModel.ts:143](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L143)                               |
 | `AnalysisViewInstance`            | [viewModel.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L168)                                      |
 | `AnalysisViewPosition`            | [ViewEngine.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/engine/ViewEngine.ts#L97)                                         |
 | `AnalysisVisualizationType`       | [analysisVisualizations.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisVisualizations.ts#L77)               |
 | `calculateRecordSummary`          | [recordSummary.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordSummary.ts#L70)                                   |
 | `clearBuiltinFilterProps`         | [filterBuiltinCompiler.ts:324](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L324)                 |
 | `clearFilterValues`               | [filterConfigurationClear.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationClear.ts#L40)             |
-| `compileAnalysis`                 | [analysisCompiler.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L214)                         |
-| `compileAnalysisExpression`       | [analysisCompiler.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L72)                           |
+| `compileAnalysis`                 | [analysisCompiler.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisCompiler.ts#L179)                         |
+| `compileAnalysisExpression`       | [analysisExpressions.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisExpressions.ts#L134)                   |
 | `compileBuiltinFilter`            | [filterBuiltinCompiler.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterBuiltinCompiler.ts#L178)                 |
 | `compileDashboardScope`           | [dashboardFilters.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardFilters.ts#L119)                        |
 | `compileFilterConfiguration`      | [filterConfigurationCompiler.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationCompiler.ts#L99)       |
@@ -36772,10 +36844,10 @@ console.log(compiled.plan.query, result.rows);
 | `DashboardFilter`                 | [dashboardModel.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L64)                              |
 | `DashboardHost`                   | [ViewHost.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/ViewHost.ts#L74)                                          |
 | `DashboardPanel`                  | [dashboardModel.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L49)                              |
-| `DashboardPanelSnapshot`          | [DashboardRuntime.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L52)                          |
-| `DashboardRuntime`                | [DashboardRuntime.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L107)                        |
+| `DashboardPanelSnapshot`          | [DashboardPanelRuntime.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardPanelRuntime.ts#L32)                |
+| `DashboardRuntime`                | [DashboardRuntime.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L68)                          |
 | `DashboardSession`                | [dashboardModel.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L79)                              |
-| `DashboardSnapshot`               | [DashboardRuntime.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L67)                          |
+| `DashboardSnapshot`               | [DashboardRuntime.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/DashboardRuntime.ts#L47)                          |
 | `DashboardTransform`              | [dashboardModel.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L105)                            |
 | `DashboardTransformContext`       | [dashboardModel.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L98)                              |
 | `DashboardTransforms`             | [dashboardModel.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardModel.ts#L108)                            |
@@ -36816,7 +36888,7 @@ console.log(compiled.plan.query, result.rows);
 | `getRecordSummaryMetrics`         | [recordPresentation.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/recordPresentation.ts#L21)                         |
 | `isSimpleFilter`                  | [filterNodes.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L45)                                       |
 | `LEGACY_VIEW_FORMATS`             | [viewServiceContract.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L85)                    |
-| `MAX_ANALYSIS_ELEMENTS`           | [analysisModel.ts:156](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L156)                               |
+| `MAX_ANALYSIS_ELEMENTS`           | [analysisModel.ts:221](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisModel.ts#L221)                               |
 | `MemoryViewHost`                  | [MemoryViewHost.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L27)                                 |
 | `MemoryViewHostOptions`           | [MemoryViewHost.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/MemoryViewHost.ts#L21)                                 |
 | `newFilterNode`                   | [filterNodes.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterNodes.ts#L26)                                       |
@@ -36863,7 +36935,7 @@ console.log(compiled.plan.query, result.rows);
 | `validateDashboardExpression`     | [dashboardFilters.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/dashboard/dashboardFilters.ts#L91)                          |
 | `validateFilterConfiguration`     | [filterConfigurationValidation.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/filter/filterConfigurationValidation.ts#L120) |
 | `validateRecordRows`              | [recordData.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/record/validation/recordData.ts#L42)                              |
-| `validateViewDefinition`          | [definitionValidation.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/definitionValidation.ts#L195)     |
+| `validateViewDefinition`          | [definitionValidation.ts:216](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/definitionValidation.ts#L216)     |
 | `validateViewInstance`            | [instanceValidation.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/validation/instanceValidation.ts#L22)           |
 | `ViewCapabilities`                | [viewModel.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L192)                                      |
 | `ViewCreateContext`               | [viewServiceContract.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L41)                    |
@@ -36892,15 +36964,15 @@ console.log(compiled.plan.query, result.rows);
 | `ViewServiceErrorCode`            | [viewServiceContract.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewServiceContract.ts#L19)                    |
 | `ViewSession`                     | [viewModel.ts:327](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L327)                                      |
 | `ViewSource`                      | [viewModel.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/contracts/viewModel.ts#L214)                                      |
-| `WowAnalysisSchema`               | [wowAnalysis.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L34)                                     |
-| `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L29)                                     |
+| `WowAnalysisSchema`               | [wowAnalysis.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L36)                                     |
+| `WowAnalysisSchemaOptions`        | [wowAnalysis.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/wowAnalysis.ts#L30)                                     |
 
 ## `@ahoo-wang/fetcher-view-engine/react`
 
 | 符号                              | 声明                                                                                                                                                     |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AnalysisComponentEditorProps`    | [analysisReactTypes.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L22)                   |
-| `AnalysisEditor`                  | [AnalysisEditor.tsx:743](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L743)                       |
+| `AnalysisEditor`                  | [AnalysisEditor.tsx:799](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisEditor.tsx#L799)                       |
 | `AnalysisExtensions`              | [analysisReactTypes.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/analysisReactTypes.ts#L33)                   |
 | `AnalysisPresentationEditor`      | [AnalysisPresentationEditor.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L52) |
 | `AnalysisPresentationEditorProps` | [AnalysisPresentationEditor.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/src/analysis/AnalysisPresentationEditor.tsx#L40) |

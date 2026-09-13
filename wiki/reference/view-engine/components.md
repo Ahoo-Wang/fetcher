@@ -188,3 +188,13 @@ Implicit measure selection is resolved identically by the editor and projector b
 Dimension-owned display outputs are included in advanced server-sort choices. New display aliases avoid collisions with dimensions, measures and existing display outputs; changing an existing display field retains its alias. Invalid full query configuration pauses automatic refresh. If an analysis result was evicted, the chart empty state offers an explicit rerun when the current query is valid; it does not change automatic loading policy. Unconditional element filters are described as all records in the executed summary.
 
 `ViewPage` / `ViewPageContent` accept shared `engine`, `extensions`, `filterContext`, `className` and `initialSidebarCollapsed` props (`ViewPage` also accepts binding `error`). Put record-only `selectable`, `autoRefreshPaused`, `renderToolbar`, `renderCard` and `renderPagination` options inside `record`; these do not affect analysis views. Standalone `RecordView` still accepts them directly. The page owns configuration-panel visibility. `ViewExtensions` composes `RecordExtensions` and `AnalysisExtensions` at the page layer.
+
+## Extended metric editors
+
+The analysis query editor offers distinct counts, percentile presets P50/P95/P99 and custom values, independent metric filters, derived formulas, and result filters when the host enables them. Derived formulas select earlier metrics by business title and persist stable IDs. Use the explicit number/percent display choice for derived values. Dimension settings expose missing-value grouping and single-dimension date gap filling.
+
+All controls retain incomplete drafts, respect disabled states, and keep invalid references visible for repair. Filters on element-scoped metrics count/filter element records, not root orders. See [models](./models.md#extended-aggregation-analysis) for capabilities, limits, and statistical semantics.
+
+`AnalysisEditorProps.filterEditors` forwards definition-level filter editor mappings to metric and element filters. Metric-filter undo uses the last executed same-scope metric configuration by ID, rather than its first mounted value. The execution summary includes bucket parameters (missing keys, histogram intervals, date units/timezones and dense filling), each metric predicate, percentile parameter, metric expression, derived formula, and HAVING from the retained query plan.
+
+Shared chart axes require compatible units and matching number-format styles; percent and decimal metrics cannot share an axis. Metric cards and tables retain independent formatting per metric.
