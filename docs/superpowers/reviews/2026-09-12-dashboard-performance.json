@@ -1,0 +1,266 @@
+{
+  "node": "v24.11.0",
+  "generatedAt": "2026-09-12T10:44:36.684Z",
+  "scope": "Headless fixed-input local processing, no server latency; 2 warmups + 5 measured samples per kind/version.",
+  "legacyClientMixedHost": "passed: baseline engine loads and queries projected records while modern default stays dashboard",
+  "samples": [
+    {
+      "version": "baseline",
+      "kind": "record",
+      "run": 0,
+      "warmup": true,
+      "firstAvailableMs": 0.5814579999999978,
+      "processingMs": 0.6930830000000014
+    },
+    {
+      "version": "baseline",
+      "kind": "record",
+      "run": 1,
+      "warmup": true,
+      "firstAvailableMs": 0.4209999999999994,
+      "processingMs": 0.22245800000000315
+    },
+    {
+      "version": "baseline",
+      "kind": "record",
+      "run": 2,
+      "warmup": false,
+      "firstAvailableMs": 0.3100829999999988,
+      "processingMs": 0.19012500000000188
+    },
+    {
+      "version": "baseline",
+      "kind": "record",
+      "run": 3,
+      "warmup": false,
+      "firstAvailableMs": 0.2647919999999999,
+      "processingMs": 0.16787500000000222
+    },
+    {
+      "version": "baseline",
+      "kind": "record",
+      "run": 4,
+      "warmup": false,
+      "firstAvailableMs": 0.2587919999999997,
+      "processingMs": 0.1648750000000021
+    },
+    {
+      "version": "baseline",
+      "kind": "record",
+      "run": 5,
+      "warmup": false,
+      "firstAvailableMs": 0.22991700000000037,
+      "processingMs": 0.1549580000000006
+    },
+    {
+      "version": "baseline",
+      "kind": "record",
+      "run": 6,
+      "warmup": false,
+      "firstAvailableMs": 0.22954099999999755,
+      "processingMs": 0.2047500000000042
+    },
+    {
+      "version": "baseline",
+      "kind": "analysis",
+      "run": 0,
+      "warmup": true,
+      "firstAvailableMs": 1.118542000000005,
+      "processingMs": 0.1550409999999971
+    },
+    {
+      "version": "baseline",
+      "kind": "analysis",
+      "run": 1,
+      "warmup": true,
+      "firstAvailableMs": 0.31833299999999554,
+      "processingMs": 0.12862499999999955
+    },
+    {
+      "version": "baseline",
+      "kind": "analysis",
+      "run": 2,
+      "warmup": false,
+      "firstAvailableMs": 0.2752920000000003,
+      "processingMs": 0.23045800000000582
+    },
+    {
+      "version": "baseline",
+      "kind": "analysis",
+      "run": 3,
+      "warmup": false,
+      "firstAvailableMs": 0.18504200000000282,
+      "processingMs": 0.07191699999999912
+    },
+    {
+      "version": "baseline",
+      "kind": "analysis",
+      "run": 4,
+      "warmup": false,
+      "firstAvailableMs": 0.16899999999999693,
+      "processingMs": 0.07925000000000182
+    },
+    {
+      "version": "baseline",
+      "kind": "analysis",
+      "run": 5,
+      "warmup": false,
+      "firstAvailableMs": 0.16962500000000347,
+      "processingMs": 0.07654200000000344
+    },
+    {
+      "version": "baseline",
+      "kind": "analysis",
+      "run": 6,
+      "warmup": false,
+      "firstAvailableMs": 0.22837499999999977,
+      "processingMs": 0.05912500000000165
+    },
+    {
+      "version": "candidate",
+      "kind": "record",
+      "run": 0,
+      "warmup": true,
+      "firstAvailableMs": 2.1419169999999994,
+      "processingMs": 0.39220800000000366
+    },
+    {
+      "version": "candidate",
+      "kind": "record",
+      "run": 1,
+      "warmup": true,
+      "firstAvailableMs": 0.3641670000000019,
+      "processingMs": 0.26012500000000216
+    },
+    {
+      "version": "candidate",
+      "kind": "record",
+      "run": 2,
+      "warmup": false,
+      "firstAvailableMs": 0.3218340000000026,
+      "processingMs": 0.1947499999999991
+    },
+    {
+      "version": "candidate",
+      "kind": "record",
+      "run": 3,
+      "warmup": false,
+      "firstAvailableMs": 0.2666670000000053,
+      "processingMs": 0.16966599999999943
+    },
+    {
+      "version": "candidate",
+      "kind": "record",
+      "run": 4,
+      "warmup": false,
+      "firstAvailableMs": 0.2849999999999966,
+      "processingMs": 0.2064579999999978
+    },
+    {
+      "version": "candidate",
+      "kind": "record",
+      "run": 5,
+      "warmup": false,
+      "firstAvailableMs": 0.40724999999999767,
+      "processingMs": 0.1615419999999972
+    },
+    {
+      "version": "candidate",
+      "kind": "record",
+      "run": 6,
+      "warmup": false,
+      "firstAvailableMs": 0.23295800000000355,
+      "processingMs": 0.1523340000000033
+    },
+    {
+      "version": "candidate",
+      "kind": "analysis",
+      "run": 0,
+      "warmup": true,
+      "firstAvailableMs": 1.018958000000005,
+      "processingMs": 0.22295799999999844
+    },
+    {
+      "version": "candidate",
+      "kind": "analysis",
+      "run": 1,
+      "warmup": true,
+      "firstAvailableMs": 0.4483329999999981,
+      "processingMs": 0.18816699999999997
+    },
+    {
+      "version": "candidate",
+      "kind": "analysis",
+      "run": 2,
+      "warmup": false,
+      "firstAvailableMs": 0.3456250000000054,
+      "processingMs": 0.09133299999999878
+    },
+    {
+      "version": "candidate",
+      "kind": "analysis",
+      "run": 3,
+      "warmup": false,
+      "firstAvailableMs": 0.21216700000000088,
+      "processingMs": 0.09166700000000105
+    },
+    {
+      "version": "candidate",
+      "kind": "analysis",
+      "run": 4,
+      "warmup": false,
+      "firstAvailableMs": 0.203708000000006,
+      "processingMs": 0.08391699999999958
+    },
+    {
+      "version": "candidate",
+      "kind": "analysis",
+      "run": 5,
+      "warmup": false,
+      "firstAvailableMs": 0.17812499999999432,
+      "processingMs": 0.06308400000000347
+    },
+    {
+      "version": "candidate",
+      "kind": "analysis",
+      "run": 6,
+      "warmup": false,
+      "firstAvailableMs": 0.16279099999999858,
+      "processingMs": 0.05924999999999159
+    }
+  ],
+  "comparisons": [
+    {
+      "kind": "record",
+      "metric": "firstAvailableMs",
+      "baselineMedian": 0.2587919999999997,
+      "candidateMedian": 0.2849999999999966,
+      "differenceMs": 0.0262079999999969,
+      "regression": false
+    },
+    {
+      "kind": "record",
+      "metric": "processingMs",
+      "baselineMedian": 0.16787500000000222,
+      "candidateMedian": 0.16966599999999943,
+      "differenceMs": 0.0017909999999972115,
+      "regression": false
+    },
+    {
+      "kind": "analysis",
+      "metric": "firstAvailableMs",
+      "baselineMedian": 0.18504200000000282,
+      "candidateMedian": 0.203708000000006,
+      "differenceMs": 0.01866600000000318,
+      "regression": false
+    },
+    {
+      "kind": "analysis",
+      "metric": "processingMs",
+      "baselineMedian": 0.07654200000000344,
+      "candidateMedian": 0.08391699999999958,
+      "differenceMs": 0.007374999999996135,
+      "regression": false
+    }
+  ]
+}

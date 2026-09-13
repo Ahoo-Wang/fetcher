@@ -47,6 +47,8 @@ catalog:
   recharts: ^3.10.1
   react-compiler-runtime: ^1.0.0
   react-dom: ^19.2.8
+  react-grid-layout: 2.2.4
+  react-markdown: 10.1.0
   react-day-picker: ^10.0.1
   react-use: ^17.6.1
   reflect-metadata: ^0.2.2

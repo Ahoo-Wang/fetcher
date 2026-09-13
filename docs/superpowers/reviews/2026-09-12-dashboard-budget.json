@@ -1,0 +1,68 @@
+{
+  "node": "v24.11.0",
+  "generatedAt": "2026-09-12T10:44:40.905Z",
+  "measurement": "Runtime retained config/reference JSON bytes; GC heap delta is diagnostic, not a leak proof.",
+  "results": [
+    {
+      "dashboards": 1,
+      "panelsPerDashboard": 12,
+      "repeatedReferences": true,
+      "retainedReferences": 12,
+      "childConfigBytes": 262144,
+      "metadataJSONBytes": 3149142,
+      "heapDeltaBytes": 20142152,
+      "remainingRuntimeCount": 0
+    },
+    {
+      "dashboards": 1,
+      "panelsPerDashboard": 12,
+      "repeatedReferences": false,
+      "retainedReferences": 12,
+      "childConfigBytes": 262144,
+      "metadataJSONBytes": 3149333,
+      "heapDeltaBytes": 18454408,
+      "remainingRuntimeCount": 0
+    },
+    {
+      "dashboards": 6,
+      "panelsPerDashboard": 12,
+      "repeatedReferences": true,
+      "retainedReferences": 72,
+      "childConfigBytes": 262144,
+      "metadataJSONBytes": 18894852,
+      "heapDeltaBytes": 28975664,
+      "remainingRuntimeCount": 0
+    },
+    {
+      "dashboards": 6,
+      "panelsPerDashboard": 12,
+      "repeatedReferences": false,
+      "retainedReferences": 72,
+      "childConfigBytes": 262144,
+      "metadataJSONBytes": 18895998,
+      "heapDeltaBytes": 34234184,
+      "remainingRuntimeCount": 0
+    },
+    {
+      "dashboards": 20,
+      "panelsPerDashboard": 12,
+      "repeatedReferences": true,
+      "retainedReferences": 240,
+      "childConfigBytes": 262144,
+      "metadataJSONBytes": 62982840,
+      "heapDeltaBytes": 40222840,
+      "remainingRuntimeCount": 0
+    },
+    {
+      "dashboards": 20,
+      "panelsPerDashboard": 12,
+      "repeatedReferences": false,
+      "retainedReferences": 240,
+      "childConfigBytes": 262144,
+      "metadataJSONBytes": 62987140,
+      "heapDeltaBytes": 78217560,
+      "remainingRuntimeCount": 0
+    }
+  ],
+  "candidateMetadataBudgetBytes": 127926272
+}
