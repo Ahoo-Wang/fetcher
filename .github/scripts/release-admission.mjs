@@ -36,6 +36,27 @@ export function requireSuccessfulCheck(checks, name, app) {
     `${name}: latest trusted check must complete successfully`,
   );
 }
+export function requireSuccessfulCodecov(checks, statuses) {
+  const name = 'codecov/project';
+  if (
+    checks.some(check => check.name === name && check.app?.slug === 'codecov')
+  ) {
+    requireSuccessfulCheck(checks, name, 'codecov');
+    return;
+  }
+  const latest = statuses
+    .filter(
+      status =>
+        status.context === name &&
+        status.creator?.login === 'codecov[bot]' &&
+        status.creator?.type === 'Bot',
+    )
+    .sort((a, b) => b.id - a.id)[0];
+  assert.ok(
+    latest?.state === 'success',
+    `${name}: latest trusted Codecov status must complete successfully`,
+  );
+}
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
@@ -67,6 +88,9 @@ if (
     'Codacy Static Code Analysis',
     'codacy-production',
   );
-  requireSuccessfulCheck(checks, 'codecov/project', 'codecov');
+  const statuses = pages(
+    `repos/${repo}/commits/${sha}/statuses?per_page=100`,
+  ).flat();
+  requireSuccessfulCodecov(checks, statuses);
   console.log(`Release admitted for ${sha}`);
 }

@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   requireSuccessfulRun,
+  requireSuccessfulCodecov,
   requireSuccessfulCheck,
 } from './release-admission.mjs';
 test('release requires exact SHA, latest completed workflow and non-PR execution', () => {
@@ -44,4 +45,34 @@ test('external check must come from the expected app and cannot reuse an old suc
     [check, { ...check, id: 2, conclusion: 'failure' }],
   ])
     assert.throws(() => requireSuccessfulCheck(checks, 'coverage', 'codecov'));
+});
+
+test('Codecov accepts trusted commit statuses without bypassing failed check runs', () => {
+  const status = {
+    id: 1,
+    context: 'codecov/project',
+    creator: { login: 'codecov[bot]', type: 'Bot' },
+    state: 'success',
+  };
+  assert.doesNotThrow(() => requireSuccessfulCodecov([], [status]));
+  for (const statuses of [
+    [],
+    [{ ...status, creator: { login: 'other', type: 'Bot' } }],
+    [{ ...status, creator: { login: 'codecov[bot]', type: 'User' } }],
+    [{ ...status, context: 'codecov/patch' }],
+    [status, { ...status, id: 2, state: 'pending' }],
+    [status, { ...status, id: 2, state: 'failure' }],
+  ])
+    assert.throws(() => requireSuccessfulCodecov([], statuses));
+  const check = {
+    id: 1,
+    name: 'codecov/project',
+    app: { slug: 'codecov' },
+    status: 'completed',
+    conclusion: 'success',
+  };
+  assert.doesNotThrow(() => requireSuccessfulCodecov([check], []));
+  assert.throws(() =>
+    requireSuccessfulCodecov([{ ...check, conclusion: 'failure' }], [status]),
+  );
 });
