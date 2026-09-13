@@ -1009,3 +1009,78 @@ it('offers scalar distinct-count fields but excludes declared array fields', asy
   expect(await screen.findByRole('option', { name: '客户编号' })).toBeDefined();
   expect(screen.queryByRole('option', { name: '标签数组' })).toBeNull();
 });
+
+it('keeps colon-containing metric and filter IDs independent when panels stay mounted', async () => {
+  const { AnalysisEditor } = await import('../src/analysis/AnalysisEditor.js');
+  const { FilterOperator: Op, filter } = await import('@ahoo-wang/fetcher-wow');
+  const { createFilterConfiguration } =
+    await import('../src/filter/filterConfiguration.js');
+  const filters = (id: string) =>
+    createFilterConfiguration({
+      id,
+      field: 'amount',
+      component: { name: 'buffered' },
+      operator: Op.EQ,
+      props: { value: 1 },
+    });
+  const validity = vi.fn();
+  render(
+    <AnalysisEditor
+      value={{
+        filters: filters('root'),
+        dimensions: [],
+        metrics: [
+          { ...metrics[0], id: 'a:b', filters: filters('c') },
+          { ...metrics[0], id: 'a', alias: 'other', filters: filters('b:c') },
+        ],
+        sort: [],
+        limit: 10,
+        presentation: { layout: 'table', columns: [] },
+      }}
+      context={{
+        fields: [
+          {
+            field: 'amount',
+            label: '金额',
+            type: 'number',
+            operators: [Op.EQ],
+          },
+        ],
+        capability: {
+          count: true,
+          features: { metricFilters: true },
+          fields: [],
+        },
+      }}
+      onChange={() => {}}
+      onFilterValidityChange={validity}
+      extensions={{
+        filters: {
+          buffered: {
+            modes: ['simple', 'advanced'],
+            compile: () => filter.eq('amount', 1),
+            component: ({ onValidityChange }) => (
+              <>
+                <button onClick={() => onValidityChange(false)}>
+                  无效草稿
+                </button>
+                <button onClick={() => onValidityChange(true)}>有效草稿</button>
+              </>
+            ),
+          },
+        },
+      }}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '编辑指标 1' }));
+  fireEvent.click(screen.getAllByText('统计条件', { exact: true }).at(-1)!);
+  fireEvent.click(await screen.findByRole('button', { name: '无效草稿' }));
+  expect(validity).toHaveBeenLastCalledWith(false);
+  fireEvent.click(
+    screen.getByRole('button', { name: '完成编辑', exact: true }),
+  );
+  fireEvent.click(screen.getByRole('button', { name: '编辑指标 2' }));
+  fireEvent.click(screen.getAllByText('统计条件', { exact: true }).at(-1)!);
+  fireEvent.click(await screen.findByRole('button', { name: '有效草稿' }));
+  expect(validity).toHaveBeenLastCalledWith(false);
+});

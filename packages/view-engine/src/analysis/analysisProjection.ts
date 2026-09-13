@@ -170,6 +170,11 @@ export function projectAnalysis(
   )
     return fail('指标单位不兼容，请选择相同单位的指标或查看表格');
   if (
+    presentation.layout !== 'metric' &&
+    new Set(metrics.map(c => c.numberFormat?.style ?? 'decimal')).size > 1
+  )
+    return fail('指标显示格式不兼容，请选择相同格式的指标或查看表格');
+  if (
     presentation.stacked &&
     visualization.stacked &&
     metrics.some(

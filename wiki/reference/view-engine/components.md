@@ -196,3 +196,5 @@ The analysis query editor offers distinct counts, percentile presets P50/P95/P99
 All controls retain incomplete drafts, respect disabled states, and keep invalid references visible for repair. Filters on element-scoped metrics count/filter element records, not root orders. See [models](./models.md#extended-aggregation-analysis) for capabilities, limits, and statistical semantics.
 
 `AnalysisEditorProps.filterEditors` forwards definition-level filter editor mappings to metric and element filters. Metric-filter undo uses the last executed same-scope metric configuration by ID, rather than its first mounted value. The execution summary includes bucket parameters (missing keys, histogram intervals, date units/timezones and dense filling), each metric predicate, percentile parameter, metric expression, derived formula, and HAVING from the retained query plan.
+
+Shared chart axes require compatible units and matching number-format styles; percent and decimal metrics cannot share an axis. Metric cards and tables retain independent formatting per metric.

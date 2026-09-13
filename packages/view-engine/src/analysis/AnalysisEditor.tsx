@@ -809,7 +809,8 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
     value.metrics.every(
       item =>
         !item.filters ||
-        metricValidity[`${item.id}:${item.filters.root.id}`] !== false,
+        metricValidity[JSON.stringify([item.id, item.filters.root.id])] !==
+          false,
     );
   useEffect(() => {
     onFilterValidityChange?.(filtersValid);
@@ -862,9 +863,9 @@ export function AnalysisEditor(props: AnalysisEditorProps) {
           referenceMetrics={referenceMetrics}
           onMetricFilterValidityChange={(id, rootId, valid) =>
             setMetricValidity(previous =>
-              previous[`${id}:${rootId}`] === valid
+              previous[JSON.stringify([id, rootId])] === valid
                 ? previous
-                : { ...previous, [`${id}:${rootId}`]: valid },
+                : { ...previous, [JSON.stringify([id, rootId])]: valid },
             )
           }
         />
