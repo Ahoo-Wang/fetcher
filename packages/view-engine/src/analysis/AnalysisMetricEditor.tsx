@@ -120,7 +120,15 @@ export function AnalysisMetricEditor({
           disabled={disabled}
           value={item.field}
           options={fields.map(f => ({ value: f.field, label: f.label }))}
-          onChange={field => update({ field, props: {} })}
+          onChange={field =>
+            update({
+              field,
+              props:
+                component === 'percentile'
+                  ? { percentile: item.props.percentile }
+                  : {},
+            })
+          }
         />
       )}
       {['numeric', 'distinct-count', 'percentile'].includes(component) &&
@@ -282,12 +290,14 @@ export function AnalysisMetricEditor({
           <p>空操作数或除零时显示无值。</p>
         </>
       )}
-      {component !== 'derived' &&
-        (context.capability.features?.metricFilters || item.filters) && (
-          <details>
-            <summary>统计条件</summary>
-            {item.filters ? (
-              <>
+      {(item.filters ||
+        (component !== 'derived' &&
+          context.capability.features?.metricFilters)) && (
+        <details>
+          <summary>统计条件</summary>
+          {item.filters ? (
+            <>
+              {component !== 'derived' ? (
                 <FilterPanel
                   value={item.filters}
                   appliedValue={appliedValue}
@@ -303,34 +313,37 @@ export function AnalysisMetricEditor({
                   onApply={() => {}}
                   onChange={filters => update({ filters })}
                 />
-                <Button
-                  disabled={disabled}
-                  variant="ghost"
-                  onClick={() => update({ filters: undefined })}
-                >
-                  移除统计条件
-                </Button>
-              </>
-            ) : (
+              ) : (
+                <p>派生指标不支持统计条件，请移除旧条件以保留现有公式。</p>
+              )}
               <Button
                 disabled={disabled}
-                variant="outline"
-                onClick={() =>
-                  update({
-                    filters: createFilterConfiguration({
-                      id: crypto.randomUUID(),
-                      component: { name: 'builtin' },
-                      operator: FilterOperator.MATCH_ALL,
-                      props: {},
-                    }),
-                  })
-                }
+                variant="ghost"
+                onClick={() => update({ filters: undefined })}
               >
-                添加统计条件
+                移除统计条件
               </Button>
-            )}
-          </details>
-        )}
+            </>
+          ) : (
+            <Button
+              disabled={disabled}
+              variant="outline"
+              onClick={() =>
+                update({
+                  filters: createFilterConfiguration({
+                    id: crypto.randomUUID(),
+                    component: { name: 'builtin' },
+                    operator: FilterOperator.MATCH_ALL,
+                    props: {},
+                  }),
+                })
+              }
+            >
+              添加统计条件
+            </Button>
+          )}
+        </details>
+      )}
     </div>
   );
 }

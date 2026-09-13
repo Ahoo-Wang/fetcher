@@ -229,6 +229,13 @@ function ComponentList({
                     ? registry[component].component
                     : undefined;
                 const capability = capabilityByField.get(item.field ?? '');
+                const canMissingKey =
+                  context.capability.features?.missingKey === true &&
+                  context.fields.find(field => field.field === item.field)
+                    ?.type === 'string';
+                const canEnableDense =
+                  context.capability.features?.dense === true &&
+                  value.dimensions.length === 1;
                 const readyToEdit = openedIds.has(item.id);
                 const fields = readyToEdit
                   ? context.fields.filter(field => {
@@ -558,35 +565,57 @@ function ComponentList({
                                       </label>
                                     )}
                                     {component === 'terms' &&
-                                      (context.capability.features
-                                        ?.missingKey ||
+                                      (canMissingKey ||
                                         item.props.missingKey !==
                                           undefined) && (
-                                        <label>
-                                          缺失值归组
-                                          <Input
-                                            disabled={disabled}
-                                            aria-label={`${label} 缺失值归组`}
-                                            value={
-                                              typeof item.props.missingKey ===
-                                              'string'
-                                                ? item.props.missingKey
-                                                : ''
-                                            }
-                                            onChange={e =>
-                                              update(index, {
-                                                props: {
-                                                  ...item.props,
-                                                  missingKey:
-                                                    e.target.value || undefined,
-                                                },
-                                              })
-                                            }
-                                          />
-                                          <span>
-                                            与真实同名桶合并；仅支持字符串分组。
-                                          </span>
-                                        </label>
+                                        <>
+                                          <label>
+                                            缺失值归组
+                                            <Input
+                                              disabled={
+                                                disabled || !canMissingKey
+                                              }
+                                              aria-label={`${label} 缺失值归组`}
+                                              value={
+                                                typeof item.props.missingKey ===
+                                                'string'
+                                                  ? item.props.missingKey
+                                                  : ''
+                                              }
+                                              onChange={event => {
+                                                if (canMissingKey)
+                                                  update(index, {
+                                                    props: {
+                                                      ...item.props,
+                                                      missingKey:
+                                                        event.target.value ||
+                                                        undefined,
+                                                    },
+                                                  });
+                                              }}
+                                            />
+                                            <span>
+                                              与真实同名桶合并；仅支持字符串分组。
+                                            </span>
+                                          </label>
+                                          {!canMissingKey && (
+                                            <Button
+                                              variant="outline"
+                                              disabled={disabled}
+                                              aria-label={`清除${label} 缺失值归组`}
+                                              onClick={() =>
+                                                update(index, {
+                                                  props: {
+                                                    ...item.props,
+                                                    missingKey: undefined,
+                                                  },
+                                                })
+                                              }
+                                            >
+                                              清除缺失值归组
+                                            </Button>
+                                          )}
+                                        </>
                                       )}
                                     {component === 'date-histogram' &&
                                       (context.capability.features?.dense ||
@@ -594,17 +623,28 @@ function ComponentList({
                                         <label>
                                           <input
                                             type="checkbox"
-                                            disabled={disabled}
+                                            disabled={
+                                              disabled ||
+                                              (!canEnableDense &&
+                                                item.props.dense !== true)
+                                            }
                                             aria-label={`${label} 补齐日期`}
                                             checked={item.props.dense === true}
-                                            onChange={e =>
+                                            onChange={event => {
+                                              if (
+                                                event.target.checked &&
+                                                !canEnableDense
+                                              )
+                                                return;
                                               update(index, {
                                                 props: {
                                                   ...item.props,
-                                                  dense: e.target.checked,
+                                                  dense: event.target.checked
+                                                    ? true
+                                                    : undefined,
                                                 },
-                                              })
-                                            }
+                                              });
+                                            }}
                                           />
                                           补齐日期内部缺口（仅单维分组，结果筛选可能移除空桶）
                                         </label>

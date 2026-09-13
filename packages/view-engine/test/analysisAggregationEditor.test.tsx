@@ -760,3 +760,222 @@ it('excludes custom ANY contributions from derived and result-filter choices', a
     screen.queryByRole('option', { name: '代表客户', exact: true }),
   ).toBeNull();
 });
+
+it.each(['number', 'boolean'] as const)(
+  'does not offer missing buckets on %s fields but can clear saved values',
+  async type => {
+    const { AnalysisEditor } =
+      await import('../src/analysis/AnalysisEditor.js');
+    const { AggregationGroupType: G, FilterOperator: Op } =
+      await import('@ahoo-wang/fetcher-wow');
+    const context: AnalysisCompileContext = {
+      fields: [{ field: 'key', label: '分组', type }],
+      capability: {
+        count: true,
+        features: { missingKey: true },
+        fields: [{ field: 'key', groups: [G.TERMS], functions: [] }],
+      },
+    };
+    const config: AnalysisViewConfig = {
+      filters: {
+        mode: 'simple',
+        root: {
+          id: 'all',
+          component: { name: 'builtin' },
+          operator: Op.MATCH_ALL,
+          props: {},
+        },
+      },
+      dimensions: [
+        {
+          id: 'd',
+          alias: 'key',
+          title: '分组',
+          field: 'key',
+          component: { name: 'terms' },
+          props: {},
+        },
+      ],
+      metrics,
+      sort: [],
+      limit: 10,
+      presentation: { layout: 'table', columns: [] },
+    };
+    const changed = vi.fn();
+    const view = render(
+      <AnalysisEditor value={config} context={context} onChange={changed} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '编辑维度 1' }));
+    expect(
+      screen.queryByRole('textbox', { name: '维度 1 缺失值归组' }),
+    ).toBeNull();
+    const invalid = {
+      ...config,
+      dimensions: [{ ...config.dimensions[0], props: { missingKey: '未知' } }],
+    };
+    view.rerender(
+      <AnalysisEditor value={invalid} context={context} onChange={changed} />,
+    );
+    expect(
+      screen.getByRole('textbox', { name: '维度 1 缺失值归组' }),
+    ).toHaveProperty('disabled', true);
+    fireEvent.click(
+      screen.getByRole('button', { name: '清除维度 1 缺失值归组' }),
+    );
+    expect(
+      changed.mock.lastCall![0].dimensions[0].props.missingKey,
+    ).toBeUndefined();
+  },
+);
+it('prevents enabling dense multi-dimensional groups but allows disabling a saved flag', async () => {
+  const { AnalysisEditor } = await import('../src/analysis/AnalysisEditor.js');
+  const {
+    AggregationGroupType: G,
+    AggregationDateUnit: U,
+    FilterOperator: Op,
+  } = await import('@ahoo-wang/fetcher-wow');
+  const context: AnalysisCompileContext = {
+    timeZone: 'UTC',
+    fields: [
+      { field: 'date', label: '日期', type: 'datetime' },
+      { field: 'channel', label: '渠道', type: 'string' },
+    ],
+    capability: {
+      count: true,
+      features: { dense: true },
+      fields: [
+        {
+          field: 'date',
+          groups: [G.DATE_HISTOGRAM],
+          functions: [],
+          dateUnits: [U.DAY],
+        },
+        { field: 'channel', groups: [G.TERMS], functions: [] },
+      ],
+    },
+  };
+  const config: AnalysisViewConfig = {
+    filters: {
+      mode: 'simple',
+      root: {
+        id: 'all',
+        component: { name: 'builtin' },
+        operator: Op.MATCH_ALL,
+        props: {},
+      },
+    },
+    dimensions: [
+      {
+        id: 'date',
+        alias: 'date',
+        title: '日期',
+        field: 'date',
+        component: { name: 'date-histogram' },
+        props: { unit: U.DAY },
+      },
+      {
+        id: 'channel',
+        alias: 'channel',
+        title: '渠道',
+        field: 'channel',
+        component: { name: 'terms' },
+        props: {},
+      },
+    ],
+    metrics,
+    sort: [],
+    limit: 10,
+    presentation: { layout: 'table', columns: [] },
+  };
+  const changed = vi.fn();
+  const view = render(
+    <AnalysisEditor value={config} context={context} onChange={changed} />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '编辑维度 1' }));
+  expect(
+    screen.getByRole('checkbox', { name: '维度 1 补齐日期' }),
+  ).toHaveProperty('disabled', true);
+  view.rerender(
+    <AnalysisEditor
+      value={{
+        ...config,
+        dimensions: config.dimensions.map((d, i) =>
+          i === 0 ? { ...d, props: { ...d.props, dense: true } } : d,
+        ),
+      }}
+      context={context}
+      onChange={changed}
+    />,
+  );
+  expect(
+    screen.getByRole('checkbox', { name: '维度 1 补齐日期' }),
+  ).toHaveProperty('disabled', false);
+  fireEvent.click(screen.getByRole('checkbox', { name: '维度 1 补齐日期' }));
+  expect(changed.mock.lastCall![0].dimensions[0].props.dense).not.toBe(true);
+  expect(changed.mock.lastCall![0].dimensions[0].props.unit).toBe(U.DAY);
+});
+it('removes stale derived filters without replacing the formula', async () => {
+  const { FilterOperator: Op } = await import('@ahoo-wang/fetcher-wow');
+  const value: AnalysisComponentConfig = {
+    ...metrics[0],
+    component: { name: 'derived' },
+    derivedExpression: { type: D.METRIC_REF, metricId: 'source' },
+    props: { displayFormat: 'percent' },
+    filters: {
+      mode: 'simple',
+      root: {
+        id: 'all',
+        component: { name: 'builtin' },
+        operator: Op.MATCH_ALL,
+        props: {},
+      },
+    },
+  };
+  const change = vi.fn();
+  render(
+    <AnalysisMetricEditor
+      value={value}
+      context={{ fields: [], capability: { count: true, fields: [] } }}
+      previousMetrics={[]}
+      onChange={change}
+      label="指标 1"
+    />,
+  );
+  fireEvent.click(screen.getByText('统计条件', { exact: true }));
+  expect(screen.queryByRole('button', { name: '添加统计条件' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '移除统计条件' }));
+  expect(change).toHaveBeenCalledWith({ ...value, filters: undefined });
+});
+it('preserves percentile when changing to another compatible field', async () => {
+  const context: AnalysisCompileContext = {
+    fields: ['a', 'b'].map(field => ({ field, label: field, type: 'number' })),
+    capability: {
+      count: true,
+      features: { percentile: true },
+      fields: ['a', 'b'].map(field => ({
+        field,
+        groups: [],
+        functions: [],
+        percentile: true,
+      })),
+    },
+  };
+  const value = {
+    ...metrics[0],
+    component: { name: 'percentile' },
+    field: 'a',
+    props: { percentile: 99 },
+  };
+  const change = vi.fn();
+  render(
+    <AnalysisMetricEditor
+      value={value}
+      context={context}
+      previousMetrics={[]}
+      onChange={change}
+      label="指标 1"
+    />,
+  );
+  await choose('指标 1 字段', 'b');
+  expect(change).toHaveBeenCalledWith({ ...value, field: 'b' });
+});
