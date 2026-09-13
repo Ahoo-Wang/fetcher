@@ -103,6 +103,11 @@ avoids relying on a second installation to repair that link.
 
 ## Release admission
 
+Stable releases exclude `packages/view-engine`: `pnpm update-version <version>`
+leaves its version unchanged, and `scripts/publish-npm.sh` skips publishing it.
+It remains in workspace builds and validation. The isolated release-script test
+uses a fake publisher and never sends packages to npm.
+
 Admission reads `git rev-parse HEAD` after checkout (including release tags), then
 requires the latest successful `push` or `workflow_dispatch` run for that SHA of
 CI, Engineering Quality, Build Storybook, Integration Test and Generator Test.
