@@ -135,6 +135,9 @@ catalogs:
     react-dom:
       specifier: ^19.2.8
       version: 19.2.8
+    react-error-boundary:
+      specifier: 6.1.5
+      version: 6.1.5
     react-grid-layout:
       specifier: 2.2.4
       version: 2.2.4
@@ -935,6 +938,9 @@ importers:
       react-day-picker:
         specifier: 'catalog:'
         version: 10.0.1(@types/react@19.2.18)(react@19.2.8)
+      react-error-boundary:
+        specifier: 'catalog:'
+        version: 6.1.5(@types/react@19.2.18)(react@19.2.8)
       react-grid-layout:
         specifier: 'catalog:'
         version: 2.2.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -5529,6 +5535,15 @@ packages:
     peerDependencies:
       react: '>= 16.3.0'
       react-dom: '>= 16.3.0'
+
+  react-error-boundary@6.1.5:
+    resolution: {integrity: sha512-l2nk+KhgM6e79tAiHEs3tXTdiTW4ARniKYMQN+cLY5vQFpDOkxuXKIC4uIwYuIKoMpFQ6jEbQz9wBArUmq7GWA==}
+    peerDependencies:
+      '@types/react': ^18.0.0 || ^19.0.0
+      react: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   react-grid-layout@2.2.4:
     resolution: {integrity: sha512-Eb57FsgOMYOfsUGrMI1ku/FFR+dPNPrE8qo+3hwZubpqVSy4GO9v52DeX50Tl3JDYAlCypP4rmw7Vrqk/zOIvA==}
@@ -10835,6 +10850,12 @@ snapshots:
       prop-types: 15.8.1
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
+
+  react-error-boundary@6.1.5(@types/react@19.2.18)(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+    optionalDependencies:
+      '@types/react': 19.2.18
 
   react-grid-layout@2.2.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
