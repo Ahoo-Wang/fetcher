@@ -8,14 +8,14 @@
 
 首个可交付回答一个问题：**用户能否在 Record 视图上完成"筛选、调整列与排序、保存为个人视图、重新打开"这条完整任务（§15.3 闭环一），并且默认 UI 与一个结构不同的自定义组合消费同一套行为。**
 
-| 纳入 | 不纳入（推迟，见第 4 节） |
-|---|---|
+| 纳入                                                                                       | 不纳入（推迟，见第 4 节）                                                            |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | Host 读写合同：分页目录、点查、`WriteObservation`、全部写入携带 `requestId`（§5.5、§11.8） | `services/view-host` Kotlin 服务、`contracts/view-host`、`/hosts/wow`（§2.4、§13.6） |
-| 入口拆分：`.`／`/react`／`/ui`／`/hosts/memory`／`/hosts/indexeddb`（§2.2） | Analysis、Dashboard 的行为 controller 提取（§9、§10、§11.1 对应 Hook） |
-| Filter 完整切片：协议／编辑描述／renderer 三分，`useFilterController`（§7） | Storybook 固定状态集的 Analysis／Dashboard 部分（§11.7） |
-| Record 完整切片：`useRecordController`、结果与展示分离、汇总与动作守卫（§8） | §14 中尚未被本轮切片消费的全局预算项 |
-| Memory、IndexedDB 两个本地 Host 按新合同重写；`dev/http` 作为合同形状探针 | SSR 预载（规范本身也排除，§6.3） |
-| 闭环一的端到端验证、第二消费者、浏览器矩阵、真实包产物验证（§17） | 定义维护写模型（§4.4 只做定义读取与 revision 携带） |
+| 入口拆分：`.`／`/react`／`/ui`／`/hosts/memory`／`/hosts/indexeddb`（§2.2）                | Analysis、Dashboard 的行为 controller 提取（§9、§10、§11.1 对应 Hook）               |
+| Filter 完整切片：协议／编辑描述／renderer 三分，`useFilterController`（§7）                | Storybook 固定状态集的 Analysis／Dashboard 部分（§11.7）                             |
+| Record 完整切片：`useRecordController`、结果与展示分离、汇总与动作守卫（§8）               | §14 中尚未被本轮切片消费的全局预算项                                                 |
+| Memory、IndexedDB 两个本地 Host 按新合同重写；`dev/http` 作为合同形状探针                  | SSR 预载（规范本身也排除，§6.3）                                                     |
+| 闭环一的端到端验证、第二消费者、浏览器矩阵、真实包产物验证（§17）                          | 定义维护写模型（§4.4 只做定义读取与 revision 携带）                                  |
 
 Analysis 与 Dashboard 的现有实现在本轮**原样迁入 `/ui`**，继续通过 Engine 使用新的 Host 合同工作；规范 §15.2 明确允许 `/ui` 先承载尚未完成行为提取的既有组件，前提是不反向污染 `/react`。
 
@@ -158,14 +158,14 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 
 ## 4. 推迟项与重新启动的触发条件
 
-| 推迟项 | 规范位置 | 触发条件 |
-|---|---|---|
-| `useAnalysisController`、Analysis 编辑转换纯化 | §9、§11.1 | S4 合并后启动，复用 S4 的结果控制器模式 |
-| Dashboard 逐面板应用计划、布局事务、`useDashboardLayoutEditor` | §10、§11.1 | Analysis 切片完成；Dashboard 内容面板必须复用 S4／Analysis 的结果契约 |
-| `services/view-host`、`contracts/view-host`、`/hosts/wow` | §2.4、§13.6 | S1 合同在 Memory 与 `dev/http` 两个消费者上稳定且闭环一通过；届时再决定后端在本仓库还是独立仓库落地 |
-| 定义维护写模型与定义重载四步 | §4.4、§13.6 | 与后端切片同时；本轮只要求定义携带 `revision` 并进入查询来源 |
-| §14 全局预算（位置数、结果字节、恢复总量） | §14.1 | 各切片只实现自己消费的预算项（S1：未核对写入 16 项／8 MiB、目录摘要缓存；S4：结果缓存），其余在 Dashboard 切片补齐 |
-| Storybook 的 Analysis／Dashboard 状态 | §11.7 | 对应切片启动时 |
+| 推迟项                                                         | 规范位置    | 触发条件                                                                                                           |
+| -------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| `useAnalysisController`、Analysis 编辑转换纯化                 | §9、§11.1   | S4 合并后启动，复用 S4 的结果控制器模式                                                                            |
+| Dashboard 逐面板应用计划、布局事务、`useDashboardLayoutEditor` | §10、§11.1  | Analysis 切片完成；Dashboard 内容面板必须复用 S4／Analysis 的结果契约                                              |
+| `services/view-host`、`contracts/view-host`、`/hosts/wow`      | §2.4、§13.6 | S1 合同在 Memory 与 `dev/http` 两个消费者上稳定且闭环一通过；届时再决定后端在本仓库还是独立仓库落地                |
+| 定义维护写模型与定义重载四步                                   | §4.4、§13.6 | 与后端切片同时；本轮只要求定义携带 `revision` 并进入查询来源                                                       |
+| §14 全局预算（位置数、结果字节、恢复总量）                     | §14.1       | 各切片只实现自己消费的预算项（S1：未核对写入 16 项／8 MiB、目录摘要缓存；S4：结果缓存），其余在 Dashboard 切片补齐 |
+| Storybook 的 Analysis／Dashboard 状态                          | §11.7       | 对应切片启动时                                                                                                     |
 
 ## 5. 每个切片的统一检查清单
 
