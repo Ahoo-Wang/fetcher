@@ -131,6 +131,7 @@ export class InstanceSource {
     id: string,
     signal: AbortSignal,
     definition?: ViewDefinition,
+    readFence?: string,
   ): Promise<ViewInstance> {
     if (this.hasLocalCatalog) {
       if (!definition) throw new Error('本地实例需要视图定义');
@@ -140,7 +141,10 @@ export class InstanceSource {
       return copy(found);
     }
     if (!this.host.instance?.load) throw new Error(`无法加载实例：${id}`);
-    return this.host.instance.load(id, { signal });
+    return this.host.instance.load(id, {
+      signal,
+      ...(readFence ? { readFence } : {}),
+    });
   }
 
   async preference(signal: AbortSignal): Promise<PreferenceState> {

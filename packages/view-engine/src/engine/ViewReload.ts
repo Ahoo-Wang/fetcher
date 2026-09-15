@@ -282,7 +282,12 @@ export class ViewReload {
     } else
       result = await withDeadline(
         () =>
-          this.source.load(unverified?.id ?? id, controller.signal, definition),
+          this.source.load(
+            unverified?.id ?? id,
+            controller.signal,
+            definition,
+            this.work.readFence(unverified?.id ?? id),
+          ),
         this.store.limits.loadTimeoutMs,
         controller,
       );
@@ -309,6 +314,7 @@ export class ViewReload {
     const baseline = copy(result);
     this.work.clearDelete(id);
     this.work.clearPendingWrite(id);
+    this.work.clearReadFence(unverified?.id ?? id);
     return baseline;
   }
 

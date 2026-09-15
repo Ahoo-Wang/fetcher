@@ -46,6 +46,7 @@ import {
   type PreferenceState,
   type ViewDeleteReceipt,
   type WriteObservation,
+  type WritePrecondition,
 } from '../contracts/viewServiceContract.js';
 
 /** 类型保持的数组守卫：Array.isArray 的 any[] 谓词会把 readonly 数组退化为 any[]。 */
@@ -53,9 +54,38 @@ function isReadonlyArray(value: unknown): value is readonly unknown[] {
   return Array.isArray(value);
 }
 
+/** An uncertain preference write keeps its identity so the same intent replays under the same key. */
+interface PreferenceIntent {
+  key: string;
+  requestId: string;
+  precondition: WritePrecondition;
+}
+
 /** Explicit persisted name, deletion and user-preference operations. */
 export class ViewManagement {
   private defaultWrite?: { version: number };
+  private readonly preferenceIntents = new Map<
+    'saveDefault' | 'saveOrder',
+    PreferenceIntent
+  >();
+  /** Reuse the identity and precondition of an unresolved intent with the same payload. */
+  private preferenceIntent(
+    action: 'saveDefault' | 'saveOrder',
+    payload: unknown,
+  ): PreferenceIntent {
+    const key = JSON.stringify(payload);
+    const existing = this.preferenceIntents.get(action);
+    if (existing && existing.key === key) return existing;
+    const intent = {
+      key,
+      requestId: crypto.randomUUID(),
+      precondition: preconditionFor(
+        this.store.getSnapshot().preference.revision,
+      ),
+    };
+    this.preferenceIntents.set(action, intent);
+    return intent;
+  }
   constructor(
     private readonly store: SessionStore,
     private readonly scope: EngineScope,
@@ -142,15 +172,17 @@ export class ViewManagement {
         this.store.patch(id, { writeStatus: 'renaming', writeError: null });
       if (!current()) return;
       let observation: WriteObservation<ViewInstance>;
+      const controller = new AbortController();
       try {
         observation = readWriteObservation<ViewInstance>(
           await withDeadline(
             () =>
               this.host.instance!.rename!(id, title, target.revision, {
                 requestId,
+                signal: controller.signal,
               }),
             this.store.limits.writeTimeoutMs,
-            new AbortController(),
+            controller,
           ),
         );
       } catch (error) {
@@ -279,9 +311,7 @@ export class ViewManagement {
     this.assertPreferenceKnown();
     const request = { version: this.scope.version };
     this.defaultWrite = request;
-    const precondition = preconditionFor(
-      this.store.getSnapshot().preference.revision,
-    );
+    const intent = this.preferenceIntent('saveDefault', instanceId);
     try {
       const controller = new AbortController();
       const observation = readWriteObservation<PreferenceState>(
@@ -290,8 +320,8 @@ export class ViewManagement {
             this.host.preference!.saveDefault!(
               this.definitionId,
               instanceId,
-              precondition,
-              { requestId: crypto.randomUUID(), signal: controller.signal },
+              intent.precondition,
+              { requestId: intent.requestId, signal: controller.signal },
             ),
           this.store.limits.writeTimeoutMs,
           controller,
@@ -299,6 +329,8 @@ export class ViewManagement {
       );
       if (!this.scope.current(request.version) || this.defaultWrite !== request)
         return;
+      if (observation.outcome === 'rejected')
+        this.preferenceIntents.delete('saveDefault');
       if (observation.outcome !== 'committed')
         throw new ViewServiceError(
           observation.issue.code,
@@ -307,6 +339,9 @@ export class ViewManagement {
       const state = readPreferenceState(observation.value);
       if (state.revision !== observation.revision)
         throw new Error('偏好回执的版本不一致');
+      if (state.defaultInstanceId !== instanceId)
+        throw new Error('默认视图回执与请求目标不一致，请重新加载核对');
+      this.preferenceIntents.delete('saveDefault');
       this.defaultWrite = undefined;
       this.adoptPreference(state);
     } catch (error) {
@@ -377,9 +412,7 @@ export class ViewManagement {
     const lifecycle = this.scope.version;
     const token = Symbol();
     this.work.beginOrder(token);
-    const precondition = preconditionFor(
-      this.store.getSnapshot().preference.revision,
-    );
+    const intent = this.preferenceIntent('saveOrder', change);
     try {
       const controller = new AbortController();
       const observation = readWriteObservation<PreferenceState>(
@@ -388,8 +421,8 @@ export class ViewManagement {
             this.host.preference!.saveOrder!(
               this.definitionId,
               change,
-              precondition,
-              { requestId: crypto.randomUUID(), signal: controller.signal },
+              intent.precondition,
+              { requestId: intent.requestId, signal: controller.signal },
             ),
           this.store.limits.writeTimeoutMs,
           controller,
@@ -397,6 +430,8 @@ export class ViewManagement {
       );
       if (!this.scope.current(lifecycle) || this.work.ordering !== token)
         return;
+      if (observation.outcome === 'rejected')
+        this.preferenceIntents.delete('saveOrder');
       if (observation.outcome !== 'committed')
         throw new ViewServiceError(
           observation.issue.code,
@@ -405,6 +440,7 @@ export class ViewManagement {
       const state = readPreferenceState(observation.value);
       if (state.revision !== observation.revision)
         throw new Error('偏好回执的版本不一致');
+      this.preferenceIntents.delete('saveOrder');
       for (const id of scopeInstanceIds) this.loader.addCatalogued(id);
       this.loader.applyCatalogOrder(state.order);
       const latest = this.store.getSnapshot().instanceIds;
@@ -465,12 +501,17 @@ export class ViewManagement {
         this.store.patch(id, { writeStatus: 'deleting', writeError: null });
       if (!current()) return;
       let observation: WriteObservation<ViewDeleteReceipt>;
+      const controller = new AbortController();
       try {
         observation = readWriteObservation<ViewDeleteReceipt>(
           await withDeadline(
-            () => this.host.instance!.delete!(id, revision, { requestId }),
+            () =>
+              this.host.instance!.delete!(id, revision, {
+                requestId,
+                signal: controller.signal,
+              }),
             this.store.limits.writeTimeoutMs,
-            new AbortController(),
+            controller,
           ),
         );
       } catch (error) {

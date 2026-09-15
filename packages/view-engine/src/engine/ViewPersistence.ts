@@ -415,6 +415,8 @@ export class ViewPersistence {
       throw new Error('保存结果不符合原样保存契约，请重新加载核对');
     const saved = copy(result);
     const createdId = saved.id;
+    if (committed.visibility === 'pending')
+      this.work.noteReadFence(createdId, committed.readFence);
     this.work.finishCreate(id);
     let created = {
       ...createSession(
@@ -536,6 +538,9 @@ export class ViewPersistence {
     const saved = copy(result);
     const latest = this.store.session(id);
     this.work.clearPendingWrite(id);
+    if (committed.visibility === 'pending')
+      this.work.noteReadFence(id, committed.readFence);
+    else this.work.clearReadFence(id);
     this.work.finishWrite(id, token, () =>
       this.store.patch(id, {
         ...baselinePatch(saved, latest.instance),

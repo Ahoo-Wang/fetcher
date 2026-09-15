@@ -325,3 +325,30 @@ it('reports a missing explicit instance as a workspace error without selecting a
   });
   engine.dispose();
 });
+
+it('drops catalog members that disappeared from the host on reload while keeping opened sessions', async () => {
+  const { all, load } = pagedHost(7);
+  const list = vi
+    .fn()
+    .mockResolvedValueOnce(page(all))
+    .mockResolvedValueOnce(page([all[1], all[3]]));
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: { list, load },
+      preference: { load: async () => preference('v1') },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await engine.selectInstance('v5');
+  expect(engine.getSnapshot().instanceIds).toHaveLength(7);
+  await engine.reloadCatalog();
+  expect(engine.getSnapshot().instanceIds).toEqual(['v1', 'v3', 'v5']);
+  expect(Object.keys(engine.getSnapshot().catalog.summaries).sort()).toEqual([
+    'v1',
+    'v3',
+    'v5',
+  ]);
+  expect(engine.getSnapshot().selectedInstanceId).toBe('v5');
+  engine.dispose();
+});

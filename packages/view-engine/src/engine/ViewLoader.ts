@@ -247,9 +247,16 @@ export class ViewLoader {
         }
         summaries[item.id] = item;
       }
+      // Beyond the loaded pages only opened sessions and pending creates stay listed; stale
+      // members from an earlier catalog load are dropped.
       const extras = this.store
         .getSnapshot()
-        .instanceIds.filter(id => !this.catalogIds.includes(id));
+        .instanceIds.filter(
+          id =>
+            !this.catalogIds.includes(id) &&
+            (this.store.find(id) !== undefined ||
+              this.store.findPendingCreate(id) !== undefined),
+        );
       this.store.publish({
         instanceIds: [...this.catalogIds, ...extras],
         catalog: {

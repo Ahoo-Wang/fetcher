@@ -87,6 +87,7 @@ export function validateViewInstanceSummary(
     value.kind !== 'dashboard'
   )
     throw new Error('视图类型无效');
+  if (!definition[value.kind]) throw new Error('定义未声明此视图能力');
   assertObject(value.scope, '实例范围');
   if (
     value.scope.type !== 'personal' &&

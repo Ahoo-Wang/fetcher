@@ -35,6 +35,8 @@ interface InstanceOperation {
   pending?: PendingWrite;
   /** Request identity of the save currently in flight, before its outcome is known. */
   lastRequestId?: string;
+  /** Read fence of the last committed-but-pending write; handed back to the host on the next read. */
+  readFence?: string;
 }
 
 /** Owns operation identities and recovery together; callers never mutate coordination maps. */
@@ -69,7 +71,8 @@ export class InstanceWork {
       !operation.creation &&
       !operation.deletion &&
       !operation.pending &&
-      !operation.lastRequestId
+      !operation.lastRequestId &&
+      !operation.readFence
     )
       this.operations.delete(id);
   }
@@ -173,6 +176,17 @@ export class InstanceWork {
     const operation = this.operation(id);
     operation.pending = write;
     delete operation.lastRequestId;
+  }
+  noteReadFence(id: string, readFence: string): void {
+    this.operation(id).readFence = readFence;
+  }
+  readFence(id: string): string | undefined {
+    return this.operations.get(id)?.readFence;
+  }
+  clearReadFence(id: string): void {
+    const operation = this.operations.get(id);
+    if (operation) delete operation.readFence;
+    this.prune(id);
   }
   clearPendingWrite(id: string): void {
     const operation = this.operations.get(id);

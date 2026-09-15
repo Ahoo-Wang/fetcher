@@ -90,9 +90,10 @@ it('can reopen and retry the original uncertain deletion without enabling other 
     expect(manager.queryByRole('button', { name: '删除我的订单' })).toBeNull(),
   );
   expect(host.instance!.delete).toHaveBeenCalledTimes(2);
-  expect(vi.mocked(host.instance!.delete!).mock.calls[1]).toEqual(
-    vi.mocked(host.instance!.delete!).mock.calls[0],
-  );
+  const [firstDelete, retriedDelete] = vi.mocked(host.instance!.delete!).mock
+    .calls;
+  expect(retriedDelete.slice(0, 2)).toEqual(firstDelete.slice(0, 2));
+  expect(retriedDelete[2].requestId).toBe(firstDelete[2].requestId);
 });
 
 it('manages names and deletion together while protecting system views and pending filters', async () => {

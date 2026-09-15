@@ -67,7 +67,12 @@ it.each([
       true,
     );
     await engine.deleteInstance();
-    expect(remove.mock.calls[1]).toEqual(remove.mock.calls[0]);
+    expect(remove.mock.calls[1].slice(0, 2)).toEqual(
+      remove.mock.calls[0].slice(0, 2),
+    );
+    expect(remove.mock.calls[1][2].requestId).toBe(
+      remove.mock.calls[0][2].requestId,
+    );
     expect(remove.mock.calls[1][2].requestId).toBe(
       remove.mock.calls[0][2].requestId,
     );

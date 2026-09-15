@@ -103,8 +103,8 @@ it('retries group-local keyboard ordering while preserving drafts, selection and
   expect(saveOrder).toHaveBeenLastCalledWith(
     'orders',
     {
-      scopeInstanceIds: ['system', 'second', 'mine'],
-      orderedInstanceIds: ['system', 'second', 'mine'],
+      scopeInstanceIds: ['mine', 'second'],
+      orderedInstanceIds: ['second', 'mine'],
     },
     { type: 'absent' },
     expect.objectContaining({ requestId: expect.any(String) }),
@@ -146,8 +146,8 @@ it('isolates ordering permissions between groups', async () => {
     expect(host.preference!.saveOrder).toHaveBeenCalledExactlyOnceWith(
       'orders',
       {
-        scopeInstanceIds: ['second', 'mine', 'system'],
-        orderedInstanceIds: ['second', 'mine', 'system'],
+        scopeInstanceIds: ['mine', 'second'],
+        orderedInstanceIds: ['second', 'mine'],
       },
       { type: 'absent' },
       expect.objectContaining({ requestId: expect.any(String) }),

@@ -416,7 +416,7 @@ Record sessions retain `filterDraft`, `filterBaseline`, `appliedFilter`, `filter
 
 Both session kinds expose `editorEpoch`. Accepting a reviewed remote version advances it and discards local editor buffers; ordinary reload/restore retain their documented non-destructive input behavior. Custom mounted editors should bind commands and reset their local buffers when `(instance.id, editorEpoch)` changes, as the built-in views do. Old validity callbacks are ignored after this reset; old analysis edits and record draft edits are rejected rather than overwriting the accepted remote configuration. Published active and pending-create sessions use the same final validation path. Record admission always checks pagination/layout discriminants and nested presentation structure; missing field or capability references remain recoverable semantic errors. Cancelling an analysis refresh retains the successful result status, allowing subsequent automatic refresh.
 
-All record operations are on `engine.record(id)`: `setFilterDraft(configuration, valid?)`, `setFilterValidity(valid)`, `setFilterMode(mode)`, `applyFilter()`, `setSort(sort)`, `setColumns(columns)`, `setLayout(layout)`, `setCardConfig(card)`, `setPage(index)`, `setPageSize(size)`, `nextPage()`, `setSelection(keys)`, `refresh({ background? }?)`, `retryQuery()` and `refreshSummary()`. The facade no longer exposes direct record commands. Shared operations are `setTitle`, `save`, `saveAs`, `restore`, `reloadInstance`, `renameInstance`, `deleteInstance`, `setDefaultInstance`, `reorderInstances(orderedInstanceIds, scopeInstanceIds?)`, `loadMoreInstances` and `loadSavedInstance(id)`. Record restore restores the baseline and queries; analysis restore restores its working configuration without running.
+All record operations are on `engine.record(id)`: `setFilterDraft(configuration, valid?)`, `setFilterValidity(valid)`, `setFilterMode(mode)`, `applyFilter()`, `setSort(sort)`, `setColumns(columns)`, `setLayout(layout)`, `setCardConfig(card)`, `setPage(index)`, `setPageSize(size)`, `nextPage()`, `setSelection(keys)`, `refresh({ background? }?)`, `retryQuery()` and `refreshSummary()`. The facade no longer exposes direct record commands. Shared operations are `setTitle`, `save`, `saveAs`, `restore`, `reloadInstance`, `renameInstance`, `deleteInstance`, `setDefaultInstance`, `reorderInstances(orderedInstanceIds, scopeInstanceIds?)`, `loadMoreInstances`, `reloadCatalog` and `loadSavedInstance(id)`. Record restore restores the baseline and queries; analysis restore restores its working configuration without running.
 
 ### Conflicts, unknown writes and runtime bounds
 
@@ -874,7 +874,7 @@ are read synchronously from the host; an unavailable policy only limits manageme
 never blocks loading or record queries. `state.instanceIds` is the catalog order followed by opened
 or created instances outside the loaded pages; `state.sessions[id]` exists only for opened
 instances; `state.defaultInstanceId` is the effective personal default. `loadMoreInstances()`
-appends the next catalog page; `loadSavedInstance(id, signal?)` is a point read without a session,
+appends the next catalog page; `reloadCatalog()` reloads the catalog from its first page after a failed read without clearing sessions or the selection; `loadSavedInstance(id, signal?)` is a point read without a session,
 selection or query. Retry uses load(), and disposal/reload cancels the signal. updateHost is a
 synchronous, same-scope replacement of prepared services; later changes notify permission.subscribe.
 

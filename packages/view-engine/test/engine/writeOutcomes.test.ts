@@ -257,9 +257,12 @@ it('renames and deletes catalog entries that were never opened', async () => {
     delete: true,
   });
   await engine.renameInstance('Shared renamed', 'shared');
-  expect(rename).toHaveBeenCalledWith('shared', 'Shared renamed', 'r1', {
-    requestId: expect.any(String),
-  });
+  expect(rename).toHaveBeenCalledWith(
+    'shared',
+    'Shared renamed',
+    'r1',
+    expect.objectContaining({ requestId: expect.any(String) }),
+  );
   expect(engine.getSnapshot().catalog.summaries.shared).toMatchObject({
     title: 'Shared renamed',
     revision: 'r1+',
@@ -273,9 +276,11 @@ it('renames and deletes catalog entries that were never opened', async () => {
   );
   expect(engine.getSnapshot().catalog.summaries.third.title).toBe('third');
   await engine.deleteInstance('third');
-  expect(remove).toHaveBeenCalledWith('third', 'r1', {
-    requestId: expect.any(String),
-  });
+  expect(remove).toHaveBeenCalledWith(
+    'third',
+    'r1',
+    expect.objectContaining({ requestId: expect.any(String) }),
+  );
   expect(engine.getSnapshot().instanceIds).toEqual(['mine', 'shared']);
   expect(engine.getSnapshot().catalog.summaries.third).toBeUndefined();
   expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
@@ -569,4 +574,95 @@ it('rejects a rename receipt that changes the scope of an unopened catalog entry
     scope: { type: 'personal' },
   });
   engine.dispose();
+});
+
+it('hands a pending write fence back to the host on the next reload', async () => {
+  const all = [instance()];
+  const load = vi.fn(async () => ({
+    ...instance(),
+    title: 'Fenced',
+    revision: 'r2',
+  }));
+  const save = vi.fn(async (value: { revision: string }) => ({
+    outcome: 'committed',
+    value: { ...value, revision: 'r2' },
+    revision: 'r2',
+    visibility: 'pending',
+    readFence: 'fence-7',
+  }));
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: { list: async () => page(all), load, save },
+      preference: { load: async () => preference('mine') },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  engine.setTitle('Fenced');
+  await engine.save();
+  expect(selected(engine).visibility).toBe('pending');
+  await engine.reloadInstance();
+  expect(load).toHaveBeenLastCalledWith(
+    'mine',
+    expect.objectContaining({ readFence: 'fence-7' }),
+  );
+  await engine.reloadInstance();
+  expect(load.mock.calls[2][1]).not.toHaveProperty('readFence');
+  engine.dispose();
+});
+
+it('replays an uncertain default write under its original request identity and precondition', async () => {
+  const saveDefault = vi
+    .fn()
+    .mockResolvedValueOnce(unknownWrite('lost'))
+    .mockResolvedValueOnce(committedWrite(preference('shared', 'p2'), 'p2'))
+    .mockResolvedValueOnce(committedWrite(preference('mine', 'p3'), 'p3'));
+  const { engine } = setup({
+    host: {
+      preference: { saveDefault },
+      permission: { getInstance: managementPermissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(engine.setDefaultInstance('shared')).rejects.toThrow(/lost/);
+  await engine.setDefaultInstance('shared');
+  const [first, second] = saveDefault.mock.calls as [
+    unknown,
+    unknown,
+    unknown,
+    { requestId: string },
+  ][][];
+  expect(second[2]).toEqual(first[2]);
+  expect(second[3].requestId).toBe(first[3].requestId);
+  expect(engine.getSnapshot().defaultInstanceId).toBe('shared');
+  await engine.setDefaultInstance('mine');
+  expect(saveDefault.mock.calls[2][3].requestId).not.toBe(first[3].requestId);
+  engine.dispose();
+});
+
+it('rejects a default receipt that names a different target', async () => {
+  const saveDefault = vi
+    .fn()
+    .mockResolvedValueOnce(committedWrite(preference('mine', 'p2'), 'p2'));
+  const { engine } = setup({
+    host: {
+      preference: { saveDefault },
+      permission: { getInstance: managementPermissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(engine.setDefaultInstance('shared')).rejects.toThrow(
+    /目标不一致/,
+  );
+  expect(engine.getSnapshot().defaultInstanceId).toBe('mine');
+  engine.dispose();
+});
+
+it('rejects catalog summaries of a kind the definition does not declare', () => {
+  expect(() =>
+    validateViewInstanceSummary(
+      { ...summaryOf(instance()), kind: 'analysis' },
+      definition,
+    ),
+  ).toThrow(/未声明/);
 });

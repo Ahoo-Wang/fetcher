@@ -48,7 +48,7 @@ export function ViewManagerGroup({
         owner={engine}
         disabled={busy || !capabilities.reorder}
         titleOf={item => item.entry.summary.title}
-        onChange={async (_next, move) => {
+        onChange={async next => {
           if (busyRef.current || !engine.canReorderInstances()) return false;
           const state = engine.getSnapshot();
           const current =
@@ -59,16 +59,14 @@ export function ViewManagerGroup({
             current.some((entry, i) => entry.id !== items[i].id)
           )
             return false;
-          // Reorder within the loaded catalog; the group's relative slots are what changes.
-          const ids = [...state.instanceIds];
-          const from = ids.indexOf(move.id),
-            to = ids.indexOf(current[move.to].id);
-          if (from < 0 || to < 0) return false;
-          ids.splice(from, 1);
-          ids.splice(to, 0, move.id);
+          // Only this group's slots move; other groups keep their positions in the catalog.
           let succeeded = false;
           await execute(
-            () => engine.reorderInstances(ids),
+            () =>
+              engine.reorderInstances(
+                next.map(item => item.id),
+                items.map(item => item.id),
+              ),
             () => {
               succeeded = true;
             },
