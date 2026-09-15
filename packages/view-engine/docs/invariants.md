@@ -335,7 +335,7 @@
 | INV-05-99  | §5.5  | 只用本地配置执行时 definition/config 可由调用方直接给定；需持久化时才要求写入、版本与核对合同                | E08                |
 | INV-05-100 | §5.5  | 不用适配器内部的隐藏重试弥补缺失的请求身份                                                                   | H01                |
 | INV-05-101 | §5.5  | definition.load 独立加载定义及来源／revision；引擎不获得定义管理命令                                         | G13                |
-| INV-05-102 | §5.5  | instance.list 返回一页摘要和 nextCursor，不包含全部会话或默认偏好                                            | -                  |
+| INV-05-102 | §5.5  | instance.list 返回一页摘要和 nextCursor，接受可选读取屏障，不包含全部会话或默认偏好                          | W16                |
 | INV-05-103 | §5.5  | instance.load 可独立点查完整实例；摘要不是完整实例，不据其构造查询会话                                       | H11                |
 | INV-05-104 | §5.5  | instance.create/save 携带设计依据 definitionRevision；rename/delete 不重写配置                               | G04                |
 | INV-05-105 | §5.5  | preference.load 与实例列表分离；偏好不存在时不能伪造 revision=0                                              | H10                |

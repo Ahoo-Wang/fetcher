@@ -46,10 +46,11 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 合同变更与所有按旧合同编译的代码在同一 PR 内完成：本地 Host、`dev/http`、引擎调用方、examples、测试与文档。AGENTS.md 对 view-engine 的例外条款允许破坏 API，但要求同时更新调用方、测试与文档，不留临时兼容层。
 
 - `src/contracts/ViewHost.ts`：
-  - `instance.list(definitionId, { query?, cursor?, limit? }, signal)` 返回 `Page<ViewInstanceSummary>`，只含 `items`、`nextCursor` 和可选授权后总数；不再返回 `defaultInstanceId`。
+  - `instance.list(definitionId, { query?, cursor?, limit?, readFence? }, signal)` 返回 `Page<ViewInstanceSummary>`，只含 `items`、`nextCursor` 和可选授权后总数；不再返回 `defaultInstanceId`。目录读取同样接受写回执中的 `readFence`，否则 create／rename／delete 后的"列表同步中"无法通过读屏障结清（§5.4、§13.6）。
   - `instance.create / save / rename / delete` 统一接收 `WriteContext { requestId; signal? }` 与各自期望版本，返回 `WriteObservation<T>`；`delete` 回执只含目标实例删除事实，删除 `ViewDeleteResult.defaultInstance`。
   - 新增 `preference.load(definitionId, { readFence? }, signal)`；`preference.saveOrder(definitionId, { scopeInstanceIds, orderedInstanceIds }, precondition, ctx)` 与 `preference.saveDefault(definitionId, instanceId | null, precondition, ctx)` 返回 `WriteObservation<PreferenceState>`，前提为 `absent` 或 `matches(revision)`。偏好聚合按租户、用户、定义划分，同一 Host 可服务多个定义，因此每个偏好端口都显式携带 `definitionId`（§13.6）。
   - 新增只读 `operation.reconcile`。
+  - `ViewPermissionService` 删除 `load` 与 `refresh`，只保留同步 `getInstance`、`getDefinition` 与可选 `subscribe`；远端获取、缓存与返回顺序由 Host 或应用负责，Engine 不再发起许可请求（§13.3、INV-13-51）。
   - `definition.load(definitionId, { readFence? }, signal)` 返回携带 `id`、`revision` 的定义；`instance.load(instanceId, { readFence? }, signal)` 同样接受可选读取屏障。`readFence` 是服务返回的不透明令牌，只能提交回同服务、同主体范围的对应 load 端口，前端不解析、不比较（§5.5）。这是 `committed.visibility=pending` 能够被核对的前提。
 - `src/contracts/viewServiceContract.ts`：删除 `LEGACY_VIEW_FORMATS`、`projectSupportedInstance`、`SupportedViewFormats`；错误码增加 `DEFINITION_CHANGED`、`CURSOR_EXPIRED`，`UNKNOWN_OUTCOME` 只作为 `WriteObservation.unknown` 的问题码，不再作为 Promise reject。
 - `src/record/MemoryViewHost.ts`、`StatefulViewHost.ts`、`IndexedDBViewHost.ts`：按新合同实现，Memory 同步返回 `committed/visible`，IndexedDB 以事务 `oncomplete` 为提交；同键不同正文拒绝、版本冲突、`absent` 前提在两者都实现（§5.5、§13.4）。
@@ -58,16 +59,16 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 
 同一 PR 内的引擎调用方改动：
 
-- `src/engine/ViewLoader.ts`：拆掉 `Promise.all([definition, list, permission])` 屏障。定义加载、第一页目录、个人偏好、许可各自独立状态与失败；目录项只进入有界摘要缓存，不再为每一项 `createSession`；会话在显式打开时建立（§4.1、§11.8）。
+- `src/engine/ViewLoader.ts`：拆掉 `Promise.all([definition, list, permission])` 屏障，并删除其中对 `permission.load`／`refresh` 的调用。定义加载、第一页目录、个人偏好各自独立状态与失败，许可只同步读取 Host 已接受的结果；目录项只进入有界摘要缓存，不再为每一项 `createSession`；会话在显式打开时建立（§4.1、§11.8）。
 - `src/engine/ViewPersistence.ts`、`InstanceWork.ts`、`ViewReload.ts`、`writeRecovery.ts`：消费四种 `WriteObservation` 结局；`committed.visibility=pending` 推进基线并保存 `readFence`；`unknown` 与 `committed_pending_receipt` 保留原 `requestId`、正文与提交证明；`rejected` 保留草稿（§5.4）。
 - `src/engine/ViewManagement.ts`：删除后的选中回退与服务端默认偏好分开处理（§11.3、§13.6 删除小节）。
-- `src/engine/instancePermissions.ts`：许可不再进入加载屏障；未接入或未就绪只影响管理操作可用性（§13.3）。
+- `src/engine/instancePermissions.ts`：只订阅 Host 的同步 getter 与 `subscribe`；未接入或未就绪只影响管理操作可用性，直达实例不触发任何许可网络请求（§13.3、D13）。
 - 状态快照新增：目录页状态、偏好状态、待核对写入列表。
 
 同一 PR 内的消费者与文档：
 
 - `examples/react/sales-order/host.ts`、`examples/react/catalog/*`、`examples/react/compensation/*`、`examples/core.mjs`、`dev/HttpOrderExample.tsx` 切到新合同（`verify-package.mjs` 会对 examples 做类型检查，不能留到后续 PR）。
-- README 双语中 Host 接入示例同步。
+- README 双语中 Host 接入示例同步；`skills/fetcher-view-engine/references/api.md` 中的 Host 合同、`ViewInstanceList` 与偏好签名描述同一 PR 更新（AGENTS.md 要求公共 API 变更同步 skill 参考）。
 
 **PR S1-b：核对与目录状态补齐（不改合同）**
 
@@ -79,7 +80,7 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 
 - S1-a 单独合并即通过包测试与根级 `pnpm test:unit`；不存在任何按旧合同编译的调用方或临时适配层。
 - 类型层：不带 `requestId` 的写入调用无法编译；`list` 返回值不含实例配置；偏好端口缺少 `definitionId` 无法编译。
-- 场景：A05、A07、A08、A13、A17、D13、D14、D15、D16、H01、H07、H09、H11、H12、H13（Memory 与 IndexedDB 两个 Host 各跑一遍），W16 只验证前端映射。
+- 场景：A04、A05、A07、A08、A13、A17、D13、D14、D15、D16、H07、H09、H10、H11、H12、H13（Memory 与 IndexedDB 两个 Host 各跑一遍）；H01 限于实例与偏好写入，定义写入部分随定义写模型切片验收；W16 只验证前端映射。A04 覆盖显式打开改为异步点查后两个导航请求的竞争；H10 覆盖顺序与默认值同时以 `absent` 前提首次创建时只有一个成功。
 - 结构：`ViewLoader` 中不再存在跨定义／目录／许可的单一 `withDeadline(Promise.all(...))`；目录加载失败不清空已打开会话。
 - 不变量：`invariants.md` 中 §5.4、§5.5、§11.8、§13.1 的条款逐条勾选。
 
@@ -96,9 +97,9 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 - `MemoryViewHost` 从根入口移到 `/hosts/memory`；`IndexedDBViewHost` 从 `/react` 移到 `/hosts/indexeddb`。
 - `test/architecture.test.ts` 新增规则：`/react` 的运行时导入图不可到达 `components/ui`、`theme/`、`recharts`、`react-grid-layout`、`@tanstack/react-table`、`lucide-react`、默认 renderer 注册模块；根入口与 `/hosts/*` 不可到达 React。
 - `scripts/verify-package.mjs`：每个入口一个独立消费探针（核心 Node、React headless、`/ui`、Memory、IndexedDB），核心声明在关闭 `skipLibCheck` 下不引入 DOM 类型（§17.1、D09）。
-- `examples/`、`dev/`、`test/` 全部导入改到目标入口；README 双语的安装与导入段落更新。按 §15.2，入口切换与全部仓库消费者更新在同一个可构建提交内完成，因此不拆成第二个 PR。
+- `examples/`、`dev/`、`test/`、根目录 `stories/view-engine/*` 与 `stories/docs/*`（当前从 `/react` 导入 `ViewPage`、`IndexedDBViewHost`）全部导入改到目标入口；README 双语的安装与导入段落、`skills/fetcher-view-engine/SKILL.md` 与 `references/api.md` 的导入路径同一 PR 更新。按 §15.2，入口切换与全部仓库消费者更新在同一个可构建提交内完成，因此不拆成第二个 PR。
 
-退出条件：D09、D10、G14（Memory／IndexedDB 部分）；`verify-package.mjs` 五个探针通过；架构测试新增规则通过；仓库内不再有从 `/react` 导入默认 UI 的消费者。
+退出条件：D09、D10、G14（Memory／IndexedDB 部分）；`verify-package.mjs` 五个探针通过；架构测试新增规则通过；Storybook 构建与 `pnpm test:storybook` 通过；仓库内（含 `stories/`）不再有从 `/react` 导入默认 UI 或 Host 的消费者。
 
 风险：`/react` 在 S3、S4 之前导出很少，属预期；不要为了"看起来完整"提前导出仍有视觉依赖的 Hook（§15.2）。
 
@@ -155,7 +156,7 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 
 - **闭环一**（§15.3）在 Memory、IndexedDB、`dev/http` 三个 Host 上各跑一遍：默认订单视图筛选待出库、调整列与排序、保存个人视图、重开恢复配置且不恢复选择与页码、数据变化后执行得到新数据并显示正确来源。
 - **第二消费者**：在 `examples/react/` 新增一个只用 `/react` 的自定义组合（E05、F08），验证不依赖私有 Store 与完整页面裁剪。
-- **Storybook 固定状态集**（§11.7）只覆盖 Record：首次加载、无视图、未查询、编辑未应用、查询零行、历史结果、局部失败、许可未知、冲突、保存待核对。
+- **Storybook 固定状态集**（§11.7）只覆盖 Record：首次加载、无视图、未查询、编辑未应用、查询零行、历史结果、局部失败、许可未知、冲突、保存待核对。交互回归以 `pnpm test:storybook` 执行；`verify:view-engine` 只做静态 Storybook 构建，根级 `test:unit` 也不包含这套浏览器测试。
 - 浏览器矩阵：`VIEW_ENGINE_BROWSERS=chromium,firefox,webkit pnpm verify:view-engine`（不设该变量时脚本只跑 chromium，单浏览器结果不得记为矩阵通过；CI 中 `.github/workflows/build-storybook.yml` 设置了同一变量）；包产物：`node packages/view-engine/scripts/verify-package.mjs`；主题：`pnpm --filter @ahoo-wang/fetcher-view-engine test:themes`。
 - README 双语：新入口、当前能力范围声明（§17.4 要求区分目标能力、已实现接口与已执行验证）。
 - 清理：本轮触及范围内无双实现、无弃用别名、无失去消费者的文件（§17.3）。
@@ -180,4 +181,4 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 3. 源码模式与 React Compiler 编译模式都执行（`pnpm test` 已含 `test:compiled`）。
 4. 删除被替代实现与失去消费者的导出、fixture、脚本；不保留兼容包装。
 5. README 双语与 examples 与代码同一 PR 更新。
-6. 提交前根级 `pnpm test:unit` 通过（AGENTS.md）；合同或入口变更的 PR 必须包含仓库内全部调用方，单个 PR 独立可构建，不依赖后续 PR 修复编译。
+6. 提交前根级 `pnpm test:unit` 通过，改动 stories 或默认 UI 时另跑 `pnpm test:storybook`（AGENTS.md）；合同或入口变更的 PR 必须包含仓库内全部调用方，单个 PR 独立可构建，不依赖后续 PR 修复编译。

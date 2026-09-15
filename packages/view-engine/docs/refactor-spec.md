@@ -494,17 +494,17 @@ Record 的排序与页大小采用“只提交明确修改的字段”，不能�
 
 Host 是可选能力的组合，不是一个全功能后台必须实现的接口。有限的 `ViewHost.operation` 端口统一提供定义、实例和个人偏好操作的核对，不接受任意业务命令；它不使普通引擎获得定义维护或领域写入权限。只用本地配置执行时，definition/config 可以由调用方直接给定；需要相应持久化动作时，才要求配套写入、版本与核对合同。统一更新核心类型、本地 Host、WowViewHost、服务门面和消费者，不用适配器内部的隐藏重试弥补缺失的请求身份。[S02] [S43]
 
-| 端口                                 | 目标输入／输出                                                                 | 生命周期边界                                                      |
-| ------------------------------------ | ------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| `definition.load`                    | id、可选读取屏障、取消信号 → 当前定义及来源／revision                          | 独立加载；引擎不获得定义管理命令                                  |
-| `instance.list`                      | definitionId、query、cursor、limit → `Page<ViewInstanceSummary>`               | 返回一页摘要和 nextCursor，不包含全部会话或默认偏好               |
-| `instance.load`                      | instanceId、可选读取屏障、取消信号 → 完整保存实例                              | 可独立点查；摘要不是完整实例，不据其构造查询会话                  |
-| `instance.create/save/rename/delete` | 操作特定载荷、写入上下文、所需期望版本 → `WriteObservation<T>`                 | 创建／保存携带设计依据 definitionRevision；改名／删除不重写配置   |
-| `preference.load`                    | definitionId、可选读取屏障、取消信号 → 存在状态、revision、保存偏好与有效解析  | 与实例列表分离；从不存在不能伪造 revision=0                       |
-| `preference.saveOrder/saveDefault`   | 有界字段意图、存在／版本前提、写入上下文 → `WriteObservation<PreferenceState>` | 修改顺序不覆盖默认值；共用该用户定义范围的写入协调                |
-| `operation.reconcile`                | 有资源归属的原操作引用、取消信号 → 精确回执或仍待核对                          | 只读，不自动重放；有 unknown 写入可能的 Host 必须给出可行核对路径 |
-| `permission`                         | 同步结果及可选变化通知                                                         | 不发网络、不成为初始化等待屏障                                    |
-| `resolveSource`                      | 注册 sourceId → 业务查询源                                                     | 不走视图管理持久化服务，不由配置提供任意 URL                      |
+| 端口                                 | 目标输入／输出                                                                           | 生命周期边界                                                                    |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `definition.load`                    | id、可选读取屏障、取消信号 → 当前定义及来源／revision                                    | 独立加载；引擎不获得定义管理命令                                                |
+| `instance.list`                      | definitionId、query、cursor、limit、可选读取屏障、取消信号 → `Page<ViewInstanceSummary>` | 返回一页摘要和 nextCursor，不包含全部会话或默认偏好；读取屏障用于结清目录可见性 |
+| `instance.load`                      | instanceId、可选读取屏障、取消信号 → 完整保存实例                                        | 可独立点查；摘要不是完整实例，不据其构造查询会话                                |
+| `instance.create/save/rename/delete` | 操作特定载荷、写入上下文、所需期望版本 → `WriteObservation<T>`                           | 创建／保存携带设计依据 definitionRevision；改名／删除不重写配置                 |
+| `preference.load`                    | definitionId、可选读取屏障、取消信号 → 存在状态、revision、保存偏好与有效解析            | 与实例列表分离；从不存在不能伪造 revision=0                                     |
+| `preference.saveOrder/saveDefault`   | 有界字段意图、存在／版本前提、写入上下文 → `WriteObservation<PreferenceState>`           | 修改顺序不覆盖默认值；共用该用户定义范围的写入协调                              |
+| `operation.reconcile`                | 有资源归属的原操作引用、取消信号 → 精确回执或仍待核对                                    | 只读，不自动重放；有 unknown 写入可能的 Host 必须给出可行核对路径               |
+| `permission`                         | 同步结果及可选变化通知                                                                   | 不发网络、不成为初始化等待屏障                                                  |
+| `resolveSource`                      | 注册 sourceId → 业务查询源                                                               | 不走视图管理持久化服务，不由配置提供任意 URL                                    |
 
 `Page<T>` 只有本页 `items`、`nextCursor` 和明确可选的授权后总数；总数不可精确计算时省略，不能报告未过滤数量。列表上下文和错误不覆盖正在使用的运行会话。完整加载、部分加载、空页和到达上限是不同状态。
 
