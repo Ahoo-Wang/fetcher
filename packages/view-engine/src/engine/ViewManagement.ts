@@ -28,7 +28,11 @@ import type { ViewQueries } from './ViewQueries.js';
 import type { ViewLoader } from './ViewLoader.js';
 import type { RecordSummaries } from '../record/engine/RecordSummaries.js';
 import { copy, message, ownRecord, sameJsonState } from '../lib/snapshot.js';
-import { instanceContent, baselinePatch } from './sessionState.js';
+import {
+  instanceContent,
+  baselinePatch,
+  createSession,
+} from './sessionState.js';
 import { summaryOf, type ViewSession } from '../contracts/viewModel.js';
 import { reconcileWriteFailure, writeFailurePatch } from './writeRecovery.js';
 import {
@@ -275,12 +279,18 @@ export class ViewManagement {
       this.store.getSnapshot().preference.revision,
     );
     try {
+      const controller = new AbortController();
       const observation = readWriteObservation<PreferenceState>(
-        await this.host.preference!.saveDefault!(
-          this.definitionId,
-          instanceId,
-          precondition,
-          { requestId: crypto.randomUUID() },
+        await withDeadline(
+          () =>
+            this.host.preference!.saveDefault!(
+              this.definitionId,
+              instanceId,
+              precondition,
+              { requestId: crypto.randomUUID(), signal: controller.signal },
+            ),
+          this.store.limits.writeTimeoutMs,
+          controller,
         ),
       );
       if (!this.scope.current(request.version) || this.defaultWrite !== request)
@@ -367,12 +377,18 @@ export class ViewManagement {
       this.store.getSnapshot().preference.revision,
     );
     try {
+      const controller = new AbortController();
       const observation = readWriteObservation<PreferenceState>(
-        await this.host.preference!.saveOrder!(
-          this.definitionId,
-          change,
-          precondition,
-          { requestId: crypto.randomUUID() },
+        await withDeadline(
+          () =>
+            this.host.preference!.saveOrder!(
+              this.definitionId,
+              change,
+              precondition,
+              { requestId: crypto.randomUUID(), signal: controller.signal },
+            ),
+          this.store.limits.writeTimeoutMs,
+          controller,
         ),
       );
       if (!this.scope.current(lifecycle) || this.work.ordering !== token)
@@ -505,9 +521,25 @@ export class ViewManagement {
       const nextId = wasSelected
         ? (instanceIds[0] ?? null)
         : this.store.getSnapshot().selectedInstanceId;
-      // An unopened successor is selected through the loader so that it is point-read and queried.
+      // An unopened successor is point-read before the removal is published, so the delete
+      // resolves with a consistent selection and only its first query runs in the background.
+      if (wasSelected && nextId !== null && !this.store.find(nextId)) {
+        try {
+          const successor = await this.loader.loadSavedInstance(nextId);
+          if (!current()) return;
+          sessions[nextId] = createSession(
+            successor,
+            this.store.definition(),
+            this.store.filterCompilers,
+            this.store.analysisCompilers,
+          );
+        } catch {
+          if (!current()) return;
+        }
+      }
       const successorOpened =
-        nextId !== null && this.store.find(nextId) !== undefined;
+        nextId !== null &&
+        Object.prototype.hasOwnProperty.call(sessions, nextId);
       const followUp =
         wasSelected && nextId !== null && successorOpened
           ? this.queries.followUp(nextId)
@@ -530,10 +562,7 @@ export class ViewManagement {
           },
         }),
       );
-      // Deletion resolves once the fallback selection is in place; its query failure stays session-scoped.
-      if (wasSelected && nextId !== null && !successorOpened)
-        await this.loader.selectInstance(nextId).catch(() => {});
-      else void followUp?.().catch(() => {});
+      void followUp?.().catch(() => {});
     } catch (error) {
       if (!current()) return;
       if (!session) {

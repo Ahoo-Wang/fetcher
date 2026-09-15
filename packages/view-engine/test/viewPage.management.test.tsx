@@ -310,7 +310,7 @@ it('sets and clears the system default without changing the current view or pend
       'orders',
       'system',
       { type: 'matches', revision: 'p1' },
-      { requestId: expect.any(String) },
+      expect.objectContaining({ requestId: expect.any(String) }),
     ),
   );
   const cancel = await manager.findByRole('button', {
@@ -323,7 +323,7 @@ it('sets and clears the system default without changing the current view or pend
       'orders',
       null,
       { type: 'matches', revision: 'p2' },
-      { requestId: expect.any(String) },
+      expect.objectContaining({ requestId: expect.any(String) }),
     ),
   );
   await waitFor(() => expect(manager.queryByText('默认')).toBeNull());

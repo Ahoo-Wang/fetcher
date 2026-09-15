@@ -119,11 +119,19 @@ export function groupViewInstances(state: ViewEngineState): InstanceGroup[] {
   return groups;
 }
 
+/** Paged catalog affordances; absent when the host catalog is complete. */
+export interface CatalogPaging {
+  loading: boolean;
+  hasMore: boolean;
+  error: string | null;
+  onLoadMore(): void;
+}
 interface NavigationProps {
   groups: InstanceGroup[];
   selectedId: string | null;
   onSelect(id: string): void;
   onManage(trigger: HTMLElement | null): void;
+  catalog?: CatalogPaging;
 }
 
 export function ViewInstanceSwitcher({
@@ -133,6 +141,7 @@ export function ViewInstanceSwitcher({
   onManage,
   triggerRef,
   managerOpen,
+  catalog,
 }: NavigationProps & {
   triggerRef: RefObject<HTMLButtonElement | null>;
   managerOpen: boolean;
@@ -178,18 +187,39 @@ export function ViewInstanceSwitcher({
         align="start"
         finalFocus={!managerOpen}
         footer={
-          <Button
-            variant="ghost"
-            size="sm"
-            className="fve:w-full fve:justify-start"
-            onClick={() => {
-              setOpen(false);
-              onManage(triggerRef.current);
-            }}
-          >
-            <Settings2Icon aria-hidden="true" />
-            管理视图
-          </Button>
+          <>
+            {catalog?.error && (
+              <p
+                role="alert"
+                className="fve:px-2 fve:text-xs fve:text-destructive"
+              >
+                {catalog.error}
+              </p>
+            )}
+            {catalog?.hasMore && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="fve:w-full fve:justify-start"
+                disabled={catalog.loading}
+                onClick={catalog.onLoadMore}
+              >
+                {catalog.loading ? '正在加载目录…' : '加载更多视图'}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="fve:w-full fve:justify-start"
+              onClick={() => {
+                setOpen(false);
+                onManage(triggerRef.current);
+              }}
+            >
+              <Settings2Icon aria-hidden="true" />
+              管理视图
+            </Button>
+          </>
         }
       >
         {groups.map(group => (
@@ -227,13 +257,6 @@ export function ViewSidebar({
   title: string;
   toggleRef: RefObject<HTMLButtonElement | null>;
   onCollapse(): void;
-  /** Paged catalog affordances; absent when the host catalog is complete. */
-  catalog?: {
-    loading: boolean;
-    hasMore: boolean;
-    error: string | null;
-    onLoadMore(): void;
-  };
 }) {
   return (
     <aside

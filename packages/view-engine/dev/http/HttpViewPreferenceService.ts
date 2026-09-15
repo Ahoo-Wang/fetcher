@@ -84,6 +84,7 @@ export class HttpViewOperationService implements ViewOperationService {
     this.transport.assertDefinition(reference.definitionId);
     const search = new URLSearchParams();
     if (reference.targetId) search.set('targetId', reference.targetId);
+    if (options.readFence) search.set('readFence', options.readFence);
     const query = search.toString();
     return this.transport.request<WriteObservation<unknown>>(
       `/operations/${reference.resource}/${encodeViewResourceId(reference.requestId)}${query ? `?${query}` : ''}`,

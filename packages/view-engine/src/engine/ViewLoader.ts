@@ -133,6 +133,7 @@ export class ViewLoader {
       throw error;
     }
     this.scope.loading = false;
+    const initialSelection = this.scope.selection;
     this.store.publish({
       status: 'ready',
       error: null,
@@ -143,6 +144,15 @@ export class ViewLoader {
         status: this.source.hasPreferencePort ? 'loading' : 'ready',
       },
     });
+    // An explicit instance is point-read as soon as the definition is ready; the catalog and
+    // the personal default keep loading in the background and never block it.
+    const explicit =
+      this.initialInstanceId === undefined
+        ? undefined
+        : this.openSession(this.initialInstanceId, lifecycle).then(
+            followUp => ({ followUp, error: undefined }),
+            (error: unknown) => ({ followUp: undefined, error }),
+          );
     const [, preference] = await Promise.all([
       this.loadCatalogPage(definition, null, lifecycle, controller),
       this.loadPreference(lifecycle, controller),
@@ -150,10 +160,30 @@ export class ViewLoader {
     if (!current()) return;
     this.restoreUnverifiedCreates(definition);
     if (!current()) return;
+    if (explicit) {
+      const opened = await explicit;
+      if (!current()) return;
+      if (opened.error !== undefined) {
+        if (this.scope.selection === initialSelection)
+          this.store.publish({
+            error: message(opened.error),
+            openingInstanceId: null,
+          });
+        return;
+      }
+      // A failed first query is session-scoped state (queryError), not a workspace error.
+      await opened.followUp?.().catch(() => {});
+      return;
+    }
     const target =
-      this.initialInstanceId ??
-      (preference.status === 'ready' ? preference.defaultInstanceId : null);
-    if (target === null) return;
+      preference.status === 'ready' ? preference.defaultInstanceId : null;
+    // A default that arrives after the user already navigated must not take the selection back.
+    if (
+      target === null ||
+      this.scope.selection !== initialSelection ||
+      this.store.getSnapshot().selectedInstanceId !== null
+    )
+      return;
     let followUp: (() => Promise<void>) | undefined;
     try {
       followUp = await this.openSession(target, lifecycle);
@@ -162,7 +192,6 @@ export class ViewLoader {
       this.store.publish({ error: message(error), openingInstanceId: null });
       return;
     }
-    // A failed first query is session-scoped state (queryError), not a workspace error.
     await followUp?.().catch(() => {});
   }
 
@@ -171,7 +200,7 @@ export class ViewLoader {
     cursor: string | null,
     lifecycle: number,
     controller: AbortController,
-  ): Promise<boolean> {
+  ): Promise<{ loaded: boolean; error?: unknown }> {
     const current = () =>
       this.scope.current(lifecycle) && !controller.signal.aborted;
     try {
@@ -180,24 +209,28 @@ export class ViewLoader {
         this.store.limits.loadTimeoutMs,
         controller,
       );
-      if (!current()) return false;
+      if (!current()) return { loaded: false };
       const summaries: Record<string, ViewInstanceSummary> = ownRecord(
         this.store.getSnapshot().catalog.summaries,
       );
-      // The summary cache is bounded; a page that would overflow it is admitted only up to
-      // the budget and the next page is refused until the catalog is reloaded.
-      let truncated = false;
+      // The summary cache is bounded; a page that would overflow it is refused whole so that
+      // nothing is silently hidden, and the caller sees the resource limit.
+      const incoming = page.items.filter(
+        item => !this.catalogIds.includes(item.id),
+      );
+      if (
+        this.catalogIds.length + incoming.length >
+        this.store.limits.maxCatalogSummaries
+      )
+        throw new RuntimeLimitError(
+          'RESOURCE_LIMIT',
+          '已加载的视图目录达到运行预算，请缩小目录范围后重新加载',
+        );
       for (const item of page.items) {
-        if (this.catalogIds.includes(item.id)) {
-          summaries[item.id] = item;
-          continue;
+        if (!this.catalogIds.includes(item.id)) {
+          this.work.forgetDeleted(item.id);
+          this.catalogIds.push(item.id);
         }
-        if (this.catalogIds.length >= this.store.limits.maxCatalogSummaries) {
-          truncated = true;
-          break;
-        }
-        this.work.forgetDeleted(item.id);
-        this.catalogIds.push(item.id);
         summaries[item.id] = item;
       }
       const extras = this.store
@@ -208,14 +241,14 @@ export class ViewLoader {
         catalog: {
           status: 'ready',
           error: null,
-          nextCursor: truncated ? (page.nextCursor ?? cursor) : page.nextCursor,
+          nextCursor: page.nextCursor,
           total: page.total ?? null,
           summaries,
         },
       });
-      return true;
+      return { loaded: true };
     } catch (error) {
-      if (!current()) return false;
+      if (!current()) return { loaded: false };
       this.store.publish({
         catalog: {
           ...this.store.getSnapshot().catalog,
@@ -223,7 +256,7 @@ export class ViewLoader {
           error: message(error),
         },
       });
-      return false;
+      return { loaded: false, error };
     }
   }
 
@@ -231,8 +264,13 @@ export class ViewLoader {
   async loadMoreInstances(): Promise<void> {
     const definition = this.store.definition();
     const catalog = this.store.getSnapshot().catalog;
-    if (catalog.status !== 'ready' || catalog.nextCursor === null) return;
-    if (this.catalogLoading) throw new Error('目录正在加载，请等待完成');
+    // A failed page keeps its continuation cursor so the same page can be retried.
+    if (
+      (catalog.status !== 'ready' && catalog.status !== 'error') ||
+      catalog.nextCursor === null ||
+      this.catalogLoading
+    )
+      return;
     if (this.catalogIds.length >= this.store.limits.maxCatalogSummaries)
       throw new RuntimeLimitError(
         'RESOURCE_LIMIT',
@@ -243,16 +281,19 @@ export class ViewLoader {
     this.catalogLoading = controller;
     this.store.publish({ catalog: { ...catalog, status: 'loading' } });
     try {
-      const loaded = await this.loadCatalogPage(
+      const outcome = await this.loadCatalogPage(
         definition,
         catalog.nextCursor,
         lifecycle,
         controller,
       );
-      if (!loaded && this.scope.current(lifecycle))
-        throw new Error(
-          this.store.getSnapshot().catalog.error ?? '目录加载失败',
-        );
+      if (!outcome.loaded && this.scope.current(lifecycle)) {
+        // The page failure keeps its own type (for example a RuntimeLimitError).
+        const failure: unknown =
+          outcome.error ??
+          new Error(this.store.getSnapshot().catalog.error ?? '目录加载失败');
+        throw failure;
+      }
     } finally {
       if (this.catalogLoading === controller) this.catalogLoading = undefined;
     }
@@ -352,6 +393,12 @@ export class ViewLoader {
     signal?: AbortSignal,
   ): Promise<ViewInstance> {
     const definition = this.store.definition();
+    if (signal?.aborted) {
+      // 原样透传调用方的取消原因，保持与 AbortSignal 的拒绝契约一致。
+      const reason: unknown =
+        signal.reason ?? new DOMException('Aborted', 'AbortError');
+      throw reason;
+    }
     const controller = new AbortController();
     signal?.addEventListener('abort', () => controller.abort(signal.reason), {
       once: true,

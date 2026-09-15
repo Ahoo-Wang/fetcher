@@ -129,9 +129,10 @@ try {
     key,
   );
   const saved = await read();
-  assert(!('filter' in saved.instances[0].config));
+  const mine = saved.instances.find(item => item.id === 'my-orders');
+  assert(!('filter' in mine.config));
   assert.equal(
-    saved.instances[0].config.filters.root.props.displayLabel,
+    mine.config.filters.root.props.displayLabel,
     '只能从组件属性恢复的标签',
   );
   await reload();

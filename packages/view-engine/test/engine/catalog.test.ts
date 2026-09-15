@@ -110,11 +110,14 @@ it('refuses catalog pages beyond the summary budget without touching opened sess
     } as unknown as ViewHost,
   });
   await engine.load();
-  await engine.loadMoreInstances();
-  expect(engine.getSnapshot().instanceIds).toEqual(['v0', 'v1', 'v2', 'v3']);
-  expect(engine.getSnapshot().catalog.nextCursor).not.toBeNull();
+  // The second page (3 more) would exceed the budget of 4: it is refused whole, nothing is hidden.
   await expect(engine.loadMoreInstances()).rejects.toMatchObject({
     code: 'RESOURCE_LIMIT',
+  });
+  expect(engine.getSnapshot().instanceIds).toEqual(['v0', 'v1', 'v2']);
+  expect(engine.getSnapshot().catalog).toMatchObject({
+    status: 'error',
+    nextCursor: '3',
   });
   expect(engine.getSnapshot().selectedInstanceId).toBe('v1');
   expect(Object.keys(engine.getSnapshot().sessions)).toEqual(['v1']);
@@ -140,5 +143,84 @@ it('reports a failed preference read separately and selects nothing', async () =
   });
   expect(paged).not.toHaveBeenCalled();
   await expect(engine.setDefaultInstance('v0')).rejects.toThrow();
+  engine.dispose();
+});
+
+it('never lets a late personal default take the selection back from the user', async () => {
+  const { list, load } = pagedHost();
+  let releaseDefault!: (state: ReturnType<typeof preference>) => void;
+  const slowDefault = new Promise<ReturnType<typeof preference>>(resolve => {
+    releaseDefault = resolve;
+  });
+  const { engine, paged } = setup({
+    instances: undefined,
+    host: {
+      instance: { list, load },
+      preference: { load: () => slowDefault },
+    } as unknown as ViewHost,
+  });
+  const loading = engine.load();
+  await vi.waitFor(() =>
+    expect(engine.getSnapshot().catalog.status).toBe('ready'),
+  );
+  await engine.selectInstance('v2');
+  releaseDefault(preference('v1'));
+  await loading;
+  expect(engine.getSnapshot()).toMatchObject({
+    selectedInstanceId: 'v2',
+    defaultInstanceId: 'v1',
+  });
+  expect(Object.keys(engine.getSnapshot().sessions)).toEqual(['v2']);
+  expect(paged).toHaveBeenCalledTimes(1);
+  engine.dispose();
+});
+
+it('opens an explicit instance before the catalog or the preference has answered', async () => {
+  const { load } = pagedHost();
+  let releaseList!: () => void;
+  const slowList = new Promise<void>(resolve => {
+    releaseList = resolve;
+  });
+  const list = vi.fn(async () => {
+    await slowList;
+    return page([instance('v0')], null);
+  });
+  const { engine } = setup({
+    instances: undefined,
+    instanceId: 'v4',
+    host: {
+      instance: { list, load },
+      preference: { load: () => new Promise(() => {}) },
+    } as unknown as ViewHost,
+  });
+  const loading = engine.load();
+  await vi.waitFor(() =>
+    expect(engine.getSnapshot().selectedInstanceId).toBe('v4'),
+  );
+  expect(engine.getSnapshot().catalog.status).toBe('loading');
+  releaseList();
+  await vi.waitFor(() =>
+    expect(engine.getSnapshot().catalog.status).toBe('ready'),
+  );
+  expect(engine.getSnapshot().instanceIds).toEqual(['v0', 'v4']);
+  engine.dispose();
+  await loading;
+});
+
+it('rejects a point read whose signal was already aborted without calling the host', async () => {
+  const { list, load } = pagedHost();
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: { list, load },
+      preference: { load: async () => preference(null) },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  load.mockClear();
+  await expect(
+    engine.loadSavedInstance('v3', AbortSignal.abort(new Error('gone'))),
+  ).rejects.toThrow('gone');
+  expect(load).not.toHaveBeenCalled();
   engine.dispose();
 });

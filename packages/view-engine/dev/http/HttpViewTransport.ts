@@ -223,12 +223,14 @@ export class HttpViewTransport {
     if (envelope && typeof envelope === 'object' && envelope.data) {
       try {
         const observation = readWriteObservation<T>(envelope.data);
-        // A 4xx must carry a rejection; anything else contradicting the status is unproven.
-        if (
-          (observation.outcome === 'rejected') ===
-          (response.status >= 400 && response.status < 500)
-        )
-          return observation;
+        // The body is trusted only when the status agrees with the outcome it claims.
+        const consistent =
+          observation.outcome === 'rejected'
+            ? VIEW_SERVICE_STATUS[observation.issue.code] === response.status
+            : observation.outcome === 'committed'
+              ? response.status === 200 || response.status === 201
+              : response.status === 202;
+        if (consistent) return observation;
       } catch {
         /* Fall through to the status-based interpretation. */
       }

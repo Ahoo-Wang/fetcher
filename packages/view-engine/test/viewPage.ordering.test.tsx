@@ -107,7 +107,7 @@ it('retries group-local keyboard ordering while preserving drafts, selection and
       orderedInstanceIds: ['system', 'second', 'mine'],
     },
     { type: 'absent' },
-    { requestId: expect.any(String) },
+    expect.objectContaining({ requestId: expect.any(String) }),
   );
   expect(
     within(personal)
@@ -150,7 +150,7 @@ it('isolates ordering permissions between groups', async () => {
         orderedInstanceIds: ['second', 'mine', 'system'],
       },
       { type: 'absent' },
-      { requestId: expect.any(String) },
+      expect.objectContaining({ requestId: expect.any(String) }),
     ),
   );
   engine.dispose();

@@ -161,8 +161,7 @@ export abstract class StatefulViewHost implements ViewHost {
         );
       return this.transaction(
         state => {
-          const preference =
-            state.preferences[this.options.scopeKey]?.revision ?? null;
+          const preference = this.preferenceOf(state)?.revision ?? null;
           const cursor =
             options.cursor == null
               ? { offset: 0, query, preference }
@@ -215,7 +214,10 @@ export abstract class StatefulViewHost implements ViewHost {
           resource: 'instance',
           action: 'create',
           targetId: null,
-          input: body,
+          input: {
+            body,
+            definitionRevision: context?.definitionRevision ?? null,
+          },
           context,
         },
         state => {
@@ -274,7 +276,10 @@ export abstract class StatefulViewHost implements ViewHost {
             typeof instance.id === 'string'
               ? instance.id
               : null,
-          input: instance,
+          input: {
+            instance,
+            definitionRevision: context?.definitionRevision ?? null,
+          },
           context,
         },
         state => {
@@ -449,7 +454,7 @@ export abstract class StatefulViewHost implements ViewHost {
             order: applyOrderChange(current?.order ?? [], change),
             defaultInstanceId: current?.defaultInstanceId ?? null,
           };
-          state.preferences[this.options.scopeKey] = next;
+          this.storePreference(state, next);
           return {
             value: this.preferenceState(state),
             revision: next.revision,
@@ -482,7 +487,7 @@ export abstract class StatefulViewHost implements ViewHost {
             order: current?.order ?? [],
             defaultInstanceId: instanceId,
           };
-          state.preferences[this.options.scopeKey] = next;
+          this.storePreference(state, next);
           return {
             value: this.preferenceState(state),
             revision: next.revision,
@@ -642,16 +647,33 @@ export abstract class StatefulViewHost implements ViewHost {
         : left - right;
     });
   }
+  /** Own-property read: a scope key such as `constructor` must not resolve through the prototype. */
+  private preferenceOf(
+    state: ServiceState,
+    scopeKey = this.options.scopeKey,
+  ): StoredPreference | undefined {
+    return Object.prototype.hasOwnProperty.call(state.preferences, scopeKey)
+      ? state.preferences[scopeKey]
+      : undefined;
+  }
+  private storePreference(state: ServiceState, next: StoredPreference): void {
+    Object.defineProperty(state.preferences, this.options.scopeKey, {
+      value: next,
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
+  }
   private ordered(state: ServiceState, scopeKey: string): StoredInstance[] {
     const base = this.baseOrder(state, scopeKey);
-    const explicit = state.preferences[scopeKey]?.order ?? [];
+    const explicit = this.preferenceOf(state, scopeKey)?.order ?? [];
     return [
       ...explicit.flatMap(id => base.filter(item => item.id === id)),
       ...base.filter(item => !explicit.includes(item.id)),
     ];
   }
   private preferenceState(state: ServiceState): PreferenceState {
-    const stored = state.preferences[this.options.scopeKey];
+    const stored = this.preferenceOf(state);
     const defaultInstanceId = stored
       ? stored.defaultInstanceId
       : this.seedDefault;
@@ -671,7 +693,7 @@ export abstract class StatefulViewHost implements ViewHost {
     state: ServiceState,
     precondition: WritePrecondition,
   ): StoredPreference | undefined {
-    const current = state.preferences[this.options.scopeKey];
+    const current = this.preferenceOf(state);
     if (!precondition || typeof precondition !== 'object')
       throw new ViewServiceError(
         'PRECONDITION_REQUIRED',
@@ -737,6 +759,52 @@ export abstract class StatefulViewHost implements ViewHost {
     } catch (error) {
       throw new ViewServiceError('INVALID_ARGUMENT', message(error));
     }
+  }
+  /** The grant an action needed when it was accepted, evaluated against the current policy. */
+  private assertReplayAllowed(receipt: StoredReceipt): void {
+    const definition = this.permission.getDefinition();
+    if (receipt.resource === 'preference') {
+      const allowed =
+        receipt.action === 'saveOrder'
+          ? definition.reorder
+          : definition.setDefault;
+      if (!allowed)
+        throw new ViewServiceError(
+          'FORBIDDEN',
+          '当前主体不再拥有此偏好操作权限',
+        );
+      return;
+    }
+    const value =
+      receipt.observation.outcome === 'committed'
+        ? (receipt.observation.value as { id?: unknown; scope?: unknown })
+        : undefined;
+    const target =
+      value && typeof value === 'object' && typeof value.id === 'string'
+        ? (value as ViewInstance)
+        : undefined;
+    if (!target) return;
+    if (receipt.action === 'delete') {
+      // A delete receipt only names the id; the instance is gone, so no scope check applies.
+      return;
+    }
+    const grants = this.permission.getInstance(summaryOf(target));
+    const allowed =
+      receipt.action === 'create'
+        ? target.kind === 'dashboard'
+          ? target.scope.type === 'personal'
+            ? definition.createPersonal
+            : definition.createShared
+          : target.scope.type === 'personal'
+            ? grants.saveAsPersonal
+            : grants.saveAsShared
+        : receipt.action === 'save'
+          ? grants.save
+          : receipt.action === 'rename'
+            ? grants.rename
+            : true;
+    if (!allowed)
+      throw new ViewServiceError('FORBIDDEN', '当前主体不再拥有此写入权限');
   }
   private receiptKey(resource: StoredReceipt['resource'], requestId: string) {
     return JSON.stringify([this.options.scopeKey, resource, requestId]);
@@ -850,6 +918,13 @@ export abstract class StatefulViewHost implements ViewHost {
                 ),
               ),
             };
+          // A stored receipt is still gated by the caller's current grants.
+          try {
+            this.assertReplayAllowed(previous);
+          } catch (error) {
+            if (!(error instanceof ViewServiceError)) throw error;
+            return { result: rejection<T>(error) };
+          }
           return { result: copy(previous.observation) as WriteObservation<T> };
         }
         let observation: WriteObservation<T>;

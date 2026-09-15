@@ -325,7 +325,7 @@ it('surfaces rejected, mismatched and gated preference writes without changing s
     'orders',
     'shared',
     { type: 'absent' },
-    { requestId: expect.any(String) },
+    expect.objectContaining({ requestId: expect.any(String) }),
   );
   await expect(engine.reorderInstances(['shared', 'mine'])).rejects.toThrow(
     /no order/,
@@ -340,7 +340,7 @@ it('surfaces rejected, mismatched and gated preference writes without changing s
       orderedInstanceIds: ['shared', 'mine'],
     },
     { type: 'matches', revision: 'p2' },
-    { requestId: expect.any(String) },
+    expect.objectContaining({ requestId: expect.any(String) }),
   );
   await expect(
     engine.reorderInstances(['shared'], ['mine', 'shared']),
@@ -523,6 +523,13 @@ it('refuses to page the catalog while a page is loading or after the catalog fai
     error: 'page failed',
   });
   expect(engine.getSnapshot().instanceIds).toEqual(['mine']);
-  await expect(engine.loadMoreInstances()).resolves.toBeUndefined();
+  // The failed page keeps its cursor, so the next request retries the same page.
+  list.mockResolvedValueOnce(page([all[1]]));
+  await engine.loadMoreInstances();
+  expect(list).toHaveBeenCalledTimes(3);
+  expect(engine.getSnapshot()).toMatchObject({
+    instanceIds: ['mine', 'shared'],
+    catalog: { status: 'ready', error: null, nextCursor: null },
+  });
   engine.dispose();
 });

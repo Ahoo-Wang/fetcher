@@ -154,6 +154,13 @@ export function ViewPageContent({
       managerReturnFocus.current = trigger;
       setManagerOpen(true);
     },
+    // The same paging entry serves the sidebar and the always-visible switcher.
+    catalog: {
+      loading: state.catalog.status === 'loading',
+      hasMore: state.catalog.nextCursor !== null,
+      error: state.catalog.error,
+      onLoadMore: () => run(() => engine.loadMoreInstances()),
+    },
   };
   const toolbarStart = (
     <div className="fve:flex fve:min-w-0 fve:flex-wrap fve:items-center fve:gap-2">
@@ -243,12 +250,6 @@ export function ViewPageContent({
             title={state.definition?.title ?? ''}
             toggleRef={sidebarToggleRef}
             onCollapse={toggleSidebar}
-            catalog={{
-              loading: state.catalog.status === 'loading',
-              hasMore: state.catalog.nextCursor !== null,
-              error: state.catalog.error,
-              onLoadMore: () => run(() => engine.loadMoreInstances()),
-            }}
           />
         )}
         <main
