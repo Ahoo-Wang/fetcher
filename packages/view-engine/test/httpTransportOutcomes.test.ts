@@ -84,3 +84,22 @@ it('forwards the read fence when reconciling an operation', async () => {
   expect(url).toContain('targetId=mine');
   expect(url).toContain('readFence=fence-9');
 });
+
+it('carries opaque revisions with non-Latin-1 characters through the entity tag header', async () => {
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockResolvedValue(respond(200, committedWrite(instance, '版本-2')));
+  const host = client(fetchMock);
+  const result = await host.instance.save(
+    { ...instance, revision: '版本-1' },
+    { requestId: 'r1', definitionRevision: '定义-1' },
+  );
+  expect(result).toMatchObject({ outcome: 'committed' });
+  const headers = new Headers(
+    (fetchMock.mock.calls[0][1] as RequestInit).headers,
+  );
+  expect(headers.get('If-Match')).toBe(`"${encodeURIComponent('版本-1')}"`);
+  expect(headers.get('X-Definition-Revision')).toBe(
+    encodeURIComponent('定义-1'),
+  );
+});

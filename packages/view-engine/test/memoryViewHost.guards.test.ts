@@ -143,3 +143,55 @@ it('treats the definition revision as part of a configuration write identity', a
     issue: { code: 'CONFLICT' },
   });
 });
+
+it('expires catalog cursors when the catalog membership changes', async () => {
+  const store = new Map<string, string | null>();
+  const service = host(store);
+  await service.instance.create(
+    { ...instance, title: 'Second' },
+    { requestId: 'c-2' },
+  );
+  await service.instance.create(
+    { ...instance, title: 'Third' },
+    { requestId: 'c-3' },
+  );
+  const first = await service.instance.list(definition.id, { limit: 1 });
+  expect(first.nextCursor).not.toBeNull();
+  const loaded = await service.instance.load(first.items[0].id);
+  await service.instance.delete(loaded.id, loaded.revision, {
+    requestId: 'd-1',
+  });
+  await expect(
+    service.instance.list(definition.id, {
+      limit: 1,
+      cursor: first.nextCursor,
+    }),
+  ).rejects.toMatchObject({ code: 'CURSOR_EXPIRED' });
+  const fresh = await service.instance.list(definition.id, { limit: 1 });
+  expect(fresh.total).toBe(2);
+});
+
+it('reports a receipt whose value does not fit its action as corrupt storage', async () => {
+  const store = new Map<string, string | null>();
+  const service = host(store);
+  await service.instance.load(instance.id);
+  const raw = JSON.parse(store.get(service.storageKey)!) as {
+    receipts: Record<string, unknown>;
+  };
+  raw.receipts['["developer","instance","forged"]'] = {
+    resource: 'instance',
+    action: 'save',
+    targetId: instance.id,
+    input: {},
+    observation: {
+      outcome: 'committed',
+      value: null,
+      revision: 'x',
+      visibility: 'visible',
+    },
+  };
+  store.set(service.storageKey, JSON.stringify(raw));
+  await expect(service.instance.load(instance.id)).rejects.toMatchObject({
+    code: 'CORRUPT_STATE',
+  });
+});

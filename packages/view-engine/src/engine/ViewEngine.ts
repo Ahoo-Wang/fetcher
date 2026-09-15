@@ -725,6 +725,11 @@ export class ViewEngine {
     return this.observe('select', false, () => this.loader.selectInstance(id));
   }
 
+  /** Reloads the catalog from its first page without touching sessions or the selection. */
+  reloadCatalog(): Promise<void> {
+    return this.observe('catalog', false, () => this.loader.reloadCatalog());
+  }
+
   /** Appends the next catalog page without touching sessions or the selection. */
   loadMoreInstances(): Promise<void> {
     return this.observe('catalog', false, () =>

@@ -160,6 +160,7 @@ export function ViewPageContent({
       hasMore: state.catalog.nextCursor !== null,
       error: state.catalog.error,
       onLoadMore: () => run(() => engine.loadMoreInstances()),
+      onRetry: () => run(() => engine.reloadCatalog()),
     },
   };
   const toolbarStart = (

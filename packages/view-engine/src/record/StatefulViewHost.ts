@@ -90,6 +90,8 @@ interface CatalogCursor {
   offset: number;
   query: string;
   preference: string | null;
+  /** Catalog membership version; any instance write since the page was read expires the cursor. */
+  catalog: number;
 }
 function encodeCursor(cursor: CatalogCursor): string {
   return btoa(
@@ -107,6 +109,7 @@ function decodeCursor(value: unknown): CatalogCursor {
       !Number.isSafeInteger((parsed as CatalogCursor).offset) ||
       (parsed as CatalogCursor).offset < 0 ||
       typeof (parsed as CatalogCursor).query !== 'string' ||
+      !Number.isSafeInteger((parsed as CatalogCursor).catalog) ||
       !(
         (parsed as CatalogCursor).preference === null ||
         typeof (parsed as CatalogCursor).preference === 'string'
@@ -162,14 +165,19 @@ export abstract class StatefulViewHost implements ViewHost {
       return this.transaction(
         state => {
           const preference = this.preferenceOf(state)?.revision ?? null;
+          const catalog = state.catalogRevision;
           const cursor =
             options.cursor == null
-              ? { offset: 0, query, preference }
+              ? { offset: 0, query, preference, catalog }
               : decodeCursor(options.cursor);
-          if (cursor.query !== query || cursor.preference !== preference)
+          if (
+            cursor.query !== query ||
+            cursor.preference !== preference ||
+            cursor.catalog !== catalog
+          )
             throw new ViewServiceError(
               'CURSOR_EXPIRED',
-              '目录条件或个人顺序已变化，请重新加载目录',
+              '目录内容、条件或个人顺序已变化，请重新加载目录',
             );
           const needle = query.trim().toLocaleLowerCase();
           const matched = this.ordered(state, this.options.scopeKey).filter(
@@ -183,7 +191,7 @@ export abstract class StatefulViewHost implements ViewHost {
             items,
             nextCursor:
               end < matched.length
-                ? encodeCursor({ offset: end, query, preference })
+                ? encodeCursor({ offset: end, query, preference, catalog })
                 : null,
             total: matched.length,
           };
@@ -258,6 +266,7 @@ export abstract class StatefulViewHost implements ViewHost {
                 ? this.options.scopeKey
                 : null,
           });
+          state.catalogRevision += 1;
           return { value: this.dto(candidate), revision: candidate.revision };
         },
       );
@@ -307,6 +316,7 @@ export abstract class StatefulViewHost implements ViewHost {
             revision: crypto.randomUUID(),
           };
           state.instances[state.instances.indexOf(previous)] = saved;
+          state.catalogRevision += 1;
           return { value: this.dto(saved), revision: saved.revision };
         },
       );
@@ -334,6 +344,7 @@ export abstract class StatefulViewHost implements ViewHost {
           };
           this.validate(next);
           state.instances[state.instances.indexOf(previous)] = next;
+          state.catalogRevision += 1;
           return { value: this.dto(next), revision: next.revision };
         },
       );
@@ -355,6 +366,7 @@ export abstract class StatefulViewHost implements ViewHost {
           encodeViewResourceId(id);
           const previous = this.writable(state, id, expectedRevision, 'delete');
           state.instances.splice(state.instances.indexOf(previous), 1);
+          state.catalogRevision += 1;
           const revision = crypto.randomUUID();
           return { value: { id, revision }, revision };
         },
@@ -826,6 +838,7 @@ export abstract class StatefulViewHost implements ViewHost {
                   revision: crypto.randomUUID(),
                 })),
               seeded: [],
+              catalogRevision: 0,
               preferences: {},
               receipts: {},
             }

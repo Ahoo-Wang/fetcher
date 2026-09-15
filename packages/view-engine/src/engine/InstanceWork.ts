@@ -174,9 +174,6 @@ export class InstanceWork {
     operation.pending = write;
     delete operation.lastRequestId;
   }
-  pendingWrite(id: string): Readonly<PendingWrite> | undefined {
-    return this.operations.get(id)?.pending;
-  }
   clearPendingWrite(id: string): void {
     const operation = this.operations.get(id);
     if (operation) {

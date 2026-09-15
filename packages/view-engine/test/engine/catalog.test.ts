@@ -224,3 +224,104 @@ it('rejects a point read whose signal was already aborted without calling the ho
   expect(load).not.toHaveBeenCalled();
   engine.dispose();
 });
+
+it('turns a slow catalog read into a catalog error without touching the preference read', async () => {
+  const { load } = pagedHost();
+  const { engine } = setup({
+    instances: undefined,
+    limits: { loadTimeoutMs: 40 },
+    host: {
+      instance: { list: () => new Promise(() => {}), load },
+      preference: { load: async () => preference('v1') },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  expect(engine.getSnapshot()).toMatchObject({
+    status: 'ready',
+    catalog: { status: 'error' },
+    preference: { status: 'ready', revision: 'p1' },
+    defaultInstanceId: 'v1',
+    selectedInstanceId: 'v1',
+  });
+  expect(engine.getSnapshot().catalog.error).toMatch(/超时/);
+  engine.dispose();
+});
+
+it('reloads the catalog from its first page after a failed first read', async () => {
+  const { all, load } = pagedHost();
+  const list = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('目录不可用'))
+    .mockResolvedValueOnce(page(all.slice(0, 2)));
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: { list, load },
+      preference: { load: async () => preference('v1') },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  expect(engine.getSnapshot()).toMatchObject({
+    catalog: { status: 'error', error: '目录不可用', nextCursor: null },
+    selectedInstanceId: 'v1',
+    instanceIds: ['v1'],
+  });
+  await engine.reloadCatalog();
+  expect(engine.getSnapshot()).toMatchObject({
+    catalog: { status: 'ready', error: null },
+    instanceIds: ['v0', 'v1'],
+    selectedInstanceId: 'v1',
+  });
+  expect(Object.keys(engine.getSnapshot().sessions)).toEqual(['v1']);
+  engine.dispose();
+});
+
+it('raises the known catalog total when a visible copy is created', async () => {
+  const { all, list, load } = pagedHost();
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list,
+        load,
+        create: vi.fn(async (input: object) => {
+          const created = { ...all[0], ...input, id: 'copy', revision: 'c1' };
+          return {
+            outcome: 'committed',
+            value: created,
+            revision: 'c1',
+            visibility: 'visible',
+          };
+        }),
+      },
+      preference: { load: async () => preference('v1') },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  // The fixture page reports the page size as its total.
+  expect(engine.getSnapshot().catalog.total).toBe(3);
+  await engine.saveAs({ title: 'Copy', scope: { type: 'personal' } });
+  expect(engine.getSnapshot().catalog.total).toBe(4);
+  expect(engine.getSnapshot().instanceIds).toContain('copy');
+  engine.dispose();
+});
+
+it('reports a missing explicit instance as a workspace error without selecting anything', async () => {
+  const { list, load } = pagedHost();
+  const { engine } = setup({
+    instances: undefined,
+    instanceId: 'ghost',
+    host: {
+      instance: { list, load },
+      preference: { load: async () => preference('v1') },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  expect(engine.getSnapshot()).toMatchObject({
+    status: 'ready',
+    selectedInstanceId: null,
+    error: '无法加载实例：ghost',
+    catalog: { status: 'ready' },
+  });
+  engine.dispose();
+});

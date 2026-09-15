@@ -28,7 +28,9 @@ import type {
 import type { HttpViewTransport } from './HttpViewTransport.js';
 
 function definitionRevision(revision: string | undefined): HeadersInit {
-  return revision ? { 'X-Definition-Revision': revision } : {};
+  return revision
+    ? { 'X-Definition-Revision': encodeURIComponent(revision) }
+    : {};
 }
 
 export class HttpViewInstanceService implements ViewInstanceService {

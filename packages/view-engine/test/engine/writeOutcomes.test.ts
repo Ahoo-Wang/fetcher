@@ -533,3 +533,40 @@ it('refuses to page the catalog while a page is loading or after the catalog fai
   });
   engine.dispose();
 });
+
+it('rejects a rename receipt that changes the scope of an unopened catalog entry', async () => {
+  const all = [instance(), instance('shared')];
+  const rename = vi.fn(async (id: string, title: string) =>
+    committedWrite(
+      {
+        ...instance(id),
+        title,
+        scope: { type: 'public', source: 'shared' },
+        revision: 'r2',
+      },
+      'r2',
+    ),
+  );
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () => page(all),
+        load: async (id: string) =>
+          structuredClone(all.find(i => i.id === id)!),
+        rename,
+      },
+      preference: { load: async () => preference('mine') },
+      permission: { getInstance: managementPermissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(engine.renameInstance('Moved', 'shared')).rejects.toThrow(
+    /重新加载核对/,
+  );
+  expect(engine.getSnapshot().catalog.summaries.shared).toMatchObject({
+    title: 'shared',
+    scope: { type: 'personal' },
+  });
+  engine.dispose();
+});

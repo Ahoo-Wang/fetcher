@@ -125,6 +125,8 @@ export interface CatalogPaging {
   hasMore: boolean;
   error: string | null;
   onLoadMore(): void;
+  /** Reload from the first page after a failed catalog read. */
+  onRetry(): void;
 }
 interface NavigationProps {
   groups: InstanceGroup[];
@@ -195,6 +197,17 @@ export function ViewInstanceSwitcher({
               >
                 {catalog.error}
               </p>
+            )}
+            {catalog?.error && !catalog.hasMore && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="fve:w-full fve:justify-start"
+                disabled={catalog.loading}
+                onClick={catalog.onRetry}
+              >
+                重新加载目录
+              </Button>
             )}
             {catalog?.hasMore && (
               <Button
@@ -314,6 +327,16 @@ export function ViewSidebar({
         <p role="alert" className="fve:px-2 fve:text-xs fve:text-destructive">
           {catalog.error}
         </p>
+      )}
+      {catalog?.error && !catalog.hasMore && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={catalog.loading}
+          onClick={catalog.onRetry}
+        >
+          重新加载目录
+        </Button>
       )}
       {catalog?.hasMore && (
         <Button

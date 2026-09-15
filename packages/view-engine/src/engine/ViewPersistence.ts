@@ -484,8 +484,13 @@ export class ViewPersistence {
     const remaining = { ...this.store.getSnapshot().sessions };
     if (draft) delete remaining[id];
     this.loader.addCatalogued(saved.id);
-    this.work.finishWrite(id, token, () =>
+    this.work.finishWrite(id, token, () => {
+      const state = this.store.getSnapshot();
+      const listed = state.instanceIds.includes(saved.id);
       this.store.publish({
+        ...(state.catalog.total !== null && !listed
+          ? { catalog: { ...state.catalog, total: state.catalog.total + 1 } }
+          : {}),
         instanceIds: [
           ...new Set([...this.store.getSnapshot().instanceIds, saved.id]),
         ],
@@ -507,8 +512,8 @@ export class ViewPersistence {
         ...(selectedCopy
           ? { selectedInstanceId: selectedCopy, error: null }
           : {}),
-      }),
-    );
+      });
+    });
     return createdId;
   }
 

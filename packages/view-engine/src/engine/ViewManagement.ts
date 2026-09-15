@@ -187,7 +187,11 @@ export class ViewManagement {
         (!session &&
           (result.title !== title ||
             result.kind !==
-              this.store.getSnapshot().catalog.summaries[id]?.kind))
+              this.store.getSnapshot().catalog.summaries[id]?.kind ||
+            !sameJsonState(
+              result.scope,
+              this.store.getSnapshot().catalog.summaries[id]?.scope,
+            )))
       )
         throw new Error('改名结果修改了其他视图配置，请重新加载核对');
       const baseline = copy(result);

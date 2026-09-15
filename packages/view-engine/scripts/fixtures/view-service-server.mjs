@@ -213,8 +213,10 @@ export async function startViewService({
       }
       const revision = () => {
         try {
-          const value = JSON.parse(request.headers['if-match'] ?? 'null');
-          if (typeof value !== 'string' || !value) throw new Error();
+          const header = request.headers['if-match'] ?? '';
+          const match = /^"(.*)"$/.exec(header);
+          const value = match ? decodeURIComponent(match[1]) : '';
+          if (!value) throw new Error();
           return value;
         } catch {
           throw new ServiceError(
@@ -237,13 +239,15 @@ export async function startViewService({
             'INVALID_ARGUMENT',
             '写入必须提供 Idempotency-Key',
           );
-        const definitionRevision = request.headers['x-definition-revision'];
+        const encodedDefinition = request.headers['x-definition-revision'];
+        const definitionRevision =
+          typeof encodedDefinition === 'string' && encodedDefinition
+            ? decodeURIComponent(encodedDefinition)
+            : undefined;
         return {
           requestId,
           signal: controller.signal,
-          ...(typeof definitionRevision === 'string' && definitionRevision
-            ? { definitionRevision }
-            : {}),
+          ...(definitionRevision ? { definitionRevision } : {}),
         };
       };
       const readOptions = () => ({

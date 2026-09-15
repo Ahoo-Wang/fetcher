@@ -21,6 +21,10 @@ import {
   readWriteObservation,
   type WriteObservation,
 } from '../contracts/viewServiceContract.js';
+import { readPreferenceState } from '../contracts/validation/preferenceValidation.js';
+
+const INSTANCE_ACTIONS = ['create', 'save', 'rename', 'delete'] as const;
+const PREFERENCE_ACTIONS = ['saveOrder', 'saveDefault'] as const;
 
 export type StoredInstance = ViewInstance & { ownerKey: string | null };
 /** One user's preference document; absent until the first preference write. */
@@ -41,6 +45,8 @@ export interface ServiceState {
   instances: StoredInstance[];
   /** Users whose personal seed instances were already inserted. */
   seeded: string[];
+  /** Advances on every instance write; catalog cursors are bound to it. */
+  catalogRevision: number;
   preferences: Record<string, StoredPreference>;
   receipts: Record<string, StoredReceipt>;
 }
@@ -56,6 +62,8 @@ export function validateLocalViewState(
     !Array.isArray(state.instances) ||
     !Array.isArray(state.seeded) ||
     state.seeded.some(key => typeof key !== 'string') ||
+    !Number.isSafeInteger(state.catalogRevision) ||
+    state.catalogRevision < 0 ||
     !state.preferences ||
     typeof state.preferences !== 'object' ||
     Array.isArray(state.preferences) ||
@@ -92,16 +100,43 @@ export function validateLocalViewState(
       )
     )
       throw new Error('用户偏好无效');
-  for (const receipt of Object.values(state.receipts)) {
-    if (
-      !receipt ||
-      (receipt.resource !== 'instance' && receipt.resource !== 'preference') ||
-      typeof receipt.action !== 'string' ||
-      !(receipt.targetId === null || typeof receipt.targetId === 'string')
+  for (const receipt of Object.values(state.receipts))
+    validateReceipt(receipt, definition);
+}
+
+/** A stored receipt must be a plausible outcome of its own action; anything else is corruption. */
+function validateReceipt(receipt: StoredReceipt, definition: ViewDefinition) {
+  if (
+    !receipt ||
+    !(receipt.targetId === null || typeof receipt.targetId === 'string') ||
+    !(
+      (receipt.resource === 'instance' &&
+        (INSTANCE_ACTIONS as readonly string[]).includes(receipt.action)) ||
+      (receipt.resource === 'preference' &&
+        (PREFERENCE_ACTIONS as readonly string[]).includes(receipt.action))
     )
-      throw new Error('写入回执无效');
-    readWriteObservation(receipt.observation);
+  )
+    throw new Error('写入回执无效');
+  const observation = readWriteObservation(receipt.observation);
+  if (observation.outcome !== 'committed') return;
+  const value = observation.value;
+  if (receipt.resource === 'preference') {
+    readPreferenceState(value);
+    return;
   }
+  if (receipt.action === 'delete') {
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      typeof (value as { id?: unknown }).id !== 'string' ||
+      (value as { revision?: unknown }).revision !== observation.revision
+    )
+      throw new Error('删除回执无效');
+    return;
+  }
+  validateViewInstance(value, definition);
+  if (value.revision !== observation.revision)
+    throw new Error('写入回执的版本不一致');
 }
 
 export function createViewInput({

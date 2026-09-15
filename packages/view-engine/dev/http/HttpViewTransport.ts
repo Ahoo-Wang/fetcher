@@ -80,13 +80,14 @@ export class HttpViewTransport {
     if (id !== this.options.definitionId)
       throw new ViewServiceError('NOT_FOUND', '视图定义不存在');
   }
+  /** Opaque revisions travel percent-encoded inside the quoted entity tag so any string survives HTTP. */
   revision(revision?: string): HeadersInit {
     if (!revision)
       throw new ViewServiceError(
         'PRECONDITION_REQUIRED',
         '写入需要当前 revision，请重新加载',
       );
-    return { 'If-Match': JSON.stringify(revision) };
+    return { 'If-Match': `"${encodeURIComponent(revision)}"` };
   }
   requestIdentity(requestId: string | undefined): HeadersInit {
     if (typeof requestId !== 'string' || !requestId.trim())

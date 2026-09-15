@@ -195,14 +195,28 @@ export class ViewLoader {
     await followUp?.().catch(() => {});
   }
 
+  /** A child controller so one read's timeout aborts only itself, never its sibling or the load. */
+  private childOf(parent: AbortController): AbortController {
+    const child = new AbortController();
+    if (parent.signal.aborted) child.abort(parent.signal.reason);
+    else
+      parent.signal.addEventListener(
+        'abort',
+        () => child.abort(parent.signal.reason),
+        { once: true },
+      );
+    return child;
+  }
+
   private async loadCatalogPage(
     definition: ViewDefinition,
     cursor: string | null,
     lifecycle: number,
-    controller: AbortController,
+    parent: AbortController,
   ): Promise<{ loaded: boolean; error?: unknown }> {
     const current = () =>
-      this.scope.current(lifecycle) && !controller.signal.aborted;
+      this.scope.current(lifecycle) && !parent.signal.aborted;
+    const controller = this.childOf(parent);
     try {
       const page = await withDeadline(
         () => this.source.list(definition, cursor, controller.signal),
@@ -260,6 +274,44 @@ export class ViewLoader {
     }
   }
 
+  /** Reloads the catalog from its first page; opened sessions and the selection are untouched. */
+  async reloadCatalog(): Promise<void> {
+    const definition = this.store.definition();
+    if (
+      this.catalogLoading ||
+      this.store.getSnapshot().catalog.status === 'loading'
+    )
+      return;
+    const lifecycle = this.scope.version;
+    const controller = new AbortController();
+    this.catalogLoading = controller;
+    this.catalogIds = [];
+    this.store.publish({
+      catalog: {
+        ...this.store.getSnapshot().catalog,
+        status: 'loading',
+        error: null,
+        nextCursor: null,
+      },
+    });
+    try {
+      const outcome = await this.loadCatalogPage(
+        definition,
+        null,
+        lifecycle,
+        controller,
+      );
+      if (!outcome.loaded && this.scope.current(lifecycle)) {
+        const failure: unknown =
+          outcome.error ??
+          new Error(this.store.getSnapshot().catalog.error ?? '目录加载失败');
+        throw failure;
+      }
+    } finally {
+      if (this.catalogLoading === controller) this.catalogLoading = undefined;
+    }
+  }
+
   /** Appends the next catalog page; the loaded pages, sessions and selection are untouched. */
   async loadMoreInstances(): Promise<void> {
     const definition = this.store.definition();
@@ -301,10 +353,11 @@ export class ViewLoader {
 
   private async loadPreference(
     lifecycle: number,
-    controller: AbortController,
+    parent: AbortController,
   ): Promise<{ status: 'ready' | 'error'; defaultInstanceId: string | null }> {
     const current = () =>
-      this.scope.current(lifecycle) && !controller.signal.aborted;
+      this.scope.current(lifecycle) && !parent.signal.aborted;
+    const controller = this.childOf(parent);
     try {
       const preference = await withDeadline(
         () => this.source.preference(controller.signal),
@@ -520,10 +573,6 @@ export class ViewLoader {
     return current() ? followUp : undefined;
   }
 
-  /** Catalog membership as loaded, used to place created or opened instances after the pages. */
-  isCatalogued(id: string): boolean {
-    return this.catalogIds.includes(id);
-  }
   /** Drops an instance from the loaded catalog order after a committed delete. */
   forgetCatalogued(id: string): void {
     this.catalogIds = this.catalogIds.filter(item => item !== id);
