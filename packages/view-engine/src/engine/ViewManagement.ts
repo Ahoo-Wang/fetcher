@@ -319,8 +319,7 @@ export class ViewManagement {
     this.assertDefaultWritable();
     // Default and order writes share one preference document; concurrent dispatch under the
     // same revision precondition would only produce a spurious REVISION_CONFLICT.
-    if (this.work.ordering)
-      throw new Error('视图顺序正在保存，请等待操作完成');
+    if (this.work.ordering) throw new Error('视图顺序正在保存，请等待操作完成');
     this.assertPreferenceKnown();
     const request = { version: this.scope.version };
     this.defaultWrite = request;
@@ -358,7 +357,9 @@ export class ViewManagement {
       this.defaultWrite = undefined;
       this.adoptPreference(
         state,
-        observation.visibility === 'pending' ? observation.readFence : undefined,
+        observation.visibility === 'pending'
+          ? observation.readFence
+          : undefined,
       );
     } catch (error) {
       if (!this.scope.current(request.version) || this.defaultWrite !== request)
@@ -480,7 +481,9 @@ export class ViewManagement {
       });
       this.adoptPreference(
         state,
-        observation.visibility === 'pending' ? observation.readFence : undefined,
+        observation.visibility === 'pending'
+          ? observation.readFence
+          : undefined,
       );
     } finally {
       this.work.finishOrder(token);

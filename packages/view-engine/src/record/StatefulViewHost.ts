@@ -466,9 +466,7 @@ export abstract class StatefulViewHost implements ViewHost {
           // outside the scope, such as another view group, keep their positions.
           // Entries for instances that are no longer visible (deleted, unshared) are
           // dropped so repeated create/reorder/delete cycles cannot grow the document.
-          const explicit = (current?.order ?? []).filter(id =>
-            visible.has(id),
-          );
+          const explicit = (current?.order ?? []).filter(id => visible.has(id));
           const materialized = [
             ...explicit,
             ...this.baseOrder(state, this.options.scopeKey)

@@ -248,7 +248,8 @@ export class ViewReload {
                 requestId: request.requestId,
                 signal: controller.signal,
                 // The first dispatch's revision is part of the idempotency body.
-                definitionRevision: request.definitionRevision ?? definition.revision,
+                definitionRevision:
+                  request.definitionRevision ?? definition.revision,
               },
             ),
           this.store.limits.writeTimeoutMs,

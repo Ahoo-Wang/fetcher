@@ -1357,7 +1357,10 @@ it('reconciles an earlier write by request identity without replaying it', async
 
 it('drops stored order entries for instances that are no longer visible', async () => {
   const input = options();
-  input.instances.push({ ...instance, id: 'gone' }, { ...instance, id: 'kept' });
+  input.instances.push(
+    { ...instance, id: 'gone' },
+    { ...instance, id: 'kept' },
+  );
   const host = new MemoryViewHost(input);
   const first = committed(
     await host.preference.saveOrder(

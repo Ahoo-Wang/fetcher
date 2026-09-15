@@ -734,9 +734,7 @@ export class ViewEngine {
 
   /** Retries an independent preference read without touching sessions or the selection. */
   reloadPreference(): Promise<void> {
-    return this.observe('catalog', false, () =>
-      this.loader.reloadPreference(),
-    );
+    return this.observe('catalog', false, () => this.loader.reloadPreference());
   }
 
   /** Appends the next catalog page without touching sessions or the selection. */

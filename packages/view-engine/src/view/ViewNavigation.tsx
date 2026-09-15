@@ -367,10 +367,7 @@ export function ViewSidebar({
         </Button>
       )}
       {preference?.error && (
-        <p
-          role="alert"
-          className="fve:px-2 fve:text-xs fve:text-destructive"
-        >
+        <p role="alert" className="fve:px-2 fve:text-xs fve:text-destructive">
           {preference.error}
         </p>
       )}

@@ -376,8 +376,7 @@ export class ViewLoader {
     const preferenceFence = this.preferenceFence;
     try {
       const preference = await withDeadline(
-        () =>
-          this.source.preference(controller.signal, preferenceFence),
+        () => this.source.preference(controller.signal, preferenceFence),
         this.store.limits.loadTimeoutMs,
         controller,
       );
