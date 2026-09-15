@@ -97,12 +97,13 @@ it('serves dashboard instances over real HTTP list, order, single and deletion r
         { requestId: 'order' },
       ),
     );
-    // Without an explicit order yet, scoped IDs are appended in scope order and reordered.
+    // Without an explicit order yet, the change applies to the visible order; the unscoped
+    // dashboard keeps its slot.
     expect(ordered).toMatchObject({
-      order: ['b', 'a'],
+      order: ['b', 'dashboard', 'a'],
       defaultInstanceId: 'dashboard',
     });
-    expect(await ids()).toEqual(['b', 'a', 'dashboard']);
+    expect(await ids()).toEqual(['b', 'dashboard', 'a']);
     const a = await host.instance.load('a');
     const deleted = await host.instance.delete('a', a.revision, {
       requestId: 'delete-a',
@@ -114,7 +115,7 @@ it('serves dashboard instances over real HTTP list, order, single and deletion r
     expect(await ids()).toEqual(['b', 'dashboard']);
     expect(await host.preference.load(definition.id)).toMatchObject({
       revision: ordered.revision,
-      order: ['b', 'a'],
+      order: ['b', 'dashboard', 'a'],
       effectiveDefaultInstanceId: 'dashboard',
     });
     // Replaying the delete returns its receipt; a new attempt is a definite NOT_FOUND.

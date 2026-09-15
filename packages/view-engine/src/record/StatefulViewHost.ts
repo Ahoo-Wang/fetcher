@@ -461,9 +461,19 @@ export abstract class StatefulViewHost implements ViewHost {
                 '排序作用集合包含不可见的视图，请重新加载目录',
               );
           const current = this.checkedPreference(state, precondition);
+          // Materialize the order the user sees before applying the change: the explicit order
+          // (stale IDs included) followed by the remaining visible IDs in base order. Slots
+          // outside the scope, such as another view group, keep their positions.
+          const explicit = current?.order ?? [];
+          const materialized = [
+            ...explicit,
+            ...this.baseOrder(state, this.options.scopeKey)
+              .map(item => item.id)
+              .filter(id => !explicit.includes(id)),
+          ];
           const next: StoredPreference = {
             revision: crypto.randomUUID(),
-            order: applyOrderChange(current?.order ?? [], change),
+            order: applyOrderChange(materialized, change),
             defaultInstanceId: current?.defaultInstanceId ?? null,
           };
           this.storePreference(state, next);

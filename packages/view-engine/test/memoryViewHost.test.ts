@@ -1059,7 +1059,8 @@ it('reorders only the scoped slots of the explicit order and keeps the rest in p
   input.defaultInstanceId = 'B';
   const host = new MemoryViewHost(input);
   expect(await ids(host)).toEqual(['A', 'B', 'C', 'D']);
-  // Before an explicit order exists, scoped IDs are appended in scope order and then reordered.
+  // Before an explicit order exists, the change applies to the visible order the user sees:
+  // unscoped slots (B, D) keep their positions instead of falling behind the scoped ones.
   const partial = committed(
     await host.preference.saveOrder(
       definition.id,
@@ -1068,8 +1069,8 @@ it('reorders only the scoped slots of the explicit order and keeps the rest in p
       ctx(),
     ),
   );
-  expect(partial.order).toEqual(['C', 'A']);
-  expect(await ids(host)).toEqual(['C', 'A', 'B', 'D']);
+  expect(partial.order).toEqual(['C', 'B', 'A', 'D']);
+  expect(await ids(host)).toEqual(['C', 'B', 'A', 'D']);
   const full = committed(
     await host.preference.saveOrder(
       definition.id,
@@ -1182,7 +1183,7 @@ it('pages and filters the catalog with cursors that expire on a preference chang
   committed(
     await host.preference.saveOrder(
       definition.id,
-      { scopeInstanceIds: ['e'], orderedInstanceIds: ['e'] },
+      { scopeInstanceIds: ['a', 'e'], orderedInstanceIds: ['e', 'a'] },
       ABSENT_PRECONDITION,
       ctx(),
     ),
@@ -1194,7 +1195,7 @@ it('pages and filters the catalog with cursors that expire on a preference chang
     (await host.instance.list(definition.id, { limit: 2 })).items.map(
       item => item.id,
     ),
-  ).toEqual(['e', 'a']);
+  ).toEqual(['e', 'b']);
   // Another user's preference does not invalidate this user's cursor.
   const bob = new MemoryViewHost({ ...input, scopeKey: 'bob' });
   const bobFirst = await bob.instance.list(definition.id, { limit: 2 });
