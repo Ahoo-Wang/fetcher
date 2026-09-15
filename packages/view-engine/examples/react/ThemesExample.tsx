@@ -168,7 +168,8 @@ export function ThemesExample() {
           scopeKey="theme-example"
           definitionId={orderDefinition.id}
           definition={definition}
-          instances={orderViews}
+          instances={orderViews.instances}
+          defaultInstanceId={orderViews.defaultInstanceId}
           host={host}
           extensions={orderExtensions}
           record={{

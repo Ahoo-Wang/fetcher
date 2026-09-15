@@ -14,14 +14,23 @@
 import { expect, it, vi } from 'vitest';
 import type { ViewInstance } from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
 import {
+  committedWrite,
+  rejectedWrite,
+  type ViewDeleteReceipt,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
+import {
+  catalogHost,
   deferred,
+  deleteReceipt,
   instance,
   deletionPermissions as permissions,
   selected,
   setup,
 } from './fixtures.js';
+
+const writeContext = expect.objectContaining({ requestId: expect.any(String) });
 
 it.each([
   undefined,
@@ -29,16 +38,18 @@ it.each([
   true,
   [],
   {},
-  { defaultInstance: undefined },
-  { defaultInstance: instance() },
-  { defaultInstance: { ...instance('foreign'), definitionId: 'foreign' } },
+  { outcome: 'done' },
+  committedWrite(undefined, 'tomb'),
+  committedWrite({}, 'tomb'),
+  committedWrite({ id: 'shared', revision: 'tomb' }, 'tomb'),
+  committedWrite({ id: 'mine', revision: 'other' }, 'tomb'),
 ])(
   'requires an idempotent retry after an invalid deletion receipt %j',
   async result => {
     const remove = vi
       .fn()
       .mockResolvedValueOnce(result)
-      .mockResolvedValue({ defaultInstance: instance('shared') });
+      .mockImplementation(async (id: string) => deleteReceipt(id));
     const { engine } = setup({
       host: {
         instance: { delete: remove },
@@ -56,16 +67,29 @@ it.each([
       true,
     );
     await engine.deleteInstance();
-    expect(remove.mock.calls[1]).toEqual(remove.mock.calls[0]);
-    expect(engine.getSnapshot().defaultInstanceId).toBe('shared');
+    expect(remove.mock.calls[1].slice(0, 2)).toEqual(
+      remove.mock.calls[0].slice(0, 2),
+    );
+    expect(remove.mock.calls[1][2].requestId).toBe(
+      remove.mock.calls[0][2].requestId,
+    );
+    expect(remove.mock.calls[1][2].requestId).toBe(
+      remove.mock.calls[0][2].requestId,
+    );
+    expect(engine.getSnapshot()).toMatchObject({
+      defaultInstanceId: null,
+      selectedInstanceId: 'shared',
+    });
     expect(engine.getSnapshot().sessions.mine).toBeUndefined();
     engine.dispose();
   },
 );
 
 it('removes only after host success, then selects a remaining instance or leaves an empty page', async () => {
-  const response = deferred<{ defaultInstance: null }>();
-  const deleteInstance = vi.fn(() => response.promise);
+  const response = deferred<WriteObservation<ViewDeleteReceipt>>();
+  const deleteInstance = vi.fn(async (id: string) =>
+    id === 'mine' ? response.promise : deleteReceipt(id),
+  );
   const { engine } = setup({
     host: {
       instance: { delete: deleteInstance },
@@ -77,17 +101,19 @@ it('removes only after host success, then selects a remaining instance or leaves
   const deleting = engine.deleteInstance();
   expect(selected(engine).writeStatus).toBe('deleting');
   expect(engine.getSnapshot().instanceIds).toEqual(['mine', 'shared']);
-  expect(deleteInstance).toHaveBeenCalledWith('mine', 'r1');
-  response.resolve({ defaultInstance: null });
+  expect(deleteInstance).toHaveBeenCalledWith('mine', 'r1', writeContext);
+  response.resolve(deleteReceipt('mine'));
   await deleting;
   expect(engine.getSnapshot().selectedInstanceId).toBe('shared');
   expect(engine.getSnapshot().sessions.mine).toBeUndefined();
+  expect(engine.getSnapshot().catalog.summaries.mine).toBeUndefined();
   await engine.deleteInstance();
   expect(engine.getSnapshot()).toMatchObject({
     status: 'ready',
     instanceIds: [],
     sessions: {},
     selectedInstanceId: null,
+    catalog: { summaries: {}, total: 0 },
   });
   engine.dispose();
 });
@@ -95,12 +121,13 @@ it('removes only after host success, then selects a remaining instance or leaves
 it.each(['missing-permission', 'missing-callback', 'system'] as const)(
   'denies deletion for %s before calling the host',
   async restriction => {
-    const deleteInstance = vi.fn().mockResolvedValue({ defaultInstance: null });
+    const deleteInstance = vi.fn(async (id: string) => deleteReceipt(id));
     const value = instance();
     if (restriction === 'system')
       value.scope = { type: 'public', source: 'system' };
     const { engine } = setup({
-      instances: { instances: [value], defaultInstanceId: 'mine' },
+      instances: [value],
+      defaultInstanceId: 'mine',
       host: {
         instance: {
           delete:
@@ -122,11 +149,11 @@ it.each(['missing-permission', 'missing-callback', 'system'] as const)(
 );
 
 it('retains drafts on failure and blocks concurrent saves or repeated deletion', async () => {
-  const response = deferred<{ defaultInstance: null }>();
+  const response = deferred<WriteObservation<ViewDeleteReceipt>>();
   const deleteInstance = vi
     .fn()
     .mockReturnValueOnce(response.promise)
-    .mockResolvedValue({ defaultInstance: null });
+    .mockImplementation(async (id: string) => deleteReceipt(id));
   const { engine } = setup({
     host: {
       instance: { delete: deleteInstance },
@@ -139,33 +166,50 @@ it('retains drafts on failure and blocks concurrent saves or repeated deletion',
   await expect(engine.deleteInstance()).rejects.toThrow();
   await expect(engine.save()).rejects.toThrow();
   expect(selected(engine).writeStatus).toBe('deleting');
-  response.reject(new ViewServiceError('CONFLICT', 'delete denied'));
+  response.resolve(rejectedWrite('CONFLICT', 'delete denied'));
   await expect(deleting).rejects.toThrow('delete denied');
   expect(selected(engine)).toMatchObject({
     dirty: true,
     instance: { title: 'Draft' },
     writeStatus: 'idle',
     writeError: 'delete denied',
+    requiresReload: false,
   });
+  expect(engine.getCapabilitiesSnapshot().instances.mine.retryDelete).toBe(
+    false,
+  );
   expect(deleteInstance).toHaveBeenCalledTimes(1);
   await engine.deleteInstance();
+  expect(deleteInstance.mock.calls[1][2].requestId).not.toBe(
+    deleteInstance.mock.calls[0][2].requestId,
+  );
   expect(engine.getSnapshot().instanceIds).toEqual(['shared']);
   engine.dispose();
 });
 
 it('keeps a pending navigation when deleting its previously selected instance', async () => {
-  const response = deferred<{ defaultInstance: null }>();
+  const response = deferred<WriteObservation<ViewDeleteReceipt>>();
   const loading = deferred<ViewInstance>();
+  const catalog = catalogHost([instance(), instance('shared')]);
   const { engine } = setup({
+    instances: undefined,
     host: {
-      instance: { delete: () => response.promise, load: () => loading.promise },
+      instance: {
+        list: catalog.instance.list,
+        load: (id: string) =>
+          id === 'remote' ? loading.promise : catalog.instance.load(id),
+        delete: () => response.promise,
+      },
       permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
+  // The remaining instance was already opened, as every listed instance used to be.
+  await engine.selectInstance('shared');
+  await engine.selectInstance('mine');
   const deleting = engine.deleteInstance();
   const navigating = engine.selectInstance('remote');
-  response.resolve({ defaultInstance: null });
+  response.resolve(deleteReceipt('mine'));
   await deleting;
   loading.resolve(instance('remote'));
   await navigating;
@@ -177,11 +221,14 @@ it('keeps a pending navigation when deleting its previously selected instance', 
 it('does not report deletion as failed when the next view query fails', async () => {
   const { engine, paged } = setup({
     host: {
-      instance: { delete: async () => ({ defaultInstance: null }) },
+      instance: { delete: async (id: string) => deleteReceipt(id) },
       permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
+  // The remaining instance was already opened, as every listed instance used to be.
+  await engine.selectInstance('shared');
+  await engine.selectInstance('mine');
   paged.mockRejectedValue(new Error('query failed'));
   await expect(engine.deleteInstance()).resolves.toBeUndefined();
   await vi.waitFor(() => expect(selected(engine).queryStatus).toBe('error'));
@@ -197,16 +244,18 @@ it('ignores a late query response after its view is deleted', async () => {
   }>();
   const { engine, paged } = setup({
     host: {
-      instance: { delete: async () => ({ defaultInstance: null }) },
+      instance: { delete: async (id: string) => deleteReceipt(id) },
       permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
+  await engine.selectInstance('shared');
+  await engine.selectInstance('mine');
   paged.mockReturnValueOnce(response.promise);
   const refreshing = engine
     .record(engine.getSnapshot().selectedInstanceId!)
     .refresh();
-  await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+  await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(4));
   await engine.deleteInstance();
   response.resolve({
     list: [{ state: { id: 'late', amount: 99 } }],
@@ -215,6 +264,7 @@ it('ignores a late query response after its view is deleted', async () => {
   await refreshing;
   expect(engine.getSnapshot().sessions.mine).toBeUndefined();
   expect(engine.getSnapshot().selectedInstanceId).toBe('shared');
+  await vi.waitFor(() => expect(selected(engine).queryStatus).toBe('success'));
   expect(selected(engine).rows).not.toEqual([
     { state: { id: 'late', amount: 99 } },
   ]);
@@ -224,7 +274,7 @@ it('ignores a late query response after its view is deleted', async () => {
 it.each(['load', 'dispose'] as const)(
   'preserves the pending deletion lifecycle when %s is requested',
   async operation => {
-    const response = deferred<{ defaultInstance: null }>();
+    const response = deferred<WriteObservation<ViewDeleteReceipt>>();
     const { engine } = setup({
       host: {
         instance: { delete: () => response.promise },
@@ -238,7 +288,7 @@ it.each(['load', 'dispose'] as const)(
       await expect(engine.load()).rejects.toThrow('实例正在写入');
     else engine.dispose();
     expect(engine.getSnapshot()).toBe(snapshot);
-    response.resolve({ defaultInstance: null });
+    response.resolve(deleteReceipt('mine'));
     await deleting;
     if (operation === 'load') {
       expect(engine.getSnapshot().sessions.mine).toBeUndefined();
@@ -254,11 +304,14 @@ it('retains delete retry when a superseded reload settles before its replacement
   const second = deferred<ViewInstance>();
   const load = vi
     .fn()
+    .mockResolvedValueOnce(instance())
     .mockReturnValueOnce(first.promise)
     .mockReturnValueOnce(second.promise);
   const { engine } = setup({
+    instances: undefined,
     host: {
       instance: {
+        list: catalogHost([instance(), instance('shared')]).instance.list,
         load,
         delete: vi.fn().mockRejectedValue(new Error('network failure')),
       },

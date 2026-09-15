@@ -182,6 +182,7 @@ it('accounts for growing and shrinking content configurations received by reload
     contentConfig(0),
     {},
     { maxDashboardMetadataBytes: 900 },
+    'host',
   );
   await engine.load();
   const runtime = engine.dashboard('dashboard');
@@ -233,6 +234,7 @@ it('releases removed reference metadata when a remote reload replaces it with co
       maxDashboardMetadataBytes:
         bytes(config) * 2 + bytes(instance('child')) + bytes(definition) + 32,
     },
+    'host',
   );
   await engine.load();
   const runtime = engine.dashboard('dashboard');
@@ -259,6 +261,7 @@ it('keeps the admitted runtime configuration on an oversized reload and retries 
     contentConfig(0),
     {},
     { maxDashboardMetadataBytes: 900 },
+    'host',
   );
   await engine.load();
   const runtime = engine.dashboard('dashboard');

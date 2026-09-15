@@ -36,22 +36,23 @@ export async function verifyIndexedDBViewHost({
   }
   const load = () =>
     page.evaluate(() => window.storageHost.instance.load('my-orders'));
+  const list = tab =>
+    tab.evaluate(() => window.storageHost.instance.list('sales-orders'));
   // Same old version, independent renderer processes, repeated without sleeps or retrying assertions.
+  // Domain failures arrive as rejected observations; only cancellation rejects the promise.
   for (let round = 0; round < 50; round++) {
     const old = await load();
     const race = await Promise.all(
       [page, bobPage].map((tab, index) =>
         tab.evaluate(
           async ({ old, round, index }) => {
-            try {
-              const saved = await window.storageHost.instance.save({
-                ...old,
-                title: `writer-${round}-${index}`,
-              });
-              return { outcome: 'saved', revision: saved.revision };
-            } catch (error) {
-              return { outcome: error.code };
-            }
+            const saved = await window.storageHost.instance.save(
+              { ...old, title: `writer-${round}-${index}` },
+              { requestId: `writer-${round}-${index}` },
+            );
+            return saved.outcome === 'committed'
+              ? { outcome: 'saved', revision: saved.value.revision }
+              : { outcome: saved.issue.code };
           },
           { old, round, index },
         ),
@@ -78,19 +79,20 @@ export async function verifyIndexedDBViewHost({
       ),
     ),
   );
-  assert.equal(created[0].id, created[1].id);
-  const changed = await bobPage.evaluate(async input => {
-    try {
-      await window.storageHost.instance.create(
+  // A replayed requestId returns the stored receipt: one committed instance, identical observation.
+  assert.equal(created[0].outcome, 'committed');
+  assert.deepEqual(created[1], created[0]);
+  const changed = await bobPage.evaluate(
+    input =>
+      window.storageHost.instance.create(
         { ...input, title: 'different' },
         { requestId: 'same-create' },
-      );
-    } catch (error) {
-      return error.code;
-    }
-  }, old);
-  assert.equal(changed, 'CONFLICT');
-  // Failure after the write request succeeds must still roll back and reject the caller.
+      ),
+    old,
+  );
+  assert.equal(changed.outcome, 'rejected');
+  assert.equal(changed.issue.code, 'CONFLICT');
+  // Failure after the write request succeeds must still roll back; the caller observes UNAVAILABLE.
   const rollback = await page.evaluate(async old => {
     const put = IDBObjectStore.prototype.put;
     IDBObjectStore.prototype.put = function (...args) {
@@ -99,18 +101,16 @@ export async function verifyIndexedDBViewHost({
       return request;
     };
     try {
-      await window.storageHost.instance.save({
-        ...old,
-        title: 'must-roll-back',
-      });
-      return 'saved';
-    } catch (error) {
-      return error.code;
+      return await window.storageHost.instance.save(
+        { ...old, title: 'must-roll-back' },
+        { requestId: 'must-roll-back' },
+      );
     } finally {
       IDBObjectStore.prototype.put = put;
     }
   }, old);
-  assert.equal(rollback, 'UNAVAILABLE');
+  assert.equal(rollback.outcome, 'rejected');
+  assert.equal(rollback.issue.code, 'UNAVAILABLE');
   assert.equal((await load()).revision, old.revision);
 
   await page.evaluate(databaseName => {
@@ -179,10 +179,8 @@ export async function verifyIndexedDBViewHost({
       await window.heldTransaction;
     });
   }
-  const after = await page.evaluate(() =>
-    window.storageHost.instance.list('sales-orders'),
-  );
-  assert.equal(after.instances.length, fixture.instances.instances.length + 1);
+  const after = await list(page);
+  assert.equal(after.items.length, fixture.instances.length + 1);
   const aborted = await bobPage.evaluate(async input => {
     const controller = new AbortController();
     controller.abort();
@@ -199,12 +197,10 @@ export async function verifyIndexedDBViewHost({
 
   // Reset is durable: the other tab must see fresh seeds and no prior create receipt.
   await page.evaluate(() => window.storageHost.reset());
-  const reset = await bobPage.evaluate(() =>
-    window.storageHost.instance.list('sales-orders'),
-  );
-  assert.equal(reset.instances.length, fixture.instances.instances.length);
+  const reset = await list(bobPage);
+  assert.equal(reset.items.length, fixture.instances.length);
   assert.notEqual(
-    reset.instances.find(row => row.id === 'my-orders').revision,
+    reset.items.find(row => row.id === 'my-orders').revision,
     old.revision,
   );
   const afterReset = await bobPage.evaluate(
@@ -212,7 +208,8 @@ export async function verifyIndexedDBViewHost({
       window.storageHost.instance.create(input, { requestId: 'same-create' }),
     old,
   );
-  assert.notEqual(afterReset.id, created[0].id);
+  assert.equal(afterReset.outcome, 'committed');
+  assert.notEqual(afterReset.value.id, created[0].value.id);
   console.log(
     'IndexedDB passed: 50 cross-tab CAS races, create receipts, post-write rollback, queued/pre-abort cancellation and durable reset.',
   );

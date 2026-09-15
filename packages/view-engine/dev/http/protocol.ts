@@ -11,22 +11,43 @@
  * limitations under the License.
  */
 
-import { ViewServiceError } from '@ahoo-wang/fetcher-view-engine';
+import {
+  ViewServiceError,
+  type ViewServiceErrorCode,
+  type WriteObservation,
+} from '@ahoo-wang/fetcher-view-engine';
 import { encodeViewResourceId as encodeId } from '../../src/contracts/viewServiceContract.js';
 /** Experimental wire mapping; not part of the published ViewHost contract. */
-export const VIEW_SERVICE_STATUS = {
-  UNSUPPORTED_FORMAT: 422,
+export const VIEW_SERVICE_STATUS: Record<ViewServiceErrorCode, number> = {
   INVALID_ARGUMENT: 400,
   UNAUTHENTICATED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
   REVISION_CONFLICT: 412,
+  DEFINITION_CHANGED: 412,
   PRECONDITION_REQUIRED: 428,
+  CURSOR_EXPIRED: 410,
   CORRUPT_STATE: 500,
   UNAVAILABLE: 503,
   UNKNOWN_OUTCOME: 503,
-} as const;
+};
+
+/** HTTP status a write observation travels with; the body still carries the observation itself. */
+export function writeStatus(
+  observation: WriteObservation<unknown>,
+  created = false,
+): number {
+  switch (observation.outcome) {
+    case 'committed':
+      return created ? 201 : 200;
+    case 'committed_pending_receipt':
+    case 'unknown':
+      return 202;
+    case 'rejected':
+      return VIEW_SERVICE_STATUS[observation.issue.code];
+  }
+}
 
 export function encodeViewResourceId(id: unknown): string {
   try {

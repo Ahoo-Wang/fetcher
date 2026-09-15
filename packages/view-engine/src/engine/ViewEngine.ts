@@ -67,6 +67,7 @@ import { ViewQueries } from './ViewQueries.js';
 import { RecordQueries } from '../record/engine/RecordQueries.js';
 import { RecordEdits } from '../record/engine/RecordEdits.js';
 import { ViewLoader } from './ViewLoader.js';
+import { InstanceSource } from './InstanceSource.js';
 import { ViewReload } from './ViewReload.js';
 import { ViewPersistence } from './ViewPersistence.js';
 import { ViewServiceError } from '../contracts/viewServiceContract.js';
@@ -125,6 +126,7 @@ export class ViewEngine {
   >;
   private readonly analysisCommands: AnalysisCommands;
   private readonly edits: RecordEdits;
+  private readonly source: InstanceSource;
   private readonly loader: ViewLoader;
   private readonly reload: ViewReload;
   private readonly persistence: ViewPersistence;
@@ -240,10 +242,11 @@ export class ViewEngine {
       this.analysisCommands,
     );
     this.edits = new RecordEdits(this.store, this.queries, this.summaries);
+    this.source = new InstanceSource(host, options.definitionId, options);
     this.loader = new ViewLoader(
       this.store,
       this.scope,
-      host,
+      this.source,
       this.work,
       this.viewQueries,
       this.summaries,
@@ -255,6 +258,7 @@ export class ViewEngine {
       host,
       this.work,
       this.viewQueries,
+      this.source,
     );
     this.persistence = new ViewPersistence(
       this.store,
@@ -262,6 +266,7 @@ export class ViewEngine {
       host,
       this.work,
       this.viewQueries,
+      this.loader,
     );
     this.management = new ViewManagement(
       this.store,
@@ -270,6 +275,7 @@ export class ViewEngine {
       this.work,
       this.viewQueries,
       this.summaries,
+      this.loader,
       options.definitionId,
     );
     this.observePermissions();
@@ -392,6 +398,8 @@ export class ViewEngine {
     if (this.host === host) return;
     this.unsubscribePermissions?.();
     this.host = host;
+    // Host-backed reads (catalog, point loads, preference) must switch to the new host too.
+    this.source.updateHost(host);
     this.observePermissions();
     this.store.publish({});
   }
@@ -719,6 +727,33 @@ export class ViewEngine {
     return this.observe('select', false, () => this.loader.selectInstance(id));
   }
 
+  /** Reloads the catalog from its first page without touching sessions or the selection. */
+  reloadCatalog(): Promise<void> {
+    return this.observe('catalog', false, () => this.loader.reloadCatalog());
+  }
+
+  /** Retries an independent preference read without touching sessions or the selection. */
+  reloadPreference(): Promise<void> {
+    return this.observe('catalog', false, () => this.loader.reloadPreference());
+  }
+
+  /** Appends the next catalog page without touching sessions or the selection. */
+  loadMoreInstances(): Promise<void> {
+    return this.observe('catalog', false, () =>
+      this.loader.loadMoreInstances(),
+    );
+  }
+
+  /** Point read of a saved instance for embedding; no session, no selection, no query. */
+  loadSavedInstance(
+    instanceId: string,
+    signal?: AbortSignal,
+  ): Promise<ViewInstance> {
+    return this.observe('instance', false, () =>
+      this.loader.loadSavedInstance(instanceId, signal),
+    );
+  }
+
   reloadInstance(id?: string): Promise<void> {
     return this.observe('reload', false, () => this.reload.reloadInstance(id));
   }
@@ -845,9 +880,12 @@ export class ViewEngine {
     return this.management.canReorderInstances();
   }
 
-  reorderInstances(instanceIds: readonly string[]): Promise<void> {
+  reorderInstances(
+    orderedInstanceIds: readonly string[],
+    scopeInstanceIds?: readonly string[],
+  ): Promise<void> {
     return this.observe('order', true, () =>
-      this.management.reorderInstances(instanceIds),
+      this.management.reorderInstances(orderedInstanceIds, scopeInstanceIds),
     );
   }
 

@@ -16,13 +16,24 @@ import { expect, it, vi } from 'vitest';
 import { ViewEngine } from '../../src/engine/ViewEngine.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
 import { MemoryViewHost } from '../../src/record/MemoryViewHost.js';
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
+import {
+  ABSENT_PRECONDITION,
+  preconditionFor,
+  ViewServiceError,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
 import { HttpViewHost, VIEW_SERVICE_STATUS } from '../../dev/http/index.js';
 import { startViewService } from '../../scripts/fixtures/view-service-server.mjs';
 import { definition, instance } from '../engine/fixtures.js';
 import type { DashboardViewInstance } from '../../src/dashboard/dashboardModel.js';
 
-it('negotiates dashboard format across real HTTP list, order, single and deletion receipts', async () => {
+function committed<T>(observation: WriteObservation<T>): T {
+  if (observation.outcome !== 'committed')
+    throw new Error(`写入未提交：${JSON.stringify(observation)}`);
+  return observation.value;
+}
+
+it('serves dashboard instances over real HTTP list, order, single and deletion receipts', async () => {
   const dashboard: DashboardViewInstance = {
     id: 'dashboard',
     definitionId: definition.id,
@@ -38,48 +49,94 @@ it('negotiates dashboard format across real HTTP list, order, single and deletio
     ServiceError: ViewServiceError,
     statuses: VIEW_SERVICE_STATUS,
     definition: { ...definition, dashboard: true },
-    instances: {
-      instances: [instance('a'), dashboard, instance('b')],
-      defaultInstanceId: 'dashboard',
-    },
+    instances: [instance('a'), dashboard, instance('b')],
+    defaultInstanceId: 'dashboard',
     source,
   });
   try {
-    const options = {
+    const host = new HttpViewHost({
       baseUrl: server.baseUrl,
       definitionId: definition.id,
       headers: () => ({ Authorization: 'Bearer alice-token' }),
       resolveSource: () => source,
-    };
-    const old = new HttpViewHost(options);
-    const modern = new HttpViewHost({
-      ...options,
-      supportedFormats: { record: true, analysis: true, dashboard: 1 },
     });
+    const ids = async () =>
+      (await host.instance.list(definition.id)).items.map(item => item.id);
+    expect(await host.preference.load(definition.id)).toEqual({
+      revision: null,
+      order: [],
+      defaultInstanceId: 'dashboard',
+      effectiveDefaultInstanceId: 'dashboard',
+    });
+    expect(await ids()).toEqual(['a', 'dashboard', 'b']);
     expect(
-      (await old.instance.list(definition.id)).defaultInstanceId,
-    ).toBeNull();
-    await old.preference.saveOrder(definition.id, ['b', 'a']);
-    expect(
-      (await modern.instance.list(definition.id)).instances.map(
-        item => item.id,
+      (await host.instance.list(definition.id)).items.find(
+        item => item.id === 'dashboard',
       ),
-    ).toEqual(['b', 'dashboard', 'a']);
-    const a = await old.instance.load('a');
-    expect(await old.instance.delete('a', a.revision)).toEqual({
-      defaultInstance: null,
+    ).toEqual({
+      id: 'dashboard',
+      definitionId: definition.id,
+      kind: 'dashboard',
+      title: 'Dashboard',
+      scope: { type: 'personal' },
+      revision: expect.any(String),
     });
-    expect((await modern.instance.list(definition.id)).defaultInstanceId).toBe(
-      'dashboard',
+    const persisted = committed(
+      await host.preference.saveDefault(
+        definition.id,
+        'dashboard',
+        ABSENT_PRECONDITION,
+        { requestId: 'default' },
+      ),
     );
-    await expect(old.instance.load('dashboard')).rejects.toMatchObject({
-      code: 'UNSUPPORTED_FORMAT',
+    const ordered = committed(
+      await host.preference.saveOrder(
+        definition.id,
+        { scopeInstanceIds: ['a', 'b'], orderedInstanceIds: ['b', 'a'] },
+        preconditionFor(persisted.revision),
+        { requestId: 'order' },
+      ),
+    );
+    // Without an explicit order yet, the change applies to the visible order; the unscoped
+    // dashboard keeps its slot.
+    expect(ordered).toMatchObject({
+      order: ['b', 'dashboard', 'a'],
+      defaultInstanceId: 'dashboard',
     });
-    const saved = await modern.instance.load('dashboard');
+    expect(await ids()).toEqual(['b', 'dashboard', 'a']);
+    const a = await host.instance.load('a');
+    const deleted = await host.instance.delete('a', a.revision, {
+      requestId: 'delete-a',
+    });
+    expect(deleted).toMatchObject({
+      outcome: 'committed',
+      value: { id: 'a', revision: expect.any(String) },
+    });
+    expect(await ids()).toEqual(['b', 'dashboard']);
+    expect(await host.preference.load(definition.id)).toMatchObject({
+      revision: ordered.revision,
+      order: ['b', 'dashboard', 'a'],
+      effectiveDefaultInstanceId: 'dashboard',
+    });
+    // Replaying the delete returns its receipt; a new attempt is a definite NOT_FOUND.
     expect(
-      (await modern.instance.rename(saved.id, 'New name', saved.revision))
-        .title,
-    ).toBe('New name');
+      await host.instance.delete('a', a.revision, { requestId: 'delete-a' }),
+    ).toEqual(deleted);
+    await expect(
+      host.instance.delete('a', a.revision, { requestId: 'delete-again' }),
+    ).resolves.toMatchObject({
+      outcome: 'rejected',
+      issue: { code: 'NOT_FOUND' },
+    });
+    const saved = await host.instance.load('dashboard');
+    expect(saved.kind).toBe('dashboard');
+    expect(
+      committed(
+        await host.instance.rename(saved.id, 'New name', saved.revision, {
+          requestId: 'rename',
+        }),
+      ),
+    ).toMatchObject({ title: 'New name', kind: 'dashboard' });
   } finally {
     await server.close();
   }
@@ -124,7 +181,8 @@ it('composes definition-scoped HTTP clients for cross-definition dashboards with
       ServiceError: ViewServiceError,
       statuses: VIEW_SERVICE_STATUS,
       definition: root,
-      instances: { instances: [dashboard], defaultInstanceId: dashboard.id },
+      instances: [dashboard],
+      defaultInstanceId: dashboard.id,
       source,
     }),
     startViewService({
@@ -132,10 +190,8 @@ it('composes definition-scoped HTTP clients for cross-definition dashboards with
       ServiceError: ViewServiceError,
       statuses: VIEW_SERVICE_STATUS,
       definition,
-      instances: {
-        instances: [instance('saved-orders')],
-        defaultInstanceId: 'saved-orders',
-      },
+      instances: [instance('saved-orders')],
+      defaultInstanceId: 'saved-orders',
       source,
     }),
   ]);
@@ -150,7 +206,6 @@ it('composes definition-scoped HTTP clients for cross-definition dashboards with
           baseUrl: server.baseUrl,
           definitionId: index === 0 ? root.id : definition.id,
           headers: () => ({ Authorization: 'Bearer alice-token' }),
-          supportedFormats: { record: true, analysis: true, dashboard: 1 },
           resolveSource: () => source,
         }),
     );
@@ -177,12 +232,12 @@ it('composes definition-scoped HTTP clients for cross-definition dashboards with
     };
     const host: ViewHost = {
       definition: {
-        load: (id, signal) =>
-          clientFor(definitions, id).definition.load(id, signal),
+        load: (id, options) =>
+          clientFor(definitions, id).definition.load(id, options),
       },
       instance: {
         list: overview.instance.list,
-        load: (id, signal) => clientFor(owners, id).instance.load(id, signal),
+        load: (id, options) => clientFor(owners, id).instance.load(id, options),
         create: overview.instance.create,
         save: overview.instance.save,
         rename: overview.instance.rename,
@@ -190,10 +245,16 @@ it('composes definition-scoped HTTP clients for cross-definition dashboards with
       },
       permission: overview.permission,
       preference: overview.preference,
+      operation: overview.operation,
       resolveSource: overview.resolveSource,
     };
     engine = new ViewEngine({ definitionId: root.id, host });
     await engine.load();
+    expect(engine.getSnapshot()).toMatchObject({
+      status: 'ready',
+      selectedInstanceId: dashboard.id,
+      preference: { status: 'ready', revision: null },
+    });
     const runtime = engine.dashboard(dashboard.id);
     await vi.waitFor(() =>
       expect(
@@ -210,6 +271,9 @@ it('composes definition-scoped HTTP clients for cross-definition dashboards with
     expect(servers[0].control.mutations).toBe(1);
     expect(servers[1].control.mutations).toBe(0);
     expect(source.paged).toHaveBeenCalledTimes(1);
+    expect((await overview.instance.load(dashboard.id)).title).toBe(
+      'Updated overview',
+    );
   } finally {
     engine?.dispose();
     await Promise.all(servers.map(server => server.close()));

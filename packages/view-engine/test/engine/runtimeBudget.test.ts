@@ -13,11 +13,15 @@
 
 import type { RuntimeDiagnostic } from '../../src/lib/runtimeLimits.js';
 import { afterEach, expect, it, vi } from 'vitest';
+import {
+  committedWrite,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
 import { deferred, instance, selected, setup } from './fixtures.js';
 afterEach(() => vi.useRealTimers());
 it('treats a dispatched save timeout as unknown and ignores the late response', async () => {
   vi.useFakeTimers();
-  const pending = deferred<ReturnType<typeof instance>>();
+  const pending = deferred<WriteObservation<ReturnType<typeof instance>>>();
   const { engine } = setup({
     limits: { writeTimeoutMs: 10 },
     host: { instance: { save: () => pending.promise } } as never,
@@ -35,7 +39,9 @@ it('treats a dispatched save timeout as unknown and ignores the late response', 
     instance: { title: 'Local' },
   });
   await expect(engine.save()).rejects.toThrow('核对');
-  pending.resolve({ ...instance(), title: 'Local', revision: 'r2' });
+  pending.resolve(
+    committedWrite({ ...instance(), title: 'Local', revision: 'r2' }, 'r2'),
+  );
   await Promise.resolve();
   expect(selected(engine).baseline.revision).toBe('r1');
   engine.dispose();
@@ -194,7 +200,8 @@ it('loads an oversized default record as recoverable without auto-querying it', 
   oversized.config.filters.root.props = { large: 'x'.repeat(2048) };
   const { engine, paged } = setup({
     limits: { maxConfigBytes: 1024 },
-    instances: { instances: [oversized], defaultInstanceId: oversized.id },
+    instances: [oversized],
+    defaultInstanceId: oversized.id,
   });
   try {
     await expect(engine.load()).resolves.toBeUndefined();
@@ -241,7 +248,7 @@ it('aborts the host signal when an unknown-create replay times out', async () =>
 it('aborts the first saveAs host request at its deadline and retains uncertain outcome', async () => {
   vi.useFakeTimers();
   let signal: AbortSignal | undefined;
-  const pending = deferred<ReturnType<typeof instance>>();
+  const pending = deferred<WriteObservation<ReturnType<typeof instance>>>();
   const { engine } = setup({
     limits: { writeTimeoutMs: 10 },
     host: {
@@ -262,7 +269,9 @@ it('aborts the first saveAs host request at its deadline and retains uncertain o
     await failure;
     expect(signal?.aborted).toBe(true);
     expect(selected(engine).requiresReload).toBe(true);
-    pending.resolve({ ...instance('late'), title: 'Copy' });
+    pending.resolve(
+      committedWrite({ ...instance('late'), title: 'Copy' }, 'r1'),
+    );
     await Promise.resolve();
     expect(engine.getSnapshot().instanceIds).not.toContain('late');
   } finally {

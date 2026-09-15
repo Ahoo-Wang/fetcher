@@ -20,7 +20,11 @@ import type {
 import type { ViewCreateInput } from '../contracts/viewModel.js';
 import type { ViewHost } from '../contracts/ViewHost.js';
 import { validateViewInstance } from '../contracts/validation/instanceValidation.js';
-import { readInstanceList } from '../contracts/validation/instanceValidation.js';
+import {
+  ViewServiceError,
+  readWriteObservation,
+} from '../contracts/viewServiceContract.js';
+import type { InstanceSource } from './InstanceSource.js';
 
 import { permissionsFor } from './instancePermissions.js';
 import type { EngineScope } from './EngineScope.js';
@@ -73,6 +77,7 @@ export class ViewReload {
     private readonly host: ViewHost,
     private readonly work: InstanceWork,
     private readonly queries: ViewQueries,
+    private readonly source: InstanceSource,
   ) {}
 
   canReloadInstance(id = this.store.getSnapshot().selectedInstanceId): boolean {
@@ -86,11 +91,10 @@ export class ViewReload {
     const pending = this.work.unverifiedCreate(id);
     return pending
       ? Boolean(
-          (pending.id &&
-            (this.host.instance?.load || this.host.instance?.list)) ||
+          (pending.id && this.source.canLoad) ||
           (this.work.createRequest(id) && this.host.instance?.create),
         )
-      : Boolean(this.host.instance?.load || this.host.instance?.list);
+      : this.source.canLoad;
   }
 
   async useRemoteInstance(
@@ -196,9 +200,7 @@ export class ViewReload {
       ? this.store.find(unverified.id)?.baseline
       : undefined;
     if (!this.canReloadInstance(id))
-      throw new Error(
-        '宿主未提供 instance.load 或 instance.list，无法重新加载',
-      );
+      throw new Error('宿主未提供 instance.load，无法重新加载');
     if (this.work.writeToken(id))
       throw new Error('实例正在写入，请等待操作完成');
     const previous = this.work.beginReload(id, controller);
@@ -218,23 +220,7 @@ export class ViewReload {
     const { id, controller, definition, stale } = ctx;
     const { unverified } = gate;
     let result: ViewInstance;
-    if (
-      (!unverified || unverified.id) &&
-      !this.host.instance?.load &&
-      this.host.instance?.list
-    ) {
-      const list = await withDeadline(
-        () => this.host.instance!.list!(definition.id, controller.signal),
-        this.store.limits.loadTimeoutMs,
-        controller,
-      );
-      if (stale()) return RELOAD_ABORT;
-      const matched = readInstanceList(list, definition).find(
-        item => item.id === (unverified?.id ?? id),
-      );
-      if (!matched) throw new Error('实例列表未包含待核对的实例 ID，仍需核对');
-      result = matched;
-    } else if (unverified && (!unverified.id || !this.host.instance?.load)) {
+    if (unverified && (!unverified.id || !this.source.canLoad)) {
       const request = this.work.createRequest(id);
       if (!request || !this.host.instance?.create)
         throw new Error('缺少原创建请求，无法确认另存结果');
@@ -245,25 +231,49 @@ export class ViewReload {
           : permissions.saveAsShared)
       )
         throw new Error('宿主未允许重试此创建操作');
-      // Replaying the original request is authoritative; list content is not identity.
+      // Replaying the original request is authoritative; catalog content is not identity.
       const { definitionId, kind, title, scope, config } = request.submitted;
-      result = await withDeadline(
-        () =>
-          this.host.instance!.create!(
-            structuredClone({
-              definitionId,
-              kind,
-              title,
-              scope,
-              config,
-            }) as ViewCreateInput,
-            { requestId: request.requestId, signal: controller.signal },
-          ),
-        this.store.limits.writeTimeoutMs,
-        controller,
+      const observation = readWriteObservation<ViewInstance>(
+        await withDeadline(
+          () =>
+            this.host.instance!.create!(
+              structuredClone({
+                definitionId,
+                kind,
+                title,
+                scope,
+                config,
+              }) as ViewCreateInput,
+              {
+                requestId: request.requestId,
+                signal: controller.signal,
+                // The first dispatch's revision is part of the idempotency body.
+                definitionRevision:
+                  request.definitionRevision ?? definition.revision,
+              },
+            ),
+          this.store.limits.writeTimeoutMs,
+          controller,
+        ),
       );
       if (stale()) return RELOAD_ABORT;
+      if (observation.outcome === 'committed_pending_receipt') {
+        this.work.markCreateUnverified(id, observation.targetId);
+        throw new ViewServiceError(
+          observation.issue.code,
+          `已提交，回执待核对：${observation.issue.message}`,
+        );
+      }
+      // A rejected replay says nothing about the earlier uncertain attempt; it stays unverified.
+      if (observation.outcome !== 'committed')
+        throw new ViewServiceError(
+          observation.issue.code,
+          observation.issue.message,
+        );
+      result = observation.value;
       validateViewInstance(result, definition, unverified.id ?? undefined);
+      if (result.revision !== observation.revision)
+        throw new Error('创建回执的版本与实例不一致，仍需核对');
       if (
         !sameJsonState(
           instanceContent(result),
@@ -274,7 +284,12 @@ export class ViewReload {
     } else
       result = await withDeadline(
         () =>
-          this.host.instance!.load!(unverified?.id ?? id, controller.signal),
+          this.source.load(
+            unverified?.id ?? id,
+            controller.signal,
+            definition,
+            this.work.readFence(unverified?.id ?? id),
+          ),
         this.store.limits.loadTimeoutMs,
         controller,
       );
@@ -298,8 +313,15 @@ export class ViewReload {
     );
     if (result.kind !== session.instance.kind)
       throw new Error('重新加载不能改变实例类型');
+    // A committed-but-receipt-pending write carries a commit proof revision; a point read
+    // older than that proof is a stale read model, not a settlement of the pending write.
+    const pending = this.work.pendingWrite(id);
+    if (pending?.revision !== undefined && result.revision !== pending.revision)
+      throw new Error('重载结果早于已确认的提交版本，请稍后重新加载核对');
     const baseline = copy(result);
     this.work.clearDelete(id);
+    this.work.clearPendingWrite(id);
+    this.work.clearReadFence(unverified?.id ?? id);
     return baseline;
   }
 

@@ -25,7 +25,11 @@ import type * as DataViewModule from '../../src/view/DataViewContent.js';
 import type { DashboardViewInstance } from '../../src/dashboard/dashboardModel.js';
 import { ViewPageContent } from '../../src/view/ViewPageContent.js';
 import { DashboardView } from '../../src/dashboard/DashboardView.js';
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
+import {
+  committedWrite,
+  rejectedWrite,
+  ViewServiceError,
+} from '../../src/contracts/viewServiceContract.js';
 import { dashboardSetup, globalFilter } from './runtimeFixtures.js';
 import { instance } from '../engine/fixtures.js';
 
@@ -66,7 +70,11 @@ it('denies definition capabilities and draft editing when the policy getter thro
     {
       permission: { getDefinition },
       instance: {
-        create: async value => ({ ...value, id: 'saved', revision: 'r1' }),
+        create: async value =>
+          committedWrite(
+            { ...value, id: 'saved', revision: 'r1' } as DashboardViewInstance,
+            'r1',
+          ),
       },
     },
   );
@@ -139,11 +147,16 @@ it.each(['replace', 'reload'] as const)(
 it.each([false, true])(
   'preserves invalid editor buffers across reload with remote change=%s',
   async changed => {
-    const { engine, host } = dashboardSetup({
-      schemaVersion: 1,
-      panels: [],
-      filters: [{ ...globalFilter(), bindings: [], excludedPanelIds: [] }],
-    });
+    const { engine, host } = dashboardSetup(
+      {
+        schemaVersion: 1,
+        panels: [],
+        filters: [{ ...globalFilter(), bindings: [], excludedPanelIds: [] }],
+      },
+      {},
+      undefined,
+      'host',
+    );
     await engine.load();
     const runtime = engine.dashboard('dashboard');
     const baseline = runtime.getSnapshot().session.baseline;
@@ -173,6 +186,7 @@ it('keeps navigation available when dashboard metadata cannot be reserved and re
     undefined,
     {},
     { maxDashboardMetadataBytes: 100 },
+    'host',
   );
   await engine.load();
   const baseline = engine.getSnapshot().sessions.dashboard.baseline;
@@ -208,9 +222,8 @@ it('clears a definitive save error when restoring a dashboard', async () => {
     panels: [],
     filters: [],
   });
-  host.instance!.save = async () => {
-    throw new ViewServiceError('INVALID_ARGUMENT', 'save rejected');
-  };
+  host.instance!.save = async () =>
+    rejectedWrite('INVALID_ARGUMENT', 'save rejected');
   await engine.load();
   engine.setTitle('Changed', 'dashboard');
   await expect(engine.save('dashboard')).rejects.toThrow('save rejected');
@@ -239,10 +252,8 @@ it('retries after another runtime releases the budget without requiring a persis
   const engine = new ViewEngine({
     definitionId: 'root',
     definition: { id: 'root', title: 'Root', fields: [], dashboard: true },
-    instances: {
-      instances: [saved, { ...saved, id: 'target', title: 'Target' }],
-      defaultInstanceId: 'held',
-    },
+    instances: [saved, { ...saved, id: 'target', title: 'Target' }],
+    defaultInstanceId: 'held',
     host: { resolveSource: () => ({}) },
     limits: { maxDashboardMetadataBytes: 150 },
   });
@@ -265,6 +276,7 @@ it('does not resume the old dashboard after navigating away during recovery', as
     undefined,
     {},
     { maxDashboardMetadataBytes: 100 },
+    'host',
   );
   await engine.load();
   const baseline = engine.getSnapshot().sessions.dashboard.baseline;
@@ -302,15 +314,20 @@ it.each(['permission', 'permission-only', 'baseline', 'restore'] as const)(
   async change => {
     let editable = true;
     let notifyPermissions = () => {};
-    const { engine, host, paged } = dashboardSetup(undefined, {
-      permission: {
-        getInstance: () => ({ save: editable }),
-        subscribe: listener => {
-          notifyPermissions = listener;
-          return () => {};
+    const { engine, host, paged } = dashboardSetup(
+      undefined,
+      {
+        permission: {
+          getInstance: () => ({ save: editable }),
+          subscribe: listener => {
+            notifyPermissions = listener;
+            return () => {};
+          },
         },
       },
-    });
+      undefined,
+      'host',
+    );
     await engine.load();
     const runtime = engine.dashboard('dashboard');
     render(<DashboardView runtime={runtime} />);
@@ -377,7 +394,9 @@ it.each(['pending', 'forbidden'] as const)(
             throw new ViewServiceError('FORBIDDEN', 'reference unavailable');
           return pending;
         },
-        save: vi.fn(async value => ({ ...value, revision: 'r2' })),
+        save: vi.fn(async value =>
+          committedWrite({ ...value, revision: 'r2' }, 'r2'),
+        ),
       },
     });
     await engine.load();
@@ -398,6 +417,7 @@ it.each(['pending', 'forbidden'] as const)(
         title: 'Updated dashboard',
         config: expect.objectContaining({ panels }),
       }),
+      expect.objectContaining({ requestId: expect.any(String) }),
     );
     expect(paged).not.toHaveBeenCalled();
     engine.dispose();

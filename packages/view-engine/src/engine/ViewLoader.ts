@@ -11,60 +11,76 @@
  * limitations under the License.
  */
 
-import { withDeadline } from '../lib/runtimeLimits.js';
+import { RuntimeLimitError, withDeadline } from '../lib/runtimeLimits.js';
 import type {
-  ViewSession,
+  CatalogState,
+  PreferenceLoadState,
   ViewDefinition,
-  ViewInstanceList,
   ViewEngineOptions,
   ViewInstance,
+  ViewInstanceSummary,
+  ViewSession,
 } from '../contracts/viewModel.js';
 import { cloneSnapshot } from '../lib/types.js';
-import type { ViewHost } from '../contracts/ViewHost.js';
 import { validateViewDefinition } from '../contracts/validation/definitionValidation.js';
 import { validateViewInstance } from '../contracts/validation/instanceValidation.js';
-import { readInstanceList } from '../contracts/validation/instanceValidation.js';
 import type { EngineScope } from './EngineScope.js';
 import type { SessionStore } from './SessionStore.js';
 import type { InstanceWork } from './InstanceWork.js';
 import type { ViewQueries } from './ViewQueries.js';
+import type { InstanceSource } from './InstanceSource.js';
 import type { RecordSummaries } from '../record/engine/RecordSummaries.js';
-import { copy, message } from '../lib/snapshot.js';
+import { copy, message, ownRecord } from '../lib/snapshot.js';
 import {
   createSession,
   inheritEditingSession,
   withContent,
 } from './sessionState.js';
 
-/** Loads definitions/instances and owns navigation intent independently of record queries. */
+const EMPTY_CATALOG: CatalogState = Object.freeze({
+  status: 'idle',
+  error: null,
+  nextCursor: null,
+  total: null,
+  summaries: Object.freeze(Object.create(null) as Record<string, never>),
+});
+const EMPTY_PREFERENCE: PreferenceLoadState = Object.freeze({
+  status: 'idle',
+  error: null,
+  revision: null,
+});
+
+/**
+ * Loads the definition, the first catalog page and the personal preference independently,
+ * opens sessions only on explicit navigation and owns navigation intent.
+ */
 export class ViewLoader {
   private readonly definitionId: string;
-  private readonly localDefinition?: ViewDefinition;
-  private readonly localInstances?: ViewInstanceList;
-  private readonly inputError?: unknown;
+  private readonly initialInstanceId?: string;
   private loadController?: AbortController;
+  /** Catalog order as loaded, before opened or created instances outside the pages. */
+  private catalogIds: string[] = [];
+  private catalogLoading?: AbortController;
+  /** Fence of a committed-but-pending preference write; submitted to the next preference read. */
+  private preferenceFence?: string;
+  private preferenceLoading?: AbortController;
   constructor(
     private readonly store: SessionStore,
     private readonly scope: EngineScope,
-    private readonly host: ViewHost,
+    private readonly source: InstanceSource,
     private readonly work: InstanceWork,
     private readonly queries: ViewQueries,
     private readonly summaries: RecordSummaries,
     options: ViewEngineOptions,
   ) {
     this.definitionId = options.definitionId;
-    try {
-      this.localDefinition =
-        options.definition === undefined ? undefined : copy(options.definition);
-      this.localInstances =
-        options.instances === undefined ? undefined : copy(options.instances);
-    } catch (error) {
-      this.inputError = error;
-    }
+    this.initialInstanceId = options.instanceId;
   }
   dispose(): void {
     this.loadController?.abort();
+    this.catalogLoading?.abort();
   }
+
   async load(): Promise<void> {
     this.scope.assertActive();
     this.work.assertLoadable();
@@ -77,6 +93,7 @@ export class ViewLoader {
     });
     this.work.clearDeletes();
     this.loadController?.abort();
+    this.catalogLoading?.abort();
     if (!this.scope.current(lifecycle)) return;
     this.work.cancelReloads();
     if (!this.scope.current(lifecycle)) return;
@@ -84,6 +101,7 @@ export class ViewLoader {
     if (!this.scope.current(lifecycle)) return;
     const controller = new AbortController();
     this.loadController = controller;
+    this.catalogIds = [];
     this.store.publish({
       status: 'loading',
       error: null,
@@ -93,184 +111,480 @@ export class ViewLoader {
       openingInstanceId: null,
       defaultInstanceId: null,
       sessions: Object.create(null),
+      catalog: EMPTY_CATALOG,
+      preference: EMPTY_PREFERENCE,
     });
-    let defaultId: string | null = null;
-    let followUp: (() => Promise<void>) | undefined;
+    const current = () => this.scope.current(lifecycle);
+    let definition: ViewDefinition;
     try {
-      // 原样重抛已暂存的历史错误，包装会改变下游捕获到的错误类型。
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      if (this.inputError) throw this.inputError;
-      const [definition, list] = await withDeadline(
-        () =>
-          Promise.all([
-            Promise.resolve().then(() => {
-              if (this.localDefinition !== undefined)
-                return this.localDefinition;
-              if (!this.host.definition?.load)
-                throw new Error('缺少视图定义或 definition.load');
-              return this.host.definition?.load(
-                this.definitionId,
-                controller.signal,
-              );
-            }),
-            Promise.resolve().then(() => {
-              if (this.localInstances !== undefined) return this.localInstances;
-              if (!this.host.instance?.list)
-                throw new Error('缺少实例列表或 instance.list');
-              return this.host.instance?.list(
-                this.definitionId,
-                controller.signal,
-              );
-            }),
-            Promise.resolve().then(async () => {
-              const permission = this.host.permission;
-              if (permission?.load)
-                await permission.load(this.definitionId, controller.signal);
-              else await permission?.refresh?.(controller.signal);
-            }),
-          ]),
+      definition = await withDeadline(
+        () => this.source.definition(controller.signal),
         this.store.limits.loadTimeoutMs,
         controller,
       );
-      if (!this.scope.current(lifecycle)) return;
+      if (!current()) return;
       validateViewDefinition(definition);
       if (definition.id !== this.definitionId)
         throw new Error('返回的视图定义 ID 不匹配');
-      const instances = readInstanceList(list, definition);
-      const sessions: Record<string, ViewSession> = Object.create(null);
-      const pendingCreates: Record<string, ViewSession> = Object.create(null);
-      for (const instance of instances) {
-        this.work.forgetDeleted(instance.id);
-        sessions[instance.id] = {
-          ...createSession(
-            copy(instance),
-            definition,
-            this.store.filterCompilers,
-            this.store.analysisCompilers,
-          ),
-          requiresReload: Boolean(this.work.unverifiedCreate(instance.id)),
-          writeError: this.work.unverifiedCreate(instance.id)
-            ? '另存结果尚未核对，请重新加载核对'
-            : null,
-        };
-      }
-      for (const [id, request] of this.work.createEntries()) {
-        if (!this.work.unverifiedCreate(id)) continue;
-        const loaded = sessions[id];
-        const restored = createSession(
-          cloneSnapshot<ViewInstance>(
-            request.source.kind === 'record'
-              ? {
-                  ...request.source.instance,
-                  config: {
-                    ...request.source.instance.config,
-                    filters: request.source.filterBaseline,
-                  },
-                }
-              : request.source.instance,
-          ),
-          definition,
-          this.store.filterCompilers,
-          this.store.analysisCompilers,
-        );
-        const recovery = {
-          ...inheritEditingSession(
-            cloneSnapshot<ViewInstance>(
-              loaded?.baseline ?? request.source.baseline,
-            ),
-            request.source.kind === 'record' && restored.kind === 'record'
-              ? { ...request.source, appliedFilter: restored.appliedFilter }
-              : request.source,
-            definition,
-            this.store.filterCompilers,
-            withContent(
-              loaded?.instance ?? request.source.instance,
-              request.source.instance,
-            ),
-            this.store.analysisCompilers,
-          ),
-          requiresReload: true,
-          writeError: loaded
-            ? '另存结果尚未核对，请重新加载核对'
-            : '原视图已不在当前列表，另存结果仍需核对',
-        };
-        const retained =
-          recovery.kind === 'dashboard' &&
-          request.source.kind === 'dashboard' &&
-          !request.source.persisted
-            ? { ...recovery, persisted: false }
-            : recovery;
-        if (loaded) sessions[id] = retained;
-        else pendingCreates[id] = retained;
-      }
-      if (
-        typeof list.defaultInstanceId === 'string' &&
-        Object.prototype.hasOwnProperty.call(sessions, list.defaultInstanceId)
-      )
-        defaultId = list.defaultInstanceId;
-      this.scope.loading = false;
-      if (defaultId !== null) followUp = this.queries.followUp(defaultId);
-      this.store.publish({
-        status: 'ready',
-        error: null,
-        definition: copy(definition),
-        instanceIds: instances.map(instance => instance.id),
-        selectedInstanceId: defaultId,
-        defaultInstanceId: defaultId,
-        sessions,
-        pendingCreates,
-      });
+      this.source.validateLocal(definition);
     } catch (error) {
-      if (!this.scope.current(lifecycle)) return;
+      if (!current()) return;
       controller.abort();
-      if (!this.scope.current(lifecycle)) return;
+      if (!current()) return;
       this.scope.loading = false;
       this.store.publish({ status: 'error', error: message(error) });
       throw error;
     }
+    this.scope.loading = false;
+    const initialSelection = this.scope.selection;
+    this.store.publish({
+      status: 'ready',
+      error: null,
+      definition: copy(definition),
+      catalog: { ...EMPTY_CATALOG, status: 'loading' },
+      preference: {
+        ...EMPTY_PREFERENCE,
+        status: this.source.hasPreferencePort ? 'loading' : 'ready',
+      },
+    });
+    // An explicit instance is point-read as soon as the definition is ready; the catalog and
+    // the personal default keep loading in the background and never block it.
+    const explicit =
+      this.initialInstanceId === undefined
+        ? undefined
+        : this.openSession(this.initialInstanceId, lifecycle).then(
+            followUp => ({ followUp, error: undefined }),
+            (error: unknown) => ({ followUp: undefined, error }),
+          );
+    const [, preference] = await Promise.all([
+      this.loadCatalogPage(definition, null, lifecycle, controller),
+      this.loadPreference(lifecycle, controller),
+    ]);
+    if (!current()) return;
+    this.restoreUnverifiedCreates(definition);
+    if (!current()) return;
+    if (explicit) {
+      const opened = await explicit;
+      if (!current()) return;
+      if (opened.error !== undefined) {
+        if (this.scope.selection === initialSelection)
+          this.store.publish({
+            error: message(opened.error),
+            openingInstanceId: null,
+          });
+        return;
+      }
+      // A failed first query is session-scoped state (queryError), not a workspace error.
+      await opened.followUp?.().catch(() => {});
+      return;
+    }
+    const target =
+      preference.status === 'ready' ? preference.defaultInstanceId : null;
+    // A default that arrives after the user already navigated must not take the selection back.
+    if (
+      target === null ||
+      this.scope.selection !== initialSelection ||
+      this.store.getSnapshot().selectedInstanceId !== null
+    )
+      return;
+    let followUp: (() => Promise<void>) | undefined;
+    try {
+      followUp = await this.openSession(target, lifecycle);
+    } catch (error) {
+      if (!current()) return;
+      this.store.publish({ error: message(error), openingInstanceId: null });
+      return;
+    }
+    await followUp?.().catch(() => {});
+  }
+
+  /** A child controller so one read's timeout aborts only itself, never its sibling or the load. */
+  private childOf(parent: AbortController): AbortController {
+    const child = new AbortController();
+    if (parent.signal.aborted) child.abort(parent.signal.reason);
+    else
+      parent.signal.addEventListener(
+        'abort',
+        () => child.abort(parent.signal.reason),
+        { once: true },
+      );
+    return child;
+  }
+
+  private async loadCatalogPage(
+    definition: ViewDefinition,
+    cursor: string | null,
+    lifecycle: number,
+    parent: AbortController,
+  ): Promise<{ loaded: boolean; error?: unknown }> {
+    const current = () =>
+      this.scope.current(lifecycle) && !parent.signal.aborted;
+    const controller = this.childOf(parent);
+    // A catalog write may still be converging; its fence must reach the next catalog read.
+    const catalogFence = this.work.catalogReadFence();
+    try {
+      const page = await withDeadline(
+        () =>
+          this.source.list(definition, cursor, controller.signal, catalogFence),
+        this.store.limits.loadTimeoutMs,
+        controller,
+      );
+      if (!current()) return { loaded: false };
+      const summaries: Record<string, ViewInstanceSummary> = ownRecord(
+        this.store.getSnapshot().catalog.summaries,
+      );
+      // The summary cache is bounded; a page that would overflow it is refused whole so that
+      // nothing is silently hidden, and the caller sees the resource limit.
+      const incoming = page.items.filter(
+        item => !this.catalogIds.includes(item.id),
+      );
+      if (
+        this.catalogIds.length + incoming.length >
+        this.store.limits.maxCatalogSummaries
+      )
+        throw new RuntimeLimitError(
+          'RESOURCE_LIMIT',
+          '已加载的视图目录达到运行预算，请缩小目录范围后重新加载',
+        );
+      for (const item of page.items) {
+        if (!this.catalogIds.includes(item.id)) {
+          this.work.forgetDeleted(item.id);
+          this.catalogIds.push(item.id);
+        }
+        summaries[item.id] = item;
+      }
+      // Beyond the loaded pages only opened sessions and pending creates stay listed; stale
+      // members from an earlier catalog load are dropped.
+      const extras = this.store
+        .getSnapshot()
+        .instanceIds.filter(
+          id =>
+            !this.catalogIds.includes(id) &&
+            (this.store.find(id) !== undefined ||
+              this.store.findPendingCreate(id) !== undefined),
+        );
+      this.store.publish({
+        instanceIds: [...this.catalogIds, ...extras],
+        catalog: {
+          status: 'ready',
+          error: null,
+          nextCursor: page.nextCursor,
+          total: page.total ?? null,
+          summaries,
+        },
+      });
+      this.work.clearCatalogReadFence();
+      return { loaded: true };
+    } catch (error) {
+      if (!current()) return { loaded: false };
+      this.store.publish({
+        catalog: {
+          ...this.store.getSnapshot().catalog,
+          status: 'error',
+          error: message(error),
+        },
+      });
+      return { loaded: false, error };
+    }
+  }
+
+  /** Reloads the catalog from its first page; opened sessions and the selection are untouched. */
+  async reloadCatalog(): Promise<void> {
+    const definition = this.store.definition();
+    if (
+      this.catalogLoading ||
+      this.store.getSnapshot().catalog.status === 'loading'
+    )
+      return;
+    const lifecycle = this.scope.version;
+    const controller = new AbortController();
+    this.catalogLoading = controller;
+    this.catalogIds = [];
+    this.store.publish({
+      catalog: {
+        ...this.store.getSnapshot().catalog,
+        status: 'loading',
+        error: null,
+        nextCursor: null,
+      },
+    });
+    try {
+      const outcome = await this.loadCatalogPage(
+        definition,
+        null,
+        lifecycle,
+        controller,
+      );
+      if (!outcome.loaded && this.scope.current(lifecycle)) {
+        const failure: unknown =
+          outcome.error ??
+          new Error(this.store.getSnapshot().catalog.error ?? '目录加载失败');
+        throw failure;
+      }
+    } finally {
+      if (this.catalogLoading === controller) this.catalogLoading = undefined;
+    }
+  }
+
+  /** Appends the next catalog page; the loaded pages, sessions and selection are untouched. */
+  async loadMoreInstances(): Promise<void> {
+    const definition = this.store.definition();
+    const catalog = this.store.getSnapshot().catalog;
+    // A failed page keeps its continuation cursor so the same page can be retried.
+    if (
+      (catalog.status !== 'ready' && catalog.status !== 'error') ||
+      catalog.nextCursor === null ||
+      this.catalogLoading
+    )
+      return;
+    if (this.catalogIds.length >= this.store.limits.maxCatalogSummaries)
+      throw new RuntimeLimitError(
+        'RESOURCE_LIMIT',
+        '已加载的视图目录达到运行预算，请缩小目录范围后重新加载',
+      );
+    const lifecycle = this.scope.version;
+    const controller = new AbortController();
+    this.catalogLoading = controller;
+    this.store.publish({ catalog: { ...catalog, status: 'loading' } });
+    try {
+      const outcome = await this.loadCatalogPage(
+        definition,
+        catalog.nextCursor,
+        lifecycle,
+        controller,
+      );
+      if (!outcome.loaded && this.scope.current(lifecycle)) {
+        // The page failure keeps its own type (for example a RuntimeLimitError).
+        const failure: unknown =
+          outcome.error ??
+          new Error(this.store.getSnapshot().catalog.error ?? '目录加载失败');
+        throw failure;
+      }
+    } finally {
+      if (this.catalogLoading === controller) this.catalogLoading = undefined;
+    }
+  }
+
+  private async loadPreference(
+    lifecycle: number,
+    parent: AbortController,
+  ): Promise<{ status: 'ready' | 'error'; defaultInstanceId: string | null }> {
+    const current = () =>
+      this.scope.current(lifecycle) && !parent.signal.aborted;
+    const controller = this.childOf(parent);
+    // A preference write may still be converging; its fence must reach the next preference read.
+    const preferenceFence = this.preferenceFence;
+    try {
+      const preference = await withDeadline(
+        () => this.source.preference(controller.signal, preferenceFence),
+        this.store.limits.loadTimeoutMs,
+        controller,
+      );
+      if (!current()) return { status: 'error', defaultInstanceId: null };
+      this.preferenceFence = undefined;
+      this.store.publish({
+        defaultInstanceId: preference.effectiveDefaultInstanceId,
+        preference: {
+          status: 'ready',
+          error: null,
+          revision: preference.revision,
+        },
+      });
+      return {
+        status: 'ready',
+        defaultInstanceId: preference.effectiveDefaultInstanceId,
+      };
+    } catch (error) {
+      if (!current()) return { status: 'error', defaultInstanceId: null };
+      this.store.publish({
+        preference: { status: 'error', error: message(error), revision: null },
+      });
+      return { status: 'error', defaultInstanceId: null };
+    }
+  }
+
+  /** Retries an independent preference read; sessions, catalog and the selection are untouched. */
+  async reloadPreference(): Promise<void> {
+    this.store.definition();
+    if (
+      this.preferenceLoading ||
+      this.store.getSnapshot().preference.status === 'loading'
+    )
+      return;
+    const lifecycle = this.scope.version;
+    const controller = new AbortController();
+    this.preferenceLoading = controller;
+    this.store.publish({
+      preference: {
+        ...this.store.getSnapshot().preference,
+        status: 'loading',
+        error: null,
+      },
+    });
+    try {
+      await this.loadPreference(lifecycle, controller);
+    } finally {
+      if (this.preferenceLoading === controller)
+        this.preferenceLoading = undefined;
+    }
+  }
+
+  /** Records the fence of a committed-but-pending preference write for the next read. */
+  notePreferenceReadFence(readFence: string): void {
+    this.preferenceFence = readFence;
+  }
+
+  /** Uncertain creations survive a reload as recovery contexts, never as authoritative instances. */
+  private restoreUnverifiedCreates(definition: ViewDefinition): void {
+    const sessions: Record<string, ViewSession> = ownRecord(
+      this.store.getSnapshot().sessions,
+    );
+    const pendingCreates: Record<string, ViewSession> = Object.create(null);
+    const known = new Set(this.store.getSnapshot().instanceIds);
+    for (const [id, request] of this.work.createEntries()) {
+      if (!this.work.unverifiedCreate(id)) continue;
+      const restored = createSession(
+        cloneSnapshot<ViewInstance>(
+          request.source.kind === 'record'
+            ? {
+                ...request.source.instance,
+                config: {
+                  ...request.source.instance.config,
+                  filters: request.source.filterBaseline,
+                },
+              }
+            : request.source.instance,
+        ),
+        definition,
+        this.store.filterCompilers,
+        this.store.analysisCompilers,
+      );
+      const listed = known.has(id);
+      const recovery = {
+        ...inheritEditingSession(
+          cloneSnapshot<ViewInstance>(request.source.baseline),
+          request.source.kind === 'record' && restored.kind === 'record'
+            ? { ...request.source, appliedFilter: restored.appliedFilter }
+            : request.source,
+          definition,
+          this.store.filterCompilers,
+          withContent(request.source.instance, request.source.instance),
+          this.store.analysisCompilers,
+        ),
+        requiresReload: true,
+        writeError: listed
+          ? '另存结果尚未核对，请重新加载核对'
+          : '原视图已不在当前目录，另存结果仍需核对',
+      };
+      const retained =
+        recovery.kind === 'dashboard' &&
+        request.source.kind === 'dashboard' &&
+        !request.source.persisted
+          ? { ...recovery, persisted: false }
+          : recovery;
+      if (listed) sessions[id] = retained;
+      else pendingCreates[id] = retained;
+    }
+    this.store.publish({ sessions, pendingCreates });
+  }
+
+  /** Point read of a saved instance without opening a session; validated against the current definition. */
+  async loadSavedInstance(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<ViewInstance> {
+    const definition = this.store.definition();
+    if (signal?.aborted) {
+      // 原样透传调用方的取消原因，保持与 AbortSignal 的拒绝契约一致。
+      const reason: unknown =
+        signal.reason ?? new DOMException('Aborted', 'AbortError');
+      throw reason;
+    }
+    const controller = new AbortController();
+    signal?.addEventListener('abort', () => controller.abort(signal.reason), {
+      once: true,
+    });
+    const instance = await withDeadline(
+      () => this.source.load(id, controller.signal, definition),
+      this.store.limits.loadTimeoutMs,
+      controller,
+    );
+    validateViewInstance(instance, definition, id, false);
+    return copy(instance);
+  }
+
+  selectInstance(id: string): Promise<void> {
+    if (this.store.isPosition(id)) throw new Error('运行位置不属于实例导航');
+    this.store.definition();
+    return this.open(id, this.scope.version);
+  }
+
+  private async open(id: string, lifecycle: number): Promise<void> {
+    const followUp = await this.openSession(id, lifecycle);
     await followUp?.();
   }
 
-  async selectInstance(id: string): Promise<void> {
-    if (this.store.isPosition(id)) throw new Error('运行位置不属于实例导航');
+  /** Opens (point-loading if needed) and selects an instance; returns the query to run for it. */
+  private async openSession(
+    id: string,
+    lifecycle: number,
+  ): Promise<(() => Promise<void>) | undefined> {
     const definition = this.store.definition();
-    if (
-      Object.prototype.hasOwnProperty.call(
-        this.store.getSnapshot().pendingCreates,
-        id,
-      )
-    )
-      throw new Error('另存结果待核对，请先重新加载核对');
-    const lifecycle = this.scope.version;
+    const pending = this.store.findPendingCreate(id);
+    if (pending) {
+      if (!this.catalogIds.includes(id))
+        throw new Error('另存结果待核对，请先重新加载核对');
+      // The recovery context is the session to restore for a source still in the catalog.
+      const pendingCreates = ownRecord(this.store.getSnapshot().pendingCreates);
+      delete pendingCreates[id];
+      const sessions = ownRecord(this.store.getSnapshot().sessions);
+      sessions[id] = pending;
+      this.store.publish({ pendingCreates, sessions });
+    }
     const { selection, controller } = this.scope.beginSelection();
     const current = () =>
       this.scope.current(lifecycle) && this.scope.selection === selection;
+    // A catalogued target behaves like an already known instance: its navigation supersedes
+    // the previous instance's pending work at once. An unknown id keeps the workspace intact
+    // until the read proves it exists.
+    let cancelled = false;
+    const known =
+      this.store.find(id) !== undefined || this.catalogIds.includes(id);
+    const leaving = this.store.getSnapshot().selectedInstanceId;
+    if (known && leaving !== null && leaving !== id) {
+      this.queries.cancel(leaving);
+      if (!current()) return;
+      if (this.summaries.hasPending(leaving))
+        this.summaries.invalidate(leaving);
+      if (!current()) return;
+      cancelled = true;
+    }
     if (!this.store.find(id)) {
-      this.store.publish({
-        openingInstanceId: id,
-        error: null,
-      });
+      this.store.publish({ openingInstanceId: id, error: null });
       if (!current()) return;
       try {
-        if (!this.host.instance?.load) throw new Error(`无法加载实例：${id}`);
+        if (!this.source.canLoad) throw new Error(`无法加载实例：${id}`);
         const instance = await withDeadline(
-          () => this.host.instance!.load!(id, controller.signal),
+          () => this.source.load(id, controller.signal, definition),
           this.store.limits.loadTimeoutMs,
           controller,
         );
         if (!current()) return;
         validateViewInstance(instance, definition, id, false);
+        this.work.forgetDeleted(id);
+        const state = this.store.getSnapshot();
+        const sessions = ownRecord(state.sessions);
+        sessions[id] = createSession(
+          copy(instance),
+          definition,
+          this.store.filterCompilers,
+          this.store.analysisCompilers,
+        );
         this.store.publish({
-          sessions: {
-            ...this.store.getSnapshot().sessions,
-            [id]: createSession(
-              copy(instance),
-              definition,
-              this.store.filterCompilers,
-              this.store.analysisCompilers,
-            ),
-          },
-          instanceIds: [...this.store.getSnapshot().instanceIds, id],
+          sessions,
+          instanceIds: state.instanceIds.includes(id)
+            ? state.instanceIds
+            : [...state.instanceIds, id],
         });
       } catch (error) {
         if (!current()) return;
@@ -287,9 +601,9 @@ export class ViewLoader {
         this.store.publish({ error: null, openingInstanceId: null });
       else if (this.store.getSnapshot().openingInstanceId !== null)
         this.store.publish({ openingInstanceId: null });
-      return;
+      return undefined;
     }
-    if (previousId !== null) {
+    if (previousId !== null && !(cancelled && previousId === leaving)) {
       this.queries.cancel(previousId);
       if (!current()) return;
       if (this.summaries.hasPending(previousId))
@@ -304,6 +618,29 @@ export class ViewLoader {
       openingInstanceId: null,
       error: null,
     });
-    if (current()) await followUp();
+    return current() ? followUp : undefined;
+  }
+
+  /** Drops an instance from the loaded catalog order after a committed delete. */
+  forgetCatalogued(id: string): void {
+    this.catalogIds = this.catalogIds.filter(item => item !== id);
+  }
+  /** Reorders loaded catalog IDs by an authoritative order; unknown IDs keep their relative place. */
+  applyCatalogOrder(order: readonly string[]): void {
+    const listed = this.catalogIds.filter(id => order.includes(id));
+    const ranked = [...listed].sort(
+      (a, b) => order.indexOf(a) - order.indexOf(b),
+    );
+    let index = 0;
+    this.catalogIds = this.catalogIds.map(id =>
+      order.includes(id) ? ranked[index++] : id,
+    );
+  }
+  get catalogOrder(): readonly string[] {
+    return this.catalogIds;
+  }
+  /** Places a newly created instance after the loaded pages. */
+  addCatalogued(id: string): void {
+    if (!this.catalogIds.includes(id)) this.catalogIds.push(id);
   }
 }

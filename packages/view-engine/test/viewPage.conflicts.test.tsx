@@ -19,7 +19,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { ViewPageContent } from '../src/view/ViewPage.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
@@ -33,14 +33,14 @@ it('shows both versions and rejects a stale overwrite dialog before accepting a 
     revision: 'r2',
   };
   remote.config.pagination.size = 50;
-  host.instance!.load = async () => remote;
+  // Host catalog mode: the first point read opens the saved copy, later reads see the remote edit.
+  host.instance!.load = vi
+    .fn()
+    .mockResolvedValueOnce({ ...structuredClone(instance), revision: 'r1' })
+    .mockResolvedValue(remote);
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: {
-      instances: [{ ...instance, revision: 'r1' }],
-      defaultInstanceId: 'mine',
-    },
     host,
   });
   try {
@@ -91,6 +91,7 @@ it('shows both versions and rejects a stale overwrite dialog before accepting a 
           pagination: { mode: 'paged', size: 10 },
         }),
       }),
+      expect.objectContaining({ requestId: expect.any(String) }),
     );
   } finally {
     engine.dispose();
@@ -99,11 +100,14 @@ it('shows both versions and rejects a stale overwrite dialog before accepting a 
 
 it('allows read-only users to explicitly adopt the latest version without a write', async () => {
   const { host } = setup();
-  host.instance!.load = async () => ({
-    ...structuredClone(instance),
-    title: '远端订单',
-    revision: 'r2',
-  });
+  host.instance!.load = vi
+    .fn()
+    .mockResolvedValueOnce(structuredClone(instance))
+    .mockResolvedValue({
+      ...structuredClone(instance),
+      title: '远端订单',
+      revision: 'r2',
+    });
   host.permission = {
     getInstance: () => ({
       save: false,
@@ -114,7 +118,6 @@ it('allows read-only users to explicitly adopt the latest version without a writ
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: 'mine' },
     host,
   });
   try {

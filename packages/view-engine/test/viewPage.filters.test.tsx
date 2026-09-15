@@ -34,6 +34,7 @@ import type { FilterEditorProps } from '../src/filter/filterReactTypes.js';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { ViewPage } from './fixtures/OwnedViewPage.js';
 import { ViewPageContent } from '../src/view/ViewPage.js';
+import { page } from './engine/fixtures.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
@@ -50,22 +51,20 @@ it('edits record datetime filters in the definition timezone', async () => {
         { field: 'created', label: '创建时间', type: 'datetime' },
       ],
     },
-    instances: {
-      instances: [
-        {
-          ...instance,
-          config: {
-            ...instance.config,
-            filters: createFilterConfiguration({
-              ...newFilterNode(FilterOperator.GTE, 'created'),
-              props: { value: Date.UTC(2026, 0, 15, 15, 30) },
-              component: { name: 'builtin', options: { showTime: true } },
-            }),
-          },
+    instances: [
+      {
+        ...instance,
+        config: {
+          ...instance.config,
+          filters: createFilterConfiguration({
+            ...newFilterNode(FilterOperator.GTE, 'created'),
+            props: { value: Date.UTC(2026, 0, 15, 15, 30) },
+            component: { name: 'builtin', options: { showTime: true } },
+          }),
         },
-      ],
-      defaultInstanceId: instance.id,
-    },
+      },
+    ],
+    defaultInstanceId: instance.id,
     host,
   });
   try {
@@ -234,24 +233,22 @@ it('rejects applying an invalid custom buffer without enabling Save or querying'
       ...definition,
       fields: [{ ...definition.fields[0], editor: { name: 'custom' } }],
     },
-    instances: {
-      instances: [
-        {
-          ...instance,
-          config: {
-            ...instance.config,
-            filters: {
-              ...instance.config.filters,
-              root: {
-                ...instance.config.filters.root,
-                component: { name: 'custom' },
-              },
+    instances: [
+      {
+        ...instance,
+        config: {
+          ...instance.config,
+          filters: {
+            ...instance.config.filters,
+            root: {
+              ...instance.config.filters.root,
+              component: { name: 'custom' },
             },
           },
         },
-      ],
-      defaultInstanceId: instance.id,
-    },
+      },
+    ],
+    defaultInstanceId: instance.id,
     filterCompilers: { custom: { compile: compileBuiltinFilter } },
     host,
   });
@@ -369,6 +366,11 @@ it('preserves unconfirmed text and invalidity across instance switches', async (
       }),
     },
   };
+  const other = { ...structuredClone(instance), id: 'other' };
+  // Host catalog mode so a later point read can return a remote edit.
+  const load = vi.fn(async (id: string) =>
+    structuredClone(id === 'other' ? other : mine),
+  );
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition: {
@@ -378,15 +380,12 @@ it('preserves unconfirmed text and invalidity across instance switches', async (
         { field: 'orderNo', label: '订单编号', type: 'string' },
       ],
     },
-    instances: {
-      instances: [mine, { ...structuredClone(instance), id: 'other' }],
-      defaultInstanceId: mine.id,
-    },
     host: {
       ...host,
       instance: {
         ...host.instance,
-        load: async () => ({ ...mine, title: 'Remote', revision: '2' }),
+        list: vi.fn().mockResolvedValue(page([mine, other])),
+        load,
       },
     },
   });
@@ -411,6 +410,11 @@ it('preserves unconfirmed text and invalidity across instance switches', async (
     expect.soft(engine.getSnapshot().sessions.mine.filterValid).toBe(false);
     expect.soft(engine.getSnapshot().sessions.mine.filterPending).toBe(true);
     // Remote changes only metadata; identical filter node IDs/values must still discard local text.
+    load.mockImplementation(async () => ({
+      ...mine,
+      title: 'Remote',
+      revision: '2',
+    }));
     await act(() => engine.reloadInstance('mine'));
     const review = engine.getSnapshot().sessions.mine.conflict!;
     expect(review).toBeDefined();
@@ -472,7 +476,8 @@ it('keeps live record titles in renderers while retaining the executed query con
         },
       },
     },
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host,
   });
   try {

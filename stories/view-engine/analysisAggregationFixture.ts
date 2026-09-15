@@ -24,7 +24,9 @@ import {
 import {
   compileAnalysis,
   type AnalysisViewInstance,
+  type RecordData,
   type ViewDefinition,
+  type ViewSource,
 } from '@ahoo-wang/fetcher-view-engine';
 export const extendedDefinition: ViewDefinition = {
   id: 'extended-analysis',
@@ -172,3 +174,9 @@ export const extendedAggregate = fn(async (query: AggregationQuery) => {
     },
   ];
 });
+/** The generic source signature over the recorded mock; play functions read `extendedAggregate.mock`. */
+export const extendedSource: ViewSource = {
+  aggregate: async <Row extends RecordData = RecordData>(
+    query: AggregationQuery,
+  ) => (await extendedAggregate(query)) as unknown as Row[],
+};

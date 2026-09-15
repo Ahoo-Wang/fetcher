@@ -30,7 +30,7 @@ import {
   type FilterComponentConfig,
   type FilterOptionSource,
   type RecordViewDefinition,
-  type ViewInstanceList,
+  type ViewInstance,
 } from '@ahoo-wang/fetcher-view-engine';
 import { Button } from '@ahoo-wang/fetcher-view-engine/react';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
@@ -148,28 +148,25 @@ const draft: FilterComponentConfig = {
     },
   ],
 };
-const instances: ViewInstanceList = {
-  defaultInstanceId: 'mine',
-  instances: [
-    {
-      id: 'mine',
-      definitionId: definition.id,
-      kind: 'record',
-      title: '我的筛选',
-      scope: { type: 'personal' },
-      revision: '1',
-      config: {
-        filters: createFilterConfiguration(draft, 'simple'),
-        sort: [],
-        pagination: { mode: 'paged', size: 5 },
-        presentation: {
-          layout: 'table',
-          table: { columns: [{ id: 'id', kind: 'field', field: 'id' }] },
-        },
+const instances: ViewInstance[] = [
+  {
+    id: 'mine',
+    definitionId: definition.id,
+    kind: 'record',
+    title: '我的筛选',
+    scope: { type: 'personal' },
+    revision: '1',
+    config: {
+      filters: createFilterConfiguration(draft, 'simple'),
+      sort: [],
+      pagination: { mode: 'paged', size: 5 },
+      presentation: {
+        layout: 'table',
+        table: { columns: [{ id: 'id', kind: 'field', field: 'id' }] },
       },
     },
-  ],
-};
+  },
+];
 
 export interface BuiltinFiltersExampleProps {
   appearance?: 'light' | 'dark';
@@ -247,6 +244,7 @@ function ExampleSession({
       scopeKey,
       definition,
       instances,
+      defaultInstanceId: 'mine',
       resolveSource: () => ({
         paged: async query => {
           if (!('filter' in query))

@@ -18,8 +18,8 @@ it('reports budget refusal and retries only the summary after the slot is releas
   const { engine, source } = setup({ maxConcurrentQueries: 1 });
   const pending = deferred<{ list: []; total: number }>();
   source.paged.mockReturnValueOnce(pending.promise);
+  // Opening the default is part of load(); its query failure settles the session, not load().
   const loading = engine.load();
-  const failure = expect(loading).rejects.toThrow('记录服务不可用');
   try {
     await vi.waitFor(() => expect(source.paged).toHaveBeenCalledOnce());
     await vi.waitFor(() => {
@@ -31,7 +31,9 @@ it('reports budget refusal and retries only the summary after the slot is releas
       code: 'BUSY',
     });
     pending.reject(new Error('记录服务不可用'));
-    await failure;
+    await loading;
+    expect(session(engine).queryStatus).toBe('error');
+    expect(session(engine).queryError).toBe('记录服务不可用');
     await engine.record('mine').refreshSummary();
     expect(session(engine).allSummary.status).toBe('success');
     expect(session(engine).allSummary.values.amount?.SUM).toBe(30);
@@ -39,7 +41,7 @@ it('reports budget refusal and retries only the summary after the slot is releas
     expect(source.paged).toHaveBeenCalledOnce();
   } finally {
     pending.reject(new Error('记录服务不可用'));
-    await failure;
+    await loading.catch(() => {});
     engine.dispose();
   }
 });

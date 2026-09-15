@@ -13,57 +13,92 @@
 
 import type {
   ViewDefinition,
+  ViewDefinitionPermissions,
   ViewInstance,
-  ViewInstanceList,
   ViewInstancePermissions,
+  ViewInstanceSummary,
   ViewSource,
   ViewCreateInput,
 } from './viewModel.js';
 import type {
-  ViewCreateContext,
-  ViewDeleteResult,
-  ViewPermissionSnapshot,
+  ConfigurationWriteContext,
+  ListOptions,
+  OperationReference,
+  Page,
+  PreferenceState,
+  ReadOptions,
+  ViewDeleteReceipt,
+  ViewOrderChange,
+  WriteContext,
+  WriteObservation,
+  WritePrecondition,
 } from './viewServiceContract.js';
-/** Definition metadata, independent of instance persistence and runtime sources. */
+
+/** Definition reads only; definition maintenance is a separate, controlled management facade. */
 export interface ViewDefinitionService {
-  load?(definitionId: string, signal?: AbortSignal): Promise<ViewDefinition>;
+  load?(definitionId: string, options?: ReadOptions): Promise<ViewDefinition>;
 }
-/** Saved view content. The service enforces ownership, permissions and revisions. */
+/**
+ * Saved view content. The service enforces ownership, permissions and revisions.
+ * Catalog pages carry summaries; a full instance is always a separate point read.
+ */
 export interface ViewInstanceService {
-  list?(definitionId: string, signal?: AbortSignal): Promise<ViewInstanceList>;
-  load?(instanceId: string, signal?: AbortSignal): Promise<ViewInstance>;
+  list?(
+    definitionId: string,
+    options?: ListOptions,
+  ): Promise<Page<ViewInstanceSummary>>;
+  load?(instanceId: string, options?: ReadOptions): Promise<ViewInstance>;
   create?(
-    instance: ViewCreateInput,
-    context: ViewCreateContext,
-  ): Promise<ViewInstance>;
-  save?(instance: ViewInstance): Promise<ViewInstance>;
-  delete?(instanceId: string, revision: string): Promise<ViewDeleteResult>;
+    input: ViewCreateInput,
+    context: ConfigurationWriteContext,
+  ): Promise<WriteObservation<ViewInstance>>;
+  save?(
+    instance: ViewInstance,
+    context: ConfigurationWriteContext,
+  ): Promise<WriteObservation<ViewInstance>>;
   rename?(
     instanceId: string,
     title: string,
-    revision: string,
-  ): Promise<ViewInstance>;
+    expectedRevision: string,
+    context: WriteContext,
+  ): Promise<WriteObservation<ViewInstance>>;
+  delete?(
+    instanceId: string,
+    expectedRevision: string,
+    context: WriteContext,
+  ): Promise<WriteObservation<ViewDeleteReceipt>>;
 }
-/** Current user's display preferences; never changes shared view content. */
+/** Current user's personal preferences for one definition; never changes shared view content. */
 export interface ViewPreferenceService {
-  saveOrder?(definitionId: string, instanceIds: string[]): Promise<void>;
-  saveDefault?(definitionId: string, instanceId: string | null): Promise<void>;
-}
-/** Synchronous UI policy projection plus explicit refresh and change notifications. */
-export interface ViewPermissionService {
-  getInstance?(instance: ViewInstance): ViewInstancePermissions;
-  getDefinition?(): Pick<
-    ViewPermissionSnapshot,
-    'reorder' | 'createPersonal' | 'createShared'
-  >;
-  /** Initialize this service's synchronous getters before resolving; awaited by engine.load(). */
-  load?(
+  load?(definitionId: string, options?: ReadOptions): Promise<PreferenceState>;
+  saveOrder?(
     definitionId: string,
-    signal?: AbortSignal,
-  ): Promise<ViewPermissionSnapshot>;
-  /** Also used for initialization when load is absent. Publish subsequent changes via subscribe. */
-  refresh?(signal?: AbortSignal): Promise<void>;
+    change: ViewOrderChange,
+    precondition: WritePrecondition,
+    context: WriteContext,
+  ): Promise<WriteObservation<PreferenceState>>;
+  saveDefault?(
+    definitionId: string,
+    instanceId: string | null,
+    precondition: WritePrecondition,
+    context: WriteContext,
+  ): Promise<WriteObservation<PreferenceState>>;
+}
+/**
+ * Synchronous, host-accepted permission results. The engine never fetches permissions;
+ * the host or application loads, caches and orders them, then notifies through subscribe.
+ */
+export interface ViewPermissionService {
+  getInstance?(instance: ViewInstanceSummary): ViewInstancePermissions;
+  getDefinition?(): ViewDefinitionPermissions;
   subscribe?(listener: () => void): () => void;
+}
+/** Read-only reconciliation of an earlier write by its original identity; never replays. */
+export interface ViewOperationService {
+  reconcile?(
+    reference: OperationReference,
+    options?: ReadOptions,
+  ): Promise<WriteObservation<unknown>>;
 }
 export interface DashboardCandidate {
   id: string;
@@ -85,6 +120,7 @@ export interface ViewHost {
   instance?: ViewInstanceService;
   preference?: ViewPreferenceService;
   permission?: ViewPermissionService;
+  operation?: ViewOperationService;
   /** Local runtime bridge. This is not a view-service REST operation. */
   resolveSource(sourceId: string): ViewSource | Promise<ViewSource>;
 }

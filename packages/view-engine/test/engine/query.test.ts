@@ -117,10 +117,8 @@ it('clears stale rows and ignores old query resolution and rejection after a new
 
 it('resets cursor position on filter, sort, size and refresh and exposes no previous-page path', async () => {
   const { engine, cursor } = setup({
-    instances: {
-      instances: [instance('mine', 'cursor')],
-      defaultInstanceId: 'mine',
-    },
+    instances: [instance('mine', 'cursor')],
+    defaultInstanceId: 'mine',
   });
   cursor.mockImplementation(async query => ({
     list: [{ state: { id: 'a' } }],
@@ -175,7 +173,9 @@ it('rejects unstable or duplicate keys and malformed result metadata', async () 
   ]) {
     const { engine, paged } = setup();
     paged.mockResolvedValue(result);
-    await expect(engine.load()).rejects.toThrow();
+    // Loading settles once the definition and catalog are read; the first
+    // query is rejected on the selected session instead.
+    await expect(engine.load()).resolves.toBeUndefined();
     expect(engine.getSnapshot().status).toBe('ready');
     expect(selected(engine)).toMatchObject({
       rows: [],
@@ -184,11 +184,11 @@ it('rejects unstable or duplicate keys and malformed result metadata', async () 
     expect(selected(engine).queryError).toBeTruthy();
   }
   const { engine, cursor } = setup({
-    instances: {
-      instances: [instance('mine', 'cursor')],
-      defaultInstanceId: 'mine',
-    },
+    instances: [instance('mine', 'cursor')],
+    defaultInstanceId: 'mine',
   });
   cursor.mockResolvedValue({ list: [], nextCursor: 5 });
-  await expect(engine.load()).rejects.toThrow();
+  await expect(engine.load()).resolves.toBeUndefined();
+  expect(selected(engine)).toMatchObject({ rows: [], queryStatus: 'error' });
+  expect(selected(engine).queryError).toBeTruthy();
 });

@@ -18,6 +18,7 @@ import {
   MemoryViewHost,
   ViewEngine,
   ViewServiceError,
+  summaryOf,
 } from '@ahoo-wang/fetcher-view-engine';
 import {
   HttpViewHost,
@@ -25,6 +26,12 @@ import {
   HttpViewInstanceService,
   VIEW_SERVICE_STATUS,
 } from '../dev/http/index.js';
+import {
+  ABSENT_PRECONDITION,
+  preconditionFor,
+  type ViewServiceErrorCode,
+  type WriteObservation,
+} from '../src/contracts/viewServiceContract.js';
 
 import { startViewService } from '../scripts/fixtures/view-service-server.mjs';
 import { definition, instance, setup } from './fixtures/viewPage.js';
@@ -36,7 +43,8 @@ beforeEach(async () => {
     ServiceError: ViewServiceError,
     statuses: VIEW_SERVICE_STATUS,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     source: setup().host.resolveSource('orders'),
   });
 });
@@ -52,30 +60,68 @@ function client(token = 'alice-token', timeoutMs = 1000) {
     resolveSource: setup().host.resolveSource,
   });
 }
-it('returns the authoritative default through DELETE after another client reorders views', async () => {
+const ctx = () => ({ requestId: crypto.randomUUID() });
+function committed<T>(observation: WriteObservation<T>): T {
+  if (observation.outcome !== 'committed')
+    throw new Error(`写入未提交：${JSON.stringify(observation)}`);
+  return observation.value;
+}
+const rejected = (code: ViewServiceErrorCode) => ({
+  outcome: 'rejected',
+  issue: { code },
+});
+const ids = async (host: { instance: HttpViewInstanceService }) =>
+  (await host.instance.list(definition.id)).items.map(item => item.id);
+
+it('deletes through the engine with a receipt that only proves the deletion, after another client reorders views', async () => {
   const host = client();
   const other = client();
-  const first = await other.instance.create(
-    { ...instance, title: 'First' },
-    { requestId: 'first' },
+  const first = committed(
+    await other.instance.create(
+      { ...instance, title: 'First' },
+      { requestId: 'first' },
+    ),
   );
-  const second = await other.instance.create(
-    { ...instance, title: 'Second' },
-    { requestId: 'second' },
+  const second = committed(
+    await other.instance.create(
+      { ...instance, title: 'Second' },
+      { requestId: 'second' },
+    ),
   );
   const engine = new ViewEngine({ definitionId: definition.id, host });
   await engine.load();
+  expect(engine.getSnapshot()).toMatchObject({
+    defaultInstanceId: instance.id,
+    selectedInstanceId: instance.id,
+    instanceIds: [instance.id, first.id, second.id],
+  });
   const revision = engine.getSnapshot().sessions[instance.id].baseline.revision;
-  await other.preference.saveOrder(definition.id, [
-    instance.id,
-    second.id,
-    first.id,
-  ]);
+  committed(
+    await other.preference.saveOrder(
+      definition.id,
+      {
+        scopeInstanceIds: [instance.id, second.id, first.id],
+        orderedInstanceIds: [instance.id, second.id, first.id],
+      },
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
+  );
   await engine.deleteInstance(instance.id);
-  expect(engine.getSnapshot().defaultInstanceId).toBe(second.id);
-  expect(
-    (await host.instance.delete(instance.id, revision)).defaultInstance,
-  ).toEqual(second);
+  // The engine keeps its loaded order and never derives a fallback default.
+  expect(engine.getSnapshot()).toMatchObject({
+    defaultInstanceId: null,
+    selectedInstanceId: first.id,
+    instanceIds: [first.id, second.id],
+  });
+  await expect(
+    host.instance.delete(instance.id, revision, { requestId: 'again' }),
+  ).resolves.toMatchObject(rejected('NOT_FOUND'));
+  expect(await ids(other)).toEqual([second.id, first.id]);
+  expect(await other.preference.load(definition.id)).toMatchObject({
+    effectiveDefaultInstanceId: null,
+    order: [instance.id, second.id, first.id],
+  });
   engine.dispose();
 });
 it('allows only the configured browser origin before preflight or writes', async () => {
@@ -100,106 +146,163 @@ it('allows only the configured browser origin before preflight or writes', async
   expect(allowed.headers.get('Access-Control-Allow-Origin')).toBe(
     'http://127.0.0.1:6006',
   );
+  expect(allowed.headers.get('Access-Control-Allow-Headers')).toContain(
+    'idempotency-key',
+  );
   expect(allowed.headers.get('Vary')).toBe('Origin');
   // Node service clients do not send a browser Origin header.
-  expect((await client().instance.list(definition.id)).instances).toHaveLength(
-    1,
-  );
+  expect((await client().instance.list(definition.id)).items).toHaveLength(1);
 });
 it('executes JSON writes over HTTP with shared visibility, private isolation and typed errors', async () => {
   const alice = client(),
     bob = client('bob-token');
-  const shared = await alice.instance!.create(
-    { ...instance, title: '公共', scope: { type: 'public', source: 'shared' } },
-    { requestId: 'shared' },
+  const shared = committed(
+    await alice.instance.create(
+      {
+        ...instance,
+        title: '公共',
+        scope: { type: 'public', source: 'shared' },
+      },
+      { requestId: 'shared' },
+    ),
   );
-  expect((await bob.instance!.load(shared.id)).title).toBe('公共');
+  expect((await bob.instance.load(shared.id)).title).toBe('公共');
   await expect(
-    bob.instance!.rename(shared.id, '越权', shared.revision),
-  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
-  const privateView = await alice.instance!.create(
-    { ...instance, title: '私人' },
-    { requestId: 'private' },
+    bob.instance.rename(shared.id, '越权', shared.revision, ctx()),
+  ).resolves.toMatchObject(rejected('FORBIDDEN'));
+  const privateView = committed(
+    await alice.instance.create(
+      { ...instance, title: '私人' },
+      { requestId: 'private' },
+    ),
   );
-  await expect(bob.instance!.load(privateView.id)).rejects.toMatchObject({
+  await expect(bob.instance.load(privateView.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
   await expect(
-    client('outsider-token').instance!.load(shared.id),
+    client('outsider-token').instance.load(shared.id),
   ).rejects.toMatchObject({ code: 'NOT_FOUND' });
   await expect(
-    client('invalid-token').instance!.list(definition.id),
+    client('invalid-token').instance.list(definition.id),
   ).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
-  const renamed = await alice.instance!.rename(
-    shared.id,
-    '新名称',
-    shared.revision,
+  const renamed = committed(
+    await alice.instance.rename(shared.id, '新名称', shared.revision, ctx()),
   );
-  await expect(alice.instance!.save(shared)).rejects.toMatchObject({
-    code: 'REVISION_CONFLICT',
+  await expect(alice.instance.save(shared, ctx())).resolves.toMatchObject(
+    rejected('REVISION_CONFLICT'),
+  );
+  expect(
+    await alice.instance.delete(renamed.id, renamed.revision, ctx()),
+  ).toMatchObject({
+    outcome: 'committed',
+    value: { id: renamed.id, revision: expect.any(String) },
   });
-  await alice.instance!.delete(renamed.id, renamed.revision);
-  await expect(bob.instance!.load(renamed.id)).rejects.toMatchObject({
+  await expect(bob.instance.load(renamed.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
 });
 it('does not trust posted ownership, and stores each users order independently', async () => {
   const alice = client(),
     bob = client('bob-token');
-  const privateView = await alice.instance!.create(
-    { ...instance, ownerKey: 'bob' } as typeof instance,
-    { requestId: 'owner-forgery' },
+  const privateView = committed(
+    await alice.instance.create(
+      { ...instance, ownerKey: 'bob' } as typeof instance,
+      { requestId: 'owner-forgery' },
+    ),
   );
-  await expect(bob.instance!.load(privateView.id)).rejects.toMatchObject({
+  await expect(bob.instance.load(privateView.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
-  const shared = await alice.instance!.create(
-    { ...instance, scope: { type: 'public', source: 'shared' } },
-    { requestId: 'public' },
+  const shared = committed(
+    await alice.instance.create(
+      { ...instance, scope: { type: 'public', source: 'shared' } },
+      { requestId: 'public' },
+    ),
   );
-  const before = (await alice.instance!.list(definition.id)).instances.map(
-    item => item.id,
+  const before = await ids(alice);
+  const order = (await ids(bob)).reverse();
+  committed(
+    await bob.preference.saveOrder(
+      definition.id,
+      { scopeInstanceIds: order, orderedInstanceIds: order },
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
   );
-  const order = (await bob.instance!.list(definition.id)).instances
-    .map(item => item.id)
-    .reverse();
-  await bob.preference!.saveOrder(definition.id, order);
-  expect(
-    (await bob.instance!.list(definition.id)).instances.map(item => item.id),
-  ).toEqual(order);
-  expect(
-    (await alice.instance!.list(definition.id)).instances.map(item => item.id),
-  ).toEqual(before);
+  expect(await ids(bob)).toEqual(order);
+  expect(await ids(alice)).toEqual(before);
   expect(order).toContain(shared.id);
 });
 it('round trips a private default preference over HTTP', async () => {
   const alice = client();
   const bob = client('bob-token');
-  await alice.preference.saveDefault(definition.id, null);
+  const cleared = committed(
+    await alice.preference.saveDefault(
+      definition.id,
+      null,
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
+  );
+  expect(await client().preference.load(definition.id)).toEqual({
+    revision: cleared.revision,
+    order: [],
+    defaultInstanceId: null,
+    effectiveDefaultInstanceId: null,
+  });
+  expect(await bob.preference.load(definition.id)).toMatchObject({
+    revision: null,
+    defaultInstanceId: instance.id,
+    effectiveDefaultInstanceId: instance.id,
+  });
+  const restored = committed(
+    await alice.preference.saveDefault(
+      definition.id,
+      instance.id,
+      preconditionFor(cleared.revision),
+      ctx(),
+    ),
+  );
   expect(
-    (await client().instance.list(definition.id)).defaultInstanceId,
-  ).toBeNull();
-  expect((await bob.instance.list(definition.id)).defaultInstanceId).toBe(
-    instance.id,
-  );
-  await alice.preference.saveDefault(definition.id, instance.id);
-  expect((await client().instance.list(definition.id)).defaultInstanceId).toBe(
-    instance.id,
-  );
-  const shared = await alice.instance.create(
-    { ...instance, scope: { type: 'public', source: 'shared' } },
-    { requestId: 'shared-default' },
+    (await client().preference.load(definition.id)).effectiveDefaultInstanceId,
+  ).toBe(instance.id);
+  const shared = committed(
+    await alice.instance.create(
+      { ...instance, scope: { type: 'public', source: 'shared' } },
+      { requestId: 'shared-default' },
+    ),
   );
   expect(
-    bob.permission.getInstance(await bob.instance.load(shared.id)).save,
+    bob.permission.getInstance(summaryOf(await bob.instance.load(shared.id)))
+      .save,
   ).toBe(false);
-  await bob.preference.saveDefault(definition.id, shared.id);
-  expect((await bob.instance.list(definition.id)).defaultInstanceId).toBe(
+  committed(
+    await bob.preference.saveDefault(
+      definition.id,
+      shared.id,
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
+  );
+  expect((await bob.preference.load(definition.id)).defaultInstanceId).toBe(
     shared.id,
   );
   await expect(
-    alice.preference.saveDefault(definition.id, 'unknown'),
-  ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    alice.preference.saveDefault(
+      definition.id,
+      'unknown',
+      preconditionFor(restored.revision),
+      ctx(),
+    ),
+  ).resolves.toMatchObject(rejected('NOT_FOUND'));
+  await expect(
+    alice.preference.saveDefault(
+      definition.id,
+      instance.id,
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
+  ).resolves.toMatchObject(rejected('REVISION_CONFLICT'));
 });
 it('retries a response-lost create through the real engine with the same idempotency key', async () => {
   const host = client();
@@ -210,8 +313,12 @@ it('retries a response-lost create through the real engine with the same idempot
   await expect(engine.saveAs(request)).rejects.toMatchObject({
     code: 'UNKNOWN_OUTCOME',
   });
+  expect(engine.getSnapshot().sessions[instance.id]).toMatchObject({
+    requiresReload: true,
+    writeStatus: 'idle',
+  });
   expect(
-    (await host.instance!.list(definition.id)).instances.filter(
+    (await host.instance.list(definition.id)).items.filter(
       item => item.title === request.title,
     ),
   ).toHaveLength(1);
@@ -220,7 +327,7 @@ it('retries a response-lost create through the real engine with the same idempot
   ).rejects.toMatchObject({ code: 'UNKNOWN_OUTCOME' });
   await engine.saveAs(request);
   expect(
-    (await host.instance!.list(definition.id)).instances.filter(
+    (await host.instance.list(definition.id)).items.filter(
       item => item.title === request.title,
     ),
   ).toHaveLength(1);
@@ -244,7 +351,7 @@ it('reconciles an unknown create by reload and then allows a distinct create', a
     '待核对副本',
   );
   await engine.saveAs({ title: '下一次创建', scope: { type: 'personal' } });
-  expect((await host.instance!.list(definition.id)).instances).toHaveLength(3);
+  expect((await host.instance.list(definition.id)).items).toHaveLength(3);
   engine.dispose();
 });
 it.each(['save', 'rename', 'delete'] as const)(
@@ -296,11 +403,10 @@ it.each(['save', 'rename', 'delete'] as const)(
       ).rejects.toThrow('核对');
       expect(server.control.mutations).toBe(mutations);
       if (operation === 'delete') {
+        // The retry reuses the original request identity and receives the stored receipt.
         await engine.deleteInstance();
         expect(session()).toBeUndefined();
-        expect((await client().instance.list(definition.id)).instances).toEqual(
-          [],
-        );
+        expect((await client().instance.list(definition.id)).items).toEqual([]);
       } else {
         await expect(engine.deleteInstance()).rejects.toThrow('核对');
         await engine.reloadInstance();
@@ -325,14 +431,16 @@ it.each(['save', 'rename', 'delete'] as const)(
 it('forwards cancellation and distinguishes read timeout from an unknown write outcome', async () => {
   const host = client('alice-token', 50);
   server.control.delayNextRead = 200;
-  await expect(host.instance!.list(definition.id)).rejects.toMatchObject({
+  await expect(host.instance.list(definition.id)).rejects.toMatchObject({
     code: 'UNAVAILABLE',
   });
   await delay(30);
   expect(server.control.abortedReads).toBe(1);
   server.control.delayNextRead = 200;
   const controller = new AbortController();
-  const pending = host.instance!.list(definition.id, controller.signal);
+  const pending = host.instance.list(definition.id, {
+    signal: controller.signal,
+  });
   const assertion = expect(pending).rejects.toMatchObject({
     name: 'AbortError',
   });
@@ -344,9 +452,11 @@ it('forwards cancellation and distinguishes read timeout from an unknown write o
 });
 it('updates permission subscribers and prevents a delayed old snapshot from restoring revoked grants', async () => {
   const host = client();
-  const shared = await host.instance!.create(
-    { ...instance, scope: { type: 'public', source: 'shared' } },
-    { requestId: 'shared' },
+  const shared = committed(
+    await host.instance.create(
+      { ...instance, scope: { type: 'public', source: 'shared' } },
+      { requestId: 'shared' },
+    ),
   );
   const engine = new ViewEngine({ definitionId: definition.id, host });
   await engine.load();
@@ -355,20 +465,20 @@ it('updates permission subscribers and prevents a delayed old snapshot from rest
   ).toBe(true);
   const sessions = engine.getSnapshot().sessions;
   server.control.delayNextPermissionResponse = 300;
-  const oldPermissions = host.permission!.refresh();
+  const oldPermissions = host.permission.refresh();
   await vi.waitFor(() =>
     expect(server.control.delayedPermissionResponses).toBe(1),
   );
   server.setWriter('alice-token', false);
-  await host.permission!.refresh();
+  await host.permission.refresh();
   await oldPermissions;
   expect(
     engine.getCapabilitiesSnapshot().instances[shared.id].permissions.save,
   ).toBe(false);
   expect(engine.getSnapshot().sessions).toBe(sessions);
-  await expect(host.instance!.save(shared)).rejects.toMatchObject({
-    code: 'FORBIDDEN',
-  });
+  await expect(host.instance.save(shared, ctx())).resolves.toMatchObject(
+    rejected('FORBIDDEN'),
+  );
   engine.dispose();
 });
 
@@ -377,33 +487,41 @@ it('keeps one create after timeout or cancellation after the server commit', asy
   server.control.delayNextCreateResponse = 300;
   const input = { ...instance, title: '超时创建' };
   await expect(
-    host.instance!.create(input, { requestId: 'timeout' }),
-  ).rejects.toMatchObject({ code: 'UNKNOWN_OUTCOME' });
-  const result = await host.instance!.create(input, { requestId: 'timeout' });
+    host.instance.create(input, { requestId: 'timeout' }),
+  ).resolves.toMatchObject({
+    outcome: 'unknown',
+    issue: { code: 'UNKNOWN_OUTCOME' },
+  });
+  const result = committed(
+    await host.instance.create(input, { requestId: 'timeout' }),
+  );
   expect(
-    (await host.instance!.list(definition.id)).instances.filter(
+    (await host.instance.list(definition.id)).items.filter(
       item => item.id === result.id,
     ),
   ).toHaveLength(1);
   const normal = client();
   const controller = new AbortController();
   server.control.delayNextCreateResponse = 300;
-  const pending = normal.instance!.create(
+  const pending = normal.instance.create(
     { ...input, title: '取消响应' },
     { requestId: 'canceled', signal: controller.signal },
   );
+  // Cancellation is the caller's own signal: the promise rejects instead of observing an outcome.
   const assertion = expect(pending).rejects.toMatchObject({
-    code: 'UNKNOWN_OUTCOME',
+    name: 'AbortError',
   });
   await vi.waitFor(() => expect(server.control.delayedCreateResponses).toBe(2));
   controller.abort();
   await assertion;
-  await normal.instance!.create(
-    { ...input, title: '取消响应' },
-    { requestId: 'canceled' },
+  committed(
+    await normal.instance.create(
+      { ...input, title: '取消响应' },
+      { requestId: 'canceled' },
+    ),
   );
   expect(
-    (await normal.instance!.list(definition.id)).instances.filter(
+    (await normal.instance.list(definition.id)).items.filter(
       item => item.title === '取消响应',
     ),
   ).toHaveLength(1);
@@ -411,15 +529,15 @@ it('keeps one create after timeout or cancellation after the server commit', asy
 it('performs competing HTTP writes with one authoritative winner', async () => {
   const left = client(),
     right = client();
-  const old = await left.instance!.load(instance.id);
-  const results = await Promise.allSettled([
-    left.instance!.save({ ...old, title: 'first' }),
-    right.instance!.save({ ...old, title: 'second' }),
+  const old = await left.instance.load(instance.id);
+  const results = await Promise.all([
+    left.instance.save({ ...old, title: 'first' }, ctx()),
+    right.instance.save({ ...old, title: 'second' }, ctx()),
   ]);
-  expect(results.filter(item => item.status === 'fulfilled')).toHaveLength(1);
-  expect(results.find(item => item.status === 'rejected')).toMatchObject({
-    reason: { code: 'REVISION_CONFLICT' },
-  });
+  expect(results.filter(item => item.outcome === 'committed')).toHaveLength(1);
+  expect(results.find(item => item.outcome !== 'committed')).toMatchObject(
+    rejected('REVISION_CONFLICT'),
+  );
 });
 
 it.each(['json', 'text', 'null'] as const)(
@@ -440,23 +558,27 @@ it.each(['json', 'text', 'null'] as const)(
         });
       },
     });
-    const current = await host.instance!.load(instance.id);
-    expect(host.permission!.getInstance(current).save).toBe(true);
+    const current = summaryOf(await host.instance.load(instance.id));
+    expect(host.permission.getInstance(current).save).toBe(true);
     server.control.delayNextPermissionResponse = 300;
-    const old = host.permission!.refresh();
+    const old = host.permission.refresh();
     await vi.waitFor(() =>
       expect(server.control.delayedPermissionResponses).toBe(1),
     );
     token = 'expired';
-    const rejected = await host.permission!.refresh().catch(error => error);
-    const revoked = host.permission!.getInstance(current).save;
+    const failure = await host.permission.refresh().catch(error => error);
+    const revoked = host.permission.getInstance(current).save;
     await old;
     expect(revoked).toBe(false);
-    expect(host.permission!.getInstance(current).save).toBe(false);
-    expect(rejected).toMatchObject({ code: 'UNAUTHENTICATED' });
+    expect(host.permission.getInstance(current).save).toBe(false);
+    expect(failure).toMatchObject({ code: 'UNAUTHENTICATED' });
+    // A write during the expired session is a definite rejection, not an unknown outcome.
+    await expect(
+      host.instance.rename(current.id, '过期会话', current.revision, ctx()),
+    ).resolves.toMatchObject(rejected('UNAUTHENTICATED'));
     token = 'alice-token';
-    await host.permission!.refresh();
-    expect(host.permission!.getInstance(current).save).toBe(true);
+    await host.permission.refresh();
+    expect(host.permission.getInstance(current).save).toBe(true);
   },
 );
 
@@ -478,37 +600,67 @@ it('returns stable protocol errors for malformed inputs and missing precondition
   );
   expect(missing.status).toBe(428);
   expect((await missing.json()).error.code).toBe('PRECONDITION_REQUIRED');
+  const unidentified = await fetch(
+    `${server.baseUrl}definitions/${definition.id}/instances/${instance.id}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: headers.Authorization,
+        'If-Match': JSON.stringify('r1'),
+      },
+    },
+  );
+  expect(unidentified.status).toBe(400);
+  expect((await unidentified.json()).error.code).toBe('INVALID_ARGUMENT');
 
-  const endpoint = `${server.baseUrl}definitions/${definition.id}/default`;
+  const endpoint = `${server.baseUrl}definitions/${definition.id}/preferences/default`;
   for (const [body, status, code] of [
     ['{}', 400, 'INVALID_ARGUMENT'],
     ['{"instanceId":1}', 400, 'INVALID_ARGUMENT'],
+    [JSON.stringify({ instanceId: instance.id }), 428, 'PRECONDITION_REQUIRED'],
+    [
+      JSON.stringify({
+        instanceId: instance.id,
+        precondition: { type: 'matches', revision: 'p0' },
+      }),
+      412,
+      'REVISION_CONFLICT',
+    ],
   ] as const) {
-    const mutations = server.control.mutations;
     const invalid = await fetch(endpoint, { method: 'PUT', headers, body });
     expect(invalid.status).toBe(status);
-    expect((await invalid.json()).error.code).toBe(code);
-    expect(server.control.mutations).toBe(mutations);
+    const envelope = await invalid.json();
+    expect(envelope.error.code).toBe(code);
+    expect(envelope.data).toMatchObject({
+      outcome: 'rejected',
+      issue: { code },
+    });
   }
+  expect((await client().preference.load(definition.id)).revision).toBeNull();
 
-  const bobPrivate = await client('bob-token').instance.create(
-    { ...instance, title: 'Bob private' },
-    { requestId: 'bob-private-default' },
+  const bobPrivate = committed(
+    await client('bob-token').instance.create(
+      { ...instance, title: 'Bob private' },
+      { requestId: 'bob-private-default' },
+    ),
   );
   for (const [token, instanceId, status, code] of [
     ['alice-token', bobPrivate.id, 404, 'NOT_FOUND'],
     ['invalid-token', instance.id, 401, 'UNAUTHENTICATED'],
   ] as const) {
-    const mutations = server.control.mutations;
     const rejected = await fetch(endpoint, {
       method: 'PUT',
       headers: { ...headers, Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ instanceId }),
+      body: JSON.stringify({
+        instanceId,
+        precondition: { type: 'absent' },
+      }),
     });
     expect(rejected.status).toBe(status);
     expect((await rejected.json()).error.code).toBe(code);
-    expect(server.control.mutations).toBe(mutations);
   }
+  expect((await client().preference.load(definition.id)).revision).toBeNull();
+  expect(await ids(client())).toEqual([instance.id]);
 });
 
 it('composes independently supplied definition, instance and policy services', async () => {
@@ -520,12 +672,18 @@ it('composes independently supplied definition, instance and policy services', a
     instance: remote.instance,
     preference: remote.preference,
     permission: remote.permission,
+    operation: remote.operation,
     resolveSource: localSource,
   };
   const engine = new ViewEngine({ definitionId: definition.id, host });
   await engine.load();
   expect(loadDefinition).toHaveBeenCalledOnce();
-  expect(engine.getSnapshot().status).toBe('ready');
+  expect(engine.getSnapshot()).toMatchObject({
+    status: 'ready',
+    catalog: { status: 'ready' },
+    preference: { status: 'ready', revision: null },
+    selectedInstanceId: instance.id,
+  });
   engine.setTitle('组合服务保存');
   await engine.save();
   expect((await remote.instance.load(instance.id)).title).toBe('组合服务保存');
@@ -542,26 +700,53 @@ it('uses the instance REST client without a ViewHost or runtime source resolver'
   });
   const instances = new HttpViewInstanceService(transport);
   const list = await instances.list(definition.id);
-  expect(list.instances[0].id).toBe(instance.id);
-  expect(transport.permission.getInstance(list.instances[0]).save).toBe(true);
-  const saved = await instances.save({
-    ...list.instances[0],
-    title: '独立客户端',
-  });
+  expect(list.items[0].id).toBe(instance.id);
+  expect(list.items[0]).not.toHaveProperty('config');
+  expect(transport.permission.getInstance(list.items[0]).save).toBe(true);
+  const loaded = await instances.load(list.items[0].id);
+  const saved = committed(
+    await instances.save({ ...loaded, title: '独立客户端' }, ctx()),
+  );
   expect((await instances.load(saved.id)).title).toBe('独立客户端');
 });
 
-it('loads the permission resource directly and shares its projection with instance clients', async () => {
+it('refreshes the permission resource directly and shares its projection with instance clients', async () => {
   const host = client();
-  const snapshot = await host.permission.load(definition.id);
-  expect(snapshot.instances[instance.id].save).toBe(true);
-  expect(host.permission.getInstance(instance).save).toBe(true);
-  await expect(host.permission.load('wrong-definition')).rejects.toMatchObject({
-    code: 'NOT_FOUND',
+  const notified = vi.fn();
+  host.permission.subscribe(notified);
+  expect(host.permission.getInstance(summaryOf(instance)).save).toBe(false);
+  expect(host.permission.getDefinition()).toEqual({
+    reorder: false,
+    setDefault: false,
+    createPersonal: false,
+    createShared: false,
   });
+  await host.permission.refresh();
+  expect(notified).toHaveBeenCalledTimes(1);
+  expect(host.permission.getInstance(summaryOf(instance)).save).toBe(true);
+  expect(host.permission.getDefinition()).toEqual({
+    reorder: true,
+    setDefault: true,
+    createPersonal: true,
+    createShared: true,
+  });
+  // An unchanged projection does not notify subscribers again.
+  await host.permission.refresh();
+  expect(notified).toHaveBeenCalledTimes(1);
+  // Instance reads carry the same projection to the shared transport.
+  const created = committed(
+    await host.instance.create(
+      { ...instance, title: '新实例' },
+      { requestId: 'projected' },
+    ),
+  );
+  expect(notified).toHaveBeenCalledTimes(2);
+  expect(host.permission.getInstance(summaryOf(created)).delete).toBe(true);
+  expect(client().permission.getInstance(summaryOf(created)).save).toBe(false);
 });
 
-it('rejects permission payloads that bypass the accepted snapshot', async () => {
+it('rejects an invalid permission projection without replacing the accepted snapshot', async () => {
+  let corrupt = false;
   const host = new HttpViewHost({
     baseUrl: server.baseUrl,
     definitionId: definition.id,
@@ -569,17 +754,31 @@ it('rejects permission payloads that bypass the accepted snapshot', async () => 
     resolveSource: setup().host.resolveSource,
     fetch: async (input, init) => {
       const response = await fetch(input, init);
+      if (!corrupt) return response;
       const envelope = await response.json();
-      return Response.json({ ...envelope, data: null });
+      return Response.json({ ...envelope, permissions: { revision: 'x' } });
     },
   });
-  await expect(host.permission.load(definition.id)).rejects.toMatchObject({
+  const current = summaryOf(await host.instance.load(instance.id));
+  expect(host.permission.getInstance(current).save).toBe(true);
+  corrupt = true;
+  await expect(host.permission.refresh()).rejects.toMatchObject({
     code: 'UNAVAILABLE',
   });
+  await expect(host.instance.load(instance.id)).rejects.toMatchObject({
+    code: 'UNAVAILABLE',
+  });
+  await expect(
+    host.instance.rename(current.id, '无法证明', current.revision, ctx()),
+  ).resolves.toMatchObject({
+    outcome: 'unknown',
+    issue: { code: 'UNKNOWN_OUTCOME' },
+  });
+  expect(host.permission.getInstance(current).save).toBe(true);
 });
 
 it.each(['revocation', 'session'] as const)(
-  'rejects a stale permission return value after %s',
+  'ignores a stale permission reply after %s',
   async reason => {
     let token = 'alice-token';
     const host = new HttpViewHost({
@@ -588,26 +787,29 @@ it.each(['revocation', 'session'] as const)(
       headers: () => ({ Authorization: `Bearer ${token}` }),
       resolveSource: setup().host.resolveSource,
     });
-    const shared = await host.instance.create(
-      { ...instance, scope: { type: 'public', source: 'shared' } },
-      { requestId: 'permission-race' },
+    const shared = committed(
+      await host.instance.create(
+        { ...instance, scope: { type: 'public', source: 'shared' } },
+        { requestId: 'permission-race' },
+      ),
     );
+    expect(host.permission.getInstance(summaryOf(shared)).save).toBe(true);
     server.control.delayNextPermissionResponse = 150;
-    const old = host.permission.load(definition.id).catch(error => error);
+    const old = host.permission.refresh();
     await vi.waitFor(() =>
       expect(server.control.delayedPermissionResponses).toBe(1),
     );
     if (reason === 'revocation') {
       server.setWriter('alice-token', false);
-      await host.permission.load(definition.id);
+      await host.permission.refresh();
     } else {
       token = 'expired';
-      await expect(host.permission.load(definition.id)).rejects.toMatchObject({
+      await expect(host.permission.refresh()).rejects.toMatchObject({
         code: 'UNAUTHENTICATED',
       });
     }
-    expect(await old).toMatchObject({ code: 'UNAVAILABLE' });
-    expect(host.permission.getInstance(shared).save).toBe(false);
+    await expect(old).resolves.toBeUndefined();
+    expect(host.permission.getInstance(summaryOf(shared)).save).toBe(false);
   },
 );
 
@@ -636,7 +838,12 @@ it.each(['', ' ', '.', '..', '\ud800', null, 1])(
     const request = vi.fn<typeof fetch>(async () =>
       Response.json({
         data: instance,
-        permissions: { revision: 1, instances: {}, reorder: false },
+        permissions: {
+          revision: 1,
+          instances: {},
+          reorder: false,
+          setDefault: false,
+        },
       }),
     );
     const options = {
@@ -648,14 +855,24 @@ it.each(['', ' ', '.', '..', '\ud800', null, 1])(
     const host = new HttpViewHost(options);
     const results = await Promise.allSettled([
       host.instance.load(id),
-      host.instance.save({ ...instance, id, revision: 'r1' }),
-      host.instance.rename(id, 'title', 'r1'),
-      host.instance.delete(id, 'r1'),
+      host.instance.save({ ...instance, id, revision: 'r1' }, ctx()),
+      host.instance.rename(id, 'title', 'r1', ctx()),
+      host.instance.delete(id, 'r1', ctx()),
       host.instance.list(id),
       host.definition.load(id),
-      host.preference.saveOrder(id, []),
-      host.preference.saveDefault(id, null),
-      host.permission.load(id),
+      host.preference.load(id),
+      host.preference.saveOrder(
+        id,
+        { scopeInstanceIds: [], orderedInstanceIds: [] },
+        ABSENT_PRECONDITION,
+        ctx(),
+      ),
+      host.preference.saveDefault(id, null, ABSENT_PRECONDITION, ctx()),
+      host.operation.reconcile({
+        resource: 'instance',
+        definitionId: id,
+        requestId: 'r',
+      }),
     ]);
     expect(
       results.every(
@@ -671,12 +888,50 @@ it.each(['', ' ', '.', '..', '\ud800', null, 1])(
   },
 );
 
+it.each(['', ' '])(
+  'rejects a blank request identity %j before dispatching a write',
+  async requestId => {
+    const request = vi.fn<typeof fetch>();
+    const host = new HttpViewHost({
+      baseUrl: server.baseUrl,
+      definitionId: definition.id,
+      fetch: request,
+      resolveSource: setup().host.resolveSource,
+    });
+    const results = await Promise.allSettled([
+      host.instance.create(instance, { requestId }),
+      host.instance.save(instance, { requestId }),
+      host.instance.rename(instance.id, 'title', 'r1', { requestId }),
+      host.instance.delete(instance.id, 'r1', { requestId }),
+      host.preference.saveDefault(definition.id, null, ABSENT_PRECONDITION, {
+        requestId,
+      }),
+    ]);
+    expect(
+      results.every(
+        result =>
+          result.status === 'rejected' &&
+          result.reason.code === 'INVALID_ARGUMENT',
+      ),
+    ).toBe(true);
+    await expect(
+      host.instance.save({ ...instance, revision: '' }, ctx()),
+    ).rejects.toMatchObject({ code: 'PRECONDITION_REQUIRED' });
+    expect(request).not.toHaveBeenCalled();
+  },
+);
+
 it('encodes valid resource IDs exactly once without changing the requested resource', async () => {
   for (const id of ['订单 /%?#', '%2e%2e', 'orders.v1']) {
     const request = vi.fn<typeof fetch>(async () =>
       Response.json({
         data: { ...instance, id, definitionId: id },
-        permissions: { revision: 1, instances: {}, reorder: false },
+        permissions: {
+          revision: 1,
+          instances: {},
+          reorder: false,
+          setDefault: false,
+        },
       }),
     );
     const host = new HttpViewHost({
@@ -686,52 +941,250 @@ it('encodes valid resource IDs exactly once without changing the requested resou
       resolveSource: setup().host.resolveSource,
     });
     expect((await host.instance.load(id)).id).toBe(id);
-    await host.preference.saveDefault(id, null);
+    await host.preference.saveDefault(id, null, ABSENT_PRECONDITION, {
+      requestId: 'default',
+    });
+    await host.operation.reconcile({
+      resource: 'instance',
+      definitionId: id,
+      requestId: id,
+    });
     const root = `/view-service/definitions/${encodeURIComponent(id)}`;
     expect(new URL(request.mock.calls[0][0] as string).pathname).toBe(
       `${root}/instances/${encodeURIComponent(id)}`,
     );
     expect(new URL(request.mock.calls[1][0] as string).pathname).toBe(
-      `${root}/default`,
+      `${root}/preferences/default`,
+    );
+    expect(
+      new Headers(request.mock.calls[1][1]?.headers).get('Idempotency-Key'),
+    ).toBe('default');
+    expect(new URL(request.mock.calls[2][0] as string).pathname).toBe(
+      `${root}/operations/instance/${encodeURIComponent(id)}`,
     );
   }
 });
 
-it.each([false, true])(
-  'projects HTTP creation grants against negotiated dashboard support (%s)',
-  async supported => {
-    const transport = new HttpViewTransport({
-      baseUrl: server.baseUrl,
+it('projects definition grants from the accepted permission snapshot', () => {
+  const transport = new HttpViewTransport({
+    baseUrl: server.baseUrl,
+    definitionId: definition.id,
+  });
+  const { permission } = transport;
+  expect(permission.getDefinition()).toEqual({
+    reorder: false,
+    setDefault: false,
+    createPersonal: false,
+    createShared: false,
+  });
+  permission.acceptSnapshot({
+    revision: 100,
+    instances: {},
+    reorder: true,
+    setDefault: true,
+    createPersonal: true,
+    createShared: true,
+  });
+  expect(permission.getDefinition()).toEqual({
+    reorder: true,
+    setDefault: true,
+    createPersonal: true,
+    createShared: true,
+  });
+  permission.acceptSnapshot({
+    revision: 101,
+    instances: {},
+    reorder: true,
+    setDefault: false,
+  });
+  expect(permission.getDefinition()).toEqual({
+    reorder: true,
+    setDefault: false,
+    createPersonal: false,
+    createShared: false,
+  });
+  // An older authority revision cannot restore grants.
+  permission.acceptSnapshot({
+    revision: 50,
+    instances: {},
+    reorder: false,
+    setDefault: false,
+    createPersonal: true,
+    createShared: true,
+  });
+  expect(permission.getDefinition().createPersonal).toBe(false);
+  expect(() =>
+    permission.acceptSnapshot({
+      revision: 102,
+      instances: [],
+      reorder: true,
+      setDefault: true,
+    }),
+  ).toThrow(expect.objectContaining({ code: 'UNAVAILABLE' }));
+});
+
+it('pages and filters the catalog over HTTP', async () => {
+  const alice = client();
+  // Request identities travel as an HTTP header, so they stay ASCII here.
+  for (const [index, title] of ['甲', '乙', '丙'].entries())
+    committed(
+      await alice.instance.create(
+        { ...instance, title },
+        { requestId: `page-${index}` },
+      ),
+    );
+  const first = await alice.instance.list(definition.id, { limit: 2 });
+  expect(first).toMatchObject({ total: 4, nextCursor: expect.any(String) });
+  expect(first.items).toHaveLength(2);
+  const rest = await alice.instance.list(definition.id, {
+    limit: 2,
+    cursor: first.nextCursor,
+  });
+  expect(rest.nextCursor).toBeNull();
+  expect([...first.items, ...rest.items].map(item => item.title)).toEqual([
+    instance.title,
+    '甲',
+    '乙',
+    '丙',
+  ]);
+  expect(
+    (await alice.instance.list(definition.id, { query: '乙' })).items.map(
+      item => item.title,
+    ),
+  ).toEqual(['乙']);
+  await expect(
+    alice.instance.list(definition.id, { cursor: 'expired' }),
+  ).rejects.toMatchObject({ code: 'CURSOR_EXPIRED' });
+  await expect(
+    alice.instance.list(definition.id, { limit: 0 }),
+  ).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
+  committed(
+    await alice.preference.saveOrder(
+      definition.id,
+      { scopeInstanceIds: [instance.id], orderedInstanceIds: [instance.id] },
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
+  );
+  await expect(
+    alice.instance.list(definition.id, { limit: 2, cursor: first.nextCursor }),
+  ).rejects.toMatchObject({ code: 'CURSOR_EXPIRED' });
+});
+
+it('reconciles an earlier write by request identity over HTTP', async () => {
+  const host = client();
+  const reference = (requestId: string, definitionId = definition.id) => ({
+    resource: 'instance' as const,
+    definitionId,
+    requestId,
+  });
+  await expect(
+    host.operation.reconcile(reference('never')),
+  ).resolves.toMatchObject({
+    outcome: 'unknown',
+    issue: { code: 'NOT_FOUND' },
+  });
+  const created = await host.instance.create(
+    { ...instance, title: '可核对' },
+    { requestId: 'traceable' },
+  );
+  expect(created.outcome).toBe('committed');
+  expect(await host.operation.reconcile(reference('traceable'))).toEqual(
+    created,
+  );
+  expect(
+    await host.operation.reconcile({
+      ...reference('traceable'),
+      targetId: committed(created).id,
+    }),
+  ).toEqual(created);
+  // A create receipt carries no target, so a target filter cannot exclude it; a rename
+  // receipt is bound to its instance and another target reads as not found.
+  const renamed = await host.instance.rename(
+    committed(created).id,
+    '已核对',
+    committed(created).revision,
+    { requestId: 'traceable-rename' },
+  );
+  expect(renamed.outcome).toBe('committed');
+  expect(
+    await host.operation.reconcile({
+      ...reference('traceable-rename'),
+      targetId: committed(created).id,
+    }),
+  ).toEqual(renamed);
+  await expect(
+    host.operation.reconcile({
+      ...reference('traceable-rename'),
+      targetId: 'other',
+    }),
+  ).resolves.toMatchObject({
+    outcome: 'unknown',
+    issue: { code: 'NOT_FOUND' },
+  });
+  await expect(
+    client('bob-token').operation.reconcile(reference('traceable')),
+  ).resolves.toMatchObject({
+    outcome: 'unknown',
+    issue: { code: 'NOT_FOUND' },
+  });
+  await expect(
+    host.operation.reconcile(reference('traceable', 'other')),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  await expect(
+    client('invalid-token').operation.reconcile(reference('traceable')),
+  ).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+});
+
+it('rejects writes designed against another definition revision over HTTP', async () => {
+  const versioned = await startViewService({
+    Host: MemoryViewHost,
+    ServiceError: ViewServiceError,
+    statuses: VIEW_SERVICE_STATUS,
+    definition: { ...definition, revision: 'd2' },
+    instances: [instance],
+    defaultInstanceId: instance.id,
+    source: setup().host.resolveSource('orders'),
+  });
+  let engine: ViewEngine | undefined;
+  try {
+    const host = new HttpViewHost({
+      baseUrl: versioned.baseUrl,
       definitionId: definition.id,
       headers: () => ({ Authorization: 'Bearer alice-token' }),
-      ...(supported
-        ? {
-            supportedFormats: {
-              record: true as const,
-              analysis: true as const,
-              dashboard: 1 as const,
-            },
-          }
-        : {}),
+      resolveSource: setup().host.resolveSource,
     });
-    const authority = {
-      revision: 100,
-      instances: {},
-      reorder: true,
-      createPersonal: true,
-      createShared: true,
-    };
-    transport.permission.acceptSnapshot(authority);
-    vi.spyOn(transport, 'request').mockResolvedValue(authority);
-    for (let i = 0; i < 2; i++)
-      expect(await transport.permission.load(definition.id)).toMatchObject({
-        createPersonal: supported,
-        createShared: supported,
-      });
-    expect(transport.permission.getDefinition()).toEqual({
-      reorder: true,
-      createPersonal: supported,
-      createShared: supported,
-    });
-  },
-);
+    const loaded = await host.instance.load(instance.id);
+    await expect(
+      host.instance.save(loaded, {
+        requestId: 'stale-save',
+        definitionRevision: 'd1',
+      }),
+    ).resolves.toMatchObject(rejected('DEFINITION_CHANGED'));
+    await expect(
+      host.instance.create(
+        { ...instance, title: '旧定义' },
+        { requestId: 'stale-create', definitionRevision: 'd1' },
+      ),
+    ).resolves.toMatchObject(rejected('DEFINITION_CHANGED'));
+    expect((await host.instance.list(definition.id)).items).toHaveLength(1);
+    const saved = committed(
+      await host.instance.save(loaded, {
+        requestId: 'current-save',
+        definitionRevision: 'd2',
+      }),
+    );
+    expect(saved.revision).not.toBe(loaded.revision);
+    engine = new ViewEngine({ definitionId: definition.id, host });
+    await engine.load();
+    expect(engine.getSnapshot().definition?.revision).toBe('d2');
+    engine.setTitle('引擎按当前定义保存');
+    await engine.save();
+    expect((await host.instance.load(instance.id)).title).toBe(
+      '引擎按当前定义保存',
+    );
+  } finally {
+    engine?.dispose();
+    await versioned.close();
+  }
+});

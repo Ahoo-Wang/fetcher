@@ -15,11 +15,13 @@ import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { vi } from 'vitest';
 import { newFilterNode } from '../../src/filter/filterCore.js';
 import { createFilterConfiguration } from '../../src/filter/filterConfiguration.js';
-import type {
-  ViewDefinition,
-  ViewInstance,
+import {
+  summaryOf,
+  type ViewDefinition,
+  type ViewInstance,
 } from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
+import { committedWrite } from '../../src/contracts/viewServiceContract.js';
 
 export const definition: ViewDefinition = {
   id: 'orders',
@@ -58,8 +60,19 @@ export function setup() {
     title: '所有订单',
     scope: { type: 'public', source: 'system' } as const,
   };
+  const saved = new Map<string, ViewInstance>([
+    [instance.id, instance],
+    [other.id, other],
+  ]);
   const host: ViewHost = {
-    preference: {},
+    preference: {
+      load: vi.fn().mockResolvedValue({
+        revision: 'p1',
+        order: [],
+        defaultInstanceId: instance.id,
+        effectiveDefaultInstanceId: instance.id,
+      }),
+    },
     resolveSource: () => ({
       paged,
       cursor: vi.fn().mockResolvedValue({ list: [], nextCursor: null }),
@@ -67,18 +80,21 @@ export function setup() {
     definition: { load: vi.fn().mockResolvedValue(definition) },
     instance: {
       list: vi.fn().mockResolvedValue({
-        instances: [instance, other],
-        defaultInstanceId: instance.id,
+        items: [instance, other].map(summaryOf),
+        nextCursor: null,
+        total: 2,
       }),
-      save: vi.fn(async submitted => ({
-        ...submitted,
-        revision: 'next',
-      })),
-      create: vi.fn(async submitted => ({
-        ...submitted,
-        id: 'copy',
-        revision: '1',
-      })),
+      load: vi.fn(async (id: string) => {
+        const found = saved.get(id);
+        if (!found) throw new Error(`无法加载实例：${id}`);
+        return structuredClone(found);
+      }),
+      save: vi.fn(async submitted =>
+        committedWrite({ ...submitted, revision: 'next' }, 'next'),
+      ),
+      create: vi.fn(async submitted =>
+        committedWrite({ ...submitted, id: 'copy', revision: '1' }, '1'),
+      ),
     },
     permission: {
       getInstance: () => ({

@@ -93,10 +93,8 @@ function setup(limits?: { maxConcurrentQueries: number }) {
     limits,
     definitionId: root.id,
     definition: root,
-    instances: {
-      instances: [record, analysis, dashboard],
-      defaultInstanceId: null,
-    },
+    instances: [record, analysis, dashboard],
+    defaultInstanceId: null,
     host: {
       resolveSource: () => ({ paged, aggregate }),
       definition: { load: async () => root },
@@ -118,7 +116,8 @@ it.each(['records', 'analysis', 'dashboard'])(
   async instanceId => {
     const { engine, paged, aggregate, save } = setup();
     await engine.load();
-    const baseline = engine.getSnapshot().sessions[instanceId];
+    // Nothing is selected, so the embed point-reads its saved baseline instead of opening a session.
+    expect(engine.getSnapshot().sessions[instanceId]).toBeUndefined();
     const open = vi.fn();
     const view = render(
       <EmbeddedView
@@ -141,7 +140,7 @@ it.each(['records', 'analysis', 'dashboard'])(
     );
     expect(open).toHaveBeenCalledWith({ instanceId, definitionId: 'orders' });
     expect(engine.getSnapshot().selectedInstanceId).toBeNull();
-    expect(engine.getSnapshot().sessions[instanceId]).toBe(baseline);
+    expect(engine.getSnapshot().sessions[instanceId]).toBeUndefined();
     expect(
       Object.values(engine.getSnapshot().sessions).every(
         session => !session.dirty,
@@ -149,7 +148,8 @@ it.each(['records', 'analysis', 'dashboard'])(
     ).toBe(true);
     expect(save).not.toHaveBeenCalled();
     view.unmount();
-    expect(Object.keys(engine.getSnapshot().sessions)).toHaveLength(3);
+    expect(Object.keys(engine.getSnapshot().sessions)).toHaveLength(0);
+    expect(engine.getSnapshot().instanceIds).toHaveLength(3);
     expect(engine.getSnapshot().status).toBe('ready');
     engine.dispose();
   },
@@ -233,7 +233,7 @@ it('cleans StrictMode positions and clears old content when its target changes',
     ),
   ).toHaveLength(1);
   view.unmount();
-  expect(Object.keys(engine.getSnapshot().sessions)).toHaveLength(3);
+  expect(Object.keys(engine.getSnapshot().sessions)).toHaveLength(0);
   engine.dispose();
 });
 it.each(['records', 'analysis'])(
@@ -273,7 +273,11 @@ it('shows unavailable targets and asynchronous full-view navigation errors local
   const { engine, paged } = setup();
   await engine.load();
   const view = render(<EmbeddedView engine={engine} instanceId="missing" />);
-  expect(screen.getByRole('alert').textContent).toContain('不可访问');
+  const unavailable = await screen.findByRole('alert');
+  expect(unavailable.textContent).toContain('嵌入视图不存在或当前不可访问');
+  expect(
+    within(unavailable).getByRole('button', { name: '重试嵌入' }),
+  ).toBeTruthy();
   view.rerender(
     <EmbeddedView
       engine={engine}
@@ -359,7 +363,8 @@ it('retries a failed engine load through the existing engine lifecycle', async (
     .mockResolvedValue(definition);
   const engine = new ViewEngine({
     definitionId: 'orders',
-    instances: { instances: [instance('records')], defaultInstanceId: null },
+    instances: [instance('records')],
+    defaultInstanceId: null,
     host: {
       definition: { load },
       resolveSource: () => ({ paged: async () => ({ total: 0, list: [] }) }),

@@ -21,7 +21,7 @@ import {
 import { validateViewInstance } from '../../src/contracts/validation/instanceValidation.js';
 import type { ViewDefinition } from '../../src/contracts/viewModel.js';
 import type { ViewEngine } from '../../src/engine/ViewEngine.js';
-import { definition, instance, setup } from './fixtures.js';
+import { definition, instance, page, preference, setup } from './fixtures.js';
 
 const engines: ViewEngine[] = [];
 afterEach(() => engines.splice(0).forEach(engine => engine.dispose()));
@@ -72,11 +72,10 @@ it.each(cases)(
       instances: undefined,
       host: {
         instance: {
-          list: async () => ({
-            instances: [saved],
-            defaultInstanceId: saved.id,
-          }),
+          list: async () => page([saved]),
+          load: async () => saved,
         },
+        preference: { load: async () => preference(saved.id) },
       },
     });
     engines.push(engine);
@@ -94,10 +93,16 @@ it('uses the same boundary when selecting or reloading a remote instance', async
     ...newFilterNode(Op.GT, 'state.amount'),
     props: { value: 1 },
   });
-  const load = vi.fn().mockResolvedValue(forbidden);
+  const load = vi.fn(async (id: string) =>
+    id === 'other' ? forbidden : instance(),
+  );
   const { engine, paged } = setup({
     definition: restricted,
-    host: { instance: { load } },
+    instances: undefined,
+    host: {
+      instance: { list: async () => page([instance(), forbidden]), load },
+      preference: { load: async () => preference('mine') },
+    },
   });
   engines.push(engine);
   await engine.load();

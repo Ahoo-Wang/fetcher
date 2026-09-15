@@ -12,10 +12,13 @@
  */
 
 import { cloneSnapshot } from '../lib/types.js';
-import type {
-  ViewSession,
-  ViewInstance,
-  ViewInstancePermissions,
+import {
+  summaryOf,
+  type ViewDefinitionPermissions,
+  type ViewSession,
+  type ViewInstance,
+  type ViewInstancePermissions,
+  type ViewInstanceSummary,
 } from '../contracts/viewModel.js';
 import type { ViewHost } from '../contracts/ViewHost.js';
 import { isSystemSession } from './sessionState.js';
@@ -29,11 +32,46 @@ export const deniedPermissions = Object.freeze({
 });
 
 /** Policy outages deny UI capabilities without interrupting rendering. */
-export function definitionPermissionsFor(host: ViewHost) {
+export function definitionPermissionsFor(
+  host: ViewHost,
+): ViewDefinitionPermissions | undefined {
   try {
     return host.permission?.getDefinition?.();
   } catch {
     return undefined;
+  }
+}
+
+/** Grants for a catalog entry that has no open session; system scope is never editable. */
+export function summaryPermissionsFor(
+  host: ViewHost,
+  summary: ViewInstanceSummary,
+): ViewInstancePermissions {
+  if (!host.permission?.getInstance) return deniedPermissions;
+  try {
+    const permissions = host.permission.getInstance(structuredClone(summary));
+    const system =
+      summary.scope.type === 'public' && summary.scope.source === 'system';
+    return {
+      delete:
+        !system &&
+        typeof host.instance?.delete === 'function' &&
+        permissions?.delete === true,
+      rename:
+        !system &&
+        typeof host.instance?.rename === 'function' &&
+        permissions?.rename === true,
+      save:
+        typeof host.instance?.save === 'function' && permissions?.save === true,
+      saveAsPersonal:
+        typeof host.instance?.create === 'function' &&
+        permissions?.saveAsPersonal === true,
+      saveAsShared:
+        typeof host.instance?.create === 'function' &&
+        permissions?.saveAsShared === true,
+    };
+  } catch {
+    return deniedPermissions;
   }
 }
 
@@ -63,7 +101,7 @@ export function permissionsFor(
     return deniedPermissions;
   try {
     const permissions = host.permission?.getInstance(
-      cloneSnapshot<ViewInstance>(session.instance),
+      summaryOf(cloneSnapshot<ViewInstance>(session.instance)),
     );
     const system = isSystemSession(session);
     return {

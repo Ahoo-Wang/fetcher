@@ -13,7 +13,11 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { filter } from '@ahoo-wang/fetcher-wow';
-import type { AnalysisViewInstance } from '../../src/contracts/viewModel.js';
+import type {
+  AnalysisViewInstance,
+  ViewInstance,
+} from '../../src/contracts/viewModel.js';
+import { committedWrite } from '../../src/contracts/viewServiceContract.js';
 import { definition, instance, deferred } from '../engine/fixtures.js';
 import { dashboardSetup, globalFilter } from './runtimeFixtures.js';
 
@@ -405,11 +409,12 @@ it('keeps child positions and pagination when the first draft save acquires a sa
       }),
     },
   });
-  host.instance!.create = vi.fn(async input => ({
-    ...input,
-    id: 'created-dashboard',
-    revision: '1',
-  }));
+  host.instance!.create = vi.fn(async input =>
+    committedWrite(
+      { ...input, id: 'created-dashboard', revision: '1' } as ViewInstance,
+      '1',
+    ),
+  );
   await engine.load();
   await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
   const id = engine.createDashboard({

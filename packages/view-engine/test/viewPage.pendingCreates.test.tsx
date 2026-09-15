@@ -21,27 +21,31 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPageContent } from '../src/view/ViewPageContent.js';
-import { ViewServiceError } from '../src/contracts/viewServiceContract.js';
-import { instance, setup } from './engine/fixtures.js';
+import {
+  committedWrite,
+  ViewServiceError,
+} from '../src/contracts/viewServiceContract.js';
+import { instance, page, preference, setup } from './engine/fixtures.js';
 
 afterEach(cleanup);
 it('offers recovery without restoring a removed source to the visible view list', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+  const list = vi.fn().mockResolvedValue(page([instance()]));
+  const load = vi.fn(async () => instance());
+  const loadPreference = vi.fn().mockResolvedValue(preference('mine'));
   const create = vi
     .fn()
     .mockRejectedValueOnce(
       new ViewServiceError('UNKNOWN_OUTCOME', 'response lost'),
     )
-    .mockImplementation(async value => ({
-      ...value,
-      id: 'created',
-      revision: 'r1',
-    }));
+    .mockImplementation(async value =>
+      committedWrite({ ...value, id: 'created', revision: 'r1' }, 'r1'),
+    );
   const { engine } = setup({
     instances: undefined,
-    host: { instance: { list, create } },
+    host: {
+      instance: { list, load, create },
+      preference: { load: loadPreference },
+    },
   });
   await engine.load();
   const view = render(<ViewPageContent engine={engine} />);
@@ -50,7 +54,8 @@ it('offers recovery without restoring a removed source to the visible view list'
       await expect(
         engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
       ).rejects.toThrow('response lost');
-      list.mockResolvedValue({ instances: [], defaultInstanceId: null });
+      list.mockResolvedValue(page([]));
+      loadPreference.mockResolvedValue(preference(null));
       await engine.load();
     });
     expect(

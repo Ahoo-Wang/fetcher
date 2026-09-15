@@ -38,10 +38,8 @@ type Command = keyof typeof commands;
 async function prepared(command: Command) {
   const mode = command === 'next' ? 'cursor' : 'paged';
   const context = setup({
-    instances: {
-      instances: [instance('mine', mode), instance('shared', mode)],
-      defaultInstanceId: 'mine',
-    },
+    instances: [instance('mine', mode), instance('shared', mode)],
+    defaultInstanceId: 'mine',
   });
   context.paged.mockResolvedValue({
     total: 100,
@@ -237,7 +235,8 @@ it.each(['apply', 'restore', 'refresh'] as const)(
       summary: ['SUM'],
     };
     const { engine, host, paged } = setup({
-      instances: { instances: [saved], defaultInstanceId: 'mine' },
+      instances: [saved],
+      defaultInstanceId: 'mine',
     });
     const aggregate = vi.fn().mockResolvedValue([{ summary0: 10 }]);
     vi.mocked(host.resolveSource).mockReturnValue({ paged, aggregate });
@@ -319,7 +318,8 @@ it('does not start a summary query after its invalidation notification disposes 
     summary: ['SUM'],
   };
   const { engine, host, paged } = setup({
-    instances: { instances: [saved], defaultInstanceId: 'mine' },
+    instances: [saved],
+    defaultInstanceId: 'mine',
   });
   const aggregate = vi.fn().mockResolvedValue([{ summary0: 10 }]);
   vi.mocked(host.resolveSource).mockReturnValue({ paged, aggregate });
@@ -351,7 +351,8 @@ it('keeps the newer aggregate request started by a page-summary notification', a
     summary: ['SUM'],
   };
   const { engine, host, paged } = setup({
-    instances: { instances: [saved], defaultInstanceId: 'mine' },
+    instances: [saved],
+    defaultInstanceId: 'mine',
   });
   const rows = deferred<{
     total: number;

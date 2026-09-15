@@ -220,6 +220,7 @@ export function validateViewDefinition(
   assertText(value.id, '定义 ID');
   encodeViewResourceId(value.id);
   assertText(value.title, '定义名称');
+  if (value.revision !== undefined) assertText(value.revision, '定义 revision');
   if (value.record || value.analysis || value.sourceId !== undefined)
     assertText(value.sourceId, '数据源 ID');
   if (value.dashboard !== undefined && value.dashboard !== true)

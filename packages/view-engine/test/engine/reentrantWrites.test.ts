@@ -16,35 +16,46 @@ import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import type { ViewInstance } from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
-import { deferred, instance, setup } from './fixtures.js';
+import {
+  committedWrite,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
+import { deferred, instance, page, setup } from './fixtures.js';
 
 it.each(['loaded', 'pending'] as const)(
   'keeps %s navigation triggered by save-as source cancellation newer than the created copy',
   async navigation => {
-    const response = deferred<ViewInstance>();
+    const response = deferred<WriteObservation<ViewInstance>>();
     const destination = deferred<ViewInstance>();
     const { engine, paged } = setup({
-      instances: {
-        instances:
-          navigation === 'loaded'
-            ? [instance(), instance('third')]
-            : [instance()],
-        defaultInstanceId: 'mine',
-      },
+      ...(navigation === 'loaded'
+        ? { instances: [instance(), instance('third')] }
+        : { instances: undefined }),
+      defaultInstanceId: 'mine',
       host: {
         instance: {
           create: () => response.promise,
-          load: () => destination.promise,
+          list: async () => page([instance()]),
+          load: (id: string) =>
+            id === 'third'
+              ? destination.promise
+              : Promise.resolve(instance(id)),
         },
       } as unknown as ViewHost,
     });
     await engine.load();
+    if (navigation === 'loaded') {
+      // The destination was already opened, as every listed instance used to be.
+      await engine.selectInstance('third');
+      await engine.selectInstance('mine');
+    }
+    const queries = paged.mock.calls.length;
     const stalled = deferred<{ list: never[]; total: number }>();
     paged.mockReturnValueOnce(stalled.promise);
     const refreshing = engine
       .record(engine.getSnapshot().selectedInstanceId!)
       .refresh();
-    await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(queries + 1));
     const saving = engine.saveAs({
       title: 'Copy',
       scope: { type: 'personal' },
@@ -63,7 +74,9 @@ it.each(['loaded', 'pending'] as const)(
       }
     });
     try {
-      response.resolve({ ...instance('created'), title: 'Copy' });
+      response.resolve(
+        committedWrite({ ...instance('created'), title: 'Copy' }, 'r1'),
+      );
       await saving;
       expect(redirected).toBeDefined();
       expect(engine.getSnapshot().selectedInstanceId).toBe(
@@ -86,7 +99,7 @@ it.each(['loaded', 'pending'] as const)(
 );
 
 it('carries edits published while canceling the source read into the selected copy', async () => {
-  const response = deferred<ViewInstance>();
+  const response = deferred<WriteObservation<ViewInstance>>();
   const stalled = deferred<{ list: never[]; total: number }>();
   const { engine, paged } = setup({
     filterCompilers: {
@@ -126,7 +139,9 @@ it('carries edits published while canceling the source read into the selected co
     }
   });
   try {
-    response.resolve({ ...instance('created'), title: 'Copy' });
+    response.resolve(
+      committedWrite({ ...instance('created'), title: 'Copy' }, 'r1'),
+    );
     await saving;
     expect(edited).toBe(true);
     expect(engine.getSnapshot().selectedInstanceId).toBe('created');

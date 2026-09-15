@@ -57,25 +57,33 @@ try {
   });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  const scope = 'storybook:local-view-host:sales';
+  // Mirror the host's projection of the stored JSON: explicit personal order first, then the
+  // remaining visible instances in seed/creation order; the stored default is reported as-is
+  // (undefined before any preference write, when the host's seed default still applies).
   const read = () =>
-    page.evaluate(async key => {
-      const state = await window.readViewState(key);
-      if (!state) return null;
-      const user = state.users['storybook:local-view-host:sales'];
-      const visible = state.instances.filter(
-        item =>
-          item.ownerKey === null ||
-          item.ownerKey === 'storybook:local-view-host:sales',
-      );
-      const ids = [
-        ...user.order.filter(id => visible.some(item => item.id === id)),
-        ...visible.map(item => item.id).filter(id => !user.order.includes(id)),
-      ];
-      return {
-        instances: ids.map(id => visible.find(item => item.id === id)),
-        defaultInstanceId: user.defaultInstanceId,
-      };
-    }, key);
+    page.evaluate(
+      async ({ key, scope }) => {
+        const state = await window.readViewState(key);
+        if (!state) return null;
+        const preference = state.preferences[scope];
+        const order = preference?.order ?? [];
+        const visible = state.instances.filter(
+          item => item.ownerKey === null || item.ownerKey === scope,
+        );
+        const ids = [
+          ...order.filter(id => visible.some(item => item.id === id)),
+          ...visible.map(item => item.id).filter(id => !order.includes(id)),
+        ];
+        return {
+          instances: ids.map(id => visible.find(item => item.id === id)),
+          defaultInstanceId: preference
+            ? preference.defaultInstanceId
+            : undefined,
+        };
+      },
+      { key, scope },
+    );
   const editor = () =>
     page.getByRole('textbox', { name: '状态显示名称', exact: true });
   const status = () =>
@@ -121,9 +129,10 @@ try {
     key,
   );
   const saved = await read();
-  assert(!('filter' in saved.instances[0].config));
+  const mine = saved.instances.find(item => item.id === 'my-orders');
+  assert(!('filter' in mine.config));
   assert.equal(
-    saved.instances[0].config.filters.root.props.displayLabel,
+    mine.config.filters.root.props.displayLabel,
     '只能从组件属性恢复的标签',
   );
   await reload();
@@ -232,14 +241,15 @@ try {
   await page.waitForSelector('[data-drop-target]');
   await page.keyboard.press('Space');
   await page.waitForFunction(
-    async ({ key, id }) =>
-      (await window.readViewState(key)).users[
-        'storybook:local-view-host:sales'
-      ].order.indexOf(id) <
-      (await window.readViewState(key)).users[
-        'storybook:local-view-host:sales'
-      ].order.indexOf('my-orders'),
-    { key, id: copy.id },
+    async ({ key, scope, id }) => {
+      const order = (await window.readViewState(key)).preferences[scope]?.order;
+      return (
+        Array.isArray(order) &&
+        order.includes(id) &&
+        order.indexOf(id) < order.indexOf('my-orders')
+      );
+    },
+    { key, scope, id: copy.id },
   );
   await manager
     .getByRole('button', { name: '将可恢复副本设为默认视图', exact: true })

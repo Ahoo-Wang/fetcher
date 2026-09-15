@@ -93,6 +93,7 @@ export interface DashboardSession {
   readonly writeStatus: RecordSession['writeStatus'];
   readonly writeError: string | null;
   readonly requiresReload: boolean;
+  readonly visibility: 'visible' | 'pending';
   readonly conflict?: ViewInstanceConflict;
 }
 export interface DashboardTransformContext {

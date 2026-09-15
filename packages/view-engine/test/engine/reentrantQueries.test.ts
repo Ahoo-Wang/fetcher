@@ -27,7 +27,8 @@ it.each(['state', 'abort'] as const)(
       props: { value: 10 },
     });
     const { engine, paged } = setup({
-      instances: { instances: [saved], defaultInstanceId: saved.id },
+      instances: [saved],
+      defaultInstanceId: saved.id,
     });
     paged.mockImplementation(async query => ({
       total: 1,
@@ -91,7 +92,8 @@ it.each(['paged', 'cursor'] as const)(
     const saved = instance('mine', mode);
     saved.config.presentation.table.columns[0].summary = ['SUM'];
     const { engine, paged, cursor } = setup({
-      instances: { instances: [saved], defaultInstanceId: saved.id },
+      instances: [saved],
+      defaultInstanceId: saved.id,
     });
     const request = mode === 'paged' ? paged : cursor;
     let disposed = false;
@@ -119,10 +121,8 @@ it.each(['load', 'select'] as const)(
   'preserves a newer paging query started by a %s notification',
   async operation => {
     const { engine, host, paged } = setup({
-      instances: {
-        instances: [instance()],
-        defaultInstanceId: operation === 'load' ? 'mine' : null,
-      },
+      instances: [instance()],
+      defaultInstanceId: operation === 'load' ? 'mine' : null,
     });
     if (operation === 'select') await engine.load();
     const source = deferred<Awaited<ReturnType<typeof host.resolveSource>>>();

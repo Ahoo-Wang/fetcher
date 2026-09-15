@@ -17,10 +17,14 @@ import {
   newFilterNode,
   type RecordViewDefinition,
   type ViewFieldDefinition,
-  type ViewInstanceList,
   type RecordViewInstance,
 } from '@ahoo-wang/fetcher-view-engine';
 import { lifecycleLabels, type Stage } from './model.js';
+/** Local catalog seed: saved instances plus the starting view for users without a preference. */
+export interface OrderViews {
+  defaultInstanceId: string;
+  instances: RecordViewInstance[];
+}
 export const stageLabels: Record<Stage, string> = {
   all: '全部订单',
   review: '接单与审核',
@@ -215,9 +219,7 @@ export const orderDefinition: RecordViewDefinition = {
     },
   },
 };
-export function createOrderViews(
-  stage: Stage = 'all',
-): ViewInstanceList & { instances: RecordViewInstance[] } {
+export function createOrderViews(stage: Stage = 'all'): OrderViews {
   return {
     defaultInstanceId: `orders-${stage}`,
     instances: (Object.keys(stageLabels) as Stage[]).map(key => {
@@ -368,9 +370,7 @@ export function createOrderViews(
 }
 
 /** Dedicated persistence/transport story: includes opaque editor state in a writable view. */
-export function createProtocolViews(): ViewInstanceList & {
-  instances: RecordViewInstance[];
-} {
+export function createProtocolViews(): OrderViews {
   const views = createOrderViews('all');
   const personal = structuredClone(views.instances[0]);
   personal.id = 'my-orders';

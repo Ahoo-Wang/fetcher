@@ -72,7 +72,9 @@ if (serveOnly) {
       headers: () => ({ Authorization: 'Bearer alice-token' }),
       resolveSource: () => source,
     });
-    const list = () => alice.instance.list(fixture.definition.id);
+    // Catalog reads return summaries (no config); use point reads for saved configuration.
+    const list = async () =>
+      (await alice.instance.list(fixture.definition.id)).items;
     const waitUntil = async predicate => {
       for (let n = 0; n < 100; n++) {
         if (await predicate()) return;
@@ -90,8 +92,8 @@ if (serveOnly) {
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await waitUntil(
       async () =>
-        (await list()).instances.find(item => item.id === 'my-orders').config
-          .filters.root.props.displayLabel === 'HTTP 恢复标签',
+        (await alice.instance.load('my-orders')).config.filters.root.props
+          .displayLabel === 'HTTP 恢复标签',
     );
     await page.reload();
     await page
@@ -130,8 +132,7 @@ if (serveOnly) {
       );
     });
     assert.equal(
-      (await list()).instances.filter(item => item.title === '共享 HTTP 视图')
-        .length,
+      (await list()).filter(item => item.title === '共享 HTTP 视图').length,
       1,
     );
     // Chromium can transparently retry a reset connection; otherwise the engine retries the same request ID.
@@ -141,13 +142,10 @@ if (serveOnly) {
         .click();
     await dialog.waitFor({ state: 'detached' });
     assert.equal(
-      (await list()).instances.filter(item => item.title === '共享 HTTP 视图')
-        .length,
+      (await list()).filter(item => item.title === '共享 HTTP 视图').length,
       1,
     );
-    const shared = (await list()).instances.find(
-      item => item.title === '共享 HTTP 视图',
-    );
+    const shared = (await list()).find(item => item.title === '共享 HTTP 视图');
     await bobPage.goto(url + '&args=scopeKey:bob;accessToken:bob-token');
     await bobPage
       .getByRole('button', { name: '共享 HTTP 视图', exact: true })
@@ -163,7 +161,7 @@ if (serveOnly) {
       await bobPage.getByRole('button', { name: '保存', exact: true }).count(),
       0,
     );
-    const aliceOrder = (await list()).instances.map(item => item.id);
+    const aliceOrder = (await list()).map(item => item.id);
     await bobPage
       .getByRole('button', { name: '管理视图', exact: true })
       .first()
@@ -191,13 +189,13 @@ if (serveOnly) {
       async () =>
         (
           await server.hostFor('bob-token').instance.list(fixture.definition.id)
-        ).instances
+        ).items
           .map(item => item.id)
           .indexOf(shared.id) ===
         aliceOrder.indexOf(shared.id) - 1,
     );
     assert.deepEqual(
-      (await list()).instances.map(item => item.id),
+      (await list()).map(item => item.id),
       aliceOrder,
     );
 
@@ -215,10 +213,13 @@ if (serveOnly) {
       await page.getByRole('textbox', { name: '状态显示名称' }).inputValue(),
       '撤权仍保留草稿',
     );
-    await assert.rejects(
-      alice.instance.save(shared),
-      error => error.code === 'FORBIDDEN',
+    // Writes resolve to observations; a revoked grant is a definitive rejection, not a thrown error.
+    const forbidden = await alice.instance.save(
+      await alice.instance.load(shared.id),
+      { requestId: crypto.randomUUID() },
     );
+    assert.equal(forbidden.outcome, 'rejected');
+    assert.equal(forbidden.issue.code, 'FORBIDDEN');
     server.setWriter('alice-token', true);
     await page
       .getByRole('button', { name: '同步服务权限', exact: true })

@@ -32,7 +32,9 @@ const rows = Array.from({ length: 100 }, (_, i) => ({
   id: `order-${i}`,
   amount: i + 100,
 }));
-// Run the actual pre-dashboard engine against a current mixed-format host.
+// Run the baseline engine against a current mixed-kind host through the host read ports
+// (catalog, point load, preference). The baseline must speak the S1 host contract:
+// `instances: ViewInstance[]`, `list -> { items }` and `preference.load`.
 const oldRecord = {
   id: 'legacy',
   definitionId: definition.id,
@@ -51,46 +53,47 @@ const oldRecord = {
   },
 };
 const store = new Map();
-const hostOptions = {
+const mixedHost = new candidate.MemoryViewHost({
   serviceKey: 'compatibility',
   scopeKey: 'user',
   store,
   definition: { ...definition, dashboard: true },
-  instances: {
-    instances: [
-      oldRecord,
-      {
-        id: 'dashboard',
-        definitionId: definition.id,
-        title: 'Dashboard',
-        revision: '1',
-        kind: 'dashboard',
-        scope: { type: 'personal' },
-        config: { schemaVersion: 1, panels: [], filters: [] },
-      },
-    ],
-    defaultInstanceId: 'dashboard',
-  },
+  instances: [
+    oldRecord,
+    {
+      id: 'dashboard',
+      definitionId: definition.id,
+      title: 'Dashboard',
+      revision: '1',
+      kind: 'dashboard',
+      scope: { type: 'personal' },
+      config: { schemaVersion: 1, panels: [], filters: [] },
+    },
+  ],
+  defaultInstanceId: 'dashboard',
   resolveSource: () => ({
     paged: async () => ({ total: rows.length, list: rows.slice(0, 10) }),
   }),
-};
-const oldHost = new candidate.MemoryViewHost(hostOptions);
-const modernHost = new candidate.MemoryViewHost({
-  ...hostOptions,
-  supportedFormats: { record: true, analysis: true, dashboard: 1 },
 });
 const oldEngine = new baseline.ViewEngine({
   definitionId: definition.id,
-  host: oldHost,
+  host: mixedHost,
 });
 await oldEngine.load();
-assert.deepEqual(oldEngine.getSnapshot().instanceIds, ['legacy']);
-assert.equal(oldEngine.getSnapshot().loadError, undefined);
+{
+  const snapshot = oldEngine.getSnapshot();
+  assert.equal(snapshot.status, 'ready');
+  assert.equal(snapshot.catalog.status, 'ready');
+  assert.deepEqual(snapshot.instanceIds, ['legacy', 'dashboard']);
+  // The host-declared default is selected; the record instance is point-loaded on demand.
+  assert.equal(snapshot.defaultInstanceId, 'dashboard');
+  assert.equal(snapshot.selectedInstanceId, 'dashboard');
+}
+await oldEngine.selectInstance('legacy');
 await oldEngine.record('legacy').refresh();
 assert.equal(oldEngine.getSnapshot().sessions.legacy.rows.length, 10);
 assert.equal(
-  (await modernHost.instance.list(definition.id)).defaultInstanceId,
+  (await mixedHost.preference.load(definition.id)).effectiveDefaultInstanceId,
   'dashboard',
 );
 oldEngine.dispose();
@@ -142,7 +145,8 @@ for (const [version, { ViewEngine }] of [
       const engine = new ViewEngine({
         definitionId: definition.id,
         definition,
-        instances: { instances: [instance], defaultInstanceId: instance.id },
+        instances: [instance],
+        defaultInstanceId: instance.id,
         host: {
           resolveSource: () => ({
             paged: async () => ({ total: rows.length, list: rows }),
@@ -208,7 +212,7 @@ console.log(
       scope:
         'Headless fixed-input local processing, no server latency; 2 warmups + 5 measured samples per kind/version.',
       legacyClientMixedHost:
-        'passed: baseline engine loads and queries projected records while modern default stays dashboard',
+        'passed: baseline engine lists both kinds through the host ports, selects the dashboard default and queries the record instance',
       samples,
       comparisons,
     },

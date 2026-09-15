@@ -22,6 +22,7 @@ import {
 import { filter } from '@ahoo-wang/fetcher-wow';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPage } from './fixtures/OwnedViewPage.js';
+import { page, preference } from './engine/fixtures.js';
 import { setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
@@ -160,10 +161,10 @@ it.each([false, true])(
   'opens management from the switcher footer without changing selection (empty: %s)',
   async empty => {
     const { host, paged } = setup();
-    if (empty)
-      host.instance!.list = vi
-        .fn()
-        .mockResolvedValue({ instances: [], defaultInstanceId: null });
+    if (empty) {
+      host.instance!.list = vi.fn().mockResolvedValue(page([]));
+      host.preference!.load = vi.fn().mockResolvedValue(preference(null));
+    }
     render(
       <ViewPage
         scopeKey="test-user"
@@ -172,10 +173,11 @@ it.each([false, true])(
         initialSidebarCollapsed
       />,
     );
+    // The toolbar moves into the record view once the default opens; read the switcher after that.
+    if (!empty) await screen.findByRole('cell', { name: '42' });
     const chooser = await screen.findByRole('combobox', {
       name: '选择视图实例',
     });
-    if (!empty) await screen.findByRole('cell', { name: '42' });
     expect(screen.queryByRole('button', { name: '管理视图' })).toBeNull();
     fireEvent.click(chooser);
     const manage = await screen.findByRole('button', { name: '管理视图' });

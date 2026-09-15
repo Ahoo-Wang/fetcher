@@ -52,24 +52,22 @@ it('keeps unresolved component scopes null in global and table actions without q
           },
         },
       }}
-      instances={{
-        instances: [
-          {
-            ...instance,
-            config: {
-              ...instance.config,
-              filters: {
-                ...instance.config.filters,
-                root: {
-                  ...instance.config.filters.root,
-                  component: { name: 'missing' },
-                },
+      instances={[
+        {
+          ...instance,
+          config: {
+            ...instance.config,
+            filters: {
+              ...instance.config.filters,
+              root: {
+                ...instance.config.filters.root,
+                component: { name: 'missing' },
               },
             },
           },
-        ],
-        defaultInstanceId: instance.id,
-      }}
+        },
+      ]}
+      defaultInstanceId={instance.id}
       extensions={{ globalActions: { global }, toolbarActions: { table } }}
     />,
   );

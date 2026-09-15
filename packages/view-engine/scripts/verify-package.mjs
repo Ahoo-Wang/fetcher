@@ -184,7 +184,7 @@ function verifyTypes(directory) {
     };
     export function Page() { const binding = useViewEngine({ definitionId: 'orders', scopeKey: 'user:tenant', host, extensions: { ...filters, cells: { custom: cell } } }); return <ViewPage {...binding} />; }
     export function Home() {
-      const binding = useViewEngine({ definitionId: 'orders', scopeKey: 'user:tenant', host, instances: { instances: [], defaultInstanceId: null } });
+      const binding = useViewEngine({ definitionId: 'orders', scopeKey: 'user:tenant', host, instances: [], defaultInstanceId: null });
       return <EmbeddedView {...binding} instanceId="overview" onOpenView={identity => { const id: string = identity.instanceId; void id; }} />;
     }
     export function Browse(position: ViewPosition) {
@@ -425,7 +425,14 @@ try {
     assert.notEqual(core.dashboardEditorKey('a:b', 'c'), core.dashboardEditorKey('a', 'b:c'));
     assert.equal(core.dashboardEditorKey('a:b'), 'filter:a:b');
     assert.equal(typeof react.DashboardView, 'function');
-    assert.equal(core.projectSupportedInstance({kind:'dashboard',config:{schemaVersion:1}}),null);
+    for (const name of ['MemoryViewHost','ViewServiceError','committedWrite','rejectedWrite','unknownWrite','readWriteObservation','applyOrderChange','summaryOf','readInstancePage','readPreferenceState','preconditionFor']) assert.equal(typeof core[name], 'function', name);
+    assert.equal(typeof core.projectSupportedInstance, 'undefined', 'Removed format projection leaked into the package');
+    const committed = core.committedWrite({id:'v1',revision:'r1'},'r1');
+    assert.deepEqual(core.readWriteObservation(committed), {outcome:'committed',value:{id:'v1',revision:'r1'},revision:'r1',visibility:'visible'});
+    assert.deepEqual(core.rejectedWrite('REVISION_CONFLICT','stale'), {outcome:'rejected',issue:{code:'REVISION_CONFLICT',message:'stale'}});
+    assert.deepEqual(core.applyOrderChange(['a','b','c'],{scopeInstanceIds:['a','b'],orderedInstanceIds:['b','a']}), ['b','a','c']);
+    assert.deepEqual(core.preconditionFor(null), {type:'absent'});
+    assert.deepEqual(core.preconditionFor('p1'), {type:'matches',revision:'p1'});
     assert.deepEqual(Object.keys(core).filter(name => name.startsWith('HttpView') || name === 'VIEW_SERVICE_STATUS'), [], 'Experimental HTTP API leaked into the package');
     assert.equal(typeof react.ViewPage, 'function');
     assert.equal(typeof react.EmbeddedView, 'function');

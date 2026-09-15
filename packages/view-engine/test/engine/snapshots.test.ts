@@ -27,7 +27,8 @@ it('derives pending from core draft changes and saves valid working configuratio
     props: { value: 10 },
   });
   const { engine, host } = setup({
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
   });
   await engine.load();
   engine.setTitle('Edited title');
@@ -84,7 +85,8 @@ it('derives pending from core draft changes and saves valid working configuratio
 it('isolates snapshots and request payloads from caller and host mutation', async () => {
   const original = instance();
   const { engine, paged, host } = setup({
-    instances: { instances: [original], defaultInstanceId: 'mine' },
+    instances: [original],
+    defaultInstanceId: 'mine',
   });
   const initial = engine.getSnapshot();
   expect(engine.getSnapshot()).toBe(initial);
@@ -154,7 +156,10 @@ it('reports non-JSON local data during load and rejects mutable non-JSON result 
       total: 1,
       list: [{ state: { id: 'a' }, value }],
     });
-    await expect(engine.load()).rejects.toThrow('JSON');
-    expect(selected(engine).rows).toEqual([]);
+    // Loading settles once the definition and catalog are read; the first query fails locally.
+    await expect(engine.load()).resolves.toBeUndefined();
+    expect(engine.getSnapshot().status).toBe('ready');
+    expect(selected(engine)).toMatchObject({ rows: [], queryStatus: 'error' });
+    expect(selected(engine).queryError).toContain('JSON');
   }
 });

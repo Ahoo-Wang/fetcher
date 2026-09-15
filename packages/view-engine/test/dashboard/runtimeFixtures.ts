@@ -14,7 +14,10 @@
 import { vi } from 'vitest';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { ViewEngine } from '../../src/engine/ViewEngine.js';
-import type { ViewEngineOptions } from '../../src/contracts/viewModel.js';
+import type {
+  ViewEngineOptions,
+  ViewInstance,
+} from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
 import type {
   DashboardConfig,
@@ -24,7 +27,11 @@ import {
   createFilterConfiguration,
   newFilterNode,
 } from '../../src/filter/filterCore.js';
-import { definition, instance } from '../engine/fixtures.js';
+import {
+  committedWrite,
+  type ReadOptions,
+} from '../../src/contracts/viewServiceContract.js';
+import { definition, instance, page } from '../engine/fixtures.js';
 
 export function globalFilter(value = 10, excludedPanelIds: string[] = []) {
   return {
@@ -66,6 +73,12 @@ export function dashboardSetup(
   },
   overrides: Partial<ViewHost> = {},
   limits?: ViewEngineOptions['limits'],
+  /**
+   * `local` seeds the engine catalog directly (the engine never reads the host);
+   * `host` serves the dashboard through `instance.list`/`instance.load` so tests
+   * can replace `host.instance.load` to simulate remote changes on reload.
+   */
+  mode: 'local' | 'host' = 'local',
 ) {
   const dashboard: DashboardViewInstance = {
     id: 'dashboard',
@@ -86,11 +99,18 @@ export function dashboardSetup(
     total: 30,
     list: [{ state: { id: 'row', amount: 10 } }],
   });
-  const load = vi.fn(async () => instance('child'));
+  const load = vi.fn<
+    (id: string, options?: ReadOptions) => Promise<ViewInstance>
+  >(async id => (id === dashboard.id ? dashboard : instance('child')));
   const host: ViewHost = {
     instance: {
+      ...(mode === 'host'
+        ? { list: vi.fn(async () => page([dashboard])) }
+        : {}),
       load,
-      save: vi.fn(async value => ({ ...value, revision: 'r2' })),
+      save: vi.fn(async value =>
+        committedWrite({ ...value, revision: 'r2' }, 'r2'),
+      ),
     },
     definition: { load: vi.fn(async () => definition) },
     resolveSource: vi.fn(() => ({ paged })),
@@ -106,7 +126,8 @@ export function dashboardSetup(
   const engine = new ViewEngine({
     definitionId: 'root',
     definition: root,
-    instances: { instances: [dashboard], defaultInstanceId: 'dashboard' },
+    ...(mode === 'local' ? { instances: [dashboard] } : {}),
+    defaultInstanceId: 'dashboard',
     host,
     limits,
   });

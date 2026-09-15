@@ -229,7 +229,8 @@ it('retains the configuration size error across validity changes and blocks writ
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [large], defaultInstanceId: large.id },
+    instances: [large],
+    defaultInstanceId: large.id,
     limits: { maxConfigBytes: 1024 },
     filterCompilers: { large: { compile: () => filter.matchAll() } },
     host: {

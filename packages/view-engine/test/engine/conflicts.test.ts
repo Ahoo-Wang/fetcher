@@ -13,35 +13,67 @@
 
 import { expect, it, vi } from 'vitest';
 import { filter } from '@ahoo-wang/fetcher-wow';
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
-import type { ViewInstance } from '../../src/contracts/viewModel.js';
-import { instance, setup } from './fixtures.js';
+import {
+  committedWrite,
+  rejectedWrite,
+} from '../../src/contracts/viewServiceContract.js';
+import type {
+  ViewEngineOptions,
+  ViewInstance,
+} from '../../src/contracts/viewModel.js';
+import type { ViewHost } from '../../src/contracts/ViewHost.js';
+import { catalogHost, instance, setup } from './fixtures.js';
+
+/** Host-read options whose point reads after the first open serve `latest()`. */
+function remote(
+  latest: () => ViewInstance,
+  host: Partial<ViewHost> = {},
+): Partial<ViewEngineOptions> {
+  const catalog = catalogHost(
+    [instance(), instance('shared')],
+    undefined,
+    null,
+    latest,
+  );
+  return {
+    instances: undefined,
+    host: {
+      ...host,
+      instance: { ...catalog.instance, ...host.instance },
+    } as ViewHost,
+  };
+}
 
 it('does not revert a collaborator config change when the local user only changed title', async () => {
-  const remote = instance();
-  remote.revision = 'r2';
-  remote.config.pagination.size = 50;
+  const collaborator = instance();
+  collaborator.revision = 'r2';
+  collaborator.config.pagination.size = 50;
   const save = vi
-    .fn<(value: ViewInstance) => Promise<ViewInstance>>()
-    .mockRejectedValueOnce(
-      new ViewServiceError('REVISION_CONFLICT', 'Version changed'),
+    .fn()
+    .mockResolvedValueOnce(
+      rejectedWrite('REVISION_CONFLICT', 'Version changed'),
     )
-    .mockImplementation(async value => ({ ...value, revision: 'r3' }));
-  const runtime = setup({
-    host: {
+    .mockImplementation(async (value: ViewInstance) =>
+      committedWrite({ ...value, revision: 'r3' }, 'r3'),
+    );
+  const runtime = setup(
+    remote(() => collaborator, {
       resolveSource: () => ({
         paged: async () => ({
           list: [{ state: { id: 'a', amount: 10 } }],
           total: 1,
         }),
       }),
-      instance: { load: async () => remote, save },
-    },
-  });
+      instance: { save },
+    }),
+  );
   try {
     await runtime.engine.load();
     runtime.engine.setTitle('Only my title changed');
     await expect(runtime.engine.save()).rejects.toThrow('Version changed');
+    expect(runtime.engine.getSnapshot().sessions.mine.requiresReload).toBe(
+      false,
+    );
     await runtime.engine.reloadInstance();
     const session = runtime.engine.getSnapshot().sessions.mine;
     expect(session.baseline.config.pagination.size).toBe(10);
@@ -61,10 +93,8 @@ it('does not revert a collaborator config change when the local user only change
 });
 
 it('binds overwrite to the reviewed local draft and remote revision', async () => {
-  let remote = { ...instance(), title: 'Remote', revision: 'r2' };
-  const { engine, host } = setup({
-    host: { instance: { load: async () => remote } } as never,
-  });
+  let latest = { ...instance(), title: 'Remote', revision: 'r2' };
+  const { engine, host } = setup(remote(() => latest));
   await engine.load();
   engine.setTitle('Local');
   await engine.reloadInstance();
@@ -78,7 +108,7 @@ it('binds overwrite to the reviewed local draft and remote revision', async () =
   );
   expect(host.instance!.save).not.toHaveBeenCalled();
   const newer = engine.getSnapshot().sessions.mine.conflict!;
-  remote = { ...remote, title: 'Latest remote', revision: 'r3' };
+  latest = { ...latest, title: 'Latest remote', revision: 'r3' };
   await engine.reloadInstance();
   await expect(engine.overwriteInstance(newer, 'mine')).rejects.toThrow(
     '重新确认',
@@ -87,36 +117,34 @@ it('binds overwrite to the reviewed local draft and remote revision', async () =
   await engine.overwriteInstance(current, 'mine');
   expect(host.instance!.save).toHaveBeenCalledWith(
     expect.objectContaining({ title: 'Newer local edit', revision: 'r3' }),
+    expect.objectContaining({ requestId: expect.any(String) }),
   );
   expect(engine.getSnapshot().sessions.mine.conflict).toBeUndefined();
   engine.dispose();
 });
 
 it('accepts remote-only changes and unchanged remote content without conflicts', async () => {
-  let remote = { ...instance(), title: 'Remote', revision: 'r2' };
-  const { engine } = setup({
-    host: { instance: { load: async () => remote } } as never,
-  });
+  let latest = { ...instance(), title: 'Remote', revision: 'r2' };
+  const { engine } = setup(remote(() => latest));
   await engine.load();
   await engine.reloadInstance();
   expect(engine.getSnapshot().sessions.mine.instance.title).toBe('Remote');
   engine.setTitle('Local');
-  remote = { ...remote, revision: 'r3' };
+  latest = { ...latest, revision: 'r3' };
   await engine.reloadInstance();
   expect(engine.getSnapshot().sessions.mine).toMatchObject({
     instance: { title: 'Local', revision: 'r3' },
-    baseline: remote,
+    baseline: latest,
   });
   expect(engine.getSnapshot().sessions.mine.conflict).toBeUndefined();
   engine.dispose();
 });
 
 it('permits save-as during a known conflict but denies overwrite after permission loss', async () => {
-  const remote = { ...instance(), title: 'Remote', revision: 'r2' };
+  const latest = { ...instance(), title: 'Remote', revision: 'r2' };
   let canSave = true;
-  const { engine, host } = setup({
-    host: {
-      instance: { load: async () => remote },
+  const { engine, host } = setup(
+    remote(() => latest, {
       permission: {
         getInstance: () => ({
           save: canSave,
@@ -124,8 +152,8 @@ it('permits save-as during a known conflict but denies overwrite after permissio
           saveAsShared: false,
         }),
       },
-    } as never,
-  });
+    }),
+  );
   await engine.load();
   engine.setTitle('Local');
   await engine.reloadInstance();
@@ -145,10 +173,8 @@ it('permits save-as during a known conflict but denies overwrite after permissio
 });
 
 it('binds resolution to raw filter edits and accepts a later matching remote snapshot', async () => {
-  let remote = { ...instance(), title: 'Remote', revision: 'r2' };
-  const { engine } = setup({
-    host: { instance: { load: async () => remote } } as never,
-  });
+  let latest = { ...instance(), title: 'Remote', revision: 'r2' };
+  const { engine } = setup(remote(() => latest));
   await engine.load();
   engine.setTitle('Local');
   await engine.reloadInstance();
@@ -162,7 +188,7 @@ it('binds resolution to raw filter edits and accepts a later matching remote sna
   engine
     .record(engine.getSnapshot().selectedInstanceId!)
     .setFilterValidity(true);
-  remote = { ...remote, title: 'Local', revision: 'r3' };
+  latest = { ...latest, title: 'Local', revision: 'r3' };
   await engine.reloadInstance();
   expect(engine.getSnapshot().sessions.mine.conflict).toBeUndefined();
   expect(engine.getSnapshot().sessions.mine.baseline.revision).toBe('r3');
@@ -170,13 +196,9 @@ it('binds resolution to raw filter edits and accepts a later matching remote sna
 });
 
 it('invalidates a reviewed decision even when later edits return to the same content', async () => {
-  const { engine } = setup({
-    host: {
-      instance: {
-        load: async () => ({ ...instance(), title: 'Remote', revision: 'r2' }),
-      },
-    } as never,
-  });
+  const { engine } = setup(
+    remote(() => ({ ...instance(), title: 'Remote', revision: 'r2' })),
+  );
   await engine.load();
   engine.setTitle('Local');
   await engine.reloadInstance();
@@ -193,10 +215,8 @@ it('invalidates a reviewed decision even when later edits return to the same con
 });
 
 it('starts a new editing lifecycle when accepting remote metadata', async () => {
-  const remote = { ...instance(), title: 'Remote', revision: 'r2' };
-  const { engine } = setup({
-    host: { instance: { load: async () => remote } } as never,
-  });
+  const latest = { ...instance(), title: 'Remote', revision: 'r2' };
+  const { engine } = setup(remote(() => latest));
   try {
     await engine.load();
     const oldEditor = engine.record('mine');
@@ -239,15 +259,15 @@ it('starts a new editing lifecycle when accepting remote metadata', async () => 
 });
 
 it('uses the host resource budget when adopting and refreshing a large valid remote record', async () => {
-  const remote = instance();
-  remote.title = 'Remote';
-  remote.revision = 'r2';
-  remote.config.filters.root.component = { name: 'large' };
-  remote.config.filters.root.props = { opaque: 'x'.repeat(270000) };
+  const latest = instance();
+  latest.title = 'Remote';
+  latest.revision = 'r2';
+  latest.config.filters.root.component = { name: 'large' };
+  latest.config.filters.root.props = { opaque: 'x'.repeat(270000) };
   const { engine, paged } = setup({
     limits: { maxConfigBytes: 400000 },
     filterCompilers: { large: { compile: () => filter.matchAll() } },
-    host: { instance: { load: async () => remote } } as never,
+    ...remote(() => latest),
   });
   try {
     await engine.load();

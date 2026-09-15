@@ -48,8 +48,8 @@ export function ViewManager({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const deleteTrigger = useRef<HTMLButtonElement>(null);
   const target = groups
-    .flatMap(group => group.sessions)
-    .find(session => session.instance.id === confirmId);
+    .flatMap(group => group.entries)
+    .find(entry => entry.id === confirmId);
   function closeDelete() {
     setConfirmId(null);
     setError(null);
@@ -96,19 +96,20 @@ export function ViewManager({
                 <h3 className="fve:mb-2 fve:text-sm fve:font-medium">
                   {group.label}
                 </h3>
-                {group.sessions.map(session => (
+                {group.entries.map(entry => (
                   <Button
-                    key={session.instance.id}
+                    key={entry.id}
                     variant="ghost"
                     disabled={busy}
                     onClick={() =>
                       void execute(
-                        () => engine.selectInstance(session.instance.id),
+                        () => engine.selectInstance(entry.id),
                         () => onOpenChange(false),
                       )
                     }
                   >
-                    继续编辑：{session.instance.title}
+                    继续编辑：
+                    {entry.session?.instance.title ?? entry.summary.title}
                   </Button>
                 ))}
               </section>

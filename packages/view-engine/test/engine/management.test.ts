@@ -18,15 +18,25 @@ import { newFilterNode } from '../../src/filter/filterCore.js';
 import type { ViewInstance } from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
 import {
+  committedWrite,
+  type PreferenceState,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
+import {
   deferred,
+  deleteReceipt,
   instance,
   managementPermissions as permissions,
+  page,
+  preferenceWrite,
   selected,
   setup,
 } from './fixtures.js';
 
+const writeContext = expect.objectContaining({ requestId: expect.any(String) });
+
 it('renames persisted metadata without saving draft filters, columns or newer edits', async () => {
-  const response = deferred<ViewInstance>();
+  const response = deferred<WriteObservation<ViewInstance>>();
   const renameInstance = vi.fn(() => response.promise);
   const { engine, paged } = setup({
     host: {
@@ -52,10 +62,17 @@ it('renames persisted metadata without saving draft filters, columns or newer ed
     .setFilterValidity(false);
   const before = selected(engine);
   const renaming = engine.renameInstance('  New name  ');
-  expect(renameInstance).toHaveBeenCalledWith('mine', 'New name', 'r1');
+  expect(renameInstance).toHaveBeenCalledWith(
+    'mine',
+    'New name',
+    'r1',
+    writeContext,
+  );
   expect(selected(engine).writeStatus).toBe('renaming');
   await expect(engine.deleteInstance()).rejects.toThrow();
-  response.resolve({ ...instance(), title: 'New name', revision: 'r2' });
+  response.resolve(
+    committedWrite({ ...instance(), title: 'New name', revision: 'r2' }, 'r2'),
+  );
   await renaming;
   expect(selected(engine)).toMatchObject({
     baseline: {
@@ -68,19 +85,46 @@ it('renames persisted metadata without saving draft filters, columns or newer ed
     filterPending: true,
     filterDraft: before.filterDraft,
   });
+  expect(engine.getSnapshot().catalog.summaries.mine).toMatchObject({
+    title: 'New name',
+    revision: 'r2',
+  });
   expect(paged).toHaveBeenCalledTimes(1);
+  engine.dispose();
+});
+
+it('renames a listed but unopened instance through its catalog summary', async () => {
+  const renameInstance = vi.fn(async (id: string, title: string) =>
+    committedWrite({ ...instance(id), title, revision: 'r2' }, 'r2'),
+  );
+  const { engine } = setup({
+    host: {
+      instance: { rename: renameInstance },
+      permission: { getInstance: permissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  expect(engine.getSnapshot().sessions.shared).toBeUndefined();
+  await engine.renameInstance('Renamed', 'shared');
+  expect(renameInstance).toHaveBeenCalledWith(
+    'shared',
+    'Renamed',
+    'r1',
+    writeContext,
+  );
+  expect(engine.getSnapshot().sessions.shared).toBeUndefined();
+  expect(engine.getSnapshot().catalog.summaries.shared).toMatchObject({
+    title: 'Renamed',
+    revision: 'r2',
+  });
   engine.dispose();
 });
 
 it('protects system names even when the host grants every permission', async () => {
   const renameInstance = vi.fn();
   const { engine } = setup({
-    instances: {
-      instances: [
-        { ...instance(), scope: { type: 'public', source: 'system' } },
-      ],
-      defaultInstanceId: 'mine',
-    },
+    instances: [{ ...instance(), scope: { type: 'public', source: 'system' } }],
+    defaultInstanceId: 'mine',
     host: {
       instance: { rename: renameInstance },
       permission: { getInstance: permissions },
@@ -99,23 +143,27 @@ it('rejects changed content from a rename response and requires reconciliation',
   const { engine } = setup({
     host: {
       instance: {
-        rename: async () => ({
-          ...instance(),
-          title: 'New',
-          config: {
-            ...instance().config,
-            filters: createFilterConfiguration({
-              ...newFilterNode(FilterOperator.GTE, 'state.amount'),
-              props: { value: 99 },
-            }),
-          },
-        }),
+        rename: async () =>
+          committedWrite(
+            {
+              ...instance(),
+              title: 'New',
+              config: {
+                ...instance().config,
+                filters: createFilterConfiguration({
+                  ...newFilterNode(FilterOperator.GTE, 'state.amount'),
+                  props: { value: 99 },
+                }),
+              },
+            },
+            'r1',
+          ),
       },
       permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
   await engine.load();
-  await expect(engine.renameInstance('New')).rejects.toThrow();
+  await expect(engine.renameInstance('New')).rejects.toThrow(/修改了其他/);
   expect(selected(engine)).toMatchObject({
     requiresReload: true,
     writeStatus: 'idle',
@@ -125,11 +173,11 @@ it('rejects changed content from a rename response and requires reconciliation',
 });
 
 it('persists personal ordering without changing selection or querying', async () => {
-  const response = deferred<void>();
+  const response = deferred<WriteObservation<PreferenceState>>();
   const saveInstanceOrder = vi
     .fn()
     .mockReturnValueOnce(response.promise)
-    .mockResolvedValue(undefined);
+    .mockResolvedValue(preferenceWrite('mine', 'p2', ['shared', 'mine']));
   const { engine, paged } = setup({
     host: {
       preference: { saveOrder: saveInstanceOrder },
@@ -143,25 +191,84 @@ it('persists personal ordering without changing selection or querying', async ()
   await expect(ordering).rejects.toThrow('order failed');
   expect(engine.getSnapshot().instanceIds).toEqual(['mine', 'shared']);
   await engine.reorderInstances(['shared', 'mine']);
-  expect(saveInstanceOrder).toHaveBeenLastCalledWith('orders', [
-    'shared',
-    'mine',
-  ]);
-  expect(engine.getSnapshot().instanceIds).toEqual(['shared', 'mine']);
-  expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+  expect(saveInstanceOrder).toHaveBeenLastCalledWith(
+    'orders',
+    {
+      scopeInstanceIds: ['shared', 'mine'],
+      orderedInstanceIds: ['shared', 'mine'],
+    },
+    { type: 'absent' },
+    writeContext,
+  );
+  expect(engine.getSnapshot()).toMatchObject({
+    instanceIds: ['shared', 'mine'],
+    selectedInstanceId: 'mine',
+    defaultInstanceId: 'mine',
+    preference: { status: 'ready', revision: 'p2' },
+  });
   expect(paged).toHaveBeenCalledTimes(1);
-  for (const ids of [['mine'], ['mine', 'mine'], ['mine', 'unknown']])
-    await expect(engine.reorderInstances(ids)).rejects.toThrow();
+  // An unchanged relative order is a no-op; malformed scopes never reach the host.
+  await engine.reorderInstances(['mine']);
+  for (const [ids, scope] of [
+    [[], undefined],
+    [['mine', 'mine'], undefined],
+    [['mine', 'unknown'], undefined],
+    [['shared', 'mine'], ['mine']],
+    [['mine'], ['mine', 'shared']],
+  ] as const)
+    await expect(engine.reorderInstances(ids, scope)).rejects.toThrow(
+      /相同、不重复的已加载视图/,
+    );
   expect(saveInstanceOrder).toHaveBeenCalledTimes(2);
   engine.dispose();
 });
 
+it('reorders a scoped subset with the next preference revision and keeps other slots', async () => {
+  const saveOrder = vi
+    .fn()
+    .mockResolvedValueOnce(preferenceWrite('mine', 'p2', ['third', 'mine']))
+    .mockResolvedValueOnce(
+      preferenceWrite('mine', 'p3', ['third', 'mine', 'shared']),
+    );
+  const { engine } = setup({
+    instances: [instance(), instance('shared'), instance('third')],
+    host: { preference: { saveOrder } } as unknown as ViewHost,
+  });
+  await engine.load();
+  await engine.reorderInstances(['third', 'mine'], ['mine', 'third']);
+  expect(saveOrder).toHaveBeenLastCalledWith(
+    'orders',
+    {
+      scopeInstanceIds: ['mine', 'third'],
+      orderedInstanceIds: ['third', 'mine'],
+    },
+    { type: 'absent' },
+    writeContext,
+  );
+  expect(engine.getSnapshot().instanceIds).toEqual(['third', 'shared', 'mine']);
+  await engine.reorderInstances(['mine', 'shared']);
+  expect(saveOrder).toHaveBeenLastCalledWith(
+    'orders',
+    {
+      scopeInstanceIds: ['mine', 'shared'],
+      orderedInstanceIds: ['mine', 'shared'],
+    },
+    { type: 'matches', revision: 'p2' },
+    writeContext,
+  );
+  expect(engine.getSnapshot()).toMatchObject({
+    instanceIds: ['third', 'mine', 'shared'],
+    preference: { revision: 'p3' },
+  });
+  engine.dispose();
+});
+
 it('does not resurrect a deleted view or drop a new one when order persistence finishes late', async () => {
-  const response = deferred<void>();
+  const response = deferred<WriteObservation<PreferenceState>>();
   const { engine } = setup({
     host: {
       preference: { saveOrder: () => response.promise },
-      instance: { delete: async () => ({ defaultInstance: null }) },
+      instance: { delete: async (id: string) => deleteReceipt(id) },
       permission: { getInstance: permissions },
     } as unknown as ViewHost,
   });
@@ -169,9 +276,108 @@ it('does not resurrect a deleted view or drop a new one when order persistence f
   const ordering = engine.reorderInstances(['shared', 'mine']);
   await engine.saveAs({ title: 'Copy', scope: { type: 'personal' } });
   await engine.deleteInstance('mine');
-  response.resolve();
+  response.resolve(preferenceWrite('mine', 'p2', ['shared', 'mine']));
   await ordering;
   expect(engine.getSnapshot().instanceIds).toEqual(['shared', 'created']);
   expect(engine.getSnapshot().selectedInstanceId).toBe('created');
+  engine.dispose();
+});
+
+it('serializes default and order writes against the same preference document', async () => {
+  const defaultResponse = deferred<WriteObservation<PreferenceState>>();
+  const orderResponse = deferred<WriteObservation<PreferenceState>>();
+  const { engine } = setup({
+    host: {
+      preference: {
+        load: async () => preference('mine'),
+        saveDefault: () => defaultResponse.promise,
+        saveOrder: () => orderResponse.promise,
+      },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  const saving = engine.setDefaultInstance('shared');
+  await expect(engine.reorderInstances(['shared', 'mine'])).rejects.toThrow(
+    /正在保存/,
+  );
+  defaultResponse.resolve(preferenceWrite('shared'));
+  await saving;
+  const ordering = engine.reorderInstances(['shared', 'mine']);
+  await expect(engine.setDefaultInstance(null)).rejects.toThrow(/正在保存/);
+  orderResponse.resolve(preferenceWrite(null, 'p3', ['shared', 'mine']));
+  await ordering;
+  engine.dispose();
+});
+
+it('rejects an order receipt that does not implement the requested order', async () => {
+  const { engine } = setup({
+    host: {
+      preference: {
+        load: async () => preference('mine'),
+        saveOrder: async () =>
+          preferenceWrite('mine', 'p2', ['mine', 'shared']),
+      },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(engine.reorderInstances(['shared', 'mine'])).rejects.toThrow(
+    /排序回执/,
+  );
+  expect(engine.getSnapshot().instanceIds).toEqual(['mine', 'shared']);
+  engine.dispose();
+});
+
+it('gates further writes on an unopened catalog entry after an uncertain rename', async () => {
+  const { engine } = setup({
+    host: {
+      instance: {
+        rename: async () => {
+          throw new Error('timeout');
+        },
+        delete: async (id: string) => deleteReceipt(id),
+      },
+      permission: { getInstance: permissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(engine.renameInstance('Later', 'shared')).rejects.toThrow(
+    'timeout',
+  );
+  await expect(engine.renameInstance('Again', 'shared')).rejects.toThrow(
+    /核对/,
+  );
+  await expect(engine.deleteInstance('shared')).rejects.toThrow(/核对/);
+  engine.dispose();
+});
+
+it('keeps a concurrent navigation that happens while the deleted successor is point-read', async () => {
+  const successorRead = deferred<ViewInstance>();
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () =>
+          page([instance(), instance('shared'), instance('other')]),
+        load: async (id: string) => {
+          if (id === 'mine') return structuredClone(instance());
+          if (id === 'other') return structuredClone(instance('other'));
+          if (id === 'shared') return successorRead.promise;
+          throw new Error(`unexpected load: ${id}`);
+        },
+        delete: async (id: string) => deleteReceipt(id),
+      },
+      permission: { getInstance: permissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  const deleting = engine.deleteInstance();
+  await engine.selectInstance('other');
+  successorRead.resolve(structuredClone(instance('shared')));
+  await deleting;
+  const state = engine.getSnapshot();
+  expect(state.selectedInstanceId).toBe('other');
+  expect(state.sessions.other).toBeDefined();
+  expect(state.sessions.mine).toBeUndefined();
+  expect(state.instanceIds).toEqual(['shared', 'other']);
   engine.dispose();
 });

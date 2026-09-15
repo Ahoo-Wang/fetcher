@@ -29,10 +29,10 @@ function setup(withFields = false) {
   };
   const memory = new MemoryViewHost({
     definition,
-    instances: { instances: [], defaultInstanceId: null },
+    instances: [],
+    defaultInstanceId: null,
     serviceKey: 'tenant',
     scopeKey: 'alice',
-    supportedFormats: { record: true, analysis: true, dashboard: 1 },
     definitionPermissions: () => ({
       createPersonal: true,
       createShared: false,
@@ -64,7 +64,7 @@ describe('dashboard persistence through public engine', () => {
     expect(create).not.toHaveBeenCalled();
     expect(engine.getSnapshot().instanceIds).toEqual([]);
     expect(draft(engine, id)).toMatchObject({ persisted: false, dirty: true });
-    expect((await memory.instance.list('dashboards')).instances).toEqual([]);
+    expect((await memory.instance.list('dashboards')).items).toEqual([]);
     engine.dashboard(id).edit(config => ({
       ...config,
       panels: [
@@ -129,7 +129,10 @@ describe('dashboard persistence through public engine', () => {
     await engine.save(id);
     const savedId = engine.getSnapshot().selectedInstanceId!;
     const saved = await memory.instance.load(savedId);
-    await memory.instance.save({ ...saved, title: 'Remote' });
+    await memory.instance.save(
+      { ...saved, title: 'Remote' },
+      { requestId: 'remote' },
+    );
     engine.setTitle('Local', savedId);
     await expect(engine.save(savedId)).rejects.toMatchObject({
       code: 'REVISION_CONFLICT',
@@ -162,9 +165,7 @@ describe('dashboard persistence through public engine', () => {
     });
     await engine.reloadInstance(id);
     expect(engine.getSnapshot().pendingCreates[id]).toBeUndefined();
-    expect((await memory.instance.list('dashboards')).instances).toHaveLength(
-      1,
-    );
+    expect((await memory.instance.list('dashboards')).items).toHaveLength(1);
     engine.dispose();
   });
   it.each([false, true])(
@@ -185,6 +186,7 @@ describe('dashboard persistence through public engine', () => {
       await engine.load();
       const savedId = engine.getSnapshot().instanceIds[0];
       if (editedTarget) {
+        await engine.selectInstance(savedId);
         engine.setTitle('Other edit', savedId);
         await expect(engine.reloadInstance(id)).rejects.toThrow('两份');
         expect(engine.getSnapshot().pendingCreates[id]?.instance.title).toBe(
@@ -221,9 +223,7 @@ describe('dashboard persistence through public engine', () => {
     expect(create.mock.calls[1][1].requestId).toBe(
       create.mock.calls[0][1].requestId,
     );
-    expect((await memory.instance.list('dashboards')).instances).toHaveLength(
-      1,
-    );
+    expect((await memory.instance.list('dashboards')).items).toHaveLength(1);
     expect(engine.getSnapshot().instanceIds).toHaveLength(1);
     expect(engine.getSnapshot().sessions[id]).toBeUndefined();
     engine.dispose();
@@ -234,7 +234,8 @@ it('rejects dashboard creation without a create service before changing selectio
   const engine = new ViewEngine({
     definitionId: 'root',
     definition: { id: 'root', title: 'Root', fields: [], dashboard: true },
-    instances: { instances: [], defaultInstanceId: null },
+    instances: [],
+    defaultInstanceId: null,
     host: {
       resolveSource: () => {
         throw new Error('unused');

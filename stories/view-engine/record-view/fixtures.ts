@@ -23,7 +23,6 @@ import {
   type RecordData,
   type RecordViewDefinition,
   type ViewInstance,
-  type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
 
 export const statuses = [
@@ -345,6 +344,12 @@ export const orders: OrderSnapshot[] = orderItems.map((items, index) => {
   );
 });
 
+/** Seed catalog of one scenario plus the host-declared starting view. */
+export interface DemoInstances {
+  instances: ViewInstance[];
+  defaultInstanceId: string | null;
+}
+
 export function makeInstances(
   mode: 'paged' | 'cursor',
   summaries = false,
@@ -353,7 +358,7 @@ export function makeInstances(
     ...newFilterNode(FilterOperator.GTE, 'state.totalAmount'),
     props: { value: 0 },
   }),
-): ViewInstanceList {
+): DemoInstances {
   const personal: ViewInstance = {
     id: 'my-orders',
     definitionId: definition.id,

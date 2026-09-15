@@ -28,11 +28,11 @@ import { useViewEngine, ViewPage } from '@ahoo-wang/fetcher-view-engine/react';
 import {
   extendedDefinition,
   extendedInstance,
-  extendedAggregate,
+  extendedSource,
 } from './analysisAggregationFixture.js';
 import { createOrderSource } from '../../packages/view-engine/examples/react/sales-order/querySource.js';
 
-const definition: ViewDefinition = {
+const definition = {
   id: 'analysis-orders',
   title: '订单工作台',
   sourceId: 'orders',
@@ -53,7 +53,7 @@ const definition: ViewDefinition = {
       },
     ],
   },
-};
+} satisfies ViewDefinition;
 const filters = createFilterConfiguration({
   id: 'all',
   component: { name: 'builtin' },
@@ -140,12 +140,10 @@ function OrderAnalysis({ analysisOnly = false }: { analysisOnly?: boolean }) {
       definition: analysisOnly
         ? { ...definition, record: undefined }
         : definition,
-      instances: {
-        instances: analysisOnly
-          ? instances.filter(instance => instance.kind === 'analysis')
-          : instances,
-        defaultInstanceId: 'regional-analysis',
-      },
+      instances: analysisOnly
+        ? instances.filter(instance => instance.kind === 'analysis')
+        : instances,
+      defaultInstanceId: 'regional-analysis',
       resolveSource: () =>
         analysisOnly ? { aggregate: source.aggregate } : source,
       instancePermissions: instance => ({
@@ -186,11 +184,9 @@ function ExtendedOrderAnalysis() {
         serviceKey: 'extended-analysis-example',
         scopeKey: 'demo',
         definition: extendedDefinition,
-        instances: {
-          instances: [extendedInstance],
-          defaultInstanceId: extendedInstance.id,
-        },
-        resolveSource: () => ({ aggregate: extendedAggregate }),
+        instances: [extendedInstance],
+        defaultInstanceId: extendedInstance.id,
+        resolveSource: () => extendedSource,
         instancePermissions: () => ({
           save: true,
           saveAsPersonal: true,

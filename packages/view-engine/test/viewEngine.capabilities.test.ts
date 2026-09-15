@@ -13,6 +13,8 @@
 
 import { expect, it, vi } from 'vitest';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
+import { committedWrite } from '../src/contracts/viewServiceContract.js';
+import { preference } from './engine/fixtures.js';
 import { instance, setup } from './fixtures/viewPage.js';
 
 it('publishes immutable same-scope capabilities without losing sessions or querying', async () => {
@@ -32,7 +34,11 @@ it('publishes immutable same-scope capabilities without losing sessions or query
       save: undefined,
       load: vi.fn(async () => structuredClone(instance)),
     },
-    preference: { saveOrder: vi.fn(async () => {}) },
+    preference: {
+      saveOrder: vi.fn(async () =>
+        committedWrite(preference('mine', 'p2', ['system', 'mine']), 'p2'),
+      ),
+    },
   };
   engine.updateHost(nextHost);
   const after = engine.getCapabilitiesSnapshot();
@@ -51,10 +57,17 @@ it('publishes immutable same-scope capabilities without losing sessions or query
   await expect(engine.save()).rejects.toThrow();
   expect(host.instance!.save).not.toHaveBeenCalled();
   await engine.reorderInstances(['system', 'mine']);
-  expect(nextHost.preference!.saveOrder).toHaveBeenCalledWith('orders', [
-    'system',
-    'mine',
-  ]);
+  expect(nextHost.preference.saveOrder).toHaveBeenCalledWith(
+    'orders',
+    {
+      scopeInstanceIds: ['system', 'mine'],
+      orderedInstanceIds: ['system', 'mine'],
+    },
+    { type: 'matches', revision: 'p1' },
+    expect.objectContaining({ requestId: expect.any(String) }),
+  );
+  expect(engine.getSnapshot().instanceIds).toEqual(['system', 'mine']);
+  expect(engine.getSnapshot().preference.revision).toBe('p2');
   unsubscribe();
   engine.dispose();
   expect(engine.getCapabilitiesSnapshot().reorder).toBe(false);
@@ -62,28 +75,31 @@ it('publishes immutable same-scope capabilities without losing sessions or query
 
 it('derives reload capability from uncertain creation receipts as well as host methods', async () => {
   const { host } = setup();
-  host.instance!.create = vi.fn(async submitted => ({
-    ...submitted,
-    id: 'copy',
-    definitionId: 'invalid',
-  }));
+  // A committed receipt whose value fails validation leaves the create unverified.
+  host.instance!.create = vi.fn(async submitted =>
+    committedWrite(
+      { ...submitted, id: 'copy', definitionId: 'invalid', revision: '1' },
+      '1',
+    ),
+  );
   const engine = new ViewEngine({ definitionId: 'orders', host });
   await engine.load();
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
   engine.updateHost({
     ...host,
-    instance: { ...host.instance, list: undefined },
+    instance: { ...host.instance, load: undefined },
   });
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(false);
   await expect(
     engine.saveAs({ title: '副本', scope: { type: 'personal' } }),
   ).rejects.toThrow();
-  // The original request can be replayed even without either read method.
+  expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(true);
+  // The original request can be replayed even without a point read.
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
-  engine.updateHost({ ...host, instance: { list: host.instance!.list } });
-  // A list-only host can instead reconcile the known creation ID.
+  engine.updateHost({ ...host, instance: { load: host.instance!.load } });
+  // A load-only host can instead reconcile the known creation ID.
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(true);
-  engine.updateHost({ ...host, instance: { list: undefined } });
+  engine.updateHost({ ...host, instance: { load: undefined } });
   expect(engine.getCapabilitiesSnapshot().instances.mine.reload).toBe(false);
   engine.dispose();
 });
@@ -96,13 +112,24 @@ it('publishes added and removed default saving capability without disturbing the
   const notified = vi.fn();
   const unsubscribe = engine.subscribe(notified);
   expect(engine.getCapabilitiesSnapshot().setDefault).toBe(false);
-  const saveDefault = vi.fn(async () => {});
+  const saveDefault = vi.fn(async () =>
+    committedWrite(preference('system', 'p2'), 'p2'),
+  );
   engine.updateHost({ ...host, preference: { saveDefault } });
   expect(engine.canSetDefaultInstance()).toBe(true);
   expect(engine.getCapabilitiesSnapshot().setDefault).toBe(true);
   expect(notified).toHaveBeenCalledTimes(1);
   await engine.setDefaultInstance('system');
-  expect(saveDefault).toHaveBeenCalledWith('orders', 'system');
+  expect(saveDefault).toHaveBeenCalledWith(
+    'orders',
+    'system',
+    { type: 'matches', revision: 'p1' },
+    expect.objectContaining({ requestId: expect.any(String) }),
+  );
+  expect(engine.getSnapshot()).toMatchObject({
+    defaultInstanceId: 'system',
+    preference: { revision: 'p2' },
+  });
   engine.updateHost(host);
   expect(engine.getCapabilitiesSnapshot().setDefault).toBe(false);
   await expect(engine.setDefaultInstance(null)).rejects.toThrow();
@@ -112,4 +139,45 @@ it('publishes added and removed default saving capability without disturbing the
   engine.dispose();
   expect(engine.getCapabilitiesSnapshot().setDefault).toBe(false);
   unsubscribe();
+});
+
+it('reads catalog, point loads and preference through the replaced host after updateHost', async () => {
+  const { host } = setup();
+  const engine = new ViewEngine({ definitionId: 'orders', host });
+  await engine.load();
+  const nextLoad = vi.fn(async () => structuredClone(instance));
+  const nextList = vi.fn(async () => ({
+    items: [structuredClone(instance)].map(item => ({
+      id: item.id,
+      definitionId: item.definitionId,
+      title: item.title,
+      kind: item.kind,
+      scope: item.scope,
+      revision: item.revision,
+    })),
+    nextCursor: null,
+    total: 1,
+  }));
+  const nextPreference = vi.fn(async () => preference(null));
+  engine.updateHost({
+    ...host,
+    instance: { ...host.instance, load: nextLoad, list: nextList },
+    preference: { load: nextPreference },
+  });
+  await engine.loadSavedInstance(instance.id);
+  await engine.reloadCatalog();
+  await engine.reloadPreference();
+  expect(nextLoad).toHaveBeenCalledWith(
+    instance.id,
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  );
+  expect(nextList).toHaveBeenCalledWith(
+    'orders',
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  );
+  expect(nextPreference).toHaveBeenCalledWith(
+    'orders',
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  );
+  engine.dispose();
 });

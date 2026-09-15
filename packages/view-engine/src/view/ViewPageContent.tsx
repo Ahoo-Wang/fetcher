@@ -154,6 +154,20 @@ export function ViewPageContent({
       managerReturnFocus.current = trigger;
       setManagerOpen(true);
     },
+    // The same paging entry serves the sidebar and the always-visible switcher.
+    catalog: {
+      loading: state.catalog.status === 'loading',
+      hasMore: state.catalog.nextCursor !== null,
+      error: state.catalog.error,
+      onLoadMore: () => run(() => engine.loadMoreInstances()),
+      onRetry: () => run(() => engine.reloadCatalog()),
+    },
+    // Preference failures never block the catalog or sessions; they get their own retry.
+    preference: {
+      loading: state.preference.status === 'loading',
+      error: state.preference.error,
+      onRetry: () => run(() => engine.reloadPreference()),
+    },
   };
   const toolbarStart = (
     <div className="fve:flex fve:min-w-0 fve:flex-wrap fve:items-center fve:gap-2">
@@ -378,9 +392,15 @@ export function ViewPageContent({
             <div className="fve:rounded-lg fve:border fve:border-dashed fve:p-10 fve:text-center fve:text-sm fve:text-muted-foreground">
               {state.openingInstanceId
                 ? '正在打开视图实例…'
-                : state.instanceIds.length
-                  ? '请选择一个视图实例'
-                  : '暂无可用视图，请由宿主配置视图实例'}
+                : state.catalog.status === 'loading' &&
+                    !state.instanceIds.length
+                  ? '正在加载视图目录…'
+                  : state.catalog.status === 'error' &&
+                      !state.instanceIds.length
+                    ? `视图目录加载失败：${state.catalog.error}`
+                    : state.instanceIds.length
+                      ? '请选择一个视图实例'
+                      : '暂无可用视图，请由宿主配置视图实例'}
             </div>
           ) : null}
         </main>

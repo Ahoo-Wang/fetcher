@@ -63,7 +63,8 @@ it('pairs a fixed dashboard transform and editor registry with the access lifeti
         scopeKey,
         definitionId: 'root',
         definition: root,
-        instances: { instances: [saved], defaultInstanceId: 'dashboard' },
+        instances: [saved],
+        defaultInstanceId: 'dashboard',
         host,
         dashboardTransforms: { mapped: () => filter.eq('state.amount', value) },
         extensions: {

@@ -185,52 +185,48 @@ function DashboardExample({
     );
     const memory = new MemoryViewHost({
       definition: root,
-      instances: {
-        instances: empty
-          ? []
-          : [
-              contentOnly
-                ? {
-                    ...dashboard,
-                    config: {
-                      ...dashboard.config,
-                      panels: [
-                        {
-                          id: 'notes',
-                          kind: 'markdown' as const,
-                          title: '本周经营提示',
-                          content:
-                            '## 关注重点\n\n- 跟进重点客户\n- 检查库存预警\n\n**口径**：以已确认订单为准。',
-                          layout: { x: 0, y: 0, w: 6, h: 8 },
-                        },
-                        {
-                          id: 'link',
-                          kind: 'link' as const,
-                          title: '业务操作手册',
-                          href: 'https://example.com/handbook',
-                          description: '查看流程与数据口径说明。',
-                          layout: { x: 6, y: 0, w: 6, h: 8 },
-                        },
-                        {
-                          id: 'image',
-                          kind: 'image' as const,
-                          title: 'Fetcher 标志',
-                          src: logoUrl,
-                          alt: 'Fetcher 项目标志',
-                          caption:
-                            '图片由项目资源加载，可编辑为自己的图片地址。',
-                          layout: { x: 0, y: 8, w: 12, h: 8 },
-                        },
-                      ],
-                    },
-                  }
-                : dashboard,
-            ],
-        defaultInstanceId: empty ? null : dashboard.id,
-      },
+      instances: empty
+        ? []
+        : [
+            contentOnly
+              ? {
+                  ...dashboard,
+                  config: {
+                    ...dashboard.config,
+                    panels: [
+                      {
+                        id: 'notes',
+                        kind: 'markdown' as const,
+                        title: '本周经营提示',
+                        content:
+                          '## 关注重点\n\n- 跟进重点客户\n- 检查库存预警\n\n**口径**：以已确认订单为准。',
+                        layout: { x: 0, y: 0, w: 6, h: 8 },
+                      },
+                      {
+                        id: 'link',
+                        kind: 'link' as const,
+                        title: '业务操作手册',
+                        href: 'https://example.com/handbook',
+                        description: '查看流程与数据口径说明。',
+                        layout: { x: 6, y: 0, w: 6, h: 8 },
+                      },
+                      {
+                        id: 'image',
+                        kind: 'image' as const,
+                        title: 'Fetcher 标志',
+                        src: logoUrl,
+                        alt: 'Fetcher 项目标志',
+                        caption: '图片由项目资源加载，可编辑为自己的图片地址。',
+                        layout: { x: 0, y: 8, w: 12, h: 8 },
+                      },
+                    ],
+                  },
+                }
+              : dashboard,
+          ],
+      defaultInstanceId: empty ? null : dashboard.id,
       serviceKey: 'dashboard-story',
       scopeKey: 'reader',
-      supportedFormats: { record: true, analysis: true, dashboard: 1 },
       resolveSource: () => source,
       definitionPermissions: () => ({
         createPersonal: !readOnly && !saveAsOnly,
@@ -249,22 +245,22 @@ function DashboardExample({
       permission: memory.permission,
       preference: memory.preference,
       definition: {
-        load: (id, signal) => {
+        load: (id, options) => {
           const found = definitions.find(definition => definition.id === id);
           return found
             ? Promise.resolve(found)
-            : memory.definition.load(id, signal);
+            : memory.definition.load(id, options);
         },
       },
       instance: {
         ...memory.instance,
-        load: (id, signal) => {
+        load: (id, options) => {
           if (missingReference && id === 'saved-2')
             return Promise.reject(new Error('库存视图已停用，请替换引用'));
           const found = children.find(instance => instance.id === id);
           return found
             ? Promise.resolve(found)
-            : memory.instance.load(id, signal);
+            : memory.instance.load(id, options);
         },
       },
       resolveSource: () => source,

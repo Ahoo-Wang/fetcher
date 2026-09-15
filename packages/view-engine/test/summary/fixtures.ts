@@ -93,7 +93,8 @@ export function setup(limits?: ViewEngineOptions['limits']) {
     limits,
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host: { resolveSource: () => source },
   });
   return { engine, source, instance };

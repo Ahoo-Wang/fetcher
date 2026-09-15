@@ -30,11 +30,13 @@ import type { EngineScope } from './EngineScope.js';
 import { clearAnalysisResult } from '../analysis/analysisSession.js';
 import { clearRecordResult } from '../record/engine/recordSession.js';
 import { copy, freeze } from '../lib/snapshot.js';
-import type {
-  ViewDefinition,
-  ViewInstance,
-  ViewSource,
+import {
+  summaryOf,
+  type ViewDefinition,
+  type ViewInstance,
+  type ViewSource,
 } from '../contracts/viewModel.js';
+import { ownRecord, sameJsonState } from '../lib/snapshot.js';
 import { createSession, deriveSession } from './sessionState.js';
 
 import { compileFilterConfiguration } from '../filter/filterConfigurationCompiler.js';
@@ -82,6 +84,14 @@ export class SessionStore {
     selectedInstanceId: null,
     openingInstanceId: null,
     defaultInstanceId: null,
+    catalog: {
+      status: 'idle',
+      error: null,
+      nextCursor: null,
+      total: null,
+      summaries: Object.create(null),
+    },
+    preference: { status: 'idle', error: null, revision: null },
     sessions: Object.create(null),
     pendingCreates: Object.create(null),
   });
@@ -303,6 +313,7 @@ export class SessionStore {
     }
     if (retained.length > this.limits.maxRetainedResults)
       next = { ...next, sessions };
+    next = this.withSummaries(next);
     this.state = freeze({ ...next, version: this.state.version + 1 });
     this.listeners.forEach(listener => {
       try {
@@ -311,6 +322,36 @@ export class SessionStore {
         console.error('视图状态订阅回调失败', error);
       }
     });
+  }
+
+  /** Catalog summaries mirror the saved baseline of every opened, persisted instance. */
+  private withSummaries(next: ViewEngineState): ViewEngineState {
+    const summaries = ownRecord(next.catalog.summaries);
+    let changed = false;
+    for (const id of next.instanceIds) {
+      const session = Object.prototype.hasOwnProperty.call(next.sessions, id)
+        ? next.sessions[id]
+        : undefined;
+      if (
+        !session ||
+        this.positions.has(id) ||
+        (session.kind === 'dashboard' && !session.persisted)
+      )
+        continue;
+      const summary = summaryOf(session.baseline as ViewInstance);
+      if (!summaries[id] || !sameJsonState(summaries[id], summary)) {
+        summaries[id] = summary;
+        changed = true;
+      }
+    }
+    for (const id of Object.keys(summaries))
+      if (!next.instanceIds.includes(id)) {
+        delete summaries[id];
+        changed = true;
+      }
+    return changed
+      ? { ...next, catalog: { ...next.catalog, summaries } }
+      : next;
   }
 
   patch(id: string, patch: SessionPatch): void {

@@ -57,7 +57,8 @@ it('cancels hidden summaries and lets background record refresh continue', async
     { id: 'amount', kind: 'field', field: 'state.amount', summary: ['SUM'] },
   ];
   const { engine } = setup({
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
     host: { resolveSource: () => ({ paged, aggregate }) },
   });
   try {
@@ -103,7 +104,8 @@ it('keeps the current layout when target defaults cannot be created', async () =
   };
   const { engine } = setup({
     definition: { ...definition, fields: [] },
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
   });
   try {
     await engine.load();

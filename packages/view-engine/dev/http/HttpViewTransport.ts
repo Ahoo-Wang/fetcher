@@ -11,17 +11,16 @@
  * limitations under the License.
  */
 
-import {
-  LEGACY_VIEW_FORMATS,
-  type SupportedViewFormats,
-} from '../../src/contracts/viewServiceContract.js';
 import { encodeViewResourceId, VIEW_SERVICE_STATUS } from './protocol.js';
 import { copy } from '../../src/lib/snapshot.js';
 import { HttpViewPermissionService } from './HttpViewPermissionService.js';
 
 import {
   ViewServiceError,
+  isViewServiceErrorCode,
+  readWriteObservation,
   type ViewServiceErrorCode,
+  type WriteObservation,
 } from '@ahoo-wang/fetcher-view-engine';
 
 export interface HttpViewTransportOptions {
@@ -30,12 +29,17 @@ export interface HttpViewTransportOptions {
   headers?: () => HeadersInit;
   fetch?: typeof fetch;
   timeoutMs?: number;
-  supportedFormats?: SupportedViewFormats;
 }
+
+interface Envelope {
+  data?: unknown;
+  permissions?: unknown;
+  error?: { code?: string; message?: string };
+}
+
 /** REST transport only; runtime components and record clients remain application-owned. */
 export class HttpViewTransport {
   readonly permission: HttpViewPermissionService;
-  readonly supportedFormats: SupportedViewFormats;
 
   private readonly options: HttpViewTransportOptions;
   private readonly root: string;
@@ -68,9 +72,6 @@ export class HttpViewTransport {
       );
     this.root = `${root.href.replace(/\/$/, '')}/definitions/${encodeViewResourceId(options.definitionId)}`;
     this.options = { ...options };
-    this.supportedFormats = Object.freeze({
-      ...(options.supportedFormats ?? LEGACY_VIEW_FORMATS),
-    });
     this.permission = new HttpViewPermissionService(this);
   }
 
@@ -79,15 +80,60 @@ export class HttpViewTransport {
     if (id !== this.options.definitionId)
       throw new ViewServiceError('NOT_FOUND', '视图定义不存在');
   }
+  /** Opaque revisions travel percent-encoded inside the quoted entity tag so any string survives HTTP. */
   revision(revision?: string): HeadersInit {
     if (!revision)
       throw new ViewServiceError(
         'PRECONDITION_REQUIRED',
         '写入需要当前 revision，请重新加载',
       );
-    return { 'If-Match': JSON.stringify(revision) };
+    return { 'If-Match': `"${encodeURIComponent(revision)}"` };
+  }
+  requestIdentity(requestId: string | undefined): HeadersInit {
+    if (typeof requestId !== 'string' || !requestId.trim())
+      throw new ViewServiceError('INVALID_ARGUMENT', '写入必须提供 requestId');
+    // Header values must be ISO-8859-1; the identity itself may be any string.
+    return { 'Idempotency-Key': encodeURIComponent(requestId) };
   }
 
+  private async exchange(
+    path: string,
+    method: string,
+    body: unknown,
+    signal: AbortSignal | undefined,
+    extraHeaders: HeadersInit | undefined,
+  ): Promise<{ response: Response; envelope: Envelope | undefined }> {
+    signal?.throwIfAborted();
+    const sequence = ++this.requestSequence;
+    const timeout = AbortSignal.timeout(this.options.timeoutMs ?? 10000);
+    const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+    const headers = new Headers(this.options.headers?.());
+    headers.set('Accept', 'application/json');
+    new Headers(extraHeaders).forEach((value, key) => headers.set(key, value));
+    if (body !== undefined) headers.set('Content-Type', 'application/json');
+    const payload = body === undefined ? undefined : JSON.stringify(copy(body));
+    const response = await (this.options.fetch ?? globalThis.fetch)(
+      this.root + path,
+      { method, headers, body: payload, signal: requestSignal },
+    );
+    if (response.status === 401) {
+      this.permissionFence = Math.max(this.permissionFence, sequence);
+      this.permission.clear();
+      await response.body?.cancel().catch(() => {});
+      return { response, envelope: undefined };
+    }
+    const envelope = (await response.json()) as Envelope;
+    if (
+      envelope &&
+      typeof envelope === 'object' &&
+      envelope.permissions &&
+      sequence > this.permissionFence
+    )
+      this.permission.acceptSnapshot(envelope.permissions);
+    return { response, envelope };
+  }
+
+  /** Reads reject with a structured error; the caller keeps its current state. */
   async request<T>(
     path: string,
     method: string,
@@ -95,74 +141,35 @@ export class HttpViewTransport {
     signal?: AbortSignal,
     extraHeaders?: HeadersInit,
   ): Promise<T> {
-    signal?.throwIfAborted();
-    const sequence = ++this.requestSequence;
-    const writing = method !== 'GET';
-    const timeout = AbortSignal.timeout(this.options.timeoutMs ?? 10000);
-    const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
-    const headers = new Headers(this.options.headers?.());
-    headers.set('Accept', 'application/json');
-    new Headers(extraHeaders).forEach((value, key) => headers.set(key, value));
-    headers.set(
-      'X-View-Formats',
-      this.supportedFormats.dashboard === 1
-        ? 'record,analysis,dashboard@1'
-        : 'record,analysis',
-    );
-    if (body !== undefined) headers.set('Content-Type', 'application/json');
-    const payload = body === undefined ? undefined : JSON.stringify(copy(body));
-    let response: Response;
-    let envelope:
-      | undefined
-      | {
-          data?: T;
-          permissions?: unknown;
-          error?: { code?: string; message?: string };
-        };
+    let exchange: Awaited<ReturnType<HttpViewTransport['exchange']>>;
     try {
-      response = await (this.options.fetch ?? globalThis.fetch)(
-        this.root + path,
-        { method, headers, body: payload, signal: requestSignal },
-      );
-      if (response.status !== 401) envelope = await response.json();
-    } catch {
-      if (writing)
-        throw new ViewServiceError(
-          'UNKNOWN_OUTCOME',
-          '写入结果未知，请使用同一请求重试或重新加载核对',
-        );
+      exchange = await this.exchange(path, method, body, signal, extraHeaders);
+    } catch (error) {
       if (signal?.aborted) throw signal.reason;
-      throw new ViewServiceError('UNAVAILABLE', '视图服务请求失败或超时');
+      throw new ViewServiceError(
+        'UNAVAILABLE',
+        error instanceof ViewServiceError
+          ? error.message
+          : '视图服务请求失败或超时',
+      );
     }
-    if (response.status === 401) {
-      this.permissionFence = Math.max(this.permissionFence, sequence);
-      this.permission.clear();
-      await response.body?.cancel().catch(() => {});
+    const { response, envelope } = exchange;
+    if (response.status === 401)
       throw new ViewServiceError(
         'UNAUTHENTICATED',
         '登录状态已失效，请重新登录',
       );
-    }
     if (!envelope || typeof envelope !== 'object')
-      throw new ViewServiceError(
-        writing ? 'UNKNOWN_OUTCOME' : 'UNAVAILABLE',
-        '视图服务响应无效',
-      );
-    if (envelope.permissions && sequence > this.permissionFence)
-      this.permission.acceptSnapshot(envelope.permissions);
+      throw new ViewServiceError('UNAVAILABLE', '视图服务响应无效');
     if (!response.ok) {
       const code = envelope.error?.code;
       if (
-        code &&
-        Object.prototype.hasOwnProperty.call(VIEW_SERVICE_STATUS, code) &&
-        VIEW_SERVICE_STATUS[code as ViewServiceErrorCode] === response.status
+        isViewServiceErrorCode(code) &&
+        VIEW_SERVICE_STATUS[code] === response.status
       )
-        throw new ViewServiceError(
-          code as ViewServiceErrorCode,
-          envelope.error?.message ?? code,
-        );
+        throw new ViewServiceError(code, envelope.error?.message ?? code);
       throw new ViewServiceError(
-        writing ? 'UNKNOWN_OUTCOME' : 'UNAVAILABLE',
+        'UNAVAILABLE',
         `视图服务返回 ${response.status}`,
       );
     }
@@ -171,9 +178,84 @@ export class HttpViewTransport {
       !Object.prototype.hasOwnProperty.call(envelope, 'data')
     )
       throw new ViewServiceError(
-        writing ? 'UNKNOWN_OUTCOME' : 'UNAVAILABLE',
+        'UNAVAILABLE',
         '视图服务响应缺少 data 或 permissions',
       );
     return envelope.data as T;
+  }
+
+  /**
+   * Writes always resolve to an observation: the service's own outcome when the body is
+   * intact, a definite rejection when authentication or validation failed before dispatch,
+   * and `unknown` whenever the network or the response shape leaves the outcome unproven.
+   */
+  async write<T>(
+    path: string,
+    method: string,
+    body: unknown,
+    signal: AbortSignal | undefined,
+    extraHeaders: HeadersInit,
+  ): Promise<WriteObservation<T>> {
+    let exchange: Awaited<ReturnType<HttpViewTransport['exchange']>>;
+    try {
+      exchange = await this.exchange(path, method, body, signal, extraHeaders);
+    } catch (error) {
+      if (signal?.aborted) throw signal.reason;
+      return {
+        outcome: 'unknown',
+        issue: {
+          code: 'UNKNOWN_OUTCOME',
+          message:
+            error instanceof ViewServiceError
+              ? error.message
+              : '写入结果未知，请使用同一请求核对或重试',
+        },
+      };
+    }
+    const { response, envelope } = exchange;
+    if (response.status === 401)
+      return {
+        outcome: 'rejected',
+        issue: {
+          code: 'UNAUTHENTICATED',
+          message: '登录状态已失效，请重新登录',
+        },
+      };
+    if (envelope && typeof envelope === 'object' && envelope.data) {
+      try {
+        const observation = readWriteObservation<T>(envelope.data);
+        // The body is trusted only when the status agrees with the outcome it claims.
+        const consistent =
+          observation.outcome === 'rejected'
+            ? VIEW_SERVICE_STATUS[observation.issue.code] === response.status
+            : observation.outcome === 'committed'
+              ? response.status === 200 || response.status === 201
+              : response.status === 202;
+        if (consistent) return observation;
+      } catch {
+        /* Fall through to the status-based interpretation. */
+      }
+    }
+    const code = envelope?.error?.code;
+    if (
+      response.status >= 400 &&
+      response.status < 500 &&
+      isViewServiceErrorCode(code) &&
+      VIEW_SERVICE_STATUS[code] === response.status
+    )
+      return {
+        outcome: 'rejected',
+        issue: {
+          code: code as ViewServiceErrorCode,
+          message: envelope?.error?.message ?? code,
+        },
+      };
+    return {
+      outcome: 'unknown',
+      issue: {
+        code: 'UNKNOWN_OUTCOME',
+        message: `视图服务返回 ${response.status}，写入结果待核对`,
+      },
+    };
   }
 }

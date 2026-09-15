@@ -38,7 +38,8 @@ function ConnectedView({
         serviceKey: `compensation:${baseURL}:${connection.model}`,
         scopeKey: 'local-demo',
         definition: connection.definition,
-        instances: connection.instances,
+        instances: connection.instances.instances,
+        defaultInstanceId: connection.instances.defaultInstanceId,
         resolveSource: () => connection.source,
         instancePermissions: instance => ({
           save: instance.scope.type === 'personal',

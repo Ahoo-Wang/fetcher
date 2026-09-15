@@ -15,10 +15,12 @@
 import assert from 'node:assert/strict';
 import {
   ViewEngine,
+  committedWrite,
   compileBuiltinFilter,
   compileFilterConfiguration,
   createFilterConfiguration,
   newFilterNode,
+  summaryOf,
 } from '@ahoo-wang/fetcher-view-engine';
 
 const definition = {
@@ -107,18 +109,20 @@ const host = {
     },
   },
   instance: {
+    // Catalog pages carry summaries only; the engine point-reads full instances.
     async list(id) {
       assert.equal(id, definition.id);
       return {
-        instances: [...saved.values()].map(value => JSON.parse(value)),
-        defaultInstanceId: initial.id,
+        items: [...saved.values()].map(value => summaryOf(JSON.parse(value))),
+        nextCursor: null,
       };
     },
     async load(id) {
       assert.ok(saved.has(id));
       return JSON.parse(saved.get(id));
     },
-    async save(instance) {
+    async save(instance, context) {
+      assert.equal(typeof context.requestId, 'string');
       assert.equal(
         instance.revision,
         JSON.parse(saved.get(instance.id)).revision,
@@ -129,9 +133,11 @@ const host = {
       };
       saved.set(next.id, JSON.stringify(next));
       writes.push('save');
-      return JSON.parse(saved.get(next.id));
+      const stored = JSON.parse(saved.get(next.id));
+      return committedWrite(stored, stored.revision);
     },
-    async create(instance) {
+    async create(instance, context) {
+      assert.equal(typeof context.requestId, 'string');
       assert.equal('id' in instance, false);
       assert.equal('revision' in instance, false);
       const created = {
@@ -141,7 +147,8 @@ const host = {
       };
       saved.set(created.id, JSON.stringify(created));
       writes.push('create');
-      return JSON.parse(saved.get(created.id));
+      const stored = JSON.parse(saved.get(created.id));
+      return committedWrite(stored, stored.revision);
     },
   },
   permission: {
@@ -160,7 +167,13 @@ const filterCompilers = {
     clear: props => ({ ...props, selectedId: undefined }),
   },
 };
-const engineOptions = { definitionId: definition.id, host, filterCompilers };
+// No preference port: the caller declares the starting view.
+const engineOptions = {
+  definitionId: definition.id,
+  host,
+  defaultInstanceId: initial.id,
+  filterCompilers,
+};
 const engine = new ViewEngine(engineOptions);
 async function verifyReloadedDraft(expectedDraft) {
   const reloaded = new ViewEngine(engineOptions);

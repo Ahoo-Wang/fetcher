@@ -143,18 +143,16 @@ function createPerformanceHost(rowCount: number, metricCount: number) {
     serviceKey: `performance-${rowCount}`,
     scopeKey: 'demo',
     definition,
-    instances: {
-      defaultInstanceId: 'a',
-      instances: configs.map(({ id, config }) => ({
-        id,
-        definitionId: definition.id,
-        kind: 'analysis',
-        title: `性能实例${id.toUpperCase()}`,
-        revision: '1',
-        scope: { type: 'personal' as const },
-        config,
-      })),
-    },
+    defaultInstanceId: 'a',
+    instances: configs.map(({ id, config }) => ({
+      id,
+      definitionId: definition.id,
+      kind: 'analysis',
+      title: `性能实例${id.toUpperCase()}`,
+      revision: '1',
+      scope: { type: 'personal' as const },
+      config,
+    })),
     resolveSource: () => ({
       async aggregate<Row extends RecordData = RecordData>(
         query: AggregationQuery,

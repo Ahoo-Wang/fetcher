@@ -73,7 +73,8 @@ for (const count of [1, 6, 20]) {
     const engine = new ViewEngine({
       definitionId: root.id,
       definition: root,
-      instances: { instances, defaultInstanceId: null },
+      instances,
+      defaultInstanceId: null,
       host: {
         instance: { load: async id => records.get(id) },
         definition: { load: async () => child },

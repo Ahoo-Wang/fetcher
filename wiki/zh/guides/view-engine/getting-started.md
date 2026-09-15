@@ -26,7 +26,7 @@ pnpm storybook
 | `ViewHost`       | 服务及 `resolveSource(sourceId)`       | 元数据、持久化、权限与本地数据源连接   |
 | `useViewEngine`  | `scopeKey`、`definitionId`、host       | 创建、加载、订阅和释放引擎             |
 
-本地元数据可通过 `definition` 和 `instances: { instances, defaultInstanceId }` 传入 `useViewEngine`。只有查询数据源也能展示页面；保存、创建、删除、排序等能力根据宿主方法和权限启用。
+本地元数据可通过 `definition`、`instances: ViewInstance[]` 和可选的 `defaultInstanceId`（`null` 或成员 ID）传入 `useViewEngine`。只有查询数据源也能展示页面；保存、创建、删除、排序等能力根据宿主方法和权限启用。
 
 ```tsx
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';

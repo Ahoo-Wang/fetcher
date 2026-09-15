@@ -20,6 +20,7 @@ import {
 } from 'react';
 import {
   type ViewHost,
+  type ViewPermissionService,
   resolveRecordPresentation,
   ViewEngine,
 } from '@ahoo-wang/fetcher-view-engine';
@@ -168,6 +169,9 @@ function WorkbenchSession({
   }, [stage, layout]);
   const [externalHost] = useState(() => createViewHost?.(() => runtime.source));
   const host = externalHost ?? runtime.hosts[role];
+  // Application-level permission refresh offered by the development HTTP host; not a ViewHost port.
+  const externalPermission = externalHost?.permission as
+    (ViewPermissionService & { refresh?: () => Promise<void> }) | undefined;
   const [owned, setOwned] = useState<{
     engine: ViewEngine;
     role: Role;
@@ -178,7 +182,11 @@ function WorkbenchSession({
       definitionId: orderDefinition.id,
       host,
       ...(!externalHost && (localDefinition || layout === 'card')
-        ? { definition: orderDefinition, instances: localViews }
+        ? {
+            definition: orderDefinition,
+            instances: localViews.instances,
+            defaultInstanceId: localViews.defaultInstanceId,
+          }
         : {}),
       filterCompilers: orderExtensions.filters,
     });
@@ -402,10 +410,10 @@ function WorkbenchSession({
             重置测试服务
           </Button>
         )}
-        {externalHost?.permission?.refresh && (
+        {externalPermission?.refresh && (
           <Button
             variant="outline"
-            onClick={() => void externalHost.permission!.refresh!()}
+            onClick={() => void externalPermission.refresh!()}
           >
             同步服务权限
           </Button>

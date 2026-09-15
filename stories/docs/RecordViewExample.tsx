@@ -19,8 +19,8 @@ import {
   type RecordData,
   type RecordQuerySource,
   type RecordViewDefinition,
+  type RecordViewInstance,
   type ViewHost,
-  type ViewInstanceList,
 } from '@ahoo-wang/fetcher-view-engine';
 import { useState } from 'react';
 import type { RecordCardRenderContext } from '@ahoo-wang/fetcher-view-engine/react';
@@ -96,37 +96,35 @@ const definition: RecordViewDefinition = {
     },
   ],
 };
-const instances: ViewInstanceList = {
-  defaultInstanceId: 'my-orders',
-  instances: [
-    {
-      id: 'my-orders',
-      definitionId: definition.id,
-      title: '我的订单',
-      kind: 'record',
-      scope: { type: 'personal' },
-      revision: '1',
-      config: {
-        filters: createFilterConfiguration({
-          ...newFilterNode(FilterOperator.GTE, 'amount'),
-          props: { value: 0 },
-        }),
-        sort: [{ field: 'id', direction: SortDirection.ASC }],
-        pagination: { mode: 'paged', size: 2 },
-        presentation: {
-          layout: 'table',
-          table: {
-            columns: [
-              { id: 'id', kind: 'field', field: 'id', width: 200 },
-              { id: 'amount', kind: 'field', field: 'amount', width: 160 },
-              { id: 'status', kind: 'field', field: 'status', width: 140 },
-            ],
-          },
+const defaultInstanceId = 'my-orders';
+const instances: RecordViewInstance[] = [
+  {
+    id: defaultInstanceId,
+    definitionId: definition.id,
+    title: '我的订单',
+    kind: 'record',
+    scope: { type: 'personal' },
+    revision: '1',
+    config: {
+      filters: createFilterConfiguration({
+        ...newFilterNode(FilterOperator.GTE, 'amount'),
+        props: { value: 0 },
+      }),
+      sort: [{ field: 'id', direction: SortDirection.ASC }],
+      pagination: { mode: 'paged', size: 2 },
+      presentation: {
+        layout: 'table',
+        table: {
+          columns: [
+            { id: 'id', kind: 'field', field: 'id', width: 200 },
+            { id: 'amount', kind: 'field', field: 'amount', width: 160 },
+            { id: 'status', kind: 'field', field: 'status', width: 140 },
+          ],
         },
       },
     },
-  ],
-};
+  },
+];
 
 // ponytail: local amount/AND demo only; use a business QueryApi for other predicates.
 function matches(amount: number, expression: FilterExpression): boolean {
@@ -196,26 +194,25 @@ function RecordViewWorkspace({
   renderCard,
   persistViews = false,
 }: RecordViewExampleProps) {
+  const layoutInstances = instances.map(instance => ({
+    ...instance,
+    config: {
+      ...instance.config,
+      presentation: resolveRecordPresentation(
+        definition,
+        layout,
+        instance.config.presentation,
+      ),
+    },
+  }));
   const [viewHost] = useState(() =>
     persistViews
       ? new IndexedDBViewHost({
           scopeKey: 'card-example-user',
           serviceKey: 'card-example',
           definition,
-          instances: {
-            ...instances,
-            instances: instances.instances.map(instance => ({
-              ...instance,
-              config: {
-                ...instance.config,
-                presentation: resolveRecordPresentation(
-                  definition,
-                  layout,
-                  instance.config.presentation,
-                ),
-              },
-            })),
-          },
+          instances: layoutInstances,
+          defaultInstanceId,
           resolveSource: host.resolveSource,
         })
       : host,
@@ -230,26 +227,8 @@ function RecordViewWorkspace({
         scopeKey="docs:orders"
         definitionId={definition.id}
         definition={definition}
-        instances={
-          persistViews
-            ? undefined
-            : layout === 'table'
-              ? instances
-              : {
-                  ...instances,
-                  instances: instances.instances.map(instance => ({
-                    ...instance,
-                    config: {
-                      ...instance.config,
-                      presentation: resolveRecordPresentation(
-                        definition,
-                        layout,
-                        instance.config.presentation,
-                      ),
-                    },
-                  })),
-                }
-        }
+        instances={persistViews ? undefined : layoutInstances}
+        defaultInstanceId={persistViews ? undefined : defaultInstanceId}
         host={viewHost}
         record={{ selectable: true, renderCard }}
         initialSidebarCollapsed

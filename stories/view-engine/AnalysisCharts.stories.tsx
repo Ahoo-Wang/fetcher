@@ -444,20 +444,18 @@ function OfflineCharts({
       serviceKey: `chart-fixture-${scenario}`,
       scopeKey: 'demo',
       definition,
-      instances: {
-        defaultInstanceId: 'example',
-        instances: [
-          {
-            id: 'example',
-            definitionId: definition.id,
-            kind: 'analysis',
-            title: title ?? fixture.title,
-            revision: '1',
-            scope: { type: 'personal' },
-            config: fixture.config,
-          },
-        ],
-      },
+      defaultInstanceId: 'example',
+      instances: [
+        {
+          id: 'example',
+          definitionId: definition.id,
+          kind: 'analysis',
+          title: title ?? fixture.title,
+          revision: '1',
+          scope: { type: 'personal' },
+          config: fixture.config,
+        },
+      ],
       resolveSource: () => ({
         async aggregate<Row extends RecordData = RecordData>(
           query: AggregationQuery,

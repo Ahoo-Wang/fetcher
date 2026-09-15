@@ -86,6 +86,8 @@ function capture(options: UseViewEngineOptions, identity: string) {
       definitionId: options.definitionId,
       definition: options.definition,
       instances: options.instances,
+      defaultInstanceId: options.defaultInstanceId,
+      instanceId: options.instanceId,
       host: options.host,
       filterCompilers: filters,
       analysisCompilers: analysis

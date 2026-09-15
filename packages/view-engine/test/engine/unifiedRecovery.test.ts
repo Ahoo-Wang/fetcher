@@ -18,8 +18,25 @@ import type {
   ViewEngineOptions,
   ViewInstance,
 } from '../../src/contracts/viewModel.js';
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
-import { deferred, definition, instance, selected, setup } from './fixtures.js';
+import {
+  ViewServiceError,
+  committedWrite,
+  rejectedWrite,
+  type PreferenceState,
+  type ReadOptions,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
+import {
+  catalogHost,
+  deferred,
+  definition,
+  instance,
+  page,
+  preference,
+  preferenceWrite,
+  selected,
+  setup,
+} from './fixtures.js';
 
 const engines: ViewEngine[] = [];
 function fixture(options: Partial<ViewEngineOptions> = {}) {
@@ -32,36 +49,36 @@ afterEach(() => engines.splice(0).forEach(engine => engine.dispose()));
 it.each(['success', 'failure'] as const)(
   'blocks full load until an ordering write completes with %s',
   async result => {
-    const pending = deferred<void>();
+    const pending = deferred<WriteObservation<PreferenceState>>();
     const saveOrder = vi.fn(() => pending.promise);
-    const list = vi.fn().mockResolvedValue({
-      instances: [instance(), instance('shared')],
-      defaultInstanceId: 'mine',
-    });
+    const catalog = catalogHost([instance(), instance('shared')], 'mine');
     const { engine } = fixture({
       instances: undefined,
-      host: { instance: { list }, preference: { saveOrder } } as ViewHost,
+      host: {
+        instance: catalog.instance,
+        preference: { ...catalog.preference, saveOrder },
+      } as ViewHost,
     });
     await engine.load();
     const ordering = engine.reorderInstances(['shared', 'mine']);
     const before = engine.getSnapshot();
     try {
       await expect(engine.load()).rejects.toThrow('视图顺序正在保存');
-      expect(list).toHaveBeenCalledOnce();
+      expect(catalog.instance.list).toHaveBeenCalledOnce();
       expect(engine.getSnapshot()).toBe(before);
       if (result === 'failure') {
-        pending.reject(new ViewServiceError('CONFLICT', 'stale order'));
+        pending.resolve(rejectedWrite('REVISION_CONFLICT', 'stale order'));
         await expect(ordering).rejects.toThrow('stale order');
         expect(engine.getSnapshot().instanceIds).toEqual(['mine', 'shared']);
       } else {
-        pending.resolve();
+        pending.resolve(preferenceWrite('mine', 'p2', ['shared', 'mine']));
         await ordering;
         expect(engine.getSnapshot().instanceIds).toEqual(['shared', 'mine']);
       }
       await engine.load();
-      expect(list).toHaveBeenCalledTimes(2);
+      expect(catalog.instance.list).toHaveBeenCalledTimes(2);
     } finally {
-      pending.resolve();
+      pending.resolve(preferenceWrite('mine'));
       await ordering.catch(() => {});
     }
   },
@@ -69,10 +86,8 @@ it.each(['success', 'failure'] as const)(
 
 it('retries the failed cursor page without losing its position or cycle history, while refresh starts over', async () => {
   const { engine, cursor } = fixture({
-    instances: {
-      instances: [instance('mine', 'cursor')],
-      defaultInstanceId: 'mine',
-    },
+    instances: [instance('mine', 'cursor')],
+    defaultInstanceId: 'mine',
   });
   cursor
     .mockResolvedValueOnce({ list: [], nextCursor: 'a' })
@@ -113,43 +128,101 @@ it('retries the failed cursor page without losing its position or cycle history,
   ]);
 });
 
-it.each([undefined, '', 'missing', 0, false])(
-  'rejects invalid list defaults %s at both load and instance reload boundaries',
+it.each(['', 'missing', 0, false])(
+  'rejects invalid local default %s before any instance is opened',
   async defaultInstanceId => {
-    const list = vi
-      .fn()
-      .mockResolvedValue({ instances: [instance()], defaultInstanceId });
-    const initial = fixture({
-      instances: undefined,
-      host: { instance: { list } } as ViewHost,
+    const { engine, paged } = fixture({
+      instances: [instance()],
+      defaultInstanceId: defaultInstanceId as string,
     });
-    await expect(initial.engine.load()).rejects.toThrow('默认视图');
-    expect(initial.engine.getSnapshot()).toMatchObject({
+    await expect(engine.load()).rejects.toThrow('默认视图');
+    expect(engine.getSnapshot()).toMatchObject({
       status: 'error',
       selectedInstanceId: null,
     });
-    expect(initial.paged).not.toHaveBeenCalled();
-    const active = fixture({ host: { instance: { list } } as ViewHost });
-    await active.engine.load();
-    active.engine.setTitle('Local edit');
-    const before = selected(active.engine).baseline;
-    await expect(active.engine.reloadInstance()).rejects.toThrow('默认视图');
-    expect(selected(active.engine).baseline).toBe(before);
-    expect(selected(active.engine).instance.title).toBe('Local edit');
-    list.mockResolvedValue({
-      instances: [{ ...instance(), revision: 'r2' }],
-      defaultInstanceId: null,
-    });
-    await active.engine.reloadInstance();
-    expect(selected(active.engine).baseline.revision).toBe('r2');
+    expect(paged).not.toHaveBeenCalled();
   },
 );
 
-it('clears failed navigation when the current valid instance is selected without discarding edits or querying again', async () => {
+it.each([undefined, '', 0, false])(
+  'isolates an invalid host preference default %s from the catalog and from instance reloads',
+  async defaultInstanceId => {
+    let remote = instance();
+    const catalog = catalogHost([instance()], undefined, null, () => remote);
+    const loadPreference = vi.fn(async () => ({
+      ...preference('mine'),
+      defaultInstanceId,
+      effectiveDefaultInstanceId: defaultInstanceId,
+    }));
+    const { engine, paged } = fixture({
+      instances: undefined,
+      host: {
+        instance: catalog.instance,
+        preference: { load: loadPreference },
+      } as unknown as ViewHost,
+    });
+    await engine.load();
+    expect(engine.getSnapshot()).toMatchObject({
+      status: 'ready',
+      error: null,
+      selectedInstanceId: null,
+      instanceIds: ['mine'],
+      catalog: { status: 'ready' },
+      preference: {
+        status: 'error',
+        error: expect.stringContaining('默认视图'),
+      },
+    });
+    expect(paged).not.toHaveBeenCalled();
+    await engine.selectInstance('mine');
+    engine.setTitle('Local edit');
+    remote = { ...instance(), revision: 'r2' };
+    // A point reload never consults the preference document again.
+    await engine.reloadInstance();
+    expect(selected(engine)).toMatchObject({
+      baseline: { revision: 'r2' },
+      instance: { title: 'Local edit' },
+    });
+    expect(loadPreference).toHaveBeenCalledOnce();
+  },
+);
+
+it('keeps the workspace usable when the host default is not in the catalog', async () => {
+  const catalog = catalogHost([instance()], 'missing');
   const { engine, paged } = fixture({
+    instances: undefined,
+    host: catalog as unknown as ViewHost,
+  });
+  await engine.load();
+  expect(engine.getSnapshot()).toMatchObject({
+    status: 'ready',
+    error: '无法加载实例：missing',
+    selectedInstanceId: null,
+    instanceIds: ['mine'],
+    preference: { status: 'ready' },
+  });
+  expect(paged).not.toHaveBeenCalled();
+  await engine.selectInstance('mine');
+  expect(engine.getSnapshot()).toMatchObject({
+    selectedInstanceId: 'mine',
+    error: null,
+  });
+  expect(paged).toHaveBeenCalledOnce();
+});
+
+it('clears failed navigation when the current valid instance is selected without discarding edits or querying again', async () => {
+  const catalog = catalogHost([instance(), instance('shared')], 'mine');
+  const load = vi.fn((id: string) =>
+    id === 'missing'
+      ? Promise.reject(new Error('not found'))
+      : catalog.instance.load(id),
+  );
+  const { engine, paged } = fixture({
+    instances: undefined,
     host: {
-      instance: { load: vi.fn().mockRejectedValue(new Error('not found')) },
-    } as ViewHost,
+      instance: { list: catalog.instance.list, load },
+      preference: catalog.preference,
+    } as unknown as ViewHost,
   });
   await engine.load();
   engine.setTitle('Draft');
@@ -165,24 +238,40 @@ it('clears failed navigation when the current valid instance is selected without
 it.each([undefined, '', '   '])(
   'rejects an empty revision %j from lists, reads and writes without replacing the baseline',
   async revision => {
-    const invalid = { ...instance(), revision };
+    const invalid = { ...instance(), revision } as unknown as ViewInstance;
     const listed = fixture({
-      instances: { instances: [invalid], defaultInstanceId: 'mine' },
+      instances: [invalid],
+      defaultInstanceId: 'mine',
     });
     await expect(listed.engine.load()).rejects.toThrow('revision');
     expect(listed.paged).not.toHaveBeenCalled();
-    const load = vi.fn().mockResolvedValue(invalid);
+    const catalogued = fixture({
+      instances: undefined,
+      host: {
+        instance: { list: async () => page([invalid]) },
+      } as unknown as ViewHost,
+    });
+    await catalogued.engine.load();
+    expect(catalogued.engine.getSnapshot()).toMatchObject({
+      status: 'ready',
+      instanceIds: [],
+      catalog: { status: 'error', error: expect.stringContaining('revision') },
+    });
+    expect(catalogued.paged).not.toHaveBeenCalled();
+    let remote = invalid;
+    const catalog = catalogHost([instance()], 'mine', null, () => remote);
     const { engine, host } = fixture({
-      host: { instance: { load } } as ViewHost,
+      instances: undefined,
+      host: catalog as unknown as ViewHost,
     });
     await engine.load();
     const baseline = selected(engine).baseline;
     await expect(engine.reloadInstance()).rejects.toThrow('revision');
     expect(selected(engine).baseline).toBe(baseline);
-    host.instance!.save = vi.fn().mockResolvedValue(invalid);
+    host.instance!.save = vi.fn(async () => committedWrite(invalid, 'r2'));
     await expect(engine.save()).rejects.toThrow('revision');
     expect(selected(engine)).toMatchObject({ baseline, requiresReload: true });
-    load.mockResolvedValue({ ...instance(), revision: 'r2' });
+    remote = { ...instance(), revision: 'r2' };
     await engine.reloadInstance();
     expect(selected(engine)).toMatchObject({
       baseline: { revision: 'r2' },
@@ -219,7 +308,9 @@ it('keeps a successful creation reconciliation successful when its record query 
     .mockRejectedValueOnce(
       new ViewServiceError('UNKNOWN_OUTCOME', 'lost response'),
     )
-    .mockResolvedValueOnce({ ...instance('created'), title: 'Copy' });
+    .mockResolvedValueOnce(
+      committedWrite({ ...instance('created'), title: 'Copy' }, 'r1'),
+    );
   const { engine, paged } = fixture({
     host: { instance: { create } } as ViewHost,
   });
@@ -296,27 +387,25 @@ it.each(['save', 'rename', 'delete', 'order'] as const)(
   },
 );
 
-it('keeps a navigation triggered by reconciliation cancellation newer than the recovered copy', async () => {
+it('keeps an in-flight navigation newer than the copy recovered by reconciliation', async () => {
   const remote = deferred<ViewInstance>();
   const persisted = { ...instance('created'), title: 'Normalized' };
-  let redirected: Promise<void> | undefined;
+  const catalog = catalogHost([instance(), instance('shared')], 'mine');
+  const load = vi.fn((id: string) => {
+    if (id === 'created') return Promise.resolve(persisted);
+    if (id !== 'remote') return catalog.instance.load(id);
+    return remote.promise;
+  });
   const { engine } = fixture({
+    instances: undefined,
     host: {
       instance: {
-        create: async () => persisted,
-        load: (id, signal) => {
-          if (id !== 'remote') return Promise.resolve(persisted);
-          signal!.addEventListener(
-            'abort',
-            () => {
-              redirected = engine.selectInstance('shared');
-            },
-            { once: true },
-          );
-          return remote.promise;
-        },
+        list: catalog.instance.list,
+        create: async () => committedWrite(persisted, 'r1'),
+        load,
       },
-    } as ViewHost,
+      preference: catalog.preference,
+    } as unknown as ViewHost,
   });
   await engine.load();
   await expect(
@@ -324,7 +413,8 @@ it('keeps a navigation triggered by reconciliation cancellation newer than the r
   ).rejects.toThrow('原样保存契约');
   const navigating = engine.selectInstance('remote');
   await engine.reloadInstance('mine');
-  await redirected;
+  // The reconciled copy is opened but never steals the selection from the pending navigation.
+  expect(engine.getSnapshot().openingInstanceId).toBe('remote');
   remote.resolve(instance('remote'));
   await navigating;
   expect(engine.getSnapshot().selectedInstanceId).toBe('remote');
@@ -335,17 +425,21 @@ it('keeps a navigation triggered by reconciliation cancellation newer than the r
 it('does not abort a newer full load started by a canceled instance-selection observer', async () => {
   const pending = deferred<ViewInstance>();
   let newest: Promise<void> | undefined;
+  const catalog = catalogHost([instance(), instance('shared')], 'mine');
   const { engine } = fixture({
     definition: undefined,
+    instances: undefined,
     host: {
       definition: {
-        load: async (_id, signal) => {
+        load: async (_id: string, { signal }: ReadOptions = {}) => {
           signal?.throwIfAborted();
           return definition;
         },
       },
       instance: {
-        load: (_id, signal) => {
+        list: catalog.instance.list,
+        load: (id: string, { signal }: ReadOptions = {}) => {
+          if (id !== 'remote') return catalog.instance.load(id);
           signal!.addEventListener(
             'abort',
             () => {
@@ -356,7 +450,8 @@ it('does not abort a newer full load started by a canceled instance-selection ob
           return pending.promise;
         },
       },
-    } as ViewHost,
+      preference: catalog.preference,
+    } as unknown as ViewHost,
   });
   await engine.load();
   const selecting = engine.selectInstance('remote');
@@ -379,7 +474,7 @@ it('keeps a newer load in progress when failure cleanup aborts the older request
     definition: undefined,
     host: {
       definition: {
-        load: async (_id, signal) => {
+        load: async (_id: string, { signal }: ReadOptions = {}) => {
           if (attempts++ === 0) {
             signal!.addEventListener(
               'abort',
@@ -411,7 +506,8 @@ it('rejects selection reentered during full load before it can capture an obsole
   let currentDefinition = definition;
   let currentInstance = instance();
   let reentered: Promise<unknown> | undefined;
-  const load = vi.fn((id: string, signal?: AbortSignal) => {
+  const load = vi.fn((id: string, { signal }: ReadOptions = {}) => {
+    if (id === 'mine') return Promise.resolve(structuredClone(currentInstance));
     if (id === 'late') return lateRead.promise;
     signal!.addEventListener(
       'abort',
@@ -430,14 +526,9 @@ it('rejects selection reentered during full load before it can capture an obsole
     instances: undefined,
     host: {
       definition: { load: async () => currentDefinition },
-      instance: {
-        list: async () => ({
-          instances: [currentInstance],
-          defaultInstanceId: 'mine',
-        }),
-        load,
-      },
-    } as ViewHost,
+      instance: { list: async () => page([currentInstance]), load },
+      preference: { load: async () => preference('mine') },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const selecting = engine.selectInstance('old');
@@ -452,7 +543,7 @@ it('rejects selection reentered during full load before it can capture an obsole
   await selecting;
   expect(await reentered).toBeInstanceOf(Error);
   expect(String(await reentered)).toContain('正在加载');
-  expect(load).toHaveBeenCalledOnce();
+  expect(load.mock.calls.map(([id]) => id)).toEqual(['mine', 'old', 'mine']);
   expect(
     engine.getSnapshot().definition?.fields.map(field => field.field),
   ).toEqual(['state.id']);
@@ -537,15 +628,16 @@ it.each([
       host: {
         definition: { load: async () => currentDefinition },
         instance: {
-          list: async () => ({
-            instances: [saved],
-            defaultInstanceId:
-              currentDefinition === oldDefinition ? 'mine' : null,
-          }),
+          list: async () => page([saved]),
+          load: async () => structuredClone(saved),
+        },
+        preference: {
+          load: async () =>
+            preference(currentDefinition === oldDefinition ? 'mine' : null),
         },
         resolveSource: id =>
           id === 'old' ? { paged, aggregate } : newerSource,
-      },
+      } as unknown as ViewHost,
     });
     await engine.load();
     currentDefinition = {
@@ -569,10 +661,8 @@ it.each([
     expect(paged).toHaveBeenCalledOnce();
     expect(aggregate).toHaveBeenCalledOnce();
     expect(engine.getSnapshot().selectedInstanceId).toBeNull();
-    expect(selected(engine, 'mine')).toMatchObject({
-      rows: [],
-      allSummary: { status: 'idle', values: {} },
-    });
+    // Nothing is selected after the newer load, so the stale results have no session to land in.
+    expect(engine.getSnapshot().sessions.mine).toBeUndefined();
     await engine.selectInstance('mine');
     expect(selected(engine).rows).toEqual([
       { state: { newId: 'fresh', amount: 2 } },

@@ -21,6 +21,8 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPage } from './fixtures/OwnedViewPage.js';
+import { committedWrite } from '../src/contracts/viewServiceContract.js';
+import { preference } from './engine/fixtures.js';
 import { instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
@@ -76,10 +78,7 @@ it('updates save-as permissions while preserving an open form and its name', asy
 
 it('refreshes open management and delete controls when host capabilities change', async () => {
   const { host, paged } = setup();
-  const local = {
-    instances: [instance, { ...instance, id: 'other', title: '其他视图' }],
-    defaultInstanceId: instance.id,
-  };
+  const local = [instance, { ...instance, id: 'other', title: '其他视图' }];
   host.permission!.getInstance = () => ({
     save: true,
     saveAsPersonal: true,
@@ -87,19 +86,22 @@ it('refreshes open management and delete controls when host capabilities change'
     rename: true,
     delete: true,
   });
-  host.instance!.rename = vi.fn(async (id, title) => ({
-    ...instance,
-    id,
-    title,
-  }));
-  host.instance!.delete = vi.fn(async () => ({ defaultInstance: null }));
-  host.preference!.saveOrder = vi.fn(async () => {});
+  host.instance!.rename = vi.fn(async (id, title) =>
+    committedWrite({ ...instance, id, title, revision: 'renamed' }, 'renamed'),
+  );
+  host.instance!.delete = vi.fn(async id =>
+    committedWrite({ id, revision: 'tomb' }, 'tomb'),
+  );
+  host.preference!.saveOrder = vi.fn(async () =>
+    committedWrite(preference(instance.id, 'p2'), 'p2'),
+  );
   const view = render(
     <ViewPage
       scopeKey="user"
       definitionId="orders"
       host={host}
       instances={local}
+      defaultInstanceId={instance.id}
     />,
   );
   await screen.findByRole('cell', { name: '42' });
@@ -120,6 +122,7 @@ it('refreshes open management and delete controls when host capabilities change'
       scopeKey="user"
       definitionId="orders"
       instances={local}
+      defaultInstanceId={instance.id}
       host={{
         ...host,
         preference: { saveOrder: undefined },

@@ -31,8 +31,8 @@ import { Button } from '../components/ui/button.js';
 import { Input } from '../components/ui/input.js';
 import { ListOrderItem } from '../lib/ListOrder.js';
 import type { ViewEngine } from '../engine/ViewEngine.js';
-import type { ViewSession } from '../contracts/viewModel.js';
 import type { ExecuteViewManagerAction } from './useViewManagerAction.js';
+import type { InstanceEntry } from './ViewNavigation.js';
 
 /** A row owns its transient name buffer and returns focus after rename or cancellation. */
 import { useViewCapabilities } from './useViewCapabilities.js';
@@ -41,21 +41,22 @@ import { ViewKindIcon } from './ViewKindIcon.js';
 
 export function ViewManagerRow({
   engine,
-  session,
+  entry,
   busy,
   execute,
   fallbackFocus,
   onDelete,
 }: {
   engine: ViewEngine;
-  session: ViewSession;
+  entry: InstanceEntry;
   busy: boolean;
   execute: ExecuteViewManagerAction;
   fallbackFocus: RefObject<HTMLElement | null>;
   onDelete(trigger: HTMLButtonElement): void;
 }) {
-  const { id, scope } = session.instance;
-  const title = session.baseline.title;
+  const { id, scope, kind } = entry.summary;
+  const session = entry.session;
+  const title = entry.summary.title;
   const viewCapabilities = useViewCapabilities(engine);
   const capabilities = viewCapabilities.instances[id];
   const state = useSyncExternalStore(
@@ -70,7 +71,9 @@ export function ViewManagerRow({
   const permissions = capabilities?.permissions ?? deniedPermissions;
   const system = scope.type === 'public' && scope.source === 'system';
   const writing =
-    busy || session.writeStatus !== 'idle' || session.requiresReload;
+    busy ||
+    (session !== undefined &&
+      (session.writeStatus !== 'idle' || session.requiresReload));
   const [name, setName] = useState<string | null>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
@@ -98,9 +101,9 @@ export function ViewManagerRow({
       id={id}
       aria-label={title}
       aria-description={
-        session.kind === 'dashboard'
+        kind === 'dashboard'
           ? '仪表盘'
-          : session.kind === 'analysis'
+          : kind === 'analysis'
             ? '分析视图'
             : '数据视图'
       }
@@ -118,7 +121,7 @@ export function ViewManagerRow({
           >
             <GripVerticalIcon aria-hidden="true" />
           </Button>
-          <ViewKindIcon kind={session.kind} />
+          <ViewKindIcon kind={kind} />
           {permissions.rename && name !== null ? (
             <>
               <Input
@@ -217,8 +220,9 @@ export function ViewManagerRow({
               title="删除视图"
               disabled={
                 busy ||
-                session.writeStatus !== 'idle' ||
-                (session.requiresReload && !capabilities?.retryDelete)
+                (session !== undefined &&
+                  (session.writeStatus !== 'idle' ||
+                    (session.requiresReload && !capabilities?.retryDelete)))
               }
               onClick={event => onDelete(event.currentTarget)}
             >

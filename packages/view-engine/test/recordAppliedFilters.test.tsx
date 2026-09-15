@@ -51,18 +51,16 @@ async function openView(root: FilterComponentConfig) {
         { field: 'customer', label: '客户', type: 'string' },
       ],
     },
-    instances: {
-      instances: [
-        {
-          ...instance,
-          config: {
-            ...instance.config,
-            filters: createFilterConfiguration(root),
-          },
+    instances: [
+      {
+        ...instance,
+        config: {
+          ...instance.config,
+          filters: createFilterConfiguration(root),
         },
-      ],
-      defaultInstanceId: instance.id,
-    },
+      },
+    ],
+    defaultInstanceId: instance.id,
     host,
   });
   engines.push(engine);
@@ -81,18 +79,16 @@ async function openApplied(
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition: viewDefinition,
-    instances: {
-      instances: [
-        {
-          ...instance,
-          config: {
-            ...instance.config,
-            filters: createFilterConfiguration(draft),
-          },
+    instances: [
+      {
+        ...instance,
+        config: {
+          ...instance.config,
+          filters: createFilterConfiguration(draft),
         },
-      ],
-      defaultInstanceId: instance.id,
-    },
+      },
+    ],
+    defaultInstanceId: instance.id,
     host,
     filterCompilers,
   });

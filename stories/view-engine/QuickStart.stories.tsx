@@ -25,7 +25,7 @@ const meta = {
       source: { code: source, language: 'tsx' },
       description: {
         component:
-          '从三笔订单开始：提供 ViewDefinition、ViewInstanceList 和 ViewHost.resolveSource，由 ViewPage 管理引擎生命周期。金额改为 10000 后按 Enter 查询，只剩 SO-202609-1001；清空已应用条件值后恢复全部记录。此页只提供查询，保存需要接入视图服务。\n\n下一步：[保存我的工作视图](./?path=/docs/view-engine-我的工作视图--docs)，再看[扩展注册与宿主接入](./?path=/docs/view-engine-扩展接入--docs)。完整业务体验位于[销售订单全链路](./?path=/docs/view-engine-全链路体验--docs)。',
+          '从三笔订单开始：提供 ViewDefinition、本地 ViewInstance 列表和 ViewHost.resolveSource，由 ViewPage 管理引擎生命周期。金额改为 10000 后按 Enter 查询，只剩 SO-202609-1001；清空已应用条件值后恢复全部记录。此页只提供查询，保存需要接入视图服务。\n\n下一步：[保存我的工作视图](./?path=/docs/view-engine-我的工作视图--docs)，再看[扩展注册与宿主接入](./?path=/docs/view-engine-扩展接入--docs)。完整业务体验位于[销售订单全链路](./?path=/docs/view-engine-全链路体验--docs)。',
       },
     },
   },
