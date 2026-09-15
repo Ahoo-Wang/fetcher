@@ -140,3 +140,44 @@ it('publishes added and removed default saving capability without disturbing the
   expect(engine.getCapabilitiesSnapshot().setDefault).toBe(false);
   unsubscribe();
 });
+
+it('reads catalog, point loads and preference through the replaced host after updateHost', async () => {
+  const { host } = setup();
+  const engine = new ViewEngine({ definitionId: 'orders', host });
+  await engine.load();
+  const nextLoad = vi.fn(async () => structuredClone(instance));
+  const nextList = vi.fn(async () => ({
+    items: [structuredClone(instance)].map(item => ({
+      id: item.id,
+      definitionId: item.definitionId,
+      title: item.title,
+      kind: item.kind,
+      scope: item.scope,
+      revision: item.revision,
+    })),
+    nextCursor: null,
+    total: 1,
+  }));
+  const nextPreference = vi.fn(async () => preference(null));
+  engine.updateHost({
+    ...host,
+    instance: { ...host.instance, load: nextLoad, list: nextList },
+    preference: { load: nextPreference },
+  });
+  await engine.loadSavedInstance(instance.id);
+  await engine.reloadCatalog();
+  await engine.reloadPreference();
+  expect(nextLoad).toHaveBeenCalledWith(
+    instance.id,
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  );
+  expect(nextList).toHaveBeenCalledWith(
+    'orders',
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  );
+  expect(nextPreference).toHaveBeenCalledWith(
+    'orders',
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  );
+  engine.dispose();
+});

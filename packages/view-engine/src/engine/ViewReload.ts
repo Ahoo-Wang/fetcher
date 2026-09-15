@@ -247,7 +247,8 @@ export class ViewReload {
               {
                 requestId: request.requestId,
                 signal: controller.signal,
-                definitionRevision: definition.revision,
+                // The first dispatch's revision is part of the idempotency body.
+                definitionRevision: request.definitionRevision ?? definition.revision,
               },
             ),
           this.store.limits.writeTimeoutMs,
@@ -311,6 +312,11 @@ export class ViewReload {
     );
     if (result.kind !== session.instance.kind)
       throw new Error('重新加载不能改变实例类型');
+    // A committed-but-receipt-pending write carries a commit proof revision; a point read
+    // older than that proof is a stale read model, not a settlement of the pending write.
+    const pending = this.work.pendingWrite(id);
+    if (pending?.revision !== undefined && result.revision !== pending.revision)
+      throw new Error('重载结果早于已确认的提交版本，请稍后重新加载核对');
     const baseline = copy(result);
     this.work.clearDelete(id);
     this.work.clearPendingWrite(id);

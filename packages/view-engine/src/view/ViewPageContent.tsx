@@ -162,6 +162,12 @@ export function ViewPageContent({
       onLoadMore: () => run(() => engine.loadMoreInstances()),
       onRetry: () => run(() => engine.reloadCatalog()),
     },
+    // Preference failures never block the catalog or sessions; they get their own retry.
+    preference: {
+      loading: state.preference.status === 'loading',
+      error: state.preference.error,
+      onRetry: () => run(() => engine.reloadPreference()),
+    },
   };
   const toolbarStart = (
     <div className="fve:flex fve:min-w-0 fve:flex-wrap fve:items-center fve:gap-2">

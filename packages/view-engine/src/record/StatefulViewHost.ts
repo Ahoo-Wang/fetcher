@@ -464,7 +464,11 @@ export abstract class StatefulViewHost implements ViewHost {
           // Materialize the order the user sees before applying the change: the explicit order
           // (stale IDs included) followed by the remaining visible IDs in base order. Slots
           // outside the scope, such as another view group, keep their positions.
-          const explicit = current?.order ?? [];
+          // Entries for instances that are no longer visible (deleted, unshared) are
+          // dropped so repeated create/reorder/delete cycles cannot grow the document.
+          const explicit = (current?.order ?? []).filter(id =>
+            visible.has(id),
+          );
           const materialized = [
             ...explicit,
             ...this.baseOrder(state, this.options.scopeKey)

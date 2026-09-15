@@ -20,6 +20,7 @@ import type { ViewHost } from '../../src/contracts/ViewHost.js';
 import { committedWrite } from '../../src/contracts/viewServiceContract.js';
 import {
   catalogHost,
+  definition,
   deferred,
   instance,
   page,
@@ -178,5 +179,79 @@ it('never confirms a returned created ID from catalog content when it cannot be 
   expect(engine.getSnapshot().sessions['created-known']).toBeUndefined();
   expect(list).not.toHaveBeenCalled();
   expect(create).toHaveBeenCalledOnce();
+  engine.dispose();
+});
+
+it('does not settle a receipt-pending save with a stale point read', async () => {
+  let remoteRevision = 'r1';
+  const save = vi.fn(() => ({
+    outcome: 'committed_pending_receipt' as const,
+    targetId: 'mine',
+    revision: 'r9',
+    issue: { code: 'UNAVAILABLE' as const, message: 'receipt later' },
+  }));
+  const load = vi.fn(async () => ({
+    ...instance(),
+    title: remoteRevision === 'r9' ? 'Draft title' : 'mine',
+    revision: remoteRevision,
+  }));
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () => page([instance(), instance('shared')]),
+        load,
+        save,
+      },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  engine.setTitle('Draft title');
+  await expect(engine.save()).rejects.toThrow(/回执待核对/);
+  remoteRevision = 'r1';
+  await expect(engine.reloadInstance()).rejects.toThrow(/早于已确认|核对/);
+  expect(selected(engine).requiresReload).toBe(true);
+  remoteRevision = 'r9';
+  await engine.reloadInstance();
+  expect(selected(engine)).toMatchObject({
+    requiresReload: false,
+    baseline: { title: 'Draft title', revision: 'r9' },
+  });
+  engine.dispose();
+});
+
+it('replays an unverified creation with the definition revision it was dispatched under', async () => {
+  let hostRevision = 'd1';
+  const create = vi.fn(async () => {
+    throw new Error('timeout');
+  });
+  const definitionAt = (revision: string) => ({
+    ...definition,
+    revision,
+  });
+  const { engine } = setup({
+    definition: undefined,
+    instances: undefined,
+    host: {
+      definition: {
+        load: async () => definitionAt(hostRevision),
+      },
+      instance: {
+        list: async () => page([instance()]),
+        create,
+        load: async (id: string) => structuredClone(instance(id)),
+      },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(
+    engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
+  ).rejects.toThrow('timeout');
+  hostRevision = 'd2';
+  await engine.load();
+  await expect(engine.reloadInstance()).rejects.toThrow('timeout');
+  expect(create).toHaveBeenCalledTimes(2);
+  expect(create.mock.calls[0][1].definitionRevision).toBe('d1');
+  expect(create.mock.calls[1][1].definitionRevision).toBe('d1');
   engine.dispose();
 });

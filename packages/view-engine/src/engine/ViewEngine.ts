@@ -398,6 +398,8 @@ export class ViewEngine {
     if (this.host === host) return;
     this.unsubscribePermissions?.();
     this.host = host;
+    // Host-backed reads (catalog, point loads, preference) must switch to the new host too.
+    this.source.updateHost(host);
     this.observePermissions();
     this.store.publish({});
   }
@@ -728,6 +730,13 @@ export class ViewEngine {
   /** Reloads the catalog from its first page without touching sessions or the selection. */
   reloadCatalog(): Promise<void> {
     return this.observe('catalog', false, () => this.loader.reloadCatalog());
+  }
+
+  /** Retries an independent preference read without touching sessions or the selection. */
+  reloadPreference(): Promise<void> {
+    return this.observe('catalog', false, () =>
+      this.loader.reloadPreference(),
+    );
   }
 
   /** Appends the next catalog page without touching sessions or the selection. */

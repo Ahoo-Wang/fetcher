@@ -45,3 +45,28 @@ it('offers catalog reload after a failed first page and paging for later pages',
   expect(screen.queryByRole('button', { name: '加载更多视图' })).toBeNull();
   expect(host.instance!.list).toHaveBeenCalledTimes(3);
 });
+
+it('offers an independent preference retry after a failed preference read', async () => {
+  const { host } = setup();
+  host.instance!.list = vi.fn(async () => page([instance]));
+  host.preference = {
+    load: vi
+      .fn()
+      .mockRejectedValueOnce(new Error('偏好暂不可用'))
+      .mockResolvedValueOnce({
+        revision: 'p2',
+        order: [],
+        defaultInstanceId: null,
+        effectiveDefaultInstanceId: null,
+      }),
+  };
+  render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
+  expect((await screen.findAllByRole('alert'))[0].textContent).toContain(
+    '偏好暂不可用',
+  );
+  fireEvent.click(
+    screen.getAllByRole('button', { name: '重新加载个人偏好' })[0],
+  );
+  await vi.waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+  expect(host.preference!.load).toHaveBeenCalledTimes(2);
+});

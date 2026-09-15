@@ -722,7 +722,7 @@ it('keeps the stored default and explicit order after deleting the default and l
       ctx(),
     ),
   );
-  expect(reordered.order).toEqual([instance.id, 'system', 'other']);
+  expect(reordered.order).toEqual(['system', 'other']);
   const engine = new ViewEngine({
     definitionId: definition.id,
     host: new MemoryViewHost(input),
@@ -1353,4 +1353,35 @@ it('reconciles an earlier write by request identity without replaying it', async
     code: 'INVALID_ARGUMENT',
   });
   expect((await host.instance.load(instance.id)).title).toBe('核对');
+});
+
+it('drops stored order entries for instances that are no longer visible', async () => {
+  const input = options();
+  input.instances.push({ ...instance, id: 'gone' }, { ...instance, id: 'kept' });
+  const host = new MemoryViewHost(input);
+  const first = committed(
+    await host.preference.saveOrder(
+      definition.id,
+      {
+        scopeInstanceIds: [instance.id, 'gone', 'kept'],
+        orderedInstanceIds: [instance.id, 'gone', 'kept'],
+      },
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
+  );
+  const gone = await host.instance.load('gone');
+  committed(await host.instance.delete(gone.id, gone.revision, ctx()));
+  const next = committed(
+    await host.preference.saveOrder(
+      definition.id,
+      {
+        scopeInstanceIds: [instance.id, 'kept'],
+        orderedInstanceIds: [instance.id, 'kept'],
+      },
+      preconditionFor(first.revision),
+      ctx(),
+    ),
+  );
+  expect(next.order).toEqual([instance.id, 'system', 'kept']);
 });

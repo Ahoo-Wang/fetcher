@@ -27,6 +27,7 @@ import {
   deleteReceipt,
   instance,
   managementPermissions as permissions,
+  page,
   preferenceWrite,
   selected,
   setup,
@@ -279,5 +280,104 @@ it('does not resurrect a deleted view or drop a new one when order persistence f
   await ordering;
   expect(engine.getSnapshot().instanceIds).toEqual(['shared', 'created']);
   expect(engine.getSnapshot().selectedInstanceId).toBe('created');
+  engine.dispose();
+});
+
+it('serializes default and order writes against the same preference document', async () => {
+  const defaultResponse = deferred<WriteObservation<PreferenceState>>();
+  const orderResponse = deferred<WriteObservation<PreferenceState>>();
+  const { engine } = setup({
+    host: {
+      preference: {
+        load: async () => preference('mine'),
+        saveDefault: () => defaultResponse.promise,
+        saveOrder: () => orderResponse.promise,
+      },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  const saving = engine.setDefaultInstance('shared');
+  await expect(engine.reorderInstances(['shared', 'mine'])).rejects.toThrow(
+    /正在保存/,
+  );
+  defaultResponse.resolve(preferenceWrite('shared'));
+  await saving;
+  const ordering = engine.reorderInstances(['shared', 'mine']);
+  await expect(engine.setDefaultInstance(null)).rejects.toThrow(/正在保存/);
+  orderResponse.resolve(preferenceWrite(null, 'p3', ['shared', 'mine']));
+  await ordering;
+  engine.dispose();
+});
+
+it('rejects an order receipt that does not implement the requested order', async () => {
+  const { engine } = setup({
+    host: {
+      preference: {
+        load: async () => preference('mine'),
+        saveOrder: async () =>
+          preferenceWrite('mine', 'p2', ['mine', 'shared']),
+      },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(engine.reorderInstances(['shared', 'mine'])).rejects.toThrow(
+    /排序回执/,
+  );
+  expect(engine.getSnapshot().instanceIds).toEqual(['mine', 'shared']);
+  engine.dispose();
+});
+
+it('gates further writes on an unopened catalog entry after an uncertain rename', async () => {
+  const { engine } = setup({
+    host: {
+      instance: {
+        rename: async () => {
+          throw new Error('timeout');
+        },
+        delete: async (id: string) => deleteReceipt(id),
+      },
+      permission: { getInstance: permissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await expect(engine.renameInstance('Later', 'shared')).rejects.toThrow(
+    'timeout',
+  );
+  await expect(engine.renameInstance('Again', 'shared')).rejects.toThrow(
+    /核对/,
+  );
+  await expect(engine.deleteInstance('shared')).rejects.toThrow(/核对/);
+  engine.dispose();
+});
+
+it('keeps a concurrent navigation that happens while the deleted successor is point-read', async () => {
+  const successorRead = deferred<ViewInstance>();
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () =>
+          page([instance(), instance('shared'), instance('other')]),
+        load: async (id: string) => {
+          if (id === 'mine') return structuredClone(instance());
+          if (id === 'other') return structuredClone(instance('other'));
+          if (id === 'shared') return successorRead.promise;
+          throw new Error(`unexpected load: ${id}`);
+        },
+        delete: async (id: string) => deleteReceipt(id),
+      },
+      permission: { getInstance: permissions },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  const deleting = engine.deleteInstance();
+  await engine.selectInstance('other');
+  successorRead.resolve(structuredClone(instance('shared')));
+  await deleting;
+  const state = engine.getSnapshot();
+  expect(state.selectedInstanceId).toBe('other');
+  expect(state.sessions.other).toBeDefined();
+  expect(state.sessions.mine).toBeUndefined();
+  expect(state.instanceIds).toEqual(['shared', 'other']);
   engine.dispose();
 });

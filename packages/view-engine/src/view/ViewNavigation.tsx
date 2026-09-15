@@ -128,12 +128,19 @@ export interface CatalogPaging {
   /** Reload from the first page after a failed catalog read. */
   onRetry(): void;
 }
+/** Independent personal-preference read state; failure never blocks the catalog. */
+export interface PreferenceReadback {
+  loading: boolean;
+  error: string | null;
+  onRetry(): void;
+}
 interface NavigationProps {
   groups: InstanceGroup[];
   selectedId: string | null;
   onSelect(id: string): void;
   onManage(trigger: HTMLElement | null): void;
   catalog?: CatalogPaging;
+  preference?: PreferenceReadback;
 }
 
 export function ViewInstanceSwitcher({
@@ -144,6 +151,7 @@ export function ViewInstanceSwitcher({
   triggerRef,
   managerOpen,
   catalog,
+  preference,
 }: NavigationProps & {
   triggerRef: RefObject<HTMLButtonElement | null>;
   managerOpen: boolean;
@@ -209,6 +217,25 @@ export function ViewInstanceSwitcher({
                 重新加载目录
               </Button>
             )}
+            {preference?.error && (
+              <p
+                role="alert"
+                className="fve:px-2 fve:text-xs fve:text-destructive"
+              >
+                {preference.error}
+              </p>
+            )}
+            {preference?.error && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="fve:w-full fve:justify-start"
+                disabled={preference.loading}
+                onClick={preference.onRetry}
+              >
+                重新加载个人偏好
+              </Button>
+            )}
             {catalog?.hasMore && (
               <Button
                 variant="ghost"
@@ -266,6 +293,7 @@ export function ViewSidebar({
   onCollapse,
   toggleRef,
   catalog,
+  preference,
 }: NavigationProps & {
   title: string;
   toggleRef: RefObject<HTMLButtonElement | null>;
@@ -336,6 +364,24 @@ export function ViewSidebar({
           onClick={catalog.onRetry}
         >
           重新加载目录
+        </Button>
+      )}
+      {preference?.error && (
+        <p
+          role="alert"
+          className="fve:px-2 fve:text-xs fve:text-destructive"
+        >
+          {preference.error}
+        </p>
+      )}
+      {preference?.error && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={preference.loading}
+          onClick={preference.onRetry}
+        >
+          重新加载个人偏好
         </Button>
       )}
       {catalog?.hasMore && (

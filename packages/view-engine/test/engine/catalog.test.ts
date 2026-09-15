@@ -352,3 +352,104 @@ it('drops catalog members that disappeared from the host on reload while keeping
   expect(engine.getSnapshot().selectedInstanceId).toBe('v5');
   engine.dispose();
 });
+
+it('submits the catalog write read fence to the next catalog read only', async () => {
+  const { list, load } = pagedHost(7);
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list,
+        load,
+        delete: async (id: string) => ({
+          outcome: 'committed' as const,
+          value: { id, revision: 't1' },
+          revision: 't1',
+          visibility: 'pending' as const,
+          readFence: 'fence-1',
+        }),
+      },
+      preference: { load: async () => preference('v1') },
+      permission: {
+        getInstance: () => ({
+          save: true,
+          saveAsPersonal: true,
+          saveAsShared: true,
+          delete: true,
+        }),
+      },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await engine.deleteInstance('v1');
+  await engine.reloadCatalog();
+  expect(list).toHaveBeenLastCalledWith(
+    'orders',
+    expect.objectContaining({ readFence: 'fence-1' }),
+  );
+  await engine.reloadCatalog();
+  expect(list.mock.lastCall?.[1]).not.toHaveProperty('readFence');
+  engine.dispose();
+});
+
+it('retries a failed preference read without reloading the workspace', async () => {
+  const { list, load } = pagedHost(7);
+  let failing = true;
+  const loadPreference = vi.fn(async () => {
+    if (failing) throw new Error('preference down');
+    return preference('v1');
+  });
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: { list, load },
+      preference: { load: loadPreference },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  expect(engine.getSnapshot().preference).toMatchObject({
+    status: 'error',
+    error: 'preference down',
+  });
+  failing = false;
+  await engine.reloadPreference();
+  expect(engine.getSnapshot().preference).toMatchObject({
+    status: 'ready',
+    error: null,
+    revision: 'p1',
+  });
+  expect(engine.getSnapshot().defaultInstanceId).toBe('v1');
+  engine.dispose();
+});
+
+it('submits a pending preference write read fence to the next preference read only', async () => {
+  const loadPreference = vi.fn(async () => preference('mine'));
+  const { engine } = setup({
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () => page([instance(), instance('shared')]),
+      },
+      preference: {
+        load: loadPreference,
+        saveDefault: async () => ({
+          outcome: 'committed' as const,
+          value: preference('shared', 'p2'),
+          revision: 'p2',
+          visibility: 'pending' as const,
+          readFence: 'pfence',
+        }),
+      },
+    } as unknown as ViewHost,
+  });
+  await engine.load();
+  await engine.setDefaultInstance('shared');
+  await engine.reloadPreference();
+  expect(loadPreference).toHaveBeenLastCalledWith(
+    'orders',
+    expect.objectContaining({ readFence: 'pfence' }),
+  );
+  await engine.reloadPreference();
+  expect(loadPreference.mock.lastCall?.[1]).not.toHaveProperty('readFence');
+  engine.dispose();
+});

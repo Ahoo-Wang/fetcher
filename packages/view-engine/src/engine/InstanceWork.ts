@@ -26,6 +26,8 @@ interface CreateRequest {
   submitted: ViewInstance;
   knownIds: ReadonlySet<string>;
   source: ViewSession;
+  /** Definition revision captured at first dispatch; replays must reuse it or the idempotency body differs. */
+  definitionRevision?: string;
 }
 interface InstanceOperation {
   write?: symbol;
@@ -176,6 +178,20 @@ export class InstanceWork {
     const operation = this.operation(id);
     operation.pending = write;
     delete operation.lastRequestId;
+  }
+  pendingWrite(id: string): Readonly<PendingWrite> | undefined {
+    return this.operations.get(id)?.pending;
+  }
+  /** Read fence of a catalog-affecting write that is committed but not yet visible. */
+  private catalogFence?: string;
+  noteCatalogReadFence(readFence: string): void {
+    this.catalogFence = readFence;
+  }
+  catalogReadFence(): string | undefined {
+    return this.catalogFence;
+  }
+  clearCatalogReadFence(): void {
+    this.catalogFence = undefined;
   }
   noteReadFence(id: string, readFence: string): void {
     this.operation(id).readFence = readFence;

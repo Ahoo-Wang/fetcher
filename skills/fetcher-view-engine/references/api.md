@@ -804,11 +804,18 @@ instance, preference and permission service interfaces. They remain type exports
 from the public package. `src/contracts/viewModel.ts` contains the shared discriminated model and record/analysis state.
 
 Core exports MemoryViewHost, MemoryViewHostOptions, ViewServiceError, ViewServiceErrorCode,
-the helpers `summaryOf`, `preconditionFor`, `committedWrite`, `rejectedWrite`, `unknownWrite`,
-`issueOf`, `readWriteObservation` and `applyOrderChange`, and the contract types `WriteContext`,
+the helpers `summaryOf`, `preconditionFor`, `ABSENT_PRECONDITION` (the `absent` write
+preference for a first create), `committedWrite`, `rejectedWrite`, `unknownWrite`,
+`issueOf`, `isViewServiceErrorCode`, `readWriteObservation`, `applyOrderChange` and
+`encodeViewResourceId` (builds the resource id of an `OperationReference` for
+`operation.reconcile`), and the contract types `WriteContext`,
 `ConfigurationWriteContext`, `ReadOptions`, `ListOptions`, `Page`, `WritePrecondition`,
 `WriteObservation`, `OperationReference`, `ViewDeleteReceipt`, `ViewOrderChange`, `PreferenceState`
-and `ViewInstanceSummary`.
+and `ViewInstanceSummary`. The read-side trust boundaries are also public:
+`readInstancePage` validates one host catalog page, `validateViewInstanceSummary`
+validates a single summary against the definition's declared kinds,
+`readLocalInstances` validates caller-supplied local saved instances, and
+`readPreferenceState` validates a host preference document.
 HttpViewHost, all HTTP resource clients/transport and VIEW_SERVICE_STATUS are **not**
 public exports. They live under `packages/view-engine/dev/http` and are excluded from
 the published package. Routes, envelopes, status mapping and fake sessions are an

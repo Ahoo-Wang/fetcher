@@ -152,8 +152,8 @@ export class ViewManagement {
     if (typeof title !== 'string' || !title.trim())
       throw new Error('视图名称不能为空');
     if (session) this.work.assertWritable(session);
-    else if (this.work.writeToken(id))
-      throw new Error('实例正在写入，请等待操作完成');
+    else if (this.work.writeToken(id) || this.work.pendingWrite(id))
+      throw new Error('实例存在未核对的写入，请等待核对完成后重试');
     title = title.trim();
     if (
       title === target.title &&
@@ -198,7 +198,13 @@ export class ViewManagement {
         );
       if (observation.outcome !== 'committed') {
         reloadRequired = true;
-        this.work.recordPendingWrite(id, { action: 'rename', requestId });
+        this.work.recordPendingWrite(id, {
+          action: 'rename',
+          requestId,
+          ...(observation.outcome === 'committed_pending_receipt'
+            ? { revision: observation.revision }
+            : {}),
+        });
         throw new ViewServiceError(
           observation.issue.code,
           observation.outcome === 'committed_pending_receipt'
@@ -207,6 +213,8 @@ export class ViewManagement {
         );
       }
       reloadRequired = true;
+      if (observation.visibility === 'pending' && observation.readFence)
+        this.work.noteCatalogReadFence(observation.readFence);
       const result = observation.value;
       validateViewInstance(result, this.store.definition(), id);
       if (
@@ -285,7 +293,8 @@ export class ViewManagement {
       throw new Error('个人偏好尚未加载完成，请稍后重试或重新加载');
   }
 
-  private adoptPreference(state: PreferenceState): void {
+  private adoptPreference(state: PreferenceState, readFence?: string): void {
+    if (readFence) this.loader.notePreferenceReadFence(readFence);
     this.store.publish({
       defaultInstanceId: state.effectiveDefaultInstanceId,
       preference: { status: 'ready', error: null, revision: state.revision },
@@ -308,6 +317,10 @@ export class ViewManagement {
       if (session) this.work.assertWritable(session);
     }
     this.assertDefaultWritable();
+    // Default and order writes share one preference document; concurrent dispatch under the
+    // same revision precondition would only produce a spurious REVISION_CONFLICT.
+    if (this.work.ordering)
+      throw new Error('视图顺序正在保存，请等待操作完成');
     this.assertPreferenceKnown();
     const request = { version: this.scope.version };
     this.defaultWrite = request;
@@ -343,7 +356,10 @@ export class ViewManagement {
         throw new Error('默认视图回执与请求目标不一致，请重新加载核对');
       this.preferenceIntents.delete('saveDefault');
       this.defaultWrite = undefined;
-      this.adoptPreference(state);
+      this.adoptPreference(
+        state,
+        observation.visibility === 'pending' ? observation.readFence : undefined,
+      );
     } catch (error) {
       if (!this.scope.current(request.version) || this.defaultWrite !== request)
         return;
@@ -385,6 +401,7 @@ export class ViewManagement {
     this.store.definition();
     if (!this.canReorderInstances()) throw new Error('宿主未提供视图排序接口');
     if (this.work.ordering) throw new Error('视图顺序正在保存');
+    if (this.defaultWrite) throw new Error('默认视图正在保存，请等待操作完成');
     const known = new Set(this.store.getSnapshot().instanceIds);
     const scope = new Set(scopeInstanceIds);
     if (
@@ -440,6 +457,16 @@ export class ViewManagement {
       const state = readPreferenceState(observation.value);
       if (state.revision !== observation.revision)
         throw new Error('偏好回执的版本不一致');
+      // The receipt must have implemented the requested order for the touched slots;
+      // a well-formed but different order is a crossed response, not a success.
+      const scoped = state.order.filter(id => scope.has(id));
+      const expected = orderedInstanceIds.filter(id => scoped.includes(id));
+      if (
+        scoped.length === 0 ||
+        scoped.length !== expected.length ||
+        scoped.some((id, index) => id !== expected[index])
+      )
+        throw new Error('排序回执与请求顺序不一致，请重新加载核对');
       this.preferenceIntents.delete('saveOrder');
       for (const id of scopeInstanceIds) this.loader.addCatalogued(id);
       this.loader.applyCatalogOrder(state.order);
@@ -451,7 +478,10 @@ export class ViewManagement {
           ...latest.filter(id => !this.loader.catalogOrder.includes(id)),
         ],
       });
-      this.adoptPreference(state);
+      this.adoptPreference(
+        state,
+        observation.visibility === 'pending' ? observation.readFence : undefined,
+      );
     } finally {
       this.work.finishOrder(token);
     }
@@ -483,8 +513,11 @@ export class ViewManagement {
     // Repeating the same versioned delete is idempotent; other writes still need reconciliation.
     const retrying = this.canRetryDeleteInstance(id);
     if (session) this.work.assertWritable(session, retrying);
-    else if (this.work.writeToken(id))
-      throw new Error('实例正在写入，请等待操作完成');
+    else if (
+      this.work.writeToken(id) ||
+      (!retrying && this.work.pendingWrite(id))
+    )
+      throw new Error('实例存在未核对的写入，请等待核对完成后重试');
     this.assertDefaultWritable();
     const lifecycle = this.scope.version;
     const token = Symbol();
@@ -536,6 +569,8 @@ export class ViewManagement {
         );
       }
       reloadRequired = true;
+      if (observation.visibility === 'pending' && observation.readFence)
+        this.work.noteCatalogReadFence(observation.readFence);
       const receipt = observation.value;
       if (
         !receipt ||
@@ -555,59 +590,79 @@ export class ViewManagement {
       this.work.finishCreate(id);
       this.work.clearPendingWrite(id);
       this.loader.forgetCatalogued(id);
-      const sessions = ownRecord(this.store.getSnapshot().sessions);
-      delete sessions[id];
-      const instanceIds = this.store
-        .getSnapshot()
-        .instanceIds.filter(key => key !== id);
-      const summaries = ownRecord(this.store.getSnapshot().catalog.summaries);
-      delete summaries[id];
       const wasSelected = this.store.getSnapshot().selectedInstanceId === id;
       const nextId = wasSelected
-        ? (instanceIds[0] ?? null)
+        ? (this.store.getSnapshot().instanceIds.filter(key => key !== id)[0] ??
+          null)
         : this.store.getSnapshot().selectedInstanceId;
       // An unopened successor is point-read before the removal is published, so the delete
       // resolves with a consistent selection and only its first query runs in the background.
+      let successorReady: ViewInstance | undefined;
       if (wasSelected && nextId !== null && !this.store.find(nextId)) {
         try {
-          const successor = await this.loader.loadSavedInstance(nextId);
+          successorReady = await this.loader.loadSavedInstance(nextId);
           if (!current()) return;
-          sessions[nextId] = createSession(
-            successor,
-            this.store.definition(),
-            this.store.filterCompilers,
-            this.store.analysisCompilers,
-          );
         } catch {
           if (!current()) return;
         }
       }
-      const successorOpened =
-        nextId !== null &&
-        Object.prototype.hasOwnProperty.call(sessions, nextId);
-      const followUp =
-        wasSelected && nextId !== null && successorOpened
-          ? this.queries.followUp(nextId)
-          : undefined;
-      const defaultInstanceId = this.store.getSnapshot().defaultInstanceId;
-      this.work.finishWrite(id, token, () =>
+      // The point read could be slow; publish against the snapshot that exists now so a
+      // navigation that happened meanwhile keeps its session and selection.
+      this.work.finishWrite(id, token, () => {
+        const fresh = this.store.getSnapshot();
+        const sessions = ownRecord(fresh.sessions);
+        delete sessions[id];
+        const selectionNow = fresh.selectedInstanceId;
+        // Only take the successor over when the user has not navigated away from the
+        // deleted instance; otherwise the user's selection stands.
+        const selectionOnDeleted =
+          selectionNow === id || (wasSelected && selectionNow === null);
+        if (
+          selectionOnDeleted &&
+          successorReady !== undefined &&
+          nextId !== null &&
+          !Object.prototype.hasOwnProperty.call(sessions, nextId)
+        )
+          sessions[nextId] = createSession(
+            successorReady,
+            this.store.definition(),
+            this.store.filterCompilers,
+            this.store.analysisCompilers,
+          );
+        // An already-open successor takes over without any point read.
+        const successorOpened =
+          nextId !== null &&
+          Object.prototype.hasOwnProperty.call(sessions, nextId);
+        const instanceIds = fresh.instanceIds.filter(key => key !== id);
+        const summaries = ownRecord(fresh.catalog.summaries);
+        delete summaries[id];
+        // Register the successor's first query before publishing, so a command an observer
+        // issues during the publish supersedes it instead of being replaced by it.
+        const followUp =
+          selectionOnDeleted && successorOpened && nextId !== null
+            ? this.queries.followUp(nextId)
+            : undefined;
         this.store.publish({
           sessions,
           instanceIds,
-          selectedInstanceId: successorOpened || !wasSelected ? nextId : null,
+          selectedInstanceId: selectionOnDeleted
+            ? successorOpened
+              ? nextId
+              : null
+            : selectionNow,
           defaultInstanceId:
-            defaultInstanceId === id ? null : defaultInstanceId,
+            fresh.defaultInstanceId === id ? null : fresh.defaultInstanceId,
           catalog: {
-            ...this.store.getSnapshot().catalog,
+            ...fresh.catalog,
             summaries,
             total:
-              this.store.getSnapshot().catalog.total === null
+              fresh.catalog.total === null
                 ? null
-                : Math.max(0, this.store.getSnapshot().catalog.total! - 1),
+                : Math.max(0, fresh.catalog.total - 1),
           },
-        }),
-      );
-      void followUp?.().catch(() => {});
+        });
+        void followUp?.().catch(() => {});
+      });
     } catch (error) {
       if (!current()) return;
       if (!session) {

@@ -42,14 +42,16 @@ export class InstanceSource {
   readonly localDefault: string | null;
   readonly inputError?: unknown;
   private validated?: readonly ViewInstance[];
+  private host: ViewHost;
   constructor(
-    private readonly host: ViewHost,
+    host: ViewHost,
     readonly definitionId: string,
     options: Pick<
       ViewEngineOptions,
       'definition' | 'instances' | 'defaultInstanceId'
     >,
   ) {
+    this.host = host;
     this.localDefault = options.defaultInstanceId ?? null;
     try {
       this.localDefinition =
@@ -59,6 +61,11 @@ export class InstanceSource {
     } catch (error) {
       this.inputError = error;
     }
+  }
+
+  /** Host replacement keeps local inputs; only host-backed reads switch over. */
+  updateHost(host: ViewHost): void {
+    this.host = host;
   }
 
   get hasLocalCatalog(): boolean {
@@ -112,6 +119,7 @@ export class InstanceSource {
     definition: ViewDefinition,
     cursor: string | null,
     signal: AbortSignal,
+    readFence?: string,
   ): Promise<Page<ViewInstanceSummary>> {
     if (this.hasLocalCatalog) {
       const items = this.localCatalog(definition).map(summaryOf);
@@ -122,6 +130,7 @@ export class InstanceSource {
     const page = await this.host.instance.list(this.definitionId, {
       cursor,
       signal,
+      ...(readFence ? { readFence } : {}),
     });
     return readInstancePage(page, definition);
   }
@@ -147,7 +156,10 @@ export class InstanceSource {
     });
   }
 
-  async preference(signal: AbortSignal): Promise<PreferenceState> {
+  async preference(
+    signal: AbortSignal,
+    readFence?: string,
+  ): Promise<PreferenceState> {
     if (!this.hasPreferencePort)
       return {
         revision: null,
@@ -156,7 +168,10 @@ export class InstanceSource {
         effectiveDefaultInstanceId: this.localDefault,
       };
     return readPreferenceState(
-      await this.host.preference!.load!(this.definitionId, { signal }),
+      await this.host.preference!.load!(this.definitionId, {
+        signal,
+        ...(readFence ? { readFence } : {}),
+      }),
     );
   }
 }

@@ -61,6 +61,9 @@ export class ViewLoader {
   /** Catalog order as loaded, before opened or created instances outside the pages. */
   private catalogIds: string[] = [];
   private catalogLoading?: AbortController;
+  /** Fence of a committed-but-pending preference write; submitted to the next preference read. */
+  private preferenceFence?: string;
+  private preferenceLoading?: AbortController;
   constructor(
     private readonly store: SessionStore,
     private readonly scope: EngineScope,
@@ -217,9 +220,12 @@ export class ViewLoader {
     const current = () =>
       this.scope.current(lifecycle) && !parent.signal.aborted;
     const controller = this.childOf(parent);
+    // A catalog write may still be converging; its fence must reach the next catalog read.
+    const catalogFence = this.work.catalogReadFence();
     try {
       const page = await withDeadline(
-        () => this.source.list(definition, cursor, controller.signal),
+        () =>
+          this.source.list(definition, cursor, controller.signal, catalogFence),
         this.store.limits.loadTimeoutMs,
         controller,
       );
@@ -267,6 +273,7 @@ export class ViewLoader {
           summaries,
         },
       });
+      this.work.clearCatalogReadFence();
       return { loaded: true };
     } catch (error) {
       if (!current()) return { loaded: false };
@@ -365,13 +372,17 @@ export class ViewLoader {
     const current = () =>
       this.scope.current(lifecycle) && !parent.signal.aborted;
     const controller = this.childOf(parent);
+    // A preference write may still be converging; its fence must reach the next preference read.
+    const preferenceFence = this.preferenceFence;
     try {
       const preference = await withDeadline(
-        () => this.source.preference(controller.signal),
+        () =>
+          this.source.preference(controller.signal, preferenceFence),
         this.store.limits.loadTimeoutMs,
         controller,
       );
       if (!current()) return { status: 'error', defaultInstanceId: null };
+      this.preferenceFence = undefined;
       this.store.publish({
         defaultInstanceId: preference.effectiveDefaultInstanceId,
         preference: {
@@ -391,6 +402,37 @@ export class ViewLoader {
       });
       return { status: 'error', defaultInstanceId: null };
     }
+  }
+
+  /** Retries an independent preference read; sessions, catalog and the selection are untouched. */
+  async reloadPreference(): Promise<void> {
+    this.store.definition();
+    if (
+      this.preferenceLoading ||
+      this.store.getSnapshot().preference.status === 'loading'
+    )
+      return;
+    const lifecycle = this.scope.version;
+    const controller = new AbortController();
+    this.preferenceLoading = controller;
+    this.store.publish({
+      preference: {
+        ...this.store.getSnapshot().preference,
+        status: 'loading',
+        error: null,
+      },
+    });
+    try {
+      await this.loadPreference(lifecycle, controller);
+    } finally {
+      if (this.preferenceLoading === controller)
+        this.preferenceLoading = undefined;
+    }
+  }
+
+  /** Records the fence of a committed-but-pending preference write for the next read. */
+  notePreferenceReadFence(readFence: string): void {
+    this.preferenceFence = readFence;
   }
 
   /** Uncertain creations survive a reload as recovery contexts, never as authoritative instances. */

@@ -124,17 +124,24 @@ function validateReceipt(receipt: StoredReceipt, definition: ViewDefinition) {
     readPreferenceState(value);
     return;
   }
+  // An instance receipt must name the instance its committed value carries;
+  // anything else is a crossed record that replay would misattribute.
+  if (typeof receipt.targetId !== 'string' || !receipt.targetId)
+    throw new Error('写入回执缺少目标实例');
   if (receipt.action === 'delete') {
     if (
       !value ||
       typeof value !== 'object' ||
       typeof (value as { id?: unknown }).id !== 'string' ||
+      (value as { id?: string }).id !== receipt.targetId ||
       (value as { revision?: unknown }).revision !== observation.revision
     )
       throw new Error('删除回执无效');
     return;
   }
   validateViewInstance(value, definition);
+  if (value.id !== receipt.targetId)
+    throw new Error('写入回执的目标与内容不一致');
   if (value.revision !== observation.revision)
     throw new Error('写入回执的版本不一致');
 }
