@@ -2,7 +2,7 @@
 
 **关系**：[refactor-spec.md](./refactor-spec.md) 是规范性契约，本文件是它的第一份执行计划。本文只决定"先做什么、做到什么程度、怎么验收"，不改写规范中的任何行为约束；引用规范用 §节号，引用验收场景用 §16 的编号，引用不变量用 [invariants.md](./invariants.md) 的 `INV-` 编号。
 **基线**：`0ed8da1b`。
-**原则**：每个 PR 独立可构建、`pnpm --filter @ahoo-wang/fetcher-view-engine test` 通过、不留双实现或兼容包装（§1.8、§15.2）。
+**原则**：每个 PR 独立可构建，`pnpm --filter @ahoo-wang/fetcher-view-engine test` 与根级 `pnpm test:unit` 都通过（AGENTS.md 的提交门禁），不留双实现或兼容包装（§1.8、§15.2）。合同或入口变更必须与仓库内全部调用方在同一 PR 完成。
 
 ## 1. 首个可交付的范围
 
@@ -41,35 +41,44 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 
 目标：把 §5.5 的端口表和 §11.8 的目录／点查／偏好合同落到 `ViewHost`，同时修正 §1.9 指出的三处现状：`ViewLoader.load()` 的单一等待屏障、只有 `create` 携带 `requestId`、`viewServiceContract` 的旧格式投影分支。
 
-**PR S1-a：合同类型与本地 Host**
+**PR S1-a：合同、本地 Host 与全部调用方（单个可构建提交）**
+
+合同变更与所有按旧合同编译的代码在同一 PR 内完成：本地 Host、`dev/http`、引擎调用方、examples、测试与文档。AGENTS.md 对 view-engine 的例外条款允许破坏 API，但要求同时更新调用方、测试与文档，不留临时兼容层。
 
 - `src/contracts/ViewHost.ts`：
   - `instance.list(definitionId, { query?, cursor?, limit? }, signal)` 返回 `Page<ViewInstanceSummary>`，只含 `items`、`nextCursor` 和可选授权后总数；不再返回 `defaultInstanceId`。
   - `instance.create / save / rename / delete` 统一接收 `WriteContext { requestId; signal? }` 与各自期望版本，返回 `WriteObservation<T>`；`delete` 回执只含目标实例删除事实，删除 `ViewDeleteResult.defaultInstance`。
-  - 新增 `preference.load`；`preference.saveOrder({ scopeInstanceIds, orderedInstanceIds }, precondition, ctx)` 与 `saveDefault` 返回 `WriteObservation<PreferenceState>`，前提为 `absent` 或 `matches(revision)`。
+  - 新增 `preference.load(definitionId, { readFence? }, signal)`；`preference.saveOrder(definitionId, { scopeInstanceIds, orderedInstanceIds }, precondition, ctx)` 与 `preference.saveDefault(definitionId, instanceId | null, precondition, ctx)` 返回 `WriteObservation<PreferenceState>`，前提为 `absent` 或 `matches(revision)`。偏好聚合按租户、用户、定义划分，同一 Host 可服务多个定义，因此每个偏好端口都显式携带 `definitionId`（§13.6）。
   - 新增只读 `operation.reconcile`。
-  - `definition.load` 返回携带 `id`、`revision` 的定义。
+  - `definition.load(definitionId, { readFence? }, signal)` 返回携带 `id`、`revision` 的定义；`instance.load(instanceId, { readFence? }, signal)` 同样接受可选读取屏障。`readFence` 是服务返回的不透明令牌，只能提交回同服务、同主体范围的对应 load 端口，前端不解析、不比较（§5.5）。这是 `committed.visibility=pending` 能够被核对的前提。
 - `src/contracts/viewServiceContract.ts`：删除 `LEGACY_VIEW_FORMATS`、`projectSupportedInstance`、`SupportedViewFormats`；错误码增加 `DEFINITION_CHANGED`、`CURSOR_EXPIRED`，`UNKNOWN_OUTCOME` 只作为 `WriteObservation.unknown` 的问题码，不再作为 Promise reject。
 - `src/record/MemoryViewHost.ts`、`StatefulViewHost.ts`、`IndexedDBViewHost.ts`：按新合同实现，Memory 同步返回 `committed/visible`，IndexedDB 以事务 `oncomplete` 为提交；同键不同正文拒绝、版本冲突、`absent` 前提在两者都实现（§5.5、§13.4）。
 - `dev/http/*`：按同一合同改写为合同形状探针；不承诺生产语义（§13.4）。
 - 对应测试：`test/engine/*` 中涉及 Host 的用例、`test/httpViewHost.test.ts`、`scripts/verify-view-host.mjs`、`verify-indexeddb-view-host.mjs`、`verify-http-view-host.mjs`。
 
-**PR S1-b：引擎侧加载与写入协调**
+同一 PR 内的引擎调用方改动：
 
 - `src/engine/ViewLoader.ts`：拆掉 `Promise.all([definition, list, permission])` 屏障。定义加载、第一页目录、个人偏好、许可各自独立状态与失败；目录项只进入有界摘要缓存，不再为每一项 `createSession`；会话在显式打开时建立（§4.1、§11.8）。
-- `src/engine/ViewPersistence.ts`、`InstanceWork.ts`、`ViewReload.ts`、`writeRecovery.ts`：消费四种 `WriteObservation` 结局；`committed.visibility=pending` 推进基线并只等待读屏障；`unknown` 保留原 `requestId` 与正文供重放；`rejected` 保留草稿（§5.4）。
+- `src/engine/ViewPersistence.ts`、`InstanceWork.ts`、`ViewReload.ts`、`writeRecovery.ts`：消费四种 `WriteObservation` 结局；`committed.visibility=pending` 推进基线并保存 `readFence`；`unknown` 与 `committed_pending_receipt` 保留原 `requestId`、正文与提交证明；`rejected` 保留草稿（§5.4）。
 - `src/engine/ViewManagement.ts`：删除后的选中回退与服务端默认偏好分开处理（§11.3、§13.6 删除小节）。
 - `src/engine/instancePermissions.ts`：许可不再进入加载屏障；未接入或未就绪只影响管理操作可用性（§13.3）。
-- 状态快照新增：目录页状态（含 `CURSOR_EXPIRED` 重开）、偏好状态、待核对写入列表。
+- 状态快照新增：目录页状态、偏好状态、待核对写入列表。
 
-**PR S1-c：消费者与验证脚本**
+同一 PR 内的消费者与文档：
 
-- `examples/react/sales-order/host.ts`、`examples/react/catalog/*`、`examples/react/compensation/*`、`examples/core.mjs`、`dev/HttpOrderExample.tsx` 切到新合同。
+- `examples/react/sales-order/host.ts`、`examples/react/catalog/*`、`examples/react/compensation/*`、`examples/core.mjs`、`dev/HttpOrderExample.tsx` 切到新合同（`verify-package.mjs` 会对 examples 做类型检查，不能留到后续 PR）。
 - README 双语中 Host 接入示例同步。
+
+**PR S1-b：核对与目录状态补齐（不改合同）**
+
+- `operation.reconcile` 的引擎消费：对 `unknown` 与 `committed_pending_receipt` 写入提供显式核对动作，按原 `requestId` 取得精确回执后推进基线（§5.4、§5.5）。
+- `committed.visibility=pending` 时向对应 `definition.load`／`instance.load`／`preference.load` 提交 `readFence` 的有界等待与"已保存，列表同步中"状态（§11.6）。
+- 目录页 `CURSOR_EXPIRED` 重开并保留已打开会话；偏好加载失败的独立状态与重试（§11.8）。
 
 退出条件：
 
-- 类型层：不带 `requestId` 的写入调用无法编译；`list` 返回值不含实例配置。
+- S1-a 单独合并即通过包测试与根级 `pnpm test:unit`；不存在任何按旧合同编译的调用方或临时适配层。
+- 类型层：不带 `requestId` 的写入调用无法编译；`list` 返回值不含实例配置；偏好端口缺少 `definitionId` 无法编译。
 - 场景：A05、A07、A08、A13、A17、D13、D14、D15、D16、H01、H07、H09、H11、H12、H13（Memory 与 IndexedDB 两个 Host 各跑一遍），W16 只验证前端映射。
 - 结构：`ViewLoader` 中不再存在跨定义／目录／许可的单一 `withDeadline(Promise.all(...))`；目录加载失败不清空已打开会话。
 - 不变量：`invariants.md` 中 §5.4、§5.5、§11.8、§13.1 的条款逐条勾选。
@@ -80,17 +89,14 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 
 目标：落实 §2.2 的入口表与 §2.1 的单向依赖，`/react` 变为无样式行为层。
 
-**PR S2-a：新入口与架构检查**
+**PR S2：新入口、架构检查与消费者切换（单个可构建提交）**
 
 - `vite.config.ts` `lib.entry` 增加 `ui`、`hosts/memory`、`hosts/indexeddb`；`package.json` `exports` 对应新增，`sideEffects` 保持仅 CSS。
 - `src/react.ts` 只保留：`useViewEngine`、读取 Hook（`useViewSession`、`useViewCapabilities`，后者从 `src/view/` 迁出）、`useOwnedViewPosition`、类型；默认 UI（`ViewPage`、`RecordView`、`AnalysisView`、`DashboardView`、`EmbeddedView`、cells、`components/ui/*`、`ViewTheme`）全部移到新的 `src/ui.ts`。
 - `MemoryViewHost` 从根入口移到 `/hosts/memory`；`IndexedDBViewHost` 从 `/react` 移到 `/hosts/indexeddb`。
 - `test/architecture.test.ts` 新增规则：`/react` 的运行时导入图不可到达 `components/ui`、`theme/`、`recharts`、`react-grid-layout`、`@tanstack/react-table`、`lucide-react`、默认 renderer 注册模块；根入口与 `/hosts/*` 不可到达 React。
 - `scripts/verify-package.mjs`：每个入口一个独立消费探针（核心 Node、React headless、`/ui`、Memory、IndexedDB），核心声明在关闭 `skipLibCheck` 下不引入 DOM 类型（§17.1、D09）。
-
-**PR S2-b：消费者切换**
-
-- `examples/`、`dev/`、`test/` 全部导入改到目标入口；README 双语的安装与导入段落更新。按 §15.2，入口切换与全部仓库消费者更新在同一个可构建提交内完成。
+- `examples/`、`dev/`、`test/` 全部导入改到目标入口；README 双语的安装与导入段落更新。按 §15.2，入口切换与全部仓库消费者更新在同一个可构建提交内完成，因此不拆成第二个 PR。
 
 退出条件：D09、D10、G14（Memory／IndexedDB 部分）；`verify-package.mjs` 五个探针通过；架构测试新增规则通过；仓库内不再有从 `/react` 导入默认 UI 的消费者。
 
@@ -143,14 +149,14 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 - `RecordActionGuard.tsx`：行操作绑定结果身份，批量操作额外绑定选择身份；业务请求前重新核对（§8.2）。
 - `ViewRefreshControls.tsx`／`RecordRefreshControls.tsx`：计时器抽到位置级单一所有者，暂停条件按 §11.4；只对 Record 开放。
 
-退出条件：B06–B11、B15–B17、B20、E01、F02、F03（Record 范围）、H22（列宽与列序部分）；`invariants.md` §8、§11.4 条款逐条勾选。
+退出条件：B06–B11、B14、B15–B17、B20、E01、F02、F03（Record 范围）、H22（列宽与列序部分）；`invariants.md` §8、§11.4 条款逐条勾选。B14 是 S3 与 S4 的集成验收：草稿输入无效时自动刷新暂停，但显式刷新仍执行合法的已应用计划，两者不能共用同一个无效状态门禁。
 
 ### S5 首个可交付验收
 
 - **闭环一**（§15.3）在 Memory、IndexedDB、`dev/http` 三个 Host 上各跑一遍：默认订单视图筛选待出库、调整列与排序、保存个人视图、重开恢复配置且不恢复选择与页码、数据变化后执行得到新数据并显示正确来源。
 - **第二消费者**：在 `examples/react/` 新增一个只用 `/react` 的自定义组合（E05、F08），验证不依赖私有 Store 与完整页面裁剪。
 - **Storybook 固定状态集**（§11.7）只覆盖 Record：首次加载、无视图、未查询、编辑未应用、查询零行、历史结果、局部失败、许可未知、冲突、保存待核对。
-- 浏览器矩阵：根 `pnpm verify:view-engine`；包产物：`node packages/view-engine/scripts/verify-package.mjs`；主题：`pnpm --filter @ahoo-wang/fetcher-view-engine test:themes`。
+- 浏览器矩阵：`VIEW_ENGINE_BROWSERS=chromium,firefox,webkit pnpm verify:view-engine`（不设该变量时脚本只跑 chromium，单浏览器结果不得记为矩阵通过；CI 中 `.github/workflows/build-storybook.yml` 设置了同一变量）；包产物：`node packages/view-engine/scripts/verify-package.mjs`；主题：`pnpm --filter @ahoo-wang/fetcher-view-engine test:themes`。
 - README 双语：新入口、当前能力范围声明（§17.4 要求区分目标能力、已实现接口与已执行验证）。
 - 清理：本轮触及范围内无双实现、无弃用别名、无失去消费者的文件（§17.3）。
 
@@ -174,3 +180,4 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 3. 源码模式与 React Compiler 编译模式都执行（`pnpm test` 已含 `test:compiled`）。
 4. 删除被替代实现与失去消费者的导出、fixture、脚本；不保留兼容包装。
 5. README 双语与 examples 与代码同一 PR 更新。
+6. 提交前根级 `pnpm test:unit` 通过（AGENTS.md）；合同或入口变更的 PR 必须包含仓库内全部调用方，单个 PR 独立可构建，不依赖后续 PR 修复编译。
