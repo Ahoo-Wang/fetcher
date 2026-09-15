@@ -11,19 +11,38 @@
  * limitations under the License.
  */
 
-import { sameJsonState } from '../lib/snapshot.js';
 import type {
   ViewDefinition,
   ViewInstance,
   ViewCreateInput,
 } from '../contracts/viewModel.js';
 import { validateViewInstance } from '../contracts/validation/instanceValidation.js';
+import {
+  readWriteObservation,
+  type WriteObservation,
+} from '../contracts/viewServiceContract.js';
 
 export type StoredInstance = ViewInstance & { ownerKey: string | null };
+/** One user's preference document; absent until the first preference write. */
+export interface StoredPreference {
+  revision: string;
+  order: string[];
+  defaultInstanceId: string | null;
+}
+/** Exact receipt of an accepted write, keyed by scope, resource and request identity. */
+export interface StoredReceipt {
+  resource: 'instance' | 'preference';
+  action: 'create' | 'save' | 'rename' | 'delete' | 'saveOrder' | 'saveDefault';
+  targetId: string | null;
+  input: unknown;
+  observation: WriteObservation<unknown>;
+}
 export interface ServiceState {
   instances: StoredInstance[];
-  users: Record<string, { order: string[]; defaultInstanceId: string | null }>;
-  creates: Record<string, { input: ViewCreateInput; result: ViewInstance }>;
+  /** Users whose personal seed instances were already inserted. */
+  seeded: string[];
+  preferences: Record<string, StoredPreference>;
+  receipts: Record<string, StoredReceipt>;
 }
 
 /** Validate persisted service state independently of storage and locking. */
@@ -32,13 +51,17 @@ export function validateLocalViewState(
   definition: ViewDefinition,
 ): void {
   if (
+    !state ||
+    typeof state !== 'object' ||
     !Array.isArray(state.instances) ||
-    !state.users ||
-    typeof state.users !== 'object' ||
-    Array.isArray(state.users) ||
-    !state.creates ||
-    typeof state.creates !== 'object' ||
-    Array.isArray(state.creates)
+    !Array.isArray(state.seeded) ||
+    state.seeded.some(key => typeof key !== 'string') ||
+    !state.preferences ||
+    typeof state.preferences !== 'object' ||
+    Array.isArray(state.preferences) ||
+    !state.receipts ||
+    typeof state.receipts !== 'object' ||
+    Array.isArray(state.receipts)
   )
     throw new Error('服务存储格式无效');
   const known = new Set<string>();
@@ -55,22 +78,29 @@ export function validateLocalViewState(
     if (known.has(key)) throw new Error('实例重复');
     known.add(key);
   }
-  for (const user of Object.values(state.users))
+  for (const preference of Object.values(state.preferences))
     if (
-      !user ||
-      !Array.isArray(user.order) ||
-      user.order.some(id => typeof id !== 'string') ||
-      new Set(user.order).size !== user.order.length ||
+      !preference ||
+      typeof preference.revision !== 'string' ||
+      !preference.revision ||
+      !Array.isArray(preference.order) ||
+      preference.order.some(id => typeof id !== 'string') ||
+      new Set(preference.order).size !== preference.order.length ||
       !(
-        user.defaultInstanceId === null ||
-        typeof user.defaultInstanceId === 'string'
+        preference.defaultInstanceId === null ||
+        typeof preference.defaultInstanceId === 'string'
       )
     )
-      throw new Error('用户顺序无效');
-  for (const receipt of Object.values(state.creates)) {
-    validateViewInstance(receipt.result, definition);
-    if (!sameJsonState(receipt.input, createViewInput(receipt.result)))
-      throw new Error('创建回执无效');
+      throw new Error('用户偏好无效');
+  for (const receipt of Object.values(state.receipts)) {
+    if (
+      !receipt ||
+      (receipt.resource !== 'instance' && receipt.resource !== 'preference') ||
+      typeof receipt.action !== 'string' ||
+      !(receipt.targetId === null || typeof receipt.targetId === 'string')
+    )
+      throw new Error('写入回执无效');
+    readWriteObservation(receipt.observation);
   }
 }
 

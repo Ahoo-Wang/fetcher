@@ -26,6 +26,7 @@ import { ViewPageContent } from '../../src/view/ViewPageContent.js';
 import type { DashboardTransformEditorProps } from '../../src/dashboard/dashboardReactTypes.js';
 import { DashboardView } from '../../src/dashboard/DashboardView.js';
 import { ViewEngine } from '../../src/engine/ViewEngine.js';
+import { committedWrite } from '../../src/contracts/viewServiceContract.js';
 import { definition, instance } from '../engine/fixtures.js';
 import {
   createFilterConfiguration,
@@ -186,20 +187,18 @@ it('invalid local transform options disable query and save even though the last 
       fields: definition.fields,
       dashboard: true,
     },
-    instances: {
-      instances: [
-        {
-          id: 'dashboard',
-          definitionId: 'root',
-          title: 'Overview',
-          kind: 'dashboard',
-          revision: 'r1',
-          scope: { type: 'personal' },
-          config: { ...empty, filters: [item] },
-        },
-      ],
-      defaultInstanceId: 'dashboard',
-    },
+    instances: [
+      {
+        id: 'dashboard',
+        definitionId: 'root',
+        title: 'Overview',
+        kind: 'dashboard',
+        revision: 'r1',
+        scope: { type: 'personal' },
+        config: { ...empty, filters: [item] },
+      },
+    ],
+    defaultInstanceId: 'dashboard',
     host: base.host,
     dashboardTransforms: {
       legacy: () => filter.eq('state.amount', 10),
@@ -322,36 +321,34 @@ it('lists SEARCH fields and full element-relative paths and offers only compatib
       fields: sourceFields,
       dashboard: true,
     },
-    instances: {
-      instances: [
-        {
-          id: 'dashboard',
-          definitionId: 'root',
-          title: 'Overview',
-          kind: 'dashboard',
-          scope: { type: 'personal' },
-          revision: 'r1',
-          config: {
-            ...empty,
-            filters: [
-              {
-                id: 'global',
-                filters: createFilterConfiguration(root),
-                bindings: [],
-                excludedPanelIds: [],
-              },
-            ],
-          },
+    instances: [
+      {
+        id: 'dashboard',
+        definitionId: 'root',
+        title: 'Overview',
+        kind: 'dashboard',
+        scope: { type: 'personal' },
+        revision: 'r1',
+        config: {
+          ...empty,
+          filters: [
+            {
+              id: 'global',
+              filters: createFilterConfiguration(root),
+              bindings: [],
+              excludedPanelIds: [],
+            },
+          ],
         },
-      ],
-      defaultInstanceId: 'dashboard',
-    },
+      },
+    ],
+    defaultInstanceId: 'dashboard',
     host: {
       permission: { getInstance: () => ({ save: true }) },
       definition: { load: async () => target },
       instance: {
         load: async () => instance('child'),
-        save: async value => ({ ...value, revision: 'r2' }),
+        save: async value => committedWrite({ ...value, revision: 'r2' }, 'r2'),
       },
       resolveSource: () => ({ paged: async () => ({ total: 0, list: [] }) }),
     },
@@ -465,20 +462,18 @@ it('creates a scoped options transform, keeps invalid input local, then applies 
       fields: definition.fields,
       dashboard: true,
     },
-    instances: {
-      instances: [
-        {
-          id: 'dashboard',
-          definitionId: 'root',
-          title: 'Overview',
-          kind: 'dashboard',
-          revision: 'r1',
-          scope: { type: 'personal' },
-          config: { ...empty, filters: [item, { ...item, id: 'other' }] },
-        },
-      ],
-      defaultInstanceId: 'dashboard',
-    },
+    instances: [
+      {
+        id: 'dashboard',
+        definitionId: 'root',
+        title: 'Overview',
+        kind: 'dashboard',
+        revision: 'r1',
+        scope: { type: 'personal' },
+        config: { ...empty, filters: [item, { ...item, id: 'other' }] },
+      },
+    ],
+    defaultInstanceId: 'dashboard',
     host: base.host,
     dashboardTransforms: {
       minimum: ({ options }) =>
@@ -679,7 +674,12 @@ it('refreshes binding controls from a remote baseline without a new editor epoch
     ...globalFilter(),
     bindings: globalFilter().bindings.slice(0, 1),
   };
-  const { engine, paged, host } = dashboardSetup({ ...empty, filters: [item] });
+  const { engine, paged, host } = dashboardSetup(
+    { ...empty, filters: [item] },
+    {},
+    undefined,
+    'host',
+  );
   await engine.load();
   const runtime = engine.dashboard('dashboard');
   render(<DashboardView runtime={runtime} />);
@@ -944,29 +944,27 @@ it('keeps transform validity independent when filter and panel IDs contain colon
       fields: definition.fields,
       dashboard: true,
     },
-    instances: {
-      instances: [
-        {
-          id: 'dashboard',
-          definitionId: 'root',
-          title: 'Dashboard',
-          kind: 'dashboard',
-          scope: { type: 'personal' },
-          revision: 'r1',
-          config: {
-            schemaVersion: 1,
-            panels: ['c', 'b:c'].map(id => ({
-              kind: 'view',
-              id,
-              instanceId: 'child',
-              layout: { x: 0, y: 0, w: 6, h: 18 },
-            })),
-            filters,
-          },
+    instances: [
+      {
+        id: 'dashboard',
+        definitionId: 'root',
+        title: 'Dashboard',
+        kind: 'dashboard',
+        scope: { type: 'personal' },
+        revision: 'r1',
+        config: {
+          schemaVersion: 1,
+          panels: ['c', 'b:c'].map(id => ({
+            kind: 'view',
+            id,
+            instanceId: 'child',
+            layout: { x: 0, y: 0, w: 6, h: 18 },
+          })),
+          filters,
         },
-      ],
-      defaultInstanceId: 'dashboard',
-    },
+      },
+    ],
+    defaultInstanceId: 'dashboard',
     host: base.host,
     dashboardTransforms: { same: () => filter.eq('state.amount', 10) },
   });

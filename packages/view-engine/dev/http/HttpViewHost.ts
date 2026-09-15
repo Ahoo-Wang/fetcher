@@ -18,7 +18,10 @@ import {
 } from './HttpViewTransport.js';
 import { HttpViewDefinitionService } from './HttpViewDefinitionService.js';
 import { HttpViewInstanceService } from './HttpViewInstanceService.js';
-import { HttpViewPreferenceService } from './HttpViewPreferenceService.js';
+import {
+  HttpViewOperationService,
+  HttpViewPreferenceService,
+} from './HttpViewPreferenceService.js';
 export interface HttpViewHostOptions extends HttpViewTransportOptions {
   /** Local source lookup; never sent to the view service. */
   resolveSource: ViewHost['resolveSource'];
@@ -28,6 +31,7 @@ export class HttpViewHost implements ViewHost {
   readonly definition: HttpViewDefinitionService;
   readonly instance: HttpViewInstanceService;
   readonly preference: HttpViewPreferenceService;
+  readonly operation: HttpViewOperationService;
   readonly permission: HttpViewTransport['permission'];
   readonly resolveSource: ViewHost['resolveSource'];
   constructor(options: HttpViewHostOptions) {
@@ -35,6 +39,7 @@ export class HttpViewHost implements ViewHost {
     this.definition = new HttpViewDefinitionService(transport);
     this.instance = new HttpViewInstanceService(transport);
     this.preference = new HttpViewPreferenceService(transport);
+    this.operation = new HttpViewOperationService(transport);
     this.permission = transport.permission;
     this.resolveSource = options.resolveSource.bind({ ...options });
   }

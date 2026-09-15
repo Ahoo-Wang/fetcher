@@ -100,7 +100,8 @@ it.each([undefined, Op.AND, Op.OR, Op.NOR])(
     );
     const { engine, host, paged } = setup({
       definition: view,
-      instances: { instances: [saved], defaultInstanceId: saved.id },
+      instances: [saved],
+      defaultInstanceId: saved.id,
     });
     const statuses: string[] = [];
     engine.subscribe(() => statuses.push(engine.getSnapshot().status));

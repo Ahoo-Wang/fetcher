@@ -13,6 +13,7 @@
 
 import { afterEach, expect, it, vi } from 'vitest';
 import { IndexedDBViewHost } from '../src/record/IndexedDBViewHost.js';
+import { ABSENT_PRECONDITION } from '../src/contracts/viewServiceContract.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -25,7 +26,8 @@ it('reports database access failure and rejects pre-aborted work without opening
     serviceKey: 'test',
     scopeKey: 'alice',
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     resolveSource: setup().host.resolveSource,
   });
   await expect(host.instance.load(instance.id)).rejects.toMatchObject({
@@ -33,9 +35,9 @@ it('reports database access failure and rejects pre-aborted work without opening
   });
   const controller = new AbortController();
   controller.abort();
-  await expect(host.instance.load(instance.id, controller.signal)).rejects.toBe(
-    controller.signal.reason,
-  );
+  await expect(
+    host.instance.load(instance.id, { signal: controller.signal }),
+  ).rejects.toBe(controller.signal.reason);
   expect(open).toHaveBeenCalledTimes(1);
 });
 
@@ -72,7 +74,8 @@ function createHost() {
     serviceKey: 'test',
     scopeKey: 'alice',
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     resolveSource: setup().host.resolveSource,
   });
 }
@@ -161,7 +164,9 @@ it('rejects a native commit failure even after the write request succeeds', asyn
 it('keeps a committed result when cancellation arrives before the complete event', async () => {
   const db = databasePort();
   const controller = new AbortController();
-  const pending = createHost().instance.load(instance.id, controller.signal);
+  const pending = createHost().instance.load(instance.id, {
+    signal: controller.signal,
+  });
   db.open();
   db.readSuccess();
   vi.mocked(db.transaction.abort).mockImplementation(() => {
@@ -218,7 +223,9 @@ it('preserves domain errors when aborting a transaction', async () => {
 it('waits for transaction rollback before reporting cancellation', async () => {
   const db = databasePort();
   const controller = new AbortController();
-  const pending = createHost().instance.load(instance.id, controller.signal);
+  const pending = createHost().instance.load(instance.id, {
+    signal: controller.signal,
+  });
   const settled = vi.fn();
   void pending.then(settled, settled);
   db.open();
@@ -234,7 +241,9 @@ it('waits for transaction rollback before reporting cancellation', async () => {
 it('closes an opening connection that arrives after cancellation', async () => {
   const db = databasePort();
   const controller = new AbortController();
-  const pending = createHost().instance.load(instance.id, controller.signal);
+  const pending = createHost().instance.load(instance.id, {
+    signal: controller.signal,
+  });
   controller.abort();
   await expect(pending).rejects.toBe(controller.signal.reason);
   db.open();
@@ -262,26 +271,93 @@ it.each(['blocked', 'error'] as const)(
   },
 );
 
-it('commits a cleared default and restores it in a fresh host', async () => {
+it('commits a cleared default, restores it in a fresh host and replays the receipt without writing', async () => {
   const db = databasePort();
   const done = vi.fn();
-  const pending = createHost().preference.saveDefault!(
-    definition.id,
-    null,
-  ).then(done);
+  const pending = createHost()
+    .preference.saveDefault(definition.id, null, ABSENT_PRECONDITION, {
+      requestId: 'clear-default',
+    })
+    .then(done);
   db.open();
   db.readSuccess();
   const raw = db.store.put.mock.calls[0][0];
-  expect(JSON.parse(raw).users.alice.defaultInstanceId).toBeNull();
+  expect(JSON.parse(raw).preferences.alice).toMatchObject({
+    revision: expect.any(String),
+    order: [],
+    defaultInstanceId: null,
+  });
   await Promise.resolve();
   expect(done).not.toHaveBeenCalled();
   db.commit();
   await pending;
   expect(done).toHaveBeenCalledOnce();
+  const observation = done.mock.calls[0][0];
+  expect(observation).toMatchObject({
+    outcome: 'committed',
+    value: { defaultInstanceId: null, effectiveDefaultInstanceId: null },
+  });
   const restored = databasePort(raw);
-  const list = createHost().instance.list(definition.id);
+  const loaded = createHost().preference.load(definition.id);
   restored.open();
   restored.readSuccess();
+  expect(restored.store.put).not.toHaveBeenCalled();
   restored.commit();
-  await expect(list).resolves.toMatchObject({ defaultInstanceId: null });
+  await expect(loaded).resolves.toEqual({
+    revision: observation.revision,
+    order: [],
+    defaultInstanceId: null,
+    effectiveDefaultInstanceId: null,
+  });
+  // The same request identity returns the stored receipt; nothing is written again.
+  const replayed = databasePort(raw);
+  const replay = createHost().preference.saveDefault(
+    definition.id,
+    null,
+    ABSENT_PRECONDITION,
+    { requestId: 'clear-default' },
+  );
+  replayed.open();
+  replayed.readSuccess();
+  expect(replayed.store.put).not.toHaveBeenCalled();
+  replayed.commit();
+  await expect(replay).resolves.toEqual(observation);
+});
+it('resolves a domain rejection as an observation and commits without writing', async () => {
+  const db = databasePort();
+  const pending = createHost().instance.delete('absent', 'r1', {
+    requestId: 'delete-absent',
+  });
+  db.open();
+  db.readSuccess();
+  // An expected domain failure persists nothing, not even the seed or a receipt.
+  expect(db.store.put).not.toHaveBeenCalled();
+  expect(db.transaction.abort).not.toHaveBeenCalled();
+  db.commit();
+  await expect(pending).resolves.toMatchObject({
+    outcome: 'rejected',
+    issue: { code: 'NOT_FOUND' },
+  });
+  expect(db.connection.close).toHaveBeenCalledOnce();
+});
+it('resolves a rejected UNAVAILABLE observation when the write transaction aborts', async () => {
+  const db = databasePort();
+  db.store.put.mockImplementation(() => {
+    throw new Error('denied');
+  });
+  const pending = createHost().preference.saveDefault(
+    definition.id,
+    null,
+    ABSENT_PRECONDITION,
+    { requestId: 'denied-default' },
+  );
+  db.open();
+  db.readSuccess();
+  expect(db.transaction.abort).toHaveBeenCalledOnce();
+  db.rollback();
+  await expect(pending).resolves.toMatchObject({
+    outcome: 'rejected',
+    issue: { code: 'UNAVAILABLE', message: 'denied' },
+  });
+  expect(db.connection.close).toHaveBeenCalledOnce();
 });

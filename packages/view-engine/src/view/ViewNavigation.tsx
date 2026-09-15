@@ -23,31 +23,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select.js';
-import type { ViewSession, ViewEngineState } from '../contracts/viewModel.js';
+import {
+  summaryOf,
+  type ViewInstance,
+  type ViewInstanceSummary,
+  type ViewSession,
+  type ViewEngineState,
+} from '../contracts/viewModel.js';
 import { ViewKindIcon } from './ViewKindIcon.js';
 
 const GROUPS = [
   { id: 'personal', label: '个人视图' },
   { id: 'public', label: '公共视图' },
 ] as const;
-function instanceLabel(session: ViewSession, showPending = true) {
-  return `${session.instance.title}${showPending && session.dirty ? ' · 已编辑' : ''}${showPending && session.kind === 'record' && session.filterPending ? ' · 待查询' : ''}`;
+
+/** One navigable saved instance: always a catalog summary, plus its session once opened. */
+export interface InstanceEntry {
+  id: string;
+  summary: ViewInstanceSummary;
+  session?: ViewSession;
+}
+/** Working title and unsaved markers come from the session; the summary is the saved identity. */
+export function entryTitle(entry: InstanceEntry): string {
+  return entry.session?.instance.title ?? entry.summary.title;
+}
+function instanceLabel(entry: InstanceEntry, showPending = true) {
+  const session = entry.session;
+  return `${entryTitle(entry)}${showPending && session?.dirty ? ' · 已编辑' : ''}${showPending && session?.kind === 'record' && session.filterPending ? ' · 待查询' : ''}`;
+}
+function kindDescription(kind: ViewInstanceSummary['kind']) {
+  return kind === 'dashboard'
+    ? '仪表盘'
+    : kind === 'analysis'
+      ? '分析视图'
+      : '数据视图';
 }
 function ViewInstanceLabel({
-  session,
+  entry,
   showPending,
 }: {
-  session: ViewSession;
+  entry: InstanceEntry;
   showPending: boolean;
 }) {
   return (
     <span className="fve:flex fve:w-full fve:min-w-0 fve:items-center fve:gap-2">
-      <ViewKindIcon kind={session.kind} />
+      <ViewKindIcon kind={entry.summary.kind} />
       <span className="fve:min-w-0 fve:flex-1">
-        {instanceLabel(session, showPending)}
+        {instanceLabel(entry, showPending)}
       </span>
-      {session.instance.scope.type === 'public' &&
-        session.instance.scope.source === 'system' && (
+      {entry.summary.scope.type === 'public' &&
+        entry.summary.scope.source === 'system' && (
           <span className="fve:inline-flex fve:h-5 fve:shrink-0 fve:items-center fve:justify-center fve:rounded-4xl fve:border fve:border-border fve:px-2 fve:py-0.5 fve:text-xs fve:font-medium fve:whitespace-nowrap fve:text-foreground">
             系统
           </span>
@@ -59,21 +84,38 @@ function ViewInstanceLabel({
 export type InstanceGroup = {
   id: 'personal' | 'public' | 'draft';
   label: string;
-  sessions: ViewSession[];
+  entries: InstanceEntry[];
 };
 
+/** Own-property read; instance IDs such as `constructor` must not resolve through the prototype. */
+function own<T>(
+  record: Readonly<Record<string, T>>,
+  key: string,
+): T | undefined {
+  return Object.prototype.hasOwnProperty.call(record, key)
+    ? record[key]
+    : undefined;
+}
+
 export function groupViewInstances(state: ViewEngineState): InstanceGroup[] {
+  const entries: InstanceEntry[] = state.instanceIds.flatMap(id => {
+    const session = own(state.sessions, id);
+    const summary =
+      own(state.catalog.summaries, id) ??
+      (session ? summaryOf(session.instance as ViewInstance) : undefined);
+    return summary ? [{ id, summary, session }] : [];
+  });
   const groups: InstanceGroup[] = GROUPS.map(group => ({
     ...group,
-    sessions: state.instanceIds
-      .map(id => state.sessions[id])
-      .filter(session => session.instance.scope.type === group.id),
-  })).filter(group => group.sessions.length);
-  const drafts = Object.values(state.sessions).filter(
-    session => session.kind === 'dashboard' && !session.persisted,
+    entries: entries.filter(entry => entry.summary.scope.type === group.id),
+  })).filter(group => group.entries.length);
+  const drafts = Object.entries(state.sessions).flatMap(([id, session]) =>
+    session.kind === 'dashboard' && !session.persisted
+      ? [{ id, summary: summaryOf(session.instance as ViewInstance), session }]
+      : [],
   );
   if (drafts.length)
-    groups.unshift({ id: 'draft', label: '未保存草稿', sessions: drafts });
+    groups.unshift({ id: 'draft', label: '未保存草稿', entries: drafts });
   return groups;
 }
 
@@ -96,17 +138,17 @@ export function ViewInstanceSwitcher({
   managerOpen: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const sessions = groups.flatMap(group => group.sessions);
-  const selected = sessions.find(session => session.instance.id === selectedId);
-  const selectedTitle = selected?.instance.title;
+  const entries = groups.flatMap(group => group.entries);
+  const selected = entries.find(entry => entry.id === selectedId);
+  const selectedTitle = selected ? entryTitle(selected) : undefined;
   return (
     <Select<string | null>
       open={open}
       onOpenChange={setOpen}
       value={selectedId}
-      items={sessions.map(session => ({
-        value: session.instance.id,
-        label: instanceLabel(session, session.instance.id !== selectedId),
+      items={entries.map(entry => ({
+        value: entry.id,
+        label: instanceLabel(entry, entry.id !== selectedId),
       }))}
       onValueChange={next => {
         setOpen(false);
@@ -117,19 +159,13 @@ export function ViewInstanceSwitcher({
         ref={triggerRef}
         aria-label="选择视图实例"
         aria-description={
-          selected?.kind === 'dashboard'
-            ? '仪表盘'
-            : selected?.kind === 'analysis'
-              ? '分析视图'
-              : selected
-                ? '数据视图'
-                : undefined
+          selected ? kindDescription(selected.summary.kind) : undefined
         }
       >
         <SelectValue placeholder="选择视图">
           {selectedTitle === undefined ? undefined : (
             <span className="fve:flex fve:min-w-0 fve:items-center fve:gap-2">
-              <ViewKindIcon kind={selected!.kind} />
+              <ViewKindIcon kind={selected!.summary.kind} />
               <span className="fve:truncate" title={selectedTitle}>
                 {selectedTitle}
               </span>
@@ -159,21 +195,15 @@ export function ViewInstanceSwitcher({
         {groups.map(group => (
           <SelectGroup key={group.id}>
             <SelectLabel>{group.label}</SelectLabel>
-            {group.sessions.map(session => (
+            {group.entries.map(entry => (
               <SelectItem
-                key={session.instance.id}
-                value={session.instance.id}
-                aria-description={
-                  session.kind === 'dashboard'
-                    ? '仪表盘'
-                    : session.kind === 'analysis'
-                      ? '分析视图'
-                      : '数据视图'
-                }
+                key={entry.id}
+                value={entry.id}
+                aria-description={kindDescription(entry.summary.kind)}
               >
                 <ViewInstanceLabel
-                  session={session}
-                  showPending={session.instance.id !== selectedId}
+                  entry={entry}
+                  showPending={entry.id !== selectedId}
                 />
               </SelectItem>
             ))}
@@ -192,10 +222,18 @@ export function ViewSidebar({
   onManage,
   onCollapse,
   toggleRef,
+  catalog,
 }: NavigationProps & {
   title: string;
   toggleRef: RefObject<HTMLButtonElement | null>;
   onCollapse(): void;
+  /** Paged catalog affordances; absent when the host catalog is complete. */
+  catalog?: {
+    loading: boolean;
+    hasMore: boolean;
+    error: string | null;
+    onLoadMore(): void;
+  };
 }) {
   return (
     <aside
@@ -232,33 +270,38 @@ export function ViewSidebar({
           <h2 className="fve:px-2 fve:py-1 fve:text-xs fve:font-medium fve:text-muted-foreground">
             {group.label}
           </h2>
-          {group.sessions.map(session => (
+          {group.entries.map(entry => (
             <Button
-              key={session.instance.id}
-              variant={
-                selectedId === session.instance.id ? 'secondary' : 'ghost'
-              }
+              key={entry.id}
+              variant={selectedId === entry.id ? 'secondary' : 'ghost'}
               className="fve:h-auto fve:min-h-8 fve:justify-start fve:whitespace-normal fve:break-words fve:text-left"
-              aria-current={
-                selectedId === session.instance.id ? 'page' : undefined
-              }
-              aria-description={
-                session.kind === 'dashboard'
-                  ? '仪表盘'
-                  : session.kind === 'analysis'
-                    ? '分析视图'
-                    : '数据视图'
-              }
-              onClick={() => onSelect(session.instance.id)}
+              aria-current={selectedId === entry.id ? 'page' : undefined}
+              aria-description={kindDescription(entry.summary.kind)}
+              onClick={() => onSelect(entry.id)}
             >
               <ViewInstanceLabel
-                session={session}
-                showPending={session.instance.id !== selectedId}
+                entry={entry}
+                showPending={entry.id !== selectedId}
               />
             </Button>
           ))}
         </section>
       ))}
+      {catalog?.error && (
+        <p role="alert" className="fve:px-2 fve:text-xs fve:text-destructive">
+          {catalog.error}
+        </p>
+      )}
+      {catalog?.hasMore && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={catalog.loading}
+          onClick={catalog.onLoadMore}
+        >
+          {catalog.loading ? '正在加载目录…' : '加载更多视图'}
+        </Button>
+      )}
     </aside>
   );
 }

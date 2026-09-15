@@ -7,6 +7,13 @@
 import { createServer } from 'node:http';
 import { setTimeout as delay } from 'node:timers/promises';
 
+const WRITE_STATUS = observation =>
+  observation.outcome === 'committed'
+    ? 200
+    : observation.outcome === 'rejected'
+      ? undefined
+      : 202;
+
 /** Test-only HTTP boundary. Identities are resolved by server-owned bearer sessions, never request bodies. */
 export async function startViewService({
   Host,
@@ -14,6 +21,7 @@ export async function startViewService({
   statuses,
   definition,
   instances,
+  defaultInstanceId = null,
   source,
   port = 0,
   allowedOrigin = 'http://127.0.0.1:6006',
@@ -62,11 +70,11 @@ export async function startViewService({
     delayedReads: 0,
     mutations: 0,
   };
-  const hostFor = (account, supportedFormats) =>
+  const hostFor = account =>
     new Host({
       definition,
       instances,
-      supportedFormats,
+      defaultInstanceId,
       definitionPermissions: () => ({
         createPersonal: true,
         createShared: account.writer,
@@ -83,8 +91,28 @@ export async function startViewService({
         saveAsShared: account.writer,
       }),
       canReorder: () => account.order,
-      permissionsRevision: () => account.revision,
+      canSetDefault: () => true,
     });
+  /** The service's own projection of this account's grants over every visible instance. */
+  const permissionSnapshot = async (host, account, signal) => {
+    const instancesById = {};
+    let cursor = null;
+    do {
+      const page = await host.instance.list(definition.id, {
+        cursor,
+        limit: 200,
+        signal,
+      });
+      for (const item of page.items)
+        instancesById[item.id] = host.permission.getInstance(item);
+      cursor = page.nextCursor;
+    } while (cursor);
+    return {
+      revision: account.revision,
+      instances: instancesById,
+      ...host.permission.getDefinition(),
+    };
+  };
   const server = createServer(async (request, response) => {
     response.setHeader('Vary', 'Origin');
     if (request.headers.origin && request.headers.origin !== allowedOrigin) {
@@ -94,7 +122,7 @@ export async function startViewService({
     response.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     response.setHeader(
       'Access-Control-Allow-Headers',
-      'authorization, content-type, idempotency-key, if-match, x-view-formats',
+      'authorization, content-type, idempotency-key, if-match, x-definition-revision',
     );
     response.setHeader(
       'Access-Control-Allow-Methods',
@@ -112,11 +140,16 @@ export async function startViewService({
       if (!response.writableEnded) controller.abort();
     });
     let host;
+    let account;
     const send = async (status, data, error) => {
       let permissions;
       if (host) {
         try {
-          permissions = await host.permission.load(definition.id);
+          permissions = await permissionSnapshot(
+            host,
+            account,
+            controller.signal,
+          );
         } catch (permissionError) {
           if (status < 400) throw permissionError;
         }
@@ -141,18 +174,11 @@ export async function startViewService({
     };
     try {
       const token = request.headers.authorization?.replace(/^Bearer\s+/i, '');
-      const account = accounts.get(token);
+      account = accounts.get(token);
       if (!account) throw new ServiceError('UNAUTHENTICATED', '服务端会话无效');
-      host = hostFor(account, {
-        record: true,
-        analysis: true,
-        ...(request.headers['x-view-formats']
-          ?.split(',')
-          .includes('dashboard@1')
-          ? { dashboard: 1 }
-          : {}),
-      });
-      const path = new URL(request.url, 'http://localhost').pathname
+      host = hostFor(account);
+      const url = new URL(request.url, 'http://localhost');
+      const path = url.pathname
         .split('/')
         .filter(Boolean)
         .map(decodeURIComponent);
@@ -197,37 +223,88 @@ export async function startViewService({
           );
         }
       };
-      let result;
+      const context = () => {
+        const encoded = request.headers['idempotency-key'];
+        let requestId;
+        try {
+          requestId =
+            typeof encoded === 'string' ? decodeURIComponent(encoded) : encoded;
+        } catch {
+          requestId = undefined;
+        }
+        if (typeof requestId !== 'string' || !requestId.trim())
+          throw new ServiceError(
+            'INVALID_ARGUMENT',
+            '写入必须提供 Idempotency-Key',
+          );
+        const definitionRevision = request.headers['x-definition-revision'];
+        return {
+          requestId,
+          signal: controller.signal,
+          ...(typeof definitionRevision === 'string' && definitionRevision
+            ? { definitionRevision }
+            : {}),
+        };
+      };
+      const readOptions = () => ({
+        signal: controller.signal,
+        ...(url.searchParams.get('readFence')
+          ? { readFence: url.searchParams.get('readFence') }
+          : {}),
+      });
+      const write = async (observation, created = false) => {
+        control.mutations++;
+        const status =
+          WRITE_STATUS(observation) ??
+          statuses[observation.issue.code] ??
+          statuses.UNAVAILABLE;
+        await send(
+          status === 200 && created ? 201 : status,
+          observation,
+          observation.outcome === 'rejected' ? observation.issue : undefined,
+        );
+      };
       if (request.method === 'GET' && path.length === 3)
-        result = await host.definition.load(definition.id, controller.signal);
+        await send(
+          200,
+          await host.definition.load(definition.id, readOptions()),
+        );
       else if (
         request.method === 'GET' &&
         path[3] === 'permissions' &&
         path.length === 4
       )
-        result = await host.permission.load(definition.id, controller.signal);
+        await send(
+          200,
+          await permissionSnapshot(host, account, controller.signal),
+        );
       else if (
         request.method === 'GET' &&
         path[3] === 'instances' &&
         path.length === 4
-      )
-        result = await host.instance.list(definition.id, controller.signal);
-      else if (
+      ) {
+        const limit = url.searchParams.get('limit');
+        await send(
+          200,
+          await host.instance.list(definition.id, {
+            ...readOptions(),
+            query: url.searchParams.get('query') ?? undefined,
+            cursor: url.searchParams.get('cursor') ?? undefined,
+            ...(limit === null ? {} : { limit: Number(limit) }),
+          }),
+        );
+      } else if (
         request.method === 'GET' &&
         path[3] === 'instances' &&
         path.length === 5
       )
-        result = await host.instance.load(path[4], controller.signal);
+        await send(200, await host.instance.load(path[4], readOptions()));
       else if (
         request.method === 'POST' &&
         path[3] === 'instances' &&
         path.length === 4
       ) {
-        result = await host.instance.create(body, {
-          requestId: request.headers['idempotency-key'],
-          signal: controller.signal,
-        });
-        control.mutations++;
+        const observation = await host.instance.create(body, context());
         if (control.delayNextCreateResponse) {
           const ms = control.delayNextCreateResponse;
           control.delayNextCreateResponse = 0;
@@ -236,9 +313,11 @@ export async function startViewService({
         }
         if (control.dropNextCreateResponse) {
           control.dropNextCreateResponse = false;
+          control.mutations++;
           response.destroy();
           return;
         }
+        await write(observation, true);
       } else if (
         request.method === 'PUT' &&
         path[3] === 'instances' &&
@@ -246,45 +325,84 @@ export async function startViewService({
       ) {
         if (!body || body.id !== path[4] || body.revision !== revision())
           throw new ServiceError('INVALID_ARGUMENT', '路径、正文和版本不一致');
-        result = await host.instance.save(body);
-        control.mutations++;
+        await write(await host.instance.save(body, context()));
       } else if (
         request.method === 'PATCH' &&
         path[3] === 'instances' &&
         path[5] === 'name' &&
         path.length === 6
-      ) {
-        result = await host.instance.rename(path[4], body?.title, revision());
-        control.mutations++;
-      } else if (
+      )
+        await write(
+          await host.instance.rename(
+            path[4],
+            body?.title,
+            revision(),
+            context(),
+          ),
+        );
+      else if (
         request.method === 'DELETE' &&
         path[3] === 'instances' &&
         path.length === 5
-      ) {
-        result = await host.instance.delete(path[4], revision());
-        control.mutations++;
-      } else if (
-        request.method === 'PUT' &&
-        path[3] === 'order' &&
+      )
+        await write(await host.instance.delete(path[4], revision(), context()));
+      else if (
+        request.method === 'GET' &&
+        path[3] === 'preferences' &&
         path.length === 4
-      ) {
-        result = await host.preference.saveOrder(
-          definition.id,
-          body?.instanceIds,
+      )
+        await send(
+          200,
+          await host.preference.load(definition.id, readOptions()),
         );
-        control.mutations++;
-      } else if (
+      else if (
         request.method === 'PUT' &&
-        path[3] === 'default' &&
-        path.length === 4
-      ) {
-        result = await host.preference.saveDefault(
-          definition.id,
-          body?.instanceId,
+        path[3] === 'preferences' &&
+        path[4] === 'order' &&
+        path.length === 5
+      )
+        await write(
+          await host.preference.saveOrder(
+            definition.id,
+            body?.change,
+            body?.precondition,
+            context(),
+          ),
         );
-        control.mutations++;
-      } else throw new ServiceError('NOT_FOUND', '接口不存在');
-      await send(200, result);
+      else if (
+        request.method === 'PUT' &&
+        path[3] === 'preferences' &&
+        path[4] === 'default' &&
+        path.length === 5
+      )
+        await write(
+          await host.preference.saveDefault(
+            definition.id,
+            body?.instanceId,
+            body?.precondition,
+            context(),
+          ),
+        );
+      else if (
+        request.method === 'GET' &&
+        path[3] === 'operations' &&
+        path.length === 6
+      )
+        await send(
+          200,
+          await host.operation.reconcile(
+            {
+              resource: path[4],
+              definitionId: definition.id,
+              requestId: path[5],
+              ...(url.searchParams.get('targetId')
+                ? { targetId: url.searchParams.get('targetId') }
+                : {}),
+            },
+            readOptions(),
+          ),
+        );
+      else throw new ServiceError('NOT_FOUND', '接口不存在');
     } catch (error) {
       if (controller.signal.aborted) return;
       const code = error instanceof ServiceError ? error.code : 'UNAVAILABLE';

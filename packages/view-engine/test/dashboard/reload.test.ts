@@ -12,6 +12,10 @@
  */
 
 import { expect, it, vi } from 'vitest';
+import {
+  committedWrite,
+  type ReadOptions,
+} from '../../src/contracts/viewServiceContract.js';
 import { dashboardSetup } from './runtimeFixtures.js';
 import {
   instance,
@@ -37,7 +41,7 @@ it('reload survives synchronous replacement during reset publication', async () 
     id === 'other' ? gate.promise : Promise.resolve(instance(id)),
   );
   const { engine, paged } = dashboardSetup(config, {
-    instance: { load, save: async v => v },
+    instance: { load, save: async v => committedWrite(v, v.revision) },
   });
   await engine.load();
   const runtime = engine.dashboard('dashboard');
@@ -160,18 +164,21 @@ it('keeps a reload started by an abort observer deduplicated across configuratio
   const old = deferred<ReturnType<typeof instance>>();
   const fresh = deferred<ReturnType<typeof instance>>();
   const load = vi.fn<
-    (id: string, signal?: AbortSignal) => Promise<ReturnType<typeof instance>>
+    (id: string, options?: ReadOptions) => Promise<ReturnType<typeof instance>>
   >(() => Promise.resolve(instance('child')));
   const { engine, paged } = dashboardSetup(config, {
-    instance: { load, save: async value => value },
+    instance: {
+      load,
+      save: async value => committedWrite(value, value.revision),
+    },
   });
   await engine.load();
   const runtime = engine.dashboard('dashboard');
   await vi.waitFor(() => expect(paged).toHaveBeenCalledOnce());
   let nested: Promise<void> | undefined;
   load
-    .mockImplementationOnce((_id, signal) => {
-      signal!.addEventListener(
+    .mockImplementationOnce((_id, options) => {
+      options!.signal!.addEventListener(
         'abort',
         () => {
           nested = runtime.reloadReference('a');
@@ -207,8 +214,10 @@ it('keeps a reload started by an abort observer deduplicated across configuratio
 it('does not reacquire metadata after an abort observer disposes its embedding', async () => {
   const gate = deferred<ReturnType<typeof instance>>();
   let dispose = () => {};
-  const load = vi.fn((_id: string, signal?: AbortSignal) => {
-    signal!.addEventListener('abort', () => dispose(), { once: true });
+  const load = vi.fn((_id: string, options?: ReadOptions) => {
+    options!.signal!.addEventListener('abort', () => dispose(), {
+      once: true,
+    });
     return gate.promise;
   });
   const { engine } = setup({

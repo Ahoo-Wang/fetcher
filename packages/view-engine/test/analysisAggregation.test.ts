@@ -676,6 +676,8 @@ it('keeps value units on percentile and refuses percent formatting on dimensiona
 
 it('persists IDs, executes aliases and retains the executed plan after a failed edit', async () => {
   const { ViewEngine } = await import('../src/engine/ViewEngine.js');
+  const { committedWrite } =
+    await import('../src/contracts/viewServiceContract.js');
   const { vi } = await import('vitest');
   const instance: AnalysisViewInstance = {
     id: 'analysis',
@@ -713,14 +715,15 @@ it('persists IDs, executes aliases and retains the executed plan after a failed 
         analysis: context.capability,
         timeZone: context.timeZone,
       },
-      instances: { instances: [saved], defaultInstanceId: 'analysis' },
+      instances: [saved],
+      defaultInstanceId: 'analysis',
       host: {
         resolveSource: () => ({ aggregate }),
         instance: {
           save: async value => {
             if (value.kind !== 'analysis') throw new Error('expected analysis');
             saved = { ...value, revision: '2' };
-            return saved;
+            return committedWrite(saved, '2');
           },
         },
         permission: {

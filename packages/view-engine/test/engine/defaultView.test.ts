@@ -13,16 +13,27 @@
 
 import { expect, it, vi } from 'vitest';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
+import type {
+  PreferenceState,
+  ViewDeleteReceipt,
+  WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
 import {
+  catalogHost,
   deferred,
+  deleteReceipt,
   instance,
   managementPermissions,
+  preference,
+  preferenceWrite,
   setup,
   selected,
 } from './fixtures.js';
 
+const writeContext = expect.objectContaining({ requestId: expect.any(String) });
+
 it('changes only the default after the host confirms the write', async () => {
-  const response = deferred<void>();
+  const response = deferred<WriteObservation<PreferenceState>>();
   const saveDefault = vi.fn(() => response.promise);
   const { engine, paged } = setup({
     host: { preference: { saveDefault } } as ViewHost,
@@ -38,12 +49,18 @@ it('changes only the default after the host confirms the write', async () => {
   const pending = engine.setDefaultInstance('shared');
   expect(engine.getSnapshot().defaultInstanceId).toBe('mine');
   await expect(engine.setDefaultInstance(null)).rejects.toThrow(/正在保存/);
-  response.resolve();
+  response.resolve(preferenceWrite('shared'));
   await pending;
-  expect(saveDefault).toHaveBeenCalledWith('orders', 'shared');
+  expect(saveDefault).toHaveBeenCalledWith(
+    'orders',
+    'shared',
+    { type: 'absent' },
+    writeContext,
+  );
   expect(engine.getSnapshot()).toMatchObject({
     defaultInstanceId: 'shared',
     selectedInstanceId: 'mine',
+    preference: { status: 'ready', revision: 'p2' },
   });
   expect(selected(engine)).toBe(before);
   expect(paged).toHaveBeenCalledTimes(1);
@@ -51,11 +68,11 @@ it('changes only the default after the host confirms the write', async () => {
 });
 
 it('keeps the previous default on failure and permits saving that same value again', async () => {
-  const response = deferred<void>();
+  const response = deferred<WriteObservation<PreferenceState>>();
   const saveDefault = vi
     .fn()
     .mockReturnValueOnce(response.promise)
-    .mockResolvedValue(undefined);
+    .mockResolvedValue(preferenceWrite('mine'));
   const { engine } = setup({
     host: { preference: { saveDefault } } as ViewHost,
   });
@@ -67,7 +84,12 @@ it('keeps the previous default on failure and permits saving that same value aga
   expect(engine.getSnapshot().defaultInstanceId).toBe('mine');
   await engine.setDefaultInstance('mine');
   expect(saveDefault).toHaveBeenCalledTimes(2);
-  expect(saveDefault).toHaveBeenLastCalledWith('orders', 'mine');
+  expect(saveDefault).toHaveBeenLastCalledWith(
+    'orders',
+    'mine',
+    { type: 'absent' },
+    writeContext,
+  );
   engine.dispose();
 });
 
@@ -75,7 +97,7 @@ it.each(['load', 'dispose'] as const)(
   'ignores late success and failure after %s',
   async action => {
     for (const outcome of ['resolve', 'reject'] as const) {
-      const response = deferred<void>();
+      const response = deferred<WriteObservation<PreferenceState>>();
       const { engine } = setup({
         host: {
           preference: { saveDefault: () => response.promise },
@@ -85,7 +107,7 @@ it.each(['load', 'dispose'] as const)(
       const pending = engine.setDefaultInstance('shared');
       await engine[action]();
       const before = engine.getSnapshot();
-      if (outcome === 'resolve') response.resolve();
+      if (outcome === 'resolve') response.resolve(preferenceWrite('shared'));
       else response.reject(new Error('offline'));
       await pending;
       expect(engine.getSnapshot()).toBe(before);
@@ -102,20 +124,19 @@ it('keeps default writes serialized across reload until the previous host write 
     async (_definitionId: string, id: string | null) => {
       if (id === 'shared') await first.promise;
       persisted = id;
+      return preferenceWrite(id);
     },
   );
+  const catalog = catalogHost([instance(), instance('shared')]);
   const { engine } = setup({
     instances: undefined,
     host: {
-      instance: {
-        list: async () => ({
-          instances: [instance(), instance('shared')],
-          defaultInstanceId: persisted,
-        }),
-        delete: vi.fn(),
-      },
+      instance: { ...catalog.instance, delete: vi.fn() },
       permission: { getInstance: managementPermissions },
-      preference: { saveDefault },
+      preference: {
+        load: async () => preference(persisted),
+        saveDefault,
+      },
     } as unknown as ViewHost,
   });
   await engine.load();
@@ -139,10 +160,10 @@ it('keeps default writes serialized across reload until the previous host write 
 });
 
 it('releases the completed default write before notifying synchronous observers', async () => {
-  const second = deferred<void>();
+  const second = deferred<WriteObservation<PreferenceState>>();
   const saveDefault = vi
     .fn()
-    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(preferenceWrite('shared'))
     .mockReturnValueOnce(second.promise);
   const { engine } = setup({
     host: { preference: { saveDefault } } as ViewHost,
@@ -156,7 +177,7 @@ it('releases the completed default write before notifying synchronous observers'
   await engine.setDefaultInstance('shared');
   expect(saveDefault).toHaveBeenCalledTimes(2);
   await expect(engine.setDefaultInstance('mine')).rejects.toThrow(/正在保存/);
-  second.resolve();
+  second.resolve(preferenceWrite(null, 'p3'));
   await next;
   expect(engine.getSnapshot().defaultInstanceId).toBe(null);
   unsubscribe();
@@ -167,13 +188,14 @@ it.each(['default', 'delete'] as const)(
   'rejects conflicting target writes when %s starts first',
   async first => {
     const response = deferred<void>();
-    const remove = vi.fn(async () => {
+    const remove = vi.fn(async (id: string) => {
       if (first === 'delete') await response.promise;
-      return { defaultInstance: instance() };
+      return deleteReceipt(id);
     });
-    const saveDefault = vi.fn(() =>
-      first === 'default' ? response.promise : Promise.resolve(),
-    );
+    const saveDefault = vi.fn(async () => {
+      if (first === 'default') await response.promise;
+      return preferenceWrite('shared');
+    });
     const { engine } = setup({
       host: {
         preference: { saveDefault },
@@ -182,6 +204,9 @@ it.each(['default', 'delete'] as const)(
       } as unknown as ViewHost,
     });
     await engine.load();
+    // The target was already opened, as every listed instance used to be.
+    await engine.selectInstance('shared');
+    await engine.selectInstance('mine');
     const pending =
       first === 'default'
         ? engine.setDefaultInstance('shared')
@@ -202,11 +227,11 @@ it.each(['default', 'delete'] as const)(
 );
 
 it('serializes default writes with deletion of other instances', async () => {
-  const pendingDefault = deferred<void>();
+  const pendingDefault = deferred<WriteObservation<PreferenceState>>();
   const { engine } = setup({
     host: {
       preference: { saveDefault: () => pendingDefault.promise },
-      instance: { delete: async () => ({ defaultInstance: null }) },
+      instance: { delete: async (id: string) => deleteReceipt(id) },
       permission: { getInstance: managementPermissions },
     } as unknown as ViewHost,
   });
@@ -215,20 +240,20 @@ it('serializes default writes with deletion of other instances', async () => {
   try {
     await expect(engine.deleteInstance('mine')).rejects.toThrow(/正在保存/);
   } finally {
-    pendingDefault.resolve();
+    pendingDefault.resolve(preferenceWrite('shared'));
     await saving;
     engine.dispose();
   }
 });
 
 it('serializes deletions and prevents a later default from being overwritten by a receipt', async () => {
-  const response = deferred<{ defaultInstance: null }>();
+  const response = deferred<WriteObservation<ViewDeleteReceipt>>();
   const { engine } = setup({
     host: {
-      preference: { saveDefault: async () => {} },
+      preference: { saveDefault: async () => preferenceWrite('shared') },
       instance: {
         delete: async (id: string) =>
-          id === 'mine' ? response.promise : { defaultInstance: null },
+          id === 'mine' ? response.promise : deleteReceipt(id),
       },
       permission: { getInstance: managementPermissions },
     } as unknown as ViewHost,
@@ -241,24 +266,25 @@ it('serializes deletions and prevents a later default from being overwritten by 
     );
     await expect(engine.deleteInstance('shared')).rejects.toThrow(/正在删除/);
   } finally {
-    response.resolve({ defaultInstance: null });
+    response.resolve(deleteReceipt('mine'));
     await deleting;
     engine.dispose();
   }
+  expect(engine.getSnapshot()).toMatchObject({
+    defaultInstanceId: null,
+    selectedInstanceId: 'shared',
+  });
 });
 
-it('keeps a nondeleted default and falls back in user order when deleting the default', async () => {
+it('keeps a nondeleted default and clears a deleted default without computing a fallback', async () => {
   const { engine } = setup({
     host: {
-      preference: { saveDefault: async () => {}, saveOrder: async () => {} },
-      instance: {
-        delete: vi
-          .fn()
-          .mockResolvedValueOnce({ defaultInstance: instance() })
-          .mockResolvedValueOnce({ defaultInstance: instance('created') })
-          .mockResolvedValueOnce({ defaultInstance: instance('shared') })
-          .mockResolvedValueOnce({ defaultInstance: null }),
+      preference: {
+        saveDefault: async () => preferenceWrite('mine'),
+        saveOrder: async () =>
+          preferenceWrite('mine', 'p2', ['created', 'shared', 'mine']),
       },
+      instance: { delete: vi.fn(async (id: string) => deleteReceipt(id)) },
       permission: { getInstance: managementPermissions },
     } as unknown as ViewHost,
   });
@@ -268,12 +294,27 @@ it('keeps a nondeleted default and falls back in user order when deleting the de
   await engine.load();
   await engine.saveAs({ title: 'Copy', scope: { type: 'personal' } });
   await engine.reorderInstances(['created', 'shared', 'mine']);
+  expect(engine.getSnapshot().instanceIds).toEqual([
+    'created',
+    'shared',
+    'mine',
+  ]);
   await engine.deleteInstance('mine');
-  expect(engine.getSnapshot().defaultInstanceId).toBe('created');
+  expect(engine.getSnapshot()).toMatchObject({
+    defaultInstanceId: null,
+    selectedInstanceId: 'created',
+  });
   await engine.deleteInstance('created');
-  expect(engine.getSnapshot().defaultInstanceId).toBe('shared');
+  expect(engine.getSnapshot()).toMatchObject({
+    defaultInstanceId: null,
+    selectedInstanceId: 'shared',
+  });
   await engine.deleteInstance('shared');
-  expect(engine.getSnapshot().defaultInstanceId).toBe(null);
+  expect(engine.getSnapshot()).toMatchObject({
+    defaultInstanceId: null,
+    selectedInstanceId: null,
+    instanceIds: [],
+  });
   engine.dispose();
 });
 
@@ -282,15 +323,12 @@ it('reloads an explicitly cleared default without selecting or querying a fallba
   const { engine, paged } = setup({
     instances: undefined,
     host: {
-      instance: {
-        list: async () => ({
-          instances: [instance(), instance('shared')],
-          defaultInstanceId,
-        }),
-      },
+      ...catalogHost([instance(), instance('shared')]),
       preference: {
+        load: async () => preference(defaultInstanceId),
         saveDefault: async (_definitionId, id) => {
           defaultInstanceId = id;
+          return preferenceWrite(id);
         },
       },
     } as ViewHost,
@@ -324,17 +362,21 @@ it('rejects invalid or unknown targets before dispatching, including undefined w
 });
 
 it('allows visible system and shared defaults independently of edit permissions or selection', async () => {
-  const saveDefault = vi.fn(async () => {});
+  const saveDefault = vi.fn(async (_definitionId: string, id: string | null) =>
+    preferenceWrite(id),
+  );
   const { engine } = setup({
-    instances: {
-      instances: [
-        { ...instance(), scope: { type: 'public', source: 'system' } },
-        { ...instance('shared'), scope: { type: 'public', source: 'shared' } },
-      ],
-      defaultInstanceId: 'mine',
-    },
+    instances: [
+      { ...instance(), scope: { type: 'public', source: 'system' } },
+      { ...instance('shared'), scope: { type: 'public', source: 'shared' } },
+    ],
+    defaultInstanceId: 'mine',
     host: {
-      preference: { saveDefault, saveOrder: async () => {} },
+      preference: {
+        saveDefault,
+        saveOrder: async () =>
+          preferenceWrite('mine', 'p2', ['shared', 'mine']),
+      },
       permission: {
         getInstance: () => ({
           save: false,

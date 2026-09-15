@@ -14,12 +14,33 @@
 import type { AggregationQuery } from '@ahoo-wang/fetcher-wow';
 import {
   ViewServiceError,
+  applyOrderChange,
+  committedWrite,
+  rejectedWrite,
+  summaryOf,
+  type PreferenceState,
   type ViewHost,
   type ViewInstance,
+  type WriteObservation,
+  type WritePrecondition,
 } from '@ahoo-wang/fetcher-view-engine';
 import type { DemoQuery, ScenarioOptions } from './demoTypes.js';
 import { definition, makeInstances, pause } from './fixtures.js';
 import { createOrderSource } from './querySource.js';
+
+/** Expected domain failures become rejected observations; anything else is a transport failure. */
+function attempt<T>(
+  operation: () => { value: T; revision: string },
+): WriteObservation<T> {
+  try {
+    const { value, revision } = operation();
+    return committedWrite(value, revision);
+  } catch (error) {
+    if (error instanceof ViewServiceError)
+      return rejectedWrite(error.code, error.message);
+    throw error;
+  }
+}
 
 export function createHost(
   options: ScenarioOptions,
@@ -54,7 +75,12 @@ export function createHost(
     ]),
   );
   let instanceOrder = [...saved.keys()];
-  let defaultInstanceId = initialInstances.defaultInstanceId;
+  // The single user's preference document; no revision until the first preference write.
+  let preference: {
+    revision: string | null;
+    defaultInstanceId: string | null;
+  } = { revision: null, defaultInstanceId: initialInstances.defaultInstanceId };
+  let preferenceRevision = 0;
   let failNextDelete = failFirstDelete;
   let nextInstance = 1;
   const createReceipts = new Map<
@@ -62,17 +88,55 @@ export function createHost(
     { body: string; result: ViewInstance }
   >();
 
+  function assertDefinition(id: string) {
+    if (id !== definition.id) throw new Error('订单视图定义不存在。');
+  }
   function loadInstance(id: string) {
     const instance = saved.get(id);
     if (!instance)
       throw new ViewServiceError('NOT_FOUND', `视图 ${id} 不存在。`);
     return structuredClone(instance);
   }
+  function visibleOrder() {
+    return instanceOrder.filter(id => saved.has(id));
+  }
+  function preferenceState(): PreferenceState {
+    const { defaultInstanceId } = preference;
+    return {
+      revision: preference.revision,
+      order: visibleOrder(),
+      defaultInstanceId,
+      effectiveDefaultInstanceId:
+        defaultInstanceId !== null && saved.has(defaultInstanceId)
+          ? defaultInstanceId
+          : null,
+    };
+  }
+  function checkPrecondition(precondition: WritePrecondition) {
+    if (precondition.type === 'absent') {
+      if (preference.revision !== null)
+        throw new ViewServiceError(
+          'REVISION_CONFLICT',
+          '个人偏好已存在，请重新加载后再修改。',
+        );
+      return;
+    }
+    if (precondition.revision !== preference.revision)
+      throw new ViewServiceError(
+        'REVISION_CONFLICT',
+        '个人偏好已被更新，请重新加载。',
+      );
+  }
+  function commitPreference() {
+    const revision = `preference-${++preferenceRevision}`;
+    preference = { ...preference, revision };
+    return { value: preferenceState(), revision };
+  }
   const host: ViewHost = {
     ...(!local && {
       definition: {
         async load(id: string) {
-          if (id !== definition.id) throw new Error('订单视图定义不存在。');
+          assertDefinition(id);
           return structuredClone(definition);
         },
       },
@@ -99,22 +163,23 @@ export function createHost(
               instance.scope.source === 'shared'),
         };
       },
+      getDefinition() {
+        return { reorder: true, setDefault: true };
+      },
     },
     instance: {
       ...(!local && {
-        async list(id: string) {
-          if (id !== definition.id) throw new Error('订单视图定义不存在。');
-          return {
-            instances: instanceOrder
-              .filter(id => saved.has(id))
-              .map(loadInstance),
-            defaultInstanceId:
-              defaultInstanceId === null
-                ? null
-                : saved.has(defaultInstanceId)
-                  ? defaultInstanceId
-                  : (instanceOrder.find(id => saved.has(id)) ?? null),
-          };
+        async list(id: string, listOptions?: { query?: string }) {
+          assertDefinition(id);
+          const needle = (listOptions?.query ?? '').trim().toLocaleLowerCase();
+          const items = visibleOrder()
+            .map(loadInstance)
+            .filter(
+              instance =>
+                !needle || instance.title.toLocaleLowerCase().includes(needle),
+            )
+            .map(summaryOf);
+          return { items, nextCursor: null, total: items.length };
         },
         async load(id: string) {
           return loadInstance(id);
@@ -122,81 +187,91 @@ export function createHost(
       }),
       async rename(id, title, revision) {
         await pause();
-        const previous = loadInstance(id);
-        if (
-          previous.scope.type === 'public' &&
-          previous.scope.source === 'system'
-        )
-          throw new ViewServiceError('FORBIDDEN', '系统视图不能编辑名称。');
-        if (revision !== previous.revision)
-          throw new ViewServiceError(
-            'REVISION_CONFLICT',
-            '视图已被更新，请重新加载。',
-          );
-        const updated = {
-          ...previous,
-          title,
-          revision: String(Number(previous.revision) + 1),
-        };
-        saved.set(id, updated);
-        onWrite('rename', structuredClone(updated));
-        return structuredClone(updated);
-      },
-      async delete(id, revision) {
-        await pause();
-        const previous = saved.get(id);
-        if (previous) {
+        return attempt(() => {
+          const previous = loadInstance(id);
           if (
             previous.scope.type === 'public' &&
             previous.scope.source === 'system'
           )
-            throw new ViewServiceError('FORBIDDEN', '系统视图不能删除。');
+            throw new ViewServiceError('FORBIDDEN', '系统视图不能编辑名称。');
           if (revision !== previous.revision)
             throw new ViewServiceError(
               'REVISION_CONFLICT',
-              '视图已被更新，请重新加载后再删除。',
+              '视图已被更新，请重新加载。',
             );
-          if (failNextDelete) {
-            failNextDelete = false;
-            throw new ViewServiceError('CONFLICT', '删除失败，请重试。');
+          const updated = {
+            ...previous,
+            title,
+            revision: String(Number(previous.revision) + 1),
+          };
+          saved.set(id, updated);
+          onWrite('rename', structuredClone(updated));
+          return {
+            value: structuredClone(updated),
+            revision: updated.revision,
+          };
+        });
+      },
+      async delete(id, revision) {
+        await pause();
+        return attempt(() => {
+          const previous = saved.get(id);
+          if (previous) {
+            if (
+              previous.scope.type === 'public' &&
+              previous.scope.source === 'system'
+            )
+              throw new ViewServiceError('FORBIDDEN', '系统视图不能删除。');
+            if (revision !== previous.revision)
+              throw new ViewServiceError(
+                'REVISION_CONFLICT',
+                '视图已被更新，请重新加载后再删除。',
+              );
+            if (failNextDelete) {
+              failNextDelete = false;
+              throw new ViewServiceError('CONFLICT', '删除失败，请重试。');
+            }
+            saved.delete(id);
+            instanceOrder = instanceOrder.filter(value => value !== id);
+            onWrite('delete', structuredClone(previous));
           }
-          saved.delete(id);
-          instanceOrder = instanceOrder.filter(value => value !== id);
-          if (defaultInstanceId === id)
-            defaultInstanceId = instanceOrder.find(id => saved.has(id)) ?? null;
-          onWrite('delete', structuredClone(previous));
-        }
-        return {
-          defaultInstance:
-            defaultInstanceId === null ? null : loadInstance(defaultInstanceId),
-        };
+          // The receipt only records the deletion; the personal default is a separate preference.
+          const receipt = { id, revision: crypto.randomUUID() };
+          return { value: receipt, revision: receipt.revision };
+        });
       },
       async save(instance) {
         await pause();
-        const previous = loadInstance(instance.id);
-        if (instance.revision !== previous.revision)
-          throw new ViewServiceError(
-            'REVISION_CONFLICT',
-            '视图已被更新，请重新加载后再保存。',
-          );
-        const updated = {
-          ...structuredClone(instance),
-          revision: String(Number(previous.revision) + 1),
-        };
-        saved.set(updated.id, updated);
-        onWrite('save', structuredClone(updated));
-        return structuredClone(updated);
+        return attempt(() => {
+          const previous = loadInstance(instance.id);
+          if (instance.revision !== previous.revision)
+            throw new ViewServiceError(
+              'REVISION_CONFLICT',
+              '视图已被更新，请重新加载后再保存。',
+            );
+          const updated = {
+            ...structuredClone(instance),
+            revision: String(Number(previous.revision) + 1),
+          };
+          saved.set(updated.id, updated);
+          onWrite('save', structuredClone(updated));
+          return {
+            value: structuredClone(updated),
+            revision: updated.revision,
+          };
+        });
       },
       async create(instance, { requestId }) {
         await pause();
+        const body = JSON.stringify(instance);
         const previous = createReceipts.get(requestId);
         if (previous) {
-          if (previous.body !== JSON.stringify(instance))
-            throw new ViewServiceError(
-              'CONFLICT',
-              '创建请求标识已用于不同内容',
-            );
-          return structuredClone(previous.result);
+          if (previous.body !== body)
+            return rejectedWrite('CONFLICT', '创建请求标识已用于不同内容');
+          return committedWrite(
+            structuredClone(previous.result),
+            previous.result.revision,
+          );
         }
         const created = {
           ...structuredClone(instance),
@@ -206,34 +281,48 @@ export function createHost(
         saved.set(created.id, created);
         instanceOrder.push(created.id);
         createReceipts.set(requestId, {
-          body: JSON.stringify(instance),
+          body,
           result: structuredClone(created),
         });
         onWrite('create', structuredClone(created));
-        return structuredClone(created);
+        return committedWrite(structuredClone(created), created.revision);
       },
     },
     preference: {
       ...(!local && {
-        async saveDefault(definitionId: string, id: string | null) {
+        async load(definitionId: string) {
+          assertDefinition(definitionId);
+          return preferenceState();
+        },
+        async saveDefault(
+          definitionId: string,
+          id: string | null,
+          precondition: WritePrecondition,
+        ) {
           await pause();
-          if (definitionId !== definition.id)
-            throw new Error('订单视图定义不存在。');
-          if (id !== null) loadInstance(id);
-          defaultInstanceId = id;
+          return attempt(() => {
+            assertDefinition(definitionId);
+            if (id !== null) loadInstance(id);
+            checkPrecondition(precondition);
+            preference = { ...preference, defaultInstanceId: id };
+            return commitPreference();
+          });
         },
       }),
-      async saveOrder(definitionId, ids) {
+      async saveOrder(definitionId, change, precondition) {
         await pause();
-        if (
-          definitionId !== definition.id ||
-          ids.length !== saved.size ||
-          new Set(ids).size !== saved.size ||
-          ids.some(id => !saved.has(id))
-        )
-          throw new Error('可用视图已变化，请重新加载。');
-        instanceOrder = [...ids];
-        onOrder([...ids]);
+        return attempt(() => {
+          assertDefinition(definitionId);
+          if (change.scopeInstanceIds.some(id => !saved.has(id)))
+            throw new ViewServiceError(
+              'NOT_FOUND',
+              '可用视图已变化，请重新加载。',
+            );
+          checkPrecondition(precondition);
+          instanceOrder = applyOrderChange(visibleOrder(), change);
+          onOrder([...instanceOrder]);
+          return commitPreference();
+        });
       },
     },
   };

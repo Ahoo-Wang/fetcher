@@ -30,7 +30,8 @@ async function laterPage() {
   const mine = instance();
   mine.config.presentation.table.columns[0].summary = ['SUM'];
   const { engine } = setup({
-    instances: { instances: [mine], defaultInstanceId: 'mine' },
+    instances: [mine],
+    defaultInstanceId: 'mine',
     host: { resolveSource: () => ({ paged, aggregate }) },
   });
   engines.push(engine);
@@ -145,10 +146,8 @@ it.each(['paged', 'cursor'] as const)(
   'navigates the displayed %s result after an unrun mode edit',
   async mode => {
     const { engine, paged, cursor } = setup({
-      instances: {
-        instances: [instance('mine', mode)],
-        defaultInstanceId: 'mine',
-      },
+      instances: [instance('mine', mode)],
+      defaultInstanceId: 'mine',
     });
     paged.mockResolvedValue({
       total: 40,

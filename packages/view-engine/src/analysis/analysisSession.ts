@@ -57,6 +57,7 @@ export function createAnalysisSession(
       writeStatus: 'idle',
       writeError: null,
       requiresReload: false,
+      visibility: 'visible',
     },
     definition,
     filterCompilers,

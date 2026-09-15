@@ -30,9 +30,14 @@ export async function loadOrderFixture() {
     const fixture = await import(
       pathToFileURL(join(temporary, 'views.js')).href
     );
+    const views = fixture.createProtocolViews();
+    // The example may return a bare instance array or an object with a seed default.
     return {
       definition: fixture.orderDefinition,
-      instances: fixture.createProtocolViews(),
+      instances: Array.isArray(views) ? views : views.instances,
+      defaultInstanceId: Array.isArray(views)
+        ? (fixture.defaultProtocolViewId ?? null)
+        : (views.defaultInstanceId ?? null),
     };
   } finally {
     rmSync(temporary, { recursive: true, force: true });

@@ -194,7 +194,7 @@ export const playManageViews: RecordViewPlay = async ({ canvasElement }) => {
     canvas.queryByRole('button', { name: '视图选项' }),
   ).not.toBeInTheDocument();
 
-  // The same fake service must preserve a deletion fallback through later sorting and engine reload.
+  // Deleting the default only moves the local selection; the same fake service keeps the personal order across an engine reload and never invents a new default.
   const { host, initialInstances } = createHost(
     {},
     () => {},
@@ -208,12 +208,16 @@ export const playManageViews: RecordViewPlay = async ({ canvasElement }) => {
     await engine.load();
     await engine.setDefaultInstance(personal.id);
     await engine.deleteInstance(personal.id);
-    await expect(engine.getSnapshot().defaultInstanceId).toBe(system.id);
+    await expect(engine.getSnapshot()).toMatchObject({
+      defaultInstanceId: null,
+      selectedInstanceId: system.id,
+    });
     await engine.reorderInstances([shared.id, system.id]);
     await engine.load();
     await expect(engine.getSnapshot()).toMatchObject({
-      defaultInstanceId: system.id,
-      selectedInstanceId: system.id,
+      instanceIds: [shared.id, system.id],
+      defaultInstanceId: null,
+      selectedInstanceId: null,
     });
   } finally {
     engine.dispose();

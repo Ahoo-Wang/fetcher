@@ -22,9 +22,9 @@ export function OrderPage({
 }
 ```
 
-`useViewEngine(options)` owns creation, loading and disposal, including React StrictMode. Its required `scopeKey` and `definitionId` identify the lifetime; changing either replaces the engine. Optional local `definition`/`instances`, paired compiler/editor registrations in `extensions`, `limits` and `onDiagnostic` initialize that lifetime. Same-scope host updates preserve edits. Change the React key to explicitly reinitialize other inputs. The hook returns `ViewEngineBinding`: `{ engine: ViewEngine | null, extensions?, error? }`.
+`useViewEngine(options)` owns creation, loading and disposal, including React StrictMode. Its required `scopeKey` and `definitionId` identify the lifetime; changing either replaces the engine. Optional local `definition`/`instances`/`defaultInstanceId`/`instanceId`, paired compiler/editor registrations in `extensions`, `limits` and `onDiagnostic` initialize that lifetime. Same-scope host updates preserve edits. Change the React key to explicitly reinitialize other inputs. The hook returns `ViewEngineBinding`: `{ engine: ViewEngine | null, extensions?, error? }`.
 
-`ViewPage` is pure UI: pass the binding, or a caller-owned engine. It never loads or disposes that engine. `ViewPageContent` requires a non-null engine. Both compose navigation, shared writes and the selected `RecordView`, `AnalysisView` or `DashboardView`. `RecordView` and `AnalysisView` render only their own kind. A headless caller creates `new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`, calls `load()`, then `dispose()` when its scope ends.
+`ViewPage` is pure UI: pass the binding, or a caller-owned engine. It never loads or disposes that engine. `ViewPageContent` requires a non-null engine. Both compose navigation, shared writes and the selected `RecordView`, `AnalysisView` or `DashboardView`. `RecordView` and `AnalysisView` render only their own kind. A headless caller creates `new ViewEngine({ definitionId, host, definition?, instances?, defaultInstanceId?, instanceId?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`, calls `load()`, then `dispose()` when its scope ends.
 
 ### Definitions and saved instances
 
@@ -35,7 +35,9 @@ export function OrderPage({
 
 `ViewInstance` is the discriminated union `RecordViewInstance | AnalysisViewInstance | DashboardViewInstance`. Both require nonblank `id`, `definitionId`, `title`, `revision` and a `scope`. `kind: 'record'` uses `RecordViewConfig` (`filters`, `sort`, `pagination`, `presentation`); `kind: 'analysis'` uses `AnalysisViewConfig` described below. Scope is personal or public/system/shared; it is not permission. Create input omits only ID and revision; the service returns both.
 
-`ViewInstanceList` contains the visible instances and `defaultInstanceId: string | null`. Default preference and current selection are independent. The list may mix kinds. Structurally valid but currently unexecutable configurations remain editable with `session.validation`; a broken instance does not prevent healthy siblings from being used.
+`ViewEngineOptions.instances` supplies a local catalog as `readonly ViewInstance[]`, with optional `defaultInstanceId` (null or a member ID) and `instanceId` (the explicit initial instance, which takes precedence over the personal default). Without a local catalog the engine pages `instance.list` into `state.catalog` and point-loads an instance through `instance.load` when it is opened; a `ViewInstanceSummary` never carries configuration. Default preference and current selection are independent. The catalog may mix kinds. Structurally valid but currently unexecutable configurations remain editable with `session.validation`; a broken instance does not prevent healthy siblings from being used.
+
+`engine.load()` reads the definition, the first catalog page and the personal preference independently. `state.status` reflects definition readiness only; `state.catalog { status, error, nextCursor, total, summaries }` and `state.preference { status, error, revision }` carry their own states and failures. `state.instanceIds` is the catalog order followed by opened or created instances outside the loaded pages; `state.sessions[id]` exists only for opened instances. Only the effective personal default or `options.instanceId` is selected automatically; `selectInstance(id)` point-loads an unopened instance, `loadMoreInstances()` appends the next catalog page, and `loadSavedInstance(id, signal?)` is a point read without a session, selection or query.
 
 ### Working content, applied results and saves
 
@@ -53,7 +55,7 @@ Record sessions retain `filterDraft`, `filterBaseline`, `appliedFilter`, `filter
 
 All session kinds expose `editorEpoch`. Accepting a reviewed remote version advances it and discards local editor buffers; ordinary reload/restore retain their documented non-destructive input behavior. Custom mounted editors should bind commands and reset their local buffers when `(instance.id, editorEpoch)` changes, as the built-in views do. Old validity callbacks are ignored after this reset; old analysis edits and record draft edits are rejected rather than overwriting the accepted remote configuration. Published active and pending-create sessions use the same final validation path. Record admission always checks pagination/layout discriminants and nested presentation structure; missing field or capability references remain recoverable semantic errors. Cancelling an analysis refresh retains the successful result status, allowing subsequent automatic refresh.
 
-All record operations are on `engine.record(id)`: `setFilterDraft(configuration, valid?)`, `setFilterValidity(valid)`, `setFilterMode(mode)`, `applyFilter()`, `setSort(sort)`, `setColumns(columns)`, `setLayout(layout)`, `setCardConfig(card)`, `setPage(index)`, `setPageSize(size)`, `nextPage()`, `setSelection(keys)`, `refresh({ background? }?)`, `retryQuery()` and `refreshSummary()`. The facade no longer exposes direct record commands. Shared operations are `setTitle`, `save`, `saveAs`, `restore`, `reloadInstance`, `renameInstance`, `deleteInstance`, `setDefaultInstance` and `reorderInstances`. Record restore restores the baseline and queries; analysis restore restores its working configuration without running.
+All record operations are on `engine.record(id)`: `setFilterDraft(configuration, valid?)`, `setFilterValidity(valid)`, `setFilterMode(mode)`, `applyFilter()`, `setSort(sort)`, `setColumns(columns)`, `setLayout(layout)`, `setCardConfig(card)`, `setPage(index)`, `setPageSize(size)`, `nextPage()`, `setSelection(keys)`, `refresh({ background? }?)`, `retryQuery()` and `refreshSummary()`. The facade no longer exposes direct record commands. Shared operations are `setTitle`, `save`, `saveAs`, `restore`, `reloadInstance`, `renameInstance`, `deleteInstance`, `setDefaultInstance`, `reorderInstances(orderedInstanceIds, scopeInstanceIds?)`, `loadMoreInstances` and `loadSavedInstance(id)`. Record restore restores the baseline and queries; analysis restore restores its working configuration without running.
 
 ### Conflicts, unknown writes and runtime bounds
 
@@ -95,7 +97,8 @@ function BusinessDashboardPage({
     scopeKey,
     definitionId: 'orders',
     host,
-    instances: { instances: savedViews, defaultInstanceId: null },
+    instances: savedViews,
+    defaultInstanceId: null,
   });
   return (
     <EmbeddedView {...binding} instanceId="overview" onOpenView={onOpenView} />
@@ -103,7 +106,7 @@ function BusinessDashboardPage({
 }
 ```
 
-Provide `instances.defaultInstanceId: null` for a home-page-only engine to avoid automatically selecting and querying a separate workbench view. `savedViews` must belong to the loaded definition and include `overview`; use any saved record or analysis ID with the same component. Enable dashboard format support on the host. In Storybook, open **View Engine → 引擎与宿主 → 嵌入视图**: `view-engine-embedded-view--dashboard`, `--record`, `--analysis`, and `--independent`.
+Provide `defaultInstanceId: null` for a home-page-only engine to avoid automatically selecting and querying a separate workbench view. `savedViews` must belong to the loaded definition and include `overview`; use any saved record or analysis ID with the same component. In Storybook, open **View Engine → 引擎与宿主 → 嵌入视图**: `view-engine-embedded-view--dashboard`, `--record`, `--analysis`, and `--independent`.
 
 ## Independent runtime positions
 
@@ -185,7 +188,7 @@ Defaults in `RuntimeLimits`: `maxDashboardPanels=12`, `maxDashboardFilters=32`, 
 
 Data reads share the engine's concurrency budget and a 48-entry FIFO waiting queue; standalone record/analysis calls retain immediate BUSY behavior. Reference loading has independent concurrency 4 and queue 24. Every actual instance/definition/source load has its own load deadline. Queued sessions expose `queryStatus: 'waiting'`; diagnostic queued/started/terminal events report waiting/execution durations without values or records. Each global/merged expression is bounded to depth 32 and 512 nodes. Transport response-size limits remain the host's responsibility.
 
-Stateful/Memory/Local and example HTTP hosts accept `supportedFormats: { record: true, analysis: true, dashboard: 1 }`; omission represents a legacy client. The HTTP adapter sends `X-View-Formats`. Definition creation grants are exposed only when dashboard format 1 is supported; instance save-as permissions remain independent. All instance response surfaces use the same projection: hidden dashboard defaults return null without changing stored preference, deletes remain replayable, and old-client ordering preserves hidden slots. Unsupported single-instance reads/writes reject before mutation. Deploy host format projection before enabling dashboard creation; keep that projection during client rollback.
+Record, analysis and dashboard instances share one catalog, instance service and preference document; hosts do not negotiate per-client storage formats. Definition-level creation grants come from `permission.getDefinition()`; instance save-as permissions remain independent.
 
 Local tests, simulated view-service persistence and read-only Wow queries are separate evidence. Real touch devices, screen readers, business-user walkthroughs, and production-host authorization/rollback admission must be verified in the consuming application.
 

@@ -32,6 +32,7 @@ import type {
   RecordToolbarRenderContext,
 } from '../src/record/recordReactTypes.js';
 import type { ViewInstance } from '../src/contracts/viewModel.js';
+import { committedWrite } from '../src/contracts/viewServiceContract.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 const engines: ViewEngine[] = [];
@@ -117,7 +118,8 @@ it('binds ViewPageContent region operations to their rendered instance', async (
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance, other], defaultInstanceId: instance.id },
+    instances: [instance, other],
+    defaultInstanceId: instance.id,
     host,
   });
   engines.push(engine);
@@ -177,7 +179,8 @@ it('rechecks current paged state before running stale pagination operations', as
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host,
   });
   engines.push(engine);
@@ -242,7 +245,8 @@ it('shares cursor and failure guards while preserving operation rejection', asyn
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [cursorInstance], defaultInstanceId: instance.id },
+    instances: [cursorInstance],
+    defaultInstanceId: instance.id,
     host,
   });
   engines.push(engine);
@@ -277,7 +281,8 @@ it('isolates region rendering failures and preserves stateful sibling regions', 
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host,
   });
   engines.push(engine);
@@ -336,10 +341,8 @@ it.each(['renderToolbar', 'renderPagination'] as const)(
       host,
       definitionId: definition.id,
       definition,
-      instances: {
-        instances: [instance, other],
-        defaultInstanceId: instance.id,
-      },
+      instances: [instance, other],
+      defaultInstanceId: instance.id,
     });
     engines.push(engine);
     await engine.load();
@@ -420,7 +423,8 @@ it('sorts a card-only view using the shared engine configuration', async () => {
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition: onlyCard,
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
     host,
   });
   engines.push(engine);
@@ -460,12 +464,15 @@ it('sorts a card-only view using the shared engine configuration', async () => {
 
 it('ignores delayed layout edits after their rendered instance has been deleted', async () => {
   const { host } = setup();
-  host.instance!.delete = vi.fn().mockResolvedValue({ defaultInstance: null });
+  host.instance!.delete = vi.fn(async id =>
+    committedWrite({ id, revision: 'tomb' }, 'tomb'),
+  );
   host.permission = { getInstance: () => ({ delete: true }) };
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host,
   });
   engines.push(engine);
@@ -493,12 +500,15 @@ it('ignores delayed layout edits after their rendered instance has been deleted'
 
 it('uses the same guarded refresh for retained card and toolbar contexts', async () => {
   const { host, paged } = setup();
-  host.instance!.delete = vi.fn().mockResolvedValue({ defaultInstance: null });
+  host.instance!.delete = vi.fn(async id =>
+    committedWrite({ id, revision: 'tomb' }, 'tomb'),
+  );
   host.permission = { getInstance: () => ({ delete: true }) };
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host,
   });
   engines.push(engine);

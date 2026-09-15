@@ -40,7 +40,8 @@ function BusinessDashboardPage({
     scopeKey,
     definitionId: 'orders',
     host,
-    instances: { instances: savedViews, defaultInstanceId: null },
+    instances: savedViews,
+    defaultInstanceId: null,
   });
   return (
     <EmbeddedView {...binding} instanceId="overview" onOpenView={onOpenView} />
@@ -48,7 +49,7 @@ function BusinessDashboardPage({
 }
 ```
 
-Provide `instances.defaultInstanceId: null` for a home-page-only engine to avoid automatically selecting and querying a separate workbench view. `savedViews` must belong to the loaded definition and include `overview`; use any saved record or analysis ID with the same component. Enable dashboard format support on the host. In Storybook, open **View Engine → 引擎与宿主 → 嵌入视图**: `view-engine-embedded-view--dashboard`, `--record`, `--analysis`, and `--independent`.
+Provide `defaultInstanceId: null` for a home-page-only engine to avoid automatically selecting and querying a separate workbench view. `savedViews` must belong to the loaded definition and include `overview`; use any saved record or analysis ID with the same component. In Storybook, open **View Engine → 引擎与宿主 → 嵌入视图**: `view-engine-embedded-view--dashboard`, `--record`, `--analysis`, and `--independent`.
 
 ## Core entry
 
@@ -384,9 +385,9 @@ export function OrderPage({
 }
 ```
 
-`useViewEngine(options)` owns creation, loading and disposal, including React StrictMode. Its required `scopeKey` and `definitionId` identify the lifetime; changing either replaces the engine. Optional local `definition`/`instances`, paired compiler/editor registrations in `extensions`, `limits` and `onDiagnostic` initialize that lifetime. Same-scope host updates preserve edits. Change the React key to explicitly reinitialize other inputs. The hook returns `ViewEngineBinding`: `{ engine: ViewEngine | null, extensions?, error? }`.
+`useViewEngine(options)` owns creation, loading and disposal, including React StrictMode. Its required `scopeKey` and `definitionId` identify the lifetime; changing either replaces the engine. Optional local `definition`/`instances`/`defaultInstanceId`/`instanceId`, paired compiler/editor registrations in `extensions`, `limits` and `onDiagnostic` initialize that lifetime. Same-scope host updates preserve edits. Change the React key to explicitly reinitialize other inputs. The hook returns `ViewEngineBinding`: `{ engine: ViewEngine | null, extensions?, error? }`.
 
-`ViewPage` is pure UI: pass the binding, or a caller-owned engine. It never loads or disposes that engine. `ViewPageContent` requires a non-null engine. Both compose navigation, shared writes and the selected `RecordView`, `AnalysisView` or `DashboardView`. `RecordView` and `AnalysisView` render only their own kind. A headless caller creates `new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`, calls `load()`, then `dispose()` when its scope ends.
+`ViewPage` is pure UI: pass the binding, or a caller-owned engine. It never loads or disposes that engine. `ViewPageContent` requires a non-null engine. Both compose navigation, shared writes and the selected `RecordView`, `AnalysisView` or `DashboardView`. `RecordView` and `AnalysisView` render only their own kind. A headless caller creates `new ViewEngine({ definitionId, host, definition?, instances?, defaultInstanceId?, instanceId?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`, calls `load()`, then `dispose()` when its scope ends.
 
 ### Definitions and saved instances
 
@@ -397,7 +398,7 @@ export function OrderPage({
 
 `ViewInstance` is the discriminated union `RecordViewInstance | AnalysisViewInstance`. Both require nonblank `id`, `definitionId`, `title`, `revision` and a `scope`. `kind: 'record'` uses `RecordViewConfig` (`filters`, `sort`, `pagination`, `presentation`); `kind: 'analysis'` uses `AnalysisViewConfig` described below. Scope is personal or public/system/shared; it is not permission. Create input omits only ID and revision; the service returns both.
 
-`ViewInstanceList` contains the visible instances and `defaultInstanceId: string | null`. Default preference and current selection are independent. The list may mix kinds. Structurally valid but currently unexecutable configurations remain editable with `session.validation`; a broken instance does not prevent healthy siblings from being used.
+`ViewEngineOptions.instances` supplies a local catalog as `readonly ViewInstance[]`, with optional `defaultInstanceId` (null or a member ID) and `instanceId` (the explicit initial instance, which takes precedence over the personal default). Without a local catalog the engine pages `instance.list` into `state.catalog` and point-loads an instance through `instance.load` when it is opened; a `ViewInstanceSummary` (`id`, `definitionId`, `kind`, `title`, `scope`, `revision`, produced by `summaryOf`) never carries configuration. Default preference and current selection are independent. The catalog may mix kinds. Structurally valid but currently unexecutable configurations remain editable with `session.validation`; a broken instance does not prevent healthy siblings from being used.
 
 ### Working content, applied results and saves
 
@@ -415,7 +416,7 @@ Record sessions retain `filterDraft`, `filterBaseline`, `appliedFilter`, `filter
 
 Both session kinds expose `editorEpoch`. Accepting a reviewed remote version advances it and discards local editor buffers; ordinary reload/restore retain their documented non-destructive input behavior. Custom mounted editors should bind commands and reset their local buffers when `(instance.id, editorEpoch)` changes, as the built-in views do. Old validity callbacks are ignored after this reset; old analysis edits and record draft edits are rejected rather than overwriting the accepted remote configuration. Published active and pending-create sessions use the same final validation path. Record admission always checks pagination/layout discriminants and nested presentation structure; missing field or capability references remain recoverable semantic errors. Cancelling an analysis refresh retains the successful result status, allowing subsequent automatic refresh.
 
-All record operations are on `engine.record(id)`: `setFilterDraft(configuration, valid?)`, `setFilterValidity(valid)`, `setFilterMode(mode)`, `applyFilter()`, `setSort(sort)`, `setColumns(columns)`, `setLayout(layout)`, `setCardConfig(card)`, `setPage(index)`, `setPageSize(size)`, `nextPage()`, `setSelection(keys)`, `refresh({ background? }?)`, `retryQuery()` and `refreshSummary()`. The facade no longer exposes direct record commands. Shared operations are `setTitle`, `save`, `saveAs`, `restore`, `reloadInstance`, `renameInstance`, `deleteInstance`, `setDefaultInstance` and `reorderInstances`. Record restore restores the baseline and queries; analysis restore restores its working configuration without running.
+All record operations are on `engine.record(id)`: `setFilterDraft(configuration, valid?)`, `setFilterValidity(valid)`, `setFilterMode(mode)`, `applyFilter()`, `setSort(sort)`, `setColumns(columns)`, `setLayout(layout)`, `setCardConfig(card)`, `setPage(index)`, `setPageSize(size)`, `nextPage()`, `setSelection(keys)`, `refresh({ background? }?)`, `retryQuery()` and `refreshSummary()`. The facade no longer exposes direct record commands. Shared operations are `setTitle`, `save`, `saveAs`, `restore`, `reloadInstance`, `renameInstance`, `deleteInstance`, `setDefaultInstance`, `reorderInstances(orderedInstanceIds, scopeInstanceIds?)`, `loadMoreInstances` and `loadSavedInstance(id)`. Record restore restores the baseline and queries; analysis restore restores its working configuration without running.
 
 ### Conflicts, unknown writes and runtime bounds
 
@@ -802,23 +803,54 @@ The published `/react` entry is built with React Compiler using the repository V
 instance, preference and permission service interfaces. They remain type exports
 from the public package. `src/contracts/viewModel.ts` contains the shared discriminated model and record/analysis state.
 
-Core exports MemoryViewHost, MemoryViewHostOptions, ViewCreateContext, ViewDeleteResult,
-ViewPermissionSnapshot, ViewServiceError and ViewServiceErrorCode.
+Core exports MemoryViewHost, MemoryViewHostOptions, ViewServiceError, ViewServiceErrorCode,
+the helpers `summaryOf`, `preconditionFor`, `committedWrite`, `rejectedWrite`, `unknownWrite`,
+`issueOf`, `readWriteObservation` and `applyOrderChange`, and the contract types `WriteContext`,
+`ConfigurationWriteContext`, `ReadOptions`, `ListOptions`, `Page`, `WritePrecondition`,
+`WriteObservation`, `OperationReference`, `ViewDeleteReceipt`, `ViewOrderChange`, `PreferenceState`
+and `ViewInstanceSummary`.
 HttpViewHost, all HTTP resource clients/transport and VIEW_SERVICE_STATUS are **not**
 public exports. They live under `packages/view-engine/dev/http` and are excluded from
 the published package. Routes, envelopes, status mapping and fake sessions are an
 internal experiment; see the bilingual `packages/view-engine/dev/README*.md`.
 
-MemoryViewHostOptions requires serviceKey, scopeKey, definition, instances and resolveSource. Optional store is a native Map<string, string | null>; passing the same Map shares an in-process service, while omitted stores are private to each host. Optional instancePermissions, canReorder and permissionsRevision provide trusted policy. Its synchronous transaction commits only after all domain validation succeeds. reset() clears that service/definition with an explicit empty state.
+MemoryViewHostOptions requires serviceKey, scopeKey, definition, `instances: ViewInstance[]` and resolveSource; optional `defaultInstanceId` is the starting view for users without a preference document. Optional store is a native Map<string, string | null>; passing the same Map shares an in-process service, while omitted stores are private to each host. Optional `instancePermissions(summary)`, `canReorder`, `canSetDefault` and `definitionPermissions` provide trusted policy; call `publishPermissions()` after their answers change so subscribed engines re-read them. Its synchronous transaction commits only after all domain validation succeeds. reset() clears that service/definition with an explicit empty state.
 
 ViewHost.instance.create(input, {requestId, signal?}) retains one request ID through
 unknown outcomes and retries; the service commits the instance and its receipt
 atomically. Same-key different content is CONFLICT. Revision-controlled writes,
-private order replacement, permission changes and component JSON restoration are
+slot reordering, permission changes and component JSON restoration are
 transport-independent contracts. No HTTP status values are assigned by the core.
 
-Permission snapshots carry revision, explicit boolean grants and reorder capability.
-permission.subscribe notifies ViewEngine; synchronous getters never fetch.
+Read ports take an options object: `definition.load(id, { readFence?, signal? })`,
+`instance.list(definitionId, { query?, cursor?, limit?, readFence?, signal? })` returning
+`Page<ViewInstanceSummary>` (`{ items, nextCursor, total? }`), `instance.load(id, { readFence?, signal? })`,
+and `preference.load(definitionId, { readFence?, signal? })` returning
+`PreferenceState { revision, order, defaultInstanceId, effectiveDefaultInstanceId }`, where
+`revision: null` means no preference document exists yet. A stale catalog cursor rejects with
+`CURSOR_EXPIRED`. `readFence` is an opaque service token from a pending write, passed back
+unchanged to the same service.
+
+Every write takes `WriteContext { requestId, signal? }` (`create`/`save` also accept
+`definitionRevision`, rejected with `DEFINITION_CHANGED` when stale) and resolves to
+`WriteObservation<T>`: `committed` (`value`, `revision`, `visibility: 'visible'`, or `'pending'`
+with a `readFence`), `committed_pending_receipt` (`targetId`, `revision`, `issue`), `unknown`
+(`issue`) and `rejected` (`issue { code, message }`). Ports: `instance.create(input, ctx)`,
+`instance.save(instance, ctx)`, `instance.rename(id, title, expectedRevision, ctx)`,
+`instance.delete(id, expectedRevision, ctx)` → `{ id, revision }`,
+`preference.saveOrder(definitionId, { scopeInstanceIds, orderedInstanceIds }, precondition, ctx)` and
+`preference.saveDefault(definitionId, instanceId | null, precondition, ctx)` → `PreferenceState`.
+`precondition` is `{ type: 'absent' }` for the first preference write and
+`{ type: 'matches', revision }` afterwards (`preconditionFor(revision)`). A replay with the same
+requestId and body returns the stored receipt. Optional read-only
+`operation.reconcile({ resource, definitionId, requestId, targetId? }, options)` returns the stored
+observation of an earlier write without replaying it. A delete receipt says nothing about the
+personal default; that stays in the preference document.
+
+`ViewPermissionService` is synchronous: `getInstance(summary)` returns `ViewInstancePermissions`,
+`getDefinition()` returns `{ reorder?, setDefault?, createPersonal?, createShared? }` (a missing
+grant means unknown), and `subscribe(listener)` notifies ViewEngine. The engine never fetches
+permissions; the host or application loads, caches and orders them, then notifies through subscribe.
 Applications keep one fixed access scope and replace scopeKey when identity changes.
 Definition/instance IDs are nonblank valid Unicode strings and cannot equal . or .. .
 
@@ -834,12 +866,17 @@ production protocol or authentication readiness.
 
 ### Contract convergence
 
-engine.load() awaits permission.load(definitionId, signal) alongside definition/instance
-reads, falling back to permission.refresh(signal). Providers initialize their synchronous
-getters before resolving; the engine does not duplicate their permission store. Failure
-blocks ready state and record queries; retry uses load(), and disposal/reload cancels the
-signal. Synchronous-only providers remain supported. updateHost is a synchronous,
-same-scope replacement of prepared services; later changes notify permission.subscribe.
+engine.load() reads the definition, the first catalog page and the personal preference
+independently. `state.status` reflects definition readiness only; `state.catalog { status, error,
+nextCursor, total, summaries }` and `state.preference { status, error, revision }` carry their own
+states and failures, so a catalog or preference failure never clears opened sessions. Permissions
+are read synchronously from the host; an unavailable policy only limits management actions and
+never blocks loading or record queries. `state.instanceIds` is the catalog order followed by opened
+or created instances outside the loaded pages; `state.sessions[id]` exists only for opened
+instances; `state.defaultInstanceId` is the effective personal default. `loadMoreInstances()`
+appends the next catalog page; `loadSavedInstance(id, signal?)` is a point read without a session,
+selection or query. Retry uses load(), and disposal/reload cancels the signal. updateHost is a
+synchronous, same-scope replacement of prepared services; later changes notify permission.subscribe.
 
 RecordQuerySource requires paged or cursor (both also allowed), with optional aggregate.
 The selected pagination mode is checked before record/aggregate I/O. Packed public-type
@@ -946,7 +983,7 @@ Core `formatRecordNumber(value: number, field: Pick<ViewFieldDefinition, 'number
 
 An unconfirmed create retains its original requestId, submitted snapshot and original known IDs until validated completion. A rejected retry does not prove an earlier attempt failed. Full engine load preserves in-flight/unconfirmed requests; replaying the original request remains possible even when ordinary writes are blocked. reloadInstance replays unknown creates through instance.create using the same key/body; it never adopts a new list item based on matching content. A response that explicitly identifies the new instance may instead be checked through instance.load or exact ID lookup in instance.list. Existing independently opened copies keep their own edits and newer baselines. Pending requests are engine-lifetime state, not serialized view configuration. Successful save-as and reconciliation complete independently of the following record request; record failures remain in the selected session query state and can be retried with `retryQuery`, without reissuing creation. Selecting the already-active valid instance clears a prior navigation error without querying or replacing its draft.
 
-Instance validation enforces `definition.allowedOperators` together with field-level operator compatibility before publishing host responses; this structural check preserves opaque component props without running custom compilers. Instance lists must provide `defaultInstanceId: null` or the ID of a member; invalid or omitted defaults are rejected before sessions are published. An required `revision`, when supplied, must be a nonblank string. MemoryViewHost and IndexedDBViewHost preserve explicit null, never change the default on create or reorder, atomically normalize every affected user's default on deletion, and resolve a later new user's seed default against actual visibility. Scoped absent deletion is a successful no-op; it never removes a hidden private instance. Existing visible instances retain permission and revision checks.
+Instance validation enforces `definition.allowedOperators` together with field-level operator compatibility before publishing host responses; this structural check preserves opaque component props without running custom compilers. A local `defaultInstanceId` must be null or the ID of a member; an unknown ID is rejected before sessions are published. A supplied `revision` must be a nonblank string. MemoryViewHost and IndexedDBViewHost preserve an explicit null, never change the stored default on create, reorder or delete, and resolve `effectiveDefaultInstanceId` against the caller's current visibility on every preference read. Deleting an instance that is not visible in the caller's scope is rejected with `NOT_FOUND`; it never removes a hidden private instance, and replaying the same `requestId` returns the stored receipt. Existing visible instances retain permission and revision checks.
 
 Remote onValueChange uses current candidate labels for newly added/reselected IDs; unchanged IDs preserve their existing saved snapshots, excluding unavailable decorations. Paste replaces the selected text or inserts at the caret before tokenization. Datetime range compilation uses the shared strict scalar validation, so false/0 in the date/time properties cannot become an unset filter. DateTimeCell accepts explicit calendar/clock forms (T/t or whitespace, optional Z/z or numeric offset), rejects unsupported text, and never uses the host timezone to interpret a field-zoned local string.
 
@@ -1253,7 +1290,7 @@ Defaults in `RuntimeLimits`: `maxDashboardPanels=12`, `maxDashboardFilters=32`, 
 
 Data reads share the engine's concurrency budget and a 48-entry FIFO waiting queue; standalone record/analysis calls retain immediate BUSY behavior. Reference loading has independent concurrency 4 and queue 24. Every actual instance/definition/source load has its own load deadline. Queued sessions expose `queryStatus: 'waiting'`; diagnostic queued/started/terminal events report waiting/execution durations without values or records. Each global/merged expression is bounded to depth 32 and 512 nodes. Transport response-size limits remain the host's responsibility.
 
-Stateful/Memory/Local and example HTTP hosts accept `supportedFormats: { record: true, analysis: true, dashboard: 1 }`; omission represents a legacy client. The HTTP adapter sends `X-View-Formats`. Definition creation grants are exposed only when dashboard format 1 is supported; instance save-as permissions remain independent. All instance response surfaces use the same projection: hidden dashboard defaults return null without changing stored preference, deletes remain replayable, and old-client ordering preserves hidden slots. Unsupported single-instance reads/writes reject before mutation. Deploy host format projection before enabling dashboard creation; keep that projection during client rollback.
+Record, analysis and dashboard instances share one catalog, instance service and preference document; hosts do not negotiate per-client storage formats. Definition-level creation grants come from `permission.getDefinition()`; instance save-as permissions remain independent.
 
 Local tests, simulated view-service persistence and read-only Wow queries are separate evidence. Real touch devices, screen readers, business-user walkthroughs, and production-host authorization/rollback admission must be verified in the consuming application.
 

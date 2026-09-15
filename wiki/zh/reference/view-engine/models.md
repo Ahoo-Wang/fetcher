@@ -32,7 +32,7 @@ description: 保存组件配置，并显式声明记录与数据源能力。
 | `pagination`   | `{ mode: 'paged' \| 'cursor', size: number }` |
 | `presentation` | `RecordPresentation`                          |
 
-scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shared' }`；另存为只接受个人或共享范围。`ViewInstanceList` 必须返回完整可见 `instances` 和 `defaultInstanceId: string | null`；非 null 默认项必须指向列表内实例。`ViewEngineState.defaultInstanceId` 独立发布默认项，可以与 `selectedInstanceId` 不同。
+scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shared' }`；另存为只接受个人或共享范围。`ViewInstanceSummary`（`summaryOf(instance)`）是 `instance.list` 分页返回的目录投影 `{ id, definitionId, kind, title, scope, revision }`；本地 `ViewEngineOptions.instances` 数组搭配 `defaultInstanceId: string | null`，其值必须为 null 或成员 ID。`ViewEngineState.defaultInstanceId` 是生效的个人默认项，可以与 `selectedInstanceId` 不同。
 
 字段列包含 `id`、`kind: 'field'`、`field`，以及可选 `title`、`width`、`visible`、`pinned`、`renderer`、`summary`。操作列使用 `kind: 'actions'`，没有 field。显式宽度为 64–960 px，导出常量提供最小、最大与默认值（180 px）。`getRecordColumnPinning` 计算主键/操作列的强制固定位置；`orderRecordColumns` 返回展示顺序，不改写保存偏好。
 
@@ -51,7 +51,7 @@ scope 为 `{ type: 'personal' }` 或 `{ type: 'public', source: 'system' | 'shar
 
 `readRecordValue` 读取自有属性与标准点分数组下标，字面点号键优先。`getRecordKey`、`validateRecordRows` 检查稳定身份。信任边界可调用 `validateViewDefinition`、`validateViewInstance`；运行时快照使用 `DeepReadonly`。
 
-`ViewDeleteResult` 包含必填 `defaultInstance: ViewInstance | null`，表示删除事务中的权威默认视图，而不是本地顺序推算的 ID。
+`ViewDeleteReceipt` 是删除事务返回的 `{ id, revision }`，不携带默认视图。`PreferenceState` 为 `{ revision: string | null, order, defaultInstanceId, effectiveDefaultInstanceId }`；`Page<T>` 为 `{ items, nextCursor, total? }`；每次写入都解析为 `WriteObservation<T>`。参见 [ViewHost](./view-host.md)。
 
 ## 混合能力
 

@@ -32,7 +32,7 @@ description: Persist component configuration and declare record and source capab
 | `pagination`    | `{ mode: 'paged' \| 'cursor', size: number }`   |
 | `presentation`  | `RecordPresentation`                            |
 
-Scope is `{ type: 'personal' }` or `{ type: 'public', source: 'system' | 'shared' }`. Save-as accepts personal or shared scope. `ViewInstanceList` requires the complete visible `instances` and `defaultInstanceId: string | null`; a non-null default must name a listed instance. `ViewEngineState.defaultInstanceId` is the independently published default and can differ from `selectedInstanceId`.
+Scope is `{ type: 'personal' }` or `{ type: 'public', source: 'system' | 'shared' }`. Save-as accepts personal or shared scope. `ViewInstanceSummary` (`summaryOf(instance)`) is the catalog projection `{ id, definitionId, kind, title, scope, revision }` returned in `instance.list` pages; a local `ViewEngineOptions.instances` array pairs with `defaultInstanceId: string | null`, which must be null or the ID of a member. `ViewEngineState.defaultInstanceId` is the effective personal default and can differ from `selectedInstanceId`.
 
 A field column has `id`, `kind: 'field'`, `field` and optional `title`, `width`, `visible`, `pinned`, `renderer`, `summary`. An actions column uses `kind: 'actions'` and no field. Explicit width is 64–960 px; helpers export minimum, maximum and default (180 px). Row-key/action mandatory pinning is computed by `getRecordColumnPinning`; `orderRecordColumns` returns display order without rewriting persisted preferences.
 
@@ -51,7 +51,7 @@ Paged results are `{ list, total }`. Cursor results are `{ list, nextCursor }`, 
 
 `readRecordValue` traverses own properties and canonical dot-separated array indices; a literal dotted own key wins. `getRecordKey` and `validateRecordRows` check stable identities. `validateViewDefinition` and `validateViewInstance` are available at trust boundaries; runtime snapshots use `DeepReadonly`.
 
-`ViewDeleteResult` contains required `defaultInstance: ViewInstance | null`, the authoritative default view from the deletion transaction rather than an ID inferred from local order.
+`ViewDeleteReceipt` is `{ id, revision }` from the deletion transaction and carries no default view. `PreferenceState` is `{ revision: string | null, order, defaultInstanceId, effectiveDefaultInstanceId }`; `Page<T>` is `{ items, nextCursor, total? }`; every write resolves to a `WriteObservation<T>`. See [ViewHost](./view-host.md).
 
 ## Mixed capabilities
 

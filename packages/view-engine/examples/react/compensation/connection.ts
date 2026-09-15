@@ -28,7 +28,7 @@ import {
   type AnalysisViewInstance,
   type RecordData,
   type RecordViewDefinition,
-  type ViewInstanceList,
+  type RecordViewInstance,
   readRecordValue,
 } from '@ahoo-wang/fetcher-view-engine';
 
@@ -180,54 +180,51 @@ export async function connectCompensation({
       'firstEventTime',
       'eventTime',
     ];
-    const instances: ViewInstanceList = {
-      defaultInstanceId: 'records',
-      instances: [
-        {
-          id: 'records',
-          definitionId: definition.id,
-          title: '补偿记录快照',
-          kind: 'record',
-          scope: { type: 'public', source: 'system' },
-          revision: 'system-v1',
-          config: {
-            filters: createFilterConfiguration({
-              id: 'root',
-              component: { name: 'builtin' },
-              operator: FilterOperator.MATCH_ALL,
-              props: {},
-            }),
-            sort: ['eventTime', 'aggregateId']
-              .filter(path =>
-                recordFields.some(
-                  field => field.field === path && field.sortable,
-                ),
-              )
-              .map(field => ({ field, direction: SortDirection.DESC })),
-            pagination: { mode: 'paged', size: 20 },
-            presentation: {
-              layout: 'table',
-              table: {
-                columns: columns
-                  .filter(path =>
-                    recordFields.some(field => field.field === path),
-                  )
-                  .map(field => ({
-                    id: field,
-                    field,
-                    kind: 'field',
-                    width: field === 'aggregateId' ? 260 : 180,
-                  })),
-              },
+    const instances: RecordViewInstance[] = [
+      {
+        id: 'records',
+        definitionId: definition.id,
+        title: '补偿记录快照',
+        kind: 'record',
+        scope: { type: 'public', source: 'system' },
+        revision: 'system-v1',
+        config: {
+          filters: createFilterConfiguration({
+            id: 'root',
+            component: { name: 'builtin' },
+            operator: FilterOperator.MATCH_ALL,
+            props: {},
+          }),
+          sort: ['eventTime', 'aggregateId']
+            .filter(path =>
+              recordFields.some(
+                field => field.field === path && field.sortable,
+              ),
+            )
+            .map(field => ({ field, direction: SortDirection.DESC })),
+          pagination: { mode: 'paged', size: 20 },
+          presentation: {
+            layout: 'table',
+            table: {
+              columns: columns
+                .filter(path =>
+                  recordFields.some(field => field.field === path),
+                )
+                .map(field => ({
+                  id: field,
+                  field,
+                  kind: 'field',
+                  width: field === 'aggregateId' ? 260 : 180,
+                })),
             },
           },
         },
-      ],
-    };
+      },
+    ];
     return {
       model,
       definition,
-      instances,
+      instances: { instances, defaultInstanceId: 'records' },
       source: new SnapshotQueryClient<RecordData>({
         fetcher: transport,
         basePath: '/execution_failed',

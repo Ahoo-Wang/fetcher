@@ -12,7 +12,13 @@
  */
 
 import { validateDashboardConfig } from '../../dashboard/dashboardValidation.js';
-import type { ViewDefinition, ViewInstance } from '../viewModel.js';
+import {
+  summaryOf,
+  type ViewDefinition,
+  type ViewInstance,
+  type ViewInstanceSummary,
+} from '../viewModel.js';
+import type { Page } from '../viewServiceContract.js';
 import { encodeViewResourceId } from '../viewServiceContract.js';
 import { validateFilterJson } from '../../filter/filterConfigurationValidation.js';
 import { validateAnalysisConfiguration } from '../../analysis/analysisConfigurationValidation.js';
@@ -64,31 +70,82 @@ export function validateViewInstance(
   else validateRecordConfiguration(config, definition, semantic);
 }
 
-/** Shared list trust boundary for initial loading and uncertain-write reconciliation. */
-export function readInstanceList(
+/** Catalog summaries carry identity and scope only; configuration always comes from a point read. */
+export function validateViewInstanceSummary(
+  value: unknown,
+  definition: ViewDefinition,
+): asserts value is ViewInstanceSummary {
+  assertObject(value, '实例摘要');
+  assertText(value.id, '实例 ID');
+  encodeViewResourceId(value.id);
+  if (value.definitionId !== definition.id)
+    throw new Error('实例不属于当前视图定义');
+  assertText(value.title, '实例名称');
+  if (
+    value.kind !== 'record' &&
+    value.kind !== 'analysis' &&
+    value.kind !== 'dashboard'
+  )
+    throw new Error('视图类型无效');
+  assertObject(value.scope, '实例范围');
+  if (
+    value.scope.type !== 'personal' &&
+    !(
+      value.scope.type === 'public' &&
+      (value.scope.source === 'system' || value.scope.source === 'shared')
+    )
+  )
+    throw new Error('实例范围无效');
+  assertText(value.revision, '实例 revision');
+}
+
+/** Trust boundary for one catalog page returned by a host. */
+export function readInstancePage(
+  value: unknown,
+  definition: ViewDefinition,
+): Page<ViewInstanceSummary> {
+  assertObject(value, '实例目录页');
+  if (!Array.isArray(value.items)) throw new Error('目录页必须包含 items 数组');
+  const seen = new Set<string>();
+  const items: ViewInstanceSummary[] = [];
+  for (const item of value.items) {
+    validateViewInstanceSummary(item, definition);
+    if (seen.has(item.id)) throw new Error(`实例 ID 重复：${item.id}`);
+    seen.add(item.id);
+    items.push(summaryOf(item as ViewInstance));
+  }
+  if (
+    !('nextCursor' in value) ||
+    (value.nextCursor !== null &&
+      (typeof value.nextCursor !== 'string' || !value.nextCursor))
+  )
+    throw new Error('目录页 nextCursor 必须为非空字符串或 null');
+  if (
+    value.total !== undefined &&
+    (typeof value.total !== 'number' ||
+      !Number.isSafeInteger(value.total) ||
+      value.total < items.length)
+  )
+    throw new Error('目录页 total 无效');
+  return {
+    items,
+    nextCursor: value.nextCursor,
+    ...(value.total !== undefined ? { total: value.total } : {}),
+  };
+}
+
+/** Trust boundary for locally supplied saved instances that form the whole catalog. */
+export function readLocalInstances(
   value: unknown,
   definition: ViewDefinition,
 ): ViewInstance[] {
-  if (
-    !value ||
-    typeof value !== 'object' ||
-    !('instances' in value) ||
-    !Array.isArray(value.instances)
-  )
-    throw new Error('实例列表必须包含 instances 数组');
+  if (!Array.isArray(value)) throw new Error('本地实例必须是数组');
   const seen = new Set<string>();
-  for (const instance of value.instances) {
+  for (const instance of value) {
     validateViewInstance(instance, definition, undefined, false);
     if (seen.has(instance.id)) throw new Error(`实例 ID 重复：${instance.id}`);
     seen.add(instance.id);
   }
-  if (
-    !('defaultInstanceId' in value) ||
-    (value.defaultInstanceId !== null &&
-      (typeof value.defaultInstanceId !== 'string' ||
-        !seen.has(value.defaultInstanceId)))
-  )
-    throw new Error('默认视图必须为当前列表中的实例 ID 或 null');
   // 每个实例已经 validateViewInstance 校验，这里收窄为契约返回类型。
-  return value.instances as ViewInstance[];
+  return value as ViewInstance[];
 }

@@ -17,14 +17,20 @@ import { expect, it, vi } from 'vitest';
 import { newFilterNode } from '../../src/filter/filterCore.js';
 import type { ViewInstance } from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
-import { deferred, instance, selected, setup } from './fixtures.js';
+import type { ReadOptions } from '../../src/contracts/viewServiceContract.js';
+import {
+  catalogHost,
+  deferred,
+  instance,
+  page,
+  selected,
+  setup,
+} from './fixtures.js';
 
 it('keeps a subscriber navigation newer than the selection canceling a query', async () => {
   const { engine, paged } = setup({
-    instances: {
-      instances: [instance(), instance('shared'), instance('third')],
-      defaultInstanceId: 'mine',
-    },
+    instances: [instance(), instance('shared'), instance('third')],
+    defaultInstanceId: 'mine',
   });
   await engine.load();
   const entered = deferred<void>();
@@ -55,7 +61,9 @@ it('keeps a subscriber navigation newer than the selection canceling a query', a
     await redirected;
     expect(engine.getSnapshot().selectedInstanceId).toBe('third');
     expect(engine.getSnapshot().sessions.third.queryStatus).toBe('success');
-    expect(engine.getSnapshot().sessions.shared.queryStatus).toBe('idle');
+    // The superseded navigation never opened or queried its target.
+    expect(engine.getSnapshot().sessions.shared).toBeUndefined();
+    expect(paged).toHaveBeenCalledTimes(3);
   } finally {
     unsubscribe();
     engine.dispose();
@@ -113,12 +121,19 @@ it('retains each instance draft and mode, clearing selection for the new query w
 it('ignores a switched-away read and obsolete unknown-instance selections', async () => {
   const first = deferred<ViewInstance>();
   const second = deferred<ViewInstance>();
-  const loadInstance = vi
-    .fn()
-    .mockImplementationOnce(() => first.promise)
-    .mockImplementationOnce(() => second.promise);
+  const catalog = catalogHost([instance(), instance('shared')]);
+  const loadInstance = vi.fn((id: string) =>
+    id === 'first'
+      ? first.promise
+      : id === 'second'
+        ? second.promise
+        : catalog.instance.load(id),
+  );
   const { engine, paged } = setup({
-    host: { instance: { load: loadInstance } } as unknown as ViewHost,
+    instances: undefined,
+    host: {
+      instance: { list: catalog.instance.list, load: loadInstance },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const previousRows = selected(engine).rows;
@@ -140,17 +155,32 @@ it('ignores a switched-away read and obsolete unknown-instance selections', asyn
   await readFirst;
   expect(engine.getSnapshot().selectedInstanceId).toBe('second');
   expect(engine.getSnapshot().error).toBeNull();
-  expect(engine.getSnapshot().instanceIds).not.toContain('first');
+  expect(engine.getSnapshot().instanceIds).toEqual([
+    'mine',
+    'shared',
+    'second',
+  ]);
+  expect(engine.getSnapshot().catalog.summaries.second).toMatchObject({
+    id: 'second',
+    title: 'second',
+  });
 });
 
 it('ignores an older reload rejection after a newer reload has completed', async () => {
   const old = deferred<ViewInstance>();
   const loadInstance = vi
     .fn()
+    .mockResolvedValueOnce(instance())
     .mockImplementationOnce(() => old.promise)
     .mockResolvedValue({ ...instance(), title: 'Fresh', revision: 'r5' });
   const { engine } = setup({
-    host: { instance: { load: loadInstance } } as unknown as ViewHost,
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () => page([instance(), instance('shared')]),
+        load: loadInstance,
+      },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const first = engine.reloadInstance();
@@ -169,9 +199,12 @@ it('keeps the reload started synchronously by abort as the current owner', async
   const newest = deferred<ViewInstance>();
   const stale = deferred<ViewInstance>();
   let nested: Promise<void> | undefined;
-  const loadInstance = vi.fn((_id: string, signal: AbortSignal) => {
-    if (loadInstance.mock.calls.length === 1) {
-      signal.addEventListener(
+  const loadInstance = vi.fn((_id: string, { signal }: ReadOptions) => {
+    // The first read opens the default instance during load.
+    if (loadInstance.mock.calls.length === 1)
+      return Promise.resolve(instance());
+    if (loadInstance.mock.calls.length === 2) {
+      signal!.addEventListener(
         'abort',
         () => {
           nested = engine.reloadInstance();
@@ -180,12 +213,18 @@ it('keeps the reload started synchronously by abort as the current owner', async
       );
       return first.promise;
     }
-    return loadInstance.mock.calls.length === 2
+    return loadInstance.mock.calls.length === 3
       ? newest.promise
       : stale.promise;
   });
   const { engine } = setup({
-    host: { instance: { load: loadInstance } } as unknown as ViewHost,
+    instances: undefined,
+    host: {
+      instance: {
+        list: async () => page([instance(), instance('shared')]),
+        load: loadInstance,
+      },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const initial = engine.reloadInstance();
@@ -205,8 +244,16 @@ it('keeps the reload started synchronously by abort as the current owner', async
 
 it('retains the workspace and its in-flight query when an unknown selection fails', async () => {
   const pending = deferred<ViewInstance>();
+  const catalog = catalogHost([instance(), instance('shared')]);
   const { engine, paged } = setup({
-    host: { instance: { load: () => pending.promise } } as unknown as ViewHost,
+    instances: undefined,
+    host: {
+      instance: {
+        list: catalog.instance.list,
+        load: (id: string) =>
+          id === 'missing' ? pending.promise : catalog.instance.load(id),
+      },
+    } as unknown as ViewHost,
   });
   await engine.load();
   const queryResult = deferred<unknown>();
@@ -214,12 +261,39 @@ it('retains the workspace and its in-flight query when an unknown selection fail
   const query = engine.record('mine').refresh();
   const opening = engine.selectInstance('missing');
   const rejected = expect(opening).rejects.toThrow('unavailable');
-  expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+  expect(engine.getSnapshot()).toMatchObject({
+    selectedInstanceId: 'mine',
+    openingInstanceId: 'missing',
+  });
   pending.reject(new Error('unavailable'));
   await rejected;
-  expect(engine.getSnapshot().selectedInstanceId).toBe('mine');
+  expect(engine.getSnapshot()).toMatchObject({
+    selectedInstanceId: 'mine',
+    openingInstanceId: null,
+    error: 'unavailable',
+  });
+  expect(engine.getSnapshot().instanceIds).toEqual(['mine', 'shared']);
   queryResult.resolve({ total: 1, list: [{ state: { id: 'retained' } }] });
   await query;
   expect(selected(engine).rows).toEqual([{ state: { id: 'retained' } }]);
+  engine.dispose();
+});
+
+it('point-loads a listed instance on selection and rejects unknown local selections', async () => {
+  const { engine } = setup();
+  await engine.load();
+  expect(engine.getSnapshot().sessions.shared).toBeUndefined();
+  await engine.selectInstance('shared');
+  expect(selected(engine)).toMatchObject({
+    instance: { id: 'shared', title: 'shared' },
+    queryStatus: 'success',
+  });
+  await expect(engine.selectInstance('missing')).rejects.toThrow(
+    '无法加载实例：missing',
+  );
+  expect(engine.getSnapshot()).toMatchObject({
+    selectedInstanceId: 'shared',
+    instanceIds: ['mine', 'shared'],
+  });
   engine.dispose();
 });

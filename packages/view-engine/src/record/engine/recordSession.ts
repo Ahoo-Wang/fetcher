@@ -72,6 +72,7 @@ export function createRecordSession(
     writeStatus: 'idle',
     writeError: null,
     requiresReload: false,
+    visibility: 'visible',
   };
 }
 

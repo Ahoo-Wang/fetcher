@@ -27,6 +27,8 @@ import type {
 } from '../src/filter/filterReactTypes.js';
 import { ViewPage } from './fixtures/OwnedViewPage.js';
 import type { ViewInstance } from '../src/contracts/viewModel.js';
+import { committedWrite } from '../src/contracts/viewServiceContract.js';
+import { page } from './engine/fixtures.js';
 import { instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
@@ -97,13 +99,14 @@ function customInstance(): ViewInstance {
 it('renders and clears opaque component props without losing them through JSON save and reload', async () => {
   const { host, paged } = setup();
   let saved = customInstance();
-  host.instance!.list = vi.fn(async () => ({
-    instances: [saved],
-    defaultInstanceId: saved.id,
-  }));
+  host.instance!.list = vi.fn(async () => page([saved]));
+  host.instance!.load = vi.fn(async () => structuredClone(saved));
   host.instance!.save = vi.fn(async submitted => {
-    saved = JSON.parse(JSON.stringify(submitted)) as ViewInstance;
-    return saved;
+    saved = {
+      ...(JSON.parse(JSON.stringify(submitted)) as ViewInstance),
+      revision: 'next',
+    };
+    return committedWrite(saved, 'next');
   });
   const view = render(
     <ViewPage
@@ -176,10 +179,8 @@ it.each([
         scopeKey="custom-one"
         definitionId="orders"
         host={host}
-        instances={{
-          instances: [customInstance()],
-          defaultInstanceId: instance.id,
-        }}
+        instances={[customInstance()]}
+        defaultInstanceId={instance.id}
         extensions={{ filters: { custom: { ...customAmount, clear } } }}
       />,
     );
@@ -193,16 +194,14 @@ it.each([
 
 it('keeps the initial compiler and filter renderer together until the scope changes', async () => {
   const { host, paged } = setup();
-  const local = {
-    instances: [customInstance()],
-    defaultInstanceId: instance.id,
-  };
+  const local = [customInstance()];
   const view = render(
     <ViewPage
       scopeKey="custom-one"
       definitionId="orders"
       host={host}
       instances={local}
+      defaultInstanceId={instance.id}
       extensions={{ filters: { custom: customAmount } }}
     />,
   );
@@ -214,6 +213,7 @@ it('keeps the initial compiler and filter renderer together until the scope chan
       definitionId="orders"
       host={host}
       instances={local}
+      defaultInstanceId={instance.id}
       extensions={{
         filters: {
           custom: {
@@ -237,6 +237,7 @@ it('keeps the initial compiler and filter renderer together until the scope chan
       definitionId="orders"
       host={host}
       instances={local}
+      defaultInstanceId={instance.id}
       extensions={{
         filters: {
           custom: {
@@ -259,10 +260,8 @@ it('does not query from core-only compiler options accidentally spread into a Re
   const options = {
     definitionId: 'orders',
     host,
-    instances: {
-      instances: [customInstance()],
-      defaultInstanceId: instance.id,
-    },
+    instances: [customInstance()],
+    defaultInstanceId: instance.id,
     filterCompilers: { custom: { compile } },
   };
   render(<ViewPage scopeKey="component-registry" {...options} />);

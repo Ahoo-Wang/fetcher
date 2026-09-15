@@ -24,6 +24,11 @@ import {
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { ViewPageContent } from '../src/view/ViewPage.js';
+import {
+  committedWrite,
+  type ViewOrderChange,
+} from '../src/contracts/viewServiceContract.js';
+import { preference } from './engine/fixtures.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 afterEach(cleanup);
@@ -37,14 +42,19 @@ async function openOrderedViews() {
     title: '系统视图',
     scope: { type: 'public', source: 'system' } as const,
   };
-  host.preference!.saveOrder = vi.fn().mockResolvedValue(undefined);
+  // The committed preference echoes the requested order; the engine applies it to loaded slots.
+  host.preference!.saveOrder = vi.fn(
+    async (_definitionId: string, change: ViewOrderChange) =>
+      committedWrite(
+        preference(instance.id, 'p2', [...change.orderedInstanceIds]),
+        'p2',
+      ),
+  );
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: {
-      instances: [instance, system, second],
-      defaultInstanceId: instance.id,
-    },
+    instances: [instance, system, second],
+    defaultInstanceId: instance.id,
     host,
   });
   await engine.load();
@@ -90,11 +100,15 @@ it('retries group-local keyboard ordering while preserving drafts, selection and
   await waitFor(() => expect(document.activeElement).toBe(handle));
   await keyboardOrder(handle, 'ArrowDown');
   await manager.findByText(/已移至第 2 项/);
-  expect(saveOrder).toHaveBeenLastCalledWith('orders', [
-    'system',
-    'second',
-    'mine',
-  ]);
+  expect(saveOrder).toHaveBeenLastCalledWith(
+    'orders',
+    {
+      scopeInstanceIds: ['system', 'second', 'mine'],
+      orderedInstanceIds: ['system', 'second', 'mine'],
+    },
+    { type: 'absent' },
+    { requestId: expect.any(String) },
+  );
   expect(
     within(personal)
       .getAllByRole('listitem')
@@ -131,7 +145,12 @@ it('isolates ordering permissions between groups', async () => {
   await waitFor(() =>
     expect(host.preference!.saveOrder).toHaveBeenCalledExactlyOnceWith(
       'orders',
-      ['second', 'mine', 'system'],
+      {
+        scopeInstanceIds: ['second', 'mine', 'system'],
+        orderedInstanceIds: ['second', 'mine', 'system'],
+      },
+      { type: 'absent' },
+      { requestId: expect.any(String) },
     ),
   );
   engine.dispose();

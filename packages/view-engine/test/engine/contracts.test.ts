@@ -15,11 +15,14 @@ import { expect, it, vi } from 'vitest';
 import { ViewEngine } from '../../src/engine/ViewEngine.js';
 import { createFilterConfiguration } from '../../src/filter/filterCore.js';
 import { filter } from '@ahoo-wang/fetcher-wow';
+import { committedWrite } from '../../src/contracts/viewServiceContract.js';
+import type { ViewHost } from '../../src/contracts/ViewHost.js';
 import {
   setup,
   instance,
   definition,
-  deferred,
+  deleteReceipt,
+  preferenceWrite,
   selected,
   managementPermissions,
 } from './fixtures.js';
@@ -29,12 +32,10 @@ it.each(['rename', 'delete'] as const)(
   async operation => {
     const { engine, host } = setup();
     host.permission!.getInstance = managementPermissions;
-    host.instance!.rename = vi.fn(async (id, title) => ({
-      ...instance(id),
-      title,
-      revision: '2',
-    }));
-    host.instance!.delete = vi.fn(async () => ({ defaultInstance: null }));
+    host.instance!.rename = vi.fn(async (id, title) =>
+      committedWrite({ ...instance(id), title, revision: '2' }, '2'),
+    );
+    host.instance!.delete = vi.fn(async id => deleteReceipt(id));
     await engine.load();
     const report = vi.spyOn(console, 'error').mockImplementation(() => {});
     const notified = vi.fn();
@@ -56,63 +57,97 @@ it.each(['rename', 'delete'] as const)(
   },
 );
 
-it('waits for independent permission initialization before becoming ready or querying records', async () => {
+it('reads permissions synchronously, becomes ready without awaiting them and follows host notifications', async () => {
   const { host, paged } = setup();
-  const pending = deferred<void>();
   let ready = false;
+  let notify: (() => void) | undefined;
+  const refresh = vi.fn(async () => {});
+  const subscribe = vi.fn((listener: () => void) => {
+    notify = listener;
+    return () => {
+      notify = undefined;
+    };
+  });
   host.permission = {
     getInstance: () => ({ ...managementPermissions(), save: ready }),
-    refresh: vi.fn(async () => {}),
-    load: vi.fn(async () => {
-      await pending.promise;
-      ready = true;
-      return {
-        revision: 1,
-        instances: { mine: managementPermissions() },
-        reorder: true,
-      };
-    }),
+    getDefinition: () => ({ reorder: ready, setDefault: ready }),
+    subscribe,
+    // Application-facing refresh of an HTTP permission client; never called by the engine.
+    refresh,
+  } as ViewHost['permission'];
+  host.preference = {
+    saveOrder: async () => preferenceWrite('mine'),
+    saveDefault: async () => preferenceWrite('mine'),
   };
   const engine = new ViewEngine({
     definitionId: 'orders',
     definition,
-    instances: { instances: [instance()], defaultInstanceId: 'mine' },
+    instances: [instance()],
+    defaultInstanceId: 'mine',
     host,
   });
-  const loading = engine.load();
-  await vi.waitFor(() => expect(host.permission!.load).toHaveBeenCalledOnce());
-  expect(engine.getSnapshot().status).toBe('loading');
-  expect(paged).not.toHaveBeenCalled();
-  pending.resolve();
-  await loading;
+  expect(subscribe).toHaveBeenCalledOnce();
+  await engine.load();
+  expect(engine.getSnapshot().status).toBe('ready');
+  expect(paged).toHaveBeenCalledOnce();
+  expect(engine.getCapabilitiesSnapshot().instances.mine.permissions.save).toBe(
+    false,
+  );
+  expect(engine.canReorderInstances()).toBe(false);
+  expect(engine.canSetDefaultInstance()).toBe(false);
+  const listener = vi.fn();
+  engine.subscribe(listener);
+  ready = true;
+  notify!();
+  expect(listener).toHaveBeenCalled();
   expect(engine.getCapabilitiesSnapshot().instances.mine.permissions.save).toBe(
     true,
   );
-  expect(paged).toHaveBeenCalledOnce();
-  expect(host.permission!.refresh).not.toHaveBeenCalled();
+  expect(engine.canReorderInstances()).toBe(true);
+  expect(engine.canSetDefaultInstance()).toBe(true);
+  expect(refresh).not.toHaveBeenCalled();
   engine.dispose();
+  expect(notify).toBeUndefined();
 });
 
-it('fails closed on permission initialization errors, retries and forwards cancellation', async () => {
-  const { engine, host, paged } = setup();
-  host.permission!.load = vi
-    .fn()
-    .mockRejectedValueOnce(new Error('permissions offline'))
-    .mockResolvedValue({ revision: 1, instances: {}, reorder: false });
-  await expect(engine.load()).rejects.toThrow('permissions offline');
-  expect(paged).not.toHaveBeenCalled();
-  const signal = vi.mocked(host.permission!.load).mock.calls[0][1]!;
-  expect(signal.aborted).toBe(true);
+it('fails closed while a permission port throws and recovers once it answers', async () => {
+  let offline = true;
+  const { engine, host } = setup({
+    host: {
+      preference: { saveDefault: async () => preferenceWrite('shared') },
+      permission: {
+        getInstance: () => {
+          if (offline) throw new Error('policy offline');
+          return managementPermissions();
+        },
+        getDefinition: () => {
+          if (offline) throw new Error('policy offline');
+          return { setDefault: true };
+        },
+      },
+    } as ViewHost,
+  });
   await engine.load();
   expect(engine.getSnapshot().status).toBe('ready');
-  engine.dispose();
-});
-
-it('initializes refresh-only permission services without requiring a snapshot loader', async () => {
-  const { engine, host } = setup();
-  host.permission!.refresh = vi.fn(async () => {});
-  await engine.load();
-  expect(host.permission!.refresh).toHaveBeenCalledOnce();
+  expect(engine.getPermissions()).toEqual({
+    save: false,
+    saveAsPersonal: false,
+    saveAsShared: false,
+    delete: false,
+    rename: false,
+  });
+  expect(engine.canSetDefaultInstance()).toBe(false);
+  await expect(engine.save()).rejects.toThrow('未允许');
+  await expect(engine.setDefaultInstance('shared')).rejects.toThrow(
+    '默认视图保存接口',
+  );
+  expect(host.instance!.save).not.toHaveBeenCalled();
+  offline = false;
+  expect(engine.getPermissions().save).toBe(true);
+  expect(engine.canSetDefaultInstance()).toBe(true);
+  await engine.save();
+  await engine.setDefaultInstance('shared');
+  expect(engine.getSnapshot().defaultInstanceId).toBe('shared');
   engine.dispose();
 });
 
@@ -129,7 +164,8 @@ it('does not recompile filters for selection, title or query status changes', as
     filter.eq('state.amount', props.value),
   );
   const { engine } = setup({
-    instances: { instances: [value], defaultInstanceId: 'mine' },
+    instances: [value],
+    defaultInstanceId: 'mine',
     filterCompilers: { custom: { compile } },
   });
   await engine.load();
@@ -162,10 +198,8 @@ it.each(['paged', 'cursor'] as const)(
     );
     const aggregate = vi.fn();
     const { engine, host } = setup({
-      instances: {
-        instances: [instance('mine', mode)],
-        defaultInstanceId: 'mine',
-      },
+      instances: [instance('mine', mode)],
+      defaultInstanceId: 'mine',
     });
     host.resolveSource = () =>
       ({ [mode]: request, aggregate }) as ReturnType<
@@ -180,35 +214,23 @@ it.each(['paged', 'cursor'] as const)(
       { id: 'amount', kind: 'field', field: 'state.amount', summary: ['SUM'] },
     ];
     const other = setup({
-      instances: {
-        instances: [unsupported],
-        defaultInstanceId: 'mine',
-      },
+      instances: [unsupported],
+      defaultInstanceId: 'mine',
       host,
     });
-    await expect(other.engine.load()).rejects.toThrow(
-      `数据源不支持 ${opposite}`,
-    );
+    // The definition and catalog load; the unsupported mode fails the opened view's query.
+    await other.engine.load();
+    expect(other.engine.getSnapshot()).toMatchObject({
+      status: 'ready',
+      selectedInstanceId: 'mine',
+    });
+    expect(selected(other.engine)).toMatchObject({
+      queryStatus: 'error',
+      queryError: `数据源不支持 ${opposite} 分页查询`,
+      rows: [],
+    });
     expect(request).toHaveBeenCalledOnce();
     expect(aggregate).not.toHaveBeenCalled();
     other.engine.dispose();
   },
 );
-
-it('cancels permission initialization and ignores its completion after disposal', async () => {
-  const { engine, host, paged } = setup();
-  const pending = deferred<{
-    revision: number;
-    instances: Record<string, never>;
-    reorder: boolean;
-  }>();
-  host.permission!.load = vi.fn(() => pending.promise);
-  const loading = engine.load();
-  await vi.waitFor(() => expect(host.permission!.load).toHaveBeenCalledOnce());
-  const signal = vi.mocked(host.permission!.load).mock.calls[0][1]!;
-  engine.dispose();
-  expect(signal.aborted).toBe(true);
-  pending.resolve({ revision: 1, instances: {}, reorder: false });
-  await loading;
-  expect(paged).not.toHaveBeenCalled();
-});

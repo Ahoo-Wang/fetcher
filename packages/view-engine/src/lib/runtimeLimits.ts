@@ -23,6 +23,8 @@ export interface RuntimeLimits {
   maxDashboardResultRows: number;
   maxDashboardResultBytes: number;
   maxDashboardMetadataBytes: number;
+  /** Loaded catalog summaries per engine; further pages are refused, opened sessions are unaffected. */
+  maxCatalogSummaries: number;
 }
 export interface RuntimeDiagnostic {
   operationId: string;
@@ -59,6 +61,7 @@ export function validateRuntimeLimits(
     maxDashboardResultRows: 12000,
     maxDashboardResultBytes: 16777216,
     maxDashboardMetadataBytes: 122 * 1048576,
+    maxCatalogSummaries: 2000,
     ...Object.fromEntries(
       Object.entries(input).filter(([, value]) => value !== undefined),
     ),

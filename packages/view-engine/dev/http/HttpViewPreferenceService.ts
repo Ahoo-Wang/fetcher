@@ -11,22 +11,85 @@
  * limitations under the License.
  */
 
-import type { ViewPreferenceService } from '@ahoo-wang/fetcher-view-engine';
+import type {
+  OperationReference,
+  PreferenceState,
+  ReadOptions,
+  ViewOperationService,
+  ViewOrderChange,
+  ViewPreferenceService,
+  WriteContext,
+  WriteObservation,
+  WritePrecondition,
+} from '@ahoo-wang/fetcher-view-engine';
+import { encodeViewResourceId } from './protocol.js';
 import type { HttpViewTransport } from './HttpViewTransport.js';
+
 export class HttpViewPreferenceService implements ViewPreferenceService {
   constructor(private readonly transport: HttpViewTransport) {}
-  readonly saveDefault = async (
+  readonly load = async (
     id: string,
-    instanceId: string | null,
-  ): Promise<void> => {
+    options: ReadOptions = {},
+  ): Promise<PreferenceState> => {
     this.transport.assertDefinition(id);
-    await this.transport.request('/default', 'PUT', { instanceId });
+    const query = options.readFence
+      ? `?readFence=${encodeURIComponent(options.readFence)}`
+      : '';
+    return this.transport.request<PreferenceState>(
+      `/preferences${query}`,
+      'GET',
+      undefined,
+      options.signal,
+    );
   };
   readonly saveOrder = async (
     id: string,
-    instanceIds: string[],
-  ): Promise<void> => {
+    change: ViewOrderChange,
+    precondition: WritePrecondition,
+    context: WriteContext,
+  ): Promise<WriteObservation<PreferenceState>> => {
     this.transport.assertDefinition(id);
-    await this.transport.request('/order', 'PUT', { instanceIds });
+    return this.transport.write<PreferenceState>(
+      '/preferences/order',
+      'PUT',
+      { change, precondition },
+      context.signal,
+      this.transport.requestIdentity(context.requestId),
+    );
+  };
+  readonly saveDefault = async (
+    id: string,
+    instanceId: string | null,
+    precondition: WritePrecondition,
+    context: WriteContext,
+  ): Promise<WriteObservation<PreferenceState>> => {
+    this.transport.assertDefinition(id);
+    return this.transport.write<PreferenceState>(
+      '/preferences/default',
+      'PUT',
+      { instanceId, precondition },
+      context.signal,
+      this.transport.requestIdentity(context.requestId),
+    );
+  };
+}
+
+/** Read-only reconciliation of an earlier write by its request identity. */
+export class HttpViewOperationService implements ViewOperationService {
+  constructor(private readonly transport: HttpViewTransport) {}
+  readonly reconcile = async (
+    reference: OperationReference,
+    options: ReadOptions = {},
+  ): Promise<WriteObservation<unknown>> => {
+    this.transport.assertDefinition(reference.definitionId);
+    const search = new URLSearchParams();
+    if (reference.targetId) search.set('targetId', reference.targetId);
+    const query = search.toString();
+    return this.transport.request<WriteObservation<unknown>>(
+      `/operations/${reference.resource}/${encodeViewResourceId(reference.requestId)}${query ? `?${query}` : ''}`,
+      'GET',
+      undefined,
+      options.signal,
+    );
   };
 }

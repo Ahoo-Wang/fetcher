@@ -20,6 +20,8 @@ import {
   SortDirection,
 } from '@ahoo-wang/fetcher-wow';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
+import { committedWrite } from '../src/contracts/viewServiceContract.js';
+import { page } from './engine/fixtures.js';
 import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
 import type {
   AnalysisViewConfig,
@@ -98,11 +100,14 @@ const instance: AnalysisViewInstance = {
 };
 function setup(instances = [instance]) {
   const aggregate = vi.fn().mockResolvedValue([{ orders: 2, total: 30 }]);
-  const save = vi.fn(async value => ({ ...value, revision: '2' }));
+  const save = vi.fn(async value =>
+    committedWrite({ ...value, revision: '2' }, '2'),
+  );
   const engine = new ViewEngine({
     definitionId: 'orders',
     definition,
-    instances: { instances, defaultInstanceId: 'analysis' },
+    instances,
+    defaultInstanceId: 'analysis',
     host: {
       resolveSource: () => ({ aggregate }),
       instance: { save },
@@ -180,15 +185,20 @@ it('uses the shared conflict decisions for analysis documents without running on
   const aggregate = vi.fn().mockResolvedValue([{ orders: 2, total: 30 }]);
   const save = vi.fn(async (value: AnalysisViewInstance) => {
     remote = { ...value, revision: 'r4' };
-    return remote;
+    return committedWrite(remote, 'r4');
   });
+  // Host catalog mode: point reads observe the remote document as it changes.
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    defaultInstanceId: instance.id,
     host: {
       resolveSource: () => ({ aggregate }),
-      instance: { load: async () => remote, save: save as never },
+      instance: {
+        list: async () => page([instance]),
+        load: async () => remote,
+        save: save as never,
+      },
       permission: {
         getInstance: () => ({
           save: true,
@@ -276,7 +286,8 @@ it('evicts results across record and analysis while retaining both working docum
       ...definition,
       record: { rowKey: 'id', allowedLayouts: ['table'] },
     },
-    instances: { instances: [record, instance], defaultInstanceId: record.id },
+    instances: [record, instance],
+    defaultInstanceId: record.id,
     limits: { maxRetainedResults: 1 },
     host: { resolveSource: () => ({ paged, aggregate }) },
   });
@@ -329,7 +340,8 @@ it('preserves invalid analysis editor input across reloads without a JSON change
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host: {
       resolveSource: () => ({ aggregate }),
       instance: { load: async () => ({ ...instance, revision: '2' }) },
@@ -383,10 +395,8 @@ it('retries a first analysis cancelled by navigation when revisiting its instanc
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: {
-      instances: [instance, { ...instance, id: 'other' }],
-      defaultInstanceId: instance.id,
-    },
+    instances: [instance, { ...instance, id: 'other' }],
+    defaultInstanceId: instance.id,
     host: { resolveSource: () => ({ aggregate }) },
   });
   try {
@@ -412,7 +422,8 @@ it('refreshes a clean analysis instance after an explicit reload', async () => {
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host: {
       resolveSource: () => ({ aggregate }),
       instance: { load: async () => ({ ...instance, revision: '2' }) },
@@ -462,7 +473,8 @@ it('reports invalid analysis without calling the data source', async () => {
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host: { resolveSource: () => ({ aggregate }) },
     onDiagnostic: diagnostic,
   });
@@ -486,7 +498,8 @@ it('cancels a run while resolving its source without invoking aggregate', async 
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    instances: [instance],
+    defaultInstanceId: instance.id,
     host: {
       resolveSource: () =>
         delayed
@@ -539,7 +552,8 @@ it('validates query-producing sort changes before publishing and preserves inval
       ...definition,
       analysis: { ...definition.analysis!, limits: { maxSort: 1 } },
     },
-    instances: { instances: [grouped], defaultInstanceId: grouped.id },
+    instances: [grouped],
+    defaultInstanceId: grouped.id,
     host: { resolveSource: () => ({ aggregate }) },
   });
   try {
@@ -628,12 +642,18 @@ it('rejects clearSort from an editor replaced by remote conflict resolution', as
   const engine = new ViewEngine({
     definitionId: definition.id,
     definition,
-    instances: { instances: [instance], defaultInstanceId: instance.id },
+    defaultInstanceId: instance.id,
     host: {
       resolveSource: () => ({
         aggregate: async () => [{ orders: 2, total: 30 }],
       }),
-      instance: { load: async () => remote },
+      instance: {
+        list: async () => page([instance]),
+        load: vi
+          .fn()
+          .mockResolvedValueOnce(structuredClone(instance))
+          .mockResolvedValue(remote),
+      },
     },
   });
   try {
@@ -666,18 +686,20 @@ it('retries initial opening after a shared query budget refuses admission', asyn
     definitionId: definition.id,
     definition,
     limits: { maxConcurrentQueries: 1 },
-    instances: {
-      instances: [
-        instance,
-        { ...instance, id: 'other' },
-        { ...instance, id: 'busy' },
-      ],
-      defaultInstanceId: instance.id,
-    },
+    instances: [
+      instance,
+      { ...instance, id: 'other' },
+      { ...instance, id: 'busy' },
+    ],
+    defaultInstanceId: instance.id,
     host: { resolveSource: () => ({ aggregate }) },
   });
   try {
     await engine.load();
+    // Sessions are lazy: open the busy instance, then leave it selected elsewhere so that
+    // navigating to `other` does not cancel the run that occupies the shared budget.
+    await engine.selectInstance('busy');
+    await engine.selectInstance(instance.id);
     aggregate.mockImplementationOnce(
       () =>
         new Promise(resolve => {

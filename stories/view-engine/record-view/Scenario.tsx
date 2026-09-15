@@ -211,7 +211,12 @@ export function Scenario({
         definitionId={definition.id}
         host={runtime.host}
         definition={options.local ? definition : undefined}
-        instances={options.local ? runtime.initialInstances : undefined}
+        instances={
+          options.local ? runtime.initialInstances.instances : undefined
+        }
+        defaultInstanceId={
+          options.local ? runtime.initialInstances.defaultInstanceId : undefined
+        }
         extensions={extensions}
         initialSidebarCollapsed={options.sidebarCollapsed}
         record={{ selectable: true }}

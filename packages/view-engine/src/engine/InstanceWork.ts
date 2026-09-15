@@ -12,15 +12,13 @@
  */
 
 import type { ViewSession, ViewInstance } from '../contracts/viewModel.js';
-import { ViewServiceError } from '../contracts/viewServiceContract.js';
 
-/** Only a definitive service rejection proves a dispatched write did not commit. */
-export function hasUnknownWriteOutcome(error: unknown): boolean {
-  return (
-    !(error instanceof ViewServiceError) ||
-    error.code === 'UNKNOWN_OUTCOME' ||
-    error.code === 'UNAVAILABLE'
-  );
+/** An uncertain or receipt-pending save/rename kept for later reconciliation by its original identity. */
+export interface PendingWrite {
+  action: 'save' | 'rename';
+  requestId: string;
+  /** Commit proof from a `committed_pending_receipt` observation, when the service gave one. */
+  revision?: string;
 }
 
 interface CreateRequest {
@@ -33,7 +31,10 @@ interface InstanceOperation {
   write?: symbol;
   reload?: AbortController;
   creation?: { request: CreateRequest; resultId?: string | null };
-  deletion?: { revision: string };
+  deletion?: { revision: string; requestId: string };
+  pending?: PendingWrite;
+  /** Request identity of the save currently in flight, before its outcome is known. */
+  lastRequestId?: string;
 }
 
 /** Owns operation identities and recovery together; callers never mutate coordination maps. */
@@ -66,7 +67,9 @@ export class InstanceWork {
       !operation.write &&
       !operation.reload &&
       !operation.creation &&
-      !operation.deletion
+      !operation.deletion &&
+      !operation.pending &&
+      !operation.lastRequestId
     )
       this.operations.delete(id);
   }
@@ -152,11 +155,35 @@ export class InstanceWork {
     this.prune(id);
     publish?.();
   }
-  unverifiedDelete(id: string): Readonly<{ revision: string }> | undefined {
+  unverifiedDelete(
+    id: string,
+  ): Readonly<{ revision: string; requestId: string }> | undefined {
     return this.operations.get(id)?.deletion;
   }
-  markDeleteUnverified(id: string, revision: string): void {
-    this.operation(id).deletion = { revision };
+  markDeleteUnverified(id: string, revision: string, requestId: string): void {
+    this.operation(id).deletion = { revision, requestId };
+  }
+  noteRequestId(id: string, requestId: string): void {
+    this.operation(id).lastRequestId = requestId;
+  }
+  lastRequestId(id: string): string | undefined {
+    return this.operations.get(id)?.lastRequestId;
+  }
+  recordPendingWrite(id: string, write: PendingWrite): void {
+    const operation = this.operation(id);
+    operation.pending = write;
+    delete operation.lastRequestId;
+  }
+  pendingWrite(id: string): Readonly<PendingWrite> | undefined {
+    return this.operations.get(id)?.pending;
+  }
+  clearPendingWrite(id: string): void {
+    const operation = this.operations.get(id);
+    if (operation) {
+      delete operation.pending;
+      delete operation.lastRequestId;
+    }
+    this.prune(id);
   }
   clearDelete(id: string): void {
     const operation = this.operations.get(id);

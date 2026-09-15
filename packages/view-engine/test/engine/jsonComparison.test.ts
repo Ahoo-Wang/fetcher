@@ -14,6 +14,7 @@
 import { sameJsonState } from '../../src/lib/snapshot.js';
 import { expect, it } from 'vitest';
 import { filter, FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { committedWrite } from '../../src/contracts/viewServiceContract.js';
 import { instance, selected, setup } from './fixtures.js';
 
 const composed = '\u00e9';
@@ -45,7 +46,8 @@ it('accepts a saved response that only reorders opaque component property keys',
     props: { value: 1, labels },
   };
   const { engine } = setup({
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
     filterCompilers: {
       opaque: {
         compile: props => filter.eq('state.amount', props.value as number),
@@ -54,20 +56,24 @@ it('accepts a saved response that only reorders opaque component property keys',
     host: {
       resolveSource: () => ({ paged: async () => ({ total: 0, list: [] }) }),
       instance: {
-        save: async value => ({
-          ...value,
-          revision: 'r2',
-          config: {
-            ...value.config,
-            filters: {
-              ...value.config.filters,
-              root: {
-                ...value.config.filters.root,
-                props: { value: 1, labels: reordered },
+        save: async value =>
+          committedWrite(
+            {
+              ...value,
+              revision: 'r2',
+              config: {
+                ...value.config,
+                filters: {
+                  ...value.config.filters,
+                  root: {
+                    ...value.config.filters.root,
+                    props: { value: 1, labels: reordered },
+                  },
+                },
               },
             },
-          },
-        }),
+            'r2',
+          ),
       },
     },
   });

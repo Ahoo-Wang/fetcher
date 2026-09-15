@@ -22,8 +22,20 @@ import {
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPage } from './fixtures/OwnedViewPage.js';
-import { ViewServiceError } from '../src/contracts/viewServiceContract.js';
+import {
+  committedWrite,
+  rejectedWrite,
+  ViewServiceError,
+  type PreferenceState,
+  type WriteObservation,
+} from '../src/contracts/viewServiceContract.js';
+import { page, preference } from './engine/fixtures.js';
 import { instance, setup } from './fixtures/viewPage.js';
+
+const renamedWrite = (id: string, title: string) =>
+  committedWrite({ ...instance, id, title, revision: 'renamed' }, 'renamed');
+const deletedWrite = (id: string) =>
+  committedWrite({ id, revision: 'tomb' }, 'tomb');
 
 afterEach(cleanup);
 
@@ -34,17 +46,13 @@ it('can reopen and retry the original uncertain deletion without enabling other 
     rename: true,
     delete: true,
   });
-  host.instance!.rename = vi.fn(async (id, title) => ({
-    ...instance,
-    id,
-    title,
-  }));
+  host.instance!.rename = vi.fn(async (id, title) => renamedWrite(id, title));
   host.instance!.delete = vi
     .fn()
     .mockRejectedValueOnce(
       new ViewServiceError('UNKNOWN_OUTCOME', '删除结果未知'),
     )
-    .mockResolvedValue({ defaultInstance: null });
+    .mockImplementation(async id => deletedWrite(id));
   render(
     <ViewPage scopeKey="delete-recovery" definitionId="orders" host={host} />,
   );
@@ -96,16 +104,12 @@ it('manages names and deletion together while protecting system views and pendin
     rename: true,
     delete: true,
   });
-  host.instance!.rename = vi.fn(async (id, title) => ({
-    ...instance,
-    id,
-    title,
-    revision: 'renamed',
-  }));
+  host.instance!.rename = vi.fn(async (id, title) => renamedWrite(id, title));
+  // A definitive host refusal is an observation; the next attempt is a fresh delete.
   host.instance!.delete = vi
     .fn()
-    .mockRejectedValueOnce(new ViewServiceError('CONFLICT', '删除失败，请重试'))
-    .mockResolvedValue({ defaultInstance: null });
+    .mockResolvedValueOnce(rejectedWrite('CONFLICT', '删除失败，请重试'))
+    .mockImplementation(async id => deletedWrite(id));
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.change(screen.getByRole('textbox', { name: '金额值' }), {
@@ -185,16 +189,16 @@ it('retains a rejected name for retry and discards the editor buffer on closing 
     saveAsShared: false,
     rename: true,
   });
-  let rejectRename!: (error: Error) => void;
+  let settleRename!: (observation: WriteObservation<never>) => void;
   host.instance!.rename = vi
     .fn()
     .mockImplementationOnce(
       () =>
-        new Promise((_, reject) => {
-          rejectRename = reject;
+        new Promise(resolve => {
+          settleRename = resolve;
         }),
     )
-    .mockImplementation(async (id, title) => ({ ...instance, id, title }));
+    .mockImplementation(async (id, title) => renamedWrite(id, title));
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   const trigger = screen.getAllByRole('button', { name: '管理视图' })[0];
@@ -214,7 +218,7 @@ it('retains a rejected name for retry and discards the editor buffer on closing 
   });
   expect(screen.getByRole('dialog', { name: '管理视图' })).toBeTruthy();
   await act(async () =>
-    rejectRename(new ViewServiceError('CONFLICT', '名称保存失败')),
+    settleRename(rejectedWrite('CONFLICT', '名称保存失败')),
   );
   expect(manager.getByRole('alert').textContent).toBe('名称保存失败');
   expect(input.value).toBe('待重试名称');
@@ -246,16 +250,18 @@ it('retains a rejected name for retry and discards the editor buffer on closing 
 it('manages names for prototype-like instance IDs', async () => {
   const { host } = setup();
   const value = { ...instance, id: 'constructor' };
-  host.instance!.list = vi
-    .fn()
-    .mockResolvedValue({ instances: [value], defaultInstanceId: value.id });
+  host.instance!.list = vi.fn().mockResolvedValue(page([value]));
+  host.instance!.load = vi.fn(async () => structuredClone(value));
+  host.preference!.load = vi.fn().mockResolvedValue(preference(value.id));
   host.permission!.getInstance = () => ({
     save: false,
     saveAsPersonal: false,
     saveAsShared: false,
     rename: true,
   });
-  host.instance!.rename = vi.fn(async (id, title) => ({ ...value, id, title }));
+  host.instance!.rename = vi.fn(async (id, title) =>
+    committedWrite({ ...value, id, title, revision: 'renamed' }, 'renamed'),
+  );
   render(<ViewPage scopeKey="test-user" definitionId="orders" host={host} />);
   await screen.findByRole('cell', { name: '42' });
   fireEvent.click(screen.getAllByRole('button', { name: '管理视图' })[0]);
@@ -275,7 +281,16 @@ it('manages names for prototype-like instance IDs', async () => {
 
 it('sets and clears the system default without changing the current view or pending filters', async () => {
   const { host, paged } = setup();
-  host.preference!.saveDefault = vi.fn().mockResolvedValue(undefined);
+  let revision = 1;
+  host.preference!.saveDefault = vi.fn(
+    async (_definitionId: string, instanceId: string | null) => {
+      revision += 1;
+      return committedWrite(
+        preference(instanceId, `p${revision}`),
+        `p${revision}`,
+      );
+    },
+  );
   render(
     <ViewPage scopeKey="default-test" definitionId="orders" host={host} />,
   );
@@ -294,6 +309,8 @@ it('sets and clears the system default without changing the current view or pend
     expect(host.preference!.saveDefault).toHaveBeenLastCalledWith(
       'orders',
       'system',
+      { type: 'matches', revision: 'p1' },
+      { requestId: expect.any(String) },
     ),
   );
   const cancel = await manager.findByRole('button', {
@@ -305,6 +322,8 @@ it('sets and clears the system default without changing the current view or pend
     expect(host.preference!.saveDefault).toHaveBeenLastCalledWith(
       'orders',
       null,
+      { type: 'matches', revision: 'p2' },
+      { requestId: expect.any(String) },
     ),
   );
   await waitFor(() => expect(manager.queryByText('默认')).toBeNull());
@@ -321,13 +340,13 @@ it('sets and clears the system default without changing the current view or pend
 
 it('keeps the previous default on failure and retries the same button while retaining focus', async () => {
   const { host } = setup();
-  let resolveSave!: () => void;
+  let resolveSave!: (observation: WriteObservation<PreferenceState>) => void;
   host.preference!.saveDefault = vi
     .fn()
     .mockRejectedValueOnce(new Error('保存失败'))
     .mockImplementationOnce(
       () =>
-        new Promise<void>(resolve => {
+        new Promise<WriteObservation<PreferenceState>>(resolve => {
           resolveSave = resolve;
         }),
     );
@@ -362,7 +381,9 @@ it('keeps the previous default on failure and retries the same button while reta
   fireEvent.keyDown(dialog, { key: 'Escape' });
   fireEvent.click(manager.getByRole('button', { name: '完成' }));
   expect(screen.getByRole('dialog', { name: '管理视图' })).toBe(dialog);
-  await act(async () => resolveSave());
+  await act(async () =>
+    resolveSave(committedWrite(preference('system', 'p2'), 'p2')),
+  );
   expect(manager.getByRole('button', { name: '取消所有订单的默认视图' })).toBe(
     button,
   );

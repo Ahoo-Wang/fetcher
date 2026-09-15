@@ -10,15 +10,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createFilterConfiguration } from '../../src/filter/filterCore.js';
 
+import { createFilterConfiguration } from '../../src/filter/filterCore.js';
 import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { expect, it, vi } from 'vitest';
 import { newFilterNode } from '../../src/filter/filterCore.js';
 import type { ViewInstance } from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
-import { deferred, instance, selected, setup } from './fixtures.js';
+import {
+  committedWrite,
+  rejectedWrite,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
+import {
+  catalogHost,
+  deferred,
+  instance,
+  selected,
+  setup,
+} from './fixtures.js';
 
 it('denies unavailable writes and pending filter drafts', async () => {
   const { engine, host } = setup({
@@ -51,7 +61,7 @@ it('denies unavailable writes and pending filter drafts', async () => {
 });
 
 it('captures the submitted snapshot and revision while retaining subsequent edits', async () => {
-  const response = deferred<ViewInstance>();
+  const response = deferred<WriteObservation<ViewInstance>>();
   const saveInstance = vi.fn(() => response.promise);
   const { engine } = setup({
     host: { instance: { save: saveInstance } } as unknown as ViewHost,
@@ -60,17 +70,23 @@ it('captures the submitted snapshot and revision while retaining subsequent edit
   engine.setTitle('Submitted');
   const saving = engine.save();
   engine.setTitle('Latest');
-  expect(saveInstance.mock.calls[0][0]).toMatchObject({
-    title: 'Submitted',
-    revision: 'r1',
-  });
-  response.resolve({ ...instance(), title: 'Submitted', revision: 'r2' });
+  expect(saveInstance).toHaveBeenCalledWith(
+    expect.objectContaining({ title: 'Submitted', revision: 'r1' }),
+    expect.objectContaining({
+      requestId: expect.any(String),
+      signal: expect.any(AbortSignal),
+    }),
+  );
+  response.resolve(
+    committedWrite({ ...instance(), title: 'Submitted', revision: 'r2' }, 'r2'),
+  );
   await saving;
   expect(selected(engine)).toMatchObject({
     baseline: { title: 'Submitted', revision: 'r2' },
     instance: { title: 'Latest', revision: 'r2' },
     dirty: true,
     writeStatus: 'idle',
+    visibility: 'visible',
   });
   engine.setTitle('Submitted');
   expect(selected(engine).dirty).toBe(false);
@@ -80,17 +96,21 @@ it('accepts host metadata changes while requiring exact persisted title, scope a
   const { engine } = setup({
     host: {
       instance: {
-        save: async value => ({
-          ...value,
-          revision: 'r2',
-          updatedAt: 'today',
-        }),
-        create: async value => ({
-          ...value,
-          id: 'created',
-          createdAt: 'today',
-          revision: 'created-r1',
-        }),
+        save: async value =>
+          committedWrite(
+            { ...value, revision: 'r2', updatedAt: 'today' },
+            'r2',
+          ),
+        create: async value =>
+          committedWrite(
+            {
+              ...value,
+              id: 'created',
+              createdAt: 'today',
+              revision: 'created-r1',
+            },
+            'created-r1',
+          ),
       },
     } as unknown as ViewHost,
   });
@@ -113,7 +133,7 @@ it('accepts host metadata changes while requiring exact persisted title, scope a
 });
 
 it('blocks same-instance concurrent writes and keeps ordinary failures visible without retrying', async () => {
-  const response = deferred<ViewInstance>();
+  const response = deferred<WriteObservation<ViewInstance>>();
   const saveInstance = vi.fn(() => response.promise);
   const { engine, host } = setup({
     host: { instance: { save: saveInstance } } as unknown as ViewHost,
@@ -125,8 +145,12 @@ it('blocks same-instance concurrent writes and keeps ordinary failures visible w
     engine.saveAs({ title: 'Duplicate', scope: { type: 'personal' } }),
   ).rejects.toThrow();
   expect(host.instance!.create).not.toHaveBeenCalled();
-  response.reject(new ViewServiceError('REVISION_CONFLICT', 'conflict'));
-  await expect(saving).rejects.toThrow('conflict');
+  response.resolve(rejectedWrite('REVISION_CONFLICT', 'conflict'));
+  await expect(saving).rejects.toMatchObject({
+    name: 'ViewServiceError',
+    code: 'REVISION_CONFLICT',
+    message: 'conflict',
+  });
   expect(selected(engine)).toMatchObject({
     writeError: 'conflict',
     requiresReload: false,
@@ -139,21 +163,33 @@ it('blocks same-instance concurrent writes and keeps ordinary failures visible w
 
 it('requires explicit reload after a malformed or changed echo, preserving local edits against the loaded baseline', async () => {
   for (const response of [
-    { ...instance(), title: 'normalized' },
-    { ...instance(), definitionId: 'foreign' },
-    { ...instance(), id: 'other' },
-    { ...instance(), kind: 'dashboard' },
+    committedWrite({ ...instance(), title: 'normalized' }, 'r1'),
+    committedWrite({ ...instance(), definitionId: 'foreign' }, 'r1'),
+    committedWrite({ ...instance(), id: 'other' }, 'r1'),
+    committedWrite({ ...instance(), kind: 'dashboard' }, 'r1'),
+    committedWrite(null, 'r1'),
+    committedWrite({ ...instance(), title: 'My draft' }, 'r2'),
+    { outcome: 'committed', value: instance(), revision: 'r1' },
     null,
   ]) {
     const saveInstance = vi.fn().mockResolvedValue(response);
-    const loadInstance = vi.fn(async () => ({
-      ...instance(),
-      title: 'Server title',
-      revision: 'r9',
-    }));
+    const catalog = catalogHost([instance(), instance('shared')]);
+    const loadInstance = vi
+      .fn()
+      .mockImplementationOnce(catalog.instance.load)
+      .mockResolvedValue({
+        ...instance(),
+        title: 'Server title',
+        revision: 'r9',
+      });
     const { engine } = setup({
+      instances: undefined,
       host: {
-        instance: { save: saveInstance, load: loadInstance },
+        instance: {
+          list: catalog.instance.list,
+          save: saveInstance,
+          load: loadInstance,
+        },
       } as unknown as ViewHost,
     });
     await engine.load();
@@ -192,7 +228,7 @@ it('does not let a host mutate the write request to validate a changed echo', as
       instance: {
         save: async value => {
           value.title = 'Mutated';
-          return value;
+          return committedWrite(value, value.revision);
         },
       },
     } as unknown as ViewHost,
@@ -208,18 +244,23 @@ it('does not let a host mutate the write request to validate a changed echo', as
 });
 
 it('reload adopts server scope while preserving locally editable content', async () => {
-  const saveInstance = vi.fn(async (value: ViewInstance) => ({
-    ...value,
-    revision: 'r10',
-  }));
+  const saveInstance = vi.fn(async (value: ViewInstance) =>
+    committedWrite({ ...value, revision: 'r10' }, 'r10'),
+  );
+  const catalog = catalogHost([instance(), instance('shared')]);
   const { engine } = setup({
+    instances: undefined,
     host: {
       instance: {
-        load: async () => ({
-          ...instance(),
-          scope: { type: 'public', source: 'shared' },
-          revision: 'r9',
-        }),
+        list: catalog.instance.list,
+        load: vi
+          .fn()
+          .mockImplementationOnce(catalog.instance.load)
+          .mockResolvedValue({
+            ...instance(),
+            scope: { type: 'public', source: 'shared' },
+            revision: 'r9',
+          }),
         save: saveInstance,
       },
     } as unknown as ViewHost,

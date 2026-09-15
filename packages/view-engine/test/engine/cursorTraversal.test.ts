@@ -27,10 +27,8 @@ afterEach(() => engines.splice(0).forEach(engine => engine.dispose()));
 
 function setupCursor(ids = ['mine']) {
   const value = setup({
-    instances: {
-      instances: ids.map(id => instance(id, 'cursor')),
-      defaultInstanceId: ids[0],
-    },
+    instances: ids.map(id => instance(id, 'cursor')),
+    defaultInstanceId: ids[0],
   });
   engines.push(value.engine);
   return value;

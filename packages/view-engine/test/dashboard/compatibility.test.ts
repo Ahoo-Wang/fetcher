@@ -25,88 +25,131 @@ const dashboard: DashboardViewInstance = {
   kind: 'dashboard',
   config: { schemaVersion: 1, panels: [], filters: [] },
 };
-function hosts() {
-  const options = {
+function host() {
+  return new MemoryViewHost({
     serviceKey: 'service',
     scopeKey: 'alice',
     store: new Map<string, string | null>(),
     definition: { ...definition, dashboard: true as const },
-    instances: {
-      instances: [instance('a'), dashboard, instance('b')],
-      defaultInstanceId: 'dashboard',
-    },
+    instances: [instance('a'), dashboard, instance('b')],
+    defaultInstanceId: 'dashboard',
     resolveSource: () => ({ paged: async () => ({ total: 0, list: [] }) }),
     definitionPermissions: () => ({
       createPersonal: true,
       createShared: false,
     }),
-  };
-  return {
-    old: new MemoryViewHost(options),
-    modern: new MemoryViewHost({
-      ...options,
-      supportedFormats: { record: true, analysis: true, dashboard: 1 },
-    }),
-  };
+  });
 }
+const ids = async (service: MemoryViewHost) =>
+  (await service.instance.list(definition.id)).items.map(item => item.id);
+
 describe('dashboard service compatibility', () => {
-  it('projects hidden defaults in list/delete/retry without changing the stored preference', async () => {
-    const { old, modern } = hosts();
-    const oldList = await old.instance.list(definition.id);
-    expect(oldList.instances.map(item => item.id)).toEqual(['a', 'b']);
-    expect(oldList.defaultInstanceId).toBeNull();
-    const a = oldList.instances[0];
-    expect(await old.instance.delete(a.id, a.revision)).toEqual({
-      defaultInstance: null,
+  it('lists dashboards with records and keeps the stored default across delete and replay', async () => {
+    const service = host();
+    expect(await ids(service)).toEqual(['a', 'dashboard', 'b']);
+    expect(await service.preference.load(definition.id)).toMatchObject({
+      revision: null,
+      defaultInstanceId: 'dashboard',
+      effectiveDefaultInstanceId: 'dashboard',
     });
-    expect(await old.instance.delete(a.id, a.revision)).toEqual({
-      defaultInstance: null,
+    const a = (await service.instance.list(definition.id)).items[0];
+    const deleted = await service.instance.delete(a.id, a.revision, {
+      requestId: 'delete-a',
     });
-    expect((await modern.instance.list(definition.id)).defaultInstanceId).toBe(
-      'dashboard',
-    );
-    expect(await modern.instance.load('dashboard')).toMatchObject({
+    expect(deleted).toEqual({
+      outcome: 'committed',
+      visibility: 'visible',
+      value: { id: 'a', revision: expect.any(String) },
+      revision: expect.any(String),
+    });
+    if (deleted.outcome !== 'committed') throw new Error('committed');
+    expect(deleted.revision).toBe(deleted.value.revision);
+    expect(
+      await service.instance.delete(a.id, a.revision, {
+        requestId: 'delete-a',
+      }),
+    ).toEqual(deleted);
+    expect(
+      await service.instance.delete(a.id, a.revision, {
+        requestId: 'delete-a-again',
+      }),
+    ).toMatchObject({ outcome: 'rejected', issue: { code: 'NOT_FOUND' } });
+    await expect(
+      service.instance.delete(
+        a.id,
+        a.revision,
+        undefined as unknown as { requestId: string },
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
+    expect(await ids(service)).toEqual(['dashboard', 'b']);
+    expect(await service.preference.load(definition.id)).toMatchObject({
+      defaultInstanceId: 'dashboard',
+      effectiveDefaultInstanceId: 'dashboard',
+    });
+    expect(await service.instance.load('dashboard')).toMatchObject({
       kind: 'dashboard',
     });
-    await expect(old.instance.load('dashboard')).rejects.toMatchObject({
-      code: 'UNSUPPORTED_FORMAT',
-    });
   });
-  it('reorders visible objects around fixed hidden slots and rejects old writes to dashboards', async () => {
-    const { old, modern } = hosts();
-    await old.preference.saveOrder(definition.id, ['b', 'a']);
-    expect(
-      (await modern.instance.list(definition.id)).instances.map(
-        item => item.id,
-      ),
-    ).toEqual(['b', 'dashboard', 'a']);
-    const saved = await modern.instance.load('dashboard');
-    await expect(old.instance.save(saved)).rejects.toMatchObject({
-      code: 'UNSUPPORTED_FORMAT',
+  it('reorders scoped slots around fixed ones and rejects stale writes to dashboards', async () => {
+    const service = host();
+    const ordered = await service.preference.saveOrder(
+      definition.id,
+      {
+        scopeInstanceIds: ['a', 'dashboard', 'b'],
+        orderedInstanceIds: ['b', 'dashboard', 'a'],
+      },
+      { type: 'absent' },
+      { requestId: 'order-1' },
+    );
+    expect(ordered).toMatchObject({
+      outcome: 'committed',
+      value: { order: ['b', 'dashboard', 'a'] },
     });
-    await expect(
-      old.instance.rename(saved.id, 'Changed', saved.revision),
-    ).rejects.toMatchObject({ code: 'UNSUPPORTED_FORMAT' });
-    await expect(
-      old.instance.delete(saved.id, saved.revision),
-    ).rejects.toMatchObject({ code: 'UNSUPPORTED_FORMAT' });
-    await expect(
-      old.instance.create({ ...dashboard }, { requestId: 'unsupported' }),
-    ).rejects.toMatchObject({ code: 'UNSUPPORTED_FORMAT' });
-    expect((await modern.instance.load('dashboard')).title).toBe('Dashboard');
+    if (ordered.outcome !== 'committed') throw new Error('committed');
+    expect(await ids(service)).toEqual(['b', 'dashboard', 'a']);
+    // Only the scoped slots move; the dashboard keeps its position.
+    expect(
+      await service.preference.saveOrder(
+        definition.id,
+        { scopeInstanceIds: ['b', 'a'], orderedInstanceIds: ['a', 'b'] },
+        { type: 'matches', revision: ordered.revision },
+        { requestId: 'order-2' },
+      ),
+    ).toMatchObject({
+      outcome: 'committed',
+      value: { order: ['a', 'dashboard', 'b'] },
+    });
+    expect(await ids(service)).toEqual(['a', 'dashboard', 'b']);
+    const saved = await service.instance.load('dashboard');
+    expect(
+      await service.instance.save(
+        { ...saved, title: 'Changed', revision: 'stale' },
+        { requestId: 'stale-save' },
+      ),
+    ).toMatchObject({
+      outcome: 'rejected',
+      issue: { code: 'REVISION_CONFLICT' },
+    });
+    expect((await service.instance.load('dashboard')).title).toBe('Dashboard');
   });
   it('requires definition creation grants and replays exact dashboard create receipts', async () => {
-    const { modern } = hosts();
+    const service = host();
     const input = { ...dashboard, title: 'Created' };
-    const created = await modern.instance.create(input, { requestId: 'once' });
-    expect(await modern.instance.create(input, { requestId: 'once' })).toEqual(
+    const created = await service.instance.create(input, {
+      requestId: 'once',
+    });
+    expect(created).toMatchObject({
+      outcome: 'committed',
+      value: { kind: 'dashboard', title: 'Created' },
+    });
+    expect(await service.instance.create(input, { requestId: 'once' })).toEqual(
       created,
     );
-    await expect(
-      modern.instance.create(
+    expect(
+      await service.instance.create(
         { ...input, scope: { type: 'public', source: 'shared' } },
         { requestId: 'shared' },
       ),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    ).toMatchObject({ outcome: 'rejected', issue: { code: 'FORBIDDEN' } });
   });
 });

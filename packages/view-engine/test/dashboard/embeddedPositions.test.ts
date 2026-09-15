@@ -145,10 +145,8 @@ it('cannot revive disposed dashboard positions after a delayed reference load', 
   const pending = deferred<ReturnType<typeof instance>>();
   const load = vi.fn(() => pending.promise);
   const { engine, paged } = setup({
-    instances: {
-      instances: [instance(), instance('shared')],
-      defaultInstanceId: null,
-    },
+    instances: [instance(), instance('shared')],
+    defaultInstanceId: null,
     host: {
       resolveSource: () => ({}),
       instance: { load },
@@ -162,10 +160,8 @@ it('cannot revive disposed dashboard positions after a delayed reference load', 
   position.dispose();
   pending.resolve(instance('child'));
   await running;
-  expect(Object.keys(engine.getSnapshot().sessions)).toEqual([
-    'mine',
-    'shared',
-  ]);
+  // Nothing is selected, so the only sessions that could exist are leaked ones.
+  expect(Object.keys(engine.getSnapshot().sessions)).toEqual([]);
   expect(paged).not.toHaveBeenCalled();
   await expect(position.runtime.resume()).rejects.toThrow('释放');
   engine.dispose();
@@ -173,10 +169,8 @@ it('cannot revive disposed dashboard positions after a delayed reference load', 
 
 it('continues rejecting a dashboard used as a child reference', async () => {
   const { engine } = setup({
-    instances: {
-      instances: [instance(), instance('shared')],
-      defaultInstanceId: null,
-    },
+    instances: [instance(), instance('shared')],
+    defaultInstanceId: null,
     host: {
       resolveSource: () => ({}),
       instance: { load: async () => ({ ...dashboard(), id: 'child' }) },
@@ -197,7 +191,8 @@ it('continues rejecting a dashboard used as a child reference', async () => {
 it('releases child reads without publishing late results or affecting a sibling embedding', async () => {
   const held = deferred<{ total: number; list: { state: { id: string } }[] }>();
   const { engine, host, paged } = setup({
-    instances: { instances: [], defaultInstanceId: null },
+    instances: [],
+    defaultInstanceId: null,
     host: {
       resolveSource: () => ({}),
       instance: { load: async () => instance('child') },
@@ -266,7 +261,8 @@ it('suspends only the selected managed dashboard when navigating away from its e
   const root = { ...definition, dashboard: true as const };
   const { engine, host, paged } = setup({
     definition: root,
-    instances: { instances: [saved, instance()], defaultInstanceId: saved.id },
+    instances: [saved, instance()],
+    defaultInstanceId: saved.id,
     host: {
       resolveSource: () => ({}),
       instance: { load: async () => instance('child') },

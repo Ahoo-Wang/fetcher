@@ -43,7 +43,8 @@ function fixture() {
     store,
     serviceKey: 'test-service',
     definition,
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
     resolveSource: source.resolveSource,
   };
   return { options, paged };
@@ -136,7 +137,9 @@ it('reconstructs custom components from server JSON with a new host, engine and 
 it('blocks a missing runtime extension without deleting service configuration, then recovers when registered', async () => {
   const { options, paged } = fixture();
   const host = new MemoryViewHost(options);
-  await host.instance!.save(await host.instance!.load(instance.id));
+  await host.instance!.save(await host.instance!.load(instance.id), {
+    requestId: 'seed-save',
+  });
   const payload = store.get(host.storageKey);
   const mounted = render(
     <ViewPage scopeKey="contract" definitionId={definition.id} host={host} />,
@@ -179,6 +182,7 @@ it('surfaces a real host revision conflict, preserves the draft, and saves only 
       instance.id,
       '服务器更新',
       (await remoteActor.instance!.load(instance.id)).revision,
+      { requestId: 'remote-rename' },
     ),
   );
   fireEvent.click(screen.getByRole('button', { name: '保存', exact: true }));

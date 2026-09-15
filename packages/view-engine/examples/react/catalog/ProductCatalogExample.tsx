@@ -64,7 +64,8 @@ function CatalogWorkspace({
           scopeKey: 'demo:product-catalog',
           serviceKey: 'catalog-v1',
           definition,
-          instances: views,
+          instances: views.instances,
+          defaultInstanceId: views.defaultInstanceId,
           resolveSource: () => catalog.source,
         })
       : {
@@ -126,7 +127,11 @@ function CatalogWorkspace({
           key={generation}
           scopeKey="demo:product-catalog"
           definitionId={definition.id}
-          {...(!persistViews && { definition, instances: views })}
+          {...(!persistViews && {
+            definition,
+            instances: views.instances,
+            defaultInstanceId: views.defaultInstanceId,
+          })}
           host={host}
           extensions={productExtensions}
           record={{

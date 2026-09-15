@@ -46,6 +46,14 @@ export function copy<T>(value: T): T {
     );
   }
 }
+/** Own-property copy on a null prototype, safe for keys such as `constructor` or `__proto__`. */
+export function ownRecord<T>(
+  record: Readonly<Record<string, T>>,
+): Record<string, T> {
+  const copy: Record<string, T> = Object.create(null);
+  for (const key of Object.keys(record)) copy[key] = record[key];
+  return copy;
+}
 export function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }

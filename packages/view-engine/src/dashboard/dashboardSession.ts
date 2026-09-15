@@ -37,6 +37,7 @@ export function createDashboardSession(
       writeStatus: 'idle',
       writeError: null,
       requiresReload: false,
+      visibility: 'visible',
     },
     0,
     false,

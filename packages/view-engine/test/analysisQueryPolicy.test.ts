@@ -16,6 +16,7 @@ import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
 import { createFilterConfiguration } from '../src/filter/filterConfiguration.js';
 import { analysisQueryPolicy } from '../src/analysis/analysisQueryPolicy.js';
+import { page } from './engine/fixtures.js';
 import type {
   AnalysisSession,
   AnalysisViewInstance,
@@ -52,6 +53,10 @@ const instance: AnalysisViewInstance = {
 };
 function setup() {
   const aggregate = vi.fn().mockResolvedValue([{ orders: 2 }]);
+  const other = { ...instance, id: 'other' };
+  const remote = { ...instance, revision: '2', title: 'Remote orders' };
+  // Host catalog mode: point reads serve the saved documents until a test publishes a remote edit.
+  const load = vi.fn(async (id: string) => (id === 'other' ? other : instance));
   const engine = new ViewEngine({
     definitionId: 'orders',
     definition: {
@@ -61,22 +66,13 @@ function setup() {
       fields: [],
       analysis: { count: true, fields: [] },
     },
-    instances: {
-      instances: [instance, { ...instance, id: 'other' }],
-      defaultInstanceId: instance.id,
-    },
+    defaultInstanceId: instance.id,
     host: {
       resolveSource: () => ({ aggregate }),
-      instance: {
-        load: async () => ({
-          ...instance,
-          revision: '2',
-          title: 'Remote orders',
-        }),
-      },
+      instance: { list: async () => page([instance, other]), load },
     },
   });
-  return { engine, aggregate };
+  return { engine, aggregate, load, remote };
 }
 
 it('distinguishes manual drafts, explicit reload and automatic refresh by executed query', async () => {
@@ -182,10 +178,11 @@ it('refresh executes only the confirmed query without a mounted view', async () 
 });
 
 it('keeps unresolved remote conflicts out of refresh while allowing an explicit draft run', async () => {
-  const { engine, aggregate } = setup();
+  const { engine, aggregate, load, remote } = setup();
   try {
     await engine.load();
     engine.setTitle('Local orders', instance.id);
+    load.mockResolvedValue(remote);
     await engine.reloadInstance(instance.id);
     expect(engine.getSnapshot().sessions.analysis.conflict).toBeDefined();
     await engine.analysis(instance.id).refresh();

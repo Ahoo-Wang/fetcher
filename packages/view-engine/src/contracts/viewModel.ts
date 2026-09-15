@@ -57,6 +57,8 @@ export interface ViewFieldDefinition extends FilterFieldDefinition {
 /** Source metadata shared by all instances. Paths are relative to the returned record. */
 interface ViewDefinitionMetadata {
   id: string;
+  /** Opaque service revision; absent for purely local definitions. */
+  revision?: string;
   title: string;
   sourceId?: string;
   dashboard?: true;
@@ -175,9 +177,20 @@ export type ViewCreateInput =
   | Omit<RecordViewInstance, 'id' | 'revision'>
   | Omit<AnalysisViewInstance, 'id' | 'revision'>
   | Omit<DashboardViewInstance, 'id' | 'revision'>;
-export interface ViewInstanceList {
-  instances: ViewInstance[];
-  defaultInstanceId: string | null;
+/** Catalog metadata for one saved instance; never contains configuration. */
+export type ViewInstanceSummary = ViewInstanceMetadata & {
+  kind: ViewInstance['kind'];
+};
+export function summaryOf(instance: ViewInstance): ViewInstanceSummary {
+  const { id, definitionId, kind, title, scope, revision } = instance;
+  return { id, definitionId, kind, title, scope, revision };
+}
+/** Definition-scoped grants for personal preferences and dashboard creation; missing means unknown. */
+export interface ViewDefinitionPermissions {
+  reorder?: boolean;
+  setDefault?: boolean;
+  createPersonal?: boolean;
+  createShared?: boolean;
 }
 export interface ViewInstancePermissions {
   save: boolean;
@@ -226,8 +239,14 @@ export interface ViewEngineOptions {
   filterCompilers?: FilterCompilerRegistry;
   definitionId: string;
   host: ViewHost;
+  /** Locally supplied definition; the host definition port is not consulted. */
   definition?: ViewDefinition;
-  instances?: ViewInstanceList;
+  /** Locally supplied saved instances forming the whole catalog; point reads resolve here. */
+  instances?: readonly ViewInstance[];
+  /** Local default when the host provides no preference read port. */
+  defaultInstanceId?: string | null;
+  /** Explicit initial instance; takes precedence over the personal default. */
+  instanceId?: string;
 }
 /** Immutable three-way conflict and the exact working draft reviewed by a resolution UI. */
 export interface ViewInstanceConflict {
@@ -290,6 +309,8 @@ export interface RecordSession {
     'idle' | 'saving' | 'creating' | 'deleting' | 'renaming';
   readonly writeError: string | null;
   readonly requiresReload: boolean;
+  /** `pending` after a committed write whose catalog read path has not caught up yet. */
+  readonly visibility: 'visible' | 'pending';
 }
 export interface AnalysisSession {
   readonly positionId: string;
@@ -322,17 +343,38 @@ export interface AnalysisSession {
   readonly writeStatus: RecordSession['writeStatus'];
   readonly writeError: string | null;
   readonly requiresReload: boolean;
+  readonly visibility: 'visible' | 'pending';
   readonly conflict?: ViewInstanceConflict;
 }
 export type ViewSession = RecordSession | AnalysisSession | DashboardSession;
+/** Paged catalog of saved instances known to this engine; sessions exist only for opened instances. */
+export interface CatalogState {
+  readonly status: 'idle' | 'loading' | 'ready' | 'error';
+  readonly error: string | null;
+  readonly nextCursor: string | null;
+  readonly total: number | null;
+  /** Metadata for every ID in `instanceIds`, including opened or created instances outside the loaded pages. */
+  readonly summaries: Readonly<Record<string, ViewInstanceSummary>>;
+}
+/** Personal preference read state, independent of the definition and catalog. */
+export interface PreferenceLoadState {
+  readonly status: 'idle' | 'loading' | 'ready' | 'error' | 'unsupported';
+  readonly error: string | null;
+  readonly revision: string | null;
+}
 export interface ViewEngineState {
   readonly version: number;
+  /** Definition readiness only; the catalog and preference have their own states. */
   readonly status: 'idle' | 'loading' | 'ready' | 'error';
   readonly error: string | null;
   readonly definition: DeepReadonly<ViewDefinition> | null;
+  readonly catalog: CatalogState;
+  readonly preference: PreferenceLoadState;
+  /** Catalog order followed by opened or created instances not in the loaded pages. */
   readonly instanceIds: readonly string[];
   readonly selectedInstanceId: string | null;
   readonly openingInstanceId: string | null;
+  /** Effective personal default as last read or written; not necessarily loaded or selected. */
   readonly defaultInstanceId: string | null;
   readonly sessions: Readonly<Record<string, ViewSession>>;
   /** Local recovery contexts whose source is absent from the authoritative instance list. */

@@ -24,7 +24,7 @@ import {
   type RecordData,
   type RecordQuerySource,
   type RecordViewDefinition,
-  type ViewInstanceList,
+  type RecordViewInstance,
 } from '@ahoo-wang/fetcher-view-engine';
 
 export const products = [
@@ -141,7 +141,11 @@ export const definition: RecordViewDefinition = {
     },
   },
 };
-export const views: ViewInstanceList = {
+/** Local catalog seed: saved instances plus the starting view for users without a preference. */
+export const views: {
+  defaultInstanceId: string;
+  instances: RecordViewInstance[];
+} = {
   defaultInstanceId: 'all-products',
   instances: [
     {

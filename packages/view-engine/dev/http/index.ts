@@ -14,4 +14,12 @@
 export { HttpViewHost, type HttpViewHostOptions } from './HttpViewHost.js';
 export { HttpViewTransport } from './HttpViewTransport.js';
 export { HttpViewInstanceService } from './HttpViewInstanceService.js';
-export { VIEW_SERVICE_STATUS } from './protocol.js';
+export {
+  HttpViewPreferenceService,
+  HttpViewOperationService,
+} from './HttpViewPreferenceService.js';
+export {
+  HttpViewPermissionService,
+  type HttpPermissionSnapshot,
+} from './HttpViewPermissionService.js';
+export { VIEW_SERVICE_STATUS, writeStatus } from './protocol.js';

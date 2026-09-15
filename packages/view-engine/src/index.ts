@@ -29,6 +29,7 @@ export {
 } from './filter/filterCore.js';
 
 export type * from './contracts/viewModel.js';
+export { summaryOf } from './contracts/viewModel.js';
 export type * from './contracts/ViewHost.js';
 export { ViewEngine } from './engine/ViewEngine.js';
 export type {
@@ -73,13 +74,41 @@ export {
   type MemoryViewHostOptions,
 } from './record/MemoryViewHost.js';
 
-export { ViewServiceError } from './contracts/viewServiceContract.js';
+export {
+  ViewServiceError,
+  ABSENT_PRECONDITION,
+  preconditionFor,
+  committedWrite,
+  rejectedWrite,
+  unknownWrite,
+  issueOf,
+  isViewServiceErrorCode,
+  readWriteObservation,
+  applyOrderChange,
+  encodeViewResourceId,
+} from './contracts/viewServiceContract.js';
 export type {
   ViewServiceErrorCode,
-  ViewCreateContext,
-  ViewDeleteResult,
-  ViewPermissionSnapshot,
+  OperationIssue,
+  WriteContext,
+  ConfigurationWriteContext,
+  ReadOptions,
+  ListOptions,
+  Page,
+  WritePrecondition,
+  WriteVisibility,
+  WriteObservation,
+  OperationReference,
+  ViewDeleteReceipt,
+  ViewOrderChange,
+  PreferenceState,
 } from './contracts/viewServiceContract.js';
+export {
+  readInstancePage,
+  readLocalInstances,
+  validateViewInstanceSummary,
+} from './contracts/validation/instanceValidation.js';
+export { readPreferenceState } from './contracts/validation/preferenceValidation.js';
 
 export type {
   FilterOptionSource,
@@ -120,13 +149,6 @@ export type { AnalysisVisualizationType } from './analysis/analysisVisualization
 export type * from './dashboard/dashboardModel.js';
 export { dashboardEditorKey } from './dashboard/dashboardEditorKey.js';
 export { validateDashboardConfig } from './dashboard/dashboardValidation.js';
-
-export {
-  LEGACY_VIEW_FORMATS,
-  projectSupportedInstance,
-  requireSupportedInstance,
-} from './contracts/viewServiceContract.js';
-export type { SupportedViewFormats } from './contracts/viewServiceContract.js';
 
 export {
   DashboardRuntime,

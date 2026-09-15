@@ -162,13 +162,13 @@ export class DashboardPanelRuntime {
       if (!this.host.instance?.load || !this.host.definition?.load)
         throw new Error('宿主未提供引用加载服务');
       const loaded = await request('instance', signal =>
-        this.host.instance!.load!(this.instanceId, signal),
+        this.host.instance!.load!(this.instanceId, { signal }),
       );
       if (!this.current(generation)) return;
       if (loaded.id !== this.instanceId || loaded.kind === 'dashboard')
         throw new Error('引用身份无效或仪表盘嵌套');
       const definition = await request('definition', signal =>
-        this.host.definition!.load!(loaded.definitionId, signal),
+        this.host.definition!.load!(loaded.definitionId, { signal }),
       );
       if (!this.current(generation)) return;
       if (definition.id !== loaded.definitionId)

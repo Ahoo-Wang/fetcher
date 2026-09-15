@@ -13,11 +13,20 @@
 
 import { afterEach, expect, it, vi } from 'vitest';
 import type { ViewEngine } from '../../src/engine/ViewEngine.js';
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
+import type { ViewHost } from '../../src/contracts/ViewHost.js';
+import type { ViewInstance } from '../../src/contracts/viewModel.js';
 import {
+  committedWrite,
+  rejectedWrite,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
+import {
+  catalogHost,
   deferred,
+  deleteReceipt,
   instance,
   managementPermissions,
+  preferenceWrite,
   selected,
   setup,
 } from './fixtures.js';
@@ -85,21 +94,25 @@ it.each(['abort', 'notification'] as const)(
 it.each(['save', 'rename', 'reload'] as const)(
   'permits a write synchronously from the %s completion notification',
   async operation => {
-    const save = vi.fn(async value => ({ ...value, revision: 'r3' }));
-    const rename = vi.fn(async (_id: string, title: string) => ({
-      ...instance(),
-      title,
-      revision: 'r2',
-    }));
+    const save = vi.fn(async (value: ViewInstance) =>
+      committedWrite({ ...value, revision: 'r3' }, 'r3'),
+    );
+    const rename = vi.fn(async (_id: string, title: string) =>
+      committedWrite({ ...instance(), title, revision: 'r2' }, 'r2'),
+    );
+    const catalog = catalogHost(
+      [instance(), instance('shared')],
+      'mine',
+      null,
+      () => ({ ...instance(), title: 'First', revision: 'r2' }),
+    );
     const { engine } = setup({
+      instances: undefined,
       host: {
-        instance: {
-          save,
-          rename,
-          load: async () => ({ ...instance(), title: 'First', revision: 'r2' }),
-        },
+        instance: { ...catalog.instance, save, rename },
+        preference: catalog.preference,
         permission: { getInstance: managementPermissions },
-      },
+      } as unknown as ViewHost,
     });
     engines.push(engine);
     await engine.load();
@@ -136,10 +149,10 @@ it.each(['save', 'rename', 'reload'] as const)(
 it('releases a definitively rejected write before its error notification permits a retry', async () => {
   const save = vi
     .fn()
-    .mockRejectedValueOnce(
-      new ViewServiceError('INVALID_ARGUMENT', 'Try again'),
-    )
-    .mockImplementation(async value => ({ ...value, revision: 'r2' }));
+    .mockResolvedValueOnce(rejectedWrite('INVALID_ARGUMENT', 'Try again'))
+    .mockImplementation(async (value: ViewInstance) =>
+      committedWrite({ ...value, revision: 'r2' }, 'r2'),
+    );
   const { engine } = setup({ host: { instance: { save } } });
   engines.push(engine);
   await engine.load();
@@ -196,7 +209,12 @@ it('makes the source writable in the save-as completion notification', async () 
 
 it('allows a full load from the completed preference notification', async () => {
   const { engine } = setup({
-    host: { preference: { saveOrder: async () => {} } },
+    host: {
+      preference: {
+        saveOrder: async () =>
+          preferenceWrite('mine', 'p2', ['shared', 'mine']),
+      },
+    } as ViewHost,
   });
   engines.push(engine);
   await engine.load();
@@ -220,9 +238,9 @@ it('allows a full load from the completed preference notification', async () => 
 });
 
 it('releases the original creation before notifying that full-load recovery is cleared', async () => {
-  const creation = deferred<ReturnType<typeof instance>>();
+  const creation = deferred<WriteObservation<ViewInstance>>();
   const { engine } = setup({
-    host: { instance: { create: () => creation.promise } },
+    host: { instance: { create: () => creation.promise } } as ViewHost,
   });
   engines.push(engine);
   await engine.load();
@@ -242,7 +260,7 @@ it('releases the original creation before notifying that full-load recovery is c
     }
   });
   try {
-    creation.reject(new ViewServiceError('INVALID_ARGUMENT', 'Rejected'));
+    creation.resolve(rejectedWrite('INVALID_ARGUMENT', 'Rejected'));
     await creating;
     expect(resumed).toBe(true);
     await expect(saved).resolves.toBeUndefined();
@@ -252,16 +270,18 @@ it('releases the original creation before notifying that full-load recovery is c
 });
 
 it('keeps cursor navigation issued synchronously after reload ahead of its automatic refresh', async () => {
+  const catalog = catalogHost(
+    [instance('mine', 'cursor')],
+    'mine',
+    null,
+    () => ({
+      ...instance('mine', 'cursor'),
+      revision: 'r2',
+    }),
+  );
   const { engine, cursor } = setup({
-    instances: {
-      instances: [instance('mine', 'cursor')],
-      defaultInstanceId: 'mine',
-    },
-    host: {
-      instance: {
-        load: async () => ({ ...instance('mine', 'cursor'), revision: 'r2' }),
-      },
-    },
+    instances: undefined,
+    host: catalog as unknown as ViewHost,
   });
   engines.push(engine);
   cursor.mockImplementation(async query => ({
@@ -302,11 +322,11 @@ it('keeps cursor navigation issued synchronously after reload ahead of its autom
 it.each(['saveAs', 'delete'] as const)(
   'does not replace a page query started by %s completion',
   async operation => {
-    const { engine, paged, host } = setup({
+    const { engine, paged } = setup({
       host: {
-        instance: { delete: async () => ({ defaultInstance: null }) },
+        instance: { delete: async (id: string) => deleteReceipt(id) },
         permission: { getInstance: managementPermissions },
-      },
+      } as ViewHost,
     });
     engines.push(engine);
     paged.mockImplementation(async query => ({
@@ -314,6 +334,13 @@ it.each(['saveAs', 'delete'] as const)(
       list: [{ state: { id: `row-${query.pagination.index}` } }],
     }));
     await engine.load();
+    if (operation === 'delete') {
+      // Delete completion selects the next instance synchronously, so it must already be
+      // open for the notification to issue a command on it.
+      await engine.selectInstance('shared');
+      await engine.selectInstance('mine');
+    }
+    const before = paged.mock.calls.length;
     let moved = false;
     let navigation: Promise<void> | undefined;
     const unsubscribe = engine.subscribe(() => {
@@ -331,14 +358,14 @@ it.each(['saveAs', 'delete'] as const)(
       else await engine.deleteInstance();
       await navigation;
       expect(moved).toBe(true);
-      expect(host.resolveSource).toHaveBeenCalledTimes(2);
       expect(selected(engine)).toMatchObject({
         page: 2,
         rows: [{ state: { id: 'row-2' } }],
       });
-      expect(paged.mock.calls.map(call => call[0].pagination.index)).toEqual([
-        1, 2,
-      ]);
+      // Only the page query issued by the notification reaches the source.
+      expect(
+        paged.mock.calls.slice(before).map(call => call[0].pagination.index),
+      ).toEqual([2]);
     } finally {
       unsubscribe();
     }

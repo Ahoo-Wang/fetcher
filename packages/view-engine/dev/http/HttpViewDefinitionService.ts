@@ -11,16 +11,22 @@
  * limitations under the License.
  */
 
-import type { ViewDefinition } from '@ahoo-wang/fetcher-view-engine';
-import type { ViewDefinitionService } from '@ahoo-wang/fetcher-view-engine';
+import type {
+  ReadOptions,
+  ViewDefinition,
+  ViewDefinitionService,
+} from '@ahoo-wang/fetcher-view-engine';
 import type { HttpViewTransport } from './HttpViewTransport.js';
 export class HttpViewDefinitionService implements ViewDefinitionService {
   constructor(private readonly transport: HttpViewTransport) {}
   readonly load = async (
     id: string,
-    signal?: AbortSignal,
+    options: ReadOptions = {},
   ): Promise<ViewDefinition> => {
     this.transport.assertDefinition(id);
-    return this.transport.request('', 'GET', undefined, signal);
+    const query = options.readFence
+      ? `?readFence=${encodeURIComponent(options.readFence)}`
+      : '';
+    return this.transport.request(query, 'GET', undefined, options.signal);
   };
 }

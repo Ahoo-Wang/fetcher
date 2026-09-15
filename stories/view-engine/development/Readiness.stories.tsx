@@ -87,6 +87,7 @@ function ReadinessWorkbench() {
             definitionId={service.definition.id}
             definition={service.definition}
             instances={service.instances}
+            defaultInstanceId={service.defaultInstanceId}
             host={service.host}
             extensions={extensions}
             record={{ selectable: true }}

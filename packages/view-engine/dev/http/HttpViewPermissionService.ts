@@ -14,19 +14,34 @@
 import { copy, sameJsonState } from '../../src/lib/snapshot.js';
 
 import type {
-  ViewInstance,
+  ViewDefinitionPermissions,
   ViewInstancePermissions,
+  ViewInstanceSummary,
+  ViewPermissionService,
 } from '@ahoo-wang/fetcher-view-engine';
-import type { ViewPermissionService } from '@ahoo-wang/fetcher-view-engine';
-import {
-  ViewServiceError,
-  type ViewPermissionSnapshot,
-} from '@ahoo-wang/fetcher-view-engine';
+import { ViewServiceError } from '@ahoo-wang/fetcher-view-engine';
 import type { HttpViewTransport } from './HttpViewTransport.js';
-/** Permission resource and its shared, versioned UI projection. Access via transport.permission. */
+
+/** Wire shape of the service's permission projection; not part of the ViewHost contract. */
+export interface HttpPermissionSnapshot {
+  /** Monotonic authority revision; stale responses cannot restore revoked grants. */
+  revision: number;
+  instances: Record<string, Required<ViewInstancePermissions>>;
+  reorder: boolean;
+  setDefault: boolean;
+  createPersonal?: boolean;
+  createShared?: boolean;
+}
+
+/**
+ * Host-accepted permission results for the engine plus the application's refresh entry.
+ * The engine only reads the synchronous getters; the application decides when to refresh.
+ */
 export class HttpViewPermissionService implements ViewPermissionService {
   constructor(private readonly transport: HttpViewTransport) {}
-  readonly getInstance = (instance: ViewInstance): ViewInstancePermissions => {
+  readonly getInstance = (
+    instance: ViewInstanceSummary,
+  ): ViewInstancePermissions => {
     return Object.prototype.hasOwnProperty.call(
       this.permissionSnapshot.instances,
       instance.id,
@@ -40,15 +55,12 @@ export class HttpViewPermissionService implements ViewPermissionService {
           saveAsShared: false,
         };
   };
-  readonly getDefinition = () => {
+  readonly getDefinition = (): Required<ViewDefinitionPermissions> => {
     return {
       reorder: this.permissionSnapshot.reorder,
-      createPersonal:
-        this.transport.supportedFormats.dashboard === 1 &&
-        this.permissionSnapshot.createPersonal === true,
-      createShared:
-        this.transport.supportedFormats.dashboard === 1 &&
-        this.permissionSnapshot.createShared === true,
+      setDefault: this.permissionSnapshot.setDefault,
+      createPersonal: this.permissionSnapshot.createPersonal === true,
+      createShared: this.permissionSnapshot.createShared === true,
     };
   };
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -57,31 +69,9 @@ export class HttpViewPermissionService implements ViewPermissionService {
       this.listeners.delete(listener);
     };
   };
+  /** Application-driven refresh after an authority-change event; the engine never calls this. */
   readonly refresh = async (signal?: AbortSignal): Promise<void> => {
     await this.transport.request('/permissions', 'GET', undefined, signal);
-  };
-  readonly load = async (
-    id: string,
-    signal?: AbortSignal,
-  ): Promise<ViewPermissionSnapshot> => {
-    this.transport.assertDefinition(id);
-    const result = await this.transport.request(
-      '/permissions',
-      'GET',
-      undefined,
-      signal,
-    );
-    // The transport validates and accepts the envelope's current authority snapshot.
-    // Never return a raw payload that escaped those checks or predates a revocation.
-    if (
-      this.permissionSnapshot.revision < 0 ||
-      !sameJsonState(result, this.permissionSnapshot)
-    )
-      throw new ViewServiceError(
-        'UNAVAILABLE',
-        '权限响应已过期或与当前授权不一致，请重试',
-      );
-    return copy({ ...this.permissionSnapshot, ...this.getDefinition() });
   };
   /** Clear cached grants after an HTTP session rejection; keep the authority version. */
   clear(): void {
@@ -89,22 +79,25 @@ export class HttpViewPermissionService implements ViewPermissionService {
       revision: this.permissionSnapshot.revision,
       instances: {},
       reorder: false,
+      setDefault: false,
     });
     this.listeners.forEach(listener => listener());
   }
-  private permissionSnapshot: ViewPermissionSnapshot = {
+  private permissionSnapshot: HttpPermissionSnapshot = {
     revision: -1,
     instances: {},
     reorder: false,
+    setDefault: false,
   };
   private readonly listeners = new Set<() => void>();
   acceptSnapshot(value: unknown): void {
-    const next = value as ViewPermissionSnapshot;
+    const next = value as HttpPermissionSnapshot;
     if (
       !next ||
       !Number.isSafeInteger(next.revision) ||
       next.revision < 0 ||
       typeof next.reorder !== 'boolean' ||
+      typeof next.setDefault !== 'boolean' ||
       (next.createPersonal !== undefined &&
         typeof next.createPersonal !== 'boolean') ||
       (next.createShared !== undefined &&

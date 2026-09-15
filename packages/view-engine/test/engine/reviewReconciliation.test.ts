@@ -17,15 +17,51 @@ import {
 } from '../../src/filter/filterCore.js';
 
 import { afterEach, expect, it, vi } from 'vitest';
-import {} from '@ahoo-wang/fetcher-wow';
 
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
-import { deferred, instance, selected, setup } from './fixtures.js';
+import {
+  ViewServiceError,
+  committedWrite,
+  rejectedWrite,
+  type WriteObservation,
+} from '../../src/contracts/viewServiceContract.js';
+import {
+  catalogHost,
+  deferred,
+  deleteReceipt,
+  instance,
+  liveCatalog,
+  selected,
+  setup,
+} from './fixtures.js';
 import type { ViewEngine } from '../../src/engine/ViewEngine.js';
-import type { ViewInstance } from '../../src/contracts/viewModel.js';
+import type { ViewHost } from '../../src/contracts/ViewHost.js';
+import type {
+  ViewCreateInput,
+  ViewInstance,
+} from '../../src/contracts/viewModel.js';
 
 const engines: ViewEngine[] = [];
 afterEach(() => engines.splice(0).forEach(engine => engine.dispose()));
+
+/** Create port whose first response is lost; every replay commits the copy as `created`. */
+function lostThenCommitted() {
+  return vi
+    .fn()
+    .mockRejectedValueOnce(new ViewServiceError('UNKNOWN_OUTCOME', 'lost'))
+    .mockImplementation(async (value: ViewCreateInput) =>
+      committedWrite({ ...value, id: 'created', revision: 'r1' }, 'r1'),
+    );
+}
+/** Point reads over a live catalog with a dedicated response for the created copy. */
+function readsWithCreated(
+  catalog: ReturnType<typeof liveCatalog>,
+  created: (reads: number) => Promise<ViewInstance> | ViewInstance,
+) {
+  let reads = 0;
+  return vi.fn(async (id: string) =>
+    id === 'created' ? created(reads++) : catalog.host.instance.load(id),
+  );
+}
 
 it('uses authoritative scope while retaining editable title and filter draft on reload', async () => {
   const remote = {
@@ -33,8 +69,15 @@ it('uses authoritative scope while retaining editable title and filter draft on 
     scope: { type: 'public', source: 'shared' } as const,
     revision: 'r2',
   };
+  const catalog = catalogHost(
+    [instance(), instance('shared')],
+    'mine',
+    null,
+    () => remote,
+  );
   const { engine, host } = setup({
-    host: { instance: { load: vi.fn().mockResolvedValue(remote) } },
+    instances: undefined,
+    host: catalog as unknown as ViewHost,
   });
   engines.push(engine);
   await engine.load();
@@ -58,29 +101,21 @@ it('uses authoritative scope while retaining editable title and filter draft on 
 });
 
 it('retains an absent source only for creation recovery across repeated full loads', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
-  const create = vi
-    .fn()
-    .mockRejectedValueOnce(
-      new ViewServiceError('UNKNOWN_OUTCOME', 'response lost'),
-    )
-    .mockImplementation(async value => ({
-      ...value,
-      id: 'created',
-      revision: 'r1',
-    }));
+  const catalog = liveCatalog([instance()]);
+  const create = lostThenCommitted();
   const { engine, paged } = setup({
     instances: undefined,
-    host: { instance: { list, create } },
+    host: {
+      instance: { ...catalog.host.instance, create },
+      preference: catalog.host.preference,
+    } as unknown as ViewHost,
   });
   engines.push(engine);
   await engine.load();
   engine.setTitle('Local title');
   await expect(
     engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
-  ).rejects.toThrow('response lost');
+  ).rejects.toThrow('lost');
   const draft = {
     ...newFilterNode(FilterOperator.GTE, 'state.amount'),
     props: { value: 42 },
@@ -88,7 +123,7 @@ it('retains an absent source only for creation recovery across repeated full loa
   engine
     .record(engine.getSnapshot().selectedInstanceId!)
     .setFilterDraft(createFilterConfiguration(draft));
-  list.mockResolvedValue({ instances: [], defaultInstanceId: null });
+  catalog.set([], null);
   await engine.load();
   await engine.load();
   expect(engine.getSnapshot().instanceIds).toEqual([]);
@@ -116,52 +151,45 @@ it('retains an absent source only for creation recovery across repeated full loa
 });
 
 it('removes an absent recovery entry when the original creation is definitively rejected', async () => {
-  const pending = deferred<ViewInstance>();
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+  const pending = deferred<WriteObservation<ViewInstance>>();
+  const catalog = liveCatalog([instance()]);
   const { engine } = setup({
     instances: undefined,
-    host: { instance: { list, create: () => pending.promise } },
+    host: {
+      instance: { ...catalog.host.instance, create: () => pending.promise },
+      preference: catalog.host.preference,
+    } as unknown as ViewHost,
   });
   engines.push(engine);
   await engine.load();
   const writing = engine.saveAs({ title: 'Copy', scope: { type: 'personal' } });
-  list.mockResolvedValue({ instances: [], defaultInstanceId: null });
+  catalog.set([], null);
   await engine.load();
   expect(engine.canReloadInstance('mine')).toBe(true);
-  pending.reject(new ViewServiceError('FORBIDDEN', 'denied'));
+  pending.resolve(rejectedWrite('FORBIDDEN', 'denied'));
   await writing;
   expect(engine.getSnapshot().pendingCreates).toEqual({});
   expect(engine.canReloadInstance('mine')).toBe(false);
 });
 
 it('keeps absent recovery context on permission denial and uses current authority when access returns', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
-  const create = vi
-    .fn()
-    .mockRejectedValueOnce(new ViewServiceError('UNKNOWN_OUTCOME', 'lost'))
-    .mockImplementation(async value => ({
-      ...value,
-      id: 'created',
-      revision: 'r1',
-    }));
+  const catalog = liveCatalog([instance()]);
+  const create = lostThenCommitted();
   let allowed = true;
   const { engine } = setup({
     instances: undefined,
     host: {
-      instance: { list, create },
+      instance: { ...catalog.host.instance, create },
+      preference: catalog.host.preference,
       permission: { getInstance: () => ({ saveAsPersonal: allowed }) },
-    },
+    } as unknown as ViewHost,
   });
   engines.push(engine);
   await engine.load();
   await expect(
     engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
   ).rejects.toThrow('lost');
-  list.mockResolvedValue({ instances: [], defaultInstanceId: null });
+  catalog.set([], null);
   await engine.load();
   allowed = false;
   await expect(engine.reloadInstance('mine')).rejects.toThrow('未允许');
@@ -176,9 +204,7 @@ it('keeps absent recovery context on permission denial and uses current authorit
 });
 
 it('adopts authoritative scope when reconciling a known created ID after its source disappears', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+  const catalog = liveCatalog([instance()]);
   const created = {
     ...instance('created'),
     title: 'Copy',
@@ -186,41 +212,40 @@ it('adopts authoritative scope when reconciling a known created ID after its sou
   };
   const create = vi
     .fn()
-    .mockResolvedValue({ ...created, title: 'Wrong response' });
-  const load = vi.fn().mockResolvedValue(created);
+    .mockResolvedValue(
+      committedWrite({ ...created, title: 'Wrong response' }, 'r1'),
+    );
+  const load = readsWithCreated(catalog, () => created);
   const { engine } = setup({
     instances: undefined,
-    host: { instance: { list, create, load } },
+    host: {
+      instance: { list: catalog.host.instance.list, create, load },
+      preference: catalog.host.preference,
+    } as unknown as ViewHost,
   });
   engines.push(engine);
   await engine.load();
   await expect(
     engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
   ).rejects.toThrow('原样保存');
-  list.mockResolvedValue({ instances: [], defaultInstanceId: null });
+  catalog.set([], null);
   await engine.load();
   await engine.reloadInstance('mine');
-  expect(load.mock.calls[0][0]).toBe('created');
+  expect(load.mock.calls.map(([id]) => id)).toEqual(['mine', 'created']);
   expect(create).toHaveBeenCalledOnce();
   expect(selected(engine, 'created').instance.scope).toEqual(created.scope);
   expect(engine.getSnapshot().pendingCreates).toEqual({});
 });
 
 it('retains recovery editor if source reappears before reconciliation', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
-  const create = vi
-    .fn()
-    .mockRejectedValueOnce(new ViewServiceError('UNKNOWN_OUTCOME', 'lost'))
-    .mockImplementation(async value => ({
-      ...value,
-      id: 'created',
-      revision: 'r1',
-    }));
+  const catalog = liveCatalog([instance()]);
+  const create = lostThenCommitted();
   const { engine } = setup({
     instances: undefined,
-    host: { instance: { list, create } },
+    host: {
+      instance: { ...catalog.host.instance, create },
+      preference: catalog.host.preference,
+    } as unknown as ViewHost,
   });
   try {
     await engine.load();
@@ -235,15 +260,12 @@ it('retains recovery editor if source reappears before reconciliation', async ()
     engine
       .record(engine.getSnapshot().selectedInstanceId!)
       .setFilterDraft(createFilterConfiguration(draft));
-    list.mockResolvedValue({ instances: [], defaultInstanceId: null });
+    catalog.set([], null);
     await engine.load();
     expect(engine.getSnapshot().pendingCreates.mine.filterDraft.root.id).toBe(
       'local-filter-draft',
     );
-    list.mockResolvedValue({
-      instances: [instance()],
-      defaultInstanceId: 'mine',
-    });
+    catalog.set([instance()], 'mine');
     await engine.load();
     await engine.reloadInstance('mine');
     expect(engine.getSnapshot().sessions.created.filterDraft.root.id).toBe(
@@ -254,27 +276,30 @@ it('retains recovery editor if source reappears before reconciliation', async ()
   }
 });
 it('adopts authoritative scope when created copy is already listed', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+  const catalog = liveCatalog([instance()]);
   const old = { ...instance('created'), title: 'Copy' };
   const authoritative = {
     ...old,
-    scope: { type: 'public', source: 'shared' },
+    scope: { type: 'public', source: 'shared' } as const,
     revision: 'r2',
   };
-  const create = vi.fn().mockResolvedValue({ ...old, title: 'wrong' });
-  const load = vi.fn().mockResolvedValue(authoritative);
+  const create = vi
+    .fn()
+    .mockResolvedValue(committedWrite({ ...old, title: 'wrong' }, 'r1'));
+  const load = readsWithCreated(catalog, () => authoritative);
   const { engine } = setup({
     instances: undefined,
-    host: { instance: { list, create, load } },
+    host: {
+      instance: { list: catalog.host.instance.list, create, load },
+      preference: catalog.host.preference,
+    } as unknown as ViewHost,
   });
   try {
     await engine.load();
     await expect(
       engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
     ).rejects.toThrow();
-    list.mockResolvedValue({ instances: [old], defaultInstanceId: 'created' });
+    catalog.set([old], 'created');
     await engine.load();
     engine.setTitle('local copy title');
     await engine.reloadInstance('mine');
@@ -290,63 +315,65 @@ it('adopts authoritative scope when created copy is already listed', async () =>
 });
 
 it('does not resurrect a copy deleted while reconciliation was in flight', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+  const catalog = liveCatalog([instance()]);
   const old = { ...instance('created'), title: 'Copy' };
-  const create = vi.fn().mockResolvedValue({ ...old, title: 'wrong' });
-  let resolveLoad;
-  const loaded = new Promise(resolve => {
-    resolveLoad = resolve;
-  });
-  const load = vi.fn().mockReturnValue(loaded);
+  const create = vi
+    .fn()
+    .mockResolvedValue(committedWrite({ ...old, title: 'wrong' }, 'r1'));
+  const loaded = deferred<ViewInstance>();
+  // The default copy opens at once; the reconciliation read of it stays in flight.
+  const load = readsWithCreated(catalog, reads =>
+    reads === 0 ? old : loaded.promise,
+  );
   const { engine } = setup({
     instances: undefined,
     host: {
       instance: {
-        list,
+        list: catalog.host.instance.list,
         create,
         load,
-        delete: vi.fn().mockResolvedValue({ defaultInstance: null }),
+        delete: vi.fn(async (id: string) => deleteReceipt(id)),
       },
+      preference: catalog.host.preference,
       permission: {
         getInstance: () => ({ save: true, saveAsPersonal: true, delete: true }),
       },
-    },
+    } as unknown as ViewHost,
   });
   try {
     await engine.load();
     await expect(
       engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
     ).rejects.toThrow();
-    list.mockResolvedValue({ instances: [old], defaultInstanceId: 'created' });
+    catalog.set([old], 'created');
     await engine.load();
+    expect(engine.getSnapshot().selectedInstanceId).toBe('created');
     const reconciliation = engine.reloadInstance('mine');
     await engine.deleteInstance('created');
     expect(engine.getSnapshot().instanceIds).toEqual([]);
-    resolveLoad(old);
+    loaded.resolve(old);
     await reconciliation;
     expect(engine.getSnapshot().instanceIds).toEqual([]);
+    expect(engine.getSnapshot().sessions.created).toBeUndefined();
   } finally {
     engine.dispose();
   }
 });
 it('preserves independent copy unknown-save state during reconciliation', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+  const catalog = liveCatalog([instance()]);
   const old = { ...instance('created'), title: 'Copy' };
-  const create = vi.fn().mockResolvedValue({ ...old, title: 'wrong' });
-  let resolveLoad;
-  const loaded = new Promise(resolve => {
-    resolveLoad = resolve;
-  });
-  const load = vi.fn().mockReturnValue(loaded);
+  const create = vi
+    .fn()
+    .mockResolvedValue(committedWrite({ ...old, title: 'wrong' }, 'r1'));
+  const loaded = deferred<ViewInstance>();
+  const load = readsWithCreated(catalog, reads =>
+    reads === 0 ? old : loaded.promise,
+  );
   const { engine } = setup({
     instances: undefined,
     host: {
       instance: {
-        list,
+        list: catalog.host.instance.list,
         create,
         load,
         save: vi
@@ -355,14 +382,15 @@ it('preserves independent copy unknown-save state during reconciliation', async 
             new ViewServiceError('UNKNOWN_OUTCOME', 'independent save lost'),
           ),
       },
-    },
+      preference: catalog.host.preference,
+    } as unknown as ViewHost,
   });
   try {
     await engine.load();
     await expect(
       engine.saveAs({ title: 'Copy', scope: { type: 'personal' } }),
     ).rejects.toThrow();
-    list.mockResolvedValue({ instances: [old], defaultInstanceId: 'created' });
+    catalog.set([old], 'created');
     await engine.load();
     const reconciliation = engine.reloadInstance('mine');
     engine.setTitle('new title', 'created');
@@ -370,7 +398,7 @@ it('preserves independent copy unknown-save state during reconciliation', async 
       'independent save lost',
     );
     expect(engine.getSnapshot().sessions.created.requiresReload).toBe(true);
-    resolveLoad(old);
+    loaded.resolve(old);
     await reconciliation;
     expect(engine.getSnapshot().sessions.created.requiresReload).toBe(true);
     expect(engine.getSnapshot().sessions.created.writeError).toBe(
@@ -381,29 +409,30 @@ it('preserves independent copy unknown-save state during reconciliation', async 
   }
 });
 it('does not resurrect a copy first opened and deleted during reconciliation', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+  const catalog = liveCatalog([instance()]);
   const old = { ...instance('created'), title: 'Copy' };
-  const create = vi.fn().mockResolvedValue({ ...old, title: 'wrong' });
-  let resolveLoad;
-  const loaded = new Promise(resolve => {
-    resolveLoad = resolve;
-  });
-  const load = vi.fn().mockReturnValueOnce(loaded).mockResolvedValue(old);
+  const create = vi
+    .fn()
+    .mockResolvedValue(committedWrite({ ...old, title: 'wrong' }, 'r1'));
+  const loaded = deferred<ViewInstance>();
+  // The reconciliation read stays in flight; the explicit open afterwards resolves at once.
+  const load = readsWithCreated(catalog, reads =>
+    reads === 0 ? loaded.promise : old,
+  );
   const { engine } = setup({
     instances: undefined,
     host: {
       instance: {
-        list,
+        list: catalog.host.instance.list,
         create,
         load,
-        delete: vi.fn().mockResolvedValue({ defaultInstance: null }),
+        delete: vi.fn(async (id: string) => deleteReceipt(id)),
       },
+      preference: catalog.host.preference,
       permission: {
         getInstance: () => ({ save: true, saveAsPersonal: true, delete: true }),
       },
-    },
+    } as unknown as ViewHost,
   });
   try {
     await engine.load();
@@ -414,7 +443,7 @@ it('does not resurrect a copy first opened and deleted during reconciliation', a
     await engine.selectInstance('created');
     await engine.deleteInstance('created');
     expect(engine.getSnapshot().instanceIds).toEqual(['mine']);
-    resolveLoad(old);
+    loaded.resolve(old);
     await reconciliation;
     expect(engine.getSnapshot().instanceIds).toEqual(['mine']);
   } finally {
@@ -422,29 +451,25 @@ it('does not resurrect a copy first opened and deleted during reconciliation', a
   }
 });
 it('does not resurrect a copy opened and deleted before original create receipt', async () => {
-  const list = vi
-    .fn()
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+  const catalog = liveCatalog([instance()]);
   const old = { ...instance('created'), title: 'Copy' };
-  let resolveCreate;
-  const created = new Promise(resolve => {
-    resolveCreate = resolve;
-  });
-  const create = vi.fn().mockReturnValue(created);
-  const load = vi.fn().mockResolvedValue(old);
+  const created = deferred<WriteObservation<ViewInstance>>();
+  const create = vi.fn(() => created.promise);
+  const load = readsWithCreated(catalog, () => old);
   const { engine } = setup({
     instances: undefined,
     host: {
       instance: {
-        list,
+        list: catalog.host.instance.list,
         create,
         load,
-        delete: vi.fn().mockResolvedValue({ defaultInstance: null }),
+        delete: vi.fn(async (id: string) => deleteReceipt(id)),
       },
+      preference: catalog.host.preference,
       permission: {
         getInstance: () => ({ save: true, saveAsPersonal: true, delete: true }),
       },
-    },
+    } as unknown as ViewHost,
   });
   try {
     await engine.load();
@@ -455,7 +480,7 @@ it('does not resurrect a copy opened and deleted before original create receipt'
     await engine.selectInstance('created');
     await engine.deleteInstance('created');
     expect(engine.getSnapshot().instanceIds).toEqual(['mine']);
-    resolveCreate(old);
+    created.resolve(committedWrite(old, 'r1'));
     await saving;
     expect(engine.getSnapshot().instanceIds).toEqual(['mine']);
   } finally {

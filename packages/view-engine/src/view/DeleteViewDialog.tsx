@@ -22,8 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog.js';
-import type { ViewSession } from '../contracts/viewModel.js';
 import type { ViewEngine } from '../engine/ViewEngine.js';
+import { entryTitle, type InstanceEntry } from './ViewNavigation.js';
 import type { ExecuteViewManagerAction } from './useViewManagerAction.js';
 
 import { useViewCapabilities } from './useViewCapabilities.js';
@@ -40,7 +40,7 @@ export function DeleteViewDialog({
   onClose,
 }: {
   engine: ViewEngine;
-  target: ViewSession | undefined;
+  target: InstanceEntry | undefined;
   busy: boolean;
   busyRef: RefObject<boolean>;
   error: string | null;
@@ -72,12 +72,13 @@ export function DeleteViewDialog({
         <DialogHeader>
           <DialogTitle>删除视图</DialogTitle>
           <DialogDescription>
-            删除“{target?.instance.title}
+            删除“{target ? entryTitle(target) : ''}
             ”？这只会删除视图配置，不会删除业务数据。
-            {target?.instance.scope.type === 'public' &&
+            {target?.summary.scope.type === 'public' &&
               '其他使用者也将无法使用此公共视图。'}
-            {(target?.dirty ||
-              (target?.kind === 'record' && target.filterPending)) &&
+            {(target?.session?.dirty ||
+              (target?.session?.kind === 'record' &&
+                target.session.filterPending)) &&
               '未保存或待查询的修改也会丢弃。'}
           </DialogDescription>
         </DialogHeader>
@@ -99,12 +100,12 @@ export function DeleteViewDialog({
             disabled={
               busy ||
               !target ||
-              !capabilities.instances[target.instance.id]?.permissions.delete
+              !capabilities.instances[target.id]?.permissions.delete
             }
             onClick={() => {
               if (target)
                 void execute(
-                  () => engine.deleteInstance(target.instance.id),
+                  () => engine.deleteInstance(target.id),
                   () => {
                     onClose();
                   },

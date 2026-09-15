@@ -91,18 +91,16 @@ it('uses the next cursor without presenting a previous-page action or a total co
     definitionId: definition.id,
     definition,
     host,
-    instances: {
-      instances: [
-        {
-          ...instance,
-          config: {
-            ...instance.config,
-            pagination: { mode: 'cursor', size: 10 },
-          },
+    instances: [
+      {
+        ...instance,
+        config: {
+          ...instance.config,
+          pagination: { mode: 'cursor', size: 10 },
         },
-      ],
-      defaultInstanceId: instance.id,
-    },
+      },
+    ],
+    defaultInstanceId: instance.id,
   });
   await engine.load();
   render(<ViewPageContent engine={engine} />);
@@ -137,18 +135,16 @@ it('retries a failed cursor page from the record error action without returning 
     definitionId: definition.id,
     definition,
     host,
-    instances: {
-      instances: [
-        {
-          ...instance,
-          config: {
-            ...instance.config,
-            pagination: { mode: 'cursor', size: 10 },
-          },
+    instances: [
+      {
+        ...instance,
+        config: {
+          ...instance.config,
+          pagination: { mode: 'cursor', size: 10 },
         },
-      ],
-      defaultInstanceId: instance.id,
-    },
+      },
+    ],
+    defaultInstanceId: instance.id,
   });
   try {
     await engine.load();

@@ -11,132 +11,122 @@
  * limitations under the License.
  */
 
-import {
-  projectSupportedInstance,
-  requireSupportedInstance,
-} from '../../src/contracts/viewServiceContract.js';
 import { encodeViewResourceId } from './protocol.js';
 import type {
+  ConfigurationWriteContext,
+  ListOptions,
+  Page,
+  ReadOptions,
+  ViewCreateInput,
+  ViewDeleteReceipt,
   ViewInstance,
-  ViewInstanceList,
-} from '@ahoo-wang/fetcher-view-engine';
-import type { ViewInstanceService } from '@ahoo-wang/fetcher-view-engine';
-import {
-  ViewServiceError,
-  type ViewCreateContext,
-  type ViewDeleteResult,
+  ViewInstanceService,
+  ViewInstanceSummary,
+  WriteContext,
+  WriteObservation,
 } from '@ahoo-wang/fetcher-view-engine';
 import type { HttpViewTransport } from './HttpViewTransport.js';
+
+function definitionRevision(revision: string | undefined): HeadersInit {
+  return revision ? { 'X-Definition-Revision': revision } : {};
+}
+
 export class HttpViewInstanceService implements ViewInstanceService {
   constructor(private readonly transport: HttpViewTransport) {}
   readonly list = async (
     id: string,
-    signal?: AbortSignal,
-  ): Promise<ViewInstanceList> => {
+    options: ListOptions = {},
+  ): Promise<Page<ViewInstanceSummary>> => {
     this.transport.assertDefinition(id);
-    const list = await this.transport.request<ViewInstanceList>(
-      '/instances',
+    const search = new URLSearchParams();
+    if (options.query) search.set('query', options.query);
+    if (options.cursor) search.set('cursor', options.cursor);
+    if (options.limit !== undefined) search.set('limit', String(options.limit));
+    if (options.readFence) search.set('readFence', options.readFence);
+    const query = search.toString();
+    return this.transport.request<Page<ViewInstanceSummary>>(
+      `/instances${query ? `?${query}` : ''}`,
       'GET',
       undefined,
-      signal,
+      options.signal,
     );
-    const instances = list.instances
-      .map(item =>
-        projectSupportedInstance(item, this.transport.supportedFormats),
-      )
-      .filter((item): item is ViewInstance => item !== null);
-    return {
-      instances,
-      defaultInstanceId: instances.some(
-        item => item.id === list.defaultInstanceId,
-      )
-        ? list.defaultInstanceId
-        : null,
-    };
   };
   readonly load = async (
     id: string,
-    signal?: AbortSignal,
+    options: ReadOptions = {},
   ): Promise<ViewInstance> => {
-    return this.supported(
-      this.transport.request<ViewInstance>(
-        `/instances/${encodeViewResourceId(id)}`,
-        'GET',
-        undefined,
-        signal,
-      ),
+    const query = options.readFence
+      ? `?readFence=${encodeURIComponent(options.readFence)}`
+      : '';
+    return this.transport.request<ViewInstance>(
+      `/instances/${encodeViewResourceId(id)}${query}`,
+      'GET',
+      undefined,
+      options.signal,
     );
   };
   readonly create = async (
-    instance: Omit<ViewInstance, 'id' | 'revision'>,
-    context: ViewCreateContext,
-  ): Promise<ViewInstance> => {
-    if (typeof context?.requestId !== 'string' || !context.requestId.trim())
-      return Promise.reject(
-        new ViewServiceError('INVALID_ARGUMENT', '创建必须提供 requestId'),
-      );
-    return this.supported(
-      this.transport.request<ViewInstance>(
-        '/instances',
-        'POST',
-        instance,
-        context.signal,
-        {
-          'Idempotency-Key': context.requestId,
-        },
-      ),
+    instance: ViewCreateInput,
+    context: ConfigurationWriteContext,
+  ): Promise<WriteObservation<ViewInstance>> => {
+    return this.transport.write<ViewInstance>(
+      '/instances',
+      'POST',
+      instance,
+      context.signal,
+      {
+        ...this.transport.requestIdentity(context.requestId),
+        ...definitionRevision(context.definitionRevision),
+      },
     );
   };
-  readonly save = async (instance: ViewInstance): Promise<ViewInstance> => {
-    return this.supported(
-      this.transport.request<ViewInstance>(
-        `/instances/${encodeViewResourceId(instance.id)}`,
-        'PUT',
-        instance,
-        undefined,
-        this.transport.revision(instance.revision),
-      ),
+  readonly save = async (
+    instance: ViewInstance,
+    context: ConfigurationWriteContext,
+  ): Promise<WriteObservation<ViewInstance>> => {
+    return this.transport.write<ViewInstance>(
+      `/instances/${encodeViewResourceId(instance.id)}`,
+      'PUT',
+      instance,
+      context.signal,
+      {
+        ...this.transport.revision(instance.revision),
+        ...this.transport.requestIdentity(context.requestId),
+        ...definitionRevision(context.definitionRevision),
+      },
     );
   };
   readonly rename = async (
     id: string,
     title: string,
-    revision?: string,
-  ): Promise<ViewInstance> => {
-    return this.supported(
-      this.transport.request<ViewInstance>(
-        `/instances/${encodeViewResourceId(id)}/name`,
-        'PATCH',
-        { title },
-        undefined,
-        this.transport.revision(revision),
-      ),
+    expectedRevision: string,
+    context: WriteContext,
+  ): Promise<WriteObservation<ViewInstance>> => {
+    return this.transport.write<ViewInstance>(
+      `/instances/${encodeViewResourceId(id)}/name`,
+      'PATCH',
+      { title },
+      context.signal,
+      {
+        ...this.transport.revision(expectedRevision),
+        ...this.transport.requestIdentity(context.requestId),
+      },
     );
   };
   readonly delete = async (
     id: string,
-    revision?: string,
-  ): Promise<ViewDeleteResult> => {
-    const result = await this.transport.request<ViewDeleteResult>(
+    expectedRevision: string,
+    context: WriteContext,
+  ): Promise<WriteObservation<ViewDeleteReceipt>> => {
+    return this.transport.write<ViewDeleteReceipt>(
       `/instances/${encodeViewResourceId(id)}`,
       'DELETE',
       undefined,
-      undefined,
-      this.transport.revision(revision),
+      context.signal,
+      {
+        ...this.transport.revision(expectedRevision),
+        ...this.transport.requestIdentity(context.requestId),
+      },
     );
-    return {
-      defaultInstance: projectSupportedInstance(
-        result.defaultInstance,
-        this.transport.supportedFormats,
-      ),
-    };
   };
-  private async supported(
-    result: Promise<ViewInstance>,
-  ): Promise<ViewInstance> {
-    return requireSupportedInstance(
-      await result,
-      this.transport.supportedFormats,
-    );
-  }
 }

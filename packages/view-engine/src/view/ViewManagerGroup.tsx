@@ -37,10 +37,7 @@ export function ViewManagerGroup({
   onDelete(id: string, trigger: HTMLButtonElement): void;
 }) {
   const capabilities = useViewCapabilities(engine);
-  const items = group.sessions.map(session => ({
-    id: session.instance.id,
-    session,
-  }));
+  const items = group.entries.map(entry => ({ id: entry.id, entry }));
   return (
     <section aria-label={group.label}>
       <h3 className="fve:mb-2 fve:text-xs fve:font-medium fve:text-muted-foreground">
@@ -50,21 +47,22 @@ export function ViewManagerGroup({
         items={items}
         owner={engine}
         disabled={busy || !capabilities.reorder}
-        titleOf={item => item.session.baseline.title}
+        titleOf={item => item.entry.summary.title}
         onChange={async (_next, move) => {
           if (busyRef.current || !engine.canReorderInstances()) return false;
           const state = engine.getSnapshot();
           const current =
             groupViewInstances(state).find(item => item.id === group.id)
-              ?.sessions ?? [];
+              ?.entries ?? [];
           if (
             current.length !== items.length ||
-            current.some((session, i) => session.instance.id !== items[i].id)
+            current.some((entry, i) => entry.id !== items[i].id)
           )
             return false;
+          // Reorder within the loaded catalog; the group's relative slots are what changes.
           const ids = [...state.instanceIds];
           const from = ids.indexOf(move.id),
-            to = ids.indexOf(current[move.to].instance.id);
+            to = ids.indexOf(current[move.to].id);
           if (from < 0 || to < 0) return false;
           ids.splice(from, 1);
           ids.splice(to, 0, move.id);
@@ -82,15 +80,15 @@ export function ViewManagerGroup({
           aria-label={`${group.label}顺序`}
           className="fve:m-0 fve:flex fve:list-none fve:flex-col fve:gap-2 fve:p-1"
         >
-          {group.sessions.map(session => (
+          {group.entries.map(entry => (
             <ViewManagerRow
-              key={session.instance.id}
+              key={entry.id}
               engine={engine}
-              session={session}
+              entry={entry}
               busy={busy}
               execute={execute}
               fallbackFocus={fallbackFocus}
-              onDelete={trigger => onDelete(session.instance.id, trigger)}
+              onDelete={trigger => onDelete(entry.id, trigger)}
             />
           ))}
         </ol>

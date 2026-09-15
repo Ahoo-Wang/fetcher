@@ -14,107 +14,140 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { MemoryViewHost } from '../src/record/MemoryViewHost.js';
 import { ViewEngine } from '../src/engine/ViewEngine.js';
+import {
+  ABSENT_PRECONDITION,
+  type ViewServiceErrorCode,
+  type WriteObservation,
+} from '../src/contracts/viewServiceContract.js';
 import { definition, instance, setup } from './fixtures/viewPage.js';
 
 const store = new Map<string, string | null>();
 beforeEach(() => store.clear());
+const ctx = () => ({ requestId: crypto.randomUUID() });
+function committed<T>(observation: WriteObservation<T>): T {
+  if (observation.outcome !== 'committed')
+    throw new Error(`写入未提交：${JSON.stringify(observation)}`);
+  return observation.value;
+}
+const rejected = (code: ViewServiceErrorCode) => ({
+  outcome: 'rejected',
+  issue: { code },
+});
 function options(scopeKey = 'alice') {
   return {
     serviceKey: 'tenant',
     scopeKey,
     store,
     definition,
-    instances: {
-      instances: [
-        instance,
-        {
-          ...instance,
-          id: 'system',
-          scope: { type: 'public', source: 'system' } as const,
-        },
-      ],
-      defaultInstanceId: instance.id,
-    },
+    instances: [
+      instance,
+      {
+        ...instance,
+        id: 'system',
+        scope: { type: 'public', source: 'system' } as const,
+      },
+    ],
+    defaultInstanceId: instance.id,
     resolveSource: setup().host.resolveSource,
   };
 }
+const ids = async (host: MemoryViewHost) =>
+  (await host.instance.list(definition.id)).items.map(item => item.id);
+
 it('shares public content while isolating personal views, user ordering and tenants', async () => {
   const alice = new MemoryViewHost(options());
   const bob = new MemoryViewHost(options('bob'));
-  const shared = await alice.instance!.create(
-    { ...instance, title: '共享', scope: { type: 'public', source: 'shared' } },
-    { requestId: 'shared' },
+  const shared = committed(
+    await alice.instance.create(
+      {
+        ...instance,
+        title: '共享',
+        scope: { type: 'public', source: 'shared' },
+      },
+      { requestId: 'shared' },
+    ),
   );
-  const privateView = await alice.instance!.create(
-    { ...instance, title: '私人' },
-    { requestId: 'personal' },
+  const privateView = committed(
+    await alice.instance.create(
+      { ...instance, title: '私人' },
+      { requestId: 'personal' },
+    ),
   );
-  expect((await bob.instance!.load(shared.id)).title).toBe('共享');
-  await expect(bob.instance!.load(privateView.id)).rejects.toMatchObject({
+  expect((await bob.instance.load(shared.id)).title).toBe('共享');
+  await expect(bob.instance.load(privateView.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
-  await bob.instance!.rename(shared.id, '共同更新', shared.revision);
-  expect((await alice.instance!.load(shared.id)).title).toBe('共同更新');
-  const bobIds = (await bob.instance!.list(definition.id)).instances
-    .map(item => item.id)
-    .reverse();
-  const aliceIds = (await alice.instance!.list(definition.id)).instances.map(
-    item => item.id,
+  committed(
+    await bob.instance.rename(shared.id, '共同更新', shared.revision, ctx()),
   );
-  await bob.preference!.saveOrder(definition.id, bobIds);
-  expect(
-    (await bob.instance!.list(definition.id)).instances.map(item => item.id),
-  ).toEqual(bobIds);
-  expect(
-    (await alice.instance!.list(definition.id)).instances.map(item => item.id),
-  ).toEqual(aliceIds);
+  expect((await alice.instance.load(shared.id)).title).toBe('共同更新');
+  const bobIds = (await ids(bob)).reverse();
+  const aliceIds = await ids(alice);
+  committed(
+    await bob.preference.saveOrder(
+      definition.id,
+      { scopeInstanceIds: bobIds, orderedInstanceIds: bobIds },
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
+  );
+  expect(await ids(bob)).toEqual(bobIds);
+  expect(await ids(alice)).toEqual(aliceIds);
   const isolated = new MemoryViewHost({
     ...options(),
     serviceKey: 'other-tenant',
   });
-  await expect(isolated.instance!.load(shared.id)).rejects.toMatchObject({
+  await expect(isolated.instance.load(shared.id)).rejects.toMatchObject({
     code: 'NOT_FOUND',
   });
 });
+
 it('serializes competing writes and rejects the stale revision inside the lock', async () => {
   const left = new MemoryViewHost(options()),
     right = new MemoryViewHost(options());
-  const old = await left.instance!.load(instance.id);
-  const results = await Promise.allSettled([
-    left.instance!.save({ ...old, title: 'A' }),
-    right.instance!.save({ ...old, title: 'B' }),
+  const old = await left.instance.load(instance.id);
+  const results = await Promise.all([
+    left.instance.save({ ...old, title: 'A' }, ctx()),
+    right.instance.save({ ...old, title: 'B' }, ctx()),
   ]);
-  expect(results.filter(item => item.status === 'fulfilled')).toHaveLength(1);
-  expect(results.find(item => item.status === 'rejected')).toMatchObject({
-    reason: { code: 'REVISION_CONFLICT' },
-  });
+  expect(results.filter(item => item.outcome === 'committed')).toHaveLength(1);
+  expect(results.find(item => item.outcome !== 'committed')).toMatchObject(
+    rejected('REVISION_CONFLICT'),
+  );
+  const winner = results.find(item => item.outcome === 'committed')!;
+  expect(await left.instance.load(instance.id)).toEqual(committed(winner));
 });
+
 it('replays a create receipt across host reconstruction and refuses request ID payload reuse', async () => {
   const host = new MemoryViewHost(options());
   const input = { ...instance, title: '幂等创建' };
-  const first = await host.instance!.create(input, {
+  const first = await host.instance.create(input, {
     requestId: 'stable-request',
   });
-  const replay = await new MemoryViewHost(options()).instance!.create(input, {
+  expect(first).toMatchObject({ outcome: 'committed', visibility: 'visible' });
+  const replay = await new MemoryViewHost(options()).instance.create(input, {
     requestId: 'stable-request',
   });
   expect(replay).toEqual(first);
   expect(
-    (await host.instance!.list(definition.id)).instances.filter(
+    (await host.instance.list(definition.id)).items.filter(
       item => item.title === input.title,
     ),
   ).toHaveLength(1);
   await expect(
-    host.instance!.create(
+    host.instance.create(
       { ...input, title: '不同内容' },
       { requestId: 'stable-request' },
     ),
-  ).rejects.toMatchObject({ code: 'CONFLICT' });
-  const bob = await new MemoryViewHost(options('bob')).instance!.create(input, {
-    requestId: 'stable-request',
-  });
-  expect(bob.id).not.toBe(first.id);
+  ).resolves.toMatchObject(rejected('CONFLICT'));
+  const bob = committed(
+    await new MemoryViewHost(options('bob')).instance.create(input, {
+      requestId: 'stable-request',
+    }),
+  );
+  expect(bob.id).not.toBe(committed(first).id);
 });
+
 it('publishes revoked permissions without replacing the engine and enforces them on direct writes', async () => {
   let allowed = true;
   const { host: source, paged } = setup();
@@ -137,10 +170,11 @@ it('publishes revoked permissions without replacing the engine and enforces them
   expect(engine.getCapabilitiesSnapshot().instances.mine.permissions.save).toBe(
     true,
   );
+  expect(engine.canReorderInstances()).toBe(true);
   const listener = vi.fn();
   engine.subscribe(listener);
   allowed = false;
-  await host.permission!.refresh();
+  host.publishPermissions();
   expect(listener).toHaveBeenCalled();
   expect(engine.getCapabilitiesSnapshot().instances.mine.permissions.save).toBe(
     false,
@@ -148,18 +182,27 @@ it('publishes revoked permissions without replacing the engine and enforces them
   expect(engine.canReorderInstances()).toBe(false);
   expect(engine.getSnapshot().sessions).toBe(sessions);
   expect(paged).toHaveBeenCalledTimes(1);
-  const current = await host.instance!.load(instance.id);
-  await expect(host.instance!.save(current)).rejects.toMatchObject({
-    code: 'FORBIDDEN',
-  });
+  const current = await host.instance.load(instance.id);
+  await expect(host.instance.save(current, ctx())).resolves.toMatchObject(
+    rejected('FORBIDDEN'),
+  );
   await expect(
-    host.preference!.saveOrder(definition.id, ['mine', 'system']),
-  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    host.preference.saveOrder(
+      definition.id,
+      {
+        scopeInstanceIds: ['mine', 'system'],
+        orderedInstanceIds: ['system', 'mine'],
+      },
+      ABSENT_PRECONDITION,
+      ctx(),
+    ),
+  ).resolves.toMatchObject(rejected('FORBIDDEN'));
   engine.dispose();
   listener.mockClear();
-  await host.permission!.refresh();
+  host.publishPermissions();
   expect(listener).not.toHaveBeenCalled();
 });
+
 it('rejects a cancelled create without changing the in-process store', async () => {
   const host = new MemoryViewHost(options());
   await host.instance.list(definition.id);
@@ -171,5 +214,14 @@ it('rejects a cancelled create without changing the in-process store', async () 
       { requestId: 'aborted', signal: controller.signal },
     ),
   ).rejects.toMatchObject({ name: 'AbortError' });
-  expect((await host.instance.list(definition.id)).instances).toHaveLength(2);
+  expect((await host.instance.list(definition.id)).items).toHaveLength(2);
+  // The cancelled request left no receipt, so its identity is still free.
+  expect(
+    committed(
+      await host.instance.create(
+        { ...instance, title: '不能创建' },
+        { requestId: 'aborted' },
+      ),
+    ).title,
+  ).toBe('不能创建');
 });

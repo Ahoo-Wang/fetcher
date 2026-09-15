@@ -16,9 +16,17 @@ import { ViewEngine } from '../../src/engine/ViewEngine.js';
 import { MemoryViewHost } from '../../src/record/MemoryViewHost.js';
 import {
   ViewServiceError,
-  type ViewCreateContext,
+  rejectedWrite,
+  type ConfigurationWriteContext,
+  type ListOptions,
+  type Page,
+  type WriteObservation,
 } from '../../src/contracts/viewServiceContract.js';
-import type { ViewInstance } from '../../src/contracts/viewModel.js';
+import type {
+  ViewCreateInput,
+  ViewInstance,
+  ViewInstanceSummary,
+} from '../../src/contracts/viewModel.js';
 import type { ViewHost } from '../../src/contracts/ViewHost.js';
 import { definition, instance, deferred } from './fixtures.js';
 const engines: ViewEngine[] = [];
@@ -31,7 +39,8 @@ function service(defaultInstanceId: string | null = 'mine') {
     serviceKey: 'recover',
     scopeKey: 'alice',
     definition,
-    instances: { instances: [instance()], defaultInstanceId },
+    instances: [instance()],
+    defaultInstanceId,
     store: values,
     resolveSource: () => ({ paged: async () => ({ list: [], total: 0 }) }),
   });
@@ -41,16 +50,26 @@ function engineFor(host: ViewHost) {
   engines.push(engine);
   return engine;
 }
+/** The committed value of a host observation; anything else fails the test. */
+function committed<T>(observation: WriteObservation<T>): T {
+  if (observation.outcome !== 'committed')
+    throw new Error(`unexpected outcome ${observation.outcome}`);
+  return observation.value;
+}
+async function titled(host: MemoryViewHost, title: string) {
+  return (await host.instance.list(definition.id)).items.filter(
+    item => item.title === title,
+  );
+}
 const copyOptions = {
   title: 'Shared copy',
   scope: { type: 'public', source: 'shared' } as const,
 };
 it('confirms an unknown creation by the same request, never by another identical instance', async () => {
   const host = service();
-  let submitted!: Omit<ViewInstance, 'id' | 'revision'>,
-    context!: ViewCreateContext;
+  let submitted!: ViewCreateInput, context!: ConfigurationWriteContext;
   const create = vi.fn(
-    async (input: typeof submitted, ctx: ViewCreateContext) => {
+    async (input: ViewCreateInput, ctx: ConfigurationWriteContext) => {
       if (create.mock.calls.length === 1) {
         submitted = input;
         context = ctx;
@@ -66,11 +85,11 @@ it('confirms an unknown creation by the same request, never by another identical
   });
   await engine.load();
   await expect(engine.saveAs(copyOptions)).rejects.toThrow('response missing');
-  const other = await host.instance.create(submitted, {
-    requestId: 'another-request',
-  });
+  const other = committed(
+    await host.instance.create(submitted, { requestId: 'another-request' }),
+  );
   await engine.reloadInstance();
-  const own = await host.instance.create(submitted, context);
+  const own = committed(await host.instance.create(submitted, context));
   expect(engine.getSnapshot().selectedInstanceId).toBe(own.id);
   expect(own.id).not.toBe(other.id);
   expect(create.mock.calls[1][1].requestId).toBe(context.requestId);
@@ -79,12 +98,10 @@ it('confirms an unknown creation by the same request, never by another identical
 it('retains the original idempotency key after a denied retry of an uncertain creation', async () => {
   const host = service();
   const create = vi.fn(
-    async (
-      input: Omit<ViewInstance, 'id' | 'revision'>,
-      ctx: ViewCreateContext,
-    ) => {
+    async (input: ViewCreateInput, ctx: ConfigurationWriteContext) => {
       const call = create.mock.calls.length;
-      if (call === 2) throw new ViewServiceError('FORBIDDEN', 'revoked');
+      if (call === 2)
+        return rejectedWrite<ViewInstance>('FORBIDDEN', 'revoked');
       const created = await host.instance.create(input, ctx);
       if (call === 1)
         throw new ViewServiceError('UNKNOWN_OUTCOME', 'response missing');
@@ -99,27 +116,21 @@ it('retains the original idempotency key after a denied retry of an uncertain cr
   await engine.load();
   await expect(engine.saveAs(copyOptions)).rejects.toThrow('response missing');
   await expect(engine.saveAs(copyOptions)).rejects.toThrow('revoked');
+  expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(true);
   await engine.saveAs(copyOptions);
   expect(new Set(create.mock.calls.map(([, ctx]) => ctx.requestId)).size).toBe(
     1,
   );
-  expect(
-    (await host.instance.list(definition.id)).instances.filter(
-      item => item.title === copyOptions.title,
-    ),
-  ).toHaveLength(1);
+  expect(await titled(host, copyOptions.title)).toHaveLength(1);
 });
 it.each([false, true])(
   'keeps original create retry usable after full load (committed=%s)',
-  async committed => {
+  async committedFirst => {
     const host = service();
     const create = vi.fn(
-      async (
-        input: Omit<ViewInstance, 'id' | 'revision'>,
-        ctx: ViewCreateContext,
-      ) => {
+      async (input: ViewCreateInput, ctx: ConfigurationWriteContext) => {
         if (create.mock.calls.length === 1) {
-          if (committed) await host.instance.create(input, ctx);
+          if (committedFirst) await host.instance.create(input, ctx);
           throw new ViewServiceError('UNAVAILABLE', 'try again');
         }
         return host.instance.create(input, ctx);
@@ -140,24 +151,17 @@ it.each([false, true])(
     expect(new Set(engine.getSnapshot().instanceIds).size).toBe(
       engine.getSnapshot().instanceIds.length,
     );
-    expect(
-      (await host.instance.list(definition.id)).instances.filter(
-        item => item.title === copyOptions.title,
-      ),
-    ).toHaveLength(1);
+    expect(await titled(host, copyOptions.title)).toHaveLength(1);
     expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(false);
   },
 );
 it('replays an invalid create response with its original key and preserves newer source edits', async () => {
   const host = service();
   const create = vi.fn(
-    async (
-      input: Omit<ViewInstance, 'id' | 'revision'>,
-      ctx: ViewCreateContext,
-    ) => {
+    async (input: ViewCreateInput, ctx: ConfigurationWriteContext) => {
       const created = await host.instance.create(input, ctx);
       return create.mock.calls.length === 1
-        ? (null as unknown as ViewInstance)
+        ? ({ ...created, value: null } as unknown as typeof created)
         : created;
     },
   );
@@ -181,7 +185,7 @@ it('replays an invalid create response with its original key and preserves newer
     created = state.sessions[state.selectedInstanceId!];
   expect(created.instance.config.presentation.table.columns[0].width).toBe(321);
   expect(created.dirty).toBe(true);
-  expect((await host.instance.list(definition.id)).instances).toHaveLength(2);
+  expect((await host.instance.list(definition.id)).items).toHaveLength(2);
 });
 it('finishes a lost deletion response by idempotent retry', async () => {
   const host = service();
@@ -190,8 +194,8 @@ it('finishes a lost deletion response by idempotent retry', async () => {
     ...host,
     instance: {
       ...host.instance,
-      delete: async (id, revision) => {
-        const result = await host.instance.delete(id, revision);
+      delete: async (id, revision, context) => {
+        const result = await host.instance.delete(id, revision, context);
         if (first) {
           first = false;
           throw new ViewServiceError(
@@ -208,37 +212,47 @@ it('finishes a lost deletion response by idempotent retry', async () => {
   await expect(engine.deleteInstance()).rejects.toThrow(
     'deleted response missing',
   );
+  expect(engine.getCapabilitiesSnapshot().instances.mine.retryDelete).toBe(
+    true,
+  );
   await engine.deleteInstance();
   expect(engine.getSnapshot().instanceIds).toEqual([]);
   expect(engine.getSnapshot().selectedInstanceId).toBeNull();
+  expect((await host.instance.list(definition.id)).items).toEqual([]);
 });
 it('preserves explicit no-default preference across creation and host-backed loading', async () => {
   const host = service(null),
     engine = engineFor(host);
   await engine.load();
-  expect(engine.getSnapshot().selectedInstanceId).toBeNull();
+  expect(engine.getSnapshot()).toMatchObject({
+    selectedInstanceId: null,
+    defaultInstanceId: null,
+    preference: { status: 'ready', revision: null },
+  });
   const { definitionId, kind, scope, config } = instance();
-  await host.instance.create(
-    { definitionId, kind, scope, config, title: 'new' },
-    { requestId: 'new' },
+  committed(
+    await host.instance.create(
+      { definitionId, kind, scope, config, title: 'new' },
+      { requestId: 'new' },
+    ),
   );
-  expect(
-    (await host.instance.list(definition.id)).defaultInstanceId,
-  ).toBeNull();
+  expect(await host.preference.load(definition.id)).toMatchObject({
+    defaultInstanceId: null,
+    effectiveDefaultInstanceId: null,
+  });
+  await engine.load();
+  expect(engine.getSnapshot().selectedInstanceId).toBeNull();
 });
 
 it('retains creation identity when a full load overlaps the original response', async () => {
   const host = service();
-  const response = deferred<ViewInstance>();
+  const response = deferred<WriteObservation<ViewInstance>>();
   let persisted: ViewInstance | undefined;
   const create = vi.fn(
-    async (
-      input: Omit<ViewInstance, 'id' | 'revision'>,
-      ctx: ViewCreateContext,
-    ) => {
+    async (input: ViewCreateInput, ctx: ConfigurationWriteContext) => {
       const result = await host.instance.create(input, ctx);
       if (create.mock.calls.length === 1) {
-        persisted = result;
+        persisted = committed(result);
         return response.promise;
       }
       return result;
@@ -253,7 +267,12 @@ it('retains creation identity when a full load overlaps the original response', 
   const saving = engine.saveAs(copyOptions);
   await vi.waitFor(() => expect(persisted).toBeDefined());
   await engine.load();
-  response.resolve(persisted!);
+  response.resolve(
+    await host.instance.create(
+      create.mock.calls[0][0],
+      create.mock.calls[0][1],
+    ),
+  );
   await saving;
   await engine.reloadInstance();
   expect(engine.getSnapshot().selectedInstanceId).toBe(persisted!.id);
@@ -267,14 +286,11 @@ it.each(['loading', 'loaded'] as const)(
   'clears a definitively rejected original create after the source is %s again',
   async timing => {
     const host = service();
-    const response = deferred<ViewInstance>();
-    const listing = deferred<Awaited<ReturnType<typeof host.instance.list>>>();
+    const response = deferred<WriteObservation<ViewInstance>>();
+    const listing = deferred<Page<ViewInstanceSummary>>();
     let blockListing = false;
     const create = vi.fn(
-      (
-        input: Omit<ViewInstance, 'id' | 'revision'>,
-        context: ViewCreateContext,
-      ) =>
+      (input: ViewCreateInput, context: ConfigurationWriteContext) =>
         create.mock.calls.length === 1
           ? response.promise
           : host.instance.create(input, context),
@@ -284,8 +300,8 @@ it.each(['loading', 'loaded'] as const)(
       instance: {
         ...host.instance,
         create,
-        list: (id, signal) =>
-          blockListing ? listing.promise : host.instance.list(id, signal),
+        list: (id: string, options?: ListOptions) =>
+          blockListing ? listing.promise : host.instance.list(id, options),
       },
       resolveSource: id => host.resolveSource(id),
     });
@@ -298,7 +314,7 @@ it.each(['loading', 'loaded'] as const)(
       await reloading;
       expect(engine.getSnapshot().sessions.mine.requiresReload).toBe(true);
     }
-    response.reject(new ViewServiceError('FORBIDDEN', 'create denied'));
+    response.resolve(rejectedWrite('FORBIDDEN', 'create denied'));
     await saving;
     blockListing = false;
     listing.resolve(await host.instance.list(definition.id));
@@ -310,7 +326,7 @@ it.each(['loading', 'loaded'] as const)(
     expect(create.mock.calls[1][1].requestId).not.toBe(
       create.mock.calls[0][1].requestId,
     );
-    expect((await host.instance.list(definition.id)).instances).toHaveLength(2);
+    expect((await host.instance.list(definition.id)).items).toHaveLength(2);
   },
 );
 
@@ -320,10 +336,7 @@ it('preserves edits to an existing copy made by synchronous query-cancellation o
     started = deferred<void>();
   let block = false;
   const create = vi.fn(
-    async (
-      input: Omit<ViewInstance, 'id' | 'revision'>,
-      ctx: ViewCreateContext,
-    ) => {
+    async (input: ViewCreateInput, ctx: ConfigurationWriteContext) => {
       const result = await host.instance.create(input, ctx);
       if (create.mock.calls.length === 1)
         throw new ViewServiceError('UNKNOWN_OUTCOME', 'lost');
@@ -347,6 +360,9 @@ it('preserves edits to an existing copy made by synchronous query-cancellation o
   await expect(engine.saveAs(copyOptions)).rejects.toThrow('lost');
   await engine.load();
   const copyId = engine.getSnapshot().instanceIds.find(id => id !== 'mine')!;
+  // The copy is listed after the reload; open it so it holds independent edits.
+  await engine.selectInstance(copyId);
+  await engine.selectInstance('mine');
   block = true;
   const reading = engine
     .record(engine.getSnapshot().selectedInstanceId!)

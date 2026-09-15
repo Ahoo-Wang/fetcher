@@ -26,7 +26,7 @@ Open **View Engine → 入门与业务流程 → 最小接入 → 第一个数�
 | `ViewHost`       | Services plus `resolveSource(sourceId)`                    | Metadata, persistence, permissions and the local source bridge |
 | `useViewEngine`  | `scopeKey`, `definitionId`, host                           | Engine creation, loading, subscriptions and disposal           |
 
-For local metadata, pass `definition` and `instances: { instances, defaultInstanceId }` to `useViewEngine`. A query-only host is enough to display the page. Saving, creation, deletion and reordering appear according to the supplied methods and permissions.
+For local metadata, pass `definition`, `instances: ViewInstance[]` and an optional `defaultInstanceId` (`null` or a member ID) to `useViewEngine`. A query-only host is enough to display the page. Saving, creation, deletion and reordering appear according to the supplied methods and permissions.
 
 ```tsx
 import type { ViewHost } from '@ahoo-wang/fetcher-view-engine';

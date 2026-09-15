@@ -24,6 +24,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { ViewPageContent } from '../../src/view/ViewPageContent.js';
 import { DashboardView } from '../../src/dashboard/DashboardView.js';
 import { ViewEngine } from '../../src/engine/ViewEngine.js';
+import { committedWrite } from '../../src/contracts/viewServiceContract.js';
 import { definition, instance } from '../engine/fixtures.js';
 import { dashboardSetup, globalFilter } from './runtimeFixtures.js';
 vi.hoisted(() => {
@@ -105,7 +106,8 @@ it('creates the first dashboard, discovers a panel, and saves only the dashboard
       fields: definition.fields,
       dashboard: true,
     },
-    instances: { instances: [], defaultInstanceId: null },
+    instances: [],
+    defaultInstanceId: null,
     host: {
       permission: {
         getDefinition: () => ({ createPersonal: true, createShared: false }),
@@ -252,7 +254,7 @@ it('replacing a filtered reference preserves its position but requires a fresh b
     {
       instance: {
         load: async id => instance(id),
-        save: async value => ({ ...value, revision: 'r2' }),
+        save: async value => committedWrite({ ...value, revision: 'r2' }, 'r2'),
       },
       dashboard: {
         search: async () => ({
@@ -693,7 +695,7 @@ it.each(['reference', 'content', 'remove', 'layout'] as const)(
     const { engine } = dashboardSetup(undefined, {
       instance: {
         load: async id => instance(id),
-        save: async value => ({ ...value, revision: 'r2' }),
+        save: async value => committedWrite({ ...value, revision: 'r2' }, 'r2'),
       },
       dashboard: {
         search: async () => ({

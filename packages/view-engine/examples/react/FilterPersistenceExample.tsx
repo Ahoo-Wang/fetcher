@@ -14,8 +14,11 @@
 import { ExampleViewPage } from './ExampleViewPage.js';
 import { useState } from 'react';
 import {
+  committedWrite,
   createFilterConfiguration,
   newFilterNode,
+  rejectedWrite,
+  summaryOf,
   type RecordViewDefinition,
   type ViewHost,
   type ViewInstance,
@@ -94,8 +97,8 @@ export function FilterPersistenceExample({
       definition: { load: async () => structuredClone(definition) },
       instance: {
         list: async () => ({
-          instances: [JSON.parse(stored)],
-          defaultInstanceId: initial.id,
+          items: [summaryOf(JSON.parse(stored) as ViewInstance)],
+          nextCursor: null,
         }),
         load: async id => {
           if (id !== initial.id) throw new Error('未知视图。');
@@ -107,14 +110,18 @@ export function FilterPersistenceExample({
             instance.id !== previous.id ||
             instance.revision !== previous.revision
           )
-            throw new Error('视图版本已变化，请重新打开。');
+            return rejectedWrite(
+              'REVISION_CONFLICT',
+              '视图版本已变化，请重新打开。',
+            );
           stored = JSON.stringify({
             ...instance,
             revision: String(Number(previous.revision) + 1),
           });
           setSavedJson(stored);
           setWrites(value => value + 1);
-          return JSON.parse(stored);
+          const next: ViewInstance = JSON.parse(stored);
+          return committedWrite(next, next.revision);
         },
       },
       permission: {
@@ -144,6 +151,7 @@ export function FilterPersistenceExample({
       <ExampleViewPage
         key={generation}
         definitionId={definition.id}
+        defaultInstanceId={initial.id}
         scopeKey="local-user:filter-persistence"
         host={host}
         extensions={orderExtensions}

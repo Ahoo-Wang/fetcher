@@ -19,6 +19,7 @@ import {
 } from '../../src/filter/filterCore.js';
 import type { FilterCompilerRegistry } from '../../src/filter/filterModel.js';
 import type { ViewInstance } from '../../src/contracts/viewModel.js';
+import { committedWrite } from '../../src/contracts/viewServiceContract.js';
 import { definition, instance, selected, setup } from './fixtures.js';
 
 it('uses the definition timezone when loading, editing, applying and restoring local datetime filters', async () => {
@@ -39,7 +40,8 @@ it('uses the definition timezone when loading, editing, applying and restoring l
         { field: 'state.created', label: 'Created', type: 'datetime' },
       ],
     },
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
   });
   try {
     await engine.load();
@@ -116,7 +118,8 @@ it('saves an added unset control without a query and restores its identity throu
     props: {},
   });
   const restored = setup({
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
     host,
   });
   await restored.engine.load();
@@ -152,10 +155,11 @@ it('saves current valid custom configuration without changing the queried scope'
   let saved = customView();
   const saveInstance = vi.fn(async (value: ViewInstance) => {
     saved = JSON.parse(JSON.stringify({ ...value, revision: 'r2' }));
-    return saved;
+    return committedWrite(saved, 'r2');
   });
   const active = setup({
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
     filterCompilers: compilers,
   });
   active.host.instance!.save = saveInstance;
@@ -205,7 +209,8 @@ it('saves current valid custom configuration without changing the queried scope'
   expect(saved.config).not.toHaveProperty('filter');
   const reloaded = setup({
     filterCompilers: compilers,
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
   });
   await reloaded.engine.load();
   expect(selected(reloaded.engine).filterDraft.root).toMatchObject({
@@ -222,7 +227,8 @@ it('preserves an unresolved component and prevents every record and aggregate re
   const saved = customView();
   saved.config.presentation.table.columns[0].summary = ['SUM'];
   const { engine, host, paged, cursor } = setup({
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
   });
   await engine.load();
   expect(selected(engine)).toMatchObject({
@@ -251,7 +257,8 @@ it('preserves an unresolved component and prevents every record and aggregate re
 it('blocks a registered compiler which tries to query another field', async () => {
   const saved = customView();
   const { engine, host } = setup({
-    instances: { instances: [saved], defaultInstanceId: saved.id },
+    instances: [saved],
+    defaultInstanceId: saved.id,
     filterCompilers: {
       amountPicker: { compile: () => filter.eq('state.id', 'foreign') },
     },

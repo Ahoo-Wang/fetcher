@@ -17,6 +17,13 @@ import { createOrderService } from '../examples/react/sales-order/service.js';
 import { createOrderSource } from '../examples/react/sales-order/querySource.js';
 import { createOrderHost } from '../examples/react/sales-order/host.js';
 import { orderDefinition } from '../examples/react/sales-order/views.js';
+import type { WriteObservation } from '../src/contracts/viewServiceContract.js';
+
+function committed<T>(observation: WriteObservation<T>): T {
+  if (observation.outcome !== 'committed')
+    throw new Error(`写入未提交：${JSON.stringify(observation)}`);
+  return observation.value;
+}
 it('queries the same store after release and matches one item rather than different items', async () => {
   const service = createOrderService();
   const source = createOrderSource(service.read);
@@ -61,10 +68,17 @@ it('preserves personal views on reopening but prevents system edits and shared w
   const store = new Map<string, string | null>();
   const host = createOrderHost(service, 'sales', 'all', { store });
   const list = await host.instance.list(orderDefinition.id);
-  const first = list.instances[0];
+  expect(list.items[0]).not.toHaveProperty('config');
+  const first = await host.instance.load(list.items[0].id);
   await expect(
-    host.instance.save({ ...first, title: '不可修改' }),
-  ).rejects.toThrow();
+    host.instance.save(
+      { ...first, title: '不可修改' },
+      { requestId: 'system' },
+    ),
+  ).resolves.toMatchObject({
+    outcome: 'rejected',
+    issue: { code: 'FORBIDDEN' },
+  });
   const input = {
     definitionId: first.definitionId,
     title: first.title,
@@ -72,9 +86,11 @@ it('preserves personal views on reopening but prevents system edits and shared w
     scope: first.scope,
     config: first.config,
   };
-  const personal = await host.instance.create(
-    { ...input, title: '我的交付', scope: { type: 'personal' } },
-    { requestId: 'save-1' },
+  const personal = committed(
+    await host.instance.create(
+      { ...input, title: '我的交付', scope: { type: 'personal' } },
+      { requestId: 'save-1' },
+    ),
   );
   const reopened = createOrderHost(service, 'sales', 'all', { store });
   expect((await reopened.instance.load(personal.id)).title).toBe('我的交付');
@@ -83,11 +99,21 @@ it('preserves personal views on reopening but prevents system edits and shared w
       { ...input, scope: { type: 'public', source: 'shared' } },
       { requestId: 'shared' },
     ),
-  ).rejects.toThrow();
-  const saved = await host.instance.save({
-    ...personal,
-    title: '我的重点交付',
+  ).resolves.toMatchObject({
+    outcome: 'rejected',
+    issue: { code: 'FORBIDDEN' },
   });
-  await expect(host.instance.save(personal)).rejects.toThrow();
+  const saved = committed(
+    await host.instance.save(
+      { ...personal, title: '我的重点交付' },
+      { requestId: 'save-2' },
+    ),
+  );
+  await expect(
+    host.instance.save(personal, { requestId: 'save-3' }),
+  ).resolves.toMatchObject({
+    outcome: 'rejected',
+    issue: { code: 'REVISION_CONFLICT' },
+  });
   expect(saved.title).toBe('我的重点交付');
 });

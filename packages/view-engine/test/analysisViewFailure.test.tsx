@@ -105,7 +105,8 @@ it('keeps one paginated data table when the chart fails after inspecting results
   const engine = new ViewEngine({
     definitionId: 'orders',
     definition,
-    instances: { instances: [instance], defaultInstanceId: 'regions' },
+    instances: [instance],
+    defaultInstanceId: 'regions',
     host: { resolveSource: () => ({ aggregate }) },
   });
   vi.spyOn(console, 'error').mockImplementation(() => {});

@@ -22,6 +22,7 @@ import {
   createOrderViews,
   createProtocolViews,
   orderDefinition,
+  type OrderViews,
 } from './views.js';
 import { customers } from './fixtures.js';
 import type { OrderService } from './service.js';
@@ -32,7 +33,7 @@ export function createOrderHost(
   stage: Stage = 'all',
   options: QueryOptions & {
     definition?: MemoryViewHostOptions['definition'];
-    instances?: MemoryViewHostOptions['instances'];
+    instances?: OrderViews;
     store?: MemoryViewHostOptions['store'];
     source?: ReturnType<typeof createOrderSource>;
     personal?: boolean;
@@ -40,13 +41,15 @@ export function createOrderHost(
     scopeKey?: string;
   } = {},
 ) {
+  const views =
+    options.instances ??
+    (options.personal ? createProtocolViews() : createOrderViews(stage));
   const configuration: MemoryViewHostOptions = {
     serviceKey: 'sales-demo',
     scopeKey: options.scopeKey ?? role,
     definition: options.definition ?? orderDefinition,
-    instances:
-      options.instances ??
-      (options.personal ? createProtocolViews() : createOrderViews(stage)),
+    instances: views.instances,
+    defaultInstanceId: views.defaultInstanceId,
     resolveSource: () =>
       options.source ?? createOrderSource(service.read, options),
     instancePermissions: instance => ({

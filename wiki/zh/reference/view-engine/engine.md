@@ -22,9 +22,9 @@ export function OrderPage({
 }
 ```
 
-`useViewEngine(options)` 负责创建、加载和释放，包括 React StrictMode。必填的 `scopeKey` 与 `definitionId` 标识生命周期，任一变化都会替换引擎。可选的本地 `definition`/`instances`、`extensions` 中成对的编译器/编辑器注册、`limits`、`onDiagnostic` 用于初始化该生命周期。同范围的 host 更新保留编辑；其他初始化输入需要重新建立时，显式改变 React key。返回的 `ViewEngineBinding` 为 `{ engine: ViewEngine | null, extensions?, error? }`。
+`useViewEngine(options)` 负责创建、加载和释放，包括 React StrictMode。必填的 `scopeKey` 与 `definitionId` 标识生命周期，任一变化都会替换引擎。可选的本地 `definition`/`instances`/`defaultInstanceId`/`instanceId`、`extensions` 中成对的编译器/编辑器注册、`limits`、`onDiagnostic` 用于初始化该生命周期。同范围的 host 更新保留编辑；其他初始化输入需要重新建立时，显式改变 React key。返回的 `ViewEngineBinding` 为 `{ engine: ViewEngine | null, extensions?, error? }`。
 
-`ViewPage` 是纯 UI，接收 binding 或调用方持有的 engine，不会自行加载或释放引擎。`ViewPageContent` 要求非 null engine。两者组合导航、共享写入和选中的 `RecordView` 或 `AnalysisView`；后两者只渲染各自类型。无界面调用方创建 `new ViewEngine({ definitionId, host, definition?, instances?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`，调用 `load()`，范围结束时调用 `dispose()`。
+`ViewPage` 是纯 UI，接收 binding 或调用方持有的 engine，不会自行加载或释放引擎。`ViewPageContent` 要求非 null engine。两者组合导航、共享写入和选中的 `RecordView` 或 `AnalysisView`；后两者只渲染各自类型。无界面调用方创建 `new ViewEngine({ definitionId, host, definition?, instances?, defaultInstanceId?, instanceId?, filterCompilers?, analysisCompilers?, limits?, onDiagnostic? })`，调用 `load()`，范围结束时调用 `dispose()`。
 
 ### 定义与已保存实例
 
@@ -35,7 +35,9 @@ export function OrderPage({
 
 `ViewInstance` 是 `RecordViewInstance | AnalysisViewInstance | DashboardViewInstance` 判别联合。两者都要求非空 `id`、`definitionId`、`title`、`revision` 和 `scope`。`kind: 'record'` 使用 `RecordViewConfig`（filters、sort、pagination、presentation）；`kind: 'analysis'` 使用下文的 `AnalysisViewConfig`。scope 支持个人或公共/系统/共享分类，不代表权限。创建输入只省略 ID 和 revision，由服务回执返回。
 
-`ViewInstanceList` 包含可见实例与 `defaultInstanceId: string | null`，可以混合两类视图。默认偏好与当前选中项独立。结构可读取但当前不可执行的配置仍保留编辑入口，通过 `session.validation` 报错；单个失效实例不会阻断健康实例。
+`ViewEngineOptions.instances` 以 `readonly ViewInstance[]` 提供本地目录，可选 `defaultInstanceId`（null 或成员 ID）与 `instanceId`（显式初始实例，优先于个人默认）。没有本地目录时，引擎通过 `instance.list` 分页读入 `state.catalog`，打开实例时再经 `instance.load` 点查；`ViewInstanceSummary` 不携带配置。默认偏好与当前选中项独立，目录可以混合多种视图。结构可读取但当前不可执行的配置仍保留编辑入口，通过 `session.validation` 报错；单个失效实例不会阻断健康实例。
+
+`engine.load()` 分别读取定义、第一页目录和个人偏好。`state.status` 只反映定义是否就绪；`state.catalog { status, error, nextCursor, total, summaries }` 与 `state.preference { status, error, revision }` 各自维护状态和失败。`state.instanceIds` 是目录顺序加上已加载页之外被打开或创建的实例；`state.sessions[id]` 只为已打开的实例存在。只有生效的个人默认项或 `options.instanceId` 会被自动选中；`selectInstance(id)` 点查尚未打开的实例，`loadMoreInstances()` 追加下一页目录，`loadSavedInstance(id, signal?)` 是不建会话、不选中、不查询的点查。
 
 ### 工作配置、已应用结果与保存
 
@@ -53,7 +55,7 @@ export function OrderPage({
 
 两类会话都暴露 `editorEpoch`。采纳已审阅的远端版本会推进该代次并丢弃本地编辑器缓冲；普通重载和还原保留已约定的非破坏性输入行为。自定义已挂载编辑器应在 `(instance.id, editorEpoch)` 变化时重新绑定命令并重置本地缓冲，内置视图已处理。旧有效性回调在重置后被忽略，旧分析编辑和记录草稿编辑会被拒绝，不能覆盖刚采纳的远端配置。已发布的普通会话和待核对另存会话走同一最终校验路径。记录准入始终检查分页/布局判别字段及嵌套展示结构；失效字段或能力引用仍作为可恢复的语义错误处理。取消分析刷新时保留已有结果的成功状态，后续自动刷新可以继续。
 
-记录操作统一通过 `engine.record(id)`：`setFilterDraft(configuration, valid?)`、`setFilterValidity(valid)`、`setFilterMode(mode)`、`applyFilter()`、`setSort(sort)`、`setColumns(columns)`、`setLayout(layout)`、`setCardConfig(card)`、`setPage(index)`、`setPageSize(size)`、`nextPage()`、`setSelection(keys)`、`refresh({ background? }?)`、`retryQuery()`、`refreshSummary()`。门面不再提供直接记录命令。共享操作为 setTitle、save、saveAs、restore、reloadInstance、renameInstance、deleteInstance、setDefaultInstance、reorderInstances。记录还原会恢复基线并查询；分析还原只恢复工作配置，不运行。
+记录操作统一通过 `engine.record(id)`：`setFilterDraft(configuration, valid?)`、`setFilterValidity(valid)`、`setFilterMode(mode)`、`applyFilter()`、`setSort(sort)`、`setColumns(columns)`、`setLayout(layout)`、`setCardConfig(card)`、`setPage(index)`、`setPageSize(size)`、`nextPage()`、`setSelection(keys)`、`refresh({ background? }?)`、`retryQuery()`、`refreshSummary()`。门面不再提供直接记录命令。共享操作为 setTitle、save、saveAs、restore、reloadInstance、renameInstance、deleteInstance、setDefaultInstance、reorderInstances(orderedInstanceIds, scopeInstanceIds?)、loadMoreInstances、loadSavedInstance(id)。记录还原会恢复基线并查询；分析还原只恢复工作配置，不运行。
 
 ### 冲突、未知写入与运行上限
 
@@ -95,7 +97,8 @@ function BusinessDashboardPage({
     scopeKey,
     definitionId: 'orders',
     host,
-    instances: { instances: savedViews, defaultInstanceId: null },
+    instances: savedViews,
+    defaultInstanceId: null,
   });
   return (
     <EmbeddedView {...binding} instanceId="overview" onOpenView={onOpenView} />
@@ -103,7 +106,7 @@ function BusinessDashboardPage({
 }
 ```
 
-仅用于首页的引擎应传入 `instances.defaultInstanceId: null`，避免额外自动选中并查询工作台视图。`savedViews` 必须属于加载的定义并包含 `overview`；替换为任意已保存记录或分析 ID 即可复用同一组件。宿主需启用仪表盘格式支持。Storybook 入口为 **View Engine → 引擎与宿主 → 嵌入视图**：`view-engine-embedded-view--dashboard`、`--record`、`--analysis`、`--independent`。
+仅用于首页的引擎应传入 `defaultInstanceId: null`，避免额外自动选中并查询工作台视图。`savedViews` 必须属于加载的定义并包含 `overview`；替换为任意已保存记录或分析 ID 即可复用同一组件。Storybook 入口为 **View Engine → 引擎与宿主 → 嵌入视图**：`view-engine-embedded-view--dashboard`、`--record`、`--analysis`、`--independent`。
 
 ## 独立运行位置
 
@@ -183,7 +186,7 @@ await engine.save(draftId); // 首次真实创建，由宿主提供保存身份�
 
 仪表盘数据请求共享引擎并发预算和 48 项 FIFO 等待队列；独立记录/分析入口仍保持即时 BUSY。引用加载独立并发 4、等待 24，每次真实实例/定义/数据源加载分别计执行期限。等待会话使用 `queryStatus: 'waiting'`；诊断 queued/started/终态分开报告等待与执行耗时，不含筛选值或记录。全局和合并表达式分别限制深度 32、节点 512；传输响应体上限仍由宿主保障。
 
-Stateful/Memory/Local 与示例 HTTP 宿主接受 `supportedFormats: { record: true, analysis: true, dashboard: 1 }`，缺省表示旧客户端；HTTP 适配器发送 `X-View-Formats`。只有支持仪表盘格式 1 时才投影定义级创建授权；实例另存为权限保持独立。所有实例响应统一投影：隐藏的仪表盘默认项返回 null 而不改变真实偏好，删除回执可重放，旧客户端排序保留隐藏位置；不支持的单实例读写在变更前拒绝。先部署宿主格式投影，再允许创建仪表盘；客户端回退时保留投影。
+记录、分析与仪表盘实例共用同一目录、实例服务和偏好文档，宿主不按客户端协商存储格式。定义级创建授权来自 `permission.getDefinition()`，实例的另存权限与之独立。
 
 本地测试、模拟实例服务持久化与只读 Wow 查询是不同证据。真实触摸、读屏、业务用户走查及生产宿主授权/回退准入仍需在消费应用验证。
 

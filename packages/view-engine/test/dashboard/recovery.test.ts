@@ -13,7 +13,11 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { filter } from '@ahoo-wang/fetcher-wow';
-import { ViewServiceError } from '../../src/contracts/viewServiceContract.js';
+import {
+  committedWrite,
+  ViewServiceError,
+  type ReadOptions,
+} from '../../src/contracts/viewServiceContract.js';
 import { definition, instance, deferred } from '../engine/fixtures.js';
 import { dashboardSetup, globalFilter } from './runtimeFixtures.js';
 
@@ -81,17 +85,7 @@ describe('dashboard lifetime and recovery', () => {
     engine.dispose();
   });
   it('clears metadata, data and bound actions when reauthorization denies a retained reference', async () => {
-    const permissionLoad = vi.fn();
-    const { engine, paged, load } = dashboardSetup(configured(), {
-      permission: {
-        getInstance: () => ({
-          save: true,
-          saveAsPersonal: true,
-          saveAsShared: false,
-        }),
-        load: permissionLoad,
-      },
-    });
+    const { engine, paged, load } = dashboardSetup(configured());
     await engine.load();
     const runtime = engine.dashboard('dashboard');
     await vi.waitFor(() => expect(paged).toHaveBeenCalledTimes(1));
@@ -109,7 +103,6 @@ describe('dashboard lifetime and recovery', () => {
       old.kind === 'record' ? old.commands.refresh() : old.commands.run(),
     ).rejects.toThrow();
     expect(paged).toHaveBeenCalledTimes(1);
-    expect(permissionLoad).toHaveBeenCalledTimes(1);
     engine.dispose();
   });
   it('query FORBIDDEN clears old results and rejects old actions', async () => {
@@ -164,7 +157,10 @@ describe('dashboard lifetime and recovery', () => {
         })),
       },
       {
-        instance: { load, save: async value => value },
+        instance: {
+          load,
+          save: async value => committedWrite(value, value.revision),
+        },
         definition: { load: vi.fn(async () => definition) },
       },
     );
@@ -348,16 +344,16 @@ it.each([
     const oldInstance = deferred<ReturnType<typeof instance>>();
     const oldDefinition = deferred<typeof definition>();
     let oldSignal: AbortSignal | undefined;
-    const load = vi.fn(async (id: string, signal?: AbortSignal) => {
+    const load = vi.fn(async (id: string, options?: ReadOptions) => {
       if (id === 'child' && stage === 'instance') {
-        oldSignal = signal;
+        oldSignal = options?.signal;
         return oldInstance.promise;
       }
       return { ...instance(id), definitionId: id };
     });
-    const loadDefinition = vi.fn(async (id: string, signal?: AbortSignal) => {
+    const loadDefinition = vi.fn(async (id: string, options?: ReadOptions) => {
       if (id === 'child') {
-        oldSignal = signal;
+        oldSignal = options?.signal;
         return oldDefinition.promise;
       }
       return { ...definition, id };
@@ -365,7 +361,10 @@ it.each([
     const { engine, paged } = dashboardSetup(
       { ...configured(), filters: [] },
       {
-        instance: { load, save: async value => value },
+        instance: {
+          load,
+          save: async value => committedWrite(value, value.revision),
+        },
         definition: { load: loadDefinition },
       },
     );

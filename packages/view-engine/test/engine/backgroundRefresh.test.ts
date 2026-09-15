@@ -114,10 +114,8 @@ it('does not refresh selected records, pending filters or a later cursor page', 
   expect(paged).toHaveBeenCalledTimes(1);
   engine.dispose();
   const cursorView = setup({
-    instances: {
-      instances: [instance('mine', 'cursor')],
-      defaultInstanceId: 'mine',
-    },
+    instances: [instance('mine', 'cursor')],
+    defaultInstanceId: 'mine',
   });
   cursorView.cursor.mockImplementation(async query => ({
     list: [{ state: { id: 'a' } }],
@@ -149,7 +147,8 @@ it('waits for an in-flight all-record summary before another background refresh'
     summary: ['SUM'],
   };
   const { engine } = setup({
-    instances: { instances: [value], defaultInstanceId: value.id },
+    instances: [value],
+    defaultInstanceId: value.id,
     host: {
       resolveSource: () => ({ paged, cursor: vi.fn(), aggregate }),
     } as unknown as ViewHost,

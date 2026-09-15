@@ -174,7 +174,8 @@ it.runIf(Boolean(process.env.FETCHER_DASHBOARD_REAL_BASE_URL))(
           fields: [statusField],
           dashboard: true,
         },
-        instances: { instances: [dashboard], defaultInstanceId: dashboard.id },
+        instances: [dashboard],
+        defaultInstanceId: dashboard.id,
         host,
       });
       await engine.load();

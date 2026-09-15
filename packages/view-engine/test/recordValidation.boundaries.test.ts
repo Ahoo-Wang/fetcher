@@ -16,7 +16,14 @@ import { expect, it, vi } from 'vitest';
 import { validateViewDefinition } from '../src/contracts/validation/definitionValidation.js';
 import { validateViewInstance } from '../src/contracts/validation/instanceValidation.js';
 import type { ViewHost } from '../src/contracts/ViewHost.js';
-import { definition, instance, setup } from './engine/fixtures.js';
+import { summaryOf } from '../src/contracts/viewModel.js';
+import {
+  definition,
+  instance,
+  page,
+  preference,
+  setup,
+} from './engine/fixtures.js';
 
 it('accepts typed enum identities, nested fields and explicit operator editor bindings', () => {
   const schema = {
@@ -184,25 +191,45 @@ it('keeps malformed host lists out of sessions and recovers after the host fixes
   const list = vi
     .fn()
     .mockResolvedValueOnce({ items: [instance()] })
-    .mockResolvedValue({ instances: [instance()], defaultInstanceId: 'mine' });
+    .mockResolvedValue(page([instance()]));
+  const load = vi.fn(async () => instance());
   const { engine, paged } = setup({
     instances: undefined,
-    host: { instance: { list } } as ViewHost,
+    host: {
+      instance: { list, load },
+      preference: { load: async () => preference('mine') },
+    } as ViewHost,
   });
   try {
-    await expect(engine.load()).rejects.toThrow('instances 数组');
-    expect(engine.getSnapshot()).toMatchObject({
-      status: 'error',
-      instanceIds: [],
-      sessions: {},
-    });
-    expect(paged).not.toHaveBeenCalled();
+    // A malformed catalog page is a catalog error; the definition and the point-read default stay usable.
     await engine.load();
     expect(engine.getSnapshot()).toMatchObject({
       status: 'ready',
+      catalog: {
+        status: 'error',
+        error: expect.stringContaining('nextCursor'),
+      },
+      instanceIds: ['mine'],
       selectedInstanceId: 'mine',
     });
+    // Only the point-read baseline is mirrored into the catalog; nothing from the malformed page.
+    expect(engine.getSnapshot().catalog.summaries).toEqual({
+      mine: summaryOf(instance()),
+    });
+    expect(Object.keys(engine.getSnapshot().sessions)).toEqual(['mine']);
+    expect(load).toHaveBeenCalledOnce();
     expect(paged).toHaveBeenCalledOnce();
+    await engine.load();
+    expect(engine.getSnapshot()).toMatchObject({
+      status: 'ready',
+      catalog: { status: 'ready', error: null },
+      instanceIds: ['mine'],
+      selectedInstanceId: 'mine',
+    });
+    expect(engine.getSnapshot().catalog.summaries).toEqual({
+      mine: summaryOf(instance()),
+    });
+    expect(paged).toHaveBeenCalledTimes(2);
   } finally {
     engine.dispose();
   }
@@ -267,21 +294,26 @@ it.each([
       ...saved,
       config: { ...saved.config, ...patch },
     };
+    // Catalog pages carry no configuration; the malformed body is caught at the point read.
     const { engine, paged, cursor } = setup({
       instances: undefined,
       host: {
         instance: {
-          list: async () => ({
-            instances: [malformed],
-            defaultInstanceId: saved.id,
-          }),
+          list: async () => page([saved]),
+          load: async () => malformed,
         },
+        preference: { load: async () => preference(saved.id) },
       } as never,
     });
     try {
-      await expect(engine.load()).rejects.toThrow();
-      expect(engine.getSnapshot().status).toBe('error');
-      expect(engine.getSnapshot().sessions).toEqual({});
+      await engine.load();
+      expect(engine.getSnapshot()).toMatchObject({
+        status: 'ready',
+        error: expect.any(String),
+        selectedInstanceId: null,
+        openingInstanceId: null,
+        sessions: {},
+      });
       expect(paged).not.toHaveBeenCalled();
       expect(cursor).not.toHaveBeenCalled();
     } finally {

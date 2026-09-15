@@ -75,12 +75,47 @@ function OwnedEmbeddedView({
     engine.getSnapshot,
     engine.getSnapshot,
   );
-  const instance =
-    state.status === 'ready' && state.instanceIds.includes(instanceId)
-      ? state.sessions[instanceId]?.baseline
-      : undefined;
+  const sessionBaseline =
+    state.status === 'ready' ? state.sessions[instanceId]?.baseline : undefined;
   const definition = state.definition;
   const [attempt, setAttempt] = useState(0);
+  // Embedding starts from a saved snapshot; without an open session it is point-read once per attempt.
+  const [fetched, setFetched] = useState<{
+    engine: ViewEngine;
+    instanceId: string;
+    attempt: number;
+    instance?: DeepReadonly<ViewInstance>;
+    error?: string;
+  } | null>(null);
+  const needsFetch =
+    state.status === 'ready' && !sessionBaseline && definition !== null;
+  useEffect(() => {
+    if (!needsFetch) return;
+    let live = true;
+    const controller = new AbortController();
+    engine.loadSavedInstance(instanceId, controller.signal).then(
+      instance => {
+        if (live)
+          setFetched({ engine, instanceId, attempt, instance: instance });
+      },
+      reason => {
+        if (live)
+          setFetched({ engine, instanceId, attempt, error: message(reason) });
+      },
+    );
+    return () => {
+      live = false;
+      controller.abort();
+    };
+  }, [engine, instanceId, needsFetch, attempt]);
+  const current =
+    fetched?.engine === engine &&
+    fetched.instanceId === instanceId &&
+    fetched.attempt === attempt
+      ? fetched
+      : null;
+  const instance = sessionBaseline ?? current?.instance;
+  const fetchError = sessionBaseline ? undefined : current?.error;
   const [owned, setOwned] = useState<{
     engine: ViewEngine;
     instance: DeepReadonly<ViewInstance>;
@@ -174,7 +209,14 @@ function OwnedEmbeddedView({
       </div>
     );
   if (state.status !== 'ready') return <p role="status">正在加载嵌入视图…</p>;
-  if (!instance) return <p role="alert">嵌入视图不存在或当前不可访问。</p>;
+  if (fetchError)
+    return (
+      <div role="alert">
+        嵌入视图不存在或当前不可访问：{fetchError}
+        <Button onClick={() => setAttempt(value => value + 1)}>重试嵌入</Button>
+      </div>
+    );
+  if (!instance) return <p role="status">正在加载嵌入视图…</p>;
   if (active?.error)
     return (
       <div role="alert">

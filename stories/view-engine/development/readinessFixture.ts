@@ -11,7 +11,7 @@ import {
   type RecordViewDefinition,
   type ViewFieldDefinition,
   type ViewHost,
-  type ViewInstanceList,
+  type ViewInstance,
 } from '@ahoo-wang/fetcher-view-engine';
 import {
   FilterOperator as Op,
@@ -98,41 +98,39 @@ const definition: RecordViewDefinition = {
   })),
   record: { allowedLayouts: ['table', 'card'], rowKey: 'meta.id' },
 };
-const instances: ViewInstanceList = {
-  defaultInstanceId: 'all',
-  instances: [
-    {
-      id: 'all',
-      definitionId: definition.id,
-      kind: 'record',
-      revision: 'initial',
-      title: '验收订单',
-      scope: { type: 'personal' },
-      config: {
-        filters: createFilterConfiguration({
-          id: 'amount',
-          operator: Op.GTE,
-          component: { name: 'builtin' },
-          field: 'state.amount',
-          props: { value: 0 },
-        }),
-        sort: [],
-        pagination: { mode: 'paged', size: 100 },
-        presentation: {
-          layout: 'table',
-          table: {
-            columns: definition.fields.slice(0, 30).map(field => ({
-              id: field.field,
-              kind: 'field',
-              field: field.field,
-              width: 160,
-            })),
-          },
+const defaultInstanceId = 'all';
+const instances: ViewInstance[] = [
+  {
+    id: defaultInstanceId,
+    definitionId: definition.id,
+    kind: 'record',
+    revision: 'initial',
+    title: '验收订单',
+    scope: { type: 'personal' },
+    config: {
+      filters: createFilterConfiguration({
+        id: 'amount',
+        operator: Op.GTE,
+        component: { name: 'builtin' },
+        field: 'state.amount',
+        props: { value: 0 },
+      }),
+      sort: [],
+      pagination: { mode: 'paged', size: 100 },
+      presentation: {
+        layout: 'table',
+        table: {
+          columns: definition.fields.slice(0, 30).map(field => ({
+            id: field.field,
+            kind: 'field',
+            field: field.field,
+            width: 160,
+          })),
         },
       },
     },
-  ],
-};
+  },
+];
 const rows: RecordData[] = Array.from({ length: 200 }, (_, index) => ({
   meta: { id: `R-${String(index + 1).padStart(3, '0')}` },
   customer: { name: `客户 ${index + 1}`, href: `/customers/${index + 1}` },
@@ -259,6 +257,7 @@ export function createReadinessService() {
   return {
     definition,
     instances,
+    defaultInstanceId,
     host,
     metrics,
     control,

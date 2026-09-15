@@ -68,13 +68,16 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 同一 PR 内的消费者与文档：
 
 - `examples/react/sales-order/host.ts`、`examples/react/catalog/*`、`examples/react/compensation/*`、`examples/core.mjs`、`dev/HttpOrderExample.tsx` 切到新合同（`verify-package.mjs` 会对 examples 做类型检查，不能留到后续 PR）。
-- README 双语中 Host 接入示例同步；`skills/fetcher-view-engine/references/api.md` 中的 Host 合同、`ViewInstanceList` 与偏好签名描述同一 PR 更新（AGENTS.md 要求公共 API 变更同步 skill 参考）。
+- 根目录 `stories/view-engine/*` 与 `stories/docs/*` 中按 `ViewHost` 合同构造的 Host（`record-view/createHost.ts`、`development/readinessFixture.ts`、`docs/RecordViewExample.tsx` 等）同一 PR 切换到新合同；view-engine 源码变化会触发 Storybook 构建，旧合同对象会让 S1-a 无法独立合并。入口路径的切换仍留在 S2。
+- README 双语、`dev/README*.md`、`wiki/guides/view-engine/*`、`wiki/reference/view-engine/*` 及对应中文页中的 Host 合同示例，以及 `skills/fetcher-view-engine/references/api.md` 中的 Host 合同、`ViewInstanceList` 与偏好签名描述同一 PR 更新（AGENTS.md 要求公共 API 变更同步 skill 参考与文档）。
 
 **PR S1-b：核对与目录状态补齐（不改合同）**
 
 - `operation.reconcile` 的引擎消费：对 `unknown` 与 `committed_pending_receipt` 写入提供显式核对动作，按原 `requestId` 取得精确回执后推进基线（§5.4、§5.5）。
-- `committed.visibility=pending` 时向对应 `definition.load`／`instance.load`／`preference.load` 提交 `readFence` 的有界等待与"已保存，列表同步中"状态（§11.6）。
+- `committed.visibility=pending` 时向对应 `definition.load`／`instance.load`／`instance.list`／`preference.load` 提交 `readFence` 的有界等待与"已保存，列表同步中"状态（§11.6）；create／rename／delete 的可见性以目录页确认，点查只能确认单个实例。W16 与 H02 在此验收：`committed_pending_receipt` 保留提交证明与原请求、不用当前资源猜测基线、不退成 `unknown`，用故障注入（回执正文缺失或准入失败）验证。
 - 目录页 `CURSOR_EXPIRED` 重开并保留已打开会话；偏好加载失败的独立状态与重试（§11.8）。
+
+S1-a 已实现的目录摘要上限：`RuntimeLimits.maxCatalogSummaries`（默认 2,000 条），`loadMoreInstances` 在达到上限时以 `RESOURCE_LIMIT` 拒绝继续翻页，已加载页、已打开会话与选中项不受影响；不做静默淘汰。规范 §14.1 预算表同步增加该行。
 
 退出条件：
 
@@ -97,7 +100,7 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 - `MemoryViewHost` 从根入口移到 `/hosts/memory`；`IndexedDBViewHost` 从 `/react` 移到 `/hosts/indexeddb`。
 - `test/architecture.test.ts` 新增规则：`/react` 的运行时导入图不可到达 `components/ui`、`theme/`、`recharts`、`react-grid-layout`、`@tanstack/react-table`、`lucide-react`、默认 renderer 注册模块；根入口与 `/hosts/*` 不可到达 React。
 - `scripts/verify-package.mjs`：每个入口一个独立消费探针（核心 Node、React headless、`/ui`、Memory、IndexedDB），核心声明在关闭 `skipLibCheck` 下不引入 DOM 类型（§17.1、D09）。
-- `examples/`、`dev/`、`test/`、根目录 `stories/view-engine/*` 与 `stories/docs/*`（当前从 `/react` 导入 `ViewPage`、`IndexedDBViewHost`）全部导入改到目标入口；README 双语的安装与导入段落、`skills/fetcher-view-engine/SKILL.md` 与 `references/api.md` 的导入路径同一 PR 更新。按 §15.2，入口切换与全部仓库消费者更新在同一个可构建提交内完成，因此不拆成第二个 PR。
+- `examples/`、`dev/`、`test/`、根目录 `stories/view-engine/*` 与 `stories/docs/*`（当前从 `/react` 导入 `ViewPage`、`IndexedDBViewHost`）全部导入改到目标入口；README 双语的安装与导入段落、`skills/fetcher-view-engine/SKILL.md` 与 `references/api.md` 的导入路径、`wiki/guides/view-engine/getting-started.md`、`wiki/reference/view-engine/view-host.md` 及对应中文页的代码块同一 PR 更新，并执行 wiki 的文档构建验证（代码块不在 TypeScript 消费探针范围内）。按 §15.2，入口切换与全部仓库消费者更新在同一个可构建提交内完成，因此不拆成第二个 PR。
 
 退出条件：D09、D10、G14（Memory／IndexedDB 部分）；`verify-package.mjs` 五个探针通过；架构测试新增规则通过；Storybook 构建与 `pnpm test:storybook` 通过；仓库内（含 `stories/`）不再有从 `/react` 导入默认 UI 或 Host 的消费者。
 
@@ -125,7 +128,7 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 - `useRemoteFilterOptions.ts` 对照 §7.4 补齐：search 与 resolve 独立请求状态、旧回包不混入、游标去重、标签回填失败不删已选 ID、Host 报告不可访问时隐藏受限标签。
 - 日期／时间／时区／重复小时偏移分别处理，草稿允许未完成文本（§7.4、B01）。
 
-退出条件：A01、A02、B01–B05、B18、D23、E08（独立 Filter 部分）、F07（Filter 部分）；`invariants.md` §3.3、§7 条款逐条勾选；`examples/react/BuiltinFiltersExample.tsx` 改为只依赖 `/react` 加 `/ui` 的组合。
+退出条件：A01、A02、B01–B05、B18、D23、E08（独立 Filter 部分）、F07（Filter 部分）；`invariants.md` §3.3、§7 条款逐条勾选；`examples/react/BuiltinFiltersExample.tsx` 改为只依赖 `/react` 加 `/ui` 的组合；`skills/fetcher-view-engine/references/api.md` 记录 `useFilterController` 的签名、导入入口与使用约束。
 
 ### S4 Record 完整切片
 
@@ -150,7 +153,7 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 - `RecordActionGuard.tsx`：行操作绑定结果身份，批量操作额外绑定选择身份；业务请求前重新核对（§8.2）。
 - `ViewRefreshControls.tsx`／`RecordRefreshControls.tsx`：计时器抽到位置级单一所有者，暂停条件按 §11.4；只对 Record 开放。
 
-退出条件：B06–B11、B14、B15–B17、B20、E01、F02、F03（Record 范围）、H22（列宽与列序部分）；`invariants.md` §8、§11.4 条款逐条勾选。B14 是 S3 与 S4 的集成验收：草稿输入无效时自动刷新暂停，但显式刷新仍执行合法的已应用计划，两者不能共用同一个无效状态门禁。
+退出条件：B06–B11、B14、B15–B17、B20、E01、F02、F03（Record 范围）、H22（列宽与列序部分）；`invariants.md` §8、§11.4 条款逐条勾选；`skills/fetcher-view-engine/references/api.md` 记录 `useRecordController` 的签名、导入入口与使用约束。B14 是 S3 与 S4 的集成验收：草稿输入无效时自动刷新暂停，但显式刷新仍执行合法的已应用计划，两者不能共用同一个无效状态门禁。
 
 ### S5 首个可交付验收
 
@@ -165,14 +168,14 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 
 ## 4. 推迟项与重新启动的触发条件
 
-| 推迟项                                                         | 规范位置    | 触发条件                                                                                                           |
-| -------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
-| `useAnalysisController`、Analysis 编辑转换纯化                 | §9、§11.1   | S4 合并后启动，复用 S4 的结果控制器模式                                                                            |
-| Dashboard 逐面板应用计划、布局事务、`useDashboardLayoutEditor` | §10、§11.1  | Analysis 切片完成；Dashboard 内容面板必须复用 S4／Analysis 的结果契约                                              |
-| `services/view-host`、`contracts/view-host`、`/hosts/wow`      | §2.4、§13.6 | S1 合同在 Memory 与 `dev/http` 两个消费者上稳定且闭环一通过；届时再决定后端在本仓库还是独立仓库落地                |
-| 定义维护写模型与定义重载四步                                   | §4.4、§13.6 | 与后端切片同时；本轮只要求定义携带 `revision` 并进入查询来源                                                       |
-| §14 全局预算（位置数、结果字节、恢复总量）                     | §14.1       | 各切片只实现自己消费的预算项（S1：未核对写入 16 项／8 MiB、目录摘要缓存；S4：结果缓存），其余在 Dashboard 切片补齐 |
-| Storybook 的 Analysis／Dashboard 状态                          | §11.7       | 对应切片启动时                                                                                                     |
+| 推迟项                                                         | 规范位置    | 触发条件                                                                                                                                |
+| -------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `useAnalysisController`、Analysis 编辑转换纯化                 | §9、§11.1   | S4 合并后启动，复用 S4 的结果控制器模式                                                                                                 |
+| Dashboard 逐面板应用计划、布局事务、`useDashboardLayoutEditor` | §10、§11.1  | Analysis 切片完成；Dashboard 内容面板必须复用 S4／Analysis 的结果契约                                                                   |
+| `services/view-host`、`contracts/view-host`、`/hosts/wow`      | §2.4、§13.6 | S1 合同在 Memory 与 `dev/http` 两个消费者上稳定且闭环一通过；落点按规范 §2.4 固定为本仓库 `services/view-host` 与 `contracts/view-host` |
+| 定义维护写模型与定义重载四步                                   | §4.4、§13.6 | 与后端切片同时；本轮只要求定义携带 `revision` 并进入查询来源                                                                            |
+| §14 全局预算（位置数、结果字节、恢复总量）                     | §14.1       | 各切片只实现自己消费的预算项（S1：目录摘要 2,000 条已实现，未核对写入 16 项／8 MiB；S4：结果缓存），其余在 Dashboard 切片补齐           |
+| Storybook 的 Analysis／Dashboard 状态                          | §11.7       | 对应切片启动时                                                                                                                          |
 
 ## 5. 每个切片的统一检查清单
 
@@ -181,4 +184,5 @@ S1 先于 S2，因为 S1 改的是合同与引擎内部，S2 只是模块搬迁�
 3. 源码模式与 React Compiler 编译模式都执行（`pnpm test` 已含 `test:compiled`）。
 4. 删除被替代实现与失去消费者的导出、fixture、脚本；不保留兼容包装。
 5. README 双语与 examples 与代码同一 PR 更新。
-6. 提交前根级 `pnpm test:unit` 通过，改动 stories 或默认 UI 时另跑 `pnpm test:storybook`（AGENTS.md）；合同或入口变更的 PR 必须包含仓库内全部调用方，单个 PR 独立可构建，不依赖后续 PR 修复编译。
+6. 提交前根级 `pnpm test:unit` 通过，改动 stories 或默认 UI 时另跑 `pnpm test:storybook`（AGENTS.md）；合同或入口变更的 PR 必须包含仓库内全部调用方（含 `stories/` 与 wiki 代码块），单个 PR 独立可构建，不依赖后续 PR 修复编译。
+7. 公开新的 Hook、组件或 Host 端口时，`skills/fetcher-view-engine/references/api.md` 与 wiki 参考页在同一 PR 记录签名、导入入口与使用约束（AGENTS.md）。

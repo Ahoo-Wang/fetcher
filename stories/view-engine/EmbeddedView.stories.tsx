@@ -154,10 +154,10 @@ function EmbeddedExample({
     () =>
       new MemoryViewHost({
         definition,
-        instances: { instances, defaultInstanceId: null },
+        instances,
+        defaultInstanceId: null,
         serviceKey: 'embedded-story',
         scopeKey: 'manager',
-        supportedFormats: { record: true, analysis: true, dashboard: 1 },
         resolveSource: () =>
           createOrderSource(() =>
             Array.from({ length: 12 }, (_, index) => ({

@@ -39,6 +39,8 @@ import type {
   AnalysisViewInstance,
   ViewDefinition,
 } from '../src/contracts/viewModel.js';
+import { committedWrite } from '../src/contracts/viewServiceContract.js';
+import { page } from './engine/fixtures.js';
 
 afterEach(cleanup);
 function setup(
@@ -94,39 +96,36 @@ function setup(
     },
   };
   const aggregate = vi.fn().mockResolvedValue([{ orders: 2 }]);
-  const save = vi.fn(async (value: AnalysisViewInstance) => ({
-    ...value,
-    revision: '2',
-  }));
+  const save = vi.fn(async (value: AnalysisViewInstance) =>
+    committedWrite({ ...value, revision: '2' }, '2'),
+  );
   const engine = new ViewEngine({
     definitionId: 'orders',
     definition,
     limits: { maxRetainedResults },
-    instances: {
-      instances: mixed
-        ? [
-            instance,
-            {
-              ...instance,
-              id: 'records',
-              title: '订单记录',
-              kind: 'record',
-              config: {
-                filters: instance.config.filters,
-                sort: [],
-                pagination: { mode: 'paged', size: 10 },
-                presentation: {
-                  layout: 'table',
-                  table: {
-                    columns: [{ id: 'amount', kind: 'field', field: 'amount' }],
-                  },
+    instances: mixed
+      ? [
+          instance,
+          {
+            ...instance,
+            id: 'records',
+            title: '订单记录',
+            kind: 'record',
+            config: {
+              filters: instance.config.filters,
+              sort: [],
+              pagination: { mode: 'paged', size: 10 },
+              presentation: {
+                layout: 'table',
+                table: {
+                  columns: [{ id: 'amount', kind: 'field', field: 'amount' }],
                 },
               },
             },
-          ]
-        : [instance],
-      defaultInstanceId: analysisId,
-    },
+          },
+        ]
+      : [instance],
+    defaultInstanceId: analysisId,
     host: {
       resolveSource: () => ({
         aggregate,
@@ -455,6 +454,13 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
       revision: '1',
       config: localConfig,
     };
+    const sibling: AnalysisViewInstance = {
+      ...instance,
+      id: 'b',
+      config: { ...localConfig, scope: undefined },
+    };
+    // Host catalog mode; a remote edit of `a` appears only once published below.
+    let remote: AnalysisViewInstance | undefined;
     const aggregate = vi.fn(async () => [{ n: 1 }]);
     const engine = new ViewEngine({
       definitionId: 'd',
@@ -484,22 +490,14 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
           ],
         },
       },
-      instances: {
-        instances: [
-          instance,
-          {
-            ...instance,
-            id: 'b',
-            config: { ...localConfig, scope: undefined },
-          },
-        ],
-        defaultInstanceId: 'a',
-      },
+      defaultInstanceId: 'a',
       filterCompilers: { buffered },
       host: {
         resolveSource: () => ({ aggregate }),
         instance: {
-          load: async () => ({ ...instance, title: 'Remote', revision: '2' }),
+          list: async () => page([instance, sibling]),
+          load: async (id: string) =>
+            id === 'b' ? sibling : (remote ?? instance),
         },
       },
     });
@@ -517,6 +515,7 @@ it.each(['lines', 'constructor', 'toString', '__proto__'])(
       await waitFor(() =>
         expect(engine.getSnapshot().sessions.a.filterValid).toBe(false),
       );
+      remote = { ...instance, title: 'Remote', revision: '2' };
       await act(() => engine.reloadInstance('a'));
       const review = engine.getSnapshot().sessions.a.conflict!;
       expect(review).toBeDefined();
@@ -928,7 +927,8 @@ it.each(['filter', 'size'])(
       definitionId: definition.id,
       definition,
       limits: { maxConfigBytes: 2000 },
-      instances: { instances: [instance], defaultInstanceId: instance.id },
+      instances: [instance],
+      defaultInstanceId: instance.id,
       host: { resolveSource: () => ({ aggregate }) },
     });
     try {
@@ -1266,12 +1266,10 @@ it('configures a new analysis before its first accepted query and shows the data
   const engine = new ViewEngine({
     definitionId: definition!.id,
     definition: definition!,
-    instances: {
-      instances: [
-        { ...source, id: 'new', config: { ...source.config, metrics: [] } },
-      ],
-      defaultInstanceId: 'new',
-    },
+    instances: [
+      { ...source, id: 'new', config: { ...source.config, metrics: [] } },
+    ],
+    defaultInstanceId: 'new',
     host: { resolveSource: () => ({ aggregate: aggregate as never }) },
   });
   try {

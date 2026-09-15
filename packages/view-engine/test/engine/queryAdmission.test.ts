@@ -53,7 +53,8 @@ function retry(position: DataViewPosition) {
 function admission(kind: 'record' | 'analysis') {
   const configured = setup({
     limits: { maxConcurrentQueries: 1 },
-    instances: { instances: [], defaultInstanceId: null },
+    instances: [],
+    defaultInstanceId: null,
   });
   const read = vi
     .fn()

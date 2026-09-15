@@ -21,7 +21,7 @@ import {
   createFilterConfiguration,
   type RecordData,
   type RecordViewDefinition,
-  type ViewInstanceList,
+  type ViewInstance,
 } from '@ahoo-wang/fetcher-view-engine';
 import {
   Button,
@@ -81,102 +81,99 @@ const definition: RecordViewDefinition = {
   ],
   record: { allowedLayouts: ['table', 'card'], rowKey: 'id' },
 };
-const instances: ViewInstanceList = {
-  defaultInstanceId: 'mine',
-  instances: [
-    {
-      id: 'mine',
-      definitionId: definition.id,
-      title: '我的单元格',
-      kind: 'record',
-      scope: { type: 'personal' },
-      revision: '1',
-      config: {
-        filters: createFilterConfiguration({
-          id: 'all',
-          operator: FilterOperator.MATCH_ALL,
-          component: { name: 'builtin' },
-          props: {},
-        }),
-        sort: [],
-        pagination: { mode: 'paged', size: 5 },
-        presentation: {
-          layout: 'table',
-          table: {
-            columns: [
-              {
-                id: 'id',
-                kind: 'field',
-                field: 'id',
-                width: 220,
-                renderer: {
-                  name: 'text',
-                  options: { ellipsis: true, copyable: true },
+const instances: ViewInstance[] = [
+  {
+    id: 'mine',
+    definitionId: definition.id,
+    title: '我的单元格',
+    kind: 'record',
+    scope: { type: 'personal' },
+    revision: '1',
+    config: {
+      filters: createFilterConfiguration({
+        id: 'all',
+        operator: FilterOperator.MATCH_ALL,
+        component: { name: 'builtin' },
+        props: {},
+      }),
+      sort: [],
+      pagination: { mode: 'paged', size: 5 },
+      presentation: {
+        layout: 'table',
+        table: {
+          columns: [
+            {
+              id: 'id',
+              kind: 'field',
+              field: 'id',
+              width: 220,
+              renderer: {
+                name: 'text',
+                options: { ellipsis: true, copyable: true },
+              },
+            },
+            {
+              id: 'status',
+              kind: 'field',
+              field: 'status',
+              width: 120,
+              renderer: {
+                name: 'status',
+                options: {
+                  tones: [
+                    { value: 'done', tone: 'success' },
+                    { value: 'pending', tone: 'warning' },
+                  ],
                 },
               },
-              {
-                id: 'status',
-                kind: 'field',
-                field: 'status',
-                width: 120,
-                renderer: {
-                  name: 'status',
-                  options: {
-                    tones: [
-                      { value: 'done', tone: 'success' },
-                      { value: 'pending', tone: 'warning' },
-                    ],
-                  },
-                },
+            },
+            {
+              id: 'tags',
+              kind: 'field',
+              field: 'tags',
+              width: 220,
+              renderer: { name: 'tags', options: { maxVisible: 2 } },
+            },
+            {
+              id: 'link',
+              kind: 'field',
+              field: 'link',
+              width: 130,
+              renderer: {
+                name: 'link',
+                options: { hrefField: 'url', newTab: true },
               },
-              {
-                id: 'tags',
-                kind: 'field',
-                field: 'tags',
-                width: 220,
-                renderer: { name: 'tags', options: { maxVisible: 2 } },
+            },
+            {
+              id: 'createdAt',
+              kind: 'field',
+              field: 'createdAt',
+              width: 220,
+              renderer: {
+                name: 'date-time',
+                options: { dateStyle: 'short', timeStyle: 'short' },
               },
-              {
-                id: 'link',
-                kind: 'field',
-                field: 'link',
-                width: 130,
-                renderer: {
-                  name: 'link',
-                  options: { hrefField: 'url', newTab: true },
-                },
-              },
-              {
-                id: 'createdAt',
-                kind: 'field',
-                field: 'createdAt',
-                width: 220,
-                renderer: {
-                  name: 'date-time',
-                  options: { dateStyle: 'short', timeStyle: 'short' },
-                },
-              },
-              {
-                id: 'amount',
-                kind: 'field',
-                field: 'amount',
-                width: 150,
-                renderer: { name: 'number' },
-              },
-              {
-                id: 'ratio',
-                kind: 'field',
-                field: 'ratio',
-                width: 100,
-                renderer: { name: 'number' },
-              },
-            ],
-          },
+            },
+            {
+              id: 'amount',
+              kind: 'field',
+              field: 'amount',
+              width: 150,
+              renderer: { name: 'number' },
+            },
+            {
+              id: 'ratio',
+              kind: 'field',
+              field: 'ratio',
+              width: 100,
+              renderer: { name: 'number' },
+            },
+          ],
         },
       },
     },
-  ],
-};
+  },
+];
 const records: RecordData[] = [
   {
     id: 'ORDER-20260908-000001',
@@ -251,6 +248,7 @@ function CellSession({
       scopeKey,
       definition,
       instances,
+      defaultInstanceId: 'mine',
       resolveSource: () => ({
         paged: async <T extends Partial<RecordData> = RecordData>() => ({
           list: structuredClone(rows) as T[],
