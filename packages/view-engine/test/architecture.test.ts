@@ -224,6 +224,19 @@ function importsOf(file: ts.SourceFile): Import[] {
         names: [],
         namespace: true,
       });
+    } else if (
+      // `type T = import('./x').Y` is an ImportTypeNode, not a call.
+      ts.isImportTypeNode(node) &&
+      ts.isLiteralTypeNode(node.argument) &&
+      ts.isStringLiteral(node.argument.literal)
+    ) {
+      const qualifier = node.qualifier;
+      imports.push({
+        specifier: node.argument.literal.text,
+        typeOnly: true,
+        names: qualifier && ts.isIdentifier(qualifier) ? [qualifier.text] : [],
+        namespace: qualifier === undefined,
+      });
     }
     ts.forEachChild(node, visit);
   };
