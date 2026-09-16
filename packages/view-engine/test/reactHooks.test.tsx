@@ -38,7 +38,12 @@ import {
   useViewList,
   useViewRuntime,
 } from '../src/react/index.js';
-import { ordersDefinition, recordConfig, testSource } from './fixtures.js';
+import {
+  ordersDefinition,
+  recordConfig,
+  requireRecordConfig,
+  testSource,
+} from './fixtures.js';
 
 afterEach(cleanup);
 
@@ -191,7 +196,7 @@ describe('useOpenView', () => {
 
     // The one it replaced is disposed, so it stops answering commands.
     first?.edit({ pageSize: 11 });
-    expect(first?.getSnapshot().draft.pageSize).toBe(20);
+    expect(requireRecordConfig(first!.getSnapshot().draft).pageSize).toBe(20);
   });
 
   it('reports a failure to open as an issue', async () => {
@@ -947,6 +952,16 @@ describe('visibility and issues', () => {
     unsubscribe();
     document.dispatchEvent(new Event('visibilitychange'));
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('assumes visible where there is no document at all', () => {
+    vi.stubGlobal('document', undefined);
+    try {
+      expect(documentVisibility().isVisible()).toBe(true);
+      expect(documentVisibility().subscribe(() => {})).toBeInstanceOf(Function);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('reports a hidden document as not visible', () => {
