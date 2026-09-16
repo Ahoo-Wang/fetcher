@@ -78,10 +78,9 @@ jobs:
       - name: Build
         run: pnpm -r --filter './packages/*' build
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
 
+      # STORYBOOK_BROWSERS widens this to firefox/webkit; see the workflow README.
       - name: Test Storybook interactions
         run: pnpm test:storybook
-        env:
-          STORYBOOK_BROWSERS: chromium,firefox,webkit
