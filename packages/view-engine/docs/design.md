@@ -73,6 +73,7 @@ export interface FieldDefinition {
 
 export interface RecordCapability {
   rowKey: string;
+  paging: 'paged' | 'cursor'; // 数据源提供哪种分页；决定 runtime 调用 source.paged 还是 source.cursor
   layouts: ('table' | 'card')[];
   defaults?: Partial<RecordViewConfig>;
   actions?: { toolbar?: string; row?: string; bulk?: string }; // 渲染器键
@@ -144,7 +145,7 @@ export interface AnalysisViewConfig extends ViewConfigBase {
 
 export interface AnalysisTableSpec {
   columns: { alias: string; width?: number; pinned?: 'left' | 'right' }[]; // 缺省为全部 group + metric
-  totals?: boolean; // 合计行
+  totals?: boolean; // 合计行；开启时执行一次无分组聚合，不由分组行推导
 }
 
 // 与 Wow AggregationGroup / AggregationExpression / AggregationMetric 同构；
@@ -472,16 +473,17 @@ describeFilter(def, tree): FilterSummaryItem[]           // 已应用条件的�
 // record
 defaultRecordConfig(def): RecordViewConfig                      // 按 RecordCapability.defaults 补全的完整初始配置
 validateRecord(def, cfg: RecordViewConfig, kinds): Issue[]   // 含 layout 准入、table.columns 与 card 字段存在性
-compileRecord(def, cfg, kinds, ctx, page: { index: number } | { cursor: string }): FilterPagedQuery | CursorQuery
+compileRecord(def, cfg, kinds, ctx, page: RecordPageTarget): FilterPagedQuery | CursorQuery   // 按 RecordCapability.paging 判别；首次查询为 { index: 0 } 或 { cursor: null }
 projectRecord(def, cfg, page: PagedList<RecordData> | CursorPage<RecordData>): RecordView   // 列语义、行、行键；paging 为 { mode: 'paged'; index; total? } | { mode: 'cursor'; nextCursor: string | null }
 compileSummaries(def, cfg, kinds, ctx): AggregationQuery | null    // 全范围汇总
 projectSummaries(def, cfg, rows | aggregation): SummaryRow
 
 // analysis
-defaultAnalysisConfig(def): AnalysisViewConfig                  // 计数指标加首个可分组字段的完整初始配置
+defaultAnalysisConfig(def): AnalysisViewConfig                  // 从已声明能力挑选：count 为 true 取 COUNT，否则取首个字段的首个函数；有可分组字段时取其一，否则分组为空
 validateAnalysis(def, cfg: AnalysisViewConfig, kinds): Issue[]   // 见下方规则
 compileAnalysis(def, cfg, kinds, ctx): AggregationQuery          // 同构映射；三处 FilterTree 编译为 FilterExpression
-projectAnalysis(def, cfg, result): AnalysisView          // 表格列与行；图表系列
+compileAnalysisTotals(def, cfg, kinds, ctx): AggregationQuery | null   // table.totals 为 true 时的无分组聚合，否则 null
+projectAnalysis(def, cfg, result, totals?): AnalysisView          // 表格列与行；图表系列；合计行取自 totals
 resultSchema(def, cfg): ResultSchema                     // 结果行校验依据
 
 // dashboard
@@ -492,9 +494,11 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 `validateDashboard` 同时覆盖内容面板：Markdown 内容与链接数量有上限；`src` 与 `href` 只接受 http、https、mailto 与相对路径，其余产生 error 级 Issue。内容面板不进入 `mergeGlobalFilter`，`DashboardRuntime` 不为其创建子 runtime，它们只是布局中的静态项。URL 合法不代表资源可信，UI 层按第 9 节处理渲染安全。
 
+`validateDefinition(def, kinds): Issue[]` 检查定义自身：`AnalysisCapability` 至少要能构造一个指标（`count` 为 true，或某个字段声明了 `functions`／`any`／`distinctCount`／`percentile`），否则该能力不可用，报 error；`defaultAnalysisConfig` 因此总能返回合法配置。分组可以为空，Wow 允许无分组聚合。
+
 `FieldKindRegistry` 是 filter 的核心扩展点，见第 10 节。相对时间条件在 `compile*` 中依据注入的 `ctx.now` 求值，纯内核不读系统时钟。
 
-`validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一；`sort` 只能引用已存在的 group 或 metric 别名，`having` 与 `DERIVED` 只能引用 metric 别名，且 `having` 不能引用 `ANY` 指标（Wow 协议不支持）；`percentile` 在 (0, 100]；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2；`referenceLines` 引用的轴必须有系列；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
+`validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一；`sort` 只能引用已存在的 group 或 metric 别名，`having` 与 `DERIVED` 只能引用 metric 别名，且 `having` 不能引用 `ANY` 指标（Wow 协议不支持）；`percentile` 在开区间 (0, 100)，与 Wow 的 `aggregation.percentile` 一致，`100` 报 error；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2；`referenceLines` 引用的轴必须有系列；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；合计行来自 `compileAnalysisTotals` 的独立结果，因此 `AVG`、`DISTINCT_COUNT`、百分位等不可加指标也正确；该查询与主查询共享同一调度预算，失败只使合计行不可用，不影响主结果。图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
 
 `validateDashboard` 的规则：`bindings[].globalField` 必须在 `cfg.fields` 中，`bindings[].panelField` 必须在被引用实例的定义中，且两者 kind 兼容；被引用实例必须是 Record 或 Analysis；**被引用实例的可见范围必须覆盖 Dashboard 自身的范围**：`personal` Dashboard 可以引用任何可读实例，`shared` 或 `system` Dashboard 只能引用 `shared` 或 `system` 实例，否则产生 error 级 Issue，UI 提示先把被引用视图另存为共享。打开时若某个被引用实例不可读（已删除或无权限），只有该面板显示"不可访问"，其余面板照常工作。内容面板规则见下段。
 
@@ -512,10 +516,13 @@ export interface ViewRuntime<C extends ViewConfig = ViewConfig> {
   edit(patch: Partial<C>): void; // 只改 draft，同步
   apply(): void; // validate(draft) 无 error → applied = draft，执行
   refresh(): void; // 重跑 applied
-  page(target: { index: number } | { cursor: string }): void;
+  page(target: RecordPageTarget): void; // { index } 或 { cursor }；cursor 为 null 表示第一页
   select(keys: RecordKey[]): void;
   dispose(): void;
 }
+
+/** 分页目标与 RecordCapability.paging 对应；游标模式的第一页是 cursor: null。 */
+export type RecordPageTarget = { index: number } | { cursor: string | null };
 
 export interface ViewRuntimeState<C> {
   saved: ViewInstance | null; // 保存基线；null 表示未保存的新视图
@@ -532,7 +539,21 @@ export interface ViewRuntimeState<C> {
   };
   result: { config: C; data: ProjectedView; receivedAt: number } | null; // 只随成功推进
   selection: RecordKey[];
+  write: WriteState | null; // 最近一次写入的待处理结局，见第 7.4 节
 }
+
+/** 写入的非成功结局；成功直接推进 saved 并清空该字段。 */
+export type WriteState =
+  | { kind: 'conflict'; action: WriteAction; remote: ViewInstance }
+  | { kind: 'rejected'; action: WriteAction; issue: Issue }
+  | {
+      kind: 'unknown';
+      action: WriteAction;
+      requestId: string;
+      payload: unknown;
+    };
+
+export type WriteAction = 'create' | 'save' | 'rename' | 'delete';
 ```
 
 规则：
@@ -559,6 +580,9 @@ export interface ViewEngine {
   save(runtime: ViewRuntime): Promise<ViewInstance>;               // saved ? store.save : store.create
   saveAs(runtime, input: { title; scope }): Promise<ViewInstance>;
   rename / delete / reorder / setDefault(...): Promise<void>;
+  retryWrite(runtime: ViewRuntime): Promise<void>;                // 复用原 requestId 与原正文重放 unknown
+  abandonWrite(runtime: ViewRuntime): void;                       // 清除写入状态，草稿保留
+  resolveConflict(runtime: ViewRuntime, choice: 'reload' | 'overwrite'): Promise<ViewInstance | void>;
   list(definitionId: string): Promise<ViewInstanceSummary[]>; // 代码声明的系统视图 + store.list()
   preferences(definitionId: string): Promise<ViewPreferences>;
   permissions(definitionId: string): ViewPermissions;             // store 同步提供，缺省全允许
@@ -578,6 +602,8 @@ export interface RuntimeEnvironment {
   };
 }
 ```
+
+`apply()` 与 `open()` 的首次查询按 `RecordCapability.paging` 选择目标：`paged` 用 `{ index: 0 }` 调 `source.paged`，`cursor` 用 `{ cursor: null }` 调 `source.cursor`。`refresh()` 同样回到第一页。
 
 `open` 时的定义校验：`validate*(definition, instance.config)` 产生 `error` 级 Issue 则 runtime 进入"待修复"，`apply` 被拒绝直到用户修正；`warning` 不阻塞。这是定义演进的全部处理。
 
@@ -657,7 +683,7 @@ export interface ViewPreferences {
 | `FORBIDDEN` / `INVALID` / `NOT_FOUND`             | `write = { kind: 'rejected', issue }`                | 显示原因，草稿保留；可修改后作为新意图再保存                                                           |
 | 超时、断线、`UNAVAILABLE`（请求已发出，结果未知） | `write = { kind: 'unknown', requestId, payload }`    | **重试**：同一 `requestId` 与正文再次提交，服务端去重后返回既有实例；**放弃**：清除写入状态，草稿保留  |
 
-未知结果不是失败也不是成功。重试成功即推进基线；放弃后草稿仍在，用户可再次保存，此时生成新的 `requestId`。删除遇到 `CONFLICT` 时刷新摘要后要求再次确认。
+这四种结局就是 `ViewRuntimeState.write`，对应的动作是 `engine.retryWrite`、`engine.abandonWrite` 与 `engine.resolveConflict`；`save` 等方法在非成功结局时先写入该状态再 reject，调用方据此展示选项。未知结果不是失败也不是成功。重试成功即推进基线；放弃后草稿仍在，用户可再次保存，此时生成新的 `requestId`。删除遇到 `CONFLICT` 时刷新摘要后要求再次确认。
 
 ### 7.5 离开保护与导航
 

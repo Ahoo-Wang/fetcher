@@ -134,6 +134,7 @@ interface SourceFile {
   path: string;
   location: Location;
   imports: Import[];
+  hasJsx: boolean;
 }
 
 function walk(directory: string): string[] {
@@ -278,11 +279,25 @@ function deprecatedWowExports(): Set<string> {
   return names;
 }
 
-const files: SourceFile[] = walk(src).map(path => ({
-  path,
-  location: locationOf(path),
-  imports: importsOf(parse(path)),
-}));
+function containsJsx(node: ts.Node): boolean {
+  if (
+    ts.isJsxElement(node) ||
+    ts.isJsxSelfClosingElement(node) ||
+    ts.isJsxFragment(node)
+  )
+    return true;
+  return ts.forEachChild(node, containsJsx) === true;
+}
+
+const files: SourceFile[] = walk(src).map(path => {
+  const file = parse(path);
+  return {
+    path,
+    location: locationOf(path),
+    imports: importsOf(file),
+    hasJsx: containsJsx(file),
+  };
+});
 const at = (location: Location) =>
   files.filter(file => file.location === location);
 const describePath = (file: SourceFile) => relative(src, file.path);
@@ -351,6 +366,15 @@ describe('architecture', () => {
         )
         .map(({ specifier }) => `${describePath(file)} -> ${specifier}`),
     );
+    expect(violations).toEqual([]);
+  });
+
+  it.each(HEADLESS)('%s contains no JSX', location => {
+    // `jsx: react-jsx` injects an implicit `react/jsx-runtime` import that no
+    // specifier check can see, so JSX itself is a React dependency here.
+    const violations = at(location)
+      .filter(file => file.path.endsWith('.tsx') || file.hasJsx)
+      .map(describePath);
     expect(violations).toEqual([]);
   });
 
