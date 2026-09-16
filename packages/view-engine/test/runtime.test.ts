@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { FilterOperator, type QueryApi } from '@ahoo-wang/fetcher-wow';
 import { describe, expect, it, vi } from 'vitest';
 import {
   builtinFieldKinds,
@@ -23,6 +23,7 @@ import {
   type DataViewConfig,
   type DataViewDefinition,
   type ProjectedRecord,
+  type RecordData,
   type ViewInstance,
   type ViewSource,
 } from '../src/index.js';
@@ -636,6 +637,17 @@ describe('DataViewRuntime lifecycle', () => {
     expect(listener).not.toHaveBeenCalled();
     expect(source.paged).toHaveBeenCalledTimes(1);
     expect(runtime.setScopeFilter(null)).toEqual([]);
+  });
+});
+
+describe('ViewSource', () => {
+  it('is satisfied by a Wow query client as it is', () => {
+    // The assignment is the assertion: three of `QueryApi`'s methods, with the
+    // query types the kernels compile to.
+    const api = {} as QueryApi<RecordData>;
+    const source: ViewSource = api;
+
+    expect(source).toBe(api);
   });
 });
 
