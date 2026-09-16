@@ -258,7 +258,7 @@ export interface PieSpec {
   category: string; // 分组别名
   value: string; // 指标别名
   donut?: boolean;
-  maxSlices?: number; // 超出部分合并为"其他"
+  maxSlices?: number; // 超出部分合并为"其他"；只允许可加指标（COUNT／SUM）
 }
 
 export interface HeatmapSpec {
@@ -505,17 +505,17 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 `validateDashboard` 同时覆盖内容面板：Markdown 内容与链接数量有上限；`src` 与 `href` 只接受 http、https、mailto 与相对路径，其余产生 error 级 Issue。内容面板不进入 `mergeGlobalFilter`，`DashboardRuntime` 不为其创建子 runtime，它们只是布局中的静态项。URL 合法不代表资源可信，UI 层按第 9 节处理渲染安全。
 
-`validateDefinition(def, kinds): Issue[]` 检查定义自身：字段名必须匹配 Wow 的查询字段语法 `^@?[A-Za-z_][A-Za-z0-9_-]*(\.(?:@?[A-Za-z_][A-Za-z0-9_-]*|[0-9]+))*$`，根字段与 element 字段同样适用，否则编译期会抛 `TypeError` 而不是产生 Issue；字段名在根字段内唯一，每个 element 的字段作用域内同样唯一，`views[].id` 在定义内唯一，否则按名称查找无法确定使用哪一份能力；`RecordCapability.layouts` 非空且 `rowKey` 指向已声明字段，`AnalysisCapability.fields[].field` 与 `elements[].path` 同样必须存在，使各 `default*Config` 对任何被接受的定义都能返回合法完整配置；每个 `views[].config.kind` 必须与所属定义的能力匹配：`kind: 'data'` 只接受 `record`／`analysis` 且对应能力已声明，`kind: 'dashboard'` 只接受 `dashboard`，否则报 error（系统视图不可覆盖，不能交付一个只能待修复的只读视图）；每个系统视图的配置还要通过对应的 `validate*`（Dashboard 系统视图在此只做本地结构校验，面板引用需要加载被引用实例与其定义，因此由 Engine 在注册或首次打开时用 `validateDashboard` 的完整入参复验，失败按该面板不可用处理）；`definition.id` 与每个 `views[].id` 都不得包含 `:`，否则合成的 `system:${definitionId}:${id}` 会歧义（`('a:b','c')` 与 `('a','b:c')` 撞车），报 error；`AnalysisCapability` 至少要能构造一个指标（`count` 为 true，或某个字段声明了非空 `functions`、`any`、`distinctCount` 或 `percentile`），否则该能力不可用，报 error。`defaultAnalysisConfig` 按固定优先级取第一个可用者，因此总能返回合法配置：`COUNT` → 首个有非空 `functions` 的字段（取其首个函数）→ 首个 `distinctCount` 字段 → 首个 `percentile` 字段（`percentile: 95`）→ 首个 `any` 字段。分组可以为空，Wow 允许无分组聚合。
+`validateDefinition(def, kinds): Issue[]` 检查定义自身：字段名必须匹配 Wow 的查询字段语法 `^@?[A-Za-z_][A-Za-z0-9_-]*(\.(?:@?[A-Za-z_][A-Za-z0-9_-]*|[0-9]+))*$`，根字段与 element 字段同样适用，否则编译期会抛 `TypeError` 而不是产生 Issue；字段名在根字段内唯一，每个 element 的字段作用域内同样唯一；配置中引用 element 字段一律写成 `${path}.${field}` 的完整路径，因此与同名根字段不会混淆，能力查找也有确定归属；`views[].id` 在定义内唯一，否则按名称查找无法确定使用哪一份能力；`RecordCapability.layouts` 非空且 `rowKey` 指向已声明字段，`AnalysisCapability.fields[].field` 与 `elements[].path` 同样必须存在，使各 `default*Config` 对任何被接受的定义都能返回合法完整配置；每个 `views[].config.kind` 必须与所属定义的能力匹配：`kind: 'data'` 只接受 `record`／`analysis` 且对应能力已声明，`kind: 'dashboard'` 只接受 `dashboard`，否则报 error（系统视图不可覆盖，不能交付一个只能待修复的只读视图）；每个系统视图的配置还要通过对应的 `validate*`（Dashboard 系统视图在此只做本地结构校验，面板引用需要加载被引用实例与其定义，因此由 Engine 在注册或首次打开时用 `validateDashboard` 的完整入参复验，失败按该面板不可用处理）；`definition.id` 与每个 `views[].id` 都不得包含 `:`，否则合成的 `system:${definitionId}:${id}` 会歧义（`('a:b','c')` 与 `('a','b:c')` 撞车），报 error；`AnalysisCapability` 至少要能构造一个指标（`count` 为 true，或某个字段声明了非空 `functions`、`any`、`distinctCount` 或 `percentile`），否则该能力不可用，报 error。`defaultAnalysisConfig` 按固定优先级取第一个可用者，因此总能返回合法配置：`COUNT` → 首个有非空 `functions` 的字段（取其首个函数）→ 首个 `distinctCount` 字段 → 首个 `percentile` 字段（`percentile: 95`）→ 首个 `any` 字段。分组可以为空，Wow 允许无分组聚合。
 
 配置来自持久化端口，不可假设结构可信：`validateFilter` 以迭代遍历先检查 `RuntimeLimits.maxFilterDepth`（缺省 8）与 `maxFilterNodes`（缺省 256），超限立即报 error 并停止遍历，其余内核只处理已通过准入的树，因此递归不会耗尽调用栈。
 
 `FieldKindRegistry` 是 filter 的核心扩展点，见第 10 节。相对时间条件在 `compile*` 中依据注入的 `ctx.now` 求值，纯内核不读系统时钟。
 
-`validateRecord` 的规则：`layout` 在 `RecordCapability.layouts` 之内；`table.columns`、`card.title`／`fields`／`image` 引用的字段都必须存在；`pageSize` 为不超过 `RuntimeLimits.maxPageSize` 的正整数；`sort[].field` 必须存在且 `sortable` 为 true；每个 `summaries[]` 的函数必须出现在该字段的 `summary` 集合中。
+`validateRecord` 的规则：`layout` 在 `RecordCapability.layouts` 之内；`table.columns`、`card.title`／`fields`／`image` 引用的字段都必须存在；`pageSize` 为不超过 `RuntimeLimits.maxPageSize` 的正整数；`sort[].field` 必须存在且 `sortable` 为 true，游标模式下 `sort.length` 不超过 Wow 的 `MAX_CURSOR_SORT_FIELDS`（32）；每个 `summaries[]` 的函数必须出现在该字段的 `summary` 集合中。
 
-`validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一，且必须是单段（不含 `.`）、不以保留前缀 `__wow` 开头，与 Wow 的 `aggregationAlias` 一致；`sort` 只能引用已存在的 group 或 metric 别名，`having` 只能引用非 `ANY` 的 metric 别名（Wow 协议不支持）；`DERIVED` 只能引用在它之前声明的非 `ANY` metric 别名，按 `metrics` 顺序维护可引用集合，前向引用与环报 error；`percentile` 在开区间 (0, 100)，与 Wow 的 `aggregation.percentile` 一致，`100` 报 error；`HISTOGRAM` 的 `interval` 必须是大于 0 的有限数，与 `aggregation.histogram` 一致；表达式中的每个 `CONSTANT.value` 必须有限（递归检查普通表达式与派生表达式），与 `aggregation.constant` 一致；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error；`groups`、`metrics`、`elements` 的数量与 `limit` 必须满足 `AnalysisCapability.limits`（定义准入另行检查这些上限与 `defaultLimit` 本身是正整数且 `defaultLimit` 不超过 `maxLimit`）；`TERMS.missingKey` 与 `DATE_HISTOGRAM.timeZone` 若存在则不能为空白字符串，与 Wow 的 `aggregation.terms`／`dateHistogram` 一致；`table.columns[].alias` 必须是当前 groups 或 metrics 的别名且不重复。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2；`referenceLines` 引用的轴必须有系列；**图表必须消费全部分组别名**（cartesian 用 `x` 加可选 `splitBy`，pie 用 `category`，heatmap 用 `x`／`y`，scatter 用 `category`，group 漏斗用 `category`，metric 卡片要求无分组或仅 `trend.x`），否则结果里同一坐标会有多行，而 AVG、百分位、DISTINCT_COUNT 无法在投影层安全再聚合，报 error；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；合计行来自 `compileAnalysisTotals` 的独立结果，因此 `AVG`、`DISTINCT_COUNT`、百分位等不可加指标也正确；该查询与主查询共享同一调度预算，失败只使合计行不可用，不影响主结果。图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
+`validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一，且必须是单段（不含 `.`）、不以保留前缀 `__wow` 开头，与 Wow 的 `aggregationAlias` 一致；`sort` 只能引用已存在的 group 或 metric 别名，`having` 只能引用非 `ANY` 的 metric 别名（Wow 协议不支持）；`DERIVED` 只能引用在它之前声明的非 `ANY` metric 别名，按 `metrics` 顺序维护可引用集合，前向引用与环报 error；`percentile` 在开区间 (0, 100)，与 Wow 的 `aggregation.percentile` 一致，`100` 报 error；`HISTOGRAM` 的 `interval` 必须是大于 0 的有限数，与 `aggregation.histogram` 一致；表达式中的每个 `CONSTANT.value` 必须有限（递归检查普通表达式与派生表达式），与 `aggregation.constant` 一致；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error；每个 group 的 `type` 必须在该字段的 `groups` 中，`DATE_HISTOGRAM.unit` 必须在其 `dateUnits` 中，`NUMERIC.function` 必须在该字段的 `functions` 中，能力未声明即报 error；`limit` 必须是不超过 `RuntimeLimits.maxAnalysisRows` 的正整数，`groups`、`metrics`、`elements` 的数量与 `limit` 还须满足 `AnalysisCapability.limits`（取更小者）（定义准入另行检查这些上限与 `defaultLimit` 本身是正整数且 `defaultLimit` 不超过 `maxLimit`）；`TERMS.missingKey` 与 `DATE_HISTOGRAM.timeZone` 若存在则不能为空白字符串，与 Wow 的 `aggregation.terms`／`dateHistogram` 一致；`table.columns[].alias` 必须是当前 groups 或 metrics 的别名且不重复。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2，且只能用于可加指标（`COUNT` 或 `SUM` 的 `NUMERIC`）：`AVG`、`MIN`／`MAX`、`DISTINCT_COUNT`、百分位无法由各分类结果推出合并值，报 error；`referenceLines` 引用的轴必须有系列；**图表必须消费全部分组别名**（cartesian 用 `x` 加可选 `splitBy`，pie 用 `category`，heatmap 用 `x`／`y`，scatter 用 `category`，group 漏斗用 `category`，metric 卡片要求无分组或仅 `trend.x`），否则结果里同一坐标会有多行，而 AVG、百分位、DISTINCT_COUNT 无法在投影层安全再聚合，报 error；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；合计行来自 `compileAnalysisTotals` 的独立结果，因此 `AVG`、`DISTINCT_COUNT`、百分位等不可加指标也正确；该查询与主查询共享同一调度预算，失败只使合计行不可用，不影响主结果。图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
 
-`validateDashboard` 的规则：`cfg.fields[].name` 非空、符合字段语法且唯一；`panels` 数量不超过 `RuntimeLimits.maxDashboardPanels`，该检查先于创建任何子 runtime；`panels[].id` 非空且全局唯一，重复或为空报 error（面板 id 是运行时查找、布局 key 与错误归属的依据）；`layout` 的 `x`、`y` 为非负有限整数，`w`、`h` 为正有限整数，且 `x + w` 不超过栅格列数，否则面板会在适配层消失或重叠；`bindings[].globalField` 必须在 `cfg.fields` 中，`bindings[].panelField` 必须在被引用实例的定义中，且两者 kind 兼容；全局筛选按 `cfg.fields` 与传入的 `kinds` 走 `validateFilter`，因此自定义 kind 与值形状同样受检；**每个数据面板必须绑定全局筛选树实际引用的全部字段**，否则部分映射无法保持布尔语义（`region = CN OR product = X` 丢掉一支会错误收窄，视为真会抹掉整个条件），缺绑定报 error；映射后的树还要以被引用定义的字段与 `kinds` 再跑一次 `validateFilter`，因为目标字段可能限制了操作符或候选，kind 相同不等于可接受同一条件；该次校验同时重新核对深度与节点预算，两棵各自合规的树 AND 合并后仍可能超限，超限记为该面板的 error 而不进入编译；被引用实例必须是 Record 或 Analysis；**被引用实例的可见范围必须覆盖 Dashboard 自身的范围**：`personal` Dashboard 可以引用任何可读实例，`shared` 或 `system` Dashboard 只能引用 `shared` 或 `system` 实例，否则产生 error 级 Issue，UI 提示先把被引用视图另存为共享。打开时若某个被引用实例不可读（已删除或无权限），只有该面板显示"不可访问"，其余面板照常工作。内容面板规则见下段。
+`validateDashboard` 的规则：`cfg.fields[].name` 非空、符合字段语法且唯一；`panels` 数量不超过 `RuntimeLimits.maxDashboardPanels`，该检查先于创建任何子 runtime；`panels[].id` 非空且全局唯一，重复或为空报 error（面板 id 是运行时查找、布局 key 与错误归属的依据）；`layout` 的 `x`、`y` 为非负有限整数，`w`、`h` 为正有限整数，且 `x + w` 不超过栅格列数，否则面板会在适配层消失或重叠；`bindings[].globalField` 必须在 `cfg.fields` 中，`bindings[].panelField` 必须在被引用实例的定义中，且两者 kind 兼容；全局筛选按 `cfg.fields` 与传入的 `kinds` 走 `validateFilter`，因此自定义 kind 与值形状同样受检；同一面板内 `bindings[].globalField` 不能重复（一个筛选叶子只能替换成一个目标字段，一对多展开的布尔语义未定义）；**每个数据面板必须绑定全局筛选树实际引用的全部字段**，否则部分映射无法保持布尔语义（`region = CN OR product = X` 丢掉一支会错误收窄，视为真会抹掉整个条件），缺绑定报 error；映射后的树还要以被引用定义的字段与 `kinds` 再跑一次 `validateFilter`，因为目标字段可能限制了操作符或候选，kind 相同不等于可接受同一条件；该次校验同时重新核对深度与节点预算，两棵各自合规的树 AND 合并后仍可能超限，超限记为该面板的 error 而不进入编译；被引用实例必须是 Record 或 Analysis；**被引用实例的可见范围必须覆盖 Dashboard 自身的范围**：`personal` Dashboard 可以引用任何可读实例，`shared` 或 `system` Dashboard 只能引用 `shared` 或 `system` 实例，否则产生 error 级 Issue，UI 提示先把被引用视图另存为共享。打开时若某个被引用实例不可读（已删除或无权限），只有该面板显示"不可访问"，其余面板照常工作。内容面板规则见下段。
 
 ## 6. 运行时
 
@@ -524,6 +524,7 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 ```ts
 export interface ViewRuntime<C extends ViewConfig = ViewConfig> {
   readonly id: string; // runtimeId，与 instanceId 分离
+  readonly kind: C['kind']; // 判别字段，供调用方收窄
   readonly definition: ViewDefinition;
   getSnapshot(): ViewRuntimeState<C>;
   subscribe(listener: () => void): () => void;
@@ -532,7 +533,7 @@ export interface ViewRuntime<C extends ViewConfig = ViewConfig> {
   apply(): void; // validate(draft) 无 error → applied = draft，执行
   refresh(): void; // 重跑 applied
   setEditing(active: boolean): void; // 编辑器获得／失去输入焦点时调用，暂停自动刷新
-  setScopeFilter(tree: FilterTree | null): void; // 外层注入的附加条件，AND 到已应用筛选；不改 draft／saved
+  setScopeFilter(tree: FilterTree | null): Issue[]; // 外层注入的附加条件，AND 到已应用筛选；不改 draft／saved
   dispose(): void;
 }
 
@@ -543,6 +544,17 @@ export interface RecordViewRuntime<
   page(target: RecordPageTarget<P>): void;
   select(keys: RecordKey[]): void;
 }
+
+/** 打开一个实例得到的判别联合；按 runtime.kind 收窄。 */
+export type AnyViewRuntime =
+  | RecordViewRuntime
+  | ViewRuntime<AnalysisViewConfig>
+  | ViewRuntime<DashboardViewConfig>;
+
+/** 由配置类型推出的 runtime 类型，create 用它保留静态收窄。 */
+export type RuntimeFor<C extends ViewConfig> = C extends RecordViewConfig
+  ? RecordViewRuntime
+  : ViewRuntime<C>;
 
 /** 分页目标由 RecordCapability.paging 决定；游标模式的第一页是 cursor: null。 */
 export type RecordPageTarget<P extends 'paged' | 'cursor'> = P extends 'paged'
@@ -563,7 +575,7 @@ export interface ViewRuntimeState<C> {
     requestId?: string;
   };
   result: { config: C; data: ProjectedView; receivedAt: number } | null; // 只随成功推进
-  selection: RecordKey[];
+  selection: RecordKey[]; // 只覆盖当前结果；范围变化即清空，见下
   write: WriteState | null; // 最近一次写入的待处理结局，见第 7.4 节
   editing: boolean; // 由 setEditing 维护，用于暂停自动刷新
 }
@@ -605,9 +617,11 @@ export class ViewWriteError extends Error {
 规则：
 
 - `result.config` 是产生该结果的配置，不随 draft 变化；UI 用它标注"结果对应的条件"。
+- 选择绑定当前结果：`page`、`apply` 与解释环境变化清空 `selection`；`refresh` 后按新结果的行键求交集，消失的行自动移出。本轮不支持跨页选择，批量动作只作用于当前结果中仍存在的行。
 - 新的 `apply / refresh / page` 替代同一 runtime 的在途请求，旧响应到达后丢弃。这由 `RequestRunner` 用 per-runtime key 实现，全局并发上限与队列来自 `RuntimeLimits`（`maxConcurrentQueries`、`maxQueuedQueries`、`maxPageSize`、`maxAnalysisRows`、`minRefreshInterval`、`maxRefreshInterval`、`maxFilterDepth`、`maxFilterNodes`、`maxDashboardPanels`）。
 - 状态变更同步提交后再通知订阅者；相同状态返回相同对象，子对象引用稳定，以配合 `useSyncExternalStore`。
 - runtime 不做持久化。保存是 Engine 的命令，成功后 Engine 调用 `runtime.markSaved(instance)` 推进基线。
+- **注入的作用域条件同样要准入。** `setScopeFilter` 按本 runtime 的定义与 kinds 校验合并后的有效筛选（含深度与节点预算），返回 Issue 列表；含 error 时不改变已应用口径也不执行，因此自定义宿主与 Dashboard 走同一条准入路径。
 - **自动刷新。** `applied.refresh.interval` 非空时由该 runtime 持有唯一计时器，到期调用 `refresh()`。四种情况暂停：`issues` 含 error、`editing` 为 true（`useFilterEditor` 等控制器在输入获得焦点时调用 `setEditing`）、宿主报告页面不可见、上一次请求仍在途。计时与可见性都来自注入的 `RuntimeEnvironment`（见下），runtime 不触碰 DOM。计时器随 `dispose` 释放。多个 React 组件观察同一 runtime 不会产生多个计时器。
 
 `DashboardRuntime` 持有 N 个子 `ViewRuntime` 加一个全局筛选草稿。`apply()` 校验全局筛选，为每个面板计算 `mergeGlobalFilter` 后经 `setScopeFilter` 注入再触发子 runtime 执行；作用域条件不进入子 runtime 的 `draft` 或 `saved`，面板因此不会变脏，也不会把 Dashboard 条件保存回被引用实例，执行的有效配置记录在 `result.config`；每个面板独立 loading / error / result，Dashboard 不汇总成单一状态。自动刷新由 DashboardRuntime 按自身 `refresh.interval` 统一计时并触发全部数据面板的 `refresh()`；被引用实例自身的 `refresh` 配置在 Dashboard 内忽略，避免两层计时器。布局编辑是普通 `edit({ panels })`。
@@ -622,8 +636,8 @@ export interface ViewEngine {
   resolveSource(key: string): ViewSource;   // Pick<QueryApi, 'paged' | 'cursor' | 'aggregate'>
   resolveOptions(key: string): OptionSource;   // FieldDefinition.remote 的候选来源
 
-  open(instanceId: string): Promise<ViewRuntime>;                 // store.get → validate → runtime
-  create(definitionId: string, input: { title: string; scope: 'personal' | 'shared'; config: ViewConfig }): ViewRuntime; // 未保存的新视图；config 必填，由 default*Config / emptyDashboardConfig 生成
+  open(instanceId: string): Promise<AnyViewRuntime>;              // store.get → validate → runtime；按 runtime.kind 收窄
+  create<C extends ViewConfig>(definitionId: string, input: { title: string; scope: 'personal' | 'shared'; config: C }): RuntimeFor<C>; // 未保存的新视图；config 必填，由 default*Config / emptyDashboardConfig 生成
   save(runtime: ViewRuntime): Promise<ViewInstance>;               // saved ? store.save : store.create
   saveAs(runtime, input: { title; scope }): Promise<ViewInstance>;
   rename(id: string, title: string): Promise<ViewInstance>;

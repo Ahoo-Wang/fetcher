@@ -216,7 +216,9 @@ function importsOf(file: ts.SourceFile): Import[] {
       ts.isCallExpression(node) &&
       node.expression.kind === ts.SyntaxKind.ImportKeyword &&
       node.arguments[0] &&
-      ts.isStringLiteral(node.arguments[0])
+      // A template without substitutions is a constant specifier too.
+      (ts.isStringLiteral(node.arguments[0]) ||
+        ts.isNoSubstitutionTemplateLiteral(node.arguments[0]))
     ) {
       imports.push({
         specifier: node.arguments[0].text,
@@ -418,6 +420,29 @@ describe('architecture', () => {
     expect(
       Object.keys(HEADLESS_DEPENDENCIES).filter(name => !declared.has(name)),
     ).toEqual([]);
+  });
+
+  it('imports only packages this manifest declares', () => {
+    // An undeclared bare specifier may still resolve through the workspace
+    // root or a transitive dependency, and would then escape every rule below.
+    const declared = Object.keys(THIRD_PARTY);
+    const violations = files.flatMap(file =>
+      file.imports
+        .map(({ specifier }) => specifier)
+        .filter(
+          specifier =>
+            !specifier.startsWith('.') &&
+            !specifier.startsWith('@/') &&
+            !specifier.startsWith('node:') &&
+            specifier !== SELF &&
+            !specifier.startsWith(`${SELF}/`) &&
+            !declared.some(
+              name => specifier === name || specifier.startsWith(`${name}/`),
+            ),
+        )
+        .map(specifier => `${describePath(file)} -> ${specifier}`),
+    );
+    expect(violations).toEqual([]);
   });
 
   it.each(Object.entries(THIRD_PARTY))(
