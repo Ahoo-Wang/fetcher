@@ -108,9 +108,12 @@ const HEADLESS_DEPENDENCIES: Record<string, readonly Location[]> = {
 const manifest = JSON.parse(
   readFileSync(resolve(src, '../package.json'), 'utf8'),
 ) as {
+  name: string;
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
 };
+
+const SELF = manifest.name;
 
 /** Third-party packages and the only locations allowed to import them. */
 const THIRD_PARTY: Record<string, readonly Location[]> = Object.fromEntries([
@@ -228,10 +231,26 @@ function importsOf(file: ts.SourceFile): Import[] {
   return imports;
 }
 
+/**
+ * Package entries map onto layers, so a self-reference such as
+ * `@ahoo-wang/fetcher-view-engine/ui` is resolved like an internal import
+ * instead of passing as an unknown external module.
+ */
+const SELF_ENTRIES: Record<string, string> = {
+  '.': 'index.ts',
+  './react': 'react',
+  './ui': 'ui',
+};
+
 function targetOf(from: SourceFile, specifier: string): string | null {
   if (specifier.startsWith('.'))
     return relative(src, resolve(dirname(from.path), specifier));
   if (specifier.startsWith('@/')) return specifier.slice(2);
+  if (specifier === SELF || specifier.startsWith(`${SELF}/`)) {
+    const entry = specifier === SELF ? '.' : `.${specifier.slice(SELF.length)}`;
+    // An unknown entry resolves to the root, where the strictest rules apply.
+    return SELF_ENTRIES[entry] ?? 'index.ts';
+  }
   return null;
 }
 
