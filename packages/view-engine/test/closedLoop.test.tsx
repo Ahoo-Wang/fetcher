@@ -99,14 +99,19 @@ describe('closed loop one', () => {
     const { engine, store, last, setRows } = setup();
 
     const view = render(
-      <PlainRecordWorkbench engine={engine} definitionId="orders" />,
+      <PlainRecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        initialInstanceId="system:orders:all"
+      />,
     );
-    await screen.findByRole('button', { name: 'All orders' });
     await waitFor(() => expect(cells()).toHaveLength(3));
 
-    // 1. Filter down to what is waiting to ship.
+    // 1. Filter down to what is waiting to ship. Every assertion after an
+    // interaction is a `findBy`: React commits when it commits, and a test
+    // that assumes otherwise flakes rather than fails.
     fireEvent.click(screen.getByRole('button', { name: 'Filter by Status' }));
-    fireEvent.change(screen.getByLabelText('status value'), {
+    fireEvent.change(await screen.findByLabelText('status value'), {
       target: { value: 'PENDING' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Apply filter' }));
@@ -130,11 +135,11 @@ describe('closed loop one', () => {
     );
 
     // 3. Browsing state exists but is not part of the view.
-    fireEvent.click(screen.getByLabelText('select o-1'));
-    expect(text('selection')).toBe('o-1');
+    fireEvent.click(await screen.findByLabelText('select o-1'));
+    await waitFor(() => expect(text('selection')).toBe('o-1'));
 
     // 4. Save it as a personal view.
-    fireEvent.change(screen.getByLabelText('view title'), {
+    fireEvent.change(await screen.findByLabelText('view title'), {
       target: { value: 'Pending shipments' },
     });
     fireEvent.click(
