@@ -35,4 +35,4 @@ FetcherViewer 在模块作用域创建默认视图 ID 存储，固定键为 `fet
 
 ## View Engine 运行环境
 
-view-engine 包声明 Node >=20.20.2。核心入口独立于 React 和浏览器全局对象；浏览器控件通过独立的 `/react` 入口使用 React 19。ViewPage 在 Effect 中创建、释放引擎，自行持有的引擎必须显式管理范围和释放。剪贴板、页面可见性和布局 API 属于浏览器能力。MemoryViewHost 使用可选的共享 Map，适用于内存示例和 Node 服务；浏览器持久化使用浏览器/React 入口的 IndexedDBViewHost。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
+view-engine 包声明 Node >=20.20.2，正在重写。根入口独立于 React 和浏览器全局对象，并在不含 DOM 库的条件下做类型检查；钩子位于 `/react`，浏览器控件位于 `/ui`，使用 React 19。引擎由应用或 `useViewEngine` 持有，打开的视图是需显式释放的 `ViewRuntime`。剪贴板、页面可见性和布局 API 属于浏览器能力。`MemoryViewStore` 服务于内存示例和 Node 服务；持久化由应用针对自己的后端实现 `ViewStore`。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。

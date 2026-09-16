@@ -14,12 +14,17 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Dependency rules from docs/design.md §4. Each layer lists the layers it may
- * import. `ui` may import everything; layers absent from `src/` pass trivially,
- * so the rules hold from the empty tree onwards.
+ * Dependency rules from docs/design.md §4, checked on the TypeScript AST so that
+ * multi-line, type-only, re-exported and dynamic imports are all seen. Layers
+ * absent from `src/` pass trivially, so the rules hold from the empty tree on.
+ *
+ * Freedom from DOM globals in the headless layers is enforced by the compiler:
+ * `tsconfig.headless.json` type-checks them without the `DOM` library (see the
+ * `test:type` script). This file only checks module boundaries.
  */
 const LAYERS = [
   'model',
@@ -33,8 +38,9 @@ const LAYERS = [
   'ui',
 ] as const;
 type Layer = (typeof LAYERS)[number];
+type Location = Layer | 'root';
 
-const ALLOWED: Record<Layer, readonly Layer[]> = {
+const ALLOWED: Record<Location, readonly Layer[]> = {
   model: [],
   filter: ['model'],
   record: ['model', 'filter'],
@@ -52,10 +58,28 @@ const ALLOWED: Record<Layer, readonly Layer[]> = {
     'store',
   ],
   ui: [...LAYERS],
+  root: [
+    'model',
+    'filter',
+    'record',
+    'analysis',
+    'dashboard',
+    'runtime',
+    'store',
+  ],
 };
 
-/** Layers that must stay free of React and the DOM. */
-const HEADLESS: readonly Layer[] = [
+/**
+ * Dependencies that must be type-only imports of one port module: the runtime
+ * depends on the `ViewStore` contract, never on a store implementation.
+ */
+const PORTS: Partial<Record<Location, Partial<Record<Layer, string>>>> = {
+  runtime: { store: 'store/ViewStore' },
+};
+
+/** Layers (and the root entry) that must stay free of React. */
+const HEADLESS: readonly Location[] = [
+  'root',
   'model',
   'filter',
   'record',
@@ -65,9 +89,10 @@ const HEADLESS: readonly Layer[] = [
   'store',
 ];
 
-/** Third-party packages and the only layers allowed to import them. */
-const THIRD_PARTY: Record<string, readonly Layer[]> = {
+/** Third-party packages and the only locations allowed to import them. */
+const THIRD_PARTY: Record<string, readonly Location[]> = {
   '@ahoo-wang/fetcher-wow': [
+    'root',
     'model',
     'filter',
     'record',
@@ -82,24 +107,22 @@ const THIRD_PARTY: Record<string, readonly Layer[]> = {
   'lucide-react': ['ui'],
 };
 
-/** Wow APIs marked `@deprecated` in favor of `FilterExpression` and `Filter*Query`. */
-const DEPRECATED_WOW_SYMBOLS = [
-  'Condition',
-  'ConditionOptions',
-  'ConditionOptionKey',
-  'isValidateCondition',
-  'PagedQuery',
-  'ListQuery',
-  'SingleQuery',
-];
-
+const WOW = '@ahoo-wang/fetcher-wow';
 const src = resolve(dirname(fileURLToPath(import.meta.url)), '../src');
+const wowSrc = resolve(src, '../../wow/src');
+
+interface Import {
+  specifier: string;
+  typeOnly: boolean;
+  /** Named bindings as declared by the exporting module (aliases resolved). */
+  names: string[];
+  namespace: boolean;
+}
 
 interface SourceFile {
   path: string;
-  layer: Layer | 'root';
-  text: string;
-  imports: string[];
+  location: Location;
+  imports: Import[];
 }
 
 function walk(directory: string): string[] {
@@ -107,51 +130,148 @@ function walk(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return walk(path);
-    return /\.(ts|tsx)$/.test(entry.name) && !/\.test\./.test(entry.name)
+    return /\.(ts|tsx)$/.test(entry.name) && !/\.(test|d)\./.test(entry.name)
       ? [path]
       : [];
   });
 }
 
-function layerOf(path: string): Layer | 'root' {
+function parse(path: string): ts.SourceFile {
+  return ts.createSourceFile(
+    path,
+    readFileSync(path, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+}
+
+function locationOf(path: string): Location {
   const [first] = relative(src, path).split(sep);
   return (LAYERS as readonly string[]).includes(first)
     ? (first as Layer)
     : 'root';
 }
 
-function importsOf(text: string): string[] {
-  const specifiers: string[] = [];
-  const pattern =
-    /(?:^|\n)\s*(?:import|export)\s[^'"\n]*?from\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g;
-  for (const match of text.matchAll(pattern))
-    specifiers.push(match[1] ?? match[2]);
-  return specifiers;
+function importsOf(file: ts.SourceFile): Import[] {
+  const imports: Import[] = [];
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      const clause = node.importClause;
+      const bindings = clause?.namedBindings;
+      const named =
+        bindings && ts.isNamedImports(bindings) ? bindings.elements : [];
+      imports.push({
+        specifier: node.moduleSpecifier.text,
+        typeOnly:
+          clause?.isTypeOnly === true ||
+          (named.length > 0 && named.every(element => element.isTypeOnly)),
+        names: named.map(
+          element => (element.propertyName ?? element.name).text,
+        ),
+        namespace: bindings !== undefined && ts.isNamespaceImport(bindings),
+      });
+    } else if (
+      ts.isExportDeclaration(node) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      const named =
+        node.exportClause && ts.isNamedExports(node.exportClause)
+          ? node.exportClause.elements
+          : [];
+      imports.push({
+        specifier: node.moduleSpecifier.text,
+        typeOnly:
+          node.isTypeOnly ||
+          (named.length > 0 && named.every(element => element.isTypeOnly)),
+        names: named.map(
+          element => (element.propertyName ?? element.name).text,
+        ),
+        namespace: named.length === 0,
+      });
+    } else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments[0] &&
+      ts.isStringLiteral(node.arguments[0])
+    ) {
+      imports.push({
+        specifier: node.arguments[0].text,
+        typeOnly: false,
+        names: [],
+        namespace: true,
+      });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return imports;
 }
 
-function load(): SourceFile[] {
-  return walk(src).map(path => {
-    const text = readFileSync(path, 'utf8');
-    return { path, layer: layerOf(path), text, imports: importsOf(text) };
-  });
-}
-
-function targetLayer(
-  from: SourceFile,
-  specifier: string,
-): Layer | 'root' | null {
-  if (specifier.startsWith('.')) {
-    return layerOf(resolve(dirname(from.path), specifier));
-  }
-  if (specifier.startsWith('@/')) {
-    return layerOf(resolve(src, specifier.slice(2)));
-  }
+function targetOf(from: SourceFile, specifier: string): string | null {
+  if (specifier.startsWith('.'))
+    return relative(src, resolve(dirname(from.path), specifier));
+  if (specifier.startsWith('@/')) return specifier.slice(2);
   return null;
 }
 
-const files = load();
-const describeLayer = (layer: Layer) =>
-  files.filter(file => file.layer === layer);
+function targetLocation(from: SourceFile, specifier: string): Location | null {
+  const target = targetOf(from, specifier);
+  return target === null ? null : locationOf(join(src, target));
+}
+
+function isPort(from: SourceFile, specifier: string, port: string): boolean {
+  const target = targetOf(from, specifier);
+  return target !== null && target.replace(/\.(ts|js)$/, '') === port;
+}
+
+/** Every export of the Wow workspace package whose JSDoc carries `@deprecated`. */
+function deprecatedWowExports(): Set<string> {
+  const names = new Set<string>();
+  for (const path of walk(wowSrc)) {
+    for (const statement of parse(path).statements) {
+      const exported = ts
+        .getModifiers(statement as ts.HasModifiers)
+        ?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
+      if (!exported) continue;
+      if (
+        !ts
+          .getJSDocTags(statement)
+          .some(tag => tag.tagName.text === 'deprecated')
+      )
+        continue;
+      if (ts.isVariableStatement(statement)) {
+        for (const declaration of statement.declarationList.declarations)
+          if (ts.isIdentifier(declaration.name))
+            names.add(declaration.name.text);
+      } else if (
+        (ts.isFunctionDeclaration(statement) ||
+          ts.isClassDeclaration(statement) ||
+          ts.isInterfaceDeclaration(statement) ||
+          ts.isTypeAliasDeclaration(statement) ||
+          ts.isEnumDeclaration(statement)) &&
+        statement.name
+      ) {
+        names.add(statement.name.text);
+      }
+    }
+  }
+  return names;
+}
+
+const files: SourceFile[] = walk(src).map(path => ({
+  path,
+  location: locationOf(path),
+  imports: importsOf(parse(path)),
+}));
+const at = (location: Location) =>
+  files.filter(file => file.location === location);
+const describePath = (file: SourceFile) => relative(src, file.path);
+const LOCATIONS: readonly Location[] = ['root', ...LAYERS];
 
 describe('architecture', () => {
   it('has a root entry', () => {
@@ -159,90 +279,111 @@ describe('architecture', () => {
   });
 
   it('places every source file in a known layer or at the root', () => {
-    const misplaced = files
-      .filter(file => file.layer === 'root')
-      .map(file => relative(src, file.path))
+    const misplaced = at('root')
+      .map(describePath)
       .filter(path => path.includes(sep));
     expect(misplaced).toEqual([]);
   });
 
-  it.each(LAYERS)('%s imports only the layers it is allowed to', layer => {
-    const violations = describeLayer(layer).flatMap(file =>
-      file.imports
-        .map(specifier => [specifier, targetLayer(file, specifier)] as const)
-        .filter(
-          ([, target]) =>
-            target !== null &&
-            target !== layer &&
-            !(ALLOWED[layer] as readonly string[]).includes(target),
-        )
-        .map(([specifier]) => `${relative(src, file.path)} -> ${specifier}`),
-    );
-    expect(violations).toEqual([]);
-  });
-
-  it('keeps the root entry free of react and ui', () => {
-    const violations = files
-      .filter(file => file.layer === 'root')
-      .flatMap(file =>
+  it.each(LOCATIONS)(
+    '%s imports only the layers it is allowed to',
+    location => {
+      const violations = at(location).flatMap(file =>
         file.imports
-          .map(specifier => targetLayer(file, specifier))
-          .filter(target => target === 'react' || target === 'ui'),
+          .filter(({ specifier }) => {
+            const target = targetLocation(file, specifier);
+            return (
+              target !== null &&
+              target !== location &&
+              !(ALLOWED[location] as readonly string[]).includes(target)
+            );
+          })
+          .map(({ specifier }) => `${describePath(file)} -> ${specifier}`),
       );
-    expect(violations).toEqual([]);
-  });
+      expect(violations).toEqual([]);
+    },
+  );
 
-  it.each(HEADLESS)('%s is free of React and the DOM', layer => {
-    const violations = describeLayer(layer).flatMap(file => {
-      const found: string[] = [];
-      for (const specifier of file.imports)
-        if (/^react(-dom)?(\/|$)/.test(specifier))
-          found.push(`${relative(src, file.path)} imports ${specifier}`);
-      if (/\b(window|document|navigator|localStorage)\./.test(file.text))
-        found.push(`${relative(src, file.path)} touches the DOM`);
-      return found;
-    });
+  it.each(
+    Object.entries(PORTS).flatMap(([from, ports]) =>
+      Object.entries(ports ?? {}).map(
+        ([target, port]) => [from as Location, target as Layer, port] as const,
+      ),
+    ),
+  )(
+    '%s depends on %s only through type-only imports of %s',
+    (from, target, port) => {
+      const violations = at(from).flatMap(file =>
+        file.imports
+          .filter(
+            ({ specifier, typeOnly }) =>
+              targetLocation(file, specifier) === target &&
+              !(typeOnly && isPort(file, specifier, port)),
+          )
+          .map(({ specifier }) => `${describePath(file)} -> ${specifier}`),
+      );
+      expect(violations).toEqual([]);
+    },
+  );
+
+  it.each(HEADLESS)('%s is free of React', location => {
+    const violations = at(location).flatMap(file =>
+      file.imports
+        .filter(
+          ({ specifier }) =>
+            /^react(-dom)?(\/|$)/.test(specifier) ||
+            ['react', 'ui'].includes(targetLocation(file, specifier) ?? ''),
+        )
+        .map(({ specifier }) => `${describePath(file)} -> ${specifier}`),
+    );
     expect(violations).toEqual([]);
   });
 
   it.each(Object.entries(THIRD_PARTY))(
     '%s is imported only from its designated layers',
-    (name, layers) => {
+    (name, locations) => {
       const violations = files
         .filter(
           file =>
-            file.layer !== 'root' &&
-            !(layers as readonly string[]).includes(file.layer) &&
+            !(locations as readonly string[]).includes(file.location) &&
             file.imports.some(
-              specifier =>
+              ({ specifier }) =>
                 specifier === name || specifier.startsWith(`${name}/`),
             ),
         )
-        .map(file => relative(src, file.path));
+        .map(describePath);
       expect(violations).toEqual([]);
     },
   );
 
-  it('never imports deprecated Wow condition APIs', () => {
-    const pattern = new RegExp(
-      `import\\s+(?:type\\s+)?\\{([^}]*)\\}\\s+from\\s+['"]@ahoo-wang/fetcher-wow['"]`,
-      'g',
-    );
-    const violations = files.flatMap(file =>
-      [...file.text.matchAll(pattern)].flatMap(match =>
-        match[1]
-          .split(',')
-          .map(
-            name =>
-              name
-                .trim()
-                .replace(/^type\s+/, '')
-                .split(/\s+as\s+/)[0],
-          )
-          .filter(name => DEPRECATED_WOW_SYMBOLS.includes(name))
-          .map(name => `${relative(src, file.path)} imports ${name}`),
-      ),
-    );
-    expect(violations).toEqual([]);
+  describe('Wow protocol', () => {
+    const deprecated = deprecatedWowExports();
+
+    it('derives the deprecated export set from the Wow sources', () => {
+      for (const name of ['Condition', 'PagedQuery', 'pagedQuery', 'Operator'])
+        expect(deprecated.has(name)).toBe(true);
+      expect(deprecated.has('FilterExpression')).toBe(false);
+    });
+
+    it('imports Wow by name so every binding can be checked', () => {
+      const violations = files
+        .filter(file =>
+          file.imports.some(
+            ({ specifier, namespace }) => specifier === WOW && namespace,
+          ),
+        )
+        .map(describePath);
+      expect(violations).toEqual([]);
+    });
+
+    it('never imports deprecated Wow APIs', () => {
+      const violations = files.flatMap(file =>
+        file.imports
+          .filter(({ specifier }) => specifier === WOW)
+          .flatMap(({ names }) => names.filter(name => deprecated.has(name)))
+          .map(name => `${describePath(file)} imports ${name}`),
+      );
+      expect(violations).toEqual([]);
+    });
   });
 });

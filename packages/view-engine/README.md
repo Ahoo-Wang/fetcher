@@ -1,6 +1,6 @@
 # Fetcher View Engine
 
-> **Status: rewrite in progress.** This README describes the target package defined in [docs/design.md](docs/design.md). The public API below is the design target; delivery order and what is implemented at any point are tracked in design §13. The previous implementation is frozen at a git tag for reference only.
+> **Status: rewrite in progress.** This README describes the target package defined in [docs/design.md](docs/design.md). The public API below is the design target; delivery order and what is implemented at any point are tracked in design §13. The previous implementation is frozen at the git tag `view-engine-legacy` (`a064fc1a`) for reference only.
 
 **Fetcher View Engine is a data view engine for Wow-based business applications.** The application declares in code _how a dataset can be observed_: fields, kinds, operators, available groupings and metrics. Users decide in the UI _how to observe it this time_: filters, columns, sorting, groupings, charts, panel composition. The engine compiles that way of observing into Wow queries, runs them, renders the result, and saves the ways worth keeping so they can be reopened with one click.
 

@@ -12,10 +12,6 @@
  */
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { spawn } from 'node:child_process';
 import test from 'node:test';
 import { spawnOwned, stopOwned } from './owned-process.mjs';
 
@@ -77,35 +73,6 @@ test(
         process.kill(-verifier.pid, 'SIGKILL');
       } catch {}
     }
-  },
-);
-
-test(
-  'SIGTERM during the package verifier stops the active verifier',
-  { skip: process.platform === 'win32' },
-  async () => {
-    const artifacts = await mkdtemp(join(tmpdir(), 'fve-lifecycle-'));
-    const runner = spawn(process.execPath, ['scripts/verify-view-engine.mjs'], {
-      cwd: new URL('../', import.meta.url),
-      env: { ...process.env, VIEW_ENGINE_ARTIFACTS: artifacts },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let output = '';
-    const verifierPid = await new Promise((resolve, reject) => {
-      runner.once('error', reject);
-      runner.stdout.on('data', chunk => {
-        output += chunk;
-        const match = output.match(/package pid (\d+)/);
-        if (match) resolve(Number(match[1]));
-      });
-    });
-
-    runner.kill('SIGTERM');
-    const [, signal] = await once(runner, 'close');
-
-    assert.equal(signal, 'SIGTERM');
-    assert.equal(running(verifierPid), false);
-    await rm(artifacts, { recursive: true, force: true });
   },
 );
 

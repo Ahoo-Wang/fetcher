@@ -35,7 +35,7 @@ Fetcher adds reusable request configuration and result handling to native Fetch.
 | TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package               | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
 | Existing React application                 | Compatible React and Fetcher peers, a bundler           | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
 | Existing React application needing a table | View Engine peers, CSS-capable bundling, local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering                                |
-| Headless record engine or shadcn/Base UI   | Current workspace/local archive; React 19 for UI        | [View Engine quick start](../guides/view-engine/index.md)                                                    |
+| Configurable data views over Wow queries   | Rewrite in progress; not yet published                  | [View Engine status](../guides/view-engine/index.md)                                                         |
 
 The runnable HTTP and Storybook examples have deterministic fixtures. When you move them into your application, supply the routes and response JSON documented in each example. Installing a client does not create a server.
 
@@ -83,7 +83,7 @@ For an existing React application, follow the [React example peer installation a
 
 ## View Engine
 
-View Engine uses React 19 and compiled scoped CSS. Its current branch is available through the [workspace/local-archive workflow](../guides/view-engine/index.md); it has not yet had its first public registry release.
+View Engine is being rewritten and has not yet had its first public registry release; the [rewrite status](../guides/view-engine/index.md) lists the target entries and delivery order.
 
 </doc>
 
@@ -236,12 +236,12 @@ See the [repository HTTP example](../examples/http.md) for repository-specific v
 
 Use View Engine for new projects and further data-view development. Viewer is deprecated and in maintenance mode, with no new features; the Viewer path below is retained for existing consumers. The packages use different models and APIs, so migration requires adaptation.
 
-| UI and ownership                                                                  | Entry                                                                                              |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| shadcn/Base UI, headless engine, component-configuration persistence and ViewHost | [View Engine example](../examples/view-engine.md) and [task guide](../guides/view-engine/index.md) |
-| Ant Design, application-controlled table data and Viewer state                    | [Viewer example](../examples/viewer.md)                                                            |
+| UI and ownership                                                                                          | Entry                                                                                          |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Definitions in code, saved view configs, headless hooks and shadcn/Base UI defaults (rewrite in progress) | [View Engine status](../guides/view-engine/index.md) and [example](../examples/view-engine.md) |
+| Ant Design, application-controlled table data and Viewer state                                            | [Viewer example](../examples/viewer.md)                                                        |
 
-View Engine currently uses workspace/local-archive instructions until its first registry release. Its core entry is usable independently of the React UI.
+View Engine is being rewritten and has no registry release yet; its status pages describe the target entries and the delivery order. The root entry stays usable without the React UI.
 
 ## Legacy Ant Design Viewer path (deprecated)
 
@@ -282,7 +282,7 @@ After the first example succeeds, choose the change your application needs next.
 
 Use [architecture and selection](../architecture/index.md) to decide who owns state, cancellation, and persistence. Use [API reference](../reference/index.md) when you know the operation and need its exact contract; the [complete examples](../examples/index.md) remain the executable baseline.
 
-For the independent record engine, continue with [View Engine tasks](../guides/view-engine/index.md): component configuration, remote candidates, cells, summaries and ViewHost services.
+For configurable data views over Wow queries, follow the [View Engine rewrite status](../guides/view-engine/index.md): design, target API and delivery order.
 
 </doc>
 
@@ -298,7 +298,7 @@ Choose the task you need to complete. New to Fetcher? [Start with a runnable res
 - [Service clients](./services/index.md): Use direct Fetcher calls for a few endpoints. Decorators require a compatible TypeScript compiler; generation requires a complete OpenAPI document and a compile step. Neither creates backend routes.
 - [Streaming data](./streaming/index.md): Your runtime needs Fetch, Response bodies, and ReadableStream. The server must emit SSE frames; a normal JSON response is not an event stream. Keep a caller-owned cancellation signal for long-lived reads.
 - [React data flow](./react/index.md): Start in an existing React application with the declared peer dependencies. The runnable React example supplies a deterministic backend fixture; production routes remain application-owned.
-- [View Engine](./view-engine/index.md): Build a shadcn/Base UI record page with component-configuration persistence, built-in filters/cells and explicit ViewHost services. Start with the workspace example.
+- [View Engine](./view-engine/index.md): Configurable data views over Wow queries, being rewritten from a first-principles design; task guides return as each delivery step lands.
 - [Ant Design Viewer (maintenance mode, deprecated)](./viewer/index.md): Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
 - [Platform integrations](./integrations/index.md): Wow and CoSec require compatible server protocols, authentication and application-specific routes. Storage and local events can be used without a platform server. Confirm the chosen package peers before installing.
 
@@ -2133,16 +2133,16 @@ flowchart LR
   classDef default fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
 
-| Layer                  | Responsibility and cost                                                                                   | Manifest evidence                                                                                                                                                                                                                                    |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| fetcher                | HTTP defaults, interception, extraction; no internal dependency                                           | [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)                                                                                                                                 |
-| decorator              | Declarative services; metadata setup and runtime `reflect-metadata` dependency                            | [packages/decorator/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L53)                                                                                                                             |
-| eventbus / eventstream | Event delivery / SSE processing; each peers with core                                                     | [packages/eventbus/package.json:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/package.json#L51), [packages/eventstream/package.json:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L52) |
-| storage / cosec        | Storage events / authentication protocol; additional state lifetime to own                                | [packages/storage/package.json:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L55), [packages/cosec/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L53)               |
-| wow / openai           | Service-specific runtime clients using core, decorators, and streams                                      | [packages/wow/package.json:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/package.json#L63), [packages/openai/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L58)                     |
-| react                  | Request and integration Hooks; React/ReactDOM peers, direct `dequal` and `immer` dependencies             | [packages/react/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L54)                                                                                                                                     |
+| Layer                                 | Responsibility and cost                                                                                   | Manifest evidence                                                                                                                                                                                                                                    |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| fetcher                               | HTTP defaults, interception, extraction; no internal dependency                                           | [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)                                                                                                                                 |
+| decorator                             | Declarative services; metadata setup and runtime `reflect-metadata` dependency                            | [packages/decorator/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L53)                                                                                                                             |
+| eventbus / eventstream                | Event delivery / SSE processing; each peers with core                                                     | [packages/eventbus/package.json:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/package.json#L51), [packages/eventstream/package.json:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L52) |
+| storage / cosec                       | Storage events / authentication protocol; additional state lifetime to own                                | [packages/storage/package.json:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L55), [packages/cosec/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L53)               |
+| wow / openai                          | Service-specific runtime clients using core, decorators, and streams                                      | [packages/wow/package.json:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/package.json#L63), [packages/openai/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L58)                     |
+| react                                 | Request and integration Hooks; React/ReactDOM peers, direct `dequal` and `immer` dependencies             | [packages/react/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L54)                                                                                                                                     |
 | viewer (maintenance mode, deprecated) | Table and saved-view UI; React, Ant Design, icons, and dayjs peers alongside internal peers               | [packages/viewer/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/package.json#L54)                                                                                                                                   |
-| openapi / generator    | OpenAPI type vocabulary / development CLI generating source; generator uses ts-morph, commander, and yaml | [packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21), [packages/generator/package.json:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/package.json#L61)       |
+| openapi / generator                   | OpenAPI type vocabulary / development CLI generating source; generator uses ts-morph, commander, and yaml | [packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21), [packages/generator/package.json:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/package.json#L61)       |
 
 ## Installation is not execution
 
@@ -2154,7 +2154,7 @@ Follow [declarative services](../guides/services/declarative-client.md), [genera
 
 ## View Engine entries
 
-`@ahoo-wang/fetcher-view-engine` declares direct dependencies on Wow/React and its UI implementation packages; these are separate from the peer-only arrows above. Its public core entry imports no React/DOM/CSS. The `/react` entry provides shadcn/Base UI components and owns browser UI integration. `ViewHost` composes definition, instance, preference and permission services; the record query source and option sources remain application runtime adapters. See [View Engine contracts](../reference/view-engine/index.md) and its [package manifest](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/package.json).
+`@ahoo-wang/fetcher-view-engine` declares direct dependencies on Wow and its UI implementation packages; these are separate from the peer-only arrows above. The package is being rewritten in the layers `model → filter → record | analysis | dashboard → runtime → react → ui`, with `store → model`, enforced by architecture tests. The root entry (models, pure kernels, runtime, the `ViewStore` port and `MemoryViewStore`) imports no React, DOM or CSS; `/react` provides headless hooks and `/ui` the shadcn/Base UI defaults. Durable persistence is the application's `ViewStore` implementation, and query sources remain application runtime adapters. See the [View Engine reference](../reference/view-engine/index.md) and the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md).
 
 </doc>
 
@@ -2192,7 +2192,7 @@ Continue with [shared clients](../guides/http/shared-client.md), [storage and ev
 
 ## View Engine runtime
 
-The view-engine package declares Node >=20.20.2. Its core entry is independent of React and browser globals; browser controls use the separate `/react` entry with React 19. `ViewPage` initializes and disposes its engine in Effects, while caller-owned engines must be scoped and disposed explicitly. Clipboard, page visibility and layout APIs remain browser capabilities. MemoryViewHost uses an optional shared Map for in-process examples and Node services. Browser persistence uses IndexedDBViewHost from the browser/React entry. Validate a framework-specific SSR/hydration integration instead of treating headless import support as certification of every UI component.
+The view-engine package declares Node >=20.20.2 and is being rewritten. Its root entry stays independent of React and browser globals and is type-checked without the DOM library; hooks live in `/react` and browser controls in `/ui` with React 19. Engines are owned by the application or by `useViewEngine`, and open views are `ViewRuntime` instances that are disposed explicitly. Clipboard, page visibility and layout APIs remain browser capabilities. `MemoryViewStore` serves in-process examples and Node services; durable persistence is the application's `ViewStore` implementation against its own backend. Validate a framework-specific SSR/hydration integration instead of treating headless import support as certification of every UI component.
 
 </doc>
 
@@ -2402,12 +2402,12 @@ Continue with [Wow](../guides/integrations/wow.md), [CoSec](../guides/integratio
 
 Each example includes maintained source, prerequisites, run commands, expected results, and cleanup. The repository fixtures require no external backend.
 
-| Example                         | Run it to observe                                                              | Use it in your application                                                     |
-| ------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| [HTTP](./http.md)               | A local server returns Ada; a missing route produces HTTP 404                  | Copy the server and client into the independent ESM setup                      |
-| [React](./react.md)             | Load, fail, start a delayed request, then cancel it                            | Mount the component in an existing React app and provide the documented routes |
-| [Viewer](./viewer.md)           | Four rows, paging, name sorting, Active filtering, and saved-view confirmation | Mount the local component with compatible React/Viewer peers                   |
-| [View Engine](./view-engine.md) | Three orders, manual queries, sorting and paging through ViewPage              | Use the current workspace or verified local archive in a React 19 application  |
+| Example                         | Run it to observe                                                                                     | Use it in your application                                                     |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [HTTP](./http.md)               | A local server returns Ada; a missing route produces HTTP 404                                         | Copy the server and client into the independent ESM setup                      |
+| [React](./react.md)             | Load, fail, start a delayed request, then cancel it                                                   | Mount the component in an existing React app and provide the documented routes |
+| [Viewer](./viewer.md)           | Four rows, paging, name sorting, Active filtering, and saved-view confirmation                        | Mount the local component with compatible React/Viewer peers                   |
+| [View Engine](./view-engine.md) | Returns with the Record workbench of the rewrite; the previous example is at tag `view-engine-legacy` | Follow the rewrite status page until the package publishes                     |
 
 The Viewer example saves to component memory and resets on remount. The React fixture's slow route takes 2000 ms so cancellation is visible. These checks prove the example behavior, not authentication, server consistency, or production persistence.
 
@@ -3249,21 +3249,21 @@ Reading groups are listed in `.vitepress/config/pages.mjs`; stop pagination at t
 
 Each package has an entry page and focused reference topics. Choose the responsibility first, then the API family. Complex packages have deeper navigation; small packages stay compact.
 
-| Package                               | Responsibility                                              | Topics |
-| ------------------------------------- | ----------------------------------------------------------- | ------ |
-| [fetcher](./fetcher/index.md)         | HTTP requests                                               | 6      |
-| [decorator](./decorator/index.md)     | Declarative services                                        | 3      |
-| [eventbus](./eventbus/index.md)       | Event delivery                                              | 2      |
-| [eventstream](./eventstream/index.md) | SSE consumption                                             | 3      |
-| [storage](./storage/index.md)         | Stored values                                               | 2      |
-| [openapi](./openapi/index.md)         | OpenAPI type contracts                                      | 3      |
-| [generator](./generator/index.md)     | Generated clients                                           | 5      |
-| [openai](./openai/index.md)           | Chat and token streams                                      | 2      |
-| [cosec](./cosec/index.md)             | Authentication and refresh                                  | 3      |
-| [react](./react/index.md)             | Component request state                                     | 8      |
-| [wow](./wow/index.md)                 | Commands and queries                                        | 9      |
-| [viewer (deprecated)](./viewer/index.md)           | Data views and persistence                                  | 8      |
-| [view-engine](./view-engine/index.md) | Headless engine, component configuration and shadcn/Base UI | 5      |
+| Package                                  | Responsibility                               | Topics |
+| ---------------------------------------- | -------------------------------------------- | ------ |
+| [fetcher](./fetcher/index.md)            | HTTP requests                                | 6      |
+| [decorator](./decorator/index.md)        | Declarative services                         | 3      |
+| [eventbus](./eventbus/index.md)          | Event delivery                               | 2      |
+| [eventstream](./eventstream/index.md)    | SSE consumption                              | 3      |
+| [storage](./storage/index.md)            | Stored values                                | 2      |
+| [openapi](./openapi/index.md)            | OpenAPI type contracts                       | 3      |
+| [generator](./generator/index.md)        | Generated clients                            | 5      |
+| [openai](./openai/index.md)              | Chat and token streams                       | 2      |
+| [cosec](./cosec/index.md)                | Authentication and refresh                   | 3      |
+| [react](./react/index.md)                | Component request state                      | 8      |
+| [wow](./wow/index.md)                    | Commands and queries                         | 9      |
+| [viewer (deprecated)](./viewer/index.md) | Data views and persistence                   | 8      |
+| [view-engine](./view-engine/index.md)    | Configurable data views; rewrite in progress | 2      |
 
 ## Use the right depth
 
@@ -19113,7 +19113,7 @@ Fetcher 在原生 Fetch 之上提供可复用的请求配置与结果处理。�
 | TypeScript 或 JavaScript HTTP 客户端 | 支持 Fetch 的运行环境及核心包                        | [安装](./installation.md)，然后对配套本地服务执行[第一个请求](./first-request.md) |
 | 已有 React 应用                      | 兼容的 React、Fetcher peer 依赖和打包器              | [运行 React 示例](../examples/react.md)，展示加载、数据、错误与取消               |
 | 已有 React 应用，需要数据表          | View Engine peer 依赖、支持 CSS 的打包器和本地行数据 | [创建第一张表](./first-view.md)，操作分页、排序与过滤                             |
-| 无头记录引擎或 shadcn/Base UI        | 当前工作区/本地归档，UI 使用 React 19                | [View Engine 快速接入](../guides/view-engine/index.md)                            |
+| 基于 Wow 查询的可配置数据视图        | 重写进行中，尚未发布                                 | [View Engine 状态](../guides/view-engine/index.md)                                |
 
 可运行的 HTTP 和 Storybook 示例使用确定性夹具。移入应用时，必须提供示例中写明的路由与响应 JSON。安装客户端不会创建服务端。
 
@@ -19161,7 +19161,7 @@ pnpm add -D typescript
 
 ## View Engine
 
-View Engine 使用 React 19 与已编译的作用域 CSS。当前分支按[工作区/本地归档流程](../guides/view-engine/index.md)接入，尚未在公共注册表首次发布。
+View Engine 正在重写，尚未在公共注册表首次发布；[重写状态](../guides/view-engine/index.md)列出目标入口与交付顺序。
 
 </doc>
 
@@ -19314,12 +19314,12 @@ Ada
 
 新项目请使用 View Engine，数据视图能力的后续演进由它承担。Viewer 已进入维护期（弃用），不再新增功能；下方 Viewer 路径仅供存量项目维护参考。两者模型与 API 不同，迁移需要适配。
 
-| UI 与所有权                                         | 入口                                                                                       |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| shadcn/Base UI、无头引擎、组件配置持久化与 ViewHost | [View Engine 示例](../examples/view-engine.md)及[任务指南](../guides/view-engine/index.md) |
-| Ant Design、应用控制表格数据和 Viewer 状态          | [Viewer 示例](../examples/viewer.md)                                                       |
+| UI 与所有权                                                                          | 入口                                                                                   |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| 代码声明的定义、可保存的视图配置、无样式钩子与 shadcn/Base UI 默认组件（重写进行中） | [View Engine 状态](../guides/view-engine/index.md)及[示例](../examples/view-engine.md) |
+| Ant Design、应用控制表格数据和 Viewer 状态                                           | [Viewer 示例](../examples/viewer.md)                                                   |
 
-View Engine 在首次注册表发布前采用工作区/本地归档接入，核心入口可独立于 React UI 使用。
+View Engine 正在重写，尚未在注册表发布；状态页描述目标入口与交付顺序。根入口可独立于 React UI 使用。
 
 ## 旧版 Ant Design Viewer 路径（已弃用）
 
@@ -19360,7 +19360,7 @@ View Engine 在首次注册表发布前采用工作区/本地归档接入，核�
 
 通过[架构与选型](../architecture/index.md)决定状态、取消和持久化的所有者。已知操作、需要精确契约时查询 [API 参考](../reference/index.md)；[完整示例](../examples/index.md)继续作为可执行基线。
 
-独立数据视图引擎的下一步见 [View Engine 任务指南](../guides/view-engine/index.md)：组件配置、远程候选、单元格、汇总与 ViewHost 服务。
+基于 Wow 查询的可配置数据视图见 [View Engine 重写状态](../guides/view-engine/index.md)：设计、目标 API 与交付顺序。
 
 </doc>
 
@@ -19374,7 +19374,7 @@ View Engine 在首次注册表发布前采用工作区/本地归档接入，核�
 - [服务客户端](./services/index.md)：少量端点可以直接调用 Fetcher。装饰器需要兼容的 TypeScript 编译器；生成客户端需要完整 OpenAPI 文档与编译步骤。两者都不会创建后端路由。
 - [流式消费](./streaming/index.md)：运行环境需要 Fetch、Response body 和 ReadableStream。服务端必须输出 SSE 帧；普通 JSON 响应不是事件流。长时间读取需要由调用者持有取消信号。
 - [React 数据流](./react/index.md)：从已具备声明 peer 依赖的 React 应用开始。可运行 React 示例提供确定性后端夹具；生产路由仍归应用负责。
-- [View Engine 数据视图](./view-engine/index.md)：使用 shadcn/Base UI 组件、可保存的组件配置、内置筛选/单元格和明确的 ViewHost 服务，从工作区示例开始接入。
+- [View Engine 数据视图](./view-engine/index.md)：基于 Wow 查询的可配置数据视图，正按第一性原理设计重写；任务指南随交付步骤逐步回归。
 - [Ant Design Viewer（维护期，已弃用）](./viewer/index.md)：在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
 - [平台集成](./integrations/index.md)：Wow 与 CoSec 需要兼容的服务端协议、认证和应用路由。存储与本地事件不需要平台服务。安装前核对所选包的 peer 依赖。
 
@@ -21193,16 +21193,16 @@ flowchart LR
   classDef default fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
 
-| 层                     | 责任与代价                                                                    | 清单证据                                                                                                                                                                                                                                             |
-| ---------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| fetcher                | HTTP 默认配置、拦截、提取；无内部依赖                                         | [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)                                                                                                                                 |
-| decorator              | 声明式服务；需要 metadata 配置及运行依赖 `reflect-metadata`                   | [packages/decorator/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L53)                                                                                                                             |
-| eventbus / eventstream | 事件投递 / SSE 处理；各自 peer 核心包                                         | [packages/eventbus/package.json:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/package.json#L51), [packages/eventstream/package.json:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L52) |
-| storage / cosec        | 存储事件 / 认证协议；需要管理额外状态的生命周期                               | [packages/storage/package.json:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L55), [packages/cosec/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L53)               |
-| wow / openai           | 服务专用运行客户端，使用核心、装饰器和流能力                                  | [packages/wow/package.json:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/package.json#L63), [packages/openai/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L58)                     |
-| react                  | 请求与集成 Hook；peer React/ReactDOM，直接依赖 `dequal` 和 `immer`            | [packages/react/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L54)                                                                                                                                     |
+| 层                       | 责任与代价                                                                    | 清单证据                                                                                                                                                                                                                                             |
+| ------------------------ | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| fetcher                  | HTTP 默认配置、拦截、提取；无内部依赖                                         | [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)                                                                                                                                 |
+| decorator                | 声明式服务；需要 metadata 配置及运行依赖 `reflect-metadata`                   | [packages/decorator/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L53)                                                                                                                             |
+| eventbus / eventstream   | 事件投递 / SSE 处理；各自 peer 核心包                                         | [packages/eventbus/package.json:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/package.json#L51), [packages/eventstream/package.json:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L52) |
+| storage / cosec          | 存储事件 / 认证协议；需要管理额外状态的生命周期                               | [packages/storage/package.json:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L55), [packages/cosec/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L53)               |
+| wow / openai             | 服务专用运行客户端，使用核心、装饰器和流能力                                  | [packages/wow/package.json:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/package.json#L63), [packages/openai/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L58)                     |
+| react                    | 请求与集成 Hook；peer React/ReactDOM，直接依赖 `dequal` 和 `immer`            | [packages/react/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L54)                                                                                                                                     |
 | viewer（维护期，已弃用） | 表格与保存视图 UI；内部 peer 之外还要求 React、Ant Design、icons 和 dayjs     | [packages/viewer/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/package.json#L54)                                                                                                                                   |
-| openapi / generator    | OpenAPI 类型词汇 / 生成源码的开发 CLI；生成器使用 ts-morph、commander 和 yaml | [packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21), [packages/generator/package.json:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/package.json#L61)       |
+| openapi / generator      | OpenAPI 类型词汇 / 生成源码的开发 CLI；生成器使用 ts-morph、commander 和 yaml | [packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21), [packages/generator/package.json:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/package.json#L61)       |
 
 ## 安装关系不等于执行关系
 
@@ -21214,7 +21214,7 @@ React 到 CoSec 的 peer 箭头不表示每个 Hook 都通过 CoSec 认证。Vie
 
 ## View Engine 入口
 
-`@ahoo-wang/fetcher-view-engine` 直接依赖 Wow/React 及其 UI 实现包，与上图只描述 peer 的箭头不同。公开核心入口不导入 React/DOM/CSS，`/react` 提供 shadcn/Base UI 组件及浏览器 UI 接入。ViewHost 组合 definition、instance、preference 和 permission 服务，记录查询与候选数据源仍是应用的运行时适配器。参阅 [View Engine 契约](../reference/view-engine/index.md)及[包声明](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/package.json)。
+`@ahoo-wang/fetcher-view-engine` 直接依赖 Wow 及其 UI 实现包，与上图只描述 peer 的箭头不同。该包正按 `model → filter → record | analysis | dashboard → runtime → react → ui` 与 `store → model` 的分层重写，规则由架构测试强制。根入口（模型、纯内核、运行时、`ViewStore` 端口与 `MemoryViewStore`）不导入 React、DOM 或 CSS；`/react` 提供无样式钩子，`/ui` 提供 shadcn/Base UI 默认组件。持久化由应用实现 `ViewStore`，查询数据源仍是应用的运行时适配器。参阅 [View Engine 参考](../reference/view-engine/index.md)与[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)。
 
 </doc>
 
@@ -21252,7 +21252,7 @@ FetcherViewer 在模块作用域创建默认视图 ID 存储，固定键为 `fet
 
 ## View Engine 运行环境
 
-view-engine 包声明 Node >=20.20.2。核心入口独立于 React 和浏览器全局对象；浏览器控件通过独立的 `/react` 入口使用 React 19。ViewPage 在 Effect 中创建、释放引擎，自行持有的引擎必须显式管理范围和释放。剪贴板、页面可见性和布局 API 属于浏览器能力。MemoryViewHost 使用可选的共享 Map，适用于内存示例和 Node 服务；浏览器持久化使用浏览器/React 入口的 IndexedDBViewHost。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
+view-engine 包声明 Node >=20.20.2，正在重写。根入口独立于 React 和浏览器全局对象，并在不含 DOM 库的条件下做类型检查；钩子位于 `/react`，浏览器控件位于 `/ui`，使用 React 19。引擎由应用或 `useViewEngine` 持有，打开的视图是需显式释放的 `ViewRuntime`。剪贴板、页面可见性和布局 API 属于浏览器能力。`MemoryViewStore` 服务于内存示例和 Node 服务；持久化由应用针对自己的后端实现 `ViewStore`。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
 
 </doc>
 
@@ -21461,12 +21461,12 @@ SSE JSON 转换调用 `JSON.parse`，未处理的转换错误成为流错误，�
 
 每个示例包含维护中的源码、前提、运行命令、预期结果和清理方式。仓库夹具不需要外部后端。
 
-| 示例                            | 运行后观察                                      | 接入应用                                           |
-| ------------------------------- | ----------------------------------------------- | -------------------------------------------------- |
-| [HTTP](./http.md)               | 本地服务返回 Ada；不存在的路由产生 HTTP 404     | 将服务与客户端复制到独立 ESM 项目                  |
-| [React](./react.md)             | 加载、失败、启动延迟请求并取消                  | 在已有 React 应用挂载组件，并提供文档列出的路由    |
-| [Viewer](./viewer.md)           | 四行数据、分页、姓名排序、Active 过滤与保存确认 | 在兼容的 React/Viewer peer 环境挂载本地组件        |
-| [View Engine](./view-engine.md) | 三笔订单，通过 ViewPage 手动查询、排序和分页    | 在 React 19 应用中使用当前工作区或验证后的本地归档 |
+| 示例                            | 运行后观察                                                        | 接入应用                                        |
+| ------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------- |
+| [HTTP](./http.md)               | 本地服务返回 Ada；不存在的路由产生 HTTP 404                       | 将服务与客户端复制到独立 ESM 项目               |
+| [React](./react.md)             | 加载、失败、启动延迟请求并取消                                    | 在已有 React 应用挂载组件，并提供文档列出的路由 |
+| [Viewer](./viewer.md)           | 四行数据、分页、姓名排序、Active 过滤与保存确认                   | 在兼容的 React/Viewer peer 环境挂载本地组件     |
+| [View Engine](./view-engine.md) | 随重写的 Record 工作台一起回归；旧示例见 tag `view-engine-legacy` | 发布前请关注重写状态页                          |
 
 Viewer 示例将视图保存在组件内存，重新挂载会重置。React 夹具的慢请求耗时 2000 ms，便于观察取消。这些检查证明示例行为，不证明认证、服务端一致性或生产持久化。
 
@@ -22302,21 +22302,21 @@ node --test wiki/test/documentation.test.mjs
 
 每个包提供入口页和专题目录。先选择职责，再进入需要的 API 家族；复杂包拆分更细，简单包保持紧凑。
 
-| 包                                    | 职责                                | 专题数 |
-| ------------------------------------- | ----------------------------------- | ------ |
-| [fetcher](./fetcher/index.md)         | HTTP 请求                           | 6      |
-| [decorator](./decorator/index.md)     | 声明式服务                          | 3      |
-| [eventbus](./eventbus/index.md)       | 事件投递                            | 2      |
-| [eventstream](./eventstream/index.md) | SSE 消费                            | 3      |
-| [storage](./storage/index.md)         | 值存储                              | 2      |
-| [openapi](./openapi/index.md)         | OpenAPI 类型契约                    | 3      |
-| [generator](./generator/index.md)     | 生成客户端                          | 5      |
-| [openai](./openai/index.md)           | 对话与 token 流                     | 2      |
-| [cosec](./cosec/index.md)             | 认证与刷新                          | 3      |
-| [react](./react/index.md)             | 组件请求状态                        | 8      |
-| [wow](./wow/index.md)                 | 命令与查询                          | 9      |
-| [viewer（已弃用）](./viewer/index.md)           | 数据视图与持久化                    | 8      |
-| [view-engine](./view-engine/index.md) | 无头引擎、组件配置与 shadcn/Base UI | 5      |
+| 包                                    | 职责                       | 专题数 |
+| ------------------------------------- | -------------------------- | ------ |
+| [fetcher](./fetcher/index.md)         | HTTP 请求                  | 6      |
+| [decorator](./decorator/index.md)     | 声明式服务                 | 3      |
+| [eventbus](./eventbus/index.md)       | 事件投递                   | 2      |
+| [eventstream](./eventstream/index.md) | SSE 消费                   | 3      |
+| [storage](./storage/index.md)         | 值存储                     | 2      |
+| [openapi](./openapi/index.md)         | OpenAPI 类型契约           | 3      |
+| [generator](./generator/index.md)     | 生成客户端                 | 5      |
+| [openai](./openai/index.md)           | 对话与 token 流            | 2      |
+| [cosec](./cosec/index.md)             | 认证与刷新                 | 3      |
+| [react](./react/index.md)             | 组件请求状态               | 8      |
+| [wow](./wow/index.md)                 | 命令与查询                 | 9      |
+| [viewer（已弃用）](./viewer/index.md) | 数据视图与持久化           | 8      |
+| [view-engine](./view-engine/index.md) | 可配置数据视图；重写进行中 | 2      |
 
 ## 如何使用参考
 

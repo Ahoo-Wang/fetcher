@@ -100,18 +100,11 @@ export const StartHere: Story = {
       '订阅与消费事件',
       '保存与观察状态',
       '驱动异步状态',
-      '接入视图引擎',
       '组合业务界面',
     ]) {
       await expect(
         navigation.getByRole('link', { name: new RegExp(name) }),
       ).toBeVisible();
     }
-    await expect(
-      canvas.getByRole('link', { name: /验证视图恢复/ }),
-    ).toBeVisible();
-    await expect(
-      canvas.getByRole('link', { name: /验证 HTTP 视图服务/ }),
-    ).toBeVisible();
   },
 };

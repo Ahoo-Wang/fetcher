@@ -7,12 +7,12 @@ description: 新项目从 View Engine 开始，存量 Viewer 接入进入维护�
 
 新项目请使用 View Engine，数据视图能力的后续演进由它承担。Viewer 已进入维护期（弃用），不再新增功能；下方 Viewer 路径仅供存量项目维护参考。两者模型与 API 不同，迁移需要适配。
 
-| UI 与所有权                                         | 入口                                                                                       |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| shadcn/Base UI、无头引擎、组件配置持久化与 ViewHost | [View Engine 示例](../examples/view-engine.md)及[任务指南](../guides/view-engine/index.md) |
-| Ant Design、应用控制表格数据和 Viewer 状态          | [Viewer 示例](../examples/viewer.md)                                                       |
+| UI 与所有权                                                                          | 入口                                                                                   |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| 代码声明的定义、可保存的视图配置、无样式钩子与 shadcn/Base UI 默认组件（重写进行中） | [View Engine 状态](../guides/view-engine/index.md)及[示例](../examples/view-engine.md) |
+| Ant Design、应用控制表格数据和 Viewer 状态                                           | [Viewer 示例](../examples/viewer.md)                                                   |
 
-View Engine 在首次注册表发布前采用工作区/本地归档接入，核心入口可独立于 React UI 使用。
+View Engine 正在重写，尚未在注册表发布；状态页描述目标入口与交付顺序。根入口可独立于 React UI 使用。
 
 ## 旧版 Ant Design Viewer 路径（已弃用）
 
