@@ -4,3 +4,6 @@
 exclude_paths:
   - 'packages/generator/expected/**'
   - 'packages/generator/test-output/**'
+  # Vendored from the shadcn registry, updated with `shadcn add --diff`.
+  - 'packages/view-engine/src/ui/components/**'
+  - 'packages/view-engine/src/ui/lib/**'
