@@ -61,6 +61,8 @@ export interface ViewRuntime<C extends ViewConfig = ViewConfig> {
   readonly id: string;
   readonly kind: C['kind'];
   readonly definition: DataViewDefinition;
+  /** The registry admission used, which an editor must edit against. */
+  readonly kinds: FieldKindRegistry;
   getSnapshot(): ViewRuntimeState<C>;
   subscribe(listener: () => void): () => void;
   /** Changes the draft only, synchronously. */
@@ -158,6 +160,7 @@ export class DataViewRuntime<
   readonly id: string;
   readonly kind: C['kind'];
   readonly definition: DataViewDefinition;
+  readonly kinds: FieldKindRegistry;
 
   private readonly listeners = new Set<() => void>();
   private readonly context: KernelContext;
@@ -177,6 +180,7 @@ export class DataViewRuntime<
     this.id = options.id;
     this.kind = options.config.kind;
     this.definition = options.definition;
+    this.kinds = options.kinds;
     this.runner = options.runner;
     this.environment = options.environment;
     this.context = {
