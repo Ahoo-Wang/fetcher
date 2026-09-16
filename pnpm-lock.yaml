@@ -944,6 +944,9 @@ importers:
       clsx:
         specifier: 'catalog:'
         version: 2.1.1
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.23
       lucide-react:
         specifier: 'catalog:'
         version: 1.45.0(react@19.2.8)
