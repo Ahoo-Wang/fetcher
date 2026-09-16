@@ -12,10 +12,6 @@
  */
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { spawn } from 'node:child_process';
 import test from 'node:test';
 import { spawnOwned, stopOwned } from './owned-process.mjs';
 
@@ -79,70 +75,3 @@ test(
     }
   },
 );
-
-test(
-  'SIGTERM during the package verifier stops the active verifier',
-  { skip: process.platform === 'win32' },
-  async () => {
-    const artifacts = await mkdtemp(join(tmpdir(), 'fve-lifecycle-'));
-    const runner = spawn(process.execPath, ['scripts/verify-view-engine.mjs'], {
-      cwd: new URL('../', import.meta.url),
-      env: { ...process.env, VIEW_ENGINE_ARTIFACTS: artifacts },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let output = '';
-    const verifierPid = await new Promise((resolve, reject) => {
-      runner.once('error', reject);
-      runner.stdout.on('data', chunk => {
-        output += chunk;
-        const match = output.match(/package pid (\d+)/);
-        if (match) resolve(Number(match[1]));
-      });
-    });
-
-    runner.kill('SIGTERM');
-    const [, signal] = await once(runner, 'close');
-
-    assert.equal(signal, 'SIGTERM');
-    assert.equal(running(verifierPid), false);
-    await rm(artifacts, { recursive: true, force: true });
-  },
-);
-
-// Browser checks must stay sequential so diagnostics do not contaminate timing samples.
-test('collects every browser failure before rejecting the delivery matrix', async () => {
-  const { verifyBrowserMatrix } = await import('./verify-browser-matrix.mjs');
-  const visited = [];
-  await assert.rejects(
-    verifyBrowserMatrix(['chromium', 'firefox', 'webkit'], async name => {
-      visited.push(name);
-      if (name !== 'firefox') throw new Error(`${name} failed`);
-    }),
-    error => error instanceof AggregateError && error.errors.length === 2,
-  );
-  assert.deepEqual(visited, ['chromium', 'firefox', 'webkit']);
-});
-test('passes a successful matrix and stops immediately on cancellation', async () => {
-  const { verifyBrowserMatrix } = await import('./verify-browser-matrix.mjs');
-  const visited = [];
-  await verifyBrowserMatrix(['chromium', 'firefox'], async name => {
-    visited.push(name);
-    await Promise.resolve();
-    visited.push(`${name}:done`);
-  });
-  assert.deepEqual(visited, [
-    'chromium',
-    'chromium:done',
-    'firefox',
-    'firefox:done',
-  ]);
-  const cancelled = [];
-  await assert.rejects(
-    verifyBrowserMatrix(['chromium', 'firefox'], async name => {
-      cancelled.push(name);
-      throw new DOMException('cancelled', 'AbortError');
-    }),
-    { name: 'AbortError' },
-  );
-  assert.deepEqual(cancelled, ['chromium']);
-});

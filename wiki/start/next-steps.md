@@ -21,4 +21,4 @@ After the first example succeeds, choose the change your application needs next.
 
 Use [architecture and selection](../architecture/index.md) to decide who owns state, cancellation, and persistence. Use [API reference](../reference/index.md) when you know the operation and need its exact contract; the [complete examples](../examples/index.md) remain the executable baseline.
 
-For the independent record engine, continue with [View Engine tasks](../guides/view-engine/index.md): component configuration, remote candidates, cells, summaries and ViewHost services.
+For configurable data views over Wow queries, follow the [View Engine rewrite status](../guides/view-engine/index.md): design, target API and delivery order.

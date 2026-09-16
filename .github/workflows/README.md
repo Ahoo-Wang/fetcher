@@ -11,7 +11,7 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `quality.yml`                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                         |
 | `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                     |
 | `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                             |
-| `build-storybook.yml`            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build.                                            |
+| `build-storybook.yml`            | Package build, the one Storybook production build with its static index check, and Chromium interaction tests on a separate runner. `STORYBOOK_BROWSERS` widens the matrix; see below.                    |
 | `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                         |
 | `generator-test.yml`             | Verify generation against both supported Wow versions.                                                                                                                                                    |
 | `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                  |
@@ -58,7 +58,7 @@ actionlint
 pnpm -r --filter './packages/*' build
 pnpm -r --filter './packages/*' exec eslint .
 pnpm --dir integration-test exec eslint .
-pnpm lint:view-engine:stories
+pnpm lint:stories
 pnpm -r --filter './packages/*' exec tsc --noEmit --incremental false --composite false
 VITEST_MAX_WORKERS=1 pnpm test:unit
 pnpm --dir wiki build
@@ -134,17 +134,28 @@ instead of several workspaces each with one worker. All assertions remain.
 
 Storybook run 34415983847 took about eight minutes: interactions 111s and
 delivery 285s were sequential. They now use independent runners, each retaining
-its required package build; delivery still runs all three browsers in isolation.
+its required package build.
+
+The Chromium/Firefox/WebKit acceptance that this file used to promise belonged
+to the deleted view-engine delivery verifier, which ran a view-engine readiness
+check per browser rather than the whole interaction suite. It returns with the
+view-engine UI delivery (`packages/view-engine/docs/design.md`). Until then,
+interactions run on Chromium; `STORYBOOK_BROWSERS=chromium,firefox,webkit pnpm
+test:storybook` runs the matrix locally and currently fails on three
+pre-existing WebKit issues in the deprecated viewer stories (an Ant Design
+table header reports `pointer-events: none`, and an Ant Design Select emits a
+dangling `aria-activedescendant`).
 This trades one additional setup/build for overlap. Actual wall-clock savings
 must be measured on the new CI run, not inferred from local hardware.
 
 ## Isolate the heavy suites
 
-Each Node version now runs `core`, `view-engine` and `viewer` on separate runners.
-Tests still use the unchanged package scripts, including both view-engine modes.
-The partition regression uses pnpm's actual workspace selection to require every
-package exactly once; leaf builds include their dependencies. This removes the
-single-runner chain of view-engine ordinary/compiled tests followed by viewer.
+Each Node version runs `core`, `view-engine` and `viewer` on separate runners.
+Tests use the unchanged package scripts. The partition regression uses pnpm's
+actual workspace selection to require every package exactly once; leaf builds
+include their dependencies. `view-engine` is being rewritten from an empty tree
+(see `packages/view-engine/docs/design.md`); its suite stays separate so the
+growing test set does not lengthen the core runner.
 
 Node 24 artifacts preserve `packages/<name>/coverage/coverage-final.json` paths.
 The combined coverage job waits for all test jobs, merges the disjoint reports,

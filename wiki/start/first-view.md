@@ -7,12 +7,12 @@ description: Start with View Engine; maintain existing Viewer integrations.
 
 Use View Engine for new projects and further data-view development. Viewer is deprecated and in maintenance mode, with no new features; the Viewer path below is retained for existing consumers. The packages use different models and APIs, so migration requires adaptation.
 
-| UI and ownership                                                                  | Entry                                                                                              |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| shadcn/Base UI, headless engine, component-configuration persistence and ViewHost | [View Engine example](../examples/view-engine.md) and [task guide](../guides/view-engine/index.md) |
-| Ant Design, application-controlled table data and Viewer state                    | [Viewer example](../examples/viewer.md)                                                            |
+| UI and ownership                                                                                          | Entry                                                                                          |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Definitions in code, saved view configs, headless hooks and shadcn/Base UI defaults (rewrite in progress) | [View Engine status](../guides/view-engine/index.md) and [example](../examples/view-engine.md) |
+| Ant Design, application-controlled table data and Viewer state                                            | [Viewer example](../examples/viewer.md)                                                        |
 
-View Engine currently uses workspace/local-archive instructions until its first registry release. Its core entry is usable independently of the React UI.
+View Engine is being rewritten and has no registry release yet; its status pages describe the target entries and the delivery order. The root entry stays usable without the React UI.
 
 ## Legacy Ant Design Viewer path (deprecated)
 

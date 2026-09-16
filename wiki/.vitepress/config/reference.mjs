@@ -131,15 +131,7 @@ export const referencePackages = [
   },
   {
     name: 'view-engine',
-    topics: [
-      'index',
-      'models',
-      'view-host',
-      'engine',
-      'filters',
-      'components',
-      'symbols',
-    ],
+    topics: ['index', 'symbols'],
   },
   {
     name: 'viewer',

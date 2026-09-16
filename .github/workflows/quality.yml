@@ -47,7 +47,7 @@ jobs:
         run: |
           pnpm -r --filter './packages/*' exec eslint .
           pnpm --dir integration-test exec eslint .
-          pnpm lint:view-engine:stories
+          pnpm lint:stories
       - name: Check all package types against built dependencies
         if: needs.changes.outputs.code == 'true' || needs.changes.outputs.storybook == 'true'
         run: pnpm -r --filter './packages/*' exec tsc --noEmit --incremental false --composite false

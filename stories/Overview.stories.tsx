@@ -47,13 +47,6 @@ const entries = [
     href: './?path=/docs/react-hooks-async-state--docs',
   },
   {
-    title: 'View Engine',
-    task: '接入视图引擎',
-    description:
-      '从最小接入开始，按引擎、数据视图、分析视图和共享组件分层探索，连接真实 API 验证。',
-    href: './?path=/docs/view-engine-全链路体验--docs',
-  },
-  {
     title: 'Viewer',
     task: '组合业务界面',
     description: 'Ant Design 输入、过滤器、表格与完整业务流程。',
@@ -83,28 +76,6 @@ export const StartHere: Story = {
           ))}
         </nav>
       </section>
-      <section aria-labelledby="verification-title">
-        <h2 id="verification-title">开发验证</h2>
-        <p>以下场景用于验证接入边界，具有独立的存储或服务条件。</p>
-        <nav className="story-overview-grid" aria-label="开发验证导航">
-          <a href="./?path=/docs/development-local-storage--docs" target="_top">
-            <span>浏览器存储</span>
-            <strong>验证视图恢复</strong>
-            <p>保存视图后刷新页面；重置仅清理该示例的视图配置。</p>
-          </a>
-          <a
-            href="./?path=/story/development-http-service--http-view-service"
-            target="_top"
-          >
-            <span>独立服务实验</span>
-            <strong>验证 HTTP 视图服务</strong>
-            <p>
-              需先运行 node
-              packages/view-engine/scripts/verify-http-view-host.mjs --serve。
-            </p>
-          </a>
-        </nav>
-      </section>
       <footer className="story-overview-footer">
         <p>
           打开示例不会自动创建或删除记录。回归测试通过 pnpm test:storybook
@@ -129,18 +100,11 @@ export const StartHere: Story = {
       '订阅与消费事件',
       '保存与观察状态',
       '驱动异步状态',
-      '接入视图引擎',
       '组合业务界面',
     ]) {
       await expect(
         navigation.getByRole('link', { name: new RegExp(name) }),
       ).toBeVisible();
     }
-    await expect(
-      canvas.getByRole('link', { name: /验证视图恢复/ }),
-    ).toBeVisible();
-    await expect(
-      canvas.getByRole('link', { name: /验证 HTTP 视图服务/ }),
-    ).toBeVisible();
   },
 };
