@@ -18,9 +18,12 @@
  * the page around it. The host keeps its own typography.
  */
 
+/* Tailwind v4 resolves string imports itself; url() would leave them to the browser. */
+/* stylelint-disable import-notation */
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+/* stylelint-enable import-notation */
 
 /* Only this package is scanned, so the shipped stylesheet holds only what it uses. */
 @source "./";
@@ -70,6 +73,7 @@
 
 .fve-root {
   color-scheme: light;
+
   --background: oklch(1 0 0deg);
   --foreground: oklch(0.145 0 0deg);
   --card: oklch(1 0 0deg);
@@ -107,6 +111,7 @@
 .dark .fve-root:not([data-theme='light']),
 .fve-root[data-theme='dark'] {
   color-scheme: dark;
+
   --background: oklch(0.145 0 0deg);
   --foreground: oklch(0.985 0 0deg);
   --card: oklch(0.205 0 0deg);
