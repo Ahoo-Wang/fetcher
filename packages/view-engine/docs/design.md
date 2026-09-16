@@ -51,7 +51,7 @@ export type ViewDefinition =
   | { id: string; title: string; kind: 'dashboard'; views?: SystemView[] }; // Dashboard 实例的归属目录
 
 export interface SystemView {
-  id: string; // 在定义内唯一；Engine 以 `${definitionId}:${id}` 作为实例 id
+  id: string; // 在定义内唯一；Engine 以 `system:${definitionId}:${id}` 作为实例 id，`system:` 是保留命名空间
   title: string;
   config: ViewConfig;
 }
@@ -109,12 +109,12 @@ export type ViewConfig =
 interface ViewConfigBase {
   filter: FilterTree; // Dashboard 中作用于全部数据面板
   filterMode: 'simple' | 'advanced'; // 编辑器模式跟随视图保存
-  refresh: { interval: number | null }; // 自动刷新间隔，秒；null 关闭
+  refresh: { interval: number | null }; // 自动刷新间隔，秒；null 关闭；开启时必须是有限整数且不小于 RuntimeLimits.minRefreshInterval（缺省 5）
 }
 
 export interface RecordViewConfig extends ViewConfigBase {
   kind: 'record';
-  sort: FieldSort[];
+  sort: { field: string; direction: 'ASC' | 'DESC' }[];
   pageSize: number;
   summaries?: { field: string; fn: SummaryFunction }[];
   layout: 'table' | 'card'; // 当前布局；切换只改此字段
@@ -134,8 +134,8 @@ export interface AnalysisViewConfig extends ViewConfigBase {
   elements?: { path: string; filter?: FilterTree }[]; // 数组展开；filter 以元素字段为作用域
   groups: AnalysisGroup[];
   metrics: [AnalysisMetric, ...AnalysisMetric[]];
-  having?: HavingExpression; // 复用 Wow 类型：只引用指标别名与数字
-  sort: { alias: string; direction: SortDirection }[];
+  having?: AnalysisHavingExpression; // 与 Wow HavingExpression 同构，枚举为字面量；只引用指标别名与数字
+  sort: { alias: string; direction: 'ASC' | 'DESC' }[];
   limit: number;
   layout: 'table' | 'chart'; // 当前呈现；切换只改此字段
   table: AnalysisTableSpec; // 与 chart 成对保存
@@ -156,7 +156,7 @@ export type AnalysisGroup =
       type: 'DATE_HISTOGRAM';
       field: string;
       alias: string;
-      unit: AggregationDateUnit;
+      unit: `${AggregationDateUnit}`;
       timeZone?: string;
       dense?: boolean;
     };
@@ -166,7 +166,7 @@ export type AnalysisExpression =
   | { type: 'CONSTANT'; value: number }
   | {
       type: 'BINARY';
-      operator: AggregationExpressionOperator;
+      operator: `${AggregationExpressionOperator}`;
       left: AnalysisExpression;
       right: AnalysisExpression;
     };
@@ -176,7 +176,7 @@ export type AnalysisMetric =
   | {
       type: 'NUMERIC';
       alias: string;
-      function: AggregationFunction;
+      function: `${AggregationFunction}`;
       expression: AnalysisExpression;
       filter?: FilterTree;
     }
@@ -194,7 +194,10 @@ export type AnalysisMetric =
       percentile: number;
       filter?: FilterTree;
     }
-  | { type: 'DERIVED'; alias: string; expression: DerivedExpression }; // 复用 Wow 类型
+  | { type: 'DERIVED'; alias: string; expression: AnalysisDerivedExpression }; // 与 Wow DerivedExpression 同构
+
+export type AnalysisHavingExpression = LiteralEnums<HavingExpression>;
+export type AnalysisDerivedExpression = LiteralEnums<DerivedExpression>;
 
 // 图表按族保存：type 所属族的子对象必填，其余可选并在切换时保留，跨族切换不丢配置。
 // 所有引用均为 group / metric 别名，不含任何图表库类型。
@@ -339,10 +342,19 @@ export interface FilterGroup {
 }
 export interface FilterLeaf {
   field: string;
-  operator: FilterOperator;
+  operator: FilterOperatorName; // Wow FilterOperator 的同值字符串字面量
   value: FilterValue; // 语义值，形状由字段的 FieldKind 定义；不是编译结果
 }
 export type FilterNode = FilterGroup | FilterLeaf;
+
+/** 配置中的枚举一律是与 Wow 枚举同值的字符串字面量，编译时映射回枚举；配置因此是纯 JSON。 */
+export type FilterOperatorName = `${FilterOperator}`;
+/** 递归地把枚举成员换成其字符串取值，其余结构不变。 */
+type LiteralEnums<T> = T extends string
+  ? `${T}`
+  : T extends object
+    ? { [K in keyof T]: LiteralEnums<T[K]> }
+    : T;
 
 // 内置 kind 的值类型（示意，完整定义在 filter/ 各 kind 中）
 type StringFilterValue = string | string[];
@@ -400,14 +412,14 @@ export interface Issue {
 - 保存用户表达的语义，不保存编译结果。"最近 7 天"保存为 `{ type: 'relative', amount: 7, unit: 'day' }`，而不是两个绝对时间；编译在每次执行时依据 `ctx.now` 进行。
 - 组件选择不进配置。编辑器由 `(field.kind, operator, value.type)` 推出；业务想为某字段换编辑器写在 `FieldDefinition.editor`，那是定义。UI 组件改名或重写不影响任何已保存视图。
 - 语义变体用值内部的 `type` 判别，由 FieldKind 拥有。它承担组件节点模型中 `component` 字段的作用，但描述的是语义而不是 UI。自定义 kind 自行定义值的形状、校验、编译与编辑器描述，扩展能力与组件节点模型等价。
-- Wow 协议类型可以直接复用，当且仅当它本身就是意图且不含需要编译的部分：`FieldSort`、`HavingExpression`、`DerivedExpression` 与各枚举满足此条件；`AggregationGroup`、`AggregationMetric`、`AggregationExpression`、`AggregationElement` 引用字段或筛选，因此有配置层孪生类型。
+- 配置是纯 JSON：其中的枚举一律使用与 Wow 枚举同值的字符串字面量（`${Enum}` 模板字面量类型），编译时映射回枚举。Wow 协议类型只在"本身就是意图、不含字段引用与枚举"时直接复用；`HavingExpression`、`DerivedExpression` 结构可复用但含枚举，故以 `LiteralEnums<>` 派生同构的字面量版本；`AggregationGroup`、`AggregationMetric`、`AggregationExpression`、`AggregationElement`、`FieldSort` 引用字段或筛选，因此有配置层孪生类型。定义是代码，可以直接使用 Wow 枚举。
 - 编辑器状态不进配置：折叠、当前标签页、未完成的输入、拖动中的临时位置归控制器；节点在编辑期的稳定 key 由控制器分配，不持久化；Issue 用路径定位节点。保存要求配置无 error，因此不存在保存半成品再恢复的问题。
 - kind 被移除或缺少 React 渲染器时，配置仍可编译与校验，UI 以只读方式显示原值并给出 Issue。
 
 `ViewConfigBase` 的三个字段都是"观察方式"的一部分，所以随视图保存而不是作为个人偏好：
 
 - **`filterMode`。** 高级模式写出的含 OR 或嵌套分组的树无法在简单模式中呈现，重开时必须仍是高级模式。`simple` 只允许"单个 AND 组、子节点全为叶子"的树；`filterMode: 'simple'` 配上不满足的树产生 warning，UI 以高级模式打开，不改配置。
-- **`refresh`。** "每 30 秒刷一次"属于视图本身。计时器归运行时，见第 6 节。
+- **`refresh`。** "每 30 秒刷一次"属于视图本身。`interval` 为 `null` 或不小于 `RuntimeLimits.minRefreshInterval` 的有限整数；`0`、负数、非有限值与过小的值一律是 error 级 Issue，无论配置来自代码还是从 store 读入，因为运行时只执行通过校验的 `applied`。计时器归运行时，见第 6 节。
 - **布局成对保存。** Record 的 `table` 与 `card`、Analysis 的 `table` 与 `chart` 始终同时持久化，`layout` 只记录当前选择；`chart` 内部再按族保存子对象，跨族切换时控制器保留上一次的子对象。切换布局或图型不会丢失另一套设置。`RecordCapability.layouts` 限制允许的布局，`defaults` 可分别给初值。
 
 ## 4. 分层与依赖规则
@@ -458,20 +470,23 @@ clearFilter(tree): FilterTree
 describeFilter(def, tree): FilterSummaryItem[]           // 已应用条件的摘要
 
 // record
+defaultRecordConfig(def): RecordViewConfig                      // 按 RecordCapability.defaults 补全的完整初始配置
 validateRecord(def, cfg: RecordViewConfig, kinds): Issue[]   // 含 layout 准入、table.columns 与 card 字段存在性
 compileRecord(def, cfg, kinds, ctx, page: { index: number } | { cursor: string }): FilterPagedQuery | CursorQuery
-projectRecord(def, cfg, page: PagedList<RecordData>): RecordView   // 列语义、行、行键
+projectRecord(def, cfg, page: PagedList<RecordData> | CursorPage<RecordData>): RecordView   // 列语义、行、行键；paging 为 { mode: 'paged'; index; total? } | { mode: 'cursor'; nextCursor: string | null }
 compileSummaries(def, cfg, kinds, ctx): AggregationQuery | null    // 全范围汇总
 projectSummaries(def, cfg, rows | aggregation): SummaryRow
 
 // analysis
+defaultAnalysisConfig(def): AnalysisViewConfig                  // 计数指标加首个可分组字段的完整初始配置
 validateAnalysis(def, cfg: AnalysisViewConfig, kinds): Issue[]   // 见下方规则
 compileAnalysis(def, cfg, kinds, ctx): AggregationQuery          // 同构映射；三处 FilterTree 编译为 FilterExpression
 projectAnalysis(def, cfg, result): AnalysisView          // 表格列与行；图表系列
 resultSchema(def, cfg): ResultSchema                     // 结果行校验依据
 
 // dashboard
-validateDashboard(cfg: DashboardViewConfig, scope: ViewInstance['scope'], refs: Map<string, ViewInstance>): Issue[]   // 含 bindings 的字段 kind 兼容性与引用实例的可见范围
+emptyDashboardConfig(): DashboardViewConfig                     // 无面板、无全局字段的完整初始配置
+validateDashboard(cfg: DashboardViewConfig, scope: ViewInstance['scope'], refs: Map<string, { instance: ViewInstance; definition: ViewDefinition }>): Issue[]   // 含 bindings 的字段 kind 兼容性与引用实例的可见范围
 mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboard 的 filter 经 bindings 映射后 AND 合并到面板已应用筛选
 ```
 
@@ -479,7 +494,7 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 `FieldKindRegistry` 是 filter 的核心扩展点，见第 10 节。相对时间条件在 `compile*` 中依据注入的 `ctx.now` 求值，纯内核不读系统时钟。
 
-`validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一；`sort` 只能引用已存在的 group 或 metric 别名，`having` 与 `DERIVED` 只能引用 metric 别名；`percentile` 在 (0, 100]；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2；`referenceLines` 引用的轴必须有系列；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
+`validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一；`sort` 只能引用已存在的 group 或 metric 别名，`having` 与 `DERIVED` 只能引用 metric 别名，且 `having` 不能引用 `ANY` 指标（Wow 协议不支持）；`percentile` 在 (0, 100]；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2；`referenceLines` 引用的轴必须有系列；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
 
 `validateDashboard` 的规则：`bindings[].globalField` 必须在 `cfg.fields` 中，`bindings[].panelField` 必须在被引用实例的定义中，且两者 kind 兼容；被引用实例必须是 Record 或 Analysis；**被引用实例的可见范围必须覆盖 Dashboard 自身的范围**：`personal` Dashboard 可以引用任何可读实例，`shared` 或 `system` Dashboard 只能引用 `shared` 或 `system` 实例，否则产生 error 级 Issue，UI 提示先把被引用视图另存为共享。打开时若某个被引用实例不可读（已删除或无权限），只有该面板显示"不可访问"，其余面板照常工作。内容面板规则见下段。
 
@@ -523,10 +538,10 @@ export interface ViewRuntimeState<C> {
 规则：
 
 - `result.config` 是产生该结果的配置，不随 draft 变化；UI 用它标注"结果对应的条件"。
-- 新的 `apply / refresh / page` 替代同一 runtime 的在途请求，旧响应到达后丢弃。这由 `RequestRunner` 用 per-runtime key 实现，全局并发上限与队列来自 `RuntimeLimits`（`maxConcurrentQueries`、`maxQueuedQueries`、`maxPageSize`、`maxAnalysisRows`）。
+- 新的 `apply / refresh / page` 替代同一 runtime 的在途请求，旧响应到达后丢弃。这由 `RequestRunner` 用 per-runtime key 实现，全局并发上限与队列来自 `RuntimeLimits`（`maxConcurrentQueries`、`maxQueuedQueries`、`maxPageSize`、`maxAnalysisRows`、`minRefreshInterval`）。
 - 状态变更同步提交后再通知订阅者；相同状态返回相同对象，子对象引用稳定，以配合 `useSyncExternalStore`。
 - runtime 不做持久化。保存是 Engine 的命令，成功后 Engine 调用 `runtime.markSaved(instance)` 推进基线。
-- **自动刷新。** `applied.refresh.interval` 非空时由该 runtime 持有唯一计时器，到期调用 `refresh()`。四种情况暂停：`issues` 含 error、筛选输入正在编辑、页面不可见（`visibilitychange`）、上一次请求仍在途。计时器随 `dispose` 释放。多个 React 组件观察同一 runtime 不会产生多个计时器。
+- **自动刷新。** `applied.refresh.interval` 非空时由该 runtime 持有唯一计时器，到期调用 `refresh()`。四种情况暂停：`issues` 含 error、筛选输入正在编辑、宿主报告页面不可见、上一次请求仍在途。计时与可见性都来自注入的 `RuntimeEnvironment`（见下），runtime 不触碰 DOM。计时器随 `dispose` 释放。多个 React 组件观察同一 runtime 不会产生多个计时器。
 
 `DashboardRuntime` 持有 N 个子 `ViewRuntime` 加一个全局筛选草稿。`apply()` 校验全局筛选，为每个面板计算 `mergeGlobalFilter` 后调用子 runtime 的 `apply()`；每个面板独立 loading / error / result，Dashboard 不汇总成单一状态。自动刷新由 DashboardRuntime 按自身 `refresh.interval` 统一计时并触发全部数据面板的 `refresh()`；被引用实例自身的 `refresh` 配置在 Dashboard 内忽略，避免两层计时器。布局编辑是普通 `edit({ panels })`。
 
@@ -535,17 +550,32 @@ export interface ViewRuntimeState<C> {
 ```ts
 export interface ViewEngine {
   readonly store: ViewStore;
+  readonly environment: RuntimeEnvironment; // 时钟、计时器、可见性；由创建方注入
   definitions: ReadonlyMap<string, ViewDefinition>;
   resolveSource(key: string): ViewSource;   // Pick<QueryApi, 'paged' | 'cursor' | 'aggregate'>
 
   open(instanceId: string): Promise<ViewRuntime>;                 // store.get → validate → runtime
-  create(definitionId: string, input: { title: string; scope: 'personal' | 'shared'; config?: ViewConfig }): ViewRuntime; // 未保存的新视图，元数据随 runtime 保存
+  create(definitionId: string, input: { title: string; scope: 'personal' | 'shared'; config: ViewConfig }): ViewRuntime; // 未保存的新视图；config 必填，由 default*Config / emptyDashboardConfig 生成
   save(runtime: ViewRuntime): Promise<ViewInstance>;               // saved ? store.save : store.create
   saveAs(runtime, input: { title; scope }): Promise<ViewInstance>;
   rename / delete / reorder / setDefault(...): Promise<void>;
   list(definitionId: string): Promise<ViewInstanceSummary[]>; // 代码声明的系统视图 + store.list()
   preferences(definitionId: string): Promise<ViewPreferences>;
   permissions(definitionId: string): ViewPermissions;             // store 同步提供，缺省全允许
+}
+```
+
+```ts
+/** runtime 与宿主环境之间的唯一接口；Node 缺省实现始终可见，`/react` 的 `useViewEngine` 注入基于 `document.visibilityState` 的实现。 */
+export interface RuntimeEnvironment {
+  now(): Date;
+  timeZone: string;
+  setTimeout(callback: () => void, ms: number): unknown;
+  clearTimeout(handle: unknown): void;
+  visibility: {
+    isVisible(): boolean;
+    subscribe(listener: () => void): () => void;
+  };
 }
 ```
 
@@ -557,15 +587,15 @@ export interface ViewEngine {
 
 ### 7.1 实例生命周期
 
-| 命令                                              | store 调用                                                         | 前置检查                                                                      | 成功后                                                                         |
-| ------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `create(definitionId, { title, scope, config? })` | 无                                                                 | 定义存在；`scope` 对应的创建许可                                              | 返回 `saved = null` 的 runtime；不进入列表                                     |
-| `save(runtime)`，`saved = null`                   | `store.create({ definitionId, title, scope, config: draft }, ctx)` | `issues` 无 error；按 `runtime.scope` 检查 `createPersonal` 或 `createShared` | `runtime.markSaved(instance)`；列表刷新                                        |
-| `save(runtime)`，`saved != null`                  | `store.save(id, draft, saved.revision, ctx)`                       | 无 error；`saved.scope != 'system'`；`permissions.instance(id).save`          | `markSaved(instance)`；`dirty = false`                                         |
-| `saveAs(runtime, { title, scope })`               | `store.create(draftAsNew, ctx)`                                    | 无 error；对应 scope 的创建许可                                               | 返回新实例；源 runtime 的 `saved` 与 `draft` 都不变；不自动打开，UI 提供"打开" |
-| `rename(id, title)`                               | `store.rename(id, title, revision, ctx)`                           | `permissions.instance(id).rename`；标题非空                                   | 更新 `saved.title` 与列表摘要；`draft` 不受影响                                |
-| `delete(id)`                                      | `store.delete(id, revision, ctx)`                                  | `permissions.instance(id).delete`                                             | 已打开则 `dispose`；列表刷新；偏好不改写，见 7.3                               |
-| `open(instanceId)`                                | 代码声明的系统视图直接取自定义；其余 `store.get(id)`               | 实例可读                                                                      | 校验后建立 runtime；配置合法则立即 `apply()`                                   |
+| 命令                                             | store 调用                                                         | 前置检查                                                                      | 成功后                                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `create(definitionId, { title, scope, config })` | 无                                                                 | 定义存在；`scope` 对应的创建许可                                              | 返回 `saved = null` 的 runtime；不进入列表                                      |
+| `save(runtime)`，`saved = null`                  | `store.create({ definitionId, title, scope, config: draft }, ctx)` | `issues` 无 error；按 `runtime.scope` 检查 `createPersonal` 或 `createShared` | `runtime.markSaved(instance)`；列表刷新                                         |
+| `save(runtime)`，`saved != null`                 | `store.save(id, draft, saved.revision, ctx)`                       | 无 error；`saved.scope != 'system'`；`permissions.instance(id).save`          | `markSaved(instance)`；`dirty = false`                                          |
+| `saveAs(runtime, { title, scope })`              | `store.create(draftAsNew, ctx)`                                    | 无 error；对应 scope 的创建许可                                               | 返回新实例；源 runtime 的 `saved` 与 `draft` 都不变；不自动打开，UI 提供"打开"  |
+| `rename(id, title)`                              | `store.rename(id, title, revision, ctx)`                           | `permissions.instance(id).rename`；标题非空                                   | 以返回的实例整体推进 `saved`（含新 `revision`）并刷新列表摘要；`draft` 不受影响 |
+| `delete(id)`                                     | `store.delete(id, revision, ctx)`                                  | `permissions.instance(id).delete`                                             | 已打开则 `dispose`；列表刷新；偏好不改写，见 7.3                                |
+| `open(instanceId)`                               | 代码声明的系统视图直接取自定义；其余 `store.get(id)`               | 实例可读                                                                      | 校验后建立 runtime；配置合法则立即 `apply()`                                    |
 
 **保存的是配置，不是浏览状态。** `ViewInstance.config` 只含 `ViewConfig`；选择、页码、游标、结果一律不保存。重开恢复配置，并从第一页重新执行。切换 Record 或 Analysis 的布局只是一次 `edit({ layout })`，切换图型只是一次 `edit({ chart: { type } })`，各套设置都在配置中，因此切换可逆且随视图一起保存。
 
@@ -683,6 +713,8 @@ export class ViewStoreError extends Error {
 
 1. **乐观版本。** 覆盖写携带期望 `revision`，不匹配抛 `CONFLICT`。Engine 把冲突暴露给 UI，用户选择"重新加载后覆盖"或"另存"。
 2. **幂等 requestId。** 每个逻辑写入生成一次 requestId；超时或网络错误后的重试复用同一 requestId 与同一正文，服务端按 requestId 去重。Engine 在 UI 上把这种情况表述为"保存结果未知，可重试"，不把它当作确定失败，也不当作成功。
+
+`ViewStore` 签发的实例 id 不得以 `system:` 开头，该前缀保留给代码声明的系统视图；Engine 合并列表时丢弃此类条目并报告 Issue，`MemoryViewStore` 在 `create` 时直接拒绝。
 
 本包只提供一个实现：`MemoryViewStore`。它是同步 Map 加自增 revision，服务测试、示例、Storybook 与"只查询不持久化"的场景；可选的 `snapshot: { load(); save(all) }` 钩子让示例把整份数据放进 localStorage，约三十行，不是第二个实现。
 

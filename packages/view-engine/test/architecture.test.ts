@@ -89,27 +89,38 @@ const HEADLESS: readonly Location[] = [
   'store',
 ];
 
-/** Third-party packages and the only locations allowed to import them. */
-const THIRD_PARTY: Record<string, readonly Location[]> = {
-  '@ahoo-wang/fetcher-wow': [
-    'root',
-    'model',
-    'filter',
-    'record',
-    'analysis',
-    'runtime',
-  ],
-  '@tanstack/react-table': ['ui'],
-  recharts: ['ui'],
-  'react-grid-layout': ['ui'],
-  'react-markdown': ['ui'],
-  '@base-ui/react': ['ui'],
-  'lucide-react': ['ui'],
-};
-
 const WOW = '@ahoo-wang/fetcher-wow';
 const src = resolve(dirname(fileURLToPath(import.meta.url)), '../src');
 const wowSrc = resolve(src, '../../wow/src');
+
+/**
+ * Dependencies that may be imported outside `ui`. Every other runtime or peer
+ * dependency declared in package.json is derived as UI-only (React peers may
+ * also be used by the `react` layer), so a new React dependency cannot reach a
+ * headless layer without being listed here explicitly.
+ */
+const HEADLESS_DEPENDENCIES: Record<string, readonly Location[]> = {
+  [WOW]: ['root', 'model', 'filter', 'record', 'analysis', 'runtime'],
+  '@date-fns/tz': ['filter', 'record', 'analysis', 'runtime', 'ui'],
+  '@ahoo-wang/fetcher-react': ['react', 'ui'],
+};
+
+const manifest = JSON.parse(
+  readFileSync(resolve(src, '../package.json'), 'utf8'),
+) as {
+  dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
+
+/** Third-party packages and the only locations allowed to import them. */
+const THIRD_PARTY: Record<string, readonly Location[]> = Object.fromEntries([
+  ...Object.keys(manifest.dependencies ?? {}).map(
+    name => [name, HEADLESS_DEPENDENCIES[name] ?? ['ui']] as const,
+  ),
+  ...Object.keys(manifest.peerDependencies ?? {}).map(
+    name => [name, ['react', 'ui']] as const,
+  ),
+]);
 
 interface Import {
   specifier: string;
@@ -166,9 +177,13 @@ function importsOf(file: ts.SourceFile): Import[] {
         bindings && ts.isNamedImports(bindings) ? bindings.elements : [];
       imports.push({
         specifier: node.moduleSpecifier.text,
+        // A default import is a value binding, so a mixed
+        // `import helper, { type T } from ...` is not type-only.
         typeOnly:
           clause?.isTypeOnly === true ||
-          (named.length > 0 && named.every(element => element.isTypeOnly)),
+          (clause?.name === undefined &&
+            named.length > 0 &&
+            named.every(element => element.isTypeOnly)),
         names: named.map(
           element => (element.propertyName ?? element.name).text,
         ),
@@ -337,6 +352,16 @@ describe('architecture', () => {
         .map(({ specifier }) => `${describePath(file)} -> ${specifier}`),
     );
     expect(violations).toEqual([]);
+  });
+
+  it('lists only declared dependencies as headless-capable', () => {
+    const declared = new Set([
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.peerDependencies ?? {}),
+    ]);
+    expect(
+      Object.keys(HEADLESS_DEPENDENCIES).filter(name => !declared.has(name)),
+    ).toEqual([]);
   });
 
   it.each(Object.entries(THIRD_PARTY))(
