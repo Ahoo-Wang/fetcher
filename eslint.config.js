@@ -55,9 +55,6 @@ export default tseslint.config(
   storybook.configs['flat/recommended'],
   {
     ...reactLintConfig,
-    files: [
-      'packages/view-engine/**/*.{ts,tsx}',
-      'stories/view-engine/**/*.{ts,tsx}',
-    ],
+    files: ['packages/view-engine/**/*.{ts,tsx}'],
   },
 );

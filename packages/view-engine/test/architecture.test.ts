@@ -11,99 +11,238 @@
  * limitations under the License.
  */
 
-// @vitest-environment node
-import { join, relative } from 'node:path';
-import { expect, it } from 'vitest';
-import {
-  root,
-  runtimeModule,
-  graphFrom,
-  cyclesIn,
-  browserGlobalsIn,
-} from './architecture/runtimeGraph.js';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 
-it('keeps the public core runtime independent of browser UI libraries and globals', () => {
-  const graph = graphFrom([join(root, 'index.ts')]);
-  const uiImports = [...graph].flatMap(([file, module]) =>
-    [
-      ...module.external.filter(specifier =>
-        /^(react(?:$|[-/])|@tanstack\/|@base-ui\/|lucide-react$|recharts(?:$|\/))/.test(
-          specifier,
-        ),
-      ),
-      ...module.assets,
-    ].map(specifier => `${relative(root, file)} -> ${specifier}`),
-  );
-  expect(uiImports).toEqual([]);
-  expect(browserGlobalsIn(graph)).toEqual([]);
-});
+/**
+ * Dependency rules from docs/design.md §4. Each layer lists the layers it may
+ * import. `ui` may import everything; layers absent from `src/` pass trivially,
+ * so the rules hold from the empty tree onwards.
+ */
+const LAYERS = [
+  'model',
+  'filter',
+  'record',
+  'analysis',
+  'dashboard',
+  'runtime',
+  'store',
+  'react',
+  'ui',
+] as const;
+type Layer = (typeof LAYERS)[number];
 
-// Transpiling the entire source tree is a structural check, not a runtime latency budget.
-it('keeps both public runtime import graphs free of internal cycles', () => {
-  expect(
-    cyclesIn(graphFrom([join(root, 'index.ts'), join(root, 'react.ts')])),
-  ).toEqual([]);
-}, 15_000);
+const ALLOWED: Record<Layer, readonly Layer[]> = {
+  model: [],
+  filter: ['model'],
+  record: ['model', 'filter'],
+  analysis: ['model', 'filter'],
+  dashboard: ['model', 'filter'],
+  runtime: ['model', 'filter', 'record', 'analysis', 'dashboard', 'store'],
+  store: ['model'],
+  react: [
+    'model',
+    'filter',
+    'record',
+    'analysis',
+    'dashboard',
+    'runtime',
+    'store',
+  ],
+  ui: [...LAYERS],
+};
 
-it('distinguishes runtime imports and browser references from types, strings and local bindings', () => {
-  const runtime = runtimeModule(
-    'example.ts',
-    `
-    import type { ReactNode } from 'react';
-    export type { ColumnDef } from '@tanstack/react-table';
-    export { type ColumnDef as ColumnAlias } from '@tanstack/react-table';
-    import { type Hidden, value as renamed } from './runtime.js';
-    export { value } from './value.js';
-    const document = 'window';
-    export const local = [document, renamed];
-  `,
-  );
-  expect(runtime.imports).toEqual(['./runtime.js', './value.js']);
-  const fixture = (javascript: string) =>
-    new Map([
-      [
-        join(root, 'example.ts'),
-        { javascript, local: [], external: [], assets: [] },
-      ],
-    ]);
-  expect(browserGlobalsIn(fixture(runtime.javascript))).toEqual([]);
-  expect(
-    browserGlobalsIn(fixture('export const element = document.body;')),
-  ).toEqual(['example.js: document']);
-  expect(
-    browserGlobalsIn(fixture("export const element = globalThis['document'];")),
-  ).toEqual(['example.js: document']);
-  expect(
-    browserGlobalsIn(fixture('export const parser = new DOMParser();')),
-  ).toEqual(['example.js: DOMParser']);
-  const cyclic = new Map([
-    [
-      join(root, 'a.ts'),
-      { javascript: '', local: [join(root, 'b.ts')], external: [], assets: [] },
-    ],
-    [
-      join(root, 'b.ts'),
-      { javascript: '', local: [join(root, 'a.ts')], external: [], assets: [] },
-    ],
-  ]);
-  expect(cyclesIn(cyclic)).toEqual([['a.ts', 'b.ts', 'a.ts']]);
-});
+/** Layers that must stay free of React and the DOM. */
+const HEADLESS: readonly Layer[] = [
+  'model',
+  'filter',
+  'record',
+  'analysis',
+  'dashboard',
+  'runtime',
+  'store',
+];
 
-it('keeps per-kind session derivation independent of lifecycle orchestration', () => {
-  for (const entry of [
-    'record/engine/recordSession.ts',
-    'analysis/analysisSession.ts',
-  ]) {
-    const graph = graphFrom([join(root, entry)]);
-    for (const service of [
-      'engine/sessionState.ts',
-      'engine/SessionStore.ts',
-      'engine/ViewEngine.ts',
-    ]) {
-      expect(
-        graph.has(join(root, service)),
-        `${entry} must not reach ${service}`,
-      ).toBe(false);
-    }
+/** Third-party packages and the only layers allowed to import them. */
+const THIRD_PARTY: Record<string, readonly Layer[]> = {
+  '@ahoo-wang/fetcher-wow': [
+    'model',
+    'filter',
+    'record',
+    'analysis',
+    'runtime',
+  ],
+  '@tanstack/react-table': ['ui'],
+  recharts: ['ui'],
+  'react-grid-layout': ['ui'],
+  'react-markdown': ['ui'],
+  '@base-ui/react': ['ui'],
+  'lucide-react': ['ui'],
+};
+
+/** Wow APIs marked `@deprecated` in favor of `FilterExpression` and `Filter*Query`. */
+const DEPRECATED_WOW_SYMBOLS = [
+  'Condition',
+  'ConditionOptions',
+  'ConditionOptionKey',
+  'isValidateCondition',
+  'PagedQuery',
+  'ListQuery',
+  'SingleQuery',
+];
+
+const src = resolve(dirname(fileURLToPath(import.meta.url)), '../src');
+
+interface SourceFile {
+  path: string;
+  layer: Layer | 'root';
+  text: string;
+  imports: string[];
+}
+
+function walk(directory: string): string[] {
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return walk(path);
+    return /\.(ts|tsx)$/.test(entry.name) && !/\.test\./.test(entry.name)
+      ? [path]
+      : [];
+  });
+}
+
+function layerOf(path: string): Layer | 'root' {
+  const [first] = relative(src, path).split(sep);
+  return (LAYERS as readonly string[]).includes(first)
+    ? (first as Layer)
+    : 'root';
+}
+
+function importsOf(text: string): string[] {
+  const specifiers: string[] = [];
+  const pattern =
+    /(?:^|\n)\s*(?:import|export)\s[^'"\n]*?from\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g;
+  for (const match of text.matchAll(pattern))
+    specifiers.push(match[1] ?? match[2]);
+  return specifiers;
+}
+
+function load(): SourceFile[] {
+  return walk(src).map(path => {
+    const text = readFileSync(path, 'utf8');
+    return { path, layer: layerOf(path), text, imports: importsOf(text) };
+  });
+}
+
+function targetLayer(
+  from: SourceFile,
+  specifier: string,
+): Layer | 'root' | null {
+  if (specifier.startsWith('.')) {
+    return layerOf(resolve(dirname(from.path), specifier));
   }
+  if (specifier.startsWith('@/')) {
+    return layerOf(resolve(src, specifier.slice(2)));
+  }
+  return null;
+}
+
+const files = load();
+const describeLayer = (layer: Layer) =>
+  files.filter(file => file.layer === layer);
+
+describe('architecture', () => {
+  it('has a root entry', () => {
+    expect(existsSync(join(src, 'index.ts'))).toBe(true);
+  });
+
+  it('places every source file in a known layer or at the root', () => {
+    const misplaced = files
+      .filter(file => file.layer === 'root')
+      .map(file => relative(src, file.path))
+      .filter(path => path.includes(sep));
+    expect(misplaced).toEqual([]);
+  });
+
+  it.each(LAYERS)('%s imports only the layers it is allowed to', layer => {
+    const violations = describeLayer(layer).flatMap(file =>
+      file.imports
+        .map(specifier => [specifier, targetLayer(file, specifier)] as const)
+        .filter(
+          ([, target]) =>
+            target !== null &&
+            target !== layer &&
+            !(ALLOWED[layer] as readonly string[]).includes(target),
+        )
+        .map(([specifier]) => `${relative(src, file.path)} -> ${specifier}`),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it('keeps the root entry free of react and ui', () => {
+    const violations = files
+      .filter(file => file.layer === 'root')
+      .flatMap(file =>
+        file.imports
+          .map(specifier => targetLayer(file, specifier))
+          .filter(target => target === 'react' || target === 'ui'),
+      );
+    expect(violations).toEqual([]);
+  });
+
+  it.each(HEADLESS)('%s is free of React and the DOM', layer => {
+    const violations = describeLayer(layer).flatMap(file => {
+      const found: string[] = [];
+      for (const specifier of file.imports)
+        if (/^react(-dom)?(\/|$)/.test(specifier))
+          found.push(`${relative(src, file.path)} imports ${specifier}`);
+      if (/\b(window|document|navigator|localStorage)\./.test(file.text))
+        found.push(`${relative(src, file.path)} touches the DOM`);
+      return found;
+    });
+    expect(violations).toEqual([]);
+  });
+
+  it.each(Object.entries(THIRD_PARTY))(
+    '%s is imported only from its designated layers',
+    (name, layers) => {
+      const violations = files
+        .filter(
+          file =>
+            file.layer !== 'root' &&
+            !(layers as readonly string[]).includes(file.layer) &&
+            file.imports.some(
+              specifier =>
+                specifier === name || specifier.startsWith(`${name}/`),
+            ),
+        )
+        .map(file => relative(src, file.path));
+      expect(violations).toEqual([]);
+    },
+  );
+
+  it('never imports deprecated Wow condition APIs', () => {
+    const pattern = new RegExp(
+      `import\\s+(?:type\\s+)?\\{([^}]*)\\}\\s+from\\s+['"]@ahoo-wang/fetcher-wow['"]`,
+      'g',
+    );
+    const violations = files.flatMap(file =>
+      [...file.text.matchAll(pattern)].flatMap(match =>
+        match[1]
+          .split(',')
+          .map(
+            name =>
+              name
+                .trim()
+                .replace(/^type\s+/, '')
+                .split(/\s+as\s+/)[0],
+          )
+          .filter(name => DEPRECATED_WOW_SYMBOLS.includes(name))
+          .map(name => `${relative(src, file.path)} imports ${name}`),
+      ),
+    );
+    expect(violations).toEqual([]);
+  });
 });

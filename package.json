@@ -13,17 +13,15 @@
     "test": "pnpm -r test",
     "test:unit": "pnpm -r --filter=./packages/* test",
     "test:it": "pnpm -r --filter=./integration-test test",
-    "lint": "pnpm -r lint && pnpm lint:view-engine:stories",
-    "lint:view-engine": "pnpm --filter @ahoo-wang/fetcher-view-engine lint:check && pnpm lint:view-engine:stories",
-    "lint:view-engine:stories": "eslint stories/view-engine --max-warnings 0",
+    "lint": "pnpm -r lint && pnpm lint:stories",
+    "lint:stories": "eslint stories .storybook scripts/verify-storybook*.mjs --max-warnings 0",
     "format": "prettier --write .",
     "clean": "pnpm -r clean",
     "init": "sh ./scripts/init.sh",
     "update-version": "sh ./scripts/update-all-versions.sh",
-    "storybook": "pnpm --filter @ahoo-wang/fetcher-view-engine... build && storybook dev --docs -p 6006",
-    "build-storybook": "pnpm --filter @ahoo-wang/fetcher-view-engine... build && storybook build --docs && node scripts/verify-storybook.mjs",
-    "test:storybook": "vitest run --project=storybook",
-    "verify:view-engine": "node scripts/verify-view-engine.mjs"
+    "storybook": "storybook dev --docs -p 6006",
+    "build-storybook": "storybook build --docs && node scripts/verify-storybook.mjs",
+    "test:storybook": "vitest run --project=storybook"
   },
   "keywords": [
     "fetcher",

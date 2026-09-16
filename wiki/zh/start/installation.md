@@ -39,4 +39,4 @@ pnpm add -D typescript
 
 ## View Engine
 
-View Engine 使用 React 19 与已编译的作用域 CSS。当前分支按[工作区/本地归档流程](../guides/view-engine/getting-started.md)接入，尚未在公共注册表首次发布。
+View Engine 使用 React 19 与已编译的作用域 CSS。当前分支按[工作区/本地归档流程](../guides/view-engine/index.md)接入，尚未在公共注册表首次发布。

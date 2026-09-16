@@ -12,7 +12,6 @@
  */
 
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 import { createMarkdownRenderer, resolveConfig } from 'vitepress';
@@ -87,7 +86,6 @@ test('reference tables preserve complete union type code spans in both languages
       'key(index): string | null',
     ],
     'storage/key-storage': ['T | null'],
-    'view-engine/models': ["{ mode: 'paged' | 'cursor', size: number }"],
   };
   for (const prefix of ['', 'zh/']) {
     for (const [topic, expected] of Object.entries(contracts)) {
@@ -131,7 +129,6 @@ test('LLM corpus expands the actual shared examples', () => {
     'examples/http/client.ts',
     '../stories/docs/ReactRequests.tsx',
     '../stories/docs/LocalViewer.tsx',
-    '../stories/docs/RecordViewExample.tsx',
   ]) {
     const source = readFileSync(
       new URL(`../${path}`, import.meta.url),
@@ -345,16 +342,4 @@ test('repository and package README links target current documentation routes', 
       }
     }
   }
-});
-
-test('View Engine symbol indexes match public exports and declaration locations', () => {
-  execFileSync(
-    process.execPath,
-    [
-      fileURLToPath(
-        new URL('../scripts/view-engine-symbols.mjs', import.meta.url),
-      ),
-    ],
-    { stdio: 'pipe' },
-  );
 });

@@ -39,4 +39,4 @@ For an existing React application, follow the [React example peer installation a
 
 ## View Engine
 
-View Engine uses React 19 and compiled scoped CSS. Its current branch is available through the [workspace/local-archive workflow](../guides/view-engine/getting-started.md); it has not yet had its first public registry release.
+View Engine uses React 19 and compiled scoped CSS. Its current branch is available through the [workspace/local-archive workflow](../guides/view-engine/index.md); it has not yet had its first public registry release.

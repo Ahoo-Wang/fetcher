@@ -58,7 +58,7 @@ actionlint
 pnpm -r --filter './packages/*' build
 pnpm -r --filter './packages/*' exec eslint .
 pnpm --dir integration-test exec eslint .
-pnpm lint:view-engine:stories
+pnpm lint:stories
 pnpm -r --filter './packages/*' exec tsc --noEmit --incremental false --composite false
 VITEST_MAX_WORKERS=1 pnpm test:unit
 pnpm --dir wiki build
@@ -140,11 +140,12 @@ must be measured on the new CI run, not inferred from local hardware.
 
 ## Isolate the heavy suites
 
-Each Node version now runs `core`, `view-engine` and `viewer` on separate runners.
-Tests still use the unchanged package scripts, including both view-engine modes.
-The partition regression uses pnpm's actual workspace selection to require every
-package exactly once; leaf builds include their dependencies. This removes the
-single-runner chain of view-engine ordinary/compiled tests followed by viewer.
+Each Node version runs `core`, `view-engine` and `viewer` on separate runners.
+Tests use the unchanged package scripts. The partition regression uses pnpm's
+actual workspace selection to require every package exactly once; leaf builds
+include their dependencies. `view-engine` is being rewritten from an empty tree
+(see `packages/view-engine/docs/design.md`); its suite stays separate so the
+growing test set does not lengthen the core runner.
 
 Node 24 artifacts preserve `packages/<name>/coverage/coverage-final.json` paths.
 The combined coverage job waits for all test jobs, merges the disjoint reports,

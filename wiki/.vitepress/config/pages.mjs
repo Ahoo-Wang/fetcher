@@ -55,14 +55,7 @@ export const readingGroups = [
   },
   {
     directory: 'guides/view-engine',
-    topics: [
-      'index',
-      'getting-started',
-      'filters',
-      'table-and-runtime',
-      'saved-views',
-      'extensions',
-    ],
+    topics: ['index'],
   },
   {
     directory: 'guides/viewer',

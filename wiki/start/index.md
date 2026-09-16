@@ -8,12 +8,12 @@ description: Start with HTTP, a React request, or a local data table according t
 
 Fetcher adds reusable request configuration and result handling to native Fetch. Choose the first result you need; a plain HTTP application does not need a UI framework or platform backend.
 
-| Your starting point                        | Prerequisites                                      | First result                                                                                                 |
-| ------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package          | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
-| Existing React application                 | Compatible React and Fetcher peers, a bundler      | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
+| Your starting point                        | Prerequisites                                           | First result                                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package               | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
+| Existing React application                 | Compatible React and Fetcher peers, a bundler           | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
 | Existing React application needing a table | View Engine peers, CSS-capable bundling, local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering                                |
-| Headless record engine or shadcn/Base UI   | Current workspace/local archive; React 19 for UI   | [View Engine quick start](../guides/view-engine/getting-started.md)                                          |
+| Headless record engine or shadcn/Base UI   | Current workspace/local archive; React 19 for UI        | [View Engine quick start](../guides/view-engine/index.md)                                                    |
 
 The runnable HTTP and Storybook examples have deterministic fixtures. When you move them into your application, supply the routes and response JSON documented in each example. Installing a client does not create a server.
 

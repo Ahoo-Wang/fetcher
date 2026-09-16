@@ -7,33 +7,29 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-test('Storybook production build is owned by the delivery verifier, not duplicated by CI', () => {
-  const workflow = readFileSync(
-    new URL('../workflows/build-storybook.yml', import.meta.url),
-    'utf8',
-  );
-  assert.match(workflow, /run: pnpm verify:view-engine/);
-  assert.doesNotMatch(workflow, /run:.*build-storybook/);
-  const verifier = readFileSync(
-    new URL('../../scripts/verify-view-engine.mjs', import.meta.url),
-    'utf8',
-  );
+const workflow = readFileSync(
+  new URL('../workflows/build-storybook.yml', import.meta.url),
+  'utf8',
+);
+
+test('the delivery job builds Storybook once and verifies its static index', () => {
+  const [delivery] = workflow.split('\n  interactions:\n');
+  assert.match(delivery, /run: pnpm build-storybook/);
+  assert.equal(delivery.match(/build-storybook/g).length, 1);
+  const script = JSON.parse(
+    readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+  ).scripts['build-storybook'];
   assert.match(
-    verifier,
-    /await run\('storybook-build', pnpm, \['build-storybook'\](?:,|\))/,
+    script,
+    /storybook build --docs && node scripts\/verify-storybook\.mjs/,
   );
 });
 
 test('interaction tests and delivery run on separate jobs without dropping either gate', () => {
-  const workflow = readFileSync(
-    new URL('../workflows/build-storybook.yml', import.meta.url),
-    'utf8',
-  );
   const [delivery, interactions] = workflow.split('\n  interactions:\n');
   assert.ok(interactions, 'Interactions need their own runner');
-  assert.match(delivery, /run: pnpm verify:view-engine/);
   assert.doesNotMatch(delivery, /run: pnpm test:storybook/);
   assert.match(interactions, /run: pnpm test:storybook/);
   assert.match(interactions, /needs: changes/);
-  assert.doesNotMatch(interactions, /verify:view-engine/);
+  assert.doesNotMatch(interactions, /build-storybook/);
 });
