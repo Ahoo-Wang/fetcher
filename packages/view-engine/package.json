@@ -23,7 +23,12 @@
     "./react": {
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react.js"
-    }
+    },
+    "./ui": {
+      "types": "./dist/ui/index.d.ts",
+      "import": "./dist/ui.js"
+    },
+    "./styles.css": "./dist/styles.css"
   },
   "files": [
     "dist",
@@ -52,7 +57,7 @@
     "@dnd-kit/react": "catalog:",
     "@tanstack/react-table": "catalog:",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "dayjs": "catalog:",
     "dequal": "catalog:",
     "lucide-react": "catalog:",
@@ -60,8 +65,7 @@
     "react-error-boundary": "catalog:",
     "react-grid-layout": "catalog:",
     "react-markdown": "catalog:",
-    "recharts": "catalog:",
-    "tailwind-merge": "catalog:"
+    "recharts": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:",
@@ -81,6 +85,7 @@
     "@rolldown/plugin-babel": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -94,7 +99,9 @@
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "shadcn": "catalog:",
     "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "unplugin-dts": "catalog:",
