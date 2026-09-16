@@ -42,7 +42,12 @@ const NO_OP = () => {};
 export function useViewEngine(options: ViewEngineOptions): ViewEngine {
   const [engine] = useState(
     () =>
-      new ViewEngine({ environment: browserRuntimeEnvironment(), ...options }),
+      new ViewEngine({
+        ...options,
+        // After the spread, so an explicit `environment: undefined` from a
+        // caller's options object cannot drop page-visibility awareness.
+        environment: options.environment ?? browserRuntimeEnvironment(),
+      }),
   );
   useEffect(() => () => engine.dispose(), [engine]);
   return engine;
@@ -100,7 +105,9 @@ export function useOpenView(
   const [opened, setOpened] = useState<OpenedView>(NOT_OPENED);
 
   useEffect(() => {
-    if (!instanceId) return;
+    // Only `null` means "nothing to open". Any string, empty included, is an
+    // id the engine answers for, with a not-found the caller can show.
+    if (instanceId === null) return;
 
     let runtime: AnyViewRuntime | null = null;
     let cancelled = false;
@@ -108,7 +115,7 @@ export function useOpenView(
     void engine.open(instanceId).then(
       result => {
         if (cancelled) {
-          result.dispose();
+          engine.close(result);
           return;
         }
         runtime = result;
@@ -134,7 +141,7 @@ export function useOpenView(
 
     return () => {
       cancelled = true;
-      runtime?.dispose();
+      if (runtime) engine.close(runtime);
     };
   }, [engine, instanceId]);
 

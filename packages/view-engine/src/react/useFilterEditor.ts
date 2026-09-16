@@ -89,8 +89,16 @@ export function useFilterEditor(
     [fields],
   );
 
-  const write = useCallback(
-    (next: FilterTree) => runtime?.edit({ filter: next }),
+  /**
+   * Edits compose within one event: `edit` is synchronous, so each action
+   * reads the tree the runtime holds now rather than the one its render
+   * closed over. Adding a group and then a leaf inside it works.
+   */
+  const change = useCallback(
+    (update: (current: FilterTree) => FilterTree) => {
+      if (!runtime) return;
+      runtime.edit({ filter: update(runtime.getSnapshot().draft.filter) });
+    },
     [runtime],
   );
 
@@ -99,41 +107,55 @@ export function useFilterEditor(
       const definition = byName.get(field);
       const kind = definition && kinds?.get(definition.kind);
       if (!definition || !kind) return;
-      const operator = kind.defaultOperator;
+      // A field may narrow its kind's operators, and the kind's default is
+      // not always one of them; starting outside the allowed set would make
+      // every new condition invalid on arrival.
+      const allowed = operatorsOf(definition, kind);
+      const operator = allowed.includes(kind.defaultOperator)
+        ? kind.defaultOperator
+        : allowed[0];
+      if (!operator) return;
+
       const leaf: FilterNode = {
         field,
         operator,
         // The kind decides what an untouched value looks like for its operator.
         value: kind.emptyValue(operator, definition) as FilterLeaf['value'],
       };
-      write(insertAt(tree, parent, leaf));
+      change(current => insertAt(current, parent, leaf));
     },
-    [byName, kinds, tree, write],
+    [byName, kinds, change],
   );
 
   const updateLeaf = useCallback(
     (path: FilterPath, patch: Partial<FilterLeaf>) => {
-      write(
-        updateAt(tree, path, node =>
+      change(current =>
+        updateAt(current, path, node =>
           'children' in node ? node : { ...node, ...patch },
         ),
       );
     },
-    [tree, write],
+    [change],
   );
 
   const addGroup = useCallback(
     (op: 'and' | 'or', parent: FilterPath = ROOT) => {
-      write(insertAt(tree, parent, { op, children: [] }));
+      change(current => insertAt(current, parent, { op, children: [] }));
     },
-    [tree, write],
+    [change],
   );
 
   return {
     tree,
     mode: state?.draft.filterMode ?? 'simple',
     fields,
-    issues: (state?.issues ?? []).filter(found => found.path[0] === 'filter'),
+    // `validateFilter` addresses a node by its path (`[0]`, `[1, 0]`), so the
+    // code is what says an Issue belongs to the filter at all.
+    issues: (state?.issues ?? []).filter(
+      found =>
+        found.code.startsWith('filter.') ||
+        found.code.startsWith('config.filterMode.'),
+    ),
     applied: useMemo(
       () =>
         state && kinds
@@ -151,10 +173,10 @@ export function useFilterEditor(
     updateLeaf,
     addGroup,
     remove: useCallback(
-      (path: FilterPath) => write(removeAt(tree, path)),
-      [tree, write],
+      (path: FilterPath) => change(current => removeAt(current, path)),
+      [change],
     ),
-    clear: useCallback(() => write(clearFilter()), [write]),
+    clear: useCallback(() => change(clearFilter), [change]),
     submit: useCallback(() => runtime?.apply(), [runtime]),
     focus: useCallback(() => runtime?.setEditing(true), [runtime]),
     blur: useCallback(() => runtime?.setEditing(false), [runtime]),

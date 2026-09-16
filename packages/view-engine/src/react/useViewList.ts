@@ -26,7 +26,7 @@ export interface ViewListState {
   items: ViewInstanceSummary[];
   preferences: ViewPreferences | null;
   permissions: ViewPermissions;
-  /** The view to open when the caller names none. */
+  /** The view to open when the caller names none; null until preferences settle. */
   defaultInstanceId: string | null;
   loading: boolean;
   error: Issue | null;
@@ -106,8 +106,8 @@ export function useViewList(
   const reload = useCallback(() => setToken(current => current + 1), []);
 
   const current = list.key === key ? list : NOTHING_LOADED;
-  const currentPreferences =
-    preferences.key === key ? preferences : NOTHING_LOADED;
+  const preferencesSettled = preferences.key === key;
+  const currentPreferences = preferencesSettled ? preferences : NOTHING_LOADED;
 
   const items = useMemo(
     () =>
@@ -121,9 +121,13 @@ export function useViewList(
     items,
     preferences: currentPreferences.value,
     permissions,
-    defaultInstanceId: currentPreferences.value
-      ? engine.resolveDefault(items, currentPreferences.value)
-      : (items[0]?.id ?? null),
+    // No default until preferences have settled: answering from server order
+    // in the meantime opens one view and then swaps it for another.
+    defaultInstanceId: !preferencesSettled
+      ? null
+      : currentPreferences.value
+        ? engine.resolveDefault(items, currentPreferences.value)
+        : (items[0]?.id ?? null),
     loading: list.key !== key,
     error: current.error,
     preferencesError: currentPreferences.error,

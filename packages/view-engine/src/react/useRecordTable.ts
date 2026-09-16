@@ -60,7 +60,9 @@ export interface RecordTableController {
   toggleAll(): void;
   clearSelection(): void;
 
+  /** Paged sources only; a cursor source has no page numbers to jump to. */
   goTo(index: number): void;
+  /** No-op at the end of a cursor sequence, where there is no next cursor. */
   next(): void;
   previous(): void;
   refresh(): void;
@@ -93,14 +95,17 @@ export function useRecordTable(
     (field: string) => {
       if (!runtime) return;
       const current = runtime.getSnapshot().draft.sort;
-      const existing = current.find(entry => entry.field === field);
-      const rest = current.filter(entry => entry.field !== field);
+      const at = current.findIndex(entry => entry.field === field);
+      // A new field joins at the end; an existing one keeps its place, because
+      // the order of `sort` is the priority between columns.
       const next: RecordSort[] =
-        existing === undefined
-          ? [...rest, { field, direction: 'ASC' }]
-          : existing.direction === 'ASC'
-            ? [...rest, { field, direction: 'DESC' }]
-            : rest;
+        at < 0
+          ? [...current, { field, direction: 'ASC' }]
+          : current[at].direction === 'ASC'
+            ? current.map((entry, index) =>
+                index === at ? { field, direction: 'DESC' } : entry,
+              )
+            : current.filter((_entry, index) => index !== at);
       runtime.edit({ sort: next });
       runtime.apply();
     },
@@ -168,9 +173,22 @@ export function useRecordTable(
       [state],
     ),
     setColumns: useCallback(
-      (fields: string[]) =>
-        editAndApply({ table: { columns: fields.map(field => ({ field })) } }),
-      [editAndApply],
+      (fields: string[]) => {
+        if (!runtime) return;
+        // Reuse each column as it was configured: rebuilding from the field
+        // name alone would drop its width and pinning on the next save.
+        const existing = new Map(
+          runtime
+            .getSnapshot()
+            .draft.table.columns.map(column => [column.field, column]),
+        );
+        editAndApply({
+          table: {
+            columns: fields.map(field => existing.get(field) ?? { field }),
+          },
+        });
+      },
+      [editAndApply, runtime],
     ),
     pageSize: state?.draft.pageSize ?? 0,
     setPageSize: useCallback(
@@ -184,12 +202,24 @@ export function useRecordTable(
     toggleAll,
     clearSelection: useCallback(() => runtime?.select([]), [runtime]),
 
-    goTo: useCallback((index: number) => runtime?.page({ index }), [runtime]),
+    // Page numbers only mean something to a paged source.
+    goTo: useCallback(
+      (index: number) => {
+        if (paging?.mode !== 'paged') return;
+        runtime?.page({ index });
+      },
+      [runtime, paging],
+    ),
     next: useCallback(() => {
       if (!runtime || !paging) return;
-      // Which move "next" is depends on the protocol the definition declared.
-      if (paging.mode === 'cursor') runtime.page({ cursor: paging.nextCursor });
-      else runtime.page({ index: paging.index + 1 });
+      // Which move "next" is depends on the protocol the definition declared,
+      // and a cursor source that returned none has no next page to ask for.
+      if (paging.mode === 'cursor') {
+        if (paging.nextCursor !== null)
+          runtime.page({ cursor: paging.nextCursor });
+        return;
+      }
+      runtime.page({ index: paging.index + 1 });
     }, [runtime, paging]),
     previous: useCallback(() => {
       if (!runtime || paging?.mode !== 'paged' || paging.index <= 1) return;

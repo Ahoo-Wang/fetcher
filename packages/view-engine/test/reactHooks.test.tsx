@@ -23,6 +23,7 @@ import {
   issue,
   type RecordViewRuntime,
   type ViewInstance,
+  type ViewPreferences,
   type ViewSource,
 } from '../src/index.js';
 import {
@@ -102,6 +103,24 @@ describe('useViewEngine', () => {
         config: recordConfig(),
       }),
     ).not.toThrow();
+  });
+
+  it('keeps page-visibility awareness when options carry an explicit undefined', () => {
+    const store = new MemoryViewStore();
+    const hidden = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden');
+    const { result } = renderHook(() =>
+      useViewEngine({
+        definitions: [],
+        store,
+        resolveSource: () => testSource(),
+        environment: undefined,
+      }),
+    );
+
+    expect(result.current.environment.visibility.isVisible()).toBe(false);
+    hidden.mockRestore();
   });
 
   it('takes the environment a caller injects', () => {
@@ -187,6 +206,14 @@ describe('useOpenView', () => {
     expect(result.current.runtime).toBeNull();
   });
 
+  it('asks the engine about an empty id rather than idling', async () => {
+    const { engine } = engineWith();
+    const { result } = renderHook(() => useOpenView(engine, ''));
+
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(result.current.loading).toBe(false);
+  });
+
   it('stays idle without an id', () => {
     const { engine } = engineWith();
     const { result } = renderHook(() => useOpenView(engine, null));
@@ -235,6 +262,43 @@ describe('useViewList', () => {
     ]);
     expect(result.current.defaultInstanceId).toBe('orders-1');
     expect(result.current.permissions.createPersonal).toBe(true);
+  });
+
+  it('names no default until preferences have settled', async () => {
+    const { engine, store } = engineWith();
+    let release: (value: ViewPreferences) => void = () => {};
+    vi.spyOn(store, 'getPreferences').mockReturnValueOnce(
+      new Promise<ViewPreferences>(resolve => {
+        release = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useViewList(engine, 'orders'));
+    await waitFor(() => expect(result.current.items).toHaveLength(2));
+
+    // The list is in, the preferences are not: answering now would open one
+    // view and swap it for another a moment later.
+    expect(result.current.defaultInstanceId).toBeNull();
+
+    act(() =>
+      release({ order: [], defaultInstanceId: 'orders-1', revision: '1' }),
+    );
+    await waitFor(() =>
+      expect(result.current.defaultInstanceId).toBe('orders-1'),
+    );
+  });
+
+  it('falls back to server order once preferences have failed', async () => {
+    const { engine, store } = engineWith();
+    vi.spyOn(store, 'getPreferences').mockRejectedValueOnce(
+      new ViewStoreError('UNAVAILABLE', 'offline'),
+    );
+
+    const { result } = renderHook(() => useViewList(engine, 'orders'));
+
+    await waitFor(() =>
+      expect(result.current.defaultInstanceId).toBe('system:orders:all'),
+    );
   });
 
   it('keeps a failed list and failed preferences apart', async () => {
@@ -420,6 +484,46 @@ describe('useSaveCommands', () => {
     });
   });
 
+  it('leaves a failure behind when another view opens', async () => {
+    const { engine, store } = engineWith();
+    await store.create(
+      {
+        definitionId: 'orders',
+        title: 'Second',
+        scope: 'personal',
+        config: recordConfig(),
+      },
+      { requestId: 'seed' },
+    );
+    vi.spyOn(store, 'save').mockRejectedValueOnce(
+      new ViewStoreError('FORBIDDEN', 'nope'),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ id }: { id: string }) => {
+        const opened = useOpenView(engine, id);
+        return { opened, commands: useSaveCommands(engine, opened.runtime) };
+      },
+      { initialProps: { id: 'orders-1' } },
+    );
+    await waitFor(() => expect(result.current.opened.runtime).not.toBeNull());
+
+    await act(async () => {
+      await result.current.commands.save();
+    });
+    expect(result.current.commands.state.error).not.toBeNull();
+
+    rerender({ id: 'orders-2' });
+    await waitFor(() =>
+      expect(result.current.opened.runtime?.getSnapshot().saved?.id).toBe(
+        'orders-2',
+      ),
+    );
+
+    expect(result.current.commands.state.error).toBeNull();
+    expect(result.current.commands.state.pending).toBe(false);
+  });
+
   it('offers only a copy of a system view', async () => {
     const { engine } = engineWith();
     const { result } = renderHook(() => {
@@ -519,15 +623,76 @@ describe('useFilterEditor', () => {
     expect(result.current.filter.tree.children).toEqual([]);
   });
 
-  it('reports only the issues that belong to the filter', async () => {
+  it('reports the filter issues the validator produced, and only those', async () => {
     const result = await openEditor();
 
+    // A condition with no value yet is an error, and it is the reason submit
+    // does nothing, so the editor has to be able to say so.
     act(() => result.current.filter.addLeaf('warehouse'));
     act(() => result.current.opened.runtime?.edit({ pageSize: 0 }));
 
+    const codes = result.current.filter.issues.map(found => found.code);
+    expect(codes).toContain('filter.value.expected-string');
     expect(
-      result.current.filter.issues.every(found => found.path[0] === 'filter'),
+      codes.every(
+        code =>
+          code.startsWith('filter.') || code.startsWith('config.filterMode.'),
+      ),
     ).toBe(true);
+    // The page size error belongs to the view, not to this editor.
+    expect(codes.some(code => code.startsWith('record.'))).toBe(false);
+  });
+
+  it('starts a condition on an operator the field allows', async () => {
+    const definition = ordersDefinition({
+      fields: [
+        { name: 'id', label: 'Order', kind: 'string' },
+        {
+          name: 'warehouse',
+          label: 'Warehouse',
+          kind: 'string',
+          operators: [`${FilterOperator.CONTAINS}`],
+        },
+      ],
+      record: { rowKey: 'id', paging: 'paged', layouts: ['table'] },
+      views: [],
+    });
+    const engine = new ViewEngine({
+      definitions: [definition],
+      store: new MemoryViewStore({
+        instances: [
+          {
+            ...mine,
+            config: recordConfig({ table: { columns: [{ field: 'id' }] } }),
+          },
+        ],
+      }),
+      resolveSource: () => testSource(),
+    });
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, 'orders-1');
+      return { opened, filter: useFilterEditor(opened.runtime) };
+    });
+    await waitFor(() => expect(result.current.opened.runtime).not.toBeNull());
+
+    act(() => result.current.filter.addLeaf('warehouse'));
+
+    expect(result.current.filter.tree.children[0]).toMatchObject({
+      operator: `${FilterOperator.CONTAINS}`,
+    });
+  });
+
+  it('composes edits made in one batch', async () => {
+    const result = await openEditor();
+
+    act(() => {
+      result.current.filter.addGroup('or');
+      result.current.filter.addLeaf('warehouse', [0]);
+    });
+
+    const [group] = result.current.filter.tree.children;
+    expect(group).toMatchObject({ op: 'or' });
+    expect(result.current.filter.count).toBe(1);
   });
 
   it('pauses auto refresh while an editor holds focus', async () => {
@@ -581,6 +746,19 @@ describe('useRecordTable', () => {
       result.current.previous();
       result.current.refresh();
     }).not.toThrow();
+  });
+
+  it('keeps the priority of a column when its direction changes', async () => {
+    const result = await openTable();
+
+    act(() => result.current.table.toggleSort('amount'));
+    act(() => result.current.table.toggleSort('id'));
+    act(() => result.current.table.toggleSort('amount'));
+
+    expect(result.current.table.sort).toEqual([
+      { field: 'amount', direction: 'DESC' },
+      { field: 'id', direction: 'ASC' },
+    ]);
   });
 
   it('cycles a column through ascending, descending and off', async () => {
@@ -678,6 +856,65 @@ describe('useRecordTable', () => {
 
     act(() => result.current.table.setPageSize(5));
     await waitFor(() => expect(result.current.table.pageSize).toBe(5));
+  });
+
+  it('keeps the width and pinning of a column it keeps', async () => {
+    const { engine } = engineWith({
+      instances: [
+        {
+          ...mine,
+          config: recordConfig({
+            table: {
+              columns: [
+                { field: 'id', width: 120, pinned: 'left' },
+                { field: 'amount' },
+              ],
+            },
+          }),
+        },
+      ],
+    });
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, 'orders-1');
+      return useRecordTable(opened.runtime as RecordViewRuntime | null);
+    });
+    await waitFor(() => expect(result.current.status).toBe('success'));
+
+    act(() => result.current.setColumns(['id', 'warehouse']));
+
+    await waitFor(() =>
+      expect(result.current.columns[0]).toMatchObject({
+        field: 'id',
+        width: 120,
+        pinned: 'left',
+      }),
+    );
+  });
+
+  it('ignores a page number on a cursor source and a next with no cursor', async () => {
+    const definition = ordersDefinition({
+      record: { rowKey: 'id', paging: 'cursor', layouts: ['table'] },
+    });
+    const source = testSource({
+      cursor: vi.fn(() => Promise.resolve({ nextCursor: null, list: [] })),
+    });
+    const engine = new ViewEngine({
+      definitions: [definition],
+      store: new MemoryViewStore({ instances: [mine] }),
+      resolveSource: () => source,
+    });
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, 'orders-1');
+      return useRecordTable(opened.runtime as RecordViewRuntime | null);
+    });
+    await waitFor(() => expect(result.current.status).toBe('success'));
+    expect(source.cursor).toHaveBeenCalledTimes(1);
+
+    act(() => result.current.goTo(3));
+    act(() => result.current.next());
+
+    // A page number means nothing here, and the sequence has ended.
+    expect(source.cursor).toHaveBeenCalledTimes(1);
   });
 
   it('reports a failed query', async () => {

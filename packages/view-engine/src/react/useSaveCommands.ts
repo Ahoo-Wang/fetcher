@@ -56,6 +56,14 @@ export interface SaveCommands {
   state: SaveCommandState;
 }
 
+interface CommandProgress {
+  runtime: ViewRuntime | null;
+  pending: boolean;
+  error: Issue | null;
+}
+
+const IDLE: CommandProgress = { runtime: null, pending: false, error: null };
+
 /**
  * The write commands of one open view, with the permissions that decide which
  * buttons are live.
@@ -69,24 +77,32 @@ export function useSaveCommands(
   runtime: ViewRuntime | null,
 ): SaveCommands {
   const state = useViewRuntime(runtime);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<Issue | null>(null);
+  // Command state belongs to one view. A workbench reuses this hook across
+  // views, so progress and the last failure are tagged with the runtime they
+  // came from and read as empty for any other.
+  const [progress, setProgress] = useState<CommandProgress>(IDLE);
 
   const run = useCallback(
     async <T>(code: string, command: () => Promise<T>, fallback: T) => {
-      setPending(true);
-      setError(null);
+      setProgress({ runtime, pending: true, error: null });
       try {
         return await command();
       } catch (caught) {
-        setError(toIssue(caught, code));
+        setProgress({ runtime, pending: false, error: toIssue(caught, code) });
         return fallback;
       } finally {
-        setPending(false);
+        // A command that outlived its view leaves the next view's state alone.
+        setProgress(current =>
+          current.runtime === runtime && current.pending
+            ? { ...current, pending: false }
+            : current,
+        );
       }
     },
-    [],
+    [runtime],
   );
+
+  const own = progress.runtime === runtime ? progress : IDLE;
 
   const instanceId = state?.saved?.id ?? null;
   // Asked for only when a view is open: the store owns the answer, and an
@@ -158,9 +174,13 @@ export function useSaveCommands(
     if (!runtime) return;
     try {
       engine.abandonWrite(runtime);
-      setError(null);
+      setProgress({ runtime, pending: false, error: null });
     } catch (caught) {
-      setError(toIssue(caught, 'view.abandon.failed'));
+      setProgress({
+        runtime,
+        pending: false,
+        error: toIssue(caught, 'view.abandon.failed'),
+      });
     }
   }, [engine, runtime]);
 
@@ -195,8 +215,8 @@ export function useSaveCommands(
       delete: !system && instance?.delete === true,
     },
     state: {
-      pending,
-      error,
+      pending: own.pending,
+      error: own.error,
       write: state?.write ?? null,
       dirty: state?.dirty ?? false,
     },
