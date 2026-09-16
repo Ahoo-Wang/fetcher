@@ -43,6 +43,8 @@
 
 ## 安装
 
+该包尚未在公共 registry 首次发布，稳定版发布脚本会刻意跳过它。在此之前请通过本工作区（`"@ahoo-wang/fetcher-view-engine": "workspace:^"`）或本地 `pnpm pack` 产物使用。发布后的安装方式为：
+
 ```bash
 pnpm add @ahoo-wang/fetcher-view-engine @ahoo-wang/fetcher-wow
 ```

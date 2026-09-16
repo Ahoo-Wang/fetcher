@@ -365,6 +365,17 @@ describe('architecture', () => {
       expect(deprecated.has('FilterExpression')).toBe(false);
     });
 
+    it('imports Wow only from its root entry', () => {
+      // The published subpaths (query locales) belong to the deprecated
+      // Condition API, and a subpath import would bypass the name check below.
+      const violations = files.flatMap(file =>
+        file.imports
+          .filter(({ specifier }) => specifier.startsWith(`${WOW}/`))
+          .map(({ specifier }) => `${describePath(file)} -> ${specifier}`),
+      );
+      expect(violations).toEqual([]);
+    });
+
     it('imports Wow by name so every binding can be checked', () => {
       const violations = files
         .filter(file =>

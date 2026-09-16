@@ -43,6 +43,8 @@ Not a database or compute backend, not a permission system, not a general low-co
 
 ## Install
 
+The package has not had its first public registry release; the stable release scripts skip it on purpose. Until then, consume it from this workspace (`"@ahoo-wang/fetcher-view-engine": "workspace:^"`) or from a local `pnpm pack` archive. Once published, installation will be:
+
 ```bash
 pnpm add @ahoo-wang/fetcher-view-engine @ahoo-wang/fetcher-wow
 ```

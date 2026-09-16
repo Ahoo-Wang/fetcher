@@ -471,7 +471,7 @@ projectAnalysis(def, cfg, result): AnalysisView          // 表格列与行；�
 resultSchema(def, cfg): ResultSchema                     // 结果行校验依据
 
 // dashboard
-validateDashboard(cfg: DashboardViewConfig, refs: Map<string, ViewInstance>): Issue[]   // 含 bindings 的字段 kind 兼容性
+validateDashboard(cfg: DashboardViewConfig, scope: ViewInstance['scope'], refs: Map<string, ViewInstance>): Issue[]   // 含 bindings 的字段 kind 兼容性与引用实例的可见范围
 mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboard 的 filter 经 bindings 映射后 AND 合并到面板已应用筛选
 ```
 
@@ -481,7 +481,7 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 `validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一；`sort` 只能引用已存在的 group 或 metric 别名，`having` 与 `DERIVED` 只能引用 metric 别名；`percentile` 在 (0, 100]；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2；`referenceLines` 引用的轴必须有系列；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
 
-`validateDashboard` 的规则：`bindings[].globalField` 必须在 `cfg.fields` 中，`bindings[].panelField` 必须在被引用实例的定义中，且两者 kind 兼容；被引用实例必须是 Record 或 Analysis；内容面板规则见下段。
+`validateDashboard` 的规则：`bindings[].globalField` 必须在 `cfg.fields` 中，`bindings[].panelField` 必须在被引用实例的定义中，且两者 kind 兼容；被引用实例必须是 Record 或 Analysis；**被引用实例的可见范围必须覆盖 Dashboard 自身的范围**：`personal` Dashboard 可以引用任何可读实例，`shared` 或 `system` Dashboard 只能引用 `shared` 或 `system` 实例，否则产生 error 级 Issue，UI 提示先把被引用视图另存为共享。打开时若某个被引用实例不可读（已删除或无权限），只有该面板显示"不可访问"，其余面板照常工作。内容面板规则见下段。
 
 ## 6. 运行时
 
@@ -504,6 +504,8 @@ export interface ViewRuntime<C extends ViewConfig = ViewConfig> {
 
 export interface ViewRuntimeState<C> {
   saved: ViewInstance | null; // 保存基线；null 表示未保存的新视图
+  title: string; // 未保存时来自 create 的输入，已保存时等于 saved.title
+  scope: ViewInstance['scope']; // 同上；决定首次保存使用的创建许可
   draft: C;
   applied: C;
   issues: Issue[]; // validate(draft)
@@ -537,7 +539,7 @@ export interface ViewEngine {
   resolveSource(key: string): ViewSource;   // Pick<QueryApi, 'paged' | 'cursor' | 'aggregate'>
 
   open(instanceId: string): Promise<ViewRuntime>;                 // store.get → validate → runtime
-  create(definitionId: string, config?: ViewConfig): ViewRuntime;  // 未保存的新视图
+  create(definitionId: string, input: { title: string; scope: 'personal' | 'shared'; config?: ViewConfig }): ViewRuntime; // 未保存的新视图，元数据随 runtime 保存
   save(runtime: ViewRuntime): Promise<ViewInstance>;               // saved ? store.save : store.create
   saveAs(runtime, input: { title; scope }): Promise<ViewInstance>;
   rename / delete / reorder / setDefault(...): Promise<void>;
@@ -555,15 +557,15 @@ export interface ViewEngine {
 
 ### 7.1 实例生命周期
 
-| 命令                                | store 调用                                           | 前置检查                                                             | 成功后                                                                         |
-| ----------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `create(definitionId, config?)`     | 无                                                   | 定义存在                                                             | 返回 `saved = null` 的 runtime；不进入列表                                     |
-| `save(runtime)`，`saved = null`     | `store.create(input, ctx)`                           | `issues` 无 error；`permissions.createPersonal` 或 `createShared`    | `runtime.markSaved(instance)`；列表刷新                                        |
-| `save(runtime)`，`saved != null`    | `store.save(id, draft, saved.revision, ctx)`         | 无 error；`saved.scope != 'system'`；`permissions.instance(id).save` | `markSaved(instance)`；`dirty = false`                                         |
-| `saveAs(runtime, { title, scope })` | `store.create(draftAsNew, ctx)`                      | 无 error；对应 scope 的创建许可                                      | 返回新实例；源 runtime 的 `saved` 与 `draft` 都不变；不自动打开，UI 提供"打开" |
-| `rename(id, title)`                 | `store.rename(id, title, revision, ctx)`             | `permissions.instance(id).rename`；标题非空                          | 更新 `saved.title` 与列表摘要；`draft` 不受影响                                |
-| `delete(id)`                        | `store.delete(id, revision, ctx)`                    | `permissions.instance(id).delete`                                    | 已打开则 `dispose`；列表刷新；偏好不改写，见 7.3                               |
-| `open(instanceId)`                  | 代码声明的系统视图直接取自定义；其余 `store.get(id)` | 实例可读                                                             | 校验后建立 runtime；配置合法则立即 `apply()`                                   |
+| 命令                                              | store 调用                                                         | 前置检查                                                                      | 成功后                                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `create(definitionId, { title, scope, config? })` | 无                                                                 | 定义存在；`scope` 对应的创建许可                                              | 返回 `saved = null` 的 runtime；不进入列表                                     |
+| `save(runtime)`，`saved = null`                   | `store.create({ definitionId, title, scope, config: draft }, ctx)` | `issues` 无 error；按 `runtime.scope` 检查 `createPersonal` 或 `createShared` | `runtime.markSaved(instance)`；列表刷新                                        |
+| `save(runtime)`，`saved != null`                  | `store.save(id, draft, saved.revision, ctx)`                       | 无 error；`saved.scope != 'system'`；`permissions.instance(id).save`          | `markSaved(instance)`；`dirty = false`                                         |
+| `saveAs(runtime, { title, scope })`               | `store.create(draftAsNew, ctx)`                                    | 无 error；对应 scope 的创建许可                                               | 返回新实例；源 runtime 的 `saved` 与 `draft` 都不变；不自动打开，UI 提供"打开" |
+| `rename(id, title)`                               | `store.rename(id, title, revision, ctx)`                           | `permissions.instance(id).rename`；标题非空                                   | 更新 `saved.title` 与列表摘要；`draft` 不受影响                                |
+| `delete(id)`                                      | `store.delete(id, revision, ctx)`                                  | `permissions.instance(id).delete`                                             | 已打开则 `dispose`；列表刷新；偏好不改写，见 7.3                               |
+| `open(instanceId)`                                | 代码声明的系统视图直接取自定义；其余 `store.get(id)`               | 实例可读                                                                      | 校验后建立 runtime；配置合法则立即 `apply()`                                   |
 
 **保存的是配置，不是浏览状态。** `ViewInstance.config` 只含 `ViewConfig`；选择、页码、游标、结果一律不保存。重开恢复配置，并从第一页重新执行。切换 Record 或 Analysis 的布局只是一次 `edit({ layout })`，切换图型只是一次 `edit({ chart: { type } })`，各套设置都在配置中，因此切换可逆且随视图一起保存。
 
@@ -580,6 +582,8 @@ export interface ViewEngine {
 | `personal` | 任何用户                               | 仅本人           | 全部                                             | `ViewStore`                                                 |
 
 系统视图有两种来源，Engine 对它们一视同仁。**代码声明**放在 `definition.views`，随应用部署，`revision` 固定为 `'code'`，打开时不经过 store；这是"定义是代码"的自然延伸，适合每个业务对象的默认列表与常用视角。**服务端配置**由运维通过业务系统的管理入口写入，`list()` 以 `scope: 'system'` 返回；引擎不提供这条管理入口。两种来源在列表中合并，代码声明者在前。
+
+Dashboard 的范围受其引用约束：`shared` 或 `system` Dashboard 只能引用 `shared` 或 `system` 的 Record／Analysis 实例，`validateDashboard` 在保存与另存时按目标范围检查，见第 5 节。
 
 系统视图对普通用户只读：`save`、`rename`、`delete` 在派发前被 Engine 拒绝，UI 不显示对应动作，只显示"另存"。运维修改代码声明的系统视图就是一次发版；修改服务端系统视图走业务系统的管理入口。谁能创建与修改共享视图由业务服务决定，前端只消费应用已取得的许可结果：
 
