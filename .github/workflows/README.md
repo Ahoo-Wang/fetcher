@@ -11,7 +11,7 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `quality.yml`                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                         |
 | `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                     |
 | `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                             |
-| `build-storybook.yml`            | Package build, interaction tests, package/host recovery and Chromium/Firefox/WebKit acceptance. The delivery verifier owns the one Storybook production build.                                            |
+| `build-storybook.yml`            | Package build, the one Storybook production build with its static index check, and interaction tests across Chromium, Firefox and WebKit on a separate runner.                                            |
 | `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                         |
 | `generator-test.yml`             | Verify generation against both supported Wow versions.                                                                                                                                                    |
 | `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                  |
@@ -134,7 +134,7 @@ instead of several workspaces each with one worker. All assertions remain.
 
 Storybook run 34415983847 took about eight minutes: interactions 111s and
 delivery 285s were sequential. They now use independent runners, each retaining
-its required package build; delivery still runs all three browsers in isolation.
+its required package build; the interaction runner owns all three browsers.
 This trades one additional setup/build for overlap. Actual wall-clock savings
 must be measured on the new CI run, not inferred from local hardware.
 

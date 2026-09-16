@@ -51,7 +51,7 @@ export type ViewDefinition =
   | { id: string; title: string; kind: 'dashboard'; views?: SystemView[] }; // Dashboard 实例的归属目录
 
 export interface SystemView {
-  id: string; // 在定义内唯一；Engine 以 `system:${definitionId}:${id}` 作为实例 id，`system:` 是保留命名空间
+  id: string; // 在定义内唯一且不含 ':'；Engine 以 `system:${definitionId}:${id}` 作为实例 id
   title: string;
   config: ViewConfig;
 }
@@ -62,7 +62,7 @@ export interface FieldDefinition {
   kind: FieldKindId; // 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'enum' | 'reference' | 自定义
   operators?: FilterOperator[]; // 缺省取 FieldKind 的默认集
   options?: FieldOption[]; // enum 的静态候选
-  remote?: string; // reference 的远程候选源键
+  remote?: string; // reference 的远程候选源键，由 resolveOptions 解析
   sortable?: boolean;
   group?: string; // 添加筛选时的分组
   numberFormat?: Intl.NumberFormatOptions & { locale?: string };
@@ -473,13 +473,13 @@ describeFilter(def, tree): FilterSummaryItem[]           // 已应用条件的�
 // record
 defaultRecordConfig(def): RecordViewConfig                      // 按 RecordCapability.defaults 补全的完整初始配置
 validateRecord(def, cfg: RecordViewConfig, kinds): Issue[]   // 含 layout 准入、table.columns 与 card 字段存在性
-compileRecord(def, cfg, kinds, ctx, page: RecordPageTarget): FilterPagedQuery | CursorQuery   // 按 RecordCapability.paging 判别；首次查询为 { index: 0 } 或 { cursor: null }
+compileRecord(def, cfg, kinds, ctx, page: RecordPageTarget): FilterPagedQuery | CursorQuery   // 按 RecordCapability.paging 判别；首次查询为 { index: 1 } 或 { cursor: null }（Wow 页码从 1 开始）
 projectRecord(def, cfg, page: PagedList<RecordData> | CursorPage<RecordData>): RecordView   // 列语义、行、行键；paging 为 { mode: 'paged'; index; total? } | { mode: 'cursor'; nextCursor: string | null }
 compileSummaries(def, cfg, kinds, ctx): AggregationQuery | null    // 全范围汇总
 projectSummaries(def, cfg, rows | aggregation): SummaryRow
 
 // analysis
-defaultAnalysisConfig(def): AnalysisViewConfig                  // 从已声明能力挑选：count 为 true 取 COUNT，否则取首个字段的首个函数；有可分组字段时取其一，否则分组为空
+defaultAnalysisConfig(def): AnalysisViewConfig                  // 按固定优先级从已声明能力挑选指标；有可分组字段时取其一，否则分组为空
 validateAnalysis(def, cfg: AnalysisViewConfig, kinds): Issue[]   // 见下方规则
 compileAnalysis(def, cfg, kinds, ctx): AggregationQuery          // 同构映射；三处 FilterTree 编译为 FilterExpression
 compileAnalysisTotals(def, cfg, kinds, ctx): AggregationQuery | null   // table.totals 为 true 时的无分组聚合，否则 null
@@ -494,11 +494,11 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 `validateDashboard` 同时覆盖内容面板：Markdown 内容与链接数量有上限；`src` 与 `href` 只接受 http、https、mailto 与相对路径，其余产生 error 级 Issue。内容面板不进入 `mergeGlobalFilter`，`DashboardRuntime` 不为其创建子 runtime，它们只是布局中的静态项。URL 合法不代表资源可信，UI 层按第 9 节处理渲染安全。
 
-`validateDefinition(def, kinds): Issue[]` 检查定义自身：`AnalysisCapability` 至少要能构造一个指标（`count` 为 true，或某个字段声明了 `functions`／`any`／`distinctCount`／`percentile`），否则该能力不可用，报 error；`defaultAnalysisConfig` 因此总能返回合法配置。分组可以为空，Wow 允许无分组聚合。
+`validateDefinition(def, kinds): Issue[]` 检查定义自身：`definition.id` 与每个 `views[].id` 都不得包含 `:`，否则合成的 `system:${definitionId}:${id}` 会歧义（`('a:b','c')` 与 `('a','b:c')` 撞车），报 error；`AnalysisCapability` 至少要能构造一个指标（`count` 为 true，或某个字段声明了非空 `functions`、`any`、`distinctCount` 或 `percentile`），否则该能力不可用，报 error。`defaultAnalysisConfig` 按固定优先级取第一个可用者，因此总能返回合法配置：`COUNT` → 首个有非空 `functions` 的字段（取其首个函数）→ 首个 `distinctCount` 字段 → 首个 `percentile` 字段（`percentile: 95`）→ 首个 `any` 字段。分组可以为空，Wow 允许无分组聚合。
 
 `FieldKindRegistry` 是 filter 的核心扩展点，见第 10 节。相对时间条件在 `compile*` 中依据注入的 `ctx.now` 求值，纯内核不读系统时钟。
 
-`validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一；`sort` 只能引用已存在的 group 或 metric 别名，`having` 与 `DERIVED` 只能引用 metric 别名，且 `having` 不能引用 `ANY` 指标（Wow 协议不支持）；`percentile` 在开区间 (0, 100)，与 Wow 的 `aggregation.percentile` 一致，`100` 报 error；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2；`referenceLines` 引用的轴必须有系列；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；合计行来自 `compileAnalysisTotals` 的独立结果，因此 `AVG`、`DISTINCT_COUNT`、百分位等不可加指标也正确；该查询与主查询共享同一调度预算，失败只使合计行不可用，不影响主结果。图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
+`validateAnalysis` 的规则：别名在 groups 与 metrics 之间唯一；`sort` 只能引用已存在的 group 或 metric 别名，`having` 只能引用非 `ANY` 的 metric 别名（Wow 协议不支持）；`DERIVED` 只能引用在它之前声明的非 `ANY` metric 别名，按 `metrics` 顺序维护可引用集合，前向引用与环报 error；`percentile` 在开区间 (0, 100)，与 Wow 的 `aggregation.percentile` 一致，`100` 报 error；`BINARY` 的 `DIVIDE` 右侧为常量 0 报 error；`elements[].path` 必须在能力中声明，展开后可用字段为根字段加元素字段；`any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error。图表规则：`chart[族(type)]` 必须存在；`x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；`splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；`combo` 的每个系列必须有 `type`；heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；`maxSlices` 不小于 2；`referenceLines` 引用的轴必须有系列；漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；`metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`。`compileAnalysis` 因同构而退化为映射：查询级、指标级、元素级三处 `FilterTree` 分别编译为 `FilterExpression`，元素级以元素字段为作用域；`projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列；合计行来自 `compileAnalysisTotals` 的独立结果，因此 `AVG`、`DISTINCT_COUNT`、百分位等不可加指标也正确；该查询与主查询共享同一调度预算，失败只使合计行不可用，不影响主结果。图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。
 
 `validateDashboard` 的规则：`bindings[].globalField` 必须在 `cfg.fields` 中，`bindings[].panelField` 必须在被引用实例的定义中，且两者 kind 兼容；被引用实例必须是 Record 或 Analysis；**被引用实例的可见范围必须覆盖 Dashboard 自身的范围**：`personal` Dashboard 可以引用任何可读实例，`shared` 或 `system` Dashboard 只能引用 `shared` 或 `system` 实例，否则产生 error 级 Issue，UI 提示先把被引用视图另存为共享。打开时若某个被引用实例不可读（已删除或无权限），只有该面板显示"不可访问"，其余面板照常工作。内容面板规则见下段。
 
@@ -518,6 +518,8 @@ export interface ViewRuntime<C extends ViewConfig = ViewConfig> {
   refresh(): void; // 重跑 applied
   page(target: RecordPageTarget): void; // { index } 或 { cursor }；cursor 为 null 表示第一页
   select(keys: RecordKey[]): void;
+  setEditing(active: boolean): void; // 编辑器获得／失去输入焦点时调用，暂停自动刷新
+  setScopeFilter(tree: FilterTree | null): void; // 外层注入的附加条件，AND 到已应用筛选；不改 draft／saved
   dispose(): void;
 }
 
@@ -540,18 +542,22 @@ export interface ViewRuntimeState<C> {
   result: { config: C; data: ProjectedView; receivedAt: number } | null; // 只随成功推进
   selection: RecordKey[];
   write: WriteState | null; // 最近一次写入的待处理结局，见第 7.4 节
+  editing: boolean; // 由 setEditing 维护，用于暂停自动刷新
 }
 
 /** 写入的非成功结局；成功直接推进 saved 并清空该字段。 */
-export type WriteState =
-  | { kind: 'conflict'; action: WriteAction; remote: ViewInstance }
-  | { kind: 'rejected'; action: WriteAction; issue: Issue }
-  | {
-      kind: 'unknown';
-      action: WriteAction;
-      requestId: string;
-      payload: unknown;
-    };
+export type WriteState = { requestId: string; payload: WritePayload } & (
+  | { kind: 'conflict'; remote: ViewInstance }
+  | { kind: 'rejected'; issue: Issue }
+  | { kind: 'unknown' }
+);
+
+/** 原样保留的写入正文，覆盖与重试都用它，不从当前草稿重新推导。 */
+export type WritePayload =
+  | { action: 'create'; input: Omit<ViewInstance, 'id' | 'revision'> }
+  | { action: 'save'; config: ViewConfig }
+  | { action: 'rename'; title: string }
+  | { action: 'delete' };
 
 export type WriteAction = 'create' | 'save' | 'rename' | 'delete';
 ```
@@ -562,9 +568,9 @@ export type WriteAction = 'create' | 'save' | 'rename' | 'delete';
 - 新的 `apply / refresh / page` 替代同一 runtime 的在途请求，旧响应到达后丢弃。这由 `RequestRunner` 用 per-runtime key 实现，全局并发上限与队列来自 `RuntimeLimits`（`maxConcurrentQueries`、`maxQueuedQueries`、`maxPageSize`、`maxAnalysisRows`、`minRefreshInterval`）。
 - 状态变更同步提交后再通知订阅者；相同状态返回相同对象，子对象引用稳定，以配合 `useSyncExternalStore`。
 - runtime 不做持久化。保存是 Engine 的命令，成功后 Engine 调用 `runtime.markSaved(instance)` 推进基线。
-- **自动刷新。** `applied.refresh.interval` 非空时由该 runtime 持有唯一计时器，到期调用 `refresh()`。四种情况暂停：`issues` 含 error、筛选输入正在编辑、宿主报告页面不可见、上一次请求仍在途。计时与可见性都来自注入的 `RuntimeEnvironment`（见下），runtime 不触碰 DOM。计时器随 `dispose` 释放。多个 React 组件观察同一 runtime 不会产生多个计时器。
+- **自动刷新。** `applied.refresh.interval` 非空时由该 runtime 持有唯一计时器，到期调用 `refresh()`。四种情况暂停：`issues` 含 error、`editing` 为 true（`useFilterEditor` 等控制器在输入获得焦点时调用 `setEditing`）、宿主报告页面不可见、上一次请求仍在途。计时与可见性都来自注入的 `RuntimeEnvironment`（见下），runtime 不触碰 DOM。计时器随 `dispose` 释放。多个 React 组件观察同一 runtime 不会产生多个计时器。
 
-`DashboardRuntime` 持有 N 个子 `ViewRuntime` 加一个全局筛选草稿。`apply()` 校验全局筛选，为每个面板计算 `mergeGlobalFilter` 后调用子 runtime 的 `apply()`；每个面板独立 loading / error / result，Dashboard 不汇总成单一状态。自动刷新由 DashboardRuntime 按自身 `refresh.interval` 统一计时并触发全部数据面板的 `refresh()`；被引用实例自身的 `refresh` 配置在 Dashboard 内忽略，避免两层计时器。布局编辑是普通 `edit({ panels })`。
+`DashboardRuntime` 持有 N 个子 `ViewRuntime` 加一个全局筛选草稿。`apply()` 校验全局筛选，为每个面板计算 `mergeGlobalFilter` 后经 `setScopeFilter` 注入再触发子 runtime 执行；作用域条件不进入子 runtime 的 `draft` 或 `saved`，面板因此不会变脏，也不会把 Dashboard 条件保存回被引用实例，执行的有效配置记录在 `result.config`；每个面板独立 loading / error / result，Dashboard 不汇总成单一状态。自动刷新由 DashboardRuntime 按自身 `refresh.interval` 统一计时并触发全部数据面板的 `refresh()`；被引用实例自身的 `refresh` 配置在 Dashboard 内忽略，避免两层计时器。布局编辑是普通 `edit({ panels })`。
 
 `ViewEngine` 是注册表与命令入口，命令语义见第 7 节：
 
@@ -574,6 +580,7 @@ export interface ViewEngine {
   readonly environment: RuntimeEnvironment; // 时钟、计时器、可见性；由创建方注入
   definitions: ReadonlyMap<string, ViewDefinition>;
   resolveSource(key: string): ViewSource;   // Pick<QueryApi, 'paged' | 'cursor' | 'aggregate'>
+  resolveOptions(key: string): OptionSource;   // FieldDefinition.remote 的候选来源
 
   open(instanceId: string): Promise<ViewRuntime>;                 // store.get → validate → runtime
   create(definitionId: string, input: { title: string; scope: 'personal' | 'shared'; config: ViewConfig }): ViewRuntime; // 未保存的新视图；config 必填，由 default*Config / emptyDashboardConfig 生成
@@ -591,6 +598,18 @@ export interface ViewEngine {
 
 ```ts
 /** runtime 与宿主环境之间的唯一接口；Node 缺省实现始终可见，`/react` 的 `useViewEngine` 注入基于 `document.visibilityState` 的实现。 */
+/** reference 字段的远程候选：搜索分页与按 id 回填，供内置 reference 编辑器使用。 */
+export interface OptionSource {
+  search(
+    input: { query: string; cursor?: string },
+    signal?: AbortSignal,
+  ): Promise<{ items: FieldOption[]; nextCursor: string | null }>;
+  resolve(
+    ids: (string | number)[],
+    signal?: AbortSignal,
+  ): Promise<FieldOption[]>;
+}
+
 export interface RuntimeEnvironment {
   now(): Date;
   timeZone: string;
@@ -603,7 +622,7 @@ export interface RuntimeEnvironment {
 }
 ```
 
-`apply()` 与 `open()` 的首次查询按 `RecordCapability.paging` 选择目标：`paged` 用 `{ index: 0 }` 调 `source.paged`，`cursor` 用 `{ cursor: null }` 调 `source.cursor`。`refresh()` 同样回到第一页。
+`apply()` 与 `open()` 的首次查询按 `RecordCapability.paging` 选择目标：`paged` 用 `{ index: 1 }` 调 `source.paged`（Wow `Pagination.index` 从 1 开始），`cursor` 用 `{ cursor: null }` 调 `source.cursor`。`refresh()` 同样回到第一页。
 
 `open` 时的定义校验：`validate*(definition, instance.config)` 产生 `error` 级 Issue 则 runtime 进入"待修复"，`apply` 被拒绝直到用户修正；`warning` 不阻塞。这是定义演进的全部处理。
 
@@ -683,7 +702,7 @@ export interface ViewPreferences {
 | `FORBIDDEN` / `INVALID` / `NOT_FOUND`             | `write = { kind: 'rejected', issue }`                | 显示原因，草稿保留；可修改后作为新意图再保存                                                           |
 | 超时、断线、`UNAVAILABLE`（请求已发出，结果未知） | `write = { kind: 'unknown', requestId, payload }`    | **重试**：同一 `requestId` 与正文再次提交，服务端去重后返回既有实例；**放弃**：清除写入状态，草稿保留  |
 
-这四种结局就是 `ViewRuntimeState.write`，对应的动作是 `engine.retryWrite`、`engine.abandonWrite` 与 `engine.resolveConflict`；`save` 等方法在非成功结局时先写入该状态再 reject，调用方据此展示选项。未知结果不是失败也不是成功。重试成功即推进基线；放弃后草稿仍在，用户可再次保存，此时生成新的 `requestId`。删除遇到 `CONFLICT` 时刷新摘要后要求再次确认。
+这四种结局就是 `ViewRuntimeState.write`，对应的动作是 `engine.retryWrite`、`engine.abandonWrite` 与 `engine.resolveConflict`；三种结局都保留原 `requestId` 与原 `payload`（改名保留目标标题，保存保留提交的配置），覆盖与重试重放的是原意图而不是当前草稿；`save` 等方法在非成功结局时先写入该状态再 reject，调用方据此展示选项。未知结果不是失败也不是成功。重试成功即推进基线；放弃后草稿仍在，用户可再次保存，此时生成新的 `requestId`。删除遇到 `CONFLICT` 时刷新摘要后要求再次确认。
 
 ### 7.5 离开保护与导航
 

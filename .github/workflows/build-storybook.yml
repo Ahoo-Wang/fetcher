@@ -78,8 +78,10 @@ jobs:
       - name: Build
         run: pnpm -r --filter './packages/*' build
 
-      - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
 
       - name: Test Storybook interactions
         run: pnpm test:storybook
+        env:
+          STORYBOOK_BROWSERS: chromium,firefox,webkit

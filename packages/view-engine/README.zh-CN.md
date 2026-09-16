@@ -86,7 +86,7 @@ export const orders: ViewDefinition = {
     { name: 'amount', label: '金额', kind: 'number', summary: ['SUM', 'AVG'] },
     { name: 'createdAt', label: '创建时间', kind: 'datetime', sortable: true },
   ],
-  record: { rowKey: 'id', layouts: ['table', 'card'] },
+  record: { rowKey: 'id', paging: 'paged', layouts: ['table', 'card'] },
   // 系统视图：开发或运维配置的基础视图，随定义部署，所有用户可见、只读、可另存
   views: [
     {

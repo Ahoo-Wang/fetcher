@@ -91,7 +91,7 @@ export const orders: ViewDefinition = {
     },
     { name: 'createdAt', label: 'Created', kind: 'datetime', sortable: true },
   ],
-  record: { rowKey: 'id', layouts: ['table', 'card'] },
+  record: { rowKey: 'id', paging: 'paged', layouts: ['table', 'card'] },
   // System views: baseline views configured by developers or operators.
   // Deployed with the definition, visible to everyone, read-only, can be saved as.
   views: [
