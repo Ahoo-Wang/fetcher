@@ -23,6 +23,7 @@
   },
   "files": [
     "dist",
+    "docs/design.md",
     "README.md",
     "README.zh-CN.md",
     "THIRD_PARTY_NOTICES.md"

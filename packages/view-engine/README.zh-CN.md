@@ -186,7 +186,7 @@ const query = compileRecord(
   config,
   builtinFieldKinds,
   { now: new Date(), timeZone: 'Asia/Shanghai' },
-  { index: 0 },
+  { index: 1 }, // Wow 页码从 1 开始
 );
 const page = await source.paged(query);
 const view = projectRecord(orders, config, page);
