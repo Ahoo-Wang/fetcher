@@ -430,7 +430,7 @@ function validateHaving(
       if (!Array.isArray(expression.operands))
         return [issue('analysis.having.malformed', path)];
       return expression.operands.flatMap((operand, index) =>
-        walk(operand as AnalysisHavingExpression, [...path, 'operands', index]),
+        walk(operand, [...path, 'operands', index]),
       );
     }
     return nonAnyMetrics.has(expression.metric)
