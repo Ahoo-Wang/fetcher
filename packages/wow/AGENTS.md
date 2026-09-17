@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-wow build
 pnpm --filter @ahoo-wang/fetcher-wow test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-wow vitest run test/commandClient.test.ts
+pnpm --filter @ahoo-wang/fetcher-wow vitest run test/command/commandHttpHeaders.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-wow lint
@@ -106,11 +106,12 @@ src/
 
 ## Boundaries
 
-- ✅ Adding new query operators
-- ✅ Adding new condition types
+- ✅ Adding filter operators or expression types in `filter.ts`
+- ✅ Adding aggregation groups or metrics in `aggregation.ts`
 - ✅ Writing new tests
 - ⚠️ Changing command client API — affects react wow hooks and generator output
-- ⚠️ Modifying query condition builder — affects viewer filter components
+- ⚠️ Changing the `FilterExpression` API — view-engine and react build on it
+- ⚠️ Touching the legacy condition API — viewer still builds on it
 - 🚫 Breaking command result/wait strategy contract
-- 🚫 Changing Wow metadata decorator signature
+- 🚫 Changing the `WowMetadata` shape — generator reads it
 - 🚫 Removing event stream query support
