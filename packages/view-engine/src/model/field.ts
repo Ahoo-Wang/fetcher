@@ -60,18 +60,6 @@ export const FIELDLESS_FIELD_KIND_IDS: readonly FieldKindId[] = [
 ];
 
 /**
- * Kinds whose field holds several values rather than one.
- *
- * `array` holds them directly and `elementMatch` tests the entries of one, so
- * a condition on either asks "does some entry match" — an element question,
- * not a question about this record's value.
- */
-export const MULTI_VALUED_FIELD_KIND_IDS: readonly FieldKindId[] = [
-  'array',
-  'elementMatch',
-];
-
-/**
  * Whether a kind's `name` is a handle rather than a path into a document.
  *
  * Three things follow from it and each one is a place the two were confused:

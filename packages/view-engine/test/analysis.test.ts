@@ -32,6 +32,8 @@ import {
   validateAnalysis,
   type AnalysisCapability,
   type AnalysisViewConfig,
+  withFieldKinds,
+  DEFAULT_RUNTIME_LIMITS,
   type DataViewDefinition,
   type FilterOperatorName,
   type FilterTree,
@@ -694,6 +696,32 @@ describe('element scope', () => {
     },
   });
 
+  it('honours a caller that widened the tree limits', () => {
+    // An element filter is a filter like any other, so it spends the budget
+    // the caller set rather than the default one.
+    const deep = (depth: number): FilterTree =>
+      depth <= 1
+        ? {
+            op: 'and',
+            children: [{ field: 'items.sku', operator: 'EQ', value: 'x' }],
+          }
+        : { op: 'and', children: [deep(depth - 1)] };
+    const overrides = { elements: [{ path: 'items', filter: deep(12) }] };
+
+    expect(
+      codes(
+        validateAnalysis(withElements, config(overrides), builtinFieldKinds),
+      ),
+    ).toEqual(['filter.tree.too-deep']);
+    expect(
+      codes(
+        validateAnalysis(withElements, config(overrides), builtinFieldKinds, {
+          limits: { ...DEFAULT_RUNTIME_LIMITS, maxFilterDepth: 16 },
+        }),
+      ),
+    ).toEqual([]);
+  });
+
   it('qualifies element fields with their path, always', () => {
     expect(qualify('items', 'sku')).toBe('items.sku');
     // A declaration names what it holds relative to itself. Leaving a name
@@ -1080,10 +1108,88 @@ describe('metric filters', () => {
     ).toEqual(['analysis.metricFilter.not-scalar']);
   });
 
-  it('refuses a search, which asks about text rather than a value', () => {
+  it('refuses a search, which matches text rather than a value', () => {
     expect(codes(withFilter(leaf('@search', 'SEARCH', 'premium')))).toEqual([
-      'analysis.metricFilter.search-unsupported',
+      'analysis.metricFilter.not-scalar',
     ]);
+  });
+
+  it('asks the registry rather than the kind id', () => {
+    // `withFieldKinds` lets an app replace a built-in kind, so a replacement
+    // that does test one value must be usable here.
+    const scalarSearch = withFieldKinds(builtinFieldKinds, [
+      { ...builtinFieldKinds.get('search')!, scalar: true },
+    ]);
+
+    expect(
+      codes(
+        validateAnalysis(
+          wide(),
+          config({
+            metrics: [
+              {
+                type: 'COUNT',
+                alias: 'orders',
+                filter: leaf('@search', 'SEARCH', 'premium'),
+              },
+            ],
+          }),
+          scalarSearch,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it('refuses a custom kind that says it tests no single value', () => {
+    const custom = withFieldKinds(builtinFieldKinds, [
+      { ...builtinFieldKinds.get('string')!, scalar: false },
+    ]);
+
+    expect(
+      codes(
+        validateAnalysis(
+          wide(),
+          config({
+            metrics: [
+              {
+                type: 'COUNT',
+                alias: 'orders',
+                filter: leaf('warehouse', 'EQ', 'WH-1'),
+              },
+            ],
+          }),
+          custom,
+        ),
+      ),
+    ).toEqual(['analysis.metricFilter.not-scalar']);
+  });
+
+  it('honours a caller that widened the tree limits', () => {
+    // The root filter and a metric filter must agree on the budget.
+    const deep = (depth: number): FilterTree =>
+      depth <= 1
+        ? {
+            op: 'and',
+            children: [{ field: 'warehouse', operator: 'EQ', value: 'x' }],
+          }
+        : { op: 'and', children: [deep(depth - 1)] };
+
+    const overrides = {
+      metrics: [
+        { type: 'COUNT' as const, alias: 'orders', filter: deep(12) },
+      ] as AnalysisViewConfig['metrics'],
+    };
+
+    expect(
+      codes(validateAnalysis(wide(), config(overrides), builtinFieldKinds)),
+    ).toEqual(['filter.tree.too-deep']);
+    expect(
+      codes(
+        validateAnalysis(wide(), config(overrides), builtinFieldKinds, {
+          limits: { ...DEFAULT_RUNTIME_LIMITS, maxFilterDepth: 16 },
+        }),
+      ),
+    ).toEqual([]);
   });
 
   it('admits a metadata filter, unlike an element predicate', () => {

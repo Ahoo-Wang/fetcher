@@ -18,7 +18,6 @@ import {
   type AnalysisHavingExpression,
   type AnalysisViewConfig,
   type DataViewDefinition,
-  MULTI_VALUED_FIELD_KIND_IDS,
   type FilterTree,
   type Issue,
   type IssuePath,
@@ -70,9 +69,9 @@ export function validateAnalysis(
     limits,
   );
 
-  issues.push(...validateElements(config, scope, kinds));
+  issues.push(...validateElements(config, scope, kinds, limits));
   issues.push(...validateGroups(config, scope));
-  issues.push(...validateMetrics(config, capability, scope, kinds));
+  issues.push(...validateMetrics(config, capability, scope, kinds, limits));
   issues.push(...validateAliases(config));
   issues.push(...validateHaving(config, capability));
   issues.push(...validateSortAndColumns(config));
@@ -119,6 +118,7 @@ function validateElements(
   config: AnalysisViewConfig,
   scope: AnalysisScope,
   kinds: FieldKindRegistry,
+  limits: RuntimeLimits,
 ): Issue[] {
   return (config.elements ?? []).flatMap((element, index) => {
     const path: IssuePath = ['elements', index];
@@ -133,10 +133,12 @@ function validateElements(
     const fields = [...scope.fields.values()].filter(field =>
       field.name.startsWith(`${element.path}.`),
     );
-    return validateFilter(fields, element.filter, kinds).map(found => ({
-      ...found,
-      path: [...path, 'filter', ...found.path],
-    }));
+    return validateFilter(fields, element.filter, kinds, { limits }).map(
+      found => ({
+        ...found,
+        path: [...path, 'filter', ...found.path],
+      }),
+    );
   });
 }
 
@@ -307,12 +309,13 @@ function metricFilterIssues(
   tree: FilterTree,
   scope: AnalysisScope,
   kinds: FieldKindRegistry,
+  limits: RuntimeLimits,
   path: IssuePath,
 ): Issue[] {
   const fields = [...scope.fields.values()];
   return [
-    ...validateFilter(fields, tree, kinds),
-    ...wholeValueIssues(tree, scope),
+    ...validateFilter(fields, tree, kinds, { limits }),
+    ...wholeValueIssues(tree, scope, kinds),
   ].map(found => ({ ...found, path: [...path, ...found.path] }));
 }
 
@@ -321,31 +324,39 @@ function metricFilterIssues(
  *
  * A metric filter decides, per record, whether that record counts toward this
  * one metric — MongoDB re-expresses it as a `$cond` guard and Elasticsearch as
- * a filter aggregation — so it has one record's value to work with. A field
- * holding several values gives it no single value to test, and a search asks
- * about text across the record rather than about a value at all.
+ * a filter aggregation — so it has one record's value to work with. A kind
+ * that declares itself non-scalar has no such value: it compiles to a
+ * condition over the entries of a collection, or to a match across the
+ * record's text.
  *
- * The metadata kinds stay usable here, unlike inside an element predicate
- * where they are refused: an element is not a record and has no id or owner,
- * but a metric filter is looking at a whole record and those are exactly the
+ * The kind answers this rather than a list of ids here, because
+ * `withFieldKinds` lets an app replace a built-in kind or register one of its
+ * own. What settles it is the shape a kind compiles to, and only the kind
+ * knows that.
+ *
+ * The metadata kinds stay usable, unlike inside an element predicate where
+ * they are refused: an element is not a record and has no id or owner, but a
+ * metric filter is looking at a whole record and those are exactly the
  * questions it can answer.
  */
-function wholeValueIssues(tree: FilterTree, scope: AnalysisScope): Issue[] {
+function wholeValueIssues(
+  tree: FilterTree,
+  scope: AnalysisScope,
+  kinds: FieldKindRegistry,
+): Issue[] {
   const issues: Issue[] = [];
   for (const { node, path } of walkFilter(tree)) {
     if (!isFilterLeaf(node)) continue;
     const field = scope.fields.get(node.field);
-    // An unknown field is `validateFilter`'s to report, not this one's.
+    // An unknown field, and a kind no registry holds, are `validateFilter`'s
+    // to report rather than this one's.
     if (!field) continue;
+    const kind = kinds.get(field.kind);
+    if (!kind || kind.scalar !== false) continue;
 
-    if (field.kind === 'search')
-      issues.push(issue('analysis.metricFilter.search-unsupported', path));
-    else if (MULTI_VALUED_FIELD_KIND_IDS.includes(field.kind))
-      issues.push(
-        issue('analysis.metricFilter.not-scalar', path, {
-          field: field.name,
-        }),
-      );
+    issues.push(
+      issue('analysis.metricFilter.not-scalar', path, { field: field.name }),
+    );
   }
   return issues;
 }
@@ -355,6 +366,7 @@ function validateMetrics(
   capability: NonNullable<DataViewDefinition['analysis']>,
   scope: AnalysisScope,
   kinds: FieldKindRegistry,
+  limits: RuntimeLimits,
 ): Issue[] {
   const issues: Issue[] = [];
   // DERIVED may only reach metrics declared before it, which rules out both
@@ -371,7 +383,10 @@ function validateMetrics(
     // that by throwing.
     if ('filter' in metric && metric.filter)
       issues.push(
-        ...metricFilterIssues(metric.filter, scope, kinds, [...path, 'filter']),
+        ...metricFilterIssues(metric.filter, scope, kinds, limits, [
+          ...path,
+          'filter',
+        ]),
       );
 
     switch (metric.type) {

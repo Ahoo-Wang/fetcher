@@ -214,9 +214,10 @@ export type AnalysisMetric =
 
 **指标筛选（`metrics[].filter`）**：它决定"每条记录算不算进这一个指标"，所以拿到的是**一条记录的一个值**。因此它比根筛选允许得少：
 
-- 持有多个值的字段（`array`、`elementMatch`）没有单一值可判，问的是"有没有某一项匹配"——那是元素问题，不是整条记录的问题 → `analysis.metricFilter.not-scalar`
-- 全文检索问的是记录里的文本而非某个值 → `analysis.metricFilter.search-unsupported`
+- 由 **kind 自己声明** `scalar: false` 的种类被拒（`analysis.metricFilter.not-scalar`）：`array`、`elementMatch` 编译成对集合内元素的条件，`search` 编译成对整条记录文本的匹配，三者都没有"这条记录在这里的那一个值"可判
+- 判据是 kind 而非写死的 id 列表——`withFieldKinds` 允许替换内建 kind 或注册自定义 kind，决定这件事的是**编译出来的形状**，而只有 kind 知道自己编译成什么
 - **元数据字段（`@id`／`@ownerId`／`@tenantId`…）在这里是允许的**，与元素谓词里被拒相反：元素没有所有者，而指标筛选看的正是整条记录
+- 它和元素筛选一样，花的是**调用方设定的** `RuntimeLimits` 预算，不是默认值——否则同样复杂度的根筛选能过、指标筛选却被判超限
 
 Wow 的对应规则在 `requireScalarMetricFilterFields`：形状那半条（`SEARCH`／`ELEMENT_MATCH`）由 `packages/wow` 的 `aggregation.query()` 在协议层挡住，需要 schema 那半条（数组值字段）由这里挡住——因为只有这里知道 `FieldKind`。
 

@@ -271,9 +271,7 @@ export const defaultMessages: ViewMessages = Object.freeze({
   'analysis.limit.not-positive': 'The row limit must be a positive number.',
   'analysis.limit.too-large': 'The row limit cannot exceed {max}.',
   'analysis.metricFilter.not-scalar':
-    '{field} holds several values, so it cannot filter one metric.',
-  'analysis.metricFilter.search-unsupported':
-    'A search cannot filter one metric.',
+    '{field} has no single value for a metric filter to test.',
   'analysis.metrics.too-many': 'Too many metrics for this dataset.',
   'analysis.percentile.out-of-range':
     'A percentile must be between 0 and 100, exclusive.',
