@@ -213,59 +213,58 @@ describe('validateDefinition capabilities', () => {
     ).toEqual([]);
   });
 
-  it('checks element paths and their own field scope', () => {
+  it('checks an element field scope where it is declared', () => {
     expect(
       codes(
         ordersDefinition({
-          elements: [
+          fields: [
             {
-              path: 'not a path',
-              fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
-            },
-            {
-              // A name that repeats a root field is fine: a config writes
-              // an element field as `path.field`, so they cannot collide.
-              path: 'lines',
-              fields: [
+              name: 'lines',
+              label: 'Lines',
+              kind: 'array',
+              // A name that repeats a root field is fine: every reference to
+              // an element field is `field.element`, so they cannot collide.
+              elements: [
                 { name: 'id', label: 'Line', kind: 'string' },
                 { name: 'id', label: 'Again', kind: 'string' },
+                { name: 'not a name', label: 'Bad', kind: 'string' },
               ],
             },
           ],
-          analysis: { count: true, fields: [] },
+          record: undefined,
+          analysis: undefined,
           views: [],
         }),
       ),
-    ).toEqual([
-      'definition.element.path-invalid',
-      'definition.field.duplicate',
-    ]);
+    ).toEqual(['definition.field.duplicate', 'definition.field.name-invalid']);
   });
 
-  it('refuses the same array path declared twice', () => {
-    // Every reference to an element field is `path.field`, so two
-    // declarations of one path would make that reference ambiguous.
-    expect(
-      codes(
-        ordersDefinition({
-          elements: [
-            { path: 'items', fields: [] },
-            { path: 'items', fields: [] },
-          ],
-          views: [],
-        }),
-      ),
-    ).toEqual(['definition.element.duplicate']);
+  it('cannot express an array that does not exist', () => {
+    // Declaring elements on the field is what removes the dangling path: a
+    // separate list keyed by path would admit one naming no field at all.
+    const found = codes(
+      ordersDefinition({
+        analysis: {
+          count: true,
+          fields: [],
+          elements: [{ path: 'ghost', aggregations: [] }],
+        },
+        views: [],
+      }),
+    );
+
+    expect(found).toEqual(['definition.analysis.element-undeclared']);
   });
 
-  it('refuses an analysis that expands a path the definition never declared', () => {
+  it('refuses an analysis expanding a field that holds no elements', () => {
     expect(
       codes(
         ordersDefinition({
           analysis: {
             count: true,
             fields: [],
-            elements: [{ path: 'ghost', aggregations: [] }],
+            // `warehouse` is a plain string; there is nothing to expand.
+            elements: [{ path: 'warehouse', aggregations: [] }],
           },
           views: [],
         }),

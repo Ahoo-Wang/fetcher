@@ -69,7 +69,6 @@ export function validateDefinition(
 
   if (definition.kind === 'data') {
     issues.push(...validateFields(definition.fields, kinds, ['fields']));
-    issues.push(...validateElements(definition, kinds));
     issues.push(...validateRecordCapability(definition));
     issues.push(...validateAnalysisCapability(definition));
   }
@@ -81,44 +80,6 @@ export function validateDefinition(
 /** Whether a definition may be opened at all. */
 export function isUsableDefinition(issues: readonly Issue[]): boolean {
   return !issues.some(found => found.severity === 'error');
-}
-
-/**
- * The array paths a definition declares, and what their elements hold.
- *
- * A path must be a field name Wow can read, because every reference to an
- * element field is `path.field` and reaches the compiler as one. Two
- * declarations of the same path would make that reference ambiguous.
- */
-function validateElements(
-  definition: DataViewDefinition,
-  kinds: FieldKindRegistry,
-): Issue[] {
-  const issues: Issue[] = [];
-  const seen = new Set<string>();
-
-  (definition.elements ?? []).forEach((element, index) => {
-    const at: IssuePath = ['elements', index];
-    if (!isFieldName(element.path))
-      issues.push(
-        issue('definition.element.path-invalid', [...at, 'path'], {
-          path: element.path,
-        }),
-      );
-    else if (seen.has(element.path))
-      issues.push(
-        issue('definition.element.duplicate', [...at, 'path'], {
-          path: element.path,
-        }),
-      );
-    seen.add(element.path);
-
-    // An element's fields are their own scope: a name may repeat a root
-    // one, because every reference to one is written `path.field`.
-    issues.push(...validateFields(element.fields, kinds, [...at, 'fields']));
-  });
-
-  return issues;
 }
 
 function validateFields(
@@ -168,6 +129,15 @@ function validateFields(
           { field: field.name, value: String(field.stringComparison) },
         ),
       );
+
+    // An element's names are its own scope: they may repeat a root field's,
+    // because every reference to one is written `field.element`. Checking
+    // them here is what makes a nested declaration self-contained — there is
+    // no path to dangle and no second place to keep in step.
+    if (field.elements !== undefined)
+      issues.push(
+        ...validateFields(field.elements, kinds, [...at, 'elements']),
+      );
   });
 
   return issues;
@@ -202,8 +172,11 @@ function validateAnalysisCapability(definition: DataViewDefinition): Issue[] {
 
   const issues: Issue[] = [];
   const names = new Set(definition.fields.map(field => field.name));
-  const declaredPaths = new Set(
-    (definition.elements ?? []).map(element => element.path),
+  // A path may be expanded only if some field actually holds elements.
+  const expandable = new Set(
+    definition.fields
+      .filter(field => field.elements !== undefined)
+      .map(field => field.name),
   );
 
   capability.fields.forEach((entry, index) => {
@@ -223,7 +196,7 @@ function validateAnalysisCapability(definition: DataViewDefinition): Issue[] {
     const at: IssuePath = ['analysis', 'elements', index];
     // The path names a declared element; its fields are checked where they
     // are declared, so all this has to establish is that it names one.
-    if (!declaredPaths.has(element.path))
+    if (!expandable.has(element.path))
       issues.push(
         issue('definition.analysis.element-undeclared', [...at, 'path'], {
           path: element.path,

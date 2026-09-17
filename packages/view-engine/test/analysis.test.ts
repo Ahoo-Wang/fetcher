@@ -663,10 +663,15 @@ describe('element scope', () => {
   // What an element holds is the definition's to say; the capability names
   // which of those paths this analysis may expand, and how they aggregate.
   const withElements = definition({
-    elements: [
+    // The array declares what it holds; the capability only names which
+    // arrays this analysis may expand, and how their fields aggregate.
+    fields: [
+      ...definition().fields,
       {
-        path: 'items',
-        fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+        name: 'items',
+        label: 'Items',
+        kind: 'array',
+        elements: [{ name: 'sku', label: 'SKU', kind: 'string' }],
       },
     ],
     analysis: {

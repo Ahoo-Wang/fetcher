@@ -45,18 +45,14 @@ export function analysisScope(
     (capability.elements ?? []).map(element => element.path),
   );
 
-  // What an element holds is the definition's to say; the capability only
-  // names which of those paths this analysis may expand, and how they aggregate.
-  const declared = new Map(
-    (definition.elements ?? []).map(element => [element.path, element]),
-  );
-
+  // What an element holds belongs to the field that holds it; the capability
+  // only names which arrays this analysis may expand, and how they aggregate.
   for (const element of capability.elements ?? []) {
     const configured = (config?.elements ?? []).some(
       entry => entry.path === element.path,
     );
     if (!configured) continue;
-    for (const field of declared.get(element.path)?.fields ?? [])
+    for (const field of fields.get(element.path)?.elements ?? [])
       fields.set(qualify(element.path, field.name), {
         ...field,
         name: qualify(element.path, field.name),

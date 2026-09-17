@@ -44,10 +44,6 @@ export type ViewDefinition =
       kind: 'data';
       source: string; // resolveSource 的键
       fields: FieldDefinition[];
-      // 数组路径与其元素持有的字段。它描述的是数据而不是某一种观察方式，
-      // 因此在定义上而不是能力里：原先挂在 AnalysisCapability 下，
-      // 使同一个数组的元素对聚合可见、对 Record 筛选不可见。
-      elements?: ElementDefinition[];
       record?: RecordCapability;
       analysis?: AnalysisCapability;
       views?: SystemView[]; // 代码声明的系统视图，随定义部署
@@ -58,12 +54,6 @@ export interface SystemView {
   id: string; // 在定义内唯一且不含 ':'；Engine 以 `system:${definitionId}:${id}` 作为实例 id
   title: string;
   config: ViewConfig;
-}
-
-/** 一个可展开的数组路径，以及它的每个元素持有什么。 */
-export interface ElementDefinition {
-  path: string; // 数组的字段路径，如 items
-  fields: FieldDefinition[]; // 元素字段；名字可与根字段重复，引用一律写 `path.field`
 }
 
 export interface FieldDefinition {
@@ -80,6 +70,10 @@ export interface FieldDefinition {
   summary?: SummaryFunction[]; // 允许的汇总函数
   cell?: string; // 单元格渲染器键，缺省按 kind
   editor?: string; // 筛选编辑器键，缺省由 kind、operator 与 value.type 推出
+  // 数组字段的元素持有什么。它属于字段本身：items 就是那个数组，这些是它装的东西。
+  // 声明在别处就得用路径字符串回指，而路径可以指向不存在的字段——那一整类悬空引用
+  // 在这里根本写不出来。元素名字自成作用域，可与根字段重名，引用一律写 `field.element`。
+  elements?: FieldDefinition[];
 }
 
 export interface RecordCapability {
@@ -93,8 +87,8 @@ export interface RecordCapability {
 export interface AnalysisCapability {
   count: boolean;
   fields: AggregationFieldCapability[];
-  // 可展开的数组路径：path 指向定义声明的 ElementDefinition，
-  // 元素持有什么由定义说，这里只说哪些路径本分析可以展开、如何聚合
+  // 可展开的数组路径：path 指向一个声明了 elements 的字段，
+  // 元素持有什么由那个字段说，这里只说哪些数组本分析可以展开、如何聚合
   elements?: { path: string; aggregations: AggregationFieldCapability[] }[];
   expressions?: boolean; // 允许 BINARY 表达式与 DERIVED 指标
   having?: boolean;

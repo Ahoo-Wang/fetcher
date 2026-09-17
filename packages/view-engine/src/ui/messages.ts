@@ -326,10 +326,8 @@ export const defaultMessages: ViewMessages = Object.freeze({
   // Definition admission.
   'definition.analysis.default-limit-too-large':
     'The default row limit exceeds the maximum.',
-  'definition.element.path-invalid': '{path} is not a field path Wow can read.',
-  'definition.element.duplicate': 'The array path {path} is declared twice.',
   'definition.analysis.element-undeclared':
-    'The analysis expands {path}, which the definition does not declare.',
+    'The analysis expands {path}, which is not a field holding elements.',
   'definition.analysis.element-path-invalid':
     '{path} is not a usable field path.',
   'definition.analysis.field-unknown':
