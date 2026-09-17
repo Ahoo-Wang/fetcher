@@ -33,6 +33,9 @@ import {
   type AnalysisCapability,
   type AnalysisViewConfig,
   type DataViewDefinition,
+  type FilterOperatorName,
+  type FilterTree,
+  type FilterValue,
   type Issue,
 } from '../src/index.js';
 
@@ -973,5 +976,124 @@ describe('projectAnalysis', () => {
       label: 'Amount',
       numberFormat: { style: 'currency', currency: 'CNY' },
     });
+  });
+});
+
+/**
+ * A metric's own filter reaches `compileAnalysis` either way, and nothing was
+ * admitting it: an unknown field went all the way to `compileFilter`, which
+ * answers that by throwing. Wow also allows less here than at the root,
+ * because a metric filter decides per record whether that record counts, so
+ * it has one record's value to work with.
+ */
+describe('metric filters', () => {
+  const wide = () =>
+    definition({
+      fields: [
+        ...definition().fields,
+        {
+          name: 'items',
+          label: 'Items',
+          kind: 'array',
+          elements: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+        },
+        {
+          name: 'lines',
+          label: 'Lines',
+          kind: 'elementMatch',
+          elements: [{ name: 'status', label: 'Status', kind: 'string' }],
+        },
+        { name: '@search', label: 'Search', kind: 'search' },
+        { name: '@ownerId', label: 'Created by', kind: 'ownerId' },
+      ],
+    });
+
+  const withFilter = (filter: FilterTree) =>
+    validateAnalysis(
+      wide(),
+      config({ metrics: [{ type: 'COUNT', alias: 'orders', filter }] }),
+      builtinFieldKinds,
+    );
+
+  const leaf = (
+    field: string,
+    operator: FilterOperatorName,
+    value: FilterValue,
+  ): FilterTree => ({ op: 'and', children: [{ field, operator, value }] });
+
+  it('admits a filter that names a real field', () => {
+    expect(codes(withFilter(leaf('warehouse', 'EQ', 'WH-1')))).toEqual([]);
+  });
+
+  it('reports a field that does not exist', () => {
+    // This used to reach compileFilter, which answers an unknown field by
+    // throwing rather than by reporting it.
+    expect(codes(withFilter(leaf('ghost', 'EQ', 'x')))).toEqual([
+      'filter.field.unknown',
+    ]);
+  });
+
+  it('reports a value the field cannot take', () => {
+    expect(codes(withFilter(leaf('amount', 'EQ', 'not-a-number')))).toEqual([
+      'filter.value.expected-number',
+    ]);
+  });
+
+  it('paths an issue under the metric that carries the filter', () => {
+    const issues = validateAnalysis(
+      wide(),
+      config({
+        metrics: [
+          { type: 'COUNT', alias: 'orders' },
+          {
+            type: 'COUNT',
+            alias: 'other',
+            filter: leaf('ghost', 'EQ', 'x'),
+          },
+        ],
+        sort: [],
+        chart: {
+          type: 'bar',
+          cartesian: { x: 'wh', series: [{ metric: 'orders' }] },
+        },
+      }),
+      builtinFieldKinds,
+    );
+
+    expect(issues.map(found => found.path)).toContainEqual([
+      'metrics',
+      1,
+      'filter',
+      'children',
+      0,
+    ]);
+  });
+
+  it.each([
+    ['items', 'IN', ['a'] as FilterValue],
+    ['lines', 'ELEMENT_MATCH', { op: 'and', children: [] } as FilterValue],
+  ])('refuses %s, which holds several values', (field, operator, value) => {
+    // No single value to test, so the question is "does some entry match",
+    // which is an element question rather than a whole-record one.
+    expect(
+      codes(withFilter(leaf(field, operator as FilterOperatorName, value))),
+    ).toEqual(['analysis.metricFilter.not-scalar']);
+  });
+
+  it('refuses a search, which asks about text rather than a value', () => {
+    expect(codes(withFilter(leaf('@search', 'SEARCH', 'premium')))).toEqual([
+      'analysis.metricFilter.search-unsupported',
+    ]);
+  });
+
+  it('admits a metadata filter, unlike an element predicate', () => {
+    // An element has no owner, but a metric filter is looking at a whole
+    // record and that is exactly what OWNER_ID asks about.
+    expect(codes(withFilter(leaf('@ownerId', 'OWNER_ID', 'u-1')))).toEqual([]);
+  });
+
+  it('leaves an unfinished condition alone', () => {
+    // Same rule as everywhere else: unfilled is not wrong.
+    expect(codes(withFilter(leaf('warehouse', 'EQ', '')))).toEqual([]);
   });
 });

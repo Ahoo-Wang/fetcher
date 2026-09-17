@@ -210,7 +210,19 @@ export type AnalysisMetric =
       filter?: FilterTree;
     }
   | { type: 'DERIVED'; alias: string; expression: AnalysisDerivedExpression }; // 与 Wow DerivedExpression 同构
+```
 
+**指标筛选（`metrics[].filter`）**：它决定"每条记录算不算进这一个指标"，所以拿到的是**一条记录的一个值**。因此它比根筛选允许得少：
+
+- 持有多个值的字段（`array`、`elementMatch`）没有单一值可判，问的是"有没有某一项匹配"——那是元素问题，不是整条记录的问题 → `analysis.metricFilter.not-scalar`
+- 全文检索问的是记录里的文本而非某个值 → `analysis.metricFilter.search-unsupported`
+- **元数据字段（`@id`／`@ownerId`／`@tenantId`…）在这里是允许的**，与元素谓词里被拒相反：元素没有所有者，而指标筛选看的正是整条记录
+
+Wow 的对应规则在 `requireScalarMetricFilterFields`：形状那半条（`SEARCH`／`ELEMENT_MATCH`）由 `packages/wow` 的 `aggregation.query()` 在协议层挡住，需要 schema 那半条（数组值字段）由这里挡住——因为只有这里知道 `FieldKind`。
+
+除此之外它就是一棵普通的 Filter 树，按 analysis scope 的字段走 `validateFilter`，问题路径挂在 `['metrics', i, 'filter', ...]` 下。
+
+```ts
 export type AnalysisHavingExpression = LiteralEnums<HavingExpression>;
 export type AnalysisDerivedExpression = LiteralEnums<DerivedExpression>;
 

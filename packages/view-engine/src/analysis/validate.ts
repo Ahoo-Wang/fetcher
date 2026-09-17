@@ -18,14 +18,18 @@ import {
   type AnalysisHavingExpression,
   type AnalysisViewConfig,
   type DataViewDefinition,
+  MULTI_VALUED_FIELD_KIND_IDS,
+  type FilterTree,
   type Issue,
   type IssuePath,
   type RuntimeLimits,
 } from '../model/index.js';
 import {
   issue,
+  isFilterLeaf,
   validateFilter,
   validateViewConfigBase,
+  walkFilter,
   type FieldKindRegistry,
 } from '../filter/index.js';
 import { analysisScope, type AnalysisScope } from './capability.js';
@@ -68,7 +72,7 @@ export function validateAnalysis(
 
   issues.push(...validateElements(config, scope, kinds));
   issues.push(...validateGroups(config, scope));
-  issues.push(...validateMetrics(config, capability, scope));
+  issues.push(...validateMetrics(config, capability, scope, kinds));
   issues.push(...validateAliases(config));
   issues.push(...validateHaving(config, capability));
   issues.push(...validateSortAndColumns(config));
@@ -290,10 +294,67 @@ function derivedIssues(
   ];
 }
 
+/**
+ * Admits a metric's own filter, which reaches compilation either way.
+ *
+ * Two checks, because the filter is wrong in two different ways. It is an
+ * ordinary filter over the analysis scope, so it must name fields that exist
+ * and hold values its operators can take — nothing was checking that at all.
+ * It is also in metric position, where Wow allows less than it does at the
+ * root.
+ */
+function metricFilterIssues(
+  tree: FilterTree,
+  scope: AnalysisScope,
+  kinds: FieldKindRegistry,
+  path: IssuePath,
+): Issue[] {
+  const fields = [...scope.fields.values()];
+  return [
+    ...validateFilter(fields, tree, kinds),
+    ...wholeValueIssues(tree, scope),
+  ].map(found => ({ ...found, path: [...path, ...found.path] }));
+}
+
+/**
+ * Refuses the leaves a whole-value predicate cannot express.
+ *
+ * A metric filter decides, per record, whether that record counts toward this
+ * one metric — MongoDB re-expresses it as a `$cond` guard and Elasticsearch as
+ * a filter aggregation — so it has one record's value to work with. A field
+ * holding several values gives it no single value to test, and a search asks
+ * about text across the record rather than about a value at all.
+ *
+ * The metadata kinds stay usable here, unlike inside an element predicate
+ * where they are refused: an element is not a record and has no id or owner,
+ * but a metric filter is looking at a whole record and those are exactly the
+ * questions it can answer.
+ */
+function wholeValueIssues(tree: FilterTree, scope: AnalysisScope): Issue[] {
+  const issues: Issue[] = [];
+  for (const { node, path } of walkFilter(tree)) {
+    if (!isFilterLeaf(node)) continue;
+    const field = scope.fields.get(node.field);
+    // An unknown field is `validateFilter`'s to report, not this one's.
+    if (!field) continue;
+
+    if (field.kind === 'search')
+      issues.push(issue('analysis.metricFilter.search-unsupported', path));
+    else if (MULTI_VALUED_FIELD_KIND_IDS.includes(field.kind))
+      issues.push(
+        issue('analysis.metricFilter.not-scalar', path, {
+          field: field.name,
+        }),
+      );
+  }
+  return issues;
+}
+
 function validateMetrics(
   config: AnalysisViewConfig,
   capability: NonNullable<DataViewDefinition['analysis']>,
   scope: AnalysisScope,
+  kinds: FieldKindRegistry,
 ): Issue[] {
   const issues: Issue[] = [];
   // DERIVED may only reach metrics declared before it, which rules out both
@@ -304,6 +365,14 @@ function validateMetrics(
   config.metrics.forEach((metric, index) => {
     const path: IssuePath = ['metrics', index];
     const declared = (field: string) => scope.aggregations.get(field);
+
+    // A metric's own filter was compiled and never admitted, so it could name
+    // a field that does not exist and reach `compileFilter`, which answers
+    // that by throwing.
+    if ('filter' in metric && metric.filter)
+      issues.push(
+        ...metricFilterIssues(metric.filter, scope, kinds, [...path, 'filter']),
+      );
 
     switch (metric.type) {
       case 'COUNT':
