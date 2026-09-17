@@ -23,7 +23,6 @@ import {
   type RuntimeLimits,
 } from '../model/index.js';
 import {
-  isValidTimeZone,
   issue,
   validateFilter,
   validateViewConfigBase,
@@ -172,17 +171,15 @@ function validateGroups(
             unit: group.unit,
           }),
         );
+      // Only the blank check, which is Wow's own. This zone is passed through
+      // to the server and never resolved here, so the browser's zone table has
+      // no standing over it: a name the backend knows, or a fixed offset, must
+      // not be refused because this client's ICU is trimmed or out of date. A
+      // filter value is the opposite case — it is resolved here against dayjs,
+      // so an unknown zone there is an error.
       if (group.timeZone !== undefined && group.timeZone.trim() === '')
         issues.push(
           issue('analysis.group.blank-time-zone', [...path, 'timeZone']),
-        );
-      // Wow buckets by this zone, so a name no runtime resolves produces
-      // buckets nobody can place; it is refused rather than passed on.
-      else if (group.timeZone !== undefined && !isValidTimeZone(group.timeZone))
-        issues.push(
-          issue('analysis.group.unknown-time-zone', [...path, 'timeZone'], {
-            timeZone: group.timeZone,
-          }),
         );
     }
     if (group.type === 'TERMS') {

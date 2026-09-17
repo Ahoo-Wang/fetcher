@@ -14,7 +14,11 @@
 import type * as React from 'react';
 import { ArrowDownIcon, ArrowUpIcon, InboxIcon } from 'lucide-react';
 import type { NumberFormat, RecordData, RecordKey } from '../model/index.js';
-import type { RecordColumnView, SummaryRow } from '../record/index.js';
+import type {
+  RecordColumnView,
+  SummaryCell,
+  SummaryRow,
+} from '../record/index.js';
 import type { RecordTableController } from '../react/index.js';
 import { Checkbox } from './components/checkbox.js';
 import {
@@ -178,7 +182,12 @@ function SummaryFooter({
   columns: readonly RecordColumnView[];
 }) {
   const messages = useViewMessages();
-  const byField = new Map(summaries.cells.map(cell => [cell.field, cell]));
+  // A field may carry several functions — `amount` summed and averaged — and
+  // the kernel projects a cell for each, so they are grouped rather than
+  // keyed, which would keep only the last one configured.
+  const byField = new Map<string, SummaryCell[]>();
+  for (const cell of summaries.cells)
+    byField.set(cell.field, [...(byField.get(cell.field) ?? []), cell]);
 
   return (
     <TableFooter data-scope={summaries.scope}>
@@ -186,20 +195,24 @@ function SummaryFooter({
         <TableCell className="text-muted-foreground text-xs font-normal">
           {messages.label(`label.summary.${summaries.scope}`)}
         </TableCell>
-        {columns.map(column => {
-          const cell = byField.get(column.field);
-          return (
-            <TableCell key={column.field}>
-              {cell && (
-                <span title={`${cell.fn} of ${cell.label}`}>
-                  {cell.value === null
-                    ? messages.label('label.summary.unavailable')
-                    : formatNumber(cell.value, cell.numberFormat)}
+        {columns.map(column => (
+          <TableCell key={column.field}>
+            {(byField.get(column.field) ?? []).map(cell => (
+              <span
+                key={cell.fn}
+                className="block whitespace-nowrap"
+                title={`${cell.fn} of ${cell.label}`}
+              >
+                <span className="text-muted-foreground mr-1 text-xs">
+                  {cell.fn}
                 </span>
-              )}
-            </TableCell>
-          );
-        })}
+                {cell.value === null
+                  ? messages.label('label.summary.unavailable')
+                  : formatNumber(cell.value, cell.numberFormat)}
+              </span>
+            ))}
+          </TableCell>
+        ))}
       </TableRow>
     </TableFooter>
   );

@@ -215,8 +215,6 @@ export const defaultMessages: ViewMessages = Object.freeze({
   'analysis.function.unsupported': '{field} does not offer {fn}.',
   'analysis.group.blank-missing-key':
     'The placeholder for missing values is empty.',
-  'analysis.group.unknown-time-zone':
-    '{timeZone} is not a time zone this browser knows.',
   'analysis.group.blank-time-zone': 'The time zone is empty.',
   'analysis.group.interval-not-positive':
     'A histogram interval must be greater than zero.',

@@ -11,7 +11,6 @@
  * limitations under the License.
  */
 
-import { useEffect } from 'react';
 import type { FilterTree } from '../model/index.js';
 import type { DashboardRuntime, ViewEngine } from '../runtime/index.js';
 import {
@@ -65,15 +64,12 @@ export function EmbeddedView({
   theme,
   className,
 }: EmbeddedViewProps) {
-  const opened = useOpenView(engine, instanceId);
+  // The condition goes in with the config, not after it: `useOpenView` hands
+  // it to `engine.open`, so the opening query is already scoped and an
+  // inadmissible condition is reported instead of being quietly dropped.
+  const opened = useOpenView(engine, instanceId, scopeFilter);
   const messages = useViewMessages();
   const runtime = opened.runtime;
-
-  // A host's condition is part of what this view is, so it goes in as soon as
-  // the runtime exists and follows every later change to it.
-  useEffect(() => {
-    runtime?.setScopeFilter(scopeFilter);
-  }, [runtime, scopeFilter]);
 
   return (
     <ViewSurface theme={theme} className={className}>
@@ -97,6 +93,24 @@ type OpenedRuntime = NonNullable<ReturnType<typeof useOpenView>['runtime']>;
  * conditionally.
  */
 function EmbeddedBody({ runtime }: { runtime: OpenedRuntime }) {
+  const state = useViewRuntime(runtime);
+  const messages = useViewMessages();
+
+  // A config the definition no longer admits opens but never executes, so
+  // without this a record sits at an empty frame and an analysis at a
+  // skeleton that never resolves: a view waiting to be fixed, dressed up as
+  // one with nothing to show. The workbenches say so; so does this.
+  const errors = (state?.issues ?? []).filter(
+    found => found.severity === 'error',
+  );
+  if (errors.length > 0)
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>{messages.label('label.view.needs-fixing')}</AlertTitle>
+        <AlertDescription>{messages.issues(errors)}</AlertDescription>
+      </Alert>
+    );
+
   if (runtime.kind === 'record') return <EmbeddedRecord runtime={runtime} />;
   if (runtime.kind === 'analysis')
     return <EmbeddedAnalysis runtime={runtime} />;

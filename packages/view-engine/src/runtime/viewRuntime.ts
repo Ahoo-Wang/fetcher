@@ -254,7 +254,19 @@ export class DataViewRuntime<
       scope: options.scope,
       draft: options.config,
       applied: options.config,
-      issues: validateDataConfig(this.context, options.config),
+      // An injected condition is in force from the first query, so it is
+      // admitted with the config rather than after it. Without this, a host
+      // that scopes a view to one customer would have its opening query go
+      // out unscoped, and an inadmissible condition would never be reported.
+      issues: validateDataConfig(
+        this.context,
+        this.scopeFilter
+          ? {
+              ...options.config,
+              filter: mergeFilters(options.config.filter, this.scopeFilter),
+            }
+          : options.config,
+      ),
       dirty: saved === null,
       query: IDLE,
       result: null,

@@ -98,6 +98,16 @@ export interface ViewEngineOptions {
   onIssue?(issue: Issue): void;
 }
 
+export interface OpenOptions {
+  /**
+   * An outer condition in force from the first query, in the view's own field
+   * names. It is admitted with the config rather than after it, so a host that
+   * scopes a view — an order page showing one customer's shipments — never
+   * lets an unscoped query leave, and never shows rows outside its scope.
+   */
+  scopeFilter?: FilterTree | null;
+}
+
 /** What a write command is addressed to: an open view, or a handle. */
 export type WriteTarget = ViewRuntime | WriteHandle;
 
@@ -222,9 +232,12 @@ export class ViewEngine {
   }
 
   /** Opens a saved view, or a code-declared one without touching the store. */
-  async open(instanceId: string): Promise<AnyViewRuntime> {
+  async open(
+    instanceId: string,
+    options: OpenOptions = {},
+  ): Promise<AnyViewRuntime> {
     const instance = await this.readInstance(instanceId);
-    const runtime = this.attach(instance);
+    const runtime = this.attach(instance, options.scopeFilter ?? null);
     // A dashboard is judged against the instances it references, so it waits
     // for them before its first apply rather than opening into empty frames.
     if (runtime instanceof DashboardViewRuntime) await runtime.ready();
@@ -466,24 +479,33 @@ export class ViewEngine {
     this.runner.cancelAll();
   }
 
-  private attach(instance: ViewInstance): ManagedViewRuntime {
+  private attach(
+    instance: ViewInstance,
+    scopeFilter: FilterTree | null = null,
+  ): ManagedViewRuntime {
     const definition = this.requireDefinition(instance.definitionId);
-    return this.build(definition, instance.config, {
-      title: instance.title,
-      scope: instance.scope,
-      saved: instance,
-    });
+    return this.build(
+      definition,
+      instance.config,
+      {
+        title: instance.title,
+        scope: instance.scope,
+        saved: instance,
+      },
+      scopeFilter,
+    );
   }
 
   private build(
     definition: ViewDefinition,
     config: ViewConfig,
     identity: RuntimeIdentity,
+    scopeFilter: FilterTree | null = null,
   ): ManagedViewRuntime {
     const runtime =
       config.kind === 'dashboard'
-        ? this.buildDashboard(definition, config, identity)
-        : this.buildData(definition, config, identity);
+        ? this.buildDashboard(definition, config, identity, scopeFilter)
+        : this.buildData(definition, config, identity, scopeFilter);
     this.runtimes.add(runtime);
     return runtime;
   }
@@ -492,6 +514,7 @@ export class ViewEngine {
     definition: ViewDefinition,
     config: DataViewConfig,
     identity: RuntimeIdentity,
+    scopeFilter: FilterTree | null = null,
   ): DataViewRuntime {
     if (definition.kind !== 'data' || !capabilityOf(definition, config))
       throw new ViewCommandError(
@@ -513,6 +536,7 @@ export class ViewEngine {
       environment: this.environment,
       source: this.resolveSource(definition.source),
       runner: this.runner,
+      scopeFilter,
     });
   }
 
@@ -520,6 +544,7 @@ export class ViewEngine {
     definition: ViewDefinition,
     config: DashboardViewConfig,
     identity: RuntimeIdentity,
+    scopeFilter: FilterTree | null = null,
   ): DashboardViewRuntime {
     // A dashboard config belongs to a dashboard definition: the catalogue
     // entry it is listed under, which declares no fields of its own.
@@ -543,6 +568,7 @@ export class ViewEngine {
       environment: this.environment,
       resolve: this.resolvePanel,
       createPanelRuntime: this.createPanelRuntime,
+      scopeFilter,
     });
   }
 
