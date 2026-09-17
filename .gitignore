@@ -133,3 +133,6 @@ test-output/
 
 # skill-creator iteration artifacts (benchmarks, eval runs)
 skills/*-workspace/
+
+# isolated workspaces
+.worktrees/
