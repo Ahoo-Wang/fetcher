@@ -30,7 +30,12 @@ import {
   type ViewInstance,
   type ViewSource,
 } from '../src/index.js';
-import type { EditorDescriptor, FilterValue } from '../src/index.js';
+import type { PagedList } from '@ahoo-wang/fetcher-wow';
+import type {
+  EditorDescriptor,
+  FilterValue,
+  RecordData,
+} from '../src/index.js';
 import type {
   RecordTableController,
   ViewListState,
@@ -50,6 +55,8 @@ import {
 import {
   analysisConfig,
   dashboardConfig,
+  deferred,
+  ROWS,
   ordersDefinition,
   overviewDefinition,
   recordConfig,
@@ -223,6 +230,89 @@ describe('RecordWorkbench', () => {
 
     // Not an empty table, and not a skeleton that never resolves.
     await waitFor(() => expect(screen.getByText(/needs fixing/i)).toBeTruthy());
+  });
+
+  it('honours the card layout the view was saved with', async () => {
+    const cards: ViewInstance = {
+      ...mine,
+      config: recordConfig({ layout: 'card' }),
+    };
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [cards] }),
+      resolveSource: () => testSource(),
+    });
+
+    const { container } = render(
+      <EmbeddedView engine={engine} instanceId="orders-1" />,
+    );
+
+    // An embed shows what was saved; it offers no layout switch of its own.
+    await waitFor(() =>
+      expect(
+        container.querySelector('[data-slot="record-cards"]'),
+      ).not.toBeNull(),
+    );
+    expect(container.querySelector('table')).toBeNull();
+  });
+
+  /**
+   * The states a reader actually meets when a source is slow or down. They
+   * are easy to skip past with `waitFor`, and then the first time anyone sees
+   * them is in production.
+   */
+  it('shows a placeholder while the first rows are still coming', async () => {
+    const pending = deferred<PagedList<RecordData>>();
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [mine] }),
+      resolveSource: () => testSource({ paged: () => pending.promise }),
+    });
+
+    const { container } = render(
+      <EmbeddedView engine={engine} instanceId="orders-1" />,
+    );
+
+    await waitFor(() =>
+      expect(container.querySelector('[data-slot="skeleton"]')).not.toBeNull(),
+    );
+
+    pending.resolve({ total: 2, list: [...ROWS] });
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+  });
+
+  it('shows an analysis as a chart when that is what was saved', async () => {
+    const charted: ViewInstance = {
+      ...mine,
+      config: analysisConfig({ layout: 'chart' }),
+    };
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [charted] }),
+      resolveSource: () => testSource(),
+    });
+
+    const { container } = render(
+      <EmbeddedView engine={engine} instanceId="orders-1" />,
+    );
+
+    await waitFor(() =>
+      expect(container.querySelector('[data-slot="chart"]')).not.toBeNull(),
+    );
+  });
+
+  it('reports a failed analysis query', async () => {
+    const charted: ViewInstance = { ...mine, config: analysisConfig() };
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [charted] }),
+      resolveSource: () =>
+        testSource({ aggregate: () => Promise.reject(new Error('down')) }),
+    });
+
+    render(<EmbeddedView engine={engine} instanceId="orders-1" />);
+
+    await waitFor(() => expect(screen.getByText(/query failed/i)).toBeTruthy());
   });
 
   it('reports a view it cannot open', async () => {
