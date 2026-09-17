@@ -117,7 +117,14 @@ export function useSaveCommands(
       try {
         return await command();
       } catch (caught) {
-        setProgress({ runtime, pending: false, error: toIssue(caught, code) });
+        const failure = toIssue(caught, code);
+        // A workbench reuses this hook across views; another view's command
+        // may have taken the slot while this one was in flight.
+        setProgress(current =>
+          current.runtime === runtime
+            ? { runtime, pending: false, error: failure }
+            : current,
+        );
         return fallback;
       } finally {
         // A command that outlived its view leaves the next view's state alone.
@@ -205,13 +212,18 @@ export function useSaveCommands(
     if (!runtime) return;
     try {
       engine.abandonWrite(runtime);
-      setProgress({ runtime, pending: false, error: null });
+      setProgress(current =>
+        current.runtime === runtime
+          ? { runtime, pending: false, error: null }
+          : current,
+      );
     } catch (caught) {
-      setProgress({
-        runtime,
-        pending: false,
-        error: toIssue(caught, 'view.abandon.failed'),
-      });
+      const failure = toIssue(caught, 'view.abandon.failed');
+      setProgress(current =>
+        current.runtime === runtime
+          ? { runtime, pending: false, error: failure }
+          : current,
+      );
     }
   }, [engine, runtime]);
 

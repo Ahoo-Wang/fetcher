@@ -55,6 +55,8 @@ export interface FilterEditorController {
   addLeaf(field: string, parent?: FilterPath): void;
   updateLeaf(path: FilterPath, patch: Partial<FilterLeaf>): void;
   addGroup(op: 'and' | 'or', parent?: FilterPath): void;
+  /** Flips a group between AND and OR, keeping its children in place. */
+  updateGroup(path: FilterPath, op: 'and' | 'or'): void;
   remove(path: FilterPath): void;
   clear(): void;
   /** Applies the draft, which is what runs the query. */
@@ -153,6 +155,17 @@ export function useFilterEditor(
     [change],
   );
 
+  const updateGroup = useCallback(
+    (path: FilterPath, op: 'and' | 'or') => {
+      change(current =>
+        updateAt(current, path, node =>
+          'children' in node ? { ...node, op } : node,
+        ),
+      );
+    },
+    [change],
+  );
+
   return {
     tree,
     mode: state?.draft.filterMode ?? 'simple',
@@ -180,6 +193,7 @@ export function useFilterEditor(
     addLeaf,
     updateLeaf,
     addGroup,
+    updateGroup,
     remove: useCallback(
       (path: FilterPath) => change(current => removeAt(current, path)),
       [change],

@@ -12,6 +12,7 @@
  */
 
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -34,7 +35,9 @@ import type {
   RecordTableController,
   ViewListState,
 } from '../src/react/index.js';
+import { useFilterEditor } from '../src/react/index.js';
 import {
+  FilterPanel,
   FilterValueEditor,
   RecordCards,
   RecordTable,
@@ -1015,5 +1018,90 @@ describe('ViewList on its own', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Ours/ }));
     expect(opened).toHaveBeenCalledWith('b');
+  });
+});
+
+describe('FilterPanel tree editing', () => {
+  interface PanelHarness {
+    filter(): ReturnType<typeof useFilterEditor>;
+  }
+
+  function panel(): PanelHarness {
+    const { engine } = setup();
+    const runtime = engine.create('orders', {
+      title: 'Scratch',
+      scope: 'personal',
+      config: recordConfig(),
+    });
+    // The panel must re-render with the controller on every runtime commit,
+    // so both live inside one component rather than two renders.
+    let latest: ReturnType<typeof useFilterEditor> | null = null;
+    function Probe() {
+      const filter = useFilterEditor(runtime);
+      latest = filter;
+      return <FilterPanel filter={filter} />;
+    }
+    render(<Probe />);
+    return { filter: () => latest as ReturnType<typeof useFilterEditor> };
+  }
+
+  it('shows a tree whole, groups and their leaves included', () => {
+    const { filter } = panel();
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().addGroup('or');
+      filter().addLeaf('status', [1]);
+    });
+
+    // The nested condition stays visible and editable rather than dropped.
+    expect(screen.getByLabelText('warehouse value')).toBeDefined();
+    expect(screen.getByLabelText('status value')).toBeDefined();
+    expect(screen.getByRole('group', { name: 'Any of' })).toBeDefined();
+  });
+
+  it('flips a group between all and any', () => {
+    const { filter } = panel();
+    act(() => filter().addGroup('and'));
+    // The root stays `All of`; the toggle inside the nested group is the one
+    // that flips, and both render an "Any of" button of their own.
+    const toggles = document.querySelector(
+      '[aria-label="Group operator 0"]',
+    ) as HTMLElement;
+
+    fireEvent.click(within(toggles).getByRole('button', { name: 'Any of' }));
+
+    expect(filter().tree.children[0]).toMatchObject({ op: 'or' });
+  });
+
+  it('adds a condition inside the group it was asked for', async () => {
+    const { filter } = panel();
+    act(() => filter().addGroup('or'));
+    const group = screen.getByRole('group', { name: 'Any of' });
+
+    fireEvent.click(
+      within(group).getByRole('button', {
+        name: 'Add condition in this group',
+      }),
+    );
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Warehouse' }));
+
+    expect(filter().tree.children[0]).toMatchObject({
+      op: 'or',
+      children: [{ field: 'warehouse' }],
+    });
+  });
+
+  it('removes a group with everything in it', () => {
+    const { filter } = panel();
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().addGroup('or');
+      filter().addLeaf('status', [1]);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove group' }));
+
+    expect(filter().tree.children).toHaveLength(1);
+    expect(filter().tree.children[0]).toMatchObject({ field: 'warehouse' });
   });
 });

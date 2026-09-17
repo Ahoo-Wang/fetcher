@@ -12,7 +12,13 @@
  */
 
 import { FilterIcon, PlusIcon, XIcon } from 'lucide-react';
-import type { FieldOption, FilterLeaf } from '../model/index.js';
+import type {
+  FieldOption,
+  FilterGroup,
+  FilterLeaf,
+  IssuePath,
+} from '../model/index.js';
+import { nodeAt, type FilterPath } from '../filter/index.js';
 import type { FilterEditorController } from '../react/index.js';
 import { Badge } from './components/badge.js';
 import { Button } from './components/button.js';
@@ -43,8 +49,11 @@ export interface FilterPanelProps {
 }
 
 /**
- * The condition builder of the simple mode: one row per leaf, a field, an
- * operator and whatever value editor the kind implies.
+ * The condition builder: one row per leaf, a field, an operator and whatever
+ * value editor the kind implies. Simple mode shows the root's leaves flat;
+ * anything the simple editor cannot show faithfully — a group anywhere — gets
+ * the advanced one, where groups are framed blocks that can be flipped
+ * between and/or, nested, filled and removed.
  *
  * Nothing is applied until submit, which is the whole point of keeping a
  * draft apart from what ran: typing in here never re-queries.
@@ -54,9 +63,7 @@ export function FilterPanel({
   optionsFor,
   disabled,
 }: FilterPanelProps) {
-  const leaves = filter.tree.children.flatMap((node, index) =>
-    'children' in node ? [] : [{ node, index }],
-  );
+  const advanced = filter.mode === 'advanced' || !filter.simple;
 
   return (
     <section
@@ -79,26 +86,19 @@ export function FilterPanel({
           <ToggleGroupItem value="advanced">Advanced</ToggleGroupItem>
         </ToggleGroup>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button variant="outline" size="sm" disabled={disabled} />}
+        <AddCondition filter={filter} parent={[]} disabled={disabled} />
+
+        {advanced && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={() => filter.addGroup('or')}
           >
             <PlusIcon data-icon="inline-start" />
-            Add condition
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuGroup>
-              {filter.fields.map(field => (
-                <DropdownMenuItem
-                  key={field.name}
-                  onClick={() => filter.addLeaf(field.name)}
-                >
-                  {field.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            Add group
+          </Button>
+        )}
 
         <Button
           variant="outline"
@@ -124,34 +124,176 @@ export function FilterPanel({
         )}
       </div>
 
-      {leaves.length > 0 && (
-        <FieldGroup>
-          {leaves.map(({ node, index }) => (
-            <FilterLeafRow
-              key={`${node.field}-${index}`}
-              filter={filter}
-              leaf={node}
-              index={index}
-              disabled={disabled}
-              optionsFor={optionsFor}
-            />
-          ))}
-        </FieldGroup>
+      {advanced ? (
+        <GroupBlock
+          filter={filter}
+          group={filter.tree}
+          path={[]}
+          disabled={disabled}
+          optionsFor={optionsFor}
+        />
+      ) : (
+        filter.count > 0 && (
+          <FieldGroup>
+            {filter.tree.children.map((node, index) =>
+              'children' in node ? null : (
+                <FilterLeafRow
+                  key={`${node.field}-${index}`}
+                  filter={filter}
+                  leaf={node}
+                  path={[index]}
+                  disabled={disabled}
+                  optionsFor={optionsFor}
+                />
+              ),
+            )}
+          </FieldGroup>
+        )
       )}
     </section>
+  );
+}
+
+/** One group as a framed block: its operator, its children, room to add. */
+function GroupBlock({
+  filter,
+  group,
+  path,
+  disabled,
+  optionsFor,
+}: {
+  filter: FilterEditorController;
+  group: FilterGroup;
+  path: FilterPath;
+  disabled?: boolean;
+  optionsFor?: (remote: string) => FieldOption[] | undefined;
+}) {
+  const nested = path.length > 0;
+
+  return (
+    <div
+      data-slot="filter-group"
+      role="group"
+      aria-label={group.op === 'or' ? 'Any of' : 'All of'}
+      className="flex flex-col gap-2 rounded-md border border-border p-2"
+    >
+      <div className="flex items-center gap-1">
+        <ToggleGroup
+          value={[group.op]}
+          onValueChange={value => {
+            const next = value[0];
+            if (next === 'and' || next === 'or') filter.updateGroup(path, next);
+          }}
+          variant="outline"
+          size="sm"
+          aria-label={`Group operator ${path.join('.')}`}
+        >
+          <ToggleGroupItem value="and">All of</ToggleGroupItem>
+          <ToggleGroupItem value="or">Any of</ToggleGroupItem>
+        </ToggleGroup>
+
+        {nested && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Remove group"
+            disabled={disabled}
+            onClick={() => filter.remove(path)}
+          >
+            <XIcon />
+          </Button>
+        )}
+      </div>
+
+      {group.children.map((child, index) =>
+        'children' in child ? (
+          <GroupBlock
+            key={index}
+            filter={filter}
+            group={child}
+            path={[...path, index]}
+            disabled={disabled}
+            optionsFor={optionsFor}
+          />
+        ) : (
+          <FilterLeafRow
+            key={`${child.field}-${index}`}
+            filter={filter}
+            leaf={child}
+            path={[...path, index]}
+            disabled={disabled}
+            optionsFor={optionsFor}
+          />
+        ),
+      )}
+
+      <div className="flex flex-wrap items-center gap-1">
+        <AddCondition
+          filter={filter}
+          parent={path}
+          disabled={disabled}
+          label="Add condition in this group"
+        />
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => filter.addGroup('and', path)}
+        >
+          <PlusIcon data-icon="inline-start" />
+          Add group
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** The field picker that appends a leaf to one group. */
+function AddCondition({
+  filter,
+  parent,
+  disabled,
+  label = 'Add condition',
+}: {
+  filter: FilterEditorController;
+  parent: FilterPath;
+  disabled?: boolean;
+  label?: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={<Button variant="outline" size="sm" disabled={disabled} />}
+      >
+        <PlusIcon data-icon="inline-start" />
+        {label}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuGroup>
+          {filter.fields.map(field => (
+            <DropdownMenuItem
+              key={field.name}
+              onClick={() => filter.addLeaf(field.name, parent)}
+            >
+              {field.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
 function FilterLeafRow({
   filter,
   leaf,
-  index,
+  path,
   disabled,
   optionsFor,
 }: {
   filter: FilterEditorController;
   leaf: FilterLeaf;
-  index: number;
+  path: FilterPath;
   disabled?: boolean;
   optionsFor?: (remote: string) => FieldOption[] | undefined;
 }) {
@@ -161,9 +303,11 @@ function FilterLeafRow({
     label: operator.split('_').join(' ').toLowerCase(),
     value: operator,
   }));
-  const editor = filter.editorFor([index]);
-  const invalid = filter.issues.some(
-    found => found.path[found.path.length - 1] === index,
+  const editor = filter.editorFor(path);
+  // `validateFilter` addresses a node as ['children', 0, 'children', 1, …];
+  // its numeric segments are exactly this leaf's path.
+  const invalid = filter.issues.some(found =>
+    samePath(numericPath(found.path), path),
   );
 
   return (
@@ -180,7 +324,7 @@ function FilterLeafRow({
         disabled={disabled}
         onValueChange={value => {
           if (typeof value === 'string')
-            filter.updateLeaf([index], { operator: value });
+            filter.updateLeaf(path, { operator: value });
         }}
       >
         <SelectTrigger aria-label={`${label} operator`} size="sm">
@@ -204,7 +348,7 @@ function FilterLeafRow({
           label={`${leaf.field} value`}
           disabled={disabled}
           options={editor.remote ? optionsFor?.(editor.remote) : undefined}
-          onChange={value => filter.updateLeaf([index], { value })}
+          onChange={value => filter.updateLeaf(path, { value })}
         />
       )}
 
@@ -213,10 +357,21 @@ function FilterLeafRow({
         size="icon-sm"
         aria-label={`Remove ${label}`}
         disabled={disabled}
-        onClick={() => filter.remove([index])}
+        onClick={() => filter.remove(path)}
       >
         <XIcon />
       </Button>
     </Field>
+  );
+}
+
+/** The node indexes of an issue path, comparable against a `FilterPath`. */
+function numericPath(path: IssuePath): FilterPath {
+  return path.filter(segment => typeof segment === 'number');
+}
+
+function samePath(a: FilterPath, b: FilterPath): boolean {
+  return (
+    a.length === b.length && a.every((segment, index) => segment === b[index])
   );
 }

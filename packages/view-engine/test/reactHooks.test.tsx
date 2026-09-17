@@ -39,6 +39,7 @@ import {
   useViewRuntime,
 } from '../src/react/index.js';
 import {
+  deferred,
   ordersDefinition,
   recordConfig,
   requireRecordConfig,
@@ -427,6 +428,50 @@ describe('useSaveCommands', () => {
       'view.config.invalid',
     );
     expect(result.current.commands.state.pending).toBe(false);
+  });
+
+  it("keeps the current view pending while another view's command settles", async () => {
+    const { engine } = engineWith();
+    const a = await engine.open('orders-1');
+    const b = engine.create('orders', {
+      title: 'Draft',
+      scope: 'personal',
+      config: recordConfig(),
+    });
+
+    const aFailed = deferred<void>();
+    vi.spyOn(engine, 'save').mockImplementation(async runtime => {
+      if (runtime === a) {
+        await aFailed.promise;
+        throw new ViewCommandError(issue('view.config.invalid', []));
+      }
+      // B's write never settles within the test.
+      return new Promise<ViewInstance>(() => {});
+    });
+
+    // A workbench reuses this hook across views: A's save is in flight when
+    // the user switches to B and saves there.
+    const { result, rerender } = renderHook(
+      ({ runtime }: { runtime: typeof a }) => useSaveCommands(engine, runtime),
+      { initialProps: { runtime: a } },
+    );
+
+    act(() => {
+      void result.current.save();
+    });
+    rerender({ runtime: b });
+    act(() => {
+      void result.current.save();
+    });
+    expect(result.current.state.pending).toBe(true);
+
+    await act(async () => {
+      aFailed.reject(new Error('A failed'));
+      await Promise.resolve();
+    });
+
+    // B's write is still in flight, so its buttons stay disabled.
+    expect(result.current.state.pending).toBe(true);
   });
 
   it('exposes an unresolved write and its recovery actions', async () => {
