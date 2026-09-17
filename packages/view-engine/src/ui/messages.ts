@@ -248,6 +248,10 @@ export const defaultMessages: ViewMessages = Object.freeze({
   'analysis.distinctCount.undeclared':
     '{field} does not offer distinct counts.',
   'analysis.element.undeclared': 'The nested path {path} is not available.',
+  'analysis.elementFilter.empty':
+    'This filter has no conditions, so every entry is expanded.',
+  'analysis.elementFilter.incomplete':
+    'Give {field} a value, or every entry is expanded.',
   'analysis.elements.too-many': 'Too many nested paths for this dataset.',
   'analysis.expression.divide-by-zero': 'This expression divides by zero.',
   'analysis.expression.malformed': 'This metric has no usable expression.',

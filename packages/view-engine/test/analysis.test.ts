@@ -24,6 +24,7 @@ import {
   analysisScope,
   builtinFieldKinds,
   compileAnalysis,
+  emptyFilter,
   compileAnalysisTotals,
   defaultAnalysisConfig,
   projectAnalysis,
@@ -694,6 +695,157 @@ describe('element scope', () => {
         },
       ],
     },
+  });
+
+  // An element filter gates which entries the expansion lets through. It has
+  // no editor either, so the same rule as a metric's filter applies: having
+  // written one, it must actually narrow something.
+  it('refuses an element filter with no conditions', () => {
+    expect(
+      codes(
+        validateAnalysis(
+          withElements,
+          config({ elements: [{ path: 'items', filter: emptyFilter() }] }),
+          builtinFieldKinds,
+        ),
+      ),
+    ).toEqual(['analysis.elementFilter.empty']);
+  });
+
+  it('refuses an element condition with no value', () => {
+    expect(
+      codes(
+        validateAnalysis(
+          withElements,
+          config({
+            elements: [
+              {
+                path: 'items',
+                filter: {
+                  op: 'and',
+                  children: [{ field: 'items.sku', operator: 'EQ', value: '' }],
+                },
+              },
+            ],
+          }),
+          builtinFieldKinds,
+        ),
+      ),
+    ).toEqual(['analysis.elementFilter.incomplete']);
+  });
+
+  it('paths an empty element filter at the filter itself', () => {
+    expect(
+      validateAnalysis(
+        withElements,
+        config({ elements: [{ path: 'items', filter: emptyFilter() }] }),
+        builtinFieldKinds,
+      ).map(found => found.path),
+    ).toContainEqual(['elements', 0, 'filter']);
+  });
+
+  it('admits an element filter that names a value', () => {
+    expect(
+      codes(
+        validateAnalysis(
+          withElements,
+          config({
+            elements: [
+              {
+                path: 'items',
+                filter: {
+                  op: 'and',
+                  children: [
+                    { field: 'items.sku', operator: 'EQ', value: 'A-1' },
+                  ],
+                },
+              },
+            ],
+          }),
+          builtinFieldKinds,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it('leaves an element without a filter alone', () => {
+    // No filter at all is how "expand every entry" is said; only a filter
+    // that was written and says nothing is wrong.
+    expect(
+      codes(
+        validateAnalysis(
+          withElements,
+          config({ elements: [{ path: 'items' }] }),
+          builtinFieldKinds,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it('admits a multi-valued element field, which a metric filter refuses', () => {
+    // The scalar rule belongs to metric position, where the filter has one
+    // record's value to test. An element filter is an ordinary filter over
+    // the element's own fields and carries no such restriction.
+    const nested = definition({
+      fields: [
+        ...definition().fields,
+        {
+          name: 'items',
+          label: 'Items',
+          kind: 'array',
+          elements: [
+            { name: 'sku', label: 'SKU', kind: 'string' },
+            {
+              name: 'tags',
+              label: 'Tags',
+              kind: 'array',
+              elements: [{ name: 'name', label: 'Name', kind: 'string' }],
+            },
+          ],
+        },
+      ],
+      analysis: {
+        ...capability,
+        elements: [
+          {
+            path: 'items',
+            aggregations: [
+              {
+                field: 'sku',
+                groups: [AggregationGroupType.TERMS],
+                functions: [],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const onTags: FilterTree = {
+      op: 'and',
+      children: [{ field: 'items.tags', operator: 'IN', value: ['red'] }],
+    };
+
+    expect(
+      codes(
+        validateAnalysis(
+          nested,
+          config({ elements: [{ path: 'items', filter: onTags }] }),
+          builtinFieldKinds,
+        ),
+      ),
+    ).toEqual([]);
+    expect(
+      codes(
+        validateAnalysis(
+          nested,
+          config({
+            elements: [{ path: 'items' }],
+            metrics: [{ type: 'COUNT', alias: 'orders', filter: onTags }],
+          }),
+          builtinFieldKinds,
+        ),
+      ),
+    ).toEqual(['analysis.metricFilter.not-scalar']);
   });
 
   it('honours a caller that widened the tree limits', () => {

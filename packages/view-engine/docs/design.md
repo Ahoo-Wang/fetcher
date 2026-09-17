@@ -212,15 +212,23 @@ export type AnalysisMetric =
   | { type: 'DERIVED'; alias: string; expression: AnalysisDerivedExpression }; // 与 Wow DerivedExpression 同构
 ```
 
-**指标筛选（`metrics[].filter`）**：它决定"每条记录算不算进这一个指标"，所以拿到的是**一条记录的一个值**。因此它比根筛选允许得少：
+**查询筛选必须真的筛掉东西**。`metrics[].filter` 和 `elements[].filter` 都**没有编辑器**——筛选面板（`useFilterEditor`）绑的是 `config.filter`，`useAnalysisEditor` 根本不碰 `elements`。它们是查询定义的一部分，"不筛"表示成 `filter` 属性不存在；一旦写了却说不出任何东西，`compileFilter` 回以 `MATCH_ALL`，于是静默放宽：本来数已付款订单变成数全部，本来只展开已发货明细变成展开全部。数字错了，一声不吭。
+
+两种"说不出东西"都拒绝：
+
+- **没有任何条件**（空树，或只剩空分组）→ `analysis.metricFilter.empty`／`analysis.elementFilter.empty`
+- **条件没填值** → `analysis.metricFilter.incomplete`／`analysis.elementFilter.incomplete`
+
+这跟筛选面板的规则相反，是有意的：面板是**界面**，用户把常用条件摆上去、暂时不填值，表达的是"这次先不按它筛"。查询筛选不是界面，没有这层含义。
+
+超预算时两者都**不再走第二遍**：预算本就是为了让存储里来的树不会耗掉无界算力，再全量遍历一次正好把它挡下的开销花掉。两者也都花**调用方设定的** `RuntimeLimits`，不是默认值。
+
+**指标筛选（`metrics[].filter`）多一条限制**：它决定"每条记录算不算进这一个指标"，所以拿到的是**一条记录的一个值**。
 
 - 由 **kind 自己声明** `scalar: false` 的种类被拒（`analysis.metricFilter.not-scalar`）：`array`、`elementMatch` 编译成对集合内元素的条件，`search` 编译成对整条记录文本的匹配，三者都没有"这条记录在这里的那一个值"可判
 - 判据是 kind 而非写死的 id 列表——`withFieldKinds` 允许替换内建 kind 或注册自定义 kind，决定这件事的是**编译出来的形状**，而只有 kind 知道自己编译成什么
 - **元数据字段（`@id`／`@ownerId`／`@tenantId`…）在这里是允许的**，与元素谓词里被拒相反：元素没有所有者，而指标筛选看的正是整条记录
-- **筛选必须真的筛掉东西**：一棵没有叶子、或只剩空分组的树编译成 `MATCH_ALL`（`analysis.metricFilter.empty`），和下面那条是同一个问题的两扇门
-- **条件必须填值**（`analysis.metricFilter.incomplete`）。这跟筛选面板的规则相反，是有意的：面板是**界面**，用户把常用条件摆上去、暂时不填值，表达的是"这次先不按它筛"；指标筛选不是界面，选择只有"这个指标带筛选"和"不带"两种，既然选了带，空条件会在 `compileFilter` 里被丢掉，指标就**静默放宽成全部记录**——本来要数已付款订单，结果数了全部
-- 它和元素筛选一样，花的是**调用方设定的** `RuntimeLimits` 预算，不是默认值——否则同样复杂度的根筛选能过、指标筛选却被判超限
-- 超预算时**不再走第二遍**：预算本就是为了让存储里来的树不会耗掉无界的算力，再全量遍历一次正好把它挡下的开销花掉
+- 这条限制**只属于指标位置**。元素筛选是对元素自身字段的普通筛选，多值字段在那里是正当的
 - `DERIVED` 不参与：协议里它就不带筛选，`compileMetric` 也从不发出去。存储里残留的 `filter`（比如指标类型改过）不该拦住整份配置
 
 Wow 的对应规则在 `requireScalarMetricFilterFields`：形状那半条（`SEARCH`／`ELEMENT_MATCH`）由 `packages/wow` 的 `aggregation.query()` 在协议层挡住，需要 schema 那半条（数组值字段）由这里挡住——因为只有这里知道 `FieldKind`。
