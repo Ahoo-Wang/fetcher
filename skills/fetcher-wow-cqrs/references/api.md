@@ -818,6 +818,7 @@ aggregation.variance(expression, alias, predicate?);
 aggregation.distinctCount(expression, alias, predicate?);
 aggregation.percentile(expression, percentile, alias, predicate?);
 aggregation.derived(expression, alias);
+aggregation.query(query); // admits the assembled query, returns it
 ```
 
 `ANY` is a metric, not a group. It returns one non-null scalar from the current
@@ -827,22 +828,40 @@ collection cardinality. MongoDB uses a `$max` accumulator while Elasticsearch
 uses a one-bucket `terms` aggregation, so the selected value is intentionally
 unspecified. Sorting by an `ANY` alias is an expensive metric sort.
 
-Wow validates the complete aggregation's field capabilities, cardinality,
-aliases, sort fields, and expression depth on the server. Fetcher only validates
-field-path and alias syntax that can be known locally. The `Row` generic describes
-aggregation result rows only; Fetcher does not perform runtime decoding.
+`aggregation.query(query)` admits an assembled `AggregationQuery` against the
+rules Wow enforces in its own constructor, then returns it. It throws
+`TypeError` for: the `elements`, `groupBy`, `metrics` and `sort` ceilings; a
+`limit` outside 1..10000; colliding aliases; a `sort` field that is not an
+alias, is repeated, or has no `groupBy`; an effective sort over the ceiling;
+`dense` beside another dimension; `having` without a `groupBy`, referencing an
+undeclared or `ANY` metric, or carrying non-finite or inverted bounds;
+expression depth over 8 or more than 256 expression nodes across all metrics
+together; a derived reference to a metric not declared strictly before it or to
+an `ANY` metric; a non-finite constant; and `SEARCH` or `ELEMENT_MATCH` in a
+metric filter.
+
+`AGGREGATION_LIMITS` publishes those sizes (`DEFAULT_LIMIT` 100, `MAX_LIMIT`
+10000, `MAX_ELEMENTS` 5, `MAX_GROUPS` 32, `MAX_METRICS` 64, `MAX_SORT_FIELDS`
+32, `MAX_EXPRESSION_DEPTH` 8, `MAX_EXPRESSION_NODES` 256).
+`effectiveSort({ groupBy, sort })` returns the order Wow actually applies: the
+requested sort, then each remaining group ascending.
+
+What stays on the server is what needs a schema: field capabilities,
+cardinality, and whether a metric filter names an array-valued field. The `Row`
+generic describes aggregation result rows only; Fetcher does not perform runtime
+decoding.
 
 ### Derived metrics, HAVING and group options
 
 Aligned with Wow `main` at `fd1b3cd46`. Existing builder calls keep their JSON shape; optional metric filters, `missingKey`, and `dense` are omitted unless supplied.
 
 - `aggregation.distinctCount(expression, alias, predicate?)` counts distinct non-null contributions; `aggregation.percentile(expression, percentile, alias, predicate?)` accepts finite values strictly between 0 and 100 (use 50 for the median). `stddev` and `variance` compute population statistics. Percentiles are approximate on both backends; Elasticsearch distinct counts may be approximate, while MongoDB counts distinct values exactly.
-- Non-derived metrics accept an optional `FilterExpression` in the current aggregation scope. It affects only that metric. The backend validates scalar fields and rejects unsupported filter operators.
-- `aggregation.derived(expression, alias)` uses a `DerivedExpression` tree (`METRIC_REF`, `CONSTANT`, `BINARY`). References must name earlier metrics and cannot reference `ANY`. Derived metrics have no record filter; filter the referenced metrics instead. Null operands or division by zero produce null.
-- `having?: HavingExpression` supports `CONDITION`, `BETWEEN`, `IN`, `IS_NULL`, `AND`, and `OR`, using metric aliases, not field paths. `ComparisonOperator` contains `EQ`, `NE`, `GT`, `GTE`, `LT`, `LTE`. HAVING requires grouping and cannot reference `ANY`; it runs before sorting and limit. Non-empty sets/operands are enforced by tuple types; finite values, bounds, references and depth are validated by the server.
+- Non-derived metrics accept an optional `FilterExpression` in the current aggregation scope. It affects only that metric. `aggregation.query()` rejects `SEARCH` and `ELEMENT_MATCH` there — a metric filter is a whole-value predicate on one record, so element matching and full text have no reading — while the backend rejects array-valued fields, which needs a schema.
+- `aggregation.derived(expression, alias)` uses a `DerivedExpression` tree (`METRIC_REF`, `CONSTANT`, `BINARY`). References must name metrics declared strictly before the derived metric (so a self-reference cannot be written) and cannot reference `ANY`; `aggregation.query()` enforces both. Derived metrics have no record filter; filter the referenced metrics instead. Null operands or division by zero produce null.
+- `having?: HavingExpression` supports `CONDITION`, `BETWEEN`, `IN`, `IS_NULL`, `AND`, and `OR`, using metric aliases, not field paths. `ComparisonOperator` contains `EQ`, `NE`, `GT`, `GTE`, `LT`, `LTE`. HAVING requires grouping and cannot reference `ANY`; it runs before sorting and limit. Non-empty sets/operands are enforced by tuple types, and `aggregation.query()` checks finite values, ordered bounds, references and depth before the request is sent.
 - `terms(field, alias, missingKey?)` optionally merges missing/null values into a nonblank string bucket key; the backend validates string field support. `dateHistogram(field, { unit, alias, timeZone?, dense? })` fills interior date gaps when `dense` is true; it requires the only group dimension. No rows means no generated date range.
 
-Backend requirements still apply (MongoDB 5.1+ for dense groups, 7.0+ for percentiles); the client performs no backend capability probing. Raw typed expression objects are not runtime validators.
+Backend requirements still apply (MongoDB 5.1+ for dense groups, 7.0+ for percentiles); the client performs no backend capability probing. Raw typed expression objects are not runtime validators on their own — pass the assembled query through `aggregation.query()` to have them checked.
 
 ```ts
 import {
