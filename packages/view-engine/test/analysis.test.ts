@@ -1198,8 +1198,61 @@ describe('metric filters', () => {
     expect(codes(withFilter(leaf('@ownerId', 'OWNER_ID', 'u-1')))).toEqual([]);
   });
 
-  it('leaves an unfinished condition alone', () => {
-    // Same rule as everywhere else: unfilled is not wrong.
-    expect(codes(withFilter(leaf('warehouse', 'EQ', '')))).toEqual([]);
+  it('refuses a condition with no value', () => {
+    // Not the rule the filter panel follows. An empty condition is dropped at
+    // compile, so the metric would silently count every record instead of the
+    // subset the filter was meant to name.
+    expect(codes(withFilter(leaf('warehouse', 'EQ', '')))).toEqual([
+      'analysis.metricFilter.incomplete',
+    ]);
+  });
+
+  it('says nothing about a value the operator does not take', () => {
+    // IS_NULL carries no value, so there is nothing to fill in.
+    expect(codes(withFilter(leaf('warehouse', 'IS_NULL', null)))).toEqual([]);
+  });
+
+  it('reports the kind before the empty value, never both', () => {
+    expect(codes(withFilter(leaf('items', 'IN', [])))).toEqual([
+      'analysis.metricFilter.not-scalar',
+    ]);
+  });
+
+  it('ignores a stale filter left on a DERIVED metric', () => {
+    // `compileMetric` never emits one, so refusing the config would block it
+    // over a property that changes nothing.
+    const stale = {
+      type: 'DERIVED',
+      alias: 'share',
+      expression: { type: 'METRIC_REF', metric: 'orders' },
+      filter: leaf('ghost', 'EQ', 'x'),
+    } as unknown as AnalysisViewConfig['metrics'][number];
+
+    expect(
+      codes(
+        validateAnalysis(
+          wide(),
+          config({ metrics: [{ type: 'COUNT', alias: 'orders' }, stale] }),
+          builtinFieldKinds,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it('stops at the budget rather than walking the tree again', () => {
+    // The budget exists so a tree from a store cannot cost unbounded work; a
+    // second walk would spend exactly what it refused.
+    const wide_ = (leaves: number): FilterTree => ({
+      op: 'and',
+      children: Array.from({ length: leaves }, () => ({
+        field: 'items',
+        operator: 'IN' as FilterOperatorName,
+        value: [] as FilterValue,
+      })),
+    });
+
+    expect(codes(withFilter(wide_(400)))).toEqual([
+      'filter.tree.too-many-nodes',
+    ]);
   });
 });

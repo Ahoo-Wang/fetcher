@@ -25,7 +25,9 @@ import {
 } from '../model/index.js';
 import {
   issue,
+  isBlankLeafValue,
   isFilterLeaf,
+  operatorsOf,
   validateFilter,
   validateViewConfigBase,
   walkFilter,
@@ -313,33 +315,47 @@ function metricFilterIssues(
   path: IssuePath,
 ): Issue[] {
   const fields = [...scope.fields.values()];
-  return [
-    ...validateFilter(fields, tree, kinds, { limits }),
-    ...wholeValueIssues(tree, scope, kinds),
-  ].map(found => ({ ...found, path: [...path, ...found.path] }));
+  const admitted = validateFilter(fields, tree, kinds, { limits });
+  // The budget is there so a tree from a store cannot cost unbounded work.
+  // `validateFilter` answers an oversized tree with the budget issue alone, so
+  // a second full walk here would spend exactly what the budget refused.
+  const issues = admitted.some(found => BUDGET_CODES.includes(found.code))
+    ? admitted
+    : [...admitted, ...metricPositionIssues(tree, scope, kinds)];
+  return issues.map(found => ({ ...found, path: [...path, ...found.path] }));
 }
 
+/** What `validateFilter` answers with, alone, when a tree is over budget. */
+const BUDGET_CODES = ['filter.tree.too-deep', 'filter.tree.too-many-nodes'];
+
 /**
- * Refuses the leaves a whole-value predicate cannot express.
+ * Holds a metric's filter to what metric position allows.
  *
- * A metric filter decides, per record, whether that record counts toward this
- * one metric — MongoDB re-expresses it as a `$cond` guard and Elasticsearch as
- * a filter aggregation — so it has one record's value to work with. A kind
- * that declares itself non-scalar has no such value: it compiles to a
- * condition over the entries of a collection, or to a match across the
- * record's text.
- *
- * The kind answers this rather than a list of ids here, because
- * `withFieldKinds` lets an app replace a built-in kind or register one of its
- * own. What settles it is the shape a kind compiles to, and only the kind
- * knows that.
+ * **A kind with no single value.** A metric filter decides, per record,
+ * whether that record counts toward this one metric — MongoDB re-expresses it
+ * as a `$cond` guard and Elasticsearch as a filter aggregation — so it has one
+ * record's value to work with. A kind that declares itself non-scalar has no
+ * such value: it compiles to a condition over the entries of a collection, or
+ * to a match across the record's text. The kind answers this rather than a
+ * list of ids here, because `withFieldKinds` lets an app replace a built-in
+ * kind or register one of its own, and what settles it is the shape a kind
+ * compiles to.
  *
  * The metadata kinds stay usable, unlike inside an element predicate where
  * they are refused: an element is not a record and has no id or owner, but a
- * metric filter is looking at a whole record and those are exactly the
- * questions it can answer.
+ * metric filter is looking at a whole record.
+ *
+ * **A condition with no value.** Everywhere else an empty condition is
+ * unfinished rather than wrong, and `compileFilter` drops it. A filter panel
+ * is a surface: someone puts a condition there because it is one they reach
+ * for often, and leaving it empty is how they say "not right now". A metric's
+ * filter is not a surface. The choice is between a metric that is filtered and
+ * one that is not, and having chosen the first, an empty condition is dropped
+ * at compile and the metric silently widens to every record — a count that
+ * was meant to be of paid orders returns all of them. So here an empty
+ * condition is wrong.
  */
-function wholeValueIssues(
+function metricPositionIssues(
   tree: FilterTree,
   scope: AnalysisScope,
   kinds: FieldKindRegistry,
@@ -347,16 +363,21 @@ function wholeValueIssues(
   const issues: Issue[] = [];
   for (const { node, path } of walkFilter(tree)) {
     if (!isFilterLeaf(node)) continue;
+    // An unknown field, a kind no registry holds and an operator the field
+    // does not offer are all `validateFilter`'s to report, not this one's.
     const field = scope.fields.get(node.field);
-    // An unknown field, and a kind no registry holds, are `validateFilter`'s
-    // to report rather than this one's.
     if (!field) continue;
     const kind = kinds.get(field.kind);
-    if (!kind || kind.scalar !== false) continue;
+    if (!kind || !operatorsOf(field, kind).includes(node.operator)) continue;
 
-    issues.push(
-      issue('analysis.metricFilter.not-scalar', path, { field: field.name }),
-    );
+    if (kind.scalar === false)
+      issues.push(
+        issue('analysis.metricFilter.not-scalar', path, { field: field.name }),
+      );
+    else if (isBlankLeafValue(node.value, node.operator, field, kind))
+      issues.push(
+        issue('analysis.metricFilter.incomplete', path, { field: field.name }),
+      );
   }
   return issues;
 }
@@ -381,7 +402,12 @@ function validateMetrics(
     // A metric's own filter was compiled and never admitted, so it could name
     // a field that does not exist and reach `compileFilter`, which answers
     // that by throwing.
-    if ('filter' in metric && metric.filter)
+    //
+    // `DERIVED` is the exception. It carries no filter in the protocol and
+    // `compileMetric` never emits one, but a stored config can still hold a
+    // stale `filter` from before the metric was switched to `DERIVED`.
+    // Refusing it would block a config over a property that changes nothing.
+    if (metric.type !== 'DERIVED' && 'filter' in metric && metric.filter)
       issues.push(
         ...metricFilterIssues(metric.filter, scope, kinds, limits, [
           ...path,
