@@ -26,7 +26,7 @@ pnpm --filter @ahoo-wang/fetcher test
 pnpm --filter @ahoo-wang/fetcher-viewer test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher vitest run src/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 
 # Lint all packages
 pnpm lint

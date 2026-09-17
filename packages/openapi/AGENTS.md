@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher-openapi build
 pnpm --filter @ahoo-wang/fetcher-openapi test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher-openapi vitest run test/openAPI.test.ts
+pnpm --filter @ahoo-wang/fetcher-openapi exec vitest run test/index.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher-openapi lint
