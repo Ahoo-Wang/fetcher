@@ -23,6 +23,7 @@ import {
   type RuntimeLimits,
 } from '../model/index.js';
 import {
+  isValidTimeZone,
   issue,
   validateFilter,
   validateViewConfigBase,
@@ -174,6 +175,14 @@ function validateGroups(
       if (group.timeZone !== undefined && group.timeZone.trim() === '')
         issues.push(
           issue('analysis.group.blank-time-zone', [...path, 'timeZone']),
+        );
+      // Wow buckets by this zone, so a name no runtime resolves produces
+      // buckets nobody can place; it is refused rather than passed on.
+      else if (group.timeZone !== undefined && !isValidTimeZone(group.timeZone))
+        issues.push(
+          issue('analysis.group.unknown-time-zone', [...path, 'timeZone'], {
+            timeZone: group.timeZone,
+          }),
         );
     }
     if (group.type === 'TERMS') {

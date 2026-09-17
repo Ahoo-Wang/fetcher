@@ -140,6 +140,8 @@ export class ViewEngine {
   private readonly runner: RequestRunner;
   private readonly runtimes = new Set<ManagedViewRuntime>();
   private readonly writes = new Map<string, WriteState>();
+  /** Write targets with a request in flight; see `dispatch`. */
+  private readonly inFlight = new Set<string>();
   private readonly owners = new Map<string, ManagedViewRuntime>();
   private readonly preferencesCache = new Map<string, ViewPreferences>();
   /** `validateDefinition` per registered definition, computed once. */
@@ -634,6 +636,19 @@ export class ViewEngine {
     requestId: string,
     runtime: ManagedViewRuntime | undefined,
   ): Promise<ViewInstance | ViewPreferences | void> {
+    // One write at a time per target. Two saves of one view would carry the
+    // same expected revision, so the second reports a conflict the user caused
+    // by clicking twice; two first saves would each create, leaving a duplicate
+    // instance and a runtime bound to only one of them. The idempotent
+    // `requestId` cannot help, because each command mints its own: it dedupes
+    // a retry of one write, not two writes that mean the same thing.
+    const key = writeKey(payload, runtime);
+    if (this.inFlight.has(key))
+      throw new ViewCommandError(
+        issue('view.write.in-flight', [], { action: payload.action }),
+      );
+    this.inFlight.add(key);
+
     const context: WriteContext = { requestId };
     if (runtime) this.owners.set(requestId, runtime);
     try {
@@ -646,6 +661,8 @@ export class ViewEngine {
       this.writes.set(requestId, state);
       runtime?.setWrite(state);
       throw new ViewWriteError(state);
+    } finally {
+      this.inFlight.delete(key);
     }
   }
 
@@ -724,7 +741,13 @@ export class ViewEngine {
     payload: WritePayload,
   ): Promise<WriteState> {
     if (!isViewStoreError(error))
-      // The request left and nothing came back: neither failure nor success.
+      // Anything that does not speak the port's language is treated as an
+      // unknown outcome rather than a failure. It may well be a bug in the
+      // adapter that will fail again on retry, and saying "unknown" about it
+      // is then misleading — but the other mistake is worse: a write that
+      // reached the server, reported as failed, is a view the user saves a
+      // second time. Only the store can tell these apart, and it does so by
+      // raising a `ViewStoreError`.
       return { kind: 'unknown', requestId, payload };
 
     switch (error.code) {
@@ -920,6 +943,26 @@ function capabilityOf(definition: ViewDefinition, config: ViewConfig): boolean {
   return config.kind === 'record'
     ? definition.record !== undefined
     : definition.analysis !== undefined;
+}
+
+/**
+ * What a write contends for. A runtime is its own target — the design allows
+ * one in-flight write per open view, whatever the command — and a write with
+ * no runtime behind it contends for the instance or the preferences it names.
+ */
+function writeKey(
+  payload: WritePayload,
+  runtime: ManagedViewRuntime | undefined,
+): string {
+  if (runtime) return `runtime:${runtime.id}`;
+  switch (payload.action) {
+    case 'preferences':
+      return `preferences:${payload.definitionId}`;
+    case 'create':
+      return `create:${payload.input.definitionId}:${payload.input.title}`;
+    default:
+      return `instance:${payload.id}`;
+  }
 }
 
 function withRevision(

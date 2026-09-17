@@ -303,8 +303,15 @@ export class DataViewRuntime<
     this.execute({ keepSelection: false });
   }
 
+  /**
+   * Re-runs what was applied, which was admitted before it ran. An invalid
+   * draft therefore does not block it: the editor may be mid-edit and wrong,
+   * while the results on screen answer a question that was legal when asked.
+   * Auto-refresh still pauses on an invalid draft — see `refreshDelay` — but a
+   * user pressing Refresh has asked for exactly this.
+   */
   refresh(): void {
-    if (this.stopped || hasError(this.state.issues)) return;
+    if (this.stopped) return;
     // A refresh returns to the first page; the selection keeps whatever rows survive.
     this.pageTarget = firstPageOf(this.context.definition);
     this.execute({ keepSelection: true });
