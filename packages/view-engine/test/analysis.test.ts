@@ -1207,6 +1207,43 @@ describe('metric filters', () => {
     ]);
   });
 
+  it.each([
+    ['no children at all', { op: 'and', children: [] } as FilterTree],
+    [
+      'nothing but empty groups',
+      {
+        op: 'and',
+        children: [{ op: 'or', children: [] }],
+      } as FilterTree,
+    ],
+  ])('refuses a filter with %s', (_name, tree) => {
+    // It compiles to MATCH_ALL, so the metric covers every record — the same
+    // silent widening as an empty condition, through another door.
+    expect(codes(withFilter(tree))).toEqual(['analysis.metricFilter.empty']);
+  });
+
+  it('paths an empty filter at the filter itself', () => {
+    const issues = validateAnalysis(
+      wide(),
+      config({
+        metrics: [
+          {
+            type: 'COUNT',
+            alias: 'orders',
+            filter: { op: 'and', children: [] },
+          },
+        ],
+      }),
+      builtinFieldKinds,
+    );
+
+    expect(issues.map(found => found.path)).toContainEqual([
+      'metrics',
+      0,
+      'filter',
+    ]);
+  });
+
   it('says nothing about a value the operator does not take', () => {
     // IS_NULL carries no value, so there is nothing to fill in.
     expect(codes(withFilter(leaf('warehouse', 'IS_NULL', null)))).toEqual([]);

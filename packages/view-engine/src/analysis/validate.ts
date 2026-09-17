@@ -24,6 +24,7 @@ import {
   type RuntimeLimits,
 } from '../model/index.js';
 import {
+  countLeaves,
   issue,
   isBlankLeafValue,
   isFilterLeaf,
@@ -345,6 +346,10 @@ const BUDGET_CODES = ['filter.tree.too-deep', 'filter.tree.too-many-nodes'];
  * they are refused: an element is not a record and has no id or owner, but a
  * metric filter is looking at a whole record.
  *
+ * **A filter that narrows nothing.** The two cases below end the same way, so
+ * they are one rule seen from two sides: the filter says nothing, and
+ * `compileFilter` answers `MATCH_ALL`.
+ *
  * **A condition with no value.** Everywhere else an empty condition is
  * unfinished rather than wrong, and `compileFilter` drops it. A filter panel
  * is a surface: someone puts a condition there because it is one they reach
@@ -352,14 +357,21 @@ const BUDGET_CODES = ['filter.tree.too-deep', 'filter.tree.too-many-nodes'];
  * filter is not a surface. The choice is between a metric that is filtered and
  * one that is not, and having chosen the first, an empty condition is dropped
  * at compile and the metric silently widens to every record — a count that
- * was meant to be of paid orders returns all of them. So here an empty
- * condition is wrong.
+ * was meant to be of paid orders returns all of them. Wrong numbers, no
+ * warning. So here an empty condition is wrong.
+ *
+ * **No conditions at all.** The same widening through another door: a tree
+ * with no leaves, or one holding only empty groups, compiles to `MATCH_ALL`
+ * with no leaf for the check above to catch.
  */
 function metricPositionIssues(
   tree: FilterTree,
   scope: AnalysisScope,
   kinds: FieldKindRegistry,
 ): Issue[] {
+  if (countLeaves(tree) === 0)
+    return [issue('analysis.metricFilter.empty', [])];
+
   const issues: Issue[] = [];
   for (const { node, path } of walkFilter(tree)) {
     if (!isFilterLeaf(node)) continue;

@@ -270,8 +270,10 @@ export const defaultMessages: ViewMessages = Object.freeze({
     'The filter refers to {metric}, which is not a usable metric.',
   'analysis.limit.not-positive': 'The row limit must be a positive number.',
   'analysis.limit.too-large': 'The row limit cannot exceed {max}.',
+  'analysis.metricFilter.empty':
+    'This filter has no conditions, so the metric covers every record.',
   'analysis.metricFilter.incomplete':
-    'Give {field} a value, or the metric counts every record.',
+    'Give {field} a value, or the metric covers every record.',
   'analysis.metricFilter.not-scalar':
     '{field} has no single value for a metric filter to test.',
   'analysis.metrics.too-many': 'Too many metrics for this dataset.',
