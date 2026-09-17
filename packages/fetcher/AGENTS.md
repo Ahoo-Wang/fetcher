@@ -12,7 +12,7 @@ pnpm --filter @ahoo-wang/fetcher build
 pnpm --filter @ahoo-wang/fetcher test
 
 # Run a single test file
-pnpm --filter @ahoo-wang/fetcher vitest run test/fetcher.test.ts
+pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 
 # Lint
 pnpm --filter @ahoo-wang/fetcher lint
