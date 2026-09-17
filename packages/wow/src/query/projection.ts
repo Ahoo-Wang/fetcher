@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { queryField } from './filter.js';
+import { queryField } from './queryField.js';
 
 /**
  * Interface for field projection.
@@ -49,10 +49,12 @@ export function projection<FIELDS extends string = string>(
   { include, exclude }: Projection<FIELDS> = defaultProjection(),
 ): Projection<FIELDS> {
   // Kotlin holds these as `QueryField`, which refuses a path its pattern does
-  // not match. A projection entry is a path like any other.
+  // not match. A projection entry is a path like any other. Both keys stay
+  // present whether or not they were given: the shape this factory returns is
+  // its own contract, and validating a path is no reason to change it.
   return {
-    ...(include === undefined ? {} : { include: include.map(queryField) }),
-    ...(exclude === undefined ? {} : { exclude: exclude.map(queryField) }),
+    include: include?.map(queryField),
+    exclude: exclude?.map(queryField),
   };
 }
 

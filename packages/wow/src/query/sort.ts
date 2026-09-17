@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { queryField } from './filter.js';
+import { queryField } from './queryField.js';
 
 /**
  * Enumeration of sort directions.

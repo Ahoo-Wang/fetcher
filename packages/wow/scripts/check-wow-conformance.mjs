@@ -100,6 +100,11 @@ function normalize(message) {
  * The condition of a `require` holds parentheses of its own, so this balances
  * them rather than matching to the first `)` — an earlier regex stopped at
  * `require(operands.isNotEmpty()` and silently found a third of the rules.
+ *
+ * Kotlin states a rule in more than one way, and a checker that knows only
+ * `require` reports success while missing the rest. `requireNotNull` and
+ * `checkNotNull` take the same trailing message block; `error(...)` and a bare
+ * `throw` take the message as their first argument.
  */
 function messagesIn(source) {
   const found = [];
@@ -112,7 +117,9 @@ function messagesIn(source) {
     if (match) found.push(match[1]);
   };
 
-  for (const match of source.matchAll(/\b(require|check)\s*\(/g)) {
+  for (const match of source.matchAll(
+    /\b(?:require|check)(?:NotNull)?\s*\(/g,
+  )) {
     let depth = 1;
     let index = match.index + match[0].length;
     while (index < source.length && depth > 0) {
@@ -126,7 +133,9 @@ function messagesIn(source) {
     const block = /^\s*\{/.exec(tail);
     if (block) readFrom(index, 400);
   }
-  for (const match of source.matchAll(/\bthrow\s+\w*(?:Exception|Error)\s*\(/g))
+  for (const match of source.matchAll(
+    /\bthrow\s+\w*(?:Exception|Error)\s*\(|\berror\s*\(/g,
+  ))
     readFrom(match.index + match[0].length, 400);
 
   return found;

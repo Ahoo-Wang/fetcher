@@ -685,6 +685,12 @@ const RULES: ConformanceRule[] = [
 
   // ---- Left to the server ------------------------------------------------
   {
+    wow: 'Unsupported legacy query type: ${inputType.name}.',
+    source: 'wow-api QueryJsonDeserializer.kt',
+    serverOnly:
+      'Raised while reading a stored query of the deprecated shape. This package writes queries and never deserialises one.',
+  },
+  {
     wow: 'Query schema identifier is invalid: [$value].',
     source: 'wow-api schema/QuerySchemaTypes.kt',
     serverOnly:
@@ -763,9 +769,26 @@ describe('Wow query conformance', () => {
   const mirrored = RULES.filter(rule => rule.violate);
   const declared = RULES.filter(rule => !rule.violate);
 
+  // A rule is what Wow states *somewhere*: `Query field is invalid` is stated
+  // by QueryField, by Sort and by Projection, and the register carries one
+  // entry each. Keying on the message alone would fold them into one and lose
+  // two of the three without anything noticing.
+  const identity = (rule: ConformanceRule) => `${rule.source} :: ${rule.wow}`;
+
   it('names every rule exactly once', () => {
-    const names = RULES.map(rule => rule.wow);
+    const names = RULES.map(identity);
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('cites a distinct source for rules that share a message', () => {
+    const byMessage = new Map<string, string[]>();
+    for (const rule of RULES)
+      byMessage.set(rule.wow, [
+        ...(byMessage.get(rule.wow) ?? []),
+        rule.source,
+      ]);
+    for (const [, sources] of byMessage)
+      expect(new Set(sources).size).toBe(sources.length);
   });
 
   it('gives a reason for every rule it does not exercise', () => {
