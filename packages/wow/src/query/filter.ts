@@ -141,7 +141,15 @@ const DATE_PATTERN_COUNTS: Readonly<
   g: 19,
 };
 
-function queryField<FIELDS extends string>(field: FIELDS): FIELDS {
+/**
+ * Admits a field path against Wow's `QueryField` pattern.
+ *
+ * Kotlin wraps every path in `QueryField`, whose `init` refuses anything the
+ * pattern does not match — a sort field and a projection entry as much as a
+ * filter's. Exported so those two say it the same way rather than each
+ * inventing its own idea of a path.
+ */
+export function queryField<FIELDS extends string>(field: FIELDS): FIELDS {
   if (typeof field !== 'string' || !QUERY_FIELD_PATTERN.test(field)) {
     throw new TypeError(`Query field is invalid: [${String(field)}].`);
   }

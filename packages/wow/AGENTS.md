@@ -21,6 +21,25 @@ pnpm --filter @ahoo-wang/fetcher-wow lint
 pnpm --filter @ahoo-wang/fetcher-wow clean
 ```
 
+## Wow conformance
+
+This package mirrors Wow's query protocol, so every rule Wow enforces by
+throwing is accounted for in `test/query/wowConformance.test.ts`. Each entry
+names the rule verbatim, cites its Kotlin source, and says which of three
+things this package does with it: mirrors it (with an input that breaks it),
+satisfies it by the shape of the builders, or leaves it to the server (with
+the reason). Add an entry in the same change as any new rule.
+
+The tests keep those answers honest. They cannot see a rule Wow adds upstream,
+so when bumping the Wow version, diff the register against a Wow checkout:
+
+```bash
+pnpm --filter @ahoo-wang/fetcher-wow check:wow /path/to/Wow
+```
+
+It exits non-zero naming any rule in `wow-api`'s query package the register
+does not carry. It is not part of CI, which has no Wow checkout.
+
 ## Testing
 
 - Vitest with `globals: true` and `@vitest/coverage-v8`
