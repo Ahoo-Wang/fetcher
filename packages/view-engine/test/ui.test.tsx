@@ -39,6 +39,7 @@ import {
   RecordCards,
   RecordTable,
   RecordWorkbench,
+  SaveActions,
   ViewList,
   ViewSurface,
 } from '../src/ui/index.js';
@@ -567,6 +568,48 @@ describe('save actions', () => {
       expect((await store.get('orders-1')).title).toBe('Renamed'),
     );
     expect(screen.getAllByRole('columnheader')).toHaveLength(4);
+  });
+
+  it('tells onRecovered about a recovered delete too', async () => {
+    // A host may wire only the generic callback and keep its list fresh
+    // there; a recovered delete is still a recovered write.
+    const onDeleted = vi.fn();
+    const onRecovered = vi.fn();
+    const commands = {
+      can: { save: true, saveAs: true, rename: true, delete: true },
+      state: {
+        pending: false,
+        error: null,
+        dirty: false,
+        write: {
+          kind: 'unknown',
+          requestId: 'r1',
+          payload: { action: 'delete', id: 'orders-1', revision: '1' },
+        },
+      },
+      save: vi.fn(),
+      saveAs: vi.fn(),
+      rename: vi.fn(),
+      delete: vi.fn(),
+      retry: vi.fn().mockResolvedValue({ landed: true, instance: null }),
+      abandon: vi.fn(),
+      resolveConflict: vi.fn(),
+    };
+    render(
+      <ViewSurface>
+        <SaveActions
+          commands={commands as never}
+          title="Mine"
+          onDeleted={onDeleted}
+          onRecovered={onRecovered}
+        />
+      </ViewSurface>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => expect(onDeleted).toHaveBeenCalled());
+    await waitFor(() => expect(onRecovered).toHaveBeenCalledWith('delete'));
   });
 });
 

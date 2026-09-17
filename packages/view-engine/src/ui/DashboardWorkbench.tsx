@@ -141,10 +141,7 @@ export function DashboardWorkbench({
                   setChosen(instance.id);
                   list.reload();
                 }}
-                onDeleted={() => {
-                  setChosen(null);
-                  list.reload();
-                }}
+                onDeleted={() => setChosen(null)}
                 onRecovered={() => list.reload()}
               />
             </div>

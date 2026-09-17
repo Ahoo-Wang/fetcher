@@ -85,9 +85,10 @@ export function SaveActions({
   /**
    * A recovered write lands like the original one would have: a recovered
    * create or save opens what it made, a rename keeps the instance current,
-   * a delete lets the view go. A reload is not a landing: the server's state
-   * was adopted, so nothing is opened or let go of — the list may still have
-   * moved.
+   * a delete lets the view go. Every landing also reports through
+   * onRecovered, which is where a host that wires nothing else stays fresh.
+   * A reload is not a landing: the server's state was adopted, so nothing is
+   * opened or let go of — the list may still have moved.
    */
   const notify = (
     action: WriteAction | undefined,
@@ -102,10 +103,11 @@ export function SaveActions({
     switch (action) {
       case 'delete':
         onDeleted?.();
+        onRecovered?.(action);
         return;
       case 'rename':
         if (instance) onRenamed?.(instance);
-        else onRecovered?.(action);
+        onRecovered?.(action);
         return;
       default:
         if (instance) onSaved?.(instance);
