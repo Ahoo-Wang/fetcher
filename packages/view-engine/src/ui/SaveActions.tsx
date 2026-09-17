@@ -82,11 +82,35 @@ export function SaveActions({
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  /** A recovered write lands like the original one would have. */
-  const notify = (action: WriteAction | undefined) => {
+  /**
+   * A recovered write lands like the original one would have: a recovered
+   * create or save opens what it made, a rename keeps the instance current,
+   * a delete lets the view go. A reload is not a landing: the server's state
+   * was adopted, so nothing is opened or let go of — the list may still have
+   * moved.
+   */
+  const notify = (
+    action: WriteAction | undefined,
+    instance: ViewInstance | null,
+    reloaded = false,
+  ) => {
     if (!action) return;
-    if (action === 'delete') onDeleted?.();
-    else onRecovered?.(action);
+    if (reloaded) {
+      onRecovered?.(action);
+      return;
+    }
+    switch (action) {
+      case 'delete':
+        onDeleted?.();
+        return;
+      case 'rename':
+        if (instance) onRenamed?.(instance);
+        else onRecovered?.(action);
+        return;
+      default:
+        if (instance) onSaved?.(instance);
+        onRecovered?.(action);
+    }
   };
 
   return (
@@ -198,8 +222,12 @@ function WriteOutcome({
   notify,
 }: {
   commands: SaveCommands;
-  /** Reports a recovered write, by the action it carried. */
-  notify(action: WriteAction | undefined): void;
+  /** Reports a recovered write, by the action it carried and what it made. */
+  notify(
+    action: WriteAction | undefined,
+    instance: ViewInstance | null,
+    reloaded?: boolean,
+  ): void;
 }) {
   const { write, error } = commands.state;
   const messages = useViewMessages();
@@ -219,7 +247,10 @@ function WriteOutcome({
               const action = write.payload.action;
               void commands
                 .resolveConflict('reload')
-                .then(done => done && notify(action));
+                .then(
+                  result =>
+                    result.landed && notify(action, result.instance, true),
+                );
             }}
           >
             Take theirs
@@ -230,7 +261,9 @@ function WriteOutcome({
               const action = write.payload.action;
               void commands
                 .resolveConflict('overwrite')
-                .then(done => done && notify(action));
+                .then(
+                  result => result.landed && notify(action, result.instance),
+                );
             }}
           >
             Keep mine
@@ -256,7 +289,11 @@ function WriteOutcome({
             size="sm"
             onClick={() => {
               const action = write.payload.action;
-              void commands.retry().then(done => done && notify(action));
+              void commands
+                .retry()
+                .then(
+                  result => result.landed && notify(action, result.instance),
+                );
             }}
           >
             Retry

@@ -12,7 +12,12 @@
  */
 
 import { useCallback, useState } from 'react';
-import type { Issue, ViewInstance, ViewScope } from '../model/index.js';
+import type {
+  Issue,
+  ViewInstance,
+  ViewPreferences,
+  ViewScope,
+} from '../model/index.js';
 import type {
   ConflictChoice,
   ViewEngine,
@@ -25,6 +30,28 @@ import { toIssue } from './issues.js';
 export interface SaveTargetInput {
   title: string;
   scope: Exclude<ViewScope, 'system'>;
+}
+
+/** What replaying a write answered: whether it landed, and what it made. */
+export interface RecoveredWrite {
+  landed: boolean;
+  /** The instance a recovered create, save or rename produced, if any. */
+  instance: ViewInstance | null;
+}
+
+const UNRECOVERED: RecoveredWrite = { landed: false, instance: null };
+
+/** Preferences resolve too, and carry no instance. */
+function recoveredOf(
+  result: ViewInstance | ViewPreferences | void,
+): RecoveredWrite {
+  return {
+    landed: true,
+    instance:
+      typeof result === 'object' && result !== null && 'config' in result
+        ? result
+        : null,
+  };
 }
 
 export interface SaveAbilities {
@@ -49,11 +76,11 @@ export interface SaveCommands {
   saveAs(input: SaveTargetInput): Promise<ViewInstance | null>;
   rename(title: string): Promise<ViewInstance | null>;
   delete(): Promise<boolean>;
-  /** Replays the pending write; true when it landed this time. */
-  retry(): Promise<boolean>;
+  /** Replays the pending write and reports what the replay answered. */
+  retry(): Promise<RecoveredWrite>;
   abandon(): void;
-  /** Resolves a conflict; true when the choice completed a write. */
-  resolveConflict(choice: ConflictChoice): Promise<boolean>;
+  /** Resolves a conflict and reports what the choice answered. */
+  resolveConflict(choice: ConflictChoice): Promise<RecoveredWrite>;
   can: SaveAbilities;
   state: SaveCommandState;
 }
@@ -165,11 +192,12 @@ export function useSaveCommands(
       runtime
         ? run(
             'view.retry.failed',
-            // A delete resolves with nothing, which still means it landed.
-            () => engine.retryWrite(runtime).then(() => true),
-            false,
+            // A delete resolves with nothing, which still means it landed; a
+            // recovered create or rename carries the instance it produced.
+            () => engine.retryWrite(runtime).then(recoveredOf),
+            UNRECOVERED,
           )
-        : Promise.resolve(false),
+        : Promise.resolve(UNRECOVERED),
     [engine, runtime, run],
   );
 
@@ -193,10 +221,10 @@ export function useSaveCommands(
         ? run(
             'view.resolve.failed',
             // Both a reload and an overwrite resolve only when they landed.
-            () => engine.resolveConflict(runtime, choice).then(() => true),
-            false,
+            () => engine.resolveConflict(runtime, choice).then(recoveredOf),
+            UNRECOVERED,
           )
-        : Promise.resolve(false),
+        : Promise.resolve(UNRECOVERED),
     [engine, runtime, run],
   );
 

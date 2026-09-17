@@ -451,6 +451,123 @@ describe('save actions', () => {
       { timeout: 3000 },
     );
   });
+
+  it('keeps the view open when a delete conflict ends in a reload', async () => {
+    // Another view is the default, so a `chosen` of null would reopen that
+    // one instead: the reload must not decide the user had left this view.
+    const other: ViewInstance = { ...mine, id: 'other-1', title: 'Other' };
+    const store = new MemoryViewStore({ instances: [other, mine] });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => testSource(),
+    });
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
+    );
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+    // The server moved on; taking their version adopts the existing
+    // instance, it does not delete it.
+    const moved = await store.save(
+      'orders-1',
+      recordConfig({ pageSize: 30 }),
+      '1',
+      { requestId: 'other' },
+    );
+    vi.spyOn(store, 'delete').mockImplementationOnce(() =>
+      Promise.reject(new ViewStoreError('CONFLICT', 'moved', moved)),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete/ }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Delete',
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Take theirs' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Mine' }).ariaCurrent).toBe(
+        'true',
+      ),
+    );
+    expect(screen.getByRole('table')).toBeDefined();
+  });
+
+  it('opens the copy once a recovered save-as lands', async () => {
+    const { store } = await open();
+    vi.spyOn(store, 'create').mockRejectedValueOnce(new Error('socket closed'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save as' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'My copy' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    // The recovery lands like the original save-as: the copy joins the list
+    // and becomes the open view.
+    await waitFor(
+      () =>
+        expect(
+          screen.getByRole('button', { name: 'My copy' }).ariaCurrent,
+        ).toBe('true'),
+      { timeout: 3000 },
+    );
+  });
+
+  it('keeps unsaved edits across a rename of the default view', async () => {
+    // The default has to be the personal view: the first list entry is the
+    // code-declared system view, which nobody may rename.
+    const store = new MemoryViewStore({
+      instances: [mine],
+      preferences: {
+        orders: { order: [], defaultInstanceId: 'orders-1', revision: '0' },
+      },
+    });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => testSource(),
+    });
+    // No explicit instance: the workbench rides on the default view, so
+    // `chosen` is null and a list reload must not close the runtime.
+    render(<RecordWorkbench engine={engine} definitionId="orders" />);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
+    fireEvent.click(
+      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
+    );
+    // The header count includes the select-all column.
+    await waitFor(() =>
+      expect(screen.getAllByRole('columnheader')).toHaveLength(4),
+    );
+    // The column menu stays open after a checkbox pick; close it before the
+    // next toolbar click, which the open menu would swallow.
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'Renamed' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    // The rename refreshed the list; the unsaved column edit survived it.
+    await waitFor(async () =>
+      expect((await store.get('orders-1')).title).toBe('Renamed'),
+    );
+    expect(screen.getAllByRole('columnheader')).toHaveLength(4);
+  });
 });
 
 describe('FilterValueEditor', () => {

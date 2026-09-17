@@ -123,7 +123,12 @@ export function RecordWorkbench({
                   setChosen(saved.id);
                   list.reload();
                 }}
-                onRenamed={() => list.reload()}
+                onRenamed={instance => {
+                  // Pin the view before the reload: a workbench riding on the
+                  // default would otherwise close its runtime and lose the draft.
+                  setChosen(instance.id);
+                  list.reload();
+                }}
                 onDeleted={() => {
                   setChosen(null);
                   list.reload();
