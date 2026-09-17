@@ -272,6 +272,16 @@ interface ViewStore {
 
 本包提供 `MemoryViewStore`，用于测试、示例与只查询不持久化的场景。业务应用用自己的 fetcher 针对自己的 API 实现 `ViewStore`，HTTP 状态码到 `ViewStoreError.code` 的映射在应用侧完成。授权、可见性过滤与去重是服务端职责，`permissions` 只决定按钮可用性。
 
+### 措辞
+
+模型只带 `code` 与 `params`，措辞归 `/ui`。`defaultMessages` 给每个 issue 一句英文，`ViewSurface` 的 `messages` 按 key 覆盖它——改写与本地化是同一个入口：
+
+```tsx
+<ViewSurface messages={{ 'label.query.failed': '查询失败' }}>
+```
+
+找不到的 key 会沿点号回退到最长的已知前缀，再退回 key 本身，因此不会渲染空白。新增 issue code 却没有对应措辞时，测试会失败。
+
 ## 扩展点
 
 | 变化轴   | 机制                                                                                                                   |

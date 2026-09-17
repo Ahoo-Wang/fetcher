@@ -278,6 +278,16 @@ Two rules make it consistent:
 
 The package ships `MemoryViewStore` for tests, examples and query-only use. Business applications implement `ViewStore` against their own API with their own fetcher; mapping HTTP status codes to `ViewStoreError.code` belongs there. Authorization, visibility filtering and deduplication are server responsibilities; `permissions` only drives button availability.
 
+### Wording
+
+The model carries `code` and `params` and no copy, so `/ui` owns the words. `defaultMessages` gives every issue an English sentence, and `ViewSurface` takes a `messages` map that is merged over it — the same seam serves rewording and translation:
+
+```tsx
+<ViewSurface messages={{ 'label.query.failed': '查询失败' }}>
+```
+
+An unknown key falls back along the dots and then to the key itself, so a gap shows up rather than rendering blank. A test fails when a new issue code has no entry.
+
 ## Extension points
 
 | Axis        | Mechanism                                                                                                                                                                  |
