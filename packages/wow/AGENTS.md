@@ -54,7 +54,7 @@ src/
     sort.ts                   — Sort specifications
     projection.ts             — Field projection
     types.ts                  — DynamicDocument type aliases
-    condition.ts              — DEPRECATED legacy condition API — use filter.ts
+    condition.ts              — DEPRECATED legacy conditions; DeletionState still current
     operator.ts               — DEPRECATED legacy Operator enum — use FilterOperator
     index.ts
     locale/                   — DEPRECATED i18n for the legacy Operator enum
@@ -82,9 +82,9 @@ src/
 
 - **Command Client**: Sends CQRS commands with wait strategies (sent, processed, snapshot)
 - **Query Clients**: Type-safe query builders for snapshots, event streams, and state aggregates
-- **Filter Expressions**: `filter.*` builders produce the `FilterExpression` tree every query takes — the current API
-- **Aggregation**: `aggregation.*` builders compose groups, metrics, derived expressions, and having clauses
-- **Legacy Condition API**: `condition.ts`, `operator.ts`, and `locale/` are deprecated — superseded by `filter.ts`
+- **Filter Expressions**: `filter.*` builders produce the `FilterExpression` tree the filterable `QueryApi` operations take — the current API. It is optional on `AggregationQuery`, and the load-state clients accept no filter at all
+- **Aggregation**: `aggregation.*` builds groups, metrics and arithmetic expressions. There is no `aggregation.having()` — `HavingExpression` is constructed directly, and `derived()` takes an already-built `DerivedExpression`
+- **Legacy Condition API**: `condition.ts`, `operator.ts`, and `locale/` are deprecated — superseded by `filter.ts`. The exception is `DeletionState`, which is not deprecated and is what `filter.deletion()` takes
 - **Wow Metadata**: `WowMetadata` types describing bounded contexts and aggregates (types only, no decorator)
 
 ## Dependencies
