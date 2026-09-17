@@ -16,11 +16,11 @@ This package is being rebuilt from an empty tree against `docs/design.md`, and i
 
 ## Build & Run Commands
 
-`@ahoo-wang/fetcher-wow` resolves to its `dist/`, so the workspace dependencies must be built before this package's tests can run — otherwise vitest fails with `Failed to resolve import "@ahoo-wang/fetcher-wow"`. From the repo root, `pnpm build` builds everything in topological order; the minimum chain is `fetcher` → `eventstream` + `decorator` → `wow`.
+`@ahoo-wang/fetcher-wow` resolves to its `dist/`, so the workspace dependencies must be built first — otherwise vitest fails with `Failed to resolve import "@ahoo-wang/fetcher-wow"`, and even this package's own `build` cannot stand alone, because its `test:package` step imports the built entry. Use the **trailing `...`** filter, which the root `AGENTS.md` documents for exactly this; it selects `fetcher` → `eventstream` + `decorator` → `wow` → `view-engine`. `pnpm build` from the repo root does the same for everything.
 
 ```bash
-# Build (also verifies the built package)
-pnpm --filter @ahoo-wang/fetcher-view-engine build
+# Build, workspace dependencies included (also verifies the built package)
+pnpm --filter @ahoo-wang/fetcher-view-engine... build
 
 # Run tests (coverage + three tsc projects)
 pnpm --filter @ahoo-wang/fetcher-view-engine test
@@ -49,7 +49,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine lint:check
 - Test files live in `test/` at the package root, named by subject rather than mirroring `src/` one-to-one (27 files)
 - `@` resolves to `src/`
 - **Coverage thresholds are enforced**: statements 95, branches 91, functions 97, lines 96. `src/ui/components/**`, `src/ui/lib/**` and `src/styles.ts` are excluded — they are vendored from the shadcn registry and are upstream's to test
-- `test/architecture.test.ts` enforces the dependency rules below on the TypeScript AST, so multi-line, type-only, re-exported and dynamic imports are all seen. It reads the wow **sources** off disk, so it is the one suite that runs without any build — every test that imports `@ahoo-wang/fetcher-wow` needs the dependency chain built first
+- `test/architecture.test.ts` enforces the dependency rules below on the TypeScript AST, so multi-line, type-only, re-exported and **statically resolvable** dynamic imports are all seen — an `import()` whose argument is a string literal or a substitution-free template. One built from a variable is not recorded, and would slip past these assertions. It reads the wow **sources** off disk, so it is the one suite that runs without any build — every test that imports `@ahoo-wang/fetcher-wow` needs the dependency chain built first
 - `tsconfig.headless.json` type-checks the headless layers **without the DOM lib**, which is what keeps them free of browser globals
 - `scripts/verify-package.mjs` checks the built artifact: every entry resolves and imports, the root entry's types need no DOM lib, and no JavaScript entry pulls in the stylesheet
 
@@ -188,7 +188,7 @@ src/
 - **Configs are data**: what a user saves is a way of looking, not a snapshot. The only persisted objects are `ViewInstance` and personal preferences; consistency is an optimistic version plus an idempotent `requestId`
 - **Runtime state is transient**: drafts, results, paging and selection live only inside one opening. A `ViewRuntime` is a small `subscribe` / `getSnapshot` store and never persists
 - **Four pure kernels**: `filter`, `record`, `analysis`, `dashboard` are synchronous pure functions, all shaped "definition + config in, result or `Issue` out". They never read the clock — relative times resolve against an injected `ctx.now`
-- **`FieldKind` is the main extension point**: operators, validation, compilation and a data-only editor descriptor. Applications register custom kinds; `ui` registers a React renderer under the same kind id
+- **`FieldKind` is the main extension point**: operators, validation, compilation and a data-only editor descriptor. Applications register custom kinds in `FieldKindRegistry`. Note that `EditorDescriptor.input` is a **closed union** and `FilterValueEditor` switches over it, so a custom kind picks one of the existing inputs — there is no renderer registry in `/ui` or `/react` today, and an unrecognised shape falls through to a plain text input. `docs/design.md` §10 describes a per-kind renderer registry as intended, not as built
 - **Untrusted configs**: configs arrive from a store, so validation checks depth and node budgets before anything walks a tree
 - **A blank leaf is not an error**: a field chosen without a value yet is a normal editing state — it is not validated by kind and does not compile
 
