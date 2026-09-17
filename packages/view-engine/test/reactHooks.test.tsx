@@ -380,10 +380,10 @@ describe('useSaveCommands', () => {
     ).resolves.toBeNull();
     await expect(result.current.rename('x')).resolves.toBeNull();
     await expect(result.current.delete()).resolves.toBe(false);
-    await expect(result.current.retry()).resolves.toBeUndefined();
-    await expect(
-      result.current.resolveConflict('reload'),
-    ).resolves.toBeUndefined();
+    await expect(result.current.retry()).resolves.toBe(false);
+    await expect(result.current.resolveConflict('reload')).resolves.toBe(
+      false,
+    );
     expect(() => result.current.abandon()).not.toThrow();
   });
 

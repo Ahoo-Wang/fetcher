@@ -128,6 +128,7 @@ export function RecordWorkbench({
                   setChosen(null);
                   list.reload();
                 }}
+                onRecovered={() => list.reload()}
               />
             </RecordToolbar>
 

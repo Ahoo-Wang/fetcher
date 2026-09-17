@@ -140,6 +140,7 @@ export function DashboardWorkbench({
                   setChosen(null);
                   list.reload();
                 }}
+                onRecovered={() => list.reload()}
               />
             </div>
 

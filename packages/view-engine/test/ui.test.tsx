@@ -19,6 +19,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -423,6 +424,33 @@ describe('save actions', () => {
       expect((await store.get('orders-1')).revision).toBe('2'),
     );
   });
+
+  it('lets go of the view once a recovered delete lands', async () => {
+    const { store } = await open();
+    vi.spyOn(store, 'delete').mockRejectedValueOnce(new Error('socket closed'));
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete/ }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Delete',
+      }),
+    );
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('never came back');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    // The store has it now; the workbench follows: the view stops rendering
+    // and the list drops the entry once its reload lands.
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('table')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull();
+      },
+      { timeout: 3000 },
+    );
+  });
 });
 
 describe('FilterValueEditor', () => {
@@ -433,22 +461,38 @@ describe('FilterValueEditor', () => {
 
   function editor(
     descriptor: EditorDescriptor,
-    value: FilterValue = null,
+    initial: FilterValue = null,
     options: typeof CANDIDATES | null = CANDIDATES,
-  ): { changes: FilterValue[] } {
+  ): { changes: FilterValue[]; replace(next: FilterValue): void } {
     const changes: FilterValue[] = [];
-    render(
-      <ViewSurface>
-        <FilterValueEditor
-          editor={descriptor}
-          value={value}
-          label="amount"
-          options={options ?? undefined}
-          onChange={next => changes.push(next)}
-        />
-      </ViewSurface>,
-    );
-    return { changes };
+    // A host like the filter panel feeds the editor the value it emitted —
+    // the same reference — and may later replace the value wholesale.
+    function Host({ forced }: { forced: FilterValue | null }) {
+      const [current, setCurrent] = useState<FilterValue>(initial);
+      if (forced !== null && forced !== current) {
+        // A replacement wins over whatever was being typed.
+        setCurrent(forced);
+      }
+      return (
+        <ViewSurface>
+          <FilterValueEditor
+            editor={descriptor}
+            value={current}
+            label="amount"
+            options={options ?? undefined}
+            onChange={next => {
+              changes.push(next);
+              setCurrent(next);
+            }}
+          />
+        </ViewSurface>
+      );
+    }
+    const view = render(<Host forced={null} />);
+    return {
+      changes,
+      replace: (next: FilterValue) => view.rerender(<Host forced={next} />),
+    };
   }
 
   it('renders nothing for an operator that takes no value', () => {
@@ -485,6 +529,19 @@ describe('FilterValueEditor', () => {
 
     fireEvent.change(input, { target: { value: 'a, b' } });
     expect(changes).toEqual([['a'], ['a', 'b']]);
+  });
+
+  it('adopts a value the host replaced with an equal list', () => {
+    const { replace } = editor({ input: 'text', multiple: true }, ['a']);
+    const input = screen.getByLabelText('amount') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: 'a,' } });
+    expect(input.value).toBe('a,');
+
+    // A host that rebuilds its config — a conflict reload, a reset — supplies
+    // a fresh list with the same items; the half-typed draft must not survive.
+    replace(['a']);
+    expect(input.value).toBe('a');
   });
 
   it('collects one number and a range of two', () => {

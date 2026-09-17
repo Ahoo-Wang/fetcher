@@ -128,6 +128,7 @@ export function AnalysisWorkbench({
                 setChosen(null);
                 list.reload();
               }}
+              onRecovered={() => list.reload()}
             />
 
             {state?.query.status === 'error' && state.query.error && (

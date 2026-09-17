@@ -49,9 +49,11 @@ export interface SaveCommands {
   saveAs(input: SaveTargetInput): Promise<ViewInstance | null>;
   rename(title: string): Promise<ViewInstance | null>;
   delete(): Promise<boolean>;
-  retry(): Promise<void>;
+  /** Replays the pending write; true when it landed this time. */
+  retry(): Promise<boolean>;
   abandon(): void;
-  resolveConflict(choice: ConflictChoice): Promise<void>;
+  /** Resolves a conflict; true when the choice completed a write. */
+  resolveConflict(choice: ConflictChoice): Promise<boolean>;
   can: SaveAbilities;
   state: SaveCommandState;
 }
@@ -163,10 +165,11 @@ export function useSaveCommands(
       runtime
         ? run(
             'view.retry.failed',
-            () => engine.retryWrite(runtime).then(() => undefined),
-            undefined,
+            // A delete resolves with nothing, which still means it landed.
+            () => engine.retryWrite(runtime).then(() => true),
+            false,
           )
-        : Promise.resolve(undefined),
+        : Promise.resolve(false),
     [engine, runtime, run],
   );
 
@@ -189,10 +192,11 @@ export function useSaveCommands(
       runtime
         ? run(
             'view.resolve.failed',
-            () => engine.resolveConflict(runtime, choice).then(() => undefined),
-            undefined,
+            // Both a reload and an overwrite resolve only when they landed.
+            () => engine.resolveConflict(runtime, choice).then(() => true),
+            false,
           )
-        : Promise.resolve(undefined),
+        : Promise.resolve(false),
     [engine, runtime, run],
   );
 

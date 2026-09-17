@@ -163,15 +163,6 @@ interface ValueProps {
   disabled?: boolean;
 }
 
-/** Same list, item by item; all the text editor's draft ever needs. */
-function sameList(parsed: FilterValue, value: FilterValue): boolean {
-  if (!Array.isArray(parsed) || !Array.isArray(value)) return false;
-  return (
-    parsed.length === value.length &&
-    parsed.every((item, index) => item === value[index])
-  );
-}
-
 function TextValue({
   value,
   onChange,
@@ -182,14 +173,14 @@ function TextValue({
   // A list is parsed on the way out, but the raw text stays on screen while
   // it is typed: re-deriving it from the parsed list would eat the comma
   // separating the values, and a second value could never be entered. The
-  // draft lives only while its parsed result is still the value in force;
-  // anything else, such as a cleared condition, replaces it.
+  // draft lives only while the value in force is the very list it produced —
+  // the reference a host feeds back. A replacement, equal or not, wins.
   const [draft, setDraft] = useState<{
     text: string;
     parsed: FilterValue;
   } | null>(null);
   const text =
-    draft !== null && sameList(draft.parsed, value)
+    draft !== null && draft.parsed === value
       ? draft.text
       : Array.isArray(value)
         ? value.map(scalarText).join(', ')
