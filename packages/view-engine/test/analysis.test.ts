@@ -559,7 +559,12 @@ describe('validateAnalysis', () => {
         validateAnalysis(
           definition({ analysis: { ...capability, having: false } }),
           config({
-            having: { type: 'CONDITION', metric: 'orders', operator: 'GT', value: 1 },
+            having: {
+              type: 'CONDITION',
+              metric: 'orders',
+              operator: 'GT',
+              value: 1,
+            },
           }),
           builtinFieldKinds,
         ),
