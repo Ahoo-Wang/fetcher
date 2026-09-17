@@ -261,6 +261,22 @@ describe('RecordWorkbench interaction', () => {
       expect(vi.mocked(source.paged).mock.calls.length).toBe(before + 1),
     );
   });
+
+  it('refreshes the list once a save-as lands in the store', async () => {
+    await open();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save as' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'My copy' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    // The copy joins the sidebar rather than waiting for a remount.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'My copy' })).toBeDefined(),
+    );
+  });
 });
 
 describe('save actions', () => {
@@ -455,6 +471,20 @@ describe('FilterValueEditor', () => {
     });
 
     expect(changes).toEqual([['a', 'b']]);
+  });
+
+  it('keeps the trailing comma while a second list value is typed', () => {
+    const { changes } = editor({ input: 'text', multiple: true }, ['a']);
+    const input = screen.getByLabelText('amount') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: 'a,' } });
+    // The comma is the separator being typed; eating it re-derives the text
+    // from the parsed list and makes a second value impossible to enter.
+    expect(input.value).toBe('a,');
+    expect(changes).toEqual([['a']]);
+
+    fireEvent.change(input, { target: { value: 'a, b' } });
+    expect(changes).toEqual([['a'], ['a', 'b']]);
   });
 
   it('collects one number and a range of two', () => {

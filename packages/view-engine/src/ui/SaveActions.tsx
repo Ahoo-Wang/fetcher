@@ -49,6 +49,8 @@ export interface SaveActionsProps {
   title: string;
   /** Called with the instance a save produced, so a host can open it. */
   onSaved?(instance: ViewInstance): void;
+  /** Called with the renamed instance, so a host can refresh its list. */
+  onRenamed?(instance: ViewInstance): void;
   onDeleted?(): void;
 }
 
@@ -69,6 +71,7 @@ export function SaveActions({
   commands,
   title,
   onSaved,
+  onRenamed,
   onDeleted,
 }: SaveActionsProps) {
   const [copyOpen, setCopyOpen] = useState(false);
@@ -142,7 +145,9 @@ export function SaveActions({
         description="Only the title changes; the conditions stay."
         initialTitle={title}
         onSubmit={next => {
-          void commands.rename(next);
+          void commands
+            .rename(next)
+            .then(instance => instance && onRenamed?.(instance));
           setRenameOpen(false);
         }}
       />

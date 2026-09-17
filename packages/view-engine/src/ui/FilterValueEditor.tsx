@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { useState } from 'react';
 import { CalendarIcon } from 'lucide-react';
 import type { FieldOption, FilterValue } from '../model/index.js';
 import {
@@ -162,6 +163,15 @@ interface ValueProps {
   disabled?: boolean;
 }
 
+/** Same list, item by item; all the text editor's draft ever needs. */
+function sameList(parsed: FilterValue, value: FilterValue): boolean {
+  if (!Array.isArray(parsed) || !Array.isArray(value)) return false;
+  return (
+    parsed.length === value.length &&
+    parsed.every((item, index) => item === value[index])
+  );
+}
+
 function TextValue({
   value,
   onChange,
@@ -169,26 +179,41 @@ function TextValue({
   disabled,
   multiple,
 }: ValueProps & { multiple: boolean }) {
-  // A scalar kind stores a scalar; anything else reaches its own editor.
-  const text = Array.isArray(value)
-    ? value.map(scalarText).join(', ')
-    : scalarText(value);
+  // A list is parsed on the way out, but the raw text stays on screen while
+  // it is typed: re-deriving it from the parsed list would eat the comma
+  // separating the values, and a second value could never be entered. The
+  // draft lives only while its parsed result is still the value in force;
+  // anything else, such as a cleared condition, replaces it.
+  const [draft, setDraft] = useState<{
+    text: string;
+    parsed: FilterValue;
+  } | null>(null);
+  const text =
+    draft !== null && sameList(draft.parsed, value)
+      ? draft.text
+      : Array.isArray(value)
+        ? value.map(scalarText).join(', ')
+        : scalarText(value);
+
   return (
     <Input
       aria-label={label}
       disabled={disabled}
       value={text}
       placeholder={multiple ? 'Comma separated' : undefined}
-      onChange={event =>
-        onChange(
-          multiple
-            ? event.target.value
-                .split(',')
-                .map(part => part.trim())
-                .filter(part => part.length > 0)
-            : event.target.value,
-        )
-      }
+      onChange={event => {
+        const raw = event.target.value;
+        if (!multiple) {
+          onChange(raw);
+          return;
+        }
+        const parsed = raw
+          .split(',')
+          .map(part => part.trim())
+          .filter(part => part.length > 0);
+        setDraft({ text: raw, parsed });
+        onChange(parsed);
+      }}
     />
   );
 }

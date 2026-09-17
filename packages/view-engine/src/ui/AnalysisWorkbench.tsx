@@ -119,8 +119,15 @@ export function AnalysisWorkbench({
             <SaveActions
               commands={commands}
               title={state?.title ?? ''}
-              onSaved={saved => setChosen(saved.id)}
-              onDeleted={() => setChosen(null)}
+              onSaved={saved => {
+                setChosen(saved.id);
+                list.reload();
+              }}
+              onRenamed={() => list.reload()}
+              onDeleted={() => {
+                setChosen(null);
+                list.reload();
+              }}
             />
 
             {state?.query.status === 'error' && state.query.error && (
