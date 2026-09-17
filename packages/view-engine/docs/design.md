@@ -59,7 +59,9 @@ export interface SystemView {
 export interface FieldDefinition {
   name: string; // 支持 a.b 路径
   label: string;
-  kind: FieldKindId; // 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'enum' | 'reference' | 自定义
+  kind: FieldKindId; // 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'enum'
+  //                  | 'reference' | 'array' | 'elementMatch' | 'search'
+  //                  | 'documentId' | 'aggregateId' | 'tenantId' | 'ownerId' | 'spaceId' | 自定义
   operators?: FilterOperator[]; // 缺省取 FieldKind 的默认集
   options?: FieldOption[]; // enum 的静态候选
   remote?: string; // reference 的远程候选源键，由 resolveOptions 解析
@@ -67,6 +69,8 @@ export interface FieldDefinition {
   group?: string; // 添加筛选时的分组
   numberFormat?: Intl.NumberFormatOptions & { locale?: string };
   stringComparison?: 'CASE_SENSITIVE' | 'CASE_INSENSITIVE'; // CONTAINS／STARTS_WITH／ENDS_WITH 的比较方式，缺省不区分大小写
+  searchFields?: string[]; // search 字段查哪些文档字段；缺省交给后端索引
+  searchMode?: 'TERMS' | 'PHRASE'; // 按词还是按短语，缺省 TERMS
   summary?: SummaryFunction[]; // 允许的汇总函数
   cell?: string; // 单元格渲染器键，缺省按 kind
   editor?: string; // 筛选编辑器键，缺省由 kind、operator 与 value.type 推出

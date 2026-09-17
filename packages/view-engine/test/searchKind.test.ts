@@ -20,6 +20,7 @@ import {
   validateFilter,
 } from '../src/filter/index.js';
 import { validateDefinition } from '../src/runtime/index.js';
+import { defaultRecordConfig, validateRecord } from '../src/record/index.js';
 import type {
   FieldDefinition,
   FilterTree,
@@ -123,6 +124,120 @@ describe('the search kind', () => {
         item => item.text,
       ),
     ).toEqual(['Search blue']);
+  });
+});
+
+describe('a handle is not a record field', () => {
+  const definition = ordersDefinition({
+    fields: [
+      { name: 'warehouse', label: 'W', kind: 'string' },
+      { name: '@search', label: 'Search', kind: 'search' },
+      { name: '@ownerId', label: 'Owner', kind: 'ownerId' },
+    ],
+    record: { rowKey: 'warehouse', paging: 'paged', layouts: ['table'] },
+    analysis: undefined,
+    views: [],
+  });
+
+  it('is left out of the default layout', () => {
+    // A column on a handle reads nothing from a row and would be empty for
+    // every record ever shown.
+    const config = defaultRecordConfig(definition);
+
+    expect(config.table.columns.map(column => column.field)).toEqual([
+      'warehouse',
+    ]);
+    expect(config.card.fields).not.toContain('@search');
+  });
+
+  it('is refused as a column a saved config asks for', () => {
+    expect(
+      validateRecord(
+        definition,
+        defaultRecordConfig({
+          ...definition,
+          record: { ...definition.record!, layouts: ['table'] },
+        }),
+        builtinFieldKinds,
+      ),
+    ).toEqual([]);
+
+    expect(
+      validateRecord(
+        definition,
+        {
+          ...defaultRecordConfig(definition),
+          table: { columns: [{ field: '@search' }] },
+        },
+        builtinFieldKinds,
+      ).map(found => found.code),
+    ).toEqual(['record.field.not-a-column']);
+  });
+});
+
+describe('a handle cannot be asked of one entry', () => {
+  const withEntries: FieldDefinition[] = [
+    { name: '@search', label: 'Search', kind: 'search' },
+    {
+      name: 'items',
+      label: 'Items',
+      kind: 'elementMatch',
+      elements: [
+        { name: 'sku', label: 'SKU', kind: 'string' },
+        { name: 'code', label: 'Code', kind: 'documentId' },
+        { name: 'text', label: 'Text', kind: 'search' },
+      ],
+    },
+  ];
+
+  it('refuses a search inside an element predicate', () => {
+    // `ElementMatchFilter` refuses a root filter in its constructor, so a
+    // definition the engine called usable would throw when the condition ran.
+    const inner: FilterTree = {
+      op: 'and',
+      children: [{ field: 'items.text', operator: 'SEARCH', value: 'blue' }],
+    };
+
+    expect(
+      validateFilter(
+        withEntries,
+        {
+          op: 'and',
+          children: [
+            {
+              field: 'items',
+              operator: 'ELEMENT_MATCH',
+              value: inner as never,
+            },
+          ],
+        },
+        builtinFieldKinds,
+      ).map(found => found.code),
+    ).toContain('filter.element.root-filter');
+  });
+
+  it('refuses a metadata handle the entries happen to declare', () => {
+    const inner: FilterTree = {
+      op: 'and',
+      children: [{ field: 'items.code', operator: 'ID', value: 'x' }],
+    };
+
+    expect(
+      validateFilter(
+        withEntries,
+        {
+          op: 'and',
+          children: [
+            {
+              field: 'items',
+              operator: 'ELEMENT_MATCH',
+              value: inner as never,
+            },
+          ],
+        },
+        builtinFieldKinds,
+      ).map(found => found.code),
+    ).toContain('filter.element.root-filter');
   });
 });
 

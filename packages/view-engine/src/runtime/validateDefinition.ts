@@ -14,6 +14,7 @@
 import {
   DEFAULT_RUNTIME_LIMITS,
   SYSTEM_INSTANCE_ID_SEPARATOR,
+  isFieldlessKind,
   isFieldName,
   SEARCH_MODES,
   STRING_COMPARISONS,
@@ -90,9 +91,14 @@ function validateFields(
 ): Issue[] {
   const issues: Issue[] = [];
   const seen = new Set<string>();
-  // Every name at this level, not the ones seen so far: a search may name a
-  // field declared after it, and the order of a list is nobody's contract.
-  const declared = new Set(fields.map(field => field.name));
+  // Every document field at this level, not the ones seen so far: a search
+  // may name a field declared after it, and the order of a list is nobody's
+  // contract.
+  const documentFields = new Set(
+    fields
+      .filter(field => !isFieldlessKind(field.kind))
+      .map(field => field.name),
+  );
 
   fields.forEach((field, index) => {
     const at: IssuePath = [...path, index];
@@ -148,8 +154,11 @@ function validateFields(
         }),
       );
 
+    // A handle is not a path, so searching one would ask the backend for a
+    // document field that does not exist. Naming it is as wrong as naming
+    // nothing, and for the same reason.
     const missing = (field.searchFields ?? []).filter(
-      name => !declared.has(name),
+      name => !documentFields.has(name),
     );
     if (missing.length > 0)
       issues.push(

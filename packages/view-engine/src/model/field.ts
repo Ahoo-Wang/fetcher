@@ -59,6 +59,18 @@ export const FIELDLESS_FIELD_KIND_IDS: readonly FieldKindId[] = [
   'search',
 ];
 
+/**
+ * Whether a kind's `name` is a handle rather than a path into a document.
+ *
+ * Three things follow from it and each one is a place the two were confused:
+ * the presence operators do not apply, the field is not a record column, and
+ * Wow refuses such a filter inside an element predicate — it calls them root
+ * filters, and its list is exactly this one.
+ */
+export function isFieldlessKind(kind: FieldKindId): boolean {
+  return FIELDLESS_FIELD_KIND_IDS.includes(kind);
+}
+
 export const METADATA_FIELD_KIND_IDS: readonly MetadataFieldKindId[] = [
   'documentId',
   'aggregateId',

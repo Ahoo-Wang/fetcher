@@ -186,6 +186,8 @@ export const defaultMessages: ViewMessages = Object.freeze({
     '{field} searches {missing}, which the definition does not declare.',
   'definition.field.search-mode-invalid':
     '{field} declares an unknown search mode: {value}.',
+  'filter.element.root-filter':
+    '{field} asks about the whole record, so it cannot be asked of one entry.',
   'filter.value.expected-predicate': 'Describe what an entry must match.',
   'filter.field.holds-no-elements':
     '{field} holds no entries to match against.',
@@ -220,6 +222,8 @@ export const defaultMessages: ViewMessages = Object.freeze({
   // Record kernel.
   'record.capability.missing':
     '{definition} does not offer a record view any more.',
+  'record.field.not-a-column':
+    '{field} is a search or metadata handle, not something a row holds.',
   'record.field.unknown': 'The column {field} no longer exists.',
   'record.layout.unsupported': 'The {layout} layout is not available here.',
   'record.pageSize.not-positive': 'The page size must be a positive number.',
