@@ -573,6 +573,17 @@ describe('validateAnalysis', () => {
         having: { type: 'AND', operands: undefined } as never,
       }),
     ).toEqual(['analysis.having.malformed']);
+
+    // Not even a plain number reaches the walk, and a null inside a group's
+    // operands is a finding at that depth rather than a crash.
+    expect(check({ having: 42 as never })).toEqual([
+      'analysis.having.malformed',
+    ]);
+    expect(
+      check({
+        having: { type: 'AND', operands: [null] } as never,
+      }),
+    ).toEqual(['analysis.having.malformed']);
   });
 
   it('bounds the limit and the counts', () => {

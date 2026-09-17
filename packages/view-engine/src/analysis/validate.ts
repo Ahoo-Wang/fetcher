@@ -420,13 +420,17 @@ function validateHaving(
     expression: AnalysisHavingExpression,
     path: IssuePath,
   ): Issue[] => {
+    // A having arrives from a store: a number, or a null inside a group's
+    // operands, is a finding at its own depth rather than a crash.
+    if (typeof expression !== 'object' || expression === null)
+      return [issue('analysis.having.malformed', path)];
     if ('operands' in expression) {
       // A group whose operands are not an array cannot be walked; report it
       // rather than crash on a shape this version does not know.
       if (!Array.isArray(expression.operands))
         return [issue('analysis.having.malformed', path)];
       return expression.operands.flatMap((operand, index) =>
-        walk(operand, [...path, 'operands', index]),
+        walk(operand as AnalysisHavingExpression, [...path, 'operands', index]),
       );
     }
     return nonAnyMetrics.has(expression.metric)
