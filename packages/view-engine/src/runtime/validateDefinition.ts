@@ -69,8 +69,9 @@ export function validateDefinition(
 
   if (definition.kind === 'data') {
     issues.push(...validateFields(definition.fields, kinds, ['fields']));
+    issues.push(...validateElements(definition, kinds));
     issues.push(...validateRecordCapability(definition));
-    issues.push(...validateAnalysisCapability(definition, kinds));
+    issues.push(...validateAnalysisCapability(definition));
   }
 
   issues.push(...validateSystemViews(definition, kinds, limits));
@@ -80,6 +81,44 @@ export function validateDefinition(
 /** Whether a definition may be opened at all. */
 export function isUsableDefinition(issues: readonly Issue[]): boolean {
   return !issues.some(found => found.severity === 'error');
+}
+
+/**
+ * The array paths a definition declares, and what their elements hold.
+ *
+ * A path must be a field name Wow can read, because every reference to an
+ * element field is `path.field` and reaches the compiler as one. Two
+ * declarations of the same path would make that reference ambiguous.
+ */
+function validateElements(
+  definition: DataViewDefinition,
+  kinds: FieldKindRegistry,
+): Issue[] {
+  const issues: Issue[] = [];
+  const seen = new Set<string>();
+
+  (definition.elements ?? []).forEach((element, index) => {
+    const at: IssuePath = ['elements', index];
+    if (!isFieldName(element.path))
+      issues.push(
+        issue('definition.element.path-invalid', [...at, 'path'], {
+          path: element.path,
+        }),
+      );
+    else if (seen.has(element.path))
+      issues.push(
+        issue('definition.element.duplicate', [...at, 'path'], {
+          path: element.path,
+        }),
+      );
+    seen.add(element.path);
+
+    // An element's fields are their own scope: a name may repeat a root
+    // one, because every reference to one is written `path.field`.
+    issues.push(...validateFields(element.fields, kinds, [...at, 'fields']));
+  });
+
+  return issues;
 }
 
 function validateFields(
@@ -157,15 +196,15 @@ function validateRecordCapability(definition: DataViewDefinition): Issue[] {
   return issues;
 }
 
-function validateAnalysisCapability(
-  definition: DataViewDefinition,
-  kinds: FieldKindRegistry,
-): Issue[] {
+function validateAnalysisCapability(definition: DataViewDefinition): Issue[] {
   const capability: AnalysisCapability | undefined = definition.analysis;
   if (!capability) return [];
 
   const issues: Issue[] = [];
   const names = new Set(definition.fields.map(field => field.name));
+  const declaredPaths = new Set(
+    (definition.elements ?? []).map(element => element.path),
+  );
 
   capability.fields.forEach((entry, index) => {
     if (!names.has(entry.field))
@@ -182,15 +221,14 @@ function validateAnalysisCapability(
 
   (capability.elements ?? []).forEach((element, index) => {
     const at: IssuePath = ['analysis', 'elements', index];
-    if (!isFieldName(element.path))
+    // The path names a declared element; its fields are checked where they
+    // are declared, so all this has to establish is that it names one.
+    if (!declaredPaths.has(element.path))
       issues.push(
-        issue('definition.analysis.element-path-invalid', [...at, 'path'], {
+        issue('definition.analysis.element-undeclared', [...at, 'path'], {
           path: element.path,
         }),
       );
-    // An element's fields are their own scope: a name may repeat a root one,
-    // because a config always writes an element field as `path.field`.
-    issues.push(...validateFields(element.fields, kinds, [...at, 'fields']));
   });
 
   // `defaultAnalysisConfig` walks a fixed priority to find one metric. A

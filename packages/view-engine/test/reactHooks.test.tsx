@@ -797,6 +797,12 @@ describe('useFilterEditor', () => {
     // findings are addressed under ['elements', i, 'filter', …]; carrying them
     // by code alone would let them mark top-level conditions as invalid.
     const elemented = ordersDefinition({
+      elements: [
+        {
+          path: 'items',
+          fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+        },
+      ],
       analysis: {
         count: true,
         fields: [
@@ -809,7 +815,6 @@ describe('useFilterEditor', () => {
         elements: [
           {
             path: 'items',
-            fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
             aggregations: [{ field: 'sku', groups: [], functions: [] }],
           },
         ],

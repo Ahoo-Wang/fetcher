@@ -44,6 +44,10 @@ export type ViewDefinition =
       kind: 'data';
       source: string; // resolveSource 的键
       fields: FieldDefinition[];
+      // 数组路径与其元素持有的字段。它描述的是数据而不是某一种观察方式，
+      // 因此在定义上而不是能力里：原先挂在 AnalysisCapability 下，
+      // 使同一个数组的元素对聚合可见、对 Record 筛选不可见。
+      elements?: ElementDefinition[];
       record?: RecordCapability;
       analysis?: AnalysisCapability;
       views?: SystemView[]; // 代码声明的系统视图，随定义部署
@@ -54,6 +58,12 @@ export interface SystemView {
   id: string; // 在定义内唯一且不含 ':'；Engine 以 `system:${definitionId}:${id}` 作为实例 id
   title: string;
   config: ViewConfig;
+}
+
+/** 一个可展开的数组路径，以及它的每个元素持有什么。 */
+export interface ElementDefinition {
+  path: string; // 数组的字段路径，如 items
+  fields: FieldDefinition[]; // 元素字段；名字可与根字段重复，引用一律写 `path.field`
 }
 
 export interface FieldDefinition {
@@ -83,12 +93,9 @@ export interface RecordCapability {
 export interface AnalysisCapability {
   count: boolean;
   fields: AggregationFieldCapability[];
-  // 可展开的数组路径：元素字段的定义与其聚合能力，与根字段同构
-  elements?: {
-    path: string;
-    fields: FieldDefinition[];
-    aggregations: AggregationFieldCapability[];
-  }[];
+  // 可展开的数组路径：path 指向定义声明的 ElementDefinition，
+  // 元素持有什么由定义说，这里只说哪些路径本分析可以展开、如何聚合
+  elements?: { path: string; aggregations: AggregationFieldCapability[] }[];
   expressions?: boolean; // 允许 BINARY 表达式与 DERIVED 指标
   having?: boolean;
   limits?: {

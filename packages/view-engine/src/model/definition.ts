@@ -35,6 +35,16 @@ export interface DataViewDefinition {
   /** Key passed to `resolveSource`. */
   source: string;
   fields: FieldDefinition[];
+  /**
+   * Array paths and the fields their elements hold.
+   *
+   * This describes the data, not one way of looking at it, which is why it
+   * sits here rather than under a capability. It used to live inside
+   * `AnalysisCapability`, and that put the same array's elements within reach
+   * of aggregation and out of reach of a record filter — an asymmetry with no
+   * reason behind it beyond where the declaration happened to be written.
+   */
+  elements?: ElementDefinition[];
   record?: RecordCapability;
   analysis?: AnalysisCapability;
   /** System views declared in code; they deploy with the definition. */
@@ -115,9 +125,24 @@ export interface AnalysisCapability {
   limits?: AnalysisLimits;
 }
 
+/** One expandable array path, and what each of its elements holds. */
+export interface ElementDefinition {
+  /** Field path of the array, e.g. `items`. */
+  path: string;
+  /**
+   * Fields of one element. A name may repeat a root field's, because every
+   * reference to one is written `path.field`.
+   */
+  fields: FieldDefinition[];
+}
+
+/**
+ * How an element's fields may be aggregated. The path names an
+ * `ElementDefinition`; what the elements hold is declared there, and only the
+ * aggregation capability is analysis's to state.
+ */
 export interface AnalysisElementCapability {
   path: string;
-  fields: FieldDefinition[];
   aggregations: AggregationFieldCapability[];
 }
 

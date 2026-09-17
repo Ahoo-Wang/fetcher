@@ -660,13 +660,20 @@ describe('validateAnalysis', () => {
 });
 
 describe('element scope', () => {
+  // What an element holds is the definition's to say; the capability names
+  // which of those paths this analysis may expand, and how they aggregate.
   const withElements = definition({
+    elements: [
+      {
+        path: 'items',
+        fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+      },
+    ],
     analysis: {
       ...capability,
       elements: [
         {
           path: 'items',
-          fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
           aggregations: [
             {
               field: 'sku',

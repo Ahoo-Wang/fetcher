@@ -217,34 +217,60 @@ describe('validateDefinition capabilities', () => {
     expect(
       codes(
         ordersDefinition({
-          analysis: {
-            count: true,
-            fields: [],
-            elements: [
-              {
-                path: 'not a path',
-                fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
-                aggregations: [],
-              },
-              {
-                // A name that repeats a root field is fine: a config writes
-                // an element field as `path.field`, so they cannot collide.
-                path: 'lines',
-                fields: [
-                  { name: 'id', label: 'Line', kind: 'string' },
-                  { name: 'id', label: 'Again', kind: 'string' },
-                ],
-                aggregations: [],
-              },
-            ],
-          },
+          elements: [
+            {
+              path: 'not a path',
+              fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+            },
+            {
+              // A name that repeats a root field is fine: a config writes
+              // an element field as `path.field`, so they cannot collide.
+              path: 'lines',
+              fields: [
+                { name: 'id', label: 'Line', kind: 'string' },
+                { name: 'id', label: 'Again', kind: 'string' },
+              ],
+            },
+          ],
+          analysis: { count: true, fields: [] },
           views: [],
         }),
       ),
     ).toEqual([
-      'definition.analysis.element-path-invalid',
+      'definition.element.path-invalid',
       'definition.field.duplicate',
     ]);
+  });
+
+  it('refuses the same array path declared twice', () => {
+    // Every reference to an element field is `path.field`, so two
+    // declarations of one path would make that reference ambiguous.
+    expect(
+      codes(
+        ordersDefinition({
+          elements: [
+            { path: 'items', fields: [] },
+            { path: 'items', fields: [] },
+          ],
+          views: [],
+        }),
+      ),
+    ).toEqual(['definition.element.duplicate']);
+  });
+
+  it('refuses an analysis that expands a path the definition never declared', () => {
+    expect(
+      codes(
+        ordersDefinition({
+          analysis: {
+            count: true,
+            fields: [],
+            elements: [{ path: 'ghost', aggregations: [] }],
+          },
+          views: [],
+        }),
+      ),
+    ).toEqual(['definition.analysis.element-undeclared']);
   });
 
   it('refuses limits that are not positive integers, or a default above the max', () => {
