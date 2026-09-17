@@ -23,6 +23,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+
 /*
  * The grid adapter's own geometry, from the library that computes it. Every
  * rule matches a `.react-grid-*` class that only `DashboardGrid` renders, and
