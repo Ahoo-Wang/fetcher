@@ -18,7 +18,7 @@ import type {
   FilterLeaf,
   IssuePath,
 } from '../model/index.js';
-import { nodeAt, type FilterPath } from '../filter/index.js';
+import type { FilterPath } from '../filter/index.js';
 import type { FilterEditorController } from '../react/index.js';
 import { Badge } from './components/badge.js';
 import { Button } from './components/button.js';
