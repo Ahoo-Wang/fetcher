@@ -180,6 +180,12 @@ export const defaultMessages: ViewMessages = Object.freeze({
   'filter.value.expected-id': 'Enter an id, or pick a candidate.',
   'filter.value.expected-id-list': 'Enter one or more ids.',
   'filter.value.expects-one': 'This condition takes a single value.',
+  'filter.value.expected-text': 'Type what to search for.',
+  'label.operator.SEARCH': 'contains',
+  'definition.field.search-fields-unknown':
+    '{field} searches {missing}, which the definition does not declare.',
+  'definition.field.search-mode-invalid':
+    '{field} declares an unknown search mode: {value}.',
   'filter.value.expected-predicate': 'Describe what an entry must match.',
   'filter.field.holds-no-elements':
     '{field} holds no entries to match against.',
