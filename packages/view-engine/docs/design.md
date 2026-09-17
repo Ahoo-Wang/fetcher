@@ -387,9 +387,22 @@ type DateTimeFilterValue =
     }
   | {
       type: 'preset';
-      // 三个方向各一套：today／yesterday／tomorrow，以及 this／last／next
-      // 的 Week／Month／Quarter／Year。
-      preset: DateTimePreset;
+      preset:
+        | 'today'
+        | 'yesterday'
+        | 'tomorrow'
+        | 'thisWeek'
+        | 'lastWeek'
+        | 'nextWeek'
+        | 'thisMonth'
+        | 'lastMonth'
+        | 'nextMonth'
+        | 'thisQuarter'
+        | 'lastQuarter'
+        | 'nextQuarter'
+        | 'thisYear'
+        | 'lastYear'
+        | 'nextYear';
     };
 
 // ---- 实例与偏好 ----

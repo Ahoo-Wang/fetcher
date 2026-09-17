@@ -539,6 +539,45 @@ describe('relative windows and named periods', () => {
     );
   });
 
+  it.each([
+    [undefined, 'last 7 day'],
+    ['past', 'last 7 day'],
+    ['future', 'next 7 day'],
+  ])('summarises a %s window as %s', (direction, want) => {
+    // A forward window described as "last" would contradict the query that
+    // actually ran, in the one place a user checks what is in force.
+    expect(
+      describeFilter(
+        fields,
+        tree({
+          field: 'createdAt',
+          operator: `${FilterOperator.BETWEEN}`,
+          value: {
+            type: 'relative',
+            amount: 7,
+            unit: 'day',
+            ...(direction === undefined ? {} : { direction }),
+          } as never,
+        }),
+        builtinFieldKinds,
+      )[0].text,
+    ).toContain(want);
+  });
+
+  it('summarises a period as words rather than as its key', () => {
+    expect(
+      describeFilter(
+        fields,
+        tree({
+          field: 'createdAt',
+          operator: `${FilterOperator.BETWEEN}`,
+          value: { type: 'preset', preset: 'nextQuarter' } as never,
+        }),
+        builtinFieldKinds,
+      )[0].text,
+    ).toContain('next quarter');
+  });
+
   it('keeps a quarter three months wide either side of this one', () => {
     const last = resolve({ type: 'preset', preset: 'lastQuarter' });
     const next = resolve({ type: 'preset', preset: 'nextQuarter' });
