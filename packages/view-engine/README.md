@@ -130,10 +130,7 @@ export const orders: ViewDefinition = {
 ### 2. Create an engine
 
 ```ts
-import {
-  MemoryViewStore,
-  ViewEngine,
-} from '@ahoo-wang/fetcher-view-engine';
+import { MemoryViewStore, ViewEngine } from '@ahoo-wang/fetcher-view-engine';
 
 const engine = new ViewEngine({
   definitions: [orders],
@@ -227,12 +224,12 @@ Details in [docs/design.md](docs/design.md) §7.
 
 ## Entries
 
-| Entry                            | Exports                                                                                                                                                                                                    |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-view-engine` | Model types, pure kernels (`validate*` / `compile*` / `project*`), runtime, `ViewStore`, `MemoryViewStore`                                                                                                 |
-| `/react`                         | `useViewEngine`, `useOpenView`, `useViewRuntime`, `useFilterEditor`, `useRecordTable`, `useAnalysisEditor`, `useDashboard`, `useSaveCommands`                                                              |
+| Entry                            | Exports                                                                                                                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-view-engine` | Model types, pure kernels (`validate*` / `compile*` / `project*`), runtime, `ViewStore`, `MemoryViewStore`                                                                                                                 |
+| `/react`                         | `useViewEngine`, `useOpenView`, `useViewRuntime`, `useFilterEditor`, `useRecordTable`, `useAnalysisEditor`, `useDashboard`, `useSaveCommands`                                                                              |
 | `/ui`                            | `RecordWorkbench`, `AnalysisWorkbench`, `DashboardWorkbench`, `FilterPanel`, `RecordTable`, `RecordCards`, `AnalysisEditor`, `AnalysisChart`, `DashboardGrid`, `MarkdownPanel`, `ImagePanel`, `LinksPanel`, `EmbeddedView` |
-| `/styles.css`                    | The theme. Import it explicitly; no JavaScript entry imports CSS, which `scripts/verify-package.mjs` checks on every build.                                                                                |
+| `/styles.css`                    | The theme. Import it explicitly; no JavaScript entry imports CSS, which `scripts/verify-package.mjs` checks on every build.                                                                                                |
 
 ## Persistence
 

@@ -128,10 +128,7 @@ export const orders: ViewDefinition = {
 ### 2. 创建引擎
 
 ```ts
-import {
-  MemoryViewStore,
-  ViewEngine,
-} from '@ahoo-wang/fetcher-view-engine';
+import { MemoryViewStore, ViewEngine } from '@ahoo-wang/fetcher-view-engine';
 
 const engine = new ViewEngine({
   definitions: [orders],
@@ -225,12 +222,12 @@ const view = projectRecord(orders, config, page);
 
 ## 入口
 
-| 入口                             | 导出                                                                                                                                                                                                       |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-view-engine` | 模型类型、纯内核（`validate*` / `compile*` / `project*`）、运行时、`ViewStore`、`MemoryViewStore`                                                                                                          |
-| `/react`                         | `useViewEngine`、`useOpenView`、`useViewRuntime`、`useFilterEditor`、`useRecordTable`、`useAnalysisEditor`、`useDashboard`、`useSaveCommands`                                                              |
+| 入口                             | 导出                                                                                                                                                                                                                       |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-view-engine` | 模型类型、纯内核（`validate*` / `compile*` / `project*`）、运行时、`ViewStore`、`MemoryViewStore`                                                                                                                          |
+| `/react`                         | `useViewEngine`、`useOpenView`、`useViewRuntime`、`useFilterEditor`、`useRecordTable`、`useAnalysisEditor`、`useDashboard`、`useSaveCommands`                                                                              |
 | `/ui`                            | `RecordWorkbench`、`AnalysisWorkbench`、`DashboardWorkbench`、`FilterPanel`、`RecordTable`、`RecordCards`、`AnalysisEditor`、`AnalysisChart`、`DashboardGrid`、`MarkdownPanel`、`ImagePanel`、`LinksPanel`、`EmbeddedView` |
-| `/styles.css`                    | 主题。显式导入；任何 JS 入口都不会引入 CSS，`scripts/verify-package.mjs` 在每次构建时核对这一点。                                                                                                          |
+| `/styles.css`                    | 主题。显式导入；任何 JS 入口都不会引入 CSS，`scripts/verify-package.mjs` 在每次构建时核对这一点。                                                                                                                          |
 
 ## 持久化
 
