@@ -157,6 +157,12 @@ export function useFilterEditor(
 
   const updateGroup = useCallback(
     (path: FilterPath, op: 'and' | 'or') => {
+      // `updateAt` leaves the root alone by design, so the root's operator is
+      // written directly: a tree may be one big OR.
+      if (path.length === 0) {
+        change(current => (current.op === op ? current : { ...current, op }));
+        return;
+      }
       change(current =>
         updateAt(current, path, node =>
           'children' in node ? { ...node, op } : node,
@@ -171,11 +177,16 @@ export function useFilterEditor(
     mode: state?.draft.filterMode ?? 'simple',
     fields,
     // `validateFilter` addresses a node by its path (`[0]`, `[1, 0]`), so the
-    // code is what says an Issue belongs to the filter at all.
+    // code is what says an Issue belongs to the filter at all — and the path
+    // is what says it belongs to *this* filter: an element's or a dashboard
+    // panel's own filter is validated in its own scope and re-pathed under
+    // ['elements', …] or ['panels', …], which would otherwise mark top-level
+    // conditions as invalid.
     issues: (state?.issues ?? []).filter(
       found =>
-        found.code.startsWith('filter.') ||
-        found.code.startsWith('config.filterMode.'),
+        found.code.startsWith('config.filterMode.') ||
+        (found.code.startsWith('filter.') &&
+          (found.path.length === 0 || found.path[0] === 'children')),
     ),
     applied: useMemo(
       () =>

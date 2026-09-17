@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { FilterOperator } from '@ahoo-wang/fetcher-wow';
+import { AggregationGroupType, FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -21,6 +21,7 @@ import {
   ViewStoreError,
   ViewWriteError,
   issue,
+  type DataViewDefinition,
   type RecordViewRuntime,
   type ViewInstance,
   type ViewPreferences,
@@ -40,6 +41,7 @@ import {
 } from '../src/react/index.js';
 import {
   deferred,
+  analysisConfig,
   ordersDefinition,
   recordConfig,
   requireRecordConfig,
@@ -62,13 +64,14 @@ function engineWith(
     instances?: ViewInstance[];
     source?: ViewSource;
     store?: MemoryViewStore;
+    definitions?: DataViewDefinition[];
   } = {},
 ): { engine: ViewEngine; store: MemoryViewStore } {
   const store =
     options.store ??
     new MemoryViewStore({ instances: options.instances ?? [mine] });
   const engine = new ViewEngine({
-    definitions: [ordersDefinition()],
+    definitions: options.definitions ?? [ordersDefinition()],
     store,
     resolveSource: () => options.source ?? testSource(),
   });
@@ -695,6 +698,58 @@ describe('useFilterEditor', () => {
     ).toBe(true);
     // The page size error belongs to the view, not to this editor.
     expect(codes.some(code => code.startsWith('record.'))).toBe(false);
+  });
+
+  it('keeps element-scoped filter issues out of this editor', async () => {
+    // An element's own filter is validated in its own field scope and its
+    // findings are addressed under ['elements', i, 'filter', …]; carrying them
+    // by code alone would let them mark top-level conditions as invalid.
+    const elemented = ordersDefinition({
+      analysis: {
+        count: true,
+        fields: [
+          {
+            field: 'warehouse',
+            groups: [AggregationGroupType.TERMS],
+            functions: [],
+          },
+        ],
+        elements: [
+          {
+            path: 'items',
+            fields: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+            aggregations: [{ field: 'sku', groups: [], functions: [] }],
+          },
+        ],
+      },
+    });
+    const { engine } = engineWith({
+      definitions: [elemented],
+      instances: [
+        {
+          ...mine,
+          config: analysisConfig({
+            elements: [
+              {
+                path: 'items',
+                filter: {
+                  op: 'and',
+                  children: [{ field: 'ghost', operator: 'EQ', value: 'x' }],
+                },
+              },
+            ],
+          }),
+        },
+      ],
+    });
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, 'orders-1');
+      return { opened, filter: useFilterEditor(opened.runtime) };
+    });
+    await waitFor(() => expect(result.current.opened.runtime).not.toBeNull());
+
+    const codes = result.current.filter.issues.map(found => found.code);
+    expect(codes).not.toContain('filter.field.unknown');
   });
 
   it('starts a condition on an operator the field allows', async () => {

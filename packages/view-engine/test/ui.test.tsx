@@ -1026,7 +1026,7 @@ describe('FilterPanel tree editing', () => {
     filter(): ReturnType<typeof useFilterEditor>;
   }
 
-  function panel(): PanelHarness {
+  function panel(disabled = false): PanelHarness {
     const { engine } = setup();
     const runtime = engine.create('orders', {
       title: 'Scratch',
@@ -1039,7 +1039,7 @@ describe('FilterPanel tree editing', () => {
     function Probe() {
       const filter = useFilterEditor(runtime);
       latest = filter;
-      return <FilterPanel filter={filter} />;
+      return <FilterPanel filter={filter} disabled={disabled} />;
     }
     render(<Probe />);
     return { filter: () => latest as ReturnType<typeof useFilterEditor> };
@@ -1073,6 +1073,34 @@ describe('FilterPanel tree editing', () => {
     expect(filter().tree.children[0]).toMatchObject({ op: 'or' });
   });
 
+  it('flips the root group too, not only the nested ones', () => {
+    const { filter } = panel();
+    act(() => {
+      filter().setMode('advanced');
+      filter().addLeaf('warehouse');
+    });
+    const root = document.querySelector(
+      '[aria-label="Group operator"]',
+    ) as HTMLElement;
+
+    fireEvent.click(within(root).getByRole('button', { name: 'Any of' }));
+
+    expect(filter().tree.op).toBe('or');
+  });
+
+  it('disables the group operator with the rest of the panel', () => {
+    const { filter } = panel(true);
+    act(() => filter().setMode('advanced'));
+    const root = document.querySelector(
+      '[aria-label="Group operator"]',
+    ) as HTMLElement;
+    // The panel freezes the tree while a query runs; the operator toggle is
+    // part of the tree.
+    expect(
+      within(root).getByRole('button', { name: 'Any of' }).ariaDisabled,
+    ).toBe('true');
+  });
+
   it('adds a condition inside the group it was asked for', async () => {
     const { filter } = panel();
     act(() => filter().addGroup('or'));
@@ -1103,5 +1131,42 @@ describe('FilterPanel tree editing', () => {
 
     expect(filter().tree.children).toHaveLength(1);
     expect(filter().tree.children[0]).toMatchObject({ field: 'warehouse' });
+  });
+
+  it('shows a notice instead of rendering an over-budget tree', () => {
+    // A stored tree can exceed the depth budget; the validator reports it as
+    // an error, and recursing into it anyway would build as many DOM nodes
+    // as the store saw fit to save.
+    const deep: { op: 'and'; children: unknown[] } = {
+      op: 'and',
+      children: [],
+    };
+    let node = deep;
+    for (let depth = 0; depth < 5_000; depth += 1) {
+      const child = { op: 'and' as const, children: [] as unknown[] };
+      node.children.push(child);
+      node = child;
+    }
+    const { engine } = setup();
+    const runtime = engine.create('orders', {
+      title: 'Deep',
+      scope: 'personal',
+      config: recordConfig({ filter: deep as never }),
+    });
+    let latest: ReturnType<typeof useFilterEditor> | null = null;
+    function Probe() {
+      const filter = useFilterEditor(runtime);
+      latest = filter;
+      return <FilterPanel filter={filter} />;
+    }
+
+    expect(() => render(<Probe />)).not.toThrow();
+    const editor = latest as ReturnType<typeof useFilterEditor> | null;
+    expect(
+      editor?.issues.some(found => found.code === 'filter.tree.too-deep'),
+    ).toBe(true);
+    expect(
+      screen.getByText('This filter is too large to edit here.'),
+    ).toBeDefined();
   });
 });

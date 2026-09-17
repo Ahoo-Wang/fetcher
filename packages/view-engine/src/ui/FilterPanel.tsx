@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from './components/select.js';
 import { ToggleGroup, ToggleGroupItem } from './components/toggle-group.js';
+import { useViewMessages } from './MessagesProvider.js';
 import { FilterValueEditor } from './FilterValueEditor.js';
 
 export interface FilterPanelProps {
@@ -64,6 +65,15 @@ export function FilterPanel({
   disabled,
 }: FilterPanelProps) {
   const advanced = filter.mode === 'advanced' || !filter.simple;
+  const messages = useViewMessages();
+  // A stored tree can exceed the depth or node budget; the validator reports
+  // it as an error, and the panel must not recurse into it anyway.
+  const overBudget = filter.issues.some(
+    found =>
+      found.severity === 'error' &&
+      (found.code === 'filter.tree.too-deep' ||
+        found.code === 'filter.tree.too-many-nodes'),
+  );
 
   return (
     <section
@@ -124,7 +134,14 @@ export function FilterPanel({
         )}
       </div>
 
-      {advanced ? (
+      {overBudget ? (
+        <p
+          data-slot="filter-too-large"
+          className="text-muted-foreground text-sm"
+        >
+          {messages.label('label.filter.too-large')}
+        </p>
+      ) : advanced ? (
         <GroupBlock
           filter={filter}
           group={filter.tree}
@@ -186,7 +203,10 @@ function GroupBlock({
           }}
           variant="outline"
           size="sm"
-          aria-label={`Group operator ${path.join('.')}`}
+          disabled={disabled}
+          aria-label={
+            nested ? `Group operator ${path.join('.')}` : 'Group operator'
+          }
         >
           <ToggleGroupItem value="and">All of</ToggleGroupItem>
           <ToggleGroupItem value="or">Any of</ToggleGroupItem>
