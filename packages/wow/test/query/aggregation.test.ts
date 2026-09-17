@@ -971,6 +971,26 @@ describe('aggregation.query', () => {
       ).toHaveLength(1);
     });
 
+    it.each([Number.NaN, Number.POSITIVE_INFINITY])(
+      'refuses the constant %s, which JSON cannot carry',
+      value => {
+        // It would serialise to null and be refused on arrival instead.
+        expect(() =>
+          aggregation.query({
+            metrics: [
+              aggregation.sum(
+                {
+                  type: AggregationExpressionType.CONSTANT,
+                  value,
+                } as AggregationExpression,
+                'total',
+              ),
+            ],
+          }),
+        ).toThrow('aggregation constant must be finite.');
+      },
+    );
+
     it('spends one node budget across every metric', () => {
       // 255 nodes each: neither metric is too large on its own.
       expect(() =>
@@ -1029,6 +1049,22 @@ describe('aggregation.query', () => {
         }),
       ).toThrow('derived expression depth must be at most 8.');
     });
+
+    it.each([Number.NaN, Number.NEGATIVE_INFINITY])(
+      'refuses the constant %s, which JSON cannot carry',
+      value => {
+        expect(() =>
+          aggregation.query({
+            metrics: [
+              aggregation.derived(
+                { type: DerivedExpressionType.CONSTANT, value },
+                'share',
+              ),
+            ],
+          }),
+        ).toThrow('derived constant must be finite.');
+      },
+    );
 
     it('refuses a metric that references itself', () => {
       // Its own alias is declared only once it has been admitted, so the

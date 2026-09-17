@@ -400,7 +400,14 @@ function validateExpressions(metrics: readonly AggregationMetric[]): void {
     }
     switch (expression.type) {
       case AggregationExpressionType.FIELD:
+        break;
+      // `aggregation.constant` refuses these, but a query rebuilt from a
+      // stored config never passed through it, and JSON has no NaN: the value
+      // would serialise to null and be refused on arrival instead.
       case AggregationExpressionType.CONSTANT:
+        if (!Number.isFinite(expression.value)) {
+          throw new TypeError('aggregation constant must be finite.');
+        }
         break;
       case AggregationExpressionType.BINARY:
         pending.push({ expression: expression.left, depth: depth + 1 });
@@ -471,6 +478,9 @@ function validateDerivedExpression(
         break;
       }
       case DerivedExpressionType.CONSTANT:
+        if (!Number.isFinite(expression.value)) {
+          throw new TypeError('derived constant must be finite.');
+        }
         break;
       case DerivedExpressionType.BINARY:
         pending.push({ expression: expression.left, depth: depth + 1 });
