@@ -210,20 +210,17 @@ export function useSaveCommands(
 
   const abandon = useCallback(() => {
     if (!runtime) return;
+    // Abandoning is the user acting now, not an old callback arriving late,
+    // so its outcome takes the slot however it is held.
     try {
       engine.abandonWrite(runtime);
-      setProgress(current =>
-        current.runtime === runtime
-          ? { runtime, pending: false, error: null }
-          : current,
-      );
+      setProgress({ runtime, pending: false, error: null });
     } catch (caught) {
-      const failure = toIssue(caught, 'view.abandon.failed');
-      setProgress(current =>
-        current.runtime === runtime
-          ? { runtime, pending: false, error: failure }
-          : current,
-      );
+      setProgress({
+        runtime,
+        pending: false,
+        error: toIssue(caught, 'view.abandon.failed'),
+      });
     }
   }, [engine, runtime]);
 

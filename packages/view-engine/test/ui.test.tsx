@@ -1169,4 +1169,94 @@ describe('FilterPanel tree editing', () => {
       screen.getByText('This filter is too large to edit here.'),
     ).toBeDefined();
   });
+
+  it('skips the applied summary of an over-budget tree', () => {
+    // Opening a saved over-wide view leaves the oversized tree as `applied`
+    // too (apply is refused), and summarising it would walk every leaf and
+    // render one badge per condition.
+    const wide = {
+      op: 'and' as const,
+      children: Array.from({ length: 5_000 }, () => ({
+        field: 'warehouse',
+        operator: 'EQ',
+        value: 'CN',
+      })),
+    };
+    const { engine } = setup();
+    const runtime = engine.create('orders', {
+      title: 'Wide',
+      scope: 'personal',
+      config: recordConfig({ filter: wide as never }),
+    });
+    let latest: ReturnType<typeof useFilterEditor> | null = null;
+    function Probe() {
+      const filter = useFilterEditor(runtime);
+      latest = filter;
+      return <FilterPanel filter={filter} />;
+    }
+
+    render(<Probe />);
+
+    const editor = latest as ReturnType<typeof useFilterEditor> | null;
+    expect(editor?.applied).toEqual([]);
+    expect(document.querySelectorAll('[data-slot="badge"]').length).toBe(0);
+  });
+
+  it('keeps Clear as the way out of an over-budget tree', () => {
+    // Nine empty groups hit the depth budget; with no leaf, Clear would be
+    // the only undo, and disabling it would leave the tree stuck.
+    const deep: { op: 'and'; children: unknown[] } = {
+      op: 'and',
+      children: [],
+    };
+    let node = deep;
+    for (let depth = 0; depth < 12; depth += 1) {
+      const child = { op: 'and' as const, children: [] as unknown[] };
+      node.children.push(child);
+      node = child;
+    }
+    const { engine } = setup();
+    const runtime = engine.create('orders', {
+      title: 'Deep',
+      scope: 'personal',
+      config: recordConfig({ filter: deep as never }),
+    });
+    function Probe() {
+      return <FilterPanel filter={useFilterEditor(runtime)} />;
+    }
+    render(<Probe />);
+
+    expect(
+      (screen.getByRole('button', { name: 'Clear' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
+
+  it('shows the effective mode when a simple config holds an advanced tree', () => {
+    const { engine } = setup();
+    const runtime = engine.create('orders', {
+      title: 'Mixed',
+      scope: 'personal',
+      config: recordConfig({
+        filterMode: 'simple',
+        filter: {
+          op: 'or',
+          children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+        },
+      }),
+    });
+    function Probe() {
+      return <FilterPanel filter={useFilterEditor(runtime)} />;
+    }
+    render(<Probe />);
+
+    // The tree needs the advanced editor; the mode toggle says so rather
+    // than claiming Simple over a group editor.
+    expect(screen.getByRole('button', { name: 'Advanced' }).ariaPressed).toBe(
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Simple' }).ariaPressed).toBe(
+      'false',
+    );
+  });
 });

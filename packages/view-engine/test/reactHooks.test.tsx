@@ -477,6 +477,41 @@ describe('useSaveCommands', () => {
     expect(result.current.state.pending).toBe(true);
   });
 
+  it("lets the current view's abandon take the progress slot", async () => {
+    const { engine } = engineWith();
+    const a = await engine.open('orders-1');
+    const b = engine.create('orders', {
+      title: 'Draft',
+      scope: 'personal',
+      config: recordConfig(),
+    });
+
+    // A leaves a failure in the shared slot; the workbench switches to B.
+    vi.spyOn(engine, 'save').mockRejectedValueOnce(
+      new ViewCommandError(issue('view.config.invalid', [])),
+    );
+    const { result, rerender } = renderHook(
+      ({ runtime }: { runtime: typeof a }) => useSaveCommands(engine, runtime),
+      { initialProps: { runtime: a } },
+    );
+    await act(async () => {
+      await result.current.save();
+    });
+    rerender({ runtime: b });
+
+    // Abandoning is the user acting now, not an old callback arriving late:
+    // even a refusal belongs to B, over A's leftover failure.
+    vi.spyOn(engine, 'abandonWrite').mockImplementationOnce(() => {
+      throw new ViewCommandError(issue('view.write.not-pending', []));
+    });
+    act(() => {
+      result.current.abandon();
+    });
+
+    // The refusal shows as itself: toIssue keeps a command error's own code.
+    expect(result.current.state.error?.code).toBe('view.write.not-pending');
+  });
+
   it('exposes an unresolved write and its recovery actions', async () => {
     const { engine, store, result } = await openMine();
     vi.spyOn(store, 'save').mockRejectedValueOnce(

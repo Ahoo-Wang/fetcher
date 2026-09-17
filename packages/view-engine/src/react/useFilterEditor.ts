@@ -93,6 +93,13 @@ export function useFilterEditor(
   );
   const kinds = runtime?.kinds;
   const tree = state?.draft.filter ?? EMPTY_TREE;
+  // The budget findings of this filter alone: the issue filter below keeps
+  // element- and panel-scoped trees out, so a hit here is the top-level one.
+  const overBudget = (state?.issues ?? []).some(
+    found =>
+      found.code === 'filter.tree.too-deep' ||
+      found.code === 'filter.tree.too-many-nodes',
+  );
 
   const byName = useMemo(
     () => new Map(fields.map(field => [field.name, field])),
@@ -188,12 +195,15 @@ export function useFilterEditor(
         (found.code.startsWith('filter.') &&
           (found.path.length === 0 || found.path[0] === 'children')),
     ),
+    // An over-budget draft also blocked apply, so what was applied last is
+    // the oversized tree itself; summarising it would walk every leaf and
+    // render one line per condition. The findings say so instead.
     applied: useMemo(
       () =>
-        state && kinds
-          ? describeFilter(fields, state.applied.filter, kinds)
-          : [],
-      [state, fields, kinds],
+        overBudget || !state || !kinds
+          ? []
+          : describeFilter(fields, state.applied.filter, kinds),
+      [overBudget, state, fields, kinds],
     ),
     count: countLeaves(tree),
     simple: isSimpleTree(tree),

@@ -83,7 +83,10 @@ export function FilterPanel({
     >
       <div className="flex flex-wrap items-center gap-2">
         <ToggleGroup
-          value={[filter.mode]}
+          // The effective mode, not the saved one: a simple config holding a
+          // tree the simple editor cannot show opens in the advanced one, and
+          // the toggle says so instead of contradicting the editor below.
+          value={[advanced ? 'advanced' : 'simple']}
           onValueChange={value => {
             const next = value[0];
             if (next === 'simple' || next === 'advanced') filter.setMode(next);
@@ -113,7 +116,9 @@ export function FilterPanel({
         <Button
           variant="outline"
           size="sm"
-          disabled={disabled || filter.count === 0}
+          // An over-budget tree may hold no leaf at all — deep groups — and
+          // clearing it is then the only way back to an editable filter.
+          disabled={disabled || (filter.count === 0 && !overBudget)}
           onClick={filter.clear}
         >
           Clear
