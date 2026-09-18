@@ -80,6 +80,19 @@ describe('check-wow-conformance', () => {
       'discriminators on a sealed interface',
       'SyntheticDispatch: no counterpart here',
     ],
+    [
+      'an entry that is not UPPER_SNAKE',
+      'Direction.random: Wow has it, this package does not',
+    ],
+    [
+      'a discriminator holding a hyphen, past an annotation with brackets',
+      'HavingExpression.not-null: Wow has it, this package does not',
+    ],
+    // The fixture declares no FilterOperator: to the checker, Wow deleted it.
+    [
+      'an enum Wow deleted outright',
+      'FilterOperator: this package sends it, Wow does not declare it',
+    ],
   ])('reports %s', (_shape, report) => {
     expect(run().output).toContain(report);
   });

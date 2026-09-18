@@ -24,3 +24,18 @@ sealed interface SyntheticDispatch {
     data object Alpha : SyntheticDispatch
     data object Beta : SyntheticDispatch
 }
+
+// An entry that is not UPPER_SNAKE is as much a wire value as one that is.
+enum class Direction { ASC, DESC, random }
+
+// A discriminator holding a hyphen and lowercase letters, with a further
+// annotation between it and its interface whose arguments hold brackets.
+@JsonSubTypes(
+    JsonSubTypes.Type(HavingExpression.Condition::class, name = "CONDITION"),
+    JsonSubTypes.Type(HavingExpression.NotNull::class, name = "not-null"),
+)
+@Schema(oneOf = [HavingExpression.Condition::class], discriminatorProperty = "type")
+sealed interface HavingExpression {
+    data object Condition : HavingExpression
+    data object NotNull : HavingExpression
+}

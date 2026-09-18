@@ -41,11 +41,15 @@ It exits non-zero naming any rule in `wow-api`'s query package the register
 does not carry, and any wire value out of step with Wow: every enum, and the
 `@JsonSubTypes` names a sealed interface is dispatched on. A value Wow has that
 this package lacks is missing; a value this package sends that Wow does not
-know is refused with a 400. Deliberate differences are listed in the script
-with their reason — `SERVER_ONLY_ENUMS` for schema metadata the client never
-sends, `TS_ONLY_VALUES` for `Operator.RAW`, which the deprecated Condition API
-keeps for servers older than Wow #2999. It is not part of CI, which has no Wow
-checkout.
+know is refused with a 400. The comparison runs both ways: every enum here must
+have a counterpart in Wow too, so an enum Wow deletes outright is caught — and
+so is a parsing failure that silently drops a Kotlin name, which one-way
+comparison would report as success. Deliberate differences are listed in the
+script with their reason — `JDK_ENUMS` for `TimeUnit`, which Wow takes from the
+JDK rather than declaring; `SERVER_ONLY_ENUMS` for schema metadata the client
+never sends; `TS_ONLY_VALUES` for `Operator.RAW`, which the deprecated
+Condition API keeps for servers older than Wow #2999. It is not part of CI,
+which has no Wow checkout.
 
 The checker is itself held by `conformanceScript.test.ts` against the stand-in
 checkout in `test/fixtures/wow-synthetic`, one case per shape it must read.

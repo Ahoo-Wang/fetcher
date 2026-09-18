@@ -267,6 +267,24 @@ const ENUM_NAMES = {
   HavingExpression: 'HavingExpressionType',
 };
 
+/**
+ * Enums Wow uses from the JDK rather than declaring, so they appear in no
+ * wow-api source. `RelativeTimeFilter.timeUnit` and `Temporal.Epoch.timeUnit`
+ * take `java.util.concurrent.TimeUnit` directly; its constants have been fixed
+ * since Java 6, and this package's `TimeUnit` must still match them.
+ */
+const JDK_ENUMS = {
+  TimeUnit: [
+    'NANOSECONDS',
+    'MICROSECONDS',
+    'MILLISECONDS',
+    'SECONDS',
+    'MINUTES',
+    'HOURS',
+    'DAYS',
+  ],
+};
+
 /** Kotlin enums this package has no reason to mirror, and why. */
 const SERVER_ONLY_ENUMS = {
   QueryCardinality:
@@ -288,6 +306,26 @@ function closeBrace(source, index) {
   return skipBalanced(source, index, '{', '}');
 }
 
+/**
+ * The name of the interface an annotation belongs to, skipping any further
+ * annotations between them. Their arguments hold brackets of their own —
+ * `@Schema(oneOf = [...])` — so they are stepped over with the lexer.
+ */
+function interfaceAfter(source, index) {
+  let at = skipTrivia(source, index);
+  while (source[at] === '@') {
+    const name = /^@[\w.]+/.exec(source.slice(at));
+    at = skipTrivia(source, at + name[0].length);
+    if (source[at] === '(')
+      at = skipTrivia(source, skipBalanced(source, at + 1, '(', ')'));
+  }
+  const declaration =
+    /^(?:(?:sealed|abstract|public|internal|private)\s+)*interface\s+(\w+)/.exec(
+      source.slice(at),
+    );
+  return declaration ? declaration[1] : null;
+}
+
 function wowEnums(root) {
   const found = new Map();
   for (const file of kotlinFiles(root)) {
@@ -307,19 +345,32 @@ function wowEnums(root) {
         match[1],
         entries
           .split(',')
-          .map(entry => entry.trim().split(/[\s(]/)[0])
-          .filter(entry => /^[A-Z][A-Z0-9_]*$/.test(entry)),
+          .map(entry => {
+            // Kotlin permits any identifier, and a backticked name besides;
+            // reading only UPPER_SNAKE would drop the unusual one silently.
+            const trimmed = entry.trim();
+            const quoted = /^`([^`]+)`/.exec(trimmed);
+            if (quoted) return quoted[1];
+            return /^[A-Za-z_]\w*/.exec(trimmed)?.[0];
+          })
+          .filter(Boolean),
       );
     }
 
     // A sealed interface's discriminators, where they are spelled as literals.
-    for (const match of source.matchAll(
-      /@JsonSubTypes\(([\s\S]*?)\)\s*\n(?:\s*@[^\n]*\n)*\s*(?:sealed\s+)?interface\s+(\w+)/g,
-    )) {
-      const names = [...match[1].matchAll(/name\s*=\s*"([A-Z0-9_]+)"/g)].map(
-        name => name[1],
-      );
-      if (names.length > 0) found.set(match[2], names);
+    // Each is read whole with the lexer: a name holding a lowercase letter or
+    // a hyphen is as much a wire value as an UPPER_SNAKE one.
+    for (const match of source.matchAll(/@JsonSubTypes\s*\(/g)) {
+      const open = match.index + match[0].length;
+      const close = skipBalanced(source, open, '(', ')');
+      const args = source.slice(open, close - 1);
+      const names = [];
+      for (const name of args.matchAll(/\bname\s*=\s*/g)) {
+        const value = literalAt(args, name.index + name[0].length);
+        if (value !== null) names.push(value);
+      }
+      const owner = interfaceAfter(source, close);
+      if (owner && names.length > 0) found.set(owner, names);
     }
   }
   return found;
@@ -339,7 +390,9 @@ function tsEnums() {
         ))
           found.set(
             match[1],
-            [...match[2].matchAll(/=\s*'([^']*)'/g)].map(value => value[1]),
+            [...match[2].matchAll(/=\s*(?:'([^']*)'|"([^"]*)")/g)].map(
+              value => value[1] ?? value[2],
+            ),
           );
       }
     }
@@ -352,12 +405,15 @@ function compareEnums(root) {
   const failures = [];
   const skipped = [];
   const ts = tsEnums();
-  for (const [name, values] of wowEnums(root)) {
+  const wow = new Map([...Object.entries(JDK_ENUMS), ...wowEnums(root)]);
+  const matched = new Set();
+  for (const [name, values] of wow) {
     if (SERVER_ONLY_ENUMS[name]) {
       skipped.push(`${name} — ${SERVER_ONLY_ENUMS[name]}`);
       continue;
     }
     const local = ts.get(ENUM_NAMES[name] ?? name);
+    matched.add(ENUM_NAMES[name] ?? name);
     if (!local) {
       failures.push(`${name}: no counterpart here`);
       continue;
@@ -377,6 +433,12 @@ function compareEnums(root) {
           `${name}.${value}: listed as kept here only, which is no longer true`,
         );
   }
+  // The other direction. Comparing only from the Kotlin side never looks at an
+  // enum Wow deleted outright: its name is simply absent, and this package
+  // would go on sending its values into a 400 while every check passed.
+  for (const name of ts.keys())
+    if (!matched.has(name))
+      failures.push(`${name}: this package sends it, Wow does not declare it`);
   return { failures, skipped };
 }
 
