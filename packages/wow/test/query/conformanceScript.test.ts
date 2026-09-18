@@ -94,9 +94,22 @@ describe('check-wow-conformance', () => {
       'FilterOperator: this package sends it, Wow does not declare it',
     ],
     [
-      'an annotated entry',
-      'AggregationDateUnit.FORTNIGHT: Wow has it, this package does not',
+      'an entry whose wire value @JsonProperty sets',
+      'AggregationDateUnit.fortnight: Wow has it, this package does not',
     ],
+    [
+      'a rename that keeps the Kotlin name this package still sends',
+      'AggregationDateUnit.MONTH: this package sends it, Wow does not know it',
+    ],
+    [
+      'a constant that starts with a literal but is not one',
+      'AggregationGroup: cannot read the discriminator `SyntheticProtocol.Group.JOINED`',
+    ],
+    [
+      'an enum written through @JsonValue',
+      'SyntheticWire: serialises through @JsonValue',
+    ],
+    ['one simple name declared twice', 'SyntheticTwin: declared in both'],
     [
       'a discriminator spelled as a constant',
       'AggregationGroup.new-type: Wow has it, this package does not',

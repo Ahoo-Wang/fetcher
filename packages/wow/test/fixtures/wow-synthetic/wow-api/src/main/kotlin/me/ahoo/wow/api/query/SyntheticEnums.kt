@@ -54,12 +54,16 @@ sealed interface HavingExpression {
 }
 
 // An annotated entry is as much an entry. QUARTER must still be read, or it
-// would be reported as sent here and unknown to Wow; FORTNIGHT is new.
+// would be reported as sent here and unknown to Wow. `@JsonProperty` sets the
+// wire value: FORTNIGHT goes out as `fortnight`, and MONTH — which keeps its
+// Kotlin name, the way this package still spells it — now goes out as
+// `month`, so reading the name would pass while the server refused `MONTH`.
 enum class AggregationDateUnit {
     YEAR,
     @Deprecated("use MONTH") QUARTER,
-    MONTH, WEEK, DAY, HOUR, MINUTE, SECOND,
-    @JsonProperty("fortnight") FORTNIGHT,
+    @JsonProperty("month") MONTH,
+    WEEK, DAY, HOUR, MINUTE, SECOND,
+    @JsonProperty(value = "fortnight", index = 8) FORTNIGHT,
 }
 
 // A discriminator spelled as a constant, the way Wow spells its filter
@@ -67,17 +71,32 @@ enum class AggregationDateUnit {
 object SyntheticProtocol {
     object Group {
         const val NEW_TYPE = "new-type"
+
+        // Starts with a literal but is not one. Reading only the first string
+        // would report TERMS, which this package already sends, and pass.
+        const val JOINED = "TERMS" + "-server"
     }
 }
 
 @JsonSubTypes(
     JsonSubTypes.Type(AggregationGroup.New::class, name = SyntheticProtocol.Group.NEW_TYPE),
     JsonSubTypes.Type(AggregationGroup.Lost::class, name = Nowhere.MISSING),
+    JsonSubTypes.Type(AggregationGroup.Joined::class, name = SyntheticProtocol.Group.JOINED),
 )
 sealed interface AggregationGroup {
     data object New : AggregationGroup
     data object Lost : AggregationGroup
+    data object Joined : AggregationGroup
 }
+
+// Written through a property, so the entry names are not what goes out.
+enum class SyntheticWire(@get:JsonValue val wire: String) {
+    A("a"),
+    B("b"),
+}
+
+// Declared again, under the same simple name, in a subpackage.
+enum class SyntheticTwin { ONE }
 
 // Something the parser recognises as an entry but cannot read. Not valid
 // Kotlin; it stands for whatever shape the parser has not met yet, which must

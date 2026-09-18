@@ -348,6 +348,78 @@ function skipAnnotations(source, index) {
 }
 
 /**
+ * The string at `index` if a single literal is the whole expression there.
+ *
+ * `const val T = "TERMS" + "-server"` starts with a literal but is not one:
+ * reading its first string would report `TERMS` where the wire carries
+ * `TERMS-server`. Only spaces and comments may follow before the expression
+ * ends; anything else — an operator, a call — makes the value unknown.
+ */
+function wholeLiteralAt(source, index) {
+  const value = literalAt(source, index);
+  if (value === null) return null;
+  let at = source.startsWith('"""', index)
+    ? skipRawString(source, index)
+    : skipString(source, index);
+  while (at < source.length) {
+    if (source[at] === ' ' || source[at] === '\t') at += 1;
+    else if (source.startsWith('/*', at)) at = skipBlockComment(source, at);
+    else if (source.startsWith('//', at)) return value;
+    else break;
+  }
+  return at >= source.length || /[\n;},)]/.test(source[at]) ? value : null;
+}
+
+/** A value spelled as one literal or one constant, or null if it is neither. */
+function valueAt(source, index, constants) {
+  const literal = wholeLiteralAt(source, index);
+  if (literal !== null) return literal;
+  const reference = /^[A-Za-z_][\w.]*/.exec(source.slice(index))?.[0];
+  return (reference && resolveConstant(reference, constants)) ?? null;
+}
+
+/**
+ * The wire value of one enum entry.
+ *
+ * Jackson writes an enum constant under its `@JsonProperty` value when it has
+ * one, so that — not the Kotlin name — is what the server accepts. Skipping
+ * the annotation and reading the name would compare the wrong value and pass
+ * whenever this package still used the old spelling. Other annotations, like
+ * `@Deprecated`, do not change the wire value and are stepped over.
+ */
+function readEntry(entry, constants) {
+  let at = skipTrivia(entry, 0);
+  let wire;
+  while (entry[at] === '@') {
+    const name = /^@([\w.:]+)/.exec(entry.slice(at));
+    if (!name) return null;
+    at = skipTrivia(entry, at + name[0].length);
+    let args = '';
+    if (entry[at] === '(') {
+      const close = skipBalanced(entry, at + 1, '(', ')');
+      args = entry.slice(at + 1, close - 1);
+      at = skipTrivia(entry, close);
+    }
+    if (/(?:^|[.:])JsonProperty$/.test(name[1])) {
+      // The first positional argument, or `value = …`; other named arguments
+      // such as `index` or `required` leave the name as it is.
+      for (const part of splitTopLevel(args, ',')) {
+        const named = /^\s*(\w+)\s*=\s*/.exec(part);
+        if (named && named[1] !== 'value') continue;
+        const offset = named ? named[0].length : skipTrivia(part, 0);
+        if (offset >= part.length) continue;
+        wire = valueAt(part, offset, constants);
+        if (wire === null) return null;
+        break;
+      }
+    }
+  }
+  const rest = entry.slice(at);
+  const name = /^`([^`]+)`/.exec(rest)?.[1] ?? /^[A-Za-z_]\w*/.exec(rest)?.[0];
+  return name ? (wire ?? name) : null;
+}
+
+/**
  * Every `const val NAME = "…"` in a file, keyed by the path it is referred to
  * by. Wow spells its most important discriminators this way —
  * `name = QueryProtocol.FilterExpression.Operator.MATCH_ALL` on all fifty
@@ -377,12 +449,12 @@ function constantsIn(source, into) {
     const constant =
       boundary && /^const\s+val\s+(\w+)\s*(?::\s*\w+\s*)?=\s*/.exec(head);
     if (constant) {
-      const value = literalAt(source, at + constant[0].length);
-      if (value !== null)
-        into.set(
-          [...scopes.map(scope => scope.name), constant[1]].join('.'),
-          value,
-        );
+      // One whose value cannot be read is still recorded, as null, so that a
+      // reference to it fails instead of resolving to a namesake elsewhere.
+      into.set(
+        [...scopes.map(scope => scope.name), constant[1]].join('.'),
+        wholeLiteralAt(source, at + constant[0].length),
+      );
       at += constant[0].length;
       continue;
     }
@@ -447,32 +519,53 @@ function interfaceAfter(source, index) {
  * matches on both sides. So a value that cannot be read is an error here.
  */
 function wowEnums(root) {
-  const files = kotlinFiles(root).map(file => readFileSync(file, 'utf8'));
+  const files = kotlinFiles(root).map(path => ({
+    where: path.slice(join(root, PROTOCOL_DIR).length + 1),
+    source: readFileSync(path, 'utf8'),
+  }));
   const constants = new Map();
-  for (const source of files) constantsIn(source, constants);
+  for (const { source } of files) constantsIn(source, constants);
 
   const found = new Map();
+  const declaredIn = new Map();
   const unreadable = [];
-  for (const source of files) {
+  // Two declarations sharing a simple name would otherwise overwrite each
+  // other, and whichever was read first would never be compared at all.
+  const record = (name, values, where) => {
+    if (declaredIn.has(name)) {
+      unreadable.push(
+        `${name}: declared in both ${declaredIn.get(name)} and ${where}; map each explicitly`,
+      );
+      return;
+    }
+    declaredIn.set(name, where);
+    found.set(name, values);
+  };
+  for (const { where, source } of files) {
     for (const match of source.matchAll(/\benum\s+class\s+(\w+)[^{]*\{/g)) {
       const open = match.index + match[0].length;
       const body = source.slice(open, closeBrace(source, open) - 1);
+      // An enum written through `@JsonValue` puts a property on the wire, not
+      // its entries' names, so the names say nothing about what is sent.
+      if (/@(?:get:)?JsonValue\b/.test(match[0] + body)) {
+        unreadable.push(
+          `${match[1]}: serialises through @JsonValue, so its entry names are not its wire values`,
+        );
+        continue;
+      }
       // Entries end at the first top-level `;`, after which members may follow.
       const [entries] = splitTopLevel(body, ';');
       const values = [];
       for (const entry of splitTopLevel(entries, ',')) {
         if (skipTrivia(entry, 0) >= entry.length) continue; // a trailing comma
-        // `@Deprecated("…") NEW_VALUE` is as much an entry as `NEW_VALUE`.
-        const rest = entry.slice(skipAnnotations(entry, 0));
-        const name =
-          /^`([^`]+)`/.exec(rest)?.[1] ?? /^[A-Za-z_]\w*/.exec(rest)?.[0];
-        if (name) values.push(name);
+        const value = readEntry(entry, constants);
+        if (value !== null) values.push(value);
         else
           unreadable.push(
             `${match[1]}: cannot read the entry \`${entry.trim().slice(0, 60)}\``,
           );
       }
-      found.set(match[1], values);
+      record(match[1], values, where);
     }
 
     for (const match of source.matchAll(/@JsonSubTypes\s*\(/g)) {
@@ -483,20 +576,17 @@ function wowEnums(root) {
       const names = [];
       for (const name of args.matchAll(/\bname\s*=\s*/g)) {
         const at = name.index + name[0].length;
-        const literal = literalAt(args, at);
-        if (literal !== null) {
-          names.push(literal);
-          continue;
-        }
-        const reference = /^[A-Za-z_][\w.]*/.exec(args.slice(at))?.[0];
-        const value = reference && resolveConstant(reference, constants);
-        if (value !== undefined && value !== null) names.push(value);
+        const value = valueAt(args, at, constants);
+        if (value !== null) names.push(value);
         else
           unreadable.push(
-            `${owner}: cannot read the discriminator \`${reference ?? args.slice(at, at + 40).trim()}\``,
+            `${owner}: cannot read the discriminator \`${args
+              .slice(at)
+              .split(/[,)\n]/)[0]
+              .trim()}\``,
           );
       }
-      if (names.length > 0) found.set(owner, names);
+      if (names.length > 0) record(owner, names, where);
     }
   }
   return { found, unreadable };

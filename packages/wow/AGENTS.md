@@ -58,7 +58,14 @@ and comparing both ways only catches a name that goes missing whole, not one
 value dropped from a set that otherwise matches. Discriminators spelled as
 constants — Wow spells all fifty filter operators as
 `QueryProtocol.FilterExpression.Operator.X` — are resolved through the `const
-val`s they name.
+val`s they name, and a constant that is not one whole literal is unreadable.
+
+Failing closed does not catch a value read confidently but wrongly, so the
+constructs that change what goes on the wire are read for what they put there:
+an entry's `@JsonProperty` value rather than its Kotlin name, and an enum
+written through `@JsonValue` is reported, since its entry names are not sent.
+Two declarations sharing a simple name are an error rather than one silently
+replacing the other.
 
 The checker is itself held by `conformanceScript.test.ts` against the stand-in
 checkout in `test/fixtures/wow-synthetic`, one case per shape it must read.
