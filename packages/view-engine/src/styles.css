@@ -185,6 +185,28 @@
 
   .fve-root {
     @apply bg-background text-foreground;
+
+    /*
+     * The steps derive from `--radius`, which lives on this root, but Tailwind
+     * emits the `@theme` variables on `:root`, where `--radius` does not exist
+     * and the steps are invalid. The registry's components read them as
+     * variables (`rounded-[min(var(--radius-md),12px)]`), so the root declares
+     * them where `--radius` can be seen.
+     */
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+
+    /*
+     * Same story for the border colour, which the registry's chart legend
+     * reads as `border-(--color-border)` after setting it per element — the
+     * root carries the theme's value for everything that does not.
+     */
+    --color-border: var(--border);
   }
 }
 

@@ -13,7 +13,7 @@
 
 // Run after building: pnpm --filter @ahoo-wang/fetcher-view-engine test:package
 //
-// Six properties of the built package, which no unit test can see because
+// Seven properties of the built package, which no unit test can see because
 // each one is about the artifact rather than the source (docs/design.md §12):
 //
 // 1. Every declared entry resolves and imports.
@@ -27,6 +27,8 @@
 //    host can end up with the utilities of one mode over the other's tokens.
 // 6. Every token defers to a host-level `--fve-*` variable, so a host can
 //    customise the theme from `:root` without reaching inside the root.
+// 7. Every variable Tailwind emits on `:root` out of a token of the root's own
+//    is declared on the root too, where that token can be seen.
 import assert from 'node:assert/strict';
 import {
   readFileSync,
@@ -182,6 +184,43 @@ for (const [mode, rule, prefix] of [
   );
 }
 
+// 7. A variable derived from a root token is declared on the root as well.
+//
+// The `@theme` variables are Tailwind's, and Tailwind emits them on
+// `:root, :host` — which is not this root. A utility inlines its value and so
+// resolves it inside the root, which is why `rounded-md` works, but the
+// registry's components also read the variables directly, as in
+// `rounded-[min(var(--radius-md),12px)]`. At `:root` a value built out of
+// `--radius` or `--border` is invalid, because those tokens live on
+// `.fve-root` — the component would get `border-radius: 0`. So every emitted
+// variable that reads a root token is declared on the root too, where the
+// token it derives from can be seen.
+const rootTokens = lightTokens.tokens.map(([property]) => property);
+const rootDeclares = new Set(
+  styleRules(stylesheet)
+    .filter(({ selector }) =>
+      selectorList(selector).some(part => part.includes('.fve-root')),
+    )
+    .flatMap(({ tokens }) => tokens.map(([property]) => property)),
+);
+const stranded = [];
+for (const rule of styleRules(stylesheet)) {
+  const roots = selectorList(rule.selector);
+  if (!roots.includes(':root') && !roots.includes(':host')) continue;
+  for (const [property, value] of rule.tokens) {
+    // `var(--radius)` or `var(--radius, …)`, never `var(--radius-md)`.
+    const derived = rootTokens.some(token =>
+      new RegExp(`var\\(${token}\\s*[,)]`).test(value),
+    );
+    if (derived && !rootDeclares.has(property)) stranded.push(property);
+  }
+}
+assert.deepEqual(
+  stranded,
+  [],
+  'A :root variable derived from a root token must be redeclared on .fve-root: the token is not there, so the value is invalid wherever a component reads the variable',
+);
+
 /** A selector list split on its top-level commas, each part trimmed. */
 function selectorList(selectors) {
   const parts = [];
@@ -312,12 +351,12 @@ for (const file of visited) {
   }
 }
 
-// 7. And, that settled, every entry actually imports.
+// 8. And, that settled, every entry actually imports.
 for (const { specifier, resolved } of jsEntries) {
   const module = await import(resolved);
   assert.ok(Object.keys(module).length > 0, `${specifier} exports nothing`);
 }
 
 console.log(
-  `${targets.size} entries resolve and import, the root entry's types need no DOM lib, ${visited.size} runtime modules import no CSS, the stylesheet paints nothing outside .fve-root, its dark: utilities turn on the same ${tokenSelectors.length} roots as its dark tokens, and its ${lightTokens.tokens.length} light and ${darkTokens.tokens.length} dark tokens all defer to --fve-* host variables.`,
+  `${targets.size} entries resolve and import, the root entry's types need no DOM lib, ${visited.size} runtime modules import no CSS, the stylesheet paints nothing outside .fve-root, its dark: utilities turn on the same ${tokenSelectors.length} roots as its dark tokens, its ${lightTokens.tokens.length} light and ${darkTokens.tokens.length} dark tokens all defer to --fve-* host variables, and every :root variable derived from one of those ${rootTokens.length} tokens is declared on .fve-root too.`,
 );
