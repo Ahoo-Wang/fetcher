@@ -149,6 +149,8 @@ export function OrdersPage() {
 }
 ```
 
+主题跟随宿主：祖先上带 `.dark` class 即为暗色；给 `ViewSurface` 传 `theme="light"` 或 `theme="dark"` 可以把某一处视图钉住。
+
 ### 3b. 或者自行组合 UI
 
 ```tsx

@@ -41,7 +41,15 @@
 /* Only this package is scanned, so the shipped stylesheet holds only what it uses. */
 @source "./";
 
-@custom-variant dark (&:where(.dark, .dark *, [data-theme='dark'], [data-theme='dark'] *));
+/*
+ * Light and dark are decided once, in one set of selectors: this variant and
+ * the token block further down must name the same roots, or a host would get
+ * the utilities of one mode with the tokens of the other, and
+ * `scripts/verify-package.mjs` checks the built stylesheet for exactly that.
+ * A surface follows its host through a `.dark` class on any ancestor, or pins
+ * itself with `data-theme` — which is what `ViewSurface`'s `theme` sets.
+ */
+@custom-variant dark (&:where(.fve-root[data-theme='dark'], .fve-root[data-theme='dark'] *, .dark .fve-root:not([data-theme='light']), .dark .fve-root:not([data-theme='light']) *));
 
 @theme inline {
   --color-sidebar-ring: var(--sidebar-ring);

@@ -13,7 +13,7 @@
 
 // Run after building: pnpm --filter @ahoo-wang/fetcher-view-engine test:package
 //
-// Four properties of the built package, which no unit test can see because
+// Five properties of the built package, which no unit test can see because
 // each one is about the artifact rather than the source (docs/design.md §12):
 //
 // 1. Every declared entry resolves and imports.
@@ -23,6 +23,8 @@
 //    never puts CSS in a host page that did not ask for it.
 // 4. The stylesheet paints nothing outside `.fve-root`, so a host that does
 //    import it keeps its own page.
+// 5. The `dark:` utilities and the dark tokens turn on the same roots, so no
+//    host can end up with the utilities of one mode over the other's tokens.
 import assert from 'node:assert/strict';
 import {
   readFileSync,
@@ -96,6 +98,88 @@ assert.deepEqual(
   [],
   'The stylesheet paints outside .fve-root',
 );
+
+// 5. Light and dark are one decision, spelled the same way twice.
+//
+// `src/styles.css` names the dark roots once for the `@custom-variant dark`
+// the vendored components' `dark:` utilities compile against, and once for the
+// token block. Let the two drift and a host is served the utilities of one
+// mode over the tokens of the other — dark `data-theme` with light colours, or
+// a surface pinned light inside a `.dark` page painted half dark.
+const darkTokens = styleRules(stylesheet).find(
+  ({ selector, declarations }) =>
+    !selector.includes('dark\\:') &&
+    selector.includes('data-theme') &&
+    declarations.includes('color-scheme') &&
+    declarations.includes('--background'),
+);
+assert.ok(darkTokens, 'The stylesheet sets no dark tokens');
+const tokenSelectors = selectorList(darkTokens.selector);
+assert.equal(
+  tokenSelectors.length,
+  2,
+  'The dark tokens should name a pinned root and one following a .dark host',
+);
+
+// A compiled utility carries the variant on its subject, as in
+// `.dark\:bg-input\/30:where(<the variant>)`. `scripts/scope-utilities.mjs`
+// would append a second `:where(.fve-root, .fve-root *)`, and does so as soon
+// as the variant stops naming the root itself, so read the first one.
+const darkUtility = styleRules(stylesheet).find(({ selector }) =>
+  selector.startsWith('.dark\\:'),
+);
+assert.ok(darkUtility, 'The stylesheet compiled no dark: utility to check');
+const variantSelectors = selectorList(whereArgument(darkUtility.selector));
+assert.deepEqual(
+  variantSelectors.map(unquoted).sort(),
+  tokenSelectors
+    .flatMap(selector => [selector, `${selector} *`])
+    .map(unquoted)
+    .sort(),
+  'The dark: variant and the dark tokens must name the same roots',
+);
+
+/** A selector list split on its top-level commas, each part trimmed. */
+function selectorList(selectors) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let at = 0; at < selectors.length; at += 1) {
+    const char = selectors[at];
+    if (char === '(') depth += 1;
+    else if (char === ')') depth -= 1;
+    else if (char === ',' && depth === 0) {
+      parts.push(selectors.slice(start, at).trim());
+      start = at + 1;
+    }
+  }
+  parts.push(selectors.slice(start).trim());
+  return parts;
+}
+
+/**
+ * The argument of the first `:where()` in a selector, read to the parenthesis
+ * that closes it — the argument holds a `:not()` of its own.
+ */
+function whereArgument(selector) {
+  const opens = selector.indexOf(':where(');
+  assert.ok(opens >= 0, `${selector} has no :where()`);
+  const from = opens + ':where('.length;
+  let depth = 1;
+  for (let at = from; at < selector.length; at += 1) {
+    if (selector[at] === '(') depth += 1;
+    else if (selector[at] === ')') {
+      depth -= 1;
+      if (depth === 0) return selector.slice(from, at);
+    }
+  }
+  return assert.fail(`${selector} has an unbalanced :where()`);
+}
+
+/** The minifier drops the quotes in `[data-theme='dark']`; ignore them. */
+function unquoted(selector) {
+  return selector.replace(/['"]/g, '');
+}
 
 /**
  * Every style rule in a stylesheet as its selector and the properties it
@@ -181,12 +265,12 @@ for (const file of visited) {
   }
 }
 
-// 5. And, that settled, every entry actually imports.
+// 6. And, that settled, every entry actually imports.
 for (const { specifier, resolved } of jsEntries) {
   const module = await import(resolved);
   assert.ok(Object.keys(module).length > 0, `${specifier} exports nothing`);
 }
 
 console.log(
-  `${targets.size} entries resolve and import, the root entry's types need no DOM lib, ${visited.size} runtime modules import no CSS, and the stylesheet paints nothing outside .fve-root.`,
+  `${targets.size} entries resolve and import, the root entry's types need no DOM lib, ${visited.size} runtime modules import no CSS, the stylesheet paints nothing outside .fve-root, and its dark: utilities turn on the same ${tokenSelectors.length} roots as its dark tokens.`,
 );

@@ -151,6 +151,8 @@ export function OrdersPage() {
 }
 ```
 
+The theme follows the host through a `.dark` class on any ancestor; pass `theme="light"` or `theme="dark"` to `ViewSurface` to pin one view.
+
 ### 3b. Or compose your own UI
 
 ```tsx
