@@ -159,7 +159,12 @@ export function FilterPanel({
         {filter.applied.length > 0 && (
           <div className="flex flex-wrap items-center gap-1">
             {filter.applied.map(item => (
-              <Badge key={item.path.join('.')} variant="secondary">
+              // A group reads out as one badge, its conditions joined by its
+              // own operator, so the bar keeps the logic the tree has.
+              <Badge
+                key={item.path.join('.')}
+                variant={item.group ? 'outline' : 'secondary'}
+              >
                 {item.text}
               </Badge>
             ))}
