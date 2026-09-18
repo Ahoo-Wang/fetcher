@@ -93,6 +93,8 @@
     "eslint-plugin-react-hooks": "catalog:",
     "globals": "catalog:",
     "jsdom": "catalog:",
+    "postcss": "catalog:",
+    "postcss-prefix-selector": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

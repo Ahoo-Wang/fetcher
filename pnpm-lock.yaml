@@ -120,6 +120,12 @@ catalogs:
     playwright:
       specifier: ^1.63.0
       version: 1.63.0
+    postcss:
+      specifier: ^8.5.28
+      version: 8.5.28
+    postcss-prefix-selector:
+      specifier: ^2.2.1
+      version: 2.2.1
     prettier:
       specifier: ^3.9.8
       version: 3.9.8
@@ -999,6 +1005,12 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 29.1.1
+      postcss:
+        specifier: 'catalog:'
+        version: 8.5.28
+      postcss-prefix-selector:
+        specifier: 'catalog:'
+        version: 2.2.1(postcss@8.5.28)
       prettier:
         specifier: 'catalog:'
         version: 3.9.8
@@ -1216,7 +1228,7 @@ importers:
     devDependencies:
       vitepress:
         specifier: ^1.6.4
-        version: 1.6.4(@algolia/client-search@5.52.1)(@types/node@24.12.2)(@types/react@19.2.18)(less@4.9.1)(lightningcss@1.33.0)(postcss@8.5.26)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(search-insights@2.17.3)(typescript@6.0.3)
+        version: 1.6.4(@algolia/client-search@5.52.1)(@types/node@24.12.2)(@types/react@19.2.18)(less@4.9.1)(lightningcss@1.33.0)(postcss@8.5.28)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(search-insights@2.17.3)(typescript@6.0.3)
       vitepress-mermaid-renderer:
         specifier: ^1.2.2
         version: 1.2.2(mermaid@11.15.0)(vue@3.5.34(typescript@6.0.3))
@@ -5914,12 +5926,17 @@ packages:
   points-on-path@0.2.1:
     resolution: {integrity: sha512-25ClnWWuw7JbWZcgqY/gJ4FQWadKxGWk+3kR/7kD0tCaDtPPMj7oHu2ToLaVhfpnHrZzYby2w6tUA0eOIuUg8g==}
 
+  postcss-prefix-selector@2.2.1:
+    resolution: {integrity: sha512-oMvY0GLVjg6b/N09B4h/xWYczc+LsX1O+laIpXDBbP6tZll+Cj5kXxdI0IZ23NOQ+XIko8VDsCFj+bhgYsmP8g==}
+    peerDependencies:
+      postcss: ^8.0.0
+
   postcss-selector-parser@7.1.6:
     resolution: {integrity: sha512-7qASPzhKF2l2KLboRZux8CCTRMdGiV08vWmyKzPz22qZ7ZjQBOeY7rNzNoCLSUiftJ7HUq0GERHmxw/t0dCdMw==}
     engines: {node: '>=4'}
 
-  postcss@8.5.26:
-    resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
+  postcss@8.5.28:
+    resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
     engines: {node: ^10 || ^12 || >=14}
 
   powershell-utils@0.1.0:
@@ -9475,7 +9492,7 @@ snapshots:
       '@vue/shared': 3.5.34
       estree-walker: 2.0.2
       magic-string: 0.30.21
-      postcss: 8.5.26
+      postcss: 8.5.28
       source-map-js: 1.2.1
 
   '@vue/compiler-ssr@3.5.34':
@@ -11859,12 +11876,16 @@ snapshots:
       path-data-parser: 0.1.0
       points-on-curve: 0.2.0
 
+  postcss-prefix-selector@2.2.1(postcss@8.5.28):
+    dependencies:
+      postcss: 8.5.28
+
   postcss-selector-parser@7.1.6:
     dependencies:
       cssesc: 3.0.0
       util-deprecate: 1.0.2
 
-  postcss@8.5.26:
+  postcss@8.5.28:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
@@ -12300,7 +12321,7 @@ snapshots:
       kleur: 4.1.5
       open: 11.0.4
       ora: 8.2.0
-      postcss: 8.5.26
+      postcss: 8.5.28
       postcss-selector-parser: 7.1.6
       prompts: 2.4.2
       recast: 0.23.11
@@ -12771,7 +12792,7 @@ snapshots:
   vite@5.4.21(@types/node@24.12.2)(less@4.9.1)(lightningcss@1.33.0):
     dependencies:
       esbuild: 0.21.5
-      postcss: 8.5.26
+      postcss: 8.5.28
       rollup: 4.60.1
     optionalDependencies:
       '@types/node': 24.12.2
@@ -12783,7 +12804,7 @@ snapshots:
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.5
-      postcss: 8.5.26
+      postcss: 8.5.28
       rolldown: 1.2.4
       tinyglobby: 0.2.17
     optionalDependencies:
@@ -12799,7 +12820,7 @@ snapshots:
       mermaid: 11.15.0
       vue: 3.5.34(typescript@6.0.3)
 
-  vitepress@1.6.4(@algolia/client-search@5.52.1)(@types/node@24.12.2)(@types/react@19.2.18)(less@4.9.1)(lightningcss@1.33.0)(postcss@8.5.26)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(search-insights@2.17.3)(typescript@6.0.3):
+  vitepress@1.6.4(@algolia/client-search@5.52.1)(@types/node@24.12.2)(@types/react@19.2.18)(less@4.9.1)(lightningcss@1.33.0)(postcss@8.5.28)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(search-insights@2.17.3)(typescript@6.0.3):
     dependencies:
       '@docsearch/css': 3.8.2
       '@docsearch/js': 3.8.2(@algolia/client-search@5.52.1)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(search-insights@2.17.3)
@@ -12820,7 +12841,7 @@ snapshots:
       vite: 5.4.21(@types/node@24.12.2)(less@4.9.1)(lightningcss@1.33.0)
       vue: 3.5.34(typescript@6.0.3)
     optionalDependencies:
-      postcss: 8.5.26
+      postcss: 8.5.28
     transitivePeerDependencies:
       - '@algolia/client-search'
       - '@types/node'

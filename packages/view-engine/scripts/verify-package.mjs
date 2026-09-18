@@ -13,7 +13,7 @@
 
 // Run after building: pnpm --filter @ahoo-wang/fetcher-view-engine test:package
 //
-// Three properties of the built package, which no unit test can see because
+// Four properties of the built package, which no unit test can see because
 // each one is about the artifact rather than the source (docs/design.md §12):
 //
 // 1. Every declared entry resolves and imports.
@@ -21,6 +21,8 @@
 //    use the kernels and the runtime.
 // 3. No JavaScript entry pulls in the stylesheet, so importing the package
 //    never puts CSS in a host page that did not ask for it.
+// 4. The stylesheet paints nothing outside `.fve-root`, so a host that does
+//    import it keeps its own page.
 import assert from 'node:assert/strict';
 import {
   readFileSync,
@@ -30,6 +32,7 @@ import {
   rmSync,
 } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import postcss from 'postcss';
 import ts from 'typescript';
 
 const packageRoot = new URL('../', import.meta.url);
@@ -69,10 +72,48 @@ assert.ok(jsEntries.length >= 3, 'Expected the root, /react and /ui entries');
 // The stylesheet ships as its own entry, which a host imports deliberately.
 const styles = manifest.exports['./styles.css'];
 assert.equal(typeof styles, 'string', './styles.css must be a single target');
+const stylesheet = readFileSync(new URL(styles, packageRoot), 'utf8');
 assert.ok(
-  readFileSync(new URL(styles, packageRoot), 'utf8').includes('.fve-root'),
+  stylesheet.includes('.fve-root'),
   'The theme must hang off the .fve-root boundary',
 );
+
+// 4. Outside the root, a rule may only set custom properties.
+//
+// Tailwind's preflight would reset `*`, `html`, headings, lists and buttons on
+// the whole host page, and its utilities are bare classes a host may share;
+// `scripts/scope-utilities.mjs` pins every painting rule to the root at
+// build time, and this is where that is checked. Custom properties are exempt
+// because they paint nothing by themselves: Tailwind registers its `--tw-*`
+// defaults on `*`, and `@property` registrations have no selector at all.
+const leaks = styleRules(stylesheet).filter(
+  ({ selector, declarations }) =>
+    !selector.includes('.fve-root') &&
+    !declarations.every(property => property.startsWith('--')),
+);
+assert.deepEqual(
+  leaks.map(({ selector }) => selector),
+  [],
+  'The stylesheet paints outside .fve-root',
+);
+
+/**
+ * Every style rule in a stylesheet as its selector and the properties it
+ * sets; `@keyframes` steps are not selectors and are left out.
+ */
+function styleRules(css) {
+  const rules = [];
+  postcss.parse(css).walkRules(rule => {
+    if (rule.parent?.type === 'atrule' && rule.parent.name === 'keyframes')
+      return;
+    const declarations = [];
+    rule.each(node => {
+      if (node.type === 'decl') declarations.push(node.prop);
+    });
+    rules.push({ selector: rule.selector, declarations });
+  });
+  return rules;
+}
 
 // 2. The root entry's types compile without the DOM lib.
 const typeProbe = mkdtempSync(new URL('.package-types-', packageRoot));
@@ -140,12 +181,12 @@ for (const file of visited) {
   }
 }
 
-// 4. And, that settled, every entry actually imports.
+// 5. And, that settled, every entry actually imports.
 for (const { specifier, resolved } of jsEntries) {
   const module = await import(resolved);
   assert.ok(Object.keys(module).length > 0, `${specifier} exports nothing`);
 }
 
 console.log(
-  `${targets.size} entries resolve and import, the root entry's types need no DOM lib, and ${visited.size} runtime modules import no CSS.`,
+  `${targets.size} entries resolve and import, the root entry's types need no DOM lib, ${visited.size} runtime modules import no CSS, and the stylesheet paints nothing outside .fve-root.`,
 );

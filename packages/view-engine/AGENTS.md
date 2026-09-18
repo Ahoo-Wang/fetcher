@@ -51,7 +51,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine lint:check
 - **Coverage thresholds are enforced**: statements 95, branches 91, functions 97, lines 96. `src/ui/components/**`, `src/ui/lib/**` and `src/styles.ts` are excluded — they are vendored from the shadcn registry and are upstream's to test
 - `test/architecture.test.ts` enforces the dependency rules below on the TypeScript AST, so multi-line, type-only, re-exported and **statically resolvable** dynamic imports are all seen — an `import()` whose argument is a string literal or a substitution-free template. One built from a variable is not recorded, and would slip past these assertions. It reads the wow **sources** off disk, so it is the one suite that runs without any build — every test that imports `@ahoo-wang/fetcher-wow` needs the dependency chain built first
 - `tsconfig.headless.json` type-checks the headless layers **without the DOM lib**, which is what keeps them free of browser globals
-- `scripts/verify-package.mjs` checks the built artifact: every entry resolves and imports, the root entry's types need no DOM lib, and no JavaScript entry pulls in the stylesheet
+- `scripts/verify-package.mjs` checks the built artifact: every entry resolves and imports, the root entry's types need no DOM lib, and no JavaScript entry pulls in the stylesheet, and the built stylesheet paints nothing outside `.fve-root` — outside the root a rule may only set custom properties. `scripts/scope-utilities.mjs` (`postcss-prefix-selector`) makes that true at build time by pinning every painting rule, preflight and utilities included, to `:where(.fve-root, .fve-root *)`; Storybook runs the same plugin on the theme file
 
 ## Architecture — the six dependency rules
 

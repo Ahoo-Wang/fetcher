@@ -48,6 +48,8 @@ catalog:
   msw: ^2.15.0
   nanoid: ^5.1.16
   playwright: ^1.63.0
+  postcss: ^8.5.28
+  postcss-prefix-selector: ^2.2.1
   prettier: ^3.9.8
   react: ^19.2.8
   recharts: ^3.10.1

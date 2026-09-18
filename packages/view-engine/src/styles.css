@@ -16,6 +16,13 @@
  * then scoped: every token and every base rule hangs off `.fve-root`, the
  * boundary `ViewSurface` renders, so loading this file changes nothing about
  * the page around it. The host keeps its own typography.
+ *
+ * Tailwind's preflight and utilities are global as written — preflight resets
+ * `*`, `html`, headings, lists and buttons on the whole page, and a utility is
+ * a bare class a host may share. `scripts/scope-utilities.mjs` pins every
+ * painting rule to the root at build time, and `scripts/verify-package.mjs`
+ * holds the built stylesheet to it: outside the root, a rule may only set
+ * custom properties.
  */
 
 /* Tailwind v4 resolves string imports itself; url() would leave them to the browser. */
@@ -25,11 +32,10 @@
 @import 'shadcn/tailwind.css';
 
 /*
- * The grid adapter's own geometry, from the library that computes it. Every
- * rule matches a `.react-grid-*` class that only `DashboardGrid` renders, and
- * it renders inside `.fve-root`, so the host page stays untouched.
+ * The grid adapter's own geometry, from the library that computes it, in the
+ * components layer so the theme's override below it wins by order.
  */
-@import 'react-grid-layout/css/styles.css';
+@import 'react-grid-layout/css/styles.css' layer(components);
 /* stylelint-enable import-notation */
 
 /* Only this package is scanned, so the shipped stylesheet holds only what it uses. */
@@ -163,7 +169,9 @@
   .fve-root {
     @apply bg-background text-foreground;
   }
+}
 
+@layer components {
   /* Upstream paints the drop placeholder red; the theme owns that colour. */
   .fve-root .react-grid-item.react-grid-placeholder {
     @apply bg-primary;
