@@ -169,6 +169,9 @@ export function FilterPanel({
               <Badge
                 key={item.path.join('.')}
                 variant={item.group ? 'outline' : 'secondary'}
+                // A group's read-out can be long; it wraps inside the bar
+                // rather than carrying the bar off the edge of the view.
+                className="h-auto max-w-full whitespace-normal text-left"
               >
                 {item.text}
                 <button
@@ -537,7 +540,8 @@ function Condition({
           field: label,
         })}
         data-invalid={invalid || undefined}
-        className="col-span-full flex flex-col gap-1 rounded-md border border-border p-2 data-[invalid]:border-destructive"
+        data-blank={blank || undefined}
+        className="col-span-full flex flex-col gap-1 rounded-md border border-border p-2 data-[blank]:border-dashed data-[invalid]:border-destructive"
       >
         <div className="flex items-center gap-1">
           <span className="shrink-0 text-sm font-medium whitespace-nowrap">

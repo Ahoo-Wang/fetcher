@@ -1845,6 +1845,8 @@ describe('FilterPanel tree editing', () => {
 
     const block = await screen.findByRole('group', { name: 'Items condition' });
     expect(block.getAttribute('data-slot')).toBe('filter-element');
+    // Nothing said inside it yet: blank, like a condition with no value.
+    expect(block.hasAttribute('data-blank')).toBe(true);
     // Its own conditions strip sits inside it.
     expect(block.querySelector('[data-slot="filter-group"]')).not.toBeNull();
   });

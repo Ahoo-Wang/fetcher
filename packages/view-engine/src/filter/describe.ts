@@ -62,7 +62,10 @@ export function describeFilter(
 ): FilterSummaryItem[] {
   const byName = new Map(fields.map(field => [field.name, field]));
   const items = describeGroup(tree, [], byName, kinds);
-  if (tree.op === 'and' || items.length < 2) return items;
+  // Items side by side read as "all of", and one item alone reads the same
+  // under `or`; `nor` negates even a lone condition, so it always says so.
+  if (tree.op === 'and' || (tree.op === 'or' && items.length < 2)) return items;
+  if (items.length === 0) return items;
   return [groupItem(tree.op, [], items)];
 }
 

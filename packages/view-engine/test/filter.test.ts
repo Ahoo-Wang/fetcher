@@ -1068,6 +1068,24 @@ describe('describeFilter', () => {
     expect(items[0].text).toBe('Order EQ o-1 or Amount GT 9');
   });
 
+  it('keeps the negation of a "none of" root even over one condition', () => {
+    const items = describeFilter(
+      fields,
+      {
+        op: 'nor',
+        children: [
+          { field: 'paid', operator: 'EQ', value: true },
+          // Blank, so left out; the root still negates what remains.
+          { field: 'amount', operator: 'GT', value: null as never },
+        ],
+      },
+      builtinFieldKinds,
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ group: 'nor', path: [] });
+    expect(items[0].text).toBe('not Paid EQ true');
+  });
+
   it('marks a condition whose field disappeared instead of hiding it', () => {
     const items = describeFilter(
       fields,
