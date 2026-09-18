@@ -65,7 +65,13 @@ constructs that change what goes on the wire are read for what they put there:
 an entry's `@JsonProperty` value rather than its Kotlin name, and an enum
 written through `@JsonValue` is reported, since its entry names are not sent.
 Two declarations sharing a simple name are an error rather than one silently
-replacing the other.
+replacing the other. Each `JsonSubTypes.Type` must yield a name — from
+`name =`, `names =`, or a single `@JsonTypeName` on its class. Comments follow
+each language's own rules: Kotlin block comments nest, TypeScript's do not.
+
+`test/fixtures/` holds the stand-ins: `wow-synthetic` for most shapes, and
+`wow-ts-comments` with `ts-comments` as a pair for how this package's own
+TypeScript is read, which `WOW_CONFORMANCE_TS_SOURCE` points the checker at.
 
 The checker is itself held by `conformanceScript.test.ts` against the stand-in
 checkout in `test/fixtures/wow-synthetic`, one case per shape it must read.

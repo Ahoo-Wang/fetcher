@@ -109,9 +109,26 @@ function skipLineComment(source, index) {
   return end < 0 ? source.length : end + 1;
 }
 
+// A block comment, which in Kotlin nests: an opener inside a comment needs a
+// closer of its own before the outer comment ends. Stopping at the first
+// closer would read the rest of the outer comment as code, and a retired entry
+// name kept there would count as a live one. (Written with line comments:
+// JavaScript's own block comments do not nest, so an example here would end
+// this one early.)
 function skipBlockComment(source, index) {
-  const end = source.indexOf('*/', index + 2);
-  return end < 0 ? source.length : end + 2;
+  let depth = 0;
+  let at = index;
+  while (at < source.length) {
+    if (source.startsWith('/*', at)) {
+      depth += 1;
+      at += 2;
+    } else if (source.startsWith('*/', at)) {
+      depth -= 1;
+      at += 2;
+      if (depth === 0) return at;
+    } else at += 1;
+  }
+  return source.length;
 }
 
 function skipRawString(source, index) {
@@ -416,7 +433,19 @@ function readEntry(entry, constants) {
   }
   const rest = entry.slice(at);
   const name = /^`([^`]+)`/.exec(rest)?.[1] ?? /^[A-Za-z_]\w*/.exec(rest)?.[0];
-  return name ? (wire ?? name) : null;
+  if (!name) return null;
+  // An entry may carry constructor arguments and a body, and nothing else.
+  // Anything left over means the entry was not what it looked like, and
+  // reading only its leading name would take the rest on trust.
+  at = skipTrivia(
+    entry,
+    at + rest.indexOf(name) + name.length + (rest[0] === '`' ? 2 : 0),
+  );
+  if (entry[at] === '(')
+    at = skipTrivia(entry, skipBalanced(entry, at + 1, '(', ')'));
+  if (entry[at] === '{')
+    at = skipTrivia(entry, skipBalanced(entry, at + 1, '{', '}'));
+  return at >= entry.length ? (wire ?? name) : null;
 }
 
 /**
@@ -495,6 +524,90 @@ function resolveConstant(reference, constants) {
 }
 
 /**
+ * `@JsonTypeName` values by the simple name of the declaration they sit on.
+ * A `JsonSubTypes.Type` without a `name` takes its discriminator from there.
+ */
+function typeNamesIn(source, constants, into) {
+  for (const match of source.matchAll(/@JsonTypeName\s*\(/g)) {
+    const open = match.index + match[0].length;
+    const close = skipBalanced(source, open, '(', ')');
+    const value = valueAt(
+      source.slice(open, close - 1),
+      skipTrivia(source.slice(open, close - 1), 0),
+      constants,
+    );
+    const declaration =
+      /^(?:(?:data|sealed|abstract|open|inner|value|enum|private|internal|public)\s+)*(?:class|object|interface)\s+(\w+)/.exec(
+        source.slice(skipAnnotations(source, close)),
+      );
+    if (!declaration) continue;
+    into.set(declaration[1], [...(into.get(declaration[1]) ?? []), value]);
+  }
+}
+
+/**
+ * The discriminators one `@JsonSubTypes` declares, read entry by entry.
+ *
+ * Scanning its arguments for `name =` alone missed an entry that has none —
+ * `JsonSubTypes.Type(New::class)`, named by `@JsonTypeName` on the class — and
+ * a new wire value added that way would pass unseen. Each entry must yield a
+ * name from `name =`, from `names = [...]`, or from a single `@JsonTypeName`
+ * on its class; one that yields none is unreadable.
+ */
+function subtypeNames(args, owner, constants, typeNames, unreadable) {
+  const names = [];
+  for (const entry of splitTopLevel(args, ',')) {
+    const call = /^\s*@?(?:JsonSubTypes\.)?Type\s*\(/.exec(entry);
+    if (!call) {
+      if (entry.trim())
+        unreadable.push(
+          `${owner}: cannot read the subtype \`${entry.trim().slice(0, 60)}\``,
+        );
+      continue;
+    }
+    const open = call[0].length;
+    const inner = entry.slice(open, skipBalanced(entry, open, '(', ')') - 1);
+    const found = [];
+    let type = null;
+    // The name as written, when it is the name that could not be read: it
+    // says more than the class does about what to look at.
+    let unread = null;
+    const read = (source, index) => {
+      const value = valueAt(source, index, constants);
+      if (value === null) unread ??= source.slice(index).trim();
+      return value;
+    };
+    for (const part of splitTopLevel(inner, ',')) {
+      const named = /^\s*(\w+)\s*=\s*/.exec(part);
+      if (named?.[1] === 'name') found.push(read(part, named[0].length));
+      else if (named?.[1] === 'names') {
+        const list = part
+          .slice(named[0].length)
+          .trim()
+          .replace(/^\[|\]$/g, '');
+        for (const item of splitTopLevel(list, ','))
+          if (item.trim()) found.push(read(item, skipTrivia(item, 0)));
+      } else {
+        const reference = /([\w.]+)::class/.exec(part);
+        if (reference) type = reference[1];
+      }
+    }
+    if (found.length === 0 && type) {
+      const annotated = typeNames.get(type.split('.').at(-1)) ?? [];
+      if (annotated.length === 1) found.push(annotated[0]);
+    }
+    if (found.length === 0 || found.includes(null))
+      unreadable.push(
+        unread
+          ? `${owner}: cannot read the discriminator \`${unread}\``
+          : `${owner}: cannot read the discriminator of \`Type(${type ?? '?'}::class)\``,
+      );
+    else names.push(...found);
+  }
+  return names;
+}
+
+/**
  * The name of the interface an annotation belongs to, skipping any further
  * annotations between them. Their arguments hold brackets of their own —
  * `@Schema(oneOf = [...])` — so they are stepped over with the lexer.
@@ -525,6 +638,8 @@ function wowEnums(root) {
   }));
   const constants = new Map();
   for (const { source } of files) constantsIn(source, constants);
+  const typeNames = new Map();
+  for (const { source } of files) typeNamesIn(source, constants, typeNames);
 
   const found = new Map();
   const declaredIn = new Map();
@@ -573,54 +688,89 @@ function wowEnums(root) {
       const close = skipBalanced(source, open, '(', ')');
       const args = source.slice(open, close - 1);
       const owner = interfaceAfter(source, close) ?? 'an unnamed @JsonSubTypes';
-      const names = [];
-      for (const name of args.matchAll(/\bname\s*=\s*/g)) {
-        const at = name.index + name[0].length;
-        const value = valueAt(args, at, constants);
-        if (value !== null) names.push(value);
-        else
-          unreadable.push(
-            `${owner}: cannot read the discriminator \`${args
-              .slice(at)
-              .split(/[,)\n]/)[0]
-              .trim()}\``,
-          );
-      }
+      const names = subtypeNames(args, owner, constants, typeNames, unreadable);
       if (names.length > 0) record(owner, names, where);
     }
   }
   return { found, unreadable };
 }
 
-/** Every `export enum` in this package's query source, name to values. */
+/**
+ * TypeScript's comments, removed: line comments to the end of the line, and
+ * block comments, which unlike Kotlin's do not nest. A commented-out member — or an example
+ * in a doc comment — must not count as one this package still sends.
+ */
+function stripTsComments(source) {
+  let out = '';
+  let at = 0;
+  while (at < source.length) {
+    const char = source[at];
+    if (char === "'" || char === '"' || char === '`') {
+      let end = at + 1;
+      while (end < source.length && source[end] !== char)
+        end += source[end] === '\\' ? 2 : 1;
+      out += source.slice(at, end + 1);
+      at = end + 1;
+    } else if (source.startsWith('//', at)) {
+      const end = source.indexOf('\n', at);
+      at = end < 0 ? source.length : end;
+    } else if (source.startsWith('/*', at)) {
+      const end = source.indexOf('*/', at + 2);
+      at = end < 0 ? source.length : end + 2;
+    } else {
+      out += char;
+      at += 1;
+    }
+  }
+  return out;
+}
+
+/**
+ * Every `export enum` in this package's query source, and any member that
+ * could not be read. The source directory can be pointed elsewhere for the
+ * checker's own tests with `WOW_CONFORMANCE_TS_SOURCE`.
+ */
 function tsEnums() {
   const found = new Map();
+  const unreadable = [];
   const walk = dir => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const path = join(dir, entry.name);
       if (entry.isDirectory()) walk(path);
       else if (entry.name.endsWith('.ts')) {
-        const source = readFileSync(path, 'utf8');
-        for (const match of source.matchAll(
-          /export\s+enum\s+(\w+)\s*\{([\s\S]*?)\n\}/g,
-        ))
-          found.set(
-            match[1],
-            [...match[2].matchAll(/=\s*(?:'([^']*)'|"([^"]*)")/g)].map(
-              value => value[1] ?? value[2],
-            ),
-          );
+        const source = stripTsComments(readFileSync(path, 'utf8'));
+        for (const match of source.matchAll(/export\s+enum\s+(\w+)\s*\{/g)) {
+          const open = match.index + match[0].length;
+          const body = source.slice(open, source.indexOf('}', open));
+          const values = [];
+          for (const member of body.split(',')) {
+            if (!member.trim()) continue;
+            const read =
+              /^\s*(?:\w+|'[^']*'|"[^"]*")\s*=\s*(?:'([^']*)'|"([^"]*)")\s*$/.exec(
+                member,
+              );
+            if (read) values.push(read[1] ?? read[2]);
+            else
+              unreadable.push(
+                `${match[1]}: cannot read this package's member \`${member.trim().slice(0, 60)}\``,
+              );
+          }
+          found.set(match[1], values);
+        }
       }
     }
   };
-  walk(join(here, '..', 'src', 'query'));
-  return found;
+  walk(
+    process.env.WOW_CONFORMANCE_TS_SOURCE ?? join(here, '..', 'src', 'query'),
+  );
+  return { found, unreadable };
 }
 
 function compareEnums(root) {
   const failures = [];
   const skipped = [];
-  const ts = tsEnums();
+  const { found: ts, unreadable: tsUnreadable } = tsEnums();
+  failures.push(...tsUnreadable);
   const { found, unreadable } = wowEnums(root);
   failures.push(...unreadable);
   const wow = new Map([...Object.entries(JDK_ENUMS), ...found]);

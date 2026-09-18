@@ -111,6 +111,22 @@ describe('check-wow-conformance', () => {
     ],
     ['one simple name declared twice', 'SyntheticTwin: declared in both'],
     [
+      'a real entry after a nested block comment',
+      'ComparisonOperator.BETWEEN_EXCLUSIVE: Wow has it, this package does not',
+    ],
+    [
+      'a subtype named by @JsonTypeName on its class',
+      'DerivedExpression.NAMED_BY_ANNOTATION: Wow has it, this package does not',
+    ],
+    [
+      'an entry with something after its name',
+      'Trailing: cannot read the entry `BAD extra`',
+    ],
+    [
+      'a subtype named by nothing it can read',
+      'DerivedExpression: cannot read the discriminator of `Type(DerivedExpression.Unnamed::class)`',
+    ],
+    [
       'a discriminator spelled as a constant',
       'AggregationGroup.new-type: Wow has it, this package does not',
     ],
@@ -124,6 +140,44 @@ describe('check-wow-conformance', () => {
     ],
   ])('reports %s', (_shape, report) => {
     expect(run().output).toContain(report);
+  });
+
+  it('keeps a nested block comment whole', () => {
+    // Read as code, its tail would yield these as entries.
+    expect(run().output).not.toContain('ComparisonOperator.NOT_EQ');
+    expect(run().output).not.toContain('ComparisonOperator.still');
+  });
+
+  it('reads entries that carry arguments and a body', () => {
+    expect(run().output).not.toContain('SyntheticOnlyInWow: cannot read');
+  });
+
+  it('does not count a commented-out member as one this package sends', () => {
+    // PHRASE survives in the TypeScript only in comments, so it is missing
+    // here; read from the comments, it would match Wow and pass.
+    const result = spawnSync(
+      process.execPath,
+      [
+        script,
+        fileURLToPath(new URL('../fixtures/wow-ts-comments', import.meta.url)),
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          WOW_CONFORMANCE_TS_SOURCE: fileURLToPath(
+            new URL('../fixtures/ts-comments', import.meta.url),
+          ),
+        },
+      },
+    );
+    const output = `${result.stdout}${result.stderr}`;
+    expect(output).toContain(
+      'SearchMode.PHRASE: Wow has it, this package does not',
+    );
+    // And a member with a doc comment of its own still reads: flagging every
+    // documented member as unreadable would fail on this package's own source.
+    expect(output).not.toContain("cannot read this package's member");
   });
 
   it('still reads an entry past its annotation', () => {

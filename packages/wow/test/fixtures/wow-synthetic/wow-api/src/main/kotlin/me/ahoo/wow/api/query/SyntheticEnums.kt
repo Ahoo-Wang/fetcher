@@ -25,8 +25,12 @@ enum class SearchMode { TERMS }
 // Wow brings back a value this package keeps only for older servers.
 enum class Operator { RAW }
 
-// An enum with nothing to mirror it here.
-enum class SyntheticOnlyInWow { ONE, TWO }
+// An enum with nothing to mirror it here. Its entries carry arguments and a
+// body, which an entry may; they must still read as ONE and TWO.
+enum class SyntheticOnlyInWow(val code: Int) {
+    ONE(1),
+    TWO(2) { override fun toString() = "two" },
+}
 
 // Discriminators spelled as literals on a sealed interface.
 @JsonSubTypes(
@@ -103,3 +107,32 @@ enum class SyntheticTwin { ONE }
 // be reported rather than dropped.
 enum class Unreadable { FINE, @ BROKEN }
 
+// Kotlin block comments nest. Stopping at the first closer would read
+// `still inside the comment` and NOT_EQ as entries and swallow the real
+// BETWEEN_EXCLUSIVE that follows.
+enum class ComparisonOperator {
+    EQ, NE, GT, GTE, LT, LTE,
+    /* retired: /* was LIKE */ still inside the comment, NOT_EQ */
+    BETWEEN_EXCLUSIVE,
+}
+
+// Subtypes named three ways: by `name =`, by `@JsonTypeName` on the class, and
+// by nothing this checker can read — which must be reported, not skipped.
+@JsonSubTypes(
+    JsonSubTypes.Type(DerivedExpression.Ref::class, name = "METRIC_REF"),
+    JsonSubTypes.Type(DerivedExpression.Named::class),
+    JsonSubTypes.Type(DerivedExpression.Unnamed::class),
+)
+sealed interface DerivedExpression {
+    data object Ref : DerivedExpression
+
+    @JsonTypeName("NAMED_BY_ANNOTATION")
+    data object Named : DerivedExpression
+
+    data object Unnamed : DerivedExpression
+}
+
+// Not valid Kotlin: something after an entry's name that is neither arguments
+// nor a body. Reading only the leading name would take the rest on trust; it
+// stands for whatever a future parsing gap leaves behind.
+enum class Trailing { GOOD, BAD extra }
