@@ -561,6 +561,50 @@ describe('DataViewRuntime admission', () => {
     expect(source.paged).not.toHaveBeenCalled();
   });
 
+  it('reports a stored filter that lost its shape even under a scope', async () => {
+    const scope: FilterTree = {
+      op: 'and',
+      children: [
+        { field: 'warehouse', operator: `${FilterOperator.EQ}`, value: 'CN' },
+      ],
+    };
+    const { runtime, source } = harness({
+      config: recordConfig({
+        filter: { op: 'and', children: [null as never] },
+      }),
+      saved: savedInstance,
+      scopeFilter: scope,
+    });
+
+    runtime.apply();
+    await flush();
+
+    // The malformed entry is neither dropped by the merge nor run around.
+    expect(runtime.getSnapshot().issues).toContainEqual(
+      expect.objectContaining({
+        code: 'filter.node.invalid',
+        path: ['children', 0],
+      }),
+    );
+    expect(source.paged).not.toHaveBeenCalled();
+  });
+
+  it('leaves a root that is not a group to admission, scope or not', () => {
+    const { runtime } = harness({
+      config: recordConfig({
+        filter: { field: 'warehouse', operator: 'EQ', value: 'CN' } as never,
+      }),
+      scopeFilter: {
+        op: 'and',
+        children: [{ field: 'status', operator: 'EQ', value: 'open' }],
+      },
+    });
+
+    expect(runtime.getSnapshot().issues.map(found => found.code)).toContain(
+      'config.filter.invalid',
+    );
+  });
+
   it('rejudges the draft when the scope is cleared or replaced', async () => {
     const { runtime, source } = harness({ scopeFilter: unknownField });
 
@@ -750,7 +794,9 @@ describe('DataViewRuntime lifecycle', () => {
     await flush();
 
     expect(clock.timers).toBe(0);
-    expect(listener).not.toHaveBeenCalled();
+    // Disposal is the last notification, so a subscriber reading `disposed`
+    // learns of it at once; nothing after it notifies again.
+    expect(listener).toHaveBeenCalledTimes(1);
     expect(source.paged).toHaveBeenCalledTimes(1);
     expect(runtime.setScopeFilter(null)).toEqual([]);
   });

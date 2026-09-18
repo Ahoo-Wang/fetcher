@@ -24,6 +24,7 @@ import {
   createFieldKindRegistry,
   describeFilter,
   emptyFilter,
+  isEmptyFilter,
   insertAt,
   isSimpleTree,
   MAX_RELATIVE_DATE_AMOUNT,
@@ -1112,6 +1113,28 @@ describe('tree editing', () => {
       { op: 'or', children: [leaf('id', 'b')] },
     ]);
     expect(mergeFilters()).toEqual(emptyFilter());
+  });
+
+  it('does not drop a tree that lost its shape as if it were empty', () => {
+    // A stored filter whose only entry is malformed says nothing valid, but
+    // it is not empty: dropping it behind an injected scope would run the
+    // query wider than the view was saved to be, and report nothing.
+    const broken = { op: 'and', children: [null] } as unknown as FilterTree;
+    const scope: FilterTree = {
+      op: 'and',
+      children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+    };
+
+    expect(isEmptyFilter(broken)).toBe(false);
+    expect(isEmptyFilter(emptyFilter())).toBe(true);
+    const merged = mergeFilters(broken, scope);
+    expect(merged.children).toHaveLength(2);
+    expect(
+      validateFilter(fields, merged, builtinFieldKinds).map(found => ({
+        code: found.code,
+        path: found.path,
+      })),
+    ).toEqual([{ code: 'filter.node.invalid', path: ['children', 0] }]);
   });
 });
 

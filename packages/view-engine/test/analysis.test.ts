@@ -349,6 +349,33 @@ describe('validateAnalysis', () => {
         ],
       }),
     ).toEqual(['analysis.group.blank-missing-key']);
+    // A stored value of the wrong type is malformed, not blank, and must not
+    // reach `trim`.
+    expect(
+      check({
+        groups: [
+          {
+            type: 'DATE_HISTOGRAM',
+            field: 'createdAt',
+            alias: 'wh',
+            unit: 'MONTH',
+            timeZone: 123 as never,
+          },
+        ],
+      }),
+    ).toEqual(['analysis.config.malformed']);
+    expect(
+      check({
+        groups: [
+          {
+            type: 'TERMS',
+            field: 'warehouse',
+            alias: 'wh',
+            missingKey: 123 as never,
+          },
+        ],
+      }),
+    ).toEqual(['analysis.config.malformed']);
   });
 
   it('checks each metric against the field capability', () => {

@@ -239,17 +239,14 @@ describe('useOpenView', () => {
 
   it('opens the id again when its runtime is disposed under it', async () => {
     const { engine } = engineWith();
-    const { result, rerender } = renderHook(() =>
-      useOpenView(engine, 'orders-1'),
-    );
+    const { result } = renderHook(() => useOpenView(engine, 'orders-1'));
     await waitFor(() => expect(result.current.runtime).not.toBeNull());
     const first = result.current.runtime!;
 
     // Let go behind the hook's back, as the engine does with the runtime of
-    // an instance that was deleted. Disposal notifies nobody, so the hook
-    // finds out on its next render rather than at once.
-    engine.close(first);
-    rerender();
+    // an instance that was deleted. Disposal is the runtime's last
+    // notification, so the hook hears of it without a render from anyone.
+    act(() => engine.close(first));
 
     // Not the dead one, and not handed out as if it were alive.
     expect(result.current.runtime).toBeNull();
@@ -261,13 +258,10 @@ describe('useOpenView', () => {
 
   it('reports a deleted view as gone rather than keeping its dead runtime', async () => {
     const { engine } = engineWith();
-    const { result, rerender } = renderHook(() =>
-      useOpenView(engine, 'orders-1'),
-    );
+    const { result } = renderHook(() => useOpenView(engine, 'orders-1'));
     await waitFor(() => expect(result.current.runtime).not.toBeNull());
 
     await act(() => engine.delete('orders-1'));
-    rerender();
 
     await waitFor(() =>
       expect(result.current.error).toMatchObject({

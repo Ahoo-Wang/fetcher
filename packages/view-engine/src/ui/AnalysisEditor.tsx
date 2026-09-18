@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from './components/select.js';
 import { ToggleGroup, ToggleGroupItem } from './components/toggle-group.js';
-import { crossesBoundary } from './FilterPanel.js';
+import { crossesBoundary, leavesEditor } from './FilterPanel.js';
 import { useViewMessages } from './MessagesProvider.js';
 
 export interface AnalysisEditorProps {
@@ -75,7 +75,7 @@ export function AnalysisEditor({ analysis, disabled }: AnalysisEditorProps) {
         if (crossesBoundary(event)) analysis.focus();
       }}
       onBlur={event => {
-        if (crossesBoundary(event)) analysis.blur();
+        if (leavesEditor(event)) analysis.blur();
       }}
     >
       <div className="flex flex-wrap items-center gap-2">

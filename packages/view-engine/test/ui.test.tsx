@@ -650,9 +650,11 @@ describe('save actions', () => {
       }),
     );
 
+    // The runtime goes at once — disposal notifies — and the list a moment
+    // later, once it has reloaded without the deleted view.
     await waitFor(() => expect(screen.queryByRole('table')).toBeNull());
+    expect(await screen.findByText('No view yet')).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull();
-    expect(screen.getByText('No view yet')).toBeDefined();
   });
 
   it('offers a way out of a conflict', async () => {
@@ -1882,6 +1884,30 @@ describe('FilterPanel and auto refresh', () => {
     expect(editing()).toBe(true);
     expect(setEditing).toHaveBeenCalledTimes(1);
     expect(setEditing).toHaveBeenCalledWith(true);
+  });
+
+  it('keeps holding while focus is in a popup of one of its controls', () => {
+    const { editing } = panelWithRuntime();
+    const input = screen.getByLabelText('warehouse value');
+    const trigger = screen.getByRole('combobox', {
+      name: /Warehouse operator/i,
+    });
+    fireEvent.focus(input, { relatedTarget: null });
+
+    // A select's list renders in a portal outside the panel, so focus moving
+    // into it looks like leaving. Base UI marks the trigger of an open popup
+    // with `data-popup-open`, which is what the panel goes by.
+    trigger.setAttribute('data-popup-open', '');
+    fireEvent.blur(trigger, { relatedTarget: document.body });
+    expect(editing()).toBe(true);
+
+    // Closed again, focus back on the trigger: a later blur is a real leave.
+    trigger.removeAttribute('data-popup-open');
+    fireEvent.focus(trigger, { relatedTarget: document.body });
+    fireEvent.blur(trigger, {
+      relatedTarget: screen.getByRole('button', { name: 'Elsewhere' }),
+    });
+    expect(editing()).toBe(false);
   });
 
   it('lets go when focus leaves the document altogether', () => {

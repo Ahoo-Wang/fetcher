@@ -479,6 +479,33 @@ describe('DashboardViewRuntime admission', () => {
     expect(() => runtime.edit({ refresh: { interval: null } })).not.toThrow();
   });
 
+  it('hands an editor only the fields that are fields', async () => {
+    const board = await harness();
+    const runtime = await board.open(
+      dashboardConfig({ fields: [null as never, REGION_FIELD] }),
+    );
+
+    expect(runtime.getSnapshot().issues).toMatchObject([
+      { code: 'dashboard.shape.invalid', path: ['fields', 0] },
+    ]);
+    // The filter editor maps these by name; the entry that is no field is
+    // admission's to report, not the editor's to trip over.
+    expect(runtime.fields.map(field => field.name)).toEqual(['region']);
+  });
+
+  it('notifies subscribers once when disposed', async () => {
+    const board = await harness();
+    const runtime = await board.open();
+    const listener = vi.fn();
+    runtime.subscribe(listener);
+
+    runtime.dispose();
+    runtime.dispose();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(runtime.disposed).toBe(true);
+  });
+
   it('opens a config with an entry that is no panel, and runs the rest', async () => {
     const board = await harness();
     const runtime = await board.open(

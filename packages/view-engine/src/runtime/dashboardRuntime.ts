@@ -26,6 +26,7 @@ import {
   type ViewScope,
 } from '../model/index.js';
 import {
+  isFilterGroup,
   isPlainObject,
   mergeFilters,
   type FieldKindRegistry,
@@ -186,8 +187,19 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
   }
 
   /** A dashboard declares its own filter fields; there is no definition to ask. */
+  /**
+   * Only the well-formed entries: a stored `fields` may hold something that
+   * is no field, which admission reports, and an editor mapping fields by
+   * name must not be the second place to find out.
+   */
   get fields(): readonly FieldDefinition[] {
-    return this.state.draft.fields;
+    const fields: unknown = this.state.draft.fields;
+    return Array.isArray(fields)
+      ? fields.filter(
+          (field): field is FieldDefinition =>
+            isPlainObject(field) && typeof field.name === 'string',
+        )
+      : [];
   }
 
   getSnapshot(): DashboardRuntimeState {
@@ -322,6 +334,8 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
       child.runtime.dispose();
     }
     this.children.clear();
+    // The last notification, so a subscriber reading `disposed` sees it now.
+    for (const listener of [...this.listeners]) listener();
     this.listeners.clear();
   }
 
@@ -340,9 +354,11 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     scope: ViewScope,
     scopeFilter: FilterTree | null = this.scopeFilter,
   ): Issue[] {
-    const merged = scopeFilter
-      ? { ...config, filter: mergeFilters(config.filter, scopeFilter) }
-      : config;
+    // A root that is not a group is admission's to report as it stands.
+    const merged =
+      scopeFilter && isFilterGroup(config.filter)
+        ? { ...config, filter: mergeFilters(config.filter, scopeFilter) }
+        : config;
     return validateDashboard(merged, scope, this.references, this.kinds, {
       limits: this.options.limits,
     });

@@ -31,6 +31,7 @@ import {
   type ViewScope,
 } from '../model/index.js';
 import {
+  isFilterGroup,
   issue,
   mergeFilters,
   type FieldKindRegistry,
@@ -434,6 +435,9 @@ export class DataViewRuntime<
     this.stopTimer();
     this.unwatchVisibility();
     this.runner.cancel(this.id);
+    // The last notification: a subscriber that reads `disposed` sees it now
+    // rather than on some later render it happens to get.
+    for (const listener of [...this.listeners]) listener();
     this.listeners.clear();
   }
 
@@ -451,7 +455,9 @@ export class DataViewRuntime<
 
   /** A config as it would run: the scope filter ANDed after its own. */
   private withScope(config: C, scope: FilterTree | null): C {
-    if (!scope) return config;
+    // A root that is not a group is admission's to report as it stands;
+    // merging would turn it into a condition, or lose it.
+    if (!scope || !isFilterGroup(config.filter)) return config;
     return { ...config, filter: mergeFilters(config.filter, scope) };
   }
 

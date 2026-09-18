@@ -164,8 +164,18 @@ function updateChildren(
 }
 
 /** True when the tree holds no leaf at any depth. */
+/**
+ * Whether a tree asks nothing: well-formed groups all the way down and not
+ * one leaf. A tree holding a malformed entry is not empty — it is admission's
+ * to report — so `mergeFilters` must not drop it as if it said nothing, or a
+ * stored filter that lost its shape would vanish behind an injected scope
+ * and the query would run wider than the view was saved to be.
+ */
 export function isEmptyFilter(tree: FilterTree): boolean {
-  return countLeaves(tree) === 0;
+  for (const visit of walkFilterShape(tree)) {
+    if (visit.node === null || isFilterLeaf(visit.node)) return false;
+  }
+  return true;
 }
 
 /**

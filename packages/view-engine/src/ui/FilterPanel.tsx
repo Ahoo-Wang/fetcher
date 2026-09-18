@@ -94,7 +94,7 @@ export function FilterPanel({
         if (crossesBoundary(event)) filter.focus();
       }}
       onBlur={event => {
-        if (crossesBoundary(event)) filter.blur();
+        if (leavesEditor(event)) filter.blur();
       }}
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -455,6 +455,18 @@ function FilterLeafRow({
 export function crossesBoundary(event: FocusEvent<HTMLElement>): boolean {
   const other = event.relatedTarget;
   return !(other instanceof Node && event.currentTarget.contains(other));
+}
+
+/**
+ * Whether a blur means the user left the editor. A select, a date picker or
+ * a menu of one of its controls renders in a portal outside the element, and
+ * focus in there is still focus in the editor. Base UI marks the trigger of
+ * an open popup, so the editor can tell one of its own is open; when it
+ * closes, focus returns to the trigger and a later blur is judged afresh.
+ */
+export function leavesEditor(event: FocusEvent<HTMLElement>): boolean {
+  if (!crossesBoundary(event)) return false;
+  return event.currentTarget.querySelector('[data-popup-open]') === null;
 }
 
 /**

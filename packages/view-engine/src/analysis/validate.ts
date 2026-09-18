@@ -231,16 +231,28 @@ function validateGroups(
       // not be refused because this client's ICU is trimmed or out of date. A
       // filter value is the opposite case — it is resolved here against dayjs,
       // so an unknown zone there is an error.
-      if (group.timeZone !== undefined && group.timeZone.trim() === '')
-        issues.push(
-          issue('analysis.group.blank-time-zone', [...path, 'timeZone']),
-        );
+      if (group.timeZone !== undefined) {
+        if (typeof group.timeZone !== 'string')
+          issues.push(
+            issue('analysis.config.malformed', [...path, 'timeZone']),
+          );
+        else if (group.timeZone.trim() === '')
+          issues.push(
+            issue('analysis.group.blank-time-zone', [...path, 'timeZone']),
+          );
+      }
     }
     if (group.type === 'TERMS') {
-      if (group.missingKey !== undefined && group.missingKey.trim() === '')
-        issues.push(
-          issue('analysis.group.blank-missing-key', [...path, 'missingKey']),
-        );
+      if (group.missingKey !== undefined) {
+        if (typeof group.missingKey !== 'string')
+          issues.push(
+            issue('analysis.config.malformed', [...path, 'missingKey']),
+          );
+        else if (group.missingKey.trim() === '')
+          issues.push(
+            issue('analysis.group.blank-missing-key', [...path, 'missingKey']),
+          );
+      }
     }
     return issues;
   });
