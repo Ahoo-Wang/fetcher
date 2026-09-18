@@ -60,6 +60,30 @@ describe('check-wow-conformance', () => {
     expect(run().output).toContain(rule);
   });
 
+  // Wire values are compared from the Kotlin side, and each shape of drift
+  // has a line in `SyntheticEnums.kt` that should produce it.
+  it.each([
+    [
+      'a value Wow gained',
+      'AggregationFunction.MEDIAN: Wow has it, this package does not',
+    ],
+    [
+      'a value Wow dropped',
+      'SearchMode.PHRASE: this package sends it, Wow does not know it',
+    ],
+    [
+      'a kept-here-only value Wow brought back',
+      'Operator.RAW: listed as kept here only, which is no longer true',
+    ],
+    ['an enum with no counterpart', 'SyntheticOnlyInWow: no counterpart here'],
+    [
+      'discriminators on a sealed interface',
+      'SyntheticDispatch: no counterpart here',
+    ],
+  ])('reports %s', (_shape, report) => {
+    expect(run().output).toContain(report);
+  });
+
   it('exits non-zero when the register does not name a rule', () => {
     // None of the fixture's rules is in the register, so every one of them is
     // reported and the run fails. That is the whole contract.

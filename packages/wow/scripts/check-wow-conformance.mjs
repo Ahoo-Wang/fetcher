@@ -248,6 +248,138 @@ function registeredRules() {
   return names;
 }
 
+/*
+ * Wire values: every enum in the protocol package, and the `@JsonSubTypes`
+ * names a sealed interface is dispatched on. They drift the way rules do —
+ * Wow adds `AggregationFunction.MEDIAN` and nothing here notices — so they are
+ * compared from the Kotlin side: a value Wow has that this package lacks is
+ * missing, and a value this package sends that Wow does not know is refused
+ * with a 400 unless it is accounted for below.
+ */
+
+/** Kotlin names whose counterpart here is spelled differently. */
+const ENUM_NAMES = {
+  Direction: 'SortDirection',
+  AggregationGroup: 'AggregationGroupType',
+  AggregationExpression: 'AggregationExpressionType',
+  AggregationMetric: 'AggregationMetricType',
+  DerivedExpression: 'DerivedExpressionType',
+  HavingExpression: 'HavingExpressionType',
+};
+
+/** Kotlin enums this package has no reason to mirror, and why. */
+const SERVER_ONLY_ENUMS = {
+  QueryCardinality:
+    'Schema metadata. This package neither holds nor sends a schema.',
+  QueryValueKind: 'Schema metadata, as above.',
+  QuerySemanticType:
+    'How a schema says a temporal field is stored (TEMPORAL_DATE, TEMPORAL_EPOCH, TEMPORAL_FORMATTED). Schema metadata, as above.',
+};
+
+/** Values kept here that current Wow does not have, and why. */
+const TS_ONLY_VALUES = {
+  Operator: {
+    RAW: 'Removed from Wow in #2999. The deprecated Condition API exists for servers older than that, which still accept it.',
+  },
+};
+
+/** Index just past the brace that closes the one opened before `index`. */
+function closeBrace(source, index) {
+  return skipBalanced(source, index, '{', '}');
+}
+
+function wowEnums(root) {
+  const found = new Map();
+  for (const file of kotlinFiles(root)) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const match of source.matchAll(/\benum\s+class\s+(\w+)[^{]*\{/g)) {
+      const body = source.slice(
+        match.index + match[0].length,
+        closeBrace(source, match.index + match[0].length) - 1,
+      );
+      // Entries end at the first `;`, after which an enum may declare members.
+      const entries = body
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/[^\n]*/g, '')
+        .split(';')[0];
+      found.set(
+        match[1],
+        entries
+          .split(',')
+          .map(entry => entry.trim().split(/[\s(]/)[0])
+          .filter(entry => /^[A-Z][A-Z0-9_]*$/.test(entry)),
+      );
+    }
+
+    // A sealed interface's discriminators, where they are spelled as literals.
+    for (const match of source.matchAll(
+      /@JsonSubTypes\(([\s\S]*?)\)\s*\n(?:\s*@[^\n]*\n)*\s*(?:sealed\s+)?interface\s+(\w+)/g,
+    )) {
+      const names = [...match[1].matchAll(/name\s*=\s*"([A-Z0-9_]+)"/g)].map(
+        name => name[1],
+      );
+      if (names.length > 0) found.set(match[2], names);
+    }
+  }
+  return found;
+}
+
+/** Every `export enum` in this package's query source, name to values. */
+function tsEnums() {
+  const found = new Map();
+  const walk = dir => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (entry.name.endsWith('.ts')) {
+        const source = readFileSync(path, 'utf8');
+        for (const match of source.matchAll(
+          /export\s+enum\s+(\w+)\s*\{([\s\S]*?)\n\}/g,
+        ))
+          found.set(
+            match[1],
+            [...match[2].matchAll(/=\s*'([^']*)'/g)].map(value => value[1]),
+          );
+      }
+    }
+  };
+  walk(join(here, '..', 'src', 'query'));
+  return found;
+}
+
+function compareEnums(root) {
+  const failures = [];
+  const skipped = [];
+  const ts = tsEnums();
+  for (const [name, values] of wowEnums(root)) {
+    if (SERVER_ONLY_ENUMS[name]) {
+      skipped.push(`${name} — ${SERVER_ONLY_ENUMS[name]}`);
+      continue;
+    }
+    const local = ts.get(ENUM_NAMES[name] ?? name);
+    if (!local) {
+      failures.push(`${name}: no counterpart here`);
+      continue;
+    }
+    const allowed = TS_ONLY_VALUES[name] ?? {};
+    for (const value of values)
+      if (!local.includes(value))
+        failures.push(`${name}.${value}: Wow has it, this package does not`);
+    for (const value of local)
+      if (!values.includes(value) && !allowed[value])
+        failures.push(
+          `${name}.${value}: this package sends it, Wow does not know it`,
+        );
+    for (const value of Object.keys(allowed))
+      if (values.includes(value) || !local.includes(value))
+        failures.push(
+          `${name}.${value}: listed as kept here only, which is no longer true`,
+        );
+  }
+  return { failures, skipped };
+}
+
 const root = resolve(process.argv[2] ?? process.env.WOW_HOME ?? '');
 if (!process.argv[2] && !process.env.WOW_HOME) {
   console.error(
@@ -289,4 +421,15 @@ if (stale.length > 0) {
   for (const rule of stale) console.log(`  ? ${rule}`);
 }
 
-process.exit(missing.length > 0 ? 1 : 0);
+const enums = compareEnums(root);
+if (enums.failures.length > 0) {
+  console.error(
+    `\n${enums.failures.length} wire value(s) out of step with Wow:`,
+  );
+  for (const failure of enums.failures) console.error(`  ! ${failure}`);
+} else {
+  console.log('\nEvery wow-api enum and discriminator matches.');
+}
+for (const skipped of enums.skipped) console.log(`  - ${skipped}`);
+
+process.exit(missing.length > 0 || enums.failures.length > 0 ? 1 : 0);

@@ -38,7 +38,18 @@ pnpm --filter @ahoo-wang/fetcher-wow check:wow /path/to/Wow
 ```
 
 It exits non-zero naming any rule in `wow-api`'s query package the register
-does not carry. It is not part of CI, which has no Wow checkout.
+does not carry, and any wire value out of step with Wow: every enum, and the
+`@JsonSubTypes` names a sealed interface is dispatched on. A value Wow has that
+this package lacks is missing; a value this package sends that Wow does not
+know is refused with a 400. Deliberate differences are listed in the script
+with their reason — `SERVER_ONLY_ENUMS` for schema metadata the client never
+sends, `TS_ONLY_VALUES` for `Operator.RAW`, which the deprecated Condition API
+keeps for servers older than Wow #2999. It is not part of CI, which has no Wow
+checkout.
+
+The checker is itself held by `conformanceScript.test.ts` against the stand-in
+checkout in `test/fixtures/wow-synthetic`, one case per shape it must read.
+When it misses something, add the shape there first.
 
 ## Testing
 
