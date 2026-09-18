@@ -1216,6 +1216,21 @@ describe('RecordCards on its own', () => {
 });
 
 describe('RecordTable on its own', () => {
+  it('hands a custom cell the null the record holds', () => {
+    const seen: unknown[] = [];
+    render(
+      <RecordTable
+        table={tableController()}
+        renderCell={cell => {
+          if (cell.key === 'o-2' && cell.column.field === 'amount')
+            seen.push(cell.value);
+          return null;
+        }}
+      />,
+    );
+    expect(seen).toEqual([null]);
+  });
+
   it('formats each value by what the column declared', () => {
     render(<RecordTable table={tableController()} />);
 

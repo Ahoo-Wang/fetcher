@@ -139,9 +139,18 @@ export type SummarySource =
  * The value of `field` in a record. A field is a Wow query path, so
  * `state.status` is a value inside `state` rather than a key named with a dot:
  * a Wow snapshot keeps everything it materialises under `state`.
+ *
+ * A `null` the record holds comes back as `null`; only a path that is not
+ * there is `undefined`. A cell renderer may tell the two apart, and
+ * `getPropertyValue` would turn the first into the second.
  */
 export function recordValue(data: RecordData, field: string): unknown {
-  return getPropertyValue<unknown>(data, field);
+  let value: unknown = data;
+  for (const segment of field.split('.')) {
+    if (value === null || typeof value !== 'object') return undefined;
+    value = (value as Record<string, unknown>)[segment];
+  }
+  return value;
 }
 
 function reduceRows(
