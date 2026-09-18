@@ -66,10 +66,17 @@ an entry's `@JsonProperty` value rather than its Kotlin name, and an enum
 written through `@JsonValue` is reported, since its entry names are not sent.
 Two declarations sharing a simple name are an error rather than one silently
 replacing the other. Each `JsonSubTypes.Type` must yield a name — from
-`name =`, `names =`, or a single `@JsonTypeName` on its class. Comments follow
-each language's own rules: Kotlin block comments nest, TypeScript's do not.
+`name =`, `names =`, or a single `@JsonTypeName` on its class — and its owner
+must carry `@JsonTypeInfo(use = …Id.NAME)`, since under any other id the wire
+does not carry those names. `@JsonValue` is recognised under any use-site
+target and by its qualified name. Comments follow each language's own rules:
+Kotlin block comments nest, TypeScript's do not. Declarations are located in a
+copy of the source with comments and strings blanked, so a documentation
+example is neither mistaken for a declaration nor raises a false alarm, and
+then read from the original at the same offsets.
 
-`test/fixtures/` holds the stand-ins: `wow-synthetic` for most shapes, and
+`test/fixtures/` holds the stand-ins: `wow-synthetic` for most shapes,
+`wow-kdoc` for declarations that exist only in comments and strings, and
 `wow-ts-comments` with `ts-comments` as a pair for how this package's own
 TypeScript is read, which `WOW_CONFORMANCE_TS_SOURCE` points the checker at.
 

@@ -208,6 +208,31 @@ function literalAt(source, index) {
 }
 
 /**
+ * The source with every comment and string blanked out, kept the same length.
+ *
+ * Declarations are *found* by pattern, so a pattern run over the raw text
+ * finds them in comments too: a KDoc example of `enum class SearchMode { … }`
+ * would count as Wow declaring it, and would stand in for the real one after
+ * Wow deleted it. Finding runs over this; reading then goes back to the
+ * original at the same offsets, which is why the length and the newlines stay.
+ */
+function maskOpaque(source) {
+  let out = '';
+  let at = 0;
+  while (at < source.length) {
+    const end = skipOpaque(source, at);
+    if (end < 0) {
+      out += source[at];
+      at += 1;
+    } else {
+      out += source.slice(at, end).replace(/[^\n]/g, ' ');
+      at = end;
+    }
+  }
+  return out;
+}
+
+/**
  * Every message a rule is stated with in one Kotlin file.
  *
  * Kotlin states a rule in more than one way, and a checker that knows only one
@@ -220,8 +245,10 @@ function messagesIn(source) {
   const push = message => {
     if (message !== null) found.push(message);
   };
+  // A `require` in a doc comment is an example, not a rule.
+  const masked = maskOpaque(source);
 
-  for (const match of source.matchAll(
+  for (const match of masked.matchAll(
     /\b(?:require|check)(?:NotNull)?\s*\(/g,
   )) {
     const closed = skipBalanced(
@@ -234,7 +261,7 @@ function messagesIn(source) {
     if (source[block] === '{')
       push(literalAt(source, skipTrivia(source, block + 1)));
   }
-  for (const match of source.matchAll(
+  for (const match of masked.matchAll(
     /\bthrow\s+\w*(?:Exception|Error)\s*\(|\berror\s*\(/g,
   ))
     push(literalAt(source, skipTrivia(source, match.index + match[0].length)));
@@ -528,7 +555,7 @@ function resolveConstant(reference, constants) {
  * A `JsonSubTypes.Type` without a `name` takes its discriminator from there.
  */
 function typeNamesIn(source, constants, into) {
-  for (const match of source.matchAll(/@JsonTypeName\s*\(/g)) {
+  for (const match of maskOpaque(source).matchAll(/@JsonTypeName\s*\(/g)) {
     const open = match.index + match[0].length;
     const close = skipBalanced(source, open, '(', ')');
     const value = valueAt(
@@ -615,7 +642,7 @@ function subtypeNames(args, owner, constants, typeNames, unreadable) {
 function interfaceAfter(source, index) {
   const at = skipAnnotations(source, index);
   const declaration =
-    /^(?:(?:sealed|abstract|public|internal|private)\s+)*interface\s+(\w+)/.exec(
+    /^(?:(?:sealed|abstract|public|internal|private)\s+)*(?:interface|class)\s+(\w+)/.exec(
       source.slice(at),
     );
   return declaration ? declaration[1] : null;
@@ -640,6 +667,17 @@ function wowEnums(root) {
   for (const { source } of files) constantsIn(source, constants);
   const typeNames = new Map();
   for (const { source } of files) typeNamesIn(source, constants, typeNames);
+  // Which id each polymorphic declaration puts on the wire. A subtype's `name`
+  // is its discriminator only under `Id.NAME`; under `Id.CLASS` the wire
+  // carries a class name, and the `name` would be compared for nothing.
+  const typeInfo = new Map();
+  for (const { source } of files)
+    for (const match of maskOpaque(source).matchAll(/@JsonTypeInfo\s*\(/g)) {
+      const open = match.index + match[0].length;
+      const close = skipBalanced(source, open, '(', ')');
+      const owner = interfaceAfter(source, close);
+      if (owner) typeInfo.set(owner, source.slice(open, close - 1));
+    }
 
   const found = new Map();
   const declaredIn = new Map();
@@ -657,12 +695,18 @@ function wowEnums(root) {
     found.set(name, values);
   };
   for (const { where, source } of files) {
-    for (const match of source.matchAll(/\benum\s+class\s+(\w+)[^{]*\{/g)) {
+    const masked = maskOpaque(source);
+    for (const match of masked.matchAll(/\benum\s+class\s+(\w+)[^{]*\{/g)) {
       const open = match.index + match[0].length;
-      const body = source.slice(open, closeBrace(source, open) - 1);
+      const close = closeBrace(source, open);
+      const body = source.slice(open, close - 1);
       // An enum written through `@JsonValue` puts a property on the wire, not
-      // its entries' names, so the names say nothing about what is sent.
-      if (/@(?:get:)?JsonValue\b/.test(match[0] + body)) {
+      // its entries' names, so the names say nothing about what is sent. Any
+      // use-site target (`get:`, `field:`, `property:`) and a qualified name
+      // mean the same; matching only `@get:JsonValue` missed the rest.
+      if (
+        /@(?:\w+:)?(?:\w+\.)*JsonValue\b/.test(masked.slice(match.index, close))
+      ) {
         unreadable.push(
           `${match[1]}: serialises through @JsonValue, so its entry names are not its wire values`,
         );
@@ -683,11 +727,24 @@ function wowEnums(root) {
       record(match[1], values, where);
     }
 
-    for (const match of source.matchAll(/@JsonSubTypes\s*\(/g)) {
+    for (const match of masked.matchAll(/@JsonSubTypes\s*\(/g)) {
       const open = match.index + match[0].length;
       const close = skipBalanced(source, open, '(', ')');
       const args = source.slice(open, close - 1);
       const owner = interfaceAfter(source, close) ?? 'an unnamed @JsonSubTypes';
+      const info = typeInfo.get(owner);
+      const use =
+        info === undefined
+          ? undefined
+          : /\buse\s*=\s*(?:[\w]+\.)*(\w+)/.exec(info)?.[1];
+      if (use !== 'NAME') {
+        unreadable.push(
+          info === undefined
+            ? `${owner}: has no @JsonTypeInfo of its own, so its wire discriminators cannot be read from subtype names`
+            : `${owner}: @JsonTypeInfo uses ${use ?? 'no id'}, so its subtype names are not its wire discriminators`,
+        );
+        continue;
+      }
       const names = subtypeNames(args, owner, constants, typeNames, unreadable);
       if (names.length > 0) record(owner, names, where);
     }

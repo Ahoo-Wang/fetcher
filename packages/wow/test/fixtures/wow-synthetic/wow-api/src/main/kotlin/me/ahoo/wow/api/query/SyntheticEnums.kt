@@ -33,6 +33,7 @@ enum class SyntheticOnlyInWow(val code: Int) {
 }
 
 // Discriminators spelled as literals on a sealed interface.
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(SyntheticDispatch.Alpha::class, name = "ALPHA"),
     JsonSubTypes.Type(SyntheticDispatch.Beta::class, name = "BETA"),
@@ -47,6 +48,7 @@ enum class Direction { ASC, DESC, random }
 
 // A discriminator holding a hyphen and lowercase letters, with a further
 // annotation between it and its interface whose arguments hold brackets.
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(HavingExpression.Condition::class, name = "CONDITION"),
     JsonSubTypes.Type(HavingExpression.NotNull::class, name = "not-null"),
@@ -82,6 +84,7 @@ object SyntheticProtocol {
     }
 }
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(AggregationGroup.New::class, name = SyntheticProtocol.Group.NEW_TYPE),
     JsonSubTypes.Type(AggregationGroup.Lost::class, name = Nowhere.MISSING),
@@ -118,6 +121,7 @@ enum class ComparisonOperator {
 
 // Subtypes named three ways: by `name =`, by `@JsonTypeName` on the class, and
 // by nothing this checker can read — which must be reported, not skipped.
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(DerivedExpression.Ref::class, name = "METRIC_REF"),
     JsonSubTypes.Type(DerivedExpression.Named::class),
@@ -136,3 +140,26 @@ sealed interface DerivedExpression {
 // nor a body. Reading only the leading name would take the rest on trust; it
 // stands for whatever a future parsing gap leaves behind.
 enum class Trailing { GOOD, BAD extra }
+
+// @JsonValue under other use-site targets, and by its qualified name. Each puts
+// a property on the wire exactly as `@get:JsonValue` does.
+enum class SyntheticFieldWire(@field:JsonValue val wire: String) { A("a") }
+
+enum class SyntheticQualifiedWire(
+    @get:com.fasterxml.jackson.annotation.JsonValue val wire: String,
+) { A("a") }
+
+// Subtype names are the wire discriminators only under Id.NAME. Under
+// Id.CLASS the wire carries class names, and with no @JsonTypeInfo here the id
+// cannot be known from this declaration at all.
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+@JsonSubTypes(JsonSubTypes.Type(ByClass.A::class, name = "TERMS"))
+sealed interface ByClass {
+    data object A : ByClass
+}
+
+@JsonSubTypes(JsonSubTypes.Type(Untyped.A::class, name = "TERMS"))
+sealed interface Untyped {
+    data object A : Untyped
+}
+
