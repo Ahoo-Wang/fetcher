@@ -151,6 +151,49 @@ export function OrdersPage() {
 
 主题跟随宿主：祖先上带 `.dark` class 即为暗色；给 `ViewSurface` 传 `theme="light"` 或 `theme="dark"` 可以把某一处视图钉住。
 
+#### 定制主题
+
+每个 token 都读一个宿主层变量，并以内置值兜底：在自己的 `:root` 上给亮色设 `--fve-<token>`、给暗色设 `--fve-dark-<token>` 即可，视图根与 Portal 到 `<body>` 的弹层都会读到——不必考虑选择器作用域，也不必考虑样式加载顺序。
+
+```css
+:root {
+  --fve-primary: oklch(0.55 0.21 265deg);
+  --fve-primary-foreground: oklch(0.99 0 0deg);
+  --fve-dark-primary: oklch(0.75 0.15 265deg);
+  --fve-dark-primary-foreground: oklch(0.21 0.05 265deg);
+  --fve-radius: 0.375rem;
+}
+```
+
+| Token                  | 用途                       | 亮色默认值                     | 暗色默认值                     |
+| ---------------------- | -------------------------- | ------------------------------ | ------------------------------ |
+| `background`           | 整体底色                   | `oklch(1 0 0deg)`              | `oklch(0.145 0 0deg)`          |
+| `foreground`           | 默认文字                   | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `card`                 | 卡片与面板底色             | `oklch(1 0 0deg)`              | `oklch(0.205 0 0deg)`          |
+| `card-foreground`      | 卡片上的文字               | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `popover`              | 弹层底色                   | `oklch(1 0 0deg)`              | `oklch(0.205 0 0deg)`          |
+| `popover-foreground`   | 弹层内文字                 | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `primary`              | 主操作填充                 | `oklch(0.205 0 0deg)`          | `oklch(0.922 0 0deg)`          |
+| `primary-foreground`   | 主操作上的文字             | `oklch(0.985 0 0deg)`          | `oklch(0.205 0 0deg)`          |
+| `secondary`            | 次操作填充                 | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
+| `secondary-foreground` | 次操作上的文字             | `oklch(0.205 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `muted`                | 弱化底色                   | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
+| `muted-foreground`     | 次要文字                   | `oklch(0.556 0 0deg)`          | `oklch(0.708 0 0deg)`          |
+| `accent`               | 悬停与选中填充             | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
+| `accent-foreground`    | 强调态上的文字             | `oklch(0.205 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `destructive`          | 危险与删除                 | `oklch(0.577 0.245 27.325deg)` | `oklch(0.704 0.191 22.216deg)` |
+| `border`               | 边框与分隔线               | `oklch(0.922 0 0deg)`          | `oklch(1 0 0deg / 10%)`        |
+| `input`                | 输入与控件边框             | `oklch(0.922 0 0deg)`          | `oklch(1 0 0deg / 15%)`        |
+| `ring`                 | 焦点环                     | `oklch(0.708 0 0deg)`          | `oklch(0.556 0 0deg)`          |
+| `chart-1`              | 图表第 1 槽，蓝            | `#2a78d6`                      | `#3987e5`                      |
+| `chart-2`              | 图表第 2 槽，橙            | `#eb6834`                      | `#d95926`                      |
+| `chart-3`              | 图表第 3 槽，青            | `#1baf7a`                      | `#199e70`                      |
+| `chart-4`              | 图表第 4 槽，黄            | `#eda100`                      | `#c98500`                      |
+| `chart-5`              | 图表第 5 槽，品红          | `#e87ba4`                      | `#d55181`                      |
+| `radius`               | 圆角基准，其余档位由它换算 | `0.625rem`                     | —                              |
+
+`radius` 是暗色块唯一不重新声明的 token，因此 `--fve-radius` 对明暗两态同时生效，也就没有 `--fve-dark-radius`。
+
 ### 3b. 或者自行组合 UI
 
 ```tsx

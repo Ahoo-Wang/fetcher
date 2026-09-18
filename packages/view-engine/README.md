@@ -153,6 +153,49 @@ export function OrdersPage() {
 
 The theme follows the host through a `.dark` class on any ancestor; pass `theme="light"` or `theme="dark"` to `ViewSurface` to pin one view.
 
+#### Customising the theme
+
+Every token reads a host-level variable with the built-in value as its fallback: set `--fve-<token>` for light and `--fve-dark-<token>` for dark on your own `:root`, and the surface and the popups portalled to `<body>` both pick it up — no selector to scope, no load order to win.
+
+```css
+:root {
+  --fve-primary: oklch(0.55 0.21 265deg);
+  --fve-primary-foreground: oklch(0.99 0 0deg);
+  --fve-dark-primary: oklch(0.75 0.15 265deg);
+  --fve-dark-primary-foreground: oklch(0.21 0.05 265deg);
+  --fve-radius: 0.375rem;
+}
+```
+
+| Token                  | Role                                 | Light default                  | Dark default                   |
+| ---------------------- | ------------------------------------ | ------------------------------ | ------------------------------ |
+| `background`           | Surface behind everything            | `oklch(1 0 0deg)`              | `oklch(0.145 0 0deg)`          |
+| `foreground`           | Default text                         | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `card`                 | Card and panel surface               | `oklch(1 0 0deg)`              | `oklch(0.205 0 0deg)`          |
+| `card-foreground`      | Text on cards                        | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `popover`              | Popup surface                        | `oklch(1 0 0deg)`              | `oklch(0.205 0 0deg)`          |
+| `popover-foreground`   | Text in popups                       | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `primary`              | Primary action fill                  | `oklch(0.205 0 0deg)`          | `oklch(0.922 0 0deg)`          |
+| `primary-foreground`   | Text on primary                      | `oklch(0.985 0 0deg)`          | `oklch(0.205 0 0deg)`          |
+| `secondary`            | Secondary action fill                | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
+| `secondary-foreground` | Text on secondary                    | `oklch(0.205 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `muted`                | Muted surface                        | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
+| `muted-foreground`     | Secondary text                       | `oklch(0.556 0 0deg)`          | `oklch(0.708 0 0deg)`          |
+| `accent`               | Hover and selected fill              | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
+| `accent-foreground`    | Text on accent                       | `oklch(0.205 0 0deg)`          | `oklch(0.985 0 0deg)`          |
+| `destructive`          | Danger and delete                    | `oklch(0.577 0.245 27.325deg)` | `oklch(0.704 0.191 22.216deg)` |
+| `border`               | Borders and dividers                 | `oklch(0.922 0 0deg)`          | `oklch(1 0 0deg / 10%)`        |
+| `input`                | Input and control borders            | `oklch(0.922 0 0deg)`          | `oklch(1 0 0deg / 15%)`        |
+| `ring`                 | Focus ring                           | `oklch(0.708 0 0deg)`          | `oklch(0.556 0 0deg)`          |
+| `chart-1`              | Chart slot 1, blue                   | `#2a78d6`                      | `#3987e5`                      |
+| `chart-2`              | Chart slot 2, orange                 | `#eb6834`                      | `#d95926`                      |
+| `chart-3`              | Chart slot 3, aqua                   | `#1baf7a`                      | `#199e70`                      |
+| `chart-4`              | Chart slot 4, yellow                 | `#eda100`                      | `#c98500`                      |
+| `chart-5`              | Chart slot 5, magenta                | `#e87ba4`                      | `#d55181`                      |
+| `radius`               | Corner radius, the rest scale off it | `0.625rem`                     | —                              |
+
+`radius` is the one token the dark block does not redeclare, so `--fve-radius` sets it in both modes and there is no `--fve-dark-radius`.
+
 ### 3b. Or compose your own UI
 
 ```tsx

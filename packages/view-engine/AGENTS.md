@@ -74,12 +74,12 @@ Beyond the six:
 
 Package entries:
 
-| Entry                            | Contents                                                                      |
-| -------------------------------- | ----------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-view-engine` | `model`, the four kernels, `runtime`, the `ViewStore` port, `MemoryViewStore` |
-| `/react`                         | Hooks and headless controllers                                                |
-| `/ui`                            | Default components, views and workbenches                                     |
-| `/styles.css`                    | Theme, imported explicitly                                                    |
+| Entry                            | Contents                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-view-engine` | `model`, the four kernels, `runtime`, the `ViewStore` port, `MemoryViewStore`         |
+| `/react`                         | Hooks and headless controllers                                                        |
+| `/ui`                            | Default components, views and workbenches                                             |
+| `/styles.css`                    | Theme, imported explicitly, customised through `--fve-*` / `--fve-dark-*` on the host |
 
 ## Project Structure
 

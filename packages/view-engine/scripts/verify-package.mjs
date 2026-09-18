@@ -13,7 +13,7 @@
 
 // Run after building: pnpm --filter @ahoo-wang/fetcher-view-engine test:package
 //
-// Five properties of the built package, which no unit test can see because
+// Six properties of the built package, which no unit test can see because
 // each one is about the artifact rather than the source (docs/design.md §12):
 //
 // 1. Every declared entry resolves and imports.
@@ -25,6 +25,8 @@
 //    import it keeps its own page.
 // 5. The `dark:` utilities and the dark tokens turn on the same roots, so no
 //    host can end up with the utilities of one mode over the other's tokens.
+// 6. Every token defers to a host-level `--fve-*` variable, so a host can
+//    customise the theme from `:root` without reaching inside the root.
 import assert from 'node:assert/strict';
 import {
   readFileSync,
@@ -139,6 +141,47 @@ assert.deepEqual(
   'The dark: variant and the dark tokens must name the same roots',
 );
 
+// 6. Every token is an indirection through a host-level variable.
+//
+// A host customises the theme by setting `--fve-<token>` for light and
+// `--fve-dark-<token>` for dark on its own `:root`, and every token here reads
+// that variable with the built-in value as its fallback. Because the host sets
+// them above everything, the override reaches the root and the popups
+// portalled out of it alike, in follow-the-host and pinned modes alike, with
+// no selector to scope and no load order to win. A token left as a literal
+// would quietly ignore the host, so both blocks are read token by token.
+const lightTokens = styleRules(stylesheet).find(
+  ({ selector, declarations }) =>
+    selector === '.fve-root' &&
+    declarations.includes('color-scheme') &&
+    declarations.includes('--background'),
+);
+assert.ok(lightTokens, 'The stylesheet sets no light tokens');
+for (const [mode, rule, prefix] of [
+  ['light', lightTokens, '--fve-'],
+  ['dark', darkTokens, '--fve-dark-'],
+]) {
+  // The minifier may drop the space after the comma; the fallback is the rest.
+  const literal = rule.tokens.filter(
+    ([property, value]) =>
+      !new RegExp(`^var\\(${prefix}${property.slice(2)},\\s*.+\\)$`).test(
+        value,
+      ),
+  );
+  assert.deepEqual(
+    literal.map(([property]) => property),
+    [],
+    `The ${mode} tokens must each read ${prefix}<token> with the built-in value as the fallback`,
+  );
+  assert.deepEqual(
+    rule.tokens
+      .map(([property]) => property)
+      .filter(property => property.startsWith('--sidebar')),
+    [],
+    `The ${mode} tokens still set sidebar properties, which nothing in this package uses`,
+  );
+}
+
 /** A selector list split on its top-level commas, each part trimmed. */
 function selectorList(selectors) {
   const parts = [];
@@ -182,8 +225,9 @@ function unquoted(selector) {
 }
 
 /**
- * Every style rule in a stylesheet as its selector and the properties it
- * sets; `@keyframes` steps are not selectors and are left out.
+ * Every style rule in a stylesheet as its selector, the properties it sets
+ * and, for the custom properties among them, `tokens` — the property paired
+ * with its value; `@keyframes` steps are not selectors and are left out.
  */
 function styleRules(css) {
   const rules = [];
@@ -191,10 +235,13 @@ function styleRules(css) {
     if (rule.parent?.type === 'atrule' && rule.parent.name === 'keyframes')
       return;
     const declarations = [];
+    const tokens = [];
     rule.each(node => {
-      if (node.type === 'decl') declarations.push(node.prop);
+      if (node.type !== 'decl') return;
+      declarations.push(node.prop);
+      if (node.prop.startsWith('--')) tokens.push([node.prop, node.value]);
     });
-    rules.push({ selector: rule.selector, declarations });
+    rules.push({ selector: rule.selector, declarations, tokens });
   });
   return rules;
 }
@@ -265,12 +312,12 @@ for (const file of visited) {
   }
 }
 
-// 6. And, that settled, every entry actually imports.
+// 7. And, that settled, every entry actually imports.
 for (const { specifier, resolved } of jsEntries) {
   const module = await import(resolved);
   assert.ok(Object.keys(module).length > 0, `${specifier} exports nothing`);
 }
 
 console.log(
-  `${targets.size} entries resolve and import, the root entry's types need no DOM lib, ${visited.size} runtime modules import no CSS, the stylesheet paints nothing outside .fve-root, and its dark: utilities turn on the same ${tokenSelectors.length} roots as its dark tokens.`,
+  `${targets.size} entries resolve and import, the root entry's types need no DOM lib, ${visited.size} runtime modules import no CSS, the stylesheet paints nothing outside .fve-root, its dark: utilities turn on the same ${tokenSelectors.length} roots as its dark tokens, and its ${lightTokens.tokens.length} light and ${darkTokens.tokens.length} dark tokens all defer to --fve-* host variables.`,
 );
