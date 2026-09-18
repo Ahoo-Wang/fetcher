@@ -31,6 +31,11 @@ export interface ViewSurfaceProps extends React.ComponentProps<'div'> {
  * element, so importing `@ahoo-wang/fetcher-view-engine/styles.css` changes
  * nothing about the page around it, and an embedded view can pin its own
  * theme while the rest of the application follows the host.
+ *
+ * Surfaces do not nest: every workbench and `EmbeddedView` renders one root.
+ * Nesting a surface pinned to the opposite mode inside another is not
+ * supported — the `dark:` utilities follow the outer root, since CSS has no
+ * nearest-ancestor selector.
  */
 /**
  * The theme a surface was given, for what renders outside it. A popup is

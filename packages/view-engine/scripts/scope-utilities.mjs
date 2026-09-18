@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import prefixer from 'postcss-prefix-selector';
 
 /**
- * Keeps every painting rule of the theme inside `.fve-root`.
+ * Keeps every rule of the theme inside `.fve-root`.
  *
  * Tailwind's preflight resets `*`, `html`, headings, lists and buttons on the
  * whole page, its utilities are bare classes (`.flex`, `.container`,
@@ -28,9 +28,21 @@ import prefixer from 'postcss-prefix-selector';
  * sources produced. A rule whose subject can never be inside the root
  * (`html`) simply stops matching, which is how the host keeps its typography.
  *
- * Left alone: a rule that already names the root, and one that only sets
- * custom properties (Tailwind's `--tw-*` defaults on `*`, the `:root`
- * fallbacks): they paint nothing. The library skips `@keyframes` steps itself.
+ * A selector part that is exactly `:root` or `:host` becomes the root itself;
+ * a part that already names the root is left as it is. Nothing else is exempt
+ * — a rule that only sets custom properties is rewritten like any other,
+ * because a host reads custom properties. Tailwind emits its theme variables
+ * (`--spacing`, `--text-sm`, `--font-sans`, `--radius-md`, …) on `:root, :host`,
+ * so left there they would overwrite a host Tailwind's values for the same
+ * names, or be overwritten by them; and a variable derived from a token of
+ * this root (`--radius-md: calc(var(--radius) * .8)`) is only valid where the
+ * token is, which is the root and nowhere else. `*` becoming
+ * `*:where(.fve-root, .fve-root *)` is right for the same reason: Tailwind's
+ * `--tw-*` defaults then apply to the root and to everything inside it.
+ * Only `@property` registrations stay global, because registration has no
+ * selector by nature — and what it registers is the `--tw-*` and animation
+ * names a host Tailwind registers identically. The library skips `@keyframes`
+ * steps itself.
  *
  * It runs after the Tailwind Vite plugin, which compiles ahead of PostCSS,
  * and only on the theme file: Storybook runs it too, so the stories show the
@@ -45,16 +57,12 @@ export function scopeUtilities(root = '.fve-root') {
   return prefixer({
     prefix: root,
     includeFiles: [THEME],
-    transform(_prefix, selector, _prefixed, _file, rule) {
-      if (selector.includes(root)) return selector;
-      const paints = rule.nodes.some(
-        node => node.type === 'decl' && !node.prop.startsWith('--'),
-      );
-      if (!paints) return selector;
-      const at = selector.search(PSEUDO_ELEMENT);
-      return at < 0
-        ? selector + scope
-        : selector.slice(0, at) + scope + selector.slice(at);
+    transform(_prefix, selector) {
+      const part = selector.trim();
+      if (part === ':root' || part === ':host') return root;
+      if (part.includes(root)) return part;
+      const at = part.search(PSEUDO_ELEMENT);
+      return at < 0 ? part + scope : part.slice(0, at) + scope + part.slice(at);
     },
   });
 }
