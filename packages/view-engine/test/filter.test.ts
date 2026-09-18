@@ -78,6 +78,39 @@ function errors(issues: { severity: string; code: string }[]): string[] {
 }
 
 describe('validateFilter', () => {
+  it('refuses a field named twice in one group, under any operator', () => {
+    const twice = (op: 'and' | 'or' | 'nor'): FilterTree => ({
+      op,
+      children: [
+        { field: 'id', operator: 'EQ', value: 'a' },
+        { field: 'amount', operator: 'GT', value: 1 },
+        { field: 'id', operator: 'EQ', value: 'b' },
+      ],
+    });
+    for (const op of ['and', 'or', 'nor'] as const)
+      expect(validateFilter(fields, twice(op), builtinFieldKinds)).toEqual([
+        expect.objectContaining({
+          code: 'filter.field.duplicate-in-group',
+          path: ['children', 2],
+          params: { field: 'id' },
+        }),
+      ]);
+  });
+
+  it('lets a field appear once per group, so a nested group asks again', () => {
+    const nested: FilterTree = {
+      op: 'and',
+      children: [
+        { field: 'id', operator: 'EQ', value: 'a' },
+        {
+          op: 'or',
+          children: [{ field: 'id', operator: 'EQ', value: 'b' }],
+        },
+      ],
+    };
+    expect(validateFilter(fields, nested, builtinFieldKinds)).toEqual([]);
+  });
+
   it('admits an empty tree', () => {
     expect(validateFilter(fields, emptyFilter(), builtinFieldKinds)).toEqual(
       [],

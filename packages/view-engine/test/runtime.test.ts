@@ -452,7 +452,11 @@ describe('DataViewRuntime scope filter', () => {
     expect(state.draft.filter.children).toEqual([]);
     expect(state.applied.filter.children).toEqual([]);
     expect(state.dirty).toBe(false);
-    expect(state.result?.config.filter).toEqual(scope);
+    // The scope rides along as a nested group of its own.
+    expect(state.result?.config.filter).toEqual({
+      op: 'and',
+      children: [scope],
+    });
   });
 
   it('refuses a condition the definition does not admit', () => {

@@ -32,6 +32,7 @@ import {
 } from '../model/index.js';
 import {
   isFilterGroup,
+  isSimpleTree,
   issue,
   mergeFilters,
   type FieldKindRegistry,
@@ -208,6 +209,22 @@ export interface ViewRuntimeOptions<C extends DataViewConfig> {
 }
 
 const IDLE: ViewQueryState = { status: 'idle' };
+
+/**
+ * The `filterMode` warning judges what the editor can show, which is the
+ * config's own tree. A scope is merged in as a nested group, so the merged
+ * tree is never simple; that says nothing about the draft, and the warning
+ * is dropped when the draft itself is simple.
+ */
+export function withoutScopeModeWarning(
+  issues: Issue[],
+  config: ViewConfig,
+  scope: FilterTree | null,
+): Issue[] {
+  if (!scope || !isFilterGroup(config.filter) || !isSimpleTree(config.filter))
+    return issues;
+  return issues.filter(found => found.code !== 'config.filterMode.not-simple');
+}
 
 /** An `error` blocks apply and every write; a `warning` only reports. */
 export function hasError(issues: readonly Issue[]): boolean {
@@ -470,7 +487,11 @@ export class DataViewRuntime<
     config: C,
     scope: FilterTree | null = this.scopeFilter,
   ): Issue[] {
-    return validateDataConfig(this.context, this.withScope(config, scope));
+    return withoutScopeModeWarning(
+      validateDataConfig(this.context, this.withScope(config, scope)),
+      config,
+      scope,
+    );
   }
 
   private effectiveConfig(): C {

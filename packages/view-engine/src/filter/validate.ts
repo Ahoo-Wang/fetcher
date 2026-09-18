@@ -15,6 +15,7 @@ import {
   DEFAULT_RUNTIME_LIMITS,
   type FieldDefinition,
   type IssuePath,
+  type FilterGroup,
   type FilterGroupOperator,
   type FilterTree,
   type Issue,
@@ -80,6 +81,7 @@ export function validateFilter(
     if (isFilterGroup(node)) {
       if (!GROUP_OPERATORS.includes(node.op))
         issues.push(issue('filter.group.unknown-operator', path));
+      issues.push(...duplicateFieldIssues(node, path));
       continue;
     }
 
@@ -127,6 +129,30 @@ export function validateFilter(
     );
   }
 
+  return issues;
+}
+
+/**
+ * One condition per field in a group. A range is one `BETWEEN`, a choice of
+ * several values one `IN`, so a field named twice among a group's own leaves
+ * is not a second question but a slip; to ask two different things of one
+ * field, the user nests a group. It holds under every group operator, `or`
+ * included. An `ELEMENT_MATCH` predicate is a tree of its own and is judged
+ * by its own call.
+ */
+function duplicateFieldIssues(group: FilterGroup, path: IssuePath): Issue[] {
+  const issues: Issue[] = [];
+  const seen = new Set<string>();
+  group.children.forEach((child, index) => {
+    if (!isFilterLeaf(child)) return;
+    if (seen.has(child.field))
+      issues.push(
+        issue('filter.field.duplicate-in-group', [...path, 'children', index], {
+          field: child.field,
+        }),
+      );
+    seen.add(child.field);
+  });
   return issues;
 }
 
