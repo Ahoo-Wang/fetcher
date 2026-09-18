@@ -93,8 +93,31 @@ describe('check-wow-conformance', () => {
       'an enum Wow deleted outright',
       'FilterOperator: this package sends it, Wow does not declare it',
     ],
+    [
+      'an annotated entry',
+      'AggregationDateUnit.FORTNIGHT: Wow has it, this package does not',
+    ],
+    [
+      'a discriminator spelled as a constant',
+      'AggregationGroup.new-type: Wow has it, this package does not',
+    ],
+    [
+      'a discriminator whose constant cannot be found',
+      'AggregationGroup: cannot read the discriminator `Nowhere.MISSING`',
+    ],
+    [
+      'an entry the parser cannot read',
+      'Unreadable: cannot read the entry `@ BROKEN`',
+    ],
   ])('reports %s', (_shape, report) => {
     expect(run().output).toContain(report);
+  });
+
+  it('still reads an entry past its annotation', () => {
+    // Were QUARTER dropped, it would be reported as sent here and unknown to Wow.
+    expect(run().output).not.toContain(
+      'AggregationDateUnit.QUARTER: this package sends it',
+    );
   });
 
   it('exits non-zero when the register does not name a rule', () => {

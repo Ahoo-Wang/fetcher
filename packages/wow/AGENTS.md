@@ -51,6 +51,15 @@ never sends; `TS_ONLY_VALUES` for `Operator.RAW`, which the deprecated
 Condition API keeps for servers older than Wow #2999. It is not part of CI,
 which has no Wow checkout.
 
+The checker fails closed: where it recognises an enum entry, a discriminator
+or a rule but cannot read it, that is an error, never a silent skip. Every
+blind spot it has had took the shape of a dropped name and a reported success,
+and comparing both ways only catches a name that goes missing whole, not one
+value dropped from a set that otherwise matches. Discriminators spelled as
+constants — Wow spells all fifty filter operators as
+`QueryProtocol.FilterExpression.Operator.X` — are resolved through the `const
+val`s they name.
+
 The checker is itself held by `conformanceScript.test.ts` against the stand-in
 checkout in `test/fixtures/wow-synthetic`, one case per shape it must read.
 When it misses something, add the shape there first.

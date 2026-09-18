@@ -259,6 +259,9 @@ function registeredRules() {
 
 /** Kotlin names whose counterpart here is spelled differently. */
 const ENUM_NAMES = {
+  // The wire discriminator `op` is the @JsonSubTypes name, which only happens
+  // to agree with `enum class FilterOperator`; both are held to it here.
+  FilterExpression: 'FilterOperator',
   Direction: 'SortDirection',
   AggregationGroup: 'AggregationGroupType',
   AggregationExpression: 'AggregationExpressionType',
@@ -306,19 +309,126 @@ function closeBrace(source, index) {
   return skipBalanced(source, index, '{', '}');
 }
 
+/** Splits `source` at `separator` wherever it is not nested in anything. */
+function splitTopLevel(source, separator) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  let at = 0;
+  while (at < source.length) {
+    const skipped = skipOpaque(source, at);
+    if (skipped >= 0) {
+      at = skipped;
+      continue;
+    }
+    const char = source[at];
+    if ('([{'.includes(char)) depth += 1;
+    else if (')]}'.includes(char)) depth -= 1;
+    else if (char === separator && depth === 0) {
+      parts.push(source.slice(start, at));
+      start = at + 1;
+    }
+    at += 1;
+  }
+  parts.push(source.slice(start));
+  return parts;
+}
+
+/** Past any annotations, and their bracketed arguments, starting at `index`. */
+function skipAnnotations(source, index) {
+  let at = skipTrivia(source, index);
+  while (source[at] === '@') {
+    const name = /^@[\w.]+/.exec(source.slice(at));
+    if (!name) break;
+    at = skipTrivia(source, at + name[0].length);
+    if (source[at] === '(')
+      at = skipTrivia(source, skipBalanced(source, at + 1, '(', ')'));
+  }
+  return at;
+}
+
+/**
+ * Every `const val NAME = "…"` in a file, keyed by the path it is referred to
+ * by. Wow spells its most important discriminators this way —
+ * `name = QueryProtocol.FilterExpression.Operator.MATCH_ALL` on all fifty
+ * filter operators — so reading only literals would skip the one set of wire
+ * values that matters most. Scopes are the enclosing `object`s, which is how
+ * QueryProtocol nests them.
+ */
+function constantsIn(source, into) {
+  const scopes = [];
+  let depth = 0;
+  let pending = null;
+  let at = 0;
+  while (at < source.length) {
+    const skipped = skipOpaque(source, at);
+    if (skipped >= 0) {
+      at = skipped;
+      continue;
+    }
+    const head = source.slice(at, at + 160);
+    const boundary = at === 0 || !/[\w$]/.test(source[at - 1]);
+    const object = boundary && /^object\s+(\w+)/.exec(head);
+    if (object) {
+      pending = object[1];
+      at += object[0].length;
+      continue;
+    }
+    const constant =
+      boundary && /^const\s+val\s+(\w+)\s*(?::\s*\w+\s*)?=\s*/.exec(head);
+    if (constant) {
+      const value = literalAt(source, at + constant[0].length);
+      if (value !== null)
+        into.set(
+          [...scopes.map(scope => scope.name), constant[1]].join('.'),
+          value,
+        );
+      at += constant[0].length;
+      continue;
+    }
+    // An object with no body names nothing, so a later brace is not its own.
+    if (
+      source[at] === '\n' &&
+      /^\s*(?:@|(?:data|class|interface|fun|val|var|sealed|enum|private|internal|public|override|const)\b)/.test(
+        source.slice(at + 1, at + 40),
+      )
+    )
+      pending = null;
+    if (source[at] === '{') {
+      depth += 1;
+      if (pending) {
+        scopes.push({ name: pending, depth });
+        pending = null;
+      }
+    } else if (source[at] === '}') {
+      if (scopes.at(-1)?.depth === depth) scopes.pop();
+      depth -= 1;
+    }
+    at += 1;
+  }
+}
+
+/**
+ * The value a reference like `QueryProtocol.FilterExpression.Operator.ID` or a
+ * bare `NEW_TYPE` stands for. A key matches when one is a segment-suffix of the
+ * other, and only a single match counts: an ambiguous reference is unreadable,
+ * and unreadable is reported rather than guessed at.
+ */
+function resolveConstant(reference, constants) {
+  if (constants.has(reference)) return constants.get(reference);
+  const matches = [...constants.keys()].filter(
+    key => key.endsWith(`.${reference}`) || reference.endsWith(`.${key}`),
+  );
+  return matches.length === 1 ? constants.get(matches[0]) : undefined;
+}
+
 /**
  * The name of the interface an annotation belongs to, skipping any further
  * annotations between them. Their arguments hold brackets of their own —
  * `@Schema(oneOf = [...])` — so they are stepped over with the lexer.
  */
 function interfaceAfter(source, index) {
-  let at = skipTrivia(source, index);
-  while (source[at] === '@') {
-    const name = /^@[\w.]+/.exec(source.slice(at));
-    at = skipTrivia(source, at + name[0].length);
-    if (source[at] === '(')
-      at = skipTrivia(source, skipBalanced(source, at + 1, '(', ')'));
-  }
+  const at = skipAnnotations(source, index);
   const declaration =
     /^(?:(?:sealed|abstract|public|internal|private)\s+)*interface\s+(\w+)/.exec(
       source.slice(at),
@@ -326,54 +436,70 @@ function interfaceAfter(source, index) {
   return declaration ? declaration[1] : null;
 }
 
+/**
+ * Every enum and discriminator set in the protocol package, and every place
+ * the parser recognised one but could not read it.
+ *
+ * Failing closed is the point. Each blind spot this checker has had took the
+ * same shape: a name it could not read was dropped, the rest still matched,
+ * and the run reported success. Comparing both ways catches a name that goes
+ * missing whole; it cannot catch one value dropped from a set that otherwise
+ * matches on both sides. So a value that cannot be read is an error here.
+ */
 function wowEnums(root) {
-  const found = new Map();
-  for (const file of kotlinFiles(root)) {
-    const source = readFileSync(file, 'utf8');
+  const files = kotlinFiles(root).map(file => readFileSync(file, 'utf8'));
+  const constants = new Map();
+  for (const source of files) constantsIn(source, constants);
 
+  const found = new Map();
+  const unreadable = [];
+  for (const source of files) {
     for (const match of source.matchAll(/\benum\s+class\s+(\w+)[^{]*\{/g)) {
-      const body = source.slice(
-        match.index + match[0].length,
-        closeBrace(source, match.index + match[0].length) - 1,
-      );
-      // Entries end at the first `;`, after which an enum may declare members.
-      const entries = body
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/\/\/[^\n]*/g, '')
-        .split(';')[0];
-      found.set(
-        match[1],
-        entries
-          .split(',')
-          .map(entry => {
-            // Kotlin permits any identifier, and a backticked name besides;
-            // reading only UPPER_SNAKE would drop the unusual one silently.
-            const trimmed = entry.trim();
-            const quoted = /^`([^`]+)`/.exec(trimmed);
-            if (quoted) return quoted[1];
-            return /^[A-Za-z_]\w*/.exec(trimmed)?.[0];
-          })
-          .filter(Boolean),
-      );
+      const open = match.index + match[0].length;
+      const body = source.slice(open, closeBrace(source, open) - 1);
+      // Entries end at the first top-level `;`, after which members may follow.
+      const [entries] = splitTopLevel(body, ';');
+      const values = [];
+      for (const entry of splitTopLevel(entries, ',')) {
+        if (skipTrivia(entry, 0) >= entry.length) continue; // a trailing comma
+        // `@Deprecated("…") NEW_VALUE` is as much an entry as `NEW_VALUE`.
+        const rest = entry.slice(skipAnnotations(entry, 0));
+        const name =
+          /^`([^`]+)`/.exec(rest)?.[1] ?? /^[A-Za-z_]\w*/.exec(rest)?.[0];
+        if (name) values.push(name);
+        else
+          unreadable.push(
+            `${match[1]}: cannot read the entry \`${entry.trim().slice(0, 60)}\``,
+          );
+      }
+      found.set(match[1], values);
     }
 
-    // A sealed interface's discriminators, where they are spelled as literals.
-    // Each is read whole with the lexer: a name holding a lowercase letter or
-    // a hyphen is as much a wire value as an UPPER_SNAKE one.
     for (const match of source.matchAll(/@JsonSubTypes\s*\(/g)) {
       const open = match.index + match[0].length;
       const close = skipBalanced(source, open, '(', ')');
       const args = source.slice(open, close - 1);
+      const owner = interfaceAfter(source, close) ?? 'an unnamed @JsonSubTypes';
       const names = [];
       for (const name of args.matchAll(/\bname\s*=\s*/g)) {
-        const value = literalAt(args, name.index + name[0].length);
-        if (value !== null) names.push(value);
+        const at = name.index + name[0].length;
+        const literal = literalAt(args, at);
+        if (literal !== null) {
+          names.push(literal);
+          continue;
+        }
+        const reference = /^[A-Za-z_][\w.]*/.exec(args.slice(at))?.[0];
+        const value = reference && resolveConstant(reference, constants);
+        if (value !== undefined && value !== null) names.push(value);
+        else
+          unreadable.push(
+            `${owner}: cannot read the discriminator \`${reference ?? args.slice(at, at + 40).trim()}\``,
+          );
       }
-      const owner = interfaceAfter(source, close);
-      if (owner && names.length > 0) found.set(owner, names);
+      if (names.length > 0) found.set(owner, names);
     }
   }
-  return found;
+  return { found, unreadable };
 }
 
 /** Every `export enum` in this package's query source, name to values. */
@@ -405,7 +531,9 @@ function compareEnums(root) {
   const failures = [];
   const skipped = [];
   const ts = tsEnums();
-  const wow = new Map([...Object.entries(JDK_ENUMS), ...wowEnums(root)]);
+  const { found, unreadable } = wowEnums(root);
+  failures.push(...unreadable);
+  const wow = new Map([...Object.entries(JDK_ENUMS), ...found]);
   const matched = new Set();
   for (const [name, values] of wow) {
     if (SERVER_ONLY_ENUMS[name]) {
