@@ -507,6 +507,27 @@ describe('DataViewRuntime admission', () => {
     expect(source.paged).not.toHaveBeenCalled();
   });
 
+  it('survives a stored config with no refresh until it is fixed', async () => {
+    // Admission reports the missing part; the runtime must still let the
+    // user edit their way out rather than throw on the way to the timer.
+    const broken = recordConfig();
+    delete (broken as Partial<typeof broken>).refresh;
+    const { runtime, source } = harness({
+      config: broken,
+      saved: savedInstance,
+    });
+
+    expect(runtime.getSnapshot().issues.map(found => found.code)).toContain(
+      'config.refresh.missing',
+    );
+    expect(() => runtime.edit({ pageSize: 10 })).not.toThrow();
+    runtime.edit({ refresh: { interval: null } });
+    runtime.apply();
+    await flush();
+
+    expect(source.paged).toHaveBeenCalledTimes(1);
+  });
+
   it('runs again once a fixed draft has been applied', async () => {
     const { runtime, source } = harness({
       config: recordConfig({ pageSize: 5000 }),

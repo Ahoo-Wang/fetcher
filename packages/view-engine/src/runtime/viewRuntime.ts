@@ -545,7 +545,7 @@ export class DataViewRuntime<
   }
 
   private refreshDelay(): number | null {
-    const interval = this.state.applied.refresh.interval;
+    const interval = refreshIntervalOf(this.state.applied);
     if (
       this.stopped ||
       !this.autoRefresh ||
@@ -565,6 +565,20 @@ export class DataViewRuntime<
     this.timer = undefined;
     this.timerDelay = null;
   }
+}
+
+/**
+ * The interval a config asks for, read as the untrusted thing it is. A
+ * stored config with no `refresh` is admission's to report, and it is
+ * reported; every state change still passes through here on the way to the
+ * timer, and must not throw before the user can fix it.
+ */
+export function refreshIntervalOf(config: ViewConfig): number | null {
+  const interval = (config.refresh as { interval?: unknown } | undefined)
+    ?.interval;
+  return typeof interval === 'number' && Number.isFinite(interval)
+    ? interval
+    : null;
 }
 
 /** Turns a failed execution into the Issue the UI reports. */

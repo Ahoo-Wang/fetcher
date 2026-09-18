@@ -465,6 +465,20 @@ describe('DashboardViewRuntime admission', () => {
     expect(board.source.paged).not.toHaveBeenCalled();
   });
 
+  it('opens a config whose panels are not a list as a view to be fixed', async () => {
+    const board = await harness();
+    const runtime = await board.open({
+      ...dashboardConfig(),
+      panels: 'x' as never,
+    });
+
+    expect(runtime.getSnapshot().issues).toMatchObject([
+      { code: 'dashboard.shape.invalid', path: ['panels'] },
+    ]);
+    expect(runtime.getSnapshot().panels).toEqual([]);
+    expect(() => runtime.edit({ refresh: { interval: null } })).not.toThrow();
+  });
+
   it('judges an injected condition with the config from the start', async () => {
     const board = await harness();
     const runtime = await board.open(boundConfig(), {
@@ -516,6 +530,7 @@ describe('DashboardViewRuntime child refusal', () => {
     const reference: PanelReference = {
       instance: pending(),
       definition: ordersDefinition(),
+      fields: ordersDefinition().fields,
     };
     const runtime = new DashboardViewRuntime({
       id: 'dashboard-1',

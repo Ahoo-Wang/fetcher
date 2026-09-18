@@ -347,6 +347,8 @@ export const defaultMessages: ViewMessages = Object.freeze({
   'dashboard.panel.unavailable': 'The view this panel shows is unavailable.',
   'dashboard.panel.unknown-kind': 'The {kind} panel type is not available.',
   'dashboard.panels.too-many': 'A dashboard holds at most {max} panels.',
+  'dashboard.shape.invalid':
+    'This part of the dashboard is not in the expected shape.',
   'dashboard.url.unsupported-scheme':
     'Only http, https, mailto and relative links can be shown.',
 

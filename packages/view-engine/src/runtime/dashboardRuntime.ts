@@ -36,6 +36,7 @@ import type { RuntimeEnvironment } from './environment.js';
 import type { WriteState } from './write.js';
 import {
   hasError,
+  refreshIntervalOf,
   type DataViewRuntime,
   type ManagedViewRuntime,
   type ViewQueryState,
@@ -348,7 +349,7 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
   /** Loads the references a config needs and revalidates as each arrives. */
   private load(config: DashboardViewConfig): void {
     const wanted = new Set(
-      config.panels
+      panelsOf(config)
         .filter(isViewPanel)
         .map(panel => panel.instanceId)
         .filter(id => !this.references.has(id) && !this.pending.has(id)),
@@ -395,7 +396,7 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     // it counts against the whole rather than slipping between the two.
     const blocked = hasError(issues.filter(found => panelOf(found) === null));
 
-    applied.panels.forEach((panel, index) => {
+    panelsOf(applied).forEach((panel, index) => {
       const own = issues.filter(found => panelOf(found) === index);
       const { runtime, issues: reported } =
         isViewPanel(panel) && !blocked
@@ -498,7 +499,7 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
   }
 
   private refreshDelay(): number | null {
-    const interval = this.state.applied.refresh.interval;
+    const interval = refreshIntervalOf(this.state.applied);
     if (
       this.stopped ||
       interval === null ||
@@ -523,6 +524,15 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     this.timer = undefined;
     this.timerDelay = null;
   }
+}
+
+/**
+ * The panels a config holds, read as the untrusted thing a stored config is.
+ * Admission reports a `panels` that is not an array; until it is fixed there
+ * is nothing to load or run, and nothing to throw about.
+ */
+function panelsOf(config: DashboardViewConfig): readonly DashboardPanel[] {
+  return Array.isArray(config.panels) ? config.panels : [];
 }
 
 /** The panel an issue belongs to, or `null` for one about the dashboard. */
