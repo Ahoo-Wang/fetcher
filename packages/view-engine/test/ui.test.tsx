@@ -1792,6 +1792,22 @@ describe('FilterPanel tree editing', () => {
     expect(filter().applied).toEqual([]);
   });
 
+  it('reads a stored leaf with a stray children property as a condition', () => {
+    const { filter } = panel();
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().updateLeaf([0], { children: null } as never);
+    });
+
+    // Admission and the walk read it as a leaf; so does the strip.
+    expect(
+      screen.getByRole('group', { name: 'Warehouse condition' }),
+    ).toBeDefined();
+    expect(
+      document.querySelectorAll('[data-slot="filter-group"]'),
+    ).toHaveLength(0);
+  });
+
   it('lays a group conditions out in one strip, as pills', () => {
     const { filter } = panel();
     act(() => {

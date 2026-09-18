@@ -1255,6 +1255,20 @@ describe('tree editing', () => {
     expect(mergeFilters()).toEqual(emptyFilter());
   });
 
+  it('hands the base back as it stands when there is nothing to merge', () => {
+    // No wrapper an admission never saw: an `or` root stays an `or` root.
+    const any: FilterTree = {
+      op: 'or',
+      children: [
+        { field: 'id', operator: 'EQ', value: 'a' },
+        { field: 'amount', operator: 'GT', value: 1 },
+      ],
+    };
+    expect(mergeFilters(any)).toBe(any);
+    expect(mergeFilters(any, null, emptyFilter())).toBe(any);
+    expect(mergeFilters(null)).toEqual(emptyFilter());
+  });
+
   it('does not drop a tree that lost its shape as if it were empty', () => {
     // A stored filter whose only entry is malformed says nothing valid, but
     // it is not empty: dropping it behind an injected scope would run the

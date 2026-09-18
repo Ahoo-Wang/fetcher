@@ -24,6 +24,8 @@ import type {
 import {
   elementFields,
   isBlankLeafValue,
+  isFilterGroup,
+  isFilterNode,
   writeValue,
   type FilterPath,
 } from '../filter/index.js';
@@ -361,7 +363,9 @@ function ConditionStrip({
       className="@container grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-1.5"
     >
       {group.children.map((child, index) =>
-        'children' in child ? (
+        // The same reading of a node admission and the walk use: a leaf
+        // carrying a stray `children` of the wrong shape is still a leaf.
+        !isFilterNode(child) ? null : isFilterGroup(child) ? (
           <div key={index} className="col-span-full">
             <GroupBlock
               filter={filter}
