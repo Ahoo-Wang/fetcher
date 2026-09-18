@@ -312,9 +312,10 @@ function GroupBlock({
 }
 
 /**
- * A group's conditions in one wrapping strip. Conditions are pills and sit
- * side by side; a nested group, and a condition that holds a tree, takes a
- * whole line of its own, since it holds conditions of its own.
+ * A group's conditions in one strip: a grid of equal columns, as many as
+ * fit, so the pills line up and their fields, operators and values fall
+ * under one another. A nested group, and a condition that holds a tree,
+ * takes a whole line of its own, since it holds conditions of its own.
  */
 function ConditionStrip({
   filter,
@@ -335,11 +336,11 @@ function ConditionStrip({
   return (
     <div
       data-slot="filter-conditions"
-      className="flex flex-wrap items-center gap-1.5"
+      className="grid grid-cols-[repeat(auto-fill,minmax(22rem,1fr))] gap-1.5"
     >
       {group.children.map((child, index) =>
         'children' in child ? (
-          <div key={index} className="basis-full">
+          <div key={index} className="col-span-full">
             <GroupBlock
               filter={filter}
               group={child}
@@ -467,7 +468,7 @@ function Condition({
           field: label,
         })}
         size="sm"
-        className="h-7 border-0 bg-transparent px-1 shadow-none"
+        className="h-7 w-full border-0 bg-transparent px-1 shadow-none"
       >
         <SelectValue />
       </SelectTrigger>
@@ -504,11 +505,13 @@ function Condition({
           field: label,
         })}
         data-invalid={invalid || undefined}
-        className="flex basis-full flex-col gap-1 rounded-md border border-border p-2 data-[invalid]:border-destructive"
+        className="col-span-full flex flex-col gap-1 rounded-md border border-border p-2 data-[invalid]:border-destructive"
       >
         <div className="flex items-center gap-1">
-          <span className="text-sm font-medium">{label}</span>
-          {operatorSelect}
+          <span className="shrink-0 text-sm font-medium whitespace-nowrap">
+            {label}
+          </span>
+          <div className="w-44 shrink-0">{operatorSelect}</div>
           {remove}
         </div>
         <NestedPredicate
@@ -530,22 +533,26 @@ function Condition({
       })}
       data-invalid={invalid || undefined}
       data-blank={blank || undefined}
-      className="inline-flex max-w-full items-center gap-1 rounded-md border border-border bg-muted/40 py-0.5 pr-0.5 pl-2 text-sm data-[blank]:border-dashed data-[invalid]:border-destructive"
+      className="flex min-w-0 items-center gap-1 rounded-md border border-border bg-muted/40 py-0.5 pr-0.5 pl-2 text-sm data-[blank]:border-dashed data-[invalid]:border-destructive"
     >
-      <span className="font-medium whitespace-nowrap">{label}</span>
-      {operatorSelect}
-      {editor && (
-        <FilterValueEditor
-          editor={editor}
-          value={leaf.value}
-          label={messages.label('label.filter.value-of', {
-            field: leaf.field,
-          })}
-          disabled={disabled}
-          options={editor.remote ? optionsFor?.(editor.remote) : undefined}
-          onChange={value => filter.updateLeaf(path, { value })}
-        />
-      )}
+      <span className="w-20 shrink-0 truncate font-medium" title={label}>
+        {label}
+      </span>
+      <div className="w-28 shrink-0">{operatorSelect}</div>
+      <div className="min-w-0 flex-1">
+        {editor && (
+          <FilterValueEditor
+            editor={editor}
+            value={leaf.value}
+            label={messages.label('label.filter.value-of', {
+              field: leaf.field,
+            })}
+            disabled={disabled}
+            options={editor.remote ? optionsFor?.(editor.remote) : undefined}
+            onChange={value => filter.updateLeaf(path, { value })}
+          />
+        )}
+      </div>
       {remove}
     </div>
   );
