@@ -40,6 +40,8 @@ export const DEFAULT_COMPENSATION_HOST: string =
 
 export const EXECUTION_FAILED = 'execution-failed';
 
+export const EXECUTION_FAILED_ANALYSIS = 'execution-failed-analysis';
+
 /** Wow's `ExecutionFailed` aggregate, as the compensation service exposes it. */
 const AGGREGATE = 'execution_failed';
 
@@ -358,6 +360,21 @@ export const executionFailedDefinition: DataViewDefinition = {
       ]),
     },
     { id: 'all', title: '全部', config: recordView([]) },
+  ],
+};
+
+/**
+ * The same failed executions, for analysis. Its views live in a definition of
+ * their own because a workbench lists every view of the definition it opens,
+ * and a list entry carries no kind: with both kinds in one definition, the
+ * record workbench offers views it can only open as an empty table, and the
+ * analysis workbench the reverse.
+ */
+export const executionFailedAnalysisDefinition: DataViewDefinition = {
+  ...executionFailedDefinition,
+  id: EXECUTION_FAILED_ANALYSIS,
+  title: '执行失败分析',
+  views: [
     {
       id: 'by-status',
       title: '按状态分布',
@@ -419,7 +436,7 @@ export const executionFailedDefinition: DataViewDefinition = {
 export function createCompensationEngine(fetcher: Fetcher): ViewEngine {
   const source = new SnapshotQueryClient({ basePath: AGGREGATE, fetcher });
   return new ViewEngine({
-    definitions: [executionFailedDefinition],
+    definitions: [executionFailedDefinition, executionFailedAnalysisDefinition],
     store: new MemoryViewStore({ instances: [] }),
     resolveSource: () => source,
   });

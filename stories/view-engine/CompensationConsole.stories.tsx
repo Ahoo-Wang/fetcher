@@ -54,6 +54,7 @@ import { ScenarioFrame } from '../shared/ScenarioFrame.js';
 import {
   DEFAULT_COMPENSATION_HOST,
   EXECUTION_FAILED,
+  EXECUTION_FAILED_ANALYSIS,
   compensationCommands,
   compensationFetcher,
   createCompensationEngine,
@@ -328,8 +329,8 @@ function AnalysisConsole({ host }: { host: string }) {
       {engine => (
         <AnalysisWorkbench
           engine={engine}
-          definitionId={EXECUTION_FAILED}
-          instanceId={systemInstanceId(EXECUTION_FAILED, 'by-status')}
+          definitionId={EXECUTION_FAILED_ANALYSIS}
+          instanceId={systemInstanceId(EXECUTION_FAILED_ANALYSIS, 'by-status')}
         />
       )}
     </Console>
