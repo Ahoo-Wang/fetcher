@@ -940,6 +940,8 @@ useSaveCommands(engine, runtime): { save; saveAs; rename; delete; retry; abandon
 
 措辞在 `ui/`：`model` 只带 `code` 与 `params`，`ui/messages.ts` 给出每个 code 的英文句子，`ViewSurface` 的 `messages` 属性按 key 覆盖，这也是本地化的入口。缺失的 key 沿点号回退到最长的已知前缀（`/react` 把命令与 store 结果拼成 `view.open.failed.not_found` 这类 code），再退回 key 本身，因此永远不会渲染空白。`test/messages.test.tsx` 扫描源码里所有 `issue(...)` 的 code，少一条就失败——否则 `record.summary.unsupported` 这样的键会直接出现在界面上。
 
+两级 severity 在界面上分开呈现。`error` 阻塞：工作台以 destructive 变体的 `Alert` 报出（`label.view.needs-fixing`／`label.dashboard.needs-fixing`），`EmbeddedView` 以它取代结果。`warning` 不阻塞，但"报出而不阻塞"要求它被看见：`WarningNotice` 以 `role="status"` 和主题的 `warning` token（`text-warning`／`border-warning`，与 `destructive` 并列，宿主用 `--fve-warning`／`--fve-dark-warning` 定制）显示全部 warning，标题 `label.view.warnings`，不替换结果、不禁用任何按钮。三个工作台把它放在 error 提示之下、结果之上；`EmbeddedView` 同样显示——嵌入页没有编辑器，这是读者得知视图与作者所存不完全一致的唯一途径。Dashboard 只在这里显示自己的 warning（`useDashboard().issues`，不含 `['panels', …]` 路径），面板级的由面板自己呈现：不可用的面板在正文里说明理由，能运行却带 warning 的面板照常显示视图，头部加 `panel-warning` 标记（图标的可访问名与 `title` 是 warning 文案）并以 `data-warning` 标出边框。`FilterPanel` 的条件 pill 见下文。
+
 控制器输出只读状态与动作函数，不输出 JSX、类名与供应商类型。受控值合同统一：是否受控由值属性决定，回调只通知，一次逻辑交互最多一次通知。命令一律以状态兑现而不是抛出：`useSaveCommands` 的每个动作都 resolve，结局落在 `state.error` 与 `state.write`，因此点击处理器不需要 try/catch。加载态由"手上的答案属于哪一次请求"推出而不是在 effect 里同步 setState，这也是 React Compiler 规则要求的形状。
 
 排序与列的改动立即 `edit` 后 `apply`：表格渲染的列与行来自上一次成功结果，由内核按执行时的配置投影，因此不重跑就看不到改动；筛选则等提交。
@@ -950,7 +952,7 @@ useSaveCommands(engine, runtime): { save; saveAs; rename; delete; retry; abandon
 
 列出字段的三个选择器（添加条件、列选择、分析的分组与指标）都经 `fieldGroups(fields, definition.fieldGroups, key)` 分组：未被任何分组列出的字段在前、无标题，其后按目录顺序列出各分组并带标题，组内按该分组自己的 `fields` 顺序；选择器常常只列一个子集（尚未成为条件的字段、能做列的字段），所以没有字段的分组不显示。目录声明在 `DataViewDefinition.fieldGroups`（`{ id, label, fields }[]`），字段定义本身不记录归属：一个组有哪些字段在一处读完，组序与组内序都不被字段顺序绑住（字段顺序同时决定默认列序），列了未声明的字段名或把一个字段列进两个组都在定义准入时报错。Dashboard 的全局字段与元素字段没有目录，不分组。
 
-`FilterPanel` 的布局：分组是带边框的块，头部是操作符切换（All of／Any of／None of）与删除，主体是一条条件带：等宽栅格，能放几列放几列，pill 在格子里对齐，字段名、操作符、值上下对齐；持双输入的条件（区间、日期）在条件带放得下两列时占两格；条件是内联的紧凑 pill（字段 · 操作符 · 值编辑器 · 删除），不独占一行，未填写时虚线边框，校验有 error 时标为 invalid；持有谓词的 `ELEMENT_MATCH` 条件和分组一样渲染为块，头部是字段与操作符，主体是它持有的分组。简单模式只显示根分组的条件带，高级模式显示根分组的块。已应用条件的摘要 badge 仍单独显示：它说的是结果对应的条件，不是 draft；摘要保留树的逻辑——根下每个直接子节点一个 badge，分组子节点合成一个 badge，内部条件用分组自己的操作符词连接、再嵌套的分组加括号，根是 OR／NOR 时整体折成一个 badge 并说明。每个 badge 带删除：把对应条件的值设回未填写（分组则组内每条）并重新应用，字段行留在编辑器里，这是 `clearValue(path)`。
+`FilterPanel` 的布局：分组是带边框的块，头部是操作符切换（All of／Any of／None of）与删除，主体是一条条件带：等宽栅格，能放几列放几列，pill 在格子里对齐，字段名、操作符、值上下对齐；持双输入的条件（区间、日期）在条件带放得下两列时占两格；条件是内联的紧凑 pill（字段 · 操作符 · 值编辑器 · 删除），不独占一行，未填写时虚线边框，校验有 error 时标为 invalid（`data-invalid`，destructive 色），只有 warning 时标为 `data-warning`（主题的 `warning` 色）——条件照常执行，颜色只说"值得看一眼"；持有谓词的 `ELEMENT_MATCH` 条件和分组一样渲染为块，头部是字段与操作符，主体是它持有的分组。简单模式只显示根分组的条件带，高级模式显示根分组的块。已应用条件的摘要 badge 仍单独显示：它说的是结果对应的条件，不是 draft；摘要保留树的逻辑——根下每个直接子节点一个 badge，分组子节点合成一个 badge，内部条件用分组自己的操作符词连接、再嵌套的分组加括号，根是 OR／NOR 时整体折成一个 badge 并说明。每个 badge 带删除：把对应条件的值设回未填写（分组则组内每条）并重新应用，字段行留在编辑器里，这是 `clearValue(path)`。
 
 `DashboardGrid` 不做自动紧凑，面板按配置中的 `layout` 原样摆放；只有用户拖动或缩放结束时才把几何写回（`edit` + `apply`），库自身在挂载或属性变化时算出的布局不写回，因此打开已保存的 Dashboard 不会变脏。
 

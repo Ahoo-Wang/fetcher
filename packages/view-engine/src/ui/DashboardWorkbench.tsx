@@ -33,6 +33,7 @@ import { Skeleton } from './components/skeleton.js';
 import { ViewList } from './ViewList.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { ViewSurface } from './ViewSurface.js';
+import { WarningNotice } from './WarningNotice.js';
 
 export interface DashboardWorkbenchProps {
   engine: ViewEngine;
@@ -117,6 +118,9 @@ export function DashboardWorkbench({
                 <AlertDescription>{messages.issues(errors)}</AlertDescription>
               </Alert>
             )}
+            {/* The dashboard's own warnings only: a panel's travel with the
+                panel, which says so in its own frame. */}
+            <WarningNotice issues={dashboard.issues} />
 
             <div className="flex items-center gap-2">
               <Button

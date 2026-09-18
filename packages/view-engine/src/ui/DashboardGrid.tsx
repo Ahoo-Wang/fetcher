@@ -17,6 +17,7 @@ import GridLayout, { noCompactor, type Layout } from 'react-grid-layout';
 import {
   GripVerticalIcon,
   LayoutDashboardIcon,
+  TriangleAlertIcon,
   UnplugIcon,
 } from 'lucide-react';
 import type { AnalysisView } from '../analysis/index.js';
@@ -140,13 +141,32 @@ export interface DashboardPanelProps {
 /** One framed panel: a title, a grip when the layout is editable, a body. */
 export function DashboardPanel({ panel, editable }: DashboardPanelProps) {
   const messages = useViewMessages();
+  // A panel that runs and still has something to say shows its view and
+  // wears the finding in its header. A broken one says so in its body, where
+  // the view would have been, so the same finding is not said twice.
+  const warnings = panel.broken
+    ? []
+    : panel.issues.filter(found => found.severity === 'warning');
+  const warned = warnings.length > 0;
   return (
     <Card
       data-slot="dashboard-panel"
-      className="h-full gap-2 overflow-hidden py-3"
+      data-warning={warned || undefined}
+      className="h-full gap-2 overflow-hidden py-3 data-[warning]:border-warning"
     >
       <CardHeader className="px-3">
         <CardTitle className="flex items-center gap-1 text-sm">
+          {warned && (
+            <span
+              data-slot="panel-warning"
+              role="img"
+              aria-label={messages.issues(warnings)}
+              title={messages.issues(warnings)}
+              className="text-warning"
+            >
+              <TriangleAlertIcon className="size-4" />
+            </span>
+          )}
           {/*
             Decorative on purpose. Dragging is a pointer gesture with no
             keyboard equivalent yet, and naming the grip for a screen reader

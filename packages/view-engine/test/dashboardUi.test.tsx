@@ -293,7 +293,47 @@ describe('DashboardGrid', () => {
     render(<DashboardGrid dashboard={controller()} />);
 
     expect(screen.getByText('This panel is unavailable')).toBeTruthy();
+    // The finding is said once, in the body where the view would have been;
+    // the header marker is for a panel that runs with a caveat.
+    expect(document.querySelector('[data-slot="panel-warning"]')).toBeNull();
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+  });
+
+  /**
+   * No kernel rule today warns about a panel that still runs, so the finding
+   * is planted on a healthy one. What the grid owes it: the view shows as it
+   * would anyway, the caveat sits in the header, and the body does not
+   * pretend the panel is out.
+   */
+  it('shows a panel that runs with a warning, and wears it in the header', async () => {
+    const { controller } = await openDashboard(
+      dashboardConfig({ panels: [panel({ title: 'Pending' })] }),
+    );
+    const warned: DashboardController = {
+      ...controller(),
+      panels: controller().panels.map(view => ({
+        ...view,
+        issues: [
+          {
+            code: 'config.filterMode.not-simple',
+            severity: 'warning',
+            path: ['panels', 0, 'filterMode'],
+          },
+        ],
+      })),
+    };
+
+    render(<DashboardGrid dashboard={warned} />);
+
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+    const card = document.querySelector('[data-slot="dashboard-panel"]');
+    expect(card?.hasAttribute('data-warning')).toBe(true);
+    expect(
+      screen.getByRole('img', {
+        name: 'These conditions need the advanced editor to be shown in full.',
+      }),
+    ).toBeTruthy();
+    expect(screen.queryByText('This panel is unavailable')).toBeNull();
   });
 
   it('offers a grip only when the layout may be edited', async () => {
@@ -751,5 +791,54 @@ describe('DashboardWorkbench', () => {
         'This view no longer exists.',
       ),
     );
+  });
+
+  /**
+   * A warning about the dashboard itself is the workbench's to say; a
+   * warning about one panel is that panel's, in its own frame, and saying it
+   * twice would only make the notice longer than the caveat. Neither blocks:
+   * the healthy panel still runs, and nothing asks for a fix.
+   */
+  it('notes what is worth noting about the dashboard, and leaves panel findings to the panels', async () => {
+    const { engine } = setup({
+      ...overview,
+      config: dashboardConfig({
+        fields: [{ name: 'region', label: 'Region', kind: 'string' }],
+        // A simple-mode config holding an OR tree: the advanced editor opens
+        // and the kernel warns.
+        filterMode: 'simple',
+        filter: {
+          op: 'or',
+          children: [{ field: 'region', operator: 'EQ', value: 'CN' }],
+        },
+        panels: [
+          panel({
+            title: 'Pending',
+            bindings: [{ globalField: 'region', panelField: 'warehouse' }],
+          }),
+          panel({
+            id: 'gone',
+            title: 'Gone',
+            instanceId: 'deleted',
+            layout: { x: 6, y: 0, w: 6, h: 4 },
+          }),
+        ],
+      }),
+    });
+
+    render(
+      <DashboardWorkbench
+        engine={engine}
+        definitionId="overview"
+        instanceId="overview-1"
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+    const notice = document.querySelector('[data-slot="view-warnings"]');
+    expect(notice?.textContent).toContain('advanced editor');
+    expect(notice?.textContent).not.toContain('unavailable');
+    expect(screen.getByText('This panel is unavailable')).toBeTruthy();
+    expect(screen.queryByText(/needs fixing/)).toBeNull();
   });
 });

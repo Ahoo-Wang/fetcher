@@ -29,6 +29,7 @@ import { RecordCards } from './RecordCards.js';
 import { RecordTable } from './RecordTable.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { ViewSurface } from './ViewSurface.js';
+import { WarningNotice } from './WarningNotice.js';
 
 export interface EmbeddedViewProps {
   engine: ViewEngine;
@@ -124,10 +125,25 @@ function EmbeddedBody({ runtime }: { runtime: OpenedRuntime }) {
       </Alert>
     );
 
-  if (runtime.kind === 'record') return <EmbeddedRecord runtime={runtime} />;
-  if (runtime.kind === 'analysis')
-    return <EmbeddedAnalysis runtime={runtime} />;
-  return <EmbeddedDashboard runtime={runtime} />;
+  // A warning blocks nothing, so the result still shows, with the warning
+  // above it: an embed hides the editor, and this is the one place a reader
+  // learns the view is not quite what its author saved. A dashboard's
+  // panel-scoped findings are the panels' to show, each in its own frame.
+  const warnings = (state?.issues ?? []).filter(
+    found => runtime.kind !== 'dashboard' || found.path[0] !== 'panels',
+  );
+  return (
+    <>
+      <WarningNotice issues={warnings} />
+      {runtime.kind === 'record' ? (
+        <EmbeddedRecord runtime={runtime} />
+      ) : runtime.kind === 'analysis' ? (
+        <EmbeddedAnalysis runtime={runtime} />
+      ) : (
+        <EmbeddedDashboard runtime={runtime} />
+      )}
+    </>
+  );
 }
 
 function Failed({ runtime }: { runtime: OpenedRuntime }) {
