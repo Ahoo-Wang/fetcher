@@ -15,6 +15,7 @@ import type * as React from 'react';
 import { cn } from 'cn';
 import { TooltipProvider } from './components/tooltip.js';
 import { MessagesProvider } from './MessagesProvider.js';
+import { SurfaceTheme } from './popups.js';
 import type { ViewMessages } from './messages.js';
 
 export interface ViewSurfaceProps extends React.ComponentProps<'div'> {
@@ -47,7 +48,9 @@ export function ViewSurface({
       {...props}
     >
       <MessagesProvider messages={messages}>
-        <TooltipProvider>{children}</TooltipProvider>
+        <SurfaceTheme.Provider value={theme}>
+          <TooltipProvider>{children}</TooltipProvider>
+        </SurfaceTheme.Provider>
       </MessagesProvider>
     </div>
   );

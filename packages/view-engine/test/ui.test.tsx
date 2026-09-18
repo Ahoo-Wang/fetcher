@@ -2025,3 +2025,31 @@ describe('EmbeddedView', () => {
     );
   });
 });
+
+describe('popups', () => {
+  // Every popup portals to document.body, out of the surface that holds the
+  // theme tokens. Without a `.fve-root` of its own it resolved no colour at
+  // all: a transparent menu drawn over the table.
+  it.each(['dark', undefined] as const)(
+    'carry the surface theme (%s) out to the body',
+    async theme => {
+      const { engine } = setup();
+      render(
+        <RecordWorkbench
+          engine={engine}
+          definitionId="orders"
+          instanceId="orders-1"
+          theme={theme}
+        />,
+      );
+      await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+      fireEvent.click(screen.getByRole('button', { name: /Add condition/ }));
+      const menu = await screen.findByRole('menu');
+
+      expect(menu.closest('[data-slot="view-surface"]')).toBeNull();
+      expect(menu.classList.contains('fve-root')).toBe(true);
+      expect(menu.getAttribute('data-theme')).toBe(theme ?? null);
+    },
+  );
+});

@@ -341,6 +341,29 @@ const describePath = (file: SourceFile) => relative(src, file.path);
 const LOCATIONS: readonly Location[] = ['root', ...LAYERS];
 
 describe('architecture', () => {
+  // Registry popups portal to document.body, out of the surface that holds
+  // the theme tokens; popups.tsx carries the theme out with them. A composite
+  // importing one straight from the registry would render it with no theme,
+  // a transparent menu over the table, and nothing else would notice.
+  it('takes every popup from ui/popups.tsx, not from the registry', () => {
+    const popup =
+      /\b(DialogContent|DropdownMenuContent|DropdownMenuSubContent|PopoverContent|SelectContent|TooltipContent)\b/;
+    const ui = resolve(src, 'ui');
+    const violations = readdirSync(ui)
+      .filter(file => file.endsWith('.tsx') && file !== 'popups.tsx')
+      .flatMap(file =>
+        [
+          ...readFileSync(join(ui, file), 'utf8').matchAll(
+            /import \{([^}]*)\} from '\.\/components\/[\w-]+\.js'/g,
+          ),
+        ]
+          .map(match => popup.exec(match[1])?.[1])
+          .filter(Boolean)
+          .map(name => `${file}: ${name}`),
+      );
+    expect(violations).toEqual([]);
+  });
+
   it('has a root entry', () => {
     expect(existsSync(join(src, 'index.ts'))).toBe(true);
   });

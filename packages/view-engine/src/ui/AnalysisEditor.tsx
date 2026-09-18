@@ -22,7 +22,6 @@ import { Button } from './components/button.js';
 import { Checkbox } from './components/checkbox.js';
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
@@ -31,13 +30,13 @@ import { Field, FieldGroup, FieldLabel } from './components/field.js';
 import { Input } from './components/input.js';
 import {
   Select,
-  SelectContent,
   SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from './components/select.js';
 import { ToggleGroup, ToggleGroupItem } from './components/toggle-group.js';
+import { DropdownMenuContent, SelectContent } from './popups.js';
 import { useViewMessages } from './MessagesProvider.js';
 
 export interface AnalysisEditorProps {

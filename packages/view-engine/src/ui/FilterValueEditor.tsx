@@ -28,19 +28,15 @@ import {
 import { Button } from './components/button.js';
 import { Calendar } from './components/calendar.js';
 import { Input } from './components/input.js';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from './components/popover.js';
+import { Popover, PopoverTrigger } from './components/popover.js';
 import {
   Select,
-  SelectContent,
   SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from './components/select.js';
+import { PopoverContent, SelectContent } from './popups.js';
 
 export interface FilterValueEditorProps {
   /** What the field's kind says this operator needs. */

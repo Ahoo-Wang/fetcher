@@ -173,6 +173,7 @@ src/
     DashboardGrid.tsx, DashboardPanels.tsx
     FilterPanel.tsx, FilterValueEditor.tsx
     ViewList.tsx, ViewSurface.tsx, SaveActions.tsx, EmbeddedView.tsx
+    popups.tsx                    — Registry popup contents, carrying the surface theme out to document.body
     messages.ts, MessagesProvider.tsx   — wording by key, overridable
     index.ts
     components/                   — 24 shadcn/ui primitives — vendored, see below
@@ -205,6 +206,7 @@ src/
 - Prettier: single quotes, trailing commas, semicolons, 80 char width
 - ESLint runs `react-hooks` with `exhaustive-deps`, `incompatible-library` and `unsupported-syntax` all set to **error**; CI gates on `lint:check` with `--max-warnings 0`
 - `src/ui/components/**` and `src/ui/lib/**` are vendored from the shadcn registry — update them with `shadcn add --diff` rather than editing by hand
+- Popup contents (`DialogContent`, `DropdownMenuContent`, `DropdownMenuSubContent`, `PopoverContent`, `SelectContent`, `TooltipContent`) come from `src/ui/popups.tsx`, never straight from `components/`: they portal to `document.body`, outside `.fve-root`, and only the wrapper gives them the theme. `architecture.test.ts` enforces it
 - Bilingual READMEs (`README.md`, `README.zh-CN.md`); `docs/design.md` is in Chinese
 
 ## Git Workflow

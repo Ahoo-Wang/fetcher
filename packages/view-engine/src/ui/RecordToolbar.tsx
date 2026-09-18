@@ -24,13 +24,13 @@ import { Button } from './components/button.js';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
-  DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuTrigger,
 } from './components/dropdown-menu.js';
 import { Separator } from './components/separator.js';
 import { Spinner } from './components/spinner.js';
 import { ToggleGroup, ToggleGroupItem } from './components/toggle-group.js';
+import { DropdownMenuContent } from './popups.js';
 import { useViewMessages } from './MessagesProvider.js';
 
 export interface RecordToolbarProps {
