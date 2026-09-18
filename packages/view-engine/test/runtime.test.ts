@@ -609,6 +609,34 @@ describe('DataViewRuntime admission', () => {
     );
   });
 
+  it('addresses the draft own nodes unchanged when its root is not "all of"', () => {
+    // A root that is `or` rides in the merged tree as its first child; a
+    // finding on the draft still reads as a path into the draft.
+    const { runtime } = harness({
+      config: recordConfig({
+        filterMode: 'advanced',
+        filter: {
+          op: 'or',
+          children: [
+            { field: 'warehouse', operator: 'EQ', value: 'CN' },
+            { field: 'warehouse', operator: 'EQ', value: 'EU' },
+          ],
+        },
+      }),
+      scopeFilter: {
+        op: 'and',
+        children: [{ field: 'status', operator: 'EQ', value: 'open' }],
+      },
+    });
+
+    expect(runtime.getSnapshot().issues).toContainEqual(
+      expect.objectContaining({
+        code: 'filter.field.duplicate-in-group',
+        path: ['children', 1],
+      }),
+    );
+  });
+
   it('rejudges the draft when the scope is cleared or replaced', async () => {
     const { runtime, source } = harness({ scopeFilter: unknownField });
 

@@ -97,6 +97,43 @@ describe('validateFilter', () => {
       ]);
   });
 
+  it('holds a predicate to the rule even while it is still blank', () => {
+    // The outer loop never enters a blank predicate — a blank condition is
+    // not a mistake — but a field twice in it is a slip in the shape, not
+    // in a value, and is found on the shape walk with the rest of the tree.
+    const withItems: FieldDefinition[] = [
+      ...fields,
+      {
+        name: 'items',
+        label: 'Items',
+        kind: 'elementMatch',
+        elements: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+      },
+    ];
+    const twiceBlank: FilterTree = {
+      op: 'and',
+      children: [
+        {
+          field: 'items',
+          operator: 'ELEMENT_MATCH',
+          value: {
+            op: 'and',
+            children: [
+              { field: 'items.sku', operator: 'EQ', value: '' },
+              { field: 'items.sku', operator: 'EQ', value: '' },
+            ],
+          },
+        },
+      ],
+    };
+    expect(validateFilter(withItems, twiceBlank, builtinFieldKinds)).toEqual([
+      expect.objectContaining({
+        code: 'filter.field.duplicate-in-group',
+        path: ['children', 0, 'children', 1],
+      }),
+    ]);
+  });
+
   it('lets a field appear once per group, so a nested group asks again', () => {
     const nested: FilterTree = {
       op: 'and',
