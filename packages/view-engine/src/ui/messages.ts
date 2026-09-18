@@ -162,6 +162,7 @@ export const defaultMessages: ViewMessages = Object.freeze({
   'label.filter.operator-of': '{field} operator',
   'label.filter.value-of': '{field} value',
   'label.filter.remove-of': 'Remove {field}',
+  'label.filter.unset-of': 'Unset {condition}',
   'label.filter.comma-separated': 'Comma separated',
   'label.filter.range-from': '{field} from',
   'label.filter.range-to': '{field} to',

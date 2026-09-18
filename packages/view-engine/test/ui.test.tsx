@@ -1768,6 +1768,30 @@ describe('FilterPanel tree editing', () => {
     expect(names).not.toContain('Warehouse');
   });
 
+  it('takes an applied condition out of force from its badge, keeping the field', async () => {
+    const { filter } = panel();
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().updateLeaf([0], { value: 'CN' });
+      filter().submit();
+    });
+    await waitFor(() =>
+      expect(screen.getByText('Warehouse EQ CN')).toBeDefined(),
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Unset Warehouse EQ CN' }),
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByText('Warehouse EQ CN')).toBeNull(),
+    );
+    // The row is still there, blank, for the next question.
+    const pill = screen.getByRole('group', { name: 'Warehouse condition' });
+    expect(pill.hasAttribute('data-blank')).toBe(true);
+    expect(filter().applied).toEqual([]);
+  });
+
   it('lays a group conditions out in one strip, as pills', () => {
     const { filter } = panel();
     act(() => {
