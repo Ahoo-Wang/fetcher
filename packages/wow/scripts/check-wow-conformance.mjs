@@ -392,34 +392,52 @@ function skipAnnotations(source, index) {
 }
 
 /**
+ * Whether the expression before `index` ends there.
+ *
+ * Only spaces and comments may come before a closing bracket, a separator or
+ * the end of the text. A line break alone does not end it: inside brackets —
+ * an annotation's arguments — Kotlin reads `"TERMS"` and a next line of
+ * `+ "-server"` as one expression, and a line may open with `.` anywhere. Past
+ * a line break, only the start of another declaration ends it; an operator, or
+ * a word that is one (`as`, `in`, `is`), carries it on.
+ */
+function endsAt(source, index) {
+  const at = skipTrivia(source, index);
+  if (at >= source.length || /[;},)\]]/.test(source[at])) return true;
+  return (
+    source.slice(index, at).includes('\n') &&
+    /^(?:@|(?!(?:as|in|is)\b)[A-Za-z_])/.test(source.slice(at))
+  );
+}
+
+/**
  * The string at `index` if a single literal is the whole expression there.
  *
  * `const val T = "TERMS" + "-server"` starts with a literal but is not one:
  * reading its first string would report `TERMS` where the wire carries
- * `TERMS-server`. Only spaces and comments may follow before the expression
- * ends; anything else — an operator, a call — makes the value unknown.
+ * `TERMS-server`. Anything after it but the end of the expression — an
+ * operator, a call, on the same line or the next — makes the value unknown.
  */
 function wholeLiteralAt(source, index) {
   const value = literalAt(source, index);
   if (value === null) return null;
-  let at = source.startsWith('"""', index)
+  const end = source.startsWith('"""', index)
     ? skipRawString(source, index)
     : skipString(source, index);
-  while (at < source.length) {
-    if (source[at] === ' ' || source[at] === '\t') at += 1;
-    else if (source.startsWith('/*', at)) at = skipBlockComment(source, at);
-    else if (source.startsWith('//', at)) return value;
-    else break;
-  }
-  return at >= source.length || /[\n;},)]/.test(source[at]) ? value : null;
+  return endsAt(source, end) ? value : null;
 }
 
-/** A value spelled as one literal or one constant, or null if it is neither. */
+/**
+ * A value spelled as one literal or one constant, or null if it is neither.
+ * A constant is held to the same end as a literal: `NEW_TYPE + "-v2"` is not
+ * the value of `NEW_TYPE`.
+ */
 function valueAt(source, index, constants) {
   const literal = wholeLiteralAt(source, index);
   if (literal !== null) return literal;
   const reference = /^[A-Za-z_][\w.]*/.exec(source.slice(index))?.[0];
-  return (reference && resolveConstant(reference, constants)) ?? null;
+  if (!reference || !endsAt(source, index + reference.length)) return null;
+  return resolveConstant(reference, constants) ?? null;
 }
 
 /**
@@ -448,9 +466,12 @@ function readEntry(entry, constants) {
       // The first positional argument, or `value = …`; other named arguments
       // such as `index` or `required` leave the name as it is.
       for (const part of splitTopLevel(args, ',')) {
-        const named = /^\s*(\w+)\s*=\s*/.exec(part);
+        const start = skipTrivia(part, 0);
+        const named = /^(\w+)\s*=/.exec(part.slice(start));
         if (named && named[1] !== 'value') continue;
-        const offset = named ? named[0].length : skipTrivia(part, 0);
+        const offset = named
+          ? skipTrivia(part, start + named[0].length)
+          : start;
         if (offset >= part.length) continue;
         wire = valueAt(part, offset, constants);
         if (wire === null) return null;
@@ -507,9 +528,14 @@ function constantsIn(source, into) {
     if (constant) {
       // One whose value cannot be read is still recorded, as null, so that a
       // reference to it fails instead of resolving to a namesake elsewhere.
+      // So is a path declared twice — the same objects in two packages, or
+      // the unnamed companions of two classes. Kotlin tells them apart by
+      // package, class and import, none of which this reads, and keeping
+      // whichever came last would compare one against the other's value.
+      const key = [...scopes.map(scope => scope.name), constant[1]].join('.');
       into.set(
-        [...scopes.map(scope => scope.name), constant[1]].join('.'),
-        wholeLiteralAt(source, at + constant[0].length),
+        key,
+        into.has(key) ? null : wholeLiteralAt(source, at + constant[0].length),
       );
       at += constant[0].length;
       continue;
@@ -555,7 +581,9 @@ function resolveConstant(reference, constants) {
  * A `JsonSubTypes.Type` without a `name` takes its discriminator from there.
  */
 function typeNamesIn(source, constants, into) {
-  for (const match of maskOpaque(source).matchAll(/@JsonTypeName\s*\(/g)) {
+  for (const match of maskOpaque(source).matchAll(
+    /@(?:\w+\.)*JsonTypeName\s*\(/g,
+  )) {
     const open = match.index + match[0].length;
     const close = skipBalanced(source, open, '(', ')');
     const value = valueAt(
@@ -584,15 +612,19 @@ function typeNamesIn(source, constants, into) {
 function subtypeNames(args, owner, constants, typeNames, unreadable) {
   const names = [];
   for (const entry of splitTopLevel(args, ',')) {
-    const call = /^\s*@?(?:JsonSubTypes\.)?Type\s*\(/.exec(entry);
+    // A comment may sit before an entry, or be all that follows the last one.
+    const lead = skipTrivia(entry, 0);
+    if (lead >= entry.length) continue;
+    const call = /^@?(?:(?:\w+\.)*JsonSubTypes\.)?Type\s*\(/.exec(
+      entry.slice(lead),
+    );
     if (!call) {
-      if (entry.trim())
-        unreadable.push(
-          `${owner}: cannot read the subtype \`${entry.trim().slice(0, 60)}\``,
-        );
+      unreadable.push(
+        `${owner}: cannot read the subtype \`${entry.slice(lead).trim().slice(0, 60)}\``,
+      );
       continue;
     }
-    const open = call[0].length;
+    const open = lead + call[0].length;
     const inner = entry.slice(open, skipBalanced(entry, open, '(', ')') - 1);
     const found = [];
     let type = null;
@@ -601,21 +633,27 @@ function subtypeNames(args, owner, constants, typeNames, unreadable) {
     let unread = null;
     const read = (source, index) => {
       const value = valueAt(source, index, constants);
-      if (value === null) unread ??= source.slice(index).trim();
+      if (value === null)
+        unread ??= source.slice(index).trim().replace(/\s+/g, ' ');
       return value;
     };
     for (const part of splitTopLevel(inner, ',')) {
-      const named = /^\s*(\w+)\s*=\s*/.exec(part);
-      if (named?.[1] === 'name') found.push(read(part, named[0].length));
+      const start = skipTrivia(part, 0);
+      const named = /^(\w+)\s*=/.exec(part.slice(start));
+      const value = named && skipTrivia(part, start + named[0].length);
+      if (named?.[1] === 'name') found.push(read(part, value));
       else if (named?.[1] === 'names') {
         const list = part
-          .slice(named[0].length)
+          .slice(value)
           .trim()
           .replace(/^\[|\]$/g, '');
-        for (const item of splitTopLevel(list, ','))
-          if (item.trim()) found.push(read(item, skipTrivia(item, 0)));
+        for (const item of splitTopLevel(list, ',')) {
+          const at = skipTrivia(item, 0);
+          if (at < item.length) found.push(read(item, at));
+        }
       } else {
-        const reference = /([\w.]+)::class/.exec(part);
+        // Masked, so a class named in a comment is not taken for the real one.
+        const reference = /([\w.]+)::class/.exec(maskOpaque(part));
         if (reference) type = reference[1];
       }
     }
@@ -649,6 +687,22 @@ function interfaceAfter(source, index) {
 }
 
 /**
+ * The id a `@JsonTypeInfo` puts on the wire, from its `use` argument.
+ *
+ * Read argument by argument with comments and strings blanked: an argument
+ * list that keeps its old setting in a comment, `// use = JsonTypeInfo.Id.NAME`,
+ * above a live `use = JsonTypeInfo.Id.CLASS` sends class names, and reading the
+ * first `use =` in the text would compare subtype names for nothing.
+ */
+function typeIdOf(args) {
+  for (const part of splitTopLevel(maskOpaque(args), ',')) {
+    const use = /^\s*use\s*=\s*(?:\w+\s*\.\s*)*(\w+)\s*$/.exec(part);
+    if (use) return use[1];
+  }
+  return undefined;
+}
+
+/**
  * Every enum and discriminator set in the protocol package, and every place
  * the parser recognised one but could not read it.
  *
@@ -672,7 +726,9 @@ function wowEnums(root) {
   // carries a class name, and the `name` would be compared for nothing.
   const typeInfo = new Map();
   for (const { source } of files)
-    for (const match of maskOpaque(source).matchAll(/@JsonTypeInfo\s*\(/g)) {
+    for (const match of maskOpaque(source).matchAll(
+      /@(?:\w+\.)*JsonTypeInfo\s*\(/g,
+    )) {
       const open = match.index + match[0].length;
       const close = skipBalanced(source, open, '(', ')');
       const owner = interfaceAfter(source, close);
@@ -696,6 +752,15 @@ function wowEnums(root) {
   };
   for (const { where, source } of files) {
     const masked = maskOpaque(source);
+    // Annotations are found by name, qualified or not. One imported under
+    // another name is found by neither, and what it declares would be skipped
+    // whole — so the alias itself is the error.
+    for (const alias of masked.matchAll(
+      /^[ \t]*import\s+(?:\w+\.)*(JsonSubTypes|JsonTypeInfo|JsonTypeName|JsonProperty|JsonValue)\s+as\s+(\w+)/gm,
+    ))
+      unreadable.push(
+        `${where}: imports ${alias[1]} as ${alias[2]}, a name this checker does not read`,
+      );
     for (const match of masked.matchAll(/\benum\s+class\s+(\w+)[^{]*\{/g)) {
       const open = match.index + match[0].length;
       const close = closeBrace(source, open);
@@ -727,16 +792,13 @@ function wowEnums(root) {
       record(match[1], values, where);
     }
 
-    for (const match of masked.matchAll(/@JsonSubTypes\s*\(/g)) {
+    for (const match of masked.matchAll(/@(?:\w+\.)*JsonSubTypes\s*\(/g)) {
       const open = match.index + match[0].length;
       const close = skipBalanced(source, open, '(', ')');
       const args = source.slice(open, close - 1);
       const owner = interfaceAfter(source, close) ?? 'an unnamed @JsonSubTypes';
       const info = typeInfo.get(owner);
-      const use =
-        info === undefined
-          ? undefined
-          : /\buse\s*=\s*(?:[\w]+\.)*(\w+)/.exec(info)?.[1];
+      const use = info === undefined ? undefined : typeIdOf(info);
       if (use !== 'NAME') {
         unreadable.push(
           info === undefined
@@ -783,6 +845,36 @@ function stripTsComments(source) {
 }
 
 /**
+ * The members of the TypeScript enum whose body opens at `open`, split at the
+ * commas between them. A comma or a brace inside a string is part of a value —
+ * `JOINED = 'a,b'` is one member, as Wow's `@JsonProperty("a,b")` is one wire
+ * value — so strings are stepped over, and so are brackets.
+ */
+function tsMembers(source, open) {
+  const members = [];
+  let depth = 0;
+  let start = open;
+  for (let at = open; at < source.length; at += 1) {
+    const char = source[at];
+    if (char === "'" || char === '"' || char === '`') {
+      at += 1;
+      while (at < source.length && source[at] !== char)
+        at += source[at] === '\\' ? 2 : 1;
+    } else if ('([{'.includes(char)) depth += 1;
+    else if (char === '}' && depth === 0) {
+      members.push(source.slice(start, at));
+      return members;
+    } else if (')]}'.includes(char)) depth -= 1;
+    else if (char === ',' && depth === 0) {
+      members.push(source.slice(start, at));
+      start = at + 1;
+    }
+  }
+  members.push(source.slice(start));
+  return members;
+}
+
+/**
  * Every `export enum` in this package's query source, and any member that
  * could not be read. The source directory can be pointed elsewhere for the
  * checker's own tests with `WOW_CONFORMANCE_TS_SOURCE`.
@@ -797,10 +889,11 @@ function tsEnums() {
       else if (entry.name.endsWith('.ts')) {
         const source = stripTsComments(readFileSync(path, 'utf8'));
         for (const match of source.matchAll(/export\s+enum\s+(\w+)\s*\{/g)) {
-          const open = match.index + match[0].length;
-          const body = source.slice(open, source.indexOf('}', open));
           const values = [];
-          for (const member of body.split(',')) {
+          for (const member of tsMembers(
+            source,
+            match.index + match[0].length,
+          )) {
             if (!member.trim()) continue;
             const read =
               /^\s*(?:\w+|'[^']*'|"[^"]*")\s*=\s*(?:'([^']*)'|"([^"]*)")\s*$/.exec(

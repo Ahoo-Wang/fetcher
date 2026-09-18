@@ -58,7 +58,11 @@ and comparing both ways only catches a name that goes missing whole, not one
 value dropped from a set that otherwise matches. Discriminators spelled as
 constants — Wow spells all fifty filter operators as
 `QueryProtocol.FilterExpression.Operator.X` — are resolved through the `const
-val`s they name, and a constant that is not one whole literal is unreadable.
+val`s they name, and a constant that is not one whole literal is unreadable. So
+is a constant path declared twice: Kotlin tells the two apart by package and
+import, which the checker does not read. A value is whole only where its
+expression visibly ends, and a line break does not end one — inside brackets
+Kotlin reads on across it, and anywhere before a leading `.`.
 
 Failing closed does not catch a value read confidently but wrongly, so the
 constructs that change what goes on the wire are read for what they put there:
@@ -68,12 +72,16 @@ Two declarations sharing a simple name are an error rather than one silently
 replacing the other. Each `JsonSubTypes.Type` must yield a name — from
 `name =`, `names =`, or a single `@JsonTypeName` on its class — and its owner
 must carry `@JsonTypeInfo(use = …Id.NAME)`, since under any other id the wire
-does not carry those names. `@JsonValue` is recognised under any use-site
-target and by its qualified name. Comments follow each language's own rules:
-Kotlin block comments nest, TypeScript's do not. Declarations are located in a
-copy of the source with comments and strings blanked, so a documentation
-example is neither mistaken for a declaration nor raises a false alarm, and
-then read from the original at the same offsets.
+does not carry those names. Jackson's annotations are recognised by their
+qualified names as well as their short ones, `@JsonValue` under any use-site
+target too, and one imported under an alias is an error, since what it declares
+would otherwise be skipped whole. Comments follow each language's own rules:
+Kotlin block comments nest, TypeScript's do not. Declarations, and the `use` of
+a `@JsonTypeInfo`, are located in a copy of the source with comments and
+strings blanked, so a documentation example or a setting kept in a comment is
+neither mistaken for the real one nor raises a false alarm, and then read from
+the original at the same offsets. This package's enum members are split
+outside strings, so a value holding a comma or a brace reads whole.
 
 `test/fixtures/` holds the stand-ins: `wow-synthetic` for most shapes,
 `wow-kdoc` for declarations that exist only in comments and strings, and

@@ -46,12 +46,13 @@ sealed interface SyntheticDispatch {
 // An entry that is not UPPER_SNAKE is as much a wire value as one that is.
 enum class Direction { ASC, DESC, random }
 
-// A discriminator holding a hyphen and lowercase letters, with a further
-// annotation between it and its interface whose arguments hold brackets.
+// A discriminator holding a hyphen and lowercase letters, behind a comment of
+// its own, with a further annotation between it and its interface whose
+// arguments hold brackets.
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(HavingExpression.Condition::class, name = "CONDITION"),
-    JsonSubTypes.Type(HavingExpression.NotNull::class, name = "not-null"),
+    JsonSubTypes.Type(HavingExpression.NotNull::class, /* lowercase on purpose */ name = "not-null"),
 )
 @Schema(oneOf = [HavingExpression.Condition::class], discriminatorProperty = "type")
 sealed interface HavingExpression {
@@ -69,7 +70,7 @@ enum class AggregationDateUnit {
     @Deprecated("use MONTH") QUARTER,
     @JsonProperty("month") MONTH,
     WEEK, DAY, HOUR, MINUTE, SECOND,
-    @JsonProperty(value = "fortnight", index = 8) FORTNIGHT,
+    @JsonProperty(/* the wire value */ value = "fortnight", index = 8) FORTNIGHT,
 }
 
 // A discriminator spelled as a constant, the way Wow spells its filter
@@ -81,6 +82,17 @@ object SyntheticProtocol {
         // Starts with a literal but is not one. Reading only the first string
         // would report TERMS, which this package already sends, and pass.
         const val JOINED = "TERMS" + "-server"
+
+        // The same past a line break. A line may open with a dot, so the
+        // newline does not end the expression, and reading up to it would
+        // report TERMS again.
+        const val DOTTED = "TERMS"
+            .plus("-server")
+
+        // Declared under the same path in the schema subpackage, with another
+        // value. Kotlin tells the two apart by package; this checker cannot,
+        // so neither may stand in for the other.
+        const val SHARED = "TERMS"
     }
 }
 
@@ -89,11 +101,26 @@ object SyntheticProtocol {
     JsonSubTypes.Type(AggregationGroup.New::class, name = SyntheticProtocol.Group.NEW_TYPE),
     JsonSubTypes.Type(AggregationGroup.Lost::class, name = Nowhere.MISSING),
     JsonSubTypes.Type(AggregationGroup.Joined::class, name = SyntheticProtocol.Group.JOINED),
+    JsonSubTypes.Type(AggregationGroup.Dotted::class, name = SyntheticProtocol.Group.DOTTED),
+    JsonSubTypes.Type(AggregationGroup.Shared::class, name = SyntheticProtocol.Group.SHARED),
+    // Inside brackets Kotlin reads an operator on the next line as part of the
+    // expression. And a constant can start one as much as a literal can: read
+    // alone, NEW_TYPE would pass for new-type.
+    JsonSubTypes.Type(
+        AggregationGroup.Wrapped::class,
+        name = "TERMS"
+            + "-wrapped",
+    ),
+    JsonSubTypes.Type(AggregationGroup.Suffixed::class, name = SyntheticProtocol.Group.NEW_TYPE + "-v2"),
 )
 sealed interface AggregationGroup {
     data object New : AggregationGroup
     data object Lost : AggregationGroup
     data object Joined : AggregationGroup
+    data object Dotted : AggregationGroup
+    data object Shared : AggregationGroup
+    data object Wrapped : AggregationGroup
+    data object Suffixed : AggregationGroup
 }
 
 // Written through a property, so the entry names are not what goes out.
@@ -119,12 +146,16 @@ enum class ComparisonOperator {
     BETWEEN_EXCLUSIVE,
 }
 
-// Subtypes named three ways: by `name =`, by `@JsonTypeName` on the class, and
-// by nothing this checker can read — which must be reported, not skipped.
+// Subtypes named three ways: by `name =`, by `@JsonTypeName` on the class —
+// short or qualified, and on the class the entry names rather than one a
+// comment mentions — and by nothing this checker can read, which must be
+// reported, not skipped.
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(DerivedExpression.Ref::class, name = "METRIC_REF"),
     JsonSubTypes.Type(DerivedExpression.Named::class),
+    JsonSubTypes.Type(DerivedExpression.QualifiedName::class),
+    JsonSubTypes.Type(/* was DerivedExpression.Named::class */ DerivedExpression.Renamed::class),
     JsonSubTypes.Type(DerivedExpression.Unnamed::class),
 )
 sealed interface DerivedExpression {
@@ -132,6 +163,12 @@ sealed interface DerivedExpression {
 
     @JsonTypeName("NAMED_BY_ANNOTATION")
     data object Named : DerivedExpression
+
+    @com.fasterxml.jackson.annotation.JsonTypeName("QUALIFIED_BY_ANNOTATION")
+    data object QualifiedName : DerivedExpression
+
+    @JsonTypeName("RENAMED_BY_ANNOTATION")
+    data object Renamed : DerivedExpression
 
     data object Unnamed : DerivedExpression
 }
@@ -161,5 +198,29 @@ sealed interface ByClass {
 @JsonSubTypes(JsonSubTypes.Type(Untyped.A::class, name = "TERMS"))
 sealed interface Untyped {
     data object A : Untyped
+}
+
+// The id this used to use, kept in a comment above the one it uses now. The
+// wire carries class names; reading the comment would compare names instead.
+@JsonTypeInfo(
+    // use = JsonTypeInfo.Id.NAME,
+    use = JsonTypeInfo.Id.CLASS,
+)
+@JsonSubTypes(JsonSubTypes.Type(CommentedId.A::class, name = "TERMS"))
+sealed interface CommentedId {
+    data object A : CommentedId
+}
+
+// Every annotation by its qualified name. Matching only the short names would
+// skip this declaration whole, and a set Wow added this way would go unseen.
+@com.fasterxml.jackson.annotation.JsonTypeInfo(
+    use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME,
+    property = "type",
+)
+@com.fasterxml.jackson.annotation.JsonSubTypes(
+    com.fasterxml.jackson.annotation.JsonSubTypes.Type(SyntheticQualifiedDispatch.A::class, name = "QUALIFIED"),
+)
+sealed interface SyntheticQualifiedDispatch {
+    data object A : SyntheticQualifiedDispatch
 }
 

@@ -23,3 +23,10 @@ export enum SearchMode {
   // PHRASE = 'PHRASE',
   /** Would be written as `PHRASE = 'PHRASE'`, were it still sent. */
 }
+
+// Values holding a comma and a brace, as a @JsonProperty may. Split at every
+// comma, or cut at the first brace, neither member would read.
+export enum SyntheticPunctuated {
+  JOINED = 'a,b',
+  BRACED = 'a}b',
+}

@@ -40,6 +40,27 @@ const run = () => {
   return { ...result, output: `${result.stdout}${result.stderr}` };
 };
 
+/** The checker over `wow-ts-comments`, reading `ts-comments` as this package. */
+const runOnTsPair = () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      script,
+      fileURLToPath(new URL('../fixtures/wow-ts-comments', import.meta.url)),
+    ],
+    {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        WOW_CONFORMANCE_TS_SOURCE: fileURLToPath(
+          new URL('../fixtures/ts-comments', import.meta.url),
+        ),
+      },
+    },
+  );
+  return `${result.stdout}${result.stderr}`;
+};
+
 describe('check-wow-conformance', () => {
   it.each([
     'Synthetic plain require.',
@@ -154,6 +175,42 @@ describe('check-wow-conformance', () => {
       'an entry the parser cannot read',
       'Unreadable: cannot read the entry `@ BROKEN`',
     ],
+    [
+      'a constant that goes on past a line break',
+      'AggregationGroup: cannot read the discriminator `SyntheticProtocol.Group.DOTTED`',
+    ],
+    [
+      'an annotation argument that goes on past a line break',
+      'AggregationGroup: cannot read the discriminator `"TERMS" + "-wrapped"`',
+    ],
+    [
+      'a constant that only starts the expression',
+      'AggregationGroup: cannot read the discriminator `SyntheticProtocol.Group.NEW_TYPE + "-v2"`',
+    ],
+    [
+      'a constant declared under one path in two packages',
+      'AggregationGroup: cannot read the discriminator `SyntheticProtocol.Group.SHARED`',
+    ],
+    [
+      'annotations by their qualified names',
+      'SyntheticQualifiedDispatch: no counterpart here',
+    ],
+    [
+      '@JsonTypeName by its qualified name',
+      'DerivedExpression.QUALIFIED_BY_ANNOTATION: Wow has it, this package does not',
+    ],
+    [
+      'an annotation imported under another name',
+      'SyntheticAlias.kt: imports JsonSubTypes as Subtypes',
+    ],
+    [
+      'an id kept in a comment above the one in use',
+      'CommentedId: @JsonTypeInfo uses CLASS',
+    ],
+    [
+      'the class a subtype names, not one its comment mentions',
+      'DerivedExpression.RENAMED_BY_ANNOTATION: Wow has it, this package does not',
+    ],
   ])('reports %s', (_shape, report) => {
     expect(run().output).toContain(report);
   });
@@ -164,6 +221,12 @@ describe('check-wow-conformance', () => {
     expect(run().output).not.toContain('ComparisonOperator.still');
   });
 
+  it('reads a subtype with a comment before it', () => {
+    // A comment between entries is ordinary Kotlin. Read as the start of the
+    // entry, it made a well-formed subtype an unreadable one.
+    expect(run().output).not.toContain('cannot read the subtype');
+  });
+
   it('reads entries that carry arguments and a body', () => {
     expect(run().output).not.toContain('SyntheticOnlyInWow: cannot read');
   });
@@ -171,29 +234,20 @@ describe('check-wow-conformance', () => {
   it('does not count a commented-out member as one this package sends', () => {
     // PHRASE survives in the TypeScript only in comments, so it is missing
     // here; read from the comments, it would match Wow and pass.
-    const result = spawnSync(
-      process.execPath,
-      [
-        script,
-        fileURLToPath(new URL('../fixtures/wow-ts-comments', import.meta.url)),
-      ],
-      {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          WOW_CONFORMANCE_TS_SOURCE: fileURLToPath(
-            new URL('../fixtures/ts-comments', import.meta.url),
-          ),
-        },
-      },
-    );
-    const output = `${result.stdout}${result.stderr}`;
+    const output = runOnTsPair();
     expect(output).toContain(
       'SearchMode.PHRASE: Wow has it, this package does not',
     );
     // And a member with a doc comment of its own still reads: flagging every
     // documented member as unreadable would fail on this package's own source.
     expect(output).not.toContain("cannot read this package's member");
+  });
+
+  it('reads a member whose value holds a comma or a brace', () => {
+    // Both sides carry `a,b` and `a}b`. Split at every comma, or cut at the
+    // first brace, this package's members would read as fragments, and the
+    // enum would be reported however well it matched.
+    expect(runOnTsPair()).not.toContain('SyntheticPunctuated');
   });
 
   it('does not take a declaration in a comment or a string for a real one', () => {

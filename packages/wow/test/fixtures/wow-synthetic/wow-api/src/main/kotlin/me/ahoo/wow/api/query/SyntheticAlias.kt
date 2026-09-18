@@ -11,15 +11,16 @@
  * limitations under the License.
  */
 
-// Not Wow source. The same simple name as an enum in the parent package: the
-// checker must not let one declaration quietly overwrite the other.
-package me.ahoo.wow.api.query.schema
+// Not Wow source. An annotation imported under another name is found neither by
+// its short name nor by its qualified one, so what it declares would be skipped
+// whole. The checker has to say so rather than pass.
+package me.ahoo.wow.api.query
 
-enum class SyntheticTwin { ONE, TWO }
+import com.fasterxml.jackson.annotation.JsonSubTypes as Subtypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 
-// The path of a constant in the parent package, with another value.
-object SyntheticProtocol {
-    object Group {
-        const val SHARED = "shared-here"
-    }
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@Subtypes(Subtypes.Type(SyntheticAliased.A::class, name = "ALIASED"))
+sealed interface SyntheticAliased {
+    data object A : SyntheticAliased
 }

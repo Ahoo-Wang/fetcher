@@ -16,3 +16,8 @@
 package me.ahoo.wow.api.query
 
 enum class SearchMode { TERMS, PHRASE }
+
+enum class SyntheticPunctuated {
+    @JsonProperty("a,b") JOINED,
+    @JsonProperty("a}b") BRACED,
+}
