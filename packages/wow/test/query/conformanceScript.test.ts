@@ -49,6 +49,13 @@ describe('check-wow-conformance', () => {
     'Synthetic checkNotNull.',
     'Synthetic error call.',
     'Synthetic throw.',
+    'Synthetic paren inside a string.',
+    'Synthetic paren inside a char.',
+    'Synthetic paren inside a block comment.',
+    'Synthetic paren inside a line comment.',
+    'Synthetic paren inside a template.',
+    // The template holds a string of its own; the message must not end there.
+    'Synthetic ${listOf("nested").first()} message.',
   ])('reads a rule stated as: %s', rule => {
     expect(run().output).toContain(rule);
   });

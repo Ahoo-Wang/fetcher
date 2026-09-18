@@ -645,7 +645,11 @@ if (first.nextCursor) {
 
 `DEFAULT_CURSOR_SIZE` is `10`; `size` must be between `1` and
 `MAX_CURSOR_SIZE` (`2147483646`). A request accepts at most
-`MAX_CURSOR_SORT_FIELDS` (`32`) explicit sort fields. Snapshot and event-stream
+`MAX_CURSOR_SORT_FIELDS` (`32`) explicit sort fields, and each field at most
+once: `cursorQuery` throws `TypeError('Cursor sort fields must be unique.')`
+for a repeat. A cursor is a position in one total order, and two directions for
+the same field leave that position ambiguous, so a page could repeat or skip
+rows — Wow's gateway refuses it for the same reason. Snapshot and event-stream
 cursors use `snapshot/cursor`, `snapshot/cursor/state`, and `event/cursor`.
 
 ## Filter Expressions
@@ -704,6 +708,21 @@ filter.containsAll('state.tags', ['wow', 'cqrs']);
 
 `eq` and `ne` accept a JSON scalar or `null`; use `isIn`/`notIn` for multiple
 values. Query field segments may start with `@`.
+
+Every field path is checked against Wow's `QueryField` pattern
+(`^@?[A-Za-z_][A-Za-z0-9_-]*(\.(?:@?[A-Za-z_][A-Za-z0-9_-]*|[0-9]+))*$`) —
+not only in `filter.*` but in `asc`, `desc` and `projection`, since Wow holds a
+sort field and a projection entry as `QueryField` too. A path it rejects throws
+`TypeError('Query field is invalid: [<path>].')` where it is built:
+
+```typescript
+asc('state.createdAt'); // ok
+asc('9 not a path'); // throws TypeError
+projection({ include: ['state.items.0.sku'] }); // ok: numeric segments index arrays
+```
+
+`projection()` always returns both keys, `include` and `exclude`, whether or
+not they were given.
 
 `isEmptyString` matches exactly `""`. `isNotEmptyString` requires the field to
 exist, be non-null, and differ from `""`. Whitespace-only strings are not empty.

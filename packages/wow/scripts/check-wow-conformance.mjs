@@ -94,49 +94,133 @@ function normalize(message) {
     .trim();
 }
 
+/*
+ * A small Kotlin lexer, just enough to find where a call's arguments end.
+ *
+ * A bracket inside a string, a char literal or a comment is not syntax, and
+ * treating it as syntax is how this script has gone blind before:
+ * `require(value != ")") { "…" }` closed the call at the quoted `)` and the
+ * rule vanished, with the checker still reporting success. Each helper takes
+ * the index of the token's first character and returns the index just past it.
+ */
+
+function skipLineComment(source, index) {
+  const end = source.indexOf('\n', index);
+  return end < 0 ? source.length : end + 1;
+}
+
+function skipBlockComment(source, index) {
+  const end = source.indexOf('*/', index + 2);
+  return end < 0 ? source.length : end + 2;
+}
+
+function skipRawString(source, index) {
+  const end = source.indexOf('"""', index + 3);
+  return end < 0 ? source.length : end + 3;
+}
+
+/** A `"…"` string, including `${…}` templates that may hold strings of their own. */
+function skipString(source, index) {
+  let at = index + 1;
+  while (at < source.length) {
+    const char = source[at];
+    if (char === '\\') at += 2;
+    else if (char === '"') return at + 1;
+    else if (char === '$' && source[at + 1] === '{')
+      at = skipBalanced(source, at + 2, '{', '}');
+    else at += 1;
+  }
+  return at;
+}
+
+function skipChar(source, index) {
+  let at = index + 1;
+  while (at < source.length && source[at] !== "'")
+    at += source[at] === '\\' ? 2 : 1;
+  return at + 1;
+}
+
+/** Skips a token that brackets inside it cannot count against, or returns -1. */
+function skipOpaque(source, index) {
+  const char = source[index];
+  const next = source[index + 1];
+  if (char === '/' && next === '/') return skipLineComment(source, index);
+  if (char === '/' && next === '*') return skipBlockComment(source, index);
+  if (source.startsWith('"""', index)) return skipRawString(source, index);
+  if (char === '"') return skipString(source, index);
+  if (char === "'") return skipChar(source, index);
+  return -1;
+}
+
+/** Index just past the bracket that closes one opened before `index`. */
+function skipBalanced(source, index, open, close) {
+  let depth = 1;
+  let at = index;
+  while (at < source.length && depth > 0) {
+    const skipped = skipOpaque(source, at);
+    if (skipped >= 0) {
+      at = skipped;
+      continue;
+    }
+    if (source[at] === open) depth += 1;
+    else if (source[at] === close) depth -= 1;
+    at += 1;
+  }
+  return at;
+}
+
+/** Past whitespace and comments, which may sit between a call and its block. */
+function skipTrivia(source, index) {
+  let at = index;
+  while (at < source.length) {
+    if (/\s/.test(source[at])) at += 1;
+    else if (source.startsWith('//', at)) at = skipLineComment(source, at);
+    else if (source.startsWith('/*', at)) at = skipBlockComment(source, at);
+    else break;
+  }
+  return at;
+}
+
+/** The text of the string literal starting at `index`, or null if none does. */
+function literalAt(source, index) {
+  if (source.startsWith('"""', index))
+    return source.slice(index + 3, skipRawString(source, index) - 3);
+  if (source[index] === '"')
+    return source.slice(index + 1, skipString(source, index) - 1);
+  return null;
+}
+
 /**
- * Reads the string a `require`/`check` fails with, and every thrown message.
+ * Every message a rule is stated with in one Kotlin file.
  *
- * The condition of a `require` holds parentheses of its own, so this balances
- * them rather than matching to the first `)` — an earlier regex stopped at
- * `require(operands.isNotEmpty()` and silently found a third of the rules.
- *
- * Kotlin states a rule in more than one way, and a checker that knows only
- * `require` reports success while missing the rest. `requireNotNull` and
- * `checkNotNull` take the same trailing message block; `error(...)` and a bare
- * `throw` take the message as their first argument.
+ * Kotlin states a rule in more than one way, and a checker that knows only one
+ * reports success while missing the rest: `require`, `check` and their
+ * `NotNull` forms take a trailing `{ "…" }` block; `error(…)` and a `throw`
+ * take the message as their first argument.
  */
 function messagesIn(source) {
   const found = [];
-  const literal = /"((?:[^"\\]|\\.)*)"/y;
-
-  const readFrom = (from, within) => {
-    literal.lastIndex = from;
-    const slice = source.slice(from, from + within);
-    const match = /"((?:[^"\\]|\\.)*)"/.exec(slice);
-    if (match) found.push(match[1]);
+  const push = message => {
+    if (message !== null) found.push(message);
   };
 
   for (const match of source.matchAll(
     /\b(?:require|check)(?:NotNull)?\s*\(/g,
   )) {
-    let depth = 1;
-    let index = match.index + match[0].length;
-    while (index < source.length && depth > 0) {
-      const char = source[index];
-      if (char === '(') depth++;
-      else if (char === ')') depth--;
-      index++;
-    }
-    // The lazy message block follows the condition: `require(x) { "…" }`.
-    const tail = source.slice(index, index + 400);
-    const block = /^\s*\{/.exec(tail);
-    if (block) readFrom(index, 400);
+    const closed = skipBalanced(
+      source,
+      match.index + match[0].length,
+      '(',
+      ')',
+    );
+    const block = skipTrivia(source, closed);
+    if (source[block] === '{')
+      push(literalAt(source, skipTrivia(source, block + 1)));
   }
   for (const match of source.matchAll(
     /\bthrow\s+\w*(?:Exception|Error)\s*\(|\berror\s*\(/g,
   ))
-    readFrom(match.index + match[0].length, 400);
+    push(literalAt(source, skipTrivia(source, match.index + match[0].length)));
 
   return found;
 }
