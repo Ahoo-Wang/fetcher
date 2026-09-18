@@ -7,8 +7,3 @@ exclude_paths:
   # Vendored from the shadcn registry, updated with `shadcn add --diff`.
   - 'packages/view-engine/src/ui/components/**'
   - 'packages/view-engine/src/ui/lib/**'
-  # Stand-in sources the Wow conformance checker's tests read: fake Wow
-  # checkouts in Kotlin and fake package source in TypeScript. They hold one
-  # case per shape the checker must read — some deliberately not valid code —
-  # so they are built to look unlike ordinary source and grow with each shape.
-  - 'packages/wow/test/fixtures/**'
