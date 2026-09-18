@@ -277,7 +277,7 @@ const view = projectRecord(orders, config, page);
 | `@ahoo-wang/fetcher-view-engine` | 模型类型、纯内核（`validate*` / `compile*` / `project*`）、运行时、`ViewStore`、`MemoryViewStore`                                                                                                                          |
 | `/react`                         | `useViewEngine`、`useOpenView`、`useViewRuntime`、`useFilterEditor`、`useRecordTable`、`useAnalysisEditor`、`useDashboard`、`useSaveCommands`                                                                              |
 | `/ui`                            | `RecordWorkbench`、`AnalysisWorkbench`、`DashboardWorkbench`、`FilterPanel`、`RecordTable`、`RecordCards`、`AnalysisEditor`、`AnalysisChart`、`DashboardGrid`、`MarkdownPanel`、`ImagePanel`、`LinksPanel`、`EmbeddedView` |
-| `/styles.css`                    | 主题。显式导入；任何 JS 入口都不会引入 CSS，产物也不会在 `.fve-root` 之外绘制任何东西（preflight 与工具类在构建时收进根内），`scripts/verify-package.mjs` 在每次构建时核对这两点。                                                                                                                          |
+| `/styles.css`                    | 主题。显式导入；任何 JS 入口都不会引入 CSS，产物也不会在 `.fve-root` 之外绘制任何东西（preflight 与工具类在构建时收进根内），`scripts/verify-package.mjs` 在每次构建时核对这两点。                                         |
 
 ## 持久化
 
