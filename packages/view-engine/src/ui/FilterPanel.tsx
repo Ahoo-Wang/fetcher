@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useMemo } from 'react';
+import { useMemo, type FocusEvent } from 'react';
 import { FilterIcon, PlusIcon, XIcon } from 'lucide-react';
 import type {
   FieldOption,
@@ -87,6 +87,15 @@ export function FilterPanel({
       data-slot="filter-panel"
       aria-label="Filter"
       className="flex flex-col gap-3"
+      // Auto-refresh holds while any control in here has focus. Focus events
+      // bubble in React, so the root sees every input; a move from one
+      // control to another inside the panel is not a leave and not an enter.
+      onFocus={event => {
+        if (crossesBoundary(event)) filter.focus();
+      }}
+      onBlur={event => {
+        if (crossesBoundary(event)) filter.blur();
+      }}
     >
       <div className="flex flex-wrap items-center gap-2">
         <ToggleGroup
@@ -436,6 +445,16 @@ function FilterLeafRow({
       </Button>
     </Field>
   );
+}
+
+/**
+ * Whether a focus event entered or left the element it was handled on, as
+ * opposed to moving between two of its descendants. `relatedTarget` is the
+ * other side of the move: on focus the element left, on blur the one gained.
+ */
+export function crossesBoundary(event: FocusEvent<HTMLElement>): boolean {
+  const other = event.relatedTarget;
+  return !(other instanceof Node && event.currentTarget.contains(other));
 }
 
 /**

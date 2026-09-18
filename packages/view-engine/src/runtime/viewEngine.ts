@@ -716,9 +716,12 @@ export class ViewEngine {
         this.summaries.set(instance.id, toSummary(instance));
         // Every open view of this instance moves to the new baseline, not
         // only the one the command came through: the same view open twice
-        // would otherwise keep a revision nobody can write against.
-        for (const holder of this.holders(instance.id, runtime))
-          holder.markSaved(instance);
+        // would otherwise keep a revision nobody can write against. Only the
+        // view this write belongs to has its outcome settled; another's
+        // unsettled write is still its own to retry or abandon.
+        runtime?.markSaved(instance);
+        for (const holder of this.holders(instance.id))
+          if (holder !== runtime) holder.moveBaseline(instance);
         return;
       }
       case 'delete': {

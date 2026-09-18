@@ -544,6 +544,10 @@ describe('validateDashboard malformed configs', () => {
     expect(
       codes(malformed(dashboardConfig({ fields: ['region' as never] }))),
     ).toContain('dashboard.shape.invalid');
+    // Judged before the shared check maps fields by name, which would throw.
+    expect(
+      malformed(dashboardConfig({ fields: [null as never, REGION_FIELD] })),
+    ).toMatchObject([{ code: 'dashboard.shape.invalid', path: ['fields', 0] }]);
     expect(
       malformed(dashboardConfig({ panels: [null as never, viewPanel()] })),
     ).toMatchObject([{ code: 'dashboard.shape.invalid', path: ['panels', 0] }]);

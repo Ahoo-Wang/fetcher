@@ -25,7 +25,11 @@ import {
   type ViewInstance,
   type ViewScope,
 } from '../model/index.js';
-import { mergeFilters, type FieldKindRegistry } from '../filter/index.js';
+import {
+  isPlainObject,
+  mergeFilters,
+  type FieldKindRegistry,
+} from '../filter/index.js';
 import {
   isViewPanel,
   mapGlobalFilter,
@@ -274,12 +278,17 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
 
   markSaved(instance: ViewInstance): void {
     if (this.stopped) return;
+    this.moveBaseline(instance);
+    this.setState({ write: null });
+  }
+
+  moveBaseline(instance: ViewInstance): void {
+    if (this.stopped) return;
     this.setState({
       saved: instance,
       title: instance.title,
       scope: instance.scope,
       dirty: this.isDirty(this.state.draft, instance),
-      write: null,
     });
   }
 
@@ -397,6 +406,9 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     const blocked = hasError(issues.filter(found => panelOf(found) === null));
 
     panelsOf(applied).forEach((panel, index) => {
+      // Admission reports an entry that is no panel at its index; there is
+      // no id to build a state under, and nothing to run.
+      if (!isPlainObject(panel)) return;
       const own = issues.filter(found => panelOf(found) === index);
       const { runtime, issues: reported } =
         isViewPanel(panel) && !blocked

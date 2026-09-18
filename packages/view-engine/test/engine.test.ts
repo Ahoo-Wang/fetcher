@@ -605,6 +605,29 @@ describe('ViewEngine with one instance open twice', () => {
     expect(second.getSnapshot().dirty).toBe(true);
   });
 
+  it('keeps the other view own unsettled write when the baseline moves', async () => {
+    const { engine, store } = harness();
+    const first = await engine.open('orders-1');
+    const second = await engine.open('orders-1');
+    second.edit({ pageSize: 40 });
+    vi.spyOn(store, 'save').mockRejectedValueOnce(
+      new ViewStoreError('UNAVAILABLE', 'timeout'),
+    );
+    await failedWrite(engine.save(second));
+
+    first.edit({ pageSize: 30 });
+    await engine.save(first);
+
+    // The baseline moved under the second view, but its own write is still
+    // unknown, and still its own to retry or abandon.
+    expect(second.getSnapshot().saved?.revision).toBe('2');
+    expect(second.getSnapshot().write?.kind).toBe('unknown');
+    expect(engine.pendingWrites().size).toBe(1);
+    // The retry carries the revision it was sent with, which is stale now.
+    const retried = await engine.retryWrite(second).catch(e => e);
+    expect(isViewWriteError(retried) && retried.state.kind).toBe('conflict');
+  });
+
   it('closes every open view of a deleted instance', async () => {
     const { engine } = harness();
     const first = await engine.open('orders-1');

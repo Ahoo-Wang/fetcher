@@ -129,8 +129,14 @@ export interface ManagedViewRuntime<
    * would be shared with cannot read.
    */
   issuesAt(scope: ViewScope): Issue[];
-  /** Advances the saved baseline once the store has confirmed a write. */
+  /** Advances the saved baseline once the store has confirmed this view's write. */
   markSaved(instance: ViewInstance): void;
+  /**
+   * Advances the baseline because a write elsewhere moved it: the same
+   * instance open in another view, or renamed from the list. Whatever write
+   * of this view's own is still unsettled stays so, for its recovery actions.
+   */
+  moveBaseline(instance: ViewInstance): void;
   /** Replaces the draft with the store's state, for "reload" on a conflict. */
   adoptSaved(instance: ViewInstance): void;
   setWrite(write: WriteState | null): void;
@@ -387,12 +393,17 @@ export class DataViewRuntime<
   /** Called by `ViewEngine` once a write has been confirmed by the store. */
   markSaved(instance: ViewInstance): void {
     if (this.stopped) return;
+    this.moveBaseline(instance);
+    this.setState({ write: null });
+  }
+
+  moveBaseline(instance: ViewInstance): void {
+    if (this.stopped) return;
     this.setState({
       saved: instance,
       title: instance.title,
       scope: instance.scope,
       dirty: this.isDirty(this.state.draft, instance),
-      write: null,
     });
   }
 

@@ -127,10 +127,19 @@ export function validateDashboard(
   return issues;
 }
 
-/** The parts every later check reads without asking: the two arrays. */
+/**
+ * The parts every later check reads without asking: the two arrays, and
+ * each field entry, which the shared config check maps by name before this
+ * kernel's own rules get to look at it.
+ */
 function validateSkeleton(config: DashboardViewConfig): Issue[] {
   const issues: Issue[] = [];
   if (!Array.isArray(config.fields)) issues.push(shape(['fields'], 'array'));
+  else
+    config.fields.forEach((field, index) => {
+      if (!isPlainObject(field) || typeof field.name !== 'string')
+        issues.push(shape(['fields', index], 'object'));
+    });
   if (!Array.isArray(config.panels)) issues.push(shape(['panels'], 'array'));
   return issues;
 }
@@ -148,10 +157,6 @@ function validateFields(config: DashboardViewConfig): Issue[] {
 
   config.fields.forEach((field, index) => {
     const path: IssuePath = ['fields', index, 'name'];
-    if (!isPlainObject(field) || typeof field.name !== 'string') {
-      issues.push(shape(['fields', index], 'object'));
-      return;
-    }
     if (field.name.trim().length === 0) {
       issues.push(issue('dashboard.field.name-empty', path));
       return;

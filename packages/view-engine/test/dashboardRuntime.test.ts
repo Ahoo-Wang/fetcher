@@ -479,6 +479,21 @@ describe('DashboardViewRuntime admission', () => {
     expect(() => runtime.edit({ refresh: { interval: null } })).not.toThrow();
   });
 
+  it('opens a config with an entry that is no panel, and runs the rest', async () => {
+    const board = await harness();
+    const runtime = await board.open(
+      dashboardConfig({ panels: [null as never, panel()] }),
+    );
+
+    expect(runtime.getSnapshot().issues).toMatchObject([
+      { code: 'dashboard.shape.invalid', path: ['panels', 0] },
+    ]);
+    // The entry has no id to stand under; the panel beside it still runs.
+    expect(runtime.getSnapshot().panels).toHaveLength(1);
+    expect(runtime.getSnapshot().panels[0].runtime).not.toBeNull();
+    expect(board.source.paged).toHaveBeenCalledTimes(1);
+  });
+
   it('judges an injected condition with the config from the start', async () => {
     const board = await harness();
     const runtime = await board.open(boundConfig(), {
