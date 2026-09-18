@@ -167,34 +167,39 @@ Every token reads a host-level variable with the built-in value as its fallback:
 }
 ```
 
-| Token                  | Role                                 | Light default                  | Dark default                   |
-| ---------------------- | ------------------------------------ | ------------------------------ | ------------------------------ |
-| `background`           | Surface behind everything            | `oklch(1 0 0deg)`              | `oklch(0.145 0 0deg)`          |
-| `foreground`           | Default text                         | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `card`                 | Card and panel surface               | `oklch(1 0 0deg)`              | `oklch(0.205 0 0deg)`          |
-| `card-foreground`      | Text on cards                        | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `popover`              | Popup surface                        | `oklch(1 0 0deg)`              | `oklch(0.205 0 0deg)`          |
-| `popover-foreground`   | Text in popups                       | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `primary`              | Primary action fill                  | `oklch(0.205 0 0deg)`          | `oklch(0.922 0 0deg)`          |
-| `primary-foreground`   | Text on primary                      | `oklch(0.985 0 0deg)`          | `oklch(0.205 0 0deg)`          |
-| `secondary`            | Secondary action fill                | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
-| `secondary-foreground` | Text on secondary                    | `oklch(0.205 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `muted`                | Muted surface                        | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
-| `muted-foreground`     | Secondary text                       | `oklch(0.556 0 0deg)`          | `oklch(0.708 0 0deg)`          |
-| `accent`               | Hover and selected fill              | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
-| `accent-foreground`    | Text on accent                       | `oklch(0.205 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `destructive`          | Danger and delete                    | `oklch(0.577 0.245 27.325deg)` | `oklch(0.704 0.191 22.216deg)` |
-| `border`               | Borders and dividers                 | `oklch(0.922 0 0deg)`          | `oklch(1 0 0deg / 10%)`        |
-| `input`                | Input and control borders            | `oklch(0.922 0 0deg)`          | `oklch(1 0 0deg / 15%)`        |
-| `ring`                 | Focus ring                           | `oklch(0.708 0 0deg)`          | `oklch(0.556 0 0deg)`          |
-| `chart-1`              | Chart slot 1, blue                   | `#2a78d6`                      | `#3987e5`                      |
-| `chart-2`              | Chart slot 2, orange                 | `#eb6834`                      | `#d95926`                      |
-| `chart-3`              | Chart slot 3, aqua                   | `#1baf7a`                      | `#199e70`                      |
-| `chart-4`              | Chart slot 4, yellow                 | `#eda100`                      | `#c98500`                      |
-| `chart-5`              | Chart slot 5, magenta                | `#e87ba4`                      | `#d55181`                      |
-| `radius`               | Corner radius, the rest scale off it | `0.625rem`                     | —                              |
+| Token                  | Role                                 | Light default                   | Dark default                    |
+| ---------------------- | ------------------------------------ | ------------------------------- | ------------------------------- |
+| `background`           | Surface behind everything            | `oklch(1 0 0deg)`               | `oklch(0.145 0 0deg)`           |
+| `foreground`           | Default text                         | `oklch(0.145 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `card`                 | Card and panel surface               | `oklch(1 0 0deg)`               | `oklch(0.205 0 0deg)`           |
+| `card-foreground`      | Text on cards                        | `oklch(0.145 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `popover`              | Popup surface                        | `oklch(1 0 0deg)`               | `oklch(0.205 0 0deg)`           |
+| `popover-foreground`   | Text in popups                       | `oklch(0.145 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `primary`              | Primary action fill                  | `oklch(0.205 0 0deg)`           | `oklch(0.922 0 0deg)`           |
+| `primary-foreground`   | Text on primary                      | `oklch(0.985 0 0deg)`           | `oklch(0.205 0 0deg)`           |
+| `secondary`            | Secondary action fill                | `oklch(0.97 0 0deg)`            | `oklch(0.269 0 0deg)`           |
+| `secondary-foreground` | Text on secondary                    | `oklch(0.205 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `muted`                | Muted surface                        | `oklch(0.97 0 0deg)`            | `oklch(0.269 0 0deg)`           |
+| `muted-foreground`     | Secondary text                       | `oklch(0.556 0 0deg)`           | `oklch(0.708 0 0deg)`           |
+| `accent`               | Hover and selected fill              | `oklch(0.97 0 0deg)`            | `oklch(0.269 0 0deg)`           |
+| `accent-foreground`    | Text on accent                       | `oklch(0.205 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `destructive`          | Danger and delete                    | `oklch(0.577 0.245 27.325deg)`  | `oklch(0.704 0.191 22.216deg)`  |
+| `success`              | Positive outcome                     | `oklch(0.627 0.194 149.214deg)` | `oklch(0.792 0.209 151.711deg)` |
+| `warning`              | Needs attention, not blocking        | `oklch(0.666 0.179 58.318deg)`  | `oklch(0.828 0.189 84.429deg)`  |
+| `info`                 | Neutral notice                       | `oklch(0.546 0.245 262.881deg)` | `oklch(0.707 0.165 254.624deg)` |
+| `border`               | Borders and dividers                 | `oklch(0.922 0 0deg)`           | `oklch(1 0 0deg / 10%)`         |
+| `input`                | Input and control borders            | `oklch(0.922 0 0deg)`           | `oklch(1 0 0deg / 15%)`         |
+| `ring`                 | Focus ring                           | `oklch(0.708 0 0deg)`           | `oklch(0.556 0 0deg)`           |
+| `chart-1`              | Chart slot 1, blue                   | `#2a78d6`                       | `#3987e5`                       |
+| `chart-2`              | Chart slot 2, orange                 | `#eb6834`                       | `#d95926`                       |
+| `chart-3`              | Chart slot 3, aqua                   | `#1baf7a`                       | `#199e70`                       |
+| `chart-4`              | Chart slot 4, yellow                 | `#eda100`                       | `#c98500`                       |
+| `chart-5`              | Chart slot 5, magenta                | `#e87ba4`                       | `#d55181`                       |
+| `radius`               | Corner radius, the rest scale off it | `0.625rem`                      | —                               |
 
 `radius` is the one token the dark block does not redeclare, so `--fve-radius` sets it in both modes and there is no `--fve-dark-radius`.
+
+The root paints `--background`, so an embedded view shows its own rectangle inside a host card; to let the host's own surface show through instead, set `--fve-background: transparent` (and `--fve-dark-background` for a surface pinned to dark), and the root then paints nothing behind the components, which keep their own card, popover and input colours.
 
 ### 3b. Or compose your own UI
 

@@ -165,34 +165,39 @@ export function OrdersPage() {
 }
 ```
 
-| Token                  | 用途                       | 亮色默认值                     | 暗色默认值                     |
-| ---------------------- | -------------------------- | ------------------------------ | ------------------------------ |
-| `background`           | 整体底色                   | `oklch(1 0 0deg)`              | `oklch(0.145 0 0deg)`          |
-| `foreground`           | 默认文字                   | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `card`                 | 卡片与面板底色             | `oklch(1 0 0deg)`              | `oklch(0.205 0 0deg)`          |
-| `card-foreground`      | 卡片上的文字               | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `popover`              | 弹层底色                   | `oklch(1 0 0deg)`              | `oklch(0.205 0 0deg)`          |
-| `popover-foreground`   | 弹层内文字                 | `oklch(0.145 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `primary`              | 主操作填充                 | `oklch(0.205 0 0deg)`          | `oklch(0.922 0 0deg)`          |
-| `primary-foreground`   | 主操作上的文字             | `oklch(0.985 0 0deg)`          | `oklch(0.205 0 0deg)`          |
-| `secondary`            | 次操作填充                 | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
-| `secondary-foreground` | 次操作上的文字             | `oklch(0.205 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `muted`                | 弱化底色                   | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
-| `muted-foreground`     | 次要文字                   | `oklch(0.556 0 0deg)`          | `oklch(0.708 0 0deg)`          |
-| `accent`               | 悬停与选中填充             | `oklch(0.97 0 0deg)`           | `oklch(0.269 0 0deg)`          |
-| `accent-foreground`    | 强调态上的文字             | `oklch(0.205 0 0deg)`          | `oklch(0.985 0 0deg)`          |
-| `destructive`          | 危险与删除                 | `oklch(0.577 0.245 27.325deg)` | `oklch(0.704 0.191 22.216deg)` |
-| `border`               | 边框与分隔线               | `oklch(0.922 0 0deg)`          | `oklch(1 0 0deg / 10%)`        |
-| `input`                | 输入与控件边框             | `oklch(0.922 0 0deg)`          | `oklch(1 0 0deg / 15%)`        |
-| `ring`                 | 焦点环                     | `oklch(0.708 0 0deg)`          | `oklch(0.556 0 0deg)`          |
-| `chart-1`              | 图表第 1 槽，蓝            | `#2a78d6`                      | `#3987e5`                      |
-| `chart-2`              | 图表第 2 槽，橙            | `#eb6834`                      | `#d95926`                      |
-| `chart-3`              | 图表第 3 槽，青            | `#1baf7a`                      | `#199e70`                      |
-| `chart-4`              | 图表第 4 槽，黄            | `#eda100`                      | `#c98500`                      |
-| `chart-5`              | 图表第 5 槽，品红          | `#e87ba4`                      | `#d55181`                      |
-| `radius`               | 圆角基准，其余档位由它换算 | `0.625rem`                     | —                              |
+| Token                  | 用途                       | 亮色默认值                      | 暗色默认值                      |
+| ---------------------- | -------------------------- | ------------------------------- | ------------------------------- |
+| `background`           | 整体底色                   | `oklch(1 0 0deg)`               | `oklch(0.145 0 0deg)`           |
+| `foreground`           | 默认文字                   | `oklch(0.145 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `card`                 | 卡片与面板底色             | `oklch(1 0 0deg)`               | `oklch(0.205 0 0deg)`           |
+| `card-foreground`      | 卡片上的文字               | `oklch(0.145 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `popover`              | 弹层底色                   | `oklch(1 0 0deg)`               | `oklch(0.205 0 0deg)`           |
+| `popover-foreground`   | 弹层内文字                 | `oklch(0.145 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `primary`              | 主操作填充                 | `oklch(0.205 0 0deg)`           | `oklch(0.922 0 0deg)`           |
+| `primary-foreground`   | 主操作上的文字             | `oklch(0.985 0 0deg)`           | `oklch(0.205 0 0deg)`           |
+| `secondary`            | 次操作填充                 | `oklch(0.97 0 0deg)`            | `oklch(0.269 0 0deg)`           |
+| `secondary-foreground` | 次操作上的文字             | `oklch(0.205 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `muted`                | 弱化底色                   | `oklch(0.97 0 0deg)`            | `oklch(0.269 0 0deg)`           |
+| `muted-foreground`     | 次要文字                   | `oklch(0.556 0 0deg)`           | `oklch(0.708 0 0deg)`           |
+| `accent`               | 悬停与选中填充             | `oklch(0.97 0 0deg)`            | `oklch(0.269 0 0deg)`           |
+| `accent-foreground`    | 强调态上的文字             | `oklch(0.205 0 0deg)`           | `oklch(0.985 0 0deg)`           |
+| `destructive`          | 危险与删除                 | `oklch(0.577 0.245 27.325deg)`  | `oklch(0.704 0.191 22.216deg)`  |
+| `success`              | 成功                       | `oklch(0.627 0.194 149.214deg)` | `oklch(0.792 0.209 151.711deg)` |
+| `warning`              | 需要注意、不阻塞           | `oklch(0.666 0.179 58.318deg)`  | `oklch(0.828 0.189 84.429deg)`  |
+| `info`                 | 中性提示                   | `oklch(0.546 0.245 262.881deg)` | `oklch(0.707 0.165 254.624deg)` |
+| `border`               | 边框与分隔线               | `oklch(0.922 0 0deg)`           | `oklch(1 0 0deg / 10%)`         |
+| `input`                | 输入与控件边框             | `oklch(0.922 0 0deg)`           | `oklch(1 0 0deg / 15%)`         |
+| `ring`                 | 焦点环                     | `oklch(0.708 0 0deg)`           | `oklch(0.556 0 0deg)`           |
+| `chart-1`              | 图表第 1 槽，蓝            | `#2a78d6`                       | `#3987e5`                       |
+| `chart-2`              | 图表第 2 槽，橙            | `#eb6834`                       | `#d95926`                       |
+| `chart-3`              | 图表第 3 槽，青            | `#1baf7a`                       | `#199e70`                       |
+| `chart-4`              | 图表第 4 槽，黄            | `#eda100`                       | `#c98500`                       |
+| `chart-5`              | 图表第 5 槽，品红          | `#e87ba4`                       | `#d55181`                       |
+| `radius`               | 圆角基准，其余档位由它换算 | `0.625rem`                      | —                               |
 
 `radius` 是暗色块唯一不重新声明的 token，因此 `--fve-radius` 对明暗两态同时生效，也就没有 `--fve-dark-radius`。
+
+根默认涂 `--background`，因此嵌入在宿主卡片里的视图会露出自己的底色矩形；若想让宿主自己的底色透出来，把 `--fve-background` 设为 `transparent`（钉住暗色的视图再设 `--fve-dark-background`），根就不再在组件后面涂任何底色，而组件仍保留各自的卡片、弹层与输入框底色。
 
 ### 3b. 或者自行组合 UI
 

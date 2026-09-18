@@ -65,6 +65,9 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -106,6 +109,16 @@
   --accent: var(--fve-accent, oklch(0.97 0 0deg));
   --accent-foreground: var(--fve-accent-foreground, oklch(0.205 0 0deg));
   --destructive: var(--fve-destructive, oklch(0.577 0.245 27.325deg));
+
+  /*
+   * Status colours, reserved for an outcome or a state and never for a chart
+   * series, which carries its own slots. Only `destructive` has a registry
+   * variant; these three are applied by class, and text on a filled status
+   * surface is `text-white`, as the registry writes it for destructive.
+   */
+  --success: var(--fve-success, oklch(0.627 0.194 149.214deg));
+  --warning: var(--fve-warning, oklch(0.666 0.179 58.318deg));
+  --info: var(--fve-info, oklch(0.546 0.245 262.881deg));
   --border: var(--fve-border, oklch(0.922 0 0deg));
   --input: var(--fve-input, oklch(0.922 0 0deg));
   --ring: var(--fve-ring, oklch(0.708 0 0deg));
@@ -149,6 +162,9 @@
   --accent: var(--fve-dark-accent, oklch(0.269 0 0deg));
   --accent-foreground: var(--fve-dark-accent-foreground, oklch(0.985 0 0deg));
   --destructive: var(--fve-dark-destructive, oklch(0.704 0.191 22.216deg));
+  --success: var(--fve-dark-success, oklch(0.792 0.209 151.711deg));
+  --warning: var(--fve-dark-warning, oklch(0.828 0.189 84.429deg));
+  --info: var(--fve-dark-info, oklch(0.707 0.165 254.624deg));
   --border: var(--fve-dark-border, oklch(1 0 0deg / 10%));
   --input: var(--fve-dark-input, oklch(1 0 0deg / 15%));
   --ring: var(--fve-dark-ring, oklch(0.556 0 0deg));
@@ -176,6 +192,11 @@
   /* Upstream paints the drop placeholder red; the theme owns that colour. */
   .fve-root .react-grid-item.react-grid-placeholder {
     @apply bg-primary;
+  }
+
+  /* Upstream draws the resize handle in translucent black; the theme owns that colour. */
+  .fve-root .react-grid-item > .react-resizable-handle::after {
+    border-color: var(--muted-foreground);
   }
 
   /*
