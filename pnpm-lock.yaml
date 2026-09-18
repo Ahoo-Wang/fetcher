@@ -245,6 +245,9 @@ importers:
       '@storybook/addon-docs':
         specifier: ^10.6.0
         version: 10.6.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(storybook@10.6.0(@types/react@19.2.18)(prettier@3.9.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))
+      '@storybook/addon-themes':
+        specifier: ^10.6.0
+        version: 10.6.0(storybook@10.6.0(@types/react@19.2.18)(prettier@3.9.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))
       '@storybook/addon-vitest':
         specifier: ^10.6.0
         version: 10.6.0(@vitest/browser-playwright@4.1.11)(@vitest/browser@4.1.11)(@vitest/runner@4.1.11)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@10.6.0(@types/react@19.2.18)(prettier@3.9.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(vitest@4.1.11)
@@ -3158,6 +3161,11 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  '@storybook/addon-themes@10.6.0':
+    resolution: {integrity: sha512-PJtRtaCzKCAcouEqkHevMwv0aeQNsYWab4K/qszNGuSyFXxdcPQguKwmbB6Ajd/FxW+Of/mLXjRgpjrGVSgm1g==}
+    peerDependencies:
+      storybook: ^10.6.0
 
   '@storybook/addon-vitest@10.6.0':
     resolution: {integrity: sha512-GY2SwSXLNgyMqjQ59J7YTkEQTHdEbBMggOvbbuhuPUBhWo97OGSDCmn1UW3nXDZvkoWyWhF9T9628m1uei7FbA==}
@@ -8795,6 +8803,11 @@ snapshots:
       '@types/react': 19.2.18
     transitivePeerDependencies:
       - '@types/react-dom'
+
+  '@storybook/addon-themes@10.6.0(storybook@10.6.0(@types/react@19.2.18)(prettier@3.9.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))':
+    dependencies:
+      storybook: 10.6.0(@types/react@19.2.18)(prettier@3.9.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      ts-dedent: 2.2.0
 
   '@storybook/addon-vitest@10.6.0(@vitest/browser-playwright@4.1.11)(@vitest/browser@4.1.11)(@vitest/runner@4.1.11)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@10.6.0(@types/react@19.2.18)(prettier@3.9.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(vitest@4.1.11)':
     dependencies:
