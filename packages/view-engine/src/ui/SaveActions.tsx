@@ -295,7 +295,7 @@ function WriteOutcome({
 
   if (write?.kind === 'unknown') {
     return (
-      <Alert className="w-full text-warning *:data-[slot=alert-description]:text-warning/90">
+      <Alert className="w-full text-warning *:data-[slot=alert-description]:text-warning">
         <AlertTitle>{messages.label('label.write.unknown')}</AlertTitle>
         <AlertDescription>
           {messages.label('label.unknown.consequence')}

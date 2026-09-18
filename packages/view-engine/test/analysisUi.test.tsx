@@ -27,9 +27,10 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AnalysisView, ChartData } from '../src/index.js';
+import type { AnalysisView, ChartData, ChartSpec } from '../src/index.js';
 import {
   MemoryViewStore,
+  shapeChart,
   ViewEngine,
   type ViewInstance,
   type ViewSource,
@@ -402,6 +403,51 @@ describe('AnalysisChart', () => {
     // that is where a configured colour has to land.
     const css = container.querySelector('style')?.textContent ?? '';
     expect(css).toContain('--color-s0: #2a78d6');
+  });
+
+  /**
+   * A pivoted series is keyed by `seriesKey`, which tags a number so that `1`
+   * and `'1'` stay two series, and this file then exchanges that key for
+   * `s0` — so a spec could name neither if it tried. Its public name is the
+   * label: the split value as the legend prints it. Matching on the key left
+   * every pivot uncolourable whenever the split was not a string.
+   */
+  it('colours a pivoted series by the value the legend prints', () => {
+    const spec: ChartSpec = {
+      type: 'bar',
+      cartesian: {
+        x: 'month',
+        splitBy: 'warehouse',
+        series: [{ metric: 'orders' }],
+      },
+      // The warehouses are numbered, and a key is written as it prints.
+      colors: { '1': '#eb6834' },
+    };
+    // Shaped by the kernel rather than written out, so the keys under test
+    // are the ones a query really produces.
+    const pivoted = shapeChart(
+      analysisConfig({
+        groups: [
+          { alias: 'month', field: 'createdAt', type: 'TERMS' },
+          { alias: 'warehouse', field: 'warehouse', type: 'TERMS' },
+        ],
+        chart: spec,
+      }),
+      [
+        { month: '2026-08', warehouse: 1, orders: 2 },
+        { month: '2026-08', warehouse: 2, orders: 3 },
+      ],
+    ) as ChartData;
+
+    const { container } = render(
+      <ViewSurface>
+        <AnalysisChart data={pivoted} spec={spec} />
+      </ViewSurface>,
+    );
+
+    const css = container.querySelector('style')?.textContent ?? '';
+    expect(css).toContain('--color-s0: #eb6834');
+    expect(css).toContain('--color-s1: var(--chart-2)');
   });
 
   /**

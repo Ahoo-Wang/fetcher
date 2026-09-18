@@ -114,9 +114,11 @@
    * series, which carries its own slots. Only `destructive` has a registry
    * variant; these three are applied by class, and text on a filled status
    * surface is `text-white`, as the registry writes it for destructive.
+   * Light takes Tailwind's 700 steps, picked so the colour clears 4.5:1 as
+   * text on the surface; dark takes the 400 steps.
    */
-  --success: var(--fve-success, oklch(0.627 0.194 149.214deg));
-  --warning: var(--fve-warning, oklch(0.666 0.179 58.318deg));
+  --success: var(--fve-success, oklch(0.527 0.154 150.069deg));
+  --warning: var(--fve-warning, oklch(0.555 0.163 48.998deg));
   --info: var(--fve-info, oklch(0.546 0.245 262.881deg));
   --border: var(--fve-border, oklch(0.922 0 0deg));
   --input: var(--fve-input, oklch(0.922 0 0deg));

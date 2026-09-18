@@ -149,7 +149,7 @@ export function OrdersPage() {
 }
 ```
 
-主题跟随宿主：祖先上带 `.dark` class 即为暗色；给 `ViewSurface` 传 `theme="light"` 或 `theme="dark"` 可以把某一处视图钉住。
+主题跟随宿主：祖先上带 `.dark` class 即为暗色；给 `ViewSurface` 传 `theme="light"` 或 `theme="dark"` 可以把某一处视图钉住。弹层 portal 到 `<body>` 时带着面从级联里解析出的模式，`.dark` 不必放在 `<html>` 上。
 
 #### 定制主题
 
@@ -182,8 +182,8 @@ export function OrdersPage() {
 | `accent`               | 悬停与选中填充             | `oklch(0.97 0 0deg)`            | `oklch(0.269 0 0deg)`           |
 | `accent-foreground`    | 强调态上的文字             | `oklch(0.205 0 0deg)`           | `oklch(0.985 0 0deg)`           |
 | `destructive`          | 危险与删除                 | `oklch(0.577 0.245 27.325deg)`  | `oklch(0.704 0.191 22.216deg)`  |
-| `success`              | 成功                       | `oklch(0.627 0.194 149.214deg)` | `oklch(0.792 0.209 151.711deg)` |
-| `warning`              | 需要注意、不阻塞           | `oklch(0.666 0.179 58.318deg)`  | `oklch(0.828 0.189 84.429deg)`  |
+| `success`              | 成功                       | `oklch(0.527 0.154 150.069deg)` | `oklch(0.792 0.209 151.711deg)` |
+| `warning`              | 需要注意、不阻塞           | `oklch(0.555 0.163 48.998deg)`  | `oklch(0.828 0.189 84.429deg)`  |
 | `info`                 | 中性提示                   | `oklch(0.546 0.245 262.881deg)` | `oklch(0.707 0.165 254.624deg)` |
 | `border`               | 边框与分隔线               | `oklch(0.922 0 0deg)`           | `oklch(1 0 0deg / 10%)`         |
 | `input`                | 输入与控件边框             | `oklch(0.922 0 0deg)`           | `oklch(1 0 0deg / 15%)`         |

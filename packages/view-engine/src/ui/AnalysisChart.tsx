@@ -80,9 +80,13 @@ function color(index: number): string {
 
 /**
  * The colour the spec pinned for the first of `keys` that names one, and the
- * slot otherwise. A spec may reach here unvalidated — the stories pass one
- * straight in — and its value ends up inside a `<style>` element, so the
- * kernel's predicate decides again here rather than being trusted to have run.
+ * slot otherwise. A key is a series or category as the chart prints it, never
+ * an internal one: the kernel tags a pivot's key by type and this file then
+ * exchanges it for `s0`, `s1` …, so a spec could not name either if it tried.
+ *
+ * A spec may reach here unvalidated — the stories pass one straight in — and
+ * its value ends up inside a `<style>` element, so the kernel's predicate
+ * decides again here rather than being trusted to have run.
  */
 function colorOf(
   spec: ChartSpec | undefined,
@@ -200,9 +204,10 @@ function Cartesian({
           safeKeys.get(series.key) ?? series.key,
           {
             label: series.label,
-            // A pivoted series is keyed by its group value and an unpivoted
-            // one by its metric alias; the spec may name either.
-            color: colorOf(spec, index, series.key, series.metric),
+            // A pivoted series is named by its split value as the legend
+            // prints it and an unpivoted one by its metric alias, which is
+            // its label too; the spec may name either.
+            color: colorOf(spec, index, series.label, series.metric),
           },
         ]),
       ),
@@ -377,12 +382,15 @@ function PieSlices({
         ? messages.label('label.chart.other')
         : labelOf(slice.category),
     value: slice.value,
-    // The merged remainder is no category anyone could have coloured, so it
-    // keeps its slot whatever the spec says.
+    // A slice is named by its category as the legend prints it, which is the
+    // kernel's rule — `null` is the empty string there, where `String(...)`
+    // would have looked it up under `null`. The merged remainder is no
+    // category anyone could have coloured, so it keeps its slot whatever the
+    // spec says.
     color:
       slice.other === true
         ? color(index)
-        : colorOf(spec, index, String(slice.category)),
+        : colorOf(spec, index, labelOf(slice.category)),
   }));
   const config = Object.fromEntries(
     rows.map(row => [row.key, { label: row.name, color: row.color }]),

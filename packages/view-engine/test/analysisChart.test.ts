@@ -120,6 +120,31 @@ describe('validateChart', () => {
     ]);
   });
 
+  /**
+   * Only `undefined` is "none pinned". Every other non-object read as one,
+   * so a `colors` a migration had turned into a string, a number or a list
+   * validated clean and then coloured nothing.
+   */
+  it('takes a map of colours, or nothing at all', () => {
+    const withColors = (colors: unknown): AnalysisViewConfig =>
+      config({
+        type: 'bar',
+        cartesian: { x: 'wh', series: [{ metric: 'orders' }] },
+        colors: colors as Record<string, string>,
+      });
+
+    expect(validateChart(withColors(undefined))).toEqual([]);
+
+    for (const malformed of ['red', 3, null, ['#2a78d6']])
+      expect(validateChart(withColors(malformed))).toEqual([
+        {
+          code: 'chart.colors.malformed',
+          severity: 'error',
+          path: ['chart', 'colors'],
+        },
+      ]);
+  });
+
   describe('cartesian', () => {
     it('resolves x and every series metric', () => {
       expect(
@@ -441,8 +466,15 @@ describe('isChartColor', () => {
       'oklch(0.62 0.14 250deg)',
       'oklab(0.62 -0.02 -0.13)',
       'color(display-p3 0.1 0.45 0.84)',
+      'color(display-p3 0.5 0.2 0.1)',
+      'oklch(0.6 0.2 30)',
+      'hsl(120 50% 50%)',
+      'rebeccapurple',
       'var(--chart-1)',
+      'var(--chart-2)',
       'transparent',
+      // CSS reads a colour name case-insensitively and so does the parser.
+      'Red',
     ])
       expect(isChartColor(value)).toBe(true);
   });
@@ -454,9 +486,15 @@ describe('isChartColor', () => {
       'url(//evil/)',
       'rgb(1,2,3) !important',
       '#12345',
-      // Only lower-case keywords; a colour the theme writes is lower-case,
-      // and narrowing is free here.
-      'Red',
+      // A character class took these for colours — a word, a function name
+      // with nonsense inside it, an unknown colour space — and the series
+      // each one named then came out unpainted rather than from the palette.
+      'banana',
+      'rgb(foo)',
+      'color(nope)',
+      // A keyword that resolves against the element rather than naming a
+      // colour: the parser does not know it, so neither does the chart.
+      'currentcolor',
       '',
       42,
       null,

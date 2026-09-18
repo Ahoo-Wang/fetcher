@@ -68,7 +68,7 @@ Beyond the six:
 
 - `model` through `store` contain no React, DOM, `window` or `document`
 - `runtime` reaches `store` only as a **type-only import of `store/ViewStore`** — the port, never an implementation
-- Third-party landing spots are fixed: `@ahoo-wang/fetcher-wow` only at the root entry and in `model`, `filter`, `record`, `analysis`, `runtime` (not `dashboard`, not `store`); `dayjs` in `filter`, `record`, `analysis`, `runtime`, `ui`; `dequal` in `runtime` alone; everything else (`recharts`, `react-grid-layout`, `react-markdown`, `@base-ui/react`, `lucide-react`, …) is **UI-only**. A new React dependency cannot reach a headless layer without being listed explicitly in the test
+- Third-party landing spots are fixed: `@ahoo-wang/fetcher-wow` only at the root entry and in `model`, `filter`, `record`, `analysis`, `runtime` (not `dashboard`, not `store`); `dayjs` in `filter`, `record`, `analysis`, `runtime`, `ui`; `dequal` in `runtime` alone; `culori` in `analysis` alone; everything else (`recharts`, `react-grid-layout`, `react-markdown`, `@base-ui/react`, `lucide-react`, …) is **UI-only**. A new React dependency cannot reach a headless layer without being listed explicitly in the test
 - **Deprecated Wow APIs are banned.** The test derives the deprecated export set from the wow sources themselves and fails on any import of it. Use `FilterExpression` and the `Filter*Query` family — never `Condition`, `PagedQuery`, `ListQuery` or `SingleQuery`
 - Wow must be imported from its root entry, by name, so every binding can be checked
 
@@ -197,7 +197,7 @@ src/
 - `@ahoo-wang/fetcher-wow` — query protocol (`FilterExpression`, `FilterPagedQuery`, `CursorQuery`, `AggregationQuery`)
 - `react` / `react-dom` — **optional peer dependencies**; the root entry works without React
 - UI-only: `@base-ui/react`, `recharts`, `react-grid-layout`, `react-markdown`, `react-day-picker`, `lucide-react`, `class-variance-authority`, `cn`
-- Headless: `dayjs` (time), `dequal` (runtime equality)
+- Headless: `dayjs` (time), `dequal` (runtime equality), `culori` (colour syntax, `analysis` only — a saved chart colour is validated before it reaches a `<style>` element)
 
 ## Code Style
 

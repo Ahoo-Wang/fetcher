@@ -151,7 +151,7 @@ export function OrdersPage() {
 }
 ```
 
-The theme follows the host through a `.dark` class on any ancestor; pass `theme="light"` or `theme="dark"` to `ViewSurface` to pin one view.
+The theme follows the host through a `.dark` class on any ancestor; pass `theme="light"` or `theme="dark"` to `ViewSurface` to pin one view. Popups portalled to `<body>` carry the mode the surface resolved, so the class does not have to sit on `<html>`.
 
 #### Customising the theme
 
@@ -184,8 +184,8 @@ Every token reads a host-level variable with the built-in value as its fallback:
 | `accent`               | Hover and selected fill              | `oklch(0.97 0 0deg)`            | `oklch(0.269 0 0deg)`           |
 | `accent-foreground`    | Text on accent                       | `oklch(0.205 0 0deg)`           | `oklch(0.985 0 0deg)`           |
 | `destructive`          | Danger and delete                    | `oklch(0.577 0.245 27.325deg)`  | `oklch(0.704 0.191 22.216deg)`  |
-| `success`              | Positive outcome                     | `oklch(0.627 0.194 149.214deg)` | `oklch(0.792 0.209 151.711deg)` |
-| `warning`              | Needs attention, not blocking        | `oklch(0.666 0.179 58.318deg)`  | `oklch(0.828 0.189 84.429deg)`  |
+| `success`              | Positive outcome                     | `oklch(0.527 0.154 150.069deg)` | `oklch(0.792 0.209 151.711deg)` |
+| `warning`              | Needs attention, not blocking        | `oklch(0.555 0.163 48.998deg)`  | `oklch(0.828 0.189 84.429deg)`  |
 | `info`                 | Neutral notice                       | `oklch(0.546 0.245 262.881deg)` | `oklch(0.707 0.165 254.624deg)` |
 | `border`               | Borders and dividers                 | `oklch(0.922 0 0deg)`           | `oklch(1 0 0deg / 10%)`         |
 | `input`                | Input and control borders            | `oklch(0.922 0 0deg)`           | `oklch(1 0 0deg / 15%)`         |
