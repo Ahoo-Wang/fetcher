@@ -69,19 +69,23 @@ export function validateFilter(
   options: ValidateFilterOptions = {},
 ): Issue[] {
   const limits = options.limits ?? DEFAULT_RUNTIME_LIMITS;
+  const issues: Issue[] = [];
   if (!options.shapeChecked) {
-    const shape = checkShape(tree, fields, kinds, limits);
+    const { shape, duplicates } = checkShape(tree, fields, kinds, limits);
     if (shape.length > 0) return shape;
+    // Found on the same walk as the shape, nested trees included, so a
+    // predicate still blank — which the loop below never enters — is held to
+    // the rule as well. The nested pass a kind runs is told the shape was
+    // checked, and so does not report them a second time.
+    issues.push(...duplicates);
   }
 
   const byName = new Map(fields.map(field => [field.name, field]));
-  const issues: Issue[] = [];
 
   for (const { node, path } of walkFilter(tree)) {
     if (isFilterGroup(node)) {
       if (!GROUP_OPERATORS.includes(node.op))
         issues.push(issue('filter.group.unknown-operator', path));
-      issues.push(...duplicateFieldIssues(node, path));
       continue;
     }
 
@@ -178,15 +182,17 @@ function checkShape(
   fields: readonly FieldDefinition[],
   kinds: FieldKindRegistry,
   limits: Pick<RuntimeLimits, 'maxFilterDepth' | 'maxFilterNodes'>,
-): Issue[] {
+): { shape: Issue[]; duplicates: Issue[] } {
   const malformed: Issue[] = [];
+  const duplicates: Issue[] = [];
   const budget = walkShape(tree, fields, kinds, limits, {
     counted: { nodes: 0 },
     depthOffset: 0,
     prefix: [],
     malformed,
+    duplicates,
   });
-  return budget ? [budget] : malformed;
+  return { shape: budget ? [budget] : malformed, duplicates };
 }
 
 interface ShapeWalk {
@@ -194,6 +200,8 @@ interface ShapeWalk {
   depthOffset: number;
   prefix: IssuePath;
   malformed: Issue[];
+  /** A field named twice in one group, at every level the walk reaches. */
+  duplicates: Issue[];
 }
 
 /** The budget issue that ended the walk, or `null` when it ran to the end. */
@@ -218,6 +226,10 @@ function walkShape(
 
     if (node === null) {
       walk.malformed.push(issue('filter.node.invalid', at));
+      continue;
+    }
+    if (isFilterGroup(node)) {
+      walk.duplicates.push(...duplicateFieldIssues(node, at));
       continue;
     }
     if (!isFilterLeaf(node)) continue;
