@@ -13,6 +13,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  isChartColor,
   shapeChart,
   validateChart,
   type AnalysisGroup,
@@ -90,6 +91,32 @@ describe('validateChart', () => {
     // its own, not a TypeError from indexing the family table.
     expect(codes(undefined as unknown as ChartSpec)).toEqual([
       'analysis.config.malformed',
+    ]);
+  });
+
+  /**
+   * A saved colour is written verbatim into a `<style>` element, so it may
+   * name a colour and nothing else.
+   */
+  it('takes a colour a style element can hold, and nothing else', () => {
+    const coloured = (colors: Record<string, string>): ChartSpec => ({
+      type: 'bar',
+      cartesian: { x: 'wh', series: [{ metric: 'orders' }] },
+      colors,
+    });
+
+    expect(
+      codes(coloured({ orders: '#2a78d6', wh: 'var(--chart-2)' })),
+    ).toEqual([]);
+
+    expect(
+      validateChart(config(coloured({ orders: 'red; } .x { color: red' }))),
+    ).toEqual([
+      {
+        code: 'chart.colors.invalid',
+        severity: 'error',
+        path: ['chart', 'colors', 'orders'],
+      },
     ]);
   });
 
@@ -399,6 +426,43 @@ describe('validateChart', () => {
         ),
       ).toEqual([]);
     });
+  });
+});
+
+describe('isChartColor', () => {
+  it('accepts the shapes a theme is written in', () => {
+    for (const value of [
+      '#fff',
+      '#2a78d6',
+      '#2a78d6ff',
+      'rgb(42 120 214)',
+      'rgba(42, 120, 214, 0.5)',
+      'hsl(210 50% 40%)',
+      'oklch(0.62 0.14 250deg)',
+      'oklab(0.62 -0.02 -0.13)',
+      'color(display-p3 0.1 0.45 0.84)',
+      'var(--chart-1)',
+      'transparent',
+    ])
+      expect(isChartColor(value)).toBe(true);
+  });
+
+  it('refuses anything that could leave the declaration it sits in', () => {
+    for (const value of [
+      'red; } .x { color: red',
+      'var(--chart-1); background: url(//evil/)',
+      'url(//evil/)',
+      'rgb(1,2,3) !important',
+      '#12345',
+      // Only lower-case keywords; a colour the theme writes is lower-case,
+      // and narrowing is free here.
+      'Red',
+      '',
+      42,
+      null,
+      undefined,
+    ])
+      expect(isChartColor(value)).toBe(false);
   });
 });
 

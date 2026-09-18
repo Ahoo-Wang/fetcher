@@ -425,6 +425,7 @@ export const defaultMessages: ViewMessages = Object.freeze({
   // Charts.
   'chart.combo.series-type-missing':
     'Every series of a combo chart needs its own type.',
+  'chart.colors.invalid': 'This is not a colour the chart can paint with.',
   'chart.family.missing': 'The {type} chart has no {family} settings yet.',
   'chart.funnel.duplicate-stage': 'A funnel stage is listed twice.',
   'chart.funnel.metrics-need-no-group':

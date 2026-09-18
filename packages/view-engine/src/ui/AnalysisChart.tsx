@@ -31,6 +31,7 @@ import {
   YAxis,
   ZAxis,
 } from 'recharts';
+import { isChartColor } from '../analysis/index.js';
 import type {
   CartesianData,
   ChartData,
@@ -75,6 +76,24 @@ const PALETTE = [
 
 function color(index: number): string {
   return PALETTE[index % PALETTE.length];
+}
+
+/**
+ * The colour the spec pinned for the first of `keys` that names one, and the
+ * slot otherwise. A spec may reach here unvalidated — the stories pass one
+ * straight in — and its value ends up inside a `<style>` element, so the
+ * kernel's predicate decides again here rather than being trusted to have run.
+ */
+function colorOf(
+  spec: ChartSpec | undefined,
+  index: number,
+  ...keys: string[]
+): string {
+  for (const key of keys) {
+    const configured = spec?.colors?.[key];
+    if (isChartColor(configured)) return configured;
+  }
+  return color(index);
 }
 
 /**
@@ -179,10 +198,15 @@ function Cartesian({
       Object.fromEntries(
         data.series.map((series, index) => [
           safeKeys.get(series.key) ?? series.key,
-          { label: series.label, color: color(index) },
+          {
+            label: series.label,
+            // A pivoted series is keyed by its group value and an unpivoted
+            // one by its metric alias; the spec may name either.
+            color: colorOf(spec, index, series.key, series.metric),
+          },
         ]),
       ),
-    [data, safeKeys],
+    [data, safeKeys, spec],
   );
 
   const horizontal = spec?.cartesian?.orientation === 'horizontal';
@@ -353,12 +377,15 @@ function PieSlices({
         ? messages.label('label.chart.other')
         : labelOf(slice.category),
     value: slice.value,
+    // The merged remainder is no category anyone could have coloured, so it
+    // keeps its slot whatever the spec says.
+    color:
+      slice.other === true
+        ? color(index)
+        : colorOf(spec, index, String(slice.category)),
   }));
   const config = Object.fromEntries(
-    rows.map((row, index) => [
-      row.key,
-      { label: row.name, color: color(index) },
-    ]),
+    rows.map(row => [row.key, { label: row.name, color: row.color }]),
   ) satisfies ChartConfig;
 
   return (
@@ -374,8 +401,8 @@ function PieSlices({
           nameKey="key"
           innerRadius={spec?.pie?.donut === true ? '55%' : 0}
         >
-          {rows.map((row, index) => (
-            <Cell key={row.key} fill={color(index)} />
+          {rows.map(row => (
+            <Cell key={row.key} fill={row.color} />
           ))}
         </Pie>
         <ChartLegend content={<ChartLegendContent nameKey="key" />} />

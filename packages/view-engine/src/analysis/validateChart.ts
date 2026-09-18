@@ -33,6 +33,43 @@ export function isAdditiveMetric(metric: AnalysisMetric | undefined): boolean {
   return metric.type === 'NUMERIC' && metric.function === 'SUM';
 }
 
+/** `#rgb`, `#rrggbb` or `#rrggbbaa`. */
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+/** A colour function whose argument cannot hold anything but its numbers. */
+const FUNCTION_COLOR = /^(?:rgba?|hsla?|oklch|oklab|color)\([\w\s.,%/+-]*\)$/;
+/** A theme slot, which is how the palette itself is named. */
+const VARIABLE_COLOR = /^var\(--[\w-]+\)$/;
+/** A bare keyword — `red`, `transparent`, `currentcolor`. */
+const KEYWORD_COLOR = /^[a-z]+$/;
+
+/**
+ * Whether a saved colour is one the renderer may pass on. A chart colour is
+ * written verbatim into a `<style>` element as a custom property's value, so
+ * a config from a store gets to name a colour and nothing else: anything that
+ * could close the declaration or the rule around it is not a colour here. The
+ * renderer applies the same predicate and falls back to the palette, so an
+ * unvalidated spec cannot inject either.
+ */
+export function isChartColor(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const text = value.trim();
+  return (
+    HEX_COLOR.test(text) ||
+    FUNCTION_COLOR.test(text) ||
+    VARIABLE_COLOR.test(text) ||
+    KEYWORD_COLOR.test(text)
+  );
+}
+
+/** One finding per colour the theme would refuse to paint with. */
+function colors(chart: ChartSpec, path: IssuePath): Issue[] {
+  const colors_ = chart.colors;
+  if (typeof colors_ !== 'object' || colors_ === null) return [];
+  return Object.entries(colors_)
+    .filter(([, value]) => !isChartColor(value))
+    .map(([key]) => issue('chart.colors.invalid', [...path, 'colors', key]));
+}
+
 interface ChartContext {
   groups: Set<string>;
   metrics: Map<string, AnalysisMetric>;
@@ -65,7 +102,12 @@ export function validateChart(config: AnalysisViewConfig): Issue[] {
     path,
   };
 
-  switch (chart.type) {
+  return [...colors(chart, path), ...byFamily(context, config)];
+}
+
+/** The rules of the family the chart currently is. */
+function byFamily(context: ChartContext, config: AnalysisViewConfig): Issue[] {
+  switch (context.chart.type) {
     case 'bar':
     case 'line':
     case 'area':

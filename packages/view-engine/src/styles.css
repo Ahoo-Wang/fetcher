@@ -113,11 +113,21 @@
   --border: oklch(0.922 0 0deg);
   --input: oklch(0.922 0 0deg);
   --ring: oklch(0.708 0 0deg);
-  --chart-1: oklch(0.87 0 0deg);
-  --chart-2: oklch(0.556 0 0deg);
-  --chart-3: oklch(0.439 0 0deg);
-  --chart-4: oklch(0.371 0 0deg);
-  --chart-5: oklch(0.269 0 0deg);
+
+  /*
+   * The five chart slots carry the same hues in both modes — blue, orange,
+   * aqua, yellow, magenta — so a series keeps its identity when the surface
+   * changes. The dark steps are picked for the dark surface rather than
+   * flipped from these, and the whole set was validated for
+   * colour-vision-deficiency separation and for contrast on both surfaces.
+   * Slots are handed out in this fixed order, so the first series is always
+   * the blue one.
+   */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0deg);
   --sidebar-foreground: oklch(0.145 0 0deg);
@@ -151,11 +161,11 @@
   --border: oklch(1 0 0deg / 10%);
   --input: oklch(1 0 0deg / 15%);
   --ring: oklch(0.556 0 0deg);
-  --chart-1: oklch(0.87 0 0deg);
-  --chart-2: oklch(0.556 0 0deg);
-  --chart-3: oklch(0.439 0 0deg);
-  --chart-4: oklch(0.371 0 0deg);
-  --chart-5: oklch(0.269 0 0deg);
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
   --sidebar: oklch(0.205 0 0deg);
   --sidebar-foreground: oklch(0.985 0 0deg);
   --sidebar-primary: oklch(0.488 0.243 264.376deg);
