@@ -117,14 +117,6 @@ function EmbeddedBody({ runtime }: { runtime: OpenedRuntime }) {
   const errors = (state?.issues ?? []).filter(
     found => found.severity === 'error',
   );
-  if (errors.length > 0)
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>{messages.label('label.view.needs-fixing')}</AlertTitle>
-        <AlertDescription>{messages.issues(errors)}</AlertDescription>
-      </Alert>
-    );
-
   // A warning blocks nothing, so the result still shows, with the warning
   // above it: an embed hides the editor, and this is the one place a reader
   // learns the view is not quite what its author saved. A dashboard's
@@ -132,6 +124,19 @@ function EmbeddedBody({ runtime }: { runtime: OpenedRuntime }) {
   const warnings = (state?.issues ?? []).filter(
     found => runtime.kind !== 'dashboard' || found.path[0] !== 'panels',
   );
+  // An error takes the result's place; it does not take the warnings' — a
+  // config can carry both, and the workbench says both.
+  if (errors.length > 0)
+    return (
+      <>
+        <Alert variant="destructive">
+          <AlertTitle>{messages.label('label.view.needs-fixing')}</AlertTitle>
+          <AlertDescription>{messages.issues(errors)}</AlertDescription>
+        </Alert>
+        <WarningNotice issues={warnings} />
+      </>
+    );
+
   return (
     <>
       <WarningNotice issues={warnings} />

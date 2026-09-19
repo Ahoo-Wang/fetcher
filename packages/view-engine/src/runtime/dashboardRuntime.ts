@@ -485,7 +485,9 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
    * One panel's child, and what the panel reports. A child admits the scope
    * it is handed like any condition, and a refusal is this panel's problem:
    * the child stops rather than running its previous scope, and the reasons
-   * land in the panel's issues where the dashboard's own would.
+   * land in the panel's issues where the dashboard's own would. A warning the
+   * child raises about its own saved config travels the same way, so a panel
+   * that runs with a caveat says so instead of running as if it had none.
    */
   private syncPanel(
     panel: DashboardViewPanel,
@@ -517,7 +519,11 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     const existing = this.children.get(panel.id);
     if (existing && holds(existing.runtime, reference)) {
       const refused = existing.runtime.setScopeFilter(scope);
-      if (!hasError(refused)) return { runtime: existing.runtime, issues: own };
+      if (!hasError(refused))
+        return {
+          runtime: existing.runtime,
+          issues: [...own, ...atPanel(index, caveatsOf(existing.runtime))],
+        };
       this.dropChild(panel.id);
       return { runtime: null, issues: [...own, ...atPanel(index, refused)] };
     }
@@ -535,7 +541,10 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     const unsubscribe = runtime.subscribe(() => this.syncTimer());
     this.children.set(panel.id, { runtime, unsubscribe });
     runtime.apply();
-    return { runtime, issues: own };
+    return {
+      runtime,
+      issues: [...own, ...atPanel(index, caveatsOf(runtime))],
+    };
   }
 
   private dropChild(panelId: string): void {
@@ -619,6 +628,18 @@ function panelOf(found: Issue): number | null {
 /** What a thrown value says for itself; not everything thrown is an `Error`. */
 function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * What a running child still has to say about its own saved config. It is
+ * read off the snapshot rather than off `setScopeFilter`, which answers `[]`
+ * for a scope it already holds — a layout edit re-syncs every panel with the
+ * scope unchanged, and the warning must not vanish on that.
+ */
+function caveatsOf(runtime: DataViewRuntime): Issue[] {
+  return runtime
+    .getSnapshot()
+    .issues.filter(found => found.severity === 'warning');
 }
 
 /** A child's issues, addressed from the dashboard's config. */

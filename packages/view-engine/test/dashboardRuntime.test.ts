@@ -295,6 +295,47 @@ describe('DashboardViewRuntime unavailable references', () => {
     expect(codes(state.issues)).toEqual(['dashboard.panel.unavailable']);
   });
 
+  /**
+   * A child admits its own saved config and can warn about it. The panel ran,
+   * but the warning went nowhere: `syncPanel` reported only the dashboard's
+   * findings for a child it kept. It rides on the panel now, and survives a
+   * re-sync that leaves the scope unchanged, where `setScopeFilter` has
+   * nothing to report.
+   */
+  it('carries a running child warning on the panel', async () => {
+    const board = await harness({
+      instances: [
+        pending({
+          config: recordConfig({
+            filterMode: 'simple',
+            filter: {
+              op: 'or',
+              children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+            },
+          }),
+        }),
+      ],
+    });
+    const runtime = await board.open(dashboardConfig({ panels: [panel()] }));
+    const first = () => runtime.getSnapshot().panels[0];
+
+    expect(first().runtime).not.toBeNull();
+    expect(first().issues).toEqual([
+      {
+        code: 'config.filterMode.not-simple',
+        severity: 'warning',
+        path: ['panels', 0, 'filterMode'],
+      },
+    ]);
+
+    runtime.edit({ panels: [panel({ layout: { x: 1, y: 0, w: 6, h: 4 } })] });
+    runtime.apply();
+    await flush();
+
+    expect(first().runtime).not.toBeNull();
+    expect(codes(first().issues)).toEqual(['config.filterMode.not-simple']);
+  });
+
   it('clears the issue once the reference has arrived', async () => {
     const board = await harness();
     const runtime = await board.open(dashboardConfig({ panels: [panel()] }));

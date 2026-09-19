@@ -2702,6 +2702,43 @@ describe('EmbeddedView', () => {
     expect(notice?.textContent).toContain('advanced editor');
     expect(screen.queryByRole('alert')).toBeNull();
   });
+
+  /**
+   * A config can carry both. The error branch returned before the warning
+   * was rendered, so an embed said one level less than the workbench did.
+   */
+  it('keeps saying what is worth noting when an error takes the result place', async () => {
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({
+        instances: [
+          {
+            ...mixed,
+            config: recordConfig({
+              filterMode: 'simple',
+              filter: {
+                op: 'or',
+                children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+              },
+              // Blocks: the page size must be positive.
+              pageSize: 0,
+            }),
+          },
+        ],
+      }),
+      resolveSource: () => testSource(),
+    });
+
+    render(<EmbeddedView engine={engine} instanceId="orders-1" />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain('needs fixing'),
+    );
+    expect(
+      document.querySelector('[data-slot="view-warnings"]')?.textContent,
+    ).toContain('advanced editor');
+    expect(screen.queryByRole('row')).toBeNull();
+  });
 });
 
 describe('WarningNotice', () => {

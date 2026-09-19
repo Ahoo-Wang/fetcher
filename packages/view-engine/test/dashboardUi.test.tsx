@@ -300,30 +300,29 @@ describe('DashboardGrid', () => {
   });
 
   /**
-   * No kernel rule today warns about a panel that still runs, so the finding
-   * is planted on a healthy one. What the grid owes it: the view shows as it
-   * would anyway, the caveat sits in the header, and the body does not
-   * pretend the panel is out.
+   * The saved view a panel shows carries a warning of its own — a simple-mode
+   * config holding an OR tree — and the runtime hands it to the panel. What
+   * the grid owes it: the view shows as it would anyway, the caveat sits in
+   * the header, and the body does not pretend the panel is out.
    */
   it('shows a panel that runs with a warning, and wears it in the header', async () => {
     const { controller } = await openDashboard(
       dashboardConfig({ panels: [panel({ title: 'Pending' })] }),
+      [
+        {
+          ...pending,
+          config: recordConfig({
+            filterMode: 'simple',
+            filter: {
+              op: 'or',
+              children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+            },
+          }),
+        },
+      ],
     );
-    const warned: DashboardController = {
-      ...controller(),
-      panels: controller().panels.map(view => ({
-        ...view,
-        issues: [
-          {
-            code: 'config.filterMode.not-simple',
-            severity: 'warning',
-            path: ['panels', 0, 'filterMode'],
-          },
-        ],
-      })),
-    };
 
-    render(<DashboardGrid dashboard={warned} />);
+    render(<DashboardGrid dashboard={controller()} />);
 
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
     const card = document.querySelector('[data-slot="dashboard-panel"]');
