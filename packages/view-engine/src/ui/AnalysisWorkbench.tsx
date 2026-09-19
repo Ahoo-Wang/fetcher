@@ -33,6 +33,7 @@ import { FilterPanel } from './FilterPanel.js';
 import { SaveActions } from './SaveActions.js';
 import { ViewList } from './ViewList.js';
 import { useViewMessages } from './MessagesProvider.js';
+import type { ViewMessages } from './messages.js';
 import { ViewSurface } from './ViewSurface.js';
 import { WarningNotice } from './WarningNotice.js';
 
@@ -41,7 +42,12 @@ export interface AnalysisWorkbenchProps {
   definitionId: string;
   instanceId?: string | null;
   theme?: 'light' | 'dark';
-  /** The language dates and times show in; the runtime's when left out. */
+  /** Wording, merged over what is already in force: where a host translates. */
+  messages?: ViewMessages;
+  /**
+   * The language dates and times show in; the runtime's when left out. It is
+   * the same choice as `messages`, made for values rather than words.
+   */
   locale?: string;
   optionsFor?(remote: string): FieldOption[] | undefined;
 }
@@ -58,6 +64,7 @@ export function AnalysisWorkbench({
   definitionId,
   instanceId = null,
   theme,
+  messages: wording,
   locale,
   optionsFor,
 }: AnalysisWorkbenchProps) {
@@ -70,7 +77,7 @@ export function AnalysisWorkbench({
   const analysis = useAnalysisEditor(runtime);
   const filter = useFilterEditor(runtime);
   const commands = useSaveCommands(engine, runtime);
-  const messages = useViewMessages();
+  const messages = useViewMessages(wording);
 
   const data = state?.result?.data;
   const view: AnalysisView | null =
@@ -82,6 +89,7 @@ export function AnalysisWorkbench({
   return (
     <ViewSurface
       theme={theme}
+      messages={wording}
       locale={locale}
       timeZone={engine.environment.timeZone}
       className="gap-0 md:flex-row"

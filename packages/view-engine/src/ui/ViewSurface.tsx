@@ -21,7 +21,10 @@ import type { ViewMessages } from './messages.js';
 export interface ViewSurfaceProps extends React.ComponentProps<'div'> {
   /** Follows the host when left out; set it to pin an embedded view. */
   theme?: 'light' | 'dark';
-  /** Wording, merged over the defaults; this is also where translation goes. */
+  /**
+   * Wording, merged over what is already in force — the defaults, or an outer
+   * `MessagesProvider`; this is also where translation goes.
+   */
   messages?: ViewMessages;
   /** The language dates and times show in; the runtime's when left out. */
   locale?: string;

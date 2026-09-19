@@ -1025,6 +1025,27 @@ describe('AnalysisWorkbench', () => {
     ).toBeDefined();
   });
 
+  // Its own alerts render above the provider of the surface it draws, yet
+  // must read the wording it was handed, as everything inside that surface does.
+  it("takes the host's wording, for its own alerts and everything inside", async () => {
+    const { engine } = setup();
+
+    render(
+      <AnalysisWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="missing"
+        messages={{
+          'label.view.unopenable': '打不开这个视图',
+          'label.view.list': '视图',
+        }}
+      />,
+    );
+
+    expect(await screen.findByText('打不开这个视图')).toBeDefined();
+    expect(screen.getByRole('navigation', { name: '视图' })).toBeDefined();
+  });
+
   // A month cut in Kathmandu starts at 18:15 UTC on the last day of the month
   // before: read on any other clock, the bucket names the wrong month. In
   // Chinese it is also written unlike the runtime's own English.

@@ -757,6 +757,27 @@ describe('DashboardWorkbench', () => {
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
   });
 
+  // Its own alerts render above the provider of the surface it draws, yet
+  // must read the wording it was handed, as everything inside that surface does.
+  it("takes the host's wording, for its own alerts and everything inside", async () => {
+    const { engine } = setup();
+
+    render(
+      <DashboardWorkbench
+        engine={engine}
+        definitionId="overview"
+        instanceId="missing"
+        messages={{
+          'label.view.unopenable': '打不开这个视图',
+          'label.view.list': '视图',
+        }}
+      />,
+    );
+
+    expect(await screen.findByText('打不开这个视图')).toBeDefined();
+    expect(screen.getByRole('navigation', { name: '视图' })).toBeDefined();
+  });
+
   /** A dashboard whose one panel shows `config` over the named orders. */
   function named(config: ViewInstance['config']) {
     return new ViewEngine({

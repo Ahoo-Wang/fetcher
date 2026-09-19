@@ -32,6 +32,7 @@ import { Separator } from './components/separator.js';
 import { Skeleton } from './components/skeleton.js';
 import { ViewList } from './ViewList.js';
 import { useViewMessages } from './MessagesProvider.js';
+import type { ViewMessages } from './messages.js';
 import { ViewSurface } from './ViewSurface.js';
 import { WarningNotice } from './WarningNotice.js';
 
@@ -43,7 +44,12 @@ export interface DashboardWorkbenchProps {
   /** Whether panels may be dragged and resized. */
   editable?: boolean;
   theme?: 'light' | 'dark';
-  /** The language dates and times show in; the runtime's when left out. */
+  /** Wording, merged over what is already in force: where a host translates. */
+  messages?: ViewMessages;
+  /**
+   * The language dates and times show in; the runtime's when left out. It is
+   * the same choice as `messages`, made for values rather than words.
+   */
   locale?: string;
   optionsFor?(remote: string): FieldOption[] | undefined;
 }
@@ -64,6 +70,7 @@ export function DashboardWorkbench({
   instanceId = null,
   editable = false,
   theme,
+  messages: wording,
   locale,
   optionsFor,
 }: DashboardWorkbenchProps) {
@@ -77,7 +84,7 @@ export function DashboardWorkbench({
   const dashboard = useDashboard(board);
   const filter = useFilterEditor(runtime);
   const commands = useSaveCommands(engine, runtime);
-  const messages = useViewMessages();
+  const messages = useViewMessages(wording);
 
   const errors = (state?.issues ?? []).filter(
     found => found.severity === 'error',
@@ -97,6 +104,7 @@ export function DashboardWorkbench({
   return (
     <ViewSurface
       theme={theme}
+      messages={wording}
       locale={locale}
       timeZone={engine.environment.timeZone}
       className="gap-0 md:flex-row"
