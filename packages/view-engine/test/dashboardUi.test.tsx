@@ -700,11 +700,28 @@ describe('content panels', () => {
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
+  /**
+   * A protocol-relative destination is one react-markdown's own transform
+   * lets through, so this case fails the moment our check stops running —
+   * which a `javascript:` target would not, since that one never reaches us.
+   */
   it('keeps the words of a markdown link that goes somewhere unsafe', () => {
-    render(<MarkdownPanel content={'[click me](javascript:alert(1))'} />);
+    render(<MarkdownPanel content={'[click me](//evil.example/steal)'} />);
 
     expect(screen.queryByRole('link')).toBeNull();
     expect(screen.getByText('click me')).toBeTruthy();
+  });
+
+  it('keeps the hint the author wrote on a link', () => {
+    render(
+      <MarkdownPanel
+        content={'See [the report](https://example.com "Quarterly numbers").'}
+      />,
+    );
+
+    expect(
+      screen.getByRole('link', { name: 'the report' }).getAttribute('title'),
+    ).toBe('Quarterly numbers');
   });
 
   it('shows a placeholder when an image fails to load', () => {

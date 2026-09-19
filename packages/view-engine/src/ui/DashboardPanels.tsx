@@ -67,13 +67,23 @@ export interface MarkdownPanelProps {
  * where that promise is kept.
  */
 const MARKDOWN_COMPONENTS = {
-  a({ href, children }: { href?: string; children?: ReactNode }) {
+  a({
+    href,
+    title,
+    children,
+  }: {
+    href?: string;
+    title?: string;
+    children?: ReactNode;
+  }) {
+    // `title` is the author's own hint — the check is about where the link
+    // goes, so it takes nothing else away from them.
     return href !== undefined && isSafeContentUrl(href) ? (
-      <a href={href} target="_blank" rel="noopener noreferrer">
+      <a href={href} title={title} target="_blank" rel="noopener noreferrer">
         {children}
       </a>
     ) : (
-      <span>{children}</span>
+      <span title={title}>{children}</span>
     );
   },
 };
