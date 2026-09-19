@@ -1,0 +1,501 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  MemoryViewStore,
+  ViewEngine,
+  ViewStoreError,
+  type ViewInstance,
+  type ViewPermissions,
+} from '../src/index.js';
+import {
+  PREFERENCES_KEY,
+  useViewList,
+  useViewManager,
+  type ViewListState,
+  type ViewManagerController,
+} from '../src/react/index.js';
+import {
+  deferred,
+  ordersDefinition,
+  recordConfig,
+  testSource,
+} from './fixtures.js';
+
+afterEach(cleanup);
+
+/** Two personal views, alongside the system view the definition declares. */
+function instances(): ViewInstance[] {
+  return [
+    {
+      id: 'orders-1',
+      definitionId: 'orders',
+      title: 'Mine',
+      scope: 'personal',
+      revision: '1',
+      config: recordConfig(),
+    },
+    {
+      id: 'orders-2',
+      definitionId: 'orders',
+      title: 'Yours',
+      scope: 'personal',
+      revision: '1',
+      config: recordConfig(),
+    },
+  ];
+}
+
+function permitting(
+  overrides: Partial<ViewPermissions> = {},
+): (definitionId: string) => ViewPermissions {
+  return () => ({
+    createPersonal: true,
+    createShared: true,
+    reorder: true,
+    setDefault: true,
+    instance: () => ({ save: true, rename: true, delete: true }),
+    ...overrides,
+  });
+}
+
+function engineWith(
+  options: { permissions?: (definitionId: string) => ViewPermissions } = {},
+): { engine: ViewEngine; store: MemoryViewStore } {
+  const store = new MemoryViewStore({
+    instances: instances(),
+    permissions: options.permissions,
+  });
+  const engine = new ViewEngine({
+    definitions: [ordersDefinition()],
+    store,
+    resolveSource: () => testSource(),
+  });
+  return { engine, store };
+}
+
+interface Managed {
+  list: ViewListState;
+  manager: ViewManagerController;
+}
+
+/** The manager over a settled list, which is the only state it is used in. */
+async function managed(engine: ViewEngine) {
+  const rendered = renderHook<Managed, unknown>(() => {
+    const list = useViewList(engine, 'orders');
+    return { list, manager: useViewManager(engine, 'orders', list) };
+  });
+  await waitFor(() => expect(rendered.result.current.list.loading).toBe(false));
+  return rendered;
+}
+
+describe('useViewManager', () => {
+  it('renames a view and reloads the list', async () => {
+    const { engine } = engineWith();
+    const { result } = await managed(engine);
+
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', 'Renamed'),
+      ).resolves.toBe(true);
+    });
+
+    await waitFor(() =>
+      expect(
+        result.current.list.items.find(item => item.id === 'orders-1')?.title,
+      ).toBe('Renamed'),
+    );
+    expect(result.current.manager.outcomes.size).toBe(0);
+    expect(result.current.manager.pending).toBeNull();
+  });
+
+  it('deletes a view and reloads the list', async () => {
+    const { engine } = engineWith();
+    const { result } = await managed(engine);
+
+    await act(async () => {
+      await expect(result.current.manager.delete('orders-2')).resolves.toBe(
+        true,
+      );
+    });
+
+    await waitFor(() =>
+      expect(result.current.list.items.map(item => item.id)).toEqual([
+        'system:orders:all',
+        'orders-1',
+      ]),
+    );
+  });
+
+  it('names the write in flight while it is in flight', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const slow = deferred<ViewInstance>();
+    vi.spyOn(store, 'rename').mockReturnValueOnce(slow.promise);
+
+    let landed!: Promise<boolean>;
+    act(() => {
+      landed = result.current.manager.rename('orders-1', 'Later');
+    });
+    expect(result.current.manager.pending).toBe('orders-1');
+
+    await act(async () => {
+      slow.resolve({ ...instances()[0], title: 'Later', revision: '2' });
+      await landed;
+    });
+    expect(result.current.manager.pending).toBeNull();
+  });
+
+  it('keeps a rename conflict and clears it once the baseline moves', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    // Somebody else renamed it after this list was read, so the revision the
+    // command carries is a revision behind.
+    await store.rename('orders-1', 'Theirs', '1', { requestId: 'other' });
+
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', 'Mine'),
+      ).resolves.toBe(false);
+    });
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'conflict',
+    );
+
+    await act(async () => {
+      await expect(
+        result.current.manager.resolveConflict('orders-1', 'reload'),
+      ).resolves.toBe(true);
+    });
+
+    // Reloading a rename conflict only advances the baseline (§7.4), so the
+    // row is done with it and the list shows what is stored.
+    expect(result.current.manager.outcomes.size).toBe(0);
+    await waitFor(() =>
+      expect(
+        result.current.list.items.find(item => item.id === 'orders-1')?.title,
+      ).toBe('Theirs'),
+    );
+  });
+
+  it('overwrites a rename conflict with the original intent', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    await store.rename('orders-1', 'Theirs', '1', { requestId: 'other' });
+
+    await act(async () => {
+      await result.current.manager.rename('orders-1', 'Mine');
+    });
+    await act(async () => {
+      await expect(
+        result.current.manager.resolveConflict('orders-1', 'overwrite'),
+      ).resolves.toBe(true);
+    });
+
+    expect(result.current.manager.outcomes.size).toBe(0);
+    await expect(store.get('orders-1')).resolves.toMatchObject({
+      title: 'Mine',
+    });
+  });
+
+  it('retries an unknown outcome under its own request id', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    vi.spyOn(store, 'delete').mockRejectedValueOnce(
+      new ViewStoreError('UNAVAILABLE', 'timeout'),
+    );
+
+    await act(async () => {
+      await expect(result.current.manager.delete('orders-2')).resolves.toBe(
+        false,
+      );
+    });
+    expect(result.current.manager.outcomes.get('orders-2')?.kind).toBe(
+      'unknown',
+    );
+
+    await act(async () => {
+      await expect(result.current.manager.retry('orders-2')).resolves.toBe(
+        true,
+      );
+    });
+    expect(result.current.manager.outcomes.size).toBe(0);
+    await expect(store.get('orders-2')).rejects.toThrow();
+  });
+
+  it('abandons an unknown outcome', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    vi.spyOn(store, 'rename').mockRejectedValueOnce(
+      new ViewStoreError('UNAVAILABLE', 'timeout'),
+    );
+
+    await act(async () => {
+      await result.current.manager.rename('orders-1', 'Later');
+    });
+    act(() => result.current.manager.abandon('orders-1'));
+
+    expect(result.current.manager.outcomes.size).toBe(0);
+    expect(engine.pendingWrites().size).toBe(0);
+  });
+
+  it('leaves nothing behind when abandoning a key it never recorded', async () => {
+    const { engine } = engineWith();
+    const { result } = await managed(engine);
+    const abandonWrite = vi.spyOn(engine, 'abandonWrite');
+
+    act(() => result.current.manager.abandon('orders-1'));
+
+    expect(abandonWrite).not.toHaveBeenCalled();
+    expect(result.current.manager.outcomes.size).toBe(0);
+  });
+
+  it('records a refusal the engine made before sending anything', async () => {
+    const { engine } = engineWith();
+    const { result } = await managed(engine);
+
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', '  '),
+      ).resolves.toBe(false);
+    });
+
+    const outcome = result.current.manager.outcomes.get('orders-1');
+    expect(outcome?.kind).toBe('rejected');
+    expect(outcome?.kind === 'rejected' && outcome.issue.code).toBe(
+      'view.title.empty',
+    );
+    // Nothing left, so there is nothing to replay or to resolve.
+    await act(async () => {
+      await expect(result.current.manager.retry('orders-1')).resolves.toBe(
+        false,
+      );
+      await expect(
+        result.current.manager.resolveConflict('orders-1', 'reload'),
+      ).resolves.toBe(false);
+    });
+    act(() => result.current.manager.abandon('orders-1'));
+    expect(result.current.manager.outcomes.size).toBe(0);
+  });
+
+  it('records a refused permission against the row that asked', async () => {
+    const { engine } = engineWith({
+      permissions: permitting({
+        instance: () => ({ save: true, rename: true, delete: false }),
+      }),
+    });
+    const { result } = await managed(engine);
+
+    await act(async () => {
+      await expect(result.current.manager.delete('orders-1')).resolves.toBe(
+        false,
+      );
+    });
+
+    const outcome = result.current.manager.outcomes.get('orders-1');
+    expect(outcome?.kind === 'rejected' && outcome.issue.code).toBe(
+      'view.delete.forbidden',
+    );
+  });
+
+  it('moves a view one step and submits the whole visible order', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const before = result.current.list.items.map(item => item.id);
+
+    await act(async () => {
+      await expect(result.current.manager.move(before[1], 'up')).resolves.toBe(
+        true,
+      );
+    });
+
+    await expect(store.getPreferences('orders')).resolves.toMatchObject({
+      order: [before[1], before[0], before[2]],
+    });
+    await waitFor(() =>
+      expect(result.current.list.items.map(item => item.id)).toEqual([
+        before[1],
+        before[0],
+        before[2],
+      ]),
+    );
+  });
+
+  it('writes nothing for a move off either end, or for a row it does not hold', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const setPreferences = vi.spyOn(store, 'setPreferences');
+    const ids = result.current.list.items.map(item => item.id);
+
+    await act(async () => {
+      await expect(result.current.manager.move(ids[0], 'up')).resolves.toBe(
+        false,
+      );
+      await expect(
+        result.current.manager.move(ids[ids.length - 1], 'down'),
+      ).resolves.toBe(false);
+      await expect(result.current.manager.move('gone', 'up')).resolves.toBe(
+        false,
+      );
+    });
+
+    expect(setPreferences).not.toHaveBeenCalled();
+    expect(result.current.manager.outcomes.size).toBe(0);
+  });
+
+  it('refuses a reorder nobody is permitted, with no preferences to quote', async () => {
+    const { engine, store } = engineWith({
+      permissions: permitting({ reorder: false }),
+    });
+    // The preferences never loaded either, so the refusal describes an intent
+    // built from nothing rather than from a revision it never read.
+    vi.spyOn(store, 'getPreferences').mockRejectedValueOnce(
+      new ViewStoreError('UNAVAILABLE', 'offline'),
+    );
+    const { result } = await managed(engine);
+    expect(result.current.list.preferences).toBeNull();
+
+    await act(async () => {
+      await expect(
+        result.current.manager.move(result.current.list.items[1].id, 'up'),
+      ).resolves.toBe(false);
+    });
+
+    const outcome = result.current.manager.outcomes.get(PREFERENCES_KEY);
+    expect(outcome?.kind === 'rejected' && outcome.issue.code).toBe(
+      'view.preferences.reorder-forbidden',
+    );
+    expect(outcome?.payload.action).toBe('preferences');
+  });
+
+  it('sets and clears the default view', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+
+    await act(async () => {
+      await expect(result.current.manager.setDefault('orders-2')).resolves.toBe(
+        true,
+      );
+    });
+    await waitFor(() =>
+      expect(result.current.list.defaultInstanceId).toBe('orders-2'),
+    );
+
+    await act(async () => {
+      await expect(result.current.manager.setDefault(null)).resolves.toBe(true);
+    });
+    await expect(store.getPreferences('orders')).resolves.toMatchObject({
+      defaultInstanceId: null,
+    });
+  });
+
+  it('keeps a preference conflict after reloading, to be confirmed again', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    // The stored preferences moved on under the revision this list read.
+    await store.setPreferences(
+      'orders',
+      { order: ['orders-2'], defaultInstanceId: 'orders-2', revision: '0' },
+      { requestId: 'other' },
+    );
+
+    await act(async () => {
+      await expect(result.current.manager.setDefault('orders-1')).resolves.toBe(
+        false,
+      );
+    });
+    expect(result.current.manager.outcomes.get(PREFERENCES_KEY)?.kind).toBe(
+      'conflict',
+    );
+
+    await act(async () => {
+      await expect(
+        result.current.manager.resolveConflict(PREFERENCES_KEY, 'reload'),
+      ).resolves.toBe(true);
+    });
+
+    // §7.3: the stored preferences are read again and the user's own intent
+    // is put to them once more rather than replayed at the new revision.
+    expect(result.current.manager.outcomes.get(PREFERENCES_KEY)?.kind).toBe(
+      'conflict',
+    );
+    await waitFor(() =>
+      expect(result.current.list.defaultInstanceId).toBe('orders-2'),
+    );
+
+    // The engine settled it, so the kept outcome answers for nothing: asking
+    // again is a new write, which this time lands.
+    await act(async () => {
+      await expect(
+        result.current.manager.resolveConflict(PREFERENCES_KEY, 'reload'),
+      ).resolves.toBe(false);
+      await expect(result.current.manager.setDefault('orders-1')).resolves.toBe(
+        true,
+      );
+    });
+    expect(result.current.manager.outcomes.size).toBe(0);
+  });
+
+  it('reads the abilities of a row off the permissions', async () => {
+    const { engine } = engineWith({
+      permissions: permitting({
+        reorder: false,
+        setDefault: true,
+        instance: id => ({
+          save: true,
+          rename: id === 'orders-1',
+          delete: false,
+        }),
+      }),
+    });
+    const { result } = await managed(engine);
+
+    expect(result.current.manager.can.reorder).toBe(false);
+    expect(result.current.manager.can.setDefault).toBe(true);
+    expect(result.current.manager.can.instance('orders-1')).toEqual({
+      rename: true,
+      delete: false,
+    });
+    expect(result.current.manager.can.instance('orders-2')).toEqual({
+      rename: false,
+      delete: false,
+    });
+  });
+
+  it('offers neither rename nor delete on a system view', async () => {
+    const { engine } = engineWith();
+    const { result } = await managed(engine);
+
+    // The permissions say yes to every instance; the scope says no.
+    expect(result.current.manager.can.instance('orders-1')).toEqual({
+      rename: true,
+      delete: true,
+    });
+    expect(result.current.manager.can.instance('system:orders:all')).toEqual({
+      rename: false,
+      delete: false,
+    });
+
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('system:orders:all', 'New'),
+      ).resolves.toBe(false);
+    });
+    const outcome = result.current.manager.outcomes.get('system:orders:all');
+    expect(outcome?.kind === 'rejected' && outcome.issue.code).toBe(
+      'view.system.read-only',
+    );
+  });
+});

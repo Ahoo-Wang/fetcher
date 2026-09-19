@@ -62,6 +62,8 @@ export interface SaveAbilities {
   saveAs: boolean;
   rename: boolean;
   delete: boolean;
+  /** True when there are edits and a saved baseline to take them back to. */
+  revert: boolean;
   /**
    * Which scope a copy may be made in. A dialog that offers a scope the user
    * cannot create in only lets them press Save to be refused, so it offers
@@ -79,6 +81,19 @@ export interface SaveCommandState {
   /** An unresolved outcome: a conflict, a refusal, or an unknown result. */
   write: WriteState | null;
   dirty: boolean;
+  /**
+   * Nothing may be written right now: a write is in flight, the draft would
+   * be refused, or an earlier outcome is still unsettled. One flag rather
+   * than three, because every button that writes disables on all of them.
+   */
+  blocked: boolean;
+  /**
+   * When the last write of this view landed, by the engine's clock. A UI
+   * shows a "Saved" moment from it, so it is a timestamp and not a boolean:
+   * the same save twice in a row must read as two distinct moments. It is
+   * cleared when the next write starts, and is `null` until one lands.
+   */
+  lastSavedAt: number | null;
 }
 
 export interface SaveCommands {
@@ -86,6 +101,8 @@ export interface SaveCommands {
   saveAs(input: SaveTargetInput): Promise<ViewInstance | null>;
   rename(title: string): Promise<ViewInstance | null>;
   delete(): Promise<boolean>;
+  /** Drops the edits and puts the saved config back in force. */
+  revert(): void;
   /** Replays the pending write and reports what the replay answered. */
   retry(): Promise<RecoveredWrite>;
   abandon(): void;
@@ -99,9 +116,15 @@ interface CommandProgress {
   runtime: ViewRuntime | null;
   pending: boolean;
   error: Issue | null;
+  savedAt: number | null;
 }
 
-const IDLE: CommandProgress = { runtime: null, pending: false, error: null };
+const IDLE: CommandProgress = {
+  runtime: null,
+  pending: false,
+  error: null,
+  savedAt: null,
+};
 
 /**
  * The write commands of one open view, with the permissions that decide which
@@ -122,17 +145,32 @@ export function useSaveCommands(
   const [progress, setProgress] = useState<CommandProgress>(IDLE);
 
   const run = useCallback(
-    async <T>(code: string, command: () => Promise<T>, fallback: T) => {
-      setProgress({ runtime, pending: true, error: null });
+    async <T>(
+      code: string,
+      command: () => Promise<T>,
+      fallback: T,
+      // Only the caller knows whether its outcome means the store took the
+      // write: a delete resolves with `false` on failure, a retry with a
+      // replay that may have answered "not landed".
+      landed?: (outcome: T) => boolean,
+    ) => {
+      setProgress({ runtime, pending: true, error: null, savedAt: null });
       try {
-        return await command();
+        const outcome = await command();
+        if (landed?.(outcome) === true) {
+          const at = engine.environment.now().getTime();
+          setProgress(current =>
+            current.runtime === runtime ? { ...current, savedAt: at } : current,
+          );
+        }
+        return outcome;
       } catch (caught) {
         const failure = toIssue(caught, code);
         // A workbench reuses this hook across views; another view's command
         // may have taken the slot while this one was in flight.
         setProgress(current =>
           current.runtime === runtime
-            ? { runtime, pending: false, error: failure }
+            ? { runtime, pending: false, error: failure, savedAt: null }
             : current,
         );
         return fallback;
@@ -145,7 +183,7 @@ export function useSaveCommands(
         );
       }
     },
-    [runtime],
+    [engine, runtime],
   );
 
   const own = progress.runtime === runtime ? progress : IDLE;
@@ -171,7 +209,7 @@ export function useSaveCommands(
   const save = useCallback(
     () =>
       runtime
-        ? run('view.save.failed', () => engine.save(runtime), null)
+        ? run('view.save.failed', () => engine.save(runtime), null, landedSave)
         : Promise.resolve(null),
     [engine, runtime, run],
   );
@@ -179,7 +217,12 @@ export function useSaveCommands(
   const saveAs = useCallback(
     (input: SaveTargetInput) =>
       runtime
-        ? run('view.save-as.failed', () => engine.saveAs(runtime, input), null)
+        ? run(
+            'view.save-as.failed',
+            () => engine.saveAs(runtime, input),
+            null,
+            landedSave,
+          )
         : Promise.resolve(null),
     [engine, runtime, run],
   );
@@ -217,6 +260,7 @@ export function useSaveCommands(
             // recovered create or rename carries the instance it produced.
             () => engine.retryWrite(runtime).then(recoveredOf),
             UNRECOVERED,
+            landedWrite,
           )
         : Promise.resolve(UNRECOVERED),
     [engine, runtime, run],
@@ -228,12 +272,20 @@ export function useSaveCommands(
     // so its outcome takes the slot however it is held.
     try {
       engine.abandonWrite(runtime);
-      setProgress({ runtime, pending: false, error: null });
+      // Giving up on an outcome is not a write, so it leaves the moment an
+      // earlier one landed alone.
+      setProgress(current => ({
+        runtime,
+        pending: false,
+        error: null,
+        savedAt: current.runtime === runtime ? current.savedAt : null,
+      }));
     } catch (caught) {
       setProgress({
         runtime,
         pending: false,
         error: toIssue(caught, 'view.abandon.failed'),
+        savedAt: null,
       });
     }
   }, [engine, runtime]);
@@ -246,16 +298,22 @@ export function useSaveCommands(
             // Both a reload and an overwrite resolve only when they landed.
             () => engine.resolveConflict(runtime, choice).then(recoveredOf),
             UNRECOVERED,
+            landedWrite,
           )
         : Promise.resolve(UNRECOVERED),
     [engine, runtime, run],
   );
+
+  const revert = useCallback(() => runtime?.revert(), [runtime]);
+
+  const issues = state?.issues ?? [];
 
   return {
     save,
     saveAs,
     rename,
     delete: remove,
+    revert,
     retry,
     abandon,
     resolveConflict,
@@ -266,6 +324,9 @@ export function useSaveCommands(
       saveAs: createPersonal || createShared,
       rename: !system && instance?.rename === true,
       delete: !system && instance?.delete === true,
+      // Reverting writes nothing and needs no permission — it only puts back
+      // what the store already holds.
+      revert: state?.dirty === true && state.saved !== null,
       createPersonal,
       createShared,
     },
@@ -274,6 +335,21 @@ export function useSaveCommands(
       error: own.error,
       write: state?.write ?? null,
       dirty: state?.dirty ?? false,
+      blocked:
+        own.pending ||
+        state?.write != null ||
+        issues.some(found => found.severity === 'error'),
+      lastSavedAt: own.savedAt,
     },
   };
+}
+
+/** A save or a copy that produced an instance is one the store took. */
+function landedSave(instance: ViewInstance | null): boolean {
+  return instance !== null;
+}
+
+/** A replay or a conflict choice counts only once it actually landed. */
+function landedWrite(recovered: RecoveredWrite): boolean {
+  return recovered.landed;
 }

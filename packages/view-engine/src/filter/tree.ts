@@ -260,6 +260,63 @@ export function* walkFilter(tree: FilterTree): Generator<TreeVisit> {
     if (visit.node !== null) yield visit;
 }
 
+/**
+ * Whether two nodes say the same thing *at their own level*: a leaf by its
+ * field, operator and value, a group by its operator alone.
+ *
+ * A group deliberately ignores its children, because the callers walk the
+ * tree and ask about every node. Comparing children here would mark a group,
+ * its parent and the root as changed for one edited condition, and "3 not
+ * applied" for a single edit is a lie the user cannot act on. `null` stands
+ * for "no node there", which is never equal to a node — an added condition
+ * is a change, whatever it says.
+ *
+ * `dequal` would answer the value part, but the runtime is the only layer
+ * allowed to import it (`test/architecture.test.ts`), and this comparison
+ * belongs to the editor rather than to the store of state.
+ */
+export function sameFilterNode(
+  left: FilterNode | null,
+  right: FilterNode | null,
+): boolean {
+  if (left === right) return true;
+  if (left === null || right === null) return false;
+  if (isFilterGroup(left) || isFilterGroup(right))
+    return isFilterGroup(left) && isFilterGroup(right) && left.op === right.op;
+  return (
+    left.field === right.field &&
+    left.operator === right.operator &&
+    sameValue(left.value, right.value)
+  );
+}
+
+/** Whether two trees are the same tree, children and all. */
+export function sameFilterTree(left: FilterTree, right: FilterTree): boolean {
+  return sameValue(left, right);
+}
+
+/**
+ * Structural equality over what a config may hold: JSON values, and the
+ * nodes built from them. Configs round-trip through a store, so two trees
+ * that mean the same thing are rarely the same objects.
+ */
+function sameValue(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (Array.isArray(left) || Array.isArray(right))
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((entry, index) => sameValue(entry, right[index]))
+    );
+  if (!isObject(left) || !isObject(right)) return false;
+  const keys = Object.keys(left);
+  return (
+    keys.length === Object.keys(right).length &&
+    keys.every(key => key in right && sameValue(left[key], right[key]))
+  );
+}
+
 export function countLeaves(tree: FilterTree): number {
   let leaves = 0;
   for (const { node } of walkFilter(tree)) if (isFilterLeaf(node)) leaves += 1;

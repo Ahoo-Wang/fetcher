@@ -32,7 +32,10 @@ import {
   nodeAt,
   operatorsOf,
   removeAt,
+  sameFilterNode,
+  sameFilterTree,
   updateAt,
+  walkFilter,
   type EditorDescriptor,
   type FieldKindRegistry,
   type FilterPath,
@@ -50,11 +53,29 @@ import { useViewRuntime } from './useViewEngine.js';
  */
 export interface FilterEditorController extends FilterTreeController {
   mode: FilterMode;
-  /** Conditions currently in force, for a summary bar. */
+  /**
+   * Conditions the rows on screen were fetched under, for a summary bar. It
+   * reads the config the result carries rather than `applied`, so the bar
+   * always describes the data beside it: applying starts a query, and until
+   * it answers, `applied` has already moved on. Empty until a result exists.
+   */
   applied: FilterSummaryItem[];
   count: number;
   /** False when the tree needs the advanced editor to be shown faithfully. */
   simple: boolean;
+  /** True when the draft says something other than what was last applied. */
+  pending: boolean;
+  /** How many nodes of the draft `isPending` holds for; a badge count. */
+  pendingCount: number;
+  /**
+   * Whether the node at `path` has been edited since the last apply. Compares
+   * that node alone — a leaf by field, operator and value, a group by its
+   * operator — so one edited condition marks one pill, not its ancestors too.
+   * A node the applied tree has nothing at is pending: it is new.
+   */
+  isPending(path: FilterPath): boolean;
+  /** How many `issues` block apply *and* point at a condition the editor shows. */
+  blocked: number;
   setMode(mode: FilterMode): void;
   clear(): void;
   /** Applies the draft, which is what runs the query. */
@@ -178,6 +199,43 @@ export function useFilterEditor(
     [change],
   );
 
+  // `validateFilter` addresses a node by its path (`[0]`, `[1, 0]`), so the
+  // code is what says an Issue belongs to the filter at all — and the path
+  // is what says it belongs to *this* filter: an element's or a dashboard
+  // panel's own filter is validated in its own scope and re-pathed under
+  // ['elements', …] or ['panels', …], which would otherwise mark top-level
+  // conditions as invalid.
+  const issues = (state?.issues ?? []).filter(
+    found =>
+      found.code.startsWith('config.filterMode.') ||
+      (found.code.startsWith('filter.') &&
+        (found.path.length === 0 || found.path[0] === 'children')),
+  );
+
+  // What "not applied yet" is measured against is the tree `apply` promoted,
+  // which is not the one the result carries: between the two a query is in
+  // flight, and the editor must not go on offering to apply what it just did.
+  const inForce = state?.applied.filter ?? EMPTY_TREE;
+
+  const isPending = useCallback(
+    (path: FilterPath) =>
+      !sameFilterNode(nodeAt(tree, path), nodeAt(inForce, path)),
+    [tree, inForce],
+  );
+
+  const pendingCount = useMemo(() => {
+    let count = 0;
+    for (const { node, path } of walkFilter(tree)) {
+      // A tree path interleaves the 'children' key with each index; the
+      // editor addresses nodes by the indexes alone.
+      const at = path.filter(
+        (step): step is number => typeof step === 'number',
+      );
+      if (!sameFilterNode(node, nodeAt(inForce, at))) count += 1;
+    }
+    return count;
+  }, [tree, inForce]);
+
   return {
     tree,
     mode: state?.draft.filterMode ?? 'simple',
@@ -187,30 +245,27 @@ export function useFilterEditor(
         ? (runtime.definition.fieldGroups ?? EMPTY_GROUPS)
         : EMPTY_GROUPS,
     kinds,
-    // `validateFilter` addresses a node by its path (`[0]`, `[1, 0]`), so the
-    // code is what says an Issue belongs to the filter at all — and the path
-    // is what says it belongs to *this* filter: an element's or a dashboard
-    // panel's own filter is validated in its own scope and re-pathed under
-    // ['elements', …] or ['panels', …], which would otherwise mark top-level
-    // conditions as invalid.
-    issues: (state?.issues ?? []).filter(
-      found =>
-        found.code.startsWith('config.filterMode.') ||
-        (found.code.startsWith('filter.') &&
-          (found.path.length === 0 || found.path[0] === 'children')),
-    ),
-    // An over-budget draft also blocked apply, so what was applied last is
-    // the oversized tree itself; summarising it would walk every leaf and
-    // render one line per condition. The findings say so instead.
-    applied: useMemo(
-      () =>
-        overBudget || !state || !kinds
-          ? []
-          : describeFilter(fields, state.applied.filter, kinds),
-      [overBudget, state, fields, kinds],
-    ),
+    issues,
+    // An over-budget draft also blocked apply, so what ran last is the
+    // oversized tree itself; summarising it would walk every leaf and render
+    // one line per condition. The findings say so instead.
+    applied: useMemo(() => {
+      const ran = state?.result?.config.filter;
+      return overBudget || !ran || !kinds
+        ? []
+        : describeFilter(fields, ran, kinds);
+    }, [overBudget, state, fields, kinds]),
     count: countLeaves(tree),
     simple: isSimpleTree(tree),
+    pending: !sameFilterTree(tree, inForce),
+    pendingCount,
+    isPending,
+    // Only the conditions the editor draws: an error elsewhere in the config
+    // blocks apply too, but no pill can be marked for it, so the Apply button
+    // would promise a fix the user cannot find here.
+    blocked: issues.filter(
+      found => found.severity === 'error' && found.path[0] === 'children',
+    ).length,
     setMode: useCallback(
       (mode: FilterMode) => runtime?.edit({ filterMode: mode }),
       [runtime],

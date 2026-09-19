@@ -251,6 +251,22 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
   }
 
   /**
+   * Discards the edits and re-runs what was saved; see `ViewRuntime.revert`.
+   * The restored draft may name panels this opening has not resolved yet, so
+   * it goes through `load` exactly as an edit does.
+   */
+  revert(): void {
+    const saved = this.state.saved;
+    if (this.stopped || saved === null) return;
+    const draft = saved.config as DashboardViewConfig;
+    const issues = this.admit(draft, this.state.scope);
+    const ran = this.state.applied;
+    this.setState({ draft, issues, dirty: this.isDirty(draft, saved) });
+    this.load(draft);
+    if (!dequal(ran, draft) && !hasError(issues)) this.apply();
+  }
+
+  /**
    * One clock for every panel; a referenced view's own interval is ignored.
    *
    * Like a data view's, this re-runs what was applied, so an invalid draft

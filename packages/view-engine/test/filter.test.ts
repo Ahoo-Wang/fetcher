@@ -35,6 +35,8 @@ import {
   removeAt,
   resolveDateTimeBound,
   resolveDateTimeRange,
+  sameFilterNode,
+  sameFilterTree,
   updateAt,
   validateFilter,
   validateViewConfigBase,
@@ -1370,6 +1372,77 @@ describe('tree editing', () => {
  * number, an object with neither `children` nor `field` — is a finding at
  * its path, never a `TypeError` from the first pass to dereference it.
  */
+describe('node and tree comparison', () => {
+  const leaf = (value: unknown): FilterLeaf => ({
+    field: 'id',
+    operator: `${FilterOperator.EQ}`,
+    value: value as FilterLeaf['value'],
+  });
+
+  it('compares a leaf by field, operator and value', () => {
+    expect(sameFilterNode(leaf('a'), leaf('a'))).toBe(true);
+    expect(sameFilterNode(leaf('a'), leaf('b'))).toBe(false);
+    expect(
+      sameFilterNode(leaf('a'), { ...leaf('a'), field: 'warehouse' }),
+    ).toBe(false);
+    expect(
+      sameFilterNode(leaf('a'), {
+        ...leaf('a'),
+        operator: `${FilterOperator.NE}`,
+      }),
+    ).toBe(false);
+  });
+
+  it('reads a value that travelled through a store as the same value', () => {
+    // A stored config comes back as new objects every time, so identity is
+    // no answer: a list condition would read as edited on every render.
+    expect(sameFilterNode(leaf(['a', 'b']), leaf(['a', 'b']))).toBe(true);
+    expect(sameFilterNode(leaf(['a', 'b']), leaf(['b', 'a']))).toBe(false);
+    expect(sameFilterNode(leaf(['a']), leaf(['a', 'b']))).toBe(false);
+    expect(sameFilterNode(leaf(['a']), leaf('a'))).toBe(false);
+    expect(
+      sameFilterNode(leaf({ from: 1, to: 2 }), leaf({ to: 2, from: 1 })),
+    ).toBe(true);
+    expect(sameFilterNode(leaf({ from: 1 }), leaf({ from: 1, to: 2 }))).toBe(
+      false,
+    );
+    expect(sameFilterNode(leaf({ from: 1 }), leaf({ to: 1 }))).toBe(false);
+    expect(sameFilterNode(leaf(null), leaf('a'))).toBe(false);
+  });
+
+  it('compares a group by its operator, not by what is in it', () => {
+    const or: FilterTree = { op: 'or', children: [leaf('a')] };
+    expect(sameFilterNode(or, { op: 'or', children: [leaf('z')] })).toBe(true);
+    expect(sameFilterNode(or, { op: 'and', children: [leaf('a')] })).toBe(
+      false,
+    );
+    // A group and a leaf are never the same thing, whichever side it is on.
+    expect(sameFilterNode(or, leaf('a'))).toBe(false);
+    expect(sameFilterNode(leaf('a'), or)).toBe(false);
+  });
+
+  it('treats a missing node as unequal to any node', () => {
+    expect(sameFilterNode(null, null)).toBe(true);
+    expect(sameFilterNode(null, leaf('a'))).toBe(false);
+    expect(sameFilterNode(leaf('a'), null)).toBe(false);
+  });
+
+  it('compares a whole tree, children and all', () => {
+    const tree: FilterTree = {
+      op: 'and',
+      children: [leaf('a'), { op: 'or', children: [leaf('b')] }],
+    };
+    expect(sameFilterTree(tree, structuredClone(tree))).toBe(true);
+    expect(
+      sameFilterTree(tree, {
+        op: 'and',
+        children: [leaf('a'), { op: 'or', children: [leaf('z')] }],
+      }),
+    ).toBe(false);
+    expect(sameFilterTree(tree, emptyFilter())).toBe(false);
+  });
+});
+
 describe('malformed trees', () => {
   const order = (id: string): FilterLeaf => ({
     field: 'id',

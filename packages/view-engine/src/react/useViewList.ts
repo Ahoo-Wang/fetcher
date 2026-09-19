@@ -35,14 +35,24 @@ export interface ViewListState {
   reload(): void;
 }
 
-/** A completed load, tagged with the request it answered. */
+/**
+ * A completed load, tagged with the request it answered and the definition
+ * it is about. The two are asked separately: `key` says whether this is the
+ * newest answer, `definitionId` whether it is still about the right thing.
+ */
 interface Loaded<T> {
   key: string;
+  definitionId: string;
   value: T | null;
   error: Issue | null;
 }
 
-const NOTHING_LOADED: Loaded<never> = { key: '', value: null, error: null };
+const NOTHING_LOADED: Loaded<never> = {
+  key: '',
+  definitionId: '',
+  value: null,
+  error: null,
+};
 
 /**
  * The list, the preferences and the permissions of one definition.
@@ -68,12 +78,13 @@ export function useViewList(
 
     void engine.list(definitionId).then(
       value => {
-        if (!cancelled) setList({ key, value, error: null });
+        if (!cancelled) setList({ key, definitionId, value, error: null });
       },
       (error: unknown) => {
         if (!cancelled)
           setList({
             key,
+            definitionId,
             value: null,
             error: toIssue(error, 'view.list.failed'),
           });
@@ -82,12 +93,13 @@ export function useViewList(
 
     void engine.preferences(definitionId).then(
       value => {
-        if (!cancelled) setPreferences({ key, value, error: null });
+        if (!cancelled) setPreferences({ key, definitionId, value, error: null });
       },
       (error: unknown) => {
         if (!cancelled)
           setPreferences({
             key,
+            definitionId,
             value: null,
             error: toIssue(error, 'view.preferences.failed'),
           });
@@ -105,8 +117,14 @@ export function useViewList(
   );
   const reload = useCallback(() => setToken(current => current + 1), []);
 
-  const current = list.key === key ? list : NOTHING_LOADED;
-  const preferencesSettled = preferences.key === key;
+  // A reload refreshes; it does not blank. What is on hand for *this*
+  // definition stays on screen until the new answer lands, because a list
+  // that empties mid-reload has no default view for a moment — and a
+  // workbench riding on the default would close its runtime and lose the
+  // unsaved draft with it. Only a change of definition clears the answer,
+  // since then what is on hand is about something else.
+  const current = list.definitionId === definitionId ? list : NOTHING_LOADED;
+  const preferencesSettled = preferences.definitionId === definitionId;
   const currentPreferences = preferencesSettled ? preferences : NOTHING_LOADED;
 
   const items = useMemo(

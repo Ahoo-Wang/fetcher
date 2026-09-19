@@ -82,6 +82,12 @@ export interface ViewRuntime<C extends ViewConfig = ViewConfig> {
   /** Promotes a valid draft to `applied` and executes it. */
   apply(): void;
   /**
+   * Takes the draft back to the saved baseline and puts it in force again. A
+   * view that was never saved has no baseline to return to, so it is a no-op
+   * there; what is on screen is all there is.
+   */
+  revert(): void;
+  /**
    * Re-runs `applied` from the first page. A no-op while `applied` was never
    * admitted: a view opened on a config the definition refuses waits for a
    * fix, and no command runs it as it stands.
@@ -359,6 +365,26 @@ export class DataViewRuntime<
     this.pageTarget = firstPageOf(this.context.definition);
     this.setState({ applied: this.state.draft, selection: [] });
     this.execute({ keepSelection: false });
+  }
+
+  /**
+   * Discards the edits and re-runs what was saved.
+   *
+   * It re-applies rather than only restoring the draft, because the results
+   * on screen may already answer a question the user has just taken back —
+   * leaving them there would show the reverted config's rows under the saved
+   * config's name. A draft the store's own config cannot pass admission for
+   * is restored all the same and left for the user to fix, since refusing
+   * would strand them on edits they asked to be rid of.
+   */
+  revert(): void {
+    const saved = this.state.saved;
+    if (this.stopped || saved === null) return;
+    const draft = saved.config as C;
+    const issues = this.admit(draft);
+    const ran = this.state.applied;
+    this.setState({ draft, issues, dirty: this.isDirty(draft, saved) });
+    if (!dequal(ran, draft) && !hasError(issues)) this.apply();
   }
 
   /**
