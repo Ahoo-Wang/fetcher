@@ -16,6 +16,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import {
+  AggregationFunction,
+  AggregationGroupType,
+  FilterOperator,
+} from '@ahoo-wang/fetcher-wow';
+import { CHART_TYPES } from '../src/index.js';
 import type { FilterValue, ViewInstanceSummary } from '../src/index.js';
 import type { RecordViewRuntime } from '../src/runtime/index.js';
 import type {
@@ -140,6 +146,62 @@ describe('the Chinese catalogue', () => {
 
     expect(result.current.label('label.filter.apply')).toBe('确定');
     expect(result.current.label('label.filter.clear')).toBe('清空');
+  });
+});
+
+/**
+ * The enums a control puts in front of a reader.
+ *
+ * Each of these was named in part or not at all, on the grounds that `EQ`,
+ * `bar` and `sum` read acceptably derived from the identifier. They do, in
+ * English; `messages={zhCN}` then had no key to hang a Chinese word on and
+ * the operator select and the whole analysis editor stayed in English. A
+ * closed set is named in full or it is not translatable, and these walk the
+ * enums rather than repeating a list that could drift behind them.
+ */
+describe('the closed enums a control offers', () => {
+  const missing = (keys: readonly string[]) => [
+    ...keys.filter(key => !(key in en)).map(key => `en: ${key}`),
+    ...keys.filter(key => !(key in zhCN)).map(key => `zhCN: ${key}`),
+  ];
+
+  it('names every filter operator', () => {
+    const keys = Object.values(FilterOperator).map(
+      operator => `label.operator.${operator}`,
+    );
+
+    expect(missing(keys)).toEqual([]);
+  });
+
+  it('names every chart type', () => {
+    expect(
+      missing(CHART_TYPES.map(type => `label.chart.type.${type}`)),
+    ).toEqual([]);
+  });
+
+  it('names every grouping and every aggregation function', () => {
+    expect(
+      missing([
+        ...Object.values(AggregationGroupType).map(
+          type => `label.group.type.${type}`,
+        ),
+        ...Object.values(AggregationFunction).map(
+          fn => `label.metric.function.${fn}`,
+        ),
+      ]),
+    ).toEqual([]);
+  });
+
+  /**
+   * The English half of the same bargain: naming what a component derived
+   * must not reword it, or every English test and screenshot moves with it.
+   */
+  it('keeps the spelling the editor used to derive', () => {
+    expect(en['label.operator.EQ']).toBe('eq');
+    expect(en['label.operator.BETWEEN']).toBe('between');
+    expect(en['label.chart.type.bar']).toBe('bar');
+    expect(en['label.group.type.DATE_HISTOGRAM']).toBe('date histogram');
+    expect(en['label.metric.function.SUM']).toBe('sum');
   });
 });
 

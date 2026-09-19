@@ -336,12 +336,14 @@ interface ViewStore {
 值按字段显示：枚举显示选项的标签，`datetime`／`date` 经 `Intl.DateTimeFormat` 格式化，日期直方图的键显示为它起始的年、季度、月或日。`locale` 决定这些值用什么语言显示，缺省为运行环境的语言；它和 `messages` 是同一个选择，一个管文字，一个管值：
 
 ```tsx
+import { RecordWorkbench, zhCN } from '@ahoo-wang/fetcher-view-engine/ui';
+
 <RecordWorkbench
   engine={engine}
   definitionId="orders"
   messages={{ ...zhCN, 'label.filter.apply': '确定' }}
   locale="zh-CN"
-/>
+/>;
 ```
 
 时间按引擎的时钟 `environment.timeZone` 显示：相对日期"今天"按它解析，未声明 `timeZone` 的日期直方图也按它切桶，所以一行按什么时钟被筛选、被分组，就按什么时钟显示。

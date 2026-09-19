@@ -74,10 +74,21 @@ export const filterMessages = {
   'label.date.unit-of': '{field} unit',
   'label.date.period-of': '{field} period',
 
-  // Operator names a component would otherwise derive from the enum. Only the
-  // ones whose derived spelling is unreadable need an entry; the rest fall
-  // back, so this list stays short and an application can still name any of
-  // them by adding a key.
+  // Every `FilterOperator`, in the order the enum declares them.
+  //
+  // Half of them were left out on the grounds that `EQ` and `BETWEEN` read
+  // acceptably derived from the enum name. They do — in English. A catalogue
+  // that names only part of a closed set cannot be translated at all, which
+  // is what `messages={zhCN}` showed: the operator select still offered `eq`
+  // and `between`, because no key existed for a Chinese word to hang on. So
+  // the set is named in full, and the ones that used to be derived keep the
+  // spelling they already showed, which is why some of these read as the
+  // enum rather than as English.
+  //
+  // `test/messages.test.tsx` walks `FilterOperator` and fails on a gap, so
+  // this list cannot drift behind the wow enum.
+  'label.operator.MATCH_ALL': 'match all',
+  'label.operator.MATCH_NONE': 'match none',
   'label.operator.ID': 'is',
   'label.operator.IDS': 'is any of',
   'label.operator.AGGREGATE_ID': 'is',
@@ -85,19 +96,47 @@ export const filterMessages = {
   'label.operator.TENANT_ID': 'is',
   'label.operator.OWNER_ID': 'is',
   'label.operator.SPACE_ID': 'is',
+  'label.operator.AND': 'and',
+  'label.operator.OR': 'or',
+  'label.operator.NOR': 'nor',
+  'label.operator.EQ': 'eq',
+  'label.operator.NE': 'ne',
+  'label.operator.GT': 'gt',
+  'label.operator.GTE': 'gte',
+  'label.operator.LT': 'lt',
+  'label.operator.LTE': 'lte',
+  'label.operator.CONTAINS': 'contains',
+  'label.operator.STARTS_WITH': 'starts with',
+  'label.operator.ENDS_WITH': 'ends with',
+  'label.operator.IN': 'is any of',
+  'label.operator.NOT_IN': 'is none of',
+  'label.operator.BETWEEN': 'between',
+  'label.operator.CONTAINS_ALL': 'has all of',
+  'label.operator.IS_EMPTY': 'has no entries',
   'label.operator.IS_EMPTY_STRING': 'is blank',
   'label.operator.IS_NOT_EMPTY_STRING': 'is not blank',
   'label.operator.IS_NULL': 'is empty',
   'label.operator.IS_NOT_NULL': 'is not empty',
+  'label.operator.EXISTS': 'exists',
   'label.operator.NOT_EXISTS': 'does not exist',
-  'label.operator.IN': 'is any of',
-  'label.operator.NOT_IN': 'is none of',
-  'label.operator.CONTAINS_ALL': 'has all of',
-  'label.operator.IS_EMPTY': 'has no entries',
-  'label.operator.STARTS_WITH': 'starts with',
-  'label.operator.ENDS_WITH': 'ends with',
-  'label.operator.SEARCH': 'contains',
+  'label.operator.DELETION': 'deletion',
   'label.operator.ELEMENT_MATCH': 'has an entry where',
+  'label.operator.SEARCH': 'contains',
+  'label.operator.TODAY': 'today',
+  'label.operator.BEFORE_TODAY': 'before today',
+  'label.operator.TOMORROW': 'tomorrow',
+  'label.operator.THIS_WEEK': 'this week',
+  'label.operator.NEXT_WEEK': 'next week',
+  'label.operator.LAST_WEEK': 'last week',
+  'label.operator.THIS_MONTH': 'this month',
+  'label.operator.LAST_MONTH': 'last month',
+  'label.operator.YESTERDAY': 'yesterday',
+  'label.operator.NEXT_MONTH': 'next month',
+  'label.operator.LAST_YEAR': 'last year',
+  'label.operator.THIS_YEAR': 'this year',
+  'label.operator.NEXT_YEAR': 'next year',
+  'label.operator.RECENT_DAYS': 'recent days',
+  'label.operator.EARLIER_DAYS': 'earlier days',
 
   // Filter kernel.
   'filter.field.reference-without-source':

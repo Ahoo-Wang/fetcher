@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { Issue } from '../model/index.js';
+import type { FilterOperatorName, Issue } from '../model/index.js';
 import { en } from './messages/en.js';
 
 /**
@@ -41,16 +41,14 @@ export type ViewMessages = Readonly<Record<string, string>>;
 export type MessageKey = keyof typeof en;
 
 /**
- * `label.operator.<OPERATOR>`, the one family the catalogue names in part.
+ * `label.operator.<OPERATOR>`, composed from the operator on a condition.
  *
- * A missing entry is the design here: `BETWEEN` reads well enough derived
- * from the enum and `IDS` does not, so only the unreadable ones are named and
- * the rest fall back to the spelling the component derives. That puts the
- * composed key outside `MessageKey`, and this assertion — the only one in the
- * package — is what lets every other call stay closed.
+ * The catalogue names every `FilterOperator`, so the composed key is already
+ * a `MessageKey` and this needs no assertion: naming an operator the wording
+ * does not carry is a compile error, like every other key in the package.
  */
-export function operatorKey(operator: string): MessageKey {
-  return `label.operator.${operator}` as MessageKey;
+export function operatorKey(operator: FilterOperatorName): MessageKey {
+  return `label.operator.${operator}`;
 }
 
 /** `{field}` and friends are replaced from `Issue.params`. */

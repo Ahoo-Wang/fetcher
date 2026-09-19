@@ -338,12 +338,14 @@ The model carries `code` and `params` and no copy, so `/ui` owns the words. `def
 Values show as their fields say: an enum by its option's label, a `datetime` or a `date` through `Intl.DateTimeFormat`, a date-histogram key as the year, quarter, month or day it starts. `locale` is the language they show in, the runtime's when left out; it is the same choice as `messages`, made for values rather than words:
 
 ```tsx
+import { RecordWorkbench, zhCN } from '@ahoo-wang/fetcher-view-engine/ui';
+
 <RecordWorkbench
   engine={engine}
   definitionId="orders"
   messages={{ ...zhCN, 'label.filter.apply': '确定' }}
   locale="zh-CN"
-/>
+/>;
 ```
 
 Times read on the engine's clock, `environment.timeZone`: the zone "today" is resolved in, and the one a date histogram that names no `timeZone` is bucketed in, so a row shows the time it was filtered and grouped by.

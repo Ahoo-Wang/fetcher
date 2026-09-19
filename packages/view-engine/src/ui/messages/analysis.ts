@@ -33,6 +33,34 @@ export const analysisMessages = {
   'label.analysis.remove-metric': 'Remove metric {alias}',
   'label.analysis.empty': 'Nothing to aggregate',
 
+  // The three closed enums the editor offers as choices. They used to reach
+  // the screen as the identifier itself — `bar`, `date histogram`, `sum` —
+  // which is readable enough in English and untranslatable in anything else,
+  // so `messages={zhCN}` left the whole editor in English. The English
+  // wording is what each one already showed, so naming them changed no
+  // screen; `test/messages.test.tsx` walks the three enums and fails on a
+  // gap.
+  'label.chart.type.bar': 'bar',
+  'label.chart.type.line': 'line',
+  'label.chart.type.area': 'area',
+  'label.chart.type.combo': 'combo',
+  'label.chart.type.pie': 'pie',
+  'label.chart.type.heatmap': 'heatmap',
+  'label.chart.type.scatter': 'scatter',
+  'label.chart.type.funnel': 'funnel',
+  'label.chart.type.metric': 'metric',
+
+  'label.group.type.TERMS': 'terms',
+  'label.group.type.HISTOGRAM': 'histogram',
+  'label.group.type.DATE_HISTOGRAM': 'date histogram',
+
+  'label.metric.function.SUM': 'sum',
+  'label.metric.function.AVG': 'avg',
+  'label.metric.function.MIN': 'min',
+  'label.metric.function.MAX': 'max',
+  'label.metric.function.STDDEV': 'stddev',
+  'label.metric.function.VARIANCE': 'variance',
+
   // Series names the chart writes itself, for legends and tooltips.
   'label.chart.other': 'Other',
   'label.chart.points': 'Points',
