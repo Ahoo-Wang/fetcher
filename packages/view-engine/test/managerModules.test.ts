@@ -12,9 +12,11 @@
  */
 
 /**
- * The React-free modules `useViewManager` is composed of. The hook itself is
- * covered end to end by `viewManager.test.tsx`; these ask each rule the
- * questions that are awkward to stage through a rendered list.
+ * The React-free modules `useViewManager` is composed of, and the rules of
+ * `react/writes.ts` as a manager row asks them. The hook itself is covered end
+ * to end by `viewManager.test.tsx`, and the write vocabulary on its own by
+ * `writes.test.ts`; these ask each rule the questions that are awkward to
+ * stage through a rendered list.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -27,18 +29,20 @@ import type { WritePayload, WriteState } from '../src/runtime/index.js';
 import type { ViewPermissions } from '../src/index.js';
 import { abilitiesOf } from '../src/react/manager/abilities.js';
 import {
-  blocks,
   kept,
-  mayRefuse,
   NO_OUTCOMES,
   PREFERENCES_KEY,
   projectStates,
-  refused,
-  strandedHandle,
-  UNSENT,
   withOutcome,
   type Outcome,
 } from '../src/react/manager/outcomes.js';
+import {
+  holdsHandle,
+  mayRefuse,
+  refused,
+  strandedHandle,
+  UNSENT,
+} from '../src/react/writes.js';
 import { createCommandQueue, enqueue } from '../src/react/manager/queue.js';
 import {
   neighbourOf,
@@ -111,13 +115,13 @@ describe('manager/outcomes', () => {
   });
 
   it('blocks a new intent only while a handle is outstanding', () => {
-    expect(blocks(null)).toBe(false);
-    expect(blocks(outcomeOf('unknown'))).toBe(true);
-    expect(blocks(outcomeOf('conflict'))).toBe(true);
+    expect(holdsHandle(null)).toBe(false);
+    expect(holdsHandle(outcomeOf('unknown'))).toBe(true);
+    expect(holdsHandle(outcomeOf('conflict'))).toBe(true);
     // §7.4: correct it and save again.
-    expect(blocks(outcomeOf('rejected'))).toBe(false);
+    expect(holdsHandle(outcomeOf('rejected'))).toBe(false);
     // Settled outcomes address nothing, whatever they report.
-    expect(blocks(outcomeOf('unknown', { handle: null }))).toBe(false);
+    expect(holdsHandle(outcomeOf('unknown', { handle: null }))).toBe(false);
   });
 
   it('strands only the rejection a new command would take the slot of', () => {
