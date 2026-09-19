@@ -47,7 +47,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine lint:check
 
 - Vitest in the **jsdom** environment, with `clearMocks` and `restoreMocks`
 - **No `globals: true`** — unlike the other packages here, import `describe`, `it`, `expect`, `vi` from `vitest` explicitly
-- Test files live in `test/` at the package root, named by subject rather than mirroring `src/` one-to-one (45 files). Fixtures shared by several suites sit beside them: `test/fixtures.ts` for definitions, configs and sources, `test/fixtures/ui.tsx` for what the UI suites open
+- Test files live in `test/` at the package root, named by subject rather than mirroring `src/` one-to-one (46 files). Fixtures shared by several suites sit beside them: `test/fixtures.ts` for definitions, configs and sources, `test/fixtures/ui.tsx` for what the UI suites open
 - `@` resolves to `src/`
 - **Coverage thresholds are enforced**: statements 95, branches 91, functions 97, lines 96. `src/ui/components/**`, `src/ui/lib/**` and `src/styles.ts` are excluded — they are vendored from the shadcn registry and are upstream's to test
 - `test/architecture.test.ts` enforces the dependency rules below on the TypeScript AST, so multi-line, type-only, re-exported and **statically resolvable** dynamic imports are all seen — an `import()` whose argument is a string literal or a substitution-free template. One built from a variable is not recorded, and would slip past these assertions. It reads the wow **sources** off disk, so it is the one suite that runs without any build — every test that imports `@ahoo-wang/fetcher-wow` needs the dependency chain built first
@@ -107,6 +107,7 @@ src/
   filter/                       — Filter kernel — imports model only
     fieldKind.ts                  — FieldKind contract and registry (extension point)
     validate.ts                   — validateFilter, depth and node budgets
+    marks.ts                      — unmarkedErrors — the errors no condition pill can carry
     compile.ts                    — compileFilter → Wow FilterExpression
     tree.ts                       — Tree node predicates; trees arrive untrusted
     values.ts                     — Value shapes of the built-in kinds
@@ -163,19 +164,23 @@ src/
     useFilterEditor.ts            — Filter tree editor controller
     useDashboard.ts               — Dashboard panels, geometry and state
     useSaveCommands.ts            — Save, save-as, revert, rename, delete
+    useWorkbench.ts               — One workbench's shell: list, open, leave, the header's outcomes
     actions.ts                    — The three action slots a host fills: global, bulk, row
     environment.ts                — Page visibility, so a hidden tab stops polling
     issues.ts                     — Turns a thrown command into one Issue
     index.ts
+    workbench/                    — What `useWorkbench` composes
+      leaveGuard.ts                 — Headless leave protection; `/ui` draws `LeaveDialog` from it
+      releaseDeleted.ts             — Lets a workbench's pinned id go once the view is deleted
   ui/                           — Default look; may import every layer
+    WorkbenchShell.tsx            — The frame the three workbenches share, over one `useWorkbench`
     RecordWorkbench.tsx           — Default Record workbench
     AnalysisWorkbench.tsx         — Default Analysis workbench
     DashboardWorkbench.tsx        — Default Dashboard workbench
     ViewHeader.tsx                — Title bar: kind, audience, title, unsaved mark, save commands
     SaveActions.tsx               — Split save button group; SaveAsDialog.tsx, WriteOutcome.tsx
     ViewManager.tsx               — Rename, delete, reorder and the default view, from the sidebar
-    LeaveGuard.tsx                — `useLeaveGuard`: confirms a switch that would lose a draft
-    useReleaseDeleted.ts          — Lets a workbench's pinned id go once the view is deleted
+    LeaveGuard.tsx                — `LeaveDialog`: draws the headless guard's question
     EditorBand.tsx                — The fold a view's editor lives in
     StatusStrip.tsx               — One-line findings: warning, error, failed query (+ `dedupeIssues`)
     AppliedBar.tsx                — The conditions the rows on screen were fetched under
@@ -195,7 +200,7 @@ src/
     lib/utils.ts                  — shadcn cn() helper — vendored
 ```
 
-`test/` (45 test files plus `fixtures.ts` and `fixtures/ui.tsx`), `examples/` (`FetcherViewStore.ts`, `PlainRecordWorkbench.tsx`, `quickstart.ts`) and `docs/design/` sit beside `src/`.
+`test/` (46 test files plus `fixtures.ts` and `fixtures/ui.tsx`), `examples/` (`FetcherViewStore.ts`, `PlainRecordWorkbench.tsx`, `quickstart.ts`) and `docs/design/` sit beside `src/`.
 
 ### Key Concepts
 
