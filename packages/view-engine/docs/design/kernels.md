@@ -12,7 +12,7 @@ validateFilter(fields: FieldDefinition[], tree: FilterTree, kinds: FieldKindRegi
 isSimpleTree(tree: FilterTree): boolean                  // filterMode 'simple' 的准入判断
 compileFilter(fields, tree, kinds, ctx: { now: Date; timeZone: string }): FilterExpression
 clearFilter(tree): FilterTree
-describeFilter(fields, tree): FilterSummaryItem[]           // 已应用条件的摘要
+describeFilter(fields, tree, kinds): FilterSummaryItem[]     // 已应用条件的摘要：结构化的部件 + 英文兜底句
 
 // record
 defaultRecordConfig(def): RecordViewConfig                      // 按 RecordCapability.defaults 补全的完整初始配置
@@ -69,6 +69,15 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 - 超出 `maxFilterDepth`（缺省 8）或 `maxFilterNodes`（缺省 256）立即报 error 并停止遍历，且是唯一的发现。骨架有问题时不再按 kind 校验；
 - `compileFilter` 与 `describeFilter` 对同样的输入不抛异常而是跳过畸形条目，因此递归不会耗尽调用栈，`TypeError` 也不会击穿 `open`。`ViewConfigBase` 本身同理：非对象的配置报 `config.invalid`，`filter` 不是分组报 `config.filter.invalid`。`validateAnalysis` 先检查配置骨架（`groups`、`metrics`、`sort`、`table.columns`、`elements` 须为数组且成员为对象、别名为字符串，`table`、`chart` 须为对象），不满足只报 `analysis.config.malformed` 并停止；
 - 随后对 NUMERIC／DISTINCT_COUNT／PERCENTILE 表达式、DERIVED 表达式与 `having` 树按同一份 `maxFilterDepth`／`maxFilterNodes` 以迭代遍历准入（与 Wow 的 `MAX_EXPRESSION_DEPTH`／`MAX_EXPRESSION_NODES` 同为 8／256；深度按每棵树计，节点数按同类树共享一份），超限报 `analysis.expression.too-deep`／`too-many-nodes` 或 `analysis.having.too-deep`／`too-many-nodes` 且不再递归。（见 test/filter.test.ts「malformed trees」与 test/analysis.test.ts「a malformed skeleton」「expression budgets」）
+
+## 已应用摘要是部件，不是句子
+
+`describeFilter` 交出的每一项都拆成可被措辞目录重写的部件，而不是一句写死的英文：结果区最显眼的那一行以前由各个 kind 自己拼出来——原始操作符名、`is empty`、`on or before`——于是 `messages={zhCN}` 之下整页中文、唯独条件 badge 是英文。
+
+- `FilterSummaryItem` 带 `path`、`unresolved`、`field`／`label`／`kind`／`numberFormat`、`operator`，以及 `value`；分组不带 `field` 与 `value`，带 `group`（自身操作符）与 `items`（组内各项）。持有谓词的条件（`ELEMENT_MATCH`）同样带 `items` 与 `group`——它是一条条件而不是一层嵌套，`isGroupItem` 以"有 `items` 且没有 `field`"区分两者；
+- `value` 是封闭联合 `FilterSummaryValue`：`none`（操作符本身就是全部条件）、`blank`（kind 读不出这个值，只有字段名是真的）、`text`、`list`（原始值，kind 已解析则另带 `labels`）、`range`、`relative`、`preset`。日期把绝对值交成 `range`／`text`、相对窗口交成 `relative`、命名时段交成 `preset`，因此"下季度"到了界面仍是一个键而不是一句话；
+- `text` 保留为**英文兜底**，逐字节保持原样：宿主可能直接读 `FilterSummaryItem.text`，且 `test/filter.test.ts` 的 describe 用例按它断言。渲染成words 的是 `/ui`，见 [ui/README.md](ui/README.md#三态各有一处凭据)；
+- 字段消失或 kind 抛异常的那一项 `unresolved` 为 true，`value` 为 `blank`，但 `operator` 仍在：值读不出来，问题本身还在。（见 test/filter.test.ts「describeFilter」「describeFilter parts」）
 
 ## 一个分组内每个字段只出现一次
 

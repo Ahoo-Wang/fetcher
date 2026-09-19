@@ -34,7 +34,7 @@ import { emptyFilter, isFilterGroup, walkFilter } from '../tree.js';
 import { isBlankFilter, validateFilter } from '../validate.js';
 import {
   compilePresence,
-  describePresence,
+  describePresenceParts,
   PRESENCE_OPERATORS,
 } from './presence.js';
 
@@ -161,26 +161,38 @@ export const elementMatchFieldKind: FieldKind = {
   },
 
   describe({ leaf, field, kinds }) {
-    const presence = describePresence(leaf.operator);
-    if (presence) return `${field.label} ${presence}`;
-    if (leaf.operator === 'IS_EMPTY') return `${field.label} has no entries`;
+    const presence = describePresenceParts(leaf.operator, field);
+    if (presence) return presence;
+    if (leaf.operator === 'IS_EMPTY')
+      return {
+        text: `${field.label} has no entries`,
+        value: { kind: 'none' },
+      };
 
     // A value that is not a condition describes nothing: reading it as an
     // empty predicate would announce "has any entry", a condition nobody
     // wrote and the query does not carry.
     const value = leaf.value;
-    if (!isTree(value)) return field.label;
+    if (!isTree(value)) return { text: field.label, value: { kind: 'blank' } };
 
-    const inner = describeFilter(
+    const items = describeFilter(
       elementFields(field),
       readValue<FilterTree>(value),
       kinds,
-    ).map(item => item.text);
+    );
     // The predicate's own operator, as `describeFilter` reads a group's:
     // joining an `or` with "and" states the opposite of what is in force.
-    return inner.length === 0
-      ? `${field.label} has any entry`
-      : `${field.label} has an entry where ${inner.join(groupJoinWord(value.op))}`;
+    return {
+      text:
+        items.length === 0
+          ? `${field.label} has any entry`
+          : `${field.label} has an entry where ${items.map(item => item.text).join(groupJoinWord(value.op))}`,
+      // The predicate is not a value to show beside the operator; it is the
+      // conditions in `items`, which the bar reads out in its own wording.
+      value: { kind: 'none' },
+      items,
+      group: value.op,
+    };
   },
 };
 

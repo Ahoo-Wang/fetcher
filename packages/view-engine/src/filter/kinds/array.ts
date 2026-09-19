@@ -16,7 +16,7 @@ import { readValue, type FieldKind } from '../fieldKind.js';
 import { labelOf, validateOptionValues } from './options.js';
 import {
   compilePresence,
-  describePresence,
+  describePresenceParts,
   isPresenceOperator,
   PRESENCE_OPERATORS,
 } from './presence.js';
@@ -93,21 +93,28 @@ export const arrayFieldKind: FieldKind = {
   },
 
   describe({ leaf, field }) {
-    const presence = describePresence(leaf.operator);
-    if (presence) return `${field.label} ${presence}`;
-    if (leaf.operator === 'IS_EMPTY') return `${field.label} has no entries`;
+    const presence = describePresenceParts(leaf.operator, field);
+    if (presence) return presence;
+    if (leaf.operator === 'IS_EMPTY')
+      return {
+        text: `${field.label} has no entries`,
+        value: { kind: 'none' },
+      };
     // Entries this kind cannot read are no condition to report.
-    if (!Array.isArray(leaf.value)) return field.label;
+    if (!Array.isArray(leaf.value))
+      return { text: field.label, value: { kind: 'blank' } };
 
-    const entries = readValue<ArrayFilterValue>(leaf.value).map(entry =>
-      labelOf(field.options, entry),
-    );
+    const values = readValue<ArrayFilterValue>(leaf.value);
+    const labels = values.map(entry => labelOf(field.options, entry));
     const relation =
       leaf.operator === 'CONTAINS_ALL'
         ? 'has all of'
         : leaf.operator === 'NOT_IN'
           ? 'has none of'
           : 'has any of';
-    return `${field.label} ${relation} ${entries.join(', ')}`;
+    return {
+      text: `${field.label} ${relation} ${labels.join(', ')}`,
+      value: { kind: 'list', values, labels },
+    };
   },
 };

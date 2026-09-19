@@ -14,8 +14,15 @@
 import type {
   AnalysisDateUnit,
   FieldOption,
+  FilterGroupOperator,
+  FilterOperatorName,
   NumberFormat,
 } from '../model/index.js';
+import {
+  isGroupItem,
+  type FilterSummaryItem,
+  type FilterSummaryValue,
+} from '../filter/index.js';
 import type { MessageFormatters } from './MessagesProvider.js';
 
 /** Where a value is shown: the language, and the zone its times read in. */
@@ -156,6 +163,151 @@ export function valueText(
     return messages.label(value ? 'label.value.yes' : 'label.value.no');
   if (typeof value === 'string') return value;
   return JSON.stringify(value) ?? '';
+}
+
+/**
+ * One applied condition as the bar says it, in the wording in force.
+ *
+ * `FilterSummaryItem.text` is the kind's own English line and stays what a
+ * host reading it gets; this is what the badge shows. The kernel hands over
+ * parts — a field, an operator and a closed union of value shapes — and the
+ * words come from the catalogue, the values from the rules above: option
+ * labels the kind already resolved, dates in the surface's language and zone,
+ * numbers in their field's format.
+ */
+export function summaryText(
+  item: FilterSummaryItem,
+  messages: MessageFormatters,
+  context: DisplayContext,
+): string {
+  if (isGroupItem(item))
+    return groupText(item.group ?? 'and', item.items ?? [], messages, context);
+
+  const said: string[] = [];
+  if (item.label !== undefined) said.push(item.label);
+
+  // A predicate reads its own conditions out where a value would stand.
+  if (item.items !== undefined) {
+    if (item.items.length === 0) {
+      said.push(messages.label('label.filter.any-entry'));
+      return said.join(' ');
+    }
+    if (item.operator) said.push(operatorWord(item.operator, messages));
+    said.push(groupText(item.group ?? 'and', item.items, messages, context));
+    return said.join(' ');
+  }
+
+  // A value this kind cannot read is no condition to report, so the field's
+  // name is all that is true of it — unless the field itself is gone, where
+  // the question stands and only its answer is unreadable.
+  const value = item.value;
+  if (value === undefined || (value.kind === 'blank' && !item.unresolved))
+    return said.join(' ');
+
+  if (item.operator) said.push(operatorWord(item.operator, messages));
+  const shown = summaryValue(value, item, messages, context);
+  if (shown !== '') said.push(shown);
+  return said.join(' ');
+}
+
+/**
+ * The conditions of one group, joined and prefixed by the word for its own
+ * operator. A group inside a group is parenthesised, as it is in `text`.
+ *
+ * One condition under "all of" is said plainly: the word adds nothing to it.
+ * Every other operator changes what the conditions mean together — "none of"
+ * negates even a lone one — so it is always said.
+ */
+function groupText(
+  op: FilterGroupOperator,
+  items: readonly FilterSummaryItem[],
+  messages: MessageFormatters,
+  context: DisplayContext,
+): string {
+  const parts = items.map(child =>
+    isGroupItem(child)
+      ? `(${summaryText(child, messages, context)})`
+      : summaryText(child, messages, context),
+  );
+  if (parts.length === 1 && op === 'and') return parts[0];
+  const joined = parts.join(messages.label('label.filter.join'));
+  return `${groupWord(op, messages)} ${joined}`;
+}
+
+function groupWord(
+  op: FilterGroupOperator,
+  messages: MessageFormatters,
+): string {
+  if (op === 'or') return messages.label('label.filter.any-of');
+  if (op === 'nor') return messages.label('label.filter.none-of');
+  return messages.label('label.filter.all-of');
+}
+
+/**
+ * The catalogue names every `FilterOperator`; the derived spelling is the
+ * fallback for one a host's own kind offers, as it is in the condition pill.
+ */
+function operatorWord(
+  operator: FilterOperatorName,
+  messages: MessageFormatters,
+): string {
+  return messages.label(
+    `label.operator.${operator}`,
+    undefined,
+    operator.split('_').join(' ').toLowerCase(),
+  );
+}
+
+function summaryValue(
+  value: FilterSummaryValue,
+  item: FilterSummaryItem,
+  messages: MessageFormatters,
+  context: DisplayContext,
+): string {
+  switch (value.kind) {
+    // The operator is the whole condition, or there is nothing readable
+    // beside it; either way it has already been said.
+    case 'none':
+    case 'blank':
+      return '';
+    case 'text':
+      return value.label ?? asField(value.value, item, messages, context);
+    case 'list':
+      return value.values
+        .map(
+          (raw, index) =>
+            value.labels?.[index] ?? asField(raw, item, messages, context),
+        )
+        .join(messages.label('label.filter.join'));
+    case 'range': {
+      const from = asField(value.from, item, messages, context);
+      return value.to === undefined
+        ? from
+        : `${from} ~ ${asField(value.to, item, messages, context)}`;
+    }
+    case 'relative': {
+      const side = messages.label(
+        value.direction === 'future' ? 'label.date.future' : 'label.date.past',
+      );
+      const unit = messages.label(`label.relative.unit.${value.unit}`);
+      return `${side} ${valueText(value.amount, messages)} ${unit}`;
+    }
+    case 'preset':
+      return messages.label(`label.relative.preset.${value.preset}`);
+  }
+}
+
+/** One raw value of a condition, shown the way its field shows it. */
+function asField(
+  value: string | number | boolean,
+  item: FilterSummaryItem,
+  messages: MessageFormatters,
+  context: DisplayContext,
+): string {
+  return (
+    displayValue(value, { kind: item.kind }, context) ??
+    valueText(value, messages, item.numberFormat)
+  );
 }
 
 /** The label of each value an enum holds; `undefined` when none is known. */

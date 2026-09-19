@@ -1188,6 +1188,167 @@ describe('describeFilter', () => {
   });
 });
 
+/**
+ * The parts beside `text`.
+ *
+ * The summary used to be one English sentence per condition, concatenated
+ * inside each kind — raw operator names, "is empty", "on or before" — so the
+ * most visible line of the result area was the one line no catalogue could
+ * reach. Every kind now hands over the field, the operator and a value in a
+ * closed union, and `/ui` turns those into words; `text` stays the English
+ * reading, because a host may consume it as it stands.
+ */
+describe('describeFilter parts', () => {
+  const partsOf = (leaf: FilterTree['children'][number]) =>
+    describeFilter(fields, tree(leaf), builtinFieldKinds)[0];
+
+  it('names the field and its kind beside the operator', () => {
+    expect(
+      partsOf({ field: 'amount', operator: 'GT', value: 9 }),
+    ).toMatchObject({
+      field: 'amount',
+      label: 'Amount',
+      kind: 'number',
+      operator: 'GT',
+      value: { kind: 'text', value: 9 },
+    });
+  });
+
+  it('carries a number range as two bounds', () => {
+    expect(
+      partsOf({ field: 'amount', operator: 'BETWEEN', value: [1, 9] }).value,
+    ).toEqual({ kind: 'range', from: 1, to: 9 });
+  });
+
+  it('carries the raw codes an enum holds beside the labels it resolved', () => {
+    expect(
+      partsOf({ field: 'status', operator: 'IN', value: ['PENDING'] }).value,
+    ).toEqual({ kind: 'list', values: ['PENDING'], labels: ['Pending'] });
+  });
+
+  it('carries a reference as its ids and the labels stored with them', () => {
+    expect(
+      partsOf({
+        field: 'customer',
+        operator: 'IN',
+        value: { items: [{ id: 'c-1', label: 'Acme' }] } as never,
+      }).value,
+    ).toEqual({ kind: 'list', values: ['c-1'], labels: ['Acme'] });
+  });
+
+  it('says a presence question has no value beside its operator', () => {
+    expect(
+      partsOf({ field: 'amount', operator: 'IS_NULL', value: null as never }),
+    ).toMatchObject({ operator: 'IS_NULL', value: { kind: 'none' } });
+  });
+
+  it('keeps a relative window relative, with the side of now it lies on', () => {
+    expect(
+      partsOf({
+        field: 'createdAt',
+        operator: 'BETWEEN',
+        value: { type: 'relative', amount: 7, unit: 'day' } as never,
+      }).value,
+    ).toEqual({ kind: 'relative', amount: 7, unit: 'day', direction: 'past' });
+  });
+
+  it('keeps a named period a key, for the catalogue to name', () => {
+    expect(
+      partsOf({
+        field: 'createdAt',
+        operator: 'LTE',
+        value: { type: 'preset', preset: 'nextQuarter' } as never,
+      }).value,
+    ).toEqual({ kind: 'preset', preset: 'nextQuarter' });
+  });
+
+  it('gives a single bound the one date the operator asks for', () => {
+    const range = { type: 'absolute', from: '2026-01-01', to: '2026-01-31' };
+    const at = (operator: string) =>
+      partsOf({ field: 'createdAt', operator, value: range } as never).value;
+
+    expect(at('GTE')).toEqual({ kind: 'text', value: '2026-01-01' });
+    expect(at('LTE')).toEqual({ kind: 'text', value: '2026-01-31' });
+    expect(at('BETWEEN')).toEqual({
+      kind: 'range',
+      from: '2026-01-01',
+      to: '2026-01-31',
+    });
+  });
+
+  it('says a value the kind cannot read is blank, not a reading of it', () => {
+    // `status` is an enum, whose operators take a list.
+    expect(
+      partsOf({ field: 'status', operator: 'EQ', value: 'PENDING' }).value,
+    ).toEqual({ kind: 'blank' });
+  });
+
+  it('keeps the question a vanished field was asked under', () => {
+    // Nothing is known about the value; the operator still is, and a bar
+    // that dropped it would say less than the one line it replaced.
+    expect(
+      partsOf({ field: 'gone', operator: 'EQ', value: 'x' }),
+    ).toMatchObject({
+      operator: 'EQ',
+      value: { kind: 'blank' },
+      unresolved: true,
+    });
+  });
+
+  it('gives a group its own conditions, under its own operator', () => {
+    const items = describeFilter(
+      fields,
+      {
+        op: 'or',
+        children: [
+          { field: 'id', operator: 'EQ', value: 'o-1' },
+          { field: 'amount', operator: 'GT', value: 9 },
+        ],
+      },
+      builtinFieldKinds,
+    );
+
+    expect(items[0].group).toBe('or');
+    expect(items[0].items?.map(item => item.field)).toEqual(['id', 'amount']);
+    // A group is not a condition: it names no field and has no value.
+    expect(items[0].field).toBeUndefined();
+    expect(items[0].value).toBeUndefined();
+  });
+
+  it('gives a predicate the conditions inside it and the operator joining them', () => {
+    const withItems: FieldDefinition[] = [
+      {
+        name: 'items',
+        label: 'Items',
+        kind: 'elementMatch',
+        elements: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+      },
+    ];
+    const item = describeFilter(
+      withItems,
+      tree({
+        field: 'items',
+        operator: 'ELEMENT_MATCH',
+        value: {
+          op: 'or',
+          children: [{ field: 'items.sku', operator: 'EQ', value: 'A' }],
+        } as never,
+      }),
+      builtinFieldKinds,
+    )[0];
+
+    expect(item).toMatchObject({
+      field: 'items',
+      operator: 'ELEMENT_MATCH',
+      value: { kind: 'none' },
+      group: 'or',
+    });
+    expect(item.items?.map(inner => inner.text)).toEqual(['SKU EQ A']);
+    // And the English line is what it always was.
+    expect(item.text).toBe('Items has an entry where SKU EQ A');
+  });
+});
+
 describe('the field kind registry', () => {
   it('ships the document-field kinds and the metadata kinds', () => {
     expect([...builtinFieldKinds.keys()].sort()).toEqual(
@@ -1223,7 +1384,10 @@ describe('the field kind registry', () => {
         value: leaf.value as string,
       }),
       editor: () => ({ input: 'text' }),
-      describe: ({ leaf, field }) => `${field.label} = ${String(leaf.value)}`,
+      describe: ({ leaf, field }) => ({
+        text: `${field.label} = ${String(leaf.value)}`,
+        value: { kind: 'text', value: String(leaf.value) },
+      }),
     };
 
     const kinds = withFieldKinds(builtinFieldKinds, [colour]);
