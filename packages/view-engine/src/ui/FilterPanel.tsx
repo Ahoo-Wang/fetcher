@@ -45,6 +45,7 @@ import {
 } from './components/select.js';
 import { ToggleGroup, ToggleGroupItem } from './components/toggle-group.js';
 import { SelectContent } from './popups.js';
+import { operatorKey } from './messages.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { FilterValueEditor } from './FilterValueEditor.js';
 
@@ -490,7 +491,7 @@ function Condition({
     // spelling, which reads well enough for `EQ` and `BETWEEN` and not at all
     // for `IDS` or `OWNER_ID`.
     label: messages.label(
-      `label.operator.${operator}`,
+      operatorKey(operator),
       undefined,
       operator.split('_').join(' ').toLowerCase(),
     ),

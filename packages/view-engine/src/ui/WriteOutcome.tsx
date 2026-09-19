@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from './components/dialog.js';
 import { describeConfig } from './describeConfig.js';
+import type { MessageKey } from './messages.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { DialogContent } from './popups.js';
 import { SaveAsDialog } from './SaveAsDialog.js';
@@ -404,7 +405,7 @@ function ConfigSide({
   titleKey,
   config,
 }: {
-  titleKey: string;
+  titleKey: MessageKey;
   config: ViewConfig | null;
 }) {
   const messages = useViewMessages();

@@ -24,6 +24,7 @@ import type {
 } from '../src/react/index.js';
 import {
   defaultMessages,
+  en,
   FilterValueEditor,
   formatIssue,
   formatIssues,
@@ -33,6 +34,7 @@ import {
   useViewMessages,
   ViewList,
   ViewSurface,
+  zhCN,
 } from '../src/ui/index.js';
 
 afterEach(cleanup);
@@ -76,6 +78,68 @@ describe('the message catalogue', () => {
     expect(defaultMessages['record.summary.unsupported']).toBe(
       '{field} does not offer the {fn} summary.',
     );
+  });
+
+  it('is what the default wording is', () => {
+    // The split is by prefix family; the English catalogue is only the
+    // composition of those files, and nothing else may slip in.
+    expect(defaultMessages).toBe(en);
+  });
+});
+
+/**
+ * The second catalogue, which is what makes the first one a catalogue rather
+ * than a habit. `zhCN` is typed `Record<MessageKey, string>`, so a missing or
+ * misspelt key already fails `tsc`; these two say the same in the suite, and
+ * catch the half of it a type cannot see — a sentence that dropped a value.
+ */
+describe('the Chinese catalogue', () => {
+  it('names exactly the keys the English one does', () => {
+    expect(Object.keys(zhCN).sort()).toEqual(Object.keys(en).sort());
+  });
+
+  it('keeps every placeholder its English sentence carries', () => {
+    const placeholders = (sentence: string): string[] =>
+      [...sentence.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort();
+
+    const dropped = Object.entries(en).flatMap(([key, english]) => {
+      const mine = new Set(placeholders(zhCN[key] ?? ''));
+      const lost = placeholders(english).filter(name => !mine.has(name));
+      return lost.length === 0 ? [] : [`${key}: ${lost.join(', ')}`];
+    });
+
+    expect(dropped).toEqual([]);
+  });
+
+  it('is translated, not copied', () => {
+    expect(zhCN['label.filter.apply']).toBe('应用');
+    expect(zhCN['label.save.save-as']).toBe('另存为');
+    expect(zhCN['record.summary.unsupported']).toBe(
+      '{field} 不提供 {fn} 汇总。',
+    );
+  });
+
+  it('serves a component through the provider', () => {
+    render(
+      <MessagesProvider messages={zhCN}>
+        <Probe />
+      </MessagesProvider>,
+    );
+
+    expect(screen.getByText('还没有面板')).toBeTruthy();
+  });
+
+  it('is a base a host composes its own wording onto', () => {
+    const { result } = renderHook(() => useViewMessages(), {
+      wrapper: ({ children }) => (
+        <MessagesProvider messages={{ ...zhCN, 'label.filter.apply': '确定' }}>
+          {children}
+        </MessagesProvider>
+      ),
+    });
+
+    expect(result.current.label('label.filter.apply')).toBe('确定');
+    expect(result.current.label('label.filter.clear')).toBe('清空');
   });
 });
 
