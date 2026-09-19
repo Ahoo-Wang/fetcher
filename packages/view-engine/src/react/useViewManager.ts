@@ -11,12 +11,14 @@
  * limitations under the License.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   audienceOf,
   isSystemScope,
+  SYSTEM_INSTANCE_ID_PREFIX,
+  SYSTEM_INSTANCE_ID_SEPARATOR,
   type Issue,
-  type ViewInstanceSummary,
+  type ViewAudience,
   type ViewPreferences,
 } from '../model/index.js';
 import {
@@ -36,8 +38,14 @@ import type { ViewListState } from './useViewList.js';
  * Both are one preference record, so both contend for one slot and share one
  * outcome: there is no instance to hang them off, and a row cannot be asked
  * to recover a write that was never about it.
+ *
+ * It shares the key space with instance ids, so it is taken from the one
+ * namespace a `ViewStore` may not issue into — the `system:` prefix
+ * `isSystemInstanceId` reserves — rather than from a bare word a store could
+ * hand out as an id and collide with.
  */
-export const PREFERENCES_KEY = 'preferences';
+export const PREFERENCES_KEY =
+  `${SYSTEM_INSTANCE_ID_PREFIX}${SYSTEM_INSTANCE_ID_SEPARATOR}preferences` as const;
 
 export type MoveDirection = 'up' | 'down';
 
@@ -69,7 +77,12 @@ export interface ViewManagerController {
    * a write that changes nothing the user can see.
    */
   canMove(id: string, direction: MoveDirection): boolean;
-  /** Unresolved outcomes, by instance id or {@link PREFERENCES_KEY}. */
+  /**
+   * Unresolved outcomes, by instance id or {@link PREFERENCES_KEY}. Empty
+   * again once `definitionId` or `engine` changes: they answer for the rows
+   * of the definition they were raised under, not for whichever list is on
+   * screen now.
+   */
   outcomes: ReadonlyMap<string, WriteState>;
   retry(key: string): Promise<boolean>;
   abandon(key: string): void;
@@ -85,7 +98,11 @@ export interface ViewManagerController {
   resubmit(key: string): Promise<boolean>;
   /** Whether {@link resubmit} has an intent to put again under this key. */
   canResubmit(key: string): boolean;
-  /** The key of the write in flight, so one row alone shows progress. */
+  /**
+   * The key of the write in flight, so one row alone shows progress. Commands
+   * run one at a time, so there is never a second write for this one slot to
+   * be wrong about.
+   */
   pending: string | null;
   can: ViewManagerAbilities;
 }
@@ -120,10 +137,89 @@ const UNSENT = '';
 
 const NO_OUTCOMES: ReadonlyMap<string, Outcome> = new Map();
 
+/**
+ * What the commands have produced, tagged with the inputs they were raised
+ * under.
+ *
+ * The tag is the derivation `useViewList` makes — "which request does this
+ * answer belong to", asked of a command rather than of a load. A workbench
+ * swaps `definitionId` or `engine` while a write is in flight, and without
+ * the tag the rows of the definition just left keep their outcomes and their
+ * progress against a list that no longer holds them, and a completion from
+ * the old inputs repopulates the new one.
+ */
+interface ManagerState {
+  /** Null only before the first command; nothing is tagged with it. */
+  engine: ViewEngine | null;
+  definitionId: string;
+  outcomes: ReadonlyMap<string, Outcome>;
+  /** The key of the one write in flight; see `pending`. */
+  pending: string | null;
+}
+
+/** State belonging to no inputs, which is also how other inputs' state reads. */
+const NOTHING_MANAGED: ManagerState = {
+  engine: null,
+  definitionId: '',
+  outcomes: NO_OUTCOMES,
+  pending: null,
+};
+
 const NO_INSTANCE_WRITES: ManagedInstanceAbilities = {
   rename: false,
   delete: false,
 };
+
+/**
+ * The serialization queue, tagged with the inputs whose commands are on it.
+ *
+ * Chaining is only right among commands that answer for the same list: a
+ * workbench that swaps `definitionId` or `engine` while a write hangs would
+ * otherwise queue the new definition's first command behind it, and the row
+ * the user just clicked would sit there showing nothing.
+ */
+interface CommandQueue {
+  engine: ViewEngine;
+  definitionId: string;
+  chain: Promise<boolean>;
+}
+
+/**
+ * The order a queued move computed, while the list it was computed from is
+ * still a reload behind it.
+ *
+ * `base` is the rendered order it started from: once the list is no longer
+ * that, the reload has landed and the rendered order is the truth again.
+ */
+interface OptimisticOrder {
+  engine: ViewEngine;
+  definitionId: string;
+  base: readonly string[];
+  order: readonly string[];
+}
+
+/**
+ * What a command tells the queue about itself, beyond what it writes.
+ *
+ * Both halves arrived with a different question — one keeps an intent alive
+ * across a reload, the other decides whether an unsettled key accepts this
+ * command at all — and they are independent: `resubmit` carries an intent and
+ * is still an ordinary write, so the `unknown` guard applies to it.
+ */
+interface RunOptions {
+  /**
+   * Kept with the outcome so the same intent can be put again later. Only
+   * the preference commands pass one: everything else recovers through its
+   * handle, which addresses the write the store already has.
+   */
+  again?: () => Promise<unknown>;
+  /** A replay or a conflict choice, which is the one thing an `unknown` outcome accepts. */
+  recovery?: boolean;
+}
+
+function sameOrder(one: readonly string[], other: readonly string[]): boolean {
+  return one.length === other.length && one.every((id, at) => id === other[at]);
+}
 
 /**
  * A refusal, in the shape the row already renders. `ViewCommandError` means
@@ -152,22 +248,74 @@ export function useViewManager(
   // Kept here rather than read back from `engine.pendingWrites()`: that map is
   // keyed by request id and says nothing about which row raised a write, and
   // the error each command rejects with already carries both halves.
-  const [outcomes, setOutcomes] =
-    useState<ReadonlyMap<string, Outcome>>(NO_OUTCOMES);
-  const [pending, setPending] = useState<string | null>(null);
+  const [state, setState] = useState<ManagerState>(NOTHING_MANAGED);
+  // The same state, readable between renders. A queued command decides
+  // whether it may run at all from what the command before it recorded, and
+  // no render has necessarily happened in between.
+  const live = useRef<ManagerState>(NOTHING_MANAGED);
+  // The write in flight, so the next one waits for it rather than racing it.
+  const queue = useRef<CommandQueue | null>(null);
+  // What the moves already queued have submitted; see `move`.
+  const optimistic = useRef<OptimisticOrder | null>(null);
   const { items, permissions, preferences, reload } = list;
 
-  const record = useCallback((key: string, outcome: Outcome | null): void => {
-    setOutcomes(current => {
-      if (outcome === null && !current.has(key)) return current;
-      const next = new Map(current);
-      if (outcome) next.set(key, outcome);
-      else next.delete(key);
-      return next;
-    });
+  // The order on screen, and the group each row sits in. A move reasons over
+  // ids alone — the order a queued one computed has nothing but ids — so the
+  // audience that decides which neighbour it may swap with is looked up here
+  // rather than carried along.
+  const rendered = useMemo(() => items.map(item => item.id), [items]);
+  const audiences = useMemo(
+    () =>
+      new Map<string, ViewAudience>(
+        items.map(item => [item.id, audienceOf(item.scope)]),
+      ),
+    [items],
+  );
+
+  // State raised under other inputs is about rows this render does not list,
+  // so it reads as nothing rather than being shown against these ones.
+  const own =
+    state.engine === engine && state.definitionId === definitionId
+      ? state
+      : NOTHING_MANAGED;
+  const outcomes = own.outcomes;
+
+  const commit = useCallback((next: ManagerState): void => {
+    live.current = next;
+    setState(next);
   }, []);
 
-  const run = useCallback(
+  const record = useCallback(
+    (key: string, outcome: Outcome | null): void => {
+      const current = live.current;
+      // A completion from inputs the hook has moved on from answers for a
+      // row the list no longer holds; it must not land on the new one.
+      if (current.engine !== engine || current.definitionId !== definitionId)
+        return;
+      if (outcome === null && !current.outcomes.has(key)) return;
+      const next = new Map(current.outcomes);
+      if (outcome) next.set(key, outcome);
+      else next.delete(key);
+      commit({ ...current, outcomes: next });
+    },
+    [commit, definitionId, engine],
+  );
+
+  /**
+   * The outcome a command would be landing on, or null when the state on
+   * hand was raised under other inputs and says nothing about this key.
+   */
+  const held = useCallback(
+    (key: string): Outcome | null => {
+      const current = live.current;
+      if (current.engine !== engine || current.definitionId !== definitionId)
+        return null;
+      return current.outcomes.get(key) ?? null;
+    },
+    [definitionId, engine],
+  );
+
+  const execute = useCallback(
     async (
       key: string,
       intent: WritePayload,
@@ -180,7 +328,14 @@ export function useViewManager(
        */
       again?: () => Promise<unknown>,
     ): Promise<boolean> => {
-      setPending(key);
+      // Claiming the slot also tags it: a command under new inputs starts
+      // from nothing rather than inheriting the outcomes of the old ones.
+      const current = live.current;
+      commit(
+        current.engine === engine && current.definitionId === definitionId
+          ? { ...current, pending: key }
+          : { engine, definitionId, outcomes: NO_OUTCOMES, pending: key },
+      );
       try {
         await command();
         // It landed: nothing is left to recover, and the list it changed —
@@ -189,24 +344,88 @@ export function useViewManager(
         reload();
         return true;
       } catch (caught) {
-        record(
-          key,
-          isViewWriteError(caught)
-            ? { state: caught.state, handle: caught.handle, again }
-            : {
-                state: refused(intent, toIssue(caught, code)),
-                handle: null,
-                again,
-              },
-        );
+        if (isViewWriteError(caught)) {
+          record(key, { state: caught.state, handle: caught.handle, again });
+        } else if (!held(key)?.handle) {
+          // A refusal never left, so it has nothing to replay. Letting it
+          // take the place of an outcome that still holds a handle would
+          // drop the only way to retry or abandon that write — which is
+          // exactly what the engine refusing a second command against an
+          // `unknown` outcome would otherwise do to it. The intent still
+          // rides along: a refusal is the user's command all the same, and
+          // `resubmit` is how a preference write is put again.
+          record(key, {
+            state: refused(intent, toIssue(caught, code)),
+            handle: null,
+            again,
+          });
+        }
         return false;
       } finally {
-        // Another key's command may have taken the slot while this one was in
-        // flight; the one that holds it is the one that clears it.
-        setPending(current => (current === key ? null : current));
+        const settled = live.current;
+        if (
+          settled.engine === engine &&
+          settled.definitionId === definitionId &&
+          settled.pending === key
+        )
+          commit({ ...settled, pending: null });
       }
     },
-    [record, reload],
+    [commit, definitionId, engine, held, record, reload],
+  );
+
+  /**
+   * One write at a time, in the order the clicks came.
+   *
+   * Two rows deleted in quick succession are two writes against one list and
+   * one `pending` slot: run together, the second one's completion clears the
+   * slot while the first is still going, and the first row stops showing
+   * progress it is still making. Chaining also keeps the reload each landing
+   * triggers from reading a list the other write is halfway through. An idle
+   * queue starts now rather than a microtask later, so the row the user just
+   * clicked shows progress in that same event.
+   */
+  const run = useCallback(
+    (
+      key: string,
+      intent: WritePayload,
+      code: string,
+      command: () => Promise<unknown>,
+      { again, recovery = false }: RunOptions = {},
+    ): Promise<boolean> => {
+      // An `unknown` outcome is a write that may have landed, so the engine
+      // refuses a second one against the same target. Turning it away here
+      // keeps it off the queue entirely: it would only be refused, and the
+      // refusal would say nothing the row does not already show while the
+      // row's own retry and abandon go on being the way out.
+      const blocked = () => !recovery && held(key)?.state.kind === 'unknown';
+      if (blocked()) return Promise.resolve(false);
+      // Checked again at the front of the queue: the command ahead may be
+      // the one that turns this key `unknown`.
+      const start = () =>
+        blocked()
+          ? Promise.resolve(false)
+          : execute(key, intent, code, command, again);
+      const ahead = queue.current;
+      // Only the queue these inputs put there. One belonging to a definition
+      // or an engine the hook has moved on from settles on its own, and this
+      // command starts now rather than behind a write nobody is watching.
+      const mine =
+        ahead && ahead.engine === engine && ahead.definitionId === definitionId
+          ? ahead.chain
+          : null;
+      // `execute` resolves whatever happened, so the rejection arm is only
+      // there to keep one broken link from stalling the queue for good.
+      const landed = mine === null ? start() : mine.then(start, start);
+      const queued: CommandQueue = { engine, definitionId, chain: landed };
+      queue.current = queued;
+      const release = () => {
+        if (queue.current === queued) queue.current = null;
+      };
+      void landed.then(release, release);
+      return landed;
+    },
+    [definitionId, engine, execute, held],
   );
 
   /**
@@ -250,44 +469,83 @@ export function useViewManager(
   );
 
   const setDefault = useCallback(
-    (id: string | null) =>
-      run(
+    (id: string | null) => {
+      // The same thunk twice over: once as the command, once as the intent
+      // kept for a `resubmit` after a reload settled a conflict.
+      const put = () => engine.setDefault(definitionId, id);
+      return run(
         PREFERENCES_KEY,
         preferencesIntent({ defaultInstanceId: id }),
         'view.preferences.failed',
-        () => engine.setDefault(definitionId, id),
-        () => engine.setDefault(definitionId, id),
-      ),
+        put,
+        { again: put },
+      );
+    },
     [definitionId, engine, preferencesIntent, run],
   );
 
+  // The arrow is disabled from what the user is looking at, so it reads the
+  // rendered order alone: a queued move's order is a ref, and reading it here
+  // would make this answer depend on something no render can see.
   const canMove = useCallback(
     (id: string, direction: MoveDirection) =>
-      neighbourOf(items, id, direction) >= 0,
-    [items],
+      neighbourOf(rendered, audiences, id, direction) >= 0,
+    [audiences, rendered],
   );
 
   const move = useCallback(
     (id: string, direction: MoveDirection) => {
-      const order = items.map(item => item.id);
+      const ahead = optimistic.current;
+      // Moves are serialized and the list only catches up on the reload a
+      // landing triggers, so two quick moves of one row both read the same
+      // rendered order and submit the same result twice. The order the queued
+      // move computed stands in for the list until the list is no longer the
+      // one it was computed from — after which the reload has landed and the
+      // rendered order is the truth again.
+      const order = [
+        ...(ahead &&
+        ahead.engine === engine &&
+        ahead.definitionId === definitionId &&
+        sameOrder(ahead.base, rendered)
+          ? ahead.order
+          : rendered),
+      ];
       const from = order.indexOf(id);
-      const to = neighbourOf(items, id, direction);
+      // Over the same order the swap is applied to, so the neighbour a queued
+      // move already put this row beside is the one it is measured against
+      // rather than the one still on screen.
+      const to = neighbourOf(order, audiences, id, direction);
       // A row at either end of its own audience has nowhere to go, and a row
       // the list no longer holds cannot be placed. Submitting the order
       // unchanged would still cost a revision and still be able to conflict.
       if (from < 0 || to < 0) return Promise.resolve(false);
       [order[from], order[to]] = [order[to], order[from]];
-      return run(
+      const submitted: OptimisticOrder = {
+        engine,
+        definitionId,
+        base: rendered,
+        order,
+      };
+      optimistic.current = submitted;
+      // The whole visible order goes, not the one pair that moved: the
+      // server holds a list, not a diff.
+      const put = () => engine.reorder(definitionId, order);
+      const landed = run(
         PREFERENCES_KEY,
         preferencesIntent({ order }),
         'view.preferences.failed',
-        // The whole visible order goes, not the one pair that moved: the
-        // server holds a list, not a diff.
-        () => engine.reorder(definitionId, order),
-        () => engine.reorder(definitionId, order),
+        put,
+        { again: put },
       );
+      void landed.then(ok => {
+        // A move that never landed leaves the list where it was, so the
+        // order it computed must go with it rather than stand in for a list
+        // that was never rearranged.
+        if (!ok && optimistic.current === submitted) optimistic.current = null;
+      });
+      return landed;
     },
-    [definitionId, engine, items, preferencesIntent, run],
+    [audiences, definitionId, engine, preferencesIntent, rendered, run],
   );
 
   const retry = useCallback(
@@ -297,8 +555,12 @@ export function useViewManager(
       // longer the engine's to answer for.
       if (!outcome?.handle) return Promise.resolve(false);
       const { handle, state } = outcome;
-      return run(key, state.payload, 'view.retry.failed', () =>
-        engine.retryWrite(handle),
+      return run(
+        key,
+        state.payload,
+        'view.retry.failed',
+        () => engine.retryWrite(handle),
+        { recovery: true },
       );
     },
     [engine, outcomes, run],
@@ -326,8 +588,12 @@ export function useViewManager(
       const outcome = outcomes.get(key);
       if (!outcome?.handle || outcome.state.kind !== 'conflict') return false;
       const { handle, state } = outcome;
-      const landed = await run(key, state.payload, 'view.resolve.failed', () =>
-        engine.resolveConflict(handle, choice),
+      const landed = await run(
+        key,
+        state.payload,
+        'view.resolve.failed',
+        () => engine.resolveConflict(handle, choice),
+        { recovery: true },
       );
       // Reloading a preference conflict is not the end of it (design §7.3):
       // the stored order and default are read again, and the user's own
@@ -351,7 +617,12 @@ export function useViewManager(
       if (!outcome || !kept(outcome)) return Promise.resolve(false);
       const { again, state } = outcome;
       if (!again) return Promise.resolve(false);
-      return run(key, state.payload, 'view.preferences.failed', again, again);
+      // Not a recovery: the engine settled the conflict on the reload, so
+      // this is an ordinary new write and the `unknown` guard applies to it
+      // exactly as it does to a first attempt.
+      return run(key, state.payload, 'view.preferences.failed', again, {
+        again,
+      });
     },
     [outcomes, run],
   );
@@ -395,7 +666,7 @@ export function useViewManager(
     resolveConflict,
     resubmit,
     canResubmit,
-    pending,
+    pending: own.pending,
     can,
   };
 }
@@ -423,17 +694,23 @@ function kept(outcome: Outcome | undefined): boolean {
  * views above shared ones whatever order is stored, so the row above a
  * shared view on screen may be a personal one, and swapping the two would
  * store a new order, spend a revision and move nothing anybody can see.
+ *
+ * It walks an order of ids rather than the summaries themselves, because the
+ * order a queued move computed is the one the next move has to reason over
+ * while a row's audience is the same wherever that order puts it. Both
+ * indices a swap needs then come from the same list.
  */
 function neighbourOf(
-  items: readonly ViewInstanceSummary[],
+  order: readonly string[],
+  audiences: ReadonlyMap<string, ViewAudience>,
   id: string,
   direction: MoveDirection,
 ): number {
-  const from = items.findIndex(item => item.id === id);
-  if (from < 0) return -1;
-  const audience = audienceOf(items[from].scope);
+  const from = order.indexOf(id);
+  const audience = from < 0 ? undefined : audiences.get(id);
+  if (audience === undefined) return -1;
   const step = direction === 'up' ? -1 : 1;
-  for (let at = from + step; at >= 0 && at < items.length; at += step)
-    if (audienceOf(items[at].scope) === audience) return at;
+  for (let at = from + step; at >= 0 && at < order.length; at += step)
+    if (audiences.get(order[at]) === audience) return at;
   return -1;
 }

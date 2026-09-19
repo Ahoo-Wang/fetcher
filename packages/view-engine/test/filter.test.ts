@@ -1441,6 +1441,53 @@ describe('node and tree comparison', () => {
     ).toBe(false);
     expect(sameFilterTree(tree, emptyFilter())).toBe(false);
   });
+
+  /**
+   * The editor asks what changed on every render, and it asks it of a
+   * *draft* — something `validateFilter` has not admitted and may never
+   * admit. A recursive comparison would exhaust the stack on one, which is a
+   * crash during render rather than a finding.
+   */
+  it('answers a tree deeper than any stack without throwing', () => {
+    const deep = (depth: number): FilterTree => {
+      let node: FilterTree = { op: 'and', children: [leaf('a')] };
+      for (let level = 0; level < depth; level += 1)
+        node = { op: 'and', children: [node] };
+      return node;
+    };
+
+    // Far past any call stack, and still under the node budget: a real
+    // answer, arrived at iteratively.
+    expect(sameFilterTree(deep(15_000), deep(15_000))).toBe(true);
+    expect(sameFilterTree(deep(15_000), deep(15_001))).toBe(false);
+    // Past the budget the answer is "not the same" — the only safe one, and
+    // a tree the panel refuses to draw anyway.
+    expect(sameFilterTree(deep(40_000), deep(40_000))).toBe(false);
+    // The budget is a parameter, so a caller with tighter limits may say so.
+    expect(sameFilterTree(deep(20), deep(20), 4)).toBe(false);
+  });
+
+  it('answers a cyclic value without walking it for ever', () => {
+    const left: Record<string, unknown> = { from: 1 };
+    left.self = left;
+    const right: Record<string, unknown> = { from: 1 };
+    right.self = right;
+
+    // Two cycles that mean the same thing are still not the same answer a
+    // finite walk can give, so the budget ends it at "no".
+    expect(sameFilterNode(leaf(left), leaf(right))).toBe(false);
+    // The same object is the same value without looking inside it at all.
+    expect(sameFilterNode(leaf(left), leaf(left))).toBe(true);
+
+    const cyclic = (): FilterTree => {
+      const tree: FilterTree = { op: 'and', children: [] };
+      tree.children.push(tree);
+      return tree;
+    };
+    expect(sameFilterTree(cyclic(), cyclic())).toBe(false);
+    const one = cyclic();
+    expect(sameFilterTree(one, one)).toBe(true);
+  });
 });
 
 describe('malformed trees', () => {

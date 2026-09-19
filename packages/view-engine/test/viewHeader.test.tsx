@@ -104,9 +104,11 @@ const NOTHING: SaveCommands = {
   rename: () => Promise.resolve(null),
   delete: () => Promise.resolve(false),
   revert: () => undefined,
-  retry: () => Promise.resolve({ landed: false, instance: null }),
+  retry: () =>
+    Promise.resolve({ landed: false, written: false, instance: null }),
   abandon: () => undefined,
-  resolveConflict: () => Promise.resolve({ landed: false, instance: null }),
+  resolveConflict: () =>
+    Promise.resolve({ landed: false, written: false, instance: null }),
   can: {
     save: false,
     saveAs: false,

@@ -14,7 +14,9 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  isSystemInstanceId,
   MemoryViewStore,
+  parseSystemInstanceId,
   ViewEngine,
   ViewStoreError,
   type ViewInstance,
@@ -157,6 +159,89 @@ describe('useViewManager', () => {
       await landed;
     });
     expect(result.current.manager.pending).toBeNull();
+  });
+
+  it('runs two commands one after the other, naming each in turn', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const first = deferred<ViewInstance>();
+    const second = deferred<void>();
+    const rename = vi.spyOn(store, 'rename').mockReturnValueOnce(first.promise);
+    const remove = vi.spyOn(store, 'delete').mockReturnValueOnce(
+      // The second command must not even reach the store until the first is
+      // done: one slot cannot report two writes, and the second one's
+      // `finally` would clear it while the first is still going.
+      second.promise,
+    );
+
+    let both!: Promise<boolean[]>;
+    act(() => {
+      both = Promise.all([
+        result.current.manager.rename('orders-1', 'Later'),
+        result.current.manager.delete('orders-2'),
+      ]);
+    });
+
+    expect(result.current.manager.pending).toBe('orders-1');
+    await waitFor(() => expect(rename).toHaveBeenCalledTimes(1));
+    // The first write has reached the store and the second has not moved.
+    expect(remove).not.toHaveBeenCalled();
+    expect(result.current.manager.pending).toBe('orders-1');
+
+    await act(async () => {
+      first.resolve({ ...instances()[0], title: 'Later', revision: '2' });
+      await first.promise;
+    });
+    await waitFor(() =>
+      expect(result.current.manager.pending).toBe('orders-2'),
+    );
+    expect(remove).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      second.resolve();
+      await both;
+    });
+    expect(result.current.manager.pending).toBeNull();
+    expect(result.current.manager.outcomes.size).toBe(0);
+  });
+
+  it('drops a completion from the definition it has moved on from', async () => {
+    const { engine, store } = engineWith();
+    const slow = deferred<ViewInstance>();
+    vi.spyOn(store, 'rename').mockReturnValueOnce(slow.promise);
+
+    const rendered = renderHook<Managed, { definitionId: string }>(
+      ({ definitionId }) => {
+        const list = useViewList(engine, definitionId);
+        return { list, manager: useViewManager(engine, definitionId, list) };
+      },
+      { initialProps: { definitionId: 'orders' } },
+    );
+    await waitFor(() =>
+      expect(rendered.result.current.list.loading).toBe(false),
+    );
+
+    let landed!: Promise<boolean>;
+    act(() => {
+      landed = rendered.result.current.manager.rename('orders-1', 'Later');
+    });
+    expect(rendered.result.current.manager.pending).toBe('orders-1');
+
+    rendered.rerender({ definitionId: 'other' });
+    // Outcomes and progress answer for the rows of the definition they were
+    // raised under. This list does not hold them.
+    expect(rendered.result.current.manager.pending).toBeNull();
+    expect(rendered.result.current.manager.outcomes.size).toBe(0);
+
+    await act(async () => {
+      slow.reject(new ViewStoreError('UNAVAILABLE', 'timeout'));
+      await landed;
+    });
+
+    // The old command finished into a slot nothing reads, rather than
+    // putting an unknown outcome on a row of the definition now on screen.
+    expect(rendered.result.current.manager.pending).toBeNull();
+    expect(rendered.result.current.manager.outcomes.size).toBe(0);
   });
 
   it('keeps a rename conflict and clears it once the baseline moves', async () => {
@@ -709,6 +794,256 @@ describe('useViewManager', () => {
       ).resolves.toBe(false);
     });
     expect(setPreferences).not.toHaveBeenCalled();
+  });
+
+  it('keys preferences in the namespace a store may not issue', () => {
+    // Both halves of the key space are instance ids as far as `outcomes` is
+    // concerned, so the preferences slot is taken from the one prefix
+    // `isSystemInstanceId` reserves rather than from a bare word a store
+    // could hand out as an id of its own.
+    expect(PREFERENCES_KEY).toBe('system:preferences');
+    expect(isSystemInstanceId(PREFERENCES_KEY)).toBe(true);
+    // Not a composed system view id either, so nothing reads it as one.
+    expect(parseSystemInstanceId(PREFERENCES_KEY)).toBeNull();
+  });
+
+  it('keeps a new command off the queue while a key is unknown', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const rename = vi
+      .spyOn(store, 'rename')
+      .mockRejectedValueOnce(new ViewStoreError('UNAVAILABLE', 'timeout'));
+    const remove = vi.spyOn(store, 'delete');
+
+    await act(async () => {
+      await result.current.manager.rename('orders-1', 'Later');
+    });
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'unknown',
+    );
+    expect(rename).toHaveBeenCalledTimes(1);
+
+    // The write may have landed, so the engine refuses a second one against
+    // the same target — and a refusal carries no handle, so recording it
+    // would take away the only two things that can still answer for this
+    // row. Turning the command away here means it never gets the chance.
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', 'Again'),
+      ).resolves.toBe(false);
+      await expect(result.current.manager.delete('orders-1')).resolves.toBe(
+        false,
+      );
+    });
+    expect(rename).toHaveBeenCalledTimes(1);
+    expect(remove).not.toHaveBeenCalled();
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'unknown',
+    );
+
+    // Retry and abandon are what the key does accept, and they still work.
+    await act(async () => {
+      await expect(result.current.manager.retry('orders-1')).resolves.toBe(
+        true,
+      );
+    });
+    expect(result.current.manager.outcomes.size).toBe(0);
+    await expect(store.get('orders-1')).resolves.toMatchObject({
+      title: 'Later',
+    });
+  });
+
+  it('leaves a recoverable outcome alone when the next command is refused', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    await store.rename('orders-1', 'Theirs', '1', { requestId: 'other' });
+
+    await act(async () => {
+      await result.current.manager.rename('orders-1', 'Mine');
+    });
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'conflict',
+    );
+
+    // A refusal never left, so it has nothing to replay. Taking the slot
+    // would drop the handle the conflict still needs.
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', '  '),
+      ).resolves.toBe(false);
+    });
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'conflict',
+    );
+
+    await act(async () => {
+      await expect(
+        result.current.manager.resolveConflict('orders-1', 'overwrite'),
+      ).resolves.toBe(true);
+    });
+    expect(result.current.manager.outcomes.size).toBe(0);
+    await expect(store.get('orders-1')).resolves.toMatchObject({
+      title: 'Mine',
+    });
+  });
+
+  it('starts a command for other inputs on a queue of its own', async () => {
+    const store = new MemoryViewStore({
+      instances: [
+        ...instances(),
+        {
+          id: 'returns-1',
+          definitionId: 'returns',
+          title: 'Theirs',
+          scope: 'personal',
+          revision: '1',
+          config: recordConfig(),
+        },
+      ],
+    });
+    const engine = new ViewEngine({
+      definitions: [
+        ordersDefinition(),
+        ordersDefinition({ id: 'returns', title: 'Returns', views: [] }),
+      ],
+      store,
+      resolveSource: () => testSource(),
+    });
+    const hangs = deferred<ViewInstance>();
+    const rename = vi.spyOn(store, 'rename').mockReturnValueOnce(hangs.promise);
+
+    const rendered = renderHook<Managed, { definitionId: string }>(
+      ({ definitionId }) => {
+        const list = useViewList(engine, definitionId);
+        return { list, manager: useViewManager(engine, definitionId, list) };
+      },
+      { initialProps: { definitionId: 'orders' } },
+    );
+    await waitFor(() =>
+      expect(rendered.result.current.list.loading).toBe(false),
+    );
+
+    let stuck!: Promise<boolean>;
+    act(() => {
+      stuck = rendered.result.current.manager.rename('orders-1', 'Later');
+    });
+    expect(rendered.result.current.manager.pending).toBe('orders-1');
+
+    rendered.rerender({ definitionId: 'returns' });
+    await waitFor(() =>
+      expect(rendered.result.current.list.loading).toBe(false),
+    );
+    expect(rendered.result.current.manager.pending).toBeNull();
+
+    // The queue belongs to the inputs whose commands are on it. Chaining
+    // this one behind a write raised under a definition nobody is looking at
+    // any more would leave the row the user just clicked showing nothing
+    // until that write answers — which it may never do.
+    let second!: Promise<boolean>;
+    act(() => {
+      second = rendered.result.current.manager.rename('returns-1', 'Renamed');
+    });
+    expect(rendered.result.current.manager.pending).toBe('returns-1');
+    await waitFor(() => expect(rename).toHaveBeenCalledTimes(2));
+
+    await act(async () => {
+      await expect(second).resolves.toBe(true);
+    });
+    expect(rendered.result.current.manager.pending).toBeNull();
+    await waitFor(() =>
+      expect(
+        rendered.result.current.list.items.find(item => item.id === 'returns-1')
+          ?.title,
+      ).toBe('Renamed'),
+    );
+
+    // The old queue settles alone, and its answer lands on nothing.
+    await act(async () => {
+      hangs.resolve({ ...instances()[0], title: 'Later', revision: '2' });
+      await stuck;
+    });
+    expect(rendered.result.current.manager.outcomes.size).toBe(0);
+  });
+
+  it('computes a second quick move from the order the first submitted', async () => {
+    // Three personal views, so the row can climb twice without reaching the
+    // audience boundary: a move that crosses it is refused, and what this is
+    // about is which order the second one reads.
+    const store = new MemoryViewStore({
+      instances: [
+        ...instances(),
+        {
+          id: 'orders-3',
+          definitionId: 'orders',
+          title: 'Theirs',
+          scope: 'personal',
+          revision: '1',
+          config: recordConfig(),
+        },
+      ],
+    });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => testSource(),
+    });
+    const { result } = await managed(engine);
+    // The system view leads the list and is shared; the personal rows follow.
+    const [system, first, second, third] = result.current.list.items.map(
+      item => item.id,
+    );
+    const gate = deferred<void>();
+    const write = store.setPreferences.bind(store);
+    let calls = 0;
+    const setPreferences = vi
+      .spyOn(store, 'setPreferences')
+      .mockImplementation(async (...args) => {
+        calls += 1;
+        if (calls === 1) await gate.promise;
+        return write(...args);
+      });
+
+    // Both clicks land before the list has reloaded, so both read the same
+    // rendered order. Computing from it twice would submit the same order
+    // twice and leave the row one step from where the user put it.
+    let moves!: Promise<boolean[]>;
+    act(() => {
+      moves = Promise.all([
+        result.current.manager.move(third, 'up'),
+        result.current.manager.move(third, 'up'),
+      ]);
+    });
+
+    await waitFor(() => expect(setPreferences).toHaveBeenCalledTimes(1));
+    expect(setPreferences.mock.calls[0][1].order).toEqual([
+      system,
+      first,
+      third,
+      second,
+    ]);
+
+    await act(async () => {
+      gate.resolve();
+      await expect(moves).resolves.toEqual([true, true]);
+    });
+
+    expect(setPreferences).toHaveBeenCalledTimes(2);
+    // The neighbour comes from the order the first move submitted too: read
+    // off the rendered list, `third` would swap with `second` a second time.
+    expect(setPreferences.mock.calls[1][1].order).toEqual([
+      system,
+      third,
+      first,
+      second,
+    ]);
+    await waitFor(() =>
+      expect(result.current.list.items.map(item => item.id)).toEqual([
+        system,
+        third,
+        first,
+        second,
+      ]),
+    );
   });
 
   it('reads the abilities of a row off the permissions', async () => {
