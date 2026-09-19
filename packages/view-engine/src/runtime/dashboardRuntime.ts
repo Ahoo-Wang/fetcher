@@ -140,11 +140,13 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
   /** Why a resolved reference could not be brought into service, by id. */
   private readonly failures = new Map<string, string>();
   private readonly pending = new Map<string, Promise<void>>();
-  /** Child runtimes by panel id, with the subscription that watches each. */
-  private readonly children = new Map<
-    string,
-    { runtime: DataViewRuntime; unsubscribe: () => void }
-  >();
+  /**
+   * Child runtimes by panel id, with the subscription that watches each, and
+   * what the last sync knew about the panel — its index in the config and
+   * the dashboard's own findings about it — so the panel's issues can be
+   * rebuilt when the child alone changes.
+   */
+  private readonly children = new Map<string, PanelChild>();
 
   private state: DashboardRuntimeState;
   private scopeFilter: FilterTree | null;
@@ -518,11 +520,15 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     );
     const existing = this.children.get(panel.id);
     if (existing && holds(existing.runtime, reference)) {
+      // Before the scope goes in: the child may notify on the spot, and the
+      // refresh that answers it reads these.
+      existing.index = index;
+      existing.own = own;
       const refused = existing.runtime.setScopeFilter(scope);
       if (!hasError(refused))
         return {
           runtime: existing.runtime,
-          issues: [...own, ...atPanel(index, caveatsOf(existing.runtime))],
+          issues: panelIssues(index, own, existing.runtime),
         };
       this.dropChild(panel.id);
       return { runtime: null, issues: [...own, ...atPanel(index, refused)] };
@@ -536,15 +542,37 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
       runtime.dispose();
       return { runtime: null, issues: [...own, ...atPanel(index, refused)] };
     }
-    // The dashboard's timer waits on its panels, so it watches them. The UI
-    // subscribes to each child itself and is not notified from here.
-    const unsubscribe = runtime.subscribe(() => this.syncTimer());
-    this.children.set(panel.id, { runtime, unsubscribe });
+    // The dashboard's timer waits on its panels, so it watches them, and a
+    // panel's issues follow its child. The UI subscribes to each child
+    // itself for everything else and is not notified from here.
+    const unsubscribe = runtime.subscribe(() => {
+      this.syncTimer();
+      this.refreshPanelIssues(panel.id);
+    });
+    this.children.set(panel.id, { runtime, unsubscribe, index, own });
     runtime.apply();
-    return {
-      runtime,
-      issues: [...own, ...atPanel(index, caveatsOf(runtime))],
-    };
+    return { runtime, issues: panelIssues(index, own, runtime) };
+  }
+
+  /**
+   * A child's findings change under a host that drives it through
+   * `panelRuntime` — an edit, an apply — and nothing re-syncs the dashboard
+   * for that. The panel's issues are rebuilt from what the last sync knew
+   * and what the child says now, so a header marker is never a sync behind
+   * the body it sits over. Mid-sync the array still holds the previous
+   * child, if any, and the sync in progress reports for the new one.
+   */
+  private refreshPanelIssues(panelId: string): void {
+    const child = this.children.get(panelId);
+    const at = this.state.panels.findIndex(panel => panel.id === panelId);
+    if (!child || at < 0) return;
+    const current = this.state.panels[at];
+    if (current.runtime !== child.runtime) return;
+    const issues = panelIssues(child.index, child.own, child.runtime);
+    if (dequal(issues, current.issues)) return;
+    const panels = [...this.state.panels];
+    panels[at] = { ...current, issues };
+    this.setState({ panels });
   }
 
   private dropChild(panelId: string): void {
@@ -630,16 +658,47 @@ function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+interface PanelChild {
+  runtime: DataViewRuntime;
+  unsubscribe: () => void;
+  /** The panel's index in the config, where its issues are addressed. */
+  index: number;
+  /** The dashboard's own findings about the panel, as of the last sync. */
+  own: Issue[];
+}
+
 /**
- * What a running child still has to say about its own saved config. It is
- * read off the snapshot rather than off `setScopeFilter`, which answers `[]`
- * for a scope it already holds — a layout edit re-syncs every panel with the
- * scope unchanged, and the warning must not vanish on that.
+ * What a panel reports for a child that runs: the dashboard's own findings
+ * about it, then what the child still has to say about its saved config,
+ * re-addressed to the panel.
+ *
+ * The child's part is read off its snapshot rather than off `setScopeFilter`,
+ * which answers `[]` for a scope it already holds — a layout edit re-syncs
+ * every panel with the scope unchanged, and a warning must not vanish on
+ * that. And it is read second: the dashboard re-validates the merged filter
+ * against the child's fields, and the child admits the same merged tree, so
+ * a kind that warns is heard twice. The panel shows the wording, and the
+ * same sentence twice tells nobody anything more, so a warning the
+ * dashboard already reported is not repeated.
  */
-function caveatsOf(runtime: DataViewRuntime): Issue[] {
-  return runtime
+function panelIssues(
+  index: number,
+  own: readonly Issue[],
+  runtime: DataViewRuntime,
+): Issue[] {
+  const caveats = runtime
     .getSnapshot()
-    .issues.filter(found => found.severity === 'warning');
+    .issues.filter(
+      found =>
+        found.severity === 'warning' &&
+        !own.some(
+          said =>
+            said.severity === 'warning' &&
+            said.code === found.code &&
+            dequal(said.params, found.params),
+        ),
+    );
+  return [...own, ...atPanel(index, caveats)];
 }
 
 /** A child's issues, addressed from the dashboard's config. */
