@@ -521,10 +521,12 @@ describe('useSaveCommands', () => {
     await expect(result.current.delete()).resolves.toBe(false);
     await expect(result.current.retry()).resolves.toEqual({
       landed: false,
+      written: false,
       instance: null,
     });
     await expect(result.current.resolveConflict('reload')).resolves.toEqual({
       landed: false,
+      written: false,
       instance: null,
     });
     expect(() => result.current.abandon()).not.toThrow();
@@ -878,6 +880,52 @@ describe('useSaveCommands', () => {
       await result.current.commands.rename('Renamed');
     });
     expect(result.current.commands.state.lastSavedAt).toBeNull();
+  });
+
+  it('marks no moment for a conflict the user resolved by reloading', async () => {
+    const { store, result } = await openMine();
+    await store.save('orders-1', recordConfig({ pageSize: 77 }), '1', {
+      requestId: 'other',
+    });
+
+    act(() => result.current.opened.runtime?.edit({ pageSize: 21 }));
+    await act(async () => {
+      await result.current.commands.save();
+    });
+    expect(result.current.commands.state.write?.kind).toBe('conflict');
+
+    await act(async () => {
+      await expect(
+        result.current.commands.resolveConflict('reload'),
+      ).resolves.toMatchObject({ landed: true, written: false });
+    });
+
+    // Reloading settles the conflict by taking the stored state and dropping
+    // the draft. Nothing of the user's was written, so a "View saved" badge
+    // over the edits they just gave up is the one thing it must not show.
+    expect(result.current.commands.state.lastSavedAt).toBeNull();
+  });
+
+  it('times a conflict the user resolved by overwriting', async () => {
+    const { store, result } = await openMine();
+    await store.save('orders-1', recordConfig({ pageSize: 77 }), '1', {
+      requestId: 'other',
+    });
+
+    act(() => result.current.opened.runtime?.edit({ pageSize: 21 }));
+    await act(async () => {
+      await result.current.commands.save();
+    });
+
+    await act(async () => {
+      await expect(
+        result.current.commands.resolveConflict('overwrite'),
+      ).resolves.toMatchObject({ landed: true, written: true });
+    });
+
+    expect(result.current.commands.state.lastSavedAt).toEqual(
+      expect.any(Number),
+    );
   });
 
   it('offers only a copy of a system view', async () => {
@@ -1366,6 +1414,62 @@ describe('useFilterEditor pending and applied', () => {
     expect(filter().pendingCount).toBe(0);
     expect(filter().isPending([0])).toBe(false);
     expect(filter().applied).toEqual([]);
+  });
+
+  it('keeps the root editor working when a metric owns the oversized tree', async () => {
+    const analysis: ViewInstance = {
+      id: 'orders-analysis',
+      definitionId: 'orders',
+      title: 'By warehouse',
+      scope: 'personal',
+      revision: '1',
+      config: analysisConfig(),
+    };
+    const { engine } = engineWith({ instances: [analysis] });
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, 'orders-analysis');
+      return { opened, filter: useFilterEditor(opened.runtime) };
+    });
+    await waitFor(() => expect(result.current.opened.runtime).not.toBeNull());
+    const filter = () => result.current.filter;
+
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().updateLeaf([0], { value: 'CN' });
+    });
+    act(() => filter().submit());
+    await waitFor(() => expect(filter().applied).toHaveLength(1));
+
+    // A metric's own filter is validated in its own scope and re-pathed under
+    // ['metrics', …], and it reports the very same budget codes as this tree.
+    const wide: FilterTree = {
+      op: 'and',
+      children: Array.from({ length: 400 }, () => ({
+        field: 'amount',
+        operator: 'EQ' as const,
+        value: 1,
+      })),
+    };
+    act(() =>
+      result.current.opened.runtime?.edit({
+        metrics: [{ type: 'COUNT', alias: 'orders', filter: wide }],
+      }),
+    );
+    expect(
+      result.current.opened.runtime
+        ?.getSnapshot()
+        .issues.map(found => found.code),
+    ).toContain('filter.tree.too-many-nodes');
+
+    // That tree is not the one this editor draws, so the code alone must not
+    // switch the editor off: its own conditions are still comparable, still
+    // applicable, and the summary still describes the rows on screen.
+    expect(filter().issues).toEqual([]);
+    expect(filter().applied).toHaveLength(1);
+    act(() => filter().updateLeaf([0], { value: 'US' }));
+    expect(filter().pending).toBe(true);
+    expect(filter().pendingCount).toBe(1);
+    expect(filter().isPending([0])).toBe(true);
   });
 
   it('counts only the blocking findings that point at a condition', async () => {

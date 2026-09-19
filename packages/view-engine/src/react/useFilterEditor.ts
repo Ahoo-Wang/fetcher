@@ -103,6 +103,17 @@ const EMPTY_FIELDS: readonly FieldDefinition[] = [];
 const EMPTY_TREE: FilterTree = { op: 'and', children: [] };
 
 /**
+ * True for a finding about the tree this editor draws rather than a nested
+ * one. A metric's, an element's or a dashboard panel's filter is validated in
+ * its own scope and re-pathed under ['metrics', …], ['elements', …] or
+ * ['panels', …]; the root tree's own findings sit at the config root or under
+ * ['children', …].
+ */
+function isOwnFilterPath(found: Issue): boolean {
+  return found.path.length === 0 || found.path[0] === 'children';
+}
+
+/**
  * Editing of the draft filter tree, addressed by path.
  *
  * It holds no state of its own: every action is an `edit` on the runtime, so
@@ -121,12 +132,16 @@ export function useFilterEditor(
   );
   const kinds = runtime?.kinds;
   const tree = state?.draft.filter ?? EMPTY_TREE;
-  // The budget findings of this filter alone: the issue filter below keeps
-  // element- and panel-scoped trees out, so a hit here is the top-level one.
+  // The budget findings of this filter alone. An analysis metric's or a
+  // dashboard panel's own filter reports the very same codes, so the code
+  // alone would let an oversized tree the editor does not draw switch off
+  // `pending`, `pendingCount` and `applied` for the root tree — the path is
+  // what says the finding is this filter's, exactly as `issues` below reads it.
   const overBudget = (state?.issues ?? []).some(
     found =>
-      found.code === 'filter.tree.too-deep' ||
-      found.code === 'filter.tree.too-many-nodes',
+      (found.code === 'filter.tree.too-deep' ||
+        found.code === 'filter.tree.too-many-nodes') &&
+      isOwnFilterPath(found),
   );
 
   const byName = useMemo(
@@ -218,8 +233,7 @@ export function useFilterEditor(
   const issues = (state?.issues ?? []).filter(
     found =>
       found.code.startsWith('config.filterMode.') ||
-      (found.code.startsWith('filter.') &&
-        (found.path.length === 0 || found.path[0] === 'children')),
+      (found.code.startsWith('filter.') && isOwnFilterPath(found)),
   );
 
   // What "not applied yet" is measured against is the tree `apply` promoted,

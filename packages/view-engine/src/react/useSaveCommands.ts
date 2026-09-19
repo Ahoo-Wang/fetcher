@@ -36,19 +36,32 @@ export interface SaveTargetInput {
 
 /** What replaying a write answered: whether it landed, and what it made. */
 export interface RecoveredWrite {
+  /** The command is done: the outcome it was raised against is settled. */
   landed: boolean;
+  /**
+   * Whether it put anything in the store. A conflict resolved by `reload`
+   * lands without writing — it takes the stored state and drops the draft —
+   * so "saved just now" is exactly what it must not report.
+   */
+  written: boolean;
   /** The instance a recovered create, save or rename produced, if any. */
   instance: ViewInstance | null;
 }
 
-const UNRECOVERED: RecoveredWrite = { landed: false, instance: null };
+const UNRECOVERED: RecoveredWrite = {
+  landed: false,
+  written: false,
+  instance: null,
+};
 
 /** Preferences resolve too, and carry no instance. */
 function recoveredOf(
   result: ViewInstance | ViewPreferences | void,
+  written: boolean,
 ): RecoveredWrite {
   return {
     landed: true,
+    written,
     instance:
       typeof result === 'object' && result !== null && 'config' in result
         ? result
@@ -99,6 +112,10 @@ export interface SaveCommandState {
    * shows a "Saved" moment from it, so it is a timestamp and not a boolean:
    * the same save twice in a row must read as two distinct moments. It is
    * cleared when the next write starts, and is `null` until one lands.
+   *
+   * Only a command that wrote marks a moment. A conflict resolved by
+   * `reload` settles and reloads without writing anything, so it leaves this
+   * where it was rather than saying "Saved" over the edits just discarded.
    */
   lastSavedAt: number | null;
 }
@@ -265,9 +282,10 @@ export function useSaveCommands(
             'view.retry.failed',
             // A delete resolves with nothing, which still means it landed; a
             // recovered create or rename carries the instance it produced.
-            () => engine.retryWrite(runtime).then(recoveredOf),
+            // A replay sends the original write again, so it did write.
+            () => engine.retryWrite(runtime).then(it => recoveredOf(it, true)),
             UNRECOVERED,
-            landedWrite,
+            wroteStore,
           )
         : Promise.resolve(UNRECOVERED),
     [engine, runtime, run],
@@ -302,10 +320,16 @@ export function useSaveCommands(
       runtime
         ? run(
             'view.resolve.failed',
-            // Both a reload and an overwrite resolve only when they landed.
-            () => engine.resolveConflict(runtime, choice).then(recoveredOf),
+            // Both a reload and an overwrite resolve only when they landed,
+            // but only the overwrite writes: a reload takes the stored state
+            // and discards the draft, and timing it as a save would put
+            // "View saved" on screen over edits the user just gave up.
+            () =>
+              engine
+                .resolveConflict(runtime, choice)
+                .then(it => recoveredOf(it, choice === 'overwrite')),
             UNRECOVERED,
-            landedWrite,
+            wroteStore,
           )
         : Promise.resolve(UNRECOVERED),
     [engine, runtime, run],
@@ -356,7 +380,11 @@ function landedSave(instance: ViewInstance | null): boolean {
   return instance !== null;
 }
 
-/** A replay or a conflict choice counts only once it actually landed. */
-function landedWrite(recovered: RecoveredWrite): boolean {
-  return recovered.landed;
+/**
+ * A replay or a conflict choice marks a moment only when it wrote. Landing is
+ * not enough: `reload` settles the conflict by taking the stored state, and
+ * nothing of the user's was saved.
+ */
+function wroteStore(recovered: RecoveredWrite): boolean {
+  return recovered.written;
 }
