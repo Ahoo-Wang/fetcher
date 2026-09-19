@@ -9,7 +9,6 @@
 
 ## 重构（小步，每步一个 PR，零行为变化）
 
-- **R2 拆 `src/react/useViewManager.ts`**（804 行）——为什么：结局、队列与顺序三件事挤在一个文件里，[react.md#useviewmanager](react.md#useviewmanager) 也因此是全篇最长的一节。判据：拆为 `react/manager/{outcomes,queue,order}.ts` 加一层组合，公开面不变，`test/viewManager.test.tsx` 原样通过。落点：`src/react/`。
 - **R4 拆过长的 UI 文件**——为什么：同一个文件里既有布局又有分支，改一处要重读全部。判据：`ViewManager.tsx` 拆为 Row / DeleteDialog / OutcomeActions（与 `WriteOutcome` 共用"结局→按钮"组件），`WriteOutcome.tsx` 抽 ConflictConfirm，`FilterPanel.tsx` 拆为 GroupBlock / ConditionPill / FilterActions，`FilterValueEditor.tsx` 按 `EditorDescriptor.input` 分文件；行为与测试不变。落点：`src/ui/`。
 - **R5 写入结局模型去重**——为什么：`useSaveCommands` 与 `useViewManager` 各写了一遍"结局怎么结清、哪种恢复算写了视图、什么时候禁用"。判据：`src/react/writes.ts` 给出 `settle` / `RecoveredWrite` / `savesView` / `blockedBy`，两个钩子共用，两边测试不变。落点：`src/react/`、[management.md#冲突与未知结果](management.md#冲突与未知结果)。
 - **R6 文案目录分文件 + `MessageKey` 类型**——为什么：一份平铺的目录看不出哪些键还活着。判据：按前缀分文件并导出 `MessageKey`；同时删除死键 `label.save.rename`、`label.save.delete`、`label.rename.heading`、`label.rename.description`、`label.unknown.consequence`；`test/messages.test.tsx` 仍全绿。落点：`src/ui/messages.ts`、[ui/README.md#措辞与-messagesprovider](ui/README.md#措辞与-messagesprovider)。
@@ -20,6 +19,7 @@
 
 - **侧栏可折叠**——为什么：legacy 有，现在没有，窄屏上侧栏占掉结果的宽度。判据：折叠时标题栏最左出现展开按钮 + 定义标题 + 视图切换下拉（按受众分组、当前项打勾、系统标签、底部"管理视图"项）；筛选带增加"撤销筛选修改"（草稿筛选退回已应用）；对照 `view-engine-legacy` 截图。落点：`src/ui/ViewList.tsx`、`src/ui/ViewHeader.tsx`、[ui/README.md#工作台骨架](ui/README.md#工作台骨架)。
 - **写入结局的 Storybook 故事**——为什么：conflict / unknown / rejected 三条路径只有单测走过，改 UI 时没人看得见它们。判据：`WriteOutcome`、管理器行内结局、删除冲突二次确认各有故事，夹具的假存储能注入 `CONFLICT` 与 `UNAVAILABLE`。落点：`stories/`、`test/fixtures/`、[management.md#冲突与未知结果](management.md#冲突与未知结果)。
+- **文案支持中文**——为什么：目录只有英文默认句，宿主要中文得自己覆盖四百多个键，等于没有本地化。判据：`/ui` 导出完整的 `zhCN` 目录（`messages/zh-CN.ts`），`test/messages.test.tsx` 断言它与英文目录键集合一致、占位符成对；`ViewSurface` 的 `messages={zhCN}` 传入即生效；Record 工作台有一个中文文案故事。落点：`src/ui/messages/`，与 R6 的分文件、`MessageKey` 类型化同一个 PR 做。
 
 ## 小修
 
