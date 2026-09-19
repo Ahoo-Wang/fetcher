@@ -16,6 +16,7 @@ import type { AnalysisView } from '../analysis/index.js';
 import type { FieldOption } from '../model/index.js';
 import type { ViewEngine } from '../runtime/index.js';
 import {
+  kindMismatch,
   useAnalysisEditor,
   useFilterEditor,
   useOpenView,
@@ -76,14 +77,21 @@ export function AnalysisWorkbench({
   locale,
   optionsFor,
 }: AnalysisWorkbenchProps) {
-  const list = useViewList(engine, definitionId);
+  // Only the analysis views: the sidebar offers what this page can open, and
+  // the effective default is resolved among those alone.
+  const list = useViewList(engine, definitionId, { kind: 'analysis' });
   // One boolean governs the sidebar, so collapsing it later is a change in
   // one place rather than in the layout of every part beside it.
   const [sidebarOpen] = useState(true);
   const [chosen, setChosen] = useState<string | null>(instanceId);
 
   const opened = useOpenView(engine, chosen ?? list.defaultInstanceId);
-  const runtime = opened.runtime;
+  // A host may still name a view of another kind. It opened, and it is not
+  // this page's to draw, so it is reported the way every unopenable view is
+  // rather than left as a header over nothing.
+  const wrongKind = kindMismatch(opened.runtime, 'analysis');
+  const runtime = wrongKind ? null : opened.runtime;
+  const unopenable = opened.error ?? wrongKind;
   const state = useViewRuntime(runtime);
   const analysis = useAnalysisEditor(runtime);
   const filter = useFilterEditor(runtime);
@@ -135,10 +143,10 @@ export function AnalysisWorkbench({
       )}
 
       <main className="flex min-w-0 flex-1 flex-col gap-3 p-3">
-        {opened.error && (
+        {unopenable && (
           <Alert variant="destructive">
             <AlertTitle>{messages.label('label.view.unopenable')}</AlertTitle>
-            <AlertDescription>{messages.issue(opened.error)}</AlertDescription>
+            <AlertDescription>{messages.issue(unopenable)}</AlertDescription>
           </Alert>
         )}
 

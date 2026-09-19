@@ -15,11 +15,26 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   Issue,
   ViewInstanceSummary,
+  ViewKind,
   ViewPreferences,
 } from '../model/index.js';
 import { orderSummaries, type ViewEngine } from '../runtime/index.js';
 import type { ViewPermissions } from '../store/ViewStore.js';
 import { toIssue } from './issues.js';
+
+export interface ViewListOptions {
+  /**
+   * Narrows the list to one kind, before it is ordered and before a default
+   * is resolved from it.
+   *
+   * One data definition holds record and analysis instances together, while a
+   * workbench draws one of the two. Without this the sidebar offers views the
+   * body cannot render, and the effective default may land on one of them —
+   * which is a blank page rather than a view. Left out, every kind is listed,
+   * which is what a dashboard definition wants.
+   */
+  kind?: ViewKind;
+}
 
 export interface ViewListState {
   /** Summaries in the order the workbench shows them. */
@@ -65,7 +80,11 @@ const NOTHING_LOADED: Loaded<never> = {
 export function useViewList(
   engine: ViewEngine,
   definitionId: string,
+  options: ViewListOptions = {},
 ): ViewListState {
+  // Read off the object rather than kept: a caller writes the options inline,
+  // so the object is new every render and the kind inside it is not.
+  const { kind } = options;
   const [token, setToken] = useState(0);
   const [list, setList] =
     useState<Loaded<ViewInstanceSummary[]>>(NOTHING_LOADED);
@@ -93,7 +112,8 @@ export function useViewList(
 
     void engine.preferences(definitionId).then(
       value => {
-        if (!cancelled) setPreferences({ key, definitionId, value, error: null });
+        if (!cancelled)
+          setPreferences({ key, definitionId, value, error: null });
       },
       (error: unknown) => {
         if (!cancelled)
@@ -127,13 +147,15 @@ export function useViewList(
   const preferencesSettled = preferences.definitionId === definitionId;
   const currentPreferences = preferencesSettled ? preferences : NOTHING_LOADED;
 
-  const items = useMemo(
-    () =>
-      currentPreferences.value
-        ? orderSummaries(current.value ?? [], currentPreferences.value)
-        : (current.value ?? []),
-    [current.value, currentPreferences.value],
-  );
+  const items = useMemo(() => {
+    // The narrowing happens first, so both the order and the default below
+    // are resolved among the views the caller can actually open.
+    const all = current.value ?? [];
+    const scoped = kind ? all.filter(summary => summary.kind === kind) : all;
+    return currentPreferences.value
+      ? orderSummaries(scoped, currentPreferences.value)
+      : scoped;
+  }, [current.value, currentPreferences.value, kind]);
 
   return {
     items,

@@ -49,6 +49,7 @@ import type {
 } from '../src/react/index.js';
 import { useFilterEditor } from '../src/react/index.js';
 import {
+  defaultMessages,
   EmbeddedView,
   FilterPanel,
   FilterValueEditor,
@@ -249,6 +250,65 @@ describe('RecordWorkbench', () => {
     );
 
     expect(await screen.findByText(inZone(INSTANT))).toBeDefined();
+  });
+
+  /**
+   * One data definition holds record and analysis instances together, and
+   * this page draws records. The sidebar used to offer both, so choosing an
+   * analysis view left a header over an empty band — and a stored default of
+   * that kind opened one without anybody choosing it.
+   */
+  describe('and the other kind of view in the same definition', () => {
+    const chart: ViewInstance = {
+      id: 'orders-chart',
+      definitionId: 'orders',
+      title: 'By warehouse',
+      scope: 'personal',
+      revision: '1',
+      config: analysisConfig(),
+    };
+
+    function withBoth(): ViewEngine {
+      return new ViewEngine({
+        definitions: [ordersDefinition()],
+        store: new MemoryViewStore({ instances: [mine, chart] }),
+        resolveSource: () => testSource(),
+      });
+    }
+
+    it('lists none of them, and opens a record view by default', async () => {
+      render(<RecordWorkbench engine={withBoth()} definitionId="orders" />);
+
+      await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+      const sidebar = within(
+        document.querySelector<HTMLElement>('[data-slot="view-sidebar"]')!,
+      );
+      expect(sidebar.getByRole('button', { name: /^Mine/ })).toBeDefined();
+      expect(
+        sidebar.queryByRole('button', { name: /By warehouse/ }),
+      ).toBeNull();
+    });
+
+    // A host names the id itself, so the list cannot keep this one out. It
+    // opens, and the page says why it is not showing it.
+    it('says why an id of the other kind cannot be shown here', async () => {
+      render(
+        <RecordWorkbench
+          engine={withBoth()}
+          definitionId="orders"
+          instanceId="orders-chart"
+        />,
+      );
+
+      const alert = await screen.findByText(/another kind/);
+      expect(alert.textContent).toContain('analysis');
+      expect(
+        screen.getByText(defaultMessages['label.view.unopenable']),
+      ).toBeDefined();
+      // Not a blank body under a title bar: nothing of the view is drawn.
+      expect(document.querySelector('[data-slot="view-header"]')).toBeNull();
+      expect(screen.queryByRole('table')).toBeNull();
+    });
   });
 
   it('shows an analysis view as its saved layout', async () => {

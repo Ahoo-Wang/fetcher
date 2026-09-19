@@ -644,6 +644,8 @@ export const defaultMessages: ViewMessages = Object.freeze({
     'The stored view {id} uses a reserved id and was skipped.',
   'view.open.failed': 'This view could not be opened.',
   'view.open.not-found': 'No view named {id}.',
+  'view.open.wrong-kind':
+    'This view is of another kind ({kind}), so this page cannot show it.',
   'view.preferences.default-forbidden': 'You may not set the default view.',
   'view.preferences.failed': 'Your view preferences could not be saved.',
   'view.preferences.reorder-forbidden': 'You may not reorder views.',

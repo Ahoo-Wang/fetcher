@@ -28,6 +28,7 @@ import {
   type ViewManagerController,
 } from '../src/react/index.js';
 import {
+  analysisConfig,
   deferred,
   ordersDefinition,
   recordConfig,
@@ -329,6 +330,64 @@ describe('useViewManager', () => {
         before[1],
         before[0],
         before[2],
+      ]),
+    );
+  });
+
+  /**
+   * A workbench manages the list it shows, and it shows one kind. The order
+   * it submits is therefore a partial one — design §7.3: ids that are not in
+   * `order` follow in server order — so the views it never listed keep their
+   * places instead of being reordered by a page that could not see them.
+   */
+  it('submits only the visible order when the list is narrowed to one kind', async () => {
+    const store = new MemoryViewStore({
+      instances: [
+        ...instances(),
+        {
+          id: 'orders-chart',
+          definitionId: 'orders',
+          title: 'By warehouse',
+          scope: 'personal',
+          revision: '1',
+          config: analysisConfig(),
+        },
+      ],
+    });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => testSource(),
+    });
+    const rendered = renderHook<Managed, unknown>(() => {
+      const list = useViewList(engine, 'orders', { kind: 'record' });
+      return { list, manager: useViewManager(engine, 'orders', list) };
+    });
+    await waitFor(() =>
+      expect(rendered.result.current.list.loading).toBe(false),
+    );
+    const { result } = rendered;
+    const before = result.current.list.items.map(item => item.id);
+    expect(before).not.toContain('orders-chart');
+
+    await act(async () => {
+      await expect(result.current.manager.move(before[1], 'up')).resolves.toBe(
+        true,
+      );
+    });
+
+    await expect(store.getPreferences('orders')).resolves.toMatchObject({
+      order: [before[1], before[0], before[2]],
+    });
+    // Unlisted and unharmed: the analysis view still comes back, after the
+    // ones the order names.
+    const unfiltered = renderHook(() => useViewList(engine, 'orders'));
+    await waitFor(() =>
+      expect(unfiltered.result.current.items.map(item => item.id)).toEqual([
+        before[1],
+        before[0],
+        before[2],
+        'orders-chart',
       ]),
     );
   });

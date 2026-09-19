@@ -169,10 +169,14 @@ export const ManageViews: Story = {
       return found;
     };
 
-    // Every view of the definition is here, grouped as the sidebar groups
-    // them; a system view ships with the definition, so it cannot be deleted.
-    // The dialog fades in, so the rows are awaited rather than read at once.
+    // Every record view of the definition is here, grouped as the sidebar
+    // groups them; a system view ships with the definition, so it cannot be
+    // deleted. The dialog fades in, so the rows are awaited rather than read
+    // at once.
     await waitFor(() => expect(row('待出库订单')).toBeDefined());
+    // The definition also holds an analysis view. This page cannot draw one,
+    // so it neither lists it nor lets this dialog reorder it away.
+    await expect(() => row('仓库金额分布')).toThrow();
     await expect(
       within(row('全部订单')).queryByRole('button', {
         name: defaultMessages['label.manage.delete'],

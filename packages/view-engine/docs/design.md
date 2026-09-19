@@ -845,7 +845,7 @@ export interface ViewPreferences {
 }
 ```
 
-- **侧栏呈现。** 列表按受众分两组，个人在前、共享在后；系统视图落在共享组里，并以 `system` 标签标出它随定义而来。一个 data 定义同时承载记录与分析实例，所以每项以种类图标作前缀（记录／分析／仪表盘），种类由摘要的 `kind` 给出。侧栏标题取自 `definition.title`，由工作台传入并作 `nav` 的可访问名。三件事各占一个位置、互不重复：图标说种类，分组说受众，标签说出处。
+- **侧栏呈现。** 列表按受众分两组，个人在前、共享在后；系统视图落在共享组里，并以 `system` 标签标出它随定义而来。一个 data 定义同时承载记录与分析实例，所以每项以种类图标作前缀（记录／分析／仪表盘），种类由摘要的 `kind` 给出。侧栏标题取自 `definition.title`，由工作台传入并作 `nav` 的可访问名。三件事各占一个位置、互不重复：图标说种类，分组说受众，标签说出处。工作台只列出自己所画的那一种：`useViewList(engine, definitionId, { kind })` 先按 `kind` 过滤，再排序、再解析默认视图，因此 Record 工作台的侧栏与默认视图里不会出现分析实例，反之亦然（仪表盘定义只承载仪表盘，不必过滤）；宿主若显式指定了另一种的 `instanceId`，工作台以 `view.open.wrong-kind` 按「打不开」呈现，而不是留下一张空白正文。
 - **排序。** 工作台展示顺序为 `order` 中出现且仍存在于列表的 id，按 `order` 排列；其余按服务端返回顺序追加。`reorder(ids)` 提交当前可见列表的完整顺序与偏好 `revision`。
 - **默认视图。** `setDefault(id | null)` 只改 `defaultInstanceId`。有效默认值的解析规则：显式指定的 `instanceId` 优先；否则 `defaultInstanceId` 存在于列表则用它；否则取排序后的第一项，通常就是第一个系统视图；列表为空时显示空态并提供新建。
 - **删除与偏好。** 删除实例不写偏好。读取时忽略已不存在的 id，下一次 `reorder` 或 `setDefault` 写入自然清理。
@@ -939,7 +939,7 @@ export class ViewStoreError extends Error {
 useViewEngine(options): ViewEngine                      // 建一个并在卸载时释放；需要更长生命周期由应用自建后传入
 useViewRuntime(runtime): ViewRuntimeState | null        // useSyncExternalStore
 useOpenView(engine, instanceId, scopeFilter?): { runtime | null; loading; error; scopeIssues }   // 拥有所开 runtime：换 id 或卸载即释放；runtime 在其下被释放（如实例被删除）时不再交出，按同一 id 重新打开，得到新 runtime 或 not_found；注入的 scopeFilter 被拒时，`setScopeFilter` 返回的 error 级 Issue 由 `scopeIssues` 交出，宿主据此提示；warning 不算拒绝，条件照常生效，warning 留在 runtime 的 `issues` 里由 UI 按 warning 呈现——否则旧的、更宽的条件仍在运行却无人知晓
-useViewList(engine, definitionId): { items; preferences; permissions; defaultInstanceId; loading; error; preferencesError; reload }
+useViewList(engine, definitionId, options?: { kind }): { items; preferences; permissions; defaultInstanceId; loading; error; preferencesError; reload }   // 给出 kind 时先过滤再排序、再解析默认，见 7.3；useViewManager 因此管的是过滤后的可见列表，move 提交的是这份顺序，未列出的 id 仍按服务端顺序跟随
 
 useFilterEditor(runtime): FilterController              // 按路径增删改、模式、清空、提交；Enter 提交排除 IME 与内部弹层由 UI 层处理；applied 读 result.config.filter（描述产出当前结果的条件，无结果为空）；pending／pendingCount／isPending(path) 以 state.applied 为基准（叶子比字段＋操作符＋值，分组只比 op，不比子节点）；blocked 是落在条件上的 error 条数
 useRecordTable(runtime): RecordTableController          // 列语义、排序、列宽列序、选择、分页；无 TanStack 类型；layouts 为定义允许的布局，selectedRows 为当前结果中被选中的行（结果顺序）
