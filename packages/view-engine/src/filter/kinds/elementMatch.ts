@@ -23,7 +23,12 @@ import {
   type Issue,
 } from '../../model/index.js';
 import { compileFilter, type FilterCompileContext } from '../compile.js';
-import { describeFilter, groupJoinWord } from '../describe.js';
+import {
+  describeFilter,
+  groupJoinWord,
+  isGroupItem,
+  type FilterSummaryItem,
+} from '../describe.js';
 import {
   issue,
   readValue,
@@ -175,7 +180,7 @@ export const elementMatchFieldKind: FieldKind = {
     const value = leaf.value;
     if (!isTree(value)) return { text: field.label, value: { kind: 'blank' } };
 
-    const items = describeFilter(
+    const described = describeFilter(
       elementFields(field),
       readValue<FilterTree>(value),
       kinds,
@@ -184,17 +189,38 @@ export const elementMatchFieldKind: FieldKind = {
     // joining an `or` with "and" states the opposite of what is in force.
     return {
       text:
-        items.length === 0
+        described.length === 0
           ? `${field.label} has any entry`
-          : `${field.label} has an entry where ${items.map(item => item.text).join(groupJoinWord(value.op))}`,
+          : `${field.label} has an entry where ${described.map(item => item.text).join(groupJoinWord(value.op))}`,
       // The predicate is not a value to show beside the operator; it is the
       // conditions in `items`, which the bar reads out in its own wording.
       value: { kind: 'none' },
-      items,
+      items: predicateItems(described),
       group: value.op,
     };
   },
 };
+
+/**
+ * The conditions a predicate holds, said once.
+ *
+ * `describeFilter` folds a root that is not "all of" into a single group item
+ * carrying that operator, because at the top of a bar the items sit side by
+ * side and nothing else would say how they combine. Here the operator is
+ * stated beside them anyway, so passing the fold on read it twice — "any of
+ * (any of A, B)" — and a one-condition `nor` read as its own negation
+ * negated, which is the opposite of the query that ran. The fold is
+ * recognised by its empty path: it stands for the root, not for a group
+ * anybody wrote.
+ */
+function predicateItems(
+  described: readonly FilterSummaryItem[],
+): readonly FilterSummaryItem[] {
+  const [only] = described;
+  return described.length === 1 && isGroupItem(only) && only.path.length === 0
+    ? (only.items ?? [])
+    : described;
+}
 
 /**
  * Conditions inside a predicate that Wow calls root filters.

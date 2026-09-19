@@ -87,6 +87,15 @@ export const filterMessages = {
   // units keep the spelling the control already showed; the periods keep the
   // spelling the summary bar already read them out by, which is the same
   // word spaced out. `test/messages.test.tsx` walks both sets.
+  // A distance from now is two different conditions, and the badge has to
+  // tell them apart: `BETWEEN` asks for the span between now and there,
+  // `GTE`/`LTE` compare against the moment at the far end of it. "In the
+  // last 7 days" where "7 days ago" was meant names a span the query never
+  // ran over. These are the phrases the summary line always read.
+  'label.relative.window.past': 'last {amount} {unit}',
+  'label.relative.window.future': 'next {amount} {unit}',
+  'label.relative.instant.past': '{amount} {unit} ago',
+  'label.relative.instant.future': '{amount} {unit} ahead',
   'label.relative.unit.hour': 'hour',
   'label.relative.unit.day': 'day',
   'label.relative.unit.week': 'week',

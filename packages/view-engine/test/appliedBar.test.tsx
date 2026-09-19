@@ -341,35 +341,145 @@ describe('the applied badge in another language', () => {
     expect(screen.getByText('仓库 为空')).toBeDefined();
   });
 
-  it('reads a named period and a relative window as words', () => {
+  const when = (over: Partial<FilterSummaryItem>): FilterSummaryItem =>
+    condition({
+      field: 'createdAt',
+      label: '创建时间',
+      kind: 'datetime',
+      ...over,
+    });
+
+  it('reads a named period as words', () => {
     inChinese([
-      condition({
+      when({
         text: 'Created on or before next quarter',
-        path: ['children', 0],
-        field: 'createdAt',
-        label: '创建时间',
-        kind: 'datetime',
         operator: 'LTE',
         value: { kind: 'preset', preset: 'nextQuarter' },
       }),
-      condition({
+    ]);
+
+    expect(screen.getByText('创建时间 小于等于 下季度')).toBeDefined();
+  });
+
+  /**
+   * The same stored distance is two conditions: `BETWEEN` asks for the span
+   * between now and seven days ago, `LTE` compares against the moment at the
+   * end of it. Reading the second as 最近 7 天 describes a query that never
+   * ran, which is the worst thing this bar can do.
+   */
+  it('tells a relative window from the moment at the end of it', () => {
+    inChinese([
+      when({
         text: 'Created last 7 day',
-        path: ['children', 1],
-        field: 'createdAt',
-        label: '创建时间',
-        kind: 'datetime',
+        path: ['children', 0],
         operator: 'BETWEEN',
         value: {
           kind: 'relative',
           amount: 7,
           unit: 'day',
           direction: 'past',
+          bound: 'window',
+        },
+      }),
+      when({
+        text: 'Created on or before 7 day ago',
+        path: ['children', 1],
+        operator: 'LTE',
+        value: {
+          kind: 'relative',
+          amount: 7,
+          unit: 'day',
+          direction: 'past',
+          bound: 'instant',
+        },
+      }),
+      when({
+        text: 'Created on or after 7 day ahead',
+        path: ['children', 2],
+        operator: 'GTE',
+        value: {
+          kind: 'relative',
+          amount: 7,
+          unit: 'day',
+          direction: 'future',
+          bound: 'instant',
         },
       }),
     ]);
 
-    expect(screen.getByText('创建时间 小于等于 下季度')).toBeDefined();
-    expect(screen.getByText('创建时间 介于 过去 7 天')).toBeDefined();
+    expect(screen.getByText('创建时间 介于 最近 7 天')).toBeDefined();
+    expect(screen.getByText('创建时间 小于等于 7 天前')).toBeDefined();
+    expect(screen.getByText('创建时间 大于等于 7 天后')).toBeDefined();
+  });
+
+  /** A window with no upper edge is the `GTE` it compiles to, not a range. */
+  it('words an open-ended window as the bound it compiles to', () => {
+    inChinese([
+      when({
+        text: 'Created from 2026-01-01',
+        operator: 'GTE',
+        kind: 'date',
+        value: { kind: 'text', value: '2026-01-01' },
+      }),
+    ]);
+
+    expect(screen.getByText(/^创建时间 大于等于 /)).toBeDefined();
+  });
+
+  /**
+   * `describeFilter` folds a predicate root that is not "all of" into one
+   * group item carrying that operator; the kind states the operator beside
+   * it anyway, so passing the fold on said it twice — and turned a
+   * one-condition 都不满足 into a double negative.
+   */
+  it('reads a predicate once, under the operator it holds its conditions by', () => {
+    const sku = (value: string, index: number): FilterSummaryItem =>
+      condition({
+        path: ['children', 0, 'children', index],
+        text: `SKU EQ ${value}`,
+        field: 'items.sku',
+        label: 'SKU',
+        value: { kind: 'text', value },
+      });
+    const predicate = (
+      group: FilterSummaryItem['group'],
+      items: FilterSummaryItem[],
+    ): FilterSummaryItem =>
+      condition({
+        text: 'Items has an entry where',
+        field: 'items',
+        label: '明细',
+        kind: 'elementMatch',
+        operator: 'ELEMENT_MATCH',
+        value: { kind: 'none' },
+        group,
+        items,
+      });
+
+    const { rerender } = render(
+      <MessagesProvider messages={zhCN}>
+        <AppliedBar
+          filter={stub([predicate('or', [sku('A', 0), sku('B', 1)])])}
+          hasResult
+        />
+      </MessagesProvider>,
+    );
+    expect(
+      screen.getByText('明细 有条目满足 满足任一 SKU 等于 A、SKU 等于 B'),
+    ).toBeDefined();
+
+    // One condition under `nor` is its negation, said once.
+    rerender(
+      <MessagesProvider messages={zhCN}>
+        <AppliedBar
+          filter={stub([predicate('nor', [sku('A', 0)])])}
+          hasResult
+        />
+      </MessagesProvider>,
+    );
+    expect(
+      screen.getByText('明细 有条目满足 都不满足 SKU 等于 A'),
+    ).toBeDefined();
   });
 
   it("reads a group out under its own operator's word", () => {

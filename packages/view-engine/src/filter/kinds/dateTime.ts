@@ -40,24 +40,29 @@ function isParsableInstant(text: string): boolean {
 function describeWindow(value: DateTimeFilterValue): DescribedValue {
   switch (value.type) {
     case 'absolute':
-      return {
-        text:
-          value.to === undefined
-            ? `from ${value.from}`
-            : `${value.from} ~ ${value.to}`,
-        value: {
-          kind: 'range',
-          from: value.from,
-          ...(value.to === undefined ? {} : { to: value.to }),
-        },
-      };
+      // An upper edge nobody gave is not a range with one side missing: the
+      // compiler emits `filter.gte(from)`, so the condition in force is a
+      // `GTE` and the summary says the operator that actually ran. `from` is
+      // never missing — `isDateTimeFilterValue` refuses a value without one,
+      // so that shape reaches `describe` as unreadable rather than as a
+      // range with a hole in it.
+      return value.to === undefined
+        ? {
+            text: `from ${value.from}`,
+            operator: 'GTE',
+            value: { kind: 'text', value: value.from },
+          }
+        : {
+            text: `${value.from} ~ ${value.to}`,
+            value: { kind: 'range', from: value.from, to: value.to },
+          };
     case 'relative':
       // Reading "last 7 day" beside a query that ran forwards would be worse
       // than saying nothing: the summary bar is where a user checks what is
       // actually in force.
       return {
         text: `${value.direction === 'future' ? 'next' : 'last'} ${value.amount} ${value.unit}`,
-        value: relativeParts(value),
+        value: relativeParts(value, 'window'),
       };
     case 'preset':
       return {
@@ -71,16 +76,20 @@ function describeWindow(value: DateTimeFilterValue): DescribedValue {
 interface DescribedValue {
   text: string;
   value: FilterSummaryValue;
+  /** Set where the condition in force is not the one the leaf spells. */
+  operator?: FilterOperatorName;
 }
 
 function relativeParts(
   value: DateTimeFilterValue & { type: 'relative' },
+  bound: 'window' | 'instant',
 ): FilterSummaryValue {
   return {
     kind: 'relative',
     amount: value.amount,
     unit: value.unit,
     direction: value.direction ?? 'past',
+    bound,
   };
 }
 
@@ -103,9 +112,12 @@ function describeBound(
       return { text: `${side} ${edge}`, value: { kind: 'text', value: edge } };
     }
     case 'relative':
+      // Not the window `BETWEEN` asks for: `resolveDateTimeBound` stands on
+      // the far edge, so this compares against the moment seven days ago,
+      // and "in the last 7 days" would name a span the query never ran over.
       return {
         text: `${side} ${value.amount} ${value.unit} ${value.direction === 'future' ? 'ahead' : 'ago'}`,
-        value: relativeParts(value),
+        value: relativeParts(value, 'instant'),
       };
     case 'preset':
       return {
@@ -220,6 +232,7 @@ function createDateKind(id: FieldKindId, withTime: boolean): FieldKind {
       return {
         text: `${field.label} ${described.text}`,
         value: described.value,
+        ...(described.operator ? { operator: described.operator } : {}),
       };
     },
   };

@@ -79,8 +79,8 @@
 - **已应用**是结果上方的 `AppliedBar`，它读 `state.result.own.filter` 而不是 `applied`——应用会启动一次查询，在查询答复之前 `applied` 已经走在前面，跟着它的条会描述还没到屏幕上的行；
 - Dashboard 没有自己的结果，面板各跑各的查询，所以那里读 `state.applied.filter`，而「有没有结果可描述」由工作台看面板来答（任一面板已有结果或已经开始查询）；
 - **未保存**是标题旁的标记，Save 按钮只在 `dirty && can.save && !pending` 时可按。AppliedBar 保留树的逻辑：根下每个直接子节点一个 badge，分组子节点合成一个；
-- badge 的文字由 `ui/display.ts` 的 `summaryText` 按部件拼，不是 `FilterSummaryItem.text`——那句是内核给宿主的英文兜底，摆在中文页面上就是唯一没被翻译的一行。字段名来自定义，操作符走 `label.operator.<OP>`（未知成员仍回退到派生拼写），值按 [值按字段显示](#值按字段显示) 的规则：kind 已解析的选项标签直接用，日期按 `ViewSurface` 的 `locale`／`timeZone` 显示，数字按 `numberFormat`，相对窗口用 `label.date.past`／`label.date.future` 加 `label.relative.unit.*`，命名时段用 `label.relative.preset.*`。多值与组内各项之间的分隔符本身也是措辞（`label.filter.join`：英文 `, `，中文 `、`）；
-- 分组以自己的操作符词起头（`label.filter.all-of`／`any-of`／`none-of`）再接各项，再嵌套的分组加括号；只有一条条件的 `and` 组不加那个词——它什么也没多说，而 `none-of` 即便只有一条也必须说。谓词条件（`ELEMENT_MATCH`）按同样的方式读出它持有的那些条件，谓词里什么也没问时说 `label.filter.any-entry`；
+- badge 的文字由 `ui/display.ts` 的 `summaryText` 按部件拼，不是 `FilterSummaryItem.text`——那句是内核给宿主的英文兜底，摆在中文页面上就是唯一没被翻译的一行。字段名来自定义，操作符走 `label.operator.<OP>`（未知成员仍回退到派生拼写），值按 [值按字段显示](#值按字段显示) 的规则：kind 已解析的选项标签直接用，日期按 `ViewSurface` 的 `locale`／`timeZone` 显示，数字按 `numberFormat`，相对值按 `bound` 分成两句——区间用 `label.relative.window.<direction>`（`last {amount} {unit}`／最近 {amount} {unit}），边界用 `label.relative.instant.<direction>`（`{amount} {unit} ago`／{amount} {unit}前）——命名时段用 `label.relative.preset.*`。多值与组内各项之间的分隔符本身也是措辞（`label.filter.join`：英文 `, `，中文 `、`）；
+- 分组以自己的操作符词起头（`label.filter.all-of`／`any-of`／`none-of`）再接各项，再嵌套的分组加括号；只有一条条件时 `all-of` 与 `any-of` 都不加那个词——它们什么也没多说——而 `none-of` 是否定不是连接词，有几条都要说。谓词条件（`ELEMENT_MATCH`）按同样的方式读出它持有的那些条件，谓词里什么也没问时说 `label.filter.any-entry`；
 - 值读不出来的那一项只说字段名（这正是内核给的 `blank`）；字段已消失的那一项连操作符一起说——值读不出来，问题还在。✕ 的可访问名用的是同一段文字，所以读屏器听到的与屏幕上的一致；
 - 每个 badge 带一个 ✕，把对应条件的值设回未填写（分组则组内每条）并重新应用，字段行留在编辑器里，这是 `clearValue(path)` + `submit()`；
 - 没有条件而已有结果时显示 `label.applied.all`，还没有结果时整条不渲染。宿主注入的作用域条件（`scoped`）排在可编辑 badge 之后，以 `variant="outline"` 加 `data-scoped` 单独成组，不带 ✕，并由 `label.applied.scoped` 说明它由页面设定——它不在 draft 里，也没有一条编辑器的路径指向它，给一个删不掉的 ✕ 等于许诺一次做不到的放宽；

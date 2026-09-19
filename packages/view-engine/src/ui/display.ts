@@ -214,9 +214,9 @@ export function summaryText(
  * The conditions of one group, joined and prefixed by the word for its own
  * operator. A group inside a group is parenthesised, as it is in `text`.
  *
- * One condition under "all of" is said plainly: the word adds nothing to it.
- * Every other operator changes what the conditions mean together — "none of"
- * negates even a lone one — so it is always said.
+ * One condition under "all of" or "any of" is said plainly: neither word adds
+ * anything to a single condition. "None of" is not a joiner but a negation,
+ * so it is said whatever it holds.
  */
 function groupText(
   op: FilterGroupOperator,
@@ -229,7 +229,7 @@ function groupText(
       ? `(${summaryText(child, messages, context)})`
       : summaryText(child, messages, context),
   );
-  if (parts.length === 1 && op === 'and') return parts[0];
+  if (parts.length === 1 && op !== 'nor') return parts[0];
   const joined = parts.join(messages.label('label.filter.join'));
   return `${groupWord(op, messages)} ${joined}`;
 }
@@ -281,17 +281,18 @@ function summaryValue(
         .join(messages.label('label.filter.join'));
     case 'range': {
       const from = asField(value.from, item, messages, context);
-      return value.to === undefined
-        ? from
-        : `${from} ~ ${asField(value.to, item, messages, context)}`;
+      return `${from} ~ ${asField(value.to, item, messages, context)}`;
     }
-    case 'relative': {
-      const side = messages.label(
-        value.direction === 'future' ? 'label.date.future' : 'label.date.past',
+    case 'relative':
+      // A span, or the moment at the end of it — the same stored value, two
+      // different conditions, and the phrase has to say which.
+      return messages.label(
+        `label.relative.${value.bound}.${value.direction}`,
+        {
+          amount: valueText(value.amount, messages),
+          unit: messages.label(`label.relative.unit.${value.unit}`),
+        },
       );
-      const unit = messages.label(`label.relative.unit.${value.unit}`);
-      return `${side} ${valueText(value.amount, messages)} ${unit}`;
-    }
     case 'preset':
       return messages.label(`label.relative.preset.${value.preset}`);
   }

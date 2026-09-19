@@ -369,8 +369,12 @@ describe('summaryText', () => {
   });
 
   it("drops the group's word for a lone condition, but not under none-of", () => {
-    // "All of X" says no more than "X"; "None of X" says the opposite of it.
+    // "All of X" and "Any of X" say no more than "X"; "None of X" says the
+    // opposite of it, so that one is said whatever it holds.
     expect(say(predicate('and', [sku('A', 0)]))).toBe(
+      'Items has an entry where SKU eq A',
+    );
+    expect(say(predicate('or', [sku('A', 0)]))).toBe(
       'Items has an entry where SKU eq A',
     );
     expect(say(predicate('nor', [sku('A', 0)]))).toBe(
@@ -437,7 +441,12 @@ describe('summaryText', () => {
     );
   });
 
-  it('leaves an open-ended range on the one bound it has', () => {
+  /**
+   * A window with no upper edge compiles to `GTE`, and the kind says so:
+   * the badge used to read "between <date>", which is neither the range it
+   * claimed nor the condition that ran.
+   */
+  it('words an open-ended window as the bound it compiles to', () => {
     expect(
       say({
         path: ['children', 0],
@@ -446,12 +455,39 @@ describe('summaryText', () => {
         field: 'createdAt',
         label: 'Created',
         kind: 'date',
-        operator: 'BETWEEN',
-        value: { kind: 'range', from: '2026-01-01' },
+        operator: 'GTE',
+        value: { kind: 'text', value: '2026-01-01' },
       }),
     ).toBe(
-      `Created between ${formatted(Date.parse('2026-01-01T00:00:00.000Z'), undefined, { dateStyle: 'medium', timeZone: 'UTC' })}`,
+      `Created gte ${formatted(Date.parse('2026-01-01T00:00:00.000Z'), undefined, { dateStyle: 'medium', timeZone: 'UTC' })}`,
     );
+  });
+
+  /**
+   * The same stored distance, two conditions. `text` has always got this
+   * right — "last 7 day" for the span, "7 day ago" for the moment at the end
+   * of it — so it is the oracle for what the badge must say.
+   */
+  it('tells a relative window from the moment at the end of it', () => {
+    const relative = (
+      bound: 'window' | 'instant',
+      direction: 'past' | 'future',
+    ) =>
+      say({
+        path: ['children', 0],
+        text: '',
+        unresolved: false,
+        field: 'createdAt',
+        label: 'Created',
+        kind: 'datetime',
+        operator: bound === 'window' ? 'BETWEEN' : 'LTE',
+        value: { kind: 'relative', amount: 7, unit: 'day', direction, bound },
+      });
+
+    expect(relative('window', 'past')).toBe('Created between last 7 day');
+    expect(relative('window', 'future')).toBe('Created between next 7 day');
+    expect(relative('instant', 'past')).toBe('Created lte 7 day ago');
+    expect(relative('instant', 'future')).toBe('Created lte 7 day ahead');
   });
 
   it('uses the label a kind resolved rather than resolving it again', () => {

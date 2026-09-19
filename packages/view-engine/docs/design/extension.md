@@ -32,7 +32,9 @@ export interface FieldKind {
 
 - `value` 必须是封闭联合 `FilterSummaryValue` 中的一个（`none`／`blank`／`text`／`list`／`range`／`relative`／`preset`，见 [kernels.md#已应用摘要是部件不是句子](kernels.md#已应用摘要是部件不是句子)）。自定义 kind 也从这七种里挑一种，`/ui` 据此渲染，正如 `EditorDescriptor.input` 是封闭的一样；
 - 读不出的值交 `blank` 而不是编一个读法；操作符本身就是全部条件（presence、`IS_EMPTY`）时交 `none`；已经解析过的候选项标签随 `list.labels`／`text.label` 一起交出去，界面不再解析一遍；
-- `operator` 缺省就是叶子自己的，只有 kind 要让它读作别的时才给；持有谓词的 kind 另交 `items` 与 `group`；
+- `operator` 缺省就是叶子自己的，**编译出来的条件与叶子写的不是同一个时要自报**——缺上界的绝对 `BETWEEN` 编译成 `filter.gte(from)`，就报 `GTE`；
+- 同一个值在不同操作符下含义不同时，由 `value` 自己区分而不是让界面去猜操作符：相对日期的 `bound: 'window' | 'instant'` 就是这条规则的实例；
+- 持有谓词的 kind 另交 `items` 与 `group`，且要先拆掉 `describeFilter` 的折叠（见 [kernels.md](kernels.md#已应用摘要是部件不是句子)），否则操作符会被说两遍；
 - `text` 仍要给，且是英文：宿主可能直接读 `FilterSummaryItem.text`。它是兜底，不是摘要。
 
 ### 内置 kind

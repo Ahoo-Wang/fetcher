@@ -164,6 +164,13 @@ export const zhCN: ViewMessages = {
   'label.date.unit-of': '{field} 单位',
   'label.date.period-of': '{field} 时间段',
 
+  // 同一个"距今多远"，`BETWEEN` 问的是这段区间，`GTE`／`LTE` 比的是那一头的
+  // 那一刻；把后者读成"最近 7 天"就是在描述一次没跑过的查询。
+  'label.relative.window.past': '最近 {amount} {unit}',
+  'label.relative.window.future': '未来 {amount} {unit}',
+  'label.relative.instant.past': '{amount} {unit}前',
+  'label.relative.instant.future': '{amount} {unit}后',
+
   // 相对日期控件的两套闭合集合，措辞与 wow 的查询语言一致。
   'label.relative.unit.hour': '小时',
   'label.relative.unit.day': '天',

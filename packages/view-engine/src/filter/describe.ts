@@ -58,14 +58,30 @@ export type FilterSummaryValue =
       values: readonly (string | number)[];
       labels?: readonly string[];
     }
-  /** Two bounds in the field's own units; `to` is absent for an open one. */
-  | { kind: 'range'; from: string | number; to?: string | number }
-  /** A window measured from the evaluation moment. */
+  /**
+   * Two bounds in the field's own units. Both are required: one bound is not
+   * a range, it is the condition that actually compiles — an absolute
+   * `BETWEEN` with no upper edge compiles to `GTE`, and it says `GTE`.
+   */
+  | { kind: 'range'; from: string | number; to: string | number }
+  /**
+   * A distance from the evaluation moment, and what the condition makes of
+   * it: `window` reaches from now to there, `instant` stands on it.
+   *
+   * The two are different conditions over the same stored value — `BETWEEN`
+   * asks for the span, `GTE` and `LTE` compare against its far edge — and
+   * saying "in the last 7 days" where "7 days ago" was meant is the summary
+   * describing a query that did not run. It is not the operator restated:
+   * `direction` already says which side of now, `operator` already says
+   * which way the comparison runs, and a kind offering `LT` would leave a
+   * `before`/`after` spelling stale on the first use.
+   */
   | {
       kind: 'relative';
       amount: number;
       unit: RelativeDateUnit;
       direction: RelativeDateDirection;
+      bound: 'window' | 'instant';
     }
   /** A named calendar period, resolved at compile time. */
   | { kind: 'preset'; preset: DateTimePreset };
