@@ -46,7 +46,7 @@ pnpm --filter @ahoo-wang/fetcher-view-engine lint:check
 
 - Vitest in the **jsdom** environment, with `clearMocks` and `restoreMocks`
 - **No `globals: true`** — unlike the other packages here, import `describe`, `it`, `expect`, `vi` from `vitest` explicitly
-- Test files live in `test/` at the package root, named by subject rather than mirroring `src/` one-to-one (41 files)
+- Test files live in `test/` at the package root, named by subject rather than mirroring `src/` one-to-one (42 files)
 - `@` resolves to `src/`
 - **Coverage thresholds are enforced**: statements 95, branches 91, functions 97, lines 96. `src/ui/components/**`, `src/ui/lib/**` and `src/styles.ts` are excluded — they are vendored from the shadcn registry and are upstream's to test
 - `test/architecture.test.ts` enforces the dependency rules below on the TypeScript AST, so multi-line, type-only, re-exported and **statically resolvable** dynamic imports are all seen — an `import()` whose argument is a string literal or a substitution-free template. One built from a variable is not recorded, and would slip past these assertions. It reads the wow **sources** off disk, so it is the one suite that runs without any build — every test that imports `@ahoo-wang/fetcher-wow` needs the dependency chain built first
@@ -156,7 +156,7 @@ src/
   react/                        — Headless hooks and controllers; never imports ui
     useViewEngine.ts              — Creates and disposes one engine
     useViewList.ts                — View summaries in the user's order
-    useViewManager.ts             — Rename, delete, reorder, default; outcomes per row
+    useViewManager.ts             — Rename, delete, reorder, default; outcomes per row — composition over manager/
     useRecordTable.ts             — Record controller
     useAnalysisEditor.ts          — Analysis controller
     useFilterEditor.ts            — Filter tree editor controller
@@ -166,6 +166,12 @@ src/
     environment.ts                — Page visibility, so a hidden tab stops polling
     issues.ts                     — Turns a thrown command into one Issue
     index.ts
+    manager/                      — What useViewManager is made of; nothing here is exported
+      outcomes.ts                   — One outcome per row: which one a slot accepts, PREFERENCES_KEY
+      queue.ts                      — Serial command queue keyed by an input tag; no React
+      order.ts                      — Neighbour, swap and optimistic-order arithmetic
+      abilities.ts                  — Which manager buttons exist at all
+      useCommandRunner.ts           — The protocol every manager command runs under
   ui/                           — Default look; may import every layer
     RecordWorkbench.tsx           — Default Record workbench
     AnalysisWorkbench.tsx         — Default Analysis workbench
@@ -194,7 +200,7 @@ src/
     lib/utils.ts                  — shadcn cn() helper — vendored
 ```
 
-`test/` (41 files), `examples/` (`FetcherViewStore.ts`, `PlainRecordWorkbench.tsx`, `quickstart.ts`) and `docs/design.md` sit beside `src/`.
+`test/` (42 files), `examples/` (`FetcherViewStore.ts`, `PlainRecordWorkbench.tsx`, `quickstart.ts`) and `docs/design.md` sit beside `src/`.
 
 ### Key Concepts
 
