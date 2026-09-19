@@ -12,17 +12,19 @@
  */
 
 import type * as React from 'react';
-import { ArrowDownIcon, ArrowUpIcon, InboxIcon } from 'lucide-react';
+import { useMemo, useRef } from 'react';
+import { cn } from 'cn';
+import { InboxIcon } from 'lucide-react';
 import type { RecordData, RecordKey } from '../model/index.js';
 import type {
   RecordColumnView,
   RecordRow,
-  SummaryCell,
   SummaryRow,
 } from '../record/index.js';
 import type { RecordTableController } from '../react/index.js';
-import { recordValue } from '../record/index.js';
+import { pageSummaries, recordValue } from '../record/index.js';
 import { RowActions } from './RowActions.js';
+import { Badge } from './components/badge.js';
 import { Checkbox } from './components/checkbox.js';
 import {
   Empty,
@@ -32,14 +34,32 @@ import {
   EmptyTitle,
 } from './components/empty.js';
 import { Skeleton } from './components/skeleton.js';
-import { displayValue, formatNumber, type DisplayContext } from './display.js';
+import {
+  badgeLabels,
+  displayValue,
+  formatNumber,
+  type DisplayContext,
+} from './display.js';
 import { useViewMessages, type MessageFormatters } from './MessagesProvider.js';
 import { useSurfaceDisplay } from './ViewSurface.js';
+import {
+  ACTION_CELL,
+  ACTIONS_COLUMN,
+  HEAD_CELL,
+  NUMERIC_CELL,
+  SELECT_CELL,
+  SELECT_COLUMN,
+  columnPins,
+  isNumeric,
+  pinsSelect,
+  usePinnedOffsets,
+} from './record/columns.js';
+import { SortableHeader } from './record/SortableHeader.js';
+import { SummaryRows } from './record/SummaryRows.js';
 import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -70,22 +90,21 @@ export interface RecordTableProps {
   emptyDescription?: string;
 }
 
-/**
- * The action column stays put while the rest scrolls sideways, which is the
- * only reason it can be the last one: on a wide table, actions that scroll
- * away are actions nobody finds. The inset shadow draws its left edge — a
- * real border would move with the cell it is on and leave a gap under the
- * sticky one.
- */
-const ACTION_CELL =
-  'sticky right-0 w-0 bg-background whitespace-nowrap shadow-[inset_1px_0_0_var(--border)]';
-
 export interface RecordCell {
   column: RecordColumnView;
   row: RecordData;
   key: RecordKey;
   value: unknown;
 }
+
+/**
+ * The table scrolls, the page does not: the header stays while the rows move
+ * under it, the summaries stay at the foot, and both scroll sideways with the
+ * columns they belong to. A host that would rather scroll the whole page sets
+ * the height to `none`.
+ */
+const SCROLL_AREA =
+  'relative max-h-[var(--fve-record-table-max-h,70vh)] overflow-auto [&>[data-slot=table-container]]:overflow-visible';
 
 /**
  * The record view as a table.
@@ -108,6 +127,16 @@ export function RecordTable({
     renderCell ?? (found => defaultCell(found, messages, display));
   const allSelected =
     table.rows.length > 0 && table.selection.length === table.rows.length;
+  const columns = table.columns;
+  const element = useRef<HTMLTableElement>(null);
+  usePinnedOffsets(element);
+  const pins = useMemo(
+    () =>
+      columnPins(columns, { selectable, actions: rowActions !== undefined }),
+    [columns, selectable, rowActions],
+  );
+  const pinSelect = selectable && pinsSelect(columns);
+  const summaries = useSummaries(table.summaries, table.rows);
 
   if (table.status === 'success' && table.rows.length === 0) {
     return (
@@ -128,12 +157,18 @@ export function RecordTable({
   }
 
   return (
-    <div data-slot="record-table" className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
+    <div data-slot="record-table" className={SCROLL_AREA}>
+      <Table ref={element}>
+        {/* A layer rather than a row: it stays while the rows move under it,
+            and its edge is heavier than the hairlines between them. */}
+        <TableHeader className="bg-background sticky top-0 z-20 [&_tr]:border-b-2">
+          <TableRow className="bg-background hover:bg-background">
             {selectable && (
-              <TableHead className="w-10">
+              <TableHead
+                data-column={SELECT_COLUMN}
+                data-pin={pinSelect ? 'left' : undefined}
+                className={cn('w-10', HEAD_CELL, pinSelect && SELECT_CELL)}
+              >
                 <Checkbox
                   aria-label={messages.label('label.record.select-all')}
                   checked={allSelected}
@@ -146,27 +181,21 @@ export function RecordTable({
                 />
               </TableHead>
             )}
-            {table.columns.map(column => (
-              <TableHead
+            {columns.map(column => (
+              <SortableHeader
                 key={column.field}
-                style={column.width ? { width: column.width } : undefined}
-              >
-                {column.sortable ? (
-                  <button
-                    type="button"
-                    className="flex items-center gap-1"
-                    onClick={() => table.toggleSort(column.field)}
-                  >
-                    {column.label}
-                    <SortMark direction={table.sortOf(column.field)} />
-                  </button>
-                ) : (
-                  column.label
-                )}
-              </TableHead>
+                column={column}
+                sort={table.sort}
+                onToggle={table.toggleSort}
+                pin={pins.get(column.field)}
+              />
             ))}
             {rowActions && (
-              <TableHead className={ACTION_CELL}>
+              <TableHead
+                data-column={ACTIONS_COLUMN}
+                data-pin="right"
+                className={cn(HEAD_CELL, ACTION_CELL)}
+              >
                 {messages.label('label.toolbar.actions')}
               </TableHead>
             )}
@@ -178,7 +207,7 @@ export function RecordTable({
                 <TableRow key={`skeleton-${index}`}>
                   <TableCell
                     colSpan={
-                      table.columns.length +
+                      columns.length +
                       (selectable ? 1 : 0) +
                       (rowActions ? 1 : 0)
                     }
@@ -190,12 +219,17 @@ export function RecordTable({
             : table.rows.map(row => (
                 <TableRow
                   key={String(row.key)}
+                  // Three states that have to read apart: at rest the surface
+                  // itself, hovered a wash of it, picked a tint that the
+                  // hover does not wash out — a row loses its selection to
+                  // the pointer passing over it otherwise.
+                  className="bg-background data-[state=selected]:bg-muted data-[state=selected]:hover:bg-muted"
                   data-state={
                     table.isSelected(row.key) ? 'selected' : undefined
                   }
                 >
                   {selectable && (
-                    <TableCell>
+                    <TableCell className={cn(pinSelect && SELECT_CELL)}>
                       <Checkbox
                         aria-label={messages.label('label.record.select', {
                           key: String(row.key),
@@ -205,16 +239,26 @@ export function RecordTable({
                       />
                     </TableCell>
                   )}
-                  {table.columns.map(column => (
-                    <TableCell key={column.field}>
-                      {renderOne({
-                        column,
-                        row: row.data,
-                        key: row.key,
-                        value: recordValue(row.data, column.field),
-                      })}
-                    </TableCell>
-                  ))}
+                  {columns.map(column => {
+                    const pin = pins.get(column.field);
+                    return (
+                      <TableCell
+                        key={column.field}
+                        className={cn(
+                          isNumeric(column) && NUMERIC_CELL,
+                          pin?.className,
+                        )}
+                        style={pin?.style}
+                      >
+                        {renderOne({
+                          column,
+                          row: row.data,
+                          key: row.key,
+                          value: recordValue(row.data, column.field),
+                        })}
+                      </TableCell>
+                    );
+                  })}
                   {rowActions && (
                     <TableCell className={ACTION_CELL}>
                       <RowActions>{rowActions(row)}</RowActions>
@@ -223,12 +267,14 @@ export function RecordTable({
                 </TableRow>
               ))}
         </TableBody>
-        {table.summaries && (
-          <SummaryFooter
-            summaries={table.summaries}
-            columns={table.columns}
+        {summaries.length > 0 && (
+          <SummaryRows
+            rows={summaries}
+            columns={columns}
             selectable={selectable}
             actions={rowActions !== undefined}
+            pins={pins}
+            pinSelect={pinSelect}
           />
         )}
       </Table>
@@ -237,86 +283,23 @@ export function RecordTable({
 }
 
 /**
- * The summary row.
+ * The two scopes, from the one the runtime executed.
  *
- * Its scope is part of the number, not a detail: a `total` comes from its own
- * aggregation over everything the conditions match, while a `page` is the
- * visible rows added up, which is what is left when that query fails. An
- * average over twenty rows presented as the average over forty thousand is
- * the one mistake this row could make, so the row says which it is.
+ * The totals row is the one that costs a query; the page row is the rows on
+ * screen added up, so it is derived here rather than asked for. When the
+ * totals query failed the runtime already fell back to the page, and that
+ * single row stands on its own — inventing the other one is exactly the
+ * mistake the scope labels exist to prevent.
  */
-function SummaryFooter({
-  summaries,
-  columns,
-  selectable,
-  actions,
-}: {
-  summaries: SummaryRow;
-  columns: readonly RecordColumnView[];
-  selectable: boolean;
-  /** Whether the rows carry an action column the footer has to match. */
-  actions: boolean;
-}) {
-  const messages = useViewMessages();
-  // A field may carry several functions — `amount` summed and averaged — and
-  // the kernel projects a cell for each, so they are grouped rather than
-  // keyed, which would keep only the last one configured.
-  const byField = new Map<string, SummaryCell[]>();
-  for (const cell of summaries.cells)
-    byField.set(cell.field, [...(byField.get(cell.field) ?? []), cell]);
-
-  // The scope rides in the selection column when there is one; without it
-  // there is no spare cell, so it labels the first column from above rather
-  // than taking a column's place and hiding whatever that column summarises.
-  // A table with no columns has nothing to summarise on screen either, so the
-  // row is simply empty and `data-scope` carries the scope on its own.
-  const scope = (
-    <span
-      data-slot="summary-scope"
-      className="text-muted-foreground block text-xs font-normal"
-    >
-      {messages.label(`label.summary.${summaries.scope}`)}
-    </span>
-  );
-
-  return (
-    <TableFooter data-scope={summaries.scope}>
-      <TableRow>
-        {selectable && <TableCell>{scope}</TableCell>}
-        {columns.map((column, index) => (
-          <TableCell key={column.field}>
-            {!selectable && index === 0 && scope}
-            {(byField.get(column.field) ?? []).map(cell => (
-              <span
-                key={cell.fn}
-                className="block whitespace-nowrap"
-                title={messages.label('label.summary.of', {
-                  fn: cell.fn,
-                  field: cell.label,
-                })}
-              >
-                <span className="text-muted-foreground mr-1 text-xs">
-                  {cell.fn}
-                </span>
-                {cell.value === null
-                  ? messages.label('label.summary.unavailable')
-                  : formatNumber(cell.value, cell.numberFormat)}
-              </span>
-            ))}
-          </TableCell>
-        ))}
-        {/* Nothing to summarise about actions, but the row still has to be
-            as wide as the ones above it. */}
-        {actions && <TableCell className={ACTION_CELL} />}
-      </TableRow>
-    </TableFooter>
-  );
-}
-
-function SortMark({ direction }: { direction: 'ASC' | 'DESC' | null }) {
-  if (direction === 'ASC') return <ArrowUpIcon />;
-  if (direction === 'DESC') return <ArrowDownIcon />;
-  return null;
+function useSummaries(
+  summaries: SummaryRow | null,
+  rows: readonly RecordRow[],
+): readonly SummaryRow[] {
+  return useMemo(() => {
+    if (!summaries) return [];
+    if (summaries.scope === 'page') return [summaries];
+    return [pageSummaries(summaries.cells, rows), summaries];
+  }, [summaries, rows]);
 }
 
 /** Numbers follow the field's declared format; everything else is text. */
@@ -326,6 +309,22 @@ function defaultCell(
   display: DisplayContext,
 ): React.ReactNode {
   if (value === null || value === undefined) return null;
+  // A status is one of a known set, so it reads as a badge rather than as a
+  // word that happens to be capitalised. The neutral variant is the only one
+  // used: the definition says what the choices are, not which of them is
+  // good news, and a table that colours them by guess is a table that calls
+  // `CANCELLED` an error in one application and a normal outcome in the next.
+  const badges = badgeLabels(value, column);
+  if (badges)
+    return (
+      <span className="flex flex-wrap items-center gap-1">
+        {badges.map(label => (
+          <Badge key={label} variant="secondary">
+            {label}
+          </Badge>
+        ))}
+      </span>
+    );
   // A time, a date or an enum shows as the field says; a number keeps its
   // format and a boolean its wording below.
   const shown = displayValue(value, column, display);

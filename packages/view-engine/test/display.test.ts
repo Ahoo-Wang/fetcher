@@ -13,7 +13,12 @@
 
 import { describe, expect, it } from 'vitest';
 import type { MessageFormatters } from '../src/ui/index.js';
-import { displayValue, formatNumber, valueText } from '../src/ui/display.js';
+import {
+  badgeLabels,
+  displayValue,
+  formatNumber,
+  valueText,
+} from '../src/ui/display.js';
 
 /**
  * Expected text comes from the same Intl call, not a literal: the ICU data a
@@ -299,5 +304,62 @@ describe('displayValue', () => {
         { locale: 'en-GB', timeZone: 'Mars/Olympus_Mons' },
       ),
     ).toBe(formatted(INSTANT, 'en-GB', DATE_TIME));
+  });
+});
+
+/**
+ * Which values wear a badge. A status is one of a set the definition names,
+ * and a pill says exactly that; a string that merely happens to be short is
+ * not a status, and neither is a code nobody listed.
+ */
+describe('badgeLabels', () => {
+  const STATUS = {
+    kind: 'enum',
+    options: [
+      { value: 'PENDING', label: 'Pending' },
+      { value: 'SHIPPED', label: 'Shipped' },
+    ],
+  };
+
+  it('answers with the option label of an enum the definition named', () => {
+    expect(badgeLabels('PENDING', STATUS)).toEqual(['Pending']);
+  });
+
+  it('answers with one label per value of an array', () => {
+    expect(badgeLabels(['PENDING', 'SHIPPED'], STATUS)).toEqual([
+      'Pending',
+      'Shipped',
+    ]);
+    // A code the definition dropped is shown as it came, beside the ones it
+    // still names — the row holds it either way.
+    expect(badgeLabels(['PENDING', 'LOST'], STATUS)).toEqual([
+      'Pending',
+      'LOST',
+    ]);
+  });
+
+  it('follows the renderer key before the kind', () => {
+    expect(
+      badgeLabels('PENDING', { ...STATUS, cell: 'string' }),
+    ).toBeUndefined();
+    expect(
+      badgeLabels('PENDING', {
+        kind: 'string',
+        cell: 'enum',
+        options: STATUS.options,
+      }),
+    ).toEqual(['Pending']);
+  });
+
+  it('leaves everything else to the caller', () => {
+    // No choices declared, so nothing says this string is one of a set.
+    expect(badgeLabels('PENDING', { kind: 'enum' })).toBeUndefined();
+    expect(
+      badgeLabels('PENDING', { kind: 'enum', options: [] }),
+    ).toBeUndefined();
+    // A value none of the choices name is a code, not a status.
+    expect(badgeLabels('LOST', STATUS)).toBeUndefined();
+    expect(badgeLabels(null, STATUS)).toBeUndefined();
+    expect(badgeLabels(undefined, STATUS)).toBeUndefined();
   });
 });

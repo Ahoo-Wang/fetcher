@@ -158,17 +158,49 @@ export function valueText(
   return JSON.stringify(value) ?? '';
 }
 
+/**
+ * The labels a status cell wears as badges, or `undefined` when the field is
+ * not one.
+ *
+ * Two things have to hold. The field's renderer is `enum` and it declares the
+ * choices, so a badge means "one of a known set" rather than "some string";
+ * and at least one of the values is a choice the definition names, because a
+ * pill around a code nobody named only makes the code look deliberate. An
+ * array of enum values gets one badge each: joined into a single pill they
+ * would read as one status with a comma in its name.
+ */
+export function badgeLabels(
+  value: unknown,
+  field: DisplayField,
+): string[] | undefined {
+  if ((field.cell ?? field.kind) !== 'enum') return undefined;
+  if (!field.options || field.options.length === 0) return undefined;
+  if (value === null || value === undefined) return undefined;
+  return optionLabels(value, field.options);
+}
+
 /** The label of each value an enum holds; `undefined` when none is known. */
 function optionLabel(
   value: unknown,
   options: readonly FieldOption[],
 ): string | undefined {
+  return optionLabels(value, options)?.join(', ');
+}
+
+/**
+ * One label per value, in order, or `undefined` when the options name none of
+ * them — a code the definition no longer lists is shown as it came, but a
+ * value nothing at all is known about is left to the caller's own rendering.
+ */
+function optionLabels(
+  value: unknown,
+  options: readonly FieldOption[],
+): string[] | undefined {
   const labelOf = (item: unknown) =>
     options.find(option => option.value === item)?.label;
-  if (!Array.isArray(value)) return labelOf(value);
-  const labels = value.map(item => labelOf(item) ?? String(item));
-  return value.some(item => labelOf(item) !== undefined)
-    ? labels.join(', ')
+  const items = Array.isArray(value) ? value : [value];
+  return items.some(item => labelOf(item) !== undefined)
+    ? items.map(item => labelOf(item) ?? String(item))
     : undefined;
 }
 
