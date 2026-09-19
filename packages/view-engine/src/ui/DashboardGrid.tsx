@@ -142,11 +142,14 @@ export interface DashboardPanelProps {
 export function DashboardPanel({ panel, editable }: DashboardPanelProps) {
   const messages = useViewMessages();
   // A panel that runs and still has something to say shows its view and
-  // wears the finding in its header. A broken one says so in its body, where
-  // the view would have been, so the same finding is not said twice.
-  const warnings = panel.broken
-    ? []
-    : panel.issues.filter(found => found.severity === 'warning');
+  // wears the finding in its header. A broken one says why in its body,
+  // where the view would have been; whatever else it has to say — a config
+  // can carry a warning beside its error — still goes in the header, and
+  // only the finding the body shows is left out, so nothing is said twice.
+  const shown = bodyIssue(panel);
+  const warnings = panel.issues.filter(
+    found => found.severity === 'warning' && found !== shown,
+  );
   const warned = warnings.length > 0;
   return (
     <Card
@@ -199,8 +202,7 @@ function PanelBody({ panel }: { panel: DashboardPanelView }) {
   // and leaves the rest alone. Content panels come through here too: a link
   // whose scheme was rejected must not reach the document because the rest of
   // the dashboard happened to be fine.
-  if (panel.broken)
-    return <Unavailable issue={firstError(panel) ?? panel.issues[0]} />;
+  if (panel.broken) return <Unavailable issue={bodyIssue(panel)} />;
   if (panel.panel.kind !== 'view') return <ContentPanel panel={panel.panel} />;
   if (!panel.runtime) return <Unavailable issue={panel.issues[0]} />;
   return panel.runtime.kind === 'record' ? (
@@ -210,9 +212,16 @@ function PanelBody({ panel }: { panel: DashboardPanelView }) {
   );
 }
 
-/** The reason a panel is out, preferred over a warning that came with it. */
-function firstError(panel: DashboardPanelView): Issue | undefined {
-  return panel.issues.find(found => found.severity === 'error');
+/**
+ * The finding a broken panel's body shows as the reason it is out: its
+ * first error, else the warning that came alone. A panel that runs shows
+ * its view instead, and its findings all belong to the header.
+ */
+function bodyIssue(panel: DashboardPanelView): Issue | undefined {
+  if (!panel.broken) return undefined;
+  return (
+    panel.issues.find(found => found.severity === 'error') ?? panel.issues[0]
+  );
 }
 
 function Unavailable({ issue }: { issue: Issue | undefined }) {

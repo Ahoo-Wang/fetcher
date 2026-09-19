@@ -20,11 +20,15 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import { FilterOperator } from '@ahoo-wang/fetcher-wow';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  builtinFieldKinds,
   MemoryViewStore,
   ViewEngine,
+  withFieldKinds,
   type DashboardRuntime,
+  type FieldKind,
   type DashboardPanel,
   type DashboardViewConfig,
   type ViewInstance,
@@ -333,6 +337,40 @@ describe('DashboardGrid', () => {
       }),
     ).toBeTruthy();
     expect(screen.queryByText('This panel is unavailable')).toBeNull();
+  });
+
+  /**
+   * A saved view can carry both. The body shows why the panel is out, and
+   * the warning beside that error was dropped with it; it belongs in the
+   * header, where a running panel would wear it.
+   */
+  it('keeps a broken panel warning in the header beside the reason in the body', async () => {
+    const { controller } = await openDashboard(
+      dashboardConfig({ panels: [panel({ title: 'Pending' })] }),
+      [
+        {
+          ...pending,
+          config: recordConfig({
+            filterMode: 'simple',
+            filter: {
+              op: 'or',
+              children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+            },
+            pageSize: 0,
+          }),
+        },
+      ],
+    );
+
+    render(<DashboardGrid dashboard={controller()} />);
+
+    expect(screen.getByText('This panel is unavailable')).toBeTruthy();
+    expect(screen.getByText(/page size must be a positive/)).toBeTruthy();
+    expect(
+      screen.getByRole('img', {
+        name: 'These conditions need the advanced editor to be shown in full.',
+      }),
+    ).toBeTruthy();
   });
 
   it('offers a grip only when the layout may be edited', async () => {
@@ -839,5 +877,103 @@ describe('DashboardWorkbench', () => {
     expect(notice?.textContent).not.toContain('unavailable');
     expect(screen.getByText('This panel is unavailable')).toBeTruthy();
     expect(screen.queryByText(/needs fixing/)).toBeNull();
+  });
+
+  /**
+   * A global condition mapped onto a panel field that warns is, before
+   * Apply, a finding under `['panels', …]` that the applied panels do not
+   * carry and the dashboard's own list leaves out, so nothing showed it —
+   * and Save would have persisted it unseen. Until Apply hands it to the
+   * panel, the notice says it; once the panel wears it, the notice lets go.
+   */
+  it('says a draft panel warning no panel carries yet, until apply hands it over', async () => {
+    // Warns on the panel's field only, so the finding exists at panel level
+    // and nowhere else: the dashboard's own validation of the global
+    // condition has nothing to say about it.
+    const rounded: FieldKind = {
+      id: 'rounded',
+      operators: ['EQ'],
+      defaultOperator: 'EQ',
+      emptyValue: () => null,
+      validate: ({ value, field, path }) =>
+        field.name === 'mass' &&
+        typeof value === 'number' &&
+        !Number.isInteger(value)
+          ? [{ code: 'filter.value.rounded', severity: 'warning', path }]
+          : [],
+      compile: ({ leaf, field }) => ({
+        op: FilterOperator.EQ,
+        field: field.name,
+        value: Math.round(leaf.value as number),
+      }),
+      editor: () => ({ input: 'number' }),
+      describe: ({ leaf, field }) => `${field.label} = ${String(leaf.value)}`,
+    };
+    const orders = ordersDefinition();
+    const engine = new ViewEngine({
+      definitions: [
+        {
+          ...orders,
+          fields: [
+            ...orders.fields,
+            { name: 'mass', label: 'Mass', kind: 'rounded' },
+          ],
+        },
+        overviewDefinition(),
+      ],
+      store: new MemoryViewStore({
+        instances: [
+          pending,
+          {
+            ...overview,
+            config: dashboardConfig({
+              fields: [{ name: 'weight', label: 'Weight', kind: 'rounded' }],
+              panels: [
+                panel({
+                  title: 'Pending',
+                  bindings: [{ globalField: 'weight', panelField: 'mass' }],
+                }),
+              ],
+            }),
+          },
+        ],
+      }),
+      resolveSource: () => testSource(),
+      kinds: withFieldKinds(builtinFieldKinds, [rounded]),
+    });
+
+    render(
+      <DashboardWorkbench
+        engine={engine}
+        definitionId="overview"
+        instanceId="overview-1"
+      />,
+    );
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+    const notice = () => document.querySelector('[data-slot="view-warnings"]');
+    const marker = () => document.querySelector('[data-slot="panel-warning"]');
+    expect(notice()).toBeNull();
+    const runtime = engine
+      .openRuntimes()
+      .find(opened => opened.kind === 'dashboard') as DashboardRuntime;
+
+    act(() =>
+      runtime.edit({
+        filter: {
+          op: 'and',
+          children: [{ field: 'weight', operator: 'EQ', value: 2.5 }],
+        },
+      }),
+    );
+
+    await waitFor(() =>
+      expect(notice()?.textContent).toContain('filter.value.rounded'),
+    );
+    expect(marker()).toBeNull();
+
+    act(() => runtime.apply());
+
+    await waitFor(() => expect(marker()).toBeTruthy());
+    expect(notice()).toBeNull();
   });
 });

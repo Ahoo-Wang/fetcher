@@ -37,7 +37,9 @@ export interface WarningNoticeProps {
  */
 export function WarningNotice({ issues, className }: WarningNoticeProps) {
   const messages = useViewMessages();
-  const warnings = issues.filter(found => found.severity === 'warning');
+  const warnings = distinct(
+    issues.filter(found => found.severity === 'warning'),
+  );
   if (warnings.length === 0) return null;
   return (
     <Alert
@@ -53,5 +55,29 @@ export function WarningNotice({ issues, className }: WarningNoticeProps) {
       <AlertTitle>{messages.label('label.view.warnings')}</AlertTitle>
       <AlertDescription>{messages.issues(warnings)}</AlertDescription>
     </Alert>
+  );
+}
+
+/**
+ * One of each sentence. A dashboard validates a global condition once as
+ * its own and once more per panel it maps onto, and two leaves can trip the
+ * same rule; the code and the params are the sentence, and the same sentence
+ * twice tells nobody anything more.
+ */
+function distinct(warnings: readonly Issue[]): Issue[] {
+  const kept: Issue[] = [];
+  for (const found of warnings)
+    if (!kept.some(said => sameWording(said, found))) kept.push(found);
+  return kept;
+}
+
+function sameWording(a: Issue, b: Issue): boolean {
+  if (a.code !== b.code) return false;
+  const left = a.params ?? {};
+  const right = b.params ?? {};
+  const keys = Object.keys(left);
+  return (
+    keys.length === Object.keys(right).length &&
+    keys.every(key => left[key] === right[key])
   );
 }

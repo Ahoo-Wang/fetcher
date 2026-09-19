@@ -2775,4 +2775,45 @@ describe('WarningNotice', () => {
     expect(notice.textContent).not.toContain('blocking.elsewhere');
     expect(notice.textContent).toContain('advanced editor');
   });
+
+  /**
+   * A dashboard validates a global condition once as its own and once per
+   * panel it maps onto, so the same sentence arrived twice with two paths.
+   * The code and the params are the sentence; one of each is said.
+   */
+  it('says the same sentence once, however many paths raise it', () => {
+    render(
+      <WarningNotice
+        issues={[
+          {
+            code: 'config.filterMode.not-simple',
+            severity: 'warning',
+            path: [],
+          },
+          {
+            code: 'config.filterMode.not-simple',
+            severity: 'warning',
+            path: ['panels', 0, 'filterMode'],
+          },
+          {
+            code: 'record.summary.unsupported',
+            severity: 'warning',
+            path: ['summaries', 0],
+            params: { field: 'Amount', fn: 'AVG' },
+          },
+          {
+            code: 'record.summary.unsupported',
+            severity: 'warning',
+            path: ['summaries', 1],
+            params: { field: 'Amount', fn: 'SUM' },
+          },
+        ]}
+      />,
+    );
+
+    const text = screen.getByRole('status').textContent ?? '';
+    expect(text.match(/advanced editor/g)).toHaveLength(1);
+    expect(text).toContain('AVG summary');
+    expect(text).toContain('SUM summary');
+  });
 });
