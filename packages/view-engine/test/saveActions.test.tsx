@@ -238,8 +238,10 @@ describe('SaveActions, the split button group', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await screen.findByRole('alert');
 
-    const save = screen.getByRole('button', { name: 'Save' });
-    expect(save).toHaveProperty('disabled', false);
+    // The refusal reaches the screen one render before the command's own
+    // pending flag clears, and until it does the button reads "Saving…".
+    const save = await screen.findByRole('button', { name: 'Save' });
+    await waitFor(() => expect(save.hasAttribute('disabled')).toBe(false));
     fireEvent.click(save);
 
     await waitFor(async () =>
