@@ -11,10 +11,9 @@
  * limitations under the License.
  */
 
-import type { FocusEvent } from 'react';
+import type { FocusEvent, KeyboardEvent } from 'react';
 import type { FieldOption } from '../model/index.js';
 import type { FilterEditorController } from '../react/index.js';
-import { ToggleGroup, ToggleGroupItem } from './components/toggle-group.js';
 import { AddEntry } from './filter/AddEntry.js';
 import { FilterActions } from './filter/FilterActions.js';
 import { ConditionStrip, GroupBlock } from './filter/GroupBlock.js';
@@ -43,10 +42,15 @@ export interface FilterPanelProps {
  * since it is one. Simple mode shows the root's conditions as one strip;
  * anything the simple editor cannot show faithfully — a group anywhere — gets
  * the advanced one, where groups can be flipped between and/or, nested,
- * filled and removed.
+ * filled and removed. Which mode that is, is chosen from the editor's own
+ * menu in the title bar rather than from a row inside the panel: the panel is
+ * the conditions, and a control for *how* to edit them sitting among them was
+ * a line of chrome over every filter ever written.
  *
  * Nothing is applied until submit, which is the whole point of keeping a
- * draft apart from what ran: typing in here never re-queries.
+ * draft apart from what ran: typing in here never re-queries. Enter in a
+ * value editor is the one shortcut to that submit — the same command the
+ * Apply button runs, refused under the same conditions.
  */
 export function FilterPanel({
   filter,
@@ -69,6 +73,9 @@ export function FilterPanel({
     <section
       data-slot="filter-panel"
       aria-label={messages.label('label.filter.panel')}
+      // Announced rather than only implemented: a keyboard shortcut nobody
+      // can discover is a shortcut for whoever wrote it.
+      aria-keyshortcuts={submit ? 'Enter' : undefined}
       className="flex flex-col gap-3"
       // Auto-refresh holds while any control in here has focus. Focus events
       // bubble in React, so the root sees every input; a move from one
@@ -79,30 +86,19 @@ export function FilterPanel({
       onBlur={event => {
         if (leavesEditor(event)) filter.blur();
       }}
+      // Enter in a value editor is the same decision the Apply button is, so
+      // it runs the same command under the same conditions — never while
+      // apply is refused, and never when the keystroke was already somebody
+      // else's (see `appliesOnEnter`).
+      onKeyDown={event => {
+        if (!submit || disabled || filter.blocked > 0) return;
+        if (!appliesOnEnter(event)) return;
+        // The panel has taken the keystroke; nothing above it — a host's own
+        // form, most of all — should act on it a second time.
+        event.preventDefault();
+        filter.submit();
+      }}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <ToggleGroup
-          // The effective mode, not the saved one: a simple config holding a
-          // tree the simple editor cannot show opens in the advanced one, and
-          // the toggle says so instead of contradicting the editor below.
-          value={[advanced ? 'advanced' : 'simple']}
-          onValueChange={value => {
-            const next = value[0];
-            if (next === 'simple' || next === 'advanced') filter.setMode(next);
-          }}
-          variant="outline"
-          size="sm"
-          aria-label={messages.label('label.filter.mode')}
-        >
-          <ToggleGroupItem value="simple">
-            {messages.label('label.filter.simple')}
-          </ToggleGroupItem>
-          <ToggleGroupItem value="advanced">
-            {messages.label('label.filter.advanced')}
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-
       {overBudget ? (
         <p
           data-slot="filter-too-large"
@@ -158,13 +154,61 @@ export function FilterPanel({
 }
 
 /**
+ * Whether `node` is the element the event was handled on, or something
+ * inside it. Every boundary question below is this one asked of a different
+ * node, because a React event says nothing about where in the DOM it
+ * started: it bubbles through a portal just as it bubbles through a child.
+ */
+function within(root: HTMLElement, node: EventTarget | null): boolean {
+  return node instanceof Node && root.contains(node);
+}
+
+/**
  * Whether a focus event entered or left the element it was handled on, as
  * opposed to moving between two of its descendants. `relatedTarget` is the
  * other side of the move: on focus the element left, on blur the one gained.
  */
 export function crossesBoundary(event: FocusEvent<HTMLElement>): boolean {
-  const other = event.relatedTarget;
-  return !(other instanceof Node && event.currentTarget.contains(other));
+  return !within(event.currentTarget, event.relatedTarget);
+}
+
+/**
+ * Whether this Enter means "apply".
+ *
+ * The panel listens at its root so every value editor gets the shortcut
+ * without knowing about it, and the cost of listening that high is that
+ * keystrokes arrive which were never meant for it. Four of them are not:
+ *
+ * - one an IME is using to accept the characters being composed, which is
+ *   not a press of Enter at all as far as the user is concerned;
+ * - one held with a modifier, which is some other shortcut, possibly the
+ *   host page's;
+ * - one inside a popup of one of the panel's own controls — a select's list,
+ *   a date picker, a combobox. It is portalled outside the panel, yet a
+ *   React event still bubbles here from it, and while it is open Enter is
+ *   its answer to give. Base UI marks the open trigger, which is the same
+ *   mark `leavesEditor` reads;
+ * - one on a control that acts on Enter itself. Enter on "Add" opens the
+ *   field picker and Enter on Clear clears: one keystroke, one meaning, and
+ *   the panel does not get to add a second.
+ */
+function appliesOnEnter(event: KeyboardEvent<HTMLElement>): boolean {
+  if (event.key !== 'Enter') return false;
+  if (event.nativeEvent.isComposing) return false;
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
+    return false;
+  if (!within(event.currentTarget, event.target)) return false;
+  if (event.currentTarget.querySelector('[data-popup-open]') !== null)
+    return false;
+  return !actsOnEnter(event.target);
+}
+
+/** Controls whose own answer to Enter the panel must not talk over. */
+const ENTER_IS_TAKEN =
+  'button, a[href], summary, textarea, [role="button"], [role="link"]';
+
+function actsOnEnter(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(ENTER_IS_TAKEN) !== null;
 }
 
 /**
