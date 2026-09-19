@@ -217,7 +217,7 @@ describe('manager/abilities', () => {
 describe('manager/queue', () => {
   it('starts an idle queue in the same turn, and goes idle again', async () => {
     const queue = createCommandQueue<string>();
-    expect(queue.back).toBeNull();
+    expect(queue.backs).toEqual([]);
     let started = false;
     const landed = enqueue(queue, 'one', () => {
       started = true;
@@ -225,10 +225,10 @@ describe('manager/queue', () => {
     });
     // Not a microtask later: the row the user clicked shows progress now.
     expect(started).toBe(true);
-    expect(queue.back).not.toBeNull();
+    expect(queue.backs).toHaveLength(1);
     await expect(landed).resolves.toBe(1);
     await Promise.resolve();
-    expect(queue.back).toBeNull();
+    expect(queue.backs).toEqual([]);
   });
 
   it('runs same-tagged tasks one after the other', async () => {
@@ -260,7 +260,7 @@ describe('manager/queue', () => {
     ).resolves.toBe('after');
   });
 
-  it('starts a fresh queue for another tag rather than waiting on it', async () => {
+  it('starts a fresh chain for another tag rather than waiting on it', async () => {
     const queue = createCommandQueue<string>();
     const hanging = deferred<string>();
     const stale = enqueue(queue, 'old', () => hanging.promise);
@@ -271,9 +271,45 @@ describe('manager/queue', () => {
     });
     expect(started).toBe(true);
     await expect(landed).resolves.toBe('new');
-    // The old queue settles alone, with nobody reading its result.
+    // The old chain settles alone, with nobody reading its result.
     hanging.resolve('old');
     await expect(stale).resolves.toBe('old');
+  });
+
+  /**
+   * The inputs the caller left are not the inputs it abandoned. Coming back to
+   * a tag whose write is still in flight must chain behind that write: a
+   * second one against the same target is what the engine refuses with
+   * `view.write.in-flight`, and the caller would report that as the failure of
+   * the click that was only second.
+   */
+  it('waits for a returning tag own in-flight task', async () => {
+    const queue = createCommandQueue<string>();
+    const hanging = deferred<string>();
+    const order: string[] = [];
+    const first = enqueue(queue, 'a', () =>
+      hanging.promise.then(value => {
+        order.push(value);
+        return value;
+      }),
+    );
+    // Another tag in between, which neither waits nor displaces A's chain.
+    await enqueue(queue, 'b', () => {
+      order.push('b');
+      return Promise.resolve('b');
+    });
+
+    let started = false;
+    const second = enqueue(queue, 'a', () => {
+      started = true;
+      order.push('a2');
+      return Promise.resolve('a2');
+    });
+    expect(started).toBe(false);
+
+    hanging.resolve('a1');
+    await Promise.all([first, second]);
+    expect(order).toEqual(['b', 'a1', 'a2']);
   });
 
   it('chains by the comparison the caller supplied', async () => {

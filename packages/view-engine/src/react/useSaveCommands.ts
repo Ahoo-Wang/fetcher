@@ -177,10 +177,20 @@ export function useSaveCommands(
       // write: a delete resolves with `false` on failure, a retry with a
       // replay that may have answered "not landed".
       landed?: (outcome: T) => boolean,
+      // A replay or a conflict choice: it addresses the outcome that is in
+      // the way rather than being stopped by it. See {@link guarded}.
+      recovery = false,
     ): Promise<T> => {
       const commands = (queue.current ??=
         createCommandQueue<ViewRuntime | null>());
       return enqueue(commands, runtime, async () => {
+        // Asked at the front of the queue rather than at the click: the
+        // command ahead may be the one that turned this view `unknown`, or
+        // the last thing a runtime did before it was released. Sending anyway
+        // earns a `view.write.unknown-pending` refusal, and the header would
+        // show it as the failure of a click that was only second — over an
+        // outcome the user still has to retry or abandon.
+        if (!guarded(runtime, recovery)) return fallback;
         setProgress({ runtime, pending: true, error: null, savedAt: null });
         try {
           const outcome = await command();
@@ -296,6 +306,7 @@ export function useSaveCommands(
         engine.retryWrite(runtime).then(it => recovered(it, savesView(action))),
       UNRECOVERED,
       wroteStore,
+      true,
     );
   }, [engine, runtime, run]);
 
@@ -348,6 +359,7 @@ export function useSaveCommands(
             ),
         UNRECOVERED,
         wroteStore,
+        true,
       );
     },
     [engine, runtime, run],
@@ -392,6 +404,23 @@ export function useSaveCommands(
       lastSavedAt: own.savedAt,
     },
   };
+}
+
+/**
+ * Whether a command that has reached the front of the queue may still go.
+ *
+ * A recovery always may: it is the very outcome in the way being answered.
+ * Anything else is a new intent, and what stops it here is exactly what
+ * {@link blocksNewIntent} stopped the click by — read again, because the
+ * command ahead of this one may have turned the view `unknown` since. A
+ * runtime released while this waited has nothing left to write to, and every
+ * command on it is a no-op, so it is not worth an error either. Skipping
+ * resolves the command's own fallback, which is what "nothing happened"
+ * already reads as.
+ */
+function guarded(runtime: ViewRuntime | null, recovery: boolean): boolean {
+  if (runtime === null || runtime.disposed) return false;
+  return recovery || !blocksNewIntent(runtime.getSnapshot().write);
 }
 
 /** A save or a copy that produced an instance is one the store took. */
