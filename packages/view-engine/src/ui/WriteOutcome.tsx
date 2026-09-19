@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type {
   Issue,
   ViewConfig,
@@ -22,6 +22,7 @@ import type {
   ConflictChoice,
   WriteAction,
   WritePayload,
+  WriteState,
 } from '../runtime/index.js';
 import type { SaveCommands } from '../react/index.js';
 import { Button } from './components/button.js';
@@ -113,7 +114,28 @@ export function WriteOutcome({
   const messages = useViewMessages();
   const [confirming, setConfirming] = useState<ConflictChoice | null>(null);
   const [copying, setCopying] = useState(false);
-  const { write, error } = commands.state;
+  // The conflict a copy is being made out of, captured when the dialog opens.
+  // Landing the copy is a write of its own, and from the moment it has an
+  // outcome the runtime reports *that* one — so this captured state is the
+  // only address the original conflict still has. A ref rather than state:
+  // nothing renders from it, and it is read from an effect that must not
+  // cause a render of its own.
+  const original = useRef<WriteState | null>(null);
+  const { write, error, pending } = commands.state;
+
+  // Settled as soon as the runtime stops reporting it, whichever way the copy
+  // went: it landed (the outcome slot is empty now), or it came back rejected,
+  // unknown or in conflict itself (the slot holds the copy's). Either way the
+  // original is no longer addressable from the screen, and leaving it would
+  // strand a write in `engine.pendingWrites()` for the rest of the session.
+  // A copy the engine refused before dispatching changes nothing here — the
+  // runtime still reports the original, and it stays the user's to answer.
+  useEffect(() => {
+    const held = original.current;
+    if (held === null || write === held) return;
+    original.current = null;
+    commands.abandon(held);
+  }, [commands, write]);
 
   /**
    * A recovered write lands like the original one would have: a recovered
@@ -169,6 +191,11 @@ export function WriteOutcome({
           <Button
             variant="outline"
             size="sm"
+            // A second recovery while the first is in flight addresses the
+            // same handle twice; the engine refuses it with
+            // `view.write.in-flight`, and the line would report that as the
+            // failure of a click that was only impatient.
+            disabled={pending}
             onClick={() => setConfirming('reload')}
           >
             {messages.label('label.conflict.theirs')}
@@ -179,13 +206,21 @@ export function WriteOutcome({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCopying(true)}
+              disabled={pending}
+              onClick={() => {
+                original.current = write;
+                setCopying(true);
+              }}
             >
               {messages.label('label.conflict.copy')}
             </Button>
           )}
           {commands.can.save && (
-            <Button size="sm" onClick={() => setConfirming('overwrite')}>
+            <Button
+              size="sm"
+              disabled={pending}
+              onClick={() => setConfirming('overwrite')}
+            >
               {messages.label('label.conflict.mine')}
             </Button>
           )}
@@ -201,17 +236,22 @@ export function WriteOutcome({
 
         <SaveAsDialog
           open={copying}
-          onOpenChange={setCopying}
+          onOpenChange={open => {
+            setCopying(open);
+            // Closed without an answer: the conflict is still on screen and
+            // still the user's to settle, so nothing is given up.
+            if (!open) original.current = null;
+          }}
           commands={commands}
           title={title}
           // The copy is how this conflict ends, so the write it came out of
           // is settled here rather than left pending: the host is about to
           // open the copy, which releases this runtime, and a pending write
           // whose runtime is disposed can never be retried, overwritten or
-          // abandoned by anyone again. It is named rather than left to the
-          // runtime to report — landing the copy is itself a write, and the
-          // engine cleared the runtime's outcome as it settled that one.
+          // abandoned by anyone again. Done here rather than left to the
+          // effect above, which the unmount this callback causes would race.
           onSaved={saved => {
+            original.current = null;
             commands.abandon(write);
             onSaved?.(saved);
           }}
@@ -228,6 +268,9 @@ export function WriteOutcome({
         </span>
         <Button
           size="sm"
+          // One retry at a time: a second one replays a handle the engine is
+          // already busy with and comes back as `view.write.in-flight`.
+          disabled={pending}
           onClick={() => {
             const action = write.payload.action;
             void commands
@@ -237,7 +280,12 @@ export function WriteOutcome({
         >
           {messages.label('label.unknown.retry')}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => commands.abandon()}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={pending}
+          onClick={() => commands.abandon()}
+        >
           {messages.label('label.unknown.leave')}
         </Button>
       </OutcomeStrip>
@@ -253,6 +301,7 @@ export function WriteOutcome({
       // while the user fixes what it complained about.
       <RefusalLine
         issue={write.issue}
+        disabled={pending}
         onDismiss={() => commands.abandon(write)}
       />
     );
@@ -262,9 +311,11 @@ export function WriteOutcome({
 /** A refusal says why, and offers only the way to have done with it. */
 function RefusalLine({
   issue,
+  disabled,
   onDismiss,
 }: {
   issue: Issue;
+  disabled?: boolean;
   /** Absent for a failure the engine holds nothing for; see `WriteOutcome`. */
   onDismiss?(): void;
 }) {
@@ -277,7 +328,12 @@ function RefusalLine({
           ` ${String(issue.params.reason)}`}
       </span>
       {onDismiss && (
-        <Button variant="outline" size="sm" onClick={onDismiss}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          onClick={onDismiss}
+        >
           {messages.label('label.rejected.dismiss')}
         </Button>
       )}

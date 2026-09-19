@@ -20,7 +20,7 @@ import {
   SaveIcon,
 } from 'lucide-react';
 import type { ViewInstance } from '../model/index.js';
-import type { WriteAction } from '../runtime/index.js';
+import type { WriteAction, WriteState } from '../runtime/index.js';
 import type { SaveCommands } from '../react/index.js';
 import { Button } from './components/button.js';
 import { ButtonGroup } from './components/button-group.js';
@@ -96,6 +96,11 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
     !state.dirty &&
     !state.pending;
 
+  // An outcome the engine is still answering for. Until it is settled, every
+  // way of undoing or re-putting the draft is a second write over a first
+  // one whose result nobody knows yet.
+  const unsettled = isUnsettled(state.write);
+
   const copy = can.saveAs && (
     <SaveAsDialog
       open={copying}
@@ -116,16 +121,22 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
 
   const menuSaveAs = can.save && can.saveAs;
   const menuRevert = can.revert;
-  const { write } = state;
   // Spelled out rather than taken from `blocked`, because the outcomes are
-  // not one thing. A write in flight and a draft with errors stop any write.
-  // An unknown outcome must be settled first — the engine refuses the next
-  // write anyway. A conflict refuses a blind save: the user has been asked
-  // which version wins and has not answered. A refusal, though, is over —
-  // the store never took it, nothing is pending, and trying again with a
-  // corrected draft is exactly what the user should do next.
-  const unsettled = write?.kind === 'unknown' || write?.kind === 'conflict';
-  const stopped = state.pending || state.hasErrors || unsettled;
+  // not one thing. A write in flight stops everything. An unknown outcome
+  // must be settled first — the engine refuses the next write anyway. A
+  // conflict refuses a blind save: the user has been asked which version
+  // wins and has not answered. A refusal, though, is over — the store never
+  // took it, nothing is pending, and trying again with a corrected draft is
+  // exactly what the user should do next.
+  const stopped = state.pending || unsettled;
+  // `hasErrors` judges the draft *for the audience it already sits in*, which
+  // is the question a save in place asks. The primary button asks a different
+  // one when the user may not write here: Save As creates a copy somewhere
+  // else, and a config the current audience refuses can be perfectly valid
+  // there — a shared dashboard naming a personal view is the standard case.
+  // So the dialog judges its own target, and this button does not judge it
+  // for it.
+  const blockedDraft = can.save && state.hasErrors;
 
   return (
     <div data-slot="save-actions" className="flex items-center gap-2">
@@ -136,7 +147,7 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
           // A save with nothing to save is the one disabled button here: the
           // permission is held, so the button belongs on screen, and the
           // reason it does nothing is the state the user can see.
-          disabled={stopped || (can.save && !state.dirty)}
+          disabled={stopped || blockedDraft || (can.save && !state.dirty)}
           onClick={() => {
             if (can.save)
               void commands.save().then(made => made && onSaved?.(made));
@@ -156,7 +167,10 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
                   // Nothing in the menu may run while a write is in flight:
                   // reverting mid-save would leave the old config as a dirty
                   // draft over a baseline that has just become the new one.
-                  disabled={state.pending}
+                  // Nor while an outcome is unsettled: Retry or Keep mine is
+                  // still to land, and a revert taken first would be undone
+                  // by the write the user is about to choose.
+                  disabled={stopped}
                   aria-label={messages.label('label.header.more')}
                 />
               }
@@ -171,10 +185,7 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
                 </DropdownMenuItem>
               )}
               {menuRevert && (
-                <DropdownMenuItem
-                  disabled={state.pending}
-                  onClick={commands.revert}
-                >
+                <DropdownMenuItem disabled={stopped} onClick={commands.revert}>
                   <RotateCcwIcon />
                   {messages.label('label.save.revert')}
                 </DropdownMenuItem>
@@ -236,6 +247,16 @@ function PrimaryFace({
   );
 }
 
+/**
+ * Whether the engine is still answering for the last write. A conflict and an
+ * unknown are both unsettled: one is waiting for the user to choose, the
+ * other for a retry or an abandon, and until then any further write is a
+ * second one over a first whose result nobody knows.
+ */
+function isUnsettled(write: WriteState | null): boolean {
+  return write?.kind === 'unknown' || write?.kind === 'conflict';
+}
+
 /** The way back, when there is no way forward: put the saved config back. */
 function RevertButton({ commands }: { commands: SaveCommands }) {
   const messages = useViewMessages();
@@ -245,8 +266,9 @@ function RevertButton({ commands }: { commands: SaveCommands }) {
       size="sm"
       // Taking the edits back while the same edits are being written would
       // leave what was reverted from as the baseline and what was reverted
-      // to as a dirty draft over it.
-      disabled={commands.state.pending}
+      // to as a dirty draft over it. An unsettled outcome is the same story
+      // one step earlier: Retry or Keep mine has yet to land.
+      disabled={commands.state.pending || isUnsettled(commands.state.write)}
       onClick={commands.revert}
     >
       <RotateCcwIcon data-icon="inline-start" />

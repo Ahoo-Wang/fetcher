@@ -329,6 +329,12 @@ function OutcomeLine({
 }) {
   const messages = useViewMessages();
   const [reconfirming, setReconfirming] = useState(false);
+  // Commands run one at a time, so any write in flight — this row's or
+  // another's — is one this button would queue behind. Pressed twice, a
+  // recovery addresses the same handle twice: the engine refuses the second
+  // with `view.write.in-flight`, and the row would report that refusal as
+  // though the user's click had been the thing at fault.
+  const busy = manager.pending !== null;
 
   if (state.kind === 'conflict') {
     // A reload of a preference conflict settled it and kept what the user
@@ -344,7 +350,11 @@ function OutcomeLine({
           <span className="min-w-0 flex-1">
             {messages.label('label.write.conflict')}
           </span>
-          <Button size="xs" onClick={() => void manager.resubmit(outcomeKey)}>
+          <Button
+            size="xs"
+            disabled={busy}
+            onClick={() => void manager.resubmit(outcomeKey)}
+          >
             {messages.label('label.manage.resubmit')}
           </Button>
         </p>
@@ -369,6 +379,7 @@ function OutcomeLine({
           <Button
             variant="outline"
             size="xs"
+            disabled={busy}
             onClick={() => {
               void manager.resolveConflict(outcomeKey, 'reload');
               list.reload();
@@ -378,6 +389,7 @@ function OutcomeLine({
           </Button>
           <Button
             size="xs"
+            disabled={busy}
             onClick={() => {
               if (target) setReconfirming(true);
               else void manager.resolveConflict(outcomeKey, 'overwrite');
@@ -411,12 +423,17 @@ function OutcomeLine({
         <span className="min-w-0 flex-1">
           {messages.label('label.write.unknown')}
         </span>
-        <Button size="xs" onClick={() => void manager.retry(outcomeKey)}>
+        <Button
+          size="xs"
+          disabled={busy}
+          onClick={() => void manager.retry(outcomeKey)}
+        >
           {messages.label('label.unknown.retry')}
         </Button>
         <Button
           variant="outline"
           size="xs"
+          disabled={busy}
           onClick={() => manager.abandon(outcomeKey)}
         >
           {messages.label('label.unknown.leave')}
@@ -424,9 +441,25 @@ function OutcomeLine({
       </p>
     );
 
+  // A refusal has nothing to retry, but it is not nothing to settle: the
+  // engine may still be holding the write it refused, and the row goes on
+  // reporting it until somebody says they have read it. Without a way out,
+  // the line sits there for the session and the next command on this key
+  // takes its slot — handle and all.
   return (
-    <p role="alert" className="text-destructive text-xs">
-      {messages.issue(state.issue)}
+    <p
+      role="alert"
+      className="text-destructive flex flex-wrap items-center gap-2 text-xs"
+    >
+      <span className="min-w-0 flex-1">{messages.issue(state.issue)}</span>
+      <Button
+        variant="outline"
+        size="xs"
+        disabled={busy}
+        onClick={() => manager.abandon(outcomeKey)}
+      >
+        {messages.label('label.rejected.dismiss')}
+      </Button>
     </p>
   );
 }

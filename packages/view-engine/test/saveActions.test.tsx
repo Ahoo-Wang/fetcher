@@ -285,6 +285,26 @@ describe('SaveActions, the split button group', () => {
     ).toBeNull();
   });
 
+  /**
+   * `hasErrors` judges the draft for the audience it already sits in, which
+   * is what a save in place asks. The primary button asks something else
+   * when the user may not write here — Save As creates a copy somewhere else
+   * — and the dialog judges its own target. Disabling it for the current
+   * audience's verdict locked the only way out a reader of a system view has.
+   */
+  it('still offers a copy when the draft is invalid where it sits', async () => {
+    const { runtime } = await open(systemInstanceId('orders', 'all'));
+    // Not a page size any view may have, so `hasErrors` is true.
+    act(() => runtime.edit({ pageSize: 0 }));
+
+    await waitFor(() =>
+      expect(runtime.getSnapshot().issues.some(f => f.severity === 'error')),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Save as' }).hasAttribute('disabled'),
+    ).toBe(false);
+  });
+
   it('keeps only the way back when nothing may be written', async () => {
     const { runtime } = await open(
       systemInstanceId('orders', 'all'),
@@ -461,6 +481,126 @@ describe('WriteOutcome', () => {
     expect(engine.pendingWrites().size).toBe(0);
     // And the line that offered the three ways out is gone with it.
     expect(screen.queryByText('Someone else saved this view first')).toBeNull();
+  });
+
+  /**
+   * Revert while a conflict is on screen would put the saved config back and
+   * then be undone by whichever answer the user is still about to give. The
+   * menu was locked on `pending` alone, and a conflict is not pending — it is
+   * waiting, which is worse: nothing is in flight to finish it.
+   */
+  it('locks the menu while the outcome is still unsettled', async () => {
+    await conflicted();
+
+    expect(
+      screen
+        .getByRole('button', { name: 'More view actions' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
+
+  it('locks the menu while the result of a write is unknown', async () => {
+    const { store, runtime } = await open();
+    vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('socket closed'));
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('The result never came back');
+
+    expect(
+      screen
+        .getByRole('button', { name: 'More view actions' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
+
+  /**
+   * The copy is how the conflict ends however the copy itself goes. Once the
+   * create has an outcome, the runtime reports *that* one, and the conflict's
+   * handle is unreachable from the screen: settling it only on the happy path
+   * left the original write in `engine.pendingWrites()` for the session.
+   */
+  it('settles the write the copy came out of even when the copy fails', async () => {
+    const { engine, store } = await conflicted();
+    expect(engine.pendingWrites().size).toBe(1);
+    vi.spyOn(store, 'create').mockRejectedValueOnce(new Error('socket closed'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save my copy' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
+
+    // The copy's own outcome is what the view reports now, and it is the
+    // only write left for anyone to answer for.
+    await screen.findByText('The result never came back');
+    await waitFor(() => expect(engine.pendingWrites().size).toBe(1));
+    expect([...engine.pendingWrites().values()][0].payload.action).toBe(
+      'create',
+    );
+    expect(screen.queryByText('Someone else saved this view first')).toBeNull();
+  });
+
+  /**
+   * Two clicks, one handle: the engine refuses the second with
+   * `view.write.in-flight`, and the line would report that as the failure of
+   * a click that was only impatient.
+   */
+  it('takes one recovery at a time', async () => {
+    const { store, runtime } = await open();
+    vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('socket closed'));
+    editIt(runtime);
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('The result never came back');
+
+    const held = deferred<ViewInstance>();
+    vi.spyOn(store, 'save').mockReturnValueOnce(held.promise);
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Retry' }).hasAttribute('disabled'),
+      ).toBe(true),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Leave it' }).hasAttribute('disabled'),
+    ).toBe(true);
+    await act(async () => {
+      held.resolve({ ...mine, revision: '2' });
+    });
+  });
+
+  it('takes one conflict answer at a time', async () => {
+    const { store } = await conflicted();
+    // The copy is the one way out that leaves the conflict on screen while it
+    // runs, so it is the window in which a second answer could be given. The
+    // dialog over it is modal, so the strip is read off the document rather
+    // than through the accessibility tree.
+    const held = deferred<ViewInstance>();
+    vi.spyOn(store, 'create').mockReturnValueOnce(held.promise);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save my copy' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
+
+    const strip = document.querySelector('[data-slot="write-outcome"]');
+    await waitFor(() =>
+      expect(
+        [...(strip?.querySelectorAll('button') ?? [])].map(button => [
+          button.textContent,
+          button.hasAttribute('disabled'),
+        ]),
+      ).toEqual([
+        ['Take theirs', true],
+        ['Save my copy', true],
+        ['Keep mine', true],
+      ]),
+    );
+    await act(async () => {
+      held.resolve({ ...mine, id: 'orders-2', title: 'Mine copy' });
+    });
   });
 
   it('offers a retry when the result never came back', async () => {

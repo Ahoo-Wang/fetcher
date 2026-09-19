@@ -42,6 +42,7 @@ import type {
   FilterValue,
   RecordData,
   ViewInstanceSummary,
+  ViewPermissions,
 } from '../src/index.js';
 import type {
   RecordTableController,
@@ -120,6 +121,126 @@ function setup(source: ViewSource = testSource()) {
 }
 
 describe('RecordWorkbench', () => {
+  /** A second view to switch to, so leaving one is a thing that can happen. */
+  const yours: ViewInstance = { ...mine, id: 'orders-2', title: 'Yours' };
+
+  function withTwo(permissions?: () => ViewPermissions): ViewEngine {
+    return new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({
+        instances: [mine, yours],
+        permissions,
+      }),
+      resolveSource: () => testSource(),
+    });
+  }
+
+  /**
+   * The guard is built in the workbench, outside the surface that carries the
+   * wording, so the labels it resolves are the ones in force *there* — the
+   * defaults. Without the workbench handing its own `messages` over, one
+   * dialog in a translated page stayed in English.
+   */
+  it('asks its leave question in the wording the host gave', async () => {
+    const engine = withTwo();
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+        messages={{ 'label.leave.heading': '离开这个视图？' }}
+      />,
+    );
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+    act(() => engine.openRuntimes()[0].edit({ pageSize: 30 }));
+
+    fireEvent.click(screen.getByRole('button', { name: /^Yours/ }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('离开这个视图？');
+  });
+
+  /**
+   * Leaving disposes the runtime an unsettled write belongs to, and the
+   * engine goes on holding the write: a handle pointing at a runtime nobody
+   * can reach again, and a slot held against the next write to that view.
+   */
+  it('settles an unknown write before it lets the view go', async () => {
+    const engine = withTwo();
+    const store = engine.store as MemoryViewStore;
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
+    );
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+    vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('socket closed'));
+    act(() => engine.openRuntimes()[0].edit({ pageSize: 30 }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('The result never came back');
+    expect(engine.pendingWrites().size).toBe(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /^Yours/ }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Leave' }));
+
+    await waitFor(() => expect(engine.pendingWrites().size).toBe(0));
+  });
+
+  /**
+   * The manage button leads to a dialog of rows and the buttons each row
+   * permits. With no permission anywhere it leads to a dialog of read-only
+   * rows, which is a button whose only lesson is that it leads nowhere.
+   */
+  it('offers no way in to a manager with nothing to manage', async () => {
+    const engine = withTwo(() => ({
+      createPersonal: false,
+      createShared: false,
+      reorder: false,
+      setDefault: false,
+      instance: () => ({ save: false, rename: false, delete: false }),
+    }));
+
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
+    );
+
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+    expect(screen.queryByRole('button', { name: 'Manage views' })).toBeNull();
+  });
+
+  it('keeps the way in when one row can still be renamed', async () => {
+    const engine = withTwo(() => ({
+      createPersonal: false,
+      createShared: false,
+      reorder: false,
+      setDefault: false,
+      instance: (id: string) => ({
+        save: false,
+        rename: id === 'orders-2',
+        delete: false,
+      }),
+    }));
+
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
+    );
+
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+    expect(screen.getByRole('button', { name: 'Manage views' })).toBeDefined();
+  });
+
   it('opens a view and shows its rows', async () => {
     const { engine } = setup();
 
@@ -2015,6 +2136,7 @@ function tableController(
 function listState(overrides: Partial<ViewListState> = {}): ViewListState {
   return {
     items: [],
+    all: [],
     preferences: null,
     permissions: {
       createPersonal: true,
@@ -3636,6 +3758,106 @@ describe('EmbeddedView', () => {
     );
     expect(screen.getByRole('status').textContent).toContain('advanced editor');
     expect(screen.queryByRole('row')).toBeNull();
+  });
+
+  /**
+   * The page narrowed the view, and the bar above the rows is the only place
+   * that says so. It is named as the page's rather than mixed in with the
+   * view's own conditions, and it carries no remove: no path of the editor
+   * addresses it, so the only thing a ✕ could do is fail.
+   */
+  it("names the host scope among the conditions, as nobody's to remove", async () => {
+    const { engine } = setup();
+
+    render(
+      <EmbeddedView
+        engine={engine}
+        instanceId="orders-1"
+        scopeFilter={{
+          op: 'and',
+          children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+    const scoped = await waitFor(() => {
+      const badge = document.querySelector('[data-scoped]');
+      if (!badge) throw new Error('no scoped badge yet');
+      return badge;
+    });
+    expect(scoped.textContent).toContain('CN');
+    expect(scoped.textContent).toContain('Set by the page');
+  });
+
+  /**
+   * An embed shows what somebody already decided. The ✕ on a saved condition
+   * would let a reader widen the view — on a page that embedded "this
+   * customer's shipments", that is the page listing everyone's.
+   */
+  it('offers no way to drop a saved condition from the summary', async () => {
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({
+        instances: [
+          {
+            ...mine,
+            config: recordConfig({
+              filter: {
+                op: 'and',
+                children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+              },
+            }),
+          },
+        ],
+      }),
+      resolveSource: () => testSource(),
+    });
+
+    render(<EmbeddedView engine={engine} instanceId="orders-1" />);
+
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+    expect(
+      document.querySelector('[data-slot="applied-bar"]')?.textContent,
+    ).toContain('CN');
+    expect(screen.queryByRole('button', { name: /^Unset/ })).toBeNull();
+  });
+
+  /**
+   * The strip says "showing the last successful result", so the last
+   * successful result has to still be there. Replacing the table with the
+   * failure made that line describe an empty frame.
+   */
+  it('keeps the rows under the line that reports a failed refresh', async () => {
+    let attempt = 0;
+    const source = testSource({
+      paged: () => {
+        attempt += 1;
+        return attempt === 1
+          ? Promise.resolve({ total: 2, list: [{ id: 'o-1' }, { id: 'o-2' }] })
+          : Promise.reject(new Error('down'));
+      },
+    });
+    const { engine } = setup(source);
+
+    render(<EmbeddedView engine={engine} instanceId="orders-1" />);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    act(() => engine.openRuntimes()[0].refresh());
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain(
+        'The source answered: down',
+      ),
+    );
+    // Both at once, the way the workbenches do it: the rows that did come
+    // back are still the real ones, and the strip says so behind its
+    // disclosure rather than over an empty frame.
+    fireEvent.click(screen.getByRole('button', { name: '1 more' }));
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Showing the last successful result',
+    );
+    expect(screen.getAllByRole('row')).toHaveLength(3);
   });
 });
 

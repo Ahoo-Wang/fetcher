@@ -185,11 +185,18 @@ function EmbeddedBody({
  * What the rows were fetched under. An embed shows it for the same reason it
  * shows warnings: nothing else here says what the view is asking, and a
  * scope the host narrowed it by is part of that question.
+ *
+ * Read-only, unlike the workbench's: there is no editor here, and the view's
+ * own conditions are what its author saved. A ✕ would let a reader drop a
+ * saved condition — on a page that embedded this view to show one customer's
+ * shipments, that is the page quietly listing everyone's.
  */
 function Applied({ runtime }: { runtime: OpenedRuntime }) {
   const state = useViewRuntime(runtime);
   const filter = useFilterEditor(runtime);
-  return <AppliedBar filter={filter} hasResult={state?.result != null} />;
+  return (
+    <AppliedBar filter={filter} hasResult={state?.result != null} readOnly />
+  );
 }
 
 function Failed({ runtime }: { runtime: OpenedRuntime }) {
@@ -211,13 +218,22 @@ function EmbeddedRecord({
   runtime: Extract<OpenedRuntime, { kind: 'record' }>;
   rowActions?(row: RecordRow): ReactNode;
 }) {
+  const state = useViewRuntime(runtime);
   const table = useRecordTable(runtime);
+  const hasResult = state?.result != null;
 
-  if (table.status === 'error') return <Failed runtime={runtime} />;
+  // A refresh that failed over rows that are still good says so *above* them
+  // rather than instead of them, the way the workbenches do: the strip itself
+  // promises "the last successful result", and taking the table away would
+  // make that line describe an empty frame. Only a failure with nothing
+  // behind it replaces the content.
+  if (table.status === 'error' && !hasResult)
+    return <Failed runtime={runtime} />;
   if (table.loading && table.rows.length === 0)
     return <Skeleton className="h-24 w-full" />;
   return (
     <>
+      <Failed runtime={runtime} />
       <Applied runtime={runtime} />
       {table.layout === 'card' ? (
         <RecordCards table={table} rowActions={rowActions} />
@@ -234,10 +250,14 @@ function EmbeddedAnalysis({ runtime }: { runtime: OpenedRuntime }) {
   const data = state?.result?.data;
   const view = data?.kind === 'analysis' ? data.view : null;
 
-  if (state?.query.status === 'error') return <Failed runtime={runtime} />;
+  // As in the record embed: the chart stays while the strip reports the
+  // refresh that failed over it.
+  if (state?.query.status === 'error' && !view)
+    return <Failed runtime={runtime} />;
   if (!view) return <Skeleton className="h-24 w-full" />;
   return (
     <>
+      <Failed runtime={runtime} />
       <Applied runtime={runtime} />
       {view.chart ? (
         <AnalysisChart

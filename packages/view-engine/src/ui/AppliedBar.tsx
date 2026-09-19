@@ -28,6 +28,13 @@ export interface AppliedBarProps {
    */
   hasResult: boolean;
   disabled?: boolean;
+  /**
+   * Nothing here may be taken out of force. The ✕ is not rendered at all
+   * rather than rendered disabled: an embedded view shows what somebody
+   * already decided, and a control that is only ever grey offers a narrowing
+   * the reader will never be given.
+   */
+  readOnly?: boolean;
   className?: string;
 }
 
@@ -43,9 +50,14 @@ export function AppliedBar({
   filter,
   hasResult,
   disabled,
+  readOnly = false,
   className,
 }: AppliedBarProps) {
   const messages = useViewMessages();
+  // The host's own conditions, which are in force beside the view's own but
+  // belong to the page rather than to the view. They read as `scoped` on the
+  // controller precisely because no path here addresses them.
+  const { applied, scoped } = filter;
   // Nothing has been fetched, so there is nothing to say the fetch ran under.
   if (!hasResult) return null;
 
@@ -59,29 +71,32 @@ export function AppliedBar({
       <span className="text-muted-foreground shrink-0">
         {messages.label('label.applied.title')}
       </span>
-      {filter.applied.length === 0 ? (
+      {/* "All records" answers for everything in force, so a scope counts:
+          rows narrowed by the page are not all of them. */}
+      {applied.length === 0 && scoped.length === 0 && (
         <span className="text-muted-foreground">
           {messages.label('label.applied.all')}
         </span>
-      ) : (
-        filter.applied.map(item => (
-          // A group reads out as one badge, its conditions joined by its own
-          // operator, so the bar keeps the logic the tree has. Its remove
-          // takes the condition out of force — the value goes back to
-          // "nothing said yet" and the query runs again — while the field
-          // stays in the editor for the next question.
-          <Badge
-            key={item.path.join('.')}
-            // A condition whose field or kind the definition no longer
-            // declares is named rather than hidden, and worn plainly: it is
-            // still in force, and it is not something to go on building on.
-            variant={item.unresolved ? 'outline' : 'secondary'}
-            data-unresolved={item.unresolved || undefined}
-            // A group's read-out can be long; it wraps inside the bar rather
-            // than carrying the bar off the edge of the view.
-            className="h-auto max-w-full text-left whitespace-normal"
-          >
-            {item.text}
+      )}
+      {applied.map(item => (
+        // A group reads out as one badge, its conditions joined by its own
+        // operator, so the bar keeps the logic the tree has. Its remove
+        // takes the condition out of force — the value goes back to
+        // "nothing said yet" and the query runs again — while the field
+        // stays in the editor for the next question.
+        <Badge
+          key={item.path.join('.')}
+          // A condition whose field or kind the definition no longer
+          // declares is named rather than hidden, and worn plainly: it is
+          // still in force, and it is not something to go on building on.
+          variant={item.unresolved ? 'outline' : 'secondary'}
+          data-unresolved={item.unresolved || undefined}
+          // A group's read-out can be long; it wraps inside the bar rather
+          // than carrying the bar off the edge of the view.
+          className="h-auto max-w-full text-left whitespace-normal"
+        >
+          {item.text}
+          {!readOnly && (
             <button
               type="button"
               aria-label={messages.label('label.filter.unset-of', {
@@ -102,9 +117,28 @@ export function AppliedBar({
             >
               <XIcon />
             </button>
-          </Badge>
-        ))
-      )}
+          )}
+        </Badge>
+      ))}
+      {/* After the editable ones, and worn differently: the page put these
+          in force, and they are nobody's here to take out — so they carry
+          no ✕ at all, and say whose they are rather than leaving the reader
+          to wonder why one badge in the row cannot be removed. */}
+      {scoped.map(item => (
+        <Badge
+          key={`scoped:${item.path.join('.')}`}
+          variant="outline"
+          data-scoped
+          data-unresolved={item.unresolved || undefined}
+          className="h-auto max-w-full text-left whitespace-normal"
+        >
+          {item.text}
+          <span className="sr-only">
+            {' '}
+            {messages.label('label.applied.scoped')}
+          </span>
+        </Badge>
+      ))}
     </div>
   );
 }

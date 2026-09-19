@@ -232,6 +232,9 @@ export const defaultMessages: ViewMessages = Object.freeze({
   // not the draft above it.
   'label.applied.title': 'Showing',
   'label.applied.all': 'All records',
+  // A condition the host put in force, which the reader cannot take out:
+  // it is not in the draft, and no path of this editor addresses it.
+  'label.applied.scoped': 'Set by the page',
 
   // The three date shapes, the side of now a relative window lies on, and
   // the controls that edit them.

@@ -56,6 +56,17 @@ export interface ViewListReloadOptions {
 export interface ViewListState {
   /** Summaries in the order the workbench shows them. */
   items: ViewInstanceSummary[];
+  /**
+   * The same summaries before `options.kind` narrowed them, in the same
+   * order. Equal to `items` when no kind was asked for.
+   *
+   * A reorder stores one order for the whole definition, and a record
+   * workbench lists only the record views: submitting the order it can see
+   * would drop every analysis id from `preferences.order`. So a caller that
+   * writes the order reads it from here and moves the two ids it can see
+   * inside it, leaving the kinds it does not draw where they were.
+   */
+  all: ViewInstanceSummary[];
   preferences: ViewPreferences | null;
   permissions: ViewPermissions;
   /** The view to open when the caller names none; null until preferences settle. */
@@ -220,6 +231,7 @@ export function useViewList(
 
   return {
     items,
+    all,
     preferences: currentPreferences.value,
     permissions,
     // No default until preferences have settled: answering from server order

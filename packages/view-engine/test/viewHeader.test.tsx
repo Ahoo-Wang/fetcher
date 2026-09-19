@@ -22,7 +22,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ReactNode } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   MemoryViewStore,
   ViewEngine,
@@ -36,7 +36,11 @@ import {
   useViewRuntime,
   type SaveCommands,
 } from '../src/react/index.js';
-import { useLeaveGuard, type LeaveGuardState } from '../src/ui/LeaveGuard.js';
+import {
+  useLeaveGuard,
+  type LeaveGuardOptions,
+  type LeaveGuardState,
+} from '../src/ui/LeaveGuard.js';
 import { ViewHeader } from '../src/ui/ViewHeader.js';
 import { ViewSurface } from '../src/ui/ViewSurface.js';
 import { ordersDefinition, recordConfig, testSource } from './fixtures.js';
@@ -270,8 +274,14 @@ describe('ViewHeader', () => {
   });
 });
 
-function Guarded({ state }: { state: LeaveGuardState | null }) {
-  const guard = useLeaveGuard(state);
+function Guarded({
+  state,
+  options,
+}: {
+  state: LeaveGuardState | null;
+  options?: LeaveGuardOptions;
+}) {
+  const guard = useLeaveGuard(state, options);
   const [left, setLeft] = useState(false);
   return (
     <ViewSurface>
@@ -356,6 +366,64 @@ describe('useLeaveGuard', () => {
     leave();
 
     expect(await screen.findByRole('dialog')).toBeDefined();
+  });
+
+  /**
+   * The hook runs in the workbench, which sits outside the surface that
+   * carries the wording — so the labels it resolves are the ones in force
+   * *there*. Handed the workbench's own `messages`, the one dialog that
+   * interrupts everything else says what the rest of the surface says.
+   */
+  it('says it in the wording it was handed', async () => {
+    render(
+      <Guarded
+        state={{ dirty: true, write: null }}
+        options={{ messages: { 'label.leave.heading': '离开这个视图？' } }}
+      />,
+    );
+
+    leave();
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('离开这个视图？');
+  });
+
+  /**
+   * Leaving disposes the runtime, and an unsettled write outlives it inside
+   * the engine: the handle would address a runtime nobody can reach again.
+   */
+  it('settles the outcome on its way out', async () => {
+    const settled = vi.fn();
+    render(
+      <Guarded
+        state={{ dirty: true, write: null }}
+        options={{ onLeave: settled }}
+      />,
+    );
+
+    leave();
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Leave' }));
+
+    expect(settled).toHaveBeenCalledTimes(1);
+    expect(where()).toBe('gone');
+  });
+
+  it('settles nothing when the answer is to stay', async () => {
+    const settled = vi.fn();
+    render(
+      <Guarded
+        state={{ dirty: true, write: null }}
+        options={{ onLeave: settled }}
+      />,
+    );
+
+    leave();
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Stay' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(settled).not.toHaveBeenCalled();
   });
 
   it('does not ask about an outcome that can be settled later', () => {

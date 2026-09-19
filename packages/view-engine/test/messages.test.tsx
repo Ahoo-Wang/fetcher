@@ -453,6 +453,7 @@ function tableController(): RecordTableController {
 function listState(items: ViewInstanceSummary[]): ViewListState {
   return {
     items,
+    all: items,
     preferences: null,
     permissions: {
       createPersonal: true,

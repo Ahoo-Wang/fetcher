@@ -102,6 +102,10 @@ export function AnalysisWorkbench({
   const messages = useViewMessages(wording);
   const leave = useLeaveGuard(
     state ? { dirty: state.dirty, write: state.write } : null,
+    // The dialog is rendered out here, outside the surface that carries the
+    // wording, so it is handed the wording directly; and leaving settles the
+    // outcome first, because the runtime it belongs to is about to go.
+    { messages: wording, onLeave: () => commands.abandon() },
   );
   useReleaseDeleted(openId, chosen, opened, setChosen);
 
@@ -136,7 +140,11 @@ export function AnalysisWorkbench({
               // Opening another view releases this one's runtime and the draft
               // goes with it, so the switch is asked about before it happens.
               onOpen={id => leave.request(() => setChosen(id))}
-              manager={manager}
+              // Only when something on the list can actually be managed: a
+              // reader with no write permission at all would otherwise get a
+              // button whose only lesson is that it leads to a dialog of
+              // read-only rows.
+              manager={manager.can.anything ? manager : undefined}
               openDirtyId={state?.dirty ? (state.saved?.id ?? null) : null}
             />
           </aside>

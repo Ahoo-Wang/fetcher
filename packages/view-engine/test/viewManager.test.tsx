@@ -465,12 +465,13 @@ describe('useViewManager', () => {
   });
 
   /**
-   * A workbench manages the list it shows, and it shows one kind. The order
-   * it submits is therefore a partial one — design §7.3: ids that are not in
-   * `order` follow in server order — so the views it never listed keep their
-   * places instead of being reordered by a page that could not see them.
+   * A workbench manages the list it shows, and it shows one kind — but the
+   * store keeps one order for the whole definition. So the pair to swap is
+   * found among the rows on screen and the swap is made inside the *full*
+   * order: submitting the visible order alone would store a list with every
+   * analysis id missing from it.
    */
-  it('submits only the visible order when the list is narrowed to one kind', async () => {
+  it('swaps inside the full order, leaving the kinds it does not list in place', async () => {
     const store = new MemoryViewStore({
       instances: [
         ...instances(),
@@ -506,11 +507,13 @@ describe('useViewManager', () => {
       );
     });
 
+    // Every id the definition has, with the analysis exactly where it was:
+    // the two record views swapped around it rather than over it.
     await expect(store.getPreferences('orders')).resolves.toMatchObject({
-      order: [before[0], before[2], before[1]],
+      order: [before[0], before[2], before[1], 'orders-chart'],
     });
-    // Unlisted and unharmed: the analysis view still comes back, after the
-    // ones the order names.
+    // Unlisted and unharmed: the analysis view still comes back, in the
+    // place the stored order gives it.
     const unfiltered = renderHook(() => useViewList(engine, 'orders'));
     await waitFor(() =>
       expect(unfiltered.result.current.items.map(item => item.id)).toEqual([
@@ -1183,5 +1186,110 @@ describe('useViewManager', () => {
     expect(outcome?.kind === 'rejected' && outcome.issue.code).toBe(
       'view.system.read-only',
     );
+  });
+  /**
+   * §7.4 lets a refused command be corrected and put again, so the new one is
+   * not blocked — but the engine may still be holding the write it refused,
+   * and a row has one outcome slot. Recording the new one over it would drop
+   * the handle and leave that write in `engine.pendingWrites()` with nothing
+   * on screen able to reach it.
+   */
+  it('settles a stale refusal before the corrected command takes its slot', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    vi.spyOn(store, 'rename').mockRejectedValueOnce(
+      new ViewStoreError('FORBIDDEN', 'not yours'),
+    );
+
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', 'Nope'),
+      ).resolves.toBe(false);
+    });
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'rejected',
+    );
+    expect(engine.pendingWrites().size).toBe(1);
+
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', 'Corrected'),
+      ).resolves.toBe(true);
+    });
+
+    // The corrected one landed and settled itself; the refusal it replaced
+    // was settled on the way in rather than left behind.
+    expect(engine.pendingWrites().size).toBe(0);
+    expect(result.current.manager.outcomes.has('orders-1')).toBe(false);
+  });
+
+  /**
+   * A recovery reads its handle when it is queued and uses it at the front
+   * of the queue, and the command ahead may have settled that very outcome.
+   * Addressing it again asks the engine about a write that is already over.
+   */
+  it('skips a recovery whose outcome was settled while it waited', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const rename = vi.spyOn(store, 'rename');
+    rename.mockRejectedValueOnce(new ViewStoreError('UNAVAILABLE', 'timeout'));
+
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', 'Later'),
+      ).resolves.toBe(false);
+    });
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'unknown',
+    );
+    const before = rename.mock.calls.length;
+
+    // Two retries of the same handle, queued together: the first settles it.
+    await act(async () => {
+      const [first, second] = await Promise.all([
+        result.current.manager.retry('orders-1'),
+        result.current.manager.retry('orders-1'),
+      ]);
+      expect(first).toBe(true);
+      expect(second).toBe(false);
+    });
+
+    // The second never reached the store: it was skipped, not refused.
+    expect(rename.mock.calls.length).toBe(before + 1);
+    expect(engine.pendingWrites().size).toBe(0);
+  });
+
+  /**
+   * The manage button opens on a dialog of rows; when nothing on the list can
+   * be renamed, deleted, reordered or made the default, it opens on nothing.
+   */
+  it('says when there is nothing to manage at all', async () => {
+    const { engine } = engineWith({
+      permissions: permitting({
+        reorder: false,
+        setDefault: false,
+        instance: () => ({ save: true, rename: false, delete: false }),
+      }),
+    });
+    const { result } = await managed(engine);
+
+    expect(result.current.manager.can.anything).toBe(false);
+  });
+
+  it('says there is something to manage when one row can be renamed', async () => {
+    const { engine } = engineWith({
+      permissions: permitting({
+        reorder: false,
+        setDefault: false,
+        instance: (id: string) => ({
+          save: true,
+          rename: id === 'orders-2',
+          delete: false,
+        }),
+      }),
+    });
+    const { result } = await managed(engine);
+
+    expect(result.current.manager.can.anything).toBe(true);
   });
 });

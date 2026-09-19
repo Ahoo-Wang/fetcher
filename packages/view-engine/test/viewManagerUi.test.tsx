@@ -12,6 +12,7 @@
  */
 
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -36,7 +37,12 @@ import {
 import { ViewList } from '../src/ui/ViewList.js';
 import { ViewManager } from '../src/ui/ViewManager.js';
 import { ViewSurface } from '../src/ui/ViewSurface.js';
-import { ordersDefinition, recordConfig, testSource } from './fixtures.js';
+import {
+  deferred,
+  ordersDefinition,
+  recordConfig,
+  testSource,
+} from './fixtures.js';
 
 afterEach(cleanup);
 
@@ -600,6 +606,75 @@ describe('ViewManager outcomes', () => {
     );
   });
 
+  /**
+   * A refusal has nothing to retry, but the engine is still holding the
+   * write it refused: the line would sit over the row for the rest of the
+   * session, and the next command on that key would take its slot — handle
+   * and all — leaving that write unreachable from the screen.
+   */
+  it('lets a refusal be dismissed once it has been read', async () => {
+    const { engine, store } = setup();
+    await manage(engine);
+    vi.spyOn(store, 'rename').mockRejectedValueOnce(
+      new ViewStoreError('FORBIDDEN', 'not yours'),
+    );
+
+    fireEvent.click(
+      within(row('Mine')).getByRole('button', { name: 'Rename' }),
+    );
+    fireEvent.click(
+      within(row('Mine')).getByRole('button', { name: 'Save the title' }),
+    );
+    await screen.findByText(/You may not write to this view/);
+    expect(engine.pendingWrites().size).toBe(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+
+    await waitFor(() =>
+      expect(screen.queryByText(/You may not write to this view/)).toBeNull(),
+    );
+    expect(engine.pendingWrites().size).toBe(0);
+  });
+
+  /**
+   * Commands are serialized, so any write in flight is one a recovery would
+   * queue behind — and pressed twice, a recovery addresses the same handle
+   * twice. The engine refuses the second with `view.write.in-flight`, which
+   * the row would report as a failure of the click rather than of nothing.
+   */
+  it('takes one recovery at a time', async () => {
+    const { engine, store } = setup();
+    await manage(engine);
+    vi.spyOn(store, 'rename').mockRejectedValueOnce(
+      new ViewStoreError('UNAVAILABLE', 'timeout'),
+    );
+
+    fireEvent.click(
+      within(row('Mine')).getByRole('button', { name: 'Rename' }),
+    );
+    fireEvent.click(
+      within(row('Mine')).getByRole('button', { name: 'Save the title' }),
+    );
+    await screen.findByText('The result never came back');
+
+    const held = deferred<ViewInstance>();
+    vi.spyOn(store, 'rename').mockReturnValueOnce(held.promise);
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Retry' }).hasAttribute('disabled'),
+      ).toBe(true),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Leave it' }).hasAttribute('disabled'),
+    ).toBe(true);
+
+    await act(async () => {
+      held.resolve({ ...instances()[0], title: 'Mine', revision: '2' });
+    });
+  });
+
   it('says why a write never left, under the row that asked', async () => {
     // A refusal never reached the store, so it has no handle and offers no
     // buttons — only the reason, where the row that asked can be seen.
@@ -648,6 +723,7 @@ describe('ViewManager outcomes', () => {
         reorder: true,
         setDefault: true,
         instance: () => ({ rename: true, delete: true }),
+        anything: true,
       },
     };
     render(

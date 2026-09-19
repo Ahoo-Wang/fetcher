@@ -40,6 +40,7 @@ function stub(
 ): FilterEditorController {
   return {
     applied,
+    scoped: [],
     clearValue: vi.fn(),
     submit: vi.fn(),
     ...actions,
@@ -203,5 +204,99 @@ describe('AppliedBar', () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+  });
+  /**
+   * The host's own conditions are in force beside the view's own, and the
+   * editor has no path that reaches them: they are not in the draft, and
+   * `clearValue` cannot address them. So they are named — a reader who
+   * cannot see why the list is short learns nothing — and they carry no ✕,
+   * because the only honest thing a ✕ could do here is fail.
+   */
+  it("names the host scope after the view's own, without a way to remove it", () => {
+    render(
+      <AppliedBar
+        filter={stub(
+          [
+            {
+              path: ['children', 0],
+              text: 'Warehouse EQ CN',
+              unresolved: false,
+            },
+          ],
+          {
+            scoped: [
+              {
+                path: ['children', 0],
+                text: 'Customer EQ c-1',
+                unresolved: false,
+              },
+            ],
+          },
+        )}
+        hasResult
+      />,
+    );
+
+    const badges = [...document.querySelectorAll('[data-slot="badge"]')];
+    expect(badges.map(badge => badge.textContent?.trim())).toEqual([
+      'Warehouse EQ CN',
+      'Customer EQ c-1 Set by the page',
+    ]);
+    // The view's own is removable and dressed as a condition; the page's is
+    // worn plainly and offers nothing to press.
+    expect(badges[0].hasAttribute('data-scoped')).toBe(false);
+    expect(badges[1].hasAttribute('data-scoped')).toBe(true);
+    expect(badges[1].className).toContain('border-border');
+    expect(
+      screen.queryByRole('button', { name: 'Unset Customer EQ c-1' }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Unset Warehouse EQ CN' }),
+    ).toBeDefined();
+  });
+
+  /**
+   * "All records" answers for everything in force, and a scope is in force.
+   * Saying it beside a narrowing the page applied would be the bar telling
+   * the reader the opposite of what the rows below it are.
+   */
+  it('does not call a scoped result all of them', () => {
+    render(
+      <AppliedBar
+        filter={stub([], {
+          scoped: [
+            {
+              path: ['children', 0],
+              text: 'Customer EQ c-1',
+              unresolved: false,
+            },
+          ],
+        })}
+        hasResult
+      />,
+    );
+
+    expect(screen.queryByText('All records')).toBeNull();
+    expect(screen.getByText(/Customer EQ c-1/)).toBeDefined();
+  });
+
+  /**
+   * Read-only is not "disabled": an embedded view shows what its author
+   * saved, and a ✕ that is only ever grey still tells the reader there is a
+   * condition here they might get to drop.
+   */
+  it('renders no remove at all when it is read-only', () => {
+    render(
+      <AppliedBar
+        filter={stub([
+          { path: ['children', 0], text: 'Warehouse EQ CN', unresolved: false },
+        ])}
+        hasResult
+        readOnly
+      />,
+    );
+
+    expect(screen.getByText('Warehouse EQ CN')).toBeDefined();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

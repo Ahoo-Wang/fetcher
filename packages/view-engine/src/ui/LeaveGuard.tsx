@@ -13,6 +13,7 @@
 
 import { useCallback, useState, type ReactNode } from 'react';
 import type { WriteState } from '../runtime/index.js';
+import type { ViewMessages } from './messages.js';
 import { Button } from './components/button.js';
 import {
   Dialog,
@@ -43,6 +44,24 @@ export interface LeaveGuard {
   dialog: ReactNode;
 }
 
+export interface LeaveGuardOptions {
+  /**
+   * The wording in force around the workbench. The dialog is rendered by the
+   * workbench, which sits *outside* the `ViewSurface` that carries the
+   * provider, so without this a host's `messages` override reaches every
+   * component inside the surface and not the one dialog that interrupts them.
+   */
+  messages?: ViewMessages;
+  /**
+   * Called on confirm, before the switch. Leaving disposes the runtime, and
+   * an unsettled write outlives it inside the engine: the handle would point
+   * at a runtime nobody can reach, and `engine.pendingWrites()` would hold it
+   * for the rest of the session with nothing on screen able to retry,
+   * overwrite or abandon it. A workbench passes `commands.abandon` here.
+   */
+  onLeave?(): void;
+}
+
 /** Whether anything would be lost by closing this view right now. */
 function costly(state: LeaveGuardState | null): boolean {
   return state !== null && (state.dirty || state.write?.kind === 'unknown');
@@ -57,8 +76,11 @@ function costly(state: LeaveGuardState | null): boolean {
  * never asked about at all: a guard that interrupts every switch is one
  * people learn to dismiss without reading.
  */
-export function useLeaveGuard(state: LeaveGuardState | null): LeaveGuard {
-  const messages = useViewMessages();
+export function useLeaveGuard(
+  state: LeaveGuardState | null,
+  { messages: wording, onLeave }: LeaveGuardOptions = {},
+): LeaveGuard {
+  const messages = useViewMessages(wording);
   // The continuation, held until it is answered. Stored inside an object so
   // the state setter does not take it for an updater function.
   const [held, setHeld] = useState<{ next: () => void } | null>(null);
@@ -88,6 +110,10 @@ export function useLeaveGuard(state: LeaveGuardState | null): LeaveGuard {
           <Button
             variant="destructive"
             onClick={() => {
+              // Settled before the switch, not after: `next` releases this
+              // runtime, and the outcome would have nothing left to be an
+              // outcome of.
+              onLeave?.();
               held?.next();
               setHeld(null);
             }}
