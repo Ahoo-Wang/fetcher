@@ -41,6 +41,8 @@ export interface AnalysisWorkbenchProps {
   definitionId: string;
   instanceId?: string | null;
   theme?: 'light' | 'dark';
+  /** The language dates and times show in; the runtime's when left out. */
+  locale?: string;
   optionsFor?(remote: string): FieldOption[] | undefined;
 }
 
@@ -56,6 +58,7 @@ export function AnalysisWorkbench({
   definitionId,
   instanceId = null,
   theme,
+  locale,
   optionsFor,
 }: AnalysisWorkbenchProps) {
   const list = useViewList(engine, definitionId);
@@ -77,7 +80,12 @@ export function AnalysisWorkbench({
   );
 
   return (
-    <ViewSurface theme={theme} className="gap-0 md:flex-row">
+    <ViewSurface
+      theme={theme}
+      locale={locale}
+      timeZone={engine.environment.timeZone}
+      className="gap-0 md:flex-row"
+    >
       <aside className="flex w-56 shrink-0 flex-col gap-2 p-3">
         <ViewList
           list={list}
@@ -151,7 +159,11 @@ export function AnalysisWorkbench({
 
             {view &&
               (analysis.layout === 'chart' && view.chart ? (
-                <AnalysisChart data={view.chart} spec={analysis.chart} />
+                <AnalysisChart
+                  data={view.chart}
+                  spec={analysis.chart}
+                  columns={view.columns}
+                />
               ) : (
                 <AnalysisTable view={view} />
               ))}

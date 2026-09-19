@@ -43,6 +43,8 @@ export interface EmbeddedViewProps {
   scopeFilter?: FilterTree | null;
   /** Follows the host page when left out. */
   theme?: 'light' | 'dark';
+  /** The language dates and times show in; the runtime's when left out. */
+  locale?: string;
   className?: string;
 }
 
@@ -63,6 +65,7 @@ export function EmbeddedView({
   instanceId,
   scopeFilter = null,
   theme,
+  locale,
   className,
 }: EmbeddedViewProps) {
   // The condition goes in with the config, not after it: `useOpenView` hands
@@ -73,7 +76,12 @@ export function EmbeddedView({
   const runtime = opened.runtime;
 
   return (
-    <ViewSurface theme={theme} className={className}>
+    <ViewSurface
+      theme={theme}
+      locale={locale}
+      timeZone={engine.environment.timeZone}
+      className={className}
+    >
       {opened.error && (
         <Alert variant="destructive">
           <AlertTitle>{messages.label('label.view.unopenable')}</AlertTitle>
@@ -190,7 +198,11 @@ function EmbeddedAnalysis({ runtime }: { runtime: OpenedRuntime }) {
   if (state?.query.status === 'error') return <Failed runtime={runtime} />;
   if (!view) return <Skeleton className="h-24 w-full" />;
   return view.chart ? (
-    <AnalysisChart data={view.chart} spec={analysis.chart} />
+    <AnalysisChart
+      data={view.chart}
+      spec={analysis.chart}
+      columns={view.columns}
+    />
   ) : (
     <AnalysisTable view={view} />
   );

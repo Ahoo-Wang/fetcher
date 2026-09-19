@@ -41,7 +41,8 @@ export interface CartesianData {
    * values and is injective over group values, so it may carry a type tag;
    * `label` is what a legend shows, the value as it prints.
    */
-  series: { key: string; label: string; metric: string }[];
+  /** `value` is the raw split value of a pivoted series; `label` prints it. */
+  series: { key: string; label: string; metric: string; value?: unknown }[];
 }
 
 export interface PieSlice {
@@ -177,7 +178,10 @@ function cartesian(
   rows: readonly RecordData[],
 ): CartesianData {
   const byX = new Map<unknown, Record<string, number | null>>();
-  const seriesKeys = new Map<string, { label: string; metric: string }>();
+  const seriesKeys = new Map<
+    string,
+    { label: string; metric: string; value?: unknown }
+  >();
 
   for (const row of rows) {
     const x = row[spec.x];
@@ -189,6 +193,7 @@ function cartesian(
       seriesKeys.set(key, {
         label: spec.splitBy === undefined ? series.metric : printed(split),
         metric: series.metric,
+        ...(spec.splitBy === undefined ? {} : { value: split }),
       });
       values[key] = num(row, series.metric);
     }

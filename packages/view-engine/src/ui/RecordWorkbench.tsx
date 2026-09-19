@@ -41,6 +41,8 @@ export interface RecordWorkbenchProps {
   /** Opens this view first; the user's effective default when left out. */
   instanceId?: string | null;
   theme?: 'light' | 'dark';
+  /** The language dates and times show in; the runtime's when left out. */
+  locale?: string;
   optionsFor?(remote: string): FieldOption[] | undefined;
 }
 
@@ -57,6 +59,7 @@ export function RecordWorkbench({
   definitionId,
   instanceId = null,
   theme,
+  locale,
   optionsFor,
 }: RecordWorkbenchProps) {
   const list = useViewList(engine, definitionId);
@@ -78,7 +81,12 @@ export function RecordWorkbench({
   );
 
   return (
-    <ViewSurface theme={theme} className="gap-0 md:flex-row">
+    <ViewSurface
+      theme={theme}
+      locale={locale}
+      timeZone={engine.environment.timeZone}
+      className="gap-0 md:flex-row"
+    >
       <aside className="flex w-56 shrink-0 flex-col gap-2 p-3">
         <ViewList
           list={list}

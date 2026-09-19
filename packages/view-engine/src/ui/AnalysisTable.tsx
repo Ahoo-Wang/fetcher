@@ -12,7 +12,9 @@
  */
 
 import { SigmaIcon } from 'lucide-react';
+import { displayValue } from './display.js';
 import { useViewMessages, type MessageFormatters } from './MessagesProvider.js';
+import { useSurfaceDisplay } from './ViewSurface.js';
 import type { AnalysisView } from '../analysis/index.js';
 import type { NumberFormat } from '../model/index.js';
 import {
@@ -41,6 +43,12 @@ export interface AnalysisTableProps {
  */
 export function AnalysisTable({ view }: AnalysisTableProps) {
   const messages = useViewMessages();
+  const display = useSurfaceDisplay();
+  // A group key or an ANY shows as its field's values do; the rest, and
+  // anything the field's kind has nothing to say about, as before.
+  const show = (value: unknown, column: AnalysisView['columns'][number]) =>
+    displayValue(value, column, display) ??
+    cell(messages, value, column.numberFormat);
   if (view.rows.length === 0) {
     return (
       <Empty>
@@ -74,7 +82,7 @@ export function AnalysisTable({ view }: AnalysisTableProps) {
             <TableRow key={index}>
               {view.columns.map(column => (
                 <TableCell key={column.alias}>
-                  {cell(messages, row[column.alias], column.numberFormat)}
+                  {show(row[column.alias], column)}
                 </TableCell>
               ))}
             </TableRow>
@@ -87,11 +95,7 @@ export function AnalysisTable({ view }: AnalysisTableProps) {
                 <TableCell key={column.alias}>
                   {index === 0 && column.role === 'group'
                     ? messages.label('label.summary.total')
-                    : cell(
-                        messages,
-                        view.totals?.[column.alias],
-                        column.numberFormat,
-                      )}
+                    : show(view.totals?.[column.alias], column)}
                 </TableCell>
               ))}
             </TableRow>
