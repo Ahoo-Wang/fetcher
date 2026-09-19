@@ -7,7 +7,7 @@ description: A configurable data view engine for Wow-based applications, being r
 
 # View Engine tasks
 
-View Engine is being rewritten. The previous implementation is frozen at the git tag `view-engine-legacy`; the new package grows from an empty tree following the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md).
+View Engine is being rewritten. The previous implementation is frozen at the git tag `view-engine-legacy`; the new package grows from an empty tree following the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/).
 
 The design fixes three facts and derives everything else from them:
 
