@@ -1281,7 +1281,9 @@ describe('managing views from the workbench', () => {
     fireEvent.keyDown(document.body, { key: 'Escape' });
 
     await manage();
-    fireEvent.click(within(row('Mine')).getByRole('button', { name: 'Rename' }));
+    fireEvent.click(
+      within(row('Mine')).getByRole('button', { name: 'Rename' }),
+    );
     fireEvent.change(within(row('Mine')).getByLabelText('Title'), {
       target: { value: 'Renamed' },
     });
@@ -1477,9 +1479,7 @@ describe('the record workbench layout', () => {
     workbench([mine], {
       actions: {
         global: () => <button type="button">New order</button>,
-        row: ({ row }) => (
-          <button type="button">Open {String(row.key)}</button>
-        ),
+        row: ({ row }) => <button type="button">Open {String(row.key)}</button>,
       },
     });
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
@@ -1488,7 +1488,9 @@ describe('the record workbench layout', () => {
     const header = document.querySelector(
       '[data-slot="view-header"]',
     ) as HTMLElement;
-    expect(within(header).getByRole('button', { name: 'New order' })).toBeDefined();
+    expect(
+      within(header).getByRole('button', { name: 'New order' }),
+    ).toBeDefined();
 
     // The row action is a column of its own, pinned so a wide table cannot
     // scroll it out of reach.
@@ -3631,9 +3633,7 @@ describe('EmbeddedView', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toContain('needs fixing'),
     );
-    expect(screen.getByRole('status').textContent).toContain(
-      'advanced editor',
-    );
+    expect(screen.getByRole('status').textContent).toContain('advanced editor');
     expect(screen.queryByRole('row')).toBeNull();
   });
 });

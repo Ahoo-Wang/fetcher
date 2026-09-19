@@ -101,7 +101,11 @@ const businessActions: RecordActionSlots = {
   ),
   row: ({ row, refresh }) => (
     <>
-      <Button variant="ghost" size="xs" onClick={() => alert(`打开 ${row.key}`)}>
+      <Button
+        variant="ghost"
+        size="xs"
+        onClick={() => alert(`打开 ${row.key}`)}
+      >
         打开
       </Button>
       <Button

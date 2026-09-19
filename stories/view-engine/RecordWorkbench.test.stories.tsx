@@ -199,9 +199,7 @@ export const ManageViews: Story = {
         name: defaultMessages['label.manage.rename-confirm'],
       }),
     );
-    await waitFor(() =>
-      expect(row('大额单').textContent).toContain('大额单'),
-    );
+    await waitFor(() => expect(row('大额单').textContent).toContain('大额单'));
 
     // Which view opens first is the list's to choose, and it is marked where
     // it is set.
