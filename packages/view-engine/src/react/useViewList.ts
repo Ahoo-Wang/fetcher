@@ -93,7 +93,8 @@ export function useViewList(
 
     void engine.preferences(definitionId).then(
       value => {
-        if (!cancelled) setPreferences({ key, definitionId, value, error: null });
+        if (!cancelled)
+          setPreferences({ key, definitionId, value, error: null });
       },
       (error: unknown) => {
         if (!cancelled)
