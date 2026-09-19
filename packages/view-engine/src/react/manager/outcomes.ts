@@ -13,8 +13,8 @@
 
 /**
  * What a view manager's commands have produced: one outcome per row, held in a
- * map, with the manager's own names for the rules `react/writes.ts` defines
- * once for both hooks.
+ * map. The rules that decide what a row's slot accepts are `react/writes.ts`'s,
+ * asked from there directly — this is the map around them.
  *
  * Everything here is a pure function over one `Outcome` or over the map of
  * them: the hook holds that map in React state, but none of these rules needs
@@ -27,23 +27,6 @@ import {
 } from '../../model/index.js';
 import type { WriteState } from '../../runtime/index.js';
 import type { SettledWrite } from '../writes.js';
-
-/**
- * The rules a row's slot is decided by. `blocks` is the keyed reading of
- * "still the engine's to answer for" — a manager row loses the handle it would
- * recover through when a new command takes its one slot, which is why a
- * `conflict` stops it where the single outcome of an open runtime lets it
- * through.
- */
-export {
-  holdsHandle as blocks,
-  mayRefuse,
-  mayReplace,
-  refused,
-  settle,
-  strandedHandle,
-  UNSENT,
-} from '../writes.js';
 
 /**
  * The key the order and the default view are recorded under.

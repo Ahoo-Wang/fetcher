@@ -24,12 +24,8 @@ import type {
   WriteState,
 } from '../runtime/index.js';
 import { abilitiesOf, type ViewManagerAbilities } from './manager/abilities.js';
-import {
-  kept,
-  PREFERENCES_KEY,
-  projectStates,
-  UNSENT,
-} from './manager/outcomes.js';
+import { kept, PREFERENCES_KEY, projectStates } from './manager/outcomes.js';
+import { UNSENT } from './writes.js';
 import {
   neighbourOf,
   planMove,
@@ -112,7 +108,8 @@ type PendingOrder = OptimisticOrder & ManagerTag;
  *
  * This is the composition alone. The rules the commands are decided by live
  * beside it: `react/writes.ts` is the one write-outcome vocabulary this hook
- * and `useSaveCommands` share, `manager/outcomes.ts` holds a row's slot,
+ * and `useSaveCommands` share, `manager/outcomes.ts` holds the map of slots
+ * those rules are asked about,
  * `manager/queue.ts` serializes, `manager/order.ts` does the arithmetic of a
  * move, and `manager/useCommandRunner.ts` is the protocol all five commands
  * and the recovery actions run under.

@@ -88,7 +88,7 @@ useSaveCommands(engine, runtime): { save; saveAs; rename; delete; revert; retry;
 
 ## useViewManager
 
-实现拆在 `src/react/manager/`：`outcomes.ts`（按 key 成图的结局账本；归属与替换的规则本身在 [writes.ts](#writests)，这里只按管理器的叫法转出）、`queue.ts`（按输入打标的串行队列，React 无关，`useSaveCommands` 同走这一份）、`order.ts`（同受众相邻项与乐观顺序）、`abilities.ts`（许可投影）、`useCommandRunner.ts`（结局账本与队列的 React 一侧）；`useViewManager.ts` 只做组合。公开面只从 `/react` 入口导出。
+实现拆在 `src/react/manager/`：`outcomes.ts`（按 key 成图的结局账本；归属与替换的规则本身在 [writes.ts](#writests)，从那里直接取用）、`queue.ts`（按输入打标的串行队列，React 无关，`useSaveCommands` 同走这一份）、`order.ts`（同受众相邻项与乐观顺序）、`abilities.ts`（许可投影）、`useCommandRunner.ts`（结局账本与队列的 React 一侧）；`useViewManager.ts` 只做组合。公开面只从 `/react` 入口导出。
 
 ```ts
 useViewManager(engine, definitionId, list): { rename; delete; setDefault; move; canMove; outcomes; retry; abandon; resolveConflict; resubmit; canResubmit; pending; can }
@@ -112,7 +112,7 @@ useViewManager(engine, definitionId, list): { rename; delete; setDefault; move; 
 
 `src/react/writes.ts` 是"一次写入结局"的唯一词汇，纯函数、不含 React，两个钩子共用一份定义，[management.md#冲突与未知结果](management.md#冲突与未知结果) 那张表因此只被实现一次：`settle(caught, code, intent)` 把抛出的命令变成 `{ state, handle }`（`ViewWriteError` 交出自己的结局与 handle，其余一概没发出去，记为引用意图的 `rejected` 且无 handle）；`recovered` / `UNRECOVERED` / `RecoveredWrite` 是恢复动作的答复，`savesView(action)` 说这次恢复算不算把屏幕上这份配置存下来。
 
-两个钩子只差在手里攥着几个结局，这个差别写在函数名里，不在两份重复的判断里：`blocksNewIntent(state)` 是已打开 runtime 的规矩——只有 `unknown` 挡新意图；`holdsHandle(outcome)`（管理器里叫 `blocks`）是一行一个槽位的规矩——`conflict` 同样挡，因为新命令占位就会把它的 handle 丢掉；`strandedHandle` 给出新命令该先结清的那个 handle，`mayReplace(existing, incoming)` / `mayRefuse` 说什么样的结局可以顶掉槽里已有的。`manager/outcomes.ts` 只留下按 key 成图的那部分（`PREFERENCES_KEY`、`Outcome`、`kept`、`withOutcome`、`projectStates`），其余按管理器的叫法从这里转出。（见 test/writes.test.ts）
+两个钩子只差在手里攥着几个结局，这个差别写在函数名里，不在两份重复的判断里：`blocksNewIntent(state)` 是已打开 runtime 的规矩——只有 `unknown` 挡新意图；`holdsHandle(outcome)`（管理器里叫 `blocks`）是一行一个槽位的规矩——`conflict` 同样挡，因为新命令占位就会把它的 handle 丢掉；`strandedHandle` 给出新命令该先结清的那个 handle，`mayReplace(existing, incoming)` / `mayRefuse` 说什么样的结局可以顶掉槽里已有的。`manager/outcomes.ts` 只留下按 key 成图的那部分（`PREFERENCES_KEY`、`Outcome`、`kept`、`withOutcome`、`projectStates`），不再转出任何规则——一份定义，一条 import 路径。（见 test/writes.test.ts）
 
 ## useAnalysisEditor 与 useDashboard
 

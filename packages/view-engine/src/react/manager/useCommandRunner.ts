@@ -15,8 +15,8 @@
  * The protocol every view-manager command runs under: one outcome per key,
  * one write in flight, and both tagged with the inputs they answer for.
  *
- * It is the React half of the split — `queue.ts` serializes and `outcomes.ts`
- * holds the manager's names for the rules `react/writes.ts` defines; this
+ * It is the React half of the split — `queue.ts` serializes, `react/writes.ts`
+ * decides what a slot accepts and `outcomes.ts` is the map of slots; this
  * holds the state those rules are asked about and turns a command into an
  * outcome the row can render.
  */
@@ -24,15 +24,8 @@
 import { useCallback, useRef, useState } from 'react';
 import type { ViewEngine, WritePayload } from '../../runtime/index.js';
 import type { ViewListState } from '../useViewList.js';
-import {
-  blocks,
-  mayReplace,
-  NO_OUTCOMES,
-  settle,
-  strandedHandle,
-  withOutcome,
-  type Outcome,
-} from './outcomes.js';
+import { holdsHandle, mayReplace, settle, strandedHandle } from '../writes.js';
+import { NO_OUTCOMES, withOutcome, type Outcome } from './outcomes.js';
 import { createCommandQueue, enqueue, type CommandQueue } from './queue.js';
 
 /**
@@ -249,8 +242,8 @@ export function useCommandRunner(
       { again, recovery = false, guard }: RunOptions = {},
     ): Promise<boolean> => {
       // A recovery addresses the outcome that is in the way; every other
-      // command waits for it to be settled, as `blocks` explains.
-      const blocked = () => !recovery && blocks(held(key));
+      // command waits for it to be settled, as `holdsHandle` explains.
+      const blocked = () => !recovery && holdsHandle(held(key));
       if (blocked()) return Promise.resolve(false);
       // Asked again at the front of the queue: the command ahead may be the
       // one that turns this key `unknown`, or that settles the very handle a
