@@ -17,10 +17,13 @@ import type {
   FieldOption,
   Issue,
   NumberFormat,
+  RecordColumn,
   RecordKey,
   RecordLayout,
   RecordSort,
+  RecordSummary,
   SortDirection,
+  SummaryFunction,
 } from '../model/index.js';
 import type {
   RecordColumnView,
@@ -64,6 +67,26 @@ export interface RecordCardField {
   numberFormat?: NumberFormat;
 }
 
+/**
+ * One column with its pinning changed.
+ *
+ * The member is rebuilt rather than spread over, because a config is JSON
+ * and `{ pinned: undefined }` is not the same object as one without the key:
+ * it survives a `dequal` against the saved baseline as a difference, and a
+ * view that was only unpinned back to where it started would stay marked as
+ * unsaved for the rest of the session.
+ */
+function repinned(
+  column: RecordColumn,
+  pinned: RecordColumnPin | null,
+): RecordColumn {
+  return {
+    field: column.field,
+    ...(column.width === undefined ? {} : { width: column.width }),
+    ...(pinned === null ? {} : { pinned }),
+  };
+}
+
 function cardField(field: FieldDefinition): RecordCardField {
   return {
     field: field.name,
@@ -74,6 +97,12 @@ function cardField(field: FieldDefinition): RecordCardField {
     ...(field.numberFormat ? { numberFormat: field.numberFormat } : {}),
   };
 }
+
+/**
+ * The side a column is held on. A pinned column does not move with the rest
+ * when the table scrolls sideways, and it never leaves its side.
+ */
+export type RecordColumnPin = 'left' | 'right';
 
 export interface RecordTableController {
   /** Columns of the result on screen, which follow the executed config. */
@@ -92,6 +121,14 @@ export interface RecordTableController {
   sortOf(field: string): SortDirection | null;
   /** Ascending, then descending, then off. Applies at once, like a table does. */
   toggleSort(field: string): void;
+  /**
+   * Replaces the whole sort, in priority order, and applies at once.
+   *
+   * `toggleSort` is one column's answer and can only append; an editor that
+   * shows the sort as a list needs to say which field comes first, flip one
+   * of them and drop one of them, and all three are the same write.
+   */
+  setSort(sort: RecordSort[]): void;
 
   layout: RecordLayout;
   /**
@@ -103,6 +140,30 @@ export interface RecordTableController {
   /** Fields of the draft's table layout, in order. */
   columnFields: string[];
   setColumns(fields: string[]): void;
+  /**
+   * Puts the draft's columns in this order and applies at once.
+   *
+   * A name that is not a column is ignored and a column the caller leaves
+   * unnamed keeps its place at the end, so a control that knows about part
+   * of the table — one area of the column settings — cannot drop the rest
+   * of it by saying nothing about it.
+   */
+  setColumnOrder(fields: string[]): void;
+  /** Which side the draft holds a column on, or null when it is unpinned. */
+  pinnedOf(field: string): RecordColumnPin | null;
+  /** Holds a column on one side of the table, or lets it go. Applies at once. */
+  setPinned(field: string, pinned: RecordColumnPin | null): void;
+  /** The function the draft summarises a column with, if any. */
+  summaryOf(field: string): SummaryFunction | null;
+  /**
+   * Replaces whatever a column summarised with one function, or with none.
+   *
+   * A config may carry several functions for one field and the table shows
+   * all of them; this writes one, because a control that offers a column one
+   * summary is the shape the settings have. Setting one therefore drops the
+   * others on that column, and `null` leaves it without a summary.
+   */
+  setSummary(field: string, fn: SummaryFunction | null): void;
   pageSize: number;
   /**
    * Page sizes worth offering: the standard ladder, cut to what the runtime
@@ -149,6 +210,8 @@ const PAGE_SIZES = [10, 20, 50, 100];
 
 /** Stable identities for "no runtime yet", so memo dependencies stay still. */
 const NO_SORT: RecordSort[] = [];
+const NO_COLUMNS: RecordColumn[] = [];
+const NO_SUMMARIES: RecordSummary[] = [];
 const NO_SELECTION: RecordKey[] = [];
 const NO_ROWS: RecordRow[] = [];
 const NO_LAYOUTS: RecordLayout[] = [];
@@ -181,6 +244,8 @@ export function useRecordTable(
     [rows, selected, selection],
   );
   const sort = state?.draft.sort ?? NO_SORT;
+  const tableColumns = state?.draft.table.columns ?? NO_COLUMNS;
+  const summaries = state?.draft.summaries ?? NO_SUMMARIES;
 
   const toggleSort = useCallback(
     (field: string) => {
@@ -288,6 +353,10 @@ export function useRecordTable(
       [sort],
     ),
     toggleSort,
+    setSort: useCallback(
+      (sort: RecordSort[]) => editAndApply({ sort }),
+      [editAndApply],
+    ),
 
     layout: state?.draft.layout ?? 'table',
     layouts:
@@ -299,8 +368,8 @@ export function useRecordTable(
       [runtime],
     ),
     columnFields: useMemo(
-      () => (state?.draft.table.columns ?? []).map(column => column.field),
-      [state],
+      () => tableColumns.map(column => column.field),
+      [tableColumns],
     ),
     setColumns: useCallback(
       (fields: string[]) => {
@@ -316,6 +385,68 @@ export function useRecordTable(
           table: {
             columns: fields.map(field => existing.get(field) ?? { field }),
           },
+        });
+      },
+      [editAndApply, runtime],
+    ),
+    setColumnOrder: useCallback(
+      (fields: string[]) => {
+        if (!runtime) return;
+        const columns = runtime.getSnapshot().draft.table.columns;
+        const byField = new Map(columns.map(column => [column.field, column]));
+        const named = new Set<string>();
+        const ordered = fields.flatMap(field => {
+          const column = byField.get(field);
+          // A name repeated by the caller would otherwise become a second
+          // column of the same field, which `validateRecord` then refuses.
+          if (!column || named.has(field)) return [];
+          named.add(field);
+          return [column];
+        });
+        editAndApply({
+          table: {
+            columns: [
+              ...ordered,
+              ...columns.filter(column => !named.has(column.field)),
+            ],
+          },
+        });
+      },
+      [editAndApply, runtime],
+    ),
+    pinnedOf: useCallback(
+      (field: string) =>
+        tableColumns.find(column => column.field === field)?.pinned ?? null,
+      [tableColumns],
+    ),
+    setPinned: useCallback(
+      (field: string, pinned: RecordColumnPin | null) => {
+        if (!runtime) return;
+        editAndApply({
+          table: {
+            columns: runtime
+              .getSnapshot()
+              .draft.table.columns.map(column =>
+                column.field === field ? repinned(column, pinned) : column,
+              ),
+          },
+        });
+      },
+      [editAndApply, runtime],
+    ),
+    summaryOf: useCallback(
+      (field: string) =>
+        summaries.find(entry => entry.field === field)?.fn ?? null,
+      [summaries],
+    ),
+    setSummary: useCallback(
+      (field: string, fn: SummaryFunction | null) => {
+        if (!runtime) return;
+        const rest = (runtime.getSnapshot().draft.summaries ?? []).filter(
+          entry => entry.field !== field,
+        );
+        editAndApply({
+          summaries: fn === null ? rest : [...rest, { field, fn }],
         });
       },
       [editAndApply, runtime],

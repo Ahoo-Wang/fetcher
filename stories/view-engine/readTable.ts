@@ -22,6 +22,14 @@ export function readColumn(table: HTMLElement, header: string): string[] {
   );
 }
 
+/** The column headers a reader sees, left to right, empty ones left out. */
+export function readHeaders(table: HTMLElement): string[] {
+  const cells = (table as HTMLTableElement).tHead?.rows[0]?.cells ?? [];
+  return [...cells]
+    .map(cell => cell.textContent?.trim() ?? '')
+    .filter(text => text !== '');
+}
+
 /** The totals row's cell under a header. */
 export function readTotal(table: HTMLElement, header: string): string {
   const row = (table as HTMLTableElement).tFoot?.rows[0];

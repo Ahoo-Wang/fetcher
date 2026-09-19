@@ -62,11 +62,17 @@ function tableController(
     sort: [],
     sortOf: () => null,
     toggleSort: () => {},
+    setSort: () => {},
     layout: 'table',
     layouts: ['table', 'card'],
     setLayout: () => {},
     columnFields: ['amount'],
     setColumns: () => {},
+    setColumnOrder: () => {},
+    pinnedOf: () => null,
+    setPinned: () => {},
+    summaryOf: () => null,
+    setSummary: () => {},
     pageSize: 20,
     pageSizes: [10, 20, 50, 100],
     setPageSize: () => {},
@@ -206,8 +212,60 @@ describe('ResultToolbar layout switcher', () => {
   });
 });
 
+/**
+ * The right of the row is three groups by responsibility: the layout switch,
+ * then how the table shows what it has, then how fresh it is. The grouping
+ * is the point — four equal buttons in a row say nothing about which of them
+ * belong together — so it is asserted rather than left to a screenshot.
+ */
+describe('ResultToolbar grouping and weight', () => {
+  it('groups the controls on the right by what they are for', () => {
+    render(
+      <ResultToolbar
+        table={tableController()}
+        fields={FIELDS}
+        runtime={runtime}
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole('group')
+        .map(group => group.getAttribute('aria-label')),
+    ).toEqual(['Layout', 'Table settings', 'Freshness']);
+  });
+
+  /**
+   * The toolbar sits above the result and must not compete with it. The one
+   * exception is the layout switch, whose single outline is what makes it
+   * read as one control with two positions rather than as two buttons.
+   */
+  it('keeps every button ghost but the layout switch', () => {
+    const { container } = render(
+      <ResultToolbar
+        table={tableController()}
+        fields={FIELDS}
+        runtime={runtime}
+      />,
+    );
+
+    const toolbar = container.querySelector('[data-slot="result-toolbar"]')!;
+    const outlined = [
+      ...toolbar.querySelectorAll('[data-slot="button"]'),
+    ].filter(button => button.className.includes('border-border'));
+    expect(outlined).toEqual([]);
+    // One border around the pair, no seam between them: the vendored group
+    // does that at `spacing={0}`, which is set at the call site.
+    expect(
+      toolbar
+        .querySelector('[data-slot="toggle-group"]')!
+        .getAttribute('data-spacing'),
+    ).toBe('0');
+  });
+});
+
 describe('ResultToolbar columns and refresh', () => {
-  it('adds a field the column picker turns on', async () => {
+  it('adds a field the column settings turn on', async () => {
     const setColumns = vi.fn();
     const user = userEvent.setup();
     render(
@@ -220,32 +278,25 @@ describe('ResultToolbar columns and refresh', () => {
 
     await user.click(screen.getByRole('button', { name: /Columns/ }));
     await user.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
+      await screen.findByRole('checkbox', { name: 'Show Warehouse' }),
     );
     expect(setColumns).toHaveBeenCalledWith(['amount', 'warehouse']);
   });
 
-  it('drops a field the column picker turns off, under its own group', async () => {
-    const setColumns = vi.fn();
-    const user = userEvent.setup();
+  /**
+   * Nothing in this definition can be sorted on, so there is no sort to
+   * offer and no button to open an empty editor with.
+   */
+  it('leaves the sort out when the definition sorts on nothing', () => {
     render(
       <ResultToolbar
-        table={tableController({ setColumns })}
+        table={tableController()}
         fields={FIELDS}
-        fieldGroups={[
-          { id: 'money', label: 'Money', fields: ['amount'] },
-          { id: 'where', label: 'Where', fields: ['warehouse'] },
-        ]}
         runtime={runtime}
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /Columns/ }));
-    expect(await screen.findByText('Money')).toBeTruthy();
-    await user.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Amount' }),
-    );
-    expect(setColumns).toHaveBeenCalledWith([]);
+    expect(screen.queryByRole('button', { name: /Sort/ })).toBeNull();
   });
 
   it('refreshes, and says so while the query is out', async () => {

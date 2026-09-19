@@ -71,6 +71,13 @@ useRecordTable(runtime): RecordTableController
 - 无 TanStack 类型；
 - layouts 为定义允许的布局，selectedRows 为当前结果中被选中的行（结果顺序），pageSizes 为可供选择的每页条数（标准档位按 runtime.limits.maxPageSize 裁剪，并并入当前值）。（见 test/reactHooks.test.tsx「useRecordTable」）
 
+改动配置的命令一律是一次 `edit` 加一次 `apply`，与既有的 `toggleSort`／`setColumns` 同一条路径：表格画的是内核按**执行时**的配置投影出来的列与行，不重跑就看不到改动（筛选则等提交）。列设置与排序控件（[ui/record.md](ui/record.md)）所需的那几条：
+
+- `setColumnOrder(fields)`——按给定顺序重排草稿的列。不是列的名字忽略，重复的名字只算一次（否则会落成同一字段的两列，`validateRecord` 随即拒绝），**没被点到名的列保留在末尾**：只了解表格一部分的控件（列设置的一个区域）不该因为没提到其余部分就把它们删掉；每一列按原样搬运，宽度与固定不会在下次保存时丢失；
+- `pinnedOf(field)` / `setPinned(field, pinned)`——草稿把某列固定在哪一侧，`null` 为不固定。取消固定时删键而不是置 `undefined`（理由见 [ui/record.md](ui/record.md)）；
+- `summaryOf(field)` / `setSummary(field, fn)`——某列底下汇总用的函数。配置允许一个字段带多个函数、表格也全画出来，而这条命令写**一个**：控件一列只给一个下拉，设一个就替换掉该列原有的，`null` 则该列不汇总，其余列不受影响；
+- `setSort(sort)`——整份排序按优先级顺序替换。`toggleSort` 是单列的答案、只能往后追加，而把排序当作一张列表来编辑要能说清谁先谁后、翻转其中一条、删掉其中一条，三件事是同一次写入。（见 test/recordTableCommands.test.tsx）
+
 ## useSaveCommands
 
 ```ts

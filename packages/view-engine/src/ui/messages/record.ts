@@ -23,6 +23,10 @@ export const recordMessages = {
   'label.toolbar.layout': 'Layout',
   'label.toolbar.columns': 'Columns',
   'label.toolbar.refresh': 'Refresh',
+  // The two groups on the right of the toolbar, named so a screen reader
+  // hears what a group is for rather than "group, group".
+  'label.toolbar.arrange': 'Table settings',
+  'label.toolbar.freshness': 'Freshness',
   'label.toolbar.selected': '{count} selected',
   'label.toolbar.clear-selection': 'Clear selection',
   'label.toolbar.actions': 'Actions',
@@ -45,6 +49,46 @@ export const recordMessages = {
   'label.summary.of': '{fn} of {field}',
   'label.value.yes': 'Yes',
   'label.value.no': 'No',
+
+  // The column settings. The two areas a column cannot leave are named by
+  // the same words as the pin states, because they are the same fact: a
+  // column is in the left area precisely because it is held on the left.
+  'label.columns.title': 'Column settings',
+  'label.columns.hint':
+    'Drag a handle to reorder columns within one area. The key column stays on the left and actions stay on the right.',
+  'label.columns.instructions':
+    'Press the arrow keys to move a column one place. Press space to pick it up, the arrow keys to move it, space again to drop it and escape to cancel.',
+  'label.columns.drag': 'Reorder {field}',
+  'label.columns.moved': '{field} moved to position {index} of {total}',
+  'label.columns.picked': '{field} picked up',
+  'label.columns.cancelled': 'Move cancelled; {field} stayed where it was',
+  'label.columns.show': 'Show {field}',
+  'label.columns.last-visible': 'A table needs at least one column.',
+  'label.columns.summary': 'Summary under {field}',
+  'label.columns.pin': 'Pinning of {field}: {state}',
+  'label.columns.pin.none': 'Not pinned',
+  'label.columns.pin.left': 'Pinned left',
+  'label.columns.pin.right': 'Pinned right',
+
+  // The sort control. Every member of `SummaryFunction` and of the two sort
+  // directions is named here: a catalogue that names half of a closed set
+  // cannot be translated, and the other half shows up on screen as `AVG`.
+  'label.sort.title': 'Sort',
+  'label.sort.hint': 'Rows are ordered by the first field, then by the next.',
+  'label.sort.none': 'These rows are in no particular order.',
+  'label.sort.asc': 'Ascending',
+  'label.sort.desc': 'Descending',
+  'label.sort.more': '+{count}',
+  'label.sort.direction': 'Direction of {field}',
+  'label.sort.remove': 'Stop sorting by {field}',
+  'label.sort.add': 'Sort by a field',
+
+  'label.summary.function.none': 'No summary',
+  'label.summary.function.SUM': 'Sum',
+  'label.summary.function.AVG': 'Average',
+  'label.summary.function.MIN': 'Minimum',
+  'label.summary.function.MAX': 'Maximum',
+  'label.summary.function.COUNT': 'Count',
 
   // A summary's scope belongs on screen: a total comes from its own query
   // over everything the conditions match, a page total only from the rows

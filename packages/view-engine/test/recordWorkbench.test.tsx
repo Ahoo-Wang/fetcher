@@ -808,7 +808,7 @@ describe('RecordWorkbench interaction', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
     fireEvent.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Amount' }),
+      await screen.findByRole('checkbox', { name: 'Show Amount' }),
     );
 
     await waitFor(() =>
@@ -915,7 +915,7 @@ describe('save actions', () => {
   async function dropAColumn() {
     fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
     fireEvent.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
+      await screen.findByRole('checkbox', { name: 'Show Warehouse' }),
     );
     await waitFor(() =>
       expect(screen.getAllByRole('columnheader')).toHaveLength(4),
@@ -1331,7 +1331,7 @@ describe('managing views from the workbench', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
     fireEvent.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
+      await screen.findByRole('checkbox', { name: 'Show Warehouse' }),
     );
     // The header count includes the select-all column.
     await waitFor(() =>
@@ -1581,7 +1581,7 @@ describe('the record workbench layout', () => {
     // An edit the toolbar can make, so there is a draft worth keeping.
     fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
     fireEvent.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
+      await screen.findByRole('checkbox', { name: 'Show Warehouse' }),
     );
     await waitFor(() =>
       expect(screen.getAllByRole('columnheader')).toHaveLength(4),
