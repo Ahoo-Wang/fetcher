@@ -25,34 +25,79 @@ import type { MessageFormatters } from './MessagesProvider.js';
  * It is a pure function of the config and the wording — no clock, no
  * definition, no field labels — because a conflicting remote config may name
  * fields this release has never heard of.
+ *
+ * And it reads every part of it defensively, for the same reason. One side of
+ * the conflict is whatever the store handed back: a config written by another
+ * release, or one that lost its shape. A `.length` on something that is not
+ * an array would throw out of a render and take the dialog with it — the one
+ * dialog whose whole job is to recover — so a shape the kind does not promise
+ * is a sentence saying so, and the choice can still be made on the other side.
  */
 export function describeConfig(
   config: ViewConfig,
   messages: MessageFormatters,
 ): string {
   switch (config.kind) {
-    case 'record':
+    case 'record': {
+      const pageSize = numberOf(read(config, 'pageSize'));
+      const columns = countOf(read(read(config, 'table'), 'columns'));
+      const sorts = countOf(read(config, 'sort'));
+      if (pageSize === null || columns === null || sorts === null)
+        return unreadable(messages);
       return messages.label('label.conflict.summary.record', {
-        pageSize: config.pageSize,
+        pageSize,
         // The layout is a word the catalogue already owns; the stored value
         // is `card`, and the label that names it is the plural one.
         layout: messages.label(
-          config.layout === 'card'
+          read(config, 'layout') === 'card'
             ? 'label.layout.cards'
             : 'label.layout.table',
         ),
-        columns: config.table.columns.length,
-        sorts: config.sort.length,
+        columns,
+        sorts,
       });
-    case 'analysis':
+    }
+    case 'analysis': {
+      const groups = countOf(read(config, 'groups'));
+      const metrics = countOf(read(config, 'metrics'));
+      const limit = numberOf(read(config, 'limit'));
+      if (groups === null || metrics === null || limit === null)
+        return unreadable(messages);
       return messages.label('label.conflict.summary.analysis', {
-        groups: config.groups.length,
-        metrics: config.metrics.length,
-        limit: config.limit,
+        groups,
+        metrics,
+        limit,
       });
-    case 'dashboard':
-      return messages.label('label.conflict.summary.dashboard', {
-        panels: config.panels.length,
-      });
+    }
+    case 'dashboard': {
+      const panels = countOf(read(config, 'panels'));
+      if (panels === null) return unreadable(messages);
+      return messages.label('label.conflict.summary.dashboard', { panels });
+    }
+    // A kind this release does not know is as unreadable as a broken one,
+    // and it is the same sentence: there is nothing here to count.
+    default:
+      return unreadable(messages);
   }
+}
+
+function unreadable(messages: MessageFormatters): string {
+  return messages.label('label.conflict.summary.malformed');
+}
+
+/** One property of something that was promised to be an object. */
+function read(value: unknown, key: string): unknown {
+  return typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)[key]
+    : undefined;
+}
+
+/** How many entries an array holds; `null` when it is not an array. */
+function countOf(value: unknown): number | null {
+  return Array.isArray(value) ? value.length : null;
+}
+
+/** A number as stored; `null` when it is anything else, `NaN` included. */
+function numberOf(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }

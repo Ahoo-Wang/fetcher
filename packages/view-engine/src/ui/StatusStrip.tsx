@@ -14,7 +14,18 @@
 import { useState, type ReactNode } from 'react';
 import { cn } from 'cn';
 import { CircleAlertIcon, InfoIcon, TriangleAlertIcon } from 'lucide-react';
-import type { Issue } from '../model/index.js';
+import type {
+  FilterNode,
+  FilterTree,
+  Issue,
+  IssuePath,
+} from '../model/index.js';
+import {
+  isFilterGroup,
+  isFilterLeaf,
+  nodeAt,
+  type FilterPath,
+} from '../filter/index.js';
 import { Button, buttonVariants } from './components/button.js';
 import {
   Collapsible,
@@ -159,13 +170,59 @@ function sameWording(a: Issue, b: Issue): boolean {
  * and further from the fix. Everything else — a column the definition
  * dropped, a page size it no longer admits — has no pill to sit on, and a
  * strip is the only way it is ever seen.
+ *
+ * Which is why the draft tree is asked rather than the path alone: a
+ * condition-shaped path is not the same thing as a pill. `FilterPanel` draws
+ * a node only when the tree really holds one there — a malformed child is
+ * skipped by the condition strip, and a group carries no marker of its own —
+ * so an error addressing anything but a rendered condition is marked nowhere
+ * and belongs here. Apply is still refused for it: the editor's `blocked`
+ * counts every condition-level error, whether or not a pill could be found
+ * for it.
  */
-export function unmarkedErrors(issues: readonly Issue[]): Issue[] {
+export function unmarkedErrors(
+  issues: readonly Issue[],
+  /** The draft the editor beside this strip is showing. */
+  tree: FilterTree,
+): Issue[] {
   return issues.filter(
-    found =>
-      found.severity === 'error' &&
-      !(found.code.startsWith('filter.') && found.path[0] === 'children'),
+    found => found.severity === 'error' && !isMarked(found, tree),
   );
+}
+
+/** Whether the condition editor puts this finding on a pill of its own. */
+function isMarked(found: Issue, tree: FilterTree): boolean {
+  if (!found.code.startsWith('filter.') || found.path[0] !== 'children')
+    return false;
+  // Only a condition wears a mark; a group's own findings wear none.
+  return isFilterLeaf(conditionAt(tree, indexesOf(found.path)));
+}
+
+/** The node indexes of an issue path: `['children', 1]` addresses `[1]`. */
+function indexesOf(path: IssuePath): FilterPath {
+  return path.filter((step): step is number => typeof step === 'number');
+}
+
+/**
+ * The node a path addresses, descending into a predicate leaf's own tree as
+ * the panel does: an element match renders the group its value carries, and
+ * the findings inside it are marked on the conditions of that group.
+ */
+function conditionAt(tree: FilterTree, path: FilterPath): FilterNode | null {
+  let node: FilterNode | null = tree;
+  for (const index of path) {
+    const group = groupOf(node);
+    if (group === null) return null;
+    node = nodeAt(group, [index]);
+  }
+  return node;
+}
+
+/** The group a node holds conditions in, its own or a predicate's. */
+function groupOf(node: FilterNode | null): FilterTree | null {
+  if (node === null) return null;
+  if (isFilterGroup(node)) return node;
+  return isFilterGroup(node.value) ? node.value : null;
 }
 
 export interface IssueStripProps {

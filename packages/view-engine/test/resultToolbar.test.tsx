@@ -68,6 +68,7 @@ function tableController(
     columnFields: ['amount'],
     setColumns: () => {},
     pageSize: 20,
+    pageSizes: [10, 20, 50, 100],
     setPageSize: () => {},
     selection: [],
     selectedRows: [],

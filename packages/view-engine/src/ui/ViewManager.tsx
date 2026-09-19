@@ -24,9 +24,11 @@ import {
 import {
   audienceOf,
   isSystemScope,
+  toSummary,
   type ViewAudience,
   type ViewInstanceSummary,
 } from '../model/index.js';
+import type { ViewInstance, ViewPreferences } from '../model/index.js';
 import type { WriteState } from '../runtime/index.js';
 import {
   PREFERENCES_KEY,
@@ -150,9 +152,6 @@ function ManagedRow({
   const can = manager.can.instance(item.id);
   const outcome = manager.outcomes.get(item.id);
   const busy = manager.pending !== null;
-  // Reordering acts on the whole stored order, not on the group the row is
-  // drawn in, so the ends that have nowhere to go are the list's own ends.
-  const index = list.items.findIndex(other => other.id === item.id);
   const isDefault = list.preferences?.defaultInstanceId === item.id;
 
   return (
@@ -215,7 +214,11 @@ function ManagedRow({
                     variant="ghost"
                     size="icon-sm"
                     aria-label={messages.label('label.manage.move-up')}
-                    disabled={busy || index <= 0}
+                    // The group the row is drawn in is what it moves within:
+                    // the arrows go dead at the top and bottom of that group,
+                    // because a swap across the boundary would store a new
+                    // order and leave the screen exactly as it was.
+                    disabled={busy || !manager.canMove(item.id, 'up')}
                     onClick={() => void manager.move(item.id, 'up')}
                   >
                     <ArrowUpIcon />
@@ -224,7 +227,7 @@ function ManagedRow({
                     variant="ghost"
                     size="icon-sm"
                     aria-label={messages.label('label.manage.move-down')}
-                    disabled={busy || index >= list.items.length - 1}
+                    disabled={busy || !manager.canMove(item.id, 'down')}
                     onClick={() => void manager.move(item.id, 'down')}
                   >
                     <ArrowDownIcon />
@@ -281,6 +284,8 @@ function ManagedRow({
           manager={manager}
           list={list}
           outcomeKey={item.id}
+          item={item}
+          dirty={openDirtyId === item.id}
         />
       )}
 
@@ -310,41 +315,92 @@ function OutcomeLine({
   manager,
   list,
   outcomeKey,
+  item,
+  dirty = false,
 }: {
   state: WriteState;
   manager: ViewManagerController;
   list: ViewListState;
   outcomeKey: string;
+  /** The row this outcome belongs to; the preferences record has none. */
+  item?: ViewInstanceSummary;
+  /** True when this is the open view and it has unsaved edits. */
+  dirty?: boolean;
 }) {
   const messages = useViewMessages();
+  const [reconfirming, setReconfirming] = useState(false);
 
-  if (state.kind === 'conflict')
+  if (state.kind === 'conflict') {
+    // A reload of a preference conflict settled it and kept what the user
+    // meant (design §7.3), so what is offered now is that intent once more
+    // rather than a recovery of a write the engine no longer holds — the
+    // button used to call one that could only answer "nothing to recover".
+    if (manager.canResubmit(outcomeKey))
+      return (
+        <p
+          role="alert"
+          className="text-destructive flex flex-wrap items-center gap-2 text-xs"
+        >
+          <span className="min-w-0 flex-1">
+            {messages.label('label.write.conflict')}
+          </span>
+          <Button size="xs" onClick={() => void manager.resubmit(outcomeKey)}>
+            {messages.label('label.manage.resubmit')}
+          </Button>
+        </p>
+      );
+
+    // A delete that conflicted is the one overwrite that is asked about
+    // twice: the first confirmation was about the view as it stood, and
+    // what the conflict reports is a view that has changed since — it may
+    // now be shared, and it is certainly not what was confirmed.
+    const deleting = state.payload.action === 'delete';
+    const target = deleting ? refreshed(state.remote, item) : null;
+
     return (
-      <p
-        role="alert"
-        className="text-destructive flex flex-wrap items-center gap-2 text-xs"
-      >
-        <span className="min-w-0 flex-1">
-          {messages.label('label.write.conflict')}
-        </span>
-        <Button
-          variant="outline"
-          size="xs"
-          onClick={() => {
-            void manager.resolveConflict(outcomeKey, 'reload');
-            list.reload();
-          }}
+      <>
+        <p
+          role="alert"
+          className="text-destructive flex flex-wrap items-center gap-2 text-xs"
         >
-          {messages.label('label.manage.reload')}
-        </Button>
-        <Button
-          size="xs"
-          onClick={() => void manager.resolveConflict(outcomeKey, 'overwrite')}
-        >
-          {messages.label('label.conflict.mine')}
-        </Button>
-      </p>
+          <span className="min-w-0 flex-1">
+            {messages.label('label.write.conflict')}
+          </span>
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => {
+              void manager.resolveConflict(outcomeKey, 'reload');
+              list.reload();
+            }}
+          >
+            {messages.label('label.manage.reload')}
+          </Button>
+          <Button
+            size="xs"
+            onClick={() => {
+              if (target) setReconfirming(true);
+              else void manager.resolveConflict(outcomeKey, 'overwrite');
+            }}
+          >
+            {messages.label('label.conflict.mine')}
+          </Button>
+        </p>
+        {target && (
+          <DeleteDialog
+            open={reconfirming}
+            onOpenChange={setReconfirming}
+            item={target}
+            dirty={dirty}
+            onConfirm={() => {
+              void manager.resolveConflict(outcomeKey, 'overwrite');
+              setReconfirming(false);
+            }}
+          />
+        )}
+      </>
     );
+  }
 
   if (state.kind === 'unknown')
     return (
@@ -373,6 +429,21 @@ function OutcomeLine({
       {messages.issue(state.issue)}
     </p>
   );
+}
+
+/**
+ * The view a delete conflict is really about: the server's copy, which is
+ * what the second confirmation has to describe — a view that became shared
+ * while the dialog was open costs other people their view too, and the first
+ * confirmation never said so. The row's own summary stands in when what came
+ * back was not an instance at all.
+ */
+function refreshed(
+  remote: ViewInstance | ViewPreferences,
+  item: ViewInstanceSummary | undefined,
+): ViewInstanceSummary | null {
+  if ('config' in remote) return toSummary(remote);
+  return item ?? null;
 }
 
 /**

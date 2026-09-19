@@ -116,6 +116,16 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
 
   const menuSaveAs = can.save && can.saveAs;
   const menuRevert = can.revert;
+  const { write } = state;
+  // Spelled out rather than taken from `blocked`, because the outcomes are
+  // not one thing. A write in flight and a draft with errors stop any write.
+  // An unknown outcome must be settled first — the engine refuses the next
+  // write anyway. A conflict refuses a blind save: the user has been asked
+  // which version wins and has not answered. A refusal, though, is over —
+  // the store never took it, nothing is pending, and trying again with a
+  // corrected draft is exactly what the user should do next.
+  const unsettled = write?.kind === 'unknown' || write?.kind === 'conflict';
+  const stopped = state.pending || state.hasErrors || unsettled;
 
   return (
     <div data-slot="save-actions" className="flex items-center gap-2">
@@ -126,7 +136,7 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
           // A save with nothing to save is the one disabled button here: the
           // permission is held, so the button belongs on screen, and the
           // reason it does nothing is the state the user can see.
-          disabled={state.blocked || (can.save && !state.dirty)}
+          disabled={stopped || (can.save && !state.dirty)}
           onClick={() => {
             if (can.save)
               void commands.save().then(made => made && onSaved?.(made));
@@ -143,6 +153,10 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  // Nothing in the menu may run while a write is in flight:
+                  // reverting mid-save would leave the old config as a dirty
+                  // draft over a baseline that has just become the new one.
+                  disabled={state.pending}
                   aria-label={messages.label('label.header.more')}
                 />
               }
@@ -157,7 +171,10 @@ export function SaveActions({ commands, title, onSaved }: SaveActionsProps) {
                 </DropdownMenuItem>
               )}
               {menuRevert && (
-                <DropdownMenuItem onClick={commands.revert}>
+                <DropdownMenuItem
+                  disabled={state.pending}
+                  onClick={commands.revert}
+                >
                   <RotateCcwIcon />
                   {messages.label('label.save.revert')}
                 </DropdownMenuItem>
@@ -223,7 +240,15 @@ function PrimaryFace({
 function RevertButton({ commands }: { commands: SaveCommands }) {
   const messages = useViewMessages();
   return (
-    <Button variant="ghost" size="sm" onClick={commands.revert}>
+    <Button
+      variant="ghost"
+      size="sm"
+      // Taking the edits back while the same edits are being written would
+      // leave what was reverted from as the baseline and what was reverted
+      // to as a dirty draft over it.
+      disabled={commands.state.pending}
+      onClick={commands.revert}
+    >
       <RotateCcwIcon data-icon="inline-start" />
       {messages.label('label.save.revert')}
     </Button>

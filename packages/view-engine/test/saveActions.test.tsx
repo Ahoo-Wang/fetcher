@@ -194,6 +194,59 @@ describe('SaveActions, the split button group', () => {
     );
   });
 
+  /**
+   * A save in flight is about to become the baseline. Reverting under it
+   * would put the config the save is writing *away* back into the draft, and
+   * the moment the write lands that draft is dirty over the very edits it
+   * was meant to undo.
+   */
+  it('holds the menu shut while a write is in flight', async () => {
+    const { engine, store } = setup();
+    const held = deferred<ViewInstance>();
+    vi.spyOn(store, 'save').mockReturnValueOnce(held.promise);
+    const runtime = await engine.open('orders-1');
+    render(<Harness engine={engine} runtime={runtime} />);
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByRole('button', { name: /Saving/ });
+
+    expect(
+      screen.getByRole('button', { name: 'More view actions' }),
+    ).toHaveProperty('disabled', true);
+
+    act(() => held.resolve({ ...mine, revision: '2' }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'More view actions' }),
+      ).toHaveProperty('disabled', false),
+    );
+  });
+
+  /**
+   * A refusal is over: the store never took the write, nothing is pending,
+   * and the next thing the user should be able to do is try again. The
+   * primary button used to stay disabled for the rest of the session.
+   */
+  it('lets a refused save be made again', async () => {
+    const { store, runtime } = await open();
+    vi.spyOn(store, 'save').mockRejectedValueOnce(
+      new ViewStoreError('FORBIDDEN', 'not yours'),
+    );
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByRole('alert');
+
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toHaveProperty('disabled', false);
+    fireEvent.click(save);
+
+    await waitFor(async () =>
+      expect((await store.get('orders-1')).revision).toBe('2'),
+    );
+  });
+
   it('takes the edits back from the menu', async () => {
     const { runtime } = await open();
     editIt(runtime);
@@ -378,6 +431,38 @@ describe('WriteOutcome', () => {
     );
   });
 
+  /**
+   * A copy is one of the three ways out of a conflict, and the only one that
+   * leaves the original write untouched unless it is settled here. The host
+   * opens the copy next, which releases this runtime — and a pending write
+   * whose runtime is gone can never be retried, overwritten or abandoned by
+   * anybody again, while the engine goes on holding the slot against the
+   * next write to the same view.
+   */
+  it('settles the write the copy came out of', async () => {
+    const { engine, store, runtime } = await conflicted();
+    expect(engine.pendingWrites().size).toBe(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save my copy' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'Mine after all' },
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
+
+    await waitFor(async () =>
+      expect((await store.list('orders')).map(item => item.title)).toContain(
+        'Mine after all',
+      ),
+    );
+    await waitFor(() => expect(runtime.getSnapshot().write).toBeNull());
+    expect(engine.pendingWrites().size).toBe(0);
+    // And the line that offered the three ways out is gone with it.
+    expect(screen.queryByText('Someone else saved this view first')).toBeNull();
+  });
+
   it('offers a retry when the result never came back', async () => {
     const { store, runtime } = await open();
     vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('socket closed'));
@@ -404,6 +489,31 @@ describe('WriteOutcome', () => {
     await waitFor(() =>
       expect(screen.queryByText('The result never came back')).toBeNull(),
     );
+  });
+
+  /**
+   * A refusal has nothing to retry or overwrite, but it does have to go: the
+   * engine holds it until it is settled, and the line sits over the view
+   * until someone takes it down.
+   */
+  it('lets a refusal be dismissed once it has been read', async () => {
+    const { engine, store, runtime } = await open();
+    vi.spyOn(store, 'save').mockRejectedValueOnce(
+      new ViewStoreError('FORBIDDEN', 'not yours'),
+    );
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText(/You may not write to this view/);
+    expect(engine.pendingWrites().size).toBe(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+
+    await waitFor(() =>
+      expect(screen.queryByText(/You may not write to this view/)).toBeNull(),
+    );
+    expect(engine.pendingWrites().size).toBe(0);
+    expect(runtime.getSnapshot().write).toBeNull();
   });
 
   it('says why a write was refused, in words rather than a code', async () => {

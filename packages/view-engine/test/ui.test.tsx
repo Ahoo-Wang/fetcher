@@ -1995,6 +1995,7 @@ function tableController(
     columnFields: ['amount', 'warehouse'],
     setColumns: () => {},
     pageSize: 20,
+    pageSizes: [10, 20, 50, 100],
     setPageSize: () => {},
     selection: [],
     selectedRows: [],
@@ -3724,27 +3725,39 @@ describe('WarningStrip', () => {
 });
 
 describe('ErrorStrip', () => {
+  /** A draft holding two conditions, which is what the editor draws pills for. */
+  const twoConditions: FilterTree = {
+    op: 'and',
+    children: [
+      { field: 'warehouse', operator: 'EQ', value: 'CN' },
+      { field: 'status', operator: 'EQ', value: 'PENDING' },
+    ],
+  };
+
   it('leaves the conditions the editor marks to the editor', () => {
     // A wrong condition is marked on its own pill and counted on Apply,
     // which is where it can be fixed; the strip would only say it again.
-    const marked = unmarkedErrors([
-      {
-        code: 'filter.value.expected-date',
-        severity: 'error',
-        path: ['children', 0],
-      },
-      {
-        code: 'record.column.unknown',
-        severity: 'error',
-        path: ['table', 'columns', 0],
-        params: { field: 'gone' },
-      },
-      {
-        code: 'config.filterMode.not-simple',
-        severity: 'warning',
-        path: [],
-      },
-    ]);
+    const marked = unmarkedErrors(
+      [
+        {
+          code: 'filter.value.expected-date',
+          severity: 'error',
+          path: ['children', 0],
+        },
+        {
+          code: 'record.column.unknown',
+          severity: 'error',
+          path: ['table', 'columns', 0],
+          params: { field: 'gone' },
+        },
+        {
+          code: 'config.filterMode.not-simple',
+          severity: 'warning',
+          path: [],
+        },
+      ],
+      twoConditions,
+    );
 
     expect(marked.map(found => found.code)).toEqual(['record.column.unknown']);
 
@@ -3757,16 +3770,153 @@ describe('ErrorStrip', () => {
   it('says nothing when every error is marked elsewhere', () => {
     const { container } = render(
       <ErrorStrip
-        issues={unmarkedErrors([
-          {
-            code: 'filter.value.expected-text',
-            severity: 'error',
-            path: ['children', 1],
-          },
-        ])}
+        issues={unmarkedErrors(
+          [
+            {
+              code: 'filter.value.expected-text',
+              severity: 'error',
+              path: ['children', 1],
+            },
+          ],
+          twoConditions,
+        )}
       />,
     );
 
     expect(container.innerHTML).toBe('');
+  });
+
+  /**
+   * A condition-shaped path is not the same thing as a pill. The panel skips
+   * a malformed child — there is nothing to draw a field, an operator or a
+   * value editor from — so a finding about it is marked nowhere, and the
+   * strip is the only place it can ever be read.
+   */
+  it('keeps an error about a node the editor cannot draw', () => {
+    const kept = unmarkedErrors(
+      [
+        {
+          code: 'filter.node.invalid',
+          severity: 'error',
+          path: ['children', 0],
+        },
+      ],
+      { op: 'and', children: [null as unknown as FilterTree] },
+    );
+
+    expect(kept.map(found => found.path)).toEqual([['children', 0]]);
+  });
+
+  /** A group carries no marker of its own; only its conditions do. */
+  it('keeps an error about a group, which wears no mark', () => {
+    const kept = unmarkedErrors(
+      [
+        {
+          code: 'filter.group.duplicate-field',
+          severity: 'error',
+          path: ['children', 0],
+          params: { field: 'warehouse' },
+        },
+      ],
+      { op: 'and', children: [{ op: 'or', children: [] }] },
+    );
+
+    expect(kept).toHaveLength(1);
+  });
+
+  /**
+   * A condition inside an element match is drawn by the same components,
+   * from the tree the leaf carries, so it wears a pill like any other.
+   */
+  it('leaves a condition inside a predicate to the editor', () => {
+    const kept = unmarkedErrors(
+      [
+        {
+          code: 'filter.value.expected-text',
+          severity: 'error',
+          path: ['children', 0, 'children', 1],
+        },
+      ],
+      {
+        op: 'and',
+        children: [
+          {
+            field: 'lines',
+            operator: 'ELEMENT_MATCH',
+            value: {
+              op: 'and',
+              children: [
+                { field: 'sku', operator: 'EQ', value: 'a' },
+                { field: 'qty', operator: 'EQ', value: 1 },
+              ],
+            } as unknown as FilterValue,
+          },
+        ],
+      },
+    );
+
+    expect(kept).toEqual([]);
+  });
+});
+
+/**
+ * A stored tree can hold a child that is not a node at all — another
+ * release's shape, a broken write. The editor skips it: there is no field,
+ * operator or value to draw a pill from. So the finding has to be read
+ * somewhere, and Apply has to stay refused while it is there.
+ */
+describe('a stored condition the editor cannot draw', () => {
+  const broken: ViewInstance = {
+    ...mine,
+    config: recordConfig({
+      filter: {
+        op: 'and',
+        children: [
+          { field: 'warehouse', operator: 'EQ', value: 'CN' },
+          null as unknown as FilterTree,
+        ],
+      },
+    }),
+  };
+
+  async function openBroken() {
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [broken] }),
+      resolveSource: () => testSource(),
+    });
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
+    );
+    await screen.findByRole('alert');
+  }
+
+  it('says so in the strip, where nothing else can say it', async () => {
+    await openBroken();
+
+    const strip = screen.getByRole('alert');
+    expect(strip.textContent).toContain('needs fixing');
+    fireEvent.click(within(strip).getByRole('button', { name: '1 more' }));
+    expect(strip.textContent).toContain('This condition could not be read.');
+    // One finding, one sentence: the well-formed condition beside it is fine.
+    expect(within(strip).queryByRole('button', { name: '2 more' })).toBeNull();
+  });
+
+  it('refuses to apply while it is there', async () => {
+    await openBroken();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+    const apply = (await screen.findByRole('button', {
+      name: /Apply/,
+    })) as HTMLButtonElement;
+    expect(apply.disabled).toBe(true);
+    // And says how many, beside the button that will not move: a count that
+    // left out what no pill could carry would be a button disabled for
+    // nothing the user can see.
+    expect(screen.getByText('1 to fix')).toBeDefined();
   });
 });

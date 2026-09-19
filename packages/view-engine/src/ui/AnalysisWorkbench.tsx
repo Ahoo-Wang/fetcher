@@ -42,6 +42,7 @@ import {
 } from './StatusStrip.js';
 import { ViewHeader } from './ViewHeader.js';
 import { ViewList } from './ViewList.js';
+import { useReleaseDeleted } from './useReleaseDeleted.js';
 import { useViewMessages } from './MessagesProvider.js';
 import type { ViewMessages } from './messages.js';
 import { ViewSurface } from './ViewSurface.js';
@@ -84,8 +85,9 @@ export function AnalysisWorkbench({
   // one place rather than in the layout of every part beside it.
   const [sidebarOpen] = useState(true);
   const [chosen, setChosen] = useState<string | null>(instanceId);
+  const openId = chosen ?? list.defaultInstanceId;
 
-  const opened = useOpenView(engine, chosen ?? list.defaultInstanceId);
+  const opened = useOpenView(engine, openId);
   // A host may still name a view of another kind. It opened, and it is not
   // this page's to draw, so it is reported the way every unopenable view is
   // rather than left as a header over nothing.
@@ -101,6 +103,7 @@ export function AnalysisWorkbench({
   const leave = useLeaveGuard(
     state ? { dirty: state.dirty, write: state.write } : null,
   );
+  useReleaseDeleted(openId, chosen, opened, setChosen);
 
   const data = state?.result?.data;
   const view: AnalysisView | null =
@@ -183,7 +186,7 @@ export function AnalysisWorkbench({
             <FilterPanel filter={filter} optionsFor={optionsFor} />
             <AnalysisEditor analysis={analysis} />
 
-            <ErrorStrip issues={unmarkedErrors(issues)} />
+            <ErrorStrip issues={unmarkedErrors(issues, filter.tree)} />
             {/* Warnings block nothing — the result below is real — so they
                 sit under the errors and never replace it. */}
             <WarningStrip issues={issues} />

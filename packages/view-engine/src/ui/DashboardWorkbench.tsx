@@ -35,6 +35,7 @@ import { Separator } from './components/separator.js';
 import { Skeleton } from './components/skeleton.js';
 import { ViewHeader } from './ViewHeader.js';
 import { ViewList } from './ViewList.js';
+import { useReleaseDeleted } from './useReleaseDeleted.js';
 import { useViewMessages } from './MessagesProvider.js';
 import type { ViewMessages } from './messages.js';
 import { ViewSurface } from './ViewSurface.js';
@@ -82,8 +83,9 @@ export function DashboardWorkbench({
   // one place rather than in the layout of every part beside it.
   const [sidebarOpen] = useState(true);
   const [chosen, setChosen] = useState<string | null>(instanceId);
+  const openId = chosen ?? list.defaultInstanceId;
 
-  const opened = useOpenView(engine, chosen ?? list.defaultInstanceId);
+  const opened = useOpenView(engine, openId);
   const runtime = opened.runtime;
   const state = useViewRuntime(runtime);
   const board = runtime?.kind === 'dashboard' ? runtime : null;
@@ -95,6 +97,7 @@ export function DashboardWorkbench({
   const leave = useLeaveGuard(
     state ? { dirty: state.dirty, write: state.write } : null,
   );
+  useReleaseDeleted(openId, chosen, opened, setChosen);
 
   const issues = state?.issues ?? [];
   // The panels carry the warnings of what is applied, each in its own frame.
@@ -103,6 +106,17 @@ export function DashboardWorkbench({
   // that no panel holds until Apply hands it over — and Save would persist
   // it unseen. So the notice takes every warning no panel is showing.
   const carried = dashboard.panels.flatMap(panel => panel.issues);
+  // A dashboard runs nothing of its own — `state.result` is always null — so
+  // what the applied bar describes is whether the panels were asked at all.
+  // One panel that has answered, or that is asking, is an answer: the global
+  // condition it went out under is exactly what the bar says.
+  const hasResult = dashboard.panels.some(panel => {
+    const panelState = panel.runtime?.getSnapshot();
+    return (
+      panelState !== undefined &&
+      (panelState.result !== null || panelState.query.status !== 'idle')
+    );
+  });
   const warnings = issues.filter(
     found =>
       found.severity === 'warning' &&
@@ -193,12 +207,12 @@ export function DashboardWorkbench({
             )}
 
             <ErrorStrip
-              issues={unmarkedErrors(issues)}
+              issues={unmarkedErrors(issues, filter.tree)}
               title={messages.label('label.dashboard.needs-fixing')}
             />
             <WarningStrip issues={warnings} />
 
-            <AppliedBar filter={filter} hasResult={state?.result != null} />
+            <AppliedBar filter={filter} hasResult={hasResult} />
 
             <DashboardGrid dashboard={dashboard} editable={editable} />
           </>

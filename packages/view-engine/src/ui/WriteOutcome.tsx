@@ -204,7 +204,17 @@ export function WriteOutcome({
           onOpenChange={setCopying}
           commands={commands}
           title={title}
-          onSaved={onSaved}
+          // The copy is how this conflict ends, so the write it came out of
+          // is settled here rather than left pending: the host is about to
+          // open the copy, which releases this runtime, and a pending write
+          // whose runtime is disposed can never be retried, overwritten or
+          // abandoned by anyone again. It is named rather than left to the
+          // runtime to report — landing the copy is itself a write, and the
+          // engine cleared the runtime's outcome as it settled that one.
+          onSaved={saved => {
+            commands.abandon(write);
+            onSaved?.(saved);
+          }}
         />
       </>
     );
@@ -227,19 +237,37 @@ export function WriteOutcome({
         >
           {messages.label('label.unknown.retry')}
         </Button>
-        <Button variant="outline" size="sm" onClick={commands.abandon}>
+        <Button variant="outline" size="sm" onClick={() => commands.abandon()}>
           {messages.label('label.unknown.leave')}
         </Button>
       </OutcomeStrip>
     );
   }
 
-  const refused = write?.kind === 'rejected' ? write.issue : error;
-  return refused ? <RefusalLine issue={refused} /> : null;
+  if (write?.kind === 'rejected')
+    return (
+      // The store never took it, so there is nothing to retry or overwrite —
+      // only the reason, and a way to take it down. Dismissing matters: the
+      // refusal stays in the engine's pending writes until it is settled,
+      // and the line would sit over the view for the rest of the session
+      // while the user fixes what it complained about.
+      <RefusalLine
+        issue={write.issue}
+        onDismiss={() => commands.abandon(write)}
+      />
+    );
+  return error ? <RefusalLine issue={error} /> : null;
 }
 
-/** A refusal says why and offers nothing: there is nothing to recover. */
-function RefusalLine({ issue }: { issue: Issue }) {
+/** A refusal says why, and offers only the way to have done with it. */
+function RefusalLine({
+  issue,
+  onDismiss,
+}: {
+  issue: Issue;
+  /** Absent for a failure the engine holds nothing for; see `WriteOutcome`. */
+  onDismiss?(): void;
+}) {
   const messages = useViewMessages();
   return (
     <OutcomeStrip tone="alert">
@@ -248,6 +276,11 @@ function RefusalLine({ issue }: { issue: Issue }) {
         {issue.params?.reason !== undefined &&
           ` ${String(issue.params.reason)}`}
       </span>
+      {onDismiss && (
+        <Button variant="outline" size="sm" onClick={onDismiss}>
+          {messages.label('label.rejected.dismiss')}
+        </Button>
+      )}
     </OutcomeStrip>
   );
 }

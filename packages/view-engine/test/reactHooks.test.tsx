@@ -16,6 +16,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   builtinFieldKinds,
+  DEFAULT_RUNTIME_LIMITS,
   MemoryViewStore,
   ViewCommandError,
   ViewEngine,
@@ -574,6 +575,7 @@ describe('useSaveCommands', () => {
       write: null,
       dirty: false,
       blocked: false,
+      hasErrors: false,
       lastSavedAt: null,
     });
   });
@@ -1493,6 +1495,47 @@ describe('useRecordTable', () => {
       result.current.previous();
       result.current.refresh();
     }).not.toThrow();
+  });
+
+  /**
+   * A size above `maxPageSize` is refused by `validateRecord`, so offering
+   * one is offering a way to break the view: the user picks 100 from a list
+   * the UI drew and the config stops running. The ladder is cut to what the
+   * runtime was admitted under.
+   */
+  it('offers only the page sizes the limits admit', async () => {
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [mine] }),
+      resolveSource: () => testSource(),
+      limits: { ...DEFAULT_RUNTIME_LIMITS, maxPageSize: 50 },
+    });
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, 'orders-1');
+      return useRecordTable(opened.runtime as RecordViewRuntime | null);
+    });
+    await waitFor(() => expect(result.current.status).toBe('success'));
+
+    expect(result.current.pageSizes).toEqual([10, 20, 50]);
+  });
+
+  /** Whatever it is: a select whose value is not an item of it shows nothing. */
+  it('folds the size in force into the ladder', async () => {
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({
+        instances: [{ ...mine, config: recordConfig({ pageSize: 25 }) }],
+      }),
+      resolveSource: () => testSource(),
+      limits: { ...DEFAULT_RUNTIME_LIMITS, maxPageSize: 50 },
+    });
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, 'orders-1');
+      return useRecordTable(opened.runtime as RecordViewRuntime | null);
+    });
+    await waitFor(() => expect(result.current.status).toBe('success'));
+
+    expect(result.current.pageSizes).toEqual([10, 20, 25, 50]);
   });
 
   it('offers the layouts the definition allows', async () => {

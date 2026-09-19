@@ -174,6 +174,7 @@ src/
     SaveActions.tsx               — Split save button group; SaveAsDialog.tsx, WriteOutcome.tsx
     ViewManager.tsx               — Rename, delete, reorder and the default view, from the sidebar
     LeaveGuard.tsx                — `useLeaveGuard`: confirms a switch that would lose a draft
+    useReleaseDeleted.ts          — Lets a workbench's pinned id go once the view is deleted
     EditorBand.tsx                — The fold a view's editor lives in
     StatusStrip.tsx               — One-line findings: warning, error, failed query (+ `dedupeIssues`)
     AppliedBar.tsx                — The conditions the rows on screen were fetched under

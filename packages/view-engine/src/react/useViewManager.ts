@@ -13,8 +13,10 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import {
+  audienceOf,
   isSystemScope,
   type Issue,
+  type ViewInstanceSummary,
   type ViewPreferences,
 } from '../model/index.js';
 import {
@@ -55,12 +57,34 @@ export interface ViewManagerController {
   rename(id: string, title: string): Promise<boolean>;
   delete(id: string): Promise<boolean>;
   setDefault(id: string | null): Promise<boolean>;
+  /**
+   * Swaps a view with its neighbour in the same audience. The order is one
+   * list, but it is read as two — personal above shared — so a swap across
+   * that boundary is a write with nothing to show for it.
+   */
   move(id: string, direction: MoveDirection): Promise<boolean>;
+  /**
+   * Whether {@link move} would move anything: false at either end of the
+   * row's own audience, where the arrow is disabled rather than pressed for
+   * a write that changes nothing the user can see.
+   */
+  canMove(id: string, direction: MoveDirection): boolean;
   /** Unresolved outcomes, by instance id or {@link PREFERENCES_KEY}. */
   outcomes: ReadonlyMap<string, WriteState>;
   retry(key: string): Promise<boolean>;
   abandon(key: string): void;
   resolveConflict(key: string, choice: ConflictChoice): Promise<boolean>;
+  /**
+   * Puts the intent that conflicted to the store once more, as a new write
+   * against the revision just reloaded — the second half of how design §7.3
+   * settles a preference conflict: reload, keep the intent, put it to the
+   * user again. It is not a replay of the old write, which would carry the
+   * revision that lost, nor of the whole record, which would carry the other
+   * half of the preferences as they were read before the reload.
+   */
+  resubmit(key: string): Promise<boolean>;
+  /** Whether {@link resubmit} has an intent to put again under this key. */
+  canResubmit(key: string): boolean;
   /** The key of the write in flight, so one row alone shows progress. */
   pending: string | null;
   can: ViewManagerAbilities;
@@ -78,6 +102,13 @@ interface Outcome {
    * before dispatching, or a conflict it has already settled.
    */
   handle: WriteHandle | null;
+  /**
+   * The command as the user meant it, for a preference write whose conflict
+   * was answered with a reload. Running it again is a new write — it reads
+   * the revision the reload brought in — so the intent survives the reload
+   * without ever being replayed behind the user's back.
+   */
+  again?: () => Promise<unknown>;
 }
 
 /**
@@ -142,6 +173,12 @@ export function useViewManager(
       intent: WritePayload,
       code: string,
       command: () => Promise<unknown>,
+      /**
+       * Kept with the outcome so the same intent can be put again later. Only
+       * the preference commands pass one: everything else recovers through
+       * its handle, which addresses the write the store already has.
+       */
+      again?: () => Promise<unknown>,
     ): Promise<boolean> => {
       setPending(key);
       try {
@@ -155,8 +192,12 @@ export function useViewManager(
         record(
           key,
           isViewWriteError(caught)
-            ? { state: caught.state, handle: caught.handle }
-            : { state: refused(intent, toIssue(caught, code)), handle: null },
+            ? { state: caught.state, handle: caught.handle, again }
+            : {
+                state: refused(intent, toIssue(caught, code)),
+                handle: null,
+                again,
+              },
         );
         return false;
       } finally {
@@ -215,20 +256,26 @@ export function useViewManager(
         preferencesIntent({ defaultInstanceId: id }),
         'view.preferences.failed',
         () => engine.setDefault(definitionId, id),
+        () => engine.setDefault(definitionId, id),
       ),
     [definitionId, engine, preferencesIntent, run],
+  );
+
+  const canMove = useCallback(
+    (id: string, direction: MoveDirection) =>
+      neighbourOf(items, id, direction) >= 0,
+    [items],
   );
 
   const move = useCallback(
     (id: string, direction: MoveDirection) => {
       const order = items.map(item => item.id);
       const from = order.indexOf(id);
-      const to = from + (direction === 'up' ? -1 : 1);
-      // A row at either end has nowhere to go, and a row the list no longer
-      // holds cannot be placed. Submitting the order unchanged would still
-      // cost a revision and still be able to conflict.
-      if (from < 0 || to < 0 || to >= order.length)
-        return Promise.resolve(false);
+      const to = neighbourOf(items, id, direction);
+      // A row at either end of its own audience has nowhere to go, and a row
+      // the list no longer holds cannot be placed. Submitting the order
+      // unchanged would still cost a revision and still be able to conflict.
+      if (from < 0 || to < 0) return Promise.resolve(false);
       [order[from], order[to]] = [order[to], order[from]];
       return run(
         PREFERENCES_KEY,
@@ -236,6 +283,7 @@ export function useViewManager(
         'view.preferences.failed',
         // The whole visible order goes, not the one pair that moved: the
         // server holds a list, not a diff.
+        () => engine.reorder(definitionId, order),
         () => engine.reorder(definitionId, order),
       );
     },
@@ -288,10 +336,29 @@ export function useViewManager(
       // on saying what happened, and the handle goes — the engine settled it,
       // so pressing the same button again is a new write.
       if (landed && key === PREFERENCES_KEY && choice === 'reload')
-        record(key, { state, handle: null });
+        record(key, { state, handle: null, again: outcome.again });
       return landed;
     },
     [engine, outcomes, record, run],
+  );
+
+  const resubmit = useCallback(
+    (key: string): Promise<boolean> => {
+      const outcome = outcomes.get(key);
+      // Only an intent that was kept is put again: a conflict the engine
+      // still holds is answered through `resolveConflict`, and a refusal
+      // never left, so there is nothing a second identical write would do.
+      if (!outcome || !kept(outcome)) return Promise.resolve(false);
+      const { again, state } = outcome;
+      if (!again) return Promise.resolve(false);
+      return run(key, state.payload, 'view.preferences.failed', again, again);
+    },
+    [outcomes, run],
+  );
+
+  const canResubmit = useCallback(
+    (key: string) => kept(outcomes.get(key)),
+    [outcomes],
   );
 
   const can = useMemo<ViewManagerAbilities>(
@@ -321,11 +388,52 @@ export function useViewManager(
     delete: remove,
     setDefault,
     move,
+    canMove,
     outcomes: states,
     retry,
     abandon,
     resolveConflict,
+    resubmit,
+    canResubmit,
     pending,
     can,
   };
+}
+
+/**
+ * Whether an outcome is a conflict the engine has already settled and whose
+ * intent is still the user's to put again: after a reload there is no handle
+ * to recover through, and the button offers the write once more rather than
+ * a recovery that would answer `false`.
+ */
+function kept(outcome: Outcome | undefined): boolean {
+  return (
+    outcome !== undefined &&
+    outcome.handle === null &&
+    outcome.again !== undefined &&
+    outcome.state.kind === 'conflict'
+  );
+}
+
+/**
+ * The index the row would swap with: the nearest one in that direction that
+ * the sidebar shows in the same group, or -1 when there is none.
+ *
+ * Audience is the reason this is not `index ± 1`. Both lists render personal
+ * views above shared ones whatever order is stored, so the row above a
+ * shared view on screen may be a personal one, and swapping the two would
+ * store a new order, spend a revision and move nothing anybody can see.
+ */
+function neighbourOf(
+  items: readonly ViewInstanceSummary[],
+  id: string,
+  direction: MoveDirection,
+): number {
+  const from = items.findIndex(item => item.id === id);
+  if (from < 0) return -1;
+  const audience = audienceOf(items[from].scope);
+  const step = direction === 'up' ? -1 : 1;
+  for (let at = from + step; at >= 0 && at < items.length; at += step)
+    if (audienceOf(items[at].scope) === audience) return at;
+  return -1;
 }

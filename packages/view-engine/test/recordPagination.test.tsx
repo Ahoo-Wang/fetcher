@@ -51,6 +51,7 @@ function tableController(
     columnFields: ['amount'],
     setColumns: () => {},
     pageSize: 20,
+    pageSizes: [10, 20, 50, 100],
     setPageSize: () => {},
     selection: [],
     selectedRows: [],
@@ -119,12 +120,60 @@ describe('RecordPagination counts', () => {
 
     expect(screen.getByText('0 on this page')).toBeTruthy();
   });
+
+  /**
+   * A later page can come back empty — rows deleted since it was counted, or
+   * a source that reports no total answering one page too far. Hiding the bar
+   * then takes Previous with it and strands the user on an empty page with
+   * nothing to press.
+   */
+  it('keeps the way back on an empty page that is not the first', () => {
+    render(
+      <RecordPagination
+        table={tableController({
+          rows: [],
+          paging: { mode: 'paged', index: 3 },
+          hasNext: false,
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Page 3')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Previous page' }),
+    ).toHaveProperty('disabled', false);
+  });
+
+  /** The first page has nowhere to go back to, so an empty one says nothing. */
+  it('renders nothing for an empty first page', () => {
+    const { container } = render(
+      <RecordPagination
+        table={tableController({
+          rows: [],
+          paging: { mode: 'paged', index: 1, total: 0 },
+        })}
+      />,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
 });
 
 describe('RecordPagination page size', () => {
-  it('offers the usual sizes with the saved one folded in', async () => {
+  /**
+   * What may be offered is the controller's to decide — it is the one that
+   * knows the runtime's budget — and the bar draws exactly that list.
+   */
+  it('offers the sizes the controller allows', async () => {
     const user = userEvent.setup();
-    render(<RecordPagination table={tableController({ pageSize: 25 })} />);
+    render(
+      <RecordPagination
+        table={tableController({
+          pageSize: 25,
+          pageSizes: [10, 20, 25, 50],
+        })}
+      />,
+    );
 
     await user.click(screen.getByRole('combobox', { name: 'Rows per page' }));
     const options = await screen.findAllByRole('option');
@@ -133,7 +182,6 @@ describe('RecordPagination page size', () => {
       '20',
       '25',
       '50',
-      '100',
     ]);
   });
 

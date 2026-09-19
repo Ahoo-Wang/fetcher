@@ -29,13 +29,6 @@ export interface RecordPaginationProps {
 }
 
 /**
- * The page sizes offered before the current one is folded in. A saved view
- * may carry any size its definition admits, and the list must contain it —
- * a select whose value is not among its items shows nothing at all.
- */
-const PAGE_SIZES = [10, 20, 50, 100];
-
-/**
  * How many rows there are and how to reach the next of them.
  *
  * It sits under the result rather than in the toolbar because it is about
@@ -46,15 +39,23 @@ export function RecordPagination({ table }: RecordPaginationProps) {
   const messages = useViewMessages();
   const paging = table.paging;
   const paged = paging?.mode === 'paged';
+  // The controller decides what may be offered: the ladder cut to the
+  // runtime's `maxPageSize`, with the size in force folded in.
+  const sizes = table.pageSizes;
+
+  // Past the first page there is always a way back, and it is the only way
+  // back: a later page that came up empty — rows deleted since, or a source
+  // that reports no total and answered one page too far — would otherwise
+  // take Previous off the screen and leave the user on an empty page with
+  // nothing to press.
+  const stranded = paged && paging.index > 1;
 
   // Nothing to page through, and nothing on the way: an empty result says so
   // on its own. While a query runs the last rows are still on screen, so the
   // counts below stay with them rather than blanking and jumping back.
-  if (table.rows.length === 0 && table.status !== 'loading') return null;
+  if (table.rows.length === 0 && table.status !== 'loading' && !stranded)
+    return null;
 
-  const sizes = [...new Set([...PAGE_SIZES, table.pageSize])].sort(
-    (left, right) => left - right,
-  );
   const total = paged ? paging.total : undefined;
 
   return (

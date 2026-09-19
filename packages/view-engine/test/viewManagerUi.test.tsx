@@ -299,7 +299,7 @@ describe('ViewManager rows', () => {
     const { engine } = setup();
     await manage(engine);
 
-    // The system view is first in the stored order, so it is the one with
+    // The system view is first among the shared ones, so it is the one with
     // nowhere to go up.
     expect(
       within(row('All orders'))
@@ -313,6 +313,50 @@ describe('ViewManager rows', () => {
     );
 
     await waitFor(() => expect(rows()[0]).toContain('Yours'));
+  });
+
+  /**
+   * The dialog draws two groups, personal above shared, and the arrows move
+   * within the one the row is drawn in. Across the boundary there is nothing
+   * to see: the order would be stored again, the revision spent, and the
+   * rows would sit exactly where they were.
+   */
+  it('moves within the audience group the row is drawn in', async () => {
+    const { engine, store } = setup();
+    await manage(engine);
+
+    // Personal first, shared after, whatever the stored order is.
+    expect(rows().map(text => text.replace(/\s+/g, ' ').trim())).toEqual([
+      expect.stringContaining('Mine'),
+      expect.stringContaining('Yours'),
+      expect.stringContaining('All orders'),
+      expect.stringContaining('Ours'),
+    ]);
+
+    const ends = [
+      ['Mine', 'Move up'],
+      ['Yours', 'Move down'],
+      ['All orders', 'Move up'],
+      ['Ours', 'Move down'],
+    ] as const;
+    for (const [title, arrow] of ends)
+      expect(
+        within(row(title)).getByRole('button', { name: arrow }),
+      ).toHaveProperty('disabled', true);
+
+    // The shared view above it is the system one, three rows away in the
+    // stored order and the row above it on screen.
+    fireEvent.click(
+      within(row('Ours')).getByRole('button', { name: 'Move up' }),
+    );
+
+    await waitFor(async () =>
+      expect((await store.getPreferences('orders')).order[0]).toBe('orders-3'),
+    );
+    await waitFor(() => expect(rows()[2]).toContain('Ours'));
+    // The personal group never moved.
+    expect(rows()[0]).toContain('Mine');
+    expect(rows()[1]).toContain('Yours');
   });
 
   it('chooses and unchooses the view that opens first', async () => {
@@ -426,6 +470,89 @@ describe('ViewManager outcomes', () => {
     await waitFor(() => expect(rows().length).toBeGreaterThan(0));
   });
 
+  /**
+   * The second half of §7.3. Once the list has been reloaded the engine has
+   * settled the conflict, so the generic "Keep mine" addresses a write that
+   * no longer exists and answers nothing — the button was dead. What is
+   * offered instead is the user's own intent, put again at the revision the
+   * reload brought in.
+   */
+  it('offers the kept intent again after a preference reload', async () => {
+    const { engine, store } = setup();
+    await manage(engine);
+    await store.setPreferences(
+      'orders',
+      { order: ['orders-2'], defaultInstanceId: null, revision: '0' },
+      { requestId: 'other' },
+    );
+
+    fireEvent.click(
+      within(row('Mine')).getByRole('button', { name: 'Move down' }),
+    );
+    await screen.findByText('Someone else saved this view first');
+    fireEvent.click(screen.getByRole('button', { name: 'Reload list' }));
+
+    const again = await screen.findByRole('button', { name: 'Apply again' });
+    expect(screen.queryByRole('button', { name: 'Keep mine' })).toBeNull();
+    fireEvent.click(again);
+
+    // It lands this time, and the line goes with it.
+    await waitFor(async () =>
+      expect((await store.getPreferences('orders')).order).toEqual([
+        'system:orders:all',
+        'orders-2',
+        'orders-1',
+        'orders-3',
+      ]),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Someone else saved this view first'),
+      ).toBeNull(),
+    );
+  });
+
+  /**
+   * §7.4: a delete that conflicts has to be confirmed again. The first
+   * confirmation was about the view as the list had it; what the conflict
+   * reports is a view that has changed since — it may have become shared,
+   * and deleting it now costs other people theirs.
+   */
+  it('asks again before overwriting a delete that conflicted', async () => {
+    const { engine, store } = setup();
+    await manage(engine);
+    // Somebody else changed it after this list was read, and made it shared.
+    await store.save('orders-2', recordConfig({ pageSize: 30 }), '1', {
+      requestId: 'other',
+    });
+
+    fireEvent.click(
+      within(row('Yours')).getByRole('button', { name: 'Delete' }),
+    );
+    const first = (await screen.findByText('Delete this view?')).closest(
+      '[role="dialog"]',
+    ) as HTMLElement;
+    fireEvent.click(within(first).getByRole('button', { name: 'Delete' }));
+
+    await screen.findByText('Someone else saved this view first');
+    fireEvent.click(screen.getByRole('button', { name: 'Keep mine' }));
+
+    // Not deleted yet: the destructive answer is the dialog's, not the line's.
+    const second = (await screen.findByText('Delete this view?')).closest(
+      '[role="dialog"]',
+    ) as HTMLElement;
+    expect((await store.list('orders')).map(item => item.id)).toContain(
+      'orders-2',
+    );
+
+    fireEvent.click(within(second).getByRole('button', { name: 'Delete' }));
+    await waitFor(async () =>
+      expect((await store.list('orders')).map(item => item.id)).not.toContain(
+        'orders-2',
+      ),
+    );
+  });
+
   it('retries a result that never came back', async () => {
     const { engine, store } = setup();
     await manage(engine);
@@ -494,6 +621,7 @@ describe('ViewManager outcomes', () => {
       delete: () => Promise.resolve(false),
       setDefault: () => Promise.resolve(false),
       move: () => Promise.resolve(false),
+      canMove: () => false,
       outcomes: new Map([
         [
           'orders-1',
@@ -513,6 +641,8 @@ describe('ViewManager outcomes', () => {
       retry: () => Promise.resolve(false),
       abandon: () => undefined,
       resolveConflict: () => Promise.resolve(false),
+      resubmit: () => Promise.resolve(false),
+      canResubmit: () => false,
       pending: null,
       can: {
         reorder: true,

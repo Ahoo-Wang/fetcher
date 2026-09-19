@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { FieldOption } from '../model/index.js';
 import type { RecordRow } from '../record/index.js';
 import type { RecordViewRuntime, ViewEngine } from '../runtime/index.js';
@@ -50,6 +50,7 @@ import type { ViewMessages } from './messages.js';
 import { ViewHeader } from './ViewHeader.js';
 import { ViewSurface } from './ViewSurface.js';
 import { ViewList } from './ViewList.js';
+import { useReleaseDeleted } from './useReleaseDeleted.js';
 
 export interface RecordWorkbenchProps {
   engine: ViewEngine;
@@ -210,7 +211,7 @@ export function RecordWorkbench({
               <FilterPanel filter={filter} optionsFor={optionsFor} />
             </ConditionBand>
 
-            <ErrorStrip issues={unmarkedErrors(issues)} />
+            <ErrorStrip issues={unmarkedErrors(issues, filter.tree)} />
             {/* Warnings block nothing — the rows below are the real ones —
                 so they sit under the errors and never replace the result. */}
             <WarningStrip issues={issues} />
@@ -303,32 +304,4 @@ function ConditionBand({
       {children}
     </EditorBand>
   );
-}
-
-/**
- * Lets the pinned view go once it is gone.
- *
- * A delete from the manager disposes the runtime; `useOpenView` asks for the
- * id again and is told there is no such view. That is the cue — and only for
- * a view that was open, never for an id the host asked for and the store
- * never had, which is a mistake to report rather than to navigate away from.
- */
-function useReleaseDeleted(
-  openId: string | null,
-  chosen: string | null,
-  opened: ReturnType<typeof useOpenView>,
-  setChosen: (id: string | null) => void,
-): void {
-  const wasOpen = useRef<string | null>(null);
-  const { runtime } = opened;
-  const failed = opened.error?.code;
-  useEffect(() => {
-    if (runtime) wasOpen.current = openId;
-  }, [runtime, openId]);
-  useEffect(() => {
-    if (chosen === null || chosen !== wasOpen.current) return;
-    if (failed !== 'view.open.failed.not_found') return;
-    wasOpen.current = null;
-    setChosen(null);
-  }, [chosen, failed, setChosen]);
 }

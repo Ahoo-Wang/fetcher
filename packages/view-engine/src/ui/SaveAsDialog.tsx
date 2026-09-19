@@ -126,15 +126,14 @@ function SaveAsForm({
 
   const named = next.trim();
   const offered = allows(can, scope);
-  // A copy is one of the ways out of a conflict, so an unsettled write must
-  // not disable it. The rest of what `blocked` stands for still does: a write
-  // in flight, and a draft the engine would refuse — which is the same
-  // `blocked` with nothing unsettled behind it.
-  const stopped =
-    state.pending ||
-    (state.blocked && state.write === null) ||
-    named.length === 0 ||
-    !offered;
+  // Nothing here is gated on `state.blocked`: that is the open draft judged
+  // for the audience it already sits in, and a copy is judged for the one it
+  // is headed for — a shared dashboard referencing a personal view is
+  // refused where its personal copy is taken. Only `saveAs` knows the target,
+  // so it decides, and a refusal is shown below with the dialog still open.
+  // What does stop the button is what is true of this form alone: a write in
+  // flight, no title, or a scope this user may not create in.
+  const stopped = state.pending || named.length === 0 || !offered;
   const submit = () => {
     void commands.saveAs({ title: named, scope }).then(saved => {
       if (!saved) return;

@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { Issue } from '../src/index.js';
+import type { Issue, ViewConfig } from '../src/index.js';
 import { describeConfig } from '../src/ui/describeConfig.js';
 import {
   defaultMessages,
@@ -66,6 +66,65 @@ describe('describeConfig', () => {
 
   it('counts a dashboard by its panels', () => {
     expect(describeConfig(dashboardConfig(), wording())).toBe('0 panels');
+  });
+
+  /**
+   * One side of a conflict is whatever the store handed back — another
+   * release's config, or one that lost its shape — and the dialog it is
+   * drawn in is the one dialog whose whole job is recovery. A `.length` on
+   * something that is not an array would throw out of that render and take
+   * the way out with it, so every part is read for what it is.
+   */
+  describe('a config the store no longer holds the shape of', () => {
+    /** A config with one part replaced by something of the wrong shape. */
+    function broken(config: ViewConfig, patch: Record<string, unknown>) {
+      return { ...config, ...patch } as ViewConfig;
+    }
+
+    it('says a record config it cannot count is unreadable', () => {
+      for (const patch of [
+        { table: null },
+        { table: { columns: 'id,amount' } },
+        { sort: { field: 'amount' } },
+        { pageSize: '50' },
+        { pageSize: Number.NaN },
+      ])
+        expect(describeConfig(broken(recordConfig(), patch), wording())).toBe(
+          'Cannot be read',
+        );
+    });
+
+    it('says the same of an analysis config', () => {
+      for (const patch of [{ groups: null }, { metrics: 3 }, { limit: 'all' }])
+        expect(describeConfig(broken(analysisConfig(), patch), wording())).toBe(
+          'Cannot be read',
+        );
+    });
+
+    it('says the same of a dashboard config', () => {
+      expect(
+        describeConfig(broken(dashboardConfig(), { panels: null }), wording()),
+      ).toBe('Cannot be read');
+    });
+
+    /** A kind this release never heard of has nothing to count either. */
+    it('says the same of a kind it does not know', () => {
+      expect(
+        describeConfig(
+          { kind: 'timeline' } as unknown as ViewConfig,
+          wording(),
+        ),
+      ).toBe('Cannot be read');
+    });
+
+    it("is the application's own sentence, like every other", () => {
+      expect(
+        describeConfig(
+          broken(dashboardConfig(), { panels: null }),
+          wording({ 'label.conflict.summary.malformed': 'Unreadable' }),
+        ),
+      ).toBe('Unreadable');
+    });
   });
 
   it('says it in the words the application chose', () => {

@@ -1385,3 +1385,67 @@ describe('AnalysisWorkbench', () => {
     );
   });
 });
+
+/**
+ * The workbench is pinned to the view the host named, and nothing reloads a
+ * pin: when the manager deletes that view, the engine disposes the runtime
+ * and reopening the id answers "no such view" for as long as the page is
+ * open. Every workbench has to let go of its own accord — this one used to
+ * sit on the not-found forever.
+ */
+describe('deleting the open analysis', () => {
+  const other: ViewInstance = {
+    ...analysisView,
+    id: 'orders-2',
+    title: 'Also mine',
+  };
+
+  it('moves on to the view that is still there', async () => {
+    const store = new MemoryViewStore({ instances: [analysisView, other] });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => testSource(),
+    });
+    render(
+      <AnalysisWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'By warehouse' }).ariaCurrent,
+      ).toBe('true'),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Manage views' }));
+    const manager = await screen.findByRole('dialog');
+    const row = Array.from(
+      manager.querySelectorAll('[data-slot="view-manager-row"]'),
+    ).find(candidate =>
+      candidate.textContent?.includes('By warehouse'),
+    ) as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Delete' }));
+    const confirm = (await screen.findByText('Delete this view?')).closest(
+      '[role="dialog"]',
+    ) as HTMLElement;
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete' }));
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+    await waitFor(
+      () =>
+        expect(
+          screen.queryByRole('button', { name: 'By warehouse' }),
+        ).toBeNull(),
+      { timeout: 3000 },
+    );
+    // The pin is gone, so the list's default is what is open.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Also mine' }).ariaCurrent,
+      ).toBe('true'),
+    );
+  });
+});

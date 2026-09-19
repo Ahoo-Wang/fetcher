@@ -314,22 +314,24 @@ describe('useViewManager', () => {
   it('moves a view one step and submits the whole visible order', async () => {
     const { engine, store } = engineWith();
     const { result } = await managed(engine);
+    // The system view is first and shared; the two personal ones follow, and
+    // a move is between neighbours of the same audience.
     const before = result.current.list.items.map(item => item.id);
 
     await act(async () => {
-      await expect(result.current.manager.move(before[1], 'up')).resolves.toBe(
+      await expect(result.current.manager.move(before[2], 'up')).resolves.toBe(
         true,
       );
     });
 
     await expect(store.getPreferences('orders')).resolves.toMatchObject({
-      order: [before[1], before[0], before[2]],
+      order: [before[0], before[2], before[1]],
     });
     await waitFor(() =>
       expect(result.current.list.items.map(item => item.id)).toEqual([
-        before[1],
         before[0],
         before[2],
+        before[1],
       ]),
     );
   });
@@ -371,25 +373,120 @@ describe('useViewManager', () => {
     expect(before).not.toContain('orders-chart');
 
     await act(async () => {
-      await expect(result.current.manager.move(before[1], 'up')).resolves.toBe(
+      await expect(result.current.manager.move(before[2], 'up')).resolves.toBe(
         true,
       );
     });
 
     await expect(store.getPreferences('orders')).resolves.toMatchObject({
-      order: [before[1], before[0], before[2]],
+      order: [before[0], before[2], before[1]],
     });
     // Unlisted and unharmed: the analysis view still comes back, after the
     // ones the order names.
     const unfiltered = renderHook(() => useViewList(engine, 'orders'));
     await waitFor(() =>
       expect(unfiltered.result.current.items.map(item => item.id)).toEqual([
-        before[1],
         before[0],
         before[2],
+        before[1],
         'orders-chart',
       ]),
     );
+  });
+
+  /**
+   * Both lists draw personal views above shared ones whatever order is
+   * stored, so "the row above" on screen is the row above *within the
+   * group*. Swapping across that line writes a new order, spends a revision
+   * and moves nothing anybody can see, which is the one outcome a button
+   * must never have.
+   */
+  describe('moving within an audience group', () => {
+    /** The two personal views, the system view, and a shared one. */
+    async function grouped() {
+      const store = new MemoryViewStore({
+        instances: [
+          ...instances(),
+          {
+            id: 'orders-3',
+            definitionId: 'orders',
+            title: 'Ours',
+            scope: 'shared',
+            revision: '1',
+            config: recordConfig(),
+          },
+        ],
+      });
+      const engine = new ViewEngine({
+        definitions: [ordersDefinition()],
+        store,
+        resolveSource: () => testSource(),
+      });
+      const rendered = await managed(engine);
+      const items = rendered.result.current.list.items;
+      return {
+        store,
+        rendered,
+        ids: items.map(item => item.id),
+        systemId: items.find(item => item.scope === 'system')?.id ?? '',
+      };
+    }
+
+    it('swaps with the nearest view of the same audience', async () => {
+      const { store, rendered, ids, systemId } = await grouped();
+      const { result } = rendered;
+      // The system view is shared, and the other shared view is three rows
+      // below it in the stored order: on screen they are neighbours.
+      expect(ids.indexOf(systemId)).toBe(0);
+      expect(ids.indexOf('orders-3')).toBe(3);
+
+      await act(async () => {
+        await expect(
+          result.current.manager.move(systemId, 'down'),
+        ).resolves.toBe(true);
+      });
+
+      await expect(store.getPreferences('orders')).resolves.toMatchObject({
+        order: ['orders-3', ids[1], ids[2], systemId],
+      });
+    });
+
+    it('writes nothing at either end of the group', async () => {
+      const { store, rendered, systemId } = await grouped();
+      const { result } = rendered;
+      const setPreferences = vi.spyOn(store, 'setPreferences');
+
+      await act(async () => {
+        // The first personal view has a shared one above it on the stored
+        // order, and nothing above it on screen.
+        await expect(
+          result.current.manager.move('orders-1', 'up'),
+        ).resolves.toBe(false);
+        // And the last shared one has personal views below it, in the store.
+        await expect(
+          result.current.manager.move('orders-3', 'down'),
+        ).resolves.toBe(false);
+        await expect(result.current.manager.move(systemId, 'up')).resolves.toBe(
+          false,
+        );
+      });
+
+      expect(setPreferences).not.toHaveBeenCalled();
+    });
+
+    it('says in advance which arrows would move something', async () => {
+      const { rendered, systemId } = await grouped();
+      const { canMove } = rendered.result.current.manager;
+
+      expect(canMove('orders-1', 'up')).toBe(false);
+      expect(canMove('orders-1', 'down')).toBe(true);
+      expect(canMove('orders-2', 'down')).toBe(false);
+      expect(canMove(systemId, 'up')).toBe(false);
+      expect(canMove(systemId, 'down')).toBe(true);
+      expect(canMove('orders-3', 'down')).toBe(false);
+      // A row the list does not hold moves nowhere.
+      expect(canMove('gone', 'up')).toBe(false);
+    });
   });
 
   it('writes nothing for a move off either end, or for a row it does not hold', async () => {
@@ -427,8 +524,10 @@ describe('useViewManager', () => {
     expect(result.current.list.preferences).toBeNull();
 
     await act(async () => {
+      // The second personal view, which has one of its own above it: the
+      // refusal has to come from the permission, not from the group's end.
       await expect(
-        result.current.manager.move(result.current.list.items[1].id, 'up'),
+        result.current.manager.move(result.current.list.items[2].id, 'up'),
       ).resolves.toBe(false);
     });
 
@@ -505,6 +604,111 @@ describe('useViewManager', () => {
       );
     });
     expect(result.current.manager.outcomes.size).toBe(0);
+  });
+
+  /**
+   * The other half of §7.3: keeping the intent is only worth anything if the
+   * user can put it again. The kept outcome has no handle — the engine
+   * settled the conflict on the reload — so the recovery actions answer
+   * `false` for it, and `resubmit` is the one that writes.
+   */
+  it('puts the intent that conflicted to the store again', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    await store.setPreferences(
+      'orders',
+      { order: ['orders-2'], defaultInstanceId: 'orders-2', revision: '0' },
+      { requestId: 'other' },
+    );
+
+    // One command per `act`: the controller a render closed over answers for
+    // the outcomes that render saw, and the conflict is recorded by the first.
+    await act(async () => {
+      await result.current.manager.setDefault('orders-1');
+    });
+    await act(async () => {
+      await result.current.manager.resolveConflict(PREFERENCES_KEY, 'reload');
+    });
+    expect(result.current.manager.canResubmit(PREFERENCES_KEY)).toBe(true);
+
+    await act(async () => {
+      await expect(
+        result.current.manager.resubmit(PREFERENCES_KEY),
+      ).resolves.toBe(true);
+    });
+
+    // The user's own choice, at the revision the reload brought in — and
+    // only their choice: the order the other writer stored is left alone,
+    // where replaying the old record would have put it back as it was read.
+    await expect(store.getPreferences('orders')).resolves.toMatchObject({
+      defaultInstanceId: 'orders-1',
+      order: ['orders-2'],
+    });
+    expect(result.current.manager.outcomes.size).toBe(0);
+    expect(result.current.manager.canResubmit(PREFERENCES_KEY)).toBe(false);
+  });
+
+  it('puts a conflicted reorder back the same way', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const ids = result.current.list.items.map(item => item.id);
+    await store.setPreferences(
+      'orders',
+      { order: [], defaultInstanceId: 'orders-2', revision: '0' },
+      { requestId: 'other' },
+    );
+
+    await act(async () => {
+      await result.current.manager.move(ids[2], 'up');
+    });
+    await act(async () => {
+      await result.current.manager.resolveConflict(PREFERENCES_KEY, 'reload');
+    });
+
+    await act(async () => {
+      await expect(
+        result.current.manager.resubmit(PREFERENCES_KEY),
+      ).resolves.toBe(true);
+    });
+
+    await expect(store.getPreferences('orders')).resolves.toMatchObject({
+      order: [ids[0], ids[2], ids[1]],
+      // The default the other writer chose survives: the intent put again is
+      // the order alone.
+      defaultInstanceId: 'orders-2',
+    });
+  });
+
+  it('has nothing to put again where no intent was kept', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const setPreferences = vi.spyOn(store, 'setPreferences');
+
+    expect(result.current.manager.canResubmit(PREFERENCES_KEY)).toBe(false);
+    await act(async () => {
+      await expect(
+        result.current.manager.resubmit(PREFERENCES_KEY),
+      ).resolves.toBe(false);
+    });
+    // Nor while the conflict is still the engine's to answer for: that is
+    // what Reload and Keep mine are.
+    await store.setPreferences(
+      'orders',
+      { order: [], defaultInstanceId: 'orders-2', revision: '0' },
+      { requestId: 'other' },
+    );
+    await act(async () => {
+      await result.current.manager.setDefault('orders-1');
+    });
+    setPreferences.mockClear();
+
+    expect(result.current.manager.canResubmit(PREFERENCES_KEY)).toBe(false);
+    await act(async () => {
+      await expect(
+        result.current.manager.resubmit(PREFERENCES_KEY),
+      ).resolves.toBe(false);
+    });
+    expect(setPreferences).not.toHaveBeenCalled();
   });
 
   it('reads the abilities of a row off the permissions', async () => {

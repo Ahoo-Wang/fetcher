@@ -122,6 +122,7 @@ const NOTHING: SaveCommands = {
     write: null,
     dirty: false,
     blocked: false,
+    hasErrors: false,
     lastSavedAt: null,
   },
 };
