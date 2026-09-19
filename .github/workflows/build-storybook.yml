@@ -44,6 +44,9 @@ jobs:
       - name: Build
         run: pnpm -r --filter './packages/*' build
 
+      - name: Type-check the stories against the built packages
+        run: pnpm typecheck:stories
+
       - name: Verify acceptance process cleanup
         run: node --test scripts/owned-process.test.mjs
 

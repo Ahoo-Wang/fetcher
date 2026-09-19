@@ -25,6 +25,18 @@ test('the delivery job builds Storybook once and verifies its static index', () 
   );
 });
 
+test('the delivery job type-checks the stories against the packages it built', () => {
+  const [delivery] = workflow.split('\n  interactions:\n');
+  const build = delivery.indexOf("run: pnpm -r --filter './packages/*' build");
+  const typecheck = delivery.indexOf('run: pnpm typecheck:stories');
+  assert.ok(build >= 0, 'The delivery job builds the packages');
+  assert.ok(typecheck > build, 'Stories are checked after the build');
+  const script = JSON.parse(
+    readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+  ).scripts['typecheck:stories'];
+  assert.equal(script, 'tsc -p stories/tsconfig.json');
+});
+
 test('interaction tests and delivery run on separate jobs without dropping either gate', () => {
   const [delivery, interactions] = workflow.split('\n  interactions:\n');
   assert.ok(interactions, 'Interactions need their own runner');

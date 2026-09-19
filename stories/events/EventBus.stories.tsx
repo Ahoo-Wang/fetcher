@@ -52,8 +52,20 @@ async function runScenario(scenario: Scenario): Promise<string> {
   if (scenario === 'serial') {
     const log: string[] = [];
     const bus = new SerialTypedEventBus<string>('save');
-    bus.on({ name: 'second', order: 20, handle: () => log.push('second') });
-    bus.on({ name: 'first', order: 10, handle: () => log.push('first') });
+    bus.on({
+      name: 'second',
+      order: 20,
+      handle: () => {
+        log.push('second');
+      },
+    });
+    bus.on({
+      name: 'first',
+      order: 10,
+      handle: () => {
+        log.push('first');
+      },
+    });
     await bus.emit('saved');
     bus.destroy();
     return log.join(' → ');

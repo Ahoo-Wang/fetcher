@@ -59,7 +59,7 @@ function FetcherHookDemo({ scenario }: { scenario: Scenario }) {
     void request.execute({ url });
   };
 
-  let output = request.status;
+  let output: string = request.status;
   if (scenario === 'debounce') {
     output = debounced.result
       ? `Debounced · ${debounced.result.users.map(user => user.name).join(', ')} · query ${debounced.result.query}`

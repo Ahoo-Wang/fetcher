@@ -11,7 +11,7 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `quality.yml`                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                         |
 | `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                     |
 | `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                             |
-| `build-storybook.yml`            | Package build, the one Storybook production build with its static index check, and Chromium interaction tests on a separate runner. `STORYBOOK_BROWSERS` widens the matrix; see below.                    |
+| `build-storybook.yml`            | Package build, story type check, one Storybook production build with its static index check, and Chromium interaction tests on a separate runner. `STORYBOOK_BROWSERS` widens the matrix; see below.      |
 | `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                         |
 | `generator-test.yml`             | Verify generation against both supported Wow versions.                                                                                                                                                    |
 | `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                  |
@@ -59,6 +59,7 @@ pnpm -r --filter './packages/*' build
 pnpm -r --filter './packages/*' exec eslint .
 pnpm --dir integration-test exec eslint .
 pnpm lint:stories
+pnpm typecheck:stories
 pnpm -r --filter './packages/*' exec tsc --noEmit --incremental false --composite false
 VITEST_MAX_WORKERS=1 pnpm test:unit
 pnpm --dir wiki build
