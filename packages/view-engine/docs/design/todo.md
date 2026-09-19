@@ -24,4 +24,3 @@
 
 - **删除后重载列表的合同容易漏**——为什么：宿主直接经引擎删除实例时必须调用 `list.reload({ without: id })`，这条合同写在文档里而不是类型里。判据：评估改为引擎侧通知（架构决定，先记录，不急着改）；结论写进 [decisions.md](decisions.md)。落点：[react.md#useviewlist](react.md#useviewlist)。
 - **筛选面板里 Enter 提交**——为什么：[ui/README.md#filterpanel-的布局](ui/README.md#filterpanel-的布局) 写了 Enter 提交（排除 IME 组字与内部弹层），重写后的 `FilterPanel` 没有这个处理器，是一处遗漏。判据：在条件的值输入里按 Enter 等于点击应用；IME 组字中、弹层（Select／Combobox／Popover／Dialog）内的 Enter 不触发；`test/filterPanel.test.tsx` 覆盖三种情况。落点：`src/ui/FilterPanel.tsx`。
-
