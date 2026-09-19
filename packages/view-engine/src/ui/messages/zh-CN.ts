@@ -44,8 +44,7 @@ export const zhCN: ViewMessages = {
   'label.save-as.description': '正在看的这个视图保持原样。',
   'label.save-as.copy-title': '{title} 副本',
   'label.save-as.submit': '创建视图',
-  'label.conflict.choice':
-    '使用最新版本并放弃你的修改，或者用你的版本覆盖它。',
+  'label.conflict.choice': '使用最新版本并放弃你的修改，或者用你的版本覆盖它。',
   'label.conflict.theirs': '使用最新版本',
   'label.conflict.mine': '覆盖为我的版本',
   'label.conflict.copy': '另存为我的副本',
