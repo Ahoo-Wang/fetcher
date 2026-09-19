@@ -111,7 +111,8 @@ type PendingOrder = OptimisticOrder & ManagerTag;
  * because it is the list that changed.
  *
  * This is the composition alone. The rules the commands are decided by live
- * beside it: `manager/outcomes.ts` says what one row's slot accepts,
+ * beside it: `react/writes.ts` is the one write-outcome vocabulary this hook
+ * and `useSaveCommands` share, `manager/outcomes.ts` holds a row's slot,
  * `manager/queue.ts` serializes, `manager/order.ts` does the arithmetic of a
  * move, and `manager/useCommandRunner.ts` is the protocol all five commands
  * and the recovery actions run under.

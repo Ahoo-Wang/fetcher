@@ -16,23 +16,19 @@
  * one write in flight, and both tagged with the inputs they answer for.
  *
  * It is the React half of the split — `queue.ts` serializes and `outcomes.ts`
- * decides which outcome a key accepts; this holds the state those rules are
- * asked about and turns a command into an outcome the row can render.
+ * holds the manager's names for the rules `react/writes.ts` defines; this
+ * holds the state those rules are asked about and turns a command into an
+ * outcome the row can render.
  */
 
 import { useCallback, useRef, useState } from 'react';
-import {
-  isViewWriteError,
-  type ViewEngine,
-  type WritePayload,
-} from '../../runtime/index.js';
-import { toIssue } from '../issues.js';
+import type { ViewEngine, WritePayload } from '../../runtime/index.js';
 import type { ViewListState } from '../useViewList.js';
 import {
   blocks,
-  mayRefuse,
+  mayReplace,
   NO_OUTCOMES,
-  refused,
+  settle,
   strandedHandle,
   withOutcome,
   type Outcome,
@@ -228,19 +224,12 @@ export function useCommandRunner(
         reload(intent.action === 'delete' ? { without: intent.id } : undefined);
         return true;
       } catch (caught) {
-        if (isViewWriteError(caught)) {
-          record(key, { state: caught.state, handle: caught.handle, again });
-        } else if (mayRefuse(held(key))) {
-          // A refusal never left, and it may not displace a handle; see
-          // `mayRefuse`. The intent still rides along: a refusal is the
-          // user's command all the same, and `resubmit` is how a preference
-          // write is put again.
-          record(key, {
-            state: refused(intent, toIssue(caught, code)),
-            handle: null,
-            again,
-          });
-        }
+        // A refusal never left, and it may not displace a handle; see
+        // `mayReplace`. The intent still rides along either way: a refusal is
+        // the user's command all the same, and `resubmit` is how a preference
+        // write is put again.
+        const outcome = settle(caught, code, intent);
+        if (mayReplace(held(key), outcome)) record(key, { ...outcome, again });
         return false;
       } finally {
         const settled = live.current;
