@@ -6,7 +6,7 @@ description: 视图引擎的公开入口与契约；参考页随重写逐步补�
 
 # View Engine API 参考
 
-该包正在重写，尚无已发布的 API。目标入口由[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)固定：
+该包正在重写，尚无已发布的 API。目标入口由[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/)固定：
 
 | 入口                             | 内容                                                                                                   |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------ |

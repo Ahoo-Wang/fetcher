@@ -109,7 +109,7 @@ export function kept(outcome: Outcome | undefined): boolean {
  * abandon it. The engine refuses a second command against an `unknown`
  * outright; a `conflict` it would dispatch over, which is the same problem one
  * step later. A `rejected` outcome is a definite answer with nothing
- * outstanding, so design §7.4's "correct it and save again" goes through as
+ * outstanding, so design/management.md's "correct it and save again" goes through as
  * the new intent it is.
  */
 export function blocks(outcome: Outcome | null): boolean {

@@ -7,7 +7,7 @@ description: 面向 Wow 业务应用的可配置数据视图引擎，正按第�
 
 # View Engine 数据视图
 
-View Engine 正在重写。旧实现以 git tag `view-engine-legacy` 冻结；新包按[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)从空树自下而上生长。
+View Engine 正在重写。旧实现以 git tag `view-engine-legacy` 冻结；新包按[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/)从空树自下而上生长。
 
 设计以三个事实为基础，其余全部由此推出：
 

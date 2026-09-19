@@ -78,7 +78,7 @@ export interface ViewManagerController {
   resolveConflict(key: string, choice: ConflictChoice): Promise<boolean>;
   /**
    * Puts the intent that conflicted to the store once more, as a new write
-   * against the revision just reloaded — the second half of how design §7.3
+   * against the revision just reloaded — the second half of how design/management.md
    * settles a preference conflict: reload, keep the intent, put it to the
    * user again. It is not a replay of the old write, which would carry the
    * revision that lost, nor of the whole record, which would carry the other
@@ -322,7 +322,7 @@ export function useViewManager(
         // ahead of this one in the queue.
         { recovery: true, guard: () => held(key)?.handle === handle },
       );
-      // Reloading a preference conflict is not the end of it (design §7.3):
+      // Reloading a preference conflict is not the end of it (design/management.md):
       // the stored order and default are read again, and the user's own
       // intent is kept and put to them once more rather than replayed at the
       // new revision behind their back. The list has reloaded, the row goes
