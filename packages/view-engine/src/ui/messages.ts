@@ -114,6 +114,7 @@ export const defaultMessages: ViewMessages = Object.freeze({
   'label.delete.dirty-consequence': 'Unsaved changes go with it.',
   'label.delete.keep': 'Keep it',
   'label.dialog.cancel': 'Cancel',
+  'label.dialog.close': 'Close',
   'label.save-as.heading': 'Save as a new view',
   'label.save-as.description': 'The view you are looking at stays as it is.',
   'label.save-as.copy-title': '{title} copy',
