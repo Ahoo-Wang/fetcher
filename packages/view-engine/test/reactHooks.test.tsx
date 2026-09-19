@@ -977,6 +977,33 @@ describe('useSaveCommands', () => {
     expect(result.current.commands.state.lastSavedAt).toBeNull();
   });
 
+  it('marks no moment for a replayed write that is not a save', async () => {
+    const { store, result } = await openMine();
+    vi.spyOn(store, 'rename').mockRejectedValueOnce(
+      new ViewStoreError('UNAVAILABLE', 'timeout'),
+    );
+
+    await act(async () => {
+      await result.current.commands.rename('Renamed');
+    });
+    expect(result.current.commands.state.write?.kind).toBe('unknown');
+
+    await act(async () => {
+      await expect(result.current.commands.retry()).resolves.toMatchObject({
+        landed: true,
+        written: false,
+      });
+    });
+
+    // The replay did reach the store — the title is the new one — but what
+    // it wrote is not the config on screen. Saying "View saved" here would
+    // tell the user their unsaved edits are safe when nothing of them went.
+    expect(result.current.commands.state.lastSavedAt).toBeNull();
+    await expect(store.get('orders-1')).resolves.toMatchObject({
+      title: 'Renamed',
+    });
+  });
+
   it('times a conflict the user resolved by overwriting', async () => {
     const { store, result } = await openMine();
     await store.save('orders-1', recordConfig({ pageSize: 77 }), '1', {
@@ -1487,6 +1514,34 @@ describe('useFilterEditor pending and applied', () => {
     expect(filter().applied).toEqual([]);
   });
 
+  it('keeps summarising the result while the draft goes over budget', async () => {
+    const result = await openEditor();
+    const filter = () => result.current.filter;
+
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().updateLeaf([0], { value: 'CN' });
+    });
+    act(() => filter().submit());
+    await waitFor(() => expect(filter().applied).toHaveLength(1));
+
+    let nested: FilterTree = { op: 'and', children: [] };
+    for (let level = 0; level < 12; level += 1)
+      nested = { op: 'and', children: [nested] };
+    act(() => result.current.opened.runtime?.edit({ filter: nested }));
+
+    expect(filter().issues.map(found => found.code)).toContain(
+      'filter.tree.too-deep',
+    );
+    expect(filter().pending).toBe(false);
+    // The rows on screen are still the narrow ones: what produced them was
+    // admitted before it ran, so it is within budget whatever the draft has
+    // since become. A summary that blanked while the user edited would stop
+    // describing the data it sits beside.
+    expect(filter().applied).toHaveLength(1);
+    expect(filter().applied[0]?.text).toContain('CN');
+  });
+
   it('keeps the root editor working when a metric owns the oversized tree', async () => {
     const analysis: ViewInstance = {
       id: 'orders-analysis',
@@ -1559,6 +1614,113 @@ describe('useFilterEditor pending and applied', () => {
     // marked for it, so the filter panel must not claim it.
     act(() => result.current.opened.runtime?.edit({ pageSize: 5000 }));
     expect(filter().blocked).toBe(1);
+  });
+});
+
+describe('useFilterEditor under a host scope filter', () => {
+  /** What an embedding host narrows the view to; never in the draft. */
+  const scope: FilterTree = {
+    op: 'and',
+    children: [{ field: 'status', operator: 'EQ', value: 'OPEN' }],
+  };
+
+  /** A summary item's path as the tree editor addresses a node. */
+  function indexes(path: readonly (string | number)[]): number[] {
+    return path.filter((step): step is number => typeof step === 'number');
+  }
+
+  async function openScoped() {
+    const { engine } = engineWith();
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, 'orders-1', scope);
+      return { opened, filter: useFilterEditor(opened.runtime) };
+    });
+    await waitFor(() =>
+      expect(result.current.opened.runtime?.getSnapshot().result).toBeTruthy(),
+    );
+    return result;
+  }
+
+  it('describes the host conditions apart from the view own', async () => {
+    const result = await openScoped();
+    const filter = () => result.current.filter;
+
+    expect(filter().scoped).toHaveLength(1);
+    expect(filter().scoped[0]).toMatchObject({
+      field: 'status',
+      path: ['children', 0],
+    });
+    expect(filter().applied).toEqual([]);
+
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().updateLeaf([0], { value: 'CN' });
+      filter().addLeaf('amount');
+      filter().updateLeaf([1], { value: 10 });
+    });
+    act(() => filter().submit());
+    await waitFor(() => expect(filter().applied).toHaveLength(2));
+
+    // The scope ran with them, and `result.config` holds the merged tree —
+    // but a badge for it would offer a remove nobody here can honour, and
+    // the path it carried would address the draft's next condition instead.
+    expect(filter().applied.map(item => item.path)).toEqual([
+      ['children', 0],
+      ['children', 1],
+    ]);
+    expect(filter().applied.some(item => item.text.includes('OPEN'))).toBe(
+      false,
+    );
+
+    // The path a badge carries reaches the leaf it names, and only it.
+    act(() => {
+      filter().clearValue(indexes(filter().applied[1].path));
+      filter().submit();
+    });
+    await waitFor(() => expect(filter().applied).toHaveLength(1));
+    expect(filter().applied[0].text).toContain('CN');
+    expect(filter().scoped).toHaveLength(1);
+  });
+
+  it('addresses an or-root draft through the config that produced the result', async () => {
+    const result = await openScoped();
+    const filter = () => result.current.filter;
+
+    act(() => {
+      filter().updateGroup([], 'or');
+      filter().addLeaf('warehouse');
+      filter().updateLeaf([0], { value: 'CN' });
+      filter().addLeaf('amount');
+      filter().updateLeaf([1], { value: 10 });
+    });
+    act(() => filter().submit());
+    await waitFor(() => expect(filter().applied).toHaveLength(1));
+
+    // `mergeFilters` carries an `or` draft in as the first child of an `and`,
+    // so every path into the merged tree is one level deeper than the tree
+    // the editor draws. The summary reads `own`, which is that very tree.
+    const summary = filter().applied[0];
+    expect(summary).toMatchObject({ group: 'or', path: [] });
+    expect(summary.text).toContain('CN');
+    expect(summary.text).not.toContain('OPEN');
+
+    const runtime = result.current.opened.runtime;
+    expect(runtime?.getSnapshot().result?.config.filter).toMatchObject({
+      op: 'and',
+    });
+    expect(runtime?.getSnapshot().result?.own.filter).toMatchObject({
+      op: 'or',
+    });
+
+    act(() => {
+      filter().clearValue(indexes(summary.path));
+      filter().submit();
+    });
+    await waitFor(() => expect(filter().applied).toEqual([]));
+    // The host's own condition is not the editor's to take out, and taking
+    // the view's out did not touch it.
+    expect(filter().scoped).toHaveLength(1);
+    expect(runtime?.scopeFilter).toEqual(scope);
   });
 });
 

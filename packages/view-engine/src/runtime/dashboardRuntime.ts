@@ -150,7 +150,7 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
   private readonly children = new Map<string, PanelChild>();
 
   private state: DashboardRuntimeState;
-  private scopeFilter: FilterTree | null;
+  private injectedScope: FilterTree | null;
   private timer: unknown;
   private timerDelay: number | null = null;
   private stopped = false;
@@ -162,7 +162,7 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     this.kinds = options.kinds;
     this.limits = options.limits;
     this.environment = options.environment;
-    this.scopeFilter = options.scopeFilter ?? null;
+    this.injectedScope = options.scopeFilter ?? null;
 
     const saved = options.saved ?? null;
     this.state = {
@@ -208,6 +208,11 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
             isPlainObject(field) && typeof field.name === 'string',
         )
       : [];
+  }
+
+  /** The injected condition in force; see `ViewRuntime.scopeFilter`. */
+  get scopeFilter(): FilterTree | null {
+    return this.injectedScope;
   }
 
   getSnapshot(): DashboardRuntimeState {
@@ -291,11 +296,11 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
    */
   setScopeFilter(tree: FilterTree | null): Issue[] {
     if (this.stopped) return [];
-    if (dequal(tree ?? null, this.scopeFilter)) return [];
+    if (dequal(tree ?? null, this.injectedScope)) return [];
     const issues = this.admit(this.state.applied, this.state.scope, tree);
     if (hasError(issues)) return issues;
 
-    this.scopeFilter = tree;
+    this.injectedScope = tree ?? null;
     // The draft is judged with the scope too, so its issues move with it.
     this.sync({ issues: this.admit(this.state.draft, this.state.scope) });
     return issues;
@@ -376,7 +381,7 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
   private admit(
     config: DashboardViewConfig,
     scope: ViewScope,
-    scopeFilter: FilterTree | null = this.scopeFilter,
+    scopeFilter: FilterTree | null = this.injectedScope,
   ): Issue[] {
     // A root that is not a group is admission's to report as it stands.
     const merged =
@@ -533,7 +538,7 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     if (!reference || hasError(own)) return { runtime: null, issues: own };
 
     const scope = mapGlobalFilter(
-      mergeFilters(applied.filter, this.scopeFilter),
+      mergeFilters(applied.filter, this.injectedScope),
       panel.bindings,
     );
     const existing = this.children.get(panel.id);

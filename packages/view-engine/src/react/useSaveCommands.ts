@@ -24,6 +24,7 @@ import type {
   ConflictChoice,
   ViewEngine,
   ViewRuntime,
+  WriteAction,
   WriteState,
 } from '../runtime/index.js';
 import { useViewRuntime } from './useViewEngine.js';
@@ -39,9 +40,13 @@ export interface RecoveredWrite {
   /** The command is done: the outcome it was raised against is settled. */
   landed: boolean;
   /**
-   * Whether it put anything in the store. A conflict resolved by `reload`
-   * lands without writing — it takes the stored state and drops the draft —
-   * so "saved just now" is exactly what it must not report.
+   * Whether it saved this view — a `create` or a `save` that reached the
+   * store. That is what a "Saved" moment is about, and two other landings
+   * are not it: a conflict resolved by `reload` takes the stored state and
+   * drops the draft, so it writes nothing at all; and a recovered `rename` or
+   * `delete` does write, but not the config on screen — announcing "View
+   * saved" after a retried rename would tell the user their unsaved edits are
+   * safe when they are not.
    */
   written: boolean;
   /** The instance a recovered create, save or rename produced, if any. */
@@ -121,9 +126,11 @@ export interface SaveCommandState {
    * the same save twice in a row must read as two distinct moments. It is
    * cleared when the next write starts, and is `null` until one lands.
    *
-   * Only a command that wrote marks a moment. A conflict resolved by
-   * `reload` settles and reloads without writing anything, so it leaves this
-   * where it was rather than saying "Saved" over the edits just discarded.
+   * Only a command that saved this view marks a moment. A conflict resolved
+   * by `reload` settles and reloads without writing anything, and a recovered
+   * `rename` or `delete` writes something that is not the config on screen —
+   * both leave this where it was rather than saying "Saved" over edits that
+   * were just discarded, or were never sent at all.
    */
   lastSavedAt: number | null;
 }
@@ -290,21 +297,24 @@ export function useSaveCommands(
     [engine, instanceId, run],
   );
 
-  const retry = useCallback(
-    () =>
-      runtime
-        ? run(
-            'view.retry.failed',
-            // A delete resolves with nothing, which still means it landed; a
-            // recovered create or rename carries the instance it produced.
-            // A replay sends the original write again, so it did write.
-            () => engine.retryWrite(runtime).then(it => recoveredOf(it, true)),
-            UNRECOVERED,
-            wroteStore,
-          )
-        : Promise.resolve(UNRECOVERED),
-    [engine, runtime, run],
-  );
+  const retry = useCallback(() => {
+    if (!runtime) return Promise.resolve(UNRECOVERED);
+    // What the write was for, read before the replay settles it and clears
+    // it: a replay does write, but only a create or a save writes the config
+    // on screen, and only that is a "View saved" moment.
+    const action = runtime.getSnapshot().write?.payload.action;
+    return run(
+      'view.retry.failed',
+      // A delete resolves with nothing, which still means it landed; a
+      // recovered create, save or rename carries the instance it produced.
+      () =>
+        engine
+          .retryWrite(runtime)
+          .then(it => recoveredOf(it, savesView(action))),
+      UNRECOVERED,
+      wroteStore,
+    );
+  }, [engine, runtime, run]);
 
   const abandon = useCallback(
     (write?: WriteState) => {
@@ -337,22 +347,26 @@ export function useSaveCommands(
   );
 
   const resolveConflict = useCallback(
-    (choice: ConflictChoice) =>
-      runtime
-        ? run(
-            'view.resolve.failed',
-            // Both a reload and an overwrite resolve only when they landed,
-            // but only the overwrite writes: a reload takes the stored state
-            // and discards the draft, and timing it as a save would put
-            // "View saved" on screen over edits the user just gave up.
-            () =>
-              engine
-                .resolveConflict(runtime, choice)
-                .then(it => recoveredOf(it, choice === 'overwrite')),
-            UNRECOVERED,
-            wroteStore,
-          )
-        : Promise.resolve(UNRECOVERED),
+    (choice: ConflictChoice) => {
+      if (!runtime) return Promise.resolve(UNRECOVERED);
+      const action = runtime.getSnapshot().write?.payload.action;
+      return run(
+        'view.resolve.failed',
+        // Both a reload and an overwrite resolve only when they landed, but
+        // only an overwrite of a create or a save saves this view: a reload
+        // takes the stored state and discards the draft, and an overwritten
+        // rename moves a title rather than the config — timing either as a
+        // save would put "View saved" on screen over edits still unsaved.
+        () =>
+          engine
+            .resolveConflict(runtime, choice)
+            .then(it =>
+              recoveredOf(it, choice === 'overwrite' && savesView(action)),
+            ),
+        UNRECOVERED,
+        wroteStore,
+      );
+    },
     [engine, runtime, run],
   );
 
@@ -403,10 +417,22 @@ function landedSave(instance: ViewInstance | null): boolean {
 }
 
 /**
- * A replay or a conflict choice marks a moment only when it wrote. Landing is
- * not enough: `reload` settles the conflict by taking the stored state, and
- * nothing of the user's was saved.
+ * A replay or a conflict choice marks a moment only when it saved this view.
+ * Landing is not enough: `reload` settles the conflict by taking the stored
+ * state, and nothing of the user's was saved.
  */
 function wroteStore(recovered: RecoveredWrite): boolean {
   return recovered.written;
+}
+
+/**
+ * Whether recovering this write saves the view itself. A `rename` and a
+ * `delete` reach the store as much as a `save` does, but neither is the
+ * config on screen: "View saved" after a retried rename says the edits are
+ * safe when nothing of them has been written. A write the runtime no longer
+ * holds — the outcome settled between the render and the click — answers no,
+ * which is the quiet way to be wrong.
+ */
+function savesView(action: WriteAction | undefined): boolean {
+  return action === 'create' || action === 'save';
 }
