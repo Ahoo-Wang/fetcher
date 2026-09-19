@@ -140,7 +140,7 @@ its required package build.
 The Chromium/Firefox/WebKit acceptance that this file used to promise belonged
 to the deleted view-engine delivery verifier, which ran a view-engine readiness
 check per browser rather than the whole interaction suite. It returns with the
-view-engine UI delivery (`packages/view-engine/docs/design.md`). Until then,
+view-engine UI delivery (`packages/view-engine/docs/design/`). Until then,
 interactions run on Chromium; `STORYBOOK_BROWSERS=chromium,firefox,webkit pnpm
 test:storybook` runs the matrix locally and currently fails on three
 pre-existing WebKit issues in the deprecated viewer stories (an Ant Design
@@ -155,7 +155,7 @@ Each Node version runs `core`, `view-engine` and `viewer` on separate runners.
 Tests use the unchanged package scripts. The partition regression uses pnpm's
 actual workspace selection to require every package exactly once; leaf builds
 include their dependencies. `view-engine` is being rewritten from an empty tree
-(see `packages/view-engine/docs/design.md`); its suite stays separate so the
+(see `packages/view-engine/docs/design/`); its suite stays separate so the
 growing test set does not lengthen the core runner.
 
 Node 24 artifacts preserve `packages/<name>/coverage/coverage-final.json` paths.

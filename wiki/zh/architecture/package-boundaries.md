@@ -47,4 +47,4 @@ React 到 CoSec 的 peer 箭头不表示每个 Hook 都通过 CoSec 认证。Vie
 
 ## View Engine 入口
 
-`@ahoo-wang/fetcher-view-engine` 直接依赖 Wow 及其 UI 实现包，与上图只描述 peer 的箭头不同。该包正按 `model → filter → record | analysis | dashboard → runtime → react → ui` 与 `store → model` 的分层重写，规则由架构测试强制。根入口（模型、纯内核、运行时、`ViewStore` 端口与 `MemoryViewStore`）不导入 React、DOM 或 CSS；`/react` 提供无样式钩子，`/ui` 提供 shadcn/Base UI 默认组件。持久化由应用实现 `ViewStore`，查询数据源仍是应用的运行时适配器。参阅 [View Engine 参考](../reference/view-engine/index.md)与[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)。
+`@ahoo-wang/fetcher-view-engine` 直接依赖 Wow 及其 UI 实现包，与上图只描述 peer 的箭头不同。该包正按 `model → filter → record | analysis | dashboard → runtime → react → ui` 与 `store → model` 的分层重写，规则由架构测试强制。根入口（模型、纯内核、运行时、`ViewStore` 端口与 `MemoryViewStore`）不导入 React、DOM 或 CSS；`/react` 提供无样式钩子，`/ui` 提供 shadcn/Base UI 默认组件。持久化由应用实现 `ViewStore`，查询数据源仍是应用的运行时适配器。参阅 [View Engine 参考](../reference/view-engine/index.md)与[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/)。

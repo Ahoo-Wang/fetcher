@@ -6,7 +6,7 @@ description: Public entries and contracts of the view engine; the reference foll
 
 # View Engine reference
 
-The package is being rewritten and has no published API yet. The target entries are fixed by the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md):
+The package is being rewritten and has no published API yet. The target entries are fixed by the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/):
 
 | Entry                            | Contents                                                                                                        |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
