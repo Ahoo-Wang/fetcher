@@ -685,6 +685,28 @@ describe('content panels', () => {
     expect(document.querySelector('b')).toBeNull();
   });
 
+  /**
+   * The links in a markdown panel are the only ones a config never lists on
+   * their own — they are inside the prose — so they are the ones worth
+   * checking twice.
+   */
+  it('opens a markdown link in its own tab without the opener', () => {
+    render(
+      <MarkdownPanel content={'See [the report](https://example.com).'} />,
+    );
+
+    const link = screen.getByRole('link', { name: 'the report' });
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('keeps the words of a markdown link that goes somewhere unsafe', () => {
+    render(<MarkdownPanel content={'[click me](javascript:alert(1))'} />);
+
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByText('click me')).toBeTruthy();
+  });
+
   it('shows a placeholder when an image fails to load', () => {
     render(<ImagePanel src="/missing.png" alt="Sales trend" />);
 
