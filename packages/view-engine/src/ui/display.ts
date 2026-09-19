@@ -37,8 +37,16 @@ export interface DisplayField {
   timeZone?: string;
 }
 
-const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const EPOCH = /^-?\d+$/;
+
+/**
+ * A day, or a day and a time, with no offset: `2026-09-18`, or
+ * `2026-09-18T09:30:00` as Java writes a `LocalDateTime`. It names a time on
+ * a clock rather than a moment, and the filter kernel reads it on the
+ * engine's; shown on any other clock it would move.
+ */
+const WALL_CLOCK =
+  /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2})(?::(\d{2})(?:\.(\d+))?)?)?$/;
 
 /**
  * A value as its field shows it, or `undefined` when the field's kind has
@@ -62,41 +70,56 @@ export function displayValue(
     if (label !== undefined) return label;
   }
   if (field.dateUnit !== undefined) {
-    const date = toDate(value);
-    return date
-      ? bucket(
-          date,
-          field.dateUnit,
-          field.timeZone ?? context.timeZone,
-          context.locale,
-        )
+    const time = readTime(value, field.timeZone ?? context.timeZone);
+    return time
+      ? bucket(time.date, field.dateUnit, time.timeZone, context.locale)
       : undefined;
   }
   switch (field.cell ?? field.kind) {
     case 'datetime': {
-      const date = toDate(value);
-      return date
-        ? format(date, context.locale, {
+      const time = readTime(value, context.timeZone);
+      return time
+        ? format(time.date, context.locale, {
             dateStyle: 'medium',
             timeStyle: 'medium',
-            timeZone: context.timeZone,
+            timeZone: time.timeZone,
           })
         : undefined;
     }
     case 'date': {
-      const date = toDate(value);
-      if (!date) return undefined;
-      // `2026-09-18` names a day, not an instant. Read in any zone but UTC it
-      // could come out as the day before.
-      const calendar = typeof value === 'string' && DATE_ONLY.test(value);
-      return format(date, context.locale, {
-        dateStyle: 'medium',
-        timeZone: calendar ? 'UTC' : context.timeZone,
-      });
+      const time = readTime(value, context.timeZone);
+      return time
+        ? format(time.date, context.locale, {
+            dateStyle: 'medium',
+            timeZone: time.timeZone,
+          })
+        : undefined;
     }
     default:
       return undefined;
   }
+}
+
+/**
+ * A time and the zone to show it in. An instant shows in `timeZone`. A
+ * wall-clock string is read as if at UTC and shown in UTC, which prints it as
+ * written whatever zone is in force: `2026-09-18` stays the 18th in Los
+ * Angeles, and `09:30` stays 09:30 in a browser on another clock.
+ */
+function readTime(
+  value: unknown,
+  timeZone: string | undefined,
+): { date: Date; timeZone: string | undefined } | undefined {
+  const wall = typeof value === 'string' ? WALL_CLOCK.exec(value.trim()) : null;
+  if (wall) {
+    const [, day, minutes = '00:00', seconds = '00', fraction = ''] = wall;
+    // A Date holds milliseconds; Java writes up to nine digits.
+    const millis = `${fraction}000`.slice(0, 3);
+    const date = new Date(`${day}T${minutes}:${seconds}.${millis}Z`);
+    return Number.isNaN(date.getTime()) ? undefined : { date, timeZone: 'UTC' };
+  }
+  const date = toDate(value);
+  return date && { date, timeZone };
 }
 
 /** A number in the format its field declared; as written when it has none. */
@@ -132,7 +155,14 @@ function toDate(value: unknown): Date | undefined {
   return date && !Number.isNaN(date.getTime()) ? date : undefined;
 }
 
-/** A bucket key as the bucket it starts: a day, a month, a quarter. */
+/**
+ * A bucket key as the bucket it starts: a day, a month, a quarter.
+ *
+ * Years, quarters and months are cut on the Gregorian calendar, so they are
+ * named in it whatever calendar the language would pick: a Persian or a Hijri
+ * month would name a period the bucket does not cover. The quarter is counted in digits a
+ * number can be read from, not in the language's numerals.
+ */
 function bucket(
   date: Date,
   unit: AnalysisDateUnit,
@@ -141,19 +171,19 @@ function bucket(
 ): string {
   switch (unit) {
     case 'YEAR':
-      return format(date, locale, { year: 'numeric', timeZone });
+      return format(date, locale, gregorianYear(timeZone));
     case 'QUARTER': {
-      const parts = formatter(locale, {
-        year: 'numeric',
-        month: 'numeric',
-        timeZone,
-      }).formatToParts(date);
-      const part = (type: string) =>
-        parts.find(found => found.type === type)?.value ?? '';
-      return `${part('year')} Q${Math.floor((Number(part('month')) - 1) / 3) + 1}`;
+      const month = Number(
+        format(date, 'en-US', { month: 'numeric', timeZone }),
+      );
+      const quarter = Math.floor((month - 1) / 3) + 1;
+      return `${format(date, locale, gregorianYear(timeZone))} Q${quarter}`;
     }
     case 'MONTH':
-      return format(date, locale, { year: 'numeric', month: 'long', timeZone });
+      return format(date, locale, {
+        ...gregorianYear(timeZone),
+        month: 'long',
+      });
     case 'WEEK':
     case 'DAY':
       return format(date, locale, { dateStyle: 'medium', timeZone });
@@ -173,6 +203,12 @@ function bucket(
   }
 }
 
+function gregorianYear(
+  timeZone: string | undefined,
+): Intl.DateTimeFormatOptions {
+  return { year: 'numeric', calendar: 'gregory', timeZone };
+}
+
 function format(
   date: Date,
   locale: string | undefined,
@@ -185,9 +221,10 @@ const formatters = new Map<string, Intl.DateTimeFormat>();
 
 /**
  * A formatter per locale and options, built once: a table formats every cell
- * of a page, and building one is the expensive part. An unknown zone is
- * dropped before the language is, and the runtime's own is the last resort,
- * so a bad setting never leaves the value unshown.
+ * of a page, and building one is the expensive part. A bad setting never
+ * leaves the value unshown. An unknown language gives way first, since a time
+ * on the wrong clock is wrong where one in the runtime's language is only
+ * foreign; then an unknown zone; and the runtime's own is the last resort.
  */
 function formatter(
   locale: string | undefined,
@@ -199,6 +236,7 @@ function formatter(
     const anyZone = { ...options, timeZone: undefined };
     found =
       build(locale, options) ??
+      build(undefined, options) ??
       build(locale, anyZone) ??
       new Intl.DateTimeFormat(undefined, anyZone);
     formatters.set(key, found);

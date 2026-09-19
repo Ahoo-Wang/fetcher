@@ -21,7 +21,7 @@ import { displayValue } from '../src/ui/display.js';
  */
 function formatted(
   value: number,
-  locale: string,
+  locale: string | undefined,
   options: Intl.DateTimeFormatOptions,
 ): string {
   return new Intl.DateTimeFormat(locale, options).format(value);
@@ -56,6 +56,52 @@ describe('displayValue', () => {
 
     expect(shanghai).toContain('17:21:55');
     expect(angeles).toContain('02:21:55');
+  });
+
+  // Java writes a LocalDateTime with no offset. It names 02:10 on some clock,
+  // and the filter kernel reads it on the engine's; read on the browser's
+  // and shown on the engine's, it moved by the hours between the two.
+  it('shows a wall-clock time as written, whatever clock is in force', () => {
+    const context = { locale: 'en-GB', timeZone: 'Asia/Shanghai' };
+    const expected = formatted(Date.UTC(2026, 8, 15, 2, 10), 'en-GB', {
+      ...DATE_TIME,
+      timeZone: 'UTC',
+    });
+
+    expect(
+      displayValue('2026-09-15T02:10:00', { kind: 'datetime' }, context),
+    ).toBe(expected);
+    expect(
+      displayValue(
+        '2026-09-15 02:10:00.123456789',
+        { kind: 'datetime' },
+        context,
+      ),
+    ).toBe(expected);
+    expect(expected).toContain('02:10:00');
+  });
+
+  // A time on the wrong clock is wrong; one in the runtime's language is
+  // only foreign. `zh_CN` is not BCP 47, so Intl refuses it.
+  it('keeps the zone when the language is one Intl cannot read', () => {
+    const shown = displayValue(
+      INSTANT,
+      { kind: 'datetime' },
+      { locale: 'zh_CN', timeZone: 'Asia/Shanghai' },
+    );
+
+    expect(shown).toBe(
+      formatted(INSTANT, undefined, {
+        ...DATE_TIME,
+        timeZone: 'Asia/Shanghai',
+      }),
+    );
+    expect(shown).not.toBe(
+      formatted(INSTANT, undefined, {
+        ...DATE_TIME,
+        timeZone: 'America/Los_Angeles',
+      }),
+    );
   });
 
   it('reads a Date as the instant it holds', () => {
@@ -161,6 +207,29 @@ describe('displayValue', () => {
       formatted(day, 'en-GB', { ...DATE_TIME, timeZone: 'UTC' }),
     );
     expect(displayValue('soon', { dateUnit: 'DAY' }, utc)).toBeUndefined();
+  });
+
+  // Persian writes its own numerals, which `Number` reads as NaN, and dates by
+  // the Solar Hijri calendar, whose months are not the ones Wow cut by:
+  // September's bucket would have been named Shahrivar, which ends on the 22nd.
+  it('counts quarters in digits and names periods on the Gregorian calendar', () => {
+    const day = Date.UTC(2026, 8, 18);
+    const month = { year: 'numeric', month: 'long', timeZone: 'UTC' } as const;
+    const persian = { locale: 'fa-IR', timeZone: 'UTC' };
+
+    expect(displayValue(day, { dateUnit: 'QUARTER' }, persian)).toBe(
+      `${formatted(day, 'fa-IR', {
+        year: 'numeric',
+        calendar: 'gregory',
+        timeZone: 'UTC',
+      })} Q3`,
+    );
+    expect(displayValue(day, { dateUnit: 'MONTH' }, persian)).toBe(
+      formatted(day, 'fa-IR', { ...month, calendar: 'gregory' }),
+    );
+    expect(displayValue(day, { dateUnit: 'MONTH' }, persian)).not.toBe(
+      formatted(day, 'fa-IR', month),
+    );
   });
 
   // Buckets cut at UTC midnight and read in Los Angeles would each carry the

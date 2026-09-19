@@ -39,9 +39,9 @@ export interface CartesianData {
   /**
    * One entry per drawn line or bar. `key` is the record key of the points'
    * values and is injective over group values, so it may carry a type tag;
-   * `label` is what a legend shows, the value as it prints.
+   * `label` is what a legend shows, the value as it prints. A pivoted series
+   * also keeps the raw split `value`, for a UI to show as its field does.
    */
-  /** `value` is the raw split value of a pivoted series; `label` prints it. */
   series: { key: string; label: string; metric: string; value?: unknown }[];
 }
 

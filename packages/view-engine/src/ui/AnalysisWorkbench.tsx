@@ -82,6 +82,11 @@ export function AnalysisWorkbench({
   const data = state?.result?.data;
   const view: AnalysisView | null =
     data?.kind === 'analysis' ? data.view : null;
+  // The chart the result was shaped by, not the draft being edited: until
+  // Run, the draft's aliases may name other columns than the ones the
+  // result's categories came from, and a category is named through its column.
+  const shaped = state?.result?.config;
+  const chart = shaped?.kind === 'analysis' ? shaped.chart : analysis.chart;
   const errors = (state?.issues ?? []).filter(
     found => found.severity === 'error',
   );
@@ -169,7 +174,7 @@ export function AnalysisWorkbench({
               (analysis.layout === 'chart' && view.chart ? (
                 <AnalysisChart
                   data={view.chart}
-                  spec={analysis.chart}
+                  spec={chart}
                   columns={view.columns}
                 />
               ) : (

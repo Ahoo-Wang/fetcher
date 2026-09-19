@@ -292,6 +292,48 @@ describe('AnalysisChart', () => {
     expect(within(container).getByText('Succeeded')).toBeDefined();
   });
 
+  // Two values can show alike: two options with one label, or the two 01:00
+  // hours of the night the clocks go back. A key made of the shown text
+  // collided and let React reuse one row for the other.
+  it('keys heatmap rows and cells by value, so values shown alike stay apart', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { container } = render(
+      <ViewSurface>
+        <AnalysisChart
+          data={{
+            type: 'heatmap',
+            xs: ['A', 'B'],
+            ys: ['A', 'B'],
+            cells: [
+              [1, 2],
+              [3, 4],
+            ],
+          }}
+          spec={{
+            type: 'heatmap',
+            heatmap: { x: 'col', y: 'row', value: 'orders' },
+          }}
+          columns={['row', 'col'].map(alias => ({
+            alias,
+            label: alias,
+            role: 'group' as const,
+            kind: 'enum',
+            cell: 'enum',
+            options: [
+              { value: 'A', label: 'Same' },
+              { value: 'B', label: 'Same' },
+            ],
+          }))}
+        />
+      </ViewSurface>,
+    );
+
+    expect(within(container).getAllByText('Same')).toHaveLength(4);
+    expect(
+      error.mock.calls.some(call => String(call[0]).includes('same key')),
+    ).toBe(false);
+  });
+
   it('draws every cartesian variant', () => {
     for (const chart of ['bar', 'line', 'area', 'combo'] as const) {
       const { container } = chartOf({ ...cartesian, chart });
@@ -1099,6 +1141,39 @@ describe('AnalysisWorkbench', () => {
     expect(
       vi.mocked(source.aggregate).mock.calls[0][0].groupBy?.[0],
     ).toMatchObject({ timeZone: ZONE });
+  });
+
+  // Until Run the result on screen is the applied config's, so its categories
+  // are named through the columns that config grouped by, not the draft's.
+  it('names chart categories by the config that ran while the chart is edited', async () => {
+    const engine = new ViewEngine({
+      definitions: [namedOrdersDefinition()],
+      store: new MemoryViewStore({
+        instances: [
+          { ...analysisView, config: analysisConfig({ layout: 'chart' }) },
+        ],
+      }),
+      resolveSource: () => testSource(),
+    });
+    const { container } = render(
+      <AnalysisWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
+    );
+    expect(await within(container).findByText('China')).toBeDefined();
+
+    act(() => {
+      engine.openRuntimes()[0].edit({
+        chart: {
+          type: 'bar',
+          cartesian: { x: 'elsewhere', series: [{ metric: 'orders' }] },
+        },
+      });
+    });
+
+    expect(within(container).getByText('China')).toBeDefined();
   });
 
   it('names chart categories as their field names its values', async () => {

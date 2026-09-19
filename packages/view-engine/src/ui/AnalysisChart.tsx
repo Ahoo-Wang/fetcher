@@ -533,10 +533,7 @@ function Heatmap({
       className={cn('flex flex-col gap-1 overflow-x-auto', className)}
     >
       {data.ys.map((y, row) => (
-        <div
-          key={label(spec?.heatmap?.y, y) || row}
-          className="flex items-center gap-1"
-        >
+        <div key={labelOf(y) || row} className="flex items-center gap-1">
           <span className="text-muted-foreground w-24 shrink-0 truncate text-xs">
             {label(spec?.heatmap?.y, y)}
           </span>
@@ -544,7 +541,7 @@ function Heatmap({
             const cell = data.cells[row]?.[column] ?? null;
             return (
               <div
-                key={label(spec?.heatmap?.x, x) || column}
+                key={labelOf(x) || column}
                 title={messages.label('label.chart.cell', {
                   y: label(spec?.heatmap?.y, y),
                   x: label(spec?.heatmap?.x, x),
@@ -564,7 +561,7 @@ function Heatmap({
         <span className="w-24 shrink-0" />
         {data.xs.map((x, column) => (
           <span
-            key={label(spec?.heatmap?.x, x) || column}
+            key={labelOf(x) || column}
             className="text-muted-foreground w-8 shrink-0 truncate text-center text-xs"
           >
             {label(spec?.heatmap?.x, x)}
