@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { FilterOperatorName, Issue } from '../model/index.js';
+import type { Issue } from '../model/index.js';
 import { en } from './messages/en.js';
 
 /**
@@ -39,17 +39,6 @@ export type ViewMessages = Readonly<Record<string, string>>;
  * screen. It does not constrain what a host adds: `ViewMessages` stays open.
  */
 export type MessageKey = keyof typeof en;
-
-/**
- * `label.operator.<OPERATOR>`, composed from the operator on a condition.
- *
- * The catalogue names every `FilterOperator`, so the composed key is already
- * a `MessageKey` and this needs no assertion: naming an operator the wording
- * does not carry is a compile error, like every other key in the package.
- */
-export function operatorKey(operator: FilterOperatorName): MessageKey {
-  return `label.operator.${operator}`;
-}
 
 /** `{field}` and friends are replaced from `Issue.params`. */
 const PLACEHOLDER = /\{(\w+)\}/g;
