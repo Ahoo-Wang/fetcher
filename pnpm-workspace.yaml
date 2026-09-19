@@ -41,7 +41,7 @@ catalog:
   culori: ^4.0.2
   dayjs: ^1.11.23
   dequal: ^2.0.3
-  eslint: ^10.10.0
+  eslint: ^10.11.0
   eslint-plugin-react-compiler: ^19.1.0-rc.2
   eslint-plugin-react-hooks: ^7.1.1
   globals: ^17.12.0
