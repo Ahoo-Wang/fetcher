@@ -29,6 +29,7 @@ import {
   ViewEngine,
   ViewStoreError,
   defaultRuntimeEnvironment,
+  systemInstanceId,
   withFieldKinds,
   type FieldKind,
   type ViewInstance,
@@ -54,10 +55,12 @@ import {
   RecordCards,
   RecordTable,
   RecordWorkbench,
-  SaveActions,
+  type RecordWorkbenchProps,
+  ErrorStrip,
+  unmarkedErrors,
   ViewList,
   ViewSurface,
-  WarningNotice,
+  WarningStrip,
 } from '../src/ui/index.js';
 import {
   INSTANT,
@@ -128,7 +131,32 @@ describe('RecordWorkbench', () => {
     );
 
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
-    expect(screen.getByRole('button', { name: /Apply/ })).toBeDefined();
+    // The page reads top to bottom: which view this is, the conditions
+    // folded away, what the rows were fetched under, the toolbar, the rows.
+    expect(
+      [...document.querySelectorAll('[data-slot]')]
+        .map(node => node.getAttribute('data-slot'))
+        .filter(slot =>
+          [
+            'view-header',
+            'editor-band',
+            'applied-bar',
+            'result-toolbar',
+            'record-pagination',
+          ].includes(slot ?? ''),
+        ),
+    ).toEqual([
+      'view-header',
+      'editor-band',
+      'applied-bar',
+      'result-toolbar',
+      'record-pagination',
+    ]);
+    // A saved view opens folded, so the way out of the editor is not on
+    // screen until the band is opened.
+    expect(screen.queryByRole('button', { name: /Apply/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+    expect(await screen.findByRole('button', { name: /Apply/ })).toBeDefined();
     // The sidebar carries the definition's own title.
     expect(screen.getByRole('navigation', { name: 'Orders' })).toBeDefined();
   });
@@ -154,9 +182,10 @@ describe('RecordWorkbench', () => {
     );
 
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
-    const notice = document.querySelector('[data-slot="view-warnings"]');
+    const notice = document.querySelector('[data-slot="status-strip"]');
     expect(notice?.getAttribute('role')).toBe('status');
-    expect(notice?.textContent).toContain('Worth noting');
+    expect(notice?.getAttribute('data-tone')).toBe('warning');
+    // One finding, so the line is the finding rather than a count of them.
     expect(notice?.textContent).toContain('advanced editor');
     expect(screen.queryByText(/needs fixing/)).toBeNull();
   });
@@ -283,7 +312,12 @@ describe('RecordWorkbench', () => {
 
     render(<EmbeddedView engine={engine} instanceId="orders-1" />);
 
-    await waitFor(() => expect(screen.getByText(/query failed/i)).toBeTruthy());
+    // The strip says what went wrong, not that something did.
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain(
+        'The source answered: down',
+      ),
+    );
   });
 
   /**
@@ -476,7 +510,11 @@ describe('RecordWorkbench', () => {
 
     render(<EmbeddedView engine={engine} instanceId="orders-1" />);
 
-    await waitFor(() => expect(screen.getByText(/query failed/i)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain(
+        'The source answered: down',
+      ),
+    );
   });
 
   it('reports a view it cannot open', async () => {
@@ -531,6 +569,10 @@ describe('RecordWorkbench interaction', () => {
       />,
     );
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+    // Every saved view opens with its conditions folded away; the tests
+    // below are about what is inside the fold.
+    fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+    await screen.findByRole('button', { name: /Apply/ });
     return harness;
   }
 
@@ -676,6 +718,7 @@ describe('RecordWorkbench interaction', () => {
         instanceId="orders-1"
       />,
     );
+    fireEvent.click(await screen.findByRole('button', { name: 'Filter' }));
     const apply = await screen.findByRole('button', { name: /Apply/ });
 
     // The rows are still coming. Typing never re-queries and the next apply
@@ -706,12 +749,15 @@ describe('RecordWorkbench interaction', () => {
   it('refreshes the list once a save-as lands in the store', async () => {
     await open();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save as' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More view actions' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Save as' }));
     const dialog = await screen.findByRole('dialog');
     fireEvent.change(within(dialog).getByLabelText('Title'), {
       target: { value: 'My copy' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
 
     // The copy joins the sidebar rather than waiting for a remount.
     await waitFor(() =>
@@ -734,15 +780,81 @@ describe('save actions', () => {
     return harness;
   }
 
+  /**
+   * Save as lives in the split button's menu whenever saving in place is also
+   * allowed: one button says the thing to do now, the menu holds the rest.
+   */
+  async function openSaveAs() {
+    fireEvent.click(screen.getByRole('button', { name: 'More view actions' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Save as' }));
+    return screen.findByRole('dialog');
+  }
+
+  /** An edit the toolbar can make, so the draft has something to save. */
+  async function dropAColumn() {
+    fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
+    fireEvent.click(
+      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
+    );
+    await waitFor(() =>
+      expect(screen.getAllByRole('columnheader')).toHaveLength(4),
+    );
+    // The column menu stays open after a pick; close it before the next
+    // click, which the open menu would swallow.
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+  }
+
+  it('has nothing to save until the view is edited', async () => {
+    await open();
+
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save.hasAttribute('disabled')).toBe(true);
+
+    await dropAColumn();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled'),
+      ).toBe(false),
+    );
+  });
+
+  it('saves the open view in place', async () => {
+    const { store } = await open();
+    await dropAColumn();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(async () =>
+      expect((await store.get('orders-1')).revision).toBe('2'),
+    );
+    // The landing is said once, on the button that was pressed and to a
+    // screen reader, which does not re-read a control it already announced.
+    expect(await screen.findByRole('status')).toBeDefined();
+    expect(screen.getByRole('status').textContent).toBe('View saved');
+  });
+
+  it('takes the edits back to the last saved config', async () => {
+    await open();
+    await dropAColumn();
+
+    fireEvent.click(screen.getByRole('button', { name: 'More view actions' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Revert' }));
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('columnheader')).toHaveLength(3),
+    );
+  });
+
   it('saves a copy under a new title', async () => {
     const { store } = await open();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save as' }));
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await openSaveAs();
     fireEvent.change(within(dialog).getByLabelText('Title'), {
       target: { value: 'Pending only' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
 
     await waitFor(async () =>
       expect((await store.list('orders')).map(item => item.title)).toContain(
@@ -751,154 +863,26 @@ describe('save actions', () => {
     );
   });
 
-  it('renames the open view', async () => {
-    const { store } = await open();
+  it('opens on a copy of the title it was asked from', async () => {
+    await open();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Title'), {
-      target: { value: 'Renamed' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-
-    await waitFor(async () =>
-      expect((await store.get('orders-1')).title).toBe('Renamed'),
-    );
-  });
-
-  it('deletes after a confirmation', async () => {
-    const { store } = await open();
-
-    fireEvent.click(screen.getByRole('button', { name: /Delete/ }));
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
-
-    await waitFor(async () =>
-      expect(await store.list('orders')).toHaveLength(1),
-    );
-  });
-
-  it('moves on to the next view once the open default is deleted', async () => {
-    // No explicit instance and the personal view is the default: the id the
-    // workbench opened came from the list, so a delete has nothing to unpin.
-    // The engine disposed the runtime with the instance; what is on screen
-    // must follow, and the list must stop offering the view.
-    const store = new MemoryViewStore({
-      instances: [mine],
-      preferences: {
-        orders: { order: [], defaultInstanceId: 'orders-1', revision: '0' },
-      },
-    });
-    const engine = new ViewEngine({
-      definitions: [ordersDefinition()],
-      store,
-      resolveSource: () => testSource(),
-    });
-    render(<RecordWorkbench engine={engine} definitionId="orders" />);
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Mine' }).ariaCurrent).toBe(
-        'true',
-      ),
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /Delete/ }));
-    fireEvent.click(
-      within(await screen.findByRole('dialog')).getByRole('button', {
-        name: 'Delete',
-      }),
-    );
-
-    // The system view is what is left, and it is the one open now.
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /All orders/ }).ariaCurrent,
-      ).toBe('true'),
-    );
-    expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull();
-    expect(screen.getAllByRole('row')).toHaveLength(3);
-  });
-
-  it('shows the empty state once the last view is deleted', async () => {
-    const store = new MemoryViewStore({ instances: [mine] });
-    const engine = new ViewEngine({
-      definitions: [ordersDefinition({ views: [] })],
-      store,
-      resolveSource: () => testSource(),
-    });
-    render(<RecordWorkbench engine={engine} definitionId="orders" />);
-    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
-
-    fireEvent.click(screen.getByRole('button', { name: /Delete/ }));
-    fireEvent.click(
-      within(await screen.findByRole('dialog')).getByRole('button', {
-        name: 'Delete',
-      }),
-    );
-
-    // The runtime goes at once — disposal notifies — and the list a moment
-    // later, once it has reloaded without the deleted view.
-    await waitFor(() => expect(screen.queryByRole('table')).toBeNull());
-    expect(await screen.findByText('No view yet')).toBeDefined();
-    expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull();
-  });
-
-  it('offers a way out of a conflict', async () => {
-    const { store } = await open();
-    await store.save('orders-1', recordConfig({ pageSize: 30 }), '1', {
-      requestId: 'other',
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
-    fireEvent.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
-    );
-    await waitFor(() =>
-      expect(screen.getAllByRole('columnheader')).toHaveLength(4),
-    );
-    fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
-
-    const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('saved this view first');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Keep mine' }));
-    await waitFor(async () =>
-      expect((await store.get('orders-1')).revision).toBe('3'),
-    );
-  });
-
-  it('shows why a write was refused', async () => {
-    const { store } = await open();
-    vi.spyOn(store, 'save').mockRejectedValueOnce(
-      new ViewStoreError('FORBIDDEN', 'not yours'),
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
-    fireEvent.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
-    );
-    await waitFor(() =>
-      expect(screen.getAllByRole('columnheader')).toHaveLength(4),
-    );
-    fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
-
-    const alert = await screen.findByRole('alert');
-    // The code is the lookup key; what reaches the user is a sentence.
-    expect(alert.textContent).toContain('You may not write to this view.');
-    expect(alert.textContent).toContain('not yours');
+    const dialog = await openSaveAs();
+    expect(
+      (within(dialog).getByLabelText('Title') as HTMLInputElement).value,
+    ).toBe('Mine copy');
   });
 
   it('saves a copy everyone can see', async () => {
-    const user = userEvent.setup();
     const { store } = await open();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save as' }));
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await openSaveAs();
     fireEvent.change(within(dialog).getByLabelText('Title'), {
       target: { value: 'Ours' },
     });
-    await user.click(within(dialog).getByLabelText('Who can see it'));
-    await user.click(await screen.findByRole('option', { name: 'Everyone' }));
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Everyone' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
 
     await waitFor(async () =>
       expect(
@@ -910,7 +894,9 @@ describe('save actions', () => {
   /**
    * Save as defaulted to "Only me" whatever the store allowed, so a user who
    * may only publish shared views pressed Save and was refused by the engine
-   * for a scope the dialog had picked on their behalf.
+   * for a scope the dialog had picked on their behalf. The option stays on
+   * offer — disabled, and saying why — because a scope that simply vanished
+   * reads as one this view cannot have rather than one this user cannot make.
    */
   it('offers only the audience the user may create in', async () => {
     const store = new MemoryViewStore({
@@ -937,16 +923,20 @@ describe('save actions', () => {
     );
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save as' }));
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await openSaveAs();
+    const onlyMe = within(dialog).getByRole('radio', { name: 'Only me' });
+    expect(onlyMe.getAttribute('aria-disabled')).toBe('true');
+    expect(dialog.textContent).toContain('(no permission to create)');
+    expect(
+      within(dialog).getByRole('radio', { name: 'Everyone' }).ariaChecked,
+    ).toBe('true');
+
     fireEvent.change(within(dialog).getByLabelText('Title'), {
       target: { value: 'Ours' },
     });
-    expect(
-      within(dialog).getByLabelText('Who can see it').textContent,
-    ).toContain('Everyone');
-
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
 
     await waitFor(async () =>
       expect(
@@ -955,43 +945,191 @@ describe('save actions', () => {
     );
   });
 
-  it('offers a retry when the result never came back', async () => {
-    const { store } = await open();
-    vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('socket closed'));
+  /**
+   * A system view is nobody's to write to, so there is no button group at
+   * all — only the copy that is the one thing that can be done with it.
+   */
+  it('offers only a copy of a view nobody may write to', async () => {
+    const { engine } = setup();
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId={systemInstanceId('orders', 'all')}
+      />,
+    );
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
 
-    fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
-    fireEvent.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'More view actions' }),
+    ).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save as' })).toBeDefined();
+  });
+});
+
+/**
+ * Renaming, deleting, reordering and the default view happen in the sidebar's
+ * manager rather than beside the save button — they are about the list, not
+ * about the view on screen. What the workbench still owes is to follow: the
+ * view it has open may be the one that just went.
+ */
+describe('managing views from the workbench', () => {
+  /** One row of the manager, by the title it shows. */
+  function row(title: string): HTMLElement {
+    const found = Array.from(
+      document.querySelectorAll('[data-slot="view-manager-row"]'),
+    ).find(
+      candidate =>
+        candidate.textContent?.includes(title) ||
+        Array.from(candidate.querySelectorAll('input')).some(field =>
+          field.value.includes(title),
+        ),
+    );
+    if (!found) throw new Error(`no row for ${title}`);
+    return found as HTMLElement;
+  }
+
+  /**
+   * The manager is a modal: everything behind it is inert, the sidebar
+   * included. A test that looks at what the workbench did has to shut it.
+   */
+  function close() {
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  }
+
+  /** Opens the manager from the sidebar and waits for it to draw. */
+  async function manage() {
+    fireEvent.click(screen.getByRole('button', { name: 'Manage views' }));
+    await screen.findByRole('dialog');
+  }
+
+  /** The manager's delete, through its confirmation. */
+  async function remove(title: string) {
+    await manage();
+    fireEvent.click(within(row(title)).getByRole('button', { name: 'Delete' }));
+    const confirm = (await screen.findByText('Delete this view?')).closest(
+      '[role="dialog"]',
+    ) as HTMLElement;
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete' }));
+  }
+
+  it('moves on to the next view once the open default is deleted', async () => {
+    // No explicit instance and the personal view is the default: the id the
+    // workbench opened came from the list, so a delete has nothing to unpin.
+    // The engine disposed the runtime with the instance; what is on screen
+    // must follow, and the list must stop offering the view.
+    const store = new MemoryViewStore({
+      instances: [mine],
+      preferences: {
+        orders: { order: [], defaultInstanceId: 'orders-1', revision: '0' },
+      },
+    });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => testSource(),
+    });
+    render(<RecordWorkbench engine={engine} definitionId="orders" />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Mine' }).ariaCurrent).toBe(
+        'true',
+      ),
+    );
+
+    await remove('Mine');
+    close();
+
+    // The system view is what is left, and it is the one open now.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /All orders/ }).ariaCurrent,
+      ).toBe('true'),
+    );
+    expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull();
+    expect(screen.getAllByRole('row')).toHaveLength(3);
+  });
+
+  /**
+   * The view the workbench was *pinned* to, rather than riding on: nothing
+   * reloads the pin, so the workbench has to notice that reopening it now
+   * answers "no such view" and let go of its own accord.
+   */
+  it('lets the pinned view go when the manager deletes it', async () => {
+    const other: ViewInstance = { ...mine, id: 'orders-2', title: 'Other' };
+    const store = new MemoryViewStore({ instances: [mine, other] });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => testSource(),
+    });
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
     );
     await waitFor(() =>
-      expect(screen.getAllByRole('columnheader')).toHaveLength(4),
+      expect(screen.getByRole('button', { name: 'Mine' }).ariaCurrent).toBe(
+        'true',
+      ),
     );
-    fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
 
-    const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('never came back');
+    await remove('Mine');
+    close();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    await waitFor(async () =>
-      expect((await store.get('orders-1')).revision).toBe('2'),
+    await waitFor(
+      () => expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull(),
+      { timeout: 3000 },
+    );
+    // The pin is gone, so the list's default is what is open.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /All orders/ }).ariaCurrent,
+      ).toBe('true'),
     );
   });
 
+  it('shows the empty state once the last view is deleted', async () => {
+    const store = new MemoryViewStore({ instances: [mine] });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition({ views: [] })],
+      store,
+      resolveSource: () => testSource(),
+    });
+    render(<RecordWorkbench engine={engine} definitionId="orders" />);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    await remove('Mine');
+
+    // The runtime goes at once — disposal notifies — and the list a moment
+    // later, once it has reloaded without the deleted view.
+    await waitFor(() => expect(screen.queryByRole('table')).toBeNull());
+    expect(await screen.findByText('No view yet')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Mine' })).toBeNull();
+  });
+
   it('lets go of the view once a recovered delete lands', async () => {
-    const { store } = await open();
+    const { engine, store } = setup();
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
+    );
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
     vi.spyOn(store, 'delete').mockRejectedValueOnce(new Error('socket closed'));
 
-    fireEvent.click(screen.getByRole('button', { name: /Delete/ }));
-    fireEvent.click(
-      within(await screen.findByRole('dialog')).getByRole('button', {
-        name: 'Delete',
-      }),
-    );
+    await remove('Mine');
 
-    const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('never came back');
+    // The row that raised the write is the one that says what became of it.
+    const outcome = await screen.findByRole('status');
+    expect(outcome.textContent).toContain('never came back');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    fireEvent.click(within(outcome).getByRole('button', { name: 'Retry' }));
+    close();
 
     // The store has it now; the workbench follows: the view stops rendering
     // and the list drops the entry once its reload lands.
@@ -1005,8 +1143,8 @@ describe('save actions', () => {
   });
 
   it('keeps the view open when a delete conflict ends in a reload', async () => {
-    // Another view is the default, so a `chosen` of null would reopen that
-    // one instead: the reload must not decide the user had left this view.
+    // Another view is the default, so a pin dropped on the reload would
+    // reopen that one instead: nothing here says the user left this view.
     const other: ViewInstance = { ...mine, id: 'other-1', title: 'Other' };
     const store = new MemoryViewStore({ instances: [other, mine] });
     const engine = new ViewEngine({
@@ -1034,46 +1172,21 @@ describe('save actions', () => {
       Promise.reject(new ViewStoreError('CONFLICT', 'moved', moved)),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Delete/ }));
+    await remove('Mine');
+
+    const outcome = await screen.findByRole('alert');
     fireEvent.click(
-      within(await screen.findByRole('dialog')).getByRole('button', {
-        name: 'Delete',
-      }),
+      within(outcome).getByRole('button', { name: 'Reload list' }),
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Take theirs' }));
-
+    // The dialog is in the way of the sidebar; close it and look.
+    close();
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Mine' }).ariaCurrent).toBe(
         'true',
       ),
     );
     expect(screen.getByRole('table')).toBeDefined();
-  });
-
-  it('opens the copy once a recovered save-as lands', async () => {
-    const { store } = await open();
-    vi.spyOn(store, 'create').mockRejectedValueOnce(new Error('socket closed'));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Save as' }));
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Title'), {
-      target: { value: 'My copy' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-
-    await screen.findByRole('alert');
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-
-    // The recovery lands like the original save-as: the copy joins the list
-    // and becomes the open view.
-    await waitFor(
-      () =>
-        expect(
-          screen.getByRole('button', { name: 'My copy' }).ariaCurrent,
-        ).toBe('true'),
-      { timeout: 3000 },
-    );
   });
 
   it('keeps unsaved edits across a rename of the default view', async () => {
@@ -1091,7 +1204,7 @@ describe('save actions', () => {
       resolveSource: () => testSource(),
     });
     // No explicit instance: the workbench rides on the default view, so
-    // `chosen` is null and a list reload must not close the runtime.
+    // nothing is pinned and a list reload must not close the runtime.
     render(<RecordWorkbench engine={engine} definitionId="orders" />);
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
 
@@ -1104,63 +1217,292 @@ describe('save actions', () => {
       expect(screen.getAllByRole('columnheader')).toHaveLength(4),
     );
     // The column menu stays open after a checkbox pick; close it before the
-    // next toolbar click, which the open menu would swallow.
+    // next click, which the open menu would swallow.
     fireEvent.keyDown(document.body, { key: 'Escape' });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Title'), {
+    await manage();
+    fireEvent.click(within(row('Mine')).getByRole('button', { name: 'Rename' }));
+    fireEvent.change(within(row('Mine')).getByLabelText('Title'), {
       target: { value: 'Renamed' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    fireEvent.click(
+      within(row('Renamed')).getByRole('button', { name: 'Save the title' }),
+    );
 
     // The rename refreshed the list; the unsaved column edit survived it.
     await waitFor(async () =>
       expect((await store.get('orders-1')).title).toBe('Renamed'),
     );
-    expect(screen.getAllByRole('columnheader')).toHaveLength(4);
+    close();
+    await waitFor(() =>
+      expect(screen.getAllByRole('columnheader')).toHaveLength(4),
+    );
+  });
+});
+
+/**
+ * The result is the point of a record view, so everything above it earns its
+ * height: the editor folds away, findings are lines rather than banners, and
+ * the one thing that always shows is what the rows on screen were asked for.
+ */
+describe('the record workbench layout', () => {
+  /** A view whose saved condition the applied bar has something to say about. */
+  const filtered: ViewInstance = {
+    ...mine,
+    config: recordConfig({
+      filter: {
+        op: 'and',
+        children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
+      },
+    }),
+  };
+
+  function workbench(
+    instances: ViewInstance[],
+    props: Partial<RecordWorkbenchProps> = {},
+    source: ViewSource = testSource(),
+  ) {
+    const store = new MemoryViewStore({ instances });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => source,
+    });
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId={instances[0]?.id ?? null}
+        {...props}
+      />,
+    );
+    return { engine, store, source };
+  }
+
+  it('opens a saved view with its conditions folded away', async () => {
+    workbench([mine]);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    const band = screen.getByRole('button', { name: /^Filter/ });
+    expect(band.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('combobox', { name: 'Add' })).toBeNull();
   });
 
-  it('tells onRecovered about a recovered delete too', async () => {
-    // A host may wire only the generic callback and keep its list fresh
-    // there; a recovered delete is still a recovered write.
-    const onDeleted = vi.fn();
-    const onRecovered = vi.fn();
-    const commands = {
-      can: { save: true, saveAs: true, rename: true, delete: true },
-      state: {
-        pending: false,
-        error: null,
-        dirty: false,
-        write: {
-          kind: 'unknown',
-          requestId: 'r1',
-          payload: { action: 'delete', id: 'orders-1', revision: '1' },
-        },
-      },
-      save: vi.fn(),
-      saveAs: vi.fn(),
-      rename: vi.fn(),
-      delete: vi.fn(),
-      retry: vi.fn().mockResolvedValue({ landed: true, instance: null }),
-      abandon: vi.fn(),
-      resolveConflict: vi.fn(),
-    };
+  /**
+   * A view that was never saved has nothing to show yet, so the editor is
+   * the point of the screen rather than something in the way of it.
+   */
+  it('opens a view that was never saved with its conditions out', async () => {
+    const { engine } = workbench([]);
+    // Nothing in the store is unsaved — the store is what saving means — so
+    // the engine is asked for a fresh runtime the way a "new view" would.
+    const fresh = engine.create('orders', {
+      title: 'Scratch',
+      scope: 'personal',
+      config: recordConfig(),
+    });
+    cleanup();
+    vi.spyOn(engine, 'open').mockResolvedValue(fresh);
     render(
-      <ViewSurface>
-        <SaveActions
-          commands={commands as never}
-          title="Mine"
-          onDeleted={onDeleted}
-          onRecovered={onRecovered}
-        />
-      </ViewSurface>,
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+      />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    const band = await screen.findByRole('button', { name: /^Filter/ });
+    expect(band.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('combobox', { name: 'Add' })).toBeDefined();
+    // And it says so beside the title, where the save button would otherwise
+    // have to be read to find out.
+    expect(screen.getByText('Not saved yet')).toBeDefined();
+  });
 
-    await waitFor(() => expect(onDeleted).toHaveBeenCalled());
-    await waitFor(() => expect(onRecovered).toHaveBeenCalledWith('delete'));
+  it('counts what is waiting to be applied on the folded band', async () => {
+    workbench([mine]);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    fireEvent.click(screen.getByRole('button', { name: /^Filter/ }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Add' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'Warehouse' }));
+    fireEvent.change(await screen.findByLabelText('warehouse value'), {
+      target: { value: 'CN' },
+    });
+
+    // Folded again, the count is the one thing left saying the editor holds
+    // something the rows below were not fetched under.
+    fireEvent.click(screen.getByRole('button', { name: /^Filter/ }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /^Filter/ }).textContent,
+      ).toContain('1 not applied'),
+    );
+  });
+
+  it('says what the rows were fetched under, and takes one out of force', async () => {
+    const { source } = workbench([filtered]);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    const bar = screen.getByRole('region', { name: 'Showing' });
+    expect(bar.textContent).toContain('Warehouse');
+    expect(bar.textContent).toContain('CN');
+
+    fireEvent.click(within(bar).getByRole('button', { name: /^Unset/ }));
+
+    // Unsetting applies at once: the condition leaves the query, and the bar
+    // that describes the new result says there is nothing narrowing it.
+    await waitFor(() => {
+      const calls = vi.mocked(source.paged).mock.calls;
+      // Nothing left to narrow by: the query asks for everything.
+      expect(calls[calls.length - 1][0].filter).toEqual({ op: 'MATCH_ALL' });
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole('region', { name: 'Showing' }).textContent,
+      ).toContain('All records'),
+    );
+  });
+
+  it('keeps the rows a failed refresh could not replace, and retries', async () => {
+    let fail = false;
+    const source = testSource({
+      paged: vi.fn(() =>
+        fail
+          ? Promise.reject(new Error('gateway down'))
+          : Promise.resolve({ total: 2, list: [...ROWS] }),
+      ),
+    });
+    workbench([mine], {}, source);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    fail = true;
+    fireEvent.click(screen.getByRole('button', { name: /Refresh/ }));
+
+    const strip = await screen.findByRole('alert');
+    expect(strip.textContent).toContain('The source answered: gateway down');
+    // The rows are the last ones that came back, and the strip says so
+    // rather than the table emptying itself over a dropped connection.
+    expect(screen.getAllByRole('row')).toHaveLength(3);
+    fireEvent.click(within(strip).getByRole('button', { name: '1 more' }));
+    expect(strip.textContent).toContain('last successful result');
+
+    fail = false;
+    fireEvent.click(within(strip).getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    expect(screen.getAllByRole('row')).toHaveLength(3);
+  });
+
+  it("offers the host's bulk action only while rows are picked", async () => {
+    workbench([mine], {
+      actions: {
+        bulk: ({ rows }) => (
+          <button type="button">Export {rows.length} selected</button>
+        ),
+      },
+    });
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    expect(screen.queryByRole('button', { name: /Export/ })).toBeNull();
+
+    fireEvent.click(screen.getByLabelText('Select all rows'));
+
+    expect(
+      await screen.findByRole('button', { name: 'Export 2 selected' }),
+    ).toBeDefined();
+  });
+
+  it("puts the host's row action in the pinned column, and in the card", async () => {
+    workbench([mine], {
+      actions: {
+        global: () => <button type="button">New order</button>,
+        row: ({ row }) => (
+          <button type="button">Open {String(row.key)}</button>
+        ),
+      },
+    });
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    // The global action sits in the title bar, beside the save commands.
+    const header = document.querySelector(
+      '[data-slot="view-header"]',
+    ) as HTMLElement;
+    expect(within(header).getByRole('button', { name: 'New order' })).toBeDefined();
+
+    // The row action is a column of its own, pinned so a wide table cannot
+    // scroll it out of reach.
+    const head = screen.getByRole('columnheader', { name: 'Actions' });
+    expect(head.className).toContain('sticky');
+    const cell = screen
+      .getByRole('button', { name: 'Open o-1' })
+      .closest('[data-slot="row-actions"]');
+    expect(cell).not.toBeNull();
+    expect(cell?.closest('td')?.className).toContain('sticky');
+
+    // The same buttons follow the rows into the card layout, in a footer.
+    fireEvent.click(screen.getByRole('button', { name: 'Cards' }));
+    await waitFor(() => expect(screen.queryByRole('table')).toBeNull());
+    expect(
+      screen
+        .getByRole('button', { name: 'Open o-1' })
+        .closest('[data-slot="card-footer"]'),
+    ).not.toBeNull();
+  });
+
+  it('asks before a switch that would lose an unsaved draft', async () => {
+    const other: ViewInstance = { ...mine, id: 'orders-2', title: 'Other' };
+    workbench([mine, other]);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    // An edit the toolbar can make, so there is a draft worth keeping.
+    fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
+    fireEvent.click(
+      await screen.findByRole('menuitemcheckbox', { name: 'Warehouse' }),
+    );
+    await waitFor(() =>
+      expect(screen.getAllByRole('columnheader')).toHaveLength(4),
+    );
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Other' }));
+    const asked = await screen.findByRole('dialog');
+    expect(asked.textContent).toContain('Unsaved changes will be lost.');
+
+    fireEvent.click(within(asked).getByRole('button', { name: 'Stay' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('button', { name: 'Mine' }).ariaCurrent).toBe(
+      'true',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Other' }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Leave',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Other' }).ariaCurrent).toBe(
+        'true',
+      ),
+    );
+  });
+
+  /** Nothing to lose, nothing to ask: a guard that always fires is ignored. */
+  it('switches straight over when there is nothing to lose', async () => {
+    const other: ViewInstance = { ...mine, id: 'orders-2', title: 'Other' };
+    workbench([mine, other]);
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Other' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Other' }).ariaCurrent).toBe(
+        'true',
+      ),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 
@@ -2158,28 +2500,135 @@ describe('FilterPanel tree editing', () => {
     expect(names).not.toContain('Warehouse');
   });
 
-  it('takes an applied condition out of force from its badge, keeping the field', async () => {
+  it('leaves the applied summary to the bar that owns it', () => {
     const { filter } = panel();
     act(() => {
       filter().addLeaf('warehouse');
       filter().updateLeaf([0], { value: 'CN' });
       filter().submit();
     });
-    await waitFor(() =>
-      expect(screen.getByText('Warehouse EQ CN')).toBeDefined(),
-    );
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Unset Warehouse EQ CN' }),
-    );
+    // The panel is the draft and nothing else. What ran is described beside
+    // the rows it fetched, where it can be read against them.
+    expect(document.querySelectorAll('[data-slot="badge"]')).toHaveLength(0);
+    expect(document.querySelector('[data-slot="applied-bar"]')).toBeNull();
+  });
+
+  it('puts the way in and the way out in one row under the tree', () => {
+    const { filter } = panel();
+    act(() => filter().addLeaf('warehouse'));
+    const actions = document.querySelector(
+      '[data-slot="filter-actions"]',
+    ) as HTMLElement;
+
+    // The top row is the mode switch alone; everything that acts on the tree
+    // sits under the tree it acts on.
+    expect(
+      within(actions).getByRole('combobox', { name: 'Add' }),
+    ).toBeDefined();
+    expect(
+      within(actions).getByRole('button', { name: 'Clear' }),
+    ).toBeDefined();
+    expect(
+      within(actions).getByRole('button', { name: /Apply/ }),
+    ).toBeDefined();
+    const conditions = document.querySelector(
+      '[data-slot="filter-conditions"]',
+    ) as HTMLElement;
+    expect(
+      actions.compareDocumentPosition(conditions) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
+  it('keeps the fields to add with when it has no way out of its own', () => {
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [mine] }),
+      resolveSource: () => testSource(),
+    });
+    const runtime = engine.create('orders', {
+      title: 'Scratch',
+      scope: 'personal',
+      config: recordConfig(),
+    });
+    function Probe() {
+      return <FilterPanel filter={useFilterEditor(runtime)} submit={false} />;
+    }
+    render(<Probe />);
+
+    // An editor applied from elsewhere keeps its fields and loses the pair
+    // that would run the query a second time.
+    expect(screen.getByRole('combobox', { name: 'Add' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Clear' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Apply/ })).toBeNull();
+  });
+
+  it('marks a condition, and the button that would run it, as not applied', async () => {
+    const { filter } = panel();
+    act(() => filter().addLeaf('warehouse'));
+    const pill = () =>
+      screen.getByRole('group', { name: 'Warehouse condition' });
+    const apply = () => screen.getByRole('button', { name: /Apply/ });
+
+    // A draft is only worth keeping apart from what ran if the difference is
+    // visible, and it is visible on the condition that carries it.
+    expect(pill().hasAttribute('data-pending')).toBe(true);
+    expect(within(pill()).getByText('Not applied yet')).toBeDefined();
+    expect(apply().hasAttribute('data-pending')).toBe(true);
+
+    act(() => filter().submit());
 
     await waitFor(() =>
-      expect(screen.queryByText('Warehouse EQ CN')).toBeNull(),
+      expect(pill().hasAttribute('data-pending')).toBe(false),
     );
-    // The row is still there, blank, for the next question.
-    const pill = screen.getByRole('group', { name: 'Warehouse condition' });
-    expect(pill.hasAttribute('data-blank')).toBe(true);
-    expect(filter().applied).toEqual([]);
+    expect(apply().hasAttribute('data-pending')).toBe(false);
+  });
+
+  it('marks a group that was flipped since the last apply', () => {
+    const { filter } = panel();
+    act(() => {
+      filter().setMode('advanced');
+      filter().addGroup('or');
+    });
+
+    const group = screen.getByRole('group', { name: 'Any of' });
+    expect(group.hasAttribute('data-pending')).toBe(true);
+  });
+
+  it('marks nothing inside a predicate, which has nothing to compare against', async () => {
+    const { filter } = panel(false, withItems());
+    act(() => filter().addLeaf('items'));
+
+    // The outer condition is new, so it is pending; the tree it carries is
+    // edited straight into that leaf and has no applied tree of its own.
+    const block = await screen.findByRole('group', { name: 'Items condition' });
+    expect(block.hasAttribute('data-pending')).toBe(true);
+    expect(
+      block
+        .querySelector('[data-slot="filter-group"]')
+        ?.hasAttribute('data-pending'),
+    ).toBe(false);
+  });
+
+  it('refuses to apply while a condition is wrong, and says how many', () => {
+    const { filter } = panel();
+    act(() => {
+      filter().addLeaf('amount');
+      filter().updateLeaf([0], { value: 'ten' as never });
+    });
+    const apply = () =>
+      screen.getByRole('button', { name: /Apply/ }) as HTMLButtonElement;
+
+    // The pill says where; this says how many, beside the button that will
+    // not move until they are gone.
+    expect(apply().disabled).toBe(true);
+    expect(screen.getByText('1 to fix')).toBeDefined();
+
+    act(() => filter().updateLeaf([0], { value: 10 }));
+
+    expect(apply().disabled).toBe(false);
+    expect(screen.queryByText('1 to fix')).toBeNull();
   });
 
   it('reads a stored leaf with a stray children property as a condition', () => {
@@ -2503,7 +2952,13 @@ describe('FilterPanel tree editing', () => {
 
     const editor = latest as ReturnType<typeof useFilterEditor> | null;
     expect(editor?.applied).toEqual([]);
-    expect(document.querySelectorAll('[data-slot="badge"]').length).toBe(0);
+    // Nor does the editor recurse into it: the notice stands in for the tree.
+    expect(
+      document.querySelectorAll('[data-slot="filter-condition"]').length,
+    ).toBe(0);
+    expect(
+      screen.getByText('This filter is too large to edit here.'),
+    ).toBeDefined();
   });
 
   it('keeps Clear as the way out of an over-budget tree', () => {
@@ -2625,9 +3080,9 @@ describe('FilterPanel tree editing', () => {
 
     expect(pill().hasAttribute('data-warning')).toBe(true);
     expect(pill().hasAttribute('data-invalid')).toBe(false);
-    // A warning blocks nothing: the condition applies as it stands.
+    // A warning blocks nothing: the condition applies as it stands — and the
+    // summary describes the query that came back, so it waits for one.
     act(() => filter().submit());
-    // The summary describes the result, so it arrives with the query.
     await waitFor(() => expect(filter().applied).toHaveLength(1));
 
     act(() => filter().updateLeaf([0], { value: 'heavy' as never }));
@@ -3011,7 +3466,11 @@ describe('EmbeddedView', () => {
 
     render(<EmbeddedView engine={engine} instanceId="orders-1" />);
 
-    await waitFor(() => expect(screen.getByText(/query failed/i)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain(
+        'The source answered: down',
+      ),
+    );
   });
 
   /**
@@ -3075,8 +3534,9 @@ describe('EmbeddedView', () => {
     render(<EmbeddedView engine={engine} instanceId="orders-1" />);
 
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
-    const notice = document.querySelector('[data-slot="view-warnings"]');
-    expect(notice?.textContent).toContain('advanced editor');
+    const notice = screen.getByRole('status');
+    expect(notice.getAttribute('data-tone')).toBe('warning');
+    expect(notice.textContent).toContain('advanced editor');
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -3111,17 +3571,17 @@ describe('EmbeddedView', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toContain('needs fixing'),
     );
-    expect(
-      document.querySelector('[data-slot="view-warnings"]')?.textContent,
-    ).toContain('advanced editor');
+    expect(screen.getByRole('status').textContent).toContain(
+      'advanced editor',
+    );
     expect(screen.queryByRole('row')).toBeNull();
   });
 });
 
-describe('WarningNotice', () => {
+describe('WarningStrip', () => {
   it('renders nothing when there is no warning to report', () => {
     const { container } = render(
-      <WarningNotice issues={[{ code: 'x', severity: 'error', path: [] }]} />,
+      <WarningStrip issues={[{ code: 'x', severity: 'error', path: [] }]} />,
     );
 
     expect(container.innerHTML).toBe('');
@@ -3129,7 +3589,7 @@ describe('WarningNotice', () => {
 
   it('wears the warning colour, a class of its own, and a status role', () => {
     render(
-      <WarningNotice
+      <WarningStrip
         className="mt-2"
         issues={[
           { code: 'blocking.elsewhere', severity: 'error', path: [] },
@@ -3147,10 +3607,12 @@ describe('WarningNotice', () => {
     const notice = screen.getByRole('status');
     expect(notice.className).toContain('border-warning');
     expect(notice.className).toContain('mt-2');
-    expect(notice.textContent).toContain('Worth noting');
-    // Only the warnings; the error has an alert of its own elsewhere.
-    expect(notice.textContent).not.toContain('blocking.elsewhere');
+    // One finding is its own sentence: no count to read, nothing to unfold.
     expect(notice.textContent).toContain('advanced editor');
+    expect(notice.textContent).not.toContain('worth noting');
+    // Only the warnings; the error has a strip of its own elsewhere.
+    expect(notice.textContent).not.toContain('blocking.elsewhere');
+    expect(screen.queryByRole('button', { name: /more/ })).toBeNull();
   });
 
   /**
@@ -3160,7 +3622,7 @@ describe('WarningNotice', () => {
    */
   it('says the same sentence once, however many paths raise it', () => {
     render(
-      <WarningNotice
+      <WarningStrip
         issues={[
           {
             code: 'config.filterMode.not-simple',
@@ -3188,9 +3650,63 @@ describe('WarningNotice', () => {
       />,
     );
 
+    // Three sentences behind one line, which says how many there are.
+    expect(screen.getByRole('status').textContent).toContain(
+      '3 things worth noting',
+    );
+    fireEvent.click(screen.getByRole('button', { name: '3 more' }));
+
     const text = screen.getByRole('status').textContent ?? '';
     expect(text.match(/advanced editor/g)).toHaveLength(1);
     expect(text).toContain('AVG summary');
     expect(text).toContain('SUM summary');
+  });
+});
+
+describe('ErrorStrip', () => {
+  it('leaves the conditions the editor marks to the editor', () => {
+    // A wrong condition is marked on its own pill and counted on Apply,
+    // which is where it can be fixed; the strip would only say it again.
+    const marked = unmarkedErrors([
+      {
+        code: 'filter.value.expected-date',
+        severity: 'error',
+        path: ['children', 0],
+      },
+      {
+        code: 'record.column.unknown',
+        severity: 'error',
+        path: ['table', 'columns', 0],
+        params: { field: 'gone' },
+      },
+      {
+        code: 'config.filterMode.not-simple',
+        severity: 'warning',
+        path: [],
+      },
+    ]);
+
+    expect(marked.map(found => found.code)).toEqual(['record.column.unknown']);
+
+    render(<ErrorStrip issues={marked} />);
+    const strip = screen.getByRole('alert');
+    expect(strip.className).toContain('border-destructive');
+    expect(strip.textContent).toContain('needs fixing');
+  });
+
+  it('says nothing when every error is marked elsewhere', () => {
+    const { container } = render(
+      <ErrorStrip
+        issues={unmarkedErrors([
+          {
+            code: 'filter.value.expected-text',
+            severity: 'error',
+            path: ['children', 1],
+          },
+        ])}
+      />,
+    );
+
+    expect(container.innerHTML).toBe('');
   });
 });

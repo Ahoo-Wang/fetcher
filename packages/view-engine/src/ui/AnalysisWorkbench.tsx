@@ -21,6 +21,7 @@ import {
   useOpenView,
   useSaveCommands,
   useViewList,
+  useViewManager,
   useViewRuntime,
 } from '../react/index.js';
 import { AnalysisChart } from './AnalysisChart.js';
@@ -29,13 +30,20 @@ import { AnalysisTable } from './AnalysisTable.js';
 import { Alert, AlertDescription, AlertTitle } from './components/alert.js';
 import { Separator } from './components/separator.js';
 import { Skeleton } from './components/skeleton.js';
+import { AppliedBar } from './AppliedBar.js';
 import { FilterPanel } from './FilterPanel.js';
-import { SaveActions } from './SaveActions.js';
+import { useLeaveGuard } from './LeaveGuard.js';
+import {
+  ErrorStrip,
+  QueryStrip,
+  unmarkedErrors,
+  WarningStrip,
+} from './StatusStrip.js';
+import { ViewHeader } from './ViewHeader.js';
 import { ViewList } from './ViewList.js';
 import { useViewMessages } from './MessagesProvider.js';
 import type { ViewMessages } from './messages.js';
 import { ViewSurface } from './ViewSurface.js';
-import { WarningNotice } from './WarningNotice.js';
 
 export interface AnalysisWorkbenchProps {
   engine: ViewEngine;
@@ -69,6 +77,9 @@ export function AnalysisWorkbench({
   optionsFor,
 }: AnalysisWorkbenchProps) {
   const list = useViewList(engine, definitionId);
+  // One boolean governs the sidebar, so collapsing it later is a change in
+  // one place rather than in the layout of every part beside it.
+  const [sidebarOpen] = useState(true);
   const [chosen, setChosen] = useState<string | null>(instanceId);
 
   const opened = useOpenView(engine, chosen ?? list.defaultInstanceId);
@@ -77,7 +88,11 @@ export function AnalysisWorkbench({
   const analysis = useAnalysisEditor(runtime);
   const filter = useFilterEditor(runtime);
   const commands = useSaveCommands(engine, runtime);
+  const manager = useViewManager(engine, definitionId, list);
   const messages = useViewMessages(wording);
+  const leave = useLeaveGuard(
+    state ? { dirty: state.dirty, write: state.write } : null,
+  );
 
   const data = state?.result?.data;
   const view: AnalysisView | null =
@@ -87,9 +102,7 @@ export function AnalysisWorkbench({
   // result's categories came from, and a category is named through its column.
   const shaped = state?.result?.config;
   const chart = shaped?.kind === 'analysis' ? shaped.chart : analysis.chart;
-  const errors = (state?.issues ?? []).filter(
-    found => found.severity === 'error',
-  );
+  const issues = state?.issues ?? [];
 
   return (
     <ViewSurface
@@ -99,16 +112,27 @@ export function AnalysisWorkbench({
       timeZone={engine.environment.timeZone}
       className="gap-0 md:flex-row"
     >
-      <aside className="flex w-56 shrink-0 flex-col gap-2 p-3">
-        <ViewList
-          list={list}
-          title={engine.definitions.get(definitionId)?.title}
-          currentId={state?.saved?.id ?? null}
-          onOpen={setChosen}
-        />
-      </aside>
+      {sidebarOpen && (
+        <>
+          <aside
+            data-slot="view-sidebar"
+            className="flex w-56 shrink-0 flex-col gap-2 p-3"
+          >
+            <ViewList
+              list={list}
+              title={engine.definitions.get(definitionId)?.title}
+              currentId={state?.saved?.id ?? null}
+              // Opening another view releases this one's runtime and the draft
+              // goes with it, so the switch is asked about before it happens.
+              onOpen={id => leave.request(() => setChosen(id))}
+              manager={manager}
+              openDirtyId={state?.dirty ? (state.saved?.id ?? null) : null}
+            />
+          </aside>
 
-      <Separator orientation="vertical" className="hidden md:block" />
+          <Separator orientation="vertical" className="hidden md:block" />
+        </>
+      )}
 
       <main className="flex min-w-0 flex-1 flex-col gap-3 p-3">
         {opened.error && (
@@ -122,26 +146,10 @@ export function AnalysisWorkbench({
 
         {runtime && (
           <>
-            {/* Not frozen while a query runs: editing never re-queries, and
-                a refresh that lands mid-edit must not take the inputs away. */}
-            <FilterPanel filter={filter} optionsFor={optionsFor} />
-            <AnalysisEditor analysis={analysis} />
-
-            {errors.length > 0 && (
-              <Alert variant="destructive">
-                <AlertTitle>
-                  {messages.label('label.view.needs-fixing')}
-                </AlertTitle>
-                <AlertDescription>{messages.issues(errors)}</AlertDescription>
-              </Alert>
-            )}
-            {/* Warnings block nothing — the result below is real — so they
-                sit under the errors and never replace it. */}
-            <WarningNotice issues={state?.issues ?? []} />
-
-            <SaveActions
+            <ViewHeader
+              state={state}
+              kind="analysis"
               commands={commands}
-              title={state?.title ?? ''}
               onSaved={saved => {
                 setChosen(saved.id);
                 list.reload();
@@ -162,14 +170,22 @@ export function AnalysisWorkbench({
               onRecovered={() => list.reload()}
             />
 
-            {state?.query.status === 'error' && state.query.error && (
-              <Alert variant="destructive">
-                <AlertTitle>{messages.label('label.query.failed')}</AlertTitle>
-                <AlertDescription>
-                  {messages.issue(state.query.error)}
-                </AlertDescription>
-              </Alert>
-            )}
+            {/* Not frozen while a query runs: editing never re-queries, and
+                a refresh that lands mid-edit must not take the inputs away. */}
+            <FilterPanel filter={filter} optionsFor={optionsFor} />
+            <AnalysisEditor analysis={analysis} />
+
+            <ErrorStrip issues={unmarkedErrors(issues)} />
+            {/* Warnings block nothing — the result below is real — so they
+                sit under the errors and never replace it. */}
+            <WarningStrip issues={issues} />
+            <QueryStrip
+              error={state?.query.status === 'error' ? state.query.error : null}
+              stale={state?.result != null}
+              onRetry={() => runtime.refresh()}
+            />
+
+            <AppliedBar filter={filter} hasResult={state?.result != null} />
 
             {view &&
               (analysis.layout === 'chart' && view.chart ? (
@@ -184,6 +200,7 @@ export function AnalysisWorkbench({
           </>
         )}
       </main>
+      {leave.dialog}
     </ViewSurface>
   );
 }

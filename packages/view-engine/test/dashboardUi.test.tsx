@@ -810,8 +810,56 @@ describe('DashboardWorkbench', () => {
 
     await waitFor(() => expect(screen.getByText('Pending')).toBeTruthy());
     expect(screen.getByRole('button', { name: /Apply/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeTruthy();
+    // Refresh moved into the title bar with the save commands; the row of
+    // buttons between the editor and the panels is gone.
+    const header = document.querySelector(
+      '[data-slot="view-header"]',
+    ) as HTMLElement;
+    expect(
+      within(header).getByRole('button', { name: 'Refresh' }),
+    ).toBeTruthy();
+    expect(header.textContent).toContain('Operations');
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+  });
+
+  /**
+   * The title bar is the one place a dashboard is saved from now, and what
+   * lands there has to reach the sidebar and the open view alike.
+   */
+  it('saves a copy from the title bar and opens it', async () => {
+    const { engine, store } = setup();
+
+    render(
+      <DashboardWorkbench
+        engine={engine}
+        definitionId="overview"
+        instanceId="overview-1"
+      />,
+    );
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'More view actions' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Save as' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'Night shift' },
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
+
+    await waitFor(async () =>
+      expect((await store.list('overview')).map(item => item.title)).toContain(
+        'Night shift',
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('navigation')).getByRole('button', {
+          name: 'Night shift',
+        }).ariaCurrent,
+      ).toBe('true'),
+    );
   });
 
   // Its own alerts render above the provider of the surface it draws, yet
@@ -956,10 +1004,14 @@ describe('DashboardWorkbench', () => {
       />,
     );
 
+    // The strip is a line: it says the dashboard needs fixing, and unfolds
+    // into what exactly, rather than pushing the panels down the page.
     await waitFor(() =>
-      expect(screen.getByRole('alert').textContent).toContain(
-        'not a field is not a usable field name.',
-      ),
+      expect(screen.getByRole('alert').textContent).toContain('needs fixing'),
+    );
+    fireEvent.click(screen.getByRole('button', { name: '1 more' }));
+    expect(screen.getByRole('alert').textContent).toContain(
+      'not a field is not a usable field name.',
     );
     // Nothing ran: an error blocks the apply that would have created panels.
     expect(source.paged).not.toHaveBeenCalled();
@@ -1025,7 +1077,9 @@ describe('DashboardWorkbench', () => {
     );
 
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
-    const notice = document.querySelector('[data-slot="view-warnings"]');
+    const notice = document.querySelector(
+      '[data-slot="status-strip"][data-tone="warning"]',
+    );
     expect(notice?.textContent).toContain('advanced editor');
     expect(notice?.textContent).not.toContain('unavailable');
     expect(screen.getByText('This panel is unavailable')).toBeTruthy();
@@ -1103,7 +1157,8 @@ describe('DashboardWorkbench', () => {
       />,
     );
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
-    const notice = () => document.querySelector('[data-slot="view-warnings"]');
+    const notice = () =>
+      document.querySelector('[data-slot="status-strip"][data-tone="warning"]');
     const marker = () => document.querySelector('[data-slot="panel-warning"]');
     expect(notice()).toBeNull();
     const runtime = engine

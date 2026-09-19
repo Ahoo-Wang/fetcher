@@ -1,0 +1,504 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  MemoryViewStore,
+  ViewEngine,
+  ViewStoreError,
+  systemInstanceId,
+  type AnyViewRuntime,
+  type ViewInstance,
+  type ViewPermissions,
+} from '../src/index.js';
+import { useSaveCommands, useViewRuntime } from '../src/react/index.js';
+import { ViewHeader } from '../src/ui/ViewHeader.js';
+import { ViewSurface } from '../src/ui/ViewSurface.js';
+import { WriteOutcome } from '../src/ui/WriteOutcome.js';
+import {
+  deferred,
+  ordersDefinition,
+  recordConfig,
+  testSource,
+} from './fixtures.js';
+
+afterEach(cleanup);
+
+const mine: ViewInstance = {
+  id: 'orders-1',
+  definitionId: 'orders',
+  title: 'Mine',
+  scope: 'personal',
+  revision: '1',
+  config: recordConfig(),
+};
+
+function permitting(
+  overrides: Partial<ViewPermissions> = {},
+): () => ViewPermissions {
+  return () => ({
+    createPersonal: true,
+    createShared: true,
+    reorder: true,
+    setDefault: true,
+    instance: () => ({ save: true, rename: true, delete: true }),
+    ...overrides,
+  });
+}
+
+function setup(permissions = permitting()) {
+  const store = new MemoryViewStore({ instances: [mine], permissions });
+  const engine = new ViewEngine({
+    definitions: [ordersDefinition()],
+    store,
+    resolveSource: () => testSource(),
+  });
+  return { engine, store };
+}
+
+function Harness({
+  engine,
+  runtime,
+}: {
+  engine: ViewEngine;
+  runtime: AnyViewRuntime;
+}) {
+  const state = useViewRuntime(runtime);
+  const commands = useSaveCommands(engine, runtime);
+  return (
+    <ViewSurface>
+      <ViewHeader state={state} kind="record" commands={commands} />
+    </ViewSurface>
+  );
+}
+
+/** One open view with its header on screen, ready to be edited and saved. */
+async function open(
+  instanceId = 'orders-1',
+  permissions = permitting(),
+): Promise<{
+  engine: ViewEngine;
+  store: MemoryViewStore;
+  runtime: AnyViewRuntime;
+}> {
+  const { engine, store } = setup(permissions);
+  const runtime = await engine.open(instanceId);
+  render(<Harness engine={engine} runtime={runtime} />);
+  return { engine, store, runtime };
+}
+
+/** An edit the user could have made, so there is something to save. */
+function editIt(runtime: AnyViewRuntime, pageSize = 25) {
+  act(() => runtime.edit({ pageSize }));
+}
+
+describe('SaveActions, the split button group', () => {
+  it('has nothing to save until the view is edited', async () => {
+    const { runtime } = await open();
+
+    expect(
+      screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled'),
+    ).toBe(true);
+
+    editIt(runtime);
+    expect(
+      screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled'),
+    ).toBe(false);
+  });
+
+  it('saves in place and says so', async () => {
+    const { store, runtime } = await open();
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(async () =>
+      expect((await store.get('orders-1')).revision).toBe('2'),
+    );
+    // Said on the button, and announced separately: a screen reader does not
+    // re-read the control the user has just pressed.
+    expect(await screen.findByRole('button', { name: 'Saved' })).toBeDefined();
+    expect(screen.getByRole('status').textContent).toBe('View saved');
+  });
+
+  it('stops saying it the moment the view is edited again', async () => {
+    const { runtime } = await open();
+    editIt(runtime);
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByRole('button', { name: 'Saved' });
+
+    editIt(runtime, 40);
+
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDefined();
+  });
+
+  it('stops saying it once the moment has passed', async () => {
+    const { runtime } = await open();
+    editIt(runtime);
+    // The word is timed, so time is driven rather than waited on: the store
+    // here resolves on microtasks, which a fake clock does not hold up.
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      });
+      expect(screen.getByRole('button', { name: 'Saved' })).toBeDefined();
+
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDefined();
+      expect(screen.queryByRole('status')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('says it is saving while the write is in flight', async () => {
+    const { engine, store } = setup();
+    const held = deferred<ViewInstance>();
+    vi.spyOn(store, 'save').mockReturnValueOnce(held.promise);
+    const runtime = await engine.open('orders-1');
+    render(<Harness engine={engine} runtime={runtime} />);
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    // The spinner names itself, so the button reads as both at once.
+    const saving = await screen.findByRole('button', { name: /Saving/ });
+    expect(saving.hasAttribute('disabled')).toBe(true);
+    act(() => held.resolve({ ...mine, revision: '2' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /Saving/ })).toBeNull(),
+    );
+  });
+
+  it('takes the edits back from the menu', async () => {
+    const { runtime } = await open();
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More view actions' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Revert' }));
+
+    await waitFor(() => expect(runtime.getSnapshot().dirty).toBe(false));
+  });
+
+  /**
+   * A system view is nobody's to write to, so the group is a copy rather than
+   * a disabled Save: a control that can never be pressed teaches nothing.
+   */
+  it('offers a copy when saving in place is not allowed', async () => {
+    await open(systemInstanceId('orders', 'all'));
+
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save as' })).toBeDefined();
+    expect(
+      screen.queryByRole('button', { name: 'More view actions' }),
+    ).toBeNull();
+  });
+
+  it('drops the menu when there is nothing to put in it', async () => {
+    // May save this view, may create none: no copy to offer, and nothing
+    // edited yet, so nothing to take back either.
+    await open(
+      'orders-1',
+      permitting({ createPersonal: false, createShared: false }),
+    );
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDefined();
+    expect(
+      screen.queryByRole('button', { name: 'More view actions' }),
+    ).toBeNull();
+  });
+
+  it('keeps only the way back when nothing may be written', async () => {
+    const { runtime } = await open(
+      systemInstanceId('orders', 'all'),
+      permitting({ createPersonal: false, createShared: false }),
+    );
+
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save as' })).toBeNull();
+
+    editIt(runtime);
+    expect(screen.getByRole('button', { name: 'Revert' })).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revert' }));
+    await waitFor(() => expect(runtime.getSnapshot().dirty).toBe(false));
+    expect(screen.queryByRole('button', { name: 'Revert' })).toBeNull();
+  });
+});
+
+describe('the save-as dialog', () => {
+  async function openCopy(runtime?: AnyViewRuntime) {
+    void runtime;
+    fireEvent.click(screen.getByRole('button', { name: 'More view actions' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Save as' }));
+    return screen.findByRole('dialog');
+  }
+
+  it('keeps the dialog open and says why when the store refuses', async () => {
+    const { store } = await open();
+    vi.spyOn(store, 'create').mockRejectedValueOnce(
+      new ViewStoreError('FORBIDDEN', 'not yours'),
+    );
+
+    const dialog = await openCopy();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
+
+    const alert = await within(dialog).findByRole('alert');
+    expect(alert.textContent).toContain('You may not write to this view.');
+    // Still open: the reason belongs beside the form it belongs to.
+    expect(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    ).toBeDefined();
+  });
+
+  it('will not create a view with no title', async () => {
+    await open();
+
+    const dialog = await openCopy();
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: '   ' },
+    });
+    expect(
+      within(dialog)
+        .getByRole('button', { name: 'Create view' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
+
+  it('forgets the last answer the next time it is asked', async () => {
+    await open();
+
+    const first = await openCopy();
+    fireEvent.change(within(first).getByLabelText('Title'), {
+      target: { value: 'Something else' },
+    });
+    fireEvent.click(within(first).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    const second = await openCopy();
+    expect(
+      (within(second).getByLabelText('Title') as HTMLInputElement).value,
+    ).toBe('Mine copy');
+  });
+});
+
+describe('WriteOutcome', () => {
+  /** Someone else saved the view between opening it and saving it. */
+  async function conflicted() {
+    const opened = await open();
+    await opened.store.save('orders-1', recordConfig({ pageSize: 30 }), '1', {
+      requestId: 'other',
+    });
+    editIt(opened.runtime);
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Someone else saved this view first');
+    return opened;
+  }
+
+  it('puts the choice once more, with both ways of looking side by side', async () => {
+    await conflicted();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Take theirs' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('Take their version?');
+    // Neither config is readable, so each is summarised by what differs.
+    expect(dialog.textContent).toContain('25 per page');
+    expect(dialog.textContent).toContain('30 per page');
+  });
+
+  it('adopts the server version once that choice is confirmed', async () => {
+    const { runtime } = await conflicted();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Take theirs' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Take theirs' }),
+    );
+
+    await waitFor(() =>
+      expect(runtime.getSnapshot().saved?.revision).toBe('2'),
+    );
+  });
+
+  it('writes over the server version once that choice is confirmed', async () => {
+    const { store } = await conflicted();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep mine' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Keep mine' }));
+
+    await waitFor(async () =>
+      expect((await store.get('orders-1')).revision).toBe('3'),
+    );
+  });
+
+  it('lets the conflict be settled by making a copy instead', async () => {
+    const { store } = await conflicted();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save my copy' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'Mine after all' },
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
+
+    await waitFor(async () =>
+      expect((await store.list('orders')).map(item => item.title)).toContain(
+        'Mine after all',
+      ),
+    );
+  });
+
+  it('offers a retry when the result never came back', async () => {
+    const { store, runtime } = await open();
+    vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('socket closed'));
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('The result never came back');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(async () =>
+      expect((await store.get('orders-1')).revision).toBe('2'),
+    );
+  });
+
+  it('lets an unknown result be left alone', async () => {
+    const { store, runtime } = await open();
+    vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('socket closed'));
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('The result never came back');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Leave it' }));
+    await waitFor(() =>
+      expect(screen.queryByText('The result never came back')).toBeNull(),
+    );
+  });
+
+  it('says why a write was refused, in words rather than a code', async () => {
+    const { store, runtime } = await open();
+    vi.spyOn(store, 'save').mockRejectedValueOnce(
+      new ViewStoreError('FORBIDDEN', 'not yours'),
+    );
+    editIt(runtime);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('You may not write to this view.');
+    expect(alert.textContent).toContain('not yours');
+  });
+
+  /**
+   * A host may wire only the generic callback and keep its list fresh there;
+   * a recovered delete is still a recovered write, and the view it deleted is
+   * still gone.
+   */
+  it('tells onRecovered about a recovered delete too', async () => {
+    const onDeleted = vi.fn();
+    const onRecovered = vi.fn();
+    const commands = {
+      can: { save: true, saveAs: true },
+      state: {
+        pending: false,
+        error: null,
+        dirty: false,
+        blocked: true,
+        lastSavedAt: null,
+        write: {
+          kind: 'unknown',
+          requestId: 'r1',
+          payload: { action: 'delete', id: 'orders-1', revision: '1' },
+        },
+      },
+      retry: vi.fn().mockResolvedValue({ landed: true, instance: null }),
+      abandon: vi.fn(),
+    };
+    render(
+      <ViewSurface>
+        <WriteOutcome
+          commands={commands as never}
+          title="Mine"
+          onDeleted={onDeleted}
+          onRecovered={onRecovered}
+        />
+      </ViewSurface>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => expect(onDeleted).toHaveBeenCalled());
+    expect(onRecovered).toHaveBeenCalledWith('delete');
+  });
+
+  it('tells onRenamed about a recovered rename', async () => {
+    const onRenamed = vi.fn();
+    const renamed: ViewInstance = { ...mine, title: 'Renamed', revision: '2' };
+    const commands = {
+      can: { save: true, saveAs: true },
+      state: {
+        pending: false,
+        error: null,
+        dirty: false,
+        blocked: true,
+        lastSavedAt: null,
+        write: {
+          kind: 'unknown',
+          requestId: 'r1',
+          payload: {
+            action: 'rename',
+            id: 'orders-1',
+            revision: '1',
+            title: 'Renamed',
+          },
+        },
+      },
+      retry: vi.fn().mockResolvedValue({ landed: true, instance: renamed }),
+      abandon: vi.fn(),
+    };
+    render(
+      <ViewSurface>
+        <WriteOutcome
+          commands={commands as never}
+          title="Mine"
+          onRenamed={onRenamed}
+        />
+      </ViewSurface>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => expect(onRenamed).toHaveBeenCalledWith(renamed));
+  });
+});

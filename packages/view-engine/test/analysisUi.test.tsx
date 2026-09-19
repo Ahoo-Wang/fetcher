@@ -1106,6 +1106,46 @@ describe('AnalysisWorkbench', () => {
     expect(
       screen.getByRole('columnheader', { name: 'Warehouse' }),
     ).toBeDefined();
+    // The shell the three workbenches share: which view this is at the top,
+    // and what the result was fetched under above it.
+    expect(document.querySelector('[data-slot="view-header"]')).not.toBeNull();
+    expect(
+      screen.getByRole('region', { name: 'Showing' }).textContent,
+    ).toContain('All records');
+  });
+
+  /**
+   * Saving is the title bar's now, not a row of its own below the editor,
+   * and what lands there has to reach the sidebar and the open view alike.
+   */
+  it('saves a copy from the title bar and opens it', async () => {
+    const { store } = await open();
+
+    fireEvent.click(screen.getByRole('button', { name: 'More view actions' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Save as' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'Split by size' },
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create view' }),
+    );
+
+    await waitFor(async () =>
+      expect(
+        (await store.list('orders')).filter(
+          item => item.title === 'Split by size',
+        ),
+      ).toHaveLength(1),
+    );
+    // The copy is what is open, and the sidebar says so.
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('navigation')).getByRole('button', {
+          name: 'Split by size',
+        }).ariaCurrent,
+      ).toBe('true'),
+    );
   });
 
   // Its own alerts render above the provider of the surface it draws, yet
