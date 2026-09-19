@@ -941,12 +941,12 @@ useViewRuntime(runtime): ViewRuntimeState | null        // useSyncExternalStore
 useOpenView(engine, instanceId, scopeFilter?): { runtime | null; loading; error; scopeIssues }   // 拥有所开 runtime：换 id 或卸载即释放；runtime 在其下被释放（如实例被删除）时不再交出，按同一 id 重新打开，得到新 runtime 或 not_found；注入的 scopeFilter 被拒时，`setScopeFilter` 返回的 error 级 Issue 由 `scopeIssues` 交出，宿主据此提示；warning 不算拒绝，条件照常生效，warning 留在 runtime 的 `issues` 里由 UI 按 warning 呈现——否则旧的、更宽的条件仍在运行却无人知晓
 useViewList(engine, definitionId): { items; preferences; permissions; defaultInstanceId; loading; error; preferencesError; reload }
 
-useFilterEditor(runtime): FilterController              // 按路径增删改、模式、清空、提交；Enter 提交排除 IME 与内部弹层由 UI 层处理；applied 读 result.config.filter（描述产出当前结果的条件，无结果为空）；pending／pendingCount／isPending(path) 以 state.applied 为基准（叶子比字段＋操作符＋值，分组只比 op，不比子节点）；blocked 是落在条件上的 error 条数
+useFilterEditor(runtime): FilterController              // 按路径增删改、模式、清空、提交；Enter 提交排除 IME 与内部弹层由 UI 层处理；applied 读 result.config.filter（描述产出当前结果的条件，无结果为空）；pending／pendingCount／isPending(path) 以 state.applied 为基准（叶子比字段＋操作符＋值，分组只比 op，不比子节点）；pendingCount 同时走两棵树，只在 applied 里的路径也计一次（删掉一条、清空筛选同样是未应用的改动）；草稿超出树预算（filter.tree.too-deep／too-many-nodes）时三者一律为 false／0——面板本就不画它，比较也不走它；比较本身是迭代加计数的，过深或成环的草稿返回 false 而不是爆栈；blocked 是落在条件上的 error 条数
 useRecordTable(runtime): RecordTableController          // 列语义、排序、列宽列序、选择、分页；无 TanStack 类型；layouts 为定义允许的布局，selectedRows 为当前结果中被选中的行（结果顺序）
 useAnalysisEditor(runtime): AnalysisController
 useDashboard(runtime): DashboardController
-useSaveCommands(engine, runtime): { save; saveAs; rename; delete; revert; retry; abandon; resolveConflict; can; state }   // can 增 revert（dirty 且已保存过）；state 增 blocked（pending／含 error／写入未结清）与 lastSavedAt（最近一次成功写入的时间戳，按 environment.now()，新写入开始即清空）
-useViewManager(engine, definitionId, list): { rename; delete; setDefault; move; outcomes; retry; abandon; resolveConflict; pending; can }   // 管未打开的实例：命令一律以状态兑现，成功即 list.reload()；outcomes 按实例 id 或 'preferences' 记结局（ViewWriteError 的 state，handle 私有，供三个恢复动作寻址），引擎在发出前拒绝的记为 rejected 且无从重放；move 提交整份可见顺序，首尾不写；偏好冲突按 §7.3 重载后保留本次意图待再次确认，改名／删除冲突按 §7.4 推进基线后清除；can 取自 list.permissions，系统视图恒不可改名、删除
+useSaveCommands(engine, runtime): { save; saveAs; rename; delete; revert; retry; abandon; resolveConflict; can; state }   // can 增 revert（dirty 且已保存过）；state 增 blocked（pending／含 error／write 为 unknown——冲突与拒绝是确定的答复，其可选解法里含"另存一份"这类新意图，不应被禁用；需要在冲突时拦住盲目 Save 的 UI 自行查 state.write）与 lastSavedAt（最近一次成功写入的时间戳，按 environment.now()，新写入开始即清空）
+useViewManager(engine, definitionId, list): { rename; delete; setDefault; move; outcomes; retry; abandon; resolveConflict; pending; can }   // 管未打开的实例：命令一律以状态兑现，成功即 list.reload()；outcomes 与 pending 按 engine＋definitionId 打标（同 useViewList 的"手上的答案属于哪一次请求"），换定义或换引擎即读作空，旧输入的完成不再回填；命令按 ref 里的 promise 队列串行，同时至多一个写入在途，pending 恒是它的 key；outcomes 按实例 id 或 'preferences' 记结局（ViewWriteError 的 state，handle 私有，供三个恢复动作寻址），引擎在发出前拒绝的记为 rejected 且无从重放；move 提交整份可见顺序，首尾不写；偏好冲突按 §7.3 重载后保留本次意图待再次确认，改名／删除冲突按 §7.4 推进基线后清除；can 取自 list.permissions，系统视图恒不可改名、删除
 
 RecordActionSlots { global?; bulk?; row? }              // 三层业务动作的 render 槽位（react/actions.ts），由宿主传给工作台；动作是代码，不进配置也不进 ViewInstance
 ```

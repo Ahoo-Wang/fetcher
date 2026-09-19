@@ -158,6 +158,89 @@ describe('useViewManager', () => {
     expect(result.current.manager.pending).toBeNull();
   });
 
+  it('runs two commands one after the other, naming each in turn', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    const first = deferred<ViewInstance>();
+    const second = deferred<void>();
+    const rename = vi.spyOn(store, 'rename').mockReturnValueOnce(first.promise);
+    const remove = vi.spyOn(store, 'delete').mockReturnValueOnce(
+      // The second command must not even reach the store until the first is
+      // done: one slot cannot report two writes, and the second one's
+      // `finally` would clear it while the first is still going.
+      second.promise,
+    );
+
+    let both!: Promise<boolean[]>;
+    act(() => {
+      both = Promise.all([
+        result.current.manager.rename('orders-1', 'Later'),
+        result.current.manager.delete('orders-2'),
+      ]);
+    });
+
+    expect(result.current.manager.pending).toBe('orders-1');
+    await waitFor(() => expect(rename).toHaveBeenCalledTimes(1));
+    // The first write has reached the store and the second has not moved.
+    expect(remove).not.toHaveBeenCalled();
+    expect(result.current.manager.pending).toBe('orders-1');
+
+    await act(async () => {
+      first.resolve({ ...instances()[0], title: 'Later', revision: '2' });
+      await first.promise;
+    });
+    await waitFor(() =>
+      expect(result.current.manager.pending).toBe('orders-2'),
+    );
+    expect(remove).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      second.resolve();
+      await both;
+    });
+    expect(result.current.manager.pending).toBeNull();
+    expect(result.current.manager.outcomes.size).toBe(0);
+  });
+
+  it('drops a completion from the definition it has moved on from', async () => {
+    const { engine, store } = engineWith();
+    const slow = deferred<ViewInstance>();
+    vi.spyOn(store, 'rename').mockReturnValueOnce(slow.promise);
+
+    const rendered = renderHook<Managed, { definitionId: string }>(
+      ({ definitionId }) => {
+        const list = useViewList(engine, definitionId);
+        return { list, manager: useViewManager(engine, definitionId, list) };
+      },
+      { initialProps: { definitionId: 'orders' } },
+    );
+    await waitFor(() =>
+      expect(rendered.result.current.list.loading).toBe(false),
+    );
+
+    let landed!: Promise<boolean>;
+    act(() => {
+      landed = rendered.result.current.manager.rename('orders-1', 'Later');
+    });
+    expect(rendered.result.current.manager.pending).toBe('orders-1');
+
+    rendered.rerender({ definitionId: 'other' });
+    // Outcomes and progress answer for the rows of the definition they were
+    // raised under. This list does not hold them.
+    expect(rendered.result.current.manager.pending).toBeNull();
+    expect(rendered.result.current.manager.outcomes.size).toBe(0);
+
+    await act(async () => {
+      slow.reject(new ViewStoreError('UNAVAILABLE', 'timeout'));
+      await landed;
+    });
+
+    // The old command finished into a slot nothing reads, rather than
+    // putting an unknown outcome on a row of the definition now on screen.
+    expect(rendered.result.current.manager.pending).toBeNull();
+    expect(rendered.result.current.manager.outcomes.size).toBe(0);
+  });
+
   it('keeps a rename conflict and clears it once the baseline moves', async () => {
     const { engine, store } = engineWith();
     const { result } = await managed(engine);

@@ -83,8 +83,15 @@ export interface SaveCommandState {
   dirty: boolean;
   /**
    * Nothing may be written right now: a write is in flight, the draft would
-   * be refused, or an earlier outcome is still unsettled. One flag rather
-   * than three, because every button that writes disables on all of them.
+   * be refused, or the last one came back `unknown` and a second attempt
+   * might be a second write. One flag rather than three, because every button
+   * that writes disables on all of them.
+   *
+   * A conflict or a refusal is not among them. Both are a definite answer,
+   * and what resolves them is often a new intent — "Save my copy" after
+   * somebody else moved the baseline — which this flag would disable. A UI
+   * that must refuse a *blind* Save while a conflict is on screen asks
+   * `write` itself rather than this.
    */
   blocked: boolean;
   /**
@@ -337,7 +344,7 @@ export function useSaveCommands(
       dirty: state?.dirty ?? false,
       blocked:
         own.pending ||
-        state?.write != null ||
+        state?.write?.kind === 'unknown' ||
         issues.some(found => found.severity === 'error'),
       lastSavedAt: own.savedAt,
     },

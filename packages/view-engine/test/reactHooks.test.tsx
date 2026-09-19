@@ -783,7 +783,7 @@ describe('useSaveCommands', () => {
     expect(fresh.getSnapshot().dirty).toBe(true);
   });
 
-  it('blocks writing on a refused draft or an unsettled outcome', async () => {
+  it('blocks writing on a refused draft or an outcome nobody can read', async () => {
     const { store, result } = await openMine();
     expect(result.current.commands.state.blocked).toBe(false);
 
@@ -800,8 +800,36 @@ describe('useSaveCommands', () => {
     await act(async () => {
       await result.current.commands.save();
     });
+    // Nobody knows whether that write landed, so the next one might be the
+    // same write a second time.
     expect(result.current.commands.state.write?.kind).toBe('unknown');
     expect(result.current.commands.state.blocked).toBe(true);
+  });
+
+  it('leaves a conflict open to the new intent that resolves it', async () => {
+    const { store, result } = await openMine();
+    await store.save('orders-1', recordConfig({ pageSize: 77 }), '1', {
+      requestId: 'other',
+    });
+
+    act(() => result.current.opened.runtime?.edit({ pageSize: 21 }));
+    await act(async () => {
+      await result.current.commands.save();
+    });
+    expect(result.current.commands.state.write?.kind).toBe('conflict');
+
+    // A conflict is a definite answer, and "Save my copy" is one of the ways
+    // out of it — blocking on it would disable the button that resolves it.
+    // A UI that must refuse a *blind* Save here reads `write` itself.
+    expect(result.current.commands.state.blocked).toBe(false);
+    await act(async () => {
+      await expect(
+        result.current.commands.saveAs({
+          title: 'My copy',
+          scope: 'personal',
+        }),
+      ).resolves.not.toBeNull();
+    });
   });
 
   it('times the write that landed and clears it when the next starts', async () => {
@@ -1279,6 +1307,65 @@ describe('useFilterEditor pending and applied', () => {
     act(() => filter().updateGroup([], 'or'));
     expect(filter().isPending([])).toBe(true);
     expect(filter().pendingCount).toBe(2);
+  });
+
+  it('counts a condition the draft no longer has', async () => {
+    const result = await openEditor();
+    const filter = () => result.current.filter;
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().updateLeaf([0], { value: 'CN' });
+    });
+    act(() => filter().submit());
+    expect(filter().pendingCount).toBe(0);
+
+    act(() => filter().remove([0]));
+
+    // Taking the last condition out is as much an unapplied edit as adding
+    // one: the rows on screen are still the narrow ones, and a badge of 0
+    // beside a live Apply button is the count contradicting itself.
+    expect(filter().pending).toBe(true);
+    expect(filter().pendingCount).toBe(1);
+    expect(filter().isPending([0])).toBe(true);
+  });
+
+  it('counts every condition a cleared filter dropped', async () => {
+    const result = await openEditor();
+    const filter = () => result.current.filter;
+    act(() => {
+      filter().addLeaf('warehouse');
+      filter().updateLeaf([0], { value: 'CN' });
+      filter().addLeaf('amount');
+      filter().updateLeaf([1], { value: 10 });
+    });
+    act(() => filter().submit());
+    expect(filter().pendingCount).toBe(0);
+
+    act(() => filter().clear());
+
+    expect(filter().pending).toBe(true);
+    expect(filter().pendingCount).toBe(2);
+  });
+
+  it('says nothing is pending for a draft over the tree budget', async () => {
+    const result = await openEditor();
+    const filter = () => result.current.filter;
+
+    let nested: FilterTree = { op: 'and', children: [] };
+    for (let level = 0; level < 12; level += 1)
+      nested = { op: 'and', children: [nested] };
+    act(() => result.current.opened.runtime?.edit({ filter: nested }));
+
+    expect(filter().issues.map(found => found.code)).toContain(
+      'filter.tree.too-deep',
+    );
+    // The panel does not draw a tree admission refused, so there is no pill
+    // to mark and nothing to offer to apply — and comparing it is work the
+    // editor would repeat on every render for an answer nobody reads.
+    expect(filter().pending).toBe(false);
+    expect(filter().pendingCount).toBe(0);
+    expect(filter().isPending([0])).toBe(false);
+    expect(filter().applied).toEqual([]);
   });
 
   it('counts only the blocking findings that point at a condition', async () => {

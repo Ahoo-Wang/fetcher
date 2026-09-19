@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   isSystemScope,
   type Issue,
@@ -56,12 +56,21 @@ export interface ViewManagerController {
   delete(id: string): Promise<boolean>;
   setDefault(id: string | null): Promise<boolean>;
   move(id: string, direction: MoveDirection): Promise<boolean>;
-  /** Unresolved outcomes, by instance id or {@link PREFERENCES_KEY}. */
+  /**
+   * Unresolved outcomes, by instance id or {@link PREFERENCES_KEY}. Empty
+   * again once `definitionId` or `engine` changes: they answer for the rows
+   * of the definition they were raised under, not for whichever list is on
+   * screen now.
+   */
   outcomes: ReadonlyMap<string, WriteState>;
   retry(key: string): Promise<boolean>;
   abandon(key: string): void;
   resolveConflict(key: string, choice: ConflictChoice): Promise<boolean>;
-  /** The key of the write in flight, so one row alone shows progress. */
+  /**
+   * The key of the write in flight, so one row alone shows progress. Commands
+   * run one at a time, so there is never a second write for this one slot to
+   * be wrong about.
+   */
   pending: string | null;
   can: ViewManagerAbilities;
 }
@@ -88,6 +97,34 @@ interface Outcome {
 const UNSENT = '';
 
 const NO_OUTCOMES: ReadonlyMap<string, Outcome> = new Map();
+
+/**
+ * What the commands have produced, tagged with the inputs they were raised
+ * under.
+ *
+ * The tag is the derivation `useViewList` makes — "which request does this
+ * answer belong to", asked of a command rather than of a load. A workbench
+ * swaps `definitionId` or `engine` while a write is in flight, and without
+ * the tag the rows of the definition just left keep their outcomes and their
+ * progress against a list that no longer holds them, and a completion from
+ * the old inputs repopulates the new one.
+ */
+interface ManagerState {
+  /** Null only before the first command; nothing is tagged with it. */
+  engine: ViewEngine | null;
+  definitionId: string;
+  outcomes: ReadonlyMap<string, Outcome>;
+  /** The key of the one write in flight; see `pending`. */
+  pending: string | null;
+}
+
+/** State belonging to no inputs, which is also how other inputs' state reads. */
+const NOTHING_MANAGED: ManagerState = {
+  engine: null,
+  definitionId: '',
+  outcomes: NO_OUTCOMES,
+  pending: null,
+};
 
 const NO_INSTANCE_WRITES: ManagedInstanceAbilities = {
   rename: false,
@@ -121,29 +158,50 @@ export function useViewManager(
   // Kept here rather than read back from `engine.pendingWrites()`: that map is
   // keyed by request id and says nothing about which row raised a write, and
   // the error each command rejects with already carries both halves.
-  const [outcomes, setOutcomes] =
-    useState<ReadonlyMap<string, Outcome>>(NO_OUTCOMES);
-  const [pending, setPending] = useState<string | null>(null);
+  const [state, setState] = useState<ManagerState>(NOTHING_MANAGED);
+  // The write in flight, so the next one waits for it rather than racing it.
+  const queue = useRef<Promise<boolean> | null>(null);
   const { items, permissions, preferences, reload } = list;
 
-  const record = useCallback((key: string, outcome: Outcome | null): void => {
-    setOutcomes(current => {
-      if (outcome === null && !current.has(key)) return current;
-      const next = new Map(current);
-      if (outcome) next.set(key, outcome);
-      else next.delete(key);
-      return next;
-    });
-  }, []);
+  // State raised under other inputs is about rows this render does not list,
+  // so it reads as nothing rather than being shown against these ones.
+  const own =
+    state.engine === engine && state.definitionId === definitionId
+      ? state
+      : NOTHING_MANAGED;
+  const outcomes = own.outcomes;
 
-  const run = useCallback(
+  const record = useCallback(
+    (key: string, outcome: Outcome | null): void => {
+      setState(current => {
+        // A completion from inputs the hook has moved on from answers for a
+        // row the list no longer holds; it must not land on the new one.
+        if (current.engine !== engine || current.definitionId !== definitionId)
+          return current;
+        if (outcome === null && !current.outcomes.has(key)) return current;
+        const next = new Map(current.outcomes);
+        if (outcome) next.set(key, outcome);
+        else next.delete(key);
+        return { ...current, outcomes: next };
+      });
+    },
+    [definitionId, engine],
+  );
+
+  const execute = useCallback(
     async (
       key: string,
       intent: WritePayload,
       code: string,
       command: () => Promise<unknown>,
     ): Promise<boolean> => {
-      setPending(key);
+      // Claiming the slot also tags it: a command under new inputs starts
+      // from nothing rather than inheriting the outcomes of the old ones.
+      setState(current =>
+        current.engine === engine && current.definitionId === definitionId
+          ? { ...current, pending: key }
+          : { engine, definitionId, outcomes: NO_OUTCOMES, pending: key },
+      );
       try {
         await command();
         // It landed: nothing is left to recover, and the list it changed —
@@ -160,12 +218,53 @@ export function useViewManager(
         );
         return false;
       } finally {
-        // Another key's command may have taken the slot while this one was in
-        // flight; the one that holds it is the one that clears it.
-        setPending(current => (current === key ? null : current));
+        setState(current =>
+          current.engine === engine &&
+          current.definitionId === definitionId &&
+          current.pending === key
+            ? { ...current, pending: null }
+            : current,
+        );
       }
     },
-    [record, reload],
+    [definitionId, engine, record, reload],
+  );
+
+  /**
+   * One write at a time, in the order the clicks came.
+   *
+   * Two rows deleted in quick succession are two writes against one list and
+   * one `pending` slot: run together, the second one's completion clears the
+   * slot while the first is still going, and the first row stops showing
+   * progress it is still making. Chaining also keeps the reload each landing
+   * triggers from reading a list the other write is halfway through. An idle
+   * queue starts now rather than a microtask later, so the row the user just
+   * clicked shows progress in that same event.
+   */
+  const run = useCallback(
+    (
+      key: string,
+      intent: WritePayload,
+      code: string,
+      command: () => Promise<unknown>,
+    ): Promise<boolean> => {
+      const start = () => execute(key, intent, code, command);
+      const ahead = queue.current;
+      // `execute` resolves whatever happened, so the rejection arm is only
+      // there to keep one broken link from stalling the queue for good.
+      const landed = ahead === null ? start() : ahead.then(start, start);
+      queue.current = landed;
+      void landed.then(
+        () => {
+          if (queue.current === landed) queue.current = null;
+        },
+        () => {
+          if (queue.current === landed) queue.current = null;
+        },
+      );
+      return landed;
+    },
+    [execute],
   );
 
   /**
@@ -325,7 +424,7 @@ export function useViewManager(
     retry,
     abandon,
     resolveConflict,
-    pending,
+    pending: own.pending,
     can,
   };
 }
