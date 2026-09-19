@@ -20,6 +20,7 @@ import {
   ViewEngine,
   ViewStoreError,
   type ViewInstance,
+  type ViewInstanceSummary,
   type ViewPermissions,
 } from '../src/index.js';
 import {
@@ -138,6 +139,48 @@ describe('useViewManager', () => {
         'system:orders:all',
         'orders-1',
       ]),
+    );
+  });
+
+  it('stops naming a deleted default while the reload is in flight', async () => {
+    const { engine, store } = engineWith();
+    await store.setPreferences(
+      'orders',
+      { order: [], defaultInstanceId: 'orders-2', revision: '0' },
+      { requestId: 'seed' },
+    );
+    const { result } = await managed(engine);
+    expect(result.current.list.defaultInstanceId).toBe('orders-2');
+
+    // The reload a landing triggers is held open, which is the whole window
+    // the list keeps its settled items through.
+    const read = engine.list.bind(engine);
+    const listed = deferred<ViewInstanceSummary[]>();
+    vi.spyOn(engine, 'list').mockImplementationOnce(() => listed.promise);
+
+    await act(async () => {
+      await expect(result.current.manager.delete('orders-2')).resolves.toBe(
+        true,
+      );
+    });
+
+    // The row is gone from the store, and a workbench riding on the default
+    // would otherwise reopen it here — the engine has just disposed that
+    // runtime, so the open answers with a transient not-found.
+    expect(result.current.list.loading).toBe(true);
+    expect(result.current.list.items.map(item => item.id)).not.toContain(
+      'orders-2',
+    );
+    expect(result.current.list.preferences?.defaultInstanceId).toBeNull();
+    expect(result.current.list.defaultInstanceId).not.toBe('orders-2');
+
+    await act(async () => {
+      listed.resolve(await read('orders'));
+    });
+    await waitFor(() => expect(result.current.list.loading).toBe(false));
+    expect(result.current.list.defaultInstanceId).not.toBe('orders-2');
+    expect(result.current.list.items.map(item => item.id)).not.toContain(
+      'orders-2',
     );
   });
 
@@ -587,6 +630,51 @@ describe('useViewManager', () => {
     expect(result.current.manager.outcomes.size).toBe(0);
     await expect(store.get('orders-1')).resolves.toMatchObject({
       title: 'Later',
+    });
+  });
+
+  it('keeps a new command off the queue while a key holds a conflict', async () => {
+    const { engine, store } = engineWith();
+    const { result } = await managed(engine);
+    await store.rename('orders-1', 'Theirs', '1', { requestId: 'other' });
+
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', 'Mine'),
+      ).resolves.toBe(false);
+    });
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'conflict',
+    );
+    expect(engine.pendingWrites().size).toBe(1);
+
+    // A conflict holds a handle just as an `unknown` does, and the engine
+    // would happily dispatch a second rename over it. The row has one slot:
+    // whatever that command recorded would take the conflict's place, and
+    // the write it addresses would be left in `pendingWrites()` with nothing
+    // on screen able to overwrite or abandon it.
+    const rename = vi.spyOn(store, 'rename');
+    await act(async () => {
+      await expect(
+        result.current.manager.rename('orders-1', 'Later'),
+      ).resolves.toBe(false);
+    });
+    expect(rename).not.toHaveBeenCalled();
+    expect(result.current.manager.outcomes.get('orders-1')?.kind).toBe(
+      'conflict',
+    );
+    expect(engine.pendingWrites().size).toBe(1);
+
+    // The conflict's own handle still answers, which is the point of it.
+    await act(async () => {
+      await expect(
+        result.current.manager.resolveConflict('orders-1', 'overwrite'),
+      ).resolves.toBe(true);
+    });
+    expect(result.current.manager.outcomes.size).toBe(0);
+    expect(engine.pendingWrites().size).toBe(0);
+    await expect(store.get('orders-1')).resolves.toMatchObject({
+      title: 'Mine',
     });
   });
 

@@ -270,9 +270,13 @@ export function useViewManager(
       try {
         await command();
         // It landed: nothing is left to recover, and the list it changed —
-        // the titles, the order, the default — is now a revision behind.
+        // the titles, the order, the default — is now a revision behind. A
+        // delete also takes its row with it: the reload keeps what is on hand
+        // on screen until the store answers, so the id goes with the request
+        // rather than being listed, and named as the default, a moment longer
+        // than it exists.
         record(key, null);
-        reload();
+        reload(intent.action === 'delete' ? { without: intent.id } : undefined);
         return true;
       } catch (caught) {
         if (isViewWriteError(caught)) {
@@ -319,15 +323,26 @@ export function useViewManager(
       intent: WritePayload,
       code: string,
       command: () => Promise<unknown>,
-      /** A replay or a conflict choice, which is the one thing an `unknown` outcome accepts. */
+      /** A replay or a conflict choice, which is the one thing an unsettled outcome accepts. */
       recovery = false,
     ): Promise<boolean> => {
-      // An `unknown` outcome is a write that may have landed, so the engine
-      // refuses a second one against the same target. Turning it away here
-      // keeps it off the queue entirely: it would only be refused, and the
-      // refusal would say nothing the row does not already show while the
-      // row's own retry and abandon go on being the way out.
-      const blocked = () => !recovery && held(key)?.state.kind === 'unknown';
+      // A row holds one outcome, so a new command for a key whose outcome is
+      // still the engine's to answer for has nowhere to put its own:
+      // recording it would drop the handle, and the write it addresses would
+      // be left in `engine.pendingWrites()` with nothing on screen able to
+      // retry, overwrite or abandon it. The engine refuses a second command
+      // against an `unknown` outright; a `conflict` it would dispatch over,
+      // which is the same problem one step later. A `rejected` outcome is a
+      // definite answer with nothing outstanding, so §7.4's "correct it and
+      // save again" goes through as the new intent it is.
+      const blocked = () => {
+        const outcome = !recovery ? held(key) : null;
+        return (
+          outcome?.handle != null &&
+          (outcome.state.kind === 'unknown' ||
+            outcome.state.kind === 'conflict')
+        );
+      };
       if (blocked()) return Promise.resolve(false);
       // Checked again at the front of the queue: the command ahead may be
       // the one that turns this key `unknown`.

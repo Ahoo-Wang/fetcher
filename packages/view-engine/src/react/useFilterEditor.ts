@@ -54,12 +54,31 @@ import { useViewRuntime } from './useViewEngine.js';
 export interface FilterEditorController extends FilterTreeController {
   mode: FilterMode;
   /**
-   * Conditions the rows on screen were fetched under, for a summary bar. It
-   * reads the config the result carries rather than `applied`, so the bar
-   * always describes the data beside it: applying starts a query, and until
-   * it answers, `applied` has already moved on. Empty until a result exists.
+   * The view's own conditions the rows on screen were fetched under, for a
+   * summary bar. It reads the config the result carries rather than `applied`,
+   * so the bar always describes the data beside it: applying starts a query,
+   * and until it answers, `applied` has already moved on. Empty until a result
+   * exists.
+   *
+   * It describes `result.own`, not `result.config`: under a host scope filter
+   * the two differ, and only the first is addressed by the paths this editor
+   * takes — so `clearValue(item.path)` takes out the condition the badge names.
+   * The scope's own conditions are `scoped`.
+   *
+   * A draft over the tree budget does not empty it. What the rows came back
+   * under was admitted before it ran, so it is within budget whatever the
+   * draft has since become, and a summary that blanked while the user edited
+   * would stop describing the data it sits beside.
    */
   applied: FilterSummaryItem[];
+  /**
+   * The host's own conditions, in force alongside `applied` but not this
+   * editor's to change: `setScopeFilter` injects them, the draft never holds
+   * them, and no path here addresses them. A bar shows them as plain items,
+   * with no remove — `clearValue` cannot reach them, and offering it would
+   * promise a narrowing the user cannot undo. Empty when no scope is injected.
+   */
+  scoped: FilterSummaryItem[];
   count: number;
   /** False when the tree needs the advanced editor to be shown faithfully. */
   simple: boolean;
@@ -135,8 +154,8 @@ export function useFilterEditor(
   // The budget findings of this filter alone. An analysis metric's or a
   // dashboard panel's own filter reports the very same codes, so the code
   // alone would let an oversized tree the editor does not draw switch off
-  // `pending`, `pendingCount` and `applied` for the root tree — the path is
-  // what says the finding is this filter's, exactly as `issues` below reads it.
+  // `pending` and `pendingCount` for the root tree — the path is what says
+  // the finding is this filter's, exactly as `issues` below reads it.
   const overBudget = (state?.issues ?? []).some(
     found =>
       (found.code === 'filter.tree.too-deep' ||
@@ -282,15 +301,25 @@ export function useFilterEditor(
         : EMPTY_GROUPS,
     kinds,
     issues,
-    // An over-budget draft also blocked apply, so what ran last is the
-    // oversized tree itself; summarising it would walk every leaf and render
-    // one line per condition. The findings say so instead.
+    // The result's own config, which was admitted before it ran and is
+    // therefore within budget by construction — an over-budget draft blocked
+    // apply, so it is not what produced these rows and does not silence what
+    // did. `own` rather than `config`: a merged scope moves every path.
     applied: useMemo(() => {
-      const ran = state?.result?.config.filter;
-      return overBudget || !ran || !kinds
-        ? []
-        : describeFilter(fields, ran, kinds);
-    }, [overBudget, state, fields, kinds]),
+      const ran = state?.result?.own.filter;
+      return !ran || !kinds ? [] : describeFilter(fields, ran, kinds);
+    }, [state, fields, kinds]),
+    // The scope in force now rather than the one the result ran under: it is
+    // the host's statement about what the user is looking at, and a host that
+    // narrows it has narrowed the question before the answer arrives.
+    scoped: useMemo(
+      () => {
+        const scope = runtime?.scopeFilter;
+        return !scope || !kinds ? [] : describeFilter(fields, scope, kinds);
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- `scopeFilter` is a getter the runtime notifies through
+      [runtime, state, fields, kinds],
+    ),
     count: countLeaves(tree),
     simple: isSimpleTree(tree),
     pending: !overBudget && !sameFilterTree(tree, inForce),

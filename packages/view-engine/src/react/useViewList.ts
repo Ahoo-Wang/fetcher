@@ -21,6 +21,23 @@ import { orderSummaries, type ViewEngine } from '../runtime/index.js';
 import type { ViewPermissions } from '../store/ViewStore.js';
 import { toIssue } from './issues.js';
 
+/** What a caller already knows about the list it is asking to be read again. */
+export interface ViewListReloadOptions {
+  /**
+   * An instance that is gone: it is dropped from the summaries kept on screen
+   * for the duration of the reload, and `defaultInstanceId` never names it,
+   * before or after the answer lands.
+   *
+   * A reload refreshes rather than blanks, so without this the row deleted a
+   * moment ago goes on being listed — and named as the default — until the
+   * store answers, and a workbench riding on the default reopens a runtime
+   * that has just been disposed. A host that deletes through the engine
+   * directly passes the id here for the same reason; `useViewManager.delete`
+   * does it for the rows it manages.
+   */
+  without?: string;
+}
+
 export interface ViewListState {
   /** Summaries in the order the workbench shows them. */
   items: ViewInstanceSummary[];
@@ -32,7 +49,7 @@ export interface ViewListState {
   error: Issue | null;
   /** Kept apart: without preferences the list still works, in server order. */
   preferencesError: Issue | null;
-  reload(): void;
+  reload(options?: ViewListReloadOptions): void;
 }
 
 /**
@@ -55,6 +72,19 @@ const NOTHING_LOADED: Loaded<never> = {
 };
 
 /**
+ * One request to read the list, and what the caller already knew when it
+ * asked. `without` holds only until the answer arrives: if the delete did not
+ * take after all, the row the store still has comes back rather than staying
+ * hidden behind what the caller believed.
+ */
+interface ReloadRequest {
+  token: number;
+  without: string | null;
+}
+
+const FIRST_LOAD: ReloadRequest = { token: 0, without: null };
+
+/**
  * The list, the preferences and the permissions of one definition.
  *
  * They load independently and never block each other: a failed list leaves an
@@ -66,12 +96,12 @@ export function useViewList(
   engine: ViewEngine,
   definitionId: string,
 ): ViewListState {
-  const [token, setToken] = useState(0);
+  const [request, setRequest] = useState<ReloadRequest>(FIRST_LOAD);
   const [list, setList] =
     useState<Loaded<ViewInstanceSummary[]>>(NOTHING_LOADED);
   const [preferences, setPreferences] =
     useState<Loaded<ViewPreferences>>(NOTHING_LOADED);
-  const key = `${token}:${definitionId}`;
+  const key = `${request.token}:${definitionId}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -116,7 +146,14 @@ export function useViewList(
     () => engine.permissions(definitionId),
     [engine, definitionId],
   );
-  const reload = useCallback(() => setToken(current => current + 1), []);
+  const reload = useCallback(
+    (options?: ViewListReloadOptions) =>
+      setRequest(current => ({
+        token: current.token + 1,
+        without: options?.without ?? null,
+      })),
+    [],
+  );
 
   // A reload refreshes; it does not blank. What is on hand for *this*
   // definition stays on screen until the new answer lands, because a list
@@ -126,15 +163,33 @@ export function useViewList(
   // since then what is on hand is about something else.
   const current = list.definitionId === definitionId ? list : NOTHING_LOADED;
   const preferencesSettled = preferences.definitionId === definitionId;
-  const currentPreferences = preferencesSettled ? preferences : NOTHING_LOADED;
+  const settled = list.key === key;
+  // What the caller told us is gone, held only while the retained answer is
+  // the one that still has it. Once this request's own answer lands, the
+  // store has the last word again.
+  const without = settled ? null : request.without;
 
-  const items = useMemo(
-    () =>
-      currentPreferences.value
-        ? orderSummaries(current.value ?? [], currentPreferences.value)
-        : (current.value ?? []),
-    [current.value, currentPreferences.value],
-  );
+  const retainedPreferences = preferencesSettled ? preferences : NOTHING_LOADED;
+  // The stored default is a revision behind too, and it names the row that
+  // has just gone. Answering with it would open a view that no longer exists.
+  const currentPreferences = useMemo(() => {
+    const value = retainedPreferences.value;
+    if (without === null || !value || value.defaultInstanceId !== without)
+      return retainedPreferences;
+    return {
+      ...retainedPreferences,
+      value: { ...value, defaultInstanceId: null },
+    };
+  }, [retainedPreferences, without]);
+
+  const items = useMemo(() => {
+    const listed = current.value ?? [];
+    const kept =
+      without === null ? listed : listed.filter(item => item.id !== without);
+    return currentPreferences.value
+      ? orderSummaries(kept, currentPreferences.value)
+      : kept;
+  }, [current.value, currentPreferences.value, without]);
 
   return {
     items,
@@ -147,7 +202,7 @@ export function useViewList(
       : currentPreferences.value
         ? engine.resolveDefault(items, currentPreferences.value)
         : (items[0]?.id ?? null),
-    loading: list.key !== key,
+    loading: !settled,
     error: current.error,
     preferencesError: currentPreferences.error,
     reload,
