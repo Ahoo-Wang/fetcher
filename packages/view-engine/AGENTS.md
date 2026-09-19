@@ -142,6 +142,7 @@ src/
     index.ts
   runtime/                      — Stateful layer; never imports react or ui
     viewEngine.ts                 — ViewEngine — registry, open/create/list, permissions
+    writeLedger.ts                — The write ledger: outcomes by requestId, retry, conflicts
     viewRuntime.ts                — One open view; subscribe / getSnapshot store
     dashboardRuntime.ts           — Owns one child runtime per data panel
     requestRunner.ts              — Scheduling; a newer request supersedes a key
@@ -204,7 +205,12 @@ src/
     ViewList.tsx, ViewSurface.tsx, EmbeddedView.tsx
     kinds.ts                      — The icon each kind and audience wears, shared by list and header
     describeConfig.ts             — One config in a sentence, for a conflict's side-by-side
-    messages.ts, MessagesProvider.tsx   — wording by key, overridable
+    messages.ts, MessagesProvider.tsx   — wording by key, overridable; `MessageKey` is the union
+    messages/                     — the catalogue, one file per prefix family
+      en.ts                         — the English catalogue: the files below, spread
+      zh-CN.ts                      — `zhCN`, the same keys in 简体中文
+      save.ts, header.ts, record.ts, filter.ts, config.ts, scope.ts,
+      view.ts, manage.ts, analysis.ts, dashboard.ts, status.ts, definition.ts
     display.ts                    — A value as its field shows it: enum labels, dates, bucket keys
     index.ts
     components/                   — 24 shadcn/ui primitives — vendored, see below
@@ -236,7 +242,7 @@ src/
 - TypeScript strict mode; Apache 2.0 license headers on every source file
 - Prettier: single quotes, trailing commas, semicolons, 80 char width
 - ESLint runs `react-hooks` with `exhaustive-deps`, `incompatible-library` and `unsupported-syntax` all set to **error**; CI gates on `lint:check` with `--max-warnings 0`
-- `max-lines` is a tripwire, counting code only (`skipBlankLines`, `skipComments`): **500** for `src/**` (vendored `ui/components` / `ui/lib` and the `ui/messages` catalogue are out of scope) and **1200** for `test/**` — a file that exceeds it is either split or given a per-file override in `eslint.config.js`, and **an override requires a matching entry in `docs/design/todo.md`** saying how it comes back under the line
+- `max-lines` is a tripwire, counting code only (`skipBlankLines`, `skipComments`): **500** for `src/**` (vendored `ui/components` / `ui/lib` and the `ui/messages/` catalogue are out of scope) and **1200** for `test/**` — a file that exceeds it is either split or given a per-file override in `eslint.config.js`, whose ceiling is **the measured code lines × 1.1, rounded up to a multiple of ten**, so a fix may add a few lines but the file cannot grow back meaningfully; **an override requires a matching entry in `docs/design/todo.md`** saying how it comes back under the line, and a round of splitting re-measures and re-tightens the remaining ceilings
 - `src/ui/components/**` and `src/ui/lib/**` are vendored from the shadcn registry — update them with `shadcn add --diff` rather than editing by hand
 - Bilingual READMEs (`README.md`, `README.zh-CN.md`); `docs/design/` is in Chinese
 
