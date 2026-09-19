@@ -57,7 +57,7 @@ import {
   type ChartConfig,
 } from './components/chart.js';
 import { cn } from 'cn';
-import { displayValue } from './display.js';
+import { displayValue, valueText } from './display.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { useSurfaceDisplay } from './ViewSurface.js';
 
@@ -180,15 +180,21 @@ function useCategoryLabel(
   columns: readonly AnalysisColumnView[] | undefined,
 ): CategoryLabel {
   const display = useSurfaceDisplay();
+  const messages = useViewMessages();
   return useMemo(() => {
     const byAlias = new Map(
       (columns ?? []).map(column => [column.alias, column]),
     );
+    // As the analysis table shows the same value: what the field's kind
+    // names first, then a number in its format and a boolean in words.
     return (alias, value) => {
       const column = alias === undefined ? undefined : byAlias.get(alias);
-      return (column && displayValue(value, column, display)) ?? labelOf(value);
+      return (
+        (column && displayValue(value, column, display)) ??
+        valueText(value, messages, column?.numberFormat)
+      );
     };
-  }, [columns, display]);
+  }, [columns, display, messages]);
 }
 
 function labelOf(value: unknown): string {

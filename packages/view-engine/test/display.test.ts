@@ -81,6 +81,22 @@ describe('displayValue', () => {
     expect(expected).toContain('02:10:00');
   });
 
+  // `Date` rolls a day that does not exist into the next month, and 24:00
+  // into the next day, so a cell would have shown a date the source never held.
+  it('leaves a wall-clock time the calendar does not have to the caller', () => {
+    const context = { locale: 'en-GB', timeZone: 'UTC' };
+
+    expect(
+      displayValue('2025-02-29', { kind: 'date' }, context),
+    ).toBeUndefined();
+    expect(
+      displayValue('2026-04-31T10:00:00', { kind: 'datetime' }, context),
+    ).toBeUndefined();
+    expect(
+      displayValue('2026-01-01T24:00:00', { kind: 'datetime' }, context),
+    ).toBeUndefined();
+  });
+
   // A time on the wrong clock is wrong; one in the runtime's language is
   // only foreign. `zh_CN` is not BCP 47, so Intl refuses it.
   it('keeps the zone when the language is one Intl cannot read', () => {

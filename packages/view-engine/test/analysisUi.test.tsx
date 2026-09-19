@@ -257,6 +257,46 @@ describe('AnalysisChart', () => {
     expect(within(container).queryByText('FAILED')).toBeNull();
   });
 
+  // The kind of a number or a boolean field has nothing to add, so the axis
+  // printed `1000` and `true` where the table beside it read CN¥1,000.00 and Yes.
+  it('names a number category in its format and a boolean one in words', () => {
+    const amount = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: 'CNY',
+    }).format(1000);
+    const { container } = render(
+      <ViewSurface>
+        <AnalysisChart
+          data={{
+            ...cartesian,
+            points: [
+              { x: 1000, values: { orders: 2 } },
+              { x: true, values: { orders: 1 } },
+            ],
+          }}
+          spec={{
+            type: 'bar',
+            cartesian: { x: 'amount', series: [{ metric: 'orders' }] },
+          }}
+          columns={[
+            {
+              alias: 'amount',
+              label: 'Amount',
+              role: 'group',
+              kind: 'number',
+              cell: 'number',
+              numberFormat: { style: 'currency', currency: 'CNY' },
+            },
+            { alias: 'orders', label: 'Orders', role: 'metric' },
+          ]}
+        />
+      </ViewSurface>,
+    );
+
+    expect(within(container).getByText(amount)).toBeDefined();
+    expect(within(container).getByText('Yes')).toBeDefined();
+  });
+
   it('names a pivot series by the value it was split by', () => {
     const { container } = render(
       <ViewSurface>
@@ -626,7 +666,8 @@ describe('AnalysisChart', () => {
       cells: [[1, 2, 3]],
     });
 
-    expect(screen.getByTitle('3 · true: 2')).toBeDefined();
+    // A boolean reads as the analysis table writes it, in the catalogue's words.
+    expect(screen.getByTitle('3 · Yes: 2')).toBeDefined();
     expect(screen.getByTitle('3 · {"id":1}: 3')).toBeDefined();
   });
 

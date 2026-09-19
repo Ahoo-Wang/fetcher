@@ -16,6 +16,7 @@ import type {
   FieldOption,
   NumberFormat,
 } from '../model/index.js';
+import type { MessageFormatters } from './MessagesProvider.js';
 
 /** Where a value is shown: the language, and the zone its times read in. */
 export interface DisplayContext {
@@ -115,8 +116,15 @@ function readTime(
     const [, day, minutes = '00:00', seconds = '00', fraction = ''] = wall;
     // A Date holds milliseconds; Java writes up to nine digits.
     const millis = `${fraction}000`.slice(0, 3);
-    const date = new Date(`${day}T${minutes}:${seconds}.${millis}Z`);
-    return Number.isNaN(date.getTime()) ? undefined : { date, timeZone: 'UTC' };
+    const written = `${day}T${minutes}:${seconds}`;
+    const date = new Date(`${written}.${millis}Z`);
+    // `Date` rolls a day that does not exist over into the next month, and
+    // 24:00 into the next day: `2025-02-29` would show as the 1st of March.
+    // What it does not read back as written is left for the caller to print.
+    return !Number.isNaN(date.getTime()) &&
+      date.toISOString().startsWith(written)
+      ? { date, timeZone: 'UTC' }
+      : undefined;
   }
   const date = toDate(value);
   return date && { date, timeZone };
@@ -127,6 +135,29 @@ export function formatNumber(value: number, format?: NumberFormat): string {
   if (!format) return String(value);
   const { locale, ...options } = format;
   return new Intl.NumberFormat(locale, options).format(value);
+}
+
+/**
+ * A value an analysis shows when its field's kind has nothing to add: a number
+ * in its format, or grouped the runtime's way without one; a boolean in the
+ * catalogue's words; anything else as text. A table cell and a chart category
+ * read the same, so a currency group is not a bare number on the axis.
+ */
+export function valueText(
+  value: unknown,
+  messages: MessageFormatters,
+  format?: NumberFormat,
+): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') {
+    if (!format) return value.toLocaleString();
+    const { locale, ...options } = format;
+    return new Intl.NumberFormat(locale, options).format(value);
+  }
+  if (typeof value === 'boolean')
+    return messages.label(value ? 'label.value.yes' : 'label.value.no');
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value) ?? '';
 }
 
 /** The label of each value an enum holds; `undefined` when none is known. */

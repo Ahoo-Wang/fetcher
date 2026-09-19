@@ -12,11 +12,10 @@
  */
 
 import { SigmaIcon } from 'lucide-react';
-import { displayValue } from './display.js';
-import { useViewMessages, type MessageFormatters } from './MessagesProvider.js';
+import { displayValue, valueText } from './display.js';
+import { useViewMessages } from './MessagesProvider.js';
 import { useSurfaceDisplay } from './ViewSurface.js';
 import type { AnalysisView } from '../analysis/index.js';
-import type { NumberFormat } from '../model/index.js';
 import {
   Empty,
   EmptyHeader,
@@ -48,7 +47,7 @@ export function AnalysisTable({ view }: AnalysisTableProps) {
   // anything the field's kind has nothing to say about, as before.
   const show = (value: unknown, column: AnalysisView['columns'][number]) =>
     displayValue(value, column, display) ??
-    cell(messages, value, column.numberFormat);
+    valueText(value, messages, column.numberFormat);
   if (view.rows.length === 0) {
     return (
       <Empty>
@@ -104,21 +103,4 @@ export function AnalysisTable({ view }: AnalysisTableProps) {
       </Table>
     </div>
   );
-}
-
-function cell(
-  messages: MessageFormatters,
-  value: unknown,
-  format?: NumberFormat,
-): string {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'number') {
-    if (!format) return value.toLocaleString();
-    const { locale, ...options } = format;
-    return new Intl.NumberFormat(locale, options).format(value);
-  }
-  if (typeof value === 'boolean')
-    return messages.label(value ? 'label.value.yes' : 'label.value.no');
-  if (typeof value === 'string') return value;
-  return JSON.stringify(value) ?? '';
 }
