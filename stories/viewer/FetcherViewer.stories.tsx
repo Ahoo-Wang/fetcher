@@ -45,7 +45,7 @@ function FetcherViewerDemo({
     const view = viewerRef.current?.getActiveView();
     const query = viewerRef.current?.getPageQuery();
     setOutput(
-      `Definition: ${definition?.id} · View: ${view?.id} · Page: ${query?.pagination.index}`,
+      `Definition: ${definition?.id} · View: ${view?.id} · Page: ${query?.pagination?.index}`,
     );
   };
 

@@ -32,7 +32,7 @@ async function runScenario(scenario: Scenario): Promise<string> {
         model: 'fixture-model',
         messages: [{ role: 'user', content: 'Hello' }],
       });
-      return response.choices[0]?.message.content ?? 'No content';
+      return response.choices[0]?.message?.content ?? 'No content';
     }
 
     if (scenario === 'error') {
@@ -59,7 +59,7 @@ async function runScenario(scenario: Scenario): Promise<string> {
 
     let output = '';
     for await (const event of stream) {
-      output += event.data.choices[0]?.delta.content ?? '';
+      output += event.data.choices[0]?.delta?.content ?? '';
     }
     return output;
   } catch (error) {

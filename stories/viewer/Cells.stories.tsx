@@ -29,12 +29,13 @@ import {
   typedCellRender,
 } from '@ahoo-wang/fetcher-viewer';
 import { useState } from 'react';
+import type { FixtureViewerUser } from '../fixtures/viewer';
 import { fixtureAvatar, fixtureViewerUsers } from '../fixtures/viewer';
 
 function CellGallery() {
   const record = fixtureViewerUsers[0];
   const [output, setOutput] = useState('Choose an action');
-  const data = (value: unknown) => ({ value, record, index: 0 });
+  const data = <V,>(value: V) => ({ value, record, index: 0 });
   const missingRenderer = typedCellRender('missing-cell');
   const calendarFormats = {
     sameDay: 'YYYY-MM-DD HH:mm',
@@ -167,7 +168,8 @@ function CellGallery() {
                   primaryAction: {
                     data: data('Open'),
                     attributes: {
-                      onClick: user => setOutput(`Action: Open ${user.name}`),
+                      onClick: (user: FixtureViewerUser) =>
+                        setOutput(`Action: Open ${user.name}`),
                     },
                   },
                   moreActionTitle: 'More',
@@ -175,7 +177,7 @@ function CellGallery() {
                     {
                       data: data('Archive'),
                       attributes: {
-                        onClick: user =>
+                        onClick: (user: FixtureViewerUser) =>
                           setOutput(`Action: Archive ${user.name}`),
                       },
                     },
