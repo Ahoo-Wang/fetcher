@@ -236,6 +236,7 @@ src/
 - TypeScript strict mode; Apache 2.0 license headers on every source file
 - Prettier: single quotes, trailing commas, semicolons, 80 char width
 - ESLint runs `react-hooks` with `exhaustive-deps`, `incompatible-library` and `unsupported-syntax` all set to **error**; CI gates on `lint:check` with `--max-warnings 0`
+- `max-lines` is a tripwire, counting code only (`skipBlankLines`, `skipComments`): **500** for `src/**` (vendored `ui/components` / `ui/lib` and the `ui/messages` catalogue are out of scope) and **1200** for `test/**` — a file that exceeds it is either split or given a per-file override in `eslint.config.js`, and **an override requires a matching entry in `docs/design/todo.md`** saying how it comes back under the line
 - `src/ui/components/**` and `src/ui/lib/**` are vendored from the shadcn registry — update them with `shadcn add --diff` rather than editing by hand
 - Bilingual READMEs (`README.md`, `README.zh-CN.md`); `docs/design/` is in Chinese
 
