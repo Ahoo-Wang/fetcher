@@ -13,7 +13,12 @@
 
 import { filter, type FilterExpression } from '@ahoo-wang/fetcher-wow';
 import { readValue, type FieldKind } from '../fieldKind.js';
-import { labelOf, validateOptionValues } from './options.js';
+import {
+  namedLabels,
+  optionLabelOf,
+  shownEntries,
+  validateOptionValues,
+} from './options.js';
 import {
   compilePresence,
   describePresenceParts,
@@ -105,7 +110,11 @@ export const arrayFieldKind: FieldKind = {
       return { text: field.label, value: { kind: 'blank' } };
 
     const values = readValue<ArrayFilterValue>(leaf.value);
-    const labels = values.map(entry => labelOf(field.options, entry));
+    // Only what the definition actually named. An open-ended array has no
+    // candidates at all, so every "label" would be the entry stringified —
+    // and the bar prefers a label to the field's own formatting, which is
+    // how a currency entry ended up a bare number beside a column of ¥.
+    const labels = values.map(entry => optionLabelOf(field.options, entry));
     const relation =
       leaf.operator === 'CONTAINS_ALL'
         ? 'has all of'
@@ -113,8 +122,8 @@ export const arrayFieldKind: FieldKind = {
           ? 'has none of'
           : 'has any of';
     return {
-      text: `${field.label} ${relation} ${labels.join(', ')}`,
-      value: { kind: 'list', values, labels },
+      text: `${field.label} ${relation} ${shownEntries(values, labels)}`,
+      value: { kind: 'list', values, ...namedLabels(labels) },
     };
   },
 };

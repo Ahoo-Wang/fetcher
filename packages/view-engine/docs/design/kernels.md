@@ -74,8 +74,8 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 `describeFilter` 交出的每一项都拆成可被措辞目录重写的部件，而不是一句写死的英文：结果区最显眼的那一行以前由各个 kind 自己拼出来——原始操作符名、`is empty`、`on or before`——于是 `messages={zhCN}` 之下整页中文、唯独条件 badge 是英文。
 
-- `FilterSummaryItem` 带 `path`、`unresolved`、`field`／`label`／`kind`／`numberFormat`、`operator`，以及 `value`；分组不带 `field` 与 `value`，带 `group`（自身操作符）与 `items`（组内各项）。持有谓词的条件（`ELEMENT_MATCH`）同样带 `items` 与 `group`——它是一条条件而不是一层嵌套，`isGroupItem` 以"有 `items` 且没有 `field`"区分两者；
-- `value` 是封闭联合 `FilterSummaryValue`：`none`（操作符本身就是全部条件）、`blank`（kind 读不出这个值，只有字段名是真的）、`text`、`list`（原始值，kind 已解析则另带 `labels`）、`range`、`relative`、`preset`。命名时段交成 `preset`，因此"下季度"到了界面仍是一个键而不是一句话；
+- `FilterSummaryItem` 带 `path`、`unresolved`、`field`／`label`／`kind`／`cell`／`numberFormat`、`operator`，以及 `value`（`cell` 也要跟着走，显示规则是 `cell ?? kind` 而不是 `kind`）；分组不带 `field` 与 `value`，带 `group`（自身操作符）与 `items`（组内各项）。持有谓词的条件（`ELEMENT_MATCH`）同样带 `items` 与 `group`——它是一条条件而不是一层嵌套，`isGroupItem` 以"有 `items` 且没有 `field`"区分两者；
+- `value` 是封闭联合 `FilterSummaryValue`：`none`（操作符本身就是全部条件）、`blank`（kind 读不出这个值，只有字段名是真的）、`text`、`list`（原始值，另带按位对应的 `labels`——**只放定义真的命名过的**，没命名的位置留 `undefined`，一个都没有就整个不带：标签是「定义管这个值叫什么」，不是值本身的替身，把值 `String()` 一下冒充标签会盖过字段自己的格式，开放式数组里的金额就成了光秃秃的数字）、`range`、`relative`、`preset`。命名时段交成 `preset`，因此"下季度"到了界面仍是一个键而不是一句话；
 - **同一个存下来的值可能是两种条件**，部件必须分开说，否则摘要描述的是一次没跑过的查询：
   - `relative` 带 `bound`。`BETWEEN` 问的是此刻到"七天前"之间那一段（`window`），`GTE`／`LTE` 比的是"七天前"那一刻本身（`instant`，`resolveDateTimeBound` 取的就是远端那条边）。它不是把操作符再说一遍：方向由 `direction` 说，比较朝哪边由 `operator` 说，而 `before`／`after` 这种拼法在某个 kind 提供 `LT` 的第一天就过时了；
   - `range` 的两条边都是必填。缺上界的绝对 `BETWEEN` 编译出来是 `filter.gte(from)`，所以那一项由 kind 自报 `operator: 'GTE'`、值交 `text`——一条边不是区间，而 `BETWEEN` 配一个日期在界面上读作"介于 1 月 1 日"，既不是区间也不是"从……起"。缺 `from` 的绝对值进不来：`isDateTimeFilterValue` 不认它，它走 `blank`；

@@ -298,7 +298,11 @@ function summaryValue(
   }
 }
 
-/** One raw value of a condition, shown the way its field shows it. */
+/**
+ * One raw value of a condition, shown the way its field shows it — by the
+ * same `cell ?? kind` rule the table follows, so a number carrying a
+ * millisecond instant under `cell: 'date'` is a date in both places.
+ */
 function asField(
   value: string | number | boolean,
   item: FilterSummaryItem,
@@ -306,7 +310,7 @@ function asField(
   context: DisplayContext,
 ): string {
   return (
-    displayValue(value, { kind: item.kind }, context) ??
+    displayValue(value, { kind: item.kind, cell: item.cell }, context) ??
     valueText(value, messages, item.numberFormat)
   );
 }

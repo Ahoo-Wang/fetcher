@@ -52,11 +52,19 @@ export type FilterSummaryValue =
   | { kind: 'blank' }
   /** One value, as the field holds it; `label` when the kind resolved one. */
   | { kind: 'text'; value: string | number | boolean; label?: string }
-  /** Several values; `labels` when the kind resolved them, in the same order. */
+  /**
+   * Several values, and the label the definition gave each one — positional,
+   * and `undefined` where it named none.
+   *
+   * A label is what the definition said this value is called, never a
+   * stand-in for the value itself: a label the kind invented by stringifying
+   * the value would win over the field's own formatting, and a currency
+   * entry would show as a bare number beside a column showing ¥.
+   */
   | {
       kind: 'list';
       values: readonly (string | number)[];
-      labels?: readonly string[];
+      labels?: readonly (string | undefined)[];
     }
   /**
    * Two bounds in the field's own units. Both are required: one bound is not
@@ -123,6 +131,8 @@ export interface FilterSummaryItem {
   label?: string;
   /** The field's kind, so the bar shows the value the way the field does. */
   kind?: FieldKindId;
+  /** The field's renderer key, which overrides its kind: `cell ?? kind`. */
+  cell?: string;
   /** The field's number format, for the same reason. */
   numberFormat?: NumberFormat;
   /** How the condition reads; absent on a group. */
@@ -267,12 +277,20 @@ function describeCondition(
   };
 }
 
-/** What the bar needs about the field to show its value the way it does. */
+/**
+ * What the bar needs about the field to show its value the way it does.
+ *
+ * `cell` travels with `kind` because the display rule is `cell ?? kind`, not
+ * `kind`: a field that stores a millisecond instant as a number and declares
+ * `cell: 'date'` is a date everywhere it is shown, and a bar that read only
+ * the kind put a thirteen-digit number under a column of dates.
+ */
 function fieldParts(
   field: FieldDefinition,
-): Pick<FilterSummaryItem, 'kind' | 'numberFormat'> {
+): Pick<FilterSummaryItem, 'kind' | 'cell' | 'numberFormat'> {
   return {
     kind: field.kind,
+    ...(field.cell ? { cell: field.cell } : {}),
     ...(field.numberFormat ? { numberFormat: field.numberFormat } : {}),
   };
 }

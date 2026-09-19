@@ -48,6 +48,17 @@ const fields: FieldDefinition[] = [
     kind: 'reference',
     remote: 'customers',
   },
+  // A number carrying a millisecond instant, shown as a date wherever it is
+  // shown: the display rule is `cell ?? kind`, not `kind`.
+  { name: 'shippedAt', label: 'Shipped', kind: 'number', cell: 'date' },
+  // An open-ended array - no candidate set, so no entry has a label - whose
+  // entries are money.
+  {
+    name: 'charges',
+    label: 'Charges',
+    kind: 'array',
+    numberFormat: { style: 'currency', currency: 'CNY' },
+  },
 ];
 
 function tree(...children: FilterTree['children']): FilterTree {
@@ -308,6 +319,64 @@ describe('describeFilter parts', () => {
       from: '2026-01-01',
       to: '2026-01-31',
     });
+  });
+
+  /**
+   * The bar shows a value the way its field shows it, and "the way its field
+   * shows it" is `cell ?? kind` - the rule the table follows. A field that
+   * overrides its kind showed as a date in the table and fell back to a raw
+   * thirteen-digit timestamp in the bar, because only `kind` travelled.
+   */
+  it('carries the renderer key that overrides the field kind', () => {
+    expect(
+      partsOf({ field: 'shippedAt', operator: 'GT', value: 1_760_000_000_000 }),
+    ).toMatchObject({ kind: 'number', cell: 'date' });
+    // Nothing is invented for a field that declares none.
+    expect(partsOf({ field: 'amount', operator: 'GT', value: 9 }).cell).toBe(
+      undefined,
+    );
+  });
+
+  /**
+   * A label is what the definition calls a value, never a stand-in for the
+   * value itself. `labelOf` falls back to the value stringified, and handing
+   * that back as a label made the bar prefer it to the field's own
+   * formatting - so an open-ended array of money read as bare numbers beside
+   * a column showing the currency.
+   */
+  it('labels only the entries the definition actually named', () => {
+    // No candidate set at all: raw values, and nothing claiming to be a label.
+    expect(
+      partsOf({ field: 'charges', operator: 'IN', value: [100, 5000] }).value,
+    ).toEqual({ kind: 'list', values: [100, 5000] });
+
+    // A code the definition dropped leaves a hole where its label would be,
+    // so the ones it still names keep theirs.
+    expect(
+      partsOf({
+        field: 'status',
+        operator: 'IN',
+        value: ['PENDING', 'RETIRED'],
+      }).value,
+    ).toEqual({
+      kind: 'list',
+      values: ['PENDING', 'RETIRED'],
+      labels: ['Pending', undefined],
+    });
+  });
+
+  /** And the English line reads exactly as it always did. */
+  it('still reads an unnamed entry as the entry itself', () => {
+    expect(
+      partsOf({ field: 'charges', operator: 'IN', value: [100, 5000] }).text,
+    ).toBe('Charges has any of 100, 5000');
+    expect(
+      partsOf({
+        field: 'status',
+        operator: 'IN',
+        value: ['PENDING', 'RETIRED'],
+      }).text,
+    ).toBe('Status IN Pending, RETIRED');
   });
 
   it('says a value the kind cannot read is blank, not a reading of it', () => {

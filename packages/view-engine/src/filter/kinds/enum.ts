@@ -14,7 +14,12 @@
 import { filter, type FilterExpression } from '@ahoo-wang/fetcher-wow';
 import { type FieldKind } from '../fieldKind.js';
 import { type EnumFilterValue } from '../values.js';
-import { labelOf, validateOptionValues } from './options.js';
+import {
+  namedLabels,
+  optionLabelOf,
+  shownEntries,
+  validateOptionValues,
+} from './options.js';
 import {
   compilePresence,
   describePresenceParts,
@@ -68,10 +73,12 @@ export const enumFieldKind: FieldKind = {
     if (!Array.isArray(leaf.value))
       return { text: field.label, value: { kind: 'blank' } };
     const values = leaf.value as EnumFilterValue;
-    const labels = values.map(value => labelOf(field.options, value));
+    // A code the definition no longer lists has no label, and stringifying
+    // it into one would put it ahead of the field's own formatting.
+    const labels = values.map(value => optionLabelOf(field.options, value));
     return {
-      text: `${field.label} ${leaf.operator} ${labels.join(', ')}`,
-      value: { kind: 'list', values, labels },
+      text: `${field.label} ${leaf.operator} ${shownEntries(values, labels)}`,
+      value: { kind: 'list', values, ...namedLabels(labels) },
     };
   },
 };

@@ -284,6 +284,105 @@ describe('AppliedBar', () => {
 });
 
 /**
+ * A condition's value reads in the bar the way it reads in the table: the
+ * rule is `cell ?? kind` plus the field's own `numberFormat`, and the bar is
+ * beside the rows it describes, so a value shown two ways in one screen is
+ * the reader's problem either way.
+ */
+describe('a value the way its field shows it', () => {
+  const YUAN = { style: 'currency', currency: 'CNY' } as const;
+  const money = (value: number) =>
+    new Intl.NumberFormat(undefined, YUAN).format(value);
+
+  /**
+   * A `cell` that overrides the kind used not to travel with the summary, so
+   * a millisecond instant stored as a number showed as a date in the table
+   * and as thirteen digits in the bar above it.
+   */
+  it('honours a renderer key that overrides the kind', () => {
+    const instant = Date.parse('2026-01-31T12:00:00.000Z');
+    render(
+      <AppliedBar
+        filter={stub([
+          condition({
+            text: `Shipped GT ${instant}`,
+            field: 'shippedAt',
+            label: 'Shipped',
+            kind: 'number',
+            cell: 'date',
+            operator: 'GT',
+            value: { kind: 'text', value: instant },
+          }),
+        ])}
+        hasResult
+      />,
+    );
+
+    const shown = new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+    }).format(instant);
+    expect(screen.getByText(`Shipped gt ${shown}`)).toBeDefined();
+    expect(screen.queryByText(new RegExp(String(instant)))).toBeNull();
+  });
+
+  /**
+   * An open-ended array names no candidates, so every entry used to arrive
+   * as a "label" that was only the entry stringified — and a label wins over
+   * the field's format, which put bare numbers beside a column of currency.
+   */
+  it('formats the entries of an array the definition named no labels for', () => {
+    render(
+      <AppliedBar
+        filter={stub([
+          condition({
+            text: 'Charges has any of 100, 5000',
+            field: 'charges',
+            label: 'Charges',
+            kind: 'array',
+            numberFormat: YUAN,
+            operator: 'IN',
+            value: { kind: 'list', values: [100, 5000] },
+          }),
+        ])}
+        hasResult
+      />,
+    );
+
+    expect(
+      screen.getByText(`Charges is any of ${money(100)}, ${money(5000)}`),
+    ).toBeDefined();
+  });
+
+  /** A label the definition did give still wins, per entry. */
+  it('keeps a named entry named and formats the rest', () => {
+    render(
+      <AppliedBar
+        filter={stub([
+          condition({
+            text: 'Charges has any of Handling, 5000',
+            field: 'charges',
+            label: 'Charges',
+            kind: 'array',
+            numberFormat: YUAN,
+            operator: 'IN',
+            value: {
+              kind: 'list',
+              values: [100, 5000],
+              labels: ['Handling', undefined],
+            },
+          }),
+        ])}
+        hasResult
+      />,
+    );
+
+    expect(
+      screen.getByText(`Charges is any of Handling, ${money(5000)}`),
+    ).toBeDefined();
+  });
+});
+
+/**
  * The bar is the most visible text of the result area, and it used to be the
  * one line no catalogue could reach: each kind handed over a finished English
  * sentence — "Status IN Pending", "is empty", "on or before" — so a page in
