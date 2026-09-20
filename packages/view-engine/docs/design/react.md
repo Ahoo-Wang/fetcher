@@ -145,13 +145,24 @@ useDashboard(runtime): DashboardController
 
 两者的界面规则见 [ui/analysis.md](ui/analysis.md) 与 [ui/dashboard.md](ui/dashboard.md)。
 
+## useAutoRefresh
+
+```ts
+useAutoRefresh(runtime): RefreshController
+RefreshController { interval; intervals; setInterval(interval); now(); loading }
+```
+
+- `interval` 是**草稿**的 `refresh.interval`，也就是「这个视图被设成什么」与「保存会写下什么」。选中即 `edit` 加 `apply`，两者因此一致；只有草稿被准入拒绝、`apply` 落不下去时会短暂不一致，而那种情况下 runtime 本就因为同一个 error 停着表（四条之一）。控制器里**没有**与配置并行的第二份状态：那会让配置、计时器与屏幕各说一个数；
+- `intervals` 是裁剪后的档位（升序）：梯子 ∩ `[minRefreshInterval, maxRefreshInterval]`，再并进正在跑的那个（同样要限制允许）。限制不允许的档位不出现而不是禁用（D4）；空表示这个视图没有间隔可选，控件因此连 `▾` 都不给；
+- `now()` 就是 `runtime.refresh()`，一次性的那一下；`loading` 是本视图查询在途。没有开着的视图时全部是空操作，因为工作台在视图还在打开时就已经画出了这个控件。（见 test/refreshControl.test.tsx「useAutoRefresh」）
+
 ## useWorkbench
 
 ```ts
 useWorkbench(engine, definitionId, { kind, instanceId? }): WorkbenchController
 WorkbenchController {
   list; manager; openId; choose(id); opened; runtime; state; unopenable;
-  commands; filter; leave; onSaved; onRenamed; onDeleted; onRecovered
+  commands; filter; refresh; leave; onSaved; onRenamed; onDeleted; onRecovered
 }
 ```
 
@@ -163,6 +174,7 @@ WorkbenchController {
 - pin 指向的视图被删除后由 `react/workbench/releaseDeleted.ts` 放手：引擎随实例释放 runtime，同一 id 再开只会一直答 not_found，页面因此永远走不到还在的那个视图上。只放手**开过**的 id——宿主点名而 store 从来没有的 id 是一个要报出来的错，不是一个要导航离开的状态；
 - `leave` 是无对话框的离开守卫（`react/workbench/leaveGuard.ts`）：`asking` / `request(next)` / `confirm()` / `cancel()`。`dirty` 或写入结局为 `unknown` 时才问，`confirm` 先结清（`commands.abandon()`）再走——`next` 会释放这个 runtime，结局就再没有它可依附，handle 会指向一个谁也够不着的 runtime 而 `engine.pendingWrites()` 把它留到会话结束。怎么问是宿主的事，`/ui` 用 `LeaveDialog`；
 - `filter` 是这次打开的筛选编辑器，在这里建一次：外壳画已应用条件条要用它，error 条要用它的 `unmarked`，三个工作台本来也各建一个；
+- `refresh` 是 `useAutoRefresh(runtime)` 的结果，在这里装配而不是在三个工作台里各调一次：`refresh` 在 `ViewConfigBase` 上，三种视图都有，取法也一样；
 - 四个 `on*` 是标题栏结局的工作台语义，已经接好：存下的副本随即打开、改名留在原视图（先 pin 再 reload，否则骑在默认视图上的工作台会关掉 runtime 连草稿一起丢）、删除即移开（pin 清空，列表重读，默认视图顺位接上，或随列表一起空掉）、恢复则重读列表。（见 test/workbench.test.tsx「useWorkbench」）
 
 宿主写自己的标记时调这一个钩子就够，规则一条也不会掉——`examples/PlainRecordWorkbench.tsx` 是那份参照。`test/architecture.test.ts` 禁止 `ui/*Workbench.tsx` 直接 import `useViewList`／`useOpenView`／`useViewManager`／`useLeaveGuard`：绕过去就是把装配重建一遍。
