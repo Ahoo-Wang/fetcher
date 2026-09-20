@@ -190,6 +190,10 @@ export function WorkbenchShell({
   // A view that opened and is this page's to draw. Anything else is reported
   // instead of being dressed up as a title bar over an empty body.
   const open = state !== null && workbench.runtime !== null && !unopenable;
+  // Whether there is a result for the applied bar to describe. It renders
+  // nothing without one, which is also half of whether the result block has
+  // any reason to exist.
+  const describesResult = hasResult ?? state?.result != null;
 
   const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
   // One dialog behind two ways in — the sidebar's gear and the switcher's
@@ -197,20 +201,22 @@ export function WorkbenchShell({
   const [managing, setManaging] = useState(false);
   const canManage = manager.can.anything;
 
-  // Collapsing and expanding move focus to the control that undoes them.
-  // Both are held as refs rather than found again by selector: the buttons
-  // live in two different components, and a shell that went looking for one
-  // in the document would be reaching past both of them.
   const collapseRef = useRef<HTMLButtonElement>(null);
   const expandRef = useRef<HTMLButtonElement>(null);
-  const settled = useRef(false);
+  // The state the last run saw, not "has this run before". StrictMode does
+  // setup, cleanup, setup on mount, so a "first run" flag is already spent
+  // by the second setup and the effect would take focus off the host's page
+  // on arrival — which is the one thing it must never do. Comparing the
+  // value answers the question actually being asked: did this change?
+  const shown = useRef(sidebarOpen);
   useLayoutEffect(() => {
-    // Not on arrival: the first layout is the state the workbench opened in,
-    // which nobody asked for and which must not steal the page's focus.
-    if (!settled.current) {
-      settled.current = true;
-      return;
-    }
+    if (shown.current === sidebarOpen) return;
+    shown.current = sidebarOpen;
+    // Collapsing and expanding each take away the button that was just
+    // pressed, so focus moves to the one that undoes it. Both are held as
+    // refs rather than found again by selector: the buttons live in two
+    // different components, and a shell that went looking for one in the
+    // document would be reaching past both of them.
     (sidebarOpen ? collapseRef : expandRef).current?.focus();
   }, [sidebarOpen]);
 
@@ -226,6 +232,21 @@ export function WorkbenchShell({
     runtimeId: workbench.runtime?.id ?? null,
     onChange: onEditorOpenChange,
   });
+
+  // Folding the editor away ends the editing state the inputs inside it
+  // started. Closing unmounts them, and an unmounted input fires no blur, so
+  // `FilterPanel`'s own handler never runs — the runtime would stay
+  // `editing: true` and its auto refresh would stay paused for as long as
+  // the view is open. Same shape as the focus effect above: the question is
+  // whether this changed, which StrictMode's second setup must answer "no".
+  const blurEditor = filter.blur;
+  const wasOpen = useRef(editorIsOpen.open);
+  useLayoutEffect(() => {
+    const open = editorIsOpen.open;
+    if (wasOpen.current === open) return;
+    wasOpen.current = open;
+    if (!open) blurEditor();
+  }, [editorIsOpen.open, blurEditor]);
 
   // The way back to the list, and the list itself as one control. Both exist
   // only while the sidebar is away — with it on screen, the list *is* the
@@ -396,17 +417,21 @@ export function WorkbenchShell({
                 they sit under the errors and never replace it. */}
             <WarningStrip issues={warnings ?? state.issues} />
 
-            {/* The result, and at the top of it the caption that says what it
-                is: the applied bar describes these rows, so it belongs to
-                them rather than floating above the toolbar on its own. */}
-            <ResultBlock surface={resultSurface}>
-              <AppliedBar
-                filter={filter}
-                hasResult={hasResult ?? state.result != null}
-              />
-              {strips}
-              {result}
-            </ResultBlock>
+            {/* The result, and at the top of it the caption that says what
+                it is: the applied bar describes these rows, so it belongs to
+                them rather than floating above the toolbar on its own.
+
+                Only where one of the three will draw something. An analysis
+                that has not run yet has no result, no caption and no strip,
+                and a bordered card around all three of them is the empty
+                block this package's own layout rule forbids. */}
+            {(describesResult || filled(strips) || filled(result)) && (
+              <ResultBlock surface={resultSurface}>
+                <AppliedBar filter={filter} hasResult={describesResult} />
+                {strips}
+                {result}
+              </ResultBlock>
+            )}
           </>
         )}
       </main>
@@ -480,4 +505,15 @@ function useEditorFold({
       onChange?.(open);
     },
   };
+}
+
+/**
+ * Whether a slot was given something that will draw.
+ *
+ * A workbench fills a slot with `condition && <Thing/>`, so an unfilled one
+ * arrives as `false` rather than as nothing at all — and a block that
+ * counted it as content would be the empty card the layout rule forbids.
+ */
+function filled(slot: ReactNode): boolean {
+  return slot !== null && slot !== undefined && slot !== false;
 }

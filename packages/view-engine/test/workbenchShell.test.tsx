@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryViewStore, ViewEngine } from '../src/index.js';
@@ -54,12 +55,18 @@ function engineWith(): ViewEngine {
  */
 function Shell({
   engine,
+  hold,
   ...props
-}: { engine: ViewEngine } & Partial<WorkbenchShellProps>) {
+}: {
+  engine: ViewEngine;
+  /** Lets a test reach the very runtime the shell is driving. */
+  hold?(workbench: ReturnType<typeof useWorkbench>): void;
+} & Partial<WorkbenchShellProps>) {
   const workbench = useWorkbench(engine, 'orders', {
     kind: 'record',
     instanceId: 'mine',
   });
+  hold?.(workbench);
   return (
     <WorkbenchShell
       workbench={workbench}
@@ -202,7 +209,116 @@ describe('the editor fold', () => {
   });
 });
 
+describe('the result block', () => {
+  it('draws no block at all when there would be nothing in it', async () => {
+    const user = userEvent.setup();
+    // An analysis that has not run: no result to caption, no strip, and a
+    // workbench that has not filled the result slot either.
+    render(
+      <Shell engine={engineWith()} result={undefined} hasResult={false} />,
+    );
+    await screen.findByRole('heading', { name: 'Mine' });
+    await waitFor(() => expect(block('view-header-block')).not.toBeNull());
+
+    // A bordered card around three things that all render nothing is the
+    // empty block this package's own layout rule forbids.
+    expect(block('result-block')).toBeNull();
+    expect(user).toBeDefined();
+  });
+
+  it('draws the block for a strip alone, with no result yet', async () => {
+    render(
+      <Shell
+        engine={engineWith()}
+        result={undefined}
+        hasResult={false}
+        strips={<div>could not be run</div>}
+      />,
+    );
+    await screen.findByText('could not be run');
+
+    expect(block('result-block')).not.toBeNull();
+  });
+
+  it('counts an unfilled slot as empty, not as content', async () => {
+    // A workbench fills a slot with `condition && <Thing/>`, so an unfilled
+    // one arrives as `false` rather than as nothing at all.
+    render(
+      <Shell
+        engine={engineWith()}
+        result={false as unknown as undefined}
+        hasResult={false}
+      />,
+    );
+    await screen.findByRole('heading', { name: 'Mine' });
+
+    expect(block('result-block')).toBeNull();
+  });
+});
+
+describe('the editing state the fold owns', () => {
+  it('ends editing when a controlled fold is closed over a focused input', async () => {
+    const engine = engineWith();
+    let held: ReturnType<typeof useWorkbench> | null = null;
+    const hold = (workbench: ReturnType<typeof useWorkbench>) => {
+      held = workbench;
+    };
+    const { rerender } = render(
+      <Shell engine={engine} hold={hold} editorLabel="Filter" editorOpen />,
+    );
+    await screen.findByText('conditions');
+
+    // Whatever an input inside the editor started, the runtime is holding.
+    const runtime = held!.runtime!;
+    act(() => runtime.setEditing(true));
+    expect(runtime.getSnapshot().editing).toBe(true);
+
+    rerender(
+      <Shell
+        engine={engine}
+        hold={hold}
+        editorLabel="Filter"
+        editorOpen={false}
+      />,
+    );
+
+    // Closing unmounts the inputs, and an unmounted input fires no blur, so
+    // nothing else would ever turn this off: auto refresh would stay paused
+    // for as long as the view is open.
+    await waitFor(() => expect(runtime.getSnapshot().editing).toBe(false));
+  });
+});
+
 describe('the sidebar as a host sets it', () => {
+  it("leaves the page's focus alone on arrival, StrictMode included", async () => {
+    render(
+      <StrictMode>
+        <Shell engine={engineWith()} />
+      </StrictMode>,
+    );
+    await screen.findByText('rows');
+
+    // StrictMode does setup, cleanup, setup on mount. A "first run" flag is
+    // already spent by the second setup, and the effect would take focus off
+    // the host's page for a state nobody asked for.
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('still moves focus on a real change under StrictMode', async () => {
+    const user = userEvent.setup();
+    render(
+      <StrictMode>
+        <Shell engine={engineWith()} />
+      </StrictMode>,
+    );
+    await screen.findByText('rows');
+
+    await user.click(screen.getByRole('button', { name: COLLAPSE }));
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: EXPAND }),
+    );
+  });
+
   it('opens folded when the host says so, and can still be opened', async () => {
     const changed = vi.fn();
     const user = await open({

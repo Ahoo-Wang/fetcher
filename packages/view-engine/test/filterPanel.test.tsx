@@ -38,7 +38,7 @@ import {
   RecordWorkbench,
   zhCN,
 } from '../src/ui/index.js';
-import type { ViewMessages } from '../src/ui/index.js';
+import type { FilterPanelProps, ViewMessages } from '../src/ui/index.js';
 import { ordersDefinition, recordConfig, testSource } from './fixtures.js';
 import { mine, mixed, setup } from './fixtures/ui.js';
 
@@ -73,6 +73,8 @@ describe('FilterPanel tree editing', () => {
     disabled = false,
     definition = ordersDefinition(),
     messages?: ViewMessages,
+    /** What the surface around the panel has taken off its hands. */
+    props: Partial<FilterPanelProps> = {},
   ): PanelHarness {
     const engine = new ViewEngine({
       definitions: [definition],
@@ -90,7 +92,7 @@ describe('FilterPanel tree editing', () => {
     function Probe() {
       const filter = useFilterEditor(runtime);
       latest = filter;
-      return <FilterPanel filter={filter} disabled={disabled} />;
+      return <FilterPanel filter={filter} disabled={disabled} {...props} />;
     }
     render(
       <MessagesProvider messages={messages}>
@@ -253,9 +255,8 @@ describe('FilterPanel tree editing', () => {
       '[data-slot="filter-actions"]',
     ) as HTMLElement;
 
-    // The panel has no row of its own above the conditions any more — the
-    // mode went to the title bar — so everything that acts on the tree sits
-    // in one row under the tree it acts on.
+    // Everything that acts on the tree sits in one row under the tree it
+    // acts on.
     expect(within(actions).getByRole('button', { name: 'Add' })).toBeDefined();
     expect(
       within(actions).getByRole('button', { name: 'Clear' }),
@@ -263,9 +264,11 @@ describe('FilterPanel tree editing', () => {
     expect(
       within(actions).getByRole('button', { name: /Apply/ }),
     ).toBeDefined();
-    const root = screen.getByRole('region', { name: 'Filter' });
-    expect(within(root).queryByRole('button', { name: 'Simple' })).toBeNull();
-    expect(within(root).queryByRole('button', { name: 'Advanced' })).toBeNull();
+    // The mode is not one of them: it is a way of editing rather than a
+    // thing done to the tree, so it keeps its own place at the top.
+    expect(
+      within(actions).queryByRole('button', { name: 'Advanced' }),
+    ).toBeNull();
     const conditions = document.querySelector(
       '[data-slot="filter-conditions"]',
     ) as HTMLElement;
@@ -296,6 +299,27 @@ describe('FilterPanel tree editing', () => {
     expect(screen.getByRole('button', { name: 'Add' })).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Clear' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Apply/ })).toBeNull();
+  });
+
+  it('keeps the mode reachable when nothing outside offers it', () => {
+    panel();
+
+    // The default. A workbench whose editor is this panel and something
+    // else besides cannot fold both under the word "Filter", so the choice
+    // stays here — a mode that exists but cannot be reached is a capability
+    // lost rather than a tidier screen.
+    const root = screen.getByRole('region', { name: 'Filter' });
+    expect(
+      within(root).getByRole('button', { name: 'Advanced' }),
+    ).toBeDefined();
+  });
+
+  it('gives the mode up to a surface that has taken it', () => {
+    panel(false, ordersDefinition(), undefined, { modes: false });
+
+    const root = screen.getByRole('region', { name: 'Filter' });
+    expect(within(root).queryByRole('button', { name: 'Simple' })).toBeNull();
+    expect(within(root).queryByRole('button', { name: 'Advanced' })).toBeNull();
   });
 
   it('marks a condition, and the button that would run it, as not applied', async () => {

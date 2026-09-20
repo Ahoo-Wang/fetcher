@@ -121,7 +121,9 @@ export function RecordWorkbench({
       editor={
         /* Not frozen while a query runs: typing never re-queries, and a
            refresh that lands mid-edit must not take the input away. */
-        runtime && <FilterPanel filter={filter} optionsFor={optionsFor} />
+        runtime && (
+          <FilterPanel filter={filter} optionsFor={optionsFor} modes={false} />
+        )
       }
       strips={
         <QueryStrip

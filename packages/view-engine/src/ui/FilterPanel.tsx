@@ -15,6 +15,7 @@ import type { FocusEvent, KeyboardEvent } from 'react';
 import type { FieldOption } from '../model/index.js';
 import type { FilterEditorController } from '../react/index.js';
 import { AddEntry } from './filter/AddEntry.js';
+import { FilterModeToggle } from './filter/FilterModes.js';
 import { FilterActions } from './filter/FilterActions.js';
 import { ConditionStrip, GroupBlock } from './filter/GroupBlock.js';
 import { useViewMessages } from './MessagesProvider.js';
@@ -31,6 +32,17 @@ export interface FilterPanelProps {
    * twice.
    */
   submit?: boolean;
+  /**
+   * Whether the panel carries its own control over the editing mode.
+   *
+   * False where the surface around it has a better place for one — a
+   * workbench whose only editor is this panel puts it on the fold's toggle
+   * in the title bar. True, the default, everywhere else: a workbench whose
+   * editor is this panel *and something else* cannot fold both under the
+   * word "Filter", and a mode that exists but cannot be reached is a
+   * capability the user has lost rather than a tidier screen.
+   */
+  modes?: boolean;
 }
 
 /**
@@ -42,10 +54,12 @@ export interface FilterPanelProps {
  * since it is one. Simple mode shows the root's conditions as one strip;
  * anything the simple editor cannot show faithfully — a group anywhere — gets
  * the advanced one, where groups can be flipped between and/or, nested,
- * filled and removed. Which mode that is, is chosen from the editor's own
- * menu in the title bar rather than from a row inside the panel: the panel is
- * the conditions, and a control for *how* to edit them sitting among them was
- * a line of chrome over every filter ever written.
+ * filled and removed. Where the surface around the panel has a place for the
+ * mode — the fold's toggle in a workbench whose only editor is this panel —
+ * it takes it (`modes={false}`), because a control for *how* to edit sitting
+ * among the conditions was a line of chrome over every filter ever written.
+ * Where it has not, the panel keeps its own: a mode that exists but cannot be
+ * reached is a capability lost, not a tidier screen.
  *
  * Nothing is applied until submit, which is the whole point of keeping a
  * draft apart from what ran: typing in here never re-queries. Enter in a
@@ -57,6 +71,7 @@ export function FilterPanel({
   optionsFor,
   disabled,
   submit = true,
+  modes = true,
 }: FilterPanelProps) {
   const advanced = filter.mode === 'advanced' || !filter.simple;
   const messages = useViewMessages();
@@ -99,6 +114,12 @@ export function FilterPanel({
         filter.submit();
       }}
     >
+      {modes && (
+        <div className="flex flex-wrap items-center gap-2">
+          <FilterModeToggle filter={filter} disabled={disabled} />
+        </div>
+      )}
+
       {overBudget ? (
         <p
           data-slot="filter-too-large"

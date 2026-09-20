@@ -147,7 +147,7 @@ export function DashboardWorkbench({
         /* Without global fields there is nothing to filter, and an empty
            panel would only take up room. */
         hasGlobalFilter && (
-          <FilterPanel filter={filter} optionsFor={optionsFor} />
+          <FilterPanel filter={filter} optionsFor={optionsFor} modes={false} />
         )
       }
       result={<DashboardGrid dashboard={dashboard} editable={editable} />}
