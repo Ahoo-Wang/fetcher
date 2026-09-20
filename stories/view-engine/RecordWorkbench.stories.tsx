@@ -53,6 +53,7 @@ function RecordWorkbenchDemo({
   withActions = false,
   localized = false,
   collapsed = false,
+  transformedHost = false,
 }: {
   behaviour?: SourceBehaviour;
   instanceId?: string;
@@ -66,8 +67,13 @@ function RecordWorkbenchDemo({
   localized?: boolean;
   /** Opens with the view list folded away, as a narrow page would. */
   collapsed?: boolean;
+  /**
+   * Puts the workbench inside a host container that owns its own containing
+   * block, the way an animated panel or a GPU-hinted grid shell does.
+   */
+  transformedHost?: boolean;
 }) {
-  return (
+  const workbench = (
     <StoryEngine
       create={() =>
         createStoryEngine({
@@ -99,6 +105,17 @@ function RecordWorkbenchDemo({
         />
       )}
     </StoryEngine>
+  );
+  // `transform` makes this div the containing block for every `position:
+  // fixed` inside it, so a surface that assumed the viewport would fill the
+  // div instead. `data-transformed-host` is what the regression play looks
+  // for; the style is the whole of the scenario.
+  return transformedHost ? (
+    <div data-transformed-host style={{ transform: 'translateZ(0)' }}>
+      {workbench}
+    </div>
+  ) : (
+    workbench
   );
 }
 
@@ -180,6 +197,7 @@ const meta = {
     withActions: { table: { disable: true } },
     localized: { table: { disable: true } },
     collapsed: { table: { disable: true } },
+    transformedHost: { table: { disable: true } },
   },
 } satisfies Meta<typeof RecordWorkbenchDemo>;
 
@@ -266,3 +284,17 @@ export const CollapsedSidebar: Story = { args: { collapsed: true } };
  * 左。铺满改变的是「哪个盒子高」，不是谁在滚。
  */
 export const FillTheScreen: Story = { args: { behaviour: 'data' } };
+
+/**
+ * 同一件事，但工作台被放进一个自带 containing block 的宿主容器里（这里是
+ * `transform: translateZ(0)`，动画面板与要 GPU 提示的栅格外壳天天这么写）。
+ *
+ * 这种祖先会接管 `position: fixed` 的坐标系，于是「铺满屏幕」本来只会铺满**那
+ * 个容器**。`transform`、`filter`、`perspective`、`backdrop-filter`、
+ * `will-change`、`contain`、`container-type` 都算，逐个列举是一份会过期的清
+ * 单，所以 `useViewExpansion` 改为**量**浏览器实际给的那个盒子：不是视口，差
+ * 值就是修正量，一次到位。按下按钮，面仍然落在视口上。
+ */
+export const FillTheScreenInTransformedHost: Story = {
+  args: { transformedHost: true },
+};

@@ -133,11 +133,24 @@ export function ViewSurface({
   // off it — and hands the caller the same element. A caller's ref cannot
   // simply arrive in `...props` and win: it would replace this one, and the
   // theme would stop following the cascade.
+  //
+  // It always returns a cleanup, which means React never calls it with null
+  // and detaching is this function's own job. That is also how a caller's
+  // cleanup survives: React 19 lets a callback ref return one — a host
+  // installing a `ResizeObserver` on the root returns its disconnect — and a
+  // merge that dropped the return value would leave that observer running
+  // for the life of the page.
   const attach = React.useCallback(
     (node: HTMLDivElement | null) => {
       rootRef.current = node;
-      if (typeof ref === 'function') ref(node);
-      else if (ref) ref.current = node;
+      const released = typeof ref === 'function' ? ref(node) : undefined;
+      if (ref && typeof ref !== 'function') ref.current = node;
+      return () => {
+        rootRef.current = null;
+        if (typeof released === 'function') released();
+        else if (typeof ref === 'function') ref(null);
+        else if (ref) ref.current = null;
+      };
     },
     [ref],
   );

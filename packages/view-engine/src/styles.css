@@ -195,27 +195,86 @@
  * Unlayered on purpose: it has to outrank whatever utility gave the surface
  * its place in the host's page, and a layer would put it under them. It is
  * the whole of the visual change — expanding is one attribute, written by
- * `useViewExpansion` onto the element it was pointed at, because nothing may
- * be re-parented: a portal would remount the view and take the draft with
- * it.
+ * `useViewExpansion` onto the `.fve-root` at or above the element it was
+ * pointed at, because nothing may be re-parented: a portal would recreate
+ * every node under it and take focus, the scroll position and any IME
+ * composition with them.
  *
- * `overflow: auto` makes the surface its own scrollport, and
+ * The four `--fve-expanded-*` properties are normally absent, and the
+ * fallbacks below are then plain `inset: 0` written the long way: for a fixed
+ * box with no ancestor containing block, `100%` *is* the viewport. When an
+ * ancestor has made itself the containing block — `transform`, `filter`,
+ * `contain` and the rest — `useViewExpansion` measures the box the browser
+ * actually gave us and writes the difference into these four, so the surface
+ * lands on the viewport either way rather than on the ancestor.
+ *
  * `overscroll-behavior: contain` stops a scroll that reaches its end from
  * being handed to the page underneath — which is locked while this is open
  * and has nowhere to go with it.
  */
 .fve-root[data-view-expanded='true'] {
   position: fixed;
-  inset: 0;
+  top: var(--fve-expanded-y, 0);
+  left: var(--fve-expanded-x, 0);
   z-index: 40;
   margin: 0;
-  width: auto;
-  height: auto;
+  width: var(--fve-expanded-w, 100%);
+  height: var(--fve-expanded-h, 100%);
   max-width: none;
   max-height: none;
   border-radius: 0;
-  overflow: auto;
+  /* The surface itself never scrolls: it is a definite-height flex box whose
+     parts each take their share. What scrolls is the result. */
+  overflow: hidden;
   overscroll-behavior: contain;
+}
+
+/*
+ * Filling the screen is for the rows, so the rows get the height.
+ *
+ * A taller viewport buys nothing while the result stops at its own
+ * `max-height` and the space below it stays blank — the expansion would be
+ * more columns and not one more row. So the chain from the surface down to
+ * the table becomes a definite-height flex column, and each part says what
+ * it does with the height it is handed.
+ */
+.fve-root[data-view-expanded='true'] > [data-slot='view-sidebar'],
+.fve-root[data-view-expanded='true'] > main {
+  /* `min-height: auto` is the default for a flex item, so without this the
+     column refuses to shrink below its content and the surface's own
+     `overflow: hidden` clips it instead of letting it scroll. */
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/*
+ * The editor takes at most half the screen and scrolls inside that. It is a
+ * fold over the conditions, not the reason the view was expanded; a long
+ * filter tree that pushed the rows off the bottom would undo the whole
+ * gesture.
+ */
+.fve-root[data-view-expanded='true'] [data-slot='editor-band'],
+.fve-root[data-view-expanded='true'] [data-slot='condition-block'] {
+  max-height: 50%;
+  overflow-y: auto;
+}
+
+/* Everything the parts above did not take belongs to the result. */
+.fve-root[data-view-expanded='true'] [data-slot='result-block'] {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/*
+ * And the table fills the result instead of stopping at 70vh — but only the
+ * variant that is its own scrollport. A `scrolls={false}` table inside a
+ * dashboard panel holds its sticky layers against the panel, and giving it a
+ * height here would put a second scrollport back under them.
+ */
+.fve-root[data-view-expanded='true'] [data-slot='record-table'][data-scrolls] {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
 }
 
 @layer components {

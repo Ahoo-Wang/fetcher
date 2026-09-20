@@ -22,6 +22,7 @@ import displayMeta, {
   CollapsedSidebar as DisplayCollapsedSidebar,
   EmptyResult as DisplayEmptyResult,
   FillTheScreen as DisplayFillTheScreen,
+  FillTheScreenInTransformedHost as DisplayFillTheScreenInTransformedHost,
   Loading as DisplayLoading,
   Localized as DisplayLocalized,
   ManageViews as DisplayManageViews,
@@ -887,6 +888,9 @@ export const FillTheScreen: Story = {
     });
     const STUCK = { header: 'sticky', summary: 'sticky', pinned: 'sticky' };
     await expect(sticky()).toEqual(STUCK);
+    const before70vh = table
+      .closest<HTMLElement>('[data-slot="record-table"]')!
+      .getBoundingClientRect();
 
     const toggle = canvas.getByRole('button', {
       name: defaultMessages['label.workbench.expand-view'],
@@ -903,10 +907,31 @@ export const FillTheScreen: Story = {
     await expect(getComputedStyle(surface).position).toBe('fixed');
     await expect(surface.parentElement).toBe(parent);
     await expect(canvas.getByRole('table')).toBe(table);
-    // The background cannot be scrolled out from under it.
+    await expect(onViewport(surface)).toBe(true);
+    // The background cannot be scrolled out from under it — and as important
+    // as the value, the priority: a host stylesheet's `!important` would
+    // otherwise outrank a plain inline declaration and go on scrolling.
     await expect(doc.body.style.overflow).toBe('hidden');
+    await expect(doc.body.style.getPropertyPriority('overflow')).toBe(
+      'important',
+    );
     // Expanding changes which box is tall; it must not change what sticks.
     await expect(sticky()).toEqual(STUCK);
+
+    // And the height goes where the expansion was for. The rows are the
+    // point of a bigger screen, so the table takes what the header, the
+    // strips, the toolbar and the pagination left — not 70vh of it and a
+    // blank half-screen underneath.
+    const area = table.closest<HTMLElement>('[data-slot="record-table"]')!;
+    await expect(area).toHaveAttribute('data-scrolls');
+    await expect(getComputedStyle(area).maxHeight).toBe('none');
+    const filled = area.getBoundingClientRect();
+    await expect(filled.height).toBeGreaterThan(before70vh.height);
+    // Everything still fits inside one screen: the page under it is locked,
+    // so anything spilling past the fold would be unreachable.
+    await expect(Math.round(filled.bottom)).toBeLessThanOrEqual(
+      Math.round(surface.getBoundingClientRect().bottom) + 1,
+    );
 
     // Not a modal, and it says so by omission: nothing here claims one.
     await expect(surface.getAttribute('aria-modal')).toBeNull();
@@ -931,5 +956,90 @@ export const FillTheScreen: Story = {
     // The page is the page it was, and the table is still stuck together.
     await expect(doc.body.style.overflow).toBe(before);
     await expect(sticky()).toEqual(STUCK);
+  },
+};
+
+/**
+ * Whether an element covers the viewport, to the pixel.
+ *
+ * This is the assertion `position: fixed` cannot be trusted to satisfy on its
+ * own: it resolves against the viewport only while no ancestor has made
+ * itself the containing block.
+ */
+function onViewport(element: HTMLElement): boolean {
+  const view = element.ownerDocument.defaultView!;
+  const box = element.getBoundingClientRect();
+  return (
+    Math.abs(box.left) < 1 &&
+    Math.abs(box.top) < 1 &&
+    Math.abs(box.width - view.innerWidth) < 1 &&
+    Math.abs(box.height - view.innerHeight) < 1
+  );
+}
+
+/**
+ * The same expansion inside a host that owns the containing block.
+ *
+ * `transform` — and `filter`, `perspective`, `backdrop-filter`,
+ * `will-change`, `contain`, `container-type` — makes an ancestor the
+ * containing block for every `position: fixed` inside it, so "fill the
+ * screen" would fill *that container*. Animated panels and GPU-hinted grid
+ * shells do it as a matter of course, and an embedded view is meant to sit
+ * in an arbitrary host, so this is the case that decides whether the feature
+ * works at all outside a plain page.
+ *
+ * Enumerating the triggers is a list that goes stale with the next CSS
+ * module, so the hook measures the box the browser actually gave it: the
+ * difference from the viewport *is* the correction. This play is the check
+ * that the measurement is real.
+ */
+export const FillTheScreenInTransformedHost: Story = {
+  ...DisplayFillTheScreenInTransformedHost,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole('table');
+    const doc = canvasElement.ownerDocument;
+    const host = canvasElement.querySelector<HTMLElement>(
+      '[data-transformed-host]',
+    )!;
+    const surface = host.querySelector<HTMLElement>(
+      '[data-slot="view-surface"]',
+    )!;
+
+    // The premise: this host really is a containing block, and it really is
+    // smaller than the screen. Without both, the test proves nothing.
+    await expect(getComputedStyle(host).transform).not.toBe('none');
+    const hostBox = host.getBoundingClientRect();
+    await expect(hostBox.height).toBeLessThan(window.innerHeight);
+
+    await userEvent.click(
+      canvas.getByRole('button', {
+        name: defaultMessages['label.workbench.expand-view'],
+      }),
+    );
+    await waitFor(() =>
+      expect(surface).toHaveAttribute('data-view-expanded', 'true'),
+    );
+
+    // Still in place — the node never moved, which is the point of the whole
+    // design — and still on the viewport rather than on its host's box.
+    await expect(surface.parentElement).toBe(host);
+    await expect(onViewport(surface)).toBe(true);
+    await expect(doc.body.style.overflow).toBe('hidden');
+    // The correction is written back as geometry, not guessed from a list of
+    // properties that would go stale.
+    await expect(surface.style.getPropertyValue('--fve-expanded-w')).toBe(
+      `${window.innerWidth}px`,
+    );
+
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(surface).not.toHaveAttribute('data-view-expanded'),
+    );
+    // And the host's element is handed back without our arithmetic on it.
+    await expect(surface.style.getPropertyValue('--fve-expanded-w')).toBe('');
+    await expect(
+      Math.round(surface.getBoundingClientRect().width),
+    ).toBeLessThanOrEqual(Math.round(hostBox.width));
   },
 };

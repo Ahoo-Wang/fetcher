@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { StrictMode, useRef } from 'react';
+import { StrictMode, useRef, useState } from 'react';
 import {
   cleanup,
   fireEvent,
@@ -21,7 +21,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryViewStore, ViewEngine } from '../src/index.js';
 import type { ViewInstance, ViewSource } from '../src/index.js';
 import { useWorkbench } from '../src/react/index.js';
@@ -66,6 +66,16 @@ const mine: ViewInstance = {
   config: recordConfig(),
 };
 
+/** A second record view, so there is somewhere to switch to. */
+const ours: ViewInstance = {
+  id: 'ours',
+  definitionId: 'orders',
+  title: 'Ours',
+  scope: 'shared',
+  revision: '1',
+  config: recordConfig(),
+};
+
 const byWarehouse: ViewInstance = {
   id: 'by-warehouse',
   definitionId: 'orders',
@@ -78,7 +88,7 @@ const byWarehouse: ViewInstance = {
 function engineWith(source: ViewSource = testSource()): ViewEngine {
   return new ViewEngine({
     definitions: [ordersDefinition()],
-    store: new MemoryViewStore({ instances: [mine, byWarehouse] }),
+    store: new MemoryViewStore({ instances: [mine, ours, byWarehouse] }),
     resolveSource: () => source,
   });
 }
@@ -184,6 +194,38 @@ describe('the control that fills the screen', () => {
       document.querySelector('[data-slot="view-controls"]')!.textContent,
     ).toMatch(FILTER);
   });
+
+  it.each([
+    ['record', RecordWorkbench, 'mine'],
+    ['analysis', AnalysisWorkbench, 'by-warehouse'],
+  ] as const)(
+    'can be turned off through the %s workbench itself',
+    async (_kind, Workbench, instanceId) => {
+      // A contract the default entries do not forward is a contract a host
+      // using them cannot reach: it would have to give up the workbench and
+      // reassemble `WorkbenchShell` by hand to lose one button.
+      const { rerender } = render(
+        <Workbench
+          engine={engineWith()}
+          definitionId="orders"
+          instanceId={instanceId}
+        />,
+      );
+      expect(await screen.findByRole('button', { name: FILL })).toBeDefined();
+
+      rerender(
+        <Workbench
+          engine={engineWith()}
+          definitionId="orders"
+          instanceId={instanceId}
+          expandable={false}
+        />,
+      );
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: FILL })).toBeNull(),
+      );
+    },
+  );
 });
 
 describe('the background while a view fills the screen', () => {
@@ -193,6 +235,14 @@ describe('the background while a view fills the screen', () => {
 
     await user.click(screen.getByRole('button', { name: FILL }));
     expect(document.body.style.overflow).toBe('hidden');
+    // Important, because the page may be holding its own `overflow` that way
+    // from a stylesheet — `body { overflow: auto !important }`, or Tailwind's
+    // forced utility — and a stylesheet's `!important` outranks a plain
+    // inline declaration. The background would go on scrolling under a
+    // surface that covers it.
+    expect(document.body.style.getPropertyPriority('overflow')).toBe(
+      'important',
+    );
 
     await user.click(screen.getByRole('button', { name: LEAVE }));
     // The priority too: a host that wrote `!important` meant it, and a plain
@@ -356,6 +406,30 @@ describe('two surfaces on one document', () => {
       frame.remove();
     }
   });
+
+  it('closes the one in front and leaves the one behind it alone', async () => {
+    const pages = [await page(), await page()];
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    // Every expansion listens on the same document, so without a stack one
+    // Escape would collapse all of them at once — and leave two of them
+    // fighting over where focus lands. Only the last one opened answers.
+    expect(
+      pages[1].view.container.querySelector('[data-view-expanded]'),
+    ).toBeNull();
+    expect(
+      pages[0].view.container.querySelector('[data-view-expanded]'),
+    ).not.toBeNull();
+    // Which is also why the page is still still: something is still on it.
+    expect(document.body.style.overflow).toBe('hidden');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(
+      pages[0].view.container.querySelector('[data-view-expanded]'),
+    ).toBeNull();
+    expect(document.body.style.overflow).toBe('');
+  });
 });
 
 describe('the keyboard', () => {
@@ -434,6 +508,53 @@ describe('the keyboard', () => {
     document.dispatchEvent(handled);
 
     expect(isExpanded()).toBe(true);
+  });
+
+  it('leaves the key to a popup in another realm', async () => {
+    const frame = document.body.appendChild(document.createElement('iframe'));
+    const frameDocument = frame.contentDocument!;
+    try {
+      const inFrame = render(
+        <RecordWorkbench
+          engine={engineWith()}
+          definitionId="orders"
+          instanceId="mine"
+        />,
+        {
+          container: frameDocument.body.appendChild(
+            frameDocument.createElement('div'),
+          ),
+          baseElement: frameDocument.body,
+        },
+      );
+      await inFrame.findByRole('table');
+      fireEvent.click(inFrame.getByRole('button', { name: FILL }));
+
+      // A popup of the frame's own, with focus inside it. `instanceof
+      // Element` against *this* window's realm answers false for a node from
+      // the frame, so the whole dialog/menu/listbox check would be skipped —
+      // and the view would fold up under a picker the user only meant to
+      // close. The constructor comes from the event's own document instead.
+      const dialog = frameDocument.body.appendChild(
+        frameDocument.createElement('div'),
+      );
+      dialog.setAttribute('role', 'dialog');
+      const inside = dialog.appendChild(frameDocument.createElement('button'));
+      fireEvent.keyDown(inside, { key: 'Escape' });
+
+      expect(
+        inFrame.container.querySelector('[data-view-expanded]'),
+      ).not.toBeNull();
+      expect(frameDocument.body.style.overflow).toBe('hidden');
+
+      // And a key with nothing in front of it still puts the view back.
+      fireEvent.keyDown(frameDocument.body, { key: 'Escape' });
+      expect(
+        inFrame.container.querySelector('[data-view-expanded]'),
+      ).toBeNull();
+    } finally {
+      frame.remove();
+    }
   });
 
   it('is not moved by any other key', async () => {
@@ -552,6 +673,33 @@ describe('the states a view can be expanded in', () => {
     expect(isExpanded()).toBe(false);
     expect(screen.queryByRole('button', { name: LEAVE })).toBeNull();
     expect(document.body.style.overflow).toBe('auto');
+
+    view.rerender(<Shell engine={engine} />);
+    // And it is *ended*, not parked: a surface that came back filling the
+    // screen the moment its control returned would be the view taking over
+    // the page with nobody having asked.
+    expect(isExpanded()).toBe(false);
+    expect(
+      screen.getByRole('button', { name: FILL }).getAttribute('aria-expanded'),
+    ).toBe('false');
+    expect(document.body.style.overflow).toBe('auto');
+  });
+
+  it('belongs to this opening and ends when another view is opened', async () => {
+    const user = await expanded();
+
+    await user.click(screen.getByRole('button', { name: /Ours/ }));
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="view-title"]')!.textContent,
+      ).toBe('Ours'),
+    );
+
+    // Switching releases one runtime and opens another, and the expansion
+    // goes with it rather than surviving into a view nobody expanded — the
+    // same rule the editor's fold lives by.
+    expect(isExpanded()).toBe(false);
+    expect(document.body.style.overflow).toBe('');
   });
 });
 
@@ -566,12 +714,16 @@ describe('an embedded view, expanded by its host', () => {
     const root = useRef<HTMLDivElement>(null);
     const toggle = useRef<HTMLButtonElement>(null);
     const expansion = useViewExpansion(root, toggle);
+    // Built once and held: an engine rebuilt on every render would reopen
+    // the view on every click, which is the remount this whole feature
+    // exists not to do.
+    const [engine] = useState(engineWith);
     return (
       <>
         <button ref={toggle} type="button" onClick={expansion.toggle}>
           host control
         </button>
-        <EmbeddedView ref={root} engine={engineWith()} instanceId="mine" />
+        <EmbeddedView ref={root} engine={engine} instanceId="mine" />
       </>
     );
   }
@@ -622,6 +774,143 @@ describe('an embedded view, expanded by its host', () => {
     // `...props` would have replaced that one and broken the cascade.
     expect(held[0]).toBe(surface());
     expect(surface().classList.contains('fve-root')).toBe(true);
+  });
+
+  it("runs the host's own ref cleanup rather than swallowing it", async () => {
+    const released = vi.fn();
+    const attached = vi.fn(() => released);
+    const view = render(
+      <EmbeddedView ref={attached} engine={engineWith()} instanceId="mine" />,
+    );
+    await screen.findByRole('table');
+    expect(attached).toHaveBeenCalledTimes(1);
+    expect(released).not.toHaveBeenCalled();
+
+    view.unmount();
+    // React 19 lets a callback ref return a cleanup, and a host that installs
+    // a `ResizeObserver` on the root returns its disconnect. A merge that
+    // dropped the return value would leave that observer running for the life
+    // of the page — and would call the ref with null instead, which is not
+    // what the host asked for.
+    expect(released).toHaveBeenCalledTimes(1);
+    expect(attached).toHaveBeenCalledTimes(1);
+  });
+
+  it('expands the surface a host points it inside of', async () => {
+    function PointedInside() {
+      const inner = useRef<HTMLElement>(null);
+      const toggle = useRef<HTMLButtonElement>(null);
+      const expansion = useViewExpansion(inner, toggle);
+      const [engine] = useState(engineWith);
+      return (
+        <>
+          <button
+            ref={toggle}
+            type="button"
+            onClick={() => {
+              // Pointed at something *inside* the view, which is what the
+              // hook's contract allows.
+              inner.current = document.querySelector('table');
+              expansion.toggle();
+            }}
+          >
+            host control
+          </button>
+          <EmbeddedView engine={engine} instanceId="mine" />
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<PointedInside />);
+    await screen.findByRole('table');
+
+    await user.click(screen.getByRole('button', { name: 'host control' }));
+
+    // The stylesheet expands `.fve-root` and nothing else, so pointing this
+    // at something inside a view has to mean "expand the view it is in" —
+    // otherwise the page sits locked behind a surface that never grew.
+    expect(isExpanded()).toBe(true);
+    expect(screen.getByRole('table').hasAttribute('data-view-expanded')).toBe(
+      false,
+    );
+  });
+});
+
+/**
+ * `position: fixed` is the viewport only while no ancestor has made itself
+ * the containing block — `transform`, `filter`, `contain` and the rest all
+ * do, which is to say every animated wrapper and most grid shells. The box
+ * the browser actually gave us is measured rather than assumed, and the
+ * difference is written back as the correction.
+ */
+describe('the box a host actually gives it', () => {
+  /** The surface, expanded with `getBoundingClientRect` under the test's control. */
+  async function expandWith(box: Partial<DOMRect>) {
+    const user = await open();
+    const el = surface();
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      left: 0,
+      width: 0,
+      height: 0,
+      right: 0,
+      bottom: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+      ...box,
+    } as DOMRect);
+    await user.click(screen.getByRole('button', { name: FILL }));
+    return { user, el };
+  }
+
+  const fitted = (el: HTMLElement) =>
+    ['x', 'y', 'w', 'h'].map(name =>
+      el.style.getPropertyValue(`--fve-expanded-${name}`),
+    );
+
+  it('writes nothing when the box is already the viewport', async () => {
+    const { el } = await expandWith({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+
+    // The stylesheet's own fallbacks are `inset: 0` written the long way, so
+    // the common case stays pure CSS with no measurement written back.
+    expect(fitted(el)).toEqual(['', '', '', '']);
+  });
+
+  it('writes nothing where nothing has been laid out', async () => {
+    const user = await open();
+    await user.click(screen.getByRole('button', { name: FILL }));
+
+    // jsdom computes no layout, so every box is zero — a measurement with
+    // nothing behind it is not a correction worth writing.
+    expect(fitted(surface())).toEqual(['', '', '', '']);
+  });
+
+  it('corrects the offset an ancestor containing block introduced', async () => {
+    const { user, el } = await expandWith({
+      top: 40,
+      left: 60,
+      width: 200,
+      height: 100,
+    });
+
+    // The ancestor's padding box starts at (60, 40), so `top: 0; left: 0`
+    // landed there; moving back by exactly that puts the surface on the
+    // viewport, and the size comes from the viewport rather than from the
+    // box that was never the right one.
+    expect(fitted(el)).toEqual([
+      '-60px',
+      '-40px',
+      `${window.innerWidth}px`,
+      `${window.innerHeight}px`,
+    ]);
+
+    await user.click(screen.getByRole('button', { name: LEAVE }));
+    // And the host's element is handed back without our arithmetic on it.
+    expect(fitted(el)).toEqual(['', '', '', '']);
   });
 });
 
