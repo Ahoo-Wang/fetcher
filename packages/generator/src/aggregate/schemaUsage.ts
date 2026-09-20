@@ -211,18 +211,10 @@ const VALUE_BEARING_SCHEMA_KEYWORDS = [
 ];
 
 /** Keywords holding a map of subschemas an instance value flows through. */
-const VALUE_BEARING_MAP_KEYWORDS = [
-  'properties',
-  'patternProperties',
-];
+const VALUE_BEARING_MAP_KEYWORDS = ['properties', 'patternProperties'];
 
 /** Keywords holding a list of subschemas an instance value flows through. */
-const VALUE_BEARING_LIST_KEYWORDS = [
-  'allOf',
-  'anyOf',
-  'oneOf',
-  'prefixItems',
-];
+const VALUE_BEARING_LIST_KEYWORDS = ['allOf', 'anyOf', 'oneOf', 'prefixItems'];
 
 /**
  * Collects the component schema keys whose shape an instance of this schema
