@@ -173,12 +173,27 @@ the utility type.
 
 All `allOf` schemas generate TypeScript intersection aliases so required,
 optional, and conflicting property types retain every member constraint. Object
-schemas with optional properties and schema-valued `additionalProperties` also
-use an intersection alias: the declared properties retain their modifiers while
-the string index keeps the additional-property type without adding `undefined`.
-Other plain object schemas continue generating interfaces. TypeScript string
-indexes also constrain declared keys; they cannot express the JSON Schema case
-where declared properties have types incompatible with `additionalProperties`.
+schemas with an optional property beside schema-valued `additionalProperties`
+also use an intersection alias: the declared properties retain their modifiers
+while the string index keeps the additional-property type without adding
+`undefined`. A TypeScript index signature constrains the declared keys too, so
+an interface may only carry a named property assignable to it (TS2411), and an
+optional property never is. A required one usually is, so it keeps the
+interface unless the clash can be proven off the schemas: against an index type
+that resolves to a primitive, a property that resolves to a different
+primitive, to an object or to an array - through references as well. Anything
+undecided stays: an enum narrows the primitive it sits beside (`'a' | 'b'`
+against `string`) and a composition may admit it (`null` against
+`Model | null`). The index type must resolve to a primitive for any of this,
+which is what lets a dictionary of its own type generate at all: only an
+interface may reference itself through an index signature, an alias reaching
+itself through `Record` being circular (TS2456). A property may reference the
+model freely, an object member defers. Other plain object schemas continue generating
+interfaces. Neither form expresses the JSON Schema case where a declared
+property's type is incompatible with `additionalProperties`: the alias declares
+and reads correctly but admits no object literal, since TypeScript cannot
+exempt a named property from the index signature, and an unproven clash stays
+in the interface it does not compile in.
 Generated types do not perform runtime JSON validation.
 
 String-only enums with no const or composition constraints, and with `type` omitted or set to `'string'`, remain TypeScript enums (including empty-string members).
@@ -248,7 +263,7 @@ Nullability is judged from the whole schema, not the first `null` that turns up.
 
 A property whose schema no value can satisfy (`{ not: {} }`, an empty `enum`, or a composition of those) stays optional: a response must omit it, so requiring it would be a lie in the other direction.
 
-Promotion never changes how a model is represented: `requiresAdditionalPropertiesIntersection` reads the declared `required`, so a schema with typed `additionalProperties` keeps its intersection form rather than becoming an interface whose named property clashes with the index signature (TS2411).
+Promotion never changes how a model is represented: `requiresAdditionalPropertiesIntersection` reads the declared `required`, so a declared-optional property beside typed `additionalProperties` keeps its intersection form rather than becoming an interface whose named property clashes with the index signature (TS2411).
 
 The option assumes the service serialises every non-null property (Jackson `NON_NULL` does; `NON_DEFAULT` does not). Verify against a real response before enabling it.
 
