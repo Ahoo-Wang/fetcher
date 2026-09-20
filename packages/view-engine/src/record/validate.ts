@@ -77,7 +77,7 @@ export function validateRecord(
 
   issues.push(...validatePageSize(config, limits));
   issues.push(...validateSort(config, definition, byName));
-  issues.push(...validateColumns(config, byName));
+  issues.push(...validateColumns(config, capability.rowKey, byName));
   issues.push(...validateCard(config, byName));
   issues.push(...validateSummaries(config, byName));
 
@@ -219,6 +219,7 @@ function validateSort(
 
 function validateColumns(
   config: RecordViewConfig,
+  rowKey: string,
   fields: ReadonlyMap<string, FieldDefinition>,
 ): Issue[] {
   const seen = new Set<string>();
@@ -237,7 +238,18 @@ function validateColumns(
     // stored column may be pinned `'top'`, or to `''`. Said here it is a
     // finding the user can fix; left unsaid it reached the settings popover
     // as a key into a wording table and took the workbench down.
-    if (column.pinned !== undefined && columnPin(column.pinned) === null)
+    //
+    // Except on the row key, whose pinning the config has no opinion about:
+    // `projectRecord` holds it on the left whatever is stored, and the
+    // settings show that fixed and disabled. Reporting a value nothing on
+    // screen decides would block the query and the save over something no
+    // control can change — the trap in `ui/record.md`, sprung by the check
+    // meant to avoid one. What the config cannot say cannot be wrong.
+    if (
+      column.field !== rowKey &&
+      column.pinned !== undefined &&
+      columnPin(column.pinned) === null
+    )
       issues.push(
         issue(
           'record.column.pin-invalid',

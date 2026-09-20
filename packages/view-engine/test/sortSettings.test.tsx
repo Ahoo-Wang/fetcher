@@ -184,6 +184,25 @@ describe('editing the sort', () => {
     ]);
   });
 
+  /**
+   * The worst case for `record.sort.direction-invalid` and for
+   * `record.field.unknown` on a sort entry: the field is not in the
+   * definition at all, so there is no label to show. The entry wears its
+   * own name and keeps both of its controls.
+   */
+  it('lists an entry on a field the definition dropped, and removes it', async () => {
+    const { user, table } = await opened([{ field: 'gone', direction: 'ASC' }]);
+
+    expect(
+      document.querySelector('[data-slot="sort-entry"]')!.textContent,
+    ).toContain('gone');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Stop sorting by gone' }),
+    );
+    expect(table.setSort).toHaveBeenCalledWith([]);
+  });
+
   it('drops the entry the user takes out', async () => {
     const { user, table } = await opened([
       { field: 'amount', direction: 'DESC' },

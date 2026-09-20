@@ -484,6 +484,26 @@ describe('the shapes a store can hold', () => {
     }).not.toThrow();
   });
 
+  /**
+   * A list that could not be read at all lists nothing, so no control can
+   * take its entries out — the sort above has no sortable field left to
+   * add, which was its only other way out. Whatever the user changes
+   * carries the repair with it, so one press anywhere puts the config back
+   * in a shape the kernel admits.
+   */
+  it('writes the sound lists back with the first change of any kind', async () => {
+    const result = await openTable(broken, {}, false);
+
+    act(() => result.current.table.setPinned('amount', 'left'));
+
+    await waitFor(() => expect(result.current.table.status).toBe('success'));
+    expect(draft(result).sort).toEqual([]);
+    expect(draft(result).summaries).toEqual([]);
+    expect(draft(result).table.columns).toEqual([
+      { field: 'amount', pinned: 'left' },
+    ]);
+  });
+
   /** Entries that cannot be read go; the ones that can are kept as they are. */
   it('keeps the entries it can read and drops the rest', async () => {
     const result = await openTable(

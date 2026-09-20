@@ -748,6 +748,26 @@ describe('projectRecord', () => {
    * and a projection that says "not pinned" in the meantime — never a side
    * the table would then try to stick it to.
    */
+  /**
+   * Except on the row key, whose pinning the config has no opinion about:
+   * the projection holds it left whatever is stored and the settings show
+   * that fixed and disabled, so reporting the value would block the query
+   * and the save over something no control on screen can change.
+   */
+  it('says nothing about the row key\u2019s own pinning', () => {
+    const issues = validateRecord(
+      definition(),
+      config({
+        table: {
+          columns: [{ field: 'id', pinned: 'top' }, { field: 'amount' }],
+        },
+      } as unknown as Partial<RecordViewConfig>),
+      builtinFieldKinds,
+    );
+
+    expect(codes(issues)).toEqual([]);
+  });
+
   it('reports a pinning that is neither side, and projects it as none', () => {
     const config_ = config({
       table: { columns: [{ field: 'amount', pinned: 'top' }] },

@@ -345,6 +345,32 @@ describe('the column settings popover', () => {
     expect(table.setSummary).toHaveBeenCalledWith('warehouse', null);
   });
 
+  /**
+   * The worst case for `record.column.pin-invalid`: the column the value is
+   * about is the only one the table has. Its checkbox is refused — a table
+   * keeps one column — but its pin is not, which is the control the finding
+   * is about.
+   */
+  it('lets the only column be repinned, though it cannot be hidden', async () => {
+    const user = userEvent.setup();
+    const table = open({
+      columnFields: ['amount'],
+      pinnedOf: (field: string) => (field === 'amount' ? 'top' : null) as never,
+    });
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    expect(
+      screen
+        .getByRole('checkbox', { name: 'Show Amount' })
+        .getAttribute('aria-disabled'),
+    ).toBe('true');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Pinning of Amount: Not pinned' }),
+    );
+    expect(table.setPinned).toHaveBeenCalledWith('amount', 'left');
+  });
+
   it('cycles the pin of a column that may move', async () => {
     const user = userEvent.setup();
     const table = open();

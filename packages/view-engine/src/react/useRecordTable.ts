@@ -27,7 +27,12 @@ import type {
   ViewInstance,
 } from '../model/index.js';
 import { columnPin, type RecordColumnPin } from '../model/index.js';
-import { recordColumns, recordSort, recordSummaries } from './recordDraft.js';
+import {
+  recordColumns,
+  recordSort,
+  recordSummaries,
+  wasSound,
+} from './recordDraft.js';
 import { maxSortFields } from '../record/index.js';
 // The side a column is held on, named once in the model and offered here so
 // a control can talk about pinning without importing the kernel's types.
@@ -38,7 +43,11 @@ import type {
   RecordRow,
   SummaryRow,
 } from '../record/index.js';
-import type { QueryStatus, RecordViewRuntime } from '../runtime/index.js';
+import type {
+  QueryStatus,
+  RecordViewRuntime,
+  ViewRuntimeState,
+} from '../runtime/index.js';
 import type { RecordViewConfig } from '../model/index.js';
 import { useViewRuntime } from './useViewEngine.js';
 
@@ -115,6 +124,44 @@ function summariesOf(
   return config?.kind === 'record' && config.summaries !== undefined
     ? []
     : undefined;
+}
+
+/**
+ * The patch, plus the sound form of any list the draft could not be read
+ * from and this patch does not already replace.
+ *
+ * A list the controller had to repair is a config the kernel refuses over
+ * entries that are not on screen — they could not be read, so no control
+ * lists them and no control can take them out. Carrying the repair along
+ * with whatever the user *did* change is what makes "the first change they
+ * make writes the sound list back" true of every list rather than only of
+ * the one they touched: with no sortable field left to add, an unreadable
+ * `sort` had no other way out at all.
+ */
+function repairing(
+  patch: Partial<RecordViewConfig>,
+  state: ViewRuntimeState<RecordViewConfig>,
+): Partial<RecordViewConfig> {
+  const draft = state.draft;
+  const repairs: Partial<RecordViewConfig> = {};
+
+  const sort = recordSort(draft.sort);
+  if (patch.sort === undefined && !wasSound(draft.sort, sort))
+    repairs.sort = sort;
+
+  const summaries = recordSummaries(draft.summaries);
+  if (
+    !('summaries' in patch) &&
+    draft.summaries !== undefined &&
+    !wasSound(draft.summaries, summaries)
+  )
+    repairs.summaries = summariesOf(summaries, state.saved);
+
+  const columns = recordColumns(draft.table?.columns);
+  if (patch.table === undefined && !wasSound(draft.table?.columns, columns))
+    repairs.table = { columns };
+
+  return { ...repairs, ...patch };
 }
 
 function cardField(field: FieldDefinition): RecordCardField {
@@ -327,7 +374,7 @@ export function useRecordTable(
   const editAndApply = useCallback(
     (patch: Partial<RecordViewConfig>) => {
       if (!runtime) return;
-      runtime.edit(patch);
+      runtime.edit(repairing(patch, runtime.getSnapshot()));
       runtime.apply();
     },
     [runtime],

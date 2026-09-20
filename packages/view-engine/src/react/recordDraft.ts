@@ -82,6 +82,21 @@ export function recordSummaries(value: unknown): RecordSummary[] {
   );
 }
 
+/**
+ * Whether `raw` was already the sound list `read` made of it.
+ *
+ * A list that had to be repaired is a config the kernel refuses
+ * (`record.sort.invalid`, `record.summaries.invalid`, `record.table.invalid`)
+ * over entries no control can address — they are not on screen, because they
+ * could not be read. So the next write of any kind carries the repair with
+ * it: the user changes a column and the sort that was a string becomes the
+ * list they can see, which is the same promise this module makes about
+ * entries, made about the list itself.
+ */
+export function wasSound(raw: unknown, read: readonly unknown[]): boolean {
+  return Array.isArray(raw) && raw.length === read.length;
+}
+
 /** Columns as the draft holds them, with a width and a pinning it can use. */
 export function recordColumns(value: unknown): RecordColumn[] {
   return entries(value).map(entry => {
