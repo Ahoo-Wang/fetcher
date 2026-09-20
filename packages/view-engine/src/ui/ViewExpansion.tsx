@@ -99,6 +99,26 @@ function inFront(open: Expanded[]): Expanded | undefined {
 }
 
 /**
+ * The control of an expanded surface that a user can actually see.
+ *
+ * A toggle inside the surface is on screen with the rest of it. A toggle
+ * *outside* it — a host's own button beside an `EmbeddedView`, which is the
+ * only shape an embed has — is underneath a surface filling the screen, and
+ * what the user can see instead is the exit that surface grew for exactly
+ * that case. Handing focus to the covered button would drop a keyboard user
+ * into content nobody can see, which is the thing this is meant to prevent.
+ */
+function reachable({ element, toggleRef }: Expanded): HTMLElement | null {
+  const toggle = toggleRef.current;
+  if (toggle && element.contains(toggle)) return toggle;
+  return (
+    element.querySelector<HTMLElement>(
+      ':scope > [data-slot="view-exit"]:not([hidden])',
+    ) ?? toggle
+  );
+}
+
+/**
  * Anything that owns the Escape key while it is open. A dialog, a menu and a
  * listbox all close on Escape, and the one in front has the first claim: a
  * user pressing it over an open field picker means "close the picker", never
@@ -348,15 +368,18 @@ export function useViewExpansion(
      * Not simply this surface's own toggle: with another surface still
      * expanded over it, that toggle is back in page layout and behind it,
      * and the keyboard user's next Tab would walk content nobody can see. So
-     * focus goes to the control of whatever is still in front, and falls back
-     * to this one's only when nothing is.
+     * focus goes to the control of whatever is still in front — the one of
+     * its controls that is *on* it, since the surface in front covers a
+     * host's own button just as surely as it covers this one — and falls
+     * back to this surface's own toggle only when nothing is in front, which
+     * is when that toggle is back on screen.
      */
     function collapse() {
       setExpanded(false);
       const at = lock.open.indexOf(handle);
       const rest = lock.open.filter((_, index) => index !== at);
       const below = inFront(rest);
-      (below?.toggleRef.current ?? toggleRef.current)?.focus();
+      (below ? reachable(below) : toggleRef.current)?.focus();
     }
 
     function onKeyDown(event: KeyboardEvent) {
@@ -426,7 +449,19 @@ export function useViewExpansion(
     // element this was pointed at is no longer the element it settled on.
   }, [target, toggleRef, on, changed]);
 
-  return { expanded: on, toggle: () => setExpanded(value => !value) };
+  return {
+    expanded: on,
+    // While there is nothing to expand, this does nothing — rather than
+    // flipping a state that `on` then masks. A host's own control can
+    // outlive `enabled` going false (a shortcut still bound, a button not
+    // yet unmounted), and a press stashed there would fill the screen the
+    // moment the control came back, with nobody having asked for it. That is
+    // the same trap the adjustment above exists to avoid, reached by the
+    // other door.
+    toggle: () => {
+      if (enabled) setExpanded(value => !value);
+    },
+  };
 }
 
 export interface ViewExpandToggleProps {

@@ -828,6 +828,47 @@ describe('the states a view can be expanded in', () => {
     expect(held()).toEqual(['auto', 'auto']);
   });
 
+  it('stashes nothing when a control asks while there is nothing to expand', async () => {
+    function Switchable({ enabled }: { enabled: boolean }) {
+      const root = useRef<HTMLDivElement>(null);
+      const toggle = useRef<HTMLButtonElement>(null);
+      const expansion = useViewExpansion(root, toggle, enabled);
+      const [engine] = useState(engineWith);
+      return (
+        <>
+          {/* A host's own control, which outlives `enabled` going false —
+              a shortcut still bound, a button not yet unmounted. */}
+          <button ref={toggle} type="button" onClick={expansion.toggle}>
+            host control
+          </button>
+          <span data-testid="reported">{String(expansion.expanded)}</span>
+          <EmbeddedView ref={root} engine={engine} instanceId="mine" />
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    const view = render(<Switchable enabled={false} />);
+    await screen.findByRole('table');
+
+    await user.click(screen.getByRole('button', { name: 'host control' }));
+    expect(isExpanded()).toBe(false);
+    expect(screen.getByTestId('reported').textContent).toBe('false');
+    expect(held()).toEqual(FREE);
+
+    view.rerender(<Switchable enabled />);
+
+    // Nothing was remembered: a press that did nothing at the time must not
+    // fill the screen later, which is the same trap as parking an expansion
+    // through the control being taken away — reached by the other door.
+    expect(isExpanded()).toBe(false);
+    expect(screen.getByTestId('reported').textContent).toBe('false');
+    expect(held()).toEqual(FREE);
+
+    // And the control works again now that there is something to expand.
+    await user.click(screen.getByRole('button', { name: 'host control' }));
+    expect(isExpanded()).toBe(true);
+  });
+
   it('belongs to this opening and ends when another view is opened', async () => {
     const user = await expanded();
 
@@ -969,6 +1010,39 @@ describe('an embedded view, expanded by its host', () => {
     await user.click(screen.getByRole('button', { name: 'show' }));
     await waitFor(() => expect(isExpanded()).toBe(true));
     expect(held()).toEqual(LOCKED);
+  });
+
+  it('is uncovered with focus on its exit, not on the control under it', async () => {
+    const user = userEvent.setup();
+    render(<HostedEmbed />);
+    await screen.findByRole('table');
+    await user.click(screen.getByRole('button', { name: 'host control' }));
+
+    // A second surface, later in the document, expanded over the embed.
+    const container = document.body.appendChild(document.createElement('div'));
+    const over = render(
+      <RecordWorkbench
+        engine={engineWith()}
+        definitionId="orders"
+        instanceId="mine"
+      />,
+      { container, baseElement: container },
+    );
+    await over.findByRole('table');
+    await user.click(over.getByRole('button', { name: FILL }));
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    // The embed is still expanded, so the host's own button is still
+    // underneath it — handing focus there would drop a keyboard user into
+    // content nobody can see, which is the whole reason focus moves at all.
+    // The exit this surface grew is the one control actually on screen.
+    const exit = screen.getByRole('button', { name: LEAVE });
+    expect(surface().contains(exit)).toBe(true);
+    expect(document.activeElement).toBe(exit);
+    expect(document.activeElement).not.toBe(
+      screen.getByRole('button', { name: 'host control' }),
+    );
   });
 
   it('gives the page back when the surface it was pointed at goes away', async () => {
