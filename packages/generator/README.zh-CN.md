@@ -42,9 +42,13 @@ pnpm exec fetcher-generator generate \
 为必填。该规则的适用范围被刻意收窄：
 
 - 可空属性仍保持可选，涵盖 null 的各种写法：OpenAPI 3.0 的 `nullable` 标记、3.1 类型
-  数组中的 `null`、枚举或 const 中的 `null`，以及 `anyOf` / `oneOf` 的 `null` 分支。
-- 命令 schema 不受影响。把命令的必填属性写多了，会拒绝客户端本可以发送的请求。
-- 命令与读模型共享的 schema 保持文档声明的形态，其中会被该规则改变的 schema 会在生成
+  数组中的 `null`、枚举或 const 中的 `null`、`anyOf` / `oneOf` 的 `null` 分支，以及
+  每个分支都可空的 `allOf`。判定以整个 schema 为准——枚举里的 null 成员若与
+  `type: string` 同级，会被该 type 排除，于是该属性是必填而非可选。
+- `writeOnly` 属性仍保持可选。它们属于请求侧，无论类型怎么写，响应都可以不返回。
+- 请求 schema 不受影响，且"请求"涵盖所有操作的请求体与参数，不只是 Wow 命令。把请求的
+  必填属性写多了，会拒绝客户端本可以发起的调用。
+- 请求与读模型共享的 schema 保持文档声明的形态，其中会被该规则改变的 schema 会在生成
   日志中列出。
 
 默认值为 `false`，即完全按文档声明生成。只有当服务端确实会序列化每个非空属性时才应开

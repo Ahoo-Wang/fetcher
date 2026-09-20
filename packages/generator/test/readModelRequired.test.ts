@@ -104,8 +104,12 @@ describe('read-model required properties', () => {
     ['a 3.1 null type entry', { type: ['string', 'null'] }],
     ['a null anyOf branch', { anyOf: [{ type: 'null' }, { type: 'string' }] }],
     ['a null oneOf branch', { oneOf: [{ type: 'null' }, { type: 'string' }] }],
-    ['a null enum member', { type: 'string', enum: ['a', null] }],
+    ['a null enum member', { enum: ['a', null] }],
     ['a null const', { const: null }],
+    [
+      'an allOf whose every branch admits null',
+      { allOf: [{ type: ['string', 'null'] }, { enum: ['x', null] }] },
+    ],
   ] satisfies [string, Schema][])(
     'keeps a property optional when it admits null through %s',
     (_, propSchema) => {
@@ -121,6 +125,52 @@ describe('read-model required properties', () => {
       ).toContain('nullish?:');
     },
   );
+
+  it.each([
+    [
+      'a sibling type rejects the null enum member',
+      { type: 'string', enum: ['a', null] },
+    ],
+    ['a sibling type rejects the null const', { type: 'string', const: null }],
+    [
+      'an allOf branch rejects null',
+      { allOf: [{ type: ['string', 'null'] }, { type: 'string' }] },
+    ],
+    [
+      'no anyOf branch admits null',
+      { anyOf: [{ type: 'string' }, { type: 'number' }] },
+    ],
+  ] satisfies [string, Schema][])(
+    'requires a property that only looks nullable when %s',
+    (_, propSchema) => {
+      expect(
+        generate(
+          {
+            type: 'object',
+            properties: { value: propSchema },
+          },
+          true,
+        ),
+      ).not.toContain('value?:');
+    },
+  );
+
+  it('leaves a write-only property optional', () => {
+    // writeOnly belongs to the request side, so a response may omit it however
+    // its type reads.
+    expect(
+      generate(
+        {
+          type: 'object',
+          properties: {
+            secret: { type: 'string', writeOnly: true },
+            name: { type: 'string' },
+          },
+        },
+        true,
+      ),
+    ).toContain('secret?: string;');
+  });
 
   it('follows references when deciding nullability', () => {
     const components: Components = {

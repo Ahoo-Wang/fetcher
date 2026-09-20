@@ -190,14 +190,21 @@ export function isReadOnly(schema: Schema | Reference): boolean {
 /**
  * Checks whether a schema admits `null`.
  *
- * `null` can be expressed in several ways across OpenAPI 3.0 and 3.1, so every
- * spelling is checked: the 3.0 `nullable` flag, a `null` entry in a 3.1 type
- * array, a `null` member of an `enum`, a `null` `const`, and a `null` branch of
- * an `anyOf` / `oneOf` union. References are followed when components are
- * supplied.
+ * A schema admits null only when every applicable keyword does, so each is
+ * checked in turn rather than accepting the first `null` that turns up:
  *
- * `allOf` is deliberately ignored: intersecting with `null` yields an
- * uninhabited type rather than a nullable one.
+ * - `type` must include `null`, or the OpenAPI 3.0 `nullable` flag must be set.
+ *   An absent `type` constrains nothing and admits null.
+ * - `const` must be null, and `enum` must contain it.
+ * - `anyOf` / `oneOf` need one branch that admits null; `allOf` needs all of
+ *   them, since an intersection is only as permissive as its narrowest
+ *   conjunct.
+ *
+ * `{ type: 'string', enum: ['a', null] }` is therefore not nullable: the
+ * sibling `type` rejects the null member, exactly as `resolveType` does when it
+ * drops the literal from the generated union.
+ *
+ * References are followed when components are supplied.
  *
  * @param schema - The schema or reference to check
  * @param components - Components used to resolve references
@@ -220,21 +227,45 @@ export function isNullableSchema(
     const resolved = extractSchema(schema, components);
     return resolved ? isNullableSchema(resolved, components, visited) : false;
   }
-  if (schema.nullable === true) {
-    return true;
+  const typeAdmitsNull =
+    schema.nullable === true ||
+    schema.type === undefined ||
+    [schema.type].flat().includes('null');
+  if (!typeAdmitsNull) {
+    return false;
   }
-  if (schema.type !== undefined && [schema.type].flat().includes('null')) {
-    return true;
+  if (schema.const !== undefined && schema.const !== null) {
+    return false;
   }
-  if (schema.enum?.some(value => value === null)) {
-    return true;
+  if (Array.isArray(schema.enum) && !schema.enum.includes(null)) {
+    return false;
   }
-  if (schema.const === null) {
-    return true;
+  // Each branch gets its own visited set: sibling branches must be judged
+  // independently, while the copy still accumulates along a path so reference
+  // cycles terminate.
+  const isNullableMember = (member: Schema | Reference) =>
+    isNullableSchema(member, components, new Set(visited));
+  const unionMembers = [...(schema.anyOf ?? []), ...(schema.oneOf ?? [])];
+  if (unionMembers.length && !unionMembers.some(isNullableMember)) {
+    return false;
   }
-  return [...(schema.anyOf ?? []), ...(schema.oneOf ?? [])].some(member =>
-    isNullableSchema(member, components, visited),
-  );
+  if (schema.allOf?.length && !schema.allOf.every(isNullableMember)) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Checks whether a schema is request-only.
+ *
+ * A `writeOnly` property belongs to requests, so a response may omit it however
+ * the document declares its type.
+ *
+ * @param schema - The schema to check
+ * @returns True if the schema is write-only, false otherwise
+ */
+export function isWriteOnly(schema: Schema | Reference): boolean {
+  return (schema as Schema).writeOnly === true;
 }
 
 /**

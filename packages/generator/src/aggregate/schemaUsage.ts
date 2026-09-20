@@ -11,45 +11,60 @@
  * limitations under the License.
  */
 
-import type { Components, Reference, Schema } from '@ahoo-wang/fetcher-openapi';
-import { COMPONENTS_SCHEMAS_REF, isNullableSchema } from '../utils';
+import type {
+  Components,
+  OpenAPI,
+  Reference,
+  Schema,
+} from '@ahoo-wang/fetcher-openapi';
+import {
+  COMPONENTS_SCHEMAS_REF,
+  extractOperationEndpoints,
+  isNullableSchema,
+} from '../utils';
 import type { BoundedContextAggregates } from './aggregate';
 
 /**
  * Which side of CQRS a component schema is reachable from.
  *
- * - `write`: reachable only from command bodies.
+ * - `write`: reachable only from a request - a Wow command body, or the body
+ *   or parameters of any other operation.
  * - `read`: reachable only from aggregate state or domain event bodies.
  * - `shared`: reachable from both sides.
- * - `unknown`: reachable from neither, e.g. plain REST endpoints or a document
- *   without Wow aggregates.
+ * - `unknown`: reachable from neither, e.g. a schema used only by ordinary
+ *   responses, or any schema in a document without Wow aggregates.
  */
 export type SchemaUsage = 'read' | 'write' | 'shared' | 'unknown';
 
 /**
  * Classifies component schemas by the CQRS side that reaches them.
  *
- * Commands describe what a client sends, so their schemas must be read exactly
+ * Requests describe what a client sends, so their schemas must be read exactly
  * as the document declares them. Aggregate state and domain events describe
  * what the server returns, where a property left out of `required` is usually
  * an artefact of the exporter rather than a genuinely absent field.
  * Distinguishing the two makes it safe to relax optionality on the read side
  * only.
+ *
+ * The request side spans every operation, not only resolved Wow commands: a
+ * generated model can serve as an ordinary endpoint's request body while an
+ * aggregate also reaches it, and promoting its properties would make a request
+ * demand fields the document permits a client to omit.
  */
 export class SchemaUsageResolver {
   private readonly usages = new Map<string, SchemaUsage>();
   private readonly schemas: Record<string, Schema | Reference>;
 
+  private readonly components: Components | undefined;
+
   /**
-   * @param components - The OpenAPI components holding the schemas to classify
+   * @param openAPI - The document whose component schemas are classified
    * @param contextAggregates - Resolved aggregates providing the command, state and event roots
    */
-  constructor(
-    private readonly components: Components | undefined,
-    contextAggregates: BoundedContextAggregates,
-  ) {
-    this.schemas = components?.schemas ?? {};
-    const writeRoots = new Set<string>();
+  constructor(openAPI: OpenAPI, contextAggregates: BoundedContextAggregates) {
+    this.components = openAPI.components;
+    this.schemas = this.components?.schemas ?? {};
+    const writeRoots = requestSchemaKeys(openAPI);
     const readRoots = new Set<string>();
     for (const aggregates of contextAggregates.values()) {
       for (const aggregate of aggregates) {
@@ -137,6 +152,36 @@ export class SchemaUsageResolver {
     }
     return reached;
   }
+}
+
+/**
+ * Collects the component schema keys a client may have to send.
+ *
+ * Every operation's request body and parameters count, along with the
+ * `requestBodies` and `parameters` components themselves - a component declared
+ * but not yet referenced still describes a request, and treating it as one only
+ * ever preserves the document's declared optionality.
+ *
+ * @param openAPI - The document to scan
+ * @returns The request-side component schema keys
+ */
+export function requestSchemaKeys(openAPI: OpenAPI): Set<string> {
+  const keys = new Set<string>();
+  const collect = (node: unknown) => {
+    for (const key of referencedSchemaKeys(node)) {
+      keys.add(key);
+    }
+  };
+  for (const endpoint of extractOperationEndpoints(
+    openAPI.paths ?? {},
+    openAPI.components,
+  )) {
+    collect(endpoint.operation.requestBody);
+    collect(endpoint.operation.parameters);
+  }
+  collect(openAPI.components?.requestBodies);
+  collect(openAPI.components?.parameters);
+  return keys;
 }
 
 /**

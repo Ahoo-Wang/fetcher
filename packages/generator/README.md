@@ -47,10 +47,16 @@ narrow:
 
 - Nullable properties stay optional, in every spelling of null - the OpenAPI 3.0
   `nullable` flag, a `null` entry in a 3.1 type array, a `null` enum member or
-  const, and a `null` branch of an `anyOf` / `oneOf`.
-- Command schemas are untouched. Over-stating a command's required properties
-  would reject a request the client is entitled to send.
-- A schema both a command and a read model reach keeps its declared shape. Those
+  const, a `null` branch of an `anyOf` / `oneOf`, and an `allOf` whose every
+  branch admits null. Only the whole schema counts - a `null` enum member
+  alongside `type: string` is rejected by that sibling type, so the property is
+  required rather than optional.
+- `writeOnly` properties stay optional. They belong to the request side, so a
+  response may omit them however their type reads.
+- Request schemas are untouched, and that means every operation's body and
+  parameters, not only Wow commands. Over-stating a request's required
+  properties would reject a call the client is entitled to make.
+- A schema both a request and a read model reach keeps its declared shape. Those
   that the rule would have changed are listed in the generation log.
 
 Defaults to `false`, which generates exactly what the document declares. Only

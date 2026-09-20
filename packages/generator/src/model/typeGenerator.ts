@@ -39,6 +39,7 @@ import {
   isObject,
   isReadOnly,
   isReference,
+  isWriteOnly,
   jsDoc,
   resolveEnumMemberName,
   resolvePrimitiveType,
@@ -71,6 +72,9 @@ export class TypeGenerator implements Generator {
    * restores response properties an exporter dropped from `required` because
    * they carry a default value.
    *
+   * `writeOnly` properties are left alone: they belong to requests, so a
+   * response is entitled to omit them however their type reads.
+   *
    * @param schema - The object schema owning the properties
    * @returns The effective required property names
    */
@@ -82,7 +86,10 @@ export class TypeGenerator implements Generator {
     for (const [propName, propSchema] of Object.entries(
       schema.properties ?? {},
     )) {
-      if (!isNullableSchema(propSchema, this.components)) {
+      if (
+        !isWriteOnly(propSchema) &&
+        !isNullableSchema(propSchema, this.components)
+      ) {
         required.add(propName);
       }
     }

@@ -235,16 +235,16 @@ Model files use `types.ts` named by schema path prefix (e.g., schema key `ai.AiM
 
 Property optionality follows the document: anything missing from `required` is generated with a `?`. Exporters routinely omit properties that carry a default value, so responses come out weaker than the server actually is.
 
-`readModel.nonNullRequired` relaxes this for the read side only. `SchemaUsageResolver` (`src/aggregate/schemaUsage.ts`) walks `$ref` closures from the resolved aggregates and classifies every component schema:
+`readModel.nonNullRequired` relaxes this for the read side only. `SchemaUsageResolver` (`src/aggregate/schemaUsage.ts`) walks `$ref` closures from the resolved aggregates and from every operation's request body and parameters, then classifies each component schema:
 
-| Usage     | Reached from                         | Optionality                                   |
-| --------- | ------------------------------------ | --------------------------------------------- |
-| `read`    | aggregate state, domain event bodies | non-nullable properties become required       |
-| `write`   | command bodies                       | as declared                                   |
-| `shared`  | both                                 | as declared, and listed in the generation log |
-| `unknown` | neither, e.g. plain REST schemas     | as declared                                   |
+| Usage     | Reached from                                                                     | Optionality                                              |
+| --------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `read`    | aggregate state, domain event bodies                                             | non-nullable, non-`writeOnly` properties become required |
+| `write`   | any request: Wow command bodies, and every operation's request body / parameters | as declared                                              |
+| `shared`  | both                                                                             | as declared, and listed in the generation log            |
+| `unknown` | neither, e.g. a schema only an ordinary response uses                            | as declared                                              |
 
-Nullability is detected in every spelling: the 3.0 `nullable` flag, a `null` entry in a 3.1 type array, a `null` enum member or const, and a `null` branch of an `anyOf` / `oneOf`. References are followed, cycles guarded. `allOf` is ignored, since intersecting with `null` is uninhabited rather than nullable.
+Nullability is judged from the whole schema, not the first `null` that turns up. `type` must admit null (or carry the 3.0 `nullable` flag; an absent `type` constrains nothing), `const` must be null and `enum` must contain it, `anyOf` / `oneOf` need one branch that admits null, and `allOf` needs all of them. So `{ type: 'string', enum: ['a', null] }` is **not** nullable — the sibling `type` rejects the null member, exactly as `resolveType` drops the literal from the generated union — while `allOf: [{ type: ['string', 'null'] }, { enum: ['x', null] }]` is. References are followed and cycles guarded, with each branch judged independently.
 
 The option assumes the service serialises every non-null property (Jackson `NON_NULL` does; `NON_DEFAULT` does not). Verify against a real response before enabling it.
 

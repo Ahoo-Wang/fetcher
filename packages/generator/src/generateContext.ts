@@ -54,7 +54,7 @@ export class GenerateContext implements GenerateContextInit {
    */
   get schemaUsage(): SchemaUsageResolver {
     this.schemaUsageResolver ??= new SchemaUsageResolver(
-      this.openAPI.components,
+      this.openAPI,
       this.contextAggregates,
     );
     return this.schemaUsageResolver;

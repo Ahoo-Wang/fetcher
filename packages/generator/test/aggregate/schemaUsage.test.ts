@@ -16,6 +16,7 @@ import type { OpenAPI } from '@ahoo-wang/fetcher-openapi';
 import {
   AggregateResolver,
   referencedSchemaKeys,
+  requestSchemaKeys,
   SchemaUsageResolver,
 } from '../../src/aggregate';
 import demoSpec from '../demo.spec.json';
@@ -23,7 +24,7 @@ import demoSpec from '../demo.spec.json';
 function resolveDemoUsage(): SchemaUsageResolver {
   const openAPI = demoSpec as unknown as OpenAPI;
   return new SchemaUsageResolver(
-    openAPI.components,
+    openAPI,
     new AggregateResolver(openAPI).resolve(),
   );
 }
@@ -63,6 +64,41 @@ describe('referencedSchemaKeys', () => {
     };
     schema.properties.parent = schema;
     expect([...referencedSchemaKeys(schema)]).toEqual(['Self']);
+  });
+});
+
+describe('requestSchemaKeys', () => {
+  it('collects every demo command body', () => {
+    const keys = requestSchemaKeys(demoSpec as unknown as OpenAPI);
+    expect(keys).toContain('example.order.CreateOrder');
+    expect(keys).toContain('example.cart.AddCartItem');
+  });
+
+  it('ignores response schemas', () => {
+    expect(
+      requestSchemaKeys({
+        paths: {
+          '/orders': {
+            get: {
+              operationId: 'order.list',
+              responses: {
+                '200': {
+                  content: {
+                    'application/json': {
+                      schema: { $ref: '#/components/schemas/demo.Response' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      } as any),
+    ).toEqual(new Set());
+  });
+
+  it('tolerates a document without paths', () => {
+    expect(requestSchemaKeys({} as any)).toEqual(new Set());
   });
 });
 
@@ -144,7 +180,7 @@ describe('SchemaUsageResolver', () => {
       ],
     ]);
     const shared = new SchemaUsageResolver(
-      components as any,
+      { components } as any,
       contextAggregates as any,
     );
     expect(shared.usageOf('demo.Value')).toBe('shared');
@@ -194,7 +230,7 @@ describe('SchemaUsageResolver', () => {
       ],
     ]);
     const resolver = new SchemaUsageResolver(
-      components as any,
+      { components } as any,
       contextAggregates as any,
     );
 
@@ -205,8 +241,94 @@ describe('SchemaUsageResolver', () => {
     expect(resolver.contestedKeys()).toEqual(['demo.Command']);
   });
 
+  it('treats an ordinary operation request body as the write side', () => {
+    const components = {
+      schemas: {
+        'demo.State': {
+          type: 'object',
+          properties: { draft: { $ref: '#/components/schemas/demo.Draft' } },
+        },
+        'demo.Draft': {
+          type: 'object',
+          properties: { title: { type: 'string' } },
+        },
+        'demo.Filter': {
+          type: 'object',
+          properties: { keyword: { type: 'string' } },
+        },
+        'demo.Body': {
+          type: 'object',
+          properties: { note: { type: 'string' } },
+        },
+      },
+      requestBodies: {
+        'demo.Imported': {
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/demo.Body' },
+            },
+          },
+        },
+      },
+    };
+    const openAPI = {
+      components,
+      paths: {
+        '/drafts': {
+          post: {
+            operationId: 'draft.import',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/demo.Draft' },
+                },
+              },
+            },
+          },
+          get: {
+            operationId: 'draft.list',
+            parameters: [
+              {
+                name: 'filter',
+                in: 'query',
+                schema: { $ref: '#/components/schemas/demo.Filter' },
+              },
+            ],
+          },
+        },
+      },
+    };
+    const contextAggregates = new Map([
+      [
+        'demo',
+        new Set([
+          {
+            state: {
+              key: 'demo.State',
+              schema: components.schemas['demo.State'],
+            },
+            commands: new Map(),
+            events: new Map(),
+          },
+        ]),
+      ],
+    ]);
+    const resolver = new SchemaUsageResolver(
+      openAPI as any,
+      contextAggregates as any,
+    );
+
+    // The state reaches demo.Draft, but so does a plain request body: making
+    // its properties required would reject a request the document allows.
+    expect(resolver.usageOf('demo.Draft')).toBe('shared');
+    expect(resolver.usageOf('demo.Filter')).toBe('write');
+    expect(resolver.usageOf('demo.Body')).toBe('write');
+    expect(resolver.usageOf('demo.State')).toBe('read');
+    expect(resolver.contestedKeys()).toEqual(['demo.Draft']);
+  });
+
   it('classifies nothing when the document has no aggregates', () => {
-    const empty = new SchemaUsageResolver(undefined, new Map());
+    const empty = new SchemaUsageResolver({} as any, new Map());
     expect(empty.usageOf('anything')).toBe('unknown');
     expect(empty.sharedKeys()).toEqual([]);
   });
