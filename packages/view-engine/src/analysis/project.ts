@@ -232,6 +232,10 @@ function limitReached(
   config: AnalysisViewConfig,
   result: readonly RecordData[],
 ): { atLimit?: number } {
+  // An analysis with no groups asks one question and gets one row back, so a
+  // limit of one is met by every successful answer and cuts nothing short.
+  // Only a grouping can lose rows to a ceiling.
+  if (config.groups.length === 0) return {};
   const limit = config.limit;
   if (!Number.isInteger(limit) || limit < 1) return {};
   return result.length === limit ? { atLimit: limit } : {};

@@ -134,6 +134,22 @@ describe('projectAnalysis row limit', () => {
   });
 
   /**
+   * An analysis with no groups asks one question and gets one row, so a limit
+   * of one is met by every successful answer. Warning there would put "may
+   * have been cut short" under every metric view that ever ran.
+   */
+  it('says nothing about an analysis that has no grouping to cut short', () => {
+    const view = projectAnalysis(
+      definition,
+      analysisConfig({ groups: [], sort: [], limit: 1 }),
+      [{ orders: 6 }],
+    );
+
+    expect(view.rows).toHaveLength(1);
+    expect(view.atLimit).toBeUndefined();
+  });
+
+  /**
    * `validateAnalysis` refuses each of these, but the projection is exported
    * and a host may run it over a config nothing admitted. No usable limit
    * means nothing is known about what was left out — which is not the same
