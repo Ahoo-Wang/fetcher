@@ -39,17 +39,19 @@ export interface SortableHeaderProps {
  * One column header, and the whole of the sorting interaction.
  *
  * Three things are said rather than drawn. `aria-sort` on the cell is how a
- * table says which column it is ordered by, and it is read where an arrow is
- * only seen. The button's name is what the *next* click does — ascending,
- * then descending, then off — because a control is named by its action, and
- * the column's own label is inside that sentence, so what is heard still
- * contains what is seen. And a column that could be sorted but is not wears a
- * neutral mark, so the affordance does not appear only after it is used.
+ * table says which column it is ordered by, and it goes on the column that
+ * decides that order and on no other. The button's name is what the *next*
+ * click does — ascending, then descending, then off — because a control is
+ * named by its action, and the column's own label is inside that sentence, so
+ * what is heard still contains what is seen. And a column that could be
+ * sorted but is not wears a neutral mark, so the affordance does not appear
+ * only after it is used.
  *
  * A second sorted column joins the first rather than replacing it (see
  * `useRecordTable.toggleSort`), so while more than one is sorted each header
- * also carries its position: without it, two arrows say what the table is
- * ordered by but not in which order.
+ * also carries its position, drawn as a number and spoken in its name: two
+ * arrows say what the table is ordered by but not in which order, and ARIA
+ * has one attribute where this has several columns.
  */
 export function SortableHeader({
   column,
@@ -105,7 +107,7 @@ export function SortableHeader({
     <TableHead
       data-field={column.field}
       {...pinned}
-      aria-sort={ariaSort(direction)}
+      aria-sort={ariaSort(direction, at === 0)}
       className={head}
       style={style}
     >
@@ -142,13 +144,22 @@ export function SortableHeader({
   );
 }
 
-/** ARIA's word for the direction, and `none` for a column that could be. */
+/**
+ * ARIA's word for the direction, and only for the column that decides the
+ * order.
+ *
+ * A table is "sorted by" one column as far as these semantics go: marking
+ * every sortable header made the unsorted ones announce `none` each in turn,
+ * and a two-level sort announce two columns as ascending with nothing to say
+ * which is consulted first. The rest of the order is in the button's name,
+ * where it can be said in words.
+ */
 function ariaSort(
   direction: SortDirection | null,
-): 'ascending' | 'descending' | 'none' {
-  if (direction === 'ASC') return 'ascending';
-  if (direction === 'DESC') return 'descending';
-  return 'none';
+  primary: boolean,
+): 'ascending' | 'descending' | undefined {
+  if (!primary) return undefined;
+  return direction === 'ASC' ? 'ascending' : 'descending';
 }
 
 /**

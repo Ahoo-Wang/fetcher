@@ -92,20 +92,25 @@ export const WithData: Story = {
     await expect(
       headerOf(table, '订单号').querySelector('[data-slot="sort-available"]'),
     ).not.toBeNull();
-    await expect(headerOf(table, '订单号')).toHaveAttribute(
-      'aria-sort',
-      'none',
-    );
+    // Nothing else claims to be sorted: ARIA marks the column the table is
+    // ordered by, and there is one of those.
+    await expect(headerOf(table, '订单号')).not.toHaveAttribute('aria-sort');
 
     await userEvent.click(headerOf(table, '订单号').querySelector('button')!);
-    await waitFor(() =>
-      expect(headerOf(table, '订单号')).toHaveAttribute(
-        'aria-sort',
-        'ascending',
-      ),
-    );
+    await waitFor(() => expect(positionOf(table, '订单号')).toBe('2'));
+    // Amount still decides, so it keeps the attribute and the first place;
+    // the column that breaks its ties says where it sits in its own name.
     await expect(positionOf(table, '金额')).toBe('1');
-    await expect(positionOf(table, '订单号')).toBe('2');
+    await expect(headerOf(table, '金额')).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+    await expect(headerOf(table, '订单号')).not.toHaveAttribute('aria-sort');
+    await expect(
+      headerOf(table, '订单号')
+        .querySelector('button')!
+        .getAttribute('aria-label'),
+    ).toContain(say('label.sort.at', { position: 2, count: 2 }));
     // Amount still decides, and the second column only breaks its ties, so
     // the rows are where they were.
     await expect(readColumn(table, '订单号')).toEqual(PENDING_BY_AMOUNT);
@@ -447,18 +452,18 @@ export const TotalCoversThisPageOnly: Story = {
       expect(readColumn(table, '订单号')).toEqual(PENDING_BY_AMOUNT),
     );
 
-    // The footer names the scope it really answers for, and carries it in
-    // the attribute a host can style on.
+    // One row, naming the scope it really answers for and carrying it in the
+    // attribute a host can style on: the row that would have covered every
+    // matching record has no number, and none is invented for it.
     const footer = table.querySelector<HTMLElement>('tfoot')!;
-    await expect(footer.dataset.scope).toBe('page');
-    await expect(footer).toHaveTextContent(
-      defaultMessages['label.summary.page'],
-    );
-    await expect(footer).not.toHaveTextContent(
-      defaultMessages['label.summary.total'],
-    );
-    // The rows on screen add up to exactly what the row shows.
-    await expect(amountOf(readTotal(table, '金额'))).toBe(6470);
+    await expect(scopeLabels(table)).toEqual([
+      defaultMessages['label.summary.scope.page'],
+    ]);
+    await expect(
+      [...footer.querySelectorAll('tr')].map(row => row.dataset.scope),
+    ).toEqual(['page']);
+    // The rows on screen add up to exactly what that row shows.
+    await expect(amountOf(readPage(table, '金额'))).toBe(6470);
 
     // And one line above the result says why it is only a page total. It is
     // a warning, not an alert: nothing was blocked.

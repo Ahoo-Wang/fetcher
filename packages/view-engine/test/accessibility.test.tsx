@@ -232,11 +232,13 @@ describe('the default workbenches pass axe', () => {
     );
     await waitFor(() => expect(container.querySelector('tfoot')).toBeTruthy());
 
+    // One `aria-sort`, on the column the table is ordered by; the column
+    // that breaks its ties carries its place in the button's name instead.
     expect(
       [...container.querySelectorAll('thead [aria-sort]')].map(cell =>
         cell.getAttribute('aria-sort'),
       ),
-    ).toEqual(['ascending', 'descending']);
+    ).toEqual(['descending']);
     expect(
       container.querySelectorAll('[data-slot="sort-position"]'),
     ).toHaveLength(2);

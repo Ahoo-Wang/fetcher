@@ -252,6 +252,35 @@ describe('DashboardGrid', () => {
   });
 
   /**
+   * A panel scrolls itself (`CardContent` is the scroll area), and the table
+   * inside it must not be a second scrollport: it would be a box nothing
+   * ever scrolls, and the sticky header would hold against *it* while the
+   * panel moved the header off the top.
+   */
+  it('leaves the scrolling to the panel, so the header holds against it', async () => {
+    const { controller } = await openDashboard(
+      dashboardConfig({ panels: [panel()] }),
+    );
+
+    const { container } = render(
+      <ViewSurface>
+        <DashboardGrid dashboard={controller()} />
+      </ViewSurface>,
+    );
+
+    const area = await waitFor(() => {
+      const found = container.querySelector<HTMLElement>(
+        '[data-slot="record-table"]',
+      );
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(area.className).not.toContain('overflow-auto');
+    expect(area.className).not.toContain('max-h-');
+    expect(container.querySelector('thead')!.className).toContain('sticky');
+  });
+
+  /**
    * The scope label rides in the selection column when there is one. Without
    * it the row has no spare cell, so the label must land above the first
    * column rather than take a column's place — a summary that silently lost

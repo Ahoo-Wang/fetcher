@@ -78,8 +78,13 @@ function pinVar(side: 'left' | 'right', index: number): string {
  * than through state: this is a layout the DOM already knows and React does
  * not, so reading it back into a render would only buy a second pass. The
  * header is measured rather than a body row because a table with no rows
- * still has one, and a resize is followed because a column can change width
- * without anything re-rendering.
+ * still has one.
+ *
+ * What is watched is each of those header cells and not the table, because
+ * the offsets follow the cells: a web font that finishes loading or an action
+ * button that grows changes a column's width inside a table whose own box
+ * never moves, and offsets published from the last layout would then hold the
+ * pinned columns over their neighbours.
  */
 export function usePinnedOffsets(
   table: RefObject<HTMLTableElement | null>,
@@ -88,7 +93,7 @@ export function usePinnedOffsets(
     const node = table.current;
     if (!node) return;
     applyPins(node);
-    return observeResize(node, () => applyPins(node));
+    return observeResize(pinCells(node), () => applyPins(node));
   });
 }
 
@@ -97,11 +102,18 @@ export function usePinnedOffsets(
  * count: a column that scrolls away contributes nothing to stay clear of.
  */
 function applyPins(table: HTMLTableElement): void {
-  const cells = [
-    ...table.querySelectorAll<HTMLTableCellElement>('thead tr:first-child>th'),
-  ];
+  const cells = pinCells(table);
   accumulate(table, cells, 'left');
   accumulate(table, [...cells].reverse(), 'right');
+}
+
+/** The header cells the offsets are added up from, in column order. */
+function pinCells(table: HTMLTableElement): HTMLTableCellElement[] {
+  return [
+    ...table.querySelectorAll<HTMLTableCellElement>(
+      'thead tr:first-child>th[data-pin]',
+    ),
+  ];
 }
 
 function accumulate(
@@ -120,10 +132,14 @@ function accumulate(
 }
 
 /** Resize reporting where the platform has it, and nothing where it does not. */
-function observeResize(node: Element, changed: () => void): () => void {
-  if (typeof ResizeObserver === 'undefined') return () => {};
+function observeResize(
+  nodes: readonly Element[],
+  changed: () => void,
+): () => void {
+  if (nodes.length === 0 || typeof ResizeObserver === 'undefined')
+    return () => {};
   const observer = new ResizeObserver(changed);
-  observer.observe(node);
+  for (const node of nodes) observer.observe(node);
   return () => observer.disconnect();
 }
 

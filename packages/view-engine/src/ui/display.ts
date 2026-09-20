@@ -158,9 +158,14 @@ export function valueText(
   return JSON.stringify(value) ?? '';
 }
 
+/** One badge: the value the record holds, and the label it is shown by. */
+export interface BadgeEntry {
+  value: unknown;
+  label: string;
+}
+
 /**
- * The labels a status cell wears as badges, or `undefined` when the field is
- * not one.
+ * The badges a status cell wears, or `undefined` when the field is not one.
  *
  * Two things have to hold. The field's renderer is `enum` and it declares the
  * choices, so a badge means "one of a known set" rather than "some string";
@@ -168,15 +173,23 @@ export function valueText(
  * pill around a code nobody named only makes the code look deliberate. An
  * array of enum values gets one badge each: joined into a single pill they
  * would read as one status with a comma in its name.
+ *
+ * Each entry carries the raw value beside its label, because labels are not
+ * identities: `FieldOption.label` is free text a definition may repeat, and a
+ * list of values may repeat too, so the caller needs something better than
+ * the label to tell two badges apart.
  */
-export function badgeLabels(
+export function badgeEntries(
   value: unknown,
   field: DisplayField,
-): string[] | undefined {
+): BadgeEntry[] | undefined {
   if ((field.cell ?? field.kind) !== 'enum') return undefined;
   if (!field.options || field.options.length === 0) return undefined;
   if (value === null || value === undefined) return undefined;
-  return optionLabels(value, field.options);
+  const options = field.options;
+  const items = Array.isArray(value) ? value : [value];
+  const labels = optionLabels(items, options);
+  return labels?.map((label, index) => ({ value: items[index], label }));
 }
 
 /** The label of each value an enum holds; `undefined` when none is known. */

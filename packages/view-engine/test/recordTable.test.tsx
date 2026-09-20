@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryViewStore, ViewEngine } from '../src/index.js';
@@ -34,6 +34,20 @@ import {
 import { mine } from './fixtures/ui.js';
 
 afterEach(cleanup);
+
+/** A `ResizeObserver` that reports what it was given and fires on demand. */
+class ResizeSpy {
+  readonly observed: Element[] = [];
+  constructor(private readonly callback: ResizeObserverCallback) {}
+  observe(node: Element): void {
+    this.observed.push(node);
+  }
+  unobserve(): void {}
+  disconnect(): void {}
+  resize(): void {
+    this.callback([], this as unknown as ResizeObserver);
+  }
+}
 
 function tableController(
   overrides: Partial<RecordTableController> = {},
@@ -597,8 +611,10 @@ describe('sorting from the headers', () => {
     const { container } = render(<RecordTable table={sorted([])} />);
 
     const head = header(container, 'amount');
-    expect(head.getAttribute('aria-sort')).toBe('none');
     expect(head.querySelector('[data-slot="sort-available"]')).not.toBeNull();
+    // Nothing is sorted, so nothing claims to be: a row of headers each
+    // announcing `none` is noise, not information.
+    expect(container.querySelectorAll('thead [aria-sort]')).toHaveLength(0);
     // A column that cannot be sorted offers nothing at all, not even a mark.
     const plain = header(container, 'warehouse');
     expect(plain.hasAttribute('aria-sort')).toBe(false);
@@ -634,9 +650,15 @@ describe('sorting from the headers', () => {
     expect(position(container, 'status')).toBe('1');
     expect(position(container, 'amount')).toBe('2');
     expect(position(container, 'id')).toBe('3');
-    expect(header(container, 'amount').getAttribute('aria-sort')).toBe(
-      'descending',
-    );
+    // ARIA marks the column the table is ordered by, and there is one of
+    // those however many columns break its ties; the rest would otherwise
+    // announce two columns as sorted with nothing saying which comes first.
+    expect(
+      [...container.querySelectorAll('thead [aria-sort]')].map(cell => [
+        (cell as HTMLElement).dataset.field,
+        cell.getAttribute('aria-sort'),
+      ]),
+    ).toEqual([['status', 'ascending']]);
     // The place in the order is read as well as seen.
     expect(
       header(container, 'amount')
@@ -713,6 +735,35 @@ describe('enum cells', () => {
     ).toEqual(['Pending', 'Shipped']);
   });
 
+  /**
+   * A label is not an identity: a list may hold the same value twice and two
+   * options may be worded alike, so badges keyed by their text would collide
+   * — and two children under one key is a reconciliation React is free to get
+   * wrong, and warns about.
+   */
+  it('keeps repeated values and repeated wording apart', () => {
+    const complained = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { container } = render(
+      <RecordTable
+        table={status(
+          [
+            { value: 'PENDING', label: 'Open' },
+            // Two codes the definition words the same way.
+            { value: 'HELD', label: 'Open' },
+          ],
+          ['PENDING', 'HELD', 'PENDING'],
+        )}
+      />,
+    );
+
+    expect(
+      [...container.querySelectorAll('[data-slot="badge"]')].map(
+        node => node.textContent,
+      ),
+    ).toEqual(['Open', 'Open', 'Open']);
+    expect(complained).not.toHaveBeenCalled();
+  });
+
   it('leaves a code nobody named as plain text', () => {
     const { container } = render(
       <RecordTable table={status(undefined, 'PENDING')} />,
@@ -774,6 +825,31 @@ describe('the table chrome', () => {
     const area = container.querySelector('[data-slot="record-table"]')!;
     expect(area.className).toContain('overflow-auto');
     expect(container.querySelector('thead')!.className).toContain('sticky');
+    expect(container.querySelector('thead')!.className).toContain('top-0');
+    expect(container.querySelector('tfoot')!.className).toContain('bottom-0');
+  });
+
+  /**
+   * A box that scrolls sideways is a scrollport both ways — CSS has no
+   * one-axis overflow — so inside a surface that scrolls itself the wrapper
+   * must not be one at all: a dashboard panel shorter than this table's own
+   * height would otherwise move the header off the top while it stayed put
+   * against a box nothing ever scrolls.
+   */
+  it('leaves the scrolling to the surface around it when asked', () => {
+    const { container } = render(
+      <RecordTable
+        scrolls={false}
+        table={tableController({ summaries: { scope: 'page', cells: [] } })}
+      />,
+    );
+
+    const area = container.querySelector('[data-slot="record-table"]')!;
+    expect(area.className).not.toContain('overflow-auto');
+    expect(area.className).not.toContain('max-h-');
+    // The registry's own container stays out of the way either way, and the
+    // header and summaries still hold — against whatever really scrolls.
+    expect(area.className).toContain('overflow-visible');
     expect(container.querySelector('thead')!.className).toContain('top-0');
     expect(container.querySelector('tfoot')!.className).toContain('bottom-0');
   });
@@ -921,6 +997,55 @@ describe('the table chrome', () => {
       expect(cell.style.left).toBe(
         'var(--fve-pin-left-1, calc(2.5rem + 60px))',
       );
+  });
+
+  /**
+   * A column can change width while the table's own box does not — a web
+   * font finishing, a row-action button growing — and offsets published from
+   * the last layout would then hold the pinned columns over their
+   * neighbours. What is watched is therefore the cells the offsets are added
+   * up from, not the table.
+   */
+  it('follows a header cell that resizes while the table does not', () => {
+    const rendered: Record<string, number> = { select: 77, id: 100 };
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: Element) {
+        const cell = this as HTMLElement;
+        const key = cell.dataset.column ?? cell.dataset.field ?? '';
+        return { width: rendered[key] ?? 0 } as DOMRect;
+      },
+    );
+    const observers: ResizeSpy[] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class extends ResizeSpy {
+        constructor(callback: ResizeObserverCallback) {
+          super(callback);
+          observers.push(this);
+        }
+      },
+    );
+
+    const { container } = render(<RecordTable table={pinned()} />);
+    const table = container.querySelector('table')!;
+    expect(table.style.getPropertyValue('--fve-pin-left-0')).toBe('77px');
+
+    // The header cells that feed the offsets, and nothing else: the table
+    // itself can sit still through all of this.
+    const latest = observers[observers.length - 1];
+    const watching: Element[] = latest.observed;
+    expect(watching.every((node: Element) => node.tagName === 'TH')).toBe(true);
+    expect(watching).toContain(
+      container.querySelector('thead th[data-column="select"]'),
+    );
+    expect(watching).not.toContain(table);
+
+    // The scope label makes the selection column wider without the table
+    // moving; the pinned column follows it rather than sitting on it.
+    rendered.select = 120;
+    act(() => latest.resize());
+    expect(table.style.getPropertyValue('--fve-pin-left-0')).toBe('120px');
+    vi.unstubAllGlobals();
   });
 
   it('pins nothing but the actions when no column asked for it', () => {

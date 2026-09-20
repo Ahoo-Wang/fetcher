@@ -35,7 +35,7 @@ import {
 } from './components/empty.js';
 import { Skeleton } from './components/skeleton.js';
 import {
-  badgeLabels,
+  badgeEntries,
   displayValue,
   formatNumber,
   type DisplayContext,
@@ -85,6 +85,17 @@ export interface RecordTableProps {
    * a host hands over buttons rather than a layout.
    */
   rowActions?(row: RecordRow): React.ReactNode;
+  /**
+   * Whether the table is its own scroll area. On by default, which is what a
+   * workbench wants: the rows scroll under a header that stays.
+   *
+   * A surface that scrolls itself — a dashboard panel, a host page that
+   * scrolls as a whole — turns it off and keeps the sticky header, summaries
+   * and pinned columns, which then hold against *its* scrolling. Leaving it
+   * on inside such a surface is what takes the header away: the wrapper
+   * becomes a second scrollport that nothing ever scrolls.
+   */
+  scrolls?: boolean;
   /** Overrides the catalogue's own wording for an empty result. */
   emptyTitle?: string;
   emptyDescription?: string;
@@ -98,13 +109,28 @@ export interface RecordCell {
 }
 
 /**
- * The table scrolls, the page does not: the header stays while the rows move
+ * The table is its own scroll area: the header stays while the rows move
  * under it, the summaries stay at the foot, and both scroll sideways with the
- * columns they belong to. A host that would rather scroll the whole page sets
- * the height to `none`.
+ * columns they belong to. The registry's own container is taken out of the
+ * way — two nested scrollports and the sticky header would resolve against
+ * the inner one, which never scrolls.
  */
 const SCROLL_AREA =
   'relative max-h-[var(--fve-record-table-max-h,70vh)] overflow-auto [&>[data-slot=table-container]]:overflow-visible';
+
+/**
+ * And the same table where something around it scrolls instead.
+ *
+ * `overflow` cannot be had on one axis alone — a box that scrolls sideways is
+ * a scrollport both ways — so a wrapper that never needs to scroll must not
+ * be one at all: inside a dashboard panel shorter than this table's own
+ * height, or under a host that scrolls the whole page, the wrapper would
+ * become the scrollport the sticky header resolves against and the header
+ * would scroll away with the rows while the panel around it did the moving.
+ * Left visible, the header, the summaries and the pinned columns all hold
+ * against whatever really scrolls.
+ */
+const STATIC_AREA = 'relative [&>[data-slot=table-container]]:overflow-visible';
 
 /**
  * The record view as a table.
@@ -118,6 +144,7 @@ export function RecordTable({
   renderCell,
   selectable = true,
   rowActions,
+  scrolls = true,
   emptyTitle,
   emptyDescription,
 }: RecordTableProps) {
@@ -157,7 +184,10 @@ export function RecordTable({
   }
 
   return (
-    <div data-slot="record-table" className={SCROLL_AREA}>
+    <div
+      data-slot="record-table"
+      className={scrolls ? SCROLL_AREA : STATIC_AREA}
+    >
       <Table ref={element}>
         {/* A layer rather than a row: it stays while the rows move under it,
             and its edge is heavier than the hairlines between them. */}
@@ -314,13 +344,17 @@ function defaultCell(
   // used: the definition says what the choices are, not which of them is
   // good news, and a table that colours them by guess is a table that calls
   // `CANCELLED` an error in one application and a normal outcome in the next.
-  const badges = badgeLabels(value, column);
+  const badges = badgeEntries(value, column);
   if (badges)
     return (
       <span className="flex flex-wrap items-center gap-1">
-        {badges.map(label => (
-          <Badge key={label} variant="secondary">
-            {label}
+        {/* Keyed by the value and its place, never by the label: a list may
+            hold the same value twice and two options may be worded alike,
+            and two children under one key is a reconciliation React is free
+            to get wrong. */}
+        {badges.map((badge, index) => (
+          <Badge key={`${String(badge.value)}-${index}`} variant="secondary">
+            {badge.label}
           </Badge>
         ))}
       </span>
