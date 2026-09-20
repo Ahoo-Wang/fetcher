@@ -143,18 +143,21 @@ useAnalysisEditor(runtime): AnalysisController
 useDashboard(runtime): DashboardController
 ```
 
+- `DashboardController.loading` 是「任一面板的查询在途」，由控制器自己订阅各个子 runtime 得来：仪表盘不跑自己的查询（`state.query` 恒为 `idle`），而子 runtime 的查询变化**不会**通知仪表盘的订阅者——那是有意的，否则每个面板每次请求都要让整张栅格重渲染——所以栅格之外还要知道这件事的控件（刷新按钮）只能由这里代为订阅。它与 `DashboardViewRuntime` 自己的计时器开火前问的是同一件事。
+
 两者的界面规则见 [ui/analysis.md](ui/analysis.md) 与 [ui/dashboard.md](ui/dashboard.md)。
 
 ## useAutoRefresh
 
 ```ts
 useAutoRefresh(runtime): RefreshController
-RefreshController { interval; chosen; intervals; setInterval(interval); now(); loading }
+RefreshController { interval; chosen; intervals; unsound; setInterval(interval); now(); loading }
 ```
 
 - 两个数，一个成员的两个时刻，不是两份状态。`interval` 是 **`applied`** 的 `refresh.interval`——**正在生效**的那一档，计时器读的就是它，所以凭据只能说它（与 `AppliedBar` 读 `result.own` 同一条理由）；`chosen` 是 **草稿** 的那一档——「这个视图被设成什么」「`Save` 会写下什么」，菜单勾的是它，与布局、每页条数读草稿一致；
 - 选中即 `edit` 加 `apply`，所以两者通常相等；**只有草稿被准入拒绝、`apply` 落不下去时**才分开，此时 `applied` 那一档仍然是真的（把刷新关掉也一样：什么都没关掉）。合成一个数就会让按钮挂着一个没有东西在跑的节奏。控制器里**没有**与配置并行的第二份状态：那会让配置、计时器与屏幕各说一个数；
-- `intervals` 是裁剪后的档位（升序）：梯子 ∩ `[minRefreshInterval, maxRefreshInterval]`，再并进 `chosen`（同样要限制允许，否则菜单里没有一项勾得上）。限制不允许的档位不出现而不是禁用（D4）；空表示这个视图没有间隔可选，控件因此连 `▾` 都不给；
+- `intervals` 是裁剪后的档位（升序）：梯子 ∩「内核会跑的数」——**整数**且落在 `[minRefreshInterval, maxRefreshInterval]` 内，因为 `validateRefresh` 拒绝小数与越界是同一件事——再并进 `chosen`（同样要跑得起来，否则菜单里没有一项勾得上）。不允许的档位不出现而不是禁用（D4）；`interval` 也照这条读：`applied` 里一个跑不起来的数报 `null`，不冒充节奏；
+- `unsound` 是「准入对这个成员有话说」（`issues` 里路径以 `refresh` 开头的任意一条：缺失、不是对象、小数、越界）。它存在只为一件事——控件据此知道自己**还有事可做**：「关闭」写下的 `{ interval: null }` 是这几种拒绝的通用修法，梯子空时若连菜单都收起来，用户就被钉在一份 Apply 与 Save 都过不去、却没有控件能修的配置上。判断读 `issues` 而不在这里重算，免得控件与内核对同一份配置给出两种结论；
 - `now()` 就是 `runtime.refresh()`，一次性的那一下；`loading` 是本视图查询在途。没有开着的视图时全部是空操作，因为工作台在视图还在打开时就已经画出了这个控件。（见 test/refreshControl.test.tsx「useAutoRefresh」）
 
 ## useWorkbench

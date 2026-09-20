@@ -139,7 +139,12 @@ export function DashboardWorkbench({
         <RefreshControl
           refresh={workbench.refresh}
           variant="outline"
-          busy={dashboard.resolving}
+          // A dashboard runs no query of its own, so "something is out"
+          // is the panels' answer: while any of them is querying, pressing
+          // refresh would only replace requests that are already on their
+          // way, and the spinner is the only sign the user gets that they
+          // were.
+          busy={dashboard.resolving || dashboard.loading}
           note={messages.label('label.refresh.panels')}
         />
       }

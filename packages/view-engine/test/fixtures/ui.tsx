@@ -120,6 +120,7 @@ export function refreshController(
   return {
     interval: null,
     chosen: null,
+    unsound: false,
     intervals: [10, 30, 60, 300, 900, 1800, 3600],
     setInterval: () => {},
     now: () => {},

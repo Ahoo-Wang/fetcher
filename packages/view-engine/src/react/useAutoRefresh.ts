@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import type { ViewConfig } from '../model/index.js';
+import type { RuntimeLimits, ViewConfig } from '../model/index.js';
 import { refreshIntervalOf, type ViewRuntime } from '../runtime/index.js';
 import { useViewRuntime } from './useViewEngine.js';
 
@@ -29,6 +29,29 @@ const REFRESH_INTERVALS = [10, 30, 60, 300, 900, 1800, 3600];
 
 /** Stable identity for "no runtime, nothing on offer". */
 const NO_INTERVALS: readonly number[] = [];
+
+/**
+ * Whether the kernel would run this many seconds: a whole number inside the
+ * budget.
+ *
+ * `validateRefresh` refuses a fractional interval as surely as one out of
+ * range (`config.refresh.not-an-integer`), so both are the same answer here.
+ * An interval that fails this is one the timer will never use — offering it
+ * would offer a config that cannot run, and saying it would name a cadence
+ * nothing keeps.
+ */
+function runnable(
+  seconds: number | null,
+  limits: RuntimeLimits | undefined,
+): seconds is number {
+  return (
+    seconds !== null &&
+    limits !== undefined &&
+    Number.isInteger(seconds) &&
+    seconds >= limits.minRefreshInterval &&
+    seconds <= limits.maxRefreshInterval
+  );
+}
 
 /**
  * How often this view renews its own answer, and the way to run one now.
@@ -51,6 +74,12 @@ export interface RefreshController {
    * Choosing an interval edits and applies in one gesture, so this and
    * {@link chosen} agree except while a draft the kernel refuses holds
    * `apply` back, and then it is this one that is true.
+   *
+   * A stored value the kernel would refuse — fractional, or outside the
+   * budget — reads as `null` rather than as itself: the timer will never use
+   * it (an `applied` the kernel refuses can only come from a draft it
+   * refuses, which is already holding the timer), so naming it would promise
+   * a cadence nothing keeps. The refusal is the strip's to report.
    */
   interval: number | null;
   /**
@@ -71,6 +100,19 @@ export interface RefreshController {
    * it has nothing to open.
    */
   intervals: readonly number[];
+  /**
+   * Whether admission has something to say about this view's `refresh`
+   * member: missing, not an object, or an interval that is not a whole
+   * number of seconds in range.
+   *
+   * A control reads it to know it still has work to do when it has nothing
+   * to offer. Turning refresh **off** writes `{ interval: null }`, which is
+   * the repair for every one of those refusals, so a menu that hid itself
+   * because the limits left no rung would strand the user on a config that
+   * blocks Apply and Save with no control on screen able to mend it — the
+   * package's own rule is that a reported error is always reachable.
+   */
+  unsound: boolean;
   /**
    * Writes `refresh.interval` and applies it, the way a sort or a column
    * change does: without the apply the runtime's timer, which reads
@@ -97,27 +139,31 @@ export function useAutoRefresh(
   // Both read through the runtime's own reading of the member: a config
   // arrives from a store, and neither "what the timer uses" nor "what a save
   // would write" may throw on the way to the screen.
-  const interval = state ? refreshIntervalOf(state.applied) : null;
+  const applied = state ? refreshIntervalOf(state.applied) : null;
   const chosen = state ? refreshIntervalOf(state.draft) : null;
   const limits = runtime?.limits;
 
   return {
-    interval,
+    interval: runnable(applied, limits) ? applied : null,
     chosen,
+    // Every admission finding about this member, whatever its code: missing,
+    // fractional, too short, too long. Read off `issues` rather than judged
+    // again here, so the control and the kernel cannot come to different
+    // conclusions about the same config.
+    unsound: (state?.issues ?? []).some(found => found.path[0] === 'refresh'),
     intervals: useMemo(() => {
       if (!limits) return NO_INTERVALS;
-      const admits = (seconds: number) =>
-        seconds >= limits.minRefreshInterval &&
-        seconds <= limits.maxRefreshInterval;
-      // What is picked joins the ladder when the limits admit it: a view
+      // What is picked joins the ladder when the kernel would run it: a view
       // saved at 45 seconds has to offer the rung it is sitting on, or the
-      // menu would show nothing marked. One they refuse does not — the
-      // config is already refused, said in the strip above the result, and
-      // the way out of it is a rung that works or Off, not the number that
-      // broke. The ladder answers to the draft rather than to what is in
-      // force, because the ladder is what the menu marks.
-      const offered = REFRESH_INTERVALS.filter(admits);
-      if (chosen !== null && admits(chosen)) offered.push(chosen);
+      // menu would show nothing marked. One the kernel refuses does not —
+      // that config is already refused, said in the strip above the result,
+      // and the way out of it is a rung that works or Off, not the number
+      // that broke. The ladder answers to the draft rather than to what is
+      // in force, because the ladder is what the menu marks.
+      const offered = REFRESH_INTERVALS.filter(seconds =>
+        runnable(seconds, limits),
+      );
+      if (runnable(chosen, limits)) offered.push(chosen);
       return [...new Set(offered)].sort((left, right) => left - right);
     }, [chosen, limits]),
     setInterval: useCallback(

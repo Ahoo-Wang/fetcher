@@ -22,12 +22,18 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { PagedList } from '@ahoo-wang/fetcher-wow';
 import {
   DEFAULT_RUNTIME_LIMITS,
   MemoryViewStore,
   ViewEngine,
 } from '../src/index.js';
-import type { RuntimeLimits, ViewInstance, ViewSource } from '../src/index.js';
+import type {
+  RecordData,
+  RuntimeLimits,
+  ViewInstance,
+  ViewSource,
+} from '../src/index.js';
 import type { RecordViewRuntime, ViewRuntime } from '../src/runtime/index.js';
 import { useAutoRefresh } from '../src/react/index.js';
 import {
@@ -41,6 +47,7 @@ import {
 import {
   analysisConfig,
   dashboardConfig,
+  deferred,
   ordersDefinition,
   overviewDefinition,
   recordConfig,
@@ -168,9 +175,60 @@ describe('useAutoRefresh', () => {
       ),
     );
     expect(refused.result.current.intervals).toEqual([30, 60, 300, 900]);
-    // It is still what the view is set to, and what it opened running.
+    // It is still what the view is *set* to, and a save would write it —
+    // but it is not in force and never will be, because the same bounds
+    // that keep it off the ladder had admission refuse the config.
     expect(refused.result.current.chosen).toBe(5);
-    expect(refused.result.current.interval).toBe(5);
+    expect(refused.result.current.interval).toBeNull();
+    expect(refused.result.current.unsound).toBe(true);
+  });
+
+  /**
+   * `validateRefresh` refuses a fractional interval as surely as one out of
+   * range, so the ladder must not offer it and the credential must not name
+   * it: a cadence of 45.5 seconds is one the timer will never keep.
+   */
+  it('neither offers nor reports an interval the kernel would refuse', () => {
+    const engine = engineWith({});
+    const { result } = renderHook(() =>
+      useAutoRefresh(
+        recordRuntime(
+          engine,
+          recordConfig({ refresh: { interval: 45.5 } }),
+        ) as ViewRuntime,
+      ),
+    );
+
+    expect(result.current.intervals).not.toContain(45.5);
+    expect(result.current.interval).toBeNull();
+    // But the menu still opens on it, because `Off` is the repair.
+    expect(result.current.unsound).toBe(true);
+  });
+
+  /**
+   * The same for a `refresh` no reading can make sense of. Both numbers are
+   * null, so nothing but `unsound` can tell "this view does not refresh
+   * itself" from "this view's config cannot be read".
+   */
+  it('marks a refresh member admission refuses, however it is broken', () => {
+    const engine = engineWith({});
+    const sound = renderHook(() =>
+      useAutoRefresh(recordRuntime(engine) as ViewRuntime),
+    );
+    expect(sound.result.current.unsound).toBe(false);
+
+    const broken = renderHook(() =>
+      useAutoRefresh(
+        recordRuntime(engine, {
+          ...recordConfig(),
+          refresh: { interval: '30' },
+        } as unknown as ReturnType<typeof recordConfig>) as ViewRuntime,
+      ),
+    );
+
+    expect(broken.result.current.interval).toBeNull();
+    expect(broken.result.current.chosen).toBeNull();
+    expect(broken.result.current.unsound).toBe(true);
   });
 
   it('has nothing to offer without an open view', () => {
@@ -416,12 +474,16 @@ describe('RefreshControl', () => {
     expect(screen.getByRole('button', { name: REFRESH })).toBeTruthy();
   });
 
-  /** One the limits refuse is still one the user must be able to leave. */
+  /**
+   * A view that is refreshing must always be able to stop, even under
+   * limits that leave the ladder empty — here the interval in force is one
+   * the host's bounds admit but no rung sits on.
+   */
   it('keeps the way out when the interval in force is off the ladder', async () => {
     const user = userEvent.setup();
     render(
       <RefreshControl
-        refresh={refreshController({ interval: 2, chosen: 2, intervals: [] })}
+        refresh={refreshController({ interval: 32, chosen: 32, intervals: [] })}
       />,
     );
 
@@ -431,6 +493,32 @@ describe('RefreshControl', () => {
         .getAllByRole('menuitemradio')
         .map(item => item.textContent),
     ).toEqual([OFF]);
+  });
+
+  /**
+   * And a `refresh` member admission refuses must always be mendable: `Off`
+   * writes `{ interval: null }`, which repairs every one of those refusals.
+   * Without this the limits could leave no rung, the menu would hide itself,
+   * and the config blocking Apply and Save would have nothing on screen able
+   * to fix it — the trap this package keeps setting for itself.
+   */
+  it('keeps the menu when the stored refresh is the thing that is broken', async () => {
+    const setInterval = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <RefreshControl
+        refresh={refreshController({
+          intervals: [],
+          unsound: true,
+          setInterval,
+        })}
+      />,
+    );
+
+    const menu = await openIntervals(user);
+    await user.click(within(menu).getByRole('menuitemradio', { name: OFF }));
+
+    expect(setInterval).toHaveBeenCalledWith(null);
   });
 
   /**
@@ -589,5 +677,63 @@ describe('every workbench offers the interval', () => {
         interval: 300,
       }),
     );
+  });
+
+  /**
+   * A dashboard's own `query` never leaves `idle` — it runs nothing itself —
+   * so asking it whether something is out gets `false` while every panel on
+   * the board is mid-request, and the press would silently replace all of
+   * them. The answer has to come from the panels, the way the dashboard's
+   * own timer already asks them before it fires.
+   */
+  it('stops the dashboard press while a panel is still querying', async () => {
+    const board: ViewInstance = {
+      id: 'board-2',
+      definitionId: 'overview',
+      title: 'Overview',
+      // Personal, because the panel it holds is: a shared dashboard may not
+      // reference a personal view (`dashboard.panel.scope-too-narrow`), and
+      // a refused panel never queries, which is not what this is about.
+      scope: 'personal',
+      revision: '1',
+      config: dashboardConfig({
+        panels: [
+          {
+            id: 'orders',
+            kind: 'view',
+            instanceId: 'orders-1',
+            bindings: [],
+            layout: { x: 0, y: 0, w: 6, h: 4 },
+          },
+        ],
+      }),
+    };
+    // A source that never answers, so the panel's request stays in flight.
+    const outstanding = deferred<PagedList<RecordData>>();
+    const engine = engineWith({
+      instances: [orders, board],
+      source: testSource({ paged: () => outstanding.promise }),
+    });
+    render(
+      <ViewSurface>
+        <DashboardWorkbench
+          engine={engine}
+          definitionId="overview"
+          instanceId="board-2"
+        />
+      </ViewSurface>,
+    );
+
+    const press = await screen.findByRole('button', {
+      name: new RegExp(REFRESH),
+    });
+    await waitFor(() => expect(press.hasAttribute('disabled')).toBe(true));
+
+    // And it comes back the moment the panel has its answer.
+    await act(async () => {
+      outstanding.resolve({ total: 0, list: [] });
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(press.hasAttribute('disabled')).toBe(false));
   });
 });

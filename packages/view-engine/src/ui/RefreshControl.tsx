@@ -91,16 +91,18 @@ export function RefreshControl({
   note,
 }: RefreshControlProps) {
   const messages = useViewMessages();
-  const { interval, chosen, intervals } = refresh;
+  const { interval, chosen, intervals, unsound } = refresh;
   // The credential answers to the interval in force, never to the picked
   // one: while a refused draft holds `apply` back the two differ, and what
   // the button claims is happening had better be what is happening.
   const cadence =
     interval === null ? null : refreshIntervalLabel(interval, messages);
-  // Nothing on offer, nothing picked and nothing running: a chevron here
+  // Nothing on offer, nothing running and nothing to mend: a chevron here
   // would open a menu whose only item is the state the view is already in.
-  const choosable =
-    intervals.length > 0 || chosen !== null || interval !== null;
+  // The last two matter when the limits leave no rung at all — one keeps the
+  // way out of an interval that is running, the other the way out of a
+  // `refresh` member admission refuses, which `Off` is what repairs.
+  const choosable = intervals.length > 0 || interval !== null || unsound;
 
   return (
     <ButtonGroup
