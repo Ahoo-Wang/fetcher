@@ -12,7 +12,7 @@ validateFilter(fields: FieldDefinition[], tree: FilterTree, kinds: FieldKindRegi
 isSimpleTree(tree: FilterTree): boolean                  // filterMode 'simple' 的准入判断
 compileFilter(fields, tree, kinds, ctx: { now: Date; timeZone: string }): FilterExpression
 clearFilter(tree): FilterTree
-describeFilter(fields, tree): FilterSummaryItem[]           // 已应用条件的摘要
+describeFilter(fields, tree, kinds): FilterSummaryItem[]     // 已应用条件的摘要：结构化的部件 + 英文兜底句
 
 // record
 defaultRecordConfig(def): RecordViewConfig                      // 按 RecordCapability.defaults 补全的完整初始配置
@@ -20,14 +20,14 @@ validateRecord(def, cfg: RecordViewConfig, kinds): Issue[]   // 见下方规则
 compileRecord(def, cfg, kinds, ctx, page: RecordPageTarget): FilterPagedQuery | CursorQuery   // 按 RecordCapability.paging 判别；首次查询为 { index: 1 } 或 { cursor: null }（Wow 页码从 1 开始）
 projectRecord(def, cfg, page: PagedList<RecordData> | CursorPage<RecordData>): RecordView   // 列语义、行、行键；paging 为 { mode: 'paged'; index; total? } | { mode: 'cursor'; nextCursor: string | null }
 compileSummaries(def, cfg, kinds, ctx): AggregationQuery | null    // 全范围汇总
-projectSummaries(def, cfg, rows | aggregation): SummaryRow
+projectSummaries(def, cfg, rows | aggregation): SummaryRow        // scope 是结果的一部分：'total' 来自自己的聚合，'page' 来自屏幕上的行
 
 // analysis
 defaultAnalysisConfig(def): AnalysisViewConfig                  // 按固定优先级从已声明能力挑选指标；有可分组字段时取其一并按指标降序排序，否则分组为空且 `sort` 为空（无分组聚合只有一行，Wow 拒绝对其排序）
 validateAnalysis(def, cfg: AnalysisViewConfig, kinds): Issue[]   // 见下方规则
 compileAnalysis(def, cfg, kinds, ctx): AggregationQuery          // 同构映射；三处 FilterTree 编译为 FilterExpression
 compileAnalysisTotals(def, cfg, kinds, ctx): AggregationQuery | null   // table.totals 为 true 时的无分组聚合，否则 null
-projectAnalysis(def, cfg, result, totals?): AnalysisView          // 表格列与行；图表系列；合计行取自 totals，metric 卡片趋势模式的标题值亦取自 totals
+projectAnalysis(def, cfg, result, totals?): AnalysisView          // 表格列与行；图表系列；合计行取自 totals，metric 卡片趋势模式的标题值亦取自 totals；行数恰好等于 cfg.limit 时记 atLimit
 resultSchema(def, cfg): ResultSchema                     // 结果行校验依据
 
 // dashboard
@@ -69,6 +69,19 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 - 超出 `maxFilterDepth`（缺省 8）或 `maxFilterNodes`（缺省 256）立即报 error 并停止遍历，且是唯一的发现。骨架有问题时不再按 kind 校验；
 - `compileFilter` 与 `describeFilter` 对同样的输入不抛异常而是跳过畸形条目，因此递归不会耗尽调用栈，`TypeError` 也不会击穿 `open`。`ViewConfigBase` 本身同理：非对象的配置报 `config.invalid`，`filter` 不是分组报 `config.filter.invalid`。`validateAnalysis` 先检查配置骨架（`groups`、`metrics`、`sort`、`table.columns`、`elements` 须为数组且成员为对象、别名为字符串，`table`、`chart` 须为对象），不满足只报 `analysis.config.malformed` 并停止；
 - 随后对 NUMERIC／DISTINCT_COUNT／PERCENTILE 表达式、DERIVED 表达式与 `having` 树按同一份 `maxFilterDepth`／`maxFilterNodes` 以迭代遍历准入（与 Wow 的 `MAX_EXPRESSION_DEPTH`／`MAX_EXPRESSION_NODES` 同为 8／256；深度按每棵树计，节点数按同类树共享一份），超限报 `analysis.expression.too-deep`／`too-many-nodes` 或 `analysis.having.too-deep`／`too-many-nodes` 且不再递归。（见 test/filter.test.ts「malformed trees」与 test/analysis.test.ts「a malformed skeleton」「expression budgets」）
+
+## 已应用摘要是部件，不是句子
+
+`describeFilter` 交出的每一项都拆成可被措辞目录重写的部件，而不是一句写死的英文：结果区最显眼的那一行以前由各个 kind 自己拼出来——原始操作符名、`is empty`、`on or before`——于是 `messages={zhCN}` 之下整页中文、唯独条件 badge 是英文。
+
+- `FilterSummaryItem` 带 `path`、`unresolved`、`field`／`label`／`kind`／`cell`／`numberFormat`、`operator`（kind 认为操作符自己的词会说错时另带 `relation`：数组的 `IN` 问的是「这个数组含不含其中任一」，而 `is any of`／「是其中之一」说的是「这个值是不是其中之一」，两句话问的不是同一件事，所以 `array` 交出 `has-any`／`has-none`／`has-all`，界面按 `label.relation.*` 取词），以及 `value`（`cell` 也要跟着走，显示规则是 `cell ?? kind` 而不是 `kind`）；分组不带 `field` 与 `value`，带 `group`（自身操作符）与 `items`（组内各项）。持有谓词的条件（`ELEMENT_MATCH`）同样带 `items` 与 `group`——它是一条条件而不是一层嵌套，`isGroupItem` 以"有 `items` 且没有 `field`"区分两者；谓词的 `unresolved` 由内层汇总而来（与分组同理）：元素定义里被删掉的字段在里面读不出来，而条上只画外层这一个 badge，标记只能落在它身上；
+- `value` 是封闭联合 `FilterSummaryValue`：`none`（操作符本身就是全部条件）、`blank`（kind 读不出这个值，只有字段名是真的）、`text`、`list`（原始值，另带按位对应的 `labels`——**只放定义真的命名过的**，没命名的位置留 `undefined`，一个都没有就整个不带：标签是「定义管这个值叫什么」，不是值本身的替身，把值 `String()` 一下冒充标签会盖过字段自己的格式，开放式数组里的金额就成了光秃秃的数字）、`range`、`relative`、`preset`。命名时段交成 `preset`，因此"下季度"到了界面仍是一个键而不是一句话；
+- **同一个存下来的值可能是两种条件**，部件必须分开说，否则摘要描述的是一次没跑过的查询：
+  - `relative` 带 `bound`。`BETWEEN` 问的是此刻到"七天前"之间那一段（`window`），`GTE`／`LTE` 比的是"七天前"那一刻本身（`instant`，`resolveDateTimeBound` 取的就是远端那条边）。它不是把操作符再说一遍：方向由 `direction` 说，比较朝哪边由 `operator` 说，而 `before`／`after` 这种拼法在某个 kind 提供 `LT` 的第一天就过时了；
+  - `range` 的两条边都是必填。缺上界的绝对 `BETWEEN` 编译出来是 `filter.gte(from)`，所以那一项由 kind 自报 `operator: 'GTE'`、值交 `text`——一条边不是区间，而 `BETWEEN` 配一个日期在界面上读作"介于 1 月 1 日"，既不是区间也不是"从……起"。缺 `from` 的绝对值进不来：`isDateTimeFilterValue` 不认它，它走 `blank`；
+- 持有谓词的 kind 交 `items` 前要先把 `describeFilter` 的**折叠**拆开：根是多子 `or` 或任意非空 `nor` 时，`describeFilter` 会折成一个自带该操作符的分组项——条件在栏里并排时没有别的地方能说清它们怎么合——而谓词自己已经在旁边说了一遍操作符，原样传下去就会读成"满足任一（满足任一 A、B）"，只有一条条件的 `nor` 更会读成双重否定。折叠项以"路径为空"认出：它代表根，不代表谁写下的分组；
+- `text` 保留为**英文兜底**，逐字节保持原样：宿主可能直接读 `FilterSummaryItem.text`，且 `test/filter.test.ts` 的 describe 用例按它断言。渲染成words 的是 `/ui`，见 [ui/README.md](ui/README.md#三态各有一处凭据)；
+- 字段消失或 kind 抛异常的那一项 `unresolved` 为 true，`value` 为 `blank`，但 `operator` 仍在：值读不出来，问题本身还在。（见 test/filter.test.ts「describeFilter」「describeFilter parts」）
 
 ## 一个分组内每个字段只出现一次
 
@@ -144,6 +157,7 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 - 合计行来自 `compileAnalysisTotals` 的独立结果，因此 `AVG`、`DISTINCT_COUNT`、百分位等不可加指标也正确；
 - 该查询与主查询共享同一调度预算，失败只使合计行不可用，不影响主结果。图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。metric 卡片带 `trend` 时的标题值取自合计行（`projectAnalysis` 的 `totals`），无合计行时按分桶求和；
 - `compare` 与 `target` 在有无 `trend` 时同样生效。
+- **结果行数恰好等于 `limit` 时记下 `AnalysisView.atLimit`**。聚合回答的是至多 `limit` 行，并不告诉调用方它省略了多少，因此"正好填满上限"是唯一可用的信号，而它本身是二义的：刚好这么多组，和被截到这么多组，长得一模一样。所以它只被报成"可能被截断"（运行时的 `analysis.result.at-limit`，见 [runtime.md#规则](runtime.md#规则)），从不被报成事实——但一张看起来完整、每个占比与扇区却都是按前缀算出来的表，是读者自己查不出来的那一种错。没有分组（无分组聚合按定义只答一行，`limit: 1` 于是被每一次成功的查询填满，而没有任何分组可以被截掉）、行数少于上限、配置里没有可用上限（缺失、非正整数、非有限数——准入会拒绝这些，但投影是导出的，宿主可能拿没被准入的配置来投影），以及数据源答得比上限还多（它根本没把上限当天花板，行数因此什么也说明不了）四种情况都不记：不知道被截掉了什么，与知道没被截掉，不是同一回事。（见 test/resultIssues.test.tsx「projectAnalysis row limit」）
 
 ## Dashboard 内核的规则
 
