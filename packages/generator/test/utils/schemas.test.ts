@@ -415,6 +415,26 @@ describe('acceptsNothing', () => {
       true,
     ],
     [
+      'an impossible anyOf beside a possible oneOf',
+      { anyOf: [{ enum: [] }], oneOf: [{ type: 'string' }] },
+      true,
+    ],
+    [
+      'an impossible oneOf beside a possible anyOf',
+      { anyOf: [{ type: 'string' }], oneOf: [{ enum: [] }] },
+      true,
+    ],
+    [
+      'a not that constrains through a 3.1 keyword',
+      { not: { contains: {} } },
+      false,
+    ],
+    [
+      'a not carrying only annotations',
+      { not: { description: 'anything at all' } },
+      true,
+    ],
+    [
       'a union with one possible branch',
       { anyOf: [{ enum: [] }, { type: 'string' }] },
       false,

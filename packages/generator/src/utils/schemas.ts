@@ -311,43 +311,44 @@ export function acceptsNothing(
   if (schema.allOf?.some(acceptsNothingMember)) {
     return true;
   }
-  const unionMembers = [...(schema.anyOf ?? []), ...(schema.oneOf ?? [])];
-  return unionMembers.length > 0 && unionMembers.every(acceptsNothingMember);
+  // anyOf and oneOf are separate assertions that both have to hold, so either
+  // one running out of viable branches empties the whole schema.
+  return [schema.anyOf, schema.oneOf].some(
+    members => !!members?.length && members.every(acceptsNothingMember),
+  );
 }
 
-/** Assertion keywords that narrow which values a schema accepts. */
-const ASSERTION_KEYWORDS = [
-  'type',
-  'enum',
-  'const',
-  'allOf',
-  'anyOf',
-  'oneOf',
-  'not',
-  'nullable',
-  'properties',
-  'required',
-  'additionalProperties',
-  'items',
-  'format',
-  'pattern',
-  'minimum',
-  'maximum',
-  'exclusiveMinimum',
-  'exclusiveMaximum',
-  'multipleOf',
-  'minLength',
-  'maxLength',
-  'minItems',
-  'maxItems',
-  'uniqueItems',
-  'minProperties',
-  'maxProperties',
-];
+/**
+ * Keywords that annotate a schema without narrowing which values satisfy it.
+ * Everything else is treated as a constraint, so a keyword this generator has
+ * never heard of keeps `acceptsEverything` honest instead of silently widening
+ * it.
+ */
+const ANNOTATION_KEYWORDS = new Set([
+  'title',
+  'description',
+  'default',
+  'example',
+  'examples',
+  'deprecated',
+  'readOnly',
+  'writeOnly',
+  'externalDocs',
+  'xml',
+  'discriminator',
+  '$comment',
+  '$id',
+  '$schema',
+]);
 
 /**
  * Checks whether a schema constrains nothing, so that every value satisfies
  * it. Used to recognise the `not: {}` that rejects everything.
+ *
+ * Rather than list the assertions - a list that would fall behind every
+ * keyword OpenAPI gains - this accepts only a schema whose keys are all
+ * annotations. An unrecognised keyword counts as a constraint, which errs
+ * towards leaving the schema alone.
  *
  * @param schema - The schema or reference to check
  * @param components - Components used to resolve references
@@ -364,8 +365,10 @@ function acceptsEverything(
     const resolved = extractSchema(schema, components);
     return resolved ? acceptsEverything(resolved, components) : false;
   }
-  const record = schema as unknown as Record<string, unknown>;
-  return ASSERTION_KEYWORDS.every(keyword => record[keyword] === undefined);
+  return Object.entries(schema).every(
+    ([keyword, value]) =>
+      value === undefined || ANNOTATION_KEYWORDS.has(keyword),
+  );
 }
 
 /**

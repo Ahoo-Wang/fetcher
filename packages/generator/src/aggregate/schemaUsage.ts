@@ -208,10 +208,20 @@ const VALUE_BEARING_SCHEMA_KEYWORDS = [
   'additionalItems',
   'additionalProperties',
   'contains',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+  // `then` and `else` shape the instance once the condition has been decided.
+  // `if` is deliberately absent: it only tests the instance.
+  'then',
+  'else',
 ];
 
 /** Keywords holding a map of subschemas an instance value flows through. */
-const VALUE_BEARING_MAP_KEYWORDS = ['properties', 'patternProperties'];
+const VALUE_BEARING_MAP_KEYWORDS = [
+  'properties',
+  'patternProperties',
+  'dependentSchemas',
+];
 
 /** Keywords holding a list of subschemas an instance value flows through. */
 const VALUE_BEARING_LIST_KEYWORDS = ['allOf', 'anyOf', 'oneOf', 'prefixItems'];
@@ -221,10 +231,11 @@ const VALUE_BEARING_LIST_KEYWORDS = ['allOf', 'anyOf', 'oneOf', 'prefixItems'];
  * can actually contain.
  *
  * Only keywords a value flows through are followed - `properties`, `items`,
- * `additionalProperties`, the positive compositions, and the `x-map-key-schema`
- * extension this generator reads for map keys. `not` is excluded because it
- * describes what an instance may NOT be, and `example`, `default` and every
- * other extension are excluded because they are metadata rather than shape.
+ * `additionalProperties`, the positive compositions, the conditional `then` /
+ * `else` and `dependentSchemas`, and the `x-map-key-schema` extension this
+ * generator reads for map keys. `not` and `if` are excluded because they test
+ * an instance rather than shape it, and `example`, `default` and every other
+ * extension are excluded because they are metadata rather than shape.
  *
  * @param schema - The schema to walk
  * @returns The component schema keys reachable through value-bearing edges

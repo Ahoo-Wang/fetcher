@@ -127,6 +127,22 @@ describe('valueBearingSchemaKeys', () => {
     ).toEqual(['Base', 'Direct', 'Extra', 'Item', 'MapKey', 'Patterned']);
   });
 
+  it('follows the conditional shapes an instance can take', () => {
+    expect(
+      [
+        ...valueBearingSchemaKeys({
+          if: { $ref: '#/components/schemas/Tested' },
+          then: { $ref: '#/components/schemas/Then' },
+          else: { $ref: '#/components/schemas/Else' },
+          dependentSchemas: {
+            flag: { $ref: '#/components/schemas/Dependent' },
+          },
+          unevaluatedProperties: { $ref: '#/components/schemas/Unevaluated' },
+        } as any),
+      ].sort(),
+    ).toEqual(['Dependent', 'Else', 'Then', 'Unevaluated']);
+  });
+
   it('ignores negative constraints and metadata', () => {
     expect([
       ...valueBearingSchemaKeys({
