@@ -14,10 +14,14 @@
 import { describe, expect, it } from 'vitest';
 import { Project, ModuleKind } from 'ts-morph';
 import { runInNewContext } from 'node:vm';
-import type { Schema } from '@ahoo-wang/fetcher-openapi';
+import type { Components, Schema } from '@ahoo-wang/fetcher-openapi';
 import { TypeGenerator } from '../src/model';
 
-function generateModel(schema: Schema, assignments: string) {
+function generateModel(
+  schema: Schema,
+  assignments: string,
+  components?: Components,
+) {
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: {
@@ -32,6 +36,7 @@ function generateModel(schema: Schema, assignments: string) {
     file,
     { key: 'Model', schema },
     '/',
+    components,
   ).generate();
   file.addStatements(assignments);
   return {
@@ -939,6 +944,32 @@ describe('required additional property constraints', () => {
       ).toEqual([]);
     },
   );
+
+  it('keeps a dictionary of its own type an interface', () => {
+    // Only an interface may reference itself through an index signature: a type
+    // alias that reaches itself through `Record` is circular (TS2456), so a
+    // required property repeating the additional-property type must not be sent
+    // to the intersection.
+    const schema: Schema = {
+      type: 'object',
+      required: ['child'],
+      properties: { child: { $ref: '#/components/schemas/Model' } },
+      additionalProperties: { $ref: '#/components/schemas/Model' },
+    };
+    const { file, diagnostics } = generateModel(
+      schema,
+      `
+        declare const model: Model;
+        const child: Model = model.child;
+        const other: Model = model.other;
+      `,
+      { schemas: { Model: schema } },
+    );
+    expect(diagnostics).toEqual([]);
+    expect(file.getInterfaceOrThrow('Model').getIndexSignatures()).toHaveLength(
+      1,
+    );
+  });
 
   it.each([false, true, undefined])(
     'respects boolean/default additionalProperties: %s',

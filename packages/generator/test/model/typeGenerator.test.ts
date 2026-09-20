@@ -617,7 +617,7 @@ describe('TypeGenerator', () => {
       expect(result).toBe(mockInterfaceDeclaration);
     });
 
-    it('should add a strict index signature when no named property competes with it', () => {
+    it('should add a strict index signature when declared properties are required', () => {
       const mockIndexSignature = {
         addJsDoc: vi.fn(),
       };
@@ -629,25 +629,28 @@ describe('TypeGenerator', () => {
       const mockSourceFile = {
         addInterface: vi.fn().mockReturnValue(mockInterfaceDeclaration),
       };
-      const schema = {
-        type: 'object' as const,
-        properties: {},
-        required: ['id'],
-        additionalProperties: { type: 'number' as const },
-      };
       const generator = new TypeGenerator(
         modelInfo,
         mockSourceFile as any,
-        { key: 'TestModel', schema },
+        {
+          key: 'TestModel',
+          schema: {
+            type: 'object',
+            properties: { id: { type: 'number' } },
+            required: ['id'],
+            additionalProperties: { type: 'number' },
+          },
+        },
         outputDir,
       );
 
-      const result = (generator as any).processInterface(schema);
-
-      expect(mockInterfaceDeclaration.addProperty).toHaveBeenCalledWith({
-        name: 'id',
-        type: 'number',
+      const result = (generator as any).processInterface({
+        type: 'object',
+        properties: { id: { type: 'number' } },
+        required: ['id'],
+        additionalProperties: { type: 'number' },
       });
+
       expect(mockInterfaceDeclaration.addIndexSignature).toHaveBeenCalledWith({
         keyName: 'key',
         keyType: 'string',
@@ -659,10 +662,10 @@ describe('TypeGenerator', () => {
       expect(result).toBe(mockInterfaceDeclaration);
     });
 
-    it('should take the intersection form when a named property sits beside typed additional properties', () => {
+    it('should take the intersection form when a required property clashes with the index signature', () => {
       // An interface may only carry a named property assignable to its index
-      // signature (TS2411), which the declared `required` list says nothing
-      // about - so any named property sends the schema to the intersection.
+      // signature (TS2411), which a `string` beside a `number` index is not
+      // however the document declares it required.
       const mockTypeAlias = { addJsDoc: vi.fn() };
       const mockSourceFile = {
         addInterface: vi.fn(),
@@ -670,7 +673,7 @@ describe('TypeGenerator', () => {
       };
       const schema = {
         type: 'object' as const,
-        properties: { id: { type: 'number' as const } },
+        properties: { id: { type: 'string' as const } },
         required: ['id'],
         additionalProperties: { type: 'number' as const },
       };

@@ -207,20 +207,42 @@ export class TypeGenerator implements Generator {
    * signature.
    *
    * An interface may only carry a named property whose type is assignable to
-   * its index signature (TS2411), which no optional property ever is and a
-   * required one only is by coincidence of the two schemas. Rather than decide
-   * assignability per property - and rather than let the read-model rule flip
-   * the representation by promoting a property - ANY named property beside a
-   * typed `additionalProperties` sends the schema to the intersection form,
-   * which always compiles.
+   * its index signature (TS2411), which an optional property never is - its
+   * `undefined` alone breaks the rule. A required one is when it repeats the
+   * additional-property type, and without a type checker that is the only case
+   * we can prove, so any other required property sends the schema to the
+   * intersection too.
+   *
+   * The interface is kept wherever it does compile because only an interface
+   * may reference itself through an index signature: a type alias that reaches
+   * itself through `Record` is circular (TS2456), which is exactly what a
+   * dictionary of its own type generates.
    *
    * @param schema - The object schema to represent
    * @returns True when the schema needs the intersection form
    */
   private requiresAdditionalPropertiesIntersection(schema: Schema): boolean {
+    if (typeof schema.additionalProperties !== 'object') {
+      return false;
+    }
+    const properties = Object.entries(schema.properties ?? {});
+    if (properties.length === 0) {
+      return false;
+    }
+    const declaredRequired = new Set(schema.required ?? []);
+    if (properties.some(([name]) => !declaredRequired.has(name))) {
+      return true;
+    }
+    // Resolved in the order the declarations are emitted, so deciding the
+    // representation cannot reorder the imports a reference pulls in.
+    const propertyTypes = properties.map(([, propSchema]) =>
+      this.resolveType(propSchema),
+    );
+    const additionalType = this.resolveAdditionalPropertyType(schema);
     return (
-      typeof schema.additionalProperties === 'object' &&
-      Object.keys(schema.properties ?? {}).length > 0
+      // An `any` index signature accepts every property type.
+      additionalType !== 'any' &&
+      propertyTypes.some(type => type !== additionalType)
     );
   }
 
