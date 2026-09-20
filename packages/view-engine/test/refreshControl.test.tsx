@@ -140,11 +140,12 @@ describe('useAutoRefresh', () => {
   });
 
   /**
-   * A view saved at an interval off the ladder still has to show the one it
-   * is running at — and one the limits now refuse does not join it, because
-   * that config is already refused and the way out is a rung that works.
+   * A view saved at an interval off the ladder still has to offer the rung
+   * it is sitting on — and one the limits now refuse does not join it,
+   * because that config is already refused and the way out is a rung that
+   * works.
    */
-  it('folds in the interval in force, unless the limits refuse it', () => {
+  it('folds in the interval picked, unless the limits refuse it', () => {
     const engine = engineWith({
       limits: { minRefreshInterval: 30, maxRefreshInterval: 900 },
     });
@@ -167,7 +168,8 @@ describe('useAutoRefresh', () => {
       ),
     );
     expect(refused.result.current.intervals).toEqual([30, 60, 300, 900]);
-    // It is still what the view is set to, so the button can say so.
+    // It is still what the view is set to, and what it opened running.
+    expect(refused.result.current.chosen).toBe(5);
     expect(refused.result.current.interval).toBe(5);
   });
 
@@ -254,6 +256,42 @@ describe('useAutoRefresh', () => {
     expect(runtime.getSnapshot().draft.refresh).toEqual({ interval: 10 });
     expect(runtime.getSnapshot().applied.refresh).toEqual({ interval: null });
     expect(clock.timers).toBe(0);
+    // And the two readings part exactly here: what is set is 10, what is in
+    // force is still nothing. The control says the second one.
+    expect(result.current.chosen).toBe(10);
+    expect(result.current.interval).toBeNull();
+  });
+
+  /**
+   * The same parting, the other way round: a view that *is* refreshing, told
+   * to stop by a draft the kernel refuses. Nothing stopped — `applied` still
+   * carries the interval and the timer is still armed on it — so the control
+   * must go on saying so rather than reporting the switch-off that did not
+   * happen.
+   */
+  it('goes on reporting the interval when a refused draft turns it off', async () => {
+    const clock = testEnvironment();
+    const engine = engineWith({ environment: clock.environment });
+    const runtime = recordRuntime(
+      engine,
+      recordConfig({ refresh: { interval: 30 } }),
+    );
+    const { result } = renderHook(() => useAutoRefresh(runtime as ViewRuntime));
+
+    act(() => runtime.apply());
+    await waitFor(() =>
+      expect(runtime.getSnapshot().query.status).toBe('success'),
+    );
+    expect(clock.timers).toBe(1);
+
+    act(() =>
+      runtime.edit({ pageSize: DEFAULT_RUNTIME_LIMITS.maxPageSize + 1 }),
+    );
+    act(() => result.current.setInterval(null));
+
+    expect(runtime.getSnapshot().applied.refresh).toEqual({ interval: 30 });
+    expect(result.current.chosen).toBeNull();
+    expect(result.current.interval).toBe(30);
   });
 });
 
@@ -281,12 +319,12 @@ describe('RefreshControl', () => {
 
     rerender(
       <RefreshControl
-        refresh={refreshController({ interval: 30, setInterval })}
+        refresh={refreshController({ interval: 30, chosen: 30, setInterval })}
       />,
     );
     const again = await openIntervals(user);
-    // The one in force is the one marked, so the menu says what is running
-    // rather than only offering what could.
+    // The picked one is the one marked, so the menu says what this view is
+    // set to rather than only offering what it could be.
     expect(
       within(again)
         .getByRole('menuitemradio', { name: '30s' })
@@ -322,6 +360,51 @@ describe('RefreshControl', () => {
   });
 
   /**
+   * What is on screen when the two part: the cadence is the interval in
+   * force, and the menu marks the one picked. The other way round, the
+   * button would name a cadence nothing is running to — which is why
+   * `AppliedBar` reads the result rather than the draft, and why the draft
+   * has a credential of its own instead of borrowing this one.
+   */
+  it('says the interval in force while the menu marks the one picked', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <RefreshControl
+        refresh={refreshController({ interval: 30, chosen: 300 })}
+      />,
+    );
+
+    expect(
+      container.querySelector('[data-slot="refresh-cadence"]')!.textContent,
+    ).toBe(every(30));
+
+    const menu = await openIntervals(user);
+    expect(
+      within(menu)
+        .getByRole('menuitemradio', { name: every(300) })
+        .getAttribute('aria-checked'),
+    ).toBe('true');
+    expect(
+      within(menu)
+        .getByRole('menuitemradio', { name: every(30) })
+        .getAttribute('aria-checked'),
+    ).toBe('false');
+  });
+
+  /** Refusing to turn it off is not the same as having turned it off. */
+  it('keeps the cadence when the draft turned it off and was refused', () => {
+    const { container } = render(
+      <RefreshControl
+        refresh={refreshController({ interval: 30, chosen: null })}
+      />,
+    );
+
+    expect(
+      container.querySelector('[data-slot="refresh-cadence"]')!.textContent,
+    ).toBe(every(30));
+  });
+
+  /**
    * D4 again, at the other end: with nothing on offer and nothing in force
    * the chevron would open a menu whose only item is the state the view is
    * already in.
@@ -338,7 +421,7 @@ describe('RefreshControl', () => {
     const user = userEvent.setup();
     render(
       <RefreshControl
-        refresh={refreshController({ interval: 2, intervals: [] })}
+        refresh={refreshController({ interval: 2, chosen: 2, intervals: [] })}
       />,
     );
 

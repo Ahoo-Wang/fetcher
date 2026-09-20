@@ -119,6 +119,7 @@ export function refreshController(
 ): RefreshController {
   return {
     interval: null,
+    chosen: null,
     intervals: [10, 30, 60, 300, 900, 1800, 3600],
     setInterval: () => {},
     now: () => {},

@@ -72,6 +72,15 @@ export interface RefreshControlProps {
  * competing with the three of D2, which say whether what is on screen has
  * been applied, run, or saved.
  *
+ * The two halves therefore answer to two different ages of the same member,
+ * and deliberately: the menu marks the **picked** interval, because that is
+ * the editor's value and what a save would write, while the cadence says the
+ * one **in force**, because it is a claim about what is happening. They
+ * differ only while a draft the kernel refuses holds `apply` back — the
+ * state the strip above the result is already explaining — and in it the
+ * older number is the true one. Reading the draft in both places would put a
+ * cadence on the button that nothing is running to.
+ *
  * The UI invents no reason of its own for the timer to stop: the four the
  * runtime holds it for (`docs/design/runtime.md`) are the whole list.
  */
@@ -82,12 +91,16 @@ export function RefreshControl({
   note,
 }: RefreshControlProps) {
   const messages = useViewMessages();
-  const { interval, intervals } = refresh;
+  const { interval, chosen, intervals } = refresh;
+  // The credential answers to the interval in force, never to the picked
+  // one: while a refused draft holds `apply` back the two differ, and what
+  // the button claims is happening had better be what is happening.
   const cadence =
     interval === null ? null : refreshIntervalLabel(interval, messages);
-  // Nothing on offer and nothing chosen: a chevron here would open a menu
-  // whose only item is the state the view is already in.
-  const choosable = intervals.length > 0 || interval !== null;
+  // Nothing on offer, nothing picked and nothing running: a chevron here
+  // would open a menu whose only item is the state the view is already in.
+  const choosable =
+    intervals.length > 0 || chosen !== null || interval !== null;
 
   return (
     <ButtonGroup
@@ -147,7 +160,10 @@ export function RefreshControl({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuRadioGroup
-              value={interval === null ? OFF : String(interval)}
+              // The picked one, which is the editor's value — like the
+              // layout switch or the page size, both of which read the
+              // draft. What is marked is what a save would write.
+              value={chosen === null ? OFF : String(chosen)}
               // Base UI types a radio group's value as `any`; naming the
               // parameter's type keeps that `any` out of this file, and
               // every value in the group is written by the two lines below.

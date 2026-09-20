@@ -36,19 +36,33 @@ const NO_INTERVALS: readonly number[] = [];
  * There is no state here beside the config: the interval *is*
  * `ViewConfigBase.refresh.interval`, saved with the view and read by the
  * runtime's one timer. A control that kept its own copy would give the saved
- * config, the timer and the screen three opinions about the same number.
+ * config, the timer and the screen three opinions about the same number. The
+ * two numbers below are one member read at its two ages — what is running
+ * and what is set — not two states.
  */
 export interface RefreshController {
   /**
-   * Seconds between automatic refreshes, or `null` when off.
+   * The interval **in force**: seconds between automatic refreshes, or
+   * `null` when the view does not refresh itself.
    *
-   * It is the draft's, which is what the view is *set* to and what a save
-   * would write. Choosing an interval edits and applies in one gesture, so
-   * the two agree except while a draft the kernel refuses holds `apply`
-   * back — and a refused draft is one of the four reasons the runtime holds
-   * the timer anyway (`docs/design/runtime.md`).
+   * It is `applied`'s, because that is the one the runtime's timer reads. A
+   * credential about what is happening has to answer to what is happening —
+   * the same reason `AppliedBar` describes the result rather than the draft.
+   * Choosing an interval edits and applies in one gesture, so this and
+   * {@link chosen} agree except while a draft the kernel refuses holds
+   * `apply` back, and then it is this one that is true.
    */
   interval: number | null;
+  /**
+   * What the view is **set** to: the draft's interval, which is what a save
+   * would write and what the menu marks as picked.
+   *
+   * It is the editor's value, like the layout or the page size, and it is
+   * kept apart from {@link interval} rather than folded into it because one
+   * mark saying two things is how a credential starts lying. When they
+   * differ, the draft is refused and the strip above the result says so.
+   */
+  chosen: number | null;
   /**
    * The intervals on offer, ascending, already cut to what
    * `RuntimeLimits.minRefreshInterval` and `maxRefreshInterval` admit. An
@@ -80,28 +94,32 @@ export function useAutoRefresh(
   runtime: ViewRuntime<ViewConfig> | null,
 ): RefreshController {
   const state = useViewRuntime(runtime);
-  const draft = state?.draft;
-  // Read through the runtime's own reading of it: a config arrives from a
-  // store, and "what the timer will use" must be the one answer on screen.
-  const interval = draft ? refreshIntervalOf(draft) : null;
+  // Both read through the runtime's own reading of the member: a config
+  // arrives from a store, and neither "what the timer uses" nor "what a save
+  // would write" may throw on the way to the screen.
+  const interval = state ? refreshIntervalOf(state.applied) : null;
+  const chosen = state ? refreshIntervalOf(state.draft) : null;
   const limits = runtime?.limits;
 
   return {
     interval,
+    chosen,
     intervals: useMemo(() => {
       if (!limits) return NO_INTERVALS;
       const admits = (seconds: number) =>
         seconds >= limits.minRefreshInterval &&
         seconds <= limits.maxRefreshInterval;
-      // The interval in force joins the ladder when the limits admit it: a
-      // view saved at 45 seconds has to show the interval it is running at.
-      // One they refuse does not — the config is already refused, said in
-      // the strip above the result, and the way out of it is a rung that
-      // works or Off, not the number that broke.
+      // What is picked joins the ladder when the limits admit it: a view
+      // saved at 45 seconds has to offer the rung it is sitting on, or the
+      // menu would show nothing marked. One they refuse does not — the
+      // config is already refused, said in the strip above the result, and
+      // the way out of it is a rung that works or Off, not the number that
+      // broke. The ladder answers to the draft rather than to what is in
+      // force, because the ladder is what the menu marks.
       const offered = REFRESH_INTERVALS.filter(admits);
-      if (interval !== null && admits(interval)) offered.push(interval);
+      if (chosen !== null && admits(chosen)) offered.push(chosen);
       return [...new Set(offered)].sort((left, right) => left - right);
-    }, [interval, limits]),
+    }, [chosen, limits]),
     setInterval: useCallback(
       (next: number | null) => {
         if (!runtime) return;

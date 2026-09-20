@@ -149,11 +149,12 @@ useDashboard(runtime): DashboardController
 
 ```ts
 useAutoRefresh(runtime): RefreshController
-RefreshController { interval; intervals; setInterval(interval); now(); loading }
+RefreshController { interval; chosen; intervals; setInterval(interval); now(); loading }
 ```
 
-- `interval` 是**草稿**的 `refresh.interval`，也就是「这个视图被设成什么」与「保存会写下什么」。选中即 `edit` 加 `apply`，两者因此一致；只有草稿被准入拒绝、`apply` 落不下去时会短暂不一致，而那种情况下 runtime 本就因为同一个 error 停着表（四条之一）。控制器里**没有**与配置并行的第二份状态：那会让配置、计时器与屏幕各说一个数；
-- `intervals` 是裁剪后的档位（升序）：梯子 ∩ `[minRefreshInterval, maxRefreshInterval]`，再并进正在跑的那个（同样要限制允许）。限制不允许的档位不出现而不是禁用（D4）；空表示这个视图没有间隔可选，控件因此连 `▾` 都不给；
+- 两个数，一个成员的两个时刻，不是两份状态。`interval` 是 **`applied`** 的 `refresh.interval`——**正在生效**的那一档，计时器读的就是它，所以凭据只能说它（与 `AppliedBar` 读 `result.own` 同一条理由）；`chosen` 是 **草稿** 的那一档——「这个视图被设成什么」「`Save` 会写下什么」，菜单勾的是它，与布局、每页条数读草稿一致；
+- 选中即 `edit` 加 `apply`，所以两者通常相等；**只有草稿被准入拒绝、`apply` 落不下去时**才分开，此时 `applied` 那一档仍然是真的（把刷新关掉也一样：什么都没关掉）。合成一个数就会让按钮挂着一个没有东西在跑的节奏。控制器里**没有**与配置并行的第二份状态：那会让配置、计时器与屏幕各说一个数；
+- `intervals` 是裁剪后的档位（升序）：梯子 ∩ `[minRefreshInterval, maxRefreshInterval]`，再并进 `chosen`（同样要限制允许，否则菜单里没有一项勾得上）。限制不允许的档位不出现而不是禁用（D4）；空表示这个视图没有间隔可选，控件因此连 `▾` 都不给；
 - `now()` 就是 `runtime.refresh()`，一次性的那一下；`loading` 是本视图查询在途。没有开着的视图时全部是空操作，因为工作台在视图还在打开时就已经画出了这个控件。（见 test/refreshControl.test.tsx「useAutoRefresh」）
 
 ## useWorkbench
