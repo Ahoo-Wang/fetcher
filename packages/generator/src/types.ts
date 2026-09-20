@@ -40,9 +40,11 @@ export interface Logger {
    * probably did not intend.
    *
    * Optional so that an existing Logger keeps compiling; callers reach it
-   * through {@link warn}, which falls back to {@link info}.
+   * through {@link warn}, which falls back to {@link info}. The rest
+   * parameter only passes values through to the sink, so it takes `unknown`
+   * rather than the `any` the older methods were written with.
    */
-  warn?(message: string, ...params: any[]): void;
+  warn?(message: string, ...params: unknown[]): void;
 
   /** Log success messages */
   success(message: string, ...params: any[]): void;
