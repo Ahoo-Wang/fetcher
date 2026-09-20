@@ -15,7 +15,7 @@ Record 工作台的结果区组件。三种视图共用的骨架、状态条、�
 
 - **两个口径各占一行**：`本页`（`page`）是屏幕上这一页的行加起来，`所有`（`total`）是同一套条件下全范围聚合的答复。二十行的平均数被当成四万行的平均数，是这一行唯一能犯的错，所以口径不是注解而是行的一部分：每行首列一个灰底标签格（有选择列时占选择列，没有则标在首列之上，见上），`data-scope` 同时带在 `<tr>` 上；
 - **只有 `所有` 需要查询**。内核这两半都在：`compileSummaries` 产出全范围的 `AggregationQuery`，`projectSummaries` 按别名读回（见 [kernels.md](../kernels.md)）；`page` 口径不需要往返，因此 `record/project.ts` 的 `pageSummaries(cells, rows)` 用已执行配置给出的那些格子，在屏幕上的行上再算一遍——渲染层手里只有结果，没有配置，而这份算术与 `projectSummaries` 的 `page` 分支是同一份，放在一起才不会分头漂移；
-- **降级只剩本页**。`runtime/execute.ts` 在聚合失败时退回 `scope: 'page'`，于是表里只剩 `本页` 一行——没有的数不编。它同时也是一处未了的账：失败本身没有被带出来，界面只能从"口径是 page"反推，见 [todo.md](../todo.md);
+- **降级只剩本页**。聚合失败时 `runtime/execute.ts` 退回 `scope: 'page'`，于是表里只剩 `本页` 一行——没有的数不编——并在状态条上报一条 warning（`runtime.summary.page-only`）说明为什么只剩它。两处缺一不可：只剩一行而不说，读者未必注意到少了什么；只报 warning 而行上的词不改，那个词仍然在撒谎。（见 test/resultIssues.test.tsx「what the screen says about a downgraded total」）；
 - 一个字段可以配多个函数（`amount` 同时求和与求平均），内核为每个函数投影一格，所以格子按字段分组而不是按字段做键；函数名按目录措辞显示（`label.summary.fn.*`：合计／平均／最小／最大／计数）而不是配置里的 `SUM`，与数值一起右对齐在列的右缘；没有配汇总的列留空，而不是显示 0；某一格算不出来（字符串列求和、聚合没答这一格）显示 `label.summary.unavailable` 的破折号。
 
 ## 表头排序
