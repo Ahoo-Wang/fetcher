@@ -431,6 +431,37 @@ describe('every popup opens on the popup layer', () => {
     expect(layered.style.zIndex).toBe(LAYER);
   });
 
+  /**
+   * A dialog is the one popup a caller's own `style` reaches, and the two
+   * elements it portals are ranked against each other: a popup that lost the
+   * layer to an unrelated property would end up behind the backdrop that
+   * still has it — dimmed by its own dimming, and not clickable.
+   */
+  it.each([
+    ['an object', { maxWidth: 600 }],
+    ['a function of the popup state', () => ({ maxWidth: 600 })],
+  ] as const)(
+    "keeps the layer under a caller's style, given %s",
+    async (_form, style) => {
+      render(
+        <ViewSurface theme="light">
+          <Dialog open>
+            <DialogContent style={style}>
+              <DialogTitle>Confirm</DialogTitle>
+            </DialogContent>
+          </Dialog>
+        </ViewSurface>,
+      );
+
+      const surface = await screen.findByRole('dialog');
+
+      expect(surface.style.zIndex).toBe(LAYER);
+      // And the caller's own property is still there, which is the half a
+      // plain override would have kept.
+      expect(surface.style.maxWidth).toBe('600px');
+    },
+  );
+
   it('carries the layer on a dialog backdrop too', async () => {
     render(
       <ViewSurface theme="light">

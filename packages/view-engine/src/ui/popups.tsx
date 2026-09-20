@@ -71,6 +71,26 @@ function themedClass<S>(className: ClassName<S>): ClassName<S> {
   return withClass('fve-root', className);
 }
 
+type Style<S> =
+  | React.CSSProperties
+  | ((state: S) => React.CSSProperties | undefined)
+  | undefined;
+
+/**
+ * A popup's own style over the layer below, whichever form it takes.
+ *
+ * Merged rather than replaced, and in this order: a caller that sets an
+ * unrelated property keeps the layer, and a caller that really means to move
+ * this one popup still wins. Replacing would be the worse half of both — a
+ * dialog's backdrop stays on the layer whatever its popup does, so a popup
+ * that lost it would end up behind the dimming it brought with it.
+ */
+function layered<S>(style: Style<S>): Style<S> {
+  return typeof style === 'function'
+    ? (state: S) => ({ ...POPUP_LAYER, ...style(state) })
+    : { ...POPUP_LAYER, ...style };
+}
+
 /**
  * The layer every popup here paints on, written as a style and not a class.
  *
@@ -162,6 +182,7 @@ export function ComboboxContent({
 export function DialogContent({
   className,
   children,
+  style,
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof VendoredDialogContent>) {
@@ -176,9 +197,9 @@ export function DialogContent({
       />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        style={POPUP_LAYER}
         {...props}
         className={withClass(DIALOG_POPUP_CLASS, themedClass(className))}
+        style={layered(style)}
         data-theme={theme}
       >
         {children}
