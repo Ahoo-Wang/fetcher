@@ -24,6 +24,7 @@ export * from './AnalysisEditor.js';
 export * from './AnalysisTable.js';
 export * from './AnalysisWorkbench.js';
 export * from './AppliedBar.js';
+export * from './ColumnSettings.js';
 export * from './DashboardGrid.js';
 export * from './DashboardPanels.js';
 export * from './DashboardWorkbench.js';
@@ -49,6 +50,7 @@ export * from './ResultToolbar.js';
 export * from './RowActions.js';
 export * from './SaveActions.js';
 export * from './SaveAsDialog.js';
+export * from './SortSettings.js';
 export * from './StatusStrip.js';
 // The hook ships beside the toggle: `EmbeddedView` has no title bar to put a
 // button in, so a host that wants its embed to fill the screen owns the
