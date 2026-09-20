@@ -245,11 +245,25 @@ export function isNullableSchema(
   // cycles terminate.
   const isNullableMember = (member: Schema | Reference) =>
     isNullableSchema(member, components, new Set(visited));
-  const unionMembers = [...(schema.anyOf ?? []), ...(schema.oneOf ?? [])];
-  if (unionMembers.length && !unionMembers.some(isNullableMember)) {
+  // anyOf and oneOf are separate assertions that must both hold, so they are
+  // never merged into one check.
+  if (schema.anyOf?.length && !schema.anyOf.some(isNullableMember)) {
+    return false;
+  }
+  // oneOf admits null only when EXACTLY one branch does: a value matching two
+  // branches fails the keyword.
+  if (
+    schema.oneOf?.length &&
+    schema.oneOf.filter(isNullableMember).length !== 1
+  ) {
     return false;
   }
   if (schema.allOf?.length && !schema.allOf.every(isNullableMember)) {
+    return false;
+  }
+  // `not` rejects whatever its subschema accepts, so a nullable subschema
+  // makes the whole schema non-nullable.
+  if (schema.not !== undefined && isNullableMember(schema.not)) {
     return false;
   }
   return true;
@@ -259,13 +273,32 @@ export function isNullableSchema(
  * Checks whether a schema is request-only.
  *
  * A `writeOnly` property belongs to requests, so a response may omit it however
- * the document declares its type.
+ * the document declares its type. References are followed when components are
+ * supplied, since a property is commonly a bare `$ref` to the component that
+ * carries the flag.
  *
- * @param schema - The schema to check
+ * @param schema - The schema or reference to check
+ * @param components - Components used to resolve references
+ * @param visited - Schemas already visited, guarding against reference cycles
  * @returns True if the schema is write-only, false otherwise
  */
-export function isWriteOnly(schema: Schema | Reference): boolean {
-  return (schema as Schema).writeOnly === true;
+export function isWriteOnly(
+  schema: Schema | Reference,
+  components?: Components,
+  visited: Set<Schema | Reference> = new Set(),
+): boolean {
+  if (visited.has(schema)) {
+    return false;
+  }
+  visited.add(schema);
+  if (isReference(schema)) {
+    if (!components) {
+      return false;
+    }
+    const resolved = extractSchema(schema, components);
+    return resolved ? isWriteOnly(resolved, components, visited) : false;
+  }
+  return schema.writeOnly === true;
 }
 
 /**

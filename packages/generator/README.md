@@ -47,12 +47,14 @@ narrow:
 
 - Nullable properties stay optional, in every spelling of null - the OpenAPI 3.0
   `nullable` flag, a `null` entry in a 3.1 type array, a `null` enum member or
-  const, a `null` branch of an `anyOf` / `oneOf`, and an `allOf` whose every
-  branch admits null. Only the whole schema counts - a `null` enum member
-  alongside `type: string` is rejected by that sibling type, so the property is
+  const, one `anyOf` branch that admits null, exactly one such `oneOf` branch,
+  and an `allOf` whose every branch does. Every keyword must agree: a `null`
+  enum member alongside `type: string` is rejected by that sibling type, and a
+  `not` whose subschema accepts null rejects it too, so those properties are
   required rather than optional.
-- `writeOnly` properties stay optional. They belong to the request side, so a
-  response may omit them however their type reads.
+- `writeOnly` properties stay optional, including when the flag sits on the
+  referenced component. They belong to the request side, so a response may omit
+  them however their type reads.
 - Request schemas are untouched, and that means every operation's body and
   parameters, not only Wow commands. Over-stating a request's required
   properties would reject a call the client is entitled to make.

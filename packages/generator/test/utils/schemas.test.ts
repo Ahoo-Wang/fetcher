@@ -285,6 +285,23 @@ describe('isNullableSchema', () => {
   );
 
   it.each([
+    ['a not that accepts null', { not: { type: 'null' } }, false],
+    ['a not that rejects null', { not: { type: 'string' } }, true],
+    [
+      'anyOf and oneOf that each admit null',
+      { anyOf: [{ type: 'null' }], oneOf: [{ type: ['string', 'null'] }] },
+      true,
+    ],
+    [
+      'an anyOf admitting null beside a oneOf that does not',
+      { anyOf: [{ type: 'null' }], oneOf: [{ type: 'string' }] },
+      false,
+    ],
+    [
+      'two oneOf branches admitting null',
+      { oneOf: [{ type: 'null' }, { enum: [null] }] },
+      false,
+    ],
     [
       'one anyOf branch admits null',
       { anyOf: [{ type: 'null' }, { type: 'string' }] },
@@ -351,5 +368,30 @@ describe('isWriteOnly', () => {
     [{ type: 'string' }, false],
   ] satisfies [Schema, boolean][])('reports %o as %s', (schema, expected) => {
     expect(isWriteOnly(schema)).toBe(expected);
+  });
+
+  it('follows a reference to the component carrying the flag', () => {
+    const components = {
+      schemas: {
+        Secret: { type: 'string', writeOnly: true },
+        Plain: { type: 'string' },
+      },
+    };
+    expect(
+      isWriteOnly({ $ref: '#/components/schemas/Secret' }, components),
+    ).toBe(true);
+    expect(
+      isWriteOnly({ $ref: '#/components/schemas/Plain' }, components),
+    ).toBe(false);
+    // Without components, and for a dangling reference, nothing can be judged.
+    expect(isWriteOnly({ $ref: '#/components/schemas/Secret' })).toBe(false);
+    expect(
+      isWriteOnly({ $ref: '#/components/schemas/Missing' }, components),
+    ).toBe(false);
+  });
+
+  it('stops at a schema it has already visited', () => {
+    const schema: Schema = { type: 'string', writeOnly: true };
+    expect(isWriteOnly(schema, undefined, new Set([schema]))).toBe(false);
   });
 });

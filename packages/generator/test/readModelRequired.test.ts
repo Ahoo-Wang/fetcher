@@ -20,12 +20,19 @@ import { ModelGenerator, TypeGenerator } from '../src/model';
 import type { GeneratorConfiguration, Logger } from '../src/types';
 import demoSpec from './demo.spec.json';
 
-function generate(
+function generateModel(
   schema: Schema,
   nonNullRequired: boolean,
   components?: Components,
-): string {
-  const project = new Project({ useInMemoryFileSystem: true });
+): { text: string; diagnostics: unknown[] } {
+  const project = new Project({
+    useInMemoryFileSystem: true,
+    compilerOptions: {
+      strict: true,
+      skipLibCheck: true,
+      lib: ['lib.es2020.d.ts'],
+    },
+  });
   const file = project.createSourceFile('/types.ts', '');
   new TypeGenerator(
     { name: 'Model', path: '/' },
@@ -35,7 +42,18 @@ function generate(
     components,
     nonNullRequired,
   ).generate();
-  return file.getFullText();
+  return {
+    text: file.getFullText(),
+    diagnostics: project.getPreEmitDiagnostics().map(d => d.getMessageText()),
+  };
+}
+
+function generate(
+  schema: Schema,
+  nonNullRequired: boolean,
+  components?: Components,
+): string {
+  return generateModel(schema, nonNullRequired, components).text;
 }
 
 const silentLogger: Logger = {
@@ -170,6 +188,38 @@ describe('read-model required properties', () => {
         true,
       ),
     ).toContain('secret?: string;');
+  });
+
+  it('leaves a write-only property optional through a reference', () => {
+    const components: Components = {
+      schemas: { Secret: { type: 'string', writeOnly: true } },
+    };
+    expect(
+      generate(
+        {
+          type: 'object',
+          properties: { secret: { $ref: '#/components/schemas/Secret' } },
+        },
+        true,
+        components,
+      ),
+    ).toContain('secret?: Secret;');
+  });
+
+  it('keeps the intersection form when additionalProperties are typed', () => {
+    // An interface may only carry a named property assignable to its index
+    // signature, so promoting `name` must not switch the model to a form that
+    // no longer compiles (TS2411).
+    const schema: Schema = {
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      additionalProperties: { type: 'number' },
+    };
+    const promoted = generateModel(schema, true);
+    expect(promoted.diagnostics).toEqual([]);
+    expect(promoted.text).toContain('name: string');
+    expect(promoted.text).toContain('globalThis.Record<string, number>');
+    expect(generateModel(schema, false).diagnostics).toEqual([]);
   });
 
   it('follows references when deciding nullability', () => {
