@@ -115,7 +115,11 @@ CI, Engineering Quality, Build Storybook, Integration Test and Generator Test.
 PR runs are excluded because they may test a synthetic merge. Main pushes now
 also run Storybook delivery verification. Missing/pending/failed checks block;
 manual dispatch of the verification workflows can validate another release SHA.
-Codacy checks must come from the expected GitHub App. Codecov project checks
+Codacy checks must come from the expected GitHub App. Codacy analyses pull
+request heads rather than pushes, so a release tagged on a squashed merge
+commit carries no Codacy Check Run of its own; admission then falls back to the
+head of the pull request that was merged AS that very commit, and refuses to
+guess when there is not exactly one. Codecov project checks
 must come from the Codecov App; when no such Check Run exists, the latest
 `codecov/project` commit status must be successful and authored by the
 `codecov[bot]` Bot account. A failed Check Run cannot fall back to a status.

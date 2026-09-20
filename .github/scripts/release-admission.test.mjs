@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  mergedPullRequestHead,
   requireSuccessfulRun,
   requireSuccessfulCodecov,
   requireSuccessfulCheck,
@@ -75,4 +76,23 @@ test('Codecov accepts trusted commit statuses without bypassing failed check run
   assert.throws(() =>
     requireSuccessfulCodecov([{ ...check, conclusion: 'failure' }], [status]),
   );
+});
+
+test('Codacy may fall back only to the head of the pull request merged as this commit', () => {
+  const head = 'a'.repeat(40);
+  const pull = {
+    merged_at: '2026-09-20T00:00:00Z',
+    merge_commit_sha: 'target',
+    head: { sha: head },
+  };
+  assert.equal(mergedPullRequestHead('target', [pull]), head);
+  for (const pulls of [
+    [],
+    [{ ...pull, merged_at: null }],
+    [{ ...pull, merge_commit_sha: 'another' }],
+    [{ ...pull, head: { sha: 'not-a-sha' } }],
+    [{ ...pull, head: undefined }],
+    [pull, { ...pull, head: { sha: 'b'.repeat(40) } }],
+  ])
+    assert.equal(mergedPullRequestHead('target', pulls), undefined);
 });
