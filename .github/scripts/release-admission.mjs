@@ -36,6 +36,30 @@ export function requireSuccessfulCheck(checks, name, app) {
     `${name}: latest trusted check must complete successfully`,
   );
 }
+export const CODACY_CHECK = 'Codacy Static Code Analysis';
+export const CODACY_APP = 'codacy-production';
+
+/**
+ * The head commit of the pull request that this commit squashes, when there is
+ * exactly one.
+ *
+ * Codacy analyses pull request heads, not pushes to the default branch, so a
+ * release tagged on a merge commit has no Codacy Check Run of its own. The
+ * check for the very tree being released lives on the pull request head
+ * instead. The fallback stays tied to that tree: the pull request must be
+ * merged, and merged AS this commit, so no other branch's analysis can stand
+ * in for it. More than one candidate is refused rather than guessed at.
+ */
+export function mergedPullRequestHead(sha, pulls) {
+  const candidates = pulls.filter(
+    pull =>
+      pull.merged_at &&
+      pull.merge_commit_sha === sha &&
+      /^[a-f0-9]{40}$/.test(pull.head?.sha ?? ''),
+  );
+  return candidates.length === 1 ? candidates[0].head.sha : undefined;
+}
+
 export function requireSuccessfulCodecov(checks, statuses) {
   const name = 'codecov/project';
   if (
@@ -83,11 +107,23 @@ if (
   const checks = pages(
     `repos/${repo}/commits/${sha}/check-runs?filter=all&per_page=100`,
   ).flatMap(page => page.check_runs);
-  requireSuccessfulCheck(
-    checks,
-    'Codacy Static Code Analysis',
-    'codacy-production',
-  );
+  if (checks.some(check => check.name === CODACY_CHECK)) {
+    requireSuccessfulCheck(checks, CODACY_CHECK, CODACY_APP);
+  } else {
+    const pulls = pages(
+      `repos/${repo}/commits/${sha}/pulls?per_page=100`,
+    ).flat();
+    const head = mergedPullRequestHead(sha, pulls);
+    assert.ok(
+      head,
+      `${CODACY_CHECK}: absent on ${sha}, and no single pull request was merged as that commit`,
+    );
+    const headChecks = pages(
+      `repos/${repo}/commits/${head}/check-runs?filter=all&per_page=100`,
+    ).flatMap(page => page.check_runs);
+    requireSuccessfulCheck(headChecks, CODACY_CHECK, CODACY_APP);
+    console.log(`${CODACY_CHECK}: admitted from pull request head ${head}`);
+  }
   const statuses = pages(
     `repos/${repo}/commits/${sha}/statuses?per_page=100`,
   ).flat();
