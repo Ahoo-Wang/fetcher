@@ -452,6 +452,62 @@ describe('describeFilter parts', () => {
   });
 
   /**
+   * A predicate holds conditions of its own, and the element definition can
+   * lose a field the same way the root one can. The bar draws one badge for
+   * the outer condition, so a field that is gone inside has to mark it.
+   */
+  it('marks a predicate whose own condition names a field that is gone', () => {
+    const withItems: FieldDefinition[] = [
+      {
+        name: 'items',
+        label: 'Items',
+        kind: 'elementMatch',
+        elements: [{ name: 'sku', label: 'SKU', kind: 'string' }],
+      },
+    ];
+    const item = describeFilter(
+      withItems,
+      tree({
+        field: 'items',
+        operator: 'ELEMENT_MATCH',
+        value: {
+          op: 'and',
+          children: [{ field: 'items.retired', operator: 'EQ', value: 'A' }],
+        } as never,
+      }),
+      builtinFieldKinds,
+    )[0];
+
+    expect(item.items?.[0]).toMatchObject({ unresolved: true });
+    expect(item.unresolved).toBe(true);
+  });
+
+  /**
+   * `IN` over an array asks whether the array holds any of the candidates.
+   * The generic word for that operator says a value is one of them, which is
+   * a different question, so the kind names the relation and the bar words
+   * that instead.
+   */
+  it('gives an array condition the relation its operator stands for', () => {
+    const withTags: FieldDefinition[] = [
+      { name: 'tags', label: 'Tags', kind: 'array' },
+    ];
+    const [any, none] = ['IN', 'NOT_IN'].map(
+      operator =>
+        describeFilter(
+          withTags,
+          tree({ field: 'tags', operator: operator as 'IN', value: ['a'] }),
+          builtinFieldKinds,
+        )[0],
+    );
+
+    expect(any).toMatchObject({ operator: 'IN', relation: 'has-any' });
+    expect(none).toMatchObject({ operator: 'NOT_IN', relation: 'has-none' });
+    // The English line is what it always was.
+    expect(any?.text).toBe('Tags has any of a');
+  });
+
+  /**
    * `describeFilter` folds an `or` root with several children, and any
    * non-empty `nor` root, into one group item carrying that operator —
    * at the top of a bar the items sit side by side and nothing else would

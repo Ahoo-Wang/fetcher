@@ -24,7 +24,7 @@ export interface FieldKind {
   /** 由操作符与当前值的语义变体推出编辑器描述；组件名不进入配置。 */
   editor(operator: FilterOperator, value?: unknown): EditorDescriptor; // { input: 'text' | 'number' | 'select' | 'date' | 'daterange' | 'relative' | 'remote'; multiple?; ... }
   /** 一条已应用条件的部件，以及它们读作的那句英文。 */
-  describe(ctx): FieldKindDescription; // { text; operator?; value: FilterSummaryValue; items?; group? }
+  describe(ctx): FieldKindDescription; // { text; operator?; relation?; value: FilterSummaryValue; items?; group? }
 }
 ```
 

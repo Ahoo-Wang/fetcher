@@ -416,6 +416,28 @@ describe('the applied badge in another language', () => {
     expect(screen.queryByText(/Status IN Pending/)).toBeNull();
   });
 
+  /**
+   * An array's `IN` asks whether the array holds any of the candidates, not
+   * whether a value is one of them. Reading it with the scalar's word tells
+   * the reader the wrong thing about which rows are below.
+   */
+  it('reads an array condition as containment, not membership', () => {
+    inChinese([
+      condition({
+        text: 'Tags has any of Urgent',
+        field: 'tags',
+        label: '标签',
+        kind: 'array',
+        operator: 'IN',
+        relation: 'has-any',
+        value: { kind: 'list', values: ['URGENT'], labels: ['加急'] },
+      }),
+    ]);
+
+    expect(screen.getByText('标签 含有其中任一 加急')).toBeDefined();
+    expect(screen.queryByText(/是其中之一/)).toBeNull();
+  });
+
   it('names the whole bar in Chinese, remove included', () => {
     inChinese([status()]);
 

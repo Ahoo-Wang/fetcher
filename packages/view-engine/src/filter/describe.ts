@@ -106,12 +106,27 @@ export interface FieldKindDescription {
   text: string;
   /** How the condition reads; the leaf's own operator unless given. */
   operator?: FilterOperatorName;
+  /**
+   * What the operator means for this kind, where the generic word would say
+   * something else. `IN` over an array asks whether the array contains any
+   * of the candidates, not whether a value is one of them, and "is any of"
+   * reads as the second — so `array` names the relation and the bar words
+   * that instead.
+   */
+  relation?: FilterSummaryRelation;
   value: FilterSummaryValue;
   /** For a predicate-valued kind: the conditions inside it. */
   items?: readonly FilterSummaryItem[];
   /** The operator joining `items`. */
   group?: FilterGroupOperator;
 }
+
+/**
+ * A relation a kind reads its operator as, where the operator's own word
+ * would mislead. `/ui` words these through the catalogue, as it does
+ * operators.
+ */
+export type FilterSummaryRelation = 'has-any' | 'has-none' | 'has-all';
 
 /** One applied condition, for the summary bar above a result. */
 export interface FilterSummaryItem {
@@ -137,6 +152,8 @@ export interface FilterSummaryItem {
   numberFormat?: NumberFormat;
   /** How the condition reads; absent on a group. */
   operator?: FilterOperatorName;
+  /** What that operator means for this kind, when its own word would not. */
+  relation?: FilterSummaryRelation;
   /** What the condition compares against; absent on a group. */
   value?: FilterSummaryValue;
   /**
@@ -269,11 +286,16 @@ function describeCondition(
     label: field.label,
     ...fieldParts(field),
     operator: described.operator ?? node.operator,
+    ...(described.relation ? { relation: described.relation } : {}),
     value: described.value,
     ...(described.items ? { items: described.items } : {}),
     ...(described.group ? { group: described.group } : {}),
     text: described.text,
-    unresolved: false,
+    // A predicate holds conditions of its own, and a field the element
+    // definition has since dropped is unreadable there just as it is here.
+    // The bar draws one badge for the outer condition, so that is where the
+    // mark has to land — the same reckoning `groupItem` does.
+    unresolved: described.items?.some(item => item.unresolved) ?? false,
   };
 }
 

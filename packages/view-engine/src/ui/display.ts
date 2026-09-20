@@ -192,7 +192,7 @@ export function summaryText(
       said.push(messages.label('label.filter.any-entry'));
       return said.join(' ');
     }
-    if (item.operator) said.push(operatorWord(item.operator, messages));
+    pushWord(said, conditionWord(item, messages));
     said.push(groupText(item.group ?? 'and', item.items, messages, context));
     return said.join(' ');
   }
@@ -204,7 +204,7 @@ export function summaryText(
   if (value === undefined || (value.kind === 'blank' && !item.unresolved))
     return said.join(' ');
 
-  if (item.operator) said.push(operatorWord(item.operator, messages));
+  pushWord(said, conditionWord(item, messages));
   const shown = summaryValue(value, item, messages, context);
   if (shown !== '') said.push(shown);
   return said.join(' ');
@@ -241,6 +241,25 @@ function groupWord(
   if (op === 'or') return messages.label('label.filter.any-of');
   if (op === 'nor') return messages.label('label.filter.none-of');
   return messages.label('label.filter.all-of');
+}
+
+/**
+ * How this condition reads: the relation the kind named, or the operator's
+ * own word. `IN` over an array asks whether the array contains any of the
+ * candidates, and "is any of" would say the opposite thing about a scalar,
+ * so a kind that knows better says so and this prefers it.
+ */
+/** A word nobody has is not a gap in the sentence. */
+function pushWord(said: string[], word: string): void {
+  if (word !== '') said.push(word);
+}
+
+function conditionWord(
+  item: FilterSummaryItem,
+  messages: MessageFormatters,
+): string {
+  if (item.relation) return messages.label(`label.relation.${item.relation}`);
+  return item.operator ? operatorWord(item.operator, messages) : '';
 }
 
 /**

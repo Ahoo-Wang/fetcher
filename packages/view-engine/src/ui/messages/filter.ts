@@ -49,6 +49,12 @@ export const filterMessages = {
   // What separates the values of one condition, and the conditions of one
   // group, in an applied badge. Punctuation is wording too: a Chinese list
   // is not separated by a comma and a space.
+  // What an operator means for the kind that named it: an array's `IN` asks
+  // whether the array holds any of the candidates, which "is any of" would
+  // say the other way round.
+  'label.relation.has-any': 'has any of',
+  'label.relation.has-none': 'has none of',
+  'label.relation.has-all': 'has all of',
   'label.filter.join': ', ',
   // An element predicate that asks nothing of an entry still asks for one.
   'label.filter.any-entry': 'has any entry',

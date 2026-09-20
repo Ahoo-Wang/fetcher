@@ -12,6 +12,7 @@
  */
 
 import { filter, type FilterExpression } from '@ahoo-wang/fetcher-wow';
+import type { FilterSummaryRelation } from '../describe.js';
 import { readValue, type FieldKind } from '../fieldKind.js';
 import {
   namedLabels,
@@ -25,6 +26,17 @@ import {
   isPresenceOperator,
   PRESENCE_OPERATORS,
 } from './presence.js';
+
+/**
+ * The English `text` has always read this way. The bar words the relation
+ * through the catalogue instead, so both say the same thing in whichever
+ * language is in force.
+ */
+const RELATION_TEXT: Record<FilterSummaryRelation, string> = {
+  'has-all': 'has all of',
+  'has-none': 'has none of',
+  'has-any': 'has any of',
+};
 
 /** What one entry of an array field may be. */
 export type ArrayFilterValue = (string | number)[];
@@ -117,12 +129,13 @@ export const arrayFieldKind: FieldKind = {
     const labels = values.map(entry => optionLabelOf(field.options, entry));
     const relation =
       leaf.operator === 'CONTAINS_ALL'
-        ? 'has all of'
+        ? 'has-all'
         : leaf.operator === 'NOT_IN'
-          ? 'has none of'
-          : 'has any of';
+          ? 'has-none'
+          : 'has-any';
     return {
-      text: `${field.label} ${relation} ${shownEntries(values, labels)}`,
+      text: `${field.label} ${RELATION_TEXT[relation]} ${shownEntries(values, labels)}`,
+      relation,
       value: { kind: 'list', values, ...namedLabels(labels) },
     };
   },
