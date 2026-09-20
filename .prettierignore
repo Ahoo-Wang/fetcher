@@ -27,3 +27,7 @@ pnpm-lock.yaml
 # reformatting them turns every future update into a whole-file diff.
 packages/view-engine/src/ui/components/
 packages/view-engine/src/ui/lib/
+
+# Byte-for-byte generator snapshots, compared against ts-morph's own output by
+# the e2e test; reformatting them would fail every regeneration.
+packages/generator/expected/

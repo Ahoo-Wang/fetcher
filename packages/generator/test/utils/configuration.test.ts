@@ -157,7 +157,13 @@ describe('loadConfiguration', () => {
 
   it('falls back to info when the logger implements no warn', async () => {
     mockLoadResource.mockResolvedValue('');
-    const { warn: _warn, ...logger } = testLogger();
+    const logger: Logger = {
+      info: vi.fn(),
+      success: vi.fn(),
+      error: vi.fn(),
+      progress: vi.fn(),
+      progressWithCount: vi.fn(),
+    };
 
     await loadConfiguration(DEFAULT_SOURCE, logger);
 
