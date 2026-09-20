@@ -14,9 +14,12 @@
 /**
  * The browser APIs jsdom does not implement, stubbed just enough to import.
  *
- * `@dnd-kit/dom` constructs a `ResizeObserver` while its module body runs, so
- * a jsdom suite that so much as imports `ColumnSettings` throws before a
- * single test starts.
+ * `@dnd-kit/dom`'s `utilities` module picks its observer as it is imported —
+ * `canUseDOM ? ResizeObserver : MockResizeObserver` — so a jsdom suite that
+ * so much as imports `ColumnSettings` throws before a single test starts.
+ * Node takes the other branch and never touches the global, which is why
+ * the built `/ui` entry imports there and `verify-package` passes: this is
+ * a jsdom problem exactly, and not a sign that the package needs a DOM.
  *
  * The size it reports is made up, and has to be: jsdom computes no layout, so
  * every element measures zero. A component that sizes itself from what it is
