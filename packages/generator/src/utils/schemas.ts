@@ -11,7 +11,14 @@
  * limitations under the License.
  */
 
-import type { Reference, Schema, SchemaType } from '@ahoo-wang/fetcher-openapi';
+import type {
+  Components,
+  Reference,
+  Schema,
+  SchemaType,
+} from '@ahoo-wang/fetcher-openapi';
+import { extractSchema } from './components';
+import { isReference } from './references';
 
 /** List of primitive schema types */
 const PRIMITIVE_TYPES: SchemaType[] = [
@@ -178,6 +185,56 @@ export function isEmptyObject(schema: Schema): boolean {
 
 export function isReadOnly(schema: Schema | Reference): boolean {
   return (schema as Schema).readOnly === true;
+}
+
+/**
+ * Checks whether a schema admits `null`.
+ *
+ * `null` can be expressed in several ways across OpenAPI 3.0 and 3.1, so every
+ * spelling is checked: the 3.0 `nullable` flag, a `null` entry in a 3.1 type
+ * array, a `null` member of an `enum`, a `null` `const`, and a `null` branch of
+ * an `anyOf` / `oneOf` union. References are followed when components are
+ * supplied.
+ *
+ * `allOf` is deliberately ignored: intersecting with `null` yields an
+ * uninhabited type rather than a nullable one.
+ *
+ * @param schema - The schema or reference to check
+ * @param components - Components used to resolve references
+ * @param visited - Schemas already visited, guarding against reference cycles
+ * @returns True if the schema admits null, false otherwise
+ */
+export function isNullableSchema(
+  schema: Schema | Reference,
+  components?: Components,
+  visited: Set<Schema | Reference> = new Set(),
+): boolean {
+  if (visited.has(schema)) {
+    return false;
+  }
+  visited.add(schema);
+  if (isReference(schema)) {
+    if (!components) {
+      return false;
+    }
+    const resolved = extractSchema(schema, components);
+    return resolved ? isNullableSchema(resolved, components, visited) : false;
+  }
+  if (schema.nullable === true) {
+    return true;
+  }
+  if (schema.type !== undefined && [schema.type].flat().includes('null')) {
+    return true;
+  }
+  if (schema.enum?.some(value => value === null)) {
+    return true;
+  }
+  if (schema.const === null) {
+    return true;
+  }
+  return [...(schema.anyOf ?? []), ...(schema.oneOf ?? [])].some(member =>
+    isNullableSchema(member, components, visited),
+  );
 }
 
 /**

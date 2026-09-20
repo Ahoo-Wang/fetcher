@@ -23,12 +23,32 @@ pnpm exec fetcher-generator generate \
     "Catalog": {
       "ignorePathParameters": ["tenantId", "ownerId"]
     }
+  },
+  "readModel": {
+    "nonNullRequired": false
   }
 }
 ```
 
 默认配置路径为 `./fetcher-generator.config.json`。该可选文件不存在时，CLI 会记录解析
 失败，并使用默认值继续执行。
+
+### `readModel.nonNullRequired`
+
+未列入 `required` 的属性会生成为可选属性。这对请求侧是准确的，但导出器通常会把带默认
+值的属性排除在 `required` 之外，于是响应被低估——服务端其实总会返回这些字段。
+
+开启 `readModel.nonNullRequired` 后，状态聚合与领域事件 schema 中所有非空属性都会生成
+为必填。该规则的适用范围被刻意收窄：
+
+- 可空属性仍保持可选，涵盖 null 的各种写法：OpenAPI 3.0 的 `nullable` 标记、3.1 类型
+  数组中的 `null`、枚举或 const 中的 `null`，以及 `anyOf` / `oneOf` 的 `null` 分支。
+- 命令 schema 不受影响。把命令的必填属性写多了，会拒绝客户端本可以发送的请求。
+- 命令与读模型共享的 schema 保持文档声明的形态，其中会被该规则改变的 schema 会在生成
+  日志中列出。
+
+默认值为 `false`，即完全按文档声明生成。只有当服务端确实会序列化每个非空属性时才应开
+启——Jackson 的 `NON_NULL` 满足该前提，`NON_DEFAULT` 不满足。
 
 ## 核心能力
 

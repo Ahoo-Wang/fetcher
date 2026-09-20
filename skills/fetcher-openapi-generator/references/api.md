@@ -10,6 +10,7 @@
 - [Code Generation Pipeline](#code-generation-pipeline)
 - [Generated Output Structure](#generated-output-structure)
 - [Configuration (fetcher-generator.config.json)](#configuration-fetcher-generatorconfigjson)
+  - [Read-model optionality](#read-model-optionality)
 - [Wow CQRS Pattern Support](#wow-cqrs-pattern-support)
   - [Aggregate Identification](#aggregate-identification)
   - [Operation Patterns](#operation-patterns)
@@ -219,12 +220,33 @@ Model files use `types.ts` named by schema path prefix (e.g., schema key `ai.AiM
     "TagName": {
       "ignorePathParameters": ["tenantId", "ownerId"]
     }
+  },
+  "readModel": {
+    "nonNullRequired": false
   }
 }
 ```
 
 - `apiClients` - Map of tag name to API client configuration
 - `ignorePathParameters` - Path parameters to exclude from generated **API client** methods (default: `['tenantId', 'ownerId']`). Command clients always ignore `tenantId`/`ownerId` regardless of this setting.
+- `readModel.nonNullRequired` - Generate non-nullable read-model properties as required (default: `false`)
+
+### Read-model optionality
+
+Property optionality follows the document: anything missing from `required` is generated with a `?`. Exporters routinely omit properties that carry a default value, so responses come out weaker than the server actually is.
+
+`readModel.nonNullRequired` relaxes this for the read side only. `SchemaUsageResolver` (`src/aggregate/schemaUsage.ts`) walks `$ref` closures from the resolved aggregates and classifies every component schema:
+
+| Usage     | Reached from                         | Optionality                                   |
+| --------- | ------------------------------------ | --------------------------------------------- |
+| `read`    | aggregate state, domain event bodies | non-nullable properties become required       |
+| `write`   | command bodies                       | as declared                                   |
+| `shared`  | both                                 | as declared, and listed in the generation log |
+| `unknown` | neither, e.g. plain REST schemas     | as declared                                   |
+
+Nullability is detected in every spelling: the 3.0 `nullable` flag, a `null` entry in a 3.1 type array, a `null` enum member or const, and a `null` branch of an `anyOf` / `oneOf`. References are followed, cycles guarded. `allOf` is ignored, since intersecting with `null` is uninhabited rather than nullable.
+
+The option assumes the service serialises every non-null property (Jackson `NON_NULL` does; `NON_DEFAULT` does not). Verify against a real response before enabling it.
 
 ## Wow CQRS Pattern Support
 
