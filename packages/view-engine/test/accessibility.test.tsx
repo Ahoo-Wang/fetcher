@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { useRef, useState } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -24,8 +25,10 @@ import {
   AnalysisWorkbench,
   DashboardWorkbench,
   defaultMessages,
+  EmbeddedView,
   RecordPagination,
   RecordWorkbench,
+  useViewExpansion,
   ViewSurface,
 } from '../src/ui/index.js';
 import {
@@ -299,6 +302,46 @@ describe('the states behind a click pass axe', () => {
         name: defaultMessages['label.workbench.collapse-view'],
       }),
     );
+    expect(await violations(document.body)).toEqual([]);
+  });
+
+  /**
+   * An embed filling the screen under a control its host owns.
+   *
+   * That control is a sibling of the surface, so the surface now covers it —
+   * which on a touch device, with no Escape key to fall back on, would be a
+   * screen with no way off it. The surface grows its own exit for exactly
+   * that case, and it is a real control on a real page: it has to carry a
+   * name and pass with the rest of the document, in both states.
+   */
+  it('an embed filling the screen with the way out it grew', async () => {
+    function Hosted() {
+      const root = useRef<HTMLDivElement>(null);
+      const toggle = useRef<HTMLButtonElement>(null);
+      const expansion = useViewExpansion(root, toggle);
+      const [engine] = useState(() => engineWith([pendingOrders]));
+      return (
+        <>
+          <button ref={toggle} type="button" onClick={expansion.toggle}>
+            Fill the screen
+          </button>
+          <EmbeddedView ref={root} engine={engine} instanceId="pending" />
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<Hosted />);
+    await screen.findByRole('table');
+    // Nothing of its own while the page can be worked normally: an embed is
+    // the result and no chrome at all.
+    expect(await violations(document.body)).toEqual([]);
+
+    await user.click(screen.getByRole('button', { name: 'Fill the screen' }));
+    expect(
+      screen.getByRole('button', {
+        name: defaultMessages['label.workbench.collapse-view'],
+      }),
+    ).toBeDefined();
     expect(await violations(document.body)).toEqual([]);
   });
 });

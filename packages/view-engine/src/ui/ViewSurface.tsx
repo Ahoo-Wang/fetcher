@@ -17,6 +17,7 @@ import { TooltipProvider } from './components/tooltip.js';
 import type { DisplayContext } from './display.js';
 import { MessagesProvider } from './MessagesProvider.js';
 import type { ViewMessages } from './messages.js';
+import { ViewExpandExit } from './ViewExpansion.js';
 
 export interface ViewSurfaceProps extends React.ComponentProps<'div'> {
   /** Follows the host when left out; set it to pin an embedded view. */
@@ -165,7 +166,16 @@ export function ViewSurface({
       <SurfaceThemeContext.Provider value={theme ?? resolved}>
         <SurfaceDisplayContext.Provider value={display}>
           <MessagesProvider messages={messages}>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              {/* Hidden until `useViewExpansion` finds that this surface
+                  fills the screen with its control left underneath it; see
+                  `ViewExpandExit`. It is a direct child of the root because
+                  the stylesheet places it as one of the root's flex items,
+                  and it stays out of the page — and out of the a11y tree —
+                  the rest of the time. */}
+              <ViewExpandExit />
+              {children}
+            </TooltipProvider>
           </MessagesProvider>
         </SurfaceDisplayContext.Provider>
       </SurfaceThemeContext.Provider>

@@ -43,12 +43,53 @@ import {
   ROWS,
 } from './fixtures.js';
 
+/**
+ * What actually scrolls a document, which is what the lock borrows.
+ *
+ * `<html>` in standards mode, `<body>` in quirks: body's own overflow reaches
+ * the viewport only while html's is `visible`, so a host that owns page
+ * scrolling on `html` would go on scrolling behind a surface that locked the
+ * body alone.
+ */
+const scroller = (doc: Document = document) =>
+  (doc.scrollingElement as HTMLElement | null) ?? doc.documentElement;
+
+/**
+ * The page's inline overflow, one axis at a time and priority included.
+ *
+ * Both parts matter and the shorthand can express neither on its own: a host
+ * that set only `overflow-y`, or gave the axes different values or different
+ * priorities, is a page the shorthand cannot read back or hand back.
+ */
+function held(doc: Document = document): string[] {
+  const style = scroller(doc).style;
+  return ['overflow-x', 'overflow-y'].map(name => {
+    const priority = style.getPropertyPriority(name);
+    return style.getPropertyValue(name) + (priority ? ` !${priority}` : '');
+  });
+}
+
+/** What a host was holding before a surface borrowed it. */
+function give(value: string, priority = '', doc: Document = document): void {
+  const style = scroller(doc).style;
+  for (const name of ['overflow-x', 'overflow-y'])
+    style.setProperty(name, value, priority);
+}
+
+/** Locked, on both axes, in the way a host stylesheet cannot outrank. */
+const LOCKED = ['hidden !important', 'hidden !important'];
+/** And a page holding nothing of its own. */
+const FREE = ['', ''];
+
 afterEach(() => {
   cleanup();
   // The lock is the one thing this suite can leave behind for the next one,
   // which is exactly the failure it exists to catch — so it is cleared here
   // rather than trusted, and asserted on inside every test that takes it.
-  document.body.style.removeProperty('overflow');
+  for (const name of ['overflow', 'overflow-x', 'overflow-y']) {
+    scroller().style.removeProperty(name);
+    document.body.style.removeProperty(name);
+  }
 });
 
 const FILL = defaultMessages['label.workbench.expand-view'];
@@ -230,31 +271,25 @@ describe('the control that fills the screen', () => {
 
 describe('the background while a view fills the screen', () => {
   it('stops scrolling, and is handed back exactly as it was', async () => {
-    document.body.style.setProperty('overflow', 'auto', 'important');
+    give('auto', 'important');
     const user = await open();
 
     await user.click(screen.getByRole('button', { name: FILL }));
-    expect(document.body.style.overflow).toBe('hidden');
-    // Important, because the page may be holding its own `overflow` that way
-    // from a stylesheet — `body { overflow: auto !important }`, or Tailwind's
+    // Important, because the page may be holding its own overflow that way
+    // from a stylesheet — `html { overflow: auto !important }`, or Tailwind's
     // forced utility — and a stylesheet's `!important` outranks a plain
     // inline declaration. The background would go on scrolling under a
     // surface that covers it.
-    expect(document.body.style.getPropertyPriority('overflow')).toBe(
-      'important',
-    );
+    expect(held()).toEqual(LOCKED);
 
     await user.click(screen.getByRole('button', { name: LEAVE }));
     // The priority too: a host that wrote `!important` meant it, and a plain
     // `auto` handed back is a different page from the one we borrowed.
-    expect(document.body.style.overflow).toBe('auto');
-    expect(document.body.style.getPropertyPriority('overflow')).toBe(
-      'important',
-    );
+    expect(held()).toEqual(['auto !important', 'auto !important']);
   });
 
   it('leaves nothing behind when the view is unmounted while expanded', async () => {
-    document.body.style.setProperty('overflow', 'scroll');
+    give('scroll');
     const user = userEvent.setup();
     const view = render(
       <RecordWorkbench
@@ -265,16 +300,16 @@ describe('the background while a view fills the screen', () => {
     );
     await screen.findByRole('table');
     await user.click(screen.getByRole('button', { name: FILL }));
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(held()).toEqual(LOCKED);
 
     // Navigating away is the one close that never runs a click handler, so
     // a lock released only on the button would outlive the page that took it.
     view.unmount();
-    expect(document.body.style.overflow).toBe('scroll');
+    expect(held()).toEqual(['scroll', 'scroll']);
   });
 
   it('survives the setup React runs twice', async () => {
-    document.body.style.setProperty('overflow', 'auto');
+    give('auto');
     const user = userEvent.setup();
     const view = render(
       <StrictMode>
@@ -290,26 +325,66 @@ describe('the background while a view fills the screen', () => {
     await user.click(screen.getByRole('button', { name: FILL }));
     // Setup, cleanup, setup: a count that did not come back to one would
     // either unlock under an open surface or never unlock at all.
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(held()).toEqual(LOCKED);
     view.unmount();
-    expect(document.body.style.overflow).toBe('auto');
+    expect(held()).toEqual(['auto', 'auto']);
   });
 
   it('reads the page as it is each time rather than as it once was', async () => {
-    document.body.style.setProperty('overflow', 'auto');
+    give('auto');
     const first = await expanded();
     await first.click(screen.getByRole('button', { name: LEAVE }));
 
-    document.body.style.setProperty('overflow', 'clip', 'important');
+    give('clip', 'important');
     await first.click(screen.getByRole('button', { name: FILL }));
     await first.click(screen.getByRole('button', { name: LEAVE }));
 
     // The remembered value is dropped with the last lock, so the second
     // expansion restores what the host had by then, not what it had first.
-    expect(document.body.style.overflow).toBe('clip');
-    expect(document.body.style.getPropertyPriority('overflow')).toBe(
-      'important',
-    );
+    expect(held()).toEqual(['clip !important', 'clip !important']);
+  });
+
+  it('borrows the element that actually scrolls the document', async () => {
+    // Body's overflow reaches the viewport only while html's is `visible`, so
+    // a host that owns page scrolling on `html` — an ordinary thing to do —
+    // goes on scrolling by wheel, touch and key behind a surface that locked
+    // the body alone.
+    document.documentElement.style.setProperty('overflow-y', 'auto');
+    const user = await open();
+
+    await user.click(screen.getByRole('button', { name: FILL }));
+    expect(scroller()).toBe(document.documentElement);
+    expect(held()).toEqual(LOCKED);
+  });
+
+  it('hands back each axis on its own, value and priority', async () => {
+    // A host with one axis set, the other free, and the two at different
+    // priorities: the `overflow` shorthand can read back none of that, and
+    // writing it would replace both longhands — so restoring from it would
+    // lose whatever the host had for good.
+    const style = scroller().style;
+    style.setProperty('overflow-x', 'clip');
+    style.setProperty('overflow-y', 'scroll', 'important');
+    const user = await open();
+
+    await user.click(screen.getByRole('button', { name: FILL }));
+    expect(held()).toEqual(LOCKED);
+
+    await user.click(screen.getByRole('button', { name: LEAVE }));
+    expect(held()).toEqual(['clip', 'scroll !important']);
+  });
+
+  it('leaves an axis the host never set unset', async () => {
+    scroller().style.setProperty('overflow-y', 'auto');
+    const user = await open();
+
+    await user.click(screen.getByRole('button', { name: FILL }));
+    await user.click(screen.getByRole('button', { name: LEAVE }));
+
+    // Not `visible`, not `hidden`: an inline declaration the host never wrote
+    // is one the cascade never had to outrank, and inventing one changes
+    // which rule wins on that axis.
+    expect(held()).toEqual(['', 'auto']);
   });
 });
 
@@ -320,8 +395,8 @@ describe('the background while a view fills the screen', () => {
  * back under the second, or the second one closing never puts it back at all.
  */
 describe('two surfaces on one document', () => {
-  /** One workbench in a container of its own, expanded. */
-  async function page() {
+  /** One workbench in a container of its own, expanded unless asked not to. */
+  async function page(expand = true) {
     const user = userEvent.setup();
     const container = document.body.appendChild(document.createElement('div'));
     const view = render(
@@ -333,16 +408,20 @@ describe('two surfaces on one document', () => {
       { container, baseElement: container },
     );
     await view.findByRole('table');
-    await user.click(view.getByRole('button', { name: FILL }));
-    return { user, view };
+    const fill = async () =>
+      user.click(view.getByRole('button', { name: FILL }));
+    if (expand) await fill();
+    const open = () =>
+      view.container.querySelector('[data-view-expanded]') !== null;
+    return { user, view, fill, open };
   }
 
   it.each([{ first: 0 }, { first: 1 }])(
     'keeps the page still until the last of them leaves (first out: $first)',
     async ({ first }) => {
-      document.body.style.setProperty('overflow', 'auto', 'important');
+      give('auto', 'important');
       const pages = [await page(), await page()];
-      expect(document.body.style.overflow).toBe('hidden');
+      expect(held()).toEqual(LOCKED);
 
       const closing = pages[first];
       await closing.user.click(
@@ -355,22 +434,19 @@ describe('two surfaces on one document', () => {
       expect(
         pages[1 - first].view.getByRole('button', { name: LEAVE }),
       ).toBeDefined();
-      expect(document.body.style.overflow).toBe('hidden');
+      expect(held()).toEqual(LOCKED);
 
       const last = pages[1 - first];
       await last.user.click(last.view.getByRole('button', { name: LEAVE }));
-      expect(document.body.style.overflow).toBe('auto');
-      expect(document.body.style.getPropertyPriority('overflow')).toBe(
-        'important',
-      );
+      expect(held()).toEqual(['auto !important', 'auto !important']);
     },
   );
 
   it('counts each document on its own', async () => {
     const frame = document.body.appendChild(document.createElement('iframe'));
     const frameDocument = frame.contentDocument!;
-    document.body.style.setProperty('overflow', 'auto');
-    frameDocument.body.style.setProperty('overflow', 'scroll', 'important');
+    give('auto');
+    give('scroll', 'important', frameDocument);
     try {
       const here = await page();
       const inFrame = render(
@@ -389,19 +465,19 @@ describe('two surfaces on one document', () => {
       await inFrame.findByRole('table');
       fireEvent.click(inFrame.getByRole('button', { name: FILL }));
 
-      expect(document.body.style.overflow).toBe('hidden');
-      expect(frameDocument.body.style.overflow).toBe('hidden');
+      expect(held()).toEqual(LOCKED);
+      expect(held(frameDocument)).toEqual(LOCKED);
 
       here.view.unmount();
       // One page going back does not reach into the other's.
-      expect(document.body.style.overflow).toBe('auto');
-      expect(frameDocument.body.style.overflow).toBe('hidden');
+      expect(held()).toEqual(['auto', 'auto']);
+      expect(held(frameDocument)).toEqual(LOCKED);
 
       inFrame.unmount();
-      expect(frameDocument.body.style.overflow).toBe('scroll');
-      expect(frameDocument.body.style.getPropertyPriority('overflow')).toBe(
-        'important',
-      );
+      expect(held(frameDocument)).toEqual([
+        'scroll !important',
+        'scroll !important',
+      ]);
     } finally {
       frame.remove();
     }
@@ -412,23 +488,52 @@ describe('two surfaces on one document', () => {
 
     fireEvent.keyDown(document, { key: 'Escape' });
 
-    // Every expansion listens on the same document, so without a stack one
-    // Escape would collapse all of them at once — and leave two of them
-    // fighting over where focus lands. Only the last one opened answers.
-    expect(
-      pages[1].view.container.querySelector('[data-view-expanded]'),
-    ).toBeNull();
-    expect(
-      pages[0].view.container.querySelector('[data-view-expanded]'),
-    ).not.toBeNull();
+    // Every expansion listens on the same document, so without a rule for
+    // which one answers, one Escape would collapse all of them at once — and
+    // leave two of them fighting over where focus lands.
+    expect(pages[1].open()).toBe(false);
+    expect(pages[0].open()).toBe(true);
     // Which is also why the page is still still: something is still on it.
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(held()).toEqual(LOCKED);
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(
-      pages[0].view.container.querySelector('[data-view-expanded]'),
-    ).toBeNull();
-    expect(document.body.style.overflow).toBe('');
+    expect(pages[0].open()).toBe(false);
+    expect(held()).toEqual(FREE);
+  });
+
+  it('answers from the one actually in front, not the one opened last', async () => {
+    // Both surfaces paint in the same layer — see the `z-index` note in
+    // `styles.css` — so what covers what is document order and nothing else.
+    // Expand the later one first and the earlier one second: remembering the
+    // order they were opened in would collapse the surface *underneath*
+    // while the one the user is looking at stays exactly where it was.
+    const [first, second] = [await page(false), await page(false)];
+    await second.fill();
+    await first.fill();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(second.open()).toBe(false);
+    expect(first.open()).toBe(true);
+  });
+
+  it('leaves focus on the surface still in front of the one it closed', async () => {
+    const [first, second] = [await page(), await page()];
+    // The control of the surface that just collapsed is back in page layout
+    // and behind the one still expanded — a Tab from there would walk content
+    // nobody can see. So focus goes to what is still in front.
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(second.open()).toBe(false);
+    expect(document.activeElement).toBe(
+      first.view.getByRole('button', { name: LEAVE }),
+    );
+
+    // And with nothing left in front, back to this surface's own control.
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.activeElement).toBe(
+      first.view.getByRole('button', { name: FILL }),
+    );
   });
 });
 
@@ -471,7 +576,45 @@ describe('the keyboard', () => {
     // The menu took it, and only the menu: "close this" means the thing in
     // front, never the whole view behind it.
     expect(isExpanded()).toBe(true);
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(held()).toEqual(LOCKED);
+  });
+
+  it("leaves the key to a host's native dialog, which wears no role", async () => {
+    await expanded();
+    // A native `<dialog>` carries its role implicitly, and an implicit ARIA
+    // role is not an attribute — so `[role="dialog"]` never matches one. A
+    // document listener runs before the browser's own default close, so
+    // without naming the element the first Escape would shut the host's
+    // dialog *and* put the whole view back in the page.
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    dialog.setAttribute('open', '');
+    const inside = dialog.appendChild(document.createElement('button'));
+
+    fireEvent.keyDown(inside, { key: 'Escape', bubbles: true });
+
+    expect(isExpanded()).toBe(true);
+    dialog.remove();
+  });
+
+  it('leaves the key to the input method while a word is being composed', async () => {
+    await expanded();
+    // Escape belongs to the IME while a candidate list is open — it cancels
+    // the composition — and the native event still reads `Escape`, on an
+    // ordinary input, un-prevented. Collapsing there would take the
+    // half-typed word and the focus with it.
+    const field = surface().appendChild(document.createElement('input'));
+
+    fireEvent.keyDown(field, { key: 'Escape', isComposing: true });
+    expect(isExpanded()).toBe(true);
+
+    // The same thing said the other way, on browsers that leave
+    // `isComposing` unset.
+    fireEvent.keyDown(field, { key: 'Escape', keyCode: 229 });
+    expect(isExpanded()).toBe(true);
+
+    // And once the composition is over, the key is the view's again.
+    fireEvent.keyDown(field, { key: 'Escape' });
+    expect(isExpanded()).toBe(false);
   });
 
   it('leaves the key to a dialog that is in front of it', async () => {
@@ -545,7 +688,7 @@ describe('the keyboard', () => {
       expect(
         inFrame.container.querySelector('[data-view-expanded]'),
       ).not.toBeNull();
-      expect(frameDocument.body.style.overflow).toBe('hidden');
+      expect(held(frameDocument)).toEqual(LOCKED);
 
       // And a key with nothing in front of it still puts the view back.
       fireEvent.keyDown(frameDocument.body, { key: 'Escape' });
@@ -581,7 +724,7 @@ describe('the states a view can be expanded in', () => {
 
     await user.click(toggle);
     expect(isExpanded()).toBe(true);
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(held()).toEqual(LOCKED);
 
     pending.resolve({ total: 2, list: [...ROWS] });
     await screen.findByRole('table');
@@ -624,7 +767,7 @@ describe('the states a view can be expanded in', () => {
     // screen over what there is.
     expect(screen.queryByRole('table')).toBeNull();
     expect(isExpanded()).toBe(true);
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(held()).toEqual(LOCKED);
     pending.resolve([{ warehouse: 'CN', orders: 2, amount_sum: 30 }]);
   });
 
@@ -653,17 +796,17 @@ describe('the states a view can be expanded in', () => {
     // The toggle lives in the title bar, and there is no title bar over a
     // view nobody could draw.
     expect(screen.queryByRole('button', { name: FILL })).toBeNull();
-    expect(document.body.style.overflow).toBe('');
+    expect(held()).toEqual(FREE);
   });
 
   it('gives the page back the moment the control is taken away', async () => {
-    document.body.style.setProperty('overflow', 'auto');
+    give('auto');
     const user = userEvent.setup();
     const engine = engineWith();
     const view = render(<Shell engine={engine} />);
     await screen.findByText('rows');
     await user.click(screen.getByRole('button', { name: FILL }));
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(held()).toEqual(LOCKED);
 
     view.rerender(<Shell engine={engine} expandable={false} />);
 
@@ -672,7 +815,7 @@ describe('the states a view can be expanded in', () => {
     // leaving it pinned over a page whose scrolling is still locked.
     expect(isExpanded()).toBe(false);
     expect(screen.queryByRole('button', { name: LEAVE })).toBeNull();
-    expect(document.body.style.overflow).toBe('auto');
+    expect(held()).toEqual(['auto', 'auto']);
 
     view.rerender(<Shell engine={engine} />);
     // And it is *ended*, not parked: a surface that came back filling the
@@ -682,7 +825,7 @@ describe('the states a view can be expanded in', () => {
     expect(
       screen.getByRole('button', { name: FILL }).getAttribute('aria-expanded'),
     ).toBe('false');
-    expect(document.body.style.overflow).toBe('auto');
+    expect(held()).toEqual(['auto', 'auto']);
   });
 
   it('belongs to this opening and ends when another view is opened', async () => {
@@ -699,7 +842,7 @@ describe('the states a view can be expanded in', () => {
     // goes with it rather than surviving into a view nobody expanded — the
     // same rule the editor's fold lives by.
     expect(isExpanded()).toBe(false);
-    expect(document.body.style.overflow).toBe('');
+    expect(held()).toEqual(FREE);
   });
 });
 
@@ -737,29 +880,140 @@ describe('an embedded view, expanded by its host', () => {
   });
 
   it('expands under a control the host owns, and locks the page once', async () => {
-    document.body.style.setProperty('overflow', 'auto');
+    give('auto');
     const user = userEvent.setup();
     render(<HostedEmbed />);
     await screen.findByRole('table');
 
     await user.click(screen.getByRole('button', { name: 'host control' }));
     expect(isExpanded()).toBe(true);
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(held()).toEqual(LOCKED);
 
     await user.keyboard('{Escape}');
     expect(isExpanded()).toBe(false);
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: 'host control' }),
     );
-    expect(document.body.style.overflow).toBe('auto');
+    expect(held()).toEqual(['auto', 'auto']);
+  });
+
+  it('grows its own way out while the host control is underneath it', async () => {
+    const user = userEvent.setup();
+    render(<HostedEmbed />);
+    await screen.findByRole('table');
+    // Nothing in the page until there is something to leave.
+    expect(screen.queryByRole('button', { name: LEAVE })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'host control' }));
+
+    // The host's control is a sibling of the surface, so a surface covering
+    // the viewport covers it too. A desktop user might guess Escape; a touch
+    // device has no Escape at all, and would be left with no way out.
+    const exit = screen.getByRole('button', { name: LEAVE });
+    expect(surface().contains(exit)).toBe(true);
+
+    await user.click(exit);
+    expect(isExpanded()).toBe(false);
+    // Gone again the moment the page can be worked normally.
+    expect(screen.queryByRole('button', { name: LEAVE })).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'host control' }),
+    );
+  });
+
+  it('grows no way out when the control is already inside it', async () => {
+    const user = await expanded();
+
+    // A workbench carries its own toggle in the title bar, which the surface
+    // expanded around rather than over: a second exit would be a second
+    // thing to find for one choice.
+    expect(screen.getAllByRole('button', { name: LEAVE })).toHaveLength(1);
+    expect(
+      surface().querySelector('[data-slot="view-exit"]:not([hidden])'),
+    ).toBeNull();
+    await user.click(screen.getByRole('button', { name: LEAVE }));
+    expect(isExpanded()).toBe(false);
+  });
+
+  it('waits for a target that had not mounted when the host asked', async () => {
+    function LateEmbed() {
+      const root = useRef<HTMLDivElement>(null);
+      const toggle = useRef<HTMLButtonElement>(null);
+      const expansion = useViewExpansion(root, toggle);
+      const [engine] = useState(engineWith);
+      const [showing, setShowing] = useState(false);
+      return (
+        <>
+          <button ref={toggle} type="button" onClick={expansion.toggle}>
+            host control
+          </button>
+          <button type="button" onClick={() => setShowing(true)}>
+            show
+          </button>
+          {showing && (
+            <EmbeddedView ref={root} engine={engine} instanceId="mine" />
+          )}
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<LateEmbed />);
+
+    // Expanded before there is anything to expand: the ref is empty, and a
+    // `RefObject` reports nothing when React finally fills it. Reporting
+    // `expanded: true` with no element carrying the attributes or the lock
+    // would be a view the page believes is filling a screen it is not on.
+    await user.click(screen.getByRole('button', { name: 'host control' }));
+    expect(document.querySelector('[data-view-expanded]')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'show' }));
+    await waitFor(() => expect(isExpanded()).toBe(true));
+    expect(held()).toEqual(LOCKED);
+  });
+
+  it('gives the page back when the surface it was pointed at goes away', async () => {
+    function ClosableEmbed() {
+      const root = useRef<HTMLDivElement>(null);
+      const toggle = useRef<HTMLButtonElement>(null);
+      const expansion = useViewExpansion(root, toggle);
+      const [engine] = useState(engineWith);
+      const [showing, setShowing] = useState(true);
+      return (
+        <>
+          <button ref={toggle} type="button" onClick={expansion.toggle}>
+            host control
+          </button>
+          <button type="button" onClick={() => setShowing(false)}>
+            hide
+          </button>
+          {showing && (
+            <EmbeddedView ref={root} engine={engine} instanceId="mine" />
+          )}
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<ClosableEmbed />);
+    await screen.findByRole('table');
+
+    await user.click(screen.getByRole('button', { name: 'host control' }));
+    expect(held()).toEqual(LOCKED);
+
+    // The host takes the embed away while it is filling the screen. The hook
+    // stays mounted, its `enabled` never changed and React clears the ref
+    // without saying so — so nothing else would ever put the page back, and
+    // it would sit unscrollable with nothing on it.
+    await user.click(screen.getByRole('button', { name: 'hide' }));
+
+    await waitFor(() => expect(held()).toEqual(FREE));
   });
 
   it('hands back the root either way a ref is written', async () => {
-    const held: (HTMLElement | null)[] = [];
+    const seen: (HTMLElement | null)[] = [];
     render(
       <EmbeddedView
         ref={node => {
-          held.push(node);
+          seen.push(node);
         }}
         engine={engineWith()}
         instanceId="mine"
@@ -772,7 +1026,7 @@ describe('an embedded view, expanded by its host', () => {
     // expand. The surface keeps its own handle on the same node: it reads the
     // resolved light/dark mode off it, and a caller's ref arriving through
     // `...props` would have replaced that one and broken the cascade.
-    expect(held[0]).toBe(surface());
+    expect(seen[0]).toBe(surface());
     expect(surface().classList.contains('fve-root')).toBe(true);
   });
 
@@ -844,22 +1098,61 @@ describe('an embedded view, expanded by its host', () => {
  * difference is written back as the correction.
  */
 describe('the box a host actually gives it', () => {
-  /** The surface, expanded with `getBoundingClientRect` under the test's control. */
-  async function expandWith(box: Partial<DOMRect>) {
+  /**
+   * A host that owns the containing block, standing in for a layout engine.
+   *
+   * jsdom computes none, so the element's box is whatever this says — and it
+   * has to *answer* what the hook writes rather than repeat one frozen
+   * rectangle, because the correction is measured in two passes: the naive
+   * difference first, then what the browser made of it. A fake that returned
+   * the same box both times would report a scale that is not there.
+   *
+   * @param origin where the host's own box starts on the screen
+   * @param scale what the host multiplies its children by — `1` for a pure
+   *   translate, which changes where a box is and not how big it is
+   * @param size the element's box in its own coordinates before anything is
+   *   written, which is `width: 100%` of the host
+   */
+  function hostedIn(
+    el: HTMLElement,
+    origin: { x: number; y: number },
+    scale = 1,
+    size = { width: 200, height: 100 },
+  ) {
+    const local = (name: string, fallback: number) => {
+      const written = el.style.getPropertyValue(`--fve-expanded-${name}`);
+      return written ? Number.parseFloat(written) : fallback;
+    };
+    vi.spyOn(el, 'getBoundingClientRect').mockImplementation(() => {
+      const width = local('w', size.width) * scale;
+      const height = local('h', size.height) * scale;
+      const left = origin.x + local('x', 0) * scale;
+      const top = origin.y + local('y', 0) * scale;
+      return {
+        top,
+        left,
+        width,
+        height,
+        right: left + width,
+        bottom: top + height,
+        x: left,
+        y: top,
+        toJSON: () => ({}),
+      } as DOMRect;
+    });
+  }
+
+  /** The surface, expanded inside such a host. */
+  async function expandWith(
+    ...host: [
+      { x: number; y: number },
+      number?,
+      { width: number; height: number }?,
+    ]
+  ) {
     const user = await open();
     const el = surface();
-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-      top: 0,
-      left: 0,
-      width: 0,
-      height: 0,
-      right: 0,
-      bottom: 0,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-      ...box,
-    } as DOMRect);
+    hostedIn(el, ...host);
     await user.click(screen.getByRole('button', { name: FILL }));
     return { user, el };
   }
@@ -870,7 +1163,7 @@ describe('the box a host actually gives it', () => {
     );
 
   it('writes nothing when the box is already the viewport', async () => {
-    const { el } = await expandWith({
+    const { el } = await expandWith({ x: 0, y: 0 }, 1, {
       width: window.innerWidth,
       height: window.innerHeight,
     });
@@ -890,12 +1183,7 @@ describe('the box a host actually gives it', () => {
   });
 
   it('corrects the offset an ancestor containing block introduced', async () => {
-    const { user, el } = await expandWith({
-      top: 40,
-      left: 60,
-      width: 200,
-      height: 100,
-    });
+    const { user, el } = await expandWith({ x: 60, y: 40 });
 
     // The ancestor's padding box starts at (60, 40), so `top: 0; left: 0`
     // landed there; moving back by exactly that puts the surface on the
@@ -911,6 +1199,33 @@ describe('the box a host actually gives it', () => {
     await user.click(screen.getByRole('button', { name: LEAVE }));
     // And the host's element is handed back without our arithmetic on it.
     expect(fitted(el)).toEqual(['', '', '', '']);
+  });
+
+  it('corrects through an ancestor that scales as well as moves', async () => {
+    const { el } = await expandWith({ x: 60, y: 40 }, 0.5);
+
+    // A `transform: scale(.5)` ancestor already reports *screen* pixels from
+    // `getBoundingClientRect`, but these four properties are read in the
+    // element's own coordinates, where one pixel is half a screen pixel. The
+    // naive difference would land the surface at half the width and still
+    // 30px from the left edge, which is the half of `transform` the old
+    // `translateZ(0)` evidence never exercised.
+    expect(fitted(el)).toEqual([
+      '-120px',
+      '-80px',
+      `${window.innerWidth * 2}px`,
+      `${window.innerHeight * 2}px`,
+    ]);
+
+    // And in screen pixels — the only ones a reader has — that is the
+    // viewport, exactly.
+    const box = el.getBoundingClientRect();
+    expect([box.left, box.top, box.width, box.height]).toEqual([
+      0,
+      0,
+      window.innerWidth,
+      window.innerHeight,
+    ]);
   });
 });
 
