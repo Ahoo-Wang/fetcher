@@ -142,6 +142,8 @@ export const zhCN: ViewMessages = {
   'record.capability.missing': '{definition} 不再提供记录视图。',
   'record.card.invalid': '卡片设置无法读取。',
   'record.column.duplicate': '列 {field} 列了两次。',
+  'record.column.pin-invalid':
+    '列 {field} 固定在 {pinned}，那不是左右任何一侧。',
   'record.field.not-a-column': '{field} 是搜索或元数据句柄，不是一行里的内容。',
   'record.field.unknown': '列 {field} 已不存在。',
   'record.layout.unsupported': '这里没有 {layout} 布局。',

@@ -16,15 +16,18 @@ import {
   type CursorPage,
   type PagedList,
 } from '@ahoo-wang/fetcher-wow';
-import type {
-  DataViewDefinition,
-  FieldDefinition,
-  FieldOption,
-  NumberFormat,
-  RecordData,
-  RecordKey,
-  RecordViewConfig,
-  SummaryFunction,
+import {
+  columnPin,
+  type DataViewDefinition,
+  type FieldDefinition,
+  type FieldOption,
+  type NumberFormat,
+  type RecordColumn,
+  type RecordColumnPin,
+  type RecordData,
+  type RecordKey,
+  type RecordViewConfig,
+  type SummaryFunction,
 } from '../model/index.js';
 import { summaryAlias } from './compile.js';
 
@@ -36,7 +39,7 @@ export interface RecordColumnView {
   /** Renderer key; the kind's default when the field names none. */
   cell: string;
   width?: number;
-  pinned?: 'left' | 'right';
+  pinned?: RecordColumnPin;
   sortable: boolean;
   numberFormat?: NumberFormat;
   /** An enum's choices, so a cell can show a value by its label. */
@@ -71,7 +74,7 @@ export interface RecordView {
  */
 function columnView(
   field: FieldDefinition,
-  column: { width?: number; pinned?: 'left' | 'right' },
+  column: RecordColumn,
   rowKey: string,
 ): RecordColumnView {
   return {
@@ -80,7 +83,10 @@ function columnView(
     kind: field.kind,
     cell: field.cell ?? field.kind,
     width: column.width,
-    pinned: field.name === rowKey ? 'left' : column.pinned,
+    // Read through `columnPin`, so a stored `'top'` reaches the table as
+    // "not pinned" rather than as a side it would then try to stick to.
+    pinned:
+      field.name === rowKey ? 'left' : (columnPin(column.pinned) ?? undefined),
     sortable: field.sortable === true,
     numberFormat: field.numberFormat,
     ...(field.options ? { options: field.options } : {}),
@@ -111,7 +117,15 @@ export function projectRecord(
     );
 
   const byName = new Map(definition.fields.map(field => [field.name, field]));
-  const columns = config.table.columns.flatMap(column => {
+  // The row key leads, whatever order the config is in. It is held on the
+  // left (see `columnView`), and a column pinned left that is drawn second
+  // covers the one before it — so the one rule that says where it goes says
+  // both halves of it, here, where the table reads them.
+  const ordered = [...config.table.columns].sort(
+    (left, right) =>
+      Number(right.field === rowKey) - Number(left.field === rowKey),
+  );
+  const columns = ordered.flatMap(column => {
     const field = byName.get(column.field);
     return field ? [columnView(field, column, rowKey)] : [];
   });

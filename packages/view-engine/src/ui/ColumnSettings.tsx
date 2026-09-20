@@ -15,7 +15,11 @@ import { useCallback, useId, useMemo, useState } from 'react';
 import { DragDropProvider } from '@dnd-kit/react';
 import { Accessibility } from '@dnd-kit/dom';
 import { Columns3Icon } from 'lucide-react';
-import type { FieldDefinition, SummaryFunction } from '../model/index.js';
+import {
+  columnPin,
+  type FieldDefinition,
+  type SummaryFunction,
+} from '../model/index.js';
 import type { RecordTableController } from '../react/index.js';
 import { Button } from './components/button.js';
 import {
@@ -225,7 +229,8 @@ function Region({
           shownCount: shown,
           hintId,
           onToggle: () => table.setColumns(toggled(table.columnFields, row)),
-          onPin: () => table.setPinned(row.field, nextPin(row.pinned)),
+          onPin: () =>
+            table.setPinned(row.field, nextPin(columnPin(row.pinned))),
           onSummary: (fn: SummaryFunction | null) =>
             table.setSummary(row.field, fn),
           onMove: (step: -1 | 1) =>

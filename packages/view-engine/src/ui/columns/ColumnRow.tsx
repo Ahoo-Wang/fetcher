@@ -15,7 +15,7 @@ import type { KeyboardEvent } from 'react';
 import { useSortable } from '@dnd-kit/react/sortable';
 import { OptimisticSortingPlugin } from '@dnd-kit/dom/sortable';
 import { GripVerticalIcon, PinIcon } from 'lucide-react';
-import type { SummaryFunction } from '../../model/index.js';
+import { columnPin, type SummaryFunction } from '../../model/index.js';
 import { Button } from '../components/button.js';
 import { Checkbox } from '../components/checkbox.js';
 import {
@@ -32,7 +32,17 @@ import { ACTIONS_COLUMN, type ColumnSettingRow } from './rows.js';
 /** The value the summary select carries for "summarise nothing". */
 const NO_SUMMARY = 'none';
 
-/** Wording per pin state, so an unhandled one cannot go unlabelled. */
+/**
+ * Wording per pin state.
+ *
+ * Read through `columnPin` rather than indexed with whatever the row holds:
+ * a stored `pinned: 'top'` used to reach this as a key the catalogue has
+ * never heard of, hand `undefined` to `messages.label`, and take the
+ * workbench down from inside a popover. `validateRecord` reports the value
+ * so it can be fixed; this renders it as "not pinned" in the meantime,
+ * because a render may lean on validation only while it is also the second
+ * line of defence.
+ */
 const PIN_LABEL = {
   left: 'label.columns.pin.left',
   right: 'label.columns.pin.right',
@@ -82,7 +92,8 @@ export function ColumnRow({
   // The table has to keep one column: hiding the last one leaves a result
   // with nothing in it and no way back except the picker that emptied it.
   const last = row.visible && shownCount <= 1;
-  const pinState = messages.label(PIN_LABEL[row.pinned ?? 'none']);
+  const pinned = columnPin(row.pinned);
+  const pinState = messages.label(PIN_LABEL[pinned ?? 'none']);
 
   return (
     <li
@@ -189,9 +200,9 @@ export function ColumnRow({
         onClick={onPin}
       >
         <PinIcon
-          data-pinned={row.pinned ?? undefined}
+          data-pinned={pinned ?? undefined}
           className={
-            row.pinned === null
+            pinned === null
               ? 'text-muted-foreground'
               : 'fill-current text-foreground'
           }

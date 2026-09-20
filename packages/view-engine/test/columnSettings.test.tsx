@@ -189,6 +189,12 @@ describe('the column settings popover', () => {
     ).toBeNull();
   });
 
+  /**
+   * Unchecking is one call, and the controller takes the column's summary
+   * with it (`test/recordTableCommands.test.tsx`) — the settings do not
+   * write twice, which would be two draft states and two queries for one
+   * click.
+   */
   it('shows and hides a column from its checkbox', async () => {
     const user = userEvent.setup();
     const table = open();
@@ -285,6 +291,26 @@ describe('the column settings popover', () => {
     await user.click(await screen.findByRole('option', { name: 'No summary' }));
 
     expect(table.setSummary).toHaveBeenCalledWith('amount', null);
+  });
+
+  /**
+   * A stored `pinned: 'top'` used to be a key the catalogue has never heard
+   * of, so the popover handed `undefined` to `messages.label` and took the
+   * workbench down. `validateRecord` reports it; the row draws it as "not
+   * pinned" and the toggle carries on from there.
+   */
+  it('draws a pinning it cannot read as none, and cycles from there', async () => {
+    const user = userEvent.setup();
+    const table = open({
+      pinnedOf: (field: string) => (field === 'amount' ? 'top' : null) as never,
+    });
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    await user.click(
+      screen.getByRole('button', { name: 'Pinning of Amount: Not pinned' }),
+    );
+
+    expect(table.setPinned).toHaveBeenCalledWith('amount', 'left');
   });
 
   it('cycles the pin of a column that may move', async () => {

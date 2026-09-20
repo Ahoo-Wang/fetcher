@@ -13,6 +13,7 @@
 
 import { MAX_CURSOR_SORT_FIELDS } from '@ahoo-wang/fetcher-wow';
 import {
+  columnPin,
   DEFAULT_RUNTIME_LIMITS,
   isFieldlessKind,
   type DataViewDefinition,
@@ -231,6 +232,22 @@ function validateColumns(
         issue('record.column.duplicate', at, { field: column.field }),
       );
     seen.add(column.field);
+
+    // The shape check asks a column for a `field` and nothing else, so a
+    // stored column may be pinned `'top'`, or to `''`. Said here it is a
+    // finding the user can fix; left unsaid it reached the settings popover
+    // as a key into a wording table and took the workbench down.
+    if (column.pinned !== undefined && columnPin(column.pinned) === null)
+      issues.push(
+        issue(
+          'record.column.pin-invalid',
+          ['table', 'columns', index, 'pinned'],
+          {
+            field: column.field,
+            pinned: String(column.pinned),
+          },
+        ),
+      );
 
     const field = fields.get(column.field);
     if (!field)

@@ -25,7 +25,11 @@ import type {
   SortDirection,
   SummaryFunction,
 } from '../model/index.js';
+import { columnPin, type RecordColumnPin } from '../model/index.js';
 import { maxSortFields } from '../record/index.js';
+// The side a column is held on, named once in the model and offered here so
+// a control can talk about pinning without importing the kernel's types.
+export type { RecordColumnPin };
 import type {
   RecordColumnView,
   RecordPaging,
@@ -99,12 +103,6 @@ function cardField(field: FieldDefinition): RecordCardField {
   };
 }
 
-/**
- * The side a column is held on. A pinned column does not move with the rest
- * when the table scrolls sideways, and it never leaves its side.
- */
-export type RecordColumnPin = 'left' | 'right';
-
 export interface RecordTableController {
   /** Columns of the result on screen, which follow the executed config. */
   columns: RecordColumnView[];
@@ -151,6 +149,14 @@ export interface RecordTableController {
   setLayout(layout: RecordLayout): void;
   /** Fields of the draft's table layout, in order. */
   columnFields: string[];
+  /**
+   * Which columns the table shows, in order, and applies at once.
+   *
+   * A column that goes takes its summary with it: a summary belongs to a
+   * column, so one left behind buys an aggregation query with nowhere to
+   * appear. Each column that stays is reused as it was configured, so its
+   * width and pinning survive.
+   */
   setColumns(fields: string[]): void;
   /**
    * Puts the draft's columns in this order and applies at once.
@@ -399,10 +405,19 @@ export function useRecordTable(
             .getSnapshot()
             .draft.table.columns.map(column => [column.field, column]),
         );
+        // A summary belongs to a column, so a column that goes takes its
+        // summary with it — in this one update. Left behind, the runtime
+        // keeps asking for an aggregate with nowhere to appear: the scope
+        // row stands empty, a failed aggregate warns about a summary nobody
+        // can see, and the settings disable the select that would clear it.
+        const shown = new Set(fields);
         editAndApply({
           table: {
             columns: fields.map(field => existing.get(field) ?? { field }),
           },
+          summaries: (runtime.getSnapshot().draft.summaries ?? []).filter(
+            summary => shown.has(summary.field),
+          ),
         });
       },
       [editAndApply, runtime],
@@ -432,9 +447,11 @@ export function useRecordTable(
       },
       [editAndApply, runtime],
     ),
+    // Read through `columnPin`, so the type this declares is true even of a
+    // config that came out of a store saying `pinned: 'top'`.
     pinnedOf: useCallback(
       (field: string) =>
-        tableColumns.find(column => column.field === field)?.pinned ?? null,
+        columnPin(tableColumns.find(column => column.field === field)?.pinned),
       [tableColumns],
     ),
     setPinned: useCallback(

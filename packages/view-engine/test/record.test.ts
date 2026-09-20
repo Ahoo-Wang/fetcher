@@ -743,6 +743,53 @@ describe('projectRecord', () => {
     expect(view.columns[0]).toMatchObject({ field: 'id', pinned: 'left' });
   });
 
+  /**
+   * A column pinned nowhere in particular is a finding the user can fix,
+   * and a projection that says "not pinned" in the meantime — never a side
+   * the table would then try to stick it to.
+   */
+  it('reports a pinning that is neither side, and projects it as none', () => {
+    const config_ = config({
+      table: { columns: [{ field: 'amount', pinned: 'top' }] },
+    } as unknown as Partial<RecordViewConfig>);
+
+    const issues = validateRecord(definition(), config_, builtinFieldKinds);
+    expect(codes(issues)).toEqual(['record.column.pin-invalid']);
+    expect(issues[0].path).toEqual(['table', 'columns', 0, 'pinned']);
+
+    expect(
+      projectRecord(definition(), config_, { total: 0, list: [] }).columns[0]
+        .pinned,
+    ).toBeUndefined();
+  });
+
+  /**
+   * A column pinned left that is drawn second covers the one before it, so
+   * where the row key goes is decided here, beside its pinning, rather than
+   * by whoever wrote the config. The rest keep the order they are in.
+   */
+  it('leads with the row key, and leaves the rest in their order', () => {
+    const view = projectRecord(
+      definition(),
+      config({
+        table: {
+          columns: [
+            { field: 'amount' },
+            { field: 'warehouse' },
+            { field: 'id' },
+          ],
+        },
+      }),
+      { total: 0, list: [] },
+    );
+
+    expect(view.columns.map(column => column.field)).toEqual([
+      'id',
+      'amount',
+      'warehouse',
+    ]);
+  });
+
   it('uses the renderer key a field declares', () => {
     const view = projectRecord(
       definition(),

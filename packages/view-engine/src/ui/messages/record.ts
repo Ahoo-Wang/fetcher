@@ -124,6 +124,8 @@ export const recordMessages = {
     '{definition} does not offer a record view any more.',
   'record.card.invalid': 'The card settings could not be read.',
   'record.column.duplicate': 'The column {field} is listed twice.',
+  'record.column.pin-invalid':
+    'The column {field} is held to {pinned}, which is neither side.',
   'record.field.not-a-column':
     '{field} is a search or metadata handle, not something a row holds.',
   'record.field.unknown': 'The column {field} no longer exists.',

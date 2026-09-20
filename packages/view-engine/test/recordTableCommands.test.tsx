@@ -63,9 +63,15 @@ const mine: ViewInstance = {
   config: recordConfig(),
 };
 
+/**
+ * Opens the view and waits for rows. A config the definition refuses never
+ * runs — `apply` is blocked while the draft holds an error — so a suite
+ * about such a config passes `ready: false` and reads the draft instead.
+ */
 async function openTable(
   config?: Partial<RecordViewConfig>,
   overrides: Partial<DataViewDefinition> = {},
+  ready = true,
 ) {
   const engine = new ViewEngine({
     definitions: [{ ...definition(), ...overrides }],
@@ -81,7 +87,9 @@ async function openTable(
       table: useRecordTable(opened.runtime as RecordViewRuntime | null),
     };
   });
-  await waitFor(() => expect(result.current.table.status).toBe('success'));
+  if (ready)
+    await waitFor(() => expect(result.current.table.status).toBe('success'));
+  else await waitFor(() => expect(result.current.runtime).not.toBeNull());
   return result;
 }
 
@@ -102,10 +110,13 @@ describe('setColumnOrder', () => {
       expect(result.current.table.columnFields).toEqual(['amount', 'id']),
     );
     // The result on screen answers the new order rather than the old one:
-    // the kernel projects columns from the config that ran.
+    // the kernel projects columns from the config that ran. The row key
+    // still leads it, because that is decided where the table reads the
+    // order rather than by whoever wrote the config — the same place its
+    // left pin is decided, and for the same reason.
     expect(result.current.table.columns.map(column => column.field)).toEqual([
-      'amount',
       'id',
+      'amount',
     ]);
   });
 
@@ -208,6 +219,28 @@ describe('setPinned', () => {
     );
   });
 
+  /**
+   * A stored pinning of `'top'` is not a side. Read raw it became a key the
+   * catalogue has never heard of and took the settings popover — and the
+   * workbench around it — down; read through `columnPin` the controller's
+   * declared type is true of it.
+   */
+  it('reports a pinning that is neither side as none at all', async () => {
+    const result = await openTable(
+      {
+        table: {
+          columns: [{ field: 'id' }, { field: 'amount', pinned: 'top' }],
+        },
+      } as unknown as Partial<RecordViewConfig>,
+      {},
+      false,
+    );
+
+    expect(result.current.table.pinnedOf('amount')).toBeNull();
+    // And it is a finding rather than a silence: the view waits to be fixed.
+    expect(result.current.table.status).toBe('idle');
+  });
+
   it('does nothing to a column the draft does not hold', async () => {
     const result = await openTable();
 
@@ -217,6 +250,53 @@ describe('setPinned', () => {
       expect(result.current.table.columnFields).toEqual(['id', 'amount']),
     );
     expect(result.current.table.pinnedOf('gone')).toBeNull();
+  });
+});
+
+describe('setColumns', () => {
+  /**
+   * A summary belongs to a column. Left behind when the column is hidden,
+   * the runtime keeps asking for an aggregate with nowhere to appear — the
+   * scope row stands empty and a failure warns about a summary nobody can
+   * see — and the settings disable the select that would clear it, so there
+   * is no way back except showing the column again.
+   */
+  it('takes a hidden column\u2019s summary with it', async () => {
+    const result = await openTable({
+      summaries: [
+        { field: 'amount', fn: 'SUM' },
+        { field: 'warehouse', fn: 'COUNT' },
+      ],
+      table: {
+        columns: [{ field: 'id' }, { field: 'amount' }, { field: 'warehouse' }],
+      },
+    });
+
+    act(() => result.current.table.setColumns(['id', 'warehouse']));
+
+    await waitFor(() =>
+      expect(draft(result).summaries).toEqual([
+        { field: 'warehouse', fn: 'COUNT' },
+      ]),
+    );
+    expect(result.current.table.summaryOf('amount')).toBeNull();
+  });
+
+  it('leaves the summaries of the columns that stay', async () => {
+    const result = await openTable({
+      summaries: [{ field: 'amount', fn: 'SUM' }],
+    });
+
+    act(() => result.current.table.setColumns(['id', 'amount', 'warehouse']));
+
+    await waitFor(() =>
+      expect(result.current.table.columnFields).toEqual([
+        'id',
+        'amount',
+        'warehouse',
+      ]),
+    );
+    expect(draft(result).summaries).toEqual([{ field: 'amount', fn: 'SUM' }]);
   });
 });
 
