@@ -58,6 +58,31 @@ export const recordMessages = {
   'label.value.yes': 'Yes',
   'label.value.no': 'No',
 
+  // Sorting from the headers. The name says what a click does rather than
+  // what the column is called, because that is what the button is for; the
+  // column's own label is inside the sentence, so what is heard still
+  // contains what is seen. `label.sort.at` is appended to it while several
+  // columns are sorted, which is the only time a position means anything.
+  'label.sort.ascending': 'Sort by {field}, ascending',
+  'label.sort.descending': 'Sort by {field}, descending',
+  'label.sort.none': 'Stop sorting by {field}',
+  'label.sort.at': 'sort {position} of {count}',
+
+  // A summary's scope belongs on screen: `all` comes from its own query over
+  // everything the conditions match, `page` only from the rows in front of
+  // you, and the two are not interchangeable. `label.summary.total` is the
+  // analysis table's totals row and stays its own wording.
+  'label.summary.total': 'Total',
+  'label.summary.scope.page': 'This page',
+  'label.summary.scope.total': 'All records',
+  'label.summary.fn.none': 'No summary',
+  'label.summary.fn.SUM': 'Sum',
+  'label.summary.fn.AVG': 'Average',
+  'label.summary.fn.MIN': 'Min',
+  'label.summary.fn.MAX': 'Max',
+  'label.summary.fn.COUNT': 'Count',
+  'label.summary.unavailable': '—',
+
   // The column settings. The two areas a column cannot leave are named by
   // the same words as the pin states, because they are the same fact: a
   // column is in the left area precisely because it is held on the left.
@@ -72,38 +97,27 @@ export const recordMessages = {
   'label.columns.cancelled': 'Move cancelled; {field} stayed where it was',
   'label.columns.show': 'Show {field}',
   'label.columns.last-visible': 'A table needs at least one column.',
+  'label.columns.hidden':
+    'A column has to be shown before it can be pinned or summarised.',
   'label.columns.summary': 'Summary under {field}',
   'label.columns.pin': 'Pinning of {field}: {state}',
   'label.columns.pin.none': 'Not pinned',
   'label.columns.pin.left': 'Pinned left',
   'label.columns.pin.right': 'Pinned right',
 
-  // The sort control. Every member of `SummaryFunction` and of the two sort
-  // directions is named here: a catalogue that names half of a closed set
-  // cannot be translated, and the other half shows up on screen as `AVG`.
+  // The sort editor behind the toolbar's button. It says the direction in
+  // one word, because it labels a row of a list rather than a button whose
+  // whole job is one column; taking a field out of the sort is the header's
+  // own `label.sort.none`, which already says exactly that.
   'label.sort.title': 'Sort',
   'label.sort.hint': 'Rows are ordered by the first field, then by the next.',
-  'label.sort.none': 'These rows are in no particular order.',
+  'label.sort.unsorted': 'These rows are in no particular order.',
   'label.sort.asc': 'Ascending',
   'label.sort.desc': 'Descending',
   'label.sort.more': '+{count}',
   'label.sort.direction': 'Direction of {field}',
-  'label.sort.remove': 'Stop sorting by {field}',
   'label.sort.add': 'Sort by a field',
-
-  'label.summary.function.none': 'No summary',
-  'label.summary.function.SUM': 'Sum',
-  'label.summary.function.AVG': 'Average',
-  'label.summary.function.MIN': 'Minimum',
-  'label.summary.function.MAX': 'Maximum',
-  'label.summary.function.COUNT': 'Count',
-
-  // A summary's scope belongs on screen: a total comes from its own query
-  // over everything the conditions match, a page total only from the rows
-  // in front of you, and the two are not interchangeable.
-  'label.summary.total': 'Total',
-  'label.summary.page': 'This page',
-  'label.summary.unavailable': '—',
+  'label.sort.full': 'These rows can be ordered by at most {max} fields.',
 
   // Record kernel.
   'record.capability.missing':
@@ -116,6 +130,8 @@ export const recordMessages = {
   'record.layout.unsupported': 'The {layout} layout is not available here.',
   'record.pageSize.not-positive': 'The page size must be a positive number.',
   'record.pageSize.too-large': 'The page size cannot exceed {max}.',
+  'record.sort.direction-invalid':
+    'The sort on {field} reads neither ascending nor descending.',
   'record.sort.duplicate': 'The sort already orders by {field}.',
   'record.sort.invalid': 'The sort settings could not be read.',
   'record.sort.not-sortable': '{field} cannot be sorted on.',

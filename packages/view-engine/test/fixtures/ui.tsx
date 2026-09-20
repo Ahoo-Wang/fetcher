@@ -78,6 +78,7 @@ export function recordTableController(
     sortOf: () => null,
     toggleSort: () => {},
     setSort: () => {},
+    maxSortFields: 8,
     layout: 'table',
     layouts: ['table', 'card'],
     setLayout: () => {},

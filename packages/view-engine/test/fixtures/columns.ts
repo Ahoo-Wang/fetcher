@@ -12,10 +12,10 @@
  */
 
 /**
- * What the column and sort settings are opened against: a controller whose
- * commands are spies, and the formatters a component would have got from a
- * provider. Both let a suite assert what a control writes without an engine,
- * a runtime or a source behind it.
+ * What the column and sort settings are opened against: the shared record
+ * controller with its commands replaced by spies, and the formatters a
+ * component would have got from a provider. Both let a suite assert what a
+ * control writes without an engine, a runtime or a source behind it.
  */
 
 import { vi } from 'vitest';
@@ -27,49 +27,28 @@ import {
   formatMessage,
   type ViewMessages,
 } from '../../src/ui/messages.js';
+import { recordTableController } from './ui.js';
 
 export function tableController(
   overrides: Partial<RecordTableController> = {},
 ): RecordTableController {
-  return {
+  return recordTableController({
+    // Nothing is on screen here — these suites open a popover, not a table —
+    // and every command is a spy, because what is being tested is the call
+    // the control makes rather than what a runtime does with it.
     columns: [],
-    card: { title: '', fields: [] },
     rows: [],
     paging: null,
-    summaries: null,
-    status: 'success',
-    error: null,
-    loading: false,
-    sort: [],
-    sortOf: () => null,
-    toggleSort: vi.fn(),
-    setSort: vi.fn(),
-    layout: 'table',
     layouts: ['table'],
-    setLayout: vi.fn(),
     columnFields: [],
+    maxSortFields: 8,
     setColumns: vi.fn(),
     setColumnOrder: vi.fn(),
-    pinnedOf: () => null,
     setPinned: vi.fn(),
-    summaryOf: () => null,
     setSummary: vi.fn(),
-    pageSize: 20,
-    pageSizes: [20],
-    setPageSize: vi.fn(),
-    selection: [],
-    selectedRows: [],
-    isSelected: () => false,
-    toggle: vi.fn(),
-    toggleAll: vi.fn(),
-    clearSelection: vi.fn(),
-    goTo: vi.fn(),
-    hasNext: false,
-    next: vi.fn(),
-    previous: vi.fn(),
-    refresh: vi.fn(),
+    setSort: vi.fn(),
     ...overrides,
-  };
+  });
 }
 
 /** The formatters a provider would hand down, for a function tested alone. */

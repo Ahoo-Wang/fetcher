@@ -127,14 +127,15 @@ export function ColumnRow({
 
       {row.functions.length > 0 && (
         <Select
+          disabled={!row.visible}
           items={[
             {
               value: NO_SUMMARY,
-              label: messages.label('label.summary.function.none'),
+              label: messages.label('label.summary.fn.none'),
             },
             ...row.functions.map(fn => ({
               value: fn,
-              label: messages.label(`label.summary.function.${fn}`),
+              label: messages.label(`label.summary.fn.${fn}`),
             })),
           ]}
           value={row.summary ?? NO_SUMMARY}
@@ -150,17 +151,18 @@ export function ColumnRow({
             aria-label={messages.label('label.columns.summary', {
               field: label,
             })}
+            aria-describedby={row.visible ? undefined : hintId}
           >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectItem value={NO_SUMMARY}>
-                {messages.label('label.summary.function.none')}
+                {messages.label('label.summary.fn.none')}
               </SelectItem>
               {row.functions.map(fn => (
                 <SelectItem key={fn} value={fn}>
-                  {messages.label(`label.summary.function.${fn}`)}
+                  {messages.label(`label.summary.fn.${fn}`)}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -168,12 +170,18 @@ export function ColumnRow({
         </Select>
       )}
 
+      {/* A pin is a property of a column, and a hidden field is not one:
+          `setPinned` maps the columns the draft holds, so pinning one that is
+          switched off writes nothing, however many times it is pressed.
+          Showing it first is the move, so the toggle says it cannot rather
+          than doing nothing — and the summary select goes the same way, for
+          the same reason. */}
       <Button
         type="button"
         variant="ghost"
         size="icon-xs"
-        disabled={row.fixed}
-        aria-describedby={row.fixed ? hintId : undefined}
+        disabled={row.fixed || !row.visible}
+        aria-describedby={row.fixed || !row.visible ? hintId : undefined}
         aria-label={messages.label('label.columns.pin', {
           field: label,
           state: pinState,

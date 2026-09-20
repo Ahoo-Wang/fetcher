@@ -15,6 +15,7 @@ import {
   ArrowDownIcon,
   ArrowDownUpIcon,
   ArrowUpIcon,
+  PlusIcon,
   XIcon,
 } from 'lucide-react';
 import type {
@@ -32,15 +33,34 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from './components/popover.js';
-import { PopoverContent } from './popups.js';
-import { FieldPicker } from './FieldMenu.js';
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './components/dropdown-menu.js';
+import { DropdownMenuContent, PopoverContent } from './popups.js';
+import { GroupedMenu } from './FieldMenu.js';
+import type { MessageKey } from './messages.js';
 import { useViewMessages, type MessageFormatters } from './MessagesProvider.js';
 
-/** Wording per direction, so an unhandled one cannot go unlabelled. */
-const DIRECTION_LABEL = {
+/**
+ * Wording per direction. A stored config is untrusted data — `validateShape`
+ * only asks a sort entry for a `field` — so an entry may arrive with no
+ * direction at all, or with `up`. That reaches this render before the user
+ * can fix it, and an unknown key here used to become `undefined` on the way
+ * into `messages.label`, which throws: the whole workbench went down where a
+ * fixable finding belonged. `validateRecord` now reports the direction, and
+ * this reads it back defensively anyway, because being the second line of
+ * defence is the only way a render is allowed to depend on validation.
+ */
+const DIRECTION_LABEL: Record<SortDirection, MessageKey> = {
   ASC: 'label.sort.asc',
   DESC: 'label.sort.desc',
-} as const;
+};
+
+function directionOf(direction: SortDirection | undefined): SortDirection {
+  return direction === 'DESC' ? 'DESC' : 'ASC';
+}
 
 export interface SortSettingsProps {
   table: RecordTableController;
@@ -70,6 +90,11 @@ export function SortSettings({
   if (sortable.length === 0) return null;
 
   const used = new Set(table.sort.map(entry => entry.field));
+  // A cursor view sorts on at most so many fields, and `validateRecord`
+  // refuses a longer sort outright: `apply` would not run, the rows would
+  // keep the order they had, and the view would sit in an error the user was
+  // invited into. So the picker stops where the kernel starts refusing.
+  const full = table.sort.length >= table.maxSortFields;
   const labels = new Map(fields.map(field => [field.name, field.label]));
   const labelOf = (field: string) => labels.get(field) ?? field;
 
@@ -90,9 +115,17 @@ export function SortSettings({
           </PopoverDescription>
         </PopoverHeader>
 
+        {full && (
+          <p className="text-muted-foreground">
+            {messages.label('label.sort.full', {
+              max: table.maxSortFields,
+            })}
+          </p>
+        )}
+
         {table.sort.length === 0 ? (
           <p className="text-muted-foreground">
-            {messages.label('label.sort.none')}
+            {messages.label('label.sort.unsorted')}
           </p>
         ) : (
           <ul
@@ -121,20 +154,43 @@ export function SortSettings({
           </ul>
         )}
 
-        <FieldPicker
-          items={sortable.filter(field => !used.has(field.name))}
-          groups={fieldGroups ?? []}
-          label={messages.label('label.sort.add')}
-          disabled={used.size === sortable.length}
-          itemKey={field => field.name}
-          itemLabel={field => field.label}
-          onPick={field =>
-            table.setSort([
-              ...table.sort,
-              { field: field.name, direction: 'ASC' },
-            ])
-          }
-        />
+        {/* A new field joins at the end, ascending: it breaks the ties of
+            the fields already there, and anywhere else would quietly change
+            what the rows are mainly ordered by. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={full || used.size === sortable.length}
+              />
+            }
+          >
+            <PlusIcon data-icon="inline-start" />
+            {messages.label('label.sort.add')}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <GroupedMenu
+              items={sortable.filter(field => !used.has(field.name))}
+              groups={fieldGroups ?? []}
+              itemKey={field => field.name}
+              render={field => (
+                <DropdownMenuItem
+                  key={field.name}
+                  onClick={() =>
+                    table.setSort([
+                      ...table.sort,
+                      { field: field.name, direction: 'ASC' },
+                    ])
+                  }
+                >
+                  {field.label}
+                </DropdownMenuItem>
+              )}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </PopoverContent>
     </Popover>
   );
@@ -155,6 +211,7 @@ function SortEntry({
   onRemove(): void;
 }) {
   const messages = useViewMessages();
+  const direction = directionOf(entry.direction);
   return (
     <li
       data-slot="sort-entry"
@@ -172,14 +229,14 @@ function SortEntry({
         aria-label={messages.label('label.sort.direction', { field: label })}
         onClick={onFlip}
       >
-        <DirectionMark direction={entry.direction} />
-        {messages.label(DIRECTION_LABEL[entry.direction])}
+        <DirectionMark direction={direction} />
+        {messages.label(DIRECTION_LABEL[direction])}
       </Button>
       <Button
         type="button"
         variant="ghost"
         size="icon-xs"
-        aria-label={messages.label('label.sort.remove', { field: label })}
+        aria-label={messages.label('label.sort.none', { field: label })}
         onClick={onRemove}
       >
         <XIcon />
@@ -204,12 +261,13 @@ function SortSummary({
 }) {
   const first = sort[0];
   if (!first) return <>{messages.label('label.sort.title')}</>;
+  const direction = directionOf(first.direction);
   return (
     <>
       {labelOf(first.field)}
-      <DirectionMark direction={first.direction} />
+      <DirectionMark direction={direction} />
       <span className="sr-only">
-        {messages.label(DIRECTION_LABEL[first.direction])}
+        {messages.label(DIRECTION_LABEL[direction])}
       </span>
       {sort.length > 1 && (
         <span className="text-muted-foreground">
@@ -224,9 +282,10 @@ function DirectionMark({ direction }: { direction: SortDirection }) {
   return direction === 'ASC' ? <ArrowUpIcon /> : <ArrowDownIcon />;
 }
 
+/** Flips one entry, reading an unreadable direction as ascending first. */
 function flip(entry: RecordSort): RecordSort {
   return {
     field: entry.field,
-    direction: entry.direction === 'ASC' ? 'DESC' : 'ASC',
+    direction: directionOf(entry.direction) === 'ASC' ? 'DESC' : 'ASC',
   };
 }

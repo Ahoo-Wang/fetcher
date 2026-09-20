@@ -23,6 +23,7 @@ import {
 import {
   AnalysisWorkbench,
   DashboardWorkbench,
+  defaultMessages,
   RecordPagination,
   RecordWorkbench,
   ViewSurface,
@@ -55,6 +56,22 @@ const pendingOrders: ViewInstance = {
   scope: 'shared',
   revision: '1',
   config: recordConfig(),
+};
+
+/** The same rows under two sorted columns, with both summary scopes. */
+const sortedOrders: ViewInstance = {
+  id: 'sorted',
+  definitionId: 'orders',
+  title: 'Sorted',
+  scope: 'shared',
+  revision: '1',
+  config: recordConfig({
+    sort: [
+      { field: 'amount', direction: 'DESC' },
+      { field: 'id', direction: 'ASC' },
+    ],
+    summaries: [{ field: 'amount', fn: 'SUM' }],
+  }),
 };
 
 const warehouseTotals: ViewInstance = {
@@ -107,7 +124,15 @@ function engineWith(instances: ViewInstance[]): ViewEngine {
 
 /** Rule ids that were violated, with how many nodes each one covers. */
 async function violations(node: HTMLElement): Promise<string[]> {
-  const result = await axe.run(node, { resultTypes: ['violations'] });
+  const result = await axe.run(node, {
+    resultTypes: ['violations'],
+    // `region` asks that every piece of content sit inside a landmark, which
+    // is a question about a whole page. These suites render a fragment into a
+    // bare body, and every popup this package opens is portalled to that body
+    // as a sibling of the surface — so the rule fires on the harness rather
+    // than on anything a host would ship.
+    rules: { region: { enabled: false } },
+  });
   return result.violations.map(
     found => `${found.id} (${found.nodes.length} node(s))`,
   );
@@ -167,6 +192,89 @@ describe('the open view names the region it is drawn in', () => {
   });
 });
 
+/**
+ * The states a workbench only reaches after a click. Axe is run over the
+ * whole document rather than the container, because every popup this package
+ * opens is portalled to the body — checking the container alone would pass a
+ * menu nobody looked at.
+ */
+describe('the states behind a click pass axe', () => {
+  /** The record workbench, opened on a view with rows on screen. */
+  async function workbench() {
+    const user = userEvent.setup();
+    render(
+      <ViewSurface>
+        <RecordWorkbench
+          engine={engineWith([pendingOrders])}
+          definitionId="orders"
+          instanceId="pending"
+        />
+      </ViewSurface>,
+    );
+    await screen.findByRole('table');
+    return user;
+  }
+
+  it('the sidebar collapsed, with the switcher in the title bar', async () => {
+    const user = await workbench();
+    await user.click(
+      screen.getByRole('button', {
+        name: defaultMessages['label.workbench.collapse-sidebar'],
+      }),
+    );
+
+    expect(await violations(document.body)).toEqual([]);
+  });
+
+  it('the view switcher open', async () => {
+    const user = await workbench();
+    await user.click(
+      screen.getByRole('button', {
+        name: defaultMessages['label.workbench.collapse-sidebar'],
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: defaultMessages['label.workbench.switch-view'],
+      }),
+    );
+    await screen.findByRole('menu');
+
+    expect(await violations(document.body)).toEqual([]);
+  });
+
+  it('the editor open, with its modes menu showing', async () => {
+    const user = await workbench();
+    await user.click(
+      screen.getByRole('button', {
+        name: defaultMessages['label.workbench.editor-modes'],
+      }),
+    );
+    await screen.findByRole('menu');
+
+    expect(await violations(document.body)).toEqual([]);
+  });
+
+  it('the field picker open, which is a popover of checkboxes', async () => {
+    const user = await workbench();
+    // The editor opens folded on a saved view, so the panel is not in the
+    // document until the title bar's toggle is pressed.
+    await user.click(
+      screen.getByRole('button', {
+        name: new RegExp(`^${defaultMessages['label.filter.panel']}`),
+      }),
+    );
+    await user.click(
+      await screen.findByRole('button', {
+        name: defaultMessages['label.filter.add'],
+      }),
+    );
+    await screen.findByText(defaultMessages['label.filter.pick-fields']);
+
+    expect(await violations(document.body)).toEqual([]);
+  });
+});
+
 describe('the default workbenches pass axe', () => {
   it('record', async () => {
     const { container } = render(
@@ -180,6 +288,54 @@ describe('the default workbenches pass axe', () => {
     );
     await waitFor(() => expect(container.querySelector('table')).toBeTruthy());
 
+    expect(await violations(container)).toEqual([]);
+  });
+
+  /**
+   * The table as it is actually read: ordered by two columns, with both
+   * summary scopes under it. Sorting adds `aria-sort` to a cell and a button
+   * inside a header, and the summaries add a footer whose first cell is a
+   * label rather than a number — three ways to put a table wrong that the
+   * plain record case above would never reach.
+   */
+  it('record, sorted on two columns and summarised', async () => {
+    // Two sortable columns, so the headers carry positions as well as
+    // directions; the shared definition sorts on `amount` alone.
+    const definition = ordersDefinition();
+    const engine = new ViewEngine({
+      definitions: [
+        {
+          ...definition,
+          fields: definition.fields.map(field =>
+            field.name === 'id' ? { ...field, sortable: true } : field,
+          ),
+        },
+      ],
+      store: new MemoryViewStore({ instances: [sortedOrders] }),
+      resolveSource: () => testSource(),
+    });
+    const { container } = render(
+      <ViewSurface>
+        <RecordWorkbench
+          engine={engine}
+          definitionId="orders"
+          instanceId="sorted"
+        />
+      </ViewSurface>,
+    );
+    await waitFor(() => expect(container.querySelector('tfoot')).toBeTruthy());
+
+    // One `aria-sort`, on the column the table is ordered by; the column
+    // that breaks its ties carries its place in the button's name instead.
+    expect(
+      [...container.querySelectorAll('thead [aria-sort]')].map(cell =>
+        cell.getAttribute('aria-sort'),
+      ),
+    ).toEqual(['descending']);
+    expect(
+      container.querySelectorAll('[data-slot="sort-position"]'),
+    ).toHaveLength(2);
+    expect(container.querySelectorAll('tfoot tr[data-scope]')).toHaveLength(2);
     expect(await violations(container)).toEqual([]);
   });
 
@@ -231,7 +387,7 @@ describe('the default workbenches pass axe', () => {
       document.querySelector<HTMLElement>('[data-control="sort"]')!,
     );
     expect(
-      await screen.findByRole('combobox', { name: 'Sort by a field' }),
+      await screen.findByRole('button', { name: /Sort by a field/ }),
     ).toBeTruthy();
 
     expect(await violations(document.body)).toEqual([]);

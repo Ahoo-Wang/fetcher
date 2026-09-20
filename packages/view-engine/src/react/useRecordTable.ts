@@ -25,6 +25,7 @@ import type {
   SortDirection,
   SummaryFunction,
 } from '../model/index.js';
+import { maxSortFields } from '../record/index.js';
 import type {
   RecordColumnView,
   RecordPaging,
@@ -129,6 +130,17 @@ export interface RecordTableController {
    * of them and drop one of them, and all three are the same write.
    */
   setSort(sort: RecordSort[]): void;
+  /**
+   * How many fields this view may sort on at once.
+   *
+   * A cursor is a position in one total order, and Wow bounds how many
+   * fields that order may be built from, so `validateRecord` refuses a
+   * longer sort and `apply` never runs: the rows keep the order they had and
+   * the view sits in an error the user did not ask for. A control that
+   * offers a field therefore has to stop at the ceiling. A paged source has
+   * no such bound, and answers with the number of fields it could sort on.
+   */
+  maxSortFields: number;
 
   layout: RecordLayout;
   /**
@@ -357,6 +369,12 @@ export function useRecordTable(
       (sort: RecordSort[]) => editAndApply({ sort }),
       [editAndApply],
     ),
+    // The kernel owns the rule; the controller only hands it on, so the
+    // ceiling a control stops at is the one `validateRecord` refuses past.
+    maxSortFields:
+      runtime?.definition.kind === 'data'
+        ? maxSortFields(runtime.definition)
+        : 0,
 
     layout: state?.draft.layout ?? 'table',
     layouts:

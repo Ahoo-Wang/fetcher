@@ -155,9 +155,9 @@ describe('editing the sort', () => {
       { field: 'amount', direction: 'DESC' },
     ]);
 
-    await user.click(screen.getByRole('combobox', { name: 'Sort by a field' }));
-    expect(screen.queryByRole('option', { name: 'Warehouse' })).toBeNull();
-    await user.click(await screen.findByRole('option', { name: 'Order' }));
+    await user.click(screen.getByRole('button', { name: /Sort by a field/ }));
+    expect(screen.queryByRole('menuitem', { name: 'Warehouse' })).toBeNull();
+    await user.click(await screen.findByRole('menuitem', { name: 'Order' }));
 
     expect(table.setSort).toHaveBeenCalledWith([
       { field: 'amount', direction: 'DESC' },
@@ -173,9 +173,58 @@ describe('editing the sort', () => {
 
     expect(
       screen
-        .getByRole('combobox', { name: 'Sort by a field' })
+        .getByRole('button', { name: /Sort by a field/ })
         .hasAttribute('disabled'),
     ).toBe(true);
+  });
+
+  /**
+   * A cursor is a position in one total order and Wow bounds how many fields
+   * that order is built from, so `validateRecord` refuses a longer sort:
+   * `apply` never runs, the rows keep the order they had, and the view sits
+   * in an error the control invited the user into. It stops at the ceiling.
+   */
+  it('stops offering fields at the ceiling the kernel refuses past', async () => {
+    const user = userEvent.setup();
+    const table = tableController({
+      sort: [{ field: 'amount', direction: 'DESC' }],
+      maxSortFields: 1,
+    });
+    render(<SortSettings table={table} fields={FIELDS} />);
+    await user.click(trigger());
+
+    expect(
+      screen
+        .getByRole('button', { name: /Sort by a field/ })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      await screen.findByText('These rows can be ordered by at most 1 fields.'),
+    ).toBeTruthy();
+  });
+
+  /**
+   * A stored config is untrusted: `validateShape` asks a sort entry for a
+   * `field` and nothing else. `validateRecord` reports the direction now, but
+   * the draft is still rendered while it is being fixed, and indexing a
+   * wording table with `up` used to take the whole workbench down.
+   */
+  it('renders a direction it cannot read rather than throwing', async () => {
+    const user = userEvent.setup();
+    const table = tableController({
+      sort: [{ field: 'amount' }] as unknown as RecordSort[],
+    });
+    render(<SortSettings table={table} fields={FIELDS} />);
+
+    expect(trigger().textContent).toBe('AmountAscending');
+
+    await user.click(trigger());
+    await user.click(
+      screen.getByRole('button', { name: 'Direction of Amount' }),
+    );
+    expect(table.setSort).toHaveBeenCalledWith([
+      { field: 'amount', direction: 'DESC' },
+    ]);
   });
 
   it('gives the focus back to the trigger when it closes', async () => {

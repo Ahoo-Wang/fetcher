@@ -49,7 +49,9 @@ useFilterEditor(runtime): FilterController
 ```
 
 - 按路径增删改、模式、清空、提交；
-- Enter 提交排除 IME 与内部弹层由 UI 层处理；
+- `discard()` 把草稿筛选退回 `state.applied.filter`，是一次 **`edit` 而没有 `apply`**：屏幕上的结果本来就是在 `applied` 下取回来的，把这棵树放回去，查询与行原样不动——再跑一次只是花一个请求去拿已经在那儿的答案。做完 `pending` 归 false，因为两棵树又一致了，这正是它的意思；
+- `discard()` 不是 `commands.revert`。revert 管的是**存下来的配置**：它丢掉这个视图一切未保存的编辑，把库里那份重新变成草稿。`discard()` 只丢掉**没应用的那些条件**，既不碰存下来的配置，也不碰列、排序与分页；
+- Enter 提交排除 IME、修饰键、内部弹层与本身就吃 Enter 的控件，由 UI 层处理（[ui/README.md#filterpanel-的布局](ui/README.md#filterpanel-的布局)）；
 - applied 读 result.own.filter（描述产出当前结果的、视图自有的那部分条件，无结果为空；路径因此仍指向 draft，badge 的删除即 clearValue(path)），Dashboard 例外：它自己没有结果（查询在各面板里），改读 state.applied.filter，即面板被要求执行时的全局条件；
 - 宿主注入的作用域由 scoped 读 runtime.scopeFilter 单独描述、不可删除——读 result.config.filter 会把作用域混进同一串 badge，且 or／nor 的 draft 被包成第一个子节点后路径整体下移一层，删除会落到别的叶子上；
 - 草稿超预算不清空 applied：产出结果的那份配置是先过准入才跑的，本就在预算内，摘要要一直描述它身旁的数据；
@@ -76,6 +78,7 @@ useRecordTable(runtime): RecordTableController
 - `setColumnOrder(fields)`——按给定顺序重排草稿的列。不是列的名字忽略，重复的名字只算一次（否则会落成同一字段的两列，`validateRecord` 随即拒绝），**没被点到名的列保留在末尾**：只了解表格一部分的控件（列设置的一个区域）不该因为没提到其余部分就把它们删掉；每一列按原样搬运，宽度与固定不会在下次保存时丢失；
 - `pinnedOf(field)` / `setPinned(field, pinned)`——草稿把某列固定在哪一侧，`null` 为不固定。取消固定时删键而不是置 `undefined`（理由见 [ui/record.md](ui/record.md)）；
 - `summaryOf(field)` / `setSummary(field, fn)`——某列底下汇总用的函数。配置允许一个字段带多个函数、表格也全画出来，而这条命令写**一个**：控件一列只给一个下拉，设一个就替换掉该列原有的，`null` 则该列不汇总，其余列不受影响；
+- `maxSortFields`——这个视图一次最多按几个字段排序：游标源取 Wow 的上限，分页源取定义里字段的个数。规则在内核（`record/maxSortFields`），控制器只转交，所以"控件停在哪"与"内核从哪开始拒绝"是同一个数；
 - `setSort(sort)`——整份排序按优先级顺序替换。`toggleSort` 是单列的答案、只能往后追加，而把排序当作一张列表来编辑要能说清谁先谁后、翻转其中一条、删掉其中一条，三件事是同一次写入。（见 test/recordTableCommands.test.tsx）
 
 ## useSaveCommands

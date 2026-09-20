@@ -227,6 +227,35 @@ describe('the column settings popover', () => {
     expect(table.setColumns).not.toHaveBeenCalled();
   });
 
+  /**
+   * `setPinned` maps the columns the draft holds and `config.summaries` is
+   * only shown under a column that is there, so both controls on a hidden
+   * field would write nothing a reader could see — repeatedly, and
+   * silently. They say they cannot instead, and the popover says why.
+   */
+  it('refuses to pin or summarise a column that is switched off', async () => {
+    const user = userEvent.setup();
+    const table = open({ columnFields: ['id'] });
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    const pin = screen.getByRole('button', {
+      name: 'Pinning of Amount: Not pinned',
+    });
+    const summary = screen.getByRole('combobox', {
+      name: 'Summary under Amount',
+    });
+
+    expect(pin.hasAttribute('disabled')).toBe(true);
+    expect(summary.hasAttribute('disabled')).toBe(true);
+    expect(
+      document.getElementById(pin.getAttribute('aria-describedby')!)!
+        .textContent,
+    ).toContain(defaultMessages['label.columns.hidden']);
+
+    await user.click(pin);
+    expect(table.setPinned).not.toHaveBeenCalled();
+  });
+
   it('offers a summary only where the field declares one', async () => {
     const user = userEvent.setup();
     const table = open();
@@ -320,6 +349,22 @@ describe('moving a column with the keyboard', () => {
       'amount',
     ]);
     expect(announced()).toBe('Amount moved to position 3 of 3');
+  });
+
+  /**
+   * Counted over what the reader is looking at. The action column is on
+   * screen and is not in the config, so counting configured columns alone
+   * said "of 3" to someone looking at four.
+   */
+  it('counts the action column in the position it announces', async () => {
+    const user = userEvent.setup();
+    open({ columnFields: ['id', 'amount', 'warehouse'] }, { actions: true });
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+
+    screen.getByRole('button', { name: 'Reorder Amount' }).focus();
+    await user.keyboard('{ArrowDown}');
+
+    expect(announced()).toBe('Amount moved to position 3 of 4');
   });
 
   it('moves the row up', async () => {

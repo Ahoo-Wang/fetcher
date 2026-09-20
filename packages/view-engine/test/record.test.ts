@@ -14,6 +14,7 @@
 import {
   AggregationMetricType,
   FilterOperator,
+  MAX_CURSOR_SORT_FIELDS,
   SortDirection,
 } from '@ahoo-wang/fetcher-wow';
 import { describe, expect, it } from 'vitest';
@@ -23,6 +24,7 @@ import {
   compileSummaries,
   defaultRecordConfig,
   FIRST_PAGE,
+  maxSortFields,
   projectRecord,
   projectSummaries,
   recordCapabilityOf,
@@ -31,6 +33,7 @@ import {
   validateRecord,
   type DataViewDefinition,
   type Issue,
+  type RecordSort,
   type RecordViewConfig,
 } from '../src/index.js';
 
@@ -190,10 +193,41 @@ describe('validateRecord', () => {
     ).toEqual(['record.field.unknown']);
   });
 
+  /**
+   * The shape check asks a sort entry for a `field` and nothing else, so a
+   * stored config may name a direction of `up`, or none at all. Said here it
+   * is a finding like any other and the draft stays in the error state; left
+   * unsaid it reached the sort editor as a key into a wording table and took
+   * the whole workbench down with it.
+   */
+  it('reports a sort direction that reads as neither way round', () => {
+    const bad = [
+      { field: 'createdAt', direction: 'up' },
+      { field: 'id' },
+    ] as unknown as RecordSort[];
+
+    const issues = validateRecord(
+      definition(),
+      config({ sort: bad }),
+      builtinFieldKinds,
+    );
+
+    expect(codes(issues)).toEqual([
+      'record.sort.direction-invalid',
+      'record.sort.direction-invalid',
+      'record.sort.not-sortable',
+    ]);
+    expect(issues[0].path).toEqual(['sort', 0, 'direction']);
+  });
+
   it('bounds the sort fields of a cursor source with the Wow limit', () => {
     const def = definition({
       record: { rowKey: 'id', paging: 'cursor', layouts: ['table'] },
     });
+    // The ceiling a control has to stop at is this one: `maxSortFields` is
+    // exported so the two cannot drift into disagreeing.
+    expect(maxSortFields(def)).toBe(MAX_CURSOR_SORT_FIELDS);
+    expect(maxSortFields(definition())).toBe(definition().fields.length);
     const sort = Array.from({ length: 33 }, () => ({
       field: 'createdAt',
       direction: 'ASC' as const,
@@ -670,7 +704,10 @@ describe('projectRecord', () => {
         kind: 'string',
         cell: 'string',
         width: undefined,
-        pinned: undefined,
+        // The row key is held on the left whatever the config says: it is
+        // the column that says which record a row is, so it is the one that
+        // has to stay in view while the rest scrolls sideways.
+        pinned: 'left',
         sortable: false,
         numberFormat: undefined,
       },
@@ -687,6 +724,23 @@ describe('projectRecord', () => {
     ]);
     expect(view.rows.map(row => row.key)).toEqual(['A1', 'A2']);
     expect(view.paging).toEqual({ mode: 'paged', index: 1, total: 2 });
+  });
+
+  /**
+   * A definition's row key is not a preference, so the config is left alone
+   * and the projection answers with the pinning the table must honour —
+   * which is also what the column settings show, disabled.
+   */
+  it('holds the row key on the left, whatever the config asks for', () => {
+    const view = projectRecord(
+      definition(),
+      config({
+        table: { columns: [{ field: 'id', pinned: 'right' }] },
+      }),
+      { total: 0, list: [] },
+    );
+
+    expect(view.columns[0]).toMatchObject({ field: 'id', pinned: 'left' });
   });
 
   it('uses the renderer key a field declares', () => {

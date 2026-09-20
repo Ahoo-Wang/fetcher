@@ -59,9 +59,20 @@ export interface RecordView {
   paging: RecordPaging;
 }
 
+/**
+ * One column as the table renders it.
+ *
+ * The row key is held on the left whatever the config says. It is the
+ * column that says which record a row is, so it is the one column that must
+ * stay in view while the rest scrolls sideways — and that is a property of
+ * the definition, not a preference: the column settings show its pinning
+ * fixed and refuse to change it. Deciding it here rather than in the panel
+ * is what makes the two agree, because this is where the table reads it.
+ */
 function columnView(
   field: FieldDefinition,
   column: { width?: number; pinned?: 'left' | 'right' },
+  rowKey: string,
 ): RecordColumnView {
   return {
     field: field.name,
@@ -69,7 +80,7 @@ function columnView(
     kind: field.kind,
     cell: field.cell ?? field.kind,
     width: column.width,
-    pinned: column.pinned,
+    pinned: field.name === rowKey ? 'left' : column.pinned,
     sortable: field.sortable === true,
     numberFormat: field.numberFormat,
     ...(field.options ? { options: field.options } : {}),
@@ -102,7 +113,7 @@ export function projectRecord(
   const byName = new Map(definition.fields.map(field => [field.name, field]));
   const columns = config.table.columns.flatMap(column => {
     const field = byName.get(column.field);
-    return field ? [columnView(field, column)] : [];
+    return field ? [columnView(field, column, rowKey)] : [];
   });
 
   const rows = page.list.map(data => ({
@@ -215,4 +226,29 @@ export function projectSummaries(
 function readNumber(row: RecordData | undefined, alias: string): number | null {
   const value = row?.[alias];
   return typeof value === 'number' ? value : null;
+}
+
+/**
+ * The same cells read over the rows on screen.
+ *
+ * A table shows both scopes at once — this page beside everything the
+ * conditions match — and only the second one costs a query. The first is the
+ * visible rows added up, so it is derived from the cells the executed config
+ * already named rather than from the config itself, which a renderer holding
+ * a result does not have. Reducing the rows a second time is the same
+ * arithmetic `projectSummaries` does for a `page` source, kept here with it
+ * so the two scopes can never drift apart.
+ */
+export function pageSummaries(
+  cells: readonly SummaryCell[],
+  rows: readonly RecordRow[],
+): SummaryRow {
+  const data = rows.map(row => row.data);
+  return {
+    scope: 'page',
+    cells: cells.map(cell => ({
+      ...cell,
+      value: reduceRows(data, cell.field, cell.fn),
+    })),
+  };
 }

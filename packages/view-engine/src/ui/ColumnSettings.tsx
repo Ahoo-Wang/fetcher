@@ -100,6 +100,11 @@ export function ColumnSettings({
     ],
   );
   const shown = visibleCount(rows);
+  // What the reader is looking at, which is every column on screen — the
+  // action column included. `shown` counts the configured ones, because the
+  // rule it serves is "a table keeps one column of its own".
+  const onScreen = rows.filter(row => row.visible).length;
+  const anyHidden = rows.some(row => !row.visible);
 
   /** Commits one move and says where the column landed, for both inputs. */
   const moveTo = useCallback(
@@ -114,11 +119,11 @@ export function ColumnSettings({
         messages.label('label.columns.moved', {
           field: labelOf(rows, field),
           index: order.indexOf(field) + 1,
-          total: order.length,
+          total: onScreen,
         }),
       );
     },
-    [messages, rows, table],
+    [messages, onScreen, rows, table],
   );
 
   return (
@@ -136,6 +141,7 @@ export function ColumnSettings({
           <PopoverDescription id={hintId}>
             {messages.label('label.columns.hint')}
             {shown <= 1 && ` ${messages.label('label.columns.last-visible')}`}
+            {anyHidden && ` ${messages.label('label.columns.hidden')}`}
           </PopoverDescription>
         </PopoverHeader>
 

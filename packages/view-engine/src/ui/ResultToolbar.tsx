@@ -30,6 +30,7 @@ import { Spinner } from './components/spinner.js';
 import { ToggleGroup, ToggleGroupItem } from './components/toggle-group.js';
 import { ColumnSettings } from './ColumnSettings.js';
 import { SortSettings } from './SortSettings.js';
+import { SEGMENTED, SPACE } from './layout.js';
 import type { MessageKey } from './messages.js';
 import { useViewMessages } from './MessagesProvider.js';
 
@@ -102,11 +103,11 @@ export function ResultToolbar({
   return (
     <div
       data-slot="result-toolbar"
-      className="flex flex-wrap items-center gap-2"
+      className={`flex flex-wrap items-center ${SPACE.GROUPS}`}
     >
       {/* Kept at a button's height whether or not anything is selected, so
           picking the first row does not push the result down a line. */}
-      <div className="flex min-h-8 items-center gap-2">
+      <div className={`flex min-h-8 items-center ${SPACE.GROUPS}`}>
         {selected && (
           <>
             <Badge variant="secondary" role="status">
@@ -131,11 +132,10 @@ export function ResultToolbar({
       <div className="flex-1" />
 
       {/* Only the definition's layouts, in its order — and nothing at all
-          when there is no choice to make. `spacing={0}` is what makes it one
-          segmented control rather than two bordered buttons: the vendored
-          group then drops the inner gap and the inner border, so the pair
-          wears a single outline. It is set here because `ui/components` is
-          upstream's and is never edited in place. */}
+          when there is no choice to make. `SEGMENTED` is what makes it one
+          control with two positions rather than two bordered buttons that
+          happen to sit together; it is the house rule's one spelling of
+          that, applied here because `ui/components` is upstream's. */}
       {table.layouts.length >= 2 && (
         <ToggleGroup
           value={[table.layout]}
@@ -147,8 +147,8 @@ export function ResultToolbar({
           }}
           variant="outline"
           size="sm"
-          spacing={0}
           aria-label={messages.label('label.toolbar.layout')}
+          className={SEGMENTED}
         >
           {table.layouts.map(layout => (
             <ToggleGroupItem key={layout} value={layout}>

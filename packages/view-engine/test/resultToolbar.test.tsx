@@ -63,6 +63,7 @@ function tableController(
     sortOf: () => null,
     toggleSort: () => {},
     setSort: () => {},
+    maxSortFields: 8,
     layout: 'table',
     layouts: ['table', 'card'],
     setLayout: () => {},
@@ -254,13 +255,12 @@ describe('ResultToolbar grouping and weight', () => {
       ...toolbar.querySelectorAll('[data-slot="button"]'),
     ].filter(button => button.className.includes('border-border'));
     expect(outlined).toEqual([]);
-    // One border around the pair, no seam between them: the vendored group
-    // does that at `spacing={0}`, which is set at the call site.
+    // One border around the pair, no seam between them. The house rule has
+    // one spelling of that — `SEGMENTED` in `ui/layout.ts` — applied at the
+    // call site, because `ui/components` is upstream's.
     expect(
-      toolbar
-        .querySelector('[data-slot="toggle-group"]')!
-        .getAttribute('data-spacing'),
-    ).toBe('0');
+      toolbar.querySelector('[data-slot="toggle-group"]')!.className,
+    ).toContain('[&>*+*]:-ml-px');
   });
 });
 

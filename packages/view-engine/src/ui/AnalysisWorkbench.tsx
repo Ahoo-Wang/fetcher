@@ -13,7 +13,7 @@
 
 import type { AnalysisView } from '../analysis/index.js';
 import type { FieldOption } from '../model/index.js';
-import type { ViewEngine } from '../runtime/index.js';
+import { resultIssues, type ViewEngine } from '../runtime/index.js';
 import { useAnalysisEditor, useWorkbench } from '../react/index.js';
 import { AnalysisChart } from './AnalysisChart.js';
 import { AnalysisEditor } from './AnalysisEditor.js';
@@ -36,6 +36,14 @@ export interface AnalysisWorkbenchProps {
    */
   locale?: string;
   optionsFor?(remote: string): FieldOption[] | undefined;
+  /**
+   * The sidebar this workbench opens on. It is view state and nothing else —
+   * never saved, never asked about by the leave guard — so a host sets where
+   * it starts and the shell owns it from there.
+   */
+  defaultSidebarOpen?: boolean;
+  /** Told whenever the sidebar opens or closes, for a host that mirrors it. */
+  onSidebarOpenChange?(open: boolean): void;
 }
 
 /**
@@ -53,6 +61,8 @@ export function AnalysisWorkbench({
   messages: wording,
   locale,
   optionsFor,
+  defaultSidebarOpen,
+  onSidebarOpenChange,
 }: AnalysisWorkbenchProps) {
   const workbench = useWorkbench(engine, definitionId, {
     kind: 'analysis',
@@ -79,6 +89,16 @@ export function AnalysisWorkbench({
       messages={wording}
       locale={locale}
       timeZone={engine.environment.timeZone}
+      defaultSidebarOpen={defaultSidebarOpen}
+      onSidebarOpenChange={onSidebarOpenChange}
+      // A grouping that filled its limit is a fact about this result, so it
+      // is said beside the config's own findings and stays until the next
+      // result replaces it. The strip sits above both layouts, which is why
+      // a truncated pie is labelled as surely as a truncated table.
+      warnings={[
+        ...(state?.issues ?? []),
+        ...resultIssues(state?.result?.data),
+      ]}
       editor={
         /* Not frozen while a query runs: editing never re-queries, and a
            refresh that lands mid-edit must not take the inputs away. */

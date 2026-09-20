@@ -13,7 +13,16 @@
 
 import { describe, expect, it } from 'vitest';
 import type { MessageFormatters } from '../src/ui/index.js';
-import { displayValue, formatNumber, valueText } from '../src/ui/display.js';
+import type { FilterSummaryItem } from '../src/index.js';
+import {
+  badgeEntries,
+  displayValue,
+  formatNumber,
+  summaryText,
+  valueText,
+} from '../src/ui/display.js';
+import { en } from '../src/ui/messages/en.js';
+import { formatMessage } from '../src/ui/messages.js';
 
 /**
  * Expected text comes from the same Intl call, not a literal: the ICU data a
@@ -299,5 +308,291 @@ describe('displayValue', () => {
         { locale: 'en-GB', timeZone: 'Mars/Olympus_Mons' },
       ),
     ).toBe(formatted(INSTANT, 'en-GB', DATE_TIME));
+  });
+});
+
+/**
+ * Which values wear a badge. A status is one of a set the definition names,
+ * and a pill says exactly that; a string that merely happens to be short is
+ * not a status, and neither is a code nobody listed.
+ */
+describe('badgeEntries', () => {
+  /** What each badge says, which is all most of these cases are about. */
+  const labelsOf = (entries: { label: string }[] | undefined) =>
+    entries?.map(entry => entry.label);
+
+  const STATUS = {
+    kind: 'enum',
+    options: [
+      { value: 'PENDING', label: 'Pending' },
+      { value: 'SHIPPED', label: 'Shipped' },
+    ],
+  };
+
+  it('answers with the option label of an enum the definition named', () => {
+    // The raw value rides along: labels are free text a definition may
+    // repeat, so a caller needs something better to tell two badges apart.
+    expect(badgeEntries('PENDING', STATUS)).toEqual([
+      { value: 'PENDING', label: 'Pending' },
+    ]);
+  });
+
+  it('answers with one label per value of an array', () => {
+    expect(badgeEntries(['PENDING', 'SHIPPED'], STATUS)).toEqual([
+      { value: 'PENDING', label: 'Pending' },
+      { value: 'SHIPPED', label: 'Shipped' },
+    ]);
+    // A code the definition dropped is shown as it came, beside the ones it
+    // still names — the row holds it either way.
+    expect(badgeEntries(['PENDING', 'LOST'], STATUS)).toEqual([
+      { value: 'PENDING', label: 'Pending' },
+      { value: 'LOST', label: 'LOST' },
+    ]);
+  });
+
+  it('follows the renderer key before the kind', () => {
+    expect(
+      badgeEntries('PENDING', { ...STATUS, cell: 'string' }),
+    ).toBeUndefined();
+    expect(
+      labelsOf(
+        badgeEntries('PENDING', {
+          kind: 'string',
+          cell: 'enum',
+          options: STATUS.options,
+        }),
+      ),
+    ).toEqual(['Pending']);
+  });
+
+  it('leaves everything else to the caller', () => {
+    // No choices declared, so nothing says this string is one of a set.
+    expect(badgeEntries('PENDING', { kind: 'enum' })).toBeUndefined();
+    expect(
+      badgeEntries('PENDING', { kind: 'enum', options: [] }),
+    ).toBeUndefined();
+    // A value none of the choices name is a code, not a status.
+    expect(badgeEntries('LOST', STATUS)).toBeUndefined();
+    expect(badgeEntries(null, STATUS)).toBeUndefined();
+    expect(badgeEntries(undefined, STATUS)).toBeUndefined();
+  });
+});
+
+/**
+ * The applied badge, built from parts rather than from the English line the
+ * kind reads them as. The line was where every catalogue stopped: a kind
+ * concatenated the operator name and its own hard-coded English, so the most
+ * visible text of the result area could not be translated at all.
+ *
+ * The bar itself is covered in `test/appliedBar.test.tsx`, in Chinese among
+ * other things; these are the shapes that reach it from a predicate, a group
+ * and a field that declared a format.
+ */
+describe('summaryText', () => {
+  const words: MessageFormatters = {
+    label: (key, params, fallback) => {
+      const found = formatMessage(en, key, params);
+      return found === key && fallback !== undefined ? fallback : found;
+    },
+    issue: () => '',
+    issues: () => '',
+  };
+  const say = (item: FilterSummaryItem) => summaryText(item, words, {});
+  const sku = (value: string, index: number): FilterSummaryItem => ({
+    path: ['children', index],
+    text: `SKU EQ ${value}`,
+    unresolved: false,
+    field: 'items.sku',
+    label: 'SKU',
+    kind: 'string',
+    operator: 'EQ',
+    value: { kind: 'text', value },
+  });
+  const predicate = (
+    group: FilterSummaryItem['group'],
+    items: FilterSummaryItem[],
+  ): FilterSummaryItem => ({
+    path: ['children', 0],
+    text: 'Items has an entry where',
+    unresolved: false,
+    field: 'items',
+    label: 'Items',
+    kind: 'elementMatch',
+    operator: 'ELEMENT_MATCH',
+    value: { kind: 'none' },
+    group,
+    items,
+  });
+
+  it('reads a predicate out after the operator that holds it', () => {
+    expect(say(predicate('and', [sku('A', 0), sku('B', 1)]))).toBe(
+      'Items has an entry where All of SKU eq A, SKU eq B',
+    );
+  });
+
+  it('says nothing more than the operator for an empty predicate', () => {
+    // "Has any entry" is a condition of its own: there is an entry, and
+    // nothing is asked of it.
+    expect(say(predicate('and', []))).toBe('Items has any entry');
+  });
+
+  it("drops the group's word for a lone condition, but not under none-of", () => {
+    // "All of X" and "Any of X" say no more than "X"; "None of X" says the
+    // opposite of it, so that one is said whatever it holds.
+    expect(say(predicate('and', [sku('A', 0)]))).toBe(
+      'Items has an entry where SKU eq A',
+    );
+    expect(say(predicate('or', [sku('A', 0)]))).toBe(
+      'Items has an entry where SKU eq A',
+    );
+    expect(say(predicate('nor', [sku('A', 0)]))).toBe(
+      'Items has an entry where None of SKU eq A',
+    );
+  });
+
+  it('parenthesises a group inside a group, as the English line does', () => {
+    const inner: FilterSummaryItem = {
+      path: ['children', 1],
+      text: 'SKU EQ A nor SKU EQ B',
+      unresolved: false,
+      group: 'nor',
+      items: [sku('A', 0), sku('B', 1)],
+    };
+
+    expect(
+      say({
+        path: [],
+        text: '',
+        unresolved: false,
+        group: 'or',
+        items: [sku('C', 0), inner],
+      }),
+    ).toBe('Any of SKU eq C, (None of SKU eq A, SKU eq B)');
+  });
+
+  it('falls back to the derived spelling for an operator nothing names', () => {
+    expect(
+      say({
+        path: ['children', 0],
+        text: 'Qty CUSTOM_OP 1',
+        unresolved: false,
+        field: 'qty',
+        label: 'Qty',
+        kind: 'number',
+        operator: 'CUSTOM_OP' as never,
+        value: { kind: 'text', value: 1 },
+      }),
+    ).toBe('Qty custom op 1');
+  });
+
+  it('shows a number in the format its field declared', () => {
+    const yuan = {
+      style: 'currency',
+      currency: 'CNY',
+      locale: 'zh-CN',
+    } as const;
+
+    expect(
+      say({
+        path: ['children', 0],
+        text: 'Amount 1000 ~ 2000',
+        unresolved: false,
+        field: 'amount',
+        label: 'Amount',
+        kind: 'number',
+        numberFormat: yuan,
+        operator: 'BETWEEN',
+        value: { kind: 'range', from: 1000, to: 2000 },
+      }),
+    ).toBe(
+      `Amount between ${formatNumber(1000, yuan)} ~ ${formatNumber(2000, yuan)}`,
+    );
+  });
+
+  /**
+   * A window with no upper edge compiles to `GTE`, and the kind says so:
+   * the badge used to read "between <date>", which is neither the range it
+   * claimed nor the condition that ran.
+   */
+  it('words an open-ended window as the bound it compiles to', () => {
+    expect(
+      say({
+        path: ['children', 0],
+        text: 'Created from 2026-01-01',
+        unresolved: false,
+        field: 'createdAt',
+        label: 'Created',
+        kind: 'date',
+        operator: 'GTE',
+        value: { kind: 'text', value: '2026-01-01' },
+      }),
+    ).toBe(
+      `Created gte ${formatted(Date.parse('2026-01-01T00:00:00.000Z'), undefined, { dateStyle: 'medium', timeZone: 'UTC' })}`,
+    );
+  });
+
+  /**
+   * The same stored distance, two conditions. `text` has always got this
+   * right — "last 7 day" for the span, "7 day ago" for the moment at the end
+   * of it — so it is the oracle for what the badge must say.
+   */
+  it('tells a relative window from the moment at the end of it', () => {
+    const relative = (
+      bound: 'window' | 'instant',
+      direction: 'past' | 'future',
+    ) =>
+      say({
+        path: ['children', 0],
+        text: '',
+        unresolved: false,
+        field: 'createdAt',
+        label: 'Created',
+        kind: 'datetime',
+        operator: bound === 'window' ? 'BETWEEN' : 'LTE',
+        value: { kind: 'relative', amount: 7, unit: 'day', direction, bound },
+      });
+
+    expect(relative('window', 'past')).toBe('Created between last 7 day');
+    expect(relative('window', 'future')).toBe('Created between next 7 day');
+    expect(relative('instant', 'past')).toBe('Created lte 7 day ago');
+    expect(relative('instant', 'future')).toBe('Created lte 7 day ahead');
+  });
+
+  it('uses the label a kind resolved rather than resolving it again', () => {
+    expect(
+      say({
+        path: ['children', 0],
+        text: 'Owner ACME',
+        unresolved: false,
+        field: '@ownerId',
+        label: 'Owner',
+        kind: 'ownerId',
+        operator: 'OWNER_ID',
+        value: { kind: 'text', value: 'u-7', label: 'ACME' },
+      }),
+    ).toBe('Owner is ACME');
+  });
+
+  it('says only the field for a value its kind cannot read', () => {
+    expect(
+      say({
+        path: ['children', 0],
+        text: 'Status',
+        unresolved: false,
+        field: 'status',
+        label: 'Status',
+        kind: 'enum',
+        operator: 'EQ',
+        value: { kind: 'blank' },
+      }),
+    ).toBe('Status');
+  });
+
+  it('says nothing at all for an item carrying no parts', () => {
+    // A host may hand the bar a summary of its own; a value it left out is
+    // not a reason to print `undefined` next to the field name.
+    expect(
+      say({ path: [], text: 'legacy', unresolved: false, label: 'legacy' }),
+    ).toBe('legacy');
   });
 });

@@ -19,6 +19,7 @@
  * applied is a change nobody can see.
  */
 
+import { MAX_CURSOR_SORT_FIELDS } from '@ahoo-wang/fetcher-wow';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
@@ -62,9 +63,12 @@ const mine: ViewInstance = {
   config: recordConfig(),
 };
 
-async function openTable(config?: Partial<RecordViewConfig>) {
+async function openTable(
+  config?: Partial<RecordViewConfig>,
+  overrides: Partial<DataViewDefinition> = {},
+) {
   const engine = new ViewEngine({
-    definitions: [definition()],
+    definitions: [{ ...definition(), ...overrides }],
     store: new MemoryViewStore({
       instances: [config ? { ...mine, config: recordConfig(config) } : mine],
     }),
@@ -253,6 +257,27 @@ describe('setSummary', () => {
         { field: 'amount', fn: 'MAX' },
       ]),
     );
+  });
+});
+
+describe('maxSortFields', () => {
+  /**
+   * A control that offers a sort field has to stop where the kernel starts
+   * refusing, so the ceiling comes from the kernel rather than being spelled
+   * a second time in the UI.
+   */
+  it('answers the cursor ceiling for a cursor source', async () => {
+    const result = await openTable(undefined, {
+      record: { rowKey: 'id', paging: 'cursor', layouts: ['table'] },
+    });
+
+    expect(result.current.table.maxSortFields).toBe(MAX_CURSOR_SORT_FIELDS);
+  });
+
+  it('is bounded only by the fields there are on a paged source', async () => {
+    const result = await openTable();
+
+    expect(result.current.table.maxSortFields).toBe(definition().fields.length);
   });
 });
 

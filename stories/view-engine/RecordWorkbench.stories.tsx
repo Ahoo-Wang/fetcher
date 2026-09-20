@@ -55,6 +55,7 @@ function RecordWorkbenchDemo({
   withActions = false,
   localized = false,
   keepStore = false,
+  collapsed = false,
 }: {
   behaviour?: SourceBehaviour;
   instanceId?: string;
@@ -68,6 +69,8 @@ function RecordWorkbenchDemo({
   localized?: boolean;
   /** Publishes the store on `tableSettingsStore`, for a play to read. */
   keepStore?: boolean;
+  /** Opens with the view list folded away, as a narrow page would. */
+  collapsed?: boolean;
 }) {
   return (
     <StoryEngine
@@ -102,6 +105,7 @@ function RecordWorkbenchDemo({
           instanceId={instanceId ?? savedViews[0].id}
           actions={withActions ? businessActions : undefined}
           messages={localized ? zhCN : undefined}
+          defaultSidebarOpen={!collapsed}
         />
       )}
     </StoryEngine>
@@ -178,7 +182,7 @@ const meta = {
   argTypes: {
     behaviour: {
       control: 'inline-radio',
-      options: ['data', 'empty', 'slow', 'failing'],
+      options: ['data', 'empty', 'slow', 'failing', 'no-aggregate'],
     },
     broken: { table: { disable: true } },
     paged: { table: { disable: true } },
@@ -186,6 +190,7 @@ const meta = {
     withActions: { table: { disable: true } },
     localized: { table: { disable: true } },
     keepStore: { table: { disable: true } },
+    collapsed: { table: { disable: true } },
   },
 } satisfies Meta<typeof RecordWorkbenchDemo>;
 
@@ -204,6 +209,15 @@ export const Loading: Story = { args: { behaviour: 'slow' } };
 
 /** A failed query keeps the view and its conditions; only the data is gone. */
 export const QueryFailed: Story = { args: { behaviour: 'failing' } };
+
+/**
+ * 汇总查询失败，明细照常。合计因此退回本页合计——数字留着，因为本页合计本身
+ * 有用——但行尾的口径标签改说「本页」，上方多一条 warning 说明为什么。默默
+ * 顶替才是这里唯一的错误：读者看到「总计」，会当成全部命中记录的总计。
+ */
+export const TotalCoversThisPageOnly: Story = {
+  args: { behaviour: 'no-aggregate' },
+};
 
 /** A saved config the definition outgrew: `apply` is refused until it is fixed. */
 export const NeedsFixing: Story = { args: { broken: true } };
@@ -233,6 +247,11 @@ export const ManageViews: Story = { args: { behaviour: 'data' } };
 /**
  * 中文文案。包里带了 `zhCN`，宿主把它交给 `messages` 就换掉整面的措辞；要改其
  * 中几句，铺开再覆盖：`{ ...zhCN, 'label.filter.apply': '确定' }`。
+ *
+ * 打开的是那个带条件的共享视图，所以结果上方的「正在显示」里就有一枚可操作的
+ * 条件 badge：字段名来自定义，操作符与候选项标签分别来自目录与定义，按 ✕ 把它
+ * 撤下会立刻重跑查询。展开筛选带还能看到相对日期的单位与时间段——`day`、
+ * `thisWeek` 这些以前是原样的标识符，现在同样走目录。
  */
 export const Localized: Story = { args: { localized: true } };
 
@@ -247,3 +266,10 @@ export const Localized: Story = { args: { localized: true } };
  * 现在这副样子——列设置与排序改的都是视图本身，不是这一次打开。
  */
 export const TableSettings: Story = { args: { keepStore: true } };
+
+/**
+ * 侧栏收起后的样子：标题栏最左边是展开按钮、定义标题与视图切换下拉，结果拿回
+ * 侧栏占掉的那点宽度。下拉按受众分组、当前项打勾、系统视图带标签，末尾是「管理
+ * 视图」——和侧栏齿轮开的是同一个对话框。切换照样先过离开守卫。
+ */
+export const CollapsedSidebar: Story = { args: { collapsed: true } };

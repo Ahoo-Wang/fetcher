@@ -48,7 +48,7 @@ export const ordersDefinition: DataViewDefinition = {
   kind: 'data',
   source: 'orders',
   fields: [
-    { name: 'id', label: '订单号', kind: 'string' },
+    { name: 'id', label: '订单号', kind: 'string', sortable: true },
     {
       name: 'warehouse',
       label: '仓库',
@@ -157,7 +157,9 @@ export function recordConfig(
     summaries: [{ field: 'amount', fn: 'SUM' }],
     table: {
       columns: [
-        { field: 'id' },
+        // The row key stays put while the middle scrolls, which is what the
+        // pin is for; the host's action column does the same on the far side.
+        { field: 'id', pinned: 'left' },
         { field: 'warehouse' },
         { field: 'status' },
         { field: 'amount' },
@@ -310,8 +312,16 @@ export const savedDashboard: ViewInstance = {
   config: dashboardConfig(),
 };
 
-/** What a story wants the backend to do while it is on screen. */
-export type SourceBehaviour = 'data' | 'empty' | 'slow' | 'failing';
+/**
+ * What a story wants the backend to do while it is on screen.
+ *
+ * `no-aggregate` is the half-failure: pages come back, aggregations do not.
+ * A record view then keeps its rows and loses the scope of its summary row,
+ * which is the one state where a number on screen would otherwise go on
+ * meaning something other than what it says.
+ */
+export type SourceBehaviour =
+  'data' | 'empty' | 'slow' | 'failing' | 'no-aggregate';
 
 /**
  * The rows above behind a `ViewSource`, or a backend that refuses to answer.
@@ -330,10 +340,17 @@ export function storySource(behaviour: SourceBehaviour = 'data'): ViewSource {
     return query();
   };
 
+  const refuseAggregate = async (): Promise<never> => {
+    throw new ViewStoreError('UNAVAILABLE', '汇总服务暂时不可用');
+  };
+
   return {
     paged: query => answer(() => source.paged(query)),
     cursor: query => answer(() => source.cursor(query)),
-    aggregate: query => answer(() => source.aggregate(query)),
+    aggregate: query =>
+      behaviour === 'no-aggregate'
+        ? refuseAggregate()
+        : answer(() => source.aggregate(query)),
   };
 }
 
