@@ -52,6 +52,7 @@ function RecordWorkbenchDemo({
   paged = false,
   withActions = false,
   localized = false,
+  collapsed = false,
 }: {
   behaviour?: SourceBehaviour;
   instanceId?: string;
@@ -63,6 +64,8 @@ function RecordWorkbenchDemo({
   withActions?: boolean;
   /** Hands the workbench the shipped Chinese catalogue. */
   localized?: boolean;
+  /** Opens with the view list folded away, as a narrow page would. */
+  collapsed?: boolean;
 }) {
   return (
     <StoryEngine
@@ -92,6 +95,7 @@ function RecordWorkbenchDemo({
           instanceId={instanceId ?? savedViews[0].id}
           actions={withActions ? businessActions : undefined}
           messages={localized ? zhCN : undefined}
+          defaultSidebarOpen={!collapsed}
         />
       )}
     </StoryEngine>
@@ -175,6 +179,7 @@ const meta = {
     instanceId: { table: { disable: true } },
     withActions: { table: { disable: true } },
     localized: { table: { disable: true } },
+    collapsed: { table: { disable: true } },
   },
 } satisfies Meta<typeof RecordWorkbenchDemo>;
 
@@ -231,5 +236,17 @@ export const ManageViews: Story = { args: { behaviour: 'data' } };
 /**
  * 中文文案。包里带了 `zhCN`，宿主把它交给 `messages` 就换掉整面的措辞；要改其
  * 中几句，铺开再覆盖：`{ ...zhCN, 'label.filter.apply': '确定' }`。
+ *
+ * 打开的是那个带条件的共享视图，所以结果上方的「正在显示」里就有一枚可操作的
+ * 条件 badge：字段名来自定义，操作符与候选项标签分别来自目录与定义，按 ✕ 把它
+ * 撤下会立刻重跑查询。展开筛选带还能看到相对日期的单位与时间段——`day`、
+ * `thisWeek` 这些以前是原样的标识符，现在同样走目录。
  */
 export const Localized: Story = { args: { localized: true } };
+
+/**
+ * 侧栏收起后的样子：标题栏最左边是展开按钮、定义标题与视图切换下拉，结果拿回
+ * 侧栏占掉的那点宽度。下拉按受众分组、当前项打勾、系统视图带标签，末尾是「管理
+ * 视图」——和侧栏齿轮开的是同一个对话框。切换照样先过离开守卫。
+ */
+export const CollapsedSidebar: Story = { args: { collapsed: true } };
