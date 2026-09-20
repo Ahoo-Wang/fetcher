@@ -270,6 +270,105 @@ export function isNullableSchema(
 }
 
 /**
+ * Checks whether a schema accepts no value at all.
+ *
+ * Only the unmistakable forms are recognised - an empty `enum`, and a `not`
+ * whose subschema constrains nothing and so rejects everything - plus the
+ * compositions built from them. Deciding satisfiability in general is beyond
+ * what a generator should attempt, and guessing wrong in the other direction
+ * costs nothing: an unrecognised contradiction simply keeps the behaviour
+ * these checks are here to refine.
+ *
+ * @param schema - The schema or reference to check
+ * @param components - Components used to resolve references
+ * @param visited - Schemas already visited, guarding against reference cycles
+ * @returns True if no value can satisfy the schema, false otherwise
+ */
+export function acceptsNothing(
+  schema: Schema | Reference,
+  components?: Components,
+  visited: Set<Schema | Reference> = new Set(),
+): boolean {
+  if (visited.has(schema)) {
+    return false;
+  }
+  visited.add(schema);
+  if (isReference(schema)) {
+    if (!components) {
+      return false;
+    }
+    const resolved = extractSchema(schema, components);
+    return resolved ? acceptsNothing(resolved, components, visited) : false;
+  }
+  if (Array.isArray(schema.enum) && schema.enum.length === 0) {
+    return true;
+  }
+  if (schema.not !== undefined && acceptsEverything(schema.not, components)) {
+    return true;
+  }
+  const acceptsNothingMember = (member: Schema | Reference) =>
+    acceptsNothing(member, components, new Set(visited));
+  if (schema.allOf?.some(acceptsNothingMember)) {
+    return true;
+  }
+  const unionMembers = [...(schema.anyOf ?? []), ...(schema.oneOf ?? [])];
+  return unionMembers.length > 0 && unionMembers.every(acceptsNothingMember);
+}
+
+/** Assertion keywords that narrow which values a schema accepts. */
+const ASSERTION_KEYWORDS = [
+  'type',
+  'enum',
+  'const',
+  'allOf',
+  'anyOf',
+  'oneOf',
+  'not',
+  'nullable',
+  'properties',
+  'required',
+  'additionalProperties',
+  'items',
+  'format',
+  'pattern',
+  'minimum',
+  'maximum',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'multipleOf',
+  'minLength',
+  'maxLength',
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+  'minProperties',
+  'maxProperties',
+];
+
+/**
+ * Checks whether a schema constrains nothing, so that every value satisfies
+ * it. Used to recognise the `not: {}` that rejects everything.
+ *
+ * @param schema - The schema or reference to check
+ * @param components - Components used to resolve references
+ * @returns True if the schema asserts nothing about a value
+ */
+function acceptsEverything(
+  schema: Schema | Reference,
+  components?: Components,
+): boolean {
+  if (isReference(schema)) {
+    if (!components) {
+      return false;
+    }
+    const resolved = extractSchema(schema, components);
+    return resolved ? acceptsEverything(resolved, components) : false;
+  }
+  const record = schema as unknown as Record<string, unknown>;
+  return ASSERTION_KEYWORDS.every(keyword => record[keyword] === undefined);
+}
+
+/**
  * Checks whether a schema is request-only.
  *
  * A `writeOnly` property belongs to requests, so a response may omit it however

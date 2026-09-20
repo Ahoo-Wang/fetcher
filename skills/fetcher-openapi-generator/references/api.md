@@ -235,7 +235,7 @@ Model files use `types.ts` named by schema path prefix (e.g., schema key `ai.AiM
 
 Property optionality follows the document: anything missing from `required` is generated with a `?`. Exporters routinely omit properties that carry a default value, so responses come out weaker than the server actually is.
 
-`readModel.nonNullRequired` relaxes this for the read side only. `SchemaUsageResolver` (`src/aggregate/schemaUsage.ts`) walks `$ref` closures from the resolved aggregates and from every operation's request body and parameters, then classifies each component schema:
+`readModel.nonNullRequired` relaxes this for the read side only. `SchemaUsageResolver` (`src/aggregate/schemaUsage.ts`) walks `$ref` closures from the resolved aggregates and from every operation's request body and parameters, then classifies each component schema. The two sides use different edges: the write side follows every reference it can find (treating a schema as a request only ever preserves declared optionality), while the read side follows only edges an instance value flows through — `properties`, `items`, `additionalProperties`, the positive compositions and `x-map-key-schema` — so a schema a state merely mentions under `not` or in an example is not mistaken for part of the response.
 
 | Usage     | Reached from                                                                     | Optionality                                              |
 | --------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- |
@@ -245,6 +245,8 @@ Property optionality follows the document: anything missing from `required` is g
 | `unknown` | neither, e.g. a schema only an ordinary response uses                            | as declared                                              |
 
 Nullability is judged from the whole schema, not the first `null` that turns up. Every keyword must agree: `type` must admit null (or carry the 3.0 `nullable` flag; an absent `type` constrains nothing), `const` must be null and `enum` must contain it, `anyOf` needs one branch that admits null, `oneOf` needs **exactly** one (two matching branches fail the keyword), `allOf` needs all of them, and a `not` whose subschema accepts null rejects it. So `{ type: 'string', enum: ['a', null] }` is **not** nullable — the sibling `type` rejects the null member, exactly as `resolveType` drops the literal from the generated union — while `allOf: [{ type: ['string', 'null'] }, { enum: ['x', null] }]` is. References are followed and cycles guarded, with each branch judged independently. `writeOnly` resolves through references the same way.
+
+A property whose schema no value can satisfy (`{ not: {} }`, an empty `enum`, or a composition of those) stays optional: a response must omit it, so requiring it would be a lie in the other direction.
 
 Promotion never changes how a model is represented: `requiresAdditionalPropertiesIntersection` reads the declared `required`, so a schema with typed `additionalProperties` keeps its intersection form rather than becoming an interface whose named property clashes with the index signature (TS2411).
 
