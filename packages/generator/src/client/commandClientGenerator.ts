@@ -39,6 +39,7 @@ import {
   isEmptyObject,
   resolveOptionalFields,
   resolvePathParameterType,
+  quoteStringLiteral,
 } from '../utils';
 import {
   addApiMetadataCtor,
@@ -234,7 +235,7 @@ export class CommandClientGenerator implements Generator {
       definition.schema.schema,
       this.context.openAPI.components,
     )
-      .map(fieldName => `'${fieldName}'`)
+      .map(quoteStringLiteral)
       .join(' | ');
     if (optionalFields !== '') {
       commandType = `PartialBy<${commandType},${optionalFields}>`;

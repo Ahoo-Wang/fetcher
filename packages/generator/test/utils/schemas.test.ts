@@ -24,6 +24,7 @@ import {
   isComposition,
   toArrayType,
   isEmptyObject,
+  quoteStringLiteral,
   resolveOptionalFields,
   resolvePrimitiveType,
 } from '../../src/utils';
@@ -337,7 +338,55 @@ describe('resolveOptionalFields', () => {
     expect(resolveOptionalFields(cyclic as never)).toEqual(['a']);
   });
 
+  // `keyof ({ … } | null)` is `never`, so naming a field of a nullable command
+  // would make PartialBy violate `K extends keyof T` (TS2344).
+  it.each([
+    [
+      'a 3.1 type array',
+      { type: ['object', 'null'], properties: { note: { type: 'string' } } },
+    ],
+    [
+      'the 3.0 nullable flag',
+      {
+        type: 'object',
+        nullable: true,
+        properties: { note: { type: 'string' } },
+      },
+    ],
+    [
+      'a nullable allOf branch',
+      {
+        allOf: [
+          {
+            type: 'object',
+            nullable: true,
+            properties: { note: { type: 'string' } },
+          },
+        ],
+      },
+    ],
+  ] as [string, never][])(
+    'names no field of a schema admitting null: %s',
+    (_, schema) => {
+      expect(resolveOptionalFields(schema)).toEqual([]);
+    },
+  );
+
   it('returns nothing for a schema that declares no properties', () => {
     expect(resolveOptionalFields({ type: 'string' })).toEqual([]);
+  });
+});
+
+describe('quoteStringLiteral', () => {
+  it('leaves an ordinary name as a plain literal', () => {
+    expect(quoteStringLiteral('quantity')).toBe("'quantity'");
+  });
+
+  it('escapes a quote that would close the literal', () => {
+    expect(quoteStringLiteral("owner'sName")).toBe("'owner\\'sName'");
+  });
+
+  it('escapes a backslash before it escapes anything else', () => {
+    expect(quoteStringLiteral('a\\b')).toBe("'a\\\\b'");
   });
 });

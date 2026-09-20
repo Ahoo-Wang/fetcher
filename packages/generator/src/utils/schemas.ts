@@ -236,8 +236,12 @@ export function resolveOptionalFields(
   const declared: string[] = [];
   const required = new Set<string>();
   const visited = new Set<Schema | Reference>();
+  // A schema that admits null generates `T | null`, whose `keyof` is `never`:
+  // naming a field of it would make `PartialBy<Model, 'field'>` violate
+  // `K extends keyof T` (TS2344). Such a command takes no PartialBy at all.
+  let admitsNull = false;
   const walk = (current: Schema | Reference | undefined): void => {
-    if (!current || visited.has(current)) {
+    if (!current || visited.has(current) || admitsNull) {
       return;
     }
     visited.add(current);
@@ -245,6 +249,10 @@ export function resolveOptionalFields(
       // A reference the document does not carry contributes nothing rather
       // than making every property of the command look required.
       walk(components && extractSchema(current, components));
+      return;
+    }
+    if (current.nullable || Array.isArray(current.type)) {
+      admitsNull = true;
       return;
     }
     for (const name of current.required ?? []) {
@@ -258,5 +266,5 @@ export function resolveOptionalFields(
     current.allOf?.forEach(walk);
   };
   walk(schema);
-  return declared.filter(name => !required.has(name));
+  return admitsNull ? [] : declared.filter(name => !required.has(name));
 }

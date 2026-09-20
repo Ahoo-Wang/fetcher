@@ -31,6 +31,7 @@ import {
   extractSchema,
   getEnumText,
   getMapKeySchema,
+  isAllOf,
   isArray,
   isComposition,
   isEnum,
@@ -54,6 +55,15 @@ import type { Generator } from '../generateContext';
  * no further detail, since neither is ever assignable to a primitive.
  */
 type SchemaKind = 'object' | 'array' | { primitive: string };
+
+/** Tells whether two classifications describe the same generated shape. */
+function sameKind(left: SchemaKind | undefined, right: SchemaKind): boolean {
+  if (left === undefined) return false;
+  if (typeof left === 'string' || typeof right === 'string') {
+    return left === right;
+  }
+  return left.primitive === right.primitive;
+}
 
 /**
  * Classifies a schema, following references through the components.
@@ -80,12 +90,25 @@ function schemaKind(
     const resolved = extractSchema(schema, components);
     return resolved ? schemaKind(resolved, components, seen) : undefined;
   }
+  if (schema.nullable || Array.isArray(schema.type)) {
+    return undefined;
+  }
+  // An `allOf` narrows to whatever its branches agree on, so it is decided
+  // when every one of them decides and they all say the same thing. `anyOf`
+  // and `oneOf` widen instead, and stay undecided.
+  if (isAllOf(schema) && schema.type === undefined) {
+    const kinds = schema.allOf.map(member =>
+      schemaKind(member, components, seen),
+    );
+    const [first] = kinds;
+    return first !== undefined && kinds.every(kind => sameKind(kind, first))
+      ? first
+      : undefined;
+  }
   if (
     isComposition(schema) ||
     schema.const !== undefined ||
-    schema.nullable ||
-    schema.type === undefined ||
-    Array.isArray(schema.type)
+    schema.type === undefined
   ) {
     return undefined;
   }

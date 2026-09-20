@@ -206,6 +206,25 @@ describe('review regressions', () => {
     },
   );
 
+  it.each([
+    ['an enum', { type: 'string', enum: ['a', 'b'] }],
+    ['an allOf its branches agree on', { allOf: [{ type: 'string' }] }],
+  ] as [string, Schema][])(
+    'keeps a property the index accepts in the interface: %s',
+    (_, property) => {
+      const { diagnostics, file } = generateModel(
+        {
+          type: 'object',
+          properties: { name: property },
+          additionalProperties: { type: 'string' },
+        },
+        "const value: Model = { name: 'a', extra: 'x' };",
+      );
+      expect(diagnostics).toEqual([]);
+      expect(file.getInterface('Model')).toBeDefined();
+    },
+  );
+
   it('keeps an enum beside the primitive it narrows in the interface', () => {
     const { diagnostics, file } = generateModel(
       {

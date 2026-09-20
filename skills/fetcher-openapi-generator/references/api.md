@@ -177,23 +177,24 @@ schemas with an optional property beside schema-valued `additionalProperties`
 also use an intersection alias: the declared properties retain their modifiers
 while the string index keeps the additional-property type without adding
 `undefined`. A TypeScript index signature constrains the declared keys too, so
-an interface may only carry a named property assignable to it (TS2411), and an
-optional property never is. A required one usually is, so it keeps the
-interface unless the clash can be proven off the schemas: against an index type
-that resolves to a primitive, a property that resolves to a different
-primitive, to an object or to an array - through references as well. Anything
-undecided stays: an enum narrows the primitive it sits beside (`'a' | 'b'`
-against `string`) and a composition may admit it (`null` against
-`Model | null`). The index type must resolve to a primitive for any of this,
-which is what lets a dictionary of its own type generate at all: only an
-interface may reference itself through an index signature, an alias reaching
-itself through `Record` being circular (TS2456). A property may reference the
-model freely, an object member defers. Other plain object schemas continue generating
-interfaces. Neither form expresses the JSON Schema case where a declared
-property's type is incompatible with `additionalProperties`: the alias declares
-and reads correctly but admits no object literal, since TypeScript cannot
-exempt a named property from the index signature, and an unproven clash stays
-in the interface it does not compile in.
+an interface may only carry a named property assignable to it (TS2411). Every
+generated property is required, so the form is chosen from the property's kind
+alone: against an index type that resolves to a primitive, a property that
+resolves to a different primitive, to an object, to an array, or to a kind the
+schema does not decide takes the alias instead. Undecided counts as a clash
+because a nullable property, a type array and a typeless enum each generate a
+union no primitive index accepts. An enum is decided by the sibling type it
+narrows, so `'a' | 'b'` beside a `string` index stays an interface, and an
+`allOf` whose branches all decide the same kind is decided the same way. The
+index type must resolve to a primitive for any of this, which is what lets a
+dictionary of its own type generate at all: only an interface may reference
+itself through an index signature, an alias reaching itself through `Record`
+being circular (TS2456). A property may reference the model freely, an object
+member defers. Other plain object schemas continue generating interfaces.
+Neither form expresses the JSON Schema case where a declared property's type is
+incompatible with `additionalProperties`: the alias declares and reads
+correctly but admits no object literal, since TypeScript cannot exempt a named
+property from the index signature.
 Generated types do not perform runtime JSON validation.
 
 String-only enums with no const or composition constraints, and with `type` omitted or set to `'string'`, remain TypeScript enums (including empty-string members).
