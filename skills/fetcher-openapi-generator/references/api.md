@@ -10,7 +10,7 @@
 - [Code Generation Pipeline](#code-generation-pipeline)
 - [Generated Output Structure](#generated-output-structure)
 - [Configuration (fetcher-generator.config.json)](#configuration-fetcher-generatorconfigjson)
-  - [Read-model optionality](#read-model-optionality)
+  - [Property optionality](#property-optionality)
 - [Wow CQRS Pattern Support](#wow-cqrs-pattern-support)
   - [Aggregate Identification](#aggregate-identification)
   - [Operation Patterns](#operation-patterns)
@@ -235,37 +235,31 @@ Model files use `types.ts` named by schema path prefix (e.g., schema key `ai.AiM
     "TagName": {
       "ignorePathParameters": ["tenantId", "ownerId"]
     }
-  },
-  "readModel": {
-    "nonNullRequired": false
   }
 }
 ```
 
 - `apiClients` - Map of tag name to API client configuration
 - `ignorePathParameters` - Path parameters to exclude from generated **API client** methods (default: `['tenantId', 'ownerId']`). Command clients always ignore `tenantId`/`ownerId` regardless of this setting.
-- `readModel.nonNullRequired` - Generate non-nullable read-model properties as required (default: `false`)
 
-### Read-model optionality
+`loadConfiguration` (`src/utils/configuration.ts`) reads it. The default path is optional and resolved against the working directory; everything else is loud. A `--config` path that does not exist, content that will not parse, and an option with the wrong shape each fail the run, and unknown keys warn by name. The log records the absolute path and the resolved settings (`apiClients=…`), so a silent no-op — wrong working directory, stale binary — is visible in one run instead of looking like a generator that ignores its options.
 
-Property optionality follows the document: anything missing from `required` is generated with a `?`. Exporters routinely omit properties that carry a default value, so responses come out weaker than the server actually is.
+### Property optionality
 
-`readModel.nonNullRequired` relaxes this for the read side only. `SchemaUsageResolver` (`src/aggregate/schemaUsage.ts`) walks `$ref` closures from the resolved aggregates and from every operation's request body and parameters, then classifies each component schema. The two sides use different edges: the write side follows every reference it can find (treating a schema as a request only ever preserves declared optionality), while the read side follows only edges an instance value flows through — `properties`, `items`, `additionalProperties`, the positive compositions and `x-map-key-schema` — so a schema a state merely mentions under `not` or in an example is not mistaken for part of the response.
+Every property a schema declares is generated as required — no `?` is ever emitted for a model property. A statically typed service has no absent `int` or `boolean` to hand back, so optionality read off `required` describes the exporter rather than the wire format (exporters routinely drop properties carrying a default value).
 
-| Usage     | Reached from                                                                     | Optionality                                              |
-| --------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `read`    | aggregate state, domain event bodies                                             | non-nullable, non-`writeOnly` properties become required |
-| `write`   | any request: Wow command bodies, and every operation's request body / parameters | as declared                                              |
-| `shared`  | both                                                                             | as declared, and listed in the generation log            |
-| `unknown` | neither, e.g. a schema only an ordinary response uses                            | as declared                                              |
+Optionality the document genuinely means is carried elsewhere:
 
-Nullability is judged from the whole schema, not the first `null` that turns up. Every keyword must agree: `type` must admit null (or carry the 3.0 `nullable` flag; an absent `type` constrains nothing), `const` must be null and `enum` must contain it, `anyOf` needs one branch that admits null, `oneOf` needs **exactly** one (two matching branches fail the keyword), `allOf` needs all of them, and a `not` whose subschema accepts null rejects it. So `{ type: 'string', enum: ['a', null] }` is **not** nullable — the sibling `type` rejects the null member, exactly as `resolveType` drops the literal from the generated union — while `allOf: [{ type: ['string', 'null'] }, { enum: ['x', null] }]` is. References are followed and cycles guarded, with each branch judged independently. `writeOnly` resolves through references the same way.
+| Meaning                        | Where it lives         | Generated as                                                                                                     |
+| ------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| the value may be null          | the property type      | `T \| null` (every spelling of null in 3.0 `nullable` and 3.1 type arrays)                                       |
+| a command field may be omitted | the command type alias | `CommandBody<PartialBy<Command, 'field' \| …>>`, built by `resolveOptionalFields` from the document's `required` |
 
-A property whose schema no value can satisfy (`{ not: {} }`, an empty `enum`, or a composition of those) stays optional: a response must omit it, so requiring it would be a lie in the other direction.
+Requiring model properties therefore never narrows what a client may send: `resolveCommandType` (`src/client/commandClientGenerator.ts`) still wraps the body in `PartialBy`.
 
-Promotion never changes how a model is represented: `requiresAdditionalPropertiesIntersection` reads the declared `required`, so a declared-optional property beside typed `additionalProperties` keeps its intersection form rather than becoming an interface whose named property clashes with the index signature (TS2411).
+`requiresAdditionalPropertiesIntersection` reads only `clashesWithIndexSignature`, since no property carries `undefined` any more: an interface with an index signature is kept unless a named property provably cannot be assignable to it (TS2411). Schemas whose `required` names a key with no `properties` entry still gain that key, typed from `additionalProperties`.
 
-The option assumes the service serialises every non-null property (Jackson `NON_NULL` does; `NON_DEFAULT` does not). Verify against a real response before enabling it.
+A non-nullable self-reference has no finite literal — every level needs the next — so a recursive model that terminates declares its link nullable and generates `T | null`.
 
 ## Wow CQRS Pattern Support
 
