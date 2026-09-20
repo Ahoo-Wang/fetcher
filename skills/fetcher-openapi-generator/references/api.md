@@ -10,6 +10,7 @@
 - [Code Generation Pipeline](#code-generation-pipeline)
 - [Generated Output Structure](#generated-output-structure)
 - [Configuration (fetcher-generator.config.json)](#configuration-fetcher-generatorconfigjson)
+  - [Read-model optionality](#read-model-optionality)
 - [Wow CQRS Pattern Support](#wow-cqrs-pattern-support)
   - [Aggregate Identification](#aggregate-identification)
   - [Operation Patterns](#operation-patterns)
@@ -219,12 +220,35 @@ Model files use `types.ts` named by schema path prefix (e.g., schema key `ai.AiM
     "TagName": {
       "ignorePathParameters": ["tenantId", "ownerId"]
     }
+  },
+  "readModel": {
+    "nonNullRequired": false
   }
 }
 ```
 
 - `apiClients` - Map of tag name to API client configuration
 - `ignorePathParameters` - Path parameters to exclude from generated **API client** methods (default: `['tenantId', 'ownerId']`). Command clients always ignore `tenantId`/`ownerId` regardless of this setting.
+- `readModel.nonNullRequired` - Generate non-nullable read-model properties as required (default: `false`)
+
+### Read-model optionality
+
+Property optionality follows the document: anything missing from `required` is generated with a `?`. Exporters routinely omit properties that carry a default value, so responses come out weaker than the server actually is.
+
+`readModel.nonNullRequired` relaxes this for the read side only. `SchemaUsageResolver` (`src/aggregate/schemaUsage.ts`) walks `$ref` closures from the resolved aggregates and from every operation's request body and parameters, then classifies each component schema:
+
+| Usage     | Reached from                                                                     | Optionality                                              |
+| --------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `read`    | aggregate state, domain event bodies                                             | non-nullable, non-`writeOnly` properties become required |
+| `write`   | any request: Wow command bodies, and every operation's request body / parameters | as declared                                              |
+| `shared`  | both                                                                             | as declared, and listed in the generation log            |
+| `unknown` | neither, e.g. a schema only an ordinary response uses                            | as declared                                              |
+
+Nullability is judged from the whole schema, not the first `null` that turns up. Every keyword must agree: `type` must admit null (or carry the 3.0 `nullable` flag; an absent `type` constrains nothing), `const` must be null and `enum` must contain it, `anyOf` needs one branch that admits null, `oneOf` needs **exactly** one (two matching branches fail the keyword), `allOf` needs all of them, and a `not` whose subschema accepts null rejects it. So `{ type: 'string', enum: ['a', null] }` is **not** nullable — the sibling `type` rejects the null member, exactly as `resolveType` drops the literal from the generated union — while `allOf: [{ type: ['string', 'null'] }, { enum: ['x', null] }]` is. References are followed and cycles guarded, with each branch judged independently. `writeOnly` resolves through references the same way.
+
+Promotion never changes how a model is represented: `requiresAdditionalPropertiesIntersection` reads the declared `required`, so a schema with typed `additionalProperties` keeps its intersection form rather than becoming an interface whose named property clashes with the index signature (TS2411).
+
+The option assumes the service serialises every non-null property (Jackson `NON_NULL` does; `NON_DEFAULT` does not). Verify against a real response before enabling it.
 
 ## Wow CQRS Pattern Support
 
