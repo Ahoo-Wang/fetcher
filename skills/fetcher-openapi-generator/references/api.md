@@ -177,23 +177,24 @@ schemas with an optional property beside schema-valued `additionalProperties`
 also use an intersection alias: the declared properties retain their modifiers
 while the string index keeps the additional-property type without adding
 `undefined`. A TypeScript index signature constrains the declared keys too, so
-an interface may only carry a named property assignable to it (TS2411), and an
-optional property never is. A required one usually is, so it keeps the
-interface unless the clash can be proven off the schemas: against an index type
-that resolves to a primitive, a property that resolves to a different
-primitive, to an object or to an array - through references as well. Anything
-undecided stays: an enum narrows the primitive it sits beside (`'a' | 'b'`
-against `string`) and a composition may admit it (`null` against
-`Model | null`). The index type must resolve to a primitive for any of this,
-which is what lets a dictionary of its own type generate at all: only an
-interface may reference itself through an index signature, an alias reaching
-itself through `Record` being circular (TS2456). A property may reference the
-model freely, an object member defers. Other plain object schemas continue generating
-interfaces. Neither form expresses the JSON Schema case where a declared
-property's type is incompatible with `additionalProperties`: the alias declares
-and reads correctly but admits no object literal, since TypeScript cannot
-exempt a named property from the index signature, and an unproven clash stays
-in the interface it does not compile in.
+an interface may only carry a named property assignable to it (TS2411). Every
+generated property is required, so the form is chosen from the property's kind
+alone: against an index type that resolves to a primitive, a property that
+resolves to a different primitive, to an object, to an array, or to a kind the
+schema does not decide takes the alias instead. Undecided counts as a clash
+because a nullable property, a type array and a typeless enum each generate a
+union no primitive index accepts. An enum is decided by the sibling type it
+narrows, so `'a' | 'b'` beside a `string` index stays an interface, and an
+`allOf` whose branches all decide the same kind is decided the same way. The
+index type must resolve to a primitive for any of this, which is what lets a
+dictionary of its own type generate at all: only an interface may reference
+itself through an index signature, an alias reaching itself through `Record`
+being circular (TS2456). A property may reference the model freely, an object
+member defers. Other plain object schemas continue generating interfaces.
+Neither form expresses the JSON Schema case where a declared property's type is
+incompatible with `additionalProperties`: the alias declares and reads
+correctly but admits no object literal, since TypeScript cannot exempt a named
+property from the index signature.
 Generated types do not perform runtime JSON validation.
 
 String-only enums with no const or composition constraints, and with `type` omitted or set to `'string'`, remain TypeScript enums (including empty-string members).
@@ -250,14 +251,14 @@ Every property a schema declares is generated as required — no `?` is ever emi
 
 Optionality the document genuinely means is carried elsewhere:
 
-| Meaning                        | Where it lives         | Generated as                                                                                                     |
-| ------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| the value may be null          | the property type      | `T \| null` (every spelling of null in 3.0 `nullable` and 3.1 type arrays)                                       |
-| a command field may be omitted | the command type alias | `CommandBody<PartialBy<Command, 'field' \| …>>`, built by `resolveOptionalFields` from the document's `required` |
+| Meaning                        | Where it lives         | Generated as                                                                                                                                                                                               |
+| ------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the value may be null          | the property type      | `T \| null` (every spelling of null in 3.0 `nullable` and 3.1 type arrays)                                                                                                                                 |
+| a command field may be omitted | the command type alias | `CommandBody<PartialBy<Command, 'field' \| …>>`, built by `resolveOptionalFields` from the document's `required`, following `allOf` branches and references so an inherited optional field is not demanded |
 
-Requiring model properties therefore never narrows what a client may send: `resolveCommandType` (`src/client/commandClientGenerator.ts`) still wraps the body in `PartialBy`.
+Requiring model properties therefore does not narrow what a _command_ caller may send: `resolveCommandType` (`src/client/commandClientGenerator.ts`) still wraps the body in `PartialBy`. An ordinary operation's request body is typed as the model itself, so it is required in full — a deliberate, documented consequence.
 
-`requiresAdditionalPropertiesIntersection` reads only `clashesWithIndexSignature`, since no property carries `undefined` any more: an interface with an index signature is kept unless a named property provably cannot be assignable to it (TS2411). Schemas whose `required` names a key with no `properties` entry still gain that key, typed from `additionalProperties`.
+`requiresAdditionalPropertiesIntersection` reads only `clashesWithIndexSignature`, since no property carries `undefined` any more. That predicate errs towards the intersection: against a primitive index, an object, an array, a different primitive **and any property whose kind cannot be read off the schema** all clash, because a nullable property, a type array and a typeless enum each generate a union no primitive index accepts (TS2411). An enum is decided by the sibling type it narrows, so `'a' | 'b'` beside a `string` index stays an interface. Undecided cannot be circular (TS2456) either, since the index resolved to a primitive before the property was consulted. Schemas whose `required` names a key with no `properties` entry still gain that key, typed from `additionalProperties`.
 
 A non-nullable self-reference has no finite literal — every level needs the next — so a recursive model that terminates declares its link nullable and generates `T | null`.
 
