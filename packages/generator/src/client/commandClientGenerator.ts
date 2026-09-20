@@ -230,7 +230,10 @@ export class CommandClientGenerator implements Generator {
     }
     addImportRefModel(clientFile, this.context.outputDir, commandModelInfo);
     let commandType = `${commandModelInfo.name}`;
-    const optionalFields = resolveOptionalFields(definition.schema.schema)
+    const optionalFields = resolveOptionalFields(
+      definition.schema.schema,
+      this.context.openAPI.components,
+    )
       .map(fieldName => `'${fieldName}'`)
       .join(' | ');
     if (optionalFields !== '') {

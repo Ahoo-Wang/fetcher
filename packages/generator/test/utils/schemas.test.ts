@@ -24,6 +24,7 @@ import {
   isComposition,
   toArrayType,
   isEmptyObject,
+  resolveOptionalFields,
   resolvePrimitiveType,
 } from '../../src/utils';
 
@@ -251,5 +252,92 @@ describe('schemas', () => {
       expect(resolvePrimitiveType('object')).toBe('any');
       expect(resolvePrimitiveType('array')).toBe('any');
     });
+  });
+});
+
+describe('resolveOptionalFields', () => {
+  it('lists the declared properties no required list names', () => {
+    expect(
+      resolveOptionalFields({
+        type: 'object',
+        properties: { a: { type: 'string' }, b: { type: 'string' } },
+        required: ['a'],
+      }),
+    ).toEqual(['b']);
+  });
+
+  it('reads properties inherited through allOf', () => {
+    expect(
+      resolveOptionalFields({
+        allOf: [
+          {
+            type: 'object',
+            properties: { a: { type: 'string' }, b: { type: 'string' } },
+            required: ['a'],
+          },
+          { type: 'object', properties: { c: { type: 'string' } } },
+        ],
+      }),
+    ).toEqual(['b', 'c']);
+  });
+
+  it('treats a property any branch requires as required', () => {
+    expect(
+      resolveOptionalFields({
+        allOf: [
+          { type: 'object', properties: { a: { type: 'string' } } },
+          { required: ['a'] },
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it('follows references when components are supplied', () => {
+    const components = {
+      schemas: {
+        Base: {
+          type: 'object' as const,
+          properties: {
+            a: { type: 'string' as const },
+            b: { type: 'string' as const },
+          },
+          required: ['a'],
+        },
+      },
+    };
+    expect(
+      resolveOptionalFields(
+        { allOf: [{ $ref: '#/components/schemas/Base' }] },
+        components,
+      ),
+    ).toEqual(['b']);
+    expect(
+      resolveOptionalFields({ $ref: '#/components/schemas/Base' }, components),
+    ).toEqual(['b']);
+  });
+
+  it('contributes nothing for a reference it cannot resolve', () => {
+    expect(
+      resolveOptionalFields({ $ref: '#/components/schemas/Missing' }),
+    ).toEqual([]);
+    expect(
+      resolveOptionalFields(
+        { $ref: '#/components/schemas/Missing' },
+        { schemas: {} },
+      ),
+    ).toEqual([]);
+  });
+
+  it('stops at a schema it has already visited', () => {
+    const cyclic: Record<string, unknown> = {
+      type: 'object',
+      properties: { a: { type: 'string' } },
+    };
+    cyclic.allOf = [cyclic];
+    expect(resolveOptionalFields(cyclic as never)).toEqual(['a']);
+  });
+
+  it('returns nothing for a schema that declares no properties', () => {
+    expect(resolveOptionalFields({ type: 'string' })).toEqual([]);
   });
 });

@@ -250,14 +250,14 @@ Every property a schema declares is generated as required — no `?` is ever emi
 
 Optionality the document genuinely means is carried elsewhere:
 
-| Meaning                        | Where it lives         | Generated as                                                                                                     |
-| ------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| the value may be null          | the property type      | `T \| null` (every spelling of null in 3.0 `nullable` and 3.1 type arrays)                                       |
-| a command field may be omitted | the command type alias | `CommandBody<PartialBy<Command, 'field' \| …>>`, built by `resolveOptionalFields` from the document's `required` |
+| Meaning                        | Where it lives         | Generated as                                                                                                                                                                                               |
+| ------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the value may be null          | the property type      | `T \| null` (every spelling of null in 3.0 `nullable` and 3.1 type arrays)                                                                                                                                 |
+| a command field may be omitted | the command type alias | `CommandBody<PartialBy<Command, 'field' \| …>>`, built by `resolveOptionalFields` from the document's `required`, following `allOf` branches and references so an inherited optional field is not demanded |
 
-Requiring model properties therefore never narrows what a client may send: `resolveCommandType` (`src/client/commandClientGenerator.ts`) still wraps the body in `PartialBy`.
+Requiring model properties therefore does not narrow what a _command_ caller may send: `resolveCommandType` (`src/client/commandClientGenerator.ts`) still wraps the body in `PartialBy`. An ordinary operation's request body is typed as the model itself, so it is required in full — a deliberate, documented consequence.
 
-`requiresAdditionalPropertiesIntersection` reads only `clashesWithIndexSignature`, since no property carries `undefined` any more: an interface with an index signature is kept unless a named property provably cannot be assignable to it (TS2411). Schemas whose `required` names a key with no `properties` entry still gain that key, typed from `additionalProperties`.
+`requiresAdditionalPropertiesIntersection` reads only `clashesWithIndexSignature`, since no property carries `undefined` any more. That predicate errs towards the intersection: against a primitive index, an object, an array, a different primitive **and any property whose kind cannot be read off the schema** all clash, because a nullable property, a type array and a typeless enum each generate a union no primitive index accepts (TS2411). An enum is decided by the sibling type it narrows, so `'a' | 'b'` beside a `string` index stays an interface. Undecided cannot be circular (TS2456) either, since the index resolved to a primitive before the property was consulted. Schemas whose `required` names a key with no `properties` entry still gain that key, typed from `additionalProperties`.
 
 A non-nullable self-reference has no finite literal — every level needs the next — so a recursive model that terminates declares its link nullable and generates `T | null`.
 
