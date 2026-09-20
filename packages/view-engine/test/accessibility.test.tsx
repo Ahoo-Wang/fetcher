@@ -273,6 +273,34 @@ describe('the states behind a click pass axe', () => {
 
     expect(await violations(document.body)).toEqual([]);
   });
+
+  /**
+   * The view filling the screen, and the page put back afterwards.
+   *
+   * It is deliberately not a modal — no `aria-modal`, no focus trap, nothing
+   * marked inert — because nothing is being asked and nothing was moved: the
+   * same content, in the same place, still a descendant of the host's own
+   * page. Which means the whole document has to keep passing, in both
+   * states: an expansion that quietly stranded the controls behind it would
+   * be exactly the modality this refuses to claim.
+   */
+  it('the view filling the screen, and the page given back', async () => {
+    const user = await workbench();
+    await user.click(
+      screen.getByRole('button', {
+        name: defaultMessages['label.workbench.expand-view'],
+      }),
+    );
+
+    expect(await violations(document.body)).toEqual([]);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: defaultMessages['label.workbench.collapse-view'],
+      }),
+    );
+    expect(await violations(document.body)).toEqual([]);
+  });
 });
 
 describe('the default workbenches pass axe', () => {

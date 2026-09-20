@@ -21,6 +21,7 @@ import displayMeta, {
   CannotOpen as DisplayCannotOpen,
   CollapsedSidebar as DisplayCollapsedSidebar,
   EmptyResult as DisplayEmptyResult,
+  FillTheScreen as DisplayFillTheScreen,
   Loading as DisplayLoading,
   Localized as DisplayLocalized,
   ManageViews as DisplayManageViews,
@@ -842,5 +843,93 @@ export const PickSeveralFields: Story = {
     await waitFor(() =>
       expect(document.body.querySelector('[role="dialog"]')).toBeNull(),
     );
+  },
+};
+
+/**
+ * The view filling the screen, and the page given back.
+ *
+ * The three things that go wrong here are all asserted rather than looked
+ * at: the surface must expand **in place** (the same table node, under the
+ * same parent — a portal would remount it and take the draft with it), the
+ * document's scrolling must be locked while it is open and handed back
+ * exactly as it was, and the table's sticky layers must still hold against
+ * whatever actually scrolls, in both states.
+ */
+export const FillTheScreen: Story = {
+  ...DisplayFillTheScreen,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const table = await canvas.findByRole('table');
+    const doc = canvasElement.ownerDocument;
+    const surface = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="view-surface"]',
+    )!;
+    const parent = surface.parentElement;
+    const before = doc.body.style.overflow;
+
+    // Which column is frozen, read off the header that declares it: only the
+    // headers carry `data-pin`, and a body cell is sticky one cell at a time
+    // — freezing the header and letting the cells under it slide away is
+    // worse than not freezing at all, so the cell is what is checked.
+    const pinnedHead = table.querySelector<HTMLTableCellElement>(
+      'thead th[data-pin-index]',
+    )!;
+    const cellUnder = (section: string) =>
+      table.querySelector<HTMLTableRowElement>(`${section} tr`)!.cells[
+        pinnedHead.cellIndex
+      ];
+    /** The three layers that must not come unstuck, whatever is tall. */
+    const sticky = () => ({
+      header: getComputedStyle(pinnedHead).position,
+      summary: getComputedStyle(table.querySelector('tfoot td')!).position,
+      pinned: getComputedStyle(cellUnder('tbody')).position,
+    });
+    const STUCK = { header: 'sticky', summary: 'sticky', pinned: 'sticky' };
+    await expect(sticky()).toEqual(STUCK);
+
+    const toggle = canvas.getByRole('button', {
+      name: defaultMessages['label.workbench.expand-view'],
+    });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(toggle);
+
+    // Pinned to the viewport, and nowhere else: `position: fixed` is the
+    // whole of the visual change, and it is one attribute on the element
+    // that was already there.
+    await waitFor(() =>
+      expect(surface).toHaveAttribute('data-view-expanded', 'true'),
+    );
+    await expect(getComputedStyle(surface).position).toBe('fixed');
+    await expect(surface.parentElement).toBe(parent);
+    await expect(canvas.getByRole('table')).toBe(table);
+    // The background cannot be scrolled out from under it.
+    await expect(doc.body.style.overflow).toBe('hidden');
+    // Expanding changes which box is tall; it must not change what sticks.
+    await expect(sticky()).toEqual(STUCK);
+
+    // Not a modal, and it says so by omission: nothing here claims one.
+    await expect(surface.getAttribute('aria-modal')).toBeNull();
+    await expect(surface.getAttribute('role')).toBeNull();
+    await expect(doc.body.querySelector('[inert]')).toBeNull();
+
+    // Escape is the way out, and focus comes back to the control that opened
+    // it — the key is announced on the button rather than spent on a tooltip.
+    const back = canvas.getByRole('button', {
+      name: defaultMessages['label.workbench.collapse-view'],
+    });
+    await expect(back).toBe(toggle);
+    await expect(back).toHaveAttribute('aria-keyshortcuts', 'Escape');
+    back.focus();
+    await userEvent.keyboard('{Escape}');
+
+    await waitFor(() =>
+      expect(surface).not.toHaveAttribute('data-view-expanded'),
+    );
+    await expect(doc.activeElement).toBe(toggle);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    // The page is the page it was, and the table is still stuck together.
+    await expect(doc.body.style.overflow).toBe(before);
+    await expect(sticky()).toEqual(STUCK);
   },
 };

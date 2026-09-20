@@ -120,6 +120,7 @@ export function ViewSurface({
   locale,
   timeZone,
   children,
+  ref,
   ...props
 }: ViewSurfaceProps) {
   const rootRef = React.useRef<HTMLDivElement>(null);
@@ -128,13 +129,25 @@ export function ViewSurface({
     () => ({ locale, timeZone }),
     [locale, timeZone],
   );
+  // The surface keeps its own handle on the root — the resolved theme is read
+  // off it — and hands the caller the same element. A caller's ref cannot
+  // simply arrive in `...props` and win: it would replace this one, and the
+  // theme would stop following the cascade.
+  const attach = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      rootRef.current = node;
+      if (typeof ref === 'function') ref(node);
+      else if (ref) ref.current = node;
+    },
+    [ref],
+  );
   return (
     <div
       data-slot="view-surface"
       data-theme={theme}
       className={cn('fve-root flex min-h-0 flex-col gap-3', className)}
-      ref={rootRef}
       {...props}
+      ref={attach}
     >
       <SurfaceThemeContext.Provider value={theme ?? resolved}>
         <SurfaceDisplayContext.Provider value={display}>

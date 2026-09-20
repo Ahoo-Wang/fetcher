@@ -189,6 +189,35 @@
   }
 }
 
+/*
+ * A view filling the screen, pinned where it already stands.
+ *
+ * Unlayered on purpose: it has to outrank whatever utility gave the surface
+ * its place in the host's page, and a layer would put it under them. It is
+ * the whole of the visual change — expanding is one attribute, written by
+ * `useViewExpansion` onto the element it was pointed at, because nothing may
+ * be re-parented: a portal would remount the view and take the draft with
+ * it.
+ *
+ * `overflow: auto` makes the surface its own scrollport, and
+ * `overscroll-behavior: contain` stops a scroll that reaches its end from
+ * being handed to the page underneath — which is locked while this is open
+ * and has nowhere to go with it.
+ */
+.fve-root[data-view-expanded='true'] {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  margin: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
 @layer components {
   /* Upstream paints the drop placeholder red; the theme owns that colour. */
   .fve-root .react-grid-item.react-grid-placeholder {
