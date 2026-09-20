@@ -662,13 +662,16 @@ export const TableSettings: Story = {
     );
     await userEvent.keyboard('{Escape}');
 
-    // What is on screen: the new column order and the rows in the new one.
+    // What is on screen: the areas a table draws in. `订单号` and the newly
+    // pinned `金额` are held on the left — pinning is what moves a column
+    // between areas, since `sticky` only fixes an element where it already
+    // is — and the two that scroll follow in the order just set.
     await waitFor(() =>
       expect(readHeaders(canvas.getByRole('table'))).toEqual([
         '订单号',
+        '金额',
         '状态',
         '仓库',
-        '金额',
       ]),
     );
     await waitFor(() =>
@@ -683,6 +686,9 @@ export const TableSettings: Story = {
     );
     await waitFor(async () => {
       const saved = await tableSettingsStore.current!.get('orders-pending');
+      // The config keeps the order the reorder committed; where a pinned
+      // column is *drawn* is the projection's answer, not something a saved
+      // view has an opinion about — the same split as the row key's pin.
       expect(saved.config as RecordViewConfig).toMatchObject({
         table: {
           columns: [

@@ -12,19 +12,28 @@
  */
 
 import {
+  columnPin,
   isFieldlessKind,
   type FieldDefinition,
   type SummaryFunction,
 } from '../../model/index.js';
 
 /**
- * The row-key column is pinned left, the host's action column is pinned
- * right, and everything else orders freely between them. A column never
- * leaves the area it is in, which is what makes "drag to reorder" a promise
- * the settings can keep: an order that put the key in the middle would be
- * written to the config and then ignored by the table.
+ * The three areas a table draws its columns in, and the settings list them
+ * in: what is held on the left, what scrolls, what is held on the right.
+ *
+ * An area *is* the pinning. `projectRecord` lays the columns out this way,
+ * because `sticky` fixes an element where it already is — a column pinned
+ * right that is drawn in the middle scrolls away like any other, and the
+ * pinning is not a promise a stylesheet can keep on its own. A row moves
+ * between areas by being pinned, and is dragged only inside the one it is
+ * in: an order that crossed an area would be written to the config and then
+ * laid out differently by the table.
  */
 export type ColumnRegion = 'left' | 'middle' | 'right';
+
+/** The areas in the order a table draws them. */
+export const REGIONS: readonly ColumnRegion[] = ['left', 'middle', 'right'];
 
 /**
  * The action column's stand-in.
@@ -164,14 +173,21 @@ function row(
   input: ColumnSettingInput,
 ): ColumnSettingRow {
   const fixed = field.name === input.rowKey;
+  // A fixed column shows the side it is held on rather than what the config
+  // happens to say, so the two never disagree on screen. Read through
+  // `columnPin` even though the controller already normalises it: the area
+  // a row is listed in is computed from this, and an area that is neither
+  // of the three is a row that appears nowhere at all.
+  const pinned = fixed ? 'left' : columnPin(input.pinnedOf(field.name));
   return {
     field: field.name,
     label: field.label,
-    region: fixed ? 'left' : 'middle',
+    // A hidden column is drawn nowhere, so it is listed in the middle
+    // whatever it is pinned to: an area is where the table puts it, and a
+    // hidden column is put nowhere.
+    region: visible ? (pinned ?? 'middle') : 'middle',
     visible,
-    // A fixed column shows the side it is held on rather than what the
-    // config happens to say, so the two never disagree on screen.
-    pinned: fixed ? 'left' : input.pinnedOf(field.name),
+    pinned,
     fixed,
     functions: field.summary ?? [],
     summary: input.summaryOf(field.name),
@@ -188,46 +204,105 @@ export function regionRows(
   return rows.filter(entry => entry.region === region);
 }
 
-/** The fields that may be dragged, in their current order. */
-export function movableFields(rows: readonly ColumnSettingRow[]): string[] {
-  return rows.filter(entry => entry.movable).map(entry => entry.field);
+/** The fields that may be dragged in one area, in their current order. */
+export function movableFields(
+  rows: readonly ColumnSettingRow[],
+  region?: ColumnRegion,
+): string[] {
+  return rows
+    .filter(
+      entry =>
+        entry.movable && (region === undefined || entry.region === region),
+    )
+    .map(entry => entry.field);
+}
+
+/** The area a field is listed in, or `null` when it is not listed. */
+export function regionOf(
+  rows: readonly ColumnSettingRow[],
+  field: string,
+): ColumnRegion | null {
+  return rows.find(entry => entry.field === field)?.region ?? null;
+}
+
+/** The columns the table actually draws, in the order it draws them. */
+function rendered(rows: readonly ColumnSettingRow[]): ColumnSettingRow[] {
+  return rows.filter(entry => entry.visible && !entry.broken);
+}
+
+/**
+ * How many columns the table draws, which is what a position is counted
+ * against. A broken column is not one of them — `projectRecord` leaves it
+ * out — while the host's action column is.
+ */
+export function renderedCount(rows: readonly ColumnSettingRow[]): number {
+  return rendered(rows).length;
+}
+
+/** Where a field sits among the columns the table draws, counted from 1. */
+export function renderedIndex(
+  rows: readonly ColumnSettingRow[],
+  field: string,
+): number {
+  return rendered(rows).findIndex(entry => entry.field === field) + 1;
 }
 
 /**
  * The whole table's column order after one move, or `null` when the move
- * changes nothing — the top row pushed up, an unknown field, a drop on the
- * row it started from.
+ * changes nothing — the end of an area, an unknown field, a drop on the row
+ * it started from.
  *
- * Only the movable area is reordered, and the order it produces covers every
- * shown column: the pinned key leads, the rest follow. That is what makes a
- * region a region rather than a hint — an order that put the key second
- * would be saved, reopened and silently contradicted by the table.
+ * The move happens inside the row's own area, and the answer covers every
+ * shown column with the areas in the order the table draws them. That is
+ * the order `projectRecord` lays out, so what is saved and what is drawn
+ * are the same list rather than two that agree by luck. A shown row that
+ * cannot be dragged — the row key, a broken column — keeps its slot while
+ * the movable ones move around it.
  */
 export function reorderColumns(
   rows: readonly ColumnSettingRow[],
   field: string,
   toIndex: number,
 ): string[] | null {
-  const movable = movableFields(rows);
+  const region = regionOf(rows, field);
+  if (region === null) return null;
+  const movable = movableFields(rows, region);
   const from = movable.indexOf(field);
   if (from < 0 || toIndex < 0 || toIndex >= movable.length || toIndex === from)
     return null;
   const rest = movable.filter((_name, index) => index !== from);
   const moved = [...rest.slice(0, toIndex), field, ...rest.slice(toIndex)];
-  return [
-    ...rows
-      .filter(entry => entry.region === 'left' && entry.visible)
-      .map(entry => entry.field),
-    ...moved,
-  ];
+  let at = 0;
+  return REGIONS.flatMap(area => {
+    const shown = shownOf(rows, area);
+    return area === region
+      ? shown.map(name => (movable.includes(name) ? moved[at++] : name))
+      : shown;
+  });
 }
 
-/** Where a field sits among the movable rows, or -1 when it is not one. */
+/** The shown config columns of one area, in the order they are listed. */
+function shownOf(
+  rows: readonly ColumnSettingRow[],
+  region: ColumnRegion,
+): string[] {
+  return rows
+    .filter(
+      entry =>
+        entry.region === region &&
+        entry.visible &&
+        entry.field !== ACTIONS_COLUMN,
+    )
+    .map(entry => entry.field);
+}
+
+/** Where a field sits among the movable rows of its own area, or -1. */
 export function movableIndex(
   rows: readonly ColumnSettingRow[],
   field: string,
 ): number {
-  return movableFields(rows).indexOf(field);
+  const region = regionOf(rows, field);
+  return region === null ? -1 : movableFields(rows, region).indexOf(field);
 }
 
 /**

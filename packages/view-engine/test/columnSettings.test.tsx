@@ -391,6 +391,79 @@ describe('the column settings popover', () => {
  * query and the save, and a row that is not in the list is a column nobody
  * can take out.
  */
+/**
+ * An area is the pinning: `projectRecord` lays the columns out that way,
+ * because `sticky` fixes an element where it already is and a column pinned
+ * right that is drawn in the middle would scroll away like any other. The
+ * panel lists them the same way, so the two never say different things.
+ */
+describe('the area a column is listed in', () => {
+  function openPinned(pinnedOf: (field: string) => 'left' | 'right' | null) {
+    const table = tableController({
+      columnFields: ['id', 'warehouse', 'amount'],
+      pinnedOf,
+    });
+    render(
+      <ColumnSettings table={table} fields={FIELDS} rowKey="id" actions />,
+    );
+    return table;
+  }
+
+  it('follows the pinning, and puts a right pin at the end', async () => {
+    const user = userEvent.setup();
+    openPinned(field => (field === 'amount' ? 'right' : null));
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+
+    expect(
+      [...document.querySelectorAll('[data-slot="column-setting"]')].map(
+        row =>
+          `${row.getAttribute('data-region')}:${row.getAttribute('data-field')}`,
+      ),
+    ).toEqual([
+      'left:id',
+      'middle:warehouse',
+      'right:amount',
+      `right:${ACTIONS_COLUMN}`,
+    ]);
+  });
+
+  /** A hidden column is drawn nowhere, so it is listed in the middle. */
+  it('lists a hidden column in the middle whatever it is pinned to', async () => {
+    const user = userEvent.setup();
+    const table = tableController({
+      columnFields: ['id', 'amount'],
+      pinnedOf: (field: string) => (field === 'warehouse' ? 'right' : null),
+    });
+    render(<ColumnSettings table={table} fields={FIELDS} rowKey="id" />);
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+
+    expect(
+      document
+        .querySelector('[data-field="warehouse"]')!
+        .getAttribute('data-region'),
+    ).toBe('middle');
+  });
+
+  /**
+   * A drag stays inside its area, and the order that is committed is the
+   * order the table lays out: left, middle, right.
+   */
+  it('reorders inside one area and commits the whole layout', async () => {
+    const user = userEvent.setup();
+    const table = openPinned(field =>
+      field === 'amount' ? 'right' : field === 'warehouse' ? 'left' : null,
+    );
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    screen.getByRole('button', { name: 'Reorder Warehouse' }).focus();
+    // The row key is fixed and keeps its slot; there is nowhere to go.
+    await user.keyboard('{ArrowUp}');
+    expect(table.setColumnOrder).not.toHaveBeenCalled();
+  });
+});
+
 describe('a column the definition dropped', () => {
   function openDropped(columnFields: string[]) {
     const table = tableController({ columnFields });
@@ -481,6 +554,22 @@ describe('moving a column with the keyboard', () => {
    * screen and is not in the config, so counting configured columns alone
    * said "of 3" to someone looking at four.
    */
+  /**
+   * Counted over the columns the table draws. A broken one is not drawn —
+   * `projectRecord` leaves it out — so counting it told someone looking at
+   * two columns that a row had landed "2 of 3".
+   */
+  it('leaves a broken column out of the position it announces', async () => {
+    const user = userEvent.setup();
+    open({ columnFields: ['id', 'gone', 'amount', 'warehouse'] });
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+
+    screen.getByRole('button', { name: 'Reorder Amount' }).focus();
+    await user.keyboard('{ArrowDown}');
+
+    expect(announced()).toBe('Amount moved to position 3 of 3');
+  });
+
   it('counts the action column in the position it announces', async () => {
     const user = userEvent.setup();
     open({ columnFields: ['id', 'amount', 'warehouse'] }, { actions: true });

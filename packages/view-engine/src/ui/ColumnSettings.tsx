@@ -37,15 +37,27 @@ import {
   movableIndex,
   nextPin,
   regionRows,
+  renderedCount,
+  renderedIndex,
   reorderColumns,
   visibleCount,
+  REGIONS,
   type ColumnRegion,
   type ColumnSettingRow,
 } from './columns/rows.js';
 import { useViewMessages } from './MessagesProvider.js';
 
-/** The one sortable group; a fixed row never joins it, so it cannot leave. */
-const MOVABLE_GROUP = 'columns';
+/**
+ * One sortable group per area, so a drag cannot cross one: what is held on
+ * the left, what scrolls and what is held on the right are three lists, and
+ * a column joins another of them by being pinned rather than by being
+ * dragged there.
+ */
+const GROUP: Record<ColumnRegion, string> = {
+  left: 'columns-left',
+  middle: 'columns-middle',
+  right: 'columns-right',
+};
 
 /** Each area's accessible name, so a list of rows says which area it is. */
 const REGION_LABEL = {
@@ -104,10 +116,11 @@ export function ColumnSettings({
     ],
   );
   const shown = visibleCount(rows);
-  // What the reader is looking at, which is every column on screen — the
-  // action column included. `shown` counts the configured ones, because the
-  // rule it serves is "a table keeps one column of its own".
-  const onScreen = rows.filter(row => row.visible).length;
+  // What the reader is looking at: the columns the table actually draws —
+  // the action column included, a broken one not, since `projectRecord`
+  // leaves that out. `shown` counts the configured ones instead, because
+  // the rule it serves is "a table keeps one column of its own".
+  const onScreen = renderedCount(rows);
   const anyHidden = rows.some(row => !row.visible);
   const anyBroken = rows.some(row => row.broken);
 
@@ -123,7 +136,7 @@ export function ColumnSettings({
       setAnnouncement(
         messages.label('label.columns.moved', {
           field: labelOf(rows, field),
-          index: order.indexOf(field) + 1,
+          index: renderedIndex(reordered(rows, order), field),
           total: onScreen,
         }),
       );
@@ -170,7 +183,7 @@ export function ColumnSettings({
             moveTo(String(source.id), movableIndex(rows, String(target.id)));
           }}
         >
-          {(['left', 'middle', 'right'] as ColumnRegion[]).map(region => (
+          {REGIONS.map(region => (
             <Region
               key={region}
               region={region}
@@ -243,7 +256,7 @@ function Region({
             key={row.field}
             {...shared}
             index={movableIndex(rows, row.field)}
-            group={MOVABLE_GROUP}
+            group={GROUP[row.region]}
           />
         ) : (
           <ColumnRow key={row.field} {...shared} />
@@ -251,6 +264,24 @@ function Region({
       })}
     </ul>
   );
+}
+
+/**
+ * The rows in the order `order` puts them, so a position can be read off
+ * the move that was just committed rather than off the list it replaced.
+ */
+function reordered(
+  rows: readonly ColumnSettingRow[],
+  order: readonly string[],
+): ColumnSettingRow[] {
+  const byField = new Map(rows.map(row => [row.field, row]));
+  return [
+    ...order.flatMap(field => {
+      const row = byField.get(field);
+      return row ? [row] : [];
+    }),
+    ...rows.filter(row => !order.includes(row.field)),
+  ];
 }
 
 /** The shown columns after this row's checkbox is flipped. */

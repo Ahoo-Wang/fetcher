@@ -27,6 +27,7 @@ import type {
   ViewInstance,
 } from '../model/index.js';
 import { columnPin, type RecordColumnPin } from '../model/index.js';
+import { recordColumns, recordSort, recordSummaries } from './recordDraft.js';
 import { maxSortFields } from '../record/index.js';
 // The side a column is held on, named once in the model and offered here so
 // a control can talk about pinning without importing the kernel's types.
@@ -285,14 +286,27 @@ export function useRecordTable(
         : rows.filter(row => selected.has(row.key)),
     [rows, selected, selection],
   );
-  const sort = state?.draft.sort ?? NO_SORT;
-  const tableColumns = state?.draft.table.columns ?? NO_COLUMNS;
-  const summaries = state?.draft.summaries ?? NO_SUMMARIES;
+  // Read through `recordDraft`, so what this hands the UI is always a
+  // list of well-formed entries whatever the store held — see the rule
+  // on that module, and `docs/design/react.md`.
+  const draft = state?.draft;
+  const sort = useMemo(
+    () => (draft ? recordSort(draft.sort) : NO_SORT),
+    [draft],
+  );
+  const tableColumns = useMemo(
+    () => (draft ? recordColumns(draft.table?.columns) : NO_COLUMNS),
+    [draft],
+  );
+  const summaries = useMemo(
+    () => (draft ? recordSummaries(draft.summaries) : NO_SUMMARIES),
+    [draft],
+  );
 
   const toggleSort = useCallback(
     (field: string) => {
       if (!runtime) return;
-      const current = runtime.getSnapshot().draft.sort;
+      const current = recordSort(runtime.getSnapshot().draft.sort);
       const at = current.findIndex(entry => entry.field === field);
       // A new field joins at the end; an existing one keeps its place, because
       // the order of `sort` is the priority between columns.
@@ -412,7 +426,19 @@ export function useRecordTable(
         ? (runtime.definition.record?.layouts ?? NO_LAYOUTS)
         : NO_LAYOUTS,
     setLayout: useCallback(
-      (layout: RecordLayout) => runtime?.edit({ layout }),
+      (layout: RecordLayout) => {
+        if (!runtime) return;
+        runtime.edit({ layout });
+        // Both layouts draw the same result, so switching normally needs
+        // no query. A view whose saved layout the definition no longer
+        // allows has no result at all, though: `apply` was refused on
+        // open, `refresh` is a no-op until something has been admitted,
+        // and the switch that repairs it would otherwise leave the screen
+        // as empty as it found it.
+        const state = runtime.getSnapshot();
+        if (state.result === null && state.query.status === 'idle')
+          runtime.apply();
+      },
       [runtime],
     ),
     columnFields: useMemo(
@@ -425,9 +451,9 @@ export function useRecordTable(
         // Reuse each column as it was configured: rebuilding from the field
         // name alone would drop its width and pinning on the next save.
         const existing = new Map(
-          runtime
-            .getSnapshot()
-            .draft.table.columns.map(column => [column.field, column]),
+          recordColumns(runtime.getSnapshot().draft.table?.columns).map(
+            column => [column.field, column],
+          ),
         );
         // A summary belongs to a column, so a column that goes takes its
         // summary with it — in this one update. Left behind, the runtime
@@ -441,7 +467,7 @@ export function useRecordTable(
             columns: fields.map(field => existing.get(field) ?? { field }),
           },
           summaries: summariesOf(
-            (state.draft.summaries ?? []).filter(summary =>
+            recordSummaries(state.draft.summaries).filter(summary =>
               shown.has(summary.field),
             ),
             state.saved,
@@ -453,7 +479,9 @@ export function useRecordTable(
     setColumnOrder: useCallback(
       (fields: string[]) => {
         if (!runtime) return;
-        const columns = runtime.getSnapshot().draft.table.columns;
+        const columns = recordColumns(
+          runtime.getSnapshot().draft.table?.columns,
+        );
         const byField = new Map(columns.map(column => [column.field, column]));
         const named = new Set<string>();
         const ordered = fields.flatMap(field => {
@@ -487,11 +515,11 @@ export function useRecordTable(
         if (!runtime) return;
         editAndApply({
           table: {
-            columns: runtime
-              .getSnapshot()
-              .draft.table.columns.map(column =>
-                column.field === field ? repinned(column, pinned) : column,
-              ),
+            columns: recordColumns(
+              runtime.getSnapshot().draft.table?.columns,
+            ).map(column =>
+              column.field === field ? repinned(column, pinned) : column,
+            ),
           },
         });
       },
@@ -506,7 +534,7 @@ export function useRecordTable(
       (field: string, fn: SummaryFunction | null) => {
         if (!runtime) return;
         const state = runtime.getSnapshot();
-        const rest = (state.draft.summaries ?? []).filter(
+        const rest = recordSummaries(state.draft.summaries).filter(
           entry => entry.field !== field,
         );
         editAndApply({

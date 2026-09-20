@@ -20,7 +20,14 @@
  */
 
 import { MAX_CURSOR_SORT_FIELDS } from '@ahoo-wang/fetcher-wow';
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   MemoryViewStore,
@@ -31,6 +38,7 @@ import {
   type ViewInstance,
 } from '../src/index.js';
 import { useOpenView, useRecordTable } from '../src/react/index.js';
+import { ResultToolbar } from '../src/ui/ResultToolbar.js';
 import { ordersDefinition, recordConfig, testSource } from './fixtures.js';
 
 afterEach(cleanup);
@@ -253,6 +261,40 @@ describe('setPinned', () => {
   });
 });
 
+describe('setLayout', () => {
+  /**
+   * Both layouts draw the same result, so switching normally needs no query
+   * — but a view whose saved layout the definition no longer allows has no
+   * result at all: `apply` was refused on open and `refresh` is a no-op
+   * until something has been admitted, so the switch that repairs it would
+   * have left the screen as empty as it found it.
+   */
+  it('runs the first query when the layout was the thing refused', async () => {
+    const result = await openTable(
+      { layout: 'card' },
+      { record: { rowKey: 'id', paging: 'paged', layouts: ['table'] } },
+      false,
+    );
+    expect(result.current.table.status).toBe('idle');
+
+    act(() => result.current.table.setLayout('table'));
+
+    await waitFor(() => expect(result.current.table.status).toBe('success'));
+    expect(result.current.table.rows.length).toBeGreaterThan(0);
+  });
+
+  /** A view that is already running only changes shape; the rows stay put. */
+  it('does not re-query a view that already has a result', async () => {
+    const result = await openTable();
+    const before = result.current.runtime!.getSnapshot().result;
+
+    act(() => result.current.table.setLayout('card'));
+
+    await waitFor(() => expect(result.current.table.layout).toBe('card'));
+    expect(result.current.runtime!.getSnapshot().result).toBe(before);
+  });
+});
+
 describe('setColumns', () => {
   /**
    * A summary belongs to a column. Left behind when the column is hidden,
@@ -376,6 +418,91 @@ describe('setSummary', () => {
         { field: 'amount', fn: 'MAX' },
       ]),
     );
+  });
+});
+
+/**
+ * The controller is the boundary. A config comes from a store, so its lists
+ * may be objects, strings, or arrays with `null` in them; admission reports
+ * the shape and the draft rightly stays in the error state, but the editor
+ * that would let the user delete the offending entry is rendered from that
+ * same draft. What the controller hands the UI is therefore always a safely
+ * iterable list of well-formed entries — and dropping what cannot be read is
+ * the repair, since the first change writes the sound list back.
+ */
+describe('the shapes a store can hold', () => {
+  const broken = {
+    sort: 'amount',
+    summaries: { field: 'amount', fn: 'SUM' },
+    table: { columns: [null, { field: 'amount' }, 'id'] },
+  } as unknown as Partial<RecordViewConfig>;
+
+  it('hands the UI lists whatever the config holds', async () => {
+    const result = await openTable(broken, {}, false);
+    const table = result.current.table;
+
+    expect(table.sort).toEqual([]);
+    expect(table.columnFields).toEqual(['amount']);
+    expect(table.sortOf('amount')).toBeNull();
+    expect(table.summaryOf('amount')).toBeNull();
+    expect(table.pinnedOf('amount')).toBeNull();
+    // And the view waits to be fixed rather than pretending to be fine.
+    expect(table.status).toBe('idle');
+  });
+
+  /**
+   * The proof that the boundary is where the rule says it is: the panels do
+   * no defensive reading of their own, so this renders them against a real
+   * controller over a config a store could hold. Before the controller
+   * normalised, `.map` over a string took the workbench down from inside
+   * the toolbar, and the user never reached the entry that caused it.
+   */
+  it('lets the panels render against a config a store could hold', async () => {
+    const result = await openTable(broken, {}, false);
+
+    expect(() =>
+      render(
+        <ResultToolbar
+          table={result.current.table}
+          fields={definition().fields}
+          runtime={result.current.runtime!}
+        />,
+      ),
+    ).not.toThrow();
+    expect(screen.getByRole('button', { name: /Columns/ })).toBeTruthy();
+  });
+
+  it('lets every command run against them without throwing', async () => {
+    const result = await openTable(broken, {}, false);
+
+    expect(() => {
+      act(() => result.current.table.toggleSort('amount'));
+      act(() => result.current.table.setColumns(['amount']));
+      act(() => result.current.table.setColumnOrder(['amount']));
+      act(() => result.current.table.setPinned('amount', 'left'));
+      act(() => result.current.table.setSummary('amount', 'SUM'));
+    }).not.toThrow();
+  });
+
+  /** Entries that cannot be read go; the ones that can are kept as they are. */
+  it('keeps the entries it can read and drops the rest', async () => {
+    const result = await openTable(
+      {
+        sort: [
+          null,
+          { field: 'amount', direction: 'up' },
+          { direction: 'ASC' },
+        ],
+        summaries: [null, { field: 'amount', fn: 'NOPE' }],
+      } as unknown as Partial<RecordViewConfig>,
+      {},
+      false,
+    );
+
+    expect(result.current.table.sort).toEqual([
+      { field: 'amount', direction: 'ASC' },
+    ]);
+    expect(result.current.table.summaryOf('amount')).toBeNull();
   });
 });
 

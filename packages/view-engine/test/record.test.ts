@@ -790,6 +790,42 @@ describe('projectRecord', () => {
     ]);
   });
 
+  /**
+   * `sticky` fixes an element where it already is, so a column pinned right
+   * that is drawn in the middle scrolls away like any other: laying the
+   * areas out is part of the same rule as pinning them, and it lives where
+   * the table reads both.
+   */
+  it('lays the columns out in the three areas a table draws', () => {
+    const view = projectRecord(
+      definition(),
+      config({
+        table: {
+          columns: [
+            { field: 'amount', pinned: 'right' },
+            { field: 'warehouse' },
+            { field: 'id' },
+            { field: 'createdAt', pinned: 'left' },
+          ],
+        },
+      }),
+      { total: 0, list: [] },
+    );
+
+    expect(view.columns.map(column => column.field)).toEqual([
+      'id',
+      'createdAt',
+      'warehouse',
+      'amount',
+    ]);
+    expect(view.columns.map(column => column.pinned)).toEqual([
+      'left',
+      'left',
+      undefined,
+      'right',
+    ]);
+  });
+
   it('uses the renderer key a field declares', () => {
     const view = projectRecord(
       definition(),

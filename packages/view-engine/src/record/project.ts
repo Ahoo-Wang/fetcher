@@ -93,6 +93,30 @@ function columnView(
   };
 }
 
+/**
+ * The columns in the three areas a table draws them in: what is held on the
+ * left, what scrolls, what is held on the right.
+ *
+ * `sticky` fixes an element where it already is, so a column pinned right
+ * that is drawn in the middle simply scrolls away like any other — the
+ * pinning is not a promise a stylesheet can keep on its own. Laying the
+ * areas out is therefore part of the same rule as pinning them, and the row
+ * key leads the left area because it is the column that says which record a
+ * row is. The order inside each area is the config's own; the sort is
+ * stable, so nothing else moves.
+ */
+function laidOut(
+  columns: readonly RecordColumn[],
+  rowKey: string,
+): RecordColumn[] {
+  const area = (column: RecordColumn): number => {
+    if (column.field === rowKey) return 0;
+    const pinned = columnPin(column.pinned);
+    return pinned === 'left' ? 1 : pinned === 'right' ? 3 : 2;
+  };
+  return [...columns].sort((left, right) => area(left) - area(right));
+}
+
 function isCursorPage(
   page: PagedList<RecordData> | CursorPage<RecordData>,
 ): page is CursorPage<RecordData> {
@@ -117,15 +141,7 @@ export function projectRecord(
     );
 
   const byName = new Map(definition.fields.map(field => [field.name, field]));
-  // The row key leads, whatever order the config is in. It is held on the
-  // left (see `columnView`), and a column pinned left that is drawn second
-  // covers the one before it — so the one rule that says where it goes says
-  // both halves of it, here, where the table reads them.
-  const ordered = [...config.table.columns].sort(
-    (left, right) =>
-      Number(right.field === rowKey) - Number(left.field === rowKey),
-  );
-  const columns = ordered.flatMap(column => {
+  const columns = laidOut(config.table.columns, rowKey).flatMap(column => {
     const field = byName.get(column.field);
     return field ? [columnView(field, column, rowKey)] : [];
   });
