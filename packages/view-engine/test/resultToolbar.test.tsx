@@ -181,6 +181,29 @@ describe('ResultToolbar layout switcher', () => {
     expect(screen.queryByRole('radio', { name: 'Table' })).toBeNull();
   });
 
+  /**
+   * Unless the view is saved in a layout the definition has since dropped.
+   * `validateRecord` refuses that config, and a switcher that hides itself
+   * exactly then leaves the user reading an error with no way to answer it.
+   */
+  it('stays when the layout in force is one the definition dropped', () => {
+    render(
+      <ResultToolbar
+        table={tableController({ layouts: ['table'], layout: 'card' })}
+        fields={FIELDS}
+        runtime={runtime}
+      />,
+    );
+
+    const group = screen.getByLabelText('Layout');
+    expect(
+      [...group.querySelectorAll('button')].map(item => item.textContent),
+    ).toEqual(['Table']);
+    // Nothing is pressed, which is the truth: the layout in force is not one
+    // of these.
+    expect(group.querySelector('[aria-pressed="true"]')).toBeNull();
+  });
+
   /** Only what the definition allows, in the order the definition wrote. */
   it('offers the allowed layouts in the definition order', () => {
     render(

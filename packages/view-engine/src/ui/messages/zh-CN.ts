@@ -125,6 +125,7 @@ export const zhCN: ViewMessages = {
   'label.columns.show': '显示 {field}',
   'label.columns.last-visible': '表格至少需要保留一列。',
   'label.columns.hidden': '先把列显示出来，才能固定它或给它加汇总。',
+  'label.columns.unknown': '灰色的列已不在这份数据里，取消勾选即可移除。',
   'label.columns.summary': '{field} 的汇总',
   'label.columns.pin': '{field} 的固定方式：{state}',
   'label.columns.pin.none': '不固定',

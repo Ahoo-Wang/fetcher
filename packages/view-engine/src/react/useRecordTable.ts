@@ -24,6 +24,7 @@ import type {
   RecordSummary,
   SortDirection,
   SummaryFunction,
+  ViewInstance,
 } from '../model/index.js';
 import { columnPin, type RecordColumnPin } from '../model/index.js';
 import { maxSortFields } from '../record/index.js';
@@ -90,6 +91,29 @@ function repinned(
     ...(column.width === undefined ? {} : { width: column.width }),
     ...(pinned === null ? {} : { pinned }),
   };
+}
+
+/**
+ * The summaries to write, in the shape the saved config uses for none.
+ *
+ * `summaries` is optional, so "no summaries" is spelled two ways — an empty
+ * list, or no member at all — and `dirty` is an equality against the saved
+ * config, which cannot tell the difference between a shape and a change.
+ * Adding a summary and taking it away again therefore left the view unsaved
+ * for the rest of the session, with the leave guard asking about an edit
+ * that had already been undone. `edit` removes a member given as
+ * `undefined`, so answering with the saved config's own spelling makes
+ * undoing an undo.
+ */
+function summariesOf(
+  next: RecordSummary[],
+  saved: ViewInstance | null,
+): RecordSummary[] | undefined {
+  if (next.length > 0) return next;
+  const config = saved?.config;
+  return config?.kind === 'record' && config.summaries !== undefined
+    ? []
+    : undefined;
 }
 
 function cardField(field: FieldDefinition): RecordCardField {
@@ -411,12 +435,16 @@ export function useRecordTable(
         // row stands empty, a failed aggregate warns about a summary nobody
         // can see, and the settings disable the select that would clear it.
         const shown = new Set(fields);
+        const state = runtime.getSnapshot();
         editAndApply({
           table: {
             columns: fields.map(field => existing.get(field) ?? { field }),
           },
-          summaries: (runtime.getSnapshot().draft.summaries ?? []).filter(
-            summary => shown.has(summary.field),
+          summaries: summariesOf(
+            (state.draft.summaries ?? []).filter(summary =>
+              shown.has(summary.field),
+            ),
+            state.saved,
           ),
         });
       },
@@ -477,11 +505,15 @@ export function useRecordTable(
     setSummary: useCallback(
       (field: string, fn: SummaryFunction | null) => {
         if (!runtime) return;
-        const rest = (runtime.getSnapshot().draft.summaries ?? []).filter(
+        const state = runtime.getSnapshot();
+        const rest = (state.draft.summaries ?? []).filter(
           entry => entry.field !== field,
         );
         editAndApply({
-          summaries: fn === null ? rest : [...rest, { field, fn }],
+          summaries: summariesOf(
+            fn === null ? rest : [...rest, { field, fn }],
+            state.saved,
+          ),
         });
       },
       [editAndApply, runtime],

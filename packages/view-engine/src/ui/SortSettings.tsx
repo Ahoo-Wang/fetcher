@@ -85,9 +85,13 @@ export function SortSettings({
 }: SortSettingsProps) {
   const messages = useViewMessages();
   const sortable = fields.filter(field => field.sortable === true);
-  // A definition that declares nothing sortable offers no sort at all: a
-  // button that opens an empty editor is a button that leads nowhere.
-  if (sortable.length === 0) return null;
+  // Nothing to offer *and* nothing to take back: a button that opens an
+  // empty editor leads nowhere. A definition that stopped declaring a field
+  // sortable while a saved config still orders by it is the other case —
+  // `validateRecord` refuses the draft and the workbench says so, and
+  // hiding the control here would leave the user reading an error whose one
+  // cause is behind a door that is no longer there.
+  if (sortable.length === 0 && table.sort.length === 0) return null;
 
   const used = new Set(table.sort.map(entry => entry.field));
   // A cursor view sorts on at most so many fields, and `validateRecord`
@@ -95,6 +99,11 @@ export function SortSettings({
   // keep the order they had, and the view would sit in an error the user was
   // invited into. So the picker stops where the kernel starts refusing.
   const full = table.sort.length >= table.maxSortFields;
+  // What is left to offer. Counted rather than compared against the whole
+  // list: a definition that stopped declaring a field sortable leaves a
+  // sort on it that is used and no longer offered, and "as many used as
+  // there are" would then read as "still something to add".
+  const available = sortable.filter(field => !used.has(field.name));
   const labels = new Map(fields.map(field => [field.name, field.label]));
   const labelOf = (field: string) => labels.get(field) ?? field;
 
@@ -135,7 +144,10 @@ export function SortSettings({
           >
             {table.sort.map((entry, index) => (
               <SortEntry
-                key={entry.field}
+                // Keyed by its place as well as its field: a config that
+                // sorts twice by one field is two entries, and removing one
+                // of them has to leave the other where it is.
+                key={`${entry.field}-${index}`}
                 entry={entry}
                 index={index}
                 label={labelOf(entry.field)}
@@ -163,7 +175,7 @@ export function SortSettings({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={full || used.size === sortable.length}
+                disabled={full || available.length === 0}
               />
             }
           >
@@ -172,7 +184,7 @@ export function SortSettings({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <GroupedMenu
-              items={sortable.filter(field => !used.has(field.name))}
+              items={available}
               groups={fieldGroups ?? []}
               itemKey={field => field.name}
               render={field => (

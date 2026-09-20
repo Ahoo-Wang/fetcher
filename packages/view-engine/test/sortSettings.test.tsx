@@ -46,7 +46,7 @@ function trigger(): HTMLElement {
 }
 
 describe('what the sort button says', () => {
-  it('offers nothing at all when the definition sorts on nothing', () => {
+  it('offers nothing at all when there is neither a field nor a sort', () => {
     render(
       <SortSettings
         table={tableController()}
@@ -55,6 +55,60 @@ describe('what the sort button says', () => {
     );
 
     expect(document.querySelector('[data-control="sort"]')).toBeNull();
+  });
+
+  /**
+   * Two entries on one field is a config the kernel refuses
+   * (`record.sort.duplicate`), and both of them are listed: removing one has
+   * to leave the other where it is, which a key of the field alone could
+   * not promise.
+   */
+  it('lists a field sorted twice as two entries, each its own', async () => {
+    const user = userEvent.setup();
+    const table = open([
+      { field: 'amount', direction: 'ASC' },
+      { field: 'amount', direction: 'DESC' },
+    ]);
+
+    await user.click(trigger());
+    expect(document.querySelectorAll('[data-slot="sort-entry"]')).toHaveLength(
+      2,
+    );
+    await user.click(
+      screen.getAllByRole('button', { name: 'Stop sorting by Amount' })[0],
+    );
+
+    expect(table.setSort).toHaveBeenCalledWith([
+      { field: 'amount', direction: 'DESC' },
+    ]);
+  });
+
+  /**
+   * A definition that stopped declaring a field sortable while a saved
+   * config still orders by it: `validateRecord` refuses the draft and the
+   * workbench reports it, so hiding the control here left the user reading
+   * an error whose one cause was behind a door that no longer existed.
+   */
+  it('stays while there is a sort to take back, sortable or not', async () => {
+    const user = userEvent.setup();
+    const unsortable = [{ name: 'amount', label: 'Amount', kind: 'number' }];
+    const table = tableController({
+      sort: [{ field: 'amount', direction: 'DESC' }],
+    });
+    render(<SortSettings table={table} fields={unsortable} />);
+
+    await user.click(trigger());
+    await user.click(
+      screen.getByRole('button', { name: 'Stop sorting by Amount' }),
+    );
+
+    expect(table.setSort).toHaveBeenCalledWith([]);
+    // And nothing is offered to put back in its place.
+    expect(
+      screen
+        .getByRole('button', { name: /Sort by a field/ })
+        .hasAttribute('disabled'),
+    ).toBe(true);
   });
 
   it('says so when the rows are in no particular order', () => {

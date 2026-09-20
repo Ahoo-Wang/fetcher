@@ -132,11 +132,16 @@ export function ResultToolbar({
       <div className="flex-1" />
 
       {/* Only the definition's layouts, in its order — and nothing at all
-          when there is no choice to make. `SEGMENTED` is what makes it one
+          when there is no choice to make, unless the view is saved in a
+          layout the definition has since dropped: `validateRecord` refuses
+          that config, and a switcher that hides itself exactly then leaves
+          the user reading an error with no way to answer it. Nothing is
+          pressed in that state, which is the truth — the layout in force is
+          not one of these. `SEGMENTED` is what makes it one
           control with two positions rather than two bordered buttons that
           happen to sit together; it is the house rule's one spelling of
           that, applied here because `ui/components` is upstream's. */}
-      {table.layouts.length >= 2 && (
+      {(table.layouts.length >= 2 || !table.layouts.includes(table.layout)) && (
         <ToggleGroup
           value={[table.layout]}
           onValueChange={value => {

@@ -59,6 +59,16 @@ export interface ColumnSettingRow {
   summary: SummaryFunction | null;
   /** Whether this row may be dragged or moved with the arrow keys. */
   movable: boolean;
+  /**
+   * True for a column the definition no longer offers — a field it dropped,
+   * or one whose kind is a handle rather than something a row holds.
+   *
+   * It is listed precisely because it is broken: `validateRecord` refuses
+   * the config over it, which blocks the query and the save, and a row that
+   * is not in the list is a column nobody can take out. It carries no
+   * controls but its checkbox, which is the repair.
+   */
+  broken: boolean;
 }
 
 export type ColumnPin = 'left' | 'right';
@@ -91,18 +101,21 @@ export function columnSettingRows(
 ): ColumnSettingRow[] {
   const candidates = input.fields.filter(field => !isFieldlessKind(field.kind));
   const byName = new Map(candidates.map(field => [field.name, field]));
+  const seen = new Set<string>();
+  // In the order the table shows them, and one row per column: a config
+  // that lists a field twice is two columns claiming one identity, and one
+  // checkbox takes both of them out.
   const shown = input.columns.flatMap(name => {
+    if (seen.has(name)) return [];
+    seen.add(name);
     const field = byName.get(name);
-    return field ? [{ field, visible: true }] : [];
+    return [field ? row(field, true, input) : broken(name, input)];
   });
-  const seen = new Set(shown.map(entry => entry.field.name));
   const hidden = candidates
     .filter(field => !seen.has(field.name))
-    .map(field => ({ field, visible: false }));
+    .map(field => row(field, false, input));
 
-  const rows = [...shown, ...hidden].map(({ field, visible }) =>
-    row(field, visible, input),
-  );
+  const rows = [...shown, ...hidden];
   if (!input.actions) return rows;
   return [
     ...rows,
@@ -116,8 +129,33 @@ export function columnSettingRows(
       functions: [],
       summary: null,
       movable: false,
+      broken: false,
     },
   ];
+}
+
+/**
+ * A column the definition no longer offers, listed so it can be taken out.
+ *
+ * There is no label to show — the field is gone — so it wears its own name,
+ * and it carries no control but its checkbox: ordering, pinning and
+ * summarising a column that cannot render are all answers to a question
+ * nobody asked. Hiding it is the repair, and `setColumns` takes its summary
+ * with it.
+ */
+function broken(field: string, input: ColumnSettingInput): ColumnSettingRow {
+  return {
+    field,
+    label: field,
+    region: 'middle',
+    visible: true,
+    pinned: null,
+    fixed: false,
+    functions: [],
+    summary: input.summaryOf(field),
+    movable: false,
+    broken: true,
+  };
 }
 
 function row(
@@ -138,6 +176,7 @@ function row(
     functions: field.summary ?? [],
     summary: input.summaryOf(field.name),
     movable: visible && !fixed,
+    broken: false,
   };
 }
 
@@ -191,10 +230,19 @@ export function movableIndex(
   return movableFields(rows).indexOf(field);
 }
 
-/** How many columns the table is showing; the last one may not be hidden. */
+/**
+ * How many columns the table is showing that can actually render; the last
+ * one of those may not be hidden.
+ *
+ * A broken column does not count. The rule exists so a table is never left
+ * with nothing in it, and a column the definition dropped puts nothing in
+ * it either — counting it would guard the one row whose whole purpose is to
+ * be switched off.
+ */
 export function visibleCount(rows: readonly ColumnSettingRow[]): number {
-  return rows.filter(entry => entry.visible && entry.field !== ACTIONS_COLUMN)
-    .length;
+  return rows.filter(
+    entry => entry.visible && !entry.broken && entry.field !== ACTIONS_COLUMN,
+  ).length;
 }
 
 /** The pin state after one press: unpinned, then left, then right again. */

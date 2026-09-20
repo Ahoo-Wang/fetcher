@@ -91,9 +91,23 @@ export function ColumnRow({
   const label = actions ? messages.label('label.toolbar.actions') : row.label;
   // The table has to keep one column: hiding the last one leaves a result
   // with nothing in it and no way back except the picker that emptied it.
-  const last = row.visible && shownCount <= 1;
+  // The guard keeps a table from being left with nothing in it. A broken
+  // column puts nothing in it either, so it is never the last one worth
+  // keeping — guarding it would lock the one control that repairs it.
+  const last = row.visible && !row.broken && shownCount <= 1;
   const pinned = columnPin(row.pinned);
   const pinState = messages.label(PIN_LABEL[pinned ?? 'none']);
+  // What the select may be set to: what the field declares, plus whatever
+  // the config already says if the definition has stopped declaring it. A
+  // field that lost its summary capabilities leaves a config the kernel
+  // refuses (`record.summary.unsupported`) — which blocks the query and the
+  // save — and the one control that could take it back was the one that
+  // stopped rendering. Offering its own value back, even unsupported, is
+  // what makes "no summary" reachable.
+  const functions =
+    row.summary !== null && !row.functions.includes(row.summary)
+      ? [...row.functions, row.summary]
+      : row.functions;
 
   return (
     <li
@@ -101,8 +115,9 @@ export function ColumnRow({
       data-slot="column-setting"
       data-field={row.field}
       data-region={row.region}
+      data-broken={row.broken ? '' : undefined}
       data-dragging={dragging ? '' : undefined}
-      className="flex items-center gap-1.5 rounded-md px-1 py-0.5 data-dragging:bg-muted"
+      className="flex items-center gap-1.5 rounded-md px-1 py-0.5 data-broken:text-muted-foreground data-dragging:bg-muted"
     >
       <Button
         ref={handleRef}
@@ -130,30 +145,30 @@ export function ColumnRow({
         checked={row.visible}
         disabled={actions || last}
         aria-label={messages.label('label.columns.show', { field: label })}
-        aria-describedby={actions || last ? hintId : undefined}
+        aria-describedby={actions || last || row.broken ? hintId : undefined}
         onCheckedChange={onToggle}
       />
 
       <span className="flex-1 truncate">{label}</span>
 
-      {row.functions.length > 0 && (
+      {functions.length > 0 && (
         <Select
-          disabled={!row.visible}
+          disabled={!row.visible || row.broken}
           items={[
             {
               value: NO_SUMMARY,
               label: messages.label('label.summary.fn.none'),
             },
-            ...row.functions.map(fn => ({
+            ...functions.map(fn => ({
               value: fn,
               label: messages.label(`label.summary.fn.${fn}`),
             })),
           ]}
           value={row.summary ?? NO_SUMMARY}
           onValueChange={(value: string | null) =>
-            // Matched against what the field declares rather than cast: the
-            // list the control was built from is the list of legal answers.
-            onSummary(row.functions.find(fn => fn === value) ?? null)
+            // Matched against the list the control was built from rather
+            // than cast: anything else is not an answer it offered.
+            onSummary(functions.find(fn => fn === value) ?? null)
           }
         >
           <SelectTrigger
@@ -162,7 +177,7 @@ export function ColumnRow({
             aria-label={messages.label('label.columns.summary', {
               field: label,
             })}
-            aria-describedby={row.visible ? undefined : hintId}
+            aria-describedby={row.visible && !row.broken ? undefined : hintId}
           >
             <SelectValue />
           </SelectTrigger>
@@ -171,7 +186,7 @@ export function ColumnRow({
               <SelectItem value={NO_SUMMARY}>
                 {messages.label('label.summary.fn.none')}
               </SelectItem>
-              {row.functions.map(fn => (
+              {functions.map(fn => (
                 <SelectItem key={fn} value={fn}>
                   {messages.label(`label.summary.fn.${fn}`)}
                 </SelectItem>
@@ -186,13 +201,16 @@ export function ColumnRow({
           switched off writes nothing, however many times it is pressed.
           Showing it first is the move, so the toggle says it cannot rather
           than doing nothing — and the summary select goes the same way, for
-          the same reason. */}
+          the same reason. A broken column answers neither: its one control
+          is the checkbox that takes it out. */}
       <Button
         type="button"
         variant="ghost"
         size="icon-xs"
-        disabled={row.fixed || !row.visible}
-        aria-describedby={row.fixed || !row.visible ? hintId : undefined}
+        disabled={row.fixed || !row.visible || row.broken}
+        aria-describedby={
+          row.fixed || !row.visible || row.broken ? hintId : undefined
+        }
         aria-label={messages.label('label.columns.pin', {
           field: label,
           state: pinState,

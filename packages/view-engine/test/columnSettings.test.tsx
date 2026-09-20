@@ -18,7 +18,13 @@
  * with the write, which `recordTableCommands.test.tsx` covers.
  */
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { FieldDefinition } from '../src/model/index.js';
@@ -313,6 +319,32 @@ describe('the column settings popover', () => {
     expect(table.setPinned).toHaveBeenCalledWith('amount', 'left');
   });
 
+  /**
+   * A field that kept its place and lost its summary capabilities leaves a
+   * config the kernel refuses (`record.summary.unsupported`), which blocks
+   * the query and the save — and the one control that could take it back
+   * was the one that stopped rendering, because the field declares nothing.
+   * Its own value comes back as an option so "no summary" is reachable.
+   */
+  it('offers a configured summary back when the field no longer declares it', async () => {
+    const user = userEvent.setup();
+    const table = open({
+      columnFields: ['id', 'warehouse'],
+      summaryOf: (field: string) =>
+        field === 'warehouse' ? ('SUM' as const) : null,
+    });
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    const select = screen.getByRole('combobox', {
+      name: 'Summary under Warehouse',
+    });
+    expect(select.textContent).toContain('Sum');
+
+    await user.click(select);
+    await user.click(await screen.findByRole('option', { name: 'No summary' }));
+    expect(table.setSummary).toHaveBeenCalledWith('warehouse', null);
+  });
+
   it('cycles the pin of a column that may move', async () => {
     const user = userEvent.setup();
     const table = open();
@@ -350,6 +382,73 @@ describe('the column settings popover', () => {
         .getByRole('checkbox', { name: 'Show Actions' })
         .getAttribute('aria-disabled'),
     ).toBe('true');
+  });
+});
+
+/**
+ * A column the definition no longer offers is listed precisely because it
+ * is broken: `validateRecord` refuses the config over it, which blocks the
+ * query and the save, and a row that is not in the list is a column nobody
+ * can take out.
+ */
+describe('a column the definition dropped', () => {
+  function openDropped(columnFields: string[]) {
+    const table = tableController({ columnFields });
+    render(<ColumnSettings table={table} fields={FIELDS} rowKey="id" />);
+    return table;
+  }
+
+  it('lists it by its own name, with only its checkbox to press', async () => {
+    const user = userEvent.setup();
+    const table = openDropped(['id', 'gone', 'amount']);
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    expect(listed()).toEqual(['id', 'gone', 'amount', 'warehouse']);
+
+    const row = document.querySelector('[data-field="gone"]')!;
+    expect(row.hasAttribute('data-broken')).toBe(true);
+    expect(
+      within(row as HTMLElement)
+        .getByRole('button', { name: 'Reorder gone' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      within(row as HTMLElement)
+        .getByRole('button', { name: /^Pinning of gone/ })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Show gone' }));
+    expect(table.setColumns).toHaveBeenCalledWith(['id', 'amount']);
+  });
+
+  /**
+   * The last-column guard exists so a table is never left with nothing in
+   * it; a broken column puts nothing in it either, so guarding it would
+   * lock the one control that repairs the config.
+   */
+  it('can be switched off even when it is the only column', async () => {
+    const user = userEvent.setup();
+    const table = openDropped(['gone']);
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    const box = screen.getByRole('checkbox', { name: 'Show gone' });
+    expect(box.getAttribute('aria-disabled')).not.toBe('true');
+
+    await user.click(box);
+    expect(table.setColumns).toHaveBeenCalledWith([]);
+  });
+
+  /** One row per column, so one press takes a field listed twice out. */
+  it('shows a field listed twice once, and removes both', async () => {
+    const user = userEvent.setup();
+    const table = openDropped(['id', 'amount', 'amount']);
+
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    expect(listed()).toEqual(['id', 'amount', 'warehouse']);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Show Amount' }));
+    expect(table.setColumns).toHaveBeenCalledWith(['id']);
   });
 });
 

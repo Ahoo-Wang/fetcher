@@ -314,7 +314,46 @@ describe('setSummary', () => {
     await waitFor(() =>
       expect(result.current.table.summaryOf('amount')).toBeNull(),
     );
-    expect(draft(result).summaries).toEqual([]);
+    // The saved config has no `summaries` member, so neither has this one
+    // again — see "leaves the view as saved once the last summary goes".
+    expect('summaries' in draft(result)).toBe(false);
+  });
+
+  /**
+   * `summaries` is optional, so "none" is spelled two ways, and `dirty` is
+   * an equality against the saved config — which cannot tell a shape from a
+   * change. Adding a summary and taking it away again used to leave the
+   * view unsaved for the rest of the session, with the leave guard asking
+   * about an edit that had already been undone.
+   */
+  it('leaves the view as saved once the last summary goes', async () => {
+    const result = await openTable();
+    expect(result.current.runtime!.getSnapshot().dirty).toBe(false);
+
+    act(() => result.current.table.setSummary('amount', 'SUM'));
+    await waitFor(() =>
+      expect(result.current.runtime!.getSnapshot().dirty).toBe(true),
+    );
+
+    act(() => result.current.table.setSummary('amount', null));
+
+    await waitFor(() =>
+      expect(result.current.runtime!.getSnapshot().dirty).toBe(false),
+    );
+  });
+
+  /** And a config that spells it `[]` gets `[]` back, for the same reason. */
+  it('keeps an empty list where the saved config used one', async () => {
+    const result = await openTable({ summaries: [] });
+
+    act(() => result.current.table.setSummary('amount', 'SUM'));
+    await waitFor(() =>
+      expect(result.current.table.summaryOf('amount')).toBe('SUM'),
+    );
+    act(() => result.current.table.setSummary('amount', null));
+
+    await waitFor(() => expect(draft(result).summaries).toEqual([]));
+    expect(result.current.runtime!.getSnapshot().dirty).toBe(false);
   });
 
   /**

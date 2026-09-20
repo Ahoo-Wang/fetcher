@@ -99,6 +99,8 @@ export const recordMessages = {
   'label.columns.last-visible': 'A table needs at least one column.',
   'label.columns.hidden':
     'A column has to be shown before it can be pinned or summarised.',
+  'label.columns.unknown':
+    'A column shown in grey is not in this data any more; switch it off to take it out.',
   'label.columns.summary': 'Summary under {field}',
   'label.columns.pin': 'Pinning of {field}: {state}',
   'label.columns.pin.none': 'Not pinned',

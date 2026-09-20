@@ -109,6 +109,7 @@ export function ColumnSettings({
   // rule it serves is "a table keeps one column of its own".
   const onScreen = rows.filter(row => row.visible).length;
   const anyHidden = rows.some(row => !row.visible);
+  const anyBroken = rows.some(row => row.broken);
 
   /** Commits one move and says where the column landed, for both inputs. */
   const moveTo = useCallback(
@@ -146,6 +147,7 @@ export function ColumnSettings({
             {messages.label('label.columns.hint')}
             {shown <= 1 && ` ${messages.label('label.columns.last-visible')}`}
             {anyHidden && ` ${messages.label('label.columns.hidden')}`}
+            {anyBroken && ` ${messages.label('label.columns.unknown')}`}
           </PopoverDescription>
         </PopoverHeader>
 
