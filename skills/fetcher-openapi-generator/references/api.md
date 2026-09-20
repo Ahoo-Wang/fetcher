@@ -173,20 +173,24 @@ the utility type.
 
 All `allOf` schemas generate TypeScript intersection aliases so required,
 optional, and conflicting property types retain every member constraint. Object
-schemas with named properties beside schema-valued `additionalProperties` also
-use an intersection alias: the declared properties retain their modifiers while
-the string index keeps the additional-property type without adding `undefined`.
-A TypeScript index signature constrains the declared keys too, so an interface
-may only carry a named property assignable to it (TS2411) - which an optional
-property never is, and a required one only is when it repeats the
-additional-property type. That repetition (and an `additionalProperties`
-resolving to `any`) is the one case kept as an interface, because only an
-interface may reference itself through an index signature: a dictionary of its
-own type has no alias form (TS2456). Other plain object schemas continue
-generating interfaces. Neither form can express the JSON Schema case where a
-declared property's type is incompatible with `additionalProperties`: the alias
-declares and reads correctly but admits no object literal, since TypeScript
-cannot exempt a named property from the index signature.
+schemas with an optional property beside schema-valued `additionalProperties`
+also use an intersection alias: the declared properties retain their modifiers
+while the string index keeps the additional-property type without adding
+`undefined`. A TypeScript index signature constrains the declared keys too, so
+an interface may only carry a named property assignable to it (TS2411), and an
+optional property never is. A required one usually is, so it keeps the
+interface unless the two are plain primitives of different types - the one
+clash provable without a type checker, and the one that stops an interface
+compiling. `null` beside `Model | null`, or `'a' | 'b'` beside `string`, is not
+a clash. Keeping the interface wherever the clash is unproven is what lets a
+dictionary of its own type generate at all: only an interface may reference
+itself through an index signature, an alias reaching itself through `Record`
+being circular (TS2456). Other plain object schemas continue generating
+interfaces. Neither form expresses the JSON Schema case where a declared
+property's type is incompatible with `additionalProperties`: the alias declares
+and reads correctly but admits no object literal, since TypeScript cannot
+exempt a named property from the index signature, and an unproven clash stays
+in the interface it does not compile in.
 Generated types do not perform runtime JSON validation.
 
 String-only enums with no const or composition constraints, and with `type` omitted or set to `'string'`, remain TypeScript enums (including empty-string members).

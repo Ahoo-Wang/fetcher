@@ -881,8 +881,9 @@ describe('required additional property constraints', () => {
     'keeps required properties out of a conflicting index signature (nested: %s)',
     nested => {
       // An interface may not carry a `string` property beside a `number` index
-      // signature (TS2411), so a schema with any named property takes the
-      // intersection form however the document declares that property.
+      // signature (TS2411), and two plain primitives of different types are
+      // the one clash provable without a type checker - so this schema takes
+      // the intersection however the document declares the property.
       const schema: Schema = {
         type: 'object',
         required: ['name'],
@@ -945,11 +946,47 @@ describe('required additional property constraints', () => {
     },
   );
 
+  it.each([
+    [
+      'a null property against a nullable dictionary of itself',
+      { type: 'null' } as Schema,
+      {
+        oneOf: [{ $ref: '#/components/schemas/Model' }, { type: 'null' }],
+      } as Schema,
+    ],
+    [
+      'an enum property against the primitive it narrows',
+      { type: 'string', enum: ['a', 'b'] } as Schema,
+      { type: 'string' } as Schema,
+    ],
+  ])(
+    'leaves an assignable required property in the interface: %s',
+    (_, property, additionalProperties) => {
+      // Textual inequality is not non-assignability. Calling either of these a
+      // clash would move a schema the interface expresses perfectly well to an
+      // alias - and the first one would then reach itself through `Record`
+      // (TS2456).
+      const schema: Schema = {
+        type: 'object',
+        required: ['value'],
+        properties: { value: property },
+        additionalProperties,
+      };
+      const { file, diagnostics } = generateModel(schema, '', {
+        schemas: { Model: schema },
+      });
+      expect(diagnostics).toEqual([]);
+      expect(
+        file.getInterfaceOrThrow('Model').getIndexSignatures(),
+      ).toHaveLength(1);
+    },
+  );
+
   it('keeps a dictionary of its own type an interface', () => {
     // Only an interface may reference itself through an index signature: a type
-    // alias that reaches itself through `Record` is circular (TS2456), so a
-    // required property repeating the additional-property type must not be sent
-    // to the intersection.
+    // alias that reaches itself through `Record` is circular (TS2456). A
+    // reference is never a provable clash, so the dictionary keeps the
+    // interface and stays expressible.
     const schema: Schema = {
       type: 'object',
       required: ['child'],

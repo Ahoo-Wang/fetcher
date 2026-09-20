@@ -50,6 +50,59 @@ import {
 } from '../utils';
 import type { Generator } from '../generateContext';
 
+/**
+ * Resolves a schema that is nothing but a primitive `type` to that type.
+ *
+ * Anything else - a reference, a composition, an enum, a const, a nullable
+ * schema, a type union, an object or an array - returns undefined, leaving its
+ * assignability undecided.
+ *
+ * @param schema - The schema to inspect
+ * @returns The resolved primitive type, or undefined when the schema is not a plain primitive
+ */
+function plainPrimitiveType(schema: Schema | Reference): string | undefined {
+  if (isReference(schema)) return undefined;
+  if (
+    isComposition(schema) ||
+    isEnum(schema) ||
+    schema.const !== undefined ||
+    schema.nullable ||
+    schema.type === undefined ||
+    Array.isArray(schema.type) ||
+    schema.type === 'object' ||
+    schema.type === 'array'
+  ) {
+    return undefined;
+  }
+  return resolvePrimitiveType(schema.type);
+}
+
+/**
+ * Tells whether a named property provably cannot sit beside the index signature.
+ *
+ * Only two plain primitives settle it: a reference, a composition, an enum, a
+ * const, a nullable or an object/array schema may still be assignable to the
+ * index type (`null` to `Model | null`, `'a' | 'b'` to `string`), and calling
+ * that a clash would send a schema the interface expresses perfectly well to an
+ * alias - which for a recursive dictionary does not compile (TS2456).
+ *
+ * @param propSchema - The named property's schema
+ * @param additionalProperties - The additional-property schema
+ * @returns True when the two are primitives of different types
+ */
+function clashesWithIndexSignature(
+  propSchema: Schema | Reference,
+  additionalProperties: Schema | Reference,
+): boolean {
+  const propType = plainPrimitiveType(propSchema);
+  const additionalType = plainPrimitiveType(additionalProperties);
+  return (
+    propType !== undefined &&
+    additionalType !== undefined &&
+    propType !== additionalType
+  );
+}
+
 export class TypeGenerator implements Generator {
   constructor(
     private readonly modelInfo: ModelInfo,
@@ -207,42 +260,31 @@ export class TypeGenerator implements Generator {
    * signature.
    *
    * An interface may only carry a named property whose type is assignable to
-   * its index signature (TS2411), which an optional property never is - its
-   * `undefined` alone breaks the rule. A required one is when it repeats the
-   * additional-property type, and without a type checker that is the only case
-   * we can prove, so any other required property sends the schema to the
-   * intersection too.
+   * its index signature (TS2411). An optional property never is - its
+   * `undefined` alone breaks the rule - so it always takes the intersection.
    *
-   * The interface is kept wherever it does compile because only an interface
-   * may reference itself through an index signature: a type alias that reaches
-   * itself through `Record` is circular (TS2456), which is exactly what a
-   * dictionary of its own type generates.
+   * A required property may or may not be, and without a type checker only a
+   * clash between two plain primitives can be PROVEN, so that is the only one
+   * that moves. Everything else keeps the interface, because an interface is
+   * the only form that can reference itself through an index signature: an
+   * alias reaching itself through `Record` is circular (TS2456), which is what
+   * a dictionary of its own type would generate. Keeping the interface
+   * wherever the clash is unproven also means this rule never breaks a schema
+   * that compiled before it.
    *
    * @param schema - The object schema to represent
    * @returns True when the schema needs the intersection form
    */
   private requiresAdditionalPropertiesIntersection(schema: Schema): boolean {
-    if (typeof schema.additionalProperties !== 'object') {
-      return false;
-    }
-    const properties = Object.entries(schema.properties ?? {});
-    if (properties.length === 0) {
+    const additionalProperties = schema.additionalProperties;
+    if (typeof additionalProperties !== 'object') {
       return false;
     }
     const declaredRequired = new Set(schema.required ?? []);
-    if (properties.some(([name]) => !declaredRequired.has(name))) {
-      return true;
-    }
-    // Resolved in the order the declarations are emitted, so deciding the
-    // representation cannot reorder the imports a reference pulls in.
-    const propertyTypes = properties.map(([, propSchema]) =>
-      this.resolveType(propSchema),
-    );
-    const additionalType = this.resolveAdditionalPropertyType(schema);
-    return (
-      // An `any` index signature accepts every property type.
-      additionalType !== 'any' &&
-      propertyTypes.some(type => type !== additionalType)
+    return Object.entries(schema.properties ?? {}).some(
+      ([name, propSchema]) =>
+        !declaredRequired.has(name) ||
+        clashesWithIndexSignature(propSchema, additionalProperties),
     );
   }
 
