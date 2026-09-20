@@ -206,21 +206,21 @@ export class TypeGenerator implements Generator {
    * Chooses the intersection representation over an interface with an index
    * signature.
    *
-   * This reads the DECLARED `required` rather than the effective set: an
-   * interface may only carry a named property whose type is assignable to its
-   * index signature, so letting the read-model rule promote a property must
-   * not silently switch the model to a form that no longer compiles (TS2411).
+   * An interface may only carry a named property whose type is assignable to
+   * its index signature (TS2411), which no optional property ever is and a
+   * required one only is by coincidence of the two schemas. Rather than decide
+   * assignability per property - and rather than let the read-model rule flip
+   * the representation by promoting a property - ANY named property beside a
+   * typed `additionalProperties` sends the schema to the intersection form,
+   * which always compiles.
    *
    * @param schema - The object schema to represent
    * @returns True when the schema needs the intersection form
    */
   private requiresAdditionalPropertiesIntersection(schema: Schema): boolean {
-    if (typeof schema.additionalProperties !== 'object') {
-      return false;
-    }
-    const declaredRequired = new Set(schema.required ?? []);
-    return Object.keys(schema.properties ?? {}).some(
-      name => !declaredRequired.has(name),
+    return (
+      typeof schema.additionalProperties === 'object' &&
+      Object.keys(schema.properties ?? {}).length > 0
     );
   }
 

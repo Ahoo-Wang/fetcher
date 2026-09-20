@@ -872,6 +872,74 @@ describe('required additional property constraints', () => {
     },
   );
 
+  it.each([false, true])(
+    'keeps required properties out of a conflicting index signature (nested: %s)',
+    nested => {
+      // An interface may not carry a `string` property beside a `number` index
+      // signature (TS2411), so a schema with any named property takes the
+      // intersection form however the document declares that property.
+      const schema: Schema = {
+        type: 'object',
+        required: ['name'],
+        properties: { name: { type: 'string' } },
+        additionalProperties: { type: 'number' },
+      };
+      const value = nested ? 'model.value' : 'model';
+      const { file, diagnostics } = generateModel(
+        nested
+          ? {
+              type: 'object',
+              required: ['value'],
+              properties: { value: schema },
+            }
+          : schema,
+        `
+          declare const model: Model;
+          const name: string = ${value}.name;
+          const extra: number = ${value}.other;
+          // @ts-expect-error TypeScript cannot exempt a named property from the
+          // index signature, so no literal satisfies both halves of a schema
+          // whose additionalProperties contradict it
+          const literal: Model = ${nested ? "{ value: { name: 'name' } }" : "{ name: 'name' }"};
+        `,
+      );
+      expect(diagnostics).toEqual([]);
+      expect(file.getFullText()).toContain('globalThis.Record<string, number>');
+    },
+  );
+
+  it.each([false, true])(
+    'admits values when a required property agrees with the index signature (nested: %s)',
+    nested => {
+      const schema: Schema = {
+        type: 'object',
+        required: ['name'],
+        properties: { name: { type: 'string' } },
+        additionalProperties: { type: 'string' },
+      };
+      const wrap = (object: string) =>
+        nested ? `{ value: ${object} }` : object;
+      expect(
+        generateModel(
+          nested
+            ? {
+                type: 'object',
+                required: ['value'],
+                properties: { value: schema },
+              }
+            : schema,
+          `
+            const valid: Model = ${wrap("{ name: 'name', extra: 'value' }")};
+            // @ts-expect-error name stays required
+            const missing: Model = ${wrap("{ extra: 'value' }")};
+            // @ts-expect-error additional properties still reject numbers
+            const wrong: Model = ${wrap("{ name: 'name', extra: 1 }")};
+          `,
+        ).diagnostics,
+      ).toEqual([]);
+    },
+  );
+
   it.each([false, true, undefined])(
     'respects boolean/default additionalProperties: %s',
     additionalProperties => {
