@@ -179,13 +179,16 @@ while the string index keeps the additional-property type without adding
 `undefined`. A TypeScript index signature constrains the declared keys too, so
 an interface may only carry a named property assignable to it (TS2411), and an
 optional property never is. A required one usually is, so it keeps the
-interface unless the two are plain primitives of different types - the one
-clash provable without a type checker, and the one that stops an interface
-compiling. `null` beside `Model | null`, or `'a' | 'b'` beside `string`, is not
-a clash. Keeping the interface wherever the clash is unproven is what lets a
-dictionary of its own type generate at all: only an interface may reference
-itself through an index signature, an alias reaching itself through `Record`
-being circular (TS2456). Other plain object schemas continue generating
+interface unless the clash can be proven off the schemas: against an index type
+that resolves to a primitive, a property that resolves to a different
+primitive, to an object or to an array - through references as well. Anything
+undecided stays: an enum narrows the primitive it sits beside (`'a' | 'b'`
+against `string`) and a composition may admit it (`null` against
+`Model | null`). The index type must resolve to a primitive for any of this,
+which is what lets a dictionary of its own type generate at all: only an
+interface may reference itself through an index signature, an alias reaching
+itself through `Record` being circular (TS2456). A property may reference the
+model freely, an object member defers. Other plain object schemas continue generating
 interfaces. Neither form expresses the JSON Schema case where a declared
 property's type is incompatible with `additionalProperties`: the alias declares
 and reads correctly but admits no object literal, since TypeScript cannot

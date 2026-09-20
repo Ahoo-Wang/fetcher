@@ -947,6 +947,54 @@ describe('required additional property constraints', () => {
   );
 
   it.each([
+    ['an array', { type: 'array', items: { type: 'string' } } as Schema],
+    [
+      'an inline object',
+      { type: 'object', properties: { id: { type: 'string' } } } as Schema,
+    ],
+  ])(
+    'moves a required property out of a primitive index signature: %s',
+    (_, property) => {
+      // Against a primitive index an object and an array are as incompatible
+      // as a different primitive is (TS2411), and the index type stays a
+      // primitive, so the alias cannot reach itself through `Record`.
+      const schema: Schema = {
+        type: 'object',
+        required: ['value'],
+        properties: { value: property },
+        additionalProperties: { type: 'string' },
+      };
+      const { file, diagnostics } = generateModel(
+        schema,
+        "const valid: Model = { value: undefined as any, extra: 'text' };",
+        { schemas: { Model: schema } },
+      );
+      expect(diagnostics).toEqual([]);
+      expect(file.getTypeAliasOrThrow('Model').getText()).toContain(
+        'globalThis.Record<string, string>',
+      );
+    },
+  );
+
+  it('keeps a self-referential property beside a primitive index signature', () => {
+    // The property may reference the model, an object member defers - it is
+    // the index type that must not lead back to the alias.
+    const schema: Schema = {
+      type: 'object',
+      required: ['child'],
+      properties: { child: { $ref: '#/components/schemas/Model' } },
+      additionalProperties: { type: 'string' },
+    };
+    const { file, diagnostics } = generateModel(schema, '', {
+      schemas: { Model: schema },
+    });
+    expect(diagnostics).toEqual([]);
+    expect(file.getTypeAliasOrThrow('Model').getText()).toContain(
+      'globalThis.Record<string, string>',
+    );
+  });
+
+  it.each([
     [
       'a null property against a nullable dictionary of itself',
       { type: 'null' } as Schema,
