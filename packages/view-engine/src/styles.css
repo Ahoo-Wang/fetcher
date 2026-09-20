@@ -208,6 +208,8 @@
  * actually gave us and writes the difference into these four, so the surface
  * lands on the viewport either way rather than on the ancestor.
  *
+ * The surface itself never scrolls: it is a definite-height flex box whose
+ * parts each take their share, and what scrolls is the result.
  * `overscroll-behavior: contain` stops a scroll that reaches its end from
  * being handed to the page underneath — which is locked while this is open
  * and has nowhere to go with it.
@@ -223,8 +225,6 @@
   max-width: none;
   max-height: none;
   border-radius: 0;
-  /* The surface itself never scrolls: it is a definite-height flex box whose
-     parts each take their share. What scrolls is the result. */
   overflow: hidden;
   overscroll-behavior: contain;
 }
