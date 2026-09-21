@@ -31,3 +31,6 @@ packages/view-engine/src/ui/lib/
 # Byte-for-byte generator snapshots, compared against ts-morph's own output by
 # the e2e test; reformatting them would fail every regeneration.
 packages/generator/expected/
+
+# Vendored agent skills (copied from npx skills add; kept verbatim so updates diff cleanly)
+.claude/skills/
