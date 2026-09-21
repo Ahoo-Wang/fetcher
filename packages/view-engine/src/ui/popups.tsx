@@ -195,19 +195,19 @@ const TOOLTIP_ARROW_CLASS =
  * a close button: an alert dialog asks a question with a cost, and the answer
  * is one of the two in the footer rather than a corner that dismisses it.
  *
- * Its backdrop is the one part of this copy that is not the registry's as it
- * ships, and both departures are about the same thing: two of the three
- * questions this draws open on **top of another dialog** — a delete and its
- * second confirmation are raised from a row of the view manager, which is
- * itself a `Dialog` over a dimmed page.
+ * Three things here are not the registry's as it ships, and all three are
+ * about the same fact: two of the questions this draws open on **top of
+ * another dialog** — a delete and its second confirmation are raised from a
+ * row of the view manager, which is itself a `Dialog` over a dimmed page.
  *
- * It is `forceRender`, because Base UI does not render a nested backdrop
- * unless asked; without it the confirmation opened with no dimming of its
- * own and the list behind it never moved. And it dims at
+ * The backdrop is `forceRender`, because Base UI does not render a nested
+ * backdrop unless asked; without it the confirmation opened with no dimming
+ * of its own and the list behind it never moved. It dims at
  * `ALERT_DIALOG_BACKDROP_DIM` rather than the registry's 10%, because 10%
  * over a page that is already dimmed 10% is 19% — the confirmation read as a
  * second white card dropped into the list rather than as the one thing being
- * asked.
+ * asked. And the card itself carries `ALERT_DIALOG_RAISED`, which is what
+ * separates the two layers where a scrim cannot.
  */
 export function AlertDialogContent({
   className,
