@@ -79,7 +79,6 @@
 - **P-04 多值录入框**：chips 后的录入框无 placeholder、无 `inputMode`；文档说的「添加按钮」不存在。判据：placeholder + `inputMode=decimal`；文档删掉按钮那半句。落点：`src/ui/filter/inputs/chips.tsx`。
 - **P-05 工具栏左端**：「清除选择」是 ghost，读起来像标签不像按钮。判据：outline，或做成徽章旁的 ✕ 图标按钮。落点：`src/ui/ResultToolbar.tsx`。
 - **P-07 筛选托盘／高级**：高级模式托盘约 620px 高，800×900 上结果整个掉出首屏。判据：封顶（`max-h-[40vh] overflow-auto`）或多条件时默认折起内层分组。落点：`src/ui/FilterPanel.tsx`、[ui/README.md#filterpanel-的布局](ui/README.md#filterpanel-的布局)。
-- **P-08 收起侧栏后的标题**：定义名 16→14px、视图名 16→13px，两级标题被压成一级半。判据：`definition-title` 16/600，切换器 14/500。落点：`src/ui/ViewHeader.tsx`。
 - **P-09 标题栏分隔线**：1×16px、`--border` 约 1.2:1 基本看不见。判据：提到 20–24px 用 `--input`，或用间距说话不画线。落点：`src/ui/ViewHeader.tsx`。
 - **P-10 已应用条／徽章**：outline 徽章的边是 `--border`（≈1.2:1），表内徽章已改 `--input`，这里没改。判据：`ToneBadge` outline 档换 `--input`。落点：`src/ui/variants.tsx`。
 - **P-11 表格／宽屏**：四列表在 1600 下金额列 547px。判据：表 `max-width` 或末尾一个吃余量的空列。落点：`src/ui/RecordTable.tsx`、[ui/record.md](ui/record.md)。
