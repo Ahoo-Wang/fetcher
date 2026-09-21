@@ -297,7 +297,10 @@ export function ColumnSettings({
           </p>
         )}
 
-        <div className="-mx-2.5 flex min-h-0 flex-1 flex-col overflow-y-auto px-2.5">
+        <div
+          data-slot="column-list"
+          className="-mx-2.5 flex min-h-0 flex-1 flex-col overflow-y-auto px-2.5"
+        >
           {listed.length === 0 ? (
             // Nothing matched, which is what `Empty` is for — the same shape
             // and the same sentence the field picker shows.
