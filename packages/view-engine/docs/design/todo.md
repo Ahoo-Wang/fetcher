@@ -104,8 +104,6 @@
   或新增的一条套件钉住嵌套时 `useSurfaceTheme` 与 `dark:` 的实际取值。落点：
   `src/ui/ViewSurface.tsx`、[ui/README.md](ui/README.md)、[decisions.md](decisions.md)。
 
-- **删除 `FieldDefinition.editor`（D17-11）**——为什么：声明了却全树无人读，看起来像合同却不是。判据：从 `src/model/field.ts` 删除该成员与 [model.md](model.md) 里的说明，`validateDefinition` 对带着它的旧定义报一条 warning（`definition.field.editor-removed`，中英）而不是拒绝；`test/model*`／`test/validateDefinition*` 各一条。落点：`src/model/`、`src/runtime/validateDefinition.ts`、[model.md](model.md)。
-
 ## 功能（legacy 形态）
 
 - **隐藏字段排不了序**——为什么：配置只记已显示的列，所以列设置里隐藏的那几行没有顺序可拖，勾上之后一律落在中间区末尾；想把一个字段放到第三列，得先勾上再拖一次。判据：想清楚"隐藏字段的位置"要不要进配置（这是一个模型问题，先在 [decisions.md](decisions.md) 里给结论），若要，则 `table.columns` 增加 `hidden?: true` 一类的表达，`projectRecord` 跳过它们，列设置对隐藏行照常开放拖拽。落点：[model.md](model.md)、`src/record/project.ts`、`src/ui/columns/rows.ts`。
