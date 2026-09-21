@@ -18,6 +18,12 @@ import { ExternalLinkIcon, ImageOffIcon } from 'lucide-react';
 import type { DashboardContentPanel } from '../model/index.js';
 import { isSafeContentUrl } from '../dashboard/index.js';
 import { useViewMessages } from './MessagesProvider.js';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+} from './components/empty.js';
 import { TEXT_UI } from './layout.js';
 import { cn } from 'cn';
 
@@ -145,18 +151,24 @@ export function ImagePanel({
   const [failed, setFailed] = useState(false);
   const messages = useViewMessages();
 
+  // The same shape every other panel says nothing with: a picture that did
+  // not arrive is an empty state, and `Empty` is what this package draws one
+  // with (`DashboardGrid` already does, twice). There is no title beside the
+  // description, because the `alt` the author wrote is the only wording there
+  // is, and repeating "This image could not be loaded" above it would say the
+  // failure twice.
   if (failed || !isSafeContentUrl(src))
     return (
-      <div
-        data-slot="image-panel-placeholder"
-        className={cn(
-          'text-muted-foreground flex h-full flex-col items-center justify-center gap-2',
-          TEXT_UI,
-        )}
-      >
-        <ImageOffIcon className="size-6" aria-hidden />
-        <span>{alt ?? messages.label('label.image.failed')}</span>
-      </div>
+      <Empty data-slot="image-panel-placeholder" className="h-full p-4">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <ImageOffIcon />
+          </EmptyMedia>
+          <EmptyDescription>
+            {alt ?? messages.label('label.image.failed')}
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
 
   const image = (
@@ -167,11 +179,10 @@ export function ImagePanel({
       loading="lazy"
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
-      className={
-        fit === 'cover'
-          ? 'h-full w-full object-cover'
-          : 'h-full w-full object-contain'
-      }
+      className={cn(
+        'h-full w-full',
+        fit === 'cover' ? 'object-cover' : 'object-contain',
+      )}
     />
   );
 
