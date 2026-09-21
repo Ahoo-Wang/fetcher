@@ -20,6 +20,19 @@ import { FilterValueEditor, ViewSurface } from '../src/ui/index.js';
 
 afterEach(cleanup);
 
+/**
+ * A bound as the trigger reads it back: through the surface's own formatter,
+ * and a wall-clock string as written — which is the rule `displayValue`
+ * follows for a table cell and an applied badge alike.
+ */
+function onSurface(utc: number, withTime: boolean): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    ...(withTime ? { timeStyle: 'medium' as const } : {}),
+    timeZone: 'UTC',
+  }).format(utc);
+}
+
 /** The clock beside the calendar, by the name its own label gives it. */
 function timeBox(label: string): HTMLInputElement {
   return screen.getByLabelText(label) as HTMLInputElement;
@@ -556,9 +569,8 @@ describe('FilterValueEditor', () => {
     } as unknown as FilterValue);
 
     // The trigger reads the time back, because one was given.
-    const at = new Date(2026, 8, 16, 9, 30, 0);
     expect(screen.getByLabelText('amount').textContent).toContain(
-      at.toLocaleString(),
+      onSurface(Date.UTC(2026, 8, 16, 9, 30), true),
     );
 
     const user = userEvent.setup();
@@ -588,7 +600,7 @@ describe('FilterValueEditor', () => {
 
     // A day alone reads as a day: no 12:00:00 AM nobody chose.
     expect(screen.getByLabelText('amount').textContent).toContain(
-      new Date(2026, 8, 20).toLocaleDateString(),
+      onSurface(Date.UTC(2026, 8, 20), false),
     );
 
     const user = userEvent.setup();
@@ -664,17 +676,27 @@ describe('FilterValueEditor', () => {
     expect(timeBox('To time').disabled).toBe(true);
   });
 
-  /** A field without a time of day gets no clock beside its calendar. */
-  it('offers no time of day on a plain date field', async () => {
-    editor({ input: 'date', withTime: false }, {
+  /**
+   * A field without a time of day gets no clock — and keeps none. A bound an
+   * older editor stored as an instant still shows the day it names, but the
+   * time inside it has no control and must not be written back invisibly:
+   * that would leave a plain date field asking for midnight where the day
+   * itself is the condition.
+   */
+  it('offers no time of day on a plain date field, and keeps none', async () => {
+    const { changes } = editor({ input: 'date', withTime: false }, {
       type: 'absolute',
-      from: '2026-09-20',
+      from: new Date(2026, 8, 16, 9, 30).toISOString(),
     } as unknown as FilterValue);
 
     const user = userEvent.setup();
     await user.click(screen.getByLabelText('amount'));
-    await screen.findByRole('button', { name: /September 20/ });
+    await user.click(
+      await screen.findByRole('button', { name: /September 20/ }),
+    );
+
     expect(screen.queryByLabelText('Time')).toBeNull();
+    expect(last(changes)).toEqual({ type: 'absolute', from: '2026-09-20' });
   });
 
   /**

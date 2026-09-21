@@ -63,8 +63,8 @@ export function AbsoluteDate({
   const messages = useViewMessages();
   const display = useSurfaceDisplay();
   const blank = messages.label('label.date.pick');
-  const from = readBound(value.from);
-  const to = readBound(value.to);
+  const from = readBound(value.from, withTime);
+  const to = readBound(value.to, withTime);
 
   /**
    * One submission for the whole control: whichever half moved, the leaf is
@@ -247,15 +247,26 @@ const WALL_CLOCK = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2})(?::(\d{2}))?)?$/;
  * 30th. An instant that names its own offset — what this editor used to
  * store, and what a host's own config may hold — is shown on the local
  * clock, so the day and the time are the ones the user sees beside it.
+ *
+ * A field that carries no time of day has none whatever its stored string
+ * says: there is no control for it, so keeping one would write it back
+ * invisibly, and a plain date field would come out of this editor asking for
+ * midnight instead of for the day.
  */
-function readBound(text?: string): DayTime {
+function readBound(text: string | undefined, withTime: boolean): DayTime {
   if (!text) return { day: '', time: '' };
   const wall = WALL_CLOCK.exec(text);
-  if (wall)
-    return {
-      day: wall[1],
-      time: wall[2] === undefined ? '' : `${wall[2]}:${wall[3] ?? '00'}`,
-    };
+  const read = wall
+    ? {
+        day: wall[1],
+        time: wall[2] === undefined ? '' : `${wall[2]}:${wall[3] ?? '00'}`,
+      }
+    : instantAt(text);
+  return withTime ? read : { day: read.day, time: '' };
+}
+
+/** An instant that names its own offset, on the local clock. */
+function instantAt(text: string): DayTime {
   const parsed = new Date(text);
   if (Number.isNaN(parsed.getTime())) return { day: '', time: '' };
   return { day: dayOf(parsed), time: timeOf(parsed) };

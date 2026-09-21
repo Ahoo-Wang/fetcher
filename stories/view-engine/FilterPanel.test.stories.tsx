@@ -155,11 +155,19 @@ export const WithTime: Story = {
     await userEvent.keyboard('{Escape}');
 
     // The trigger reads the bound back with the time on the start edge and
-    // without one on the end, in the browser's own writing.
+    // without one on the end, through the surface's own formatter: a
+    // wall-clock string names a time on a clock rather than a moment, so it
+    // is shown as written whatever zone the browser is in.
+    const shown = (utc: number, withTime: boolean) =>
+      new Intl.DateTimeFormat('zh-CN', {
+        dateStyle: 'medium',
+        ...(withTime ? { timeStyle: 'medium' as const } : {}),
+        timeZone: 'UTC',
+      }).format(utc);
     await waitFor(() =>
       expect(trigger.textContent).toBe(
-        `${new Date(2026, 8, 15, 15, 30, 0).toLocaleString()} – ` +
-          new Date(2026, 8, 17).toLocaleDateString(),
+        `${shown(Date.UTC(2026, 8, 15, 15, 30), true)} – ` +
+          shown(Date.UTC(2026, 8, 17), false),
       ),
     );
 
@@ -167,16 +175,8 @@ export const WithTime: Story = {
       await canvas.findByRole('button', { name: zhCN['label.filter.apply'] }),
     );
 
-    // And so does the applied badge, in the surface's language: a bound with
-    // a time of day says it, one without stays a day. A wall-clock string
-    // names a time on a clock rather than a moment, so it is shown as
-    // written whatever zone the browser is in.
-    const shown = (utc: number, withTime: boolean) =>
-      new Intl.DateTimeFormat('zh-CN', {
-        dateStyle: 'medium',
-        ...(withTime ? { timeStyle: 'medium' as const } : {}),
-        timeZone: 'UTC',
-      }).format(utc);
+    // And the applied badge says the same: a bound with a time of day says
+    // it, one without stays a day.
     const applied = canvas.getByRole('region', {
       name: zhCN['label.applied.title'],
     });
