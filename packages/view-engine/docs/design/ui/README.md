@@ -73,9 +73,9 @@
 
 ## 版式：三块、一套间距、一种选项控件
 
-三条规则，后来的改动按它们判。落到代码上是 `ui/layout.ts` 一处（`SPACE`、`SURFACE`、`SEGMENTED`），不是各处手写的 class。
+三条规则，后来的改动按它们判。落到代码上是 `ui/layout.ts` 一处（`SPACE`、`TRAY`、`SEGMENTED`），不是各处手写的 class。
 
-- **主列是三块，不是一摞行**。视图头（identity + 保存 + 视图级控件）是 **banner**：`border-b` 划一条线，不做卡片——给"说明这是哪一页"的那一行套个卡片，等于给整页套卡片。条件区是一块**托盘**（`TRAY`：`rounded-lg bg-muted/40 p-3`，一层浅色底、不加边——条件 pill 才是带边的东西，托盘再加边就是框套框）；结果块**没有卡片**，表格通到块的边缘（D12）。块只在有内容时才存在：空卡片是一个"这儿有东西"的空头承诺。这条对结果块同样成立——分析视图跑之前既没有结果、也没有已应用条件条、也没有状态条，三样都不画的时候整块就不渲染，而不是留一个空边框。结果块由工作台组合，外壳只给框，`resultSurface={false}` 可以不要那层框——**Dashboard 就不要**，它的结果本来就是一格格面板卡片，再套一层是框里套框。
+- **主列是三块，不是一摞行**。视图头（identity + 保存 + 视图级控件）是 **banner**：`border-b` 划一条线，不做卡片——给"说明这是哪一页"的那一行套个卡片，等于给整页套卡片。条件区是一块**托盘**（`TRAY`：`rounded-lg bg-muted/40 p-3`，一层浅色底、不加边——条件 pill 才是带边的东西，托盘再加边就是框套框）；结果块**没有卡片**，表格通到块的边缘（D12）。块只在有内容时才存在：空卡片是一个"这儿有东西"的空头承诺。这条对结果块同样成立——分析视图跑之前既没有结果、也没有已应用条件条、也没有状态条，三样都不画的时候整块就不渲染，而不是留一个空边框。结果块由工作台组合，外壳只给框——**谁都不套卡片**，仪表盘那一格格面板卡片与记录表的自有边框因此都只有一层。
 - **间距是一把有级差的尺子**，不是到处 `gap-2`：块与块 16px（`SPACE.BLOCKS`）、块内行与行 12px（`SPACE.ROWS`）、行内控件组之间 8px（`SPACE.GROUPS`）、组内 4px（`SPACE.WITHIN`）。分组要看得见，而两块之间的距离若等于两个按钮之间的距离，就没有什么是成组的，眼睛无处落脚。**主列的块间距归外壳**：`WorkbenchShell` 已经把 `SPACE.BLOCKS` 发给 `<main>`，工作台不再往 `className` 里塞自己的 `gap-*`——`cn` 让调用处赢，Record 曾因此把三块压到 8px，比块里的行还紧。vendored 组件自带的、不在尺子上的间距同样在调用处合缝：`FieldGroup` 的 `gap-5`（20px，比块与块的 16 还宽）由 `AnalysisEditor` 以 `className={SPACE.ROWS}` 覆掉，和 `SEGMENTED` 是同一条规矩。（见 test/recordWorkbench.test.tsx 与 test/analysisUi.test.tsx 钉 class，stories/view-engine/ 的 `BlockSpacing`、`EditorRowSpacing` 量真实像素）
 - **互斥选项是一个控件，永远不是一排按钮**。判据按选项的多少与长短走：**≤3 个短选项** → 分段控件（segmented），一圈外框、内部无缝（`SEGMENTED`）；**选项是一句话，或多于三个** → `Select`；**同一职责下的几个动作** → `ButtonGroup`；**一个主动作带几种变体** → 拆分按钮（`SaveActions` 就是）。踩过的坑是 `ToggleGroup variant="outline"`：每一项自带边框、组又给了 gap，读起来就是三个各自独立、碰巧挨着的按钮。vendored 的 `ui/components/**` 不手改，所以缝在调用处合——`className={SEGMENTED}`。筛选的简单／高级已经进了标题栏下拉，分组操作符已经是"满足…"选择器，剩下的两处（结果工具栏的布局、分析编辑器的表／图）都用 `SEGMENTED` 合成一个控件。
 
