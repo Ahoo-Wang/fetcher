@@ -221,8 +221,7 @@ describe('closed loop two', () => {
     return (
       screen
         .getAllByRole('button')
-        .find(button => button.ariaCurrent === 'true')
-        ?.textContent ?? null
+        .find(button => button.ariaCurrent === 'true')?.textContent ?? null
     );
   }
 

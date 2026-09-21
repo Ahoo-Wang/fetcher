@@ -35,11 +35,16 @@ import type {
   ViewPermissions,
 } from '../src/index.js';
 import {
+  cellText,
+  cellValue,
   defaultMessages,
+  displayValue,
   EmbeddedView,
   RecordWorkbench,
+  useSurfaceDisplay,
+  useViewMessages,
 } from '../src/ui/index.js';
-import type { RecordWorkbenchProps } from '../src/ui/index.js';
+import type { RecordCell, RecordWorkbenchProps } from '../src/ui/index.js';
 import { SPACE } from '../src/ui/layout.js';
 import {
   INSTANT,
@@ -1371,8 +1376,7 @@ describe('a RecordWorkbench a host routes', () => {
     return (
       screen
         .getAllByRole('button')
-        .find(button => button.ariaCurrent === 'true')
-        ?.textContent ?? null
+        .find(button => button.ariaCurrent === 'true')?.textContent ?? null
     );
   }
 
@@ -1433,5 +1437,140 @@ describe('a RecordWorkbench a host routes', () => {
 
     await waitFor(() => expect(told).toHaveBeenCalledWith('orders-1'));
     expect(current()).toBe('Mine');
+  });
+});
+
+/**
+ * What a host may change about the result without writing the workbench
+ * itself. One cell nobody else could draw is the commonest reason to walk
+ * away from a default component, and the way back is that the package's own
+ * reading of a value is exported: override the column you mean, and fall
+ * back for the rest.
+ */
+describe('a RecordWorkbench a host draws cells in', () => {
+  function workbench(
+    props: Partial<RecordWorkbenchProps> = {},
+    source: ViewSource = testSource(),
+  ) {
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [mine] }),
+      resolveSource: () => source,
+    });
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+        {...props}
+      />,
+    );
+  }
+
+  /** A host's renderer: its own amount cell, the package's reading for the rest. */
+  function HostCell({ cell }: { cell: RecordCell }) {
+    const messages = useViewMessages();
+    const display = useSurfaceDisplay();
+    if (cell.column.field !== 'amount')
+      return cellValue(cell.value, cell.column, messages, display);
+    return <span data-testid="lamp">{`${cell.value} ●`}</span>;
+  }
+
+  it('draws the cells the host renders, and reads the rest itself', async () => {
+    workbench({ renderCell: cell => <HostCell cell={cell} /> });
+
+    const lamps = await screen.findAllByTestId('lamp');
+    expect(lamps.map(lamp => lamp.textContent)).toEqual(['10 ●', '20 ●']);
+    // Everything the host said nothing about still reads as it always did:
+    // `cellValue` is the fallback, not a stub.
+    expect(screen.getAllByRole('cell').map(cell => cell.textContent)).toContain(
+      'o-1',
+    );
+  });
+
+  it('draws the cards the host renders', async () => {
+    const cards: ViewInstance = {
+      ...mine,
+      config: recordConfig({ layout: 'card' }),
+    };
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [cards] }),
+      resolveSource: () => testSource(),
+    });
+    render(
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+        renderValue={value => <span data-testid="plain">{String(value)}</span>}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('plain').length).toBeGreaterThan(0),
+    );
+  });
+
+  /**
+   * A surface with nothing to do with a selection shows no checkboxes — in
+   * either layout, because a card is a row folded out and switching layout
+   * must not hand the choice back.
+   */
+  it('takes the selection away when the host offers nothing to do with it', async () => {
+    workbench({ selectable: false });
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    expect(screen.queryByRole('checkbox', { name: /select/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cards' }));
+
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="record-cards"]'),
+      ).not.toBeNull(),
+    );
+    expect(screen.queryByRole('checkbox', { name: /select/i })).toBeNull();
+  });
+
+  it("says the host's own words when there is nothing to show", async () => {
+    workbench(
+      {
+        emptyTitle: 'Nothing is waiting to ship',
+        emptyDescription: 'Every order has left the warehouse.',
+      },
+      testSource({
+        paged: vi.fn(() => Promise.resolve({ total: 0, list: [] })),
+      }),
+    );
+
+    expect(await screen.findByText('Nothing is waiting to ship')).toBeDefined();
+    expect(
+      screen.getByText('Every order has left the warehouse.'),
+    ).toBeDefined();
+  });
+
+  /**
+   * All three come off the package entry, not out of a deep path: a host
+   * handed `renderCell` and no way to reach the reading it falls back to has
+   * been handed a choice between its own cell and every other cell.
+   */
+  it('exports the whole reading from the entry, not only the node one', () => {
+    expect(typeof cellValue).toBe('function');
+    expect(typeof cellText).toBe('function');
+    const shown = displayValue(
+      INSTANT,
+      { kind: 'datetime' },
+      { locale: 'en-US', timeZone: ZONE },
+    );
+    // The same Intl call, not a literal: what is asserted is the zone and
+    // the language it reads in, not the ICU data a Node release ships.
+    expect(shown).toBe(
+      new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'medium',
+        timeZone: ZONE,
+      }).format(INSTANT),
+    );
   });
 });

@@ -32,7 +32,7 @@ import { FilterPanel } from './FilterPanel.js';
 import { FilterModes, filterModeLabel } from './filter/FilterModes.js';
 import { RecordCards } from './RecordCards.js';
 import { RecordPagination } from './RecordPagination.js';
-import { RecordTable } from './RecordTable.js';
+import { RecordTable, type RecordCell } from './RecordTable.js';
 import { NO_RELEASE, type ReleasedPins } from './record/pinCap.js';
 import { ResultToolbar } from './ResultToolbar.js';
 import { RowActions } from './RowActions.js';
@@ -101,6 +101,32 @@ export interface RecordWorkbenchProps {
    */
   actions?: RecordActionSlots;
   /**
+   * Renders one cell of the table; the default reads it as the column says.
+   *
+   * It is the smallest thing a host can change and keep everything else —
+   * a business object with one cell nobody else could draw should not cost
+   * the whole workbench. Fall back to `cellValue` for the cells it has
+   * nothing special to say about, and enum labels, the surface's zone and
+   * the field's number format all keep working.
+   */
+  renderCell?(cell: RecordCell): ReactNode;
+  /** The same, for the card layout, which lays a value out without a column. */
+  renderValue?(value: unknown): ReactNode;
+  /**
+   * Whether rows can be picked. On by default; a workbench whose host offers
+   * nothing to do with a selection turns it off rather than showing a column
+   * of checkboxes that lead nowhere.
+   */
+  selectable?: boolean;
+  /**
+   * The empty result in the host's own words — "no orders are waiting" says
+   * more than "no rows". The way out of it is the workbench's either way:
+   * conditions in force are cleared, and with none the condition editor
+   * opens.
+   */
+  emptyTitle?: string;
+  emptyDescription?: string;
+  /**
    * Told whenever an export has been handed to the browser — the file's name,
    * its contents and how many rows of which scope it holds. A host that
    * audits what leaves the application reads it; nothing here needs it, and
@@ -142,6 +168,11 @@ export function RecordWorkbench({
   expandable,
   onRenderFailure,
   actions,
+  renderCell,
+  renderValue,
+  selectable,
+  emptyTitle,
+  emptyDescription,
   onExported,
 }: RecordWorkbenchProps) {
   // The host's wording, resolved here rather than read off the provider:
@@ -330,11 +361,17 @@ export function RecordWorkbench({
             {table.layout === 'card' ? (
               <RecordCards
                 table={table}
+                renderValue={renderValue}
+                selectable={selectable}
                 rowActions={bindRow(row, record, table.refresh)}
               />
             ) : (
               <RecordTable
                 table={table}
+                renderCell={renderCell}
+                selectable={selectable}
+                emptyTitle={emptyTitle}
+                emptyDescription={emptyDescription}
                 rowActions={bindRow(row, record, table.refresh)}
                 hasConditions={hasConditions}
                 onEmptyAction={emptyAction}
