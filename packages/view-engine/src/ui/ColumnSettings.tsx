@@ -48,6 +48,7 @@ import {
   type ColumnSettingRow,
 } from './columns/rows.js';
 import { useViewMessages } from './MessagesProvider.js';
+import { ToolbarItem } from './toolbar.js';
 
 /**
  * One sortable group per area, so a drag cannot cross one: what is held on
@@ -164,10 +165,17 @@ export function ColumnSettings({
       <Tooltip>
         <TooltipTrigger
           render={
-            <PopoverTrigger
-              data-control="columns"
-              aria-label={messages.label('label.toolbar.columns')}
-              render={<Button variant="outline" size="icon-sm" />}
+            // A toolbar item where a toolbar is around it, an ordinary
+            // button anywhere else: the bar owns the roving focus order and
+            // this is one of the stops in it.
+            <ToolbarItem
+              render={
+                <PopoverTrigger
+                  data-control="columns"
+                  aria-label={messages.label('label.toolbar.columns')}
+                  render={<Button variant="outline" size="icon-sm" />}
+                />
+              }
             />
           }
         >

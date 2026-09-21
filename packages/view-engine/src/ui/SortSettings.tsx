@@ -65,6 +65,7 @@ import {
 import type { MessageKey } from './messages.js';
 import { useViewMessages, type MessageFormatters } from './MessagesProvider.js';
 import { TEXT_UI } from './layout.js';
+import { ToolbarItem } from './toolbar.js';
 import { cn } from 'cn';
 
 /**
@@ -165,14 +166,21 @@ export function SortSettings({
 
   return (
     <Popover>
-      <PopoverTrigger
-        data-control="sort"
-        // Bordered like every other function on the bar (D12 Ⅳ), and the one
-        // that keeps its words: what it says is the sort in force.
-        render={<Button variant="outline" size="sm" />}
+      {/* A toolbar item where a toolbar is around it, an ordinary button
+          anywhere else: the bar owns the roving focus order and this is one
+          of the stops in it. */}
+      <ToolbarItem
+        render={
+          <PopoverTrigger
+            data-control="sort"
+            // Bordered like every other function on the bar (D12 Ⅳ), and the
+            // one that keeps its words: what it says is the sort in force.
+            render={<Button variant="outline" size="sm" />}
+          />
+        }
       >
         <SortSummary sort={table.sort} labelOf={labelOf} messages={messages} />
-      </PopoverTrigger>
+      </ToolbarItem>
       <PopoverContent align="end" className="w-80">
         <PopoverHeader>
           <PopoverTitle>{messages.label('label.sort.title')}</PopoverTitle>
