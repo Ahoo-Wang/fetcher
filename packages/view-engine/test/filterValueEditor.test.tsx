@@ -20,6 +20,11 @@ import { FilterValueEditor, ViewSurface } from '../src/ui/index.js';
 
 afterEach(cleanup);
 
+/** The clock beside the calendar, by the name its own label gives it. */
+function timeBox(label: string): HTMLInputElement {
+  return screen.getByLabelText(label) as HTMLInputElement;
+}
+
 /** The last value a controlled editor reported. */
 function last(changes: FilterValue[]): FilterValue {
   return changes[changes.length - 1];
@@ -534,24 +539,142 @@ describe('FilterValueEditor', () => {
     });
   });
 
-  it('stores a moment when the editor carries a time of day', async () => {
+  /**
+   * A `withTime` field's bound is a day and a time of day, both written on a
+   * clock and neither carrying an offset: it is the kernel that reads them,
+   * in the runtime's or the condition's zone. The calendar keeps the time
+   * beside it, so moving the day does not silently drop the hour.
+   *
+   * Storing `toISOString()` pinned local midnight to UTC with a `Z`, which
+   * the kernel rightly takes as one fixed moment — no zone applied, and no
+   * interval reading left for an empty time (D17-1).
+   */
+  it('keeps the day and the time apart, with no offset', async () => {
     const { changes } = editor({ input: 'date', withTime: true }, {
       type: 'absolute',
-      from: '2026-09-16T00:00:00.000Z',
+      from: '2026-09-16T09:30:00',
     } as unknown as FilterValue);
+
+    // The trigger reads the time back, because one was given.
+    const at = new Date(2026, 8, 16, 9, 30, 0);
+    expect(screen.getByLabelText('amount').textContent).toContain(
+      at.toLocaleString(),
+    );
 
     const user = userEvent.setup();
     await user.click(screen.getByLabelText('amount'));
+    expect(timeBox('Time').value).toBe('09:30:00');
     await user.click(
       await screen.findByRole('button', { name: /September 20/ }),
     );
 
-    // A real moment the user picked: local midnight of that day, as an
-    // instant the kernel will not move.
     expect(last(changes)).toEqual({
       type: 'absolute',
-      from: new Date(2026, 8, 20).toISOString(),
+      from: '2026-09-20T09:30:00',
     });
+  });
+
+  /**
+   * An empty time is not midnight: the bound stays the day itself, which the
+   * kernel reads as an interval — `00:00:00.000` as a start, `23:59:59.999`
+   * as an end. So the control writes the day alone until a time is typed,
+   * and emptying the box takes the bound back to the day.
+   */
+  it('adds a time of day to a bound, and takes it off again', async () => {
+    const { changes } = editor({ input: 'date', withTime: true }, {
+      type: 'absolute',
+      from: '2026-09-20',
+    } as unknown as FilterValue);
+
+    // A day alone reads as a day: no 12:00:00 AM nobody chose.
+    expect(screen.getByLabelText('amount').textContent).toContain(
+      new Date(2026, 8, 20).toLocaleDateString(),
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText('amount'));
+    const time = timeBox('Time');
+    expect(time.value).toBe('');
+
+    fireEvent.change(time, { target: { value: '15:30:00' } });
+    expect(last(changes)).toEqual({
+      type: 'absolute',
+      from: '2026-09-20T15:30:00',
+    });
+
+    fireEvent.change(timeBox('Time'), { target: { value: '' } });
+    expect(last(changes)).toEqual({ type: 'absolute', from: '2026-09-20' });
+  });
+
+  /** Seconds are optional in the box; a time without them is on the second. */
+  it('stores a time given without seconds on the whole second', async () => {
+    const { changes } = editor({ input: 'date', withTime: true }, {
+      type: 'absolute',
+      from: '2026-09-20',
+    } as unknown as FilterValue);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText('amount'));
+    fireEvent.change(timeBox('Time'), { target: { value: '15:30' } });
+
+    expect(last(changes)).toEqual({
+      type: 'absolute',
+      from: '2026-09-20T15:30:00',
+    });
+  });
+
+  /** Both ends of a range get their own clock, and one control submits. */
+  it('gives each end of a range its own time of day', async () => {
+    const { changes } = editor(
+      { input: 'dateRange', range: true, withTime: true },
+      {
+        type: 'absolute',
+        from: '2026-09-16',
+        to: '2026-09-20',
+      } as unknown as FilterValue,
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText('amount'));
+    fireEvent.change(timeBox('From time'), { target: { value: '09:00:00' } });
+    expect(last(changes)).toEqual({
+      type: 'absolute',
+      from: '2026-09-16T09:00:00',
+      to: '2026-09-20',
+    });
+
+    fireEvent.change(timeBox('To time'), { target: { value: '18:45:00' } });
+    expect(last(changes)).toEqual({
+      type: 'absolute',
+      from: '2026-09-16T09:00:00',
+      to: '2026-09-20T18:45:00',
+    });
+  });
+
+  /**
+   * A time of day is not a moment until something says which day it is on,
+   * and a blank date condition must not read the clock to invent one.
+   */
+  it('waits for a day before a time of day can be given', async () => {
+    editor({ input: 'dateRange', range: true, withTime: true });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText('amount'));
+    expect(timeBox('From time').disabled).toBe(true);
+    expect(timeBox('To time').disabled).toBe(true);
+  });
+
+  /** A field without a time of day gets no clock beside its calendar. */
+  it('offers no time of day on a plain date field', async () => {
+    editor({ input: 'date', withTime: false }, {
+      type: 'absolute',
+      from: '2026-09-20',
+    } as unknown as FilterValue);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText('amount'));
+    await screen.findByRole('button', { name: /September 20/ });
+    expect(screen.queryByLabelText('Time')).toBeNull();
   });
 
   /**
