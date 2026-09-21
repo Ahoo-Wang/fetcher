@@ -19,8 +19,7 @@ import {
   RotateCcwIcon,
   SaveIcon,
 } from 'lucide-react';
-import type { ViewInstance } from '../model/index.js';
-import type { WriteAction, WriteState } from '../runtime/index.js';
+import type { WriteState } from '../runtime/index.js';
 import type { SaveCommands } from '../react/index.js';
 import { cn } from 'cn';
 import { Badge } from './components/badge.js';
@@ -37,6 +36,7 @@ import { Spinner } from './components/spinner.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { DropdownMenuContent } from './popups.js';
 import { SaveAsDialog } from './SaveAsDialog.js';
+import type { ViewWriteCallbacks } from './WriteOutcome.js';
 
 /**
  * How long the button says a save landed. Long enough to be read, short
@@ -44,28 +44,21 @@ import { SaveAsDialog } from './SaveAsDialog.js';
  */
 const SAVED_FOR = 2500;
 
-export interface SaveActionsProps {
+/**
+ * Two of the group, and only two: this button group saves and copies, so
+ * those are the two landings it can report. Renaming and deleting are the
+ * view manager's, and a recovered write is reported by the line that offered
+ * the recovery — `WriteOutcome`, where {@link ViewWriteCallbacks} is
+ * declared. The whole group used to be threaded through here as well, three
+ * props of it never read: a host wiring `onDeleted` to this component would
+ * have waited for a call that could not come.
+ */
+export interface SaveActionsProps extends Pick<
+  ViewWriteCallbacks,
+  'onSaved' | 'onCreated'
+> {
   commands: SaveCommands;
   title: string;
-  /** Called with the instance a save produced, so a host can open it. */
-  onSaved?(instance: ViewInstance): void;
-  /**
-   * Called only for the instance a *copy* produced. Saving in place and
-   * copying both report through `onSaved`, and only one of them leaves the
-   * user nowhere: the dialog closes, another view opens, and the button that
-   * started it is gone. A host that puts focus somewhere afterwards needs to
-   * tell the two apart, and this is the difference.
-   */
-  onCreated?(instance: ViewInstance): void;
-  /**
-   * Renaming and deleting moved to the view manager, where they act on any
-   * view rather than only the open one. The callbacks stay so a host keeps
-   * one place to learn what landed, wherever it was started from.
-   */
-  onRenamed?(instance: ViewInstance): void;
-  onDeleted?(): void;
-  /** Called when a recovered write (retry, overwrite, reload) landed. */
-  onRecovered?(action: WriteAction): void;
 }
 
 /**
