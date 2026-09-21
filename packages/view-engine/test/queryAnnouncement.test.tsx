@@ -23,6 +23,8 @@ import type { PagedList } from '@ahoo-wang/fetcher-wow';
 import { MemoryViewStore, ViewEngine } from '../src/index.js';
 import type { RecordData } from '../src/index.js';
 import { RecordWorkbench } from '../src/ui/index.js';
+import { defaultMessages } from '../src/ui/messages.js';
+import { querySentence } from '../src/ui/record/queryAnnouncement.js';
 import {
   deferred,
   mine,
@@ -30,6 +32,8 @@ import {
   ROWS,
   testSource,
 } from './fixtures.js';
+import { formattersFor } from './fixtures/columns.js';
+import { recordTableController } from './fixtures/ui.js';
 
 afterEach(cleanup);
 
@@ -69,11 +73,15 @@ describe('what a record query says out loud', () => {
 
     await waitFor(() => expect(announced()).toBe('2 records in all'));
 
-    // Polite, and the only one of its kind on this surface: two of them are
-    // two voices answering the same key (`ui/Announcer.tsx`).
-    const regions = document.querySelectorAll('[aria-live="polite"]');
+    // Polite, and the only announcer on this surface: two of them are two
+    // voices answering the same key (`ui/Announcer.tsx`). The transient
+    // `role="status"` a landed save inserts is not one — it has no
+    // `aria-live` and is read because it appears, not because it changed.
+    const regions = document.querySelectorAll(
+      '[role="status"][aria-live="polite"]',
+    );
     expect(regions).toHaveLength(1);
-    expect(regions[0]?.getAttribute('role')).toBe('status');
+    expect(regions[0]?.getAttribute('data-slot')).toBe('record-announcement');
   });
 
   it('says a query is running, then what came back', async () => {
@@ -104,16 +112,24 @@ describe('what a record query says out loud', () => {
     await waitFor(() => expect(announced()).toBe('Nothing to show'));
   });
 
-  it('counts what arrived when the source gives no total', async () => {
-    render(
-      <RecordWorkbench
-        engine={engineWith(() => Promise.resolve({ list: [...ROWS] }))}
-        definitionId="orders"
-        instanceId="orders-1"
-      />,
-    );
+  /**
+   * A cursor source is a position in one order and never answers with a
+   * total, so the announcement says the one number it holds — the same rule
+   * the pagination bar reads by, so the two can never disagree. Driven
+   * through the controller rather than a workbench: what a source's paging
+   * mode *is* belongs to `recordPagination.test.tsx`.
+   */
+  it('counts what arrived when the source gives no total', () => {
+    const messages = formattersFor(defaultMessages);
 
-    await waitFor(() => expect(announced()).toBe('2 on this page'));
+    expect(
+      querySentence(
+        recordTableController({
+          paging: { mode: 'cursor', nextCursor: 'c-2' },
+        }),
+        messages,
+      ),
+    ).toBe('2 on this page');
   });
 
   it('leaves a failure to the alert that already interrupts', async () => {
