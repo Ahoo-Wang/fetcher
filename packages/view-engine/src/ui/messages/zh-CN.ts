@@ -182,6 +182,7 @@ export const zhCN: ViewMessages = {
   'label.columns.pinned.left': '{field} 已固定到左侧',
   'label.columns.pinned.right': '{field} 已固定到右侧',
   'label.sort.title': '排序',
+  'label.sort.button': '排序：{field} {direction}',
   'label.sort.hint': '先按第一个字段排序，相同时再按下一个。',
   'label.sort.unsorted': '这些行没有指定顺序。',
   'label.sort.asc': '升序',

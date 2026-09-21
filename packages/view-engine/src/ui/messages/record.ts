@@ -161,6 +161,10 @@ export const recordMessages = {
   // whole job is one column; taking a field out of the sort is the header's
   // own `label.sort.none`, which already says exactly that.
   'label.sort.title': 'Sort',
+  // The name of the toolbar's button once something is sorted, where its
+  // words are the sort itself and nothing on it says what it is. Visible
+  // text unchanged: this is the same string said the other way (D12).
+  'label.sort.button': 'Sort: {field} {direction}',
   'label.sort.hint': 'Rows are ordered by the first field, then by the next.',
   'label.sort.unsorted': 'These rows are in no particular order.',
   'label.sort.asc': 'Ascending',
