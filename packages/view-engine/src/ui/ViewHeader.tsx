@@ -37,8 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './components/alert-dialog.js';
-import { DestructiveAction } from './variants.js';
-import { Separator } from './components/separator.js';
+import { DestructiveAction, SectionDivider } from './variants.js';
 import { AUDIENCE_ICON, KIND_ICON } from './kinds.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { Tooltip, TooltipTrigger } from './components/tooltip.js';
@@ -355,9 +354,12 @@ export function ViewHeader({
           className="ml-auto flex shrink-0 items-center gap-2"
         >
           {trailing}
-          {trailing && actions && (
-            <Separator orientation="vertical" className="h-4" />
-          )}
+          {/* The line between two authorships — this package's controls and
+              the host's own actions — and the only divider here that has to
+              be seen at all. It is `SectionDivider` rather than a `Separator`
+              with a colour written on it (D16-8); what it measured before
+              and why it is what it is now are recorded there. */}
+          {trailing && actions && <SectionDivider />}
           {actions}
         </div>
       </div>

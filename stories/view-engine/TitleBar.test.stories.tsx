@@ -16,7 +16,9 @@ import { zhCN } from '@ahoo-wang/fetcher-view-engine/ui';
 import displayMeta, {
   CollapsedSidebar as DisplayCollapsedSidebar,
   NarrowTitleBar as DisplayNarrowTitleBar,
+  WithActions as DisplayWithActions,
 } from './RecordWorkbench.stories.js';
+import { measureFillContrast } from './contrast.js';
 
 /**
  * How the title bar narrows.
@@ -389,3 +391,50 @@ export const CollapsedPathIsTwoLevels: Story = {
     ).toBe('16/600');
   },
 };
+
+/**
+ * 标题栏右端那根竖线看得见，两个主题都算。
+ *
+ * 它分的是两种作者：本包的视图级控件在左，宿主自己的全局动作在右。评审量到
+ * 它是 1×16px 的 `--border`，在这块面的底上 **1.26:1**（暗色 1.77:1）——占着
+ * 位置、许诺了一个分组，却没有人看得见。一条看不见的线不是更克制的分隔，是
+ * 没有分隔，而那段间距照样花掉了。
+ *
+ * 所以改成 `--input`，主题里「这条边就是那个东西」的那一档（两个主题都钉在
+ * ≥3:1），高度 16 → 20px：一条线要能站在它所分的控件旁边，而不是躲在它们中
+ * 间。用间距说话是另一条路，没有走——这一行的尺子只有组内 8px 与组间 8px 两
+ * 档，而标题栏在窄处会换行，16px 的空档读起来像换行的起点而不像边界。
+ *
+ * 量的是层叠之后的真颜色：`Separator` 的线是**底色**不是边框，所以读的是
+ * `measureFillContrast` 而不是 `measureBorderContrast`。
+ */
+const titleBarDivider = (theme: 'light' | 'dark'): Story => ({
+  ...DisplayWithActions,
+  args: { ...DisplayWithActions.args, theme },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole('table');
+    // 两个故事量同一个主题会双双通过而只证明一半，所以先读这块面钉的是哪种。
+    await expect(
+      canvasElement.querySelector('[data-slot="view-surface"]'),
+    ).toHaveAttribute('data-theme', theme);
+
+    const divider = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="view-controls"] [data-slot="separator"]',
+    );
+    await expect(divider, '两端都有东西时才画这根线').not.toBeNull();
+    await expect(divider!.getBoundingClientRect().height).toBe(20);
+
+    const { ratio, colors } = measureFillContrast(divider!);
+    await expect(
+      ratio,
+      `${theme} — ${colors.fill} on ${colors.surface}`,
+    ).toBeGreaterThanOrEqual(NON_TEXT_CONTRAST);
+  },
+});
+
+/** `--input` 是两个主题都钉在 3:1 的那一档（WCAG 1.4.11 的数）。 */
+const NON_TEXT_CONTRAST = 3;
+
+export const TitleBarDividerInLightTheme: Story = titleBarDivider('light');
+export const TitleBarDividerInDarkTheme: Story = titleBarDivider('dark');
