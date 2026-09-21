@@ -214,7 +214,8 @@ export function cellText(
   if (badges) return badges.map(entry => entry.label).join(', ');
   const shown = displayValue(value, field, context);
   if (shown !== undefined) return shown;
-  if (typeof value === 'number') return formatNumber(value, field.numberFormat);
+  if (typeof value === 'number')
+    return formatNumber(value, field.numberFormat, context.locale);
   if (typeof value === 'bigint') return value.toString();
   return valueText(value, messages, field.numberFormat);
 }
