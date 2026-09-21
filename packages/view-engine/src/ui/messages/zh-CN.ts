@@ -515,6 +515,7 @@ export const zhCN: ViewMessages = {
   'label.manage.picked': '已拿起 {title}',
   'label.manage.cancelled': '移动已取消，{title} 留在原处',
   'label.manage.rename': '改名',
+  'label.manage.rename-of': '改名 {title}',
   'label.manage.rename-confirm': '保存标题',
   'label.manage.rename-cancel': '保留原标题',
   'label.manage.delete': '删除',
