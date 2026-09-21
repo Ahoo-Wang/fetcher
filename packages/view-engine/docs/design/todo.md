@@ -108,6 +108,5 @@
 - **A-10 覆盖洞与无合同测试**：`RecordCards` 78% 全包最低、`ColumnResizer` 指针拖动整段未覆盖、`useWorkbench.onRecovered` 从未被调用；`ViewSwitcher` 与 `ExportDialog` 没有直接测试。判据：补五处。落点：`test/`。
 - **A-11 测试质量**：14 处 `waitFor(async …)` 每 50ms 重发 store 请求；七个测试文件在 1200 行绊线的 83–92%；文案目录只查正向，两条死 key。判据：整改 waitFor；拆 `recordTable`／`viewManagerUi`；反向 key 检查。落点：`test/`。
 - **A-12 `display.ts`**：435/500，值显示与已应用条措辞两件事共用一个文件。判据：措辞搬去 `ui/summary.ts`。落点：`src/ui/display.ts`。
-- **A-13 `ViewSource`**：手写的结构等价物，不从 wow 的 `QueryApi` 推导。判据：`Pick<QueryApi,…>` 或架构测试里加一条可赋值断言。落点：`src/runtime/source.ts`、`test/architecture.test.ts`。
 
 ## 小修
