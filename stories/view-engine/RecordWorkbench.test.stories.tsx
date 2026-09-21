@@ -3720,12 +3720,26 @@ async function settled(read: () => string): Promise<void> {
   });
 }
 
-/** Presses Tab until the element has focus, so `:focus-visible` holds. */
+/**
+ * Presses Tab until the element has focus, so `:focus-visible` holds.
+ *
+ * A control inside a `role="toolbar"` is not its own tab stop — the bar is
+ * one stop and the arrows move along it (Base UI's `Toolbar`) — so the keys
+ * pressed here are the keys a keyboard would actually press: Tab as far as
+ * the bar, then ArrowRight to the control.
+ */
 async function tabTo(target: HTMLElement): Promise<void> {
+  const toolbar = target.closest('[role="toolbar"]');
   for (let presses = 0; presses < 80; presses += 1) {
     if (document.activeElement === target) return;
+    if (toolbar?.contains(document.activeElement)) break;
     await userEvent.tab();
   }
+  for (let presses = 0; toolbar && presses < 20; presses += 1) {
+    if (document.activeElement === target) return;
+    await userEvent.keyboard('{ArrowRight}');
+  }
+  if (document.activeElement === target) return;
   throw new Error('Tab never reached the target.');
 }
 
