@@ -151,6 +151,33 @@ export function OrdersPage() {
 
 主题跟随宿主：祖先上带 `.dark` class 即为暗色；给 `ViewSurface` 传 `theme="light"` 或 `theme="dark"` 可以把某一处视图钉住。弹层 portal 到 `<body>` 时带着面从级联里解析出的模式，`.dark` 不必放在 `<html>` 上。
 
+#### 开着哪个视图，与宿主的路由
+
+一个人打开的视图，就是他可以发出去的一条链接。三个工作台因此都收 `instanceId` 与 `onInstanceChange`——进出你的路由的两个方向，`RecordWorkbench`、`AnalysisWorkbench`、`DashboardWorkbench` 契约完全一致。
+
+```tsx
+export function OrdersPage() {
+  // 你的路由给什么都行：path 参数、query、hash。
+  const [view, setView] = useSearchParam('view');
+  return (
+    <RecordWorkbench
+      engine={engine}
+      definitionId="orders"
+      instanceId={view}
+      onInstanceChange={setView}
+    />
+  );
+}
+```
+
+`instanceId` 是受控的，语义照 input 的 `value`：
+
+- **不传**——非受控形态：开着哪个由工作台自己拿着，从用户的有效默认开始；
+- **传了**——一个视图 id，或 `null` 表示那个有效默认：由你说开哪个，此后每一次变化都打开它所指的视图。`null` 是一个值，不是"没有值"；
+- `onInstanceChange(id)` 报的是此刻开着的那个，用同一套说法——`null` 在这里同样指有效默认——所以出来的值可以原样传回去。
+
+它**收敛**而不是**渲染**。视图里装着未保存的草稿，所以推进来的值与侧栏上的一次点击走同一道离开守卫：后动的那一方说话，另一方跟上。若守卫问过而用户选择留下，工作台会把**留下的那个**报回来，你的路由不会停在一个没开着的视图上。完整参照见 `examples/PlainRecordWorkbench.tsx`，连浏览器后退一并覆盖。
+
 #### 定制主题
 
 每个 token 都读一个宿主层变量，并以内置值兜底：在自己的 `:root` 上给亮色设 `--fve-<token>`、给暗色设 `--fve-dark-<token>` 即可，视图根与 Portal 到 `<body>` 的弹层都会读到——不必考虑选择器作用域，也不必考虑样式加载顺序。

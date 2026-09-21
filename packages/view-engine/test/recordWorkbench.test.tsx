@@ -1334,3 +1334,104 @@ describe('the record workbench layout', () => {
     expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 });
+
+/**
+ * The workbench with a host holding which view is open. «一键重开» in a
+ * browser is a link, so the two directions have to exist on the component and
+ * not only in the controller: a route opens a view, and the view the user
+ * picks goes back into the route.
+ */
+describe('a RecordWorkbench a host routes', () => {
+  const other: ViewInstance = { ...mine, id: 'orders-2', title: 'Other' };
+
+  function routed(props: Partial<RecordWorkbenchProps> = {}) {
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [mine, other] }),
+      resolveSource: () => testSource(),
+    });
+    const draw = (overrides: Partial<RecordWorkbenchProps>) => (
+      <RecordWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+        {...props}
+        {...overrides}
+      />
+    );
+    const view = render(draw({}));
+    return {
+      engine,
+      route: (id: string | null) => view.rerender(draw({ instanceId: id })),
+    };
+  }
+
+  /** The current view is the one the sidebar marks. */
+  function current(): string | null {
+    return (
+      screen
+        .getAllByRole('button')
+        .find(button => button.ariaCurrent === 'true')
+        ?.textContent ?? null
+    );
+  }
+
+  it('opens the view the host routed to', async () => {
+    const { route } = routed();
+    await waitFor(() => expect(current()).toBe('Mine'));
+
+    route('orders-2');
+
+    await waitFor(() => expect(current()).toBe('Other'));
+  });
+
+  it('opens the effective default when the route names none', async () => {
+    const { route } = routed({ instanceId: 'orders-2' });
+    await waitFor(() => expect(current()).toBe('Other'));
+
+    route(null);
+
+    // The definition's own view, which wears its audience beside its name.
+    await waitFor(() => expect(current()).toContain('All orders'));
+  });
+
+  it('reports the view the user picked, so the route can follow', async () => {
+    const told = vi.fn();
+    routed({ onInstanceChange: told });
+    await waitFor(() => expect(current()).toBe('Mine'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Other' }));
+
+    await waitFor(() => expect(told).toHaveBeenCalledWith('orders-2'));
+    await waitFor(() => expect(current()).toBe('Other'));
+  });
+
+  /**
+   * A route change is a switch, so it is asked about — and a "stay" leaves
+   * the host's route naming a view that is not on screen, which is why the
+   * workbench then says which one is.
+   */
+  it('asks before a routed switch loses a draft, and says what stayed', async () => {
+    const told = vi.fn();
+    const { route } = routed({ onInstanceChange: told });
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(3));
+
+    fireEvent.click(screen.getByRole('button', { name: /Columns/ }));
+    fireEvent.click(
+      await screen.findByRole('checkbox', { name: 'Show Warehouse' }),
+    );
+    await waitFor(() =>
+      expect(screen.getAllByRole('columnheader')).toHaveLength(4),
+    );
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    route('orders-2');
+    const asked = await screen.findByRole('alertdialog');
+    expect(told).not.toHaveBeenCalled();
+
+    fireEvent.click(within(asked).getByRole('button', { name: 'Stay' }));
+
+    await waitFor(() => expect(told).toHaveBeenCalledWith('orders-1'));
+    expect(current()).toBe('Mine');
+  });
+});

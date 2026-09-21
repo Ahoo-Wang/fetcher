@@ -153,6 +153,33 @@ export function OrdersPage() {
 
 The theme follows the host through a `.dark` class on any ancestor; pass `theme="light"` or `theme="dark"` to `ViewSurface` to pin one view. Popups portalled to `<body>` carry the mode the surface resolved, so the class does not have to sit on `<html>`.
 
+#### Which view is open, and your route
+
+A view somebody opened is a link they can send, so the three workbenches take `instanceId` and `onInstanceChange` — the two directions in and out of your router. `RecordWorkbench`, `AnalysisWorkbench` and `DashboardWorkbench` share the contract exactly.
+
+```tsx
+export function OrdersPage() {
+  // Whatever your router gives you: a param, a search key, a hash.
+  const [view, setView] = useSearchParam('view');
+  return (
+    <RecordWorkbench
+      engine={engine}
+      definitionId="orders"
+      instanceId={view}
+      onInstanceChange={setView}
+    />
+  );
+}
+```
+
+`instanceId` is controlled in the sense `value` is on an input:
+
+- **left out** — the uncontrolled form: the workbench owns which view is open, starting from the user's effective default;
+- **passed** — a view id, or `null` for that effective default: you say which view is open, and every later change of it opens what it names. `null` is a value, not the absence of one;
+- `onInstanceChange(id)` reports what is open now, in the same vocabulary — `null` means the effective default there too — so what comes out goes straight back in.
+
+It converges rather than renders. A view holds an unsaved draft, so a pushed value goes through the same leave guard a click on the sidebar goes through: whichever side moved last is the one that speaks, and the other follows. If the guard asks and the user stays, the workbench reports the view that stayed, so your route is never left naming a view that is not on screen. `examples/PlainRecordWorkbench.tsx` has the whole of it against `window.location.hash`, back button included.
+
 #### Customising the theme
 
 Every token reads a host-level variable with the built-in value as its fallback: set `--fve-<token>` for light and `--fve-dark-<token>` for dark on your own `:root`, and the surface and the popups portalled to `<body>` both pick it up — no selector to scope, no load order to win.
