@@ -121,6 +121,10 @@ export function RecordCards({
                 <RowItem
                   key={field.field}
                   role="listitem"
+                  // The field's name is a label, not a sentence: `TEXT_UI`
+                  // under the value's `text-sm`, which is the rung every
+                  // other chrome label in this package sits on.
+                  description="label"
                   data-slot="card-field"
                   data-field={field.field}
                   className="gap-2 px-0 py-0"

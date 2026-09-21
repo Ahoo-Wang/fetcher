@@ -342,6 +342,14 @@ describe('RecordCards on its own', () => {
       // which is what `Item` means by description and title.
       expect(row.querySelector('[data-slot="item-description"]')).toBeTruthy();
       expect(row.querySelector('[data-slot="item-title"]')).toBeTruthy();
+      // And the name reads a rung below the value: `TEXT_UI` over the
+      // registry's `text-sm`, asked for with `RowItem`'s `description`
+      // variant so that no typography lands on the vendored component.
+      // The class rather than the size, because jsdom hangs no stylesheet;
+      // the pixels are measured in the browser.
+      expect(row.className).toContain(
+        '[&_[data-slot=item-description]]:text-[length:var(--text-ui)]',
+      );
     }
   });
 

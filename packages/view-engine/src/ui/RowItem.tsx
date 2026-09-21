@@ -43,9 +43,34 @@ const rowItemVariants = cva(
         dense: 'px-1 py-0.5',
         roomy: '',
       },
+      /**
+       * How large the row's `ItemDescription` reads.
+       *
+       * `prose` is the registry's own `text-sm`, which is right when the
+       * description is a sentence meant to be read — the blurb under a
+       * link. `label` is this package's one chrome size (`TEXT_UI`, 13px),
+       * which is what a *label* is: the field name beside a value on a card
+       * is secondary text, and 13 / 14 says so by size before colour and
+       * weight get a word in.
+       *
+       * It is a variant rather than a class at the call site because
+       * `ItemDescription` is vendored and sizes itself (D16 ruling 8). The
+       * two utilities are written out rather than composed from `TEXT_UI`:
+       * Tailwind scans the source for whole class names, and a built one
+       * reaches no stylesheet — so this pair and `TEXT_UI` in `layout.ts`
+       * move together.
+       */
+      description: {
+        prose: '',
+        label: [
+          '[&_[data-slot=item-description]]:text-[length:var(--text-ui)]',
+          '[&_[data-slot=item-description]]:leading-[1.125rem]',
+        ],
+      },
     },
     defaultVariants: {
       density: 'roomy',
+      description: 'prose',
     },
   },
 );
@@ -66,12 +91,13 @@ export type RowItemProps = React.ComponentProps<typeof Item> &
 export function RowItem({
   className,
   density = 'roomy',
+  description,
   ...props
 }: RowItemProps) {
   return (
     <Item
       size={density === 'dense' ? 'xs' : 'default'}
-      className={cn(rowItemVariants({ density }), className)}
+      className={cn(rowItemVariants({ density, description }), className)}
       {...props}
     />
   );
