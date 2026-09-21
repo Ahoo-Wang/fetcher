@@ -406,3 +406,81 @@ export const TheValueStaysInsideItsPill: Story = {
     }
   },
 };
+
+/**
+ * F-09: the calendar speaks the surface's language, and the popover is sized
+ * by what is in it rather than by the grid of day numbers at the top.
+ *
+ * `react-day-picker` reads its words out of a date-fns `Locale` object and
+ * falls back to `en-US`, so this story's trigger said «2026年9月15日 –
+ * 2026年9月17日» over a popover headed `September 2026` and
+ * `Su Mo Tu We Th Fr Sa`. Measured in Chromium: the popover was 212px wide,
+ * narrower than its own 235px trigger, 「起始时刻」 was given 48px and broke
+ * across two lines in the middle of a word, and the hint under it ran to
+ * three.
+ */
+export const TheCalendarSpeaksTheSurfaceLanguage: Story = {
+  ...DisplayWithTime,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole('button', {
+        name: new RegExp(`^${zhCN['label.filter.panel']}`),
+      }),
+    );
+    const trigger = await canvas.findByLabelText(
+      formatMessage(zhCN, 'label.filter.value-of', { field: '创建时间' }),
+    );
+    await userEvent.click(trigger);
+
+    const popup = within(document.body);
+    const popover = document.body.querySelector<HTMLElement>(
+      '[data-slot="popover-content"]',
+    )!;
+
+    // The month and the weekday heads are `Intl` in the surface's language,
+    // which is the same call the trigger above was formatted with.
+    const september = new Intl.DateTimeFormat('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+    }).format(new Date(2026, 8, 15));
+    await expect(await popup.findByText(september)).toBeVisible();
+    await expect(
+      [...popover.querySelectorAll('th[aria-label]')].map(head =>
+        head.textContent?.trim(),
+      ),
+    ).toContain(
+      new Intl.DateTimeFormat('zh-CN', { weekday: 'short' }).format(
+        new Date(2026, 8, 15),
+      ),
+    );
+    // And the words no formatter produces come from the catalogue.
+    await expect(
+      popup.getByRole('button', { name: zhCN['label.date.calendar-next'] }),
+    ).toBeVisible();
+
+    // At least as wide as the control it belongs to: a popover narrower than
+    // its own trigger reads as a different, smaller thing.
+    await expect(popover.getBoundingClientRect().width).toBeGreaterThanOrEqual(
+      trigger.getBoundingClientRect().width,
+    );
+
+    // Each field's name on one line. A text node's client rects are one per
+    // line it occupies, which is the only way to tell a name that wrapped
+    // from one that happened to be tall.
+    for (const key of ['label.date.time-from', 'label.date.time-to'] as const) {
+      const field = popup.getByLabelText(zhCN[key]);
+      const name = popover.querySelector<HTMLElement>(
+        `label[for="${field.id}"]`,
+      )!;
+      const lines = document.createRange();
+      lines.selectNodeContents(name);
+      await expect(lines.getClientRects().length, zhCN[key]).toBe(1);
+      // And the box under it takes the width the name is measured against,
+      // rather than whatever a grid of digits left beside it.
+      await expect(
+        Math.round(field.getBoundingClientRect().width),
+      ).toBeGreaterThanOrEqual(Math.round(name.getBoundingClientRect().width));
+    }
+  },
+};

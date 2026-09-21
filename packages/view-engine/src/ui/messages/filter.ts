@@ -139,6 +139,18 @@ export const filterMessages = {
   'label.date.time-hint':
     'Left empty, a day runs from 00:00:00 through 23:59:59.999.',
 
+  // The calendar's own chrome. Everything it draws that is a date — the
+  // caption, the weekday heads, the day numbers, the name a day button
+  // answers to — is formatted through `Intl` in the surface's language
+  // (`ui/filter/inputs/calendar.tsx`); these four are the words around them,
+  // which no formatter can produce. `react-day-picker` says them in English
+  // whatever locale it is given, so leaving them to it left `Go to the Next
+  // Month` on a 简体中文 surface.
+  'label.date.calendar-previous': 'Go to the previous month',
+  'label.date.calendar-next': 'Go to the next month',
+  'label.date.calendar-today': 'Today, {date}',
+  'label.date.calendar-selected': '{date}, selected',
+
   // The two closed sets the relative-date control offers. Both used to be
   // rendered as the identifier itself — `hour`, `thisWeek` — so the control
   // stayed in English however the catalogue was replaced, exactly as the
