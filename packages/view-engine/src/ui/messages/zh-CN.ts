@@ -702,6 +702,7 @@ export const zhCN: ViewMessages = {
   'label.status.more': '还有 {count} 条',
   'label.status.less': '收起',
   'label.status.loading': '加载中',
+  'label.status.querying': '正在查询',
   'label.query.failed': '查询失败',
   'label.query.stale': '显示的是上一次成功的结果',
   'label.query.retry': '重试',
