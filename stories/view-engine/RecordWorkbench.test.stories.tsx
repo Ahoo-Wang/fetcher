@@ -3446,8 +3446,8 @@ const controlBorders = (theme: 'light' | 'dark'): Story => ({
  * 焦点指示在两个主题里都 ≥3:1，而且一屏只有一种画法。
  *
  * vendored 的 `Button` 以 1px `border-ring` 加 3px 半透明光晕表示焦点；表头的排序
- * 按钮与已应用条上的 ✕ 走 `FOCUS_RING`——同一份配方（透明边聚焦时染成
- * `ring`），不另造一种。评审量到 `--ring` 在 `0.708` 时边线只有 2.59:1、光晕
+ * 按钮与已应用条上的 ✕ 从前是裸 `<button>` 各抄一份同款配方，现在就是那个
+ * `Button`（`variant="ghost"`），所以一屏只有一种画法。评审量到 `--ring` 在 `0.708` 时边线只有 2.59:1、光晕
  * 1.54:1，三处又各画各的（一处还是 UA 的 `outline: auto`）。焦点由 Tab 键送到
  * 目标上：脚本调 `focus()` 不一定算 `:focus-visible`，键盘一定算。
  */
