@@ -6,7 +6,7 @@ packages:
 catalog:
   '@dnd-kit/react': 0.5.0
   '@dnd-kit/dom': 0.5.0
-  react-error-boundary: 6.1.5
+  react-error-boundary: 6.1.6
   '@tanstack/react-table': ^9.2.4
   '@date-fns/tz': ^1.5.0
   '@base-ui/react': ^1.8.0
