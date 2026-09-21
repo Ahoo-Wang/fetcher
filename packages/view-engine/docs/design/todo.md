@@ -74,7 +74,6 @@
 
 ### 打磨
 
-- **P-01 标题栏 ↺**：还原整份草稿无确认、无撤销，而同样丢草稿的切视图要弹确认。判据：↺ 走 `AlertDialog`（与离开守卫同形），或还原后留 5 秒「已还原 · 撤销」。落点：`src/ui/ViewHeader.tsx`。
 - **P-02 表头／列宽把手**：每列一个 Tab 站，20 列就是 20 个。判据：把手 `tabindex=-1`，表头 roving 组 + Alt+←/→。落点：`src/ui/record/ColumnResizer.tsx`、`SortableHeader.tsx`。
 - **P-03 字段选择表**（用户 2026-09-21 裁定：**恢复分组复选框**）：现在的拾取器是 `Combobox multiple`——一列带 ✓ 的搜索列表，未选项没有勾选指示，看起来像单选菜单，字段一多就得来回滚；用户明确说不如原来的分组复选框。判据：每个字段一个**可见的复选框**（`Checkbox`），按字段目录分组、每组一个标题，宽处两列（`grid` + 容器查询），键盘照常（Tab 进表、空格勾选、方向键按网格走）；顶部搜索框保留（字段多时它有用），空态与「完成」不变；文档把「D16 之前它是手写的复选框网格」那段改成「按用户裁定回到复选框网格，搜索与分组是这次留下的」。落点：`src/ui/filter/FieldChecklist.tsx`、[ui/README.md#字段目录与选择器分组](ui/README.md#字段目录与选择器分组)、[decisions.md#D16](decisions.md#d16-站在-shadcnbase-ui-肩膀上审计后的八条裁定)（那条裁定要补一句例外）。
 - **P-04 多值录入框**：chips 后的录入框无 placeholder、无 `inputMode`；文档说的「添加按钮」不存在。判据：placeholder + `inputMode=decimal`；文档删掉按钮那半句。落点：`src/ui/filter/inputs/chips.tsx`。
