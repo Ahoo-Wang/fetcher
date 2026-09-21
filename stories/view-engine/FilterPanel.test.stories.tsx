@@ -444,7 +444,16 @@ export const TheCalendarSpeaksTheSurfaceLanguage: Story = {
       year: 'numeric',
       month: 'long',
     }).format(new Date(2026, 8, 15));
-    await expect(await popup.findByText(september)).toBeVisible();
+    // Read off the caption rather than found by text: the library also keeps
+    // an `aria-live` span for announcing the month, which is empty between
+    // announcements and would be the first thing a text query answered with.
+    await waitFor(() =>
+      expect(
+        popover
+          .querySelector<HTMLElement>('[class*="month_caption"]')
+          ?.textContent?.trim(),
+      ).toBe(september),
+    );
     await expect(
       [...popover.querySelectorAll('th[aria-label]')].map(head =>
         head.textContent?.trim(),
