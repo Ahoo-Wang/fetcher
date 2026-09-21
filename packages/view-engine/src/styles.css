@@ -231,6 +231,37 @@
   font-size: var(--text-ui);
 }
 
+/*
+ * A joined toggle group rounds like the controls it stands beside.
+ *
+ * `ToggleGroup spacing={0}` is the registry's own segmented control — no
+ * gap, square inner corners, one shared seam — and the three call sites ask
+ * for it by that prop rather than hand-writing the look. Its one loose end
+ * is the outer corner: the group's own box is size-aware
+ * (`data-[size=sm]:rounded-[min(var(--radius-md),10px)]`) while the first
+ * and last *items*, which are what actually paints, keep the default
+ * `rounded-l-lg` / `rounded-r-lg` whatever the size. At `sm` that is 10px
+ * beside 8px `sm` buttons — the segmented switch in the result toolbar sits
+ * in a row of them, and two radii in one row read as two families of
+ * control. `ui/components/**` is upstream's, so the seam is closed here,
+ * the same place the two small font sizes are pinned; a group at the
+ * default size is untouched, since there the vendored radius is already the
+ * one its neighbours wear.
+ */
+.fve-root
+  [data-slot='toggle-group'][data-size='sm'][data-spacing='0']
+  > [data-slot='toggle-group-item']:first-child {
+  border-start-start-radius: min(var(--radius-md), 12px);
+  border-end-start-radius: min(var(--radius-md), 12px);
+}
+
+.fve-root
+  [data-slot='toggle-group'][data-size='sm'][data-spacing='0']
+  > [data-slot='toggle-group-item']:last-child {
+  border-start-end-radius: min(var(--radius-md), 12px);
+  border-end-end-radius: min(var(--radius-md), 12px);
+}
+
 .dark .fve-root:not([data-theme='light']),
 .fve-root[data-theme='dark'] {
   color-scheme: dark;
