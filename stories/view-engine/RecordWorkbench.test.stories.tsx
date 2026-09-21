@@ -4105,6 +4105,47 @@ export const IconButtonsSayTheirNameOnHover: Story = {
 };
 
 /**
+ * 侧栏每一行的种类图标，指上去要说得出自己是什么（D-2）。
+ *
+ * 从前 `TooltipTrigger` 直接挂在那个 `<svg>` 上，而它在 `Button` 里——
+ * `[&_svg]:pointer-events-none` 让这个 svg 根本收不到指针，标签永远打不开：
+ * 源码里写着的名字，屏幕上谁也拿不到。现在挂在外面那层 `span` 上，指针落在
+ * 图标上会穿到父元素，于是它就是触发器。jsdom 量不出这一条——`pointer-events`
+ * 要真的做命中测试才算数——所以钉在浏览器里。
+ */
+export const AViewRowSaysItsKindOnHover: Story = {
+  ...DisplayWithData,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole('table');
+    const doc = canvasElement.ownerDocument;
+
+    const row = listItem(canvasElement, '待出库订单');
+    const kind = row.querySelector<HTMLElement>('[data-slot="view-kind"]')!;
+    // The premise: the glyph itself still refuses the pointer, which is why
+    // it cannot be the trigger and the wrapper is.
+    await expect(
+      getComputedStyle(kind.querySelector('svg')!).pointerEvents,
+    ).toBe('none');
+    await expect(getComputedStyle(kind).pointerEvents).not.toBe('none');
+
+    await userEvent.hover(kind);
+    await waitFor(() =>
+      expect(tooltipOn(doc)).toHaveTextContent(zhCN['label.kind.record']),
+    );
+
+    // And the row is still called by the view it opens, not by its kind:
+    // a list where every name starts with the same two syllables is a list
+    // that has stopped distinguishing its items.
+    await expect(row).toHaveTextContent('待出库订单');
+    await expect(row.textContent).not.toContain(zhCN['label.kind.record']);
+
+    await userEvent.unhover(kind);
+    await waitFor(() => expect(tooltipOn(doc)).toBeNull());
+  },
+};
+
+/**
  * The tooltip that is showing, if one is.
  *
  * Base UI leaves the popup in the document while it animates away, so
