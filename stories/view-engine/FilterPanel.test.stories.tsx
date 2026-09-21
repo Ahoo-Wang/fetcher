@@ -174,6 +174,12 @@ export const DeletionReading: Story = {
       expect(bar().textContent).toContain(zhCN['label.deletion.all']),
     );
     await expect(implied()).toBeNull();
+    // And the rows answer it: the soft-deleted order the default hid is in.
+    await waitFor(() =>
+      expect(readColumn(canvas.getByRole('table'), '订单号')).toContain(
+        'SO-1007',
+      ),
+    );
     await expect(
       within(bar()).getByRole('button', {
         name: formatMessage(zhCN, 'label.filter.unset-of', {
@@ -265,6 +271,10 @@ export const WithTime: Story = {
         `创建时间 ${zhCN['label.operator.BETWEEN']} ` +
           `${shown(Date.UTC(2026, 8, 15, 15, 30), true)} ~ ` +
           shown(Date.UTC(2026, 8, 17), false),
+        // The definition's soft-delete dimension, left blank: said as the
+        // default (D17-2).
+        `删除状态 ${zhCN['label.operator.DELETION']} ${zhCN['label.deletion.active']} ` +
+          zhCN['label.applied.implied'],
       ]),
     );
   },
