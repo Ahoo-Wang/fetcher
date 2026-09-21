@@ -303,8 +303,13 @@ export const NarrowColumn: Story = {
     // out of the column instead of truncating. A `max-w-fit` on the heading
     // could not have delivered this half — it caps growth, it does not stop
     // a nowrap heading asking for its whole text.
+    // Two widths on which the bar is still one line: with the freshness
+    // control in the title bar (D12) the controls wrap to a line of their
+    // own below ~700px here, and on that line the name has the whole width
+    // back — so the comparison is made above the wrap, where the name is
+    // the one thing giving way.
     await expect(widthAt(host, 1000, title), 'title shrinks').toBeGreaterThan(
-      widthAt(host, 680, title),
+      widthAt(host, 900, title),
     );
     await expect(title.scrollWidth, 'title clipped').toBeGreaterThan(
       title.clientWidth,
