@@ -148,6 +148,13 @@ export const recordMessages = {
   'label.columns.pin.right': 'Pinned right',
   // Said after the pin state while the cap has let this pin go (D17-4).
   'label.columns.pin-released': 'let go while the area is too narrow',
+  // What the press did, said out loud after it: the toggle's own name is
+  // where the column is held, so pressing it rewrites the name under the
+  // cursor and reports nothing. All three states are named — a half-named
+  // set cannot be translated.
+  'label.columns.pinned.none': '{field} is no longer pinned',
+  'label.columns.pinned.left': '{field} is now pinned left',
+  'label.columns.pinned.right': '{field} is now pinned right',
 
   // The sort editor behind the toolbar's button. It says the direction in
   // one word, because it labels a row of a list rather than a button whose
