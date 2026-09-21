@@ -879,7 +879,11 @@ describe('RecordWorkbench interaction', () => {
         instanceId="orders-1"
       />,
     );
-    await screen.findByText(defaultMessages['label.record.empty']);
+    // The empty title, as it is drawn: the live region says the same
+    // sentence out loud, which is two nodes holding this text on purpose.
+    await screen.findByText(defaultMessages['label.record.empty'], {
+      selector: '[data-slot="empty-title"]',
+    });
     return source;
   }
 
