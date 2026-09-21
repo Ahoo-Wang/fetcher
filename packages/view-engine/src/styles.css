@@ -486,6 +486,49 @@
 }
 
 /*
+ * A user who has asked their system for less motion gets less of it here.
+ *
+ * Everything that moves on this surface moves because a vendored component
+ * says so: every popup zooms and slides in (`data-open:animate-in
+ * zoom-in-95 slide-in-from-top-2`, 100ms), every dialog zooms with a fading
+ * backdrop, and `transition-all` is on every button, badge and row. None of
+ * it is worn at a call site, so the concession is made once here rather
+ * than asked of 300 class lists — the same reason the two vendored font
+ * sizes are pinned above, and `ui/components/**` is upstream's either way.
+ *
+ * **Reduce is not remove.** Two animations on this surface carry meaning
+ * rather than decorate: the spinner says a write or a query is still in
+ * flight, and the skeleton's pulse says what is on screen is not data yet.
+ * Stopping those turns "working" into "hung", so they are excluded by the
+ * slot upstream puts on them; a looping indicator is what
+ * `prefers-reduced-motion` guidance leaves alone.
+ *
+ * Not zero: a Base UI popup unmounts on the end of its own exit animation,
+ * so the duration is cut to something imperceptible rather than taken away.
+ * `!important` because what it overrides is a utility class of the same
+ * specificity that comes later in the sheet.
+ *
+ * Both boundaries, like every other scope in this file: the host's chrome
+ * draws the same buttons and the same popups, and a concession made on one
+ * side of the pair and not the other is half a concession.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .fve-root,
+  .fve-root *:not([data-slot='spinner'], [data-slot='skeleton']),
+  .fve-root *::before,
+  .fve-root *::after,
+  .fve-tokens,
+  .fve-tokens *:not([data-slot='spinner'], [data-slot='skeleton']),
+  .fve-tokens *::before,
+  .fve-tokens *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/*
  * A view filling the screen, pinned where it already stands.
  *
  * Unlayered on purpose: it has to outrank whatever utility gave the surface
