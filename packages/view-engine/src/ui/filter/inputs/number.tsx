@@ -157,12 +157,12 @@ function NumberRangeValue({ value, onChange, label, disabled }: ValueProps) {
  *
  * `filter/kinds/number.ts` has always admitted an array of any length; this
  * control is what limited it to two, by borrowing the range's pair of boxes.
- * Values are committed one at a time — Enter in the entry field or the add
- * button moves what was typed into the list — and each one carries its own
- * remove button, named after the value so the buttons are told apart. What is
- * still being typed is not a value yet, so it stays in the entry field; it
- * reaches the draft leaf only when it is added, and the draft reaches the
- * query only on Apply.
+ * Values are committed one at a time — Enter in the entry field, the add
+ * button, or leaving the field moves what was typed into the list — and each
+ * one carries its own remove button, named after the value so the buttons are
+ * told apart. Leaving the field counts because Apply is somewhere else on the
+ * panel: reaching for it blurs the entry first, and a number the user had just
+ * typed would otherwise be dropped by the very click meant to run it.
  */
 function NumberListValue({ value, onChange, label, disabled }: ValueProps) {
   const messages = useViewMessages();
@@ -213,6 +213,11 @@ function NumberListValue({ value, onChange, label, disabled }: ValueProps) {
         value={entry}
         placeholder={messages.label('label.filter.not-set')}
         onChange={event => setEntry(event.target.value)}
+        // Apply is a button elsewhere on the panel, and pressing it blurs this
+        // field first. A number typed and not yet added would be thrown away
+        // by the very click that was meant to run the query with it, so
+        // leaving the field commits it on exactly the terms Enter does.
+        onBlur={add}
         onKeyDown={event => {
           if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
           // `FilterPanel` applies the draft on an Enter from anywhere inside

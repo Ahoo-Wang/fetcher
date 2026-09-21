@@ -404,7 +404,7 @@ describe('FilterPanel tree editing', () => {
       filter().updateLeaf([0], { operator: 'IN' });
     });
     const leaf = () => filter().tree.children[0] as { value: unknown };
-    const entry = () => screen.getByLabelText('New amount value');
+    const entry = () => screen.getByLabelText('New Amount value');
     const enter = (typed: string) => {
       fireEvent.change(entry(), { target: { value: typed } });
       fireEvent.keyDown(entry(), { key: 'Enter' });
@@ -427,8 +427,31 @@ describe('FilterPanel tree editing', () => {
 
     // An empty entry is not a value, so the button that would take it does
     // nothing at all.
-    fireEvent.click(screen.getByRole('button', { name: 'Add amount value' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Amount value' }));
     expect(leaf().value).toEqual([1, 3]);
+  });
+
+  /**
+   * Apply is a button elsewhere on the panel, and reaching for it blurs the
+   * entry field first — so a number typed and not yet added was dropped by
+   * the very click meant to run the query with it.
+   */
+  it('applies a number still in the entry field when Apply is pressed', async () => {
+    const user = userEvent.setup();
+    const { filter } = panel();
+    act(() => {
+      filter().addLeaf('amount');
+      filter().updateLeaf([0], { operator: 'IN', value: [1] });
+    });
+
+    await user.type(screen.getByLabelText('New Amount value'), '7');
+    await user.click(screen.getByRole('button', { name: /Apply/ }));
+
+    await waitFor(() =>
+      expect(filter().applied.map(item => item.text)).toEqual([
+        'Amount IN 1, 7',
+      ]),
+    );
   });
 
   /**

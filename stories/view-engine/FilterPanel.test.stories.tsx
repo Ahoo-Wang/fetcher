@@ -132,7 +132,7 @@ export const NumberList: Story = {
 
     // A fourth, entered by hand: Enter commits it and clears the field, and
     // it does not double as the panel's apply.
-    const entry = canvas.getByLabelText('New amount value');
+    const entry = canvas.getByLabelText('New 金额 value');
     await userEvent.type(entry, '8888{Enter}');
     await waitFor(() => expect(removes()).toContain('Remove 8888'));
     await expect(entry).toHaveValue(null);

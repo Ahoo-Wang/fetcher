@@ -192,10 +192,14 @@ describe('FilterValueEditor', () => {
   });
 
   /** Type a number into the entry field and hand it to the list. */
-  function addValue(typed: string, by: 'enter' | 'button' = 'enter'): void {
+  function addValue(
+    typed: string,
+    by: 'enter' | 'button' | 'blur' = 'enter',
+  ): void {
     const entry = screen.getByLabelText('New amount');
     fireEvent.change(entry, { target: { value: typed } });
     if (by === 'enter') fireEvent.keyDown(entry, { key: 'Enter' });
+    else if (by === 'blur') fireEvent.blur(entry);
     else fireEvent.click(screen.getByLabelText('Add amount'));
   }
 
@@ -230,6 +234,22 @@ describe('FilterValueEditor', () => {
   });
 
   /**
+   * Apply is a button elsewhere on the panel, and reaching for it blurs this
+   * field first — so a number typed and not yet added was dropped by the very
+   * click meant to run the query with it.
+   */
+  it('takes a number left in the entry field when it is left', () => {
+    const { changes } = editor({ input: 'number', multiple: true }, [1]);
+
+    addValue('7', 'blur');
+
+    expect(last(changes)).toEqual([1, 7]);
+    expect(
+      (screen.getByLabelText('New amount') as HTMLInputElement).value,
+    ).toBe('');
+  });
+
+  /**
    * An empty entry is a normal editing state, not a value: committing it
    * would ask for `Number('')`, which is zero, and half a number is `NaN`.
    */
@@ -238,7 +258,10 @@ describe('FilterValueEditor', () => {
 
     addValue('');
     addValue('', 'button');
+    addValue('', 'blur');
     addValue('1e');
+    // Leaving the field is the same rule as Enter, not a laxer one.
+    addValue('1e', 'blur');
     // The same number twice asks nothing more, and would name two remove
     // buttons alike.
     addValue('1');
