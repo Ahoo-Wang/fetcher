@@ -391,6 +391,47 @@ describe('FilterPanel tree editing', () => {
   });
 
   /**
+   * A numeric `IN` compiles an array of any length, and it was the editor
+   * that capped it at two by borrowing the range's pair of boxes. The rule
+   * is asked of the panel rather than of the kernel because the kernel never
+   * broke: a kind-level case passed all along while the third value had
+   * nowhere on screen to go.
+   */
+  it('builds a numeric IN of as many values as are entered', async () => {
+    const { filter } = panel();
+    act(() => {
+      filter().addLeaf('amount');
+      filter().updateLeaf([0], { operator: 'IN' });
+    });
+    const leaf = () => filter().tree.children[0] as { value: unknown };
+    const entry = () => screen.getByLabelText('New amount value');
+    const enter = (typed: string) => {
+      fireEvent.change(entry(), { target: { value: typed } });
+      fireEvent.keyDown(entry(), { key: 'Enter' });
+    };
+
+    enter('1');
+    enter('2');
+    // Enter in here adds a value; it is not also the panel's apply, which
+    // would run the query on a list still being written.
+    const submit = vi.fn();
+    fireEvent.change(entry(), { target: { value: '3' } });
+    vi.spyOn(filter(), 'submit').mockImplementation(submit);
+    fireEvent.keyDown(entry(), { key: 'Enter' });
+
+    await waitFor(() => expect(leaf().value).toEqual([1, 2, 3]));
+    expect(submit).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 2' }));
+    await waitFor(() => expect(leaf().value).toEqual([1, 3]));
+
+    // An empty entry is not a value, so the button that would take it does
+    // nothing at all.
+    fireEvent.click(screen.getByRole('button', { name: 'Add amount value' }));
+    expect(leaf().value).toEqual([1, 3]);
+  });
+
+  /**
    * The panel listens at its root, so keystrokes reach it that were never
    * meant for it. Each of these is one of those, and each has its own
    * reason for not being an apply.

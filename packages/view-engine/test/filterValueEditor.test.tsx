@@ -191,6 +191,61 @@ describe('FilterValueEditor', () => {
     expect(last(changes)).toBeNull();
   });
 
+  /** Type a number into the entry field and hand it to the list. */
+  function addValue(typed: string, by: 'enter' | 'button' = 'enter'): void {
+    const entry = screen.getByLabelText('New amount');
+    fireEvent.change(entry, { target: { value: typed } });
+    if (by === 'enter') fireEvent.keyDown(entry, { key: 'Enter' });
+    else fireEvent.click(screen.getByLabelText('Add amount'));
+  }
+
+  /**
+   * `IN` and `NOT_IN` compile an array of any length, and this editor used to
+   * borrow the range's pair of boxes — so a third value had nowhere to go.
+   */
+  it('takes as many values into a number list as are entered', () => {
+    const { changes } = editor({ input: 'number', multiple: true }, []);
+
+    addValue('1');
+    addValue('2');
+    addValue('3', 'button');
+
+    expect(last(changes)).toEqual([1, 2, 3]);
+    // What was committed left the entry field, so the next value starts blank.
+    expect(
+      (screen.getByLabelText('New amount') as HTMLInputElement).value,
+    ).toBe('');
+  });
+
+  it('removes the value its own remove button names', () => {
+    const { changes } = editor({ input: 'number', multiple: true }, [1, 2, 3]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 2' }));
+
+    expect(last(changes)).toEqual([1, 3]);
+    // The last one out leaves the kind's blank value, not a list of nothing.
+    for (const value of [1, 3])
+      fireEvent.click(screen.getByRole('button', { name: `Remove ${value}` }));
+    expect(last(changes)).toEqual([]);
+  });
+
+  /**
+   * An empty entry is a normal editing state, not a value: committing it
+   * would ask for `Number('')`, which is zero, and half a number is `NaN`.
+   */
+  it('commits nothing from an empty or half-typed number entry', () => {
+    const { changes } = editor({ input: 'number', multiple: true }, [1]);
+
+    addValue('');
+    addValue('', 'button');
+    addValue('1e');
+    // The same number twice asks nothing more, and would name two remove
+    // buttons alike.
+    addValue('1');
+
+    expect(changes).toEqual([]);
+  });
+
   it('keeps a relative window blank rather than asking for zero units', () => {
     const { changes } = editor({ input: 'relativeDate' }, {
       type: 'relative',
