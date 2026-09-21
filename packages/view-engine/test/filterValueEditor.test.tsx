@@ -653,7 +653,9 @@ describe('FilterValueEditor', () => {
       <ViewSurface locale="zh-CN" messages={zhCN}>
         <FilterValueEditor
           editor={{ input: 'date', withTime: false }}
-          value={{ type: 'absolute', from: '2026-09-16' } as unknown as FilterValue}
+          value={
+            { type: 'absolute', from: '2026-09-16' } as unknown as FilterValue
+          }
           label="创建时间"
           onChange={() => {}}
         />

@@ -5005,7 +5005,9 @@ export const ATruncatedColumnNameIsOneHoverAway: Story = {
 
     // The premise: at least one name on this header is drawn in less room
     // than it asks for.
-    const clipped = labels.filter(label => label.scrollWidth > label.offsetWidth);
+    const clipped = labels.filter(
+      label => label.scrollWidth > label.offsetWidth,
+    );
     await expect(clipped.length).toBeGreaterThan(0);
 
     const name = clipped[0];

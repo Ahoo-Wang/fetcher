@@ -381,8 +381,9 @@ export const TheValueStaysInsideItsPill: Story = {
         const frame = pill.getBoundingClientRect();
         const buttons = [...pill.querySelectorAll('button')];
         const cross = buttons[buttons.length - 1].getBoundingClientRect();
-        const value =
-          pill.querySelector<HTMLElement>('[data-slot="filter-value"]')!;
+        const value = pill.querySelector<HTMLElement>(
+          '[data-slot="filter-value"]',
+        )!;
 
         for (const control of value.querySelectorAll<HTMLElement>(
           '[data-slot="select-trigger"], [data-slot="input"], button',

@@ -111,13 +111,7 @@ export function ChoiceValue({
  * Both ends are `flex-1` against it, so they share whatever the pill has left
  * and neither is the one that gives.
  */
-export function RangeRow({
-  from,
-  to,
-}: {
-  from: ReactNode;
-  to: ReactNode;
-}) {
+export function RangeRow({ from, to }: { from: ReactNode; to: ReactNode }) {
   const messages = useViewMessages();
   return (
     <div className="flex min-w-0 items-center gap-2">
