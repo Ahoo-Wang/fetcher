@@ -184,7 +184,9 @@
 
 ## 离开保护
 
-从侧栏切到另一个视图会释放当前 runtime，而未保存的草稿只活在 runtime 里，所以那是一次删除工作：`useLeaveGuard`（`/react`，见 [react.md#useworkbench](../react.md#useworkbench)）在 `dirty` 或写入结局为 `unknown` 时先问一句，没有东西可失去时一句也不问——每次切换都拦的守卫，人会学会不读就点掉。该问的时候问什么是无状态的，`/ui` 这边只剩 `LeaveDialog({ leave, messages? })` 照着 `leave.asking` 画，两个按钮分别接 `confirm` 与 `cancel`；它是一个 `AlertDialog`——点旁边关不掉，因为「留下」是一个要按出来的决定，而不是没做决定的默认结果；它渲染在承载文案的 `ViewSurface` 之外，所以要单独把 `messages` 递给它。（见 test/workbench.test.tsx「useLeaveGuard」）
+从侧栏切到另一个视图会释放当前 runtime，而未保存的草稿只活在 runtime 里，所以那是一次删除工作：`useLeaveGuard`（`/react`，见 [react.md#useworkbench](../react.md#useworkbench)）在 `dirty` 或写入结局为 `unknown` 时先问一句，没有东西可失去时一句也不问——每次切换都拦的守卫，人会学会不读就点掉。该问的时候问什么是无状态的，`/ui` 这边只剩 `LeaveDialog({ leave, messages? })` 照着 `leave.asking` 画，两个按钮分别接 `confirm` 与 `cancel`；它是一个 `AlertDialog`——点旁边关不掉，因为「留下」是一个要按出来的决定，而不是没做决定的默认结果；它渲染在承载文案的 `ViewSurface` 之外，所以要单独把 `messages` 递给它。
+
+**守的不止是这一次切换。** 关标签、后退、点走一个外链同样带走草稿，而它们一次也不经过 `request`——没有哪个组件会被告知。所以同一条判据（`dirty` 或写入结局为 `unknown`）还挂一道 `beforeunload`（D18 Ⅸ，落在 `react/workbench/leaveGuard.ts`，`/ui` 什么也不用做）：脏或未知时挂上，干净时摘下，卸载时摘干净。处理器只做 `preventDefault()` 与 `returnValue`（后者是 Chrome／Edge 119 之前的旧路径），**不带任何措辞**——浏览器早已不显示自定义文案，能由我们措辞的那一句是上面那个对话框。**嵌入场景不挂**：`EmbeddedView` 没有编辑器、没有草稿、没有保存，压根不调这个钩子，一张只是展示某人存好的视图的业务页面，不该在关闭时被拦一下。宿主要整个关掉就传 `guardUnload: false`（`useWorkbench` 的选项）——那句提示属于整份文档，一个只占页面一角的工作台替所有人说话，是宿主该拍板的事。（见 test/workbench.test.tsx「useLeaveGuard」「beforeunload」）
 
 ## 动作槽位
 
