@@ -25,6 +25,7 @@ import type { SaveCommands } from '../react/index.js';
 import { cn } from './lib/utils.js';
 import { Badge } from './components/badge.js';
 import { Button } from './components/button.js';
+import { IconTooltip } from './IconButton.js';
 import { ButtonGroup } from './components/button-group.js';
 import { Tooltip, TooltipTrigger } from './components/tooltip.js';
 import {
@@ -174,24 +175,29 @@ export function SaveActions({
 
         {menuSaveAs && (
           <DropdownMenu>
-            <DropdownMenuTrigger
+            <IconTooltip
+              label={messages.label('label.header.more')}
               render={
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  // Nothing in the menu may run while a write is in flight:
-                  // reverting mid-save would leave the old config as a dirty
-                  // draft over a baseline that has just become the new one.
-                  // Nor while an outcome is unsettled: Retry or Keep mine is
-                  // still to land, and a revert taken first would be undone
-                  // by the write the user is about to choose.
-                  disabled={stopped}
-                  aria-label={messages.label('label.header.more')}
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      // Nothing in the menu may run while a write is in
+                      // flight: reverting mid-save would leave the old config
+                      // as a dirty draft over a baseline that has just become
+                      // the new one. Nor while an outcome is unsettled: Retry
+                      // or Keep mine is still to land, and a revert taken
+                      // first would be undone by the write the user is about
+                      // to choose.
+                      disabled={stopped}
+                    />
+                  }
                 />
               }
             >
               <ChevronDownIcon />
-            </DropdownMenuTrigger>
+            </IconTooltip>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setCopying(true)}>
                 <CopyIcon />
