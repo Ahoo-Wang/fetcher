@@ -59,16 +59,16 @@ export const SURFACE = 'rounded-lg border border-border bg-card p-3';
  */
 /**
  * The focus indicator of a control that is not a vendored `Button` — the
- * sort button in a table header, the ✕ on an applied condition. The vendored
- * button shows focus as a 1px `border-ring` plus a 3px halo; a bare button
- * has no border to colour, so it draws the same token as a 2px outline. One
- * token, one place, so every focused thing on the surface is the same grey
- * and clears the same 3:1 (`--ring` in `styles.css`).
+ * sort button in a table header, the ✕ on an applied condition.
+ *
+ * It is the registry's own recipe, not a second one: a transparent border
+ * that turns `ring` on focus, plus the 3px halo — exactly what `Button`
+ * does, so every focused thing on the surface looks the same and the 1px
+ * border clears the same 3:1 (`--ring` in `styles.css`). The halo is
+ * emphasis; the border is the indicator.
  */
 export const FOCUS_RING =
-  // `outline-none` also sets Tailwind's `--tw-outline-style` to none, which
-  // the width utility reads back — so the focused state names the style too.
-  'outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring';
+  'border border-transparent outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50';
 
 export const SEGMENTED =
   'gap-0 [&>*]:rounded-none [&>*]:shadow-none [&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md [&>*+*]:-ml-px';

@@ -620,9 +620,10 @@ describe('sorting from the headers', () => {
 
     const head = header(container, 'amount');
     expect(head.querySelector('[data-slot="sort-available"]')).not.toBeNull();
-    // A bare button shows focus in the shared ring, not the UA outline.
+    // A bare button shows focus the way the vendored button does, not with
+    // the UA outline.
     expect(head.querySelector('button')!.className).toContain(
-      'focus-visible:outline-ring',
+      'focus-visible:border-ring',
     );
     // Nothing is sorted, so nothing claims to be: a row of headers each
     // announcing `none` is noise, not information.

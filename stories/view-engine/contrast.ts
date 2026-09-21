@@ -85,28 +85,6 @@ export function measureBorderContrast(
   };
 }
 
-/** What one control's focus outline measured, against what it is drawn over. */
-export interface OutlineContrast {
-  ratio: number;
-  colors: { outline: string; surface: string };
-}
-
-/**
- * The outline of one element — a focus indicator drawn outside its box, and
- * so over the surface around it rather than over its own fill.
- */
-export function measureOutlineContrast(element: Element): OutlineContrast {
-  const style = getComputedStyle(element);
-  if (style.outlineStyle === 'none' || parseFloat(style.outlineWidth) === 0)
-    throw new Error('The element draws no outline to measure.');
-  const surface = surfaceUnder(element.parentElement);
-  const outline = composite(layer(style.outlineColor), surface);
-  return {
-    ratio: contrastRatio(outline, surface),
-    colors: { outline: css(outline), surface: css(surface) },
-  };
-}
-
 /**
  * The first colour an element is painted over: the nearest ancestor whose
  * background is opaque, with every half-transparent background between them

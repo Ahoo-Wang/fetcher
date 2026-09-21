@@ -42,7 +42,7 @@ import displayMeta, {
   WithActions as DisplayWithActions,
   WithData as DisplayWithData,
 } from './RecordWorkbench.stories.js';
-import { measureBorderContrast, measureOutlineContrast } from './contrast.js';
+import { measureBorderContrast } from './contrast.js';
 import { tableSettingsStore } from './fixtures.js';
 import {
   amountOf,
@@ -2001,10 +2001,10 @@ const controlBorders = (theme: 'light' | 'dark'): Story => ({
  * 焦点指示在两个主题里都 ≥3:1，而且一屏只有一种画法。
  *
  * vendored 的 `Button` 以 1px `border-ring` 加 3px 半透明光晕表示焦点；表头的排序
- * 按钮与已应用条上的 ✕ 没有边可染，走 `FOCUS_RING` 的 2px 描边——同一个 `--ring`
- * token。评审量到 `--ring` 在 `0.708` 时边线只有 2.59:1、光晕 1.54:1，三处又各画
- * 各的（一处还是 UA 的 `outline: auto`）。焦点由 Tab 键送到目标上：脚本调
- * `focus()` 不一定算 `:focus-visible`，键盘一定算。
+ * 按钮与已应用条上的 ✕ 走 `FOCUS_RING`——同一份配方（透明边聚焦时染成
+ * `ring`），不另造一种。评审量到 `--ring` 在 `0.708` 时边线只有 2.59:1、光晕
+ * 1.54:1，三处又各画各的（一处还是 UA 的 `outline: auto`）。焦点由 Tab 键送到
+ * 目标上：脚本调 `focus()` 不一定算 `:focus-visible`，键盘一定算。
  */
 const focusIndicators = (theme: 'light' | 'dark'): Story => ({
   ...DisplayWithData,
@@ -2035,9 +2035,11 @@ const focusIndicators = (theme: 'light' | 'dark'): Story => ({
     await settled(() => getComputedStyle(columnsButton).borderTopColor);
     measured.push({ name: 'button', ...measureBorderContrast(columnsButton) });
     await tabTo(unset);
-    measured.push({ name: 'unset', ...measureOutlineContrast(unset) });
+    await settled(() => getComputedStyle(unset).borderTopColor);
+    measured.push({ name: 'unset', ...measureBorderContrast(unset) });
     await tabTo(sortButton);
-    measured.push({ name: 'sort', ...measureOutlineContrast(sortButton) });
+    await settled(() => getComputedStyle(sortButton).borderTopColor);
+    measured.push({ name: 'sort', ...measureBorderContrast(sortButton) });
 
     const report = measured
       .map(
@@ -2049,24 +2051,22 @@ const focusIndicators = (theme: 'light' | 'dark'): Story => ({
       Math.min(...measured.map(({ ratio }) => ratio)),
       `${theme} — ${report}`,
     ).toBeGreaterThanOrEqual(NON_TEXT_CONTRAST);
-    // The same token everywhere: the bare buttons' outline is the colour the
-    // vendored button puts on its border.
-    const outline = getComputedStyle(sortButton).outlineColor;
+    // The same recipe everywhere: a focused bare button wears the colour the
+    // vendored button puts on its border, and the same halo.
+    const border = getComputedStyle(sortButton).borderTopColor;
+    const halo = getComputedStyle(sortButton).boxShadow;
     await tabTo(columnsButton);
     await settled(() => getComputedStyle(columnsButton).borderTopColor);
-    await expect(getComputedStyle(columnsButton).borderTopColor).toBe(outline);
+    await expect(getComputedStyle(columnsButton).borderTopColor).toBe(border);
+    await expect(getComputedStyle(columnsButton).boxShadow).toBe(halo);
   },
 });
 
 /**
- * Resolves once a transitioning value has stopped changing: two reads a few
- * frames apart that agree, after it has moved off its starting value.
+ * Resolves once a transitioning value has stopped changing: two reads 50ms
+ * apart that agree. A value with no transition agrees at once.
  */
 async function settled(read: () => string): Promise<void> {
-  const start = read();
-  await waitFor(() => {
-    if (read() === start) throw new Error('The value has not moved yet.');
-  });
   await waitFor(async () => {
     const before = read();
     await new Promise(resolve => setTimeout(resolve, 50));

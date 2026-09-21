@@ -172,7 +172,7 @@ describe('AppliedBar', () => {
     expect(remove.querySelector('svg')!.getAttribute('class')).toContain(
       'size-3.5',
     );
-    expect(remove.className).toContain('focus-visible:outline-ring');
+    expect(remove.className).toContain('focus-visible:border-ring');
     expect(remove.className).toContain('focus-visible:opacity-100');
   });
 
