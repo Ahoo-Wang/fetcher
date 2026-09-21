@@ -128,7 +128,7 @@ describe('AppliedBar', () => {
 
     // The badge is built from the parts, so the operator is the catalogue's
     // word for it rather than the enum name the English line carries.
-    expect(screen.getByText('Warehouse eq CN')).toBeDefined();
+    expect(screen.getByText('Warehouse is CN')).toBeDefined();
     expect(screen.queryByText('All records')).toBeNull();
   });
 
@@ -152,7 +152,7 @@ describe('AppliedBar', () => {
     // It is still in force, so it is named rather than hidden; it is not
     // something to go on building on, so it is not dressed as one. The
     // value cannot be read, but the question it was asked under can.
-    const badge = screen.getByText('legacy eq');
+    const badge = screen.getByText('legacy is');
     expect(badge.hasAttribute('data-unresolved')).toBe(true);
     expect(badge.className).toContain('border-border');
   });
@@ -165,15 +165,15 @@ describe('AppliedBar', () => {
       filter().submit();
     });
     await waitFor(() =>
-      expect(screen.getByText('Warehouse eq CN')).toBeDefined(),
+      expect(screen.getByText('Warehouse is CN')).toBeDefined(),
     );
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Unset Warehouse eq CN' }),
+      screen.getByRole('button', { name: 'Unset Warehouse is CN' }),
     );
 
     await waitFor(() =>
-      expect(screen.queryByText('Warehouse eq CN')).toBeNull(),
+      expect(screen.queryByText('Warehouse is CN')).toBeNull(),
     );
     // The condition left the query; the row is still in the editor, blank,
     // for the next question.
@@ -204,7 +204,9 @@ describe('AppliedBar', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Unset Amount gt 10' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Unset Amount more than 10' }),
+    );
 
     // The editor addresses nodes by index; the `children` keys of a summary
     // path are not part of the address.
@@ -218,7 +220,7 @@ describe('AppliedBar', () => {
     expect(
       (
         screen.getByRole('button', {
-          name: 'Unset Warehouse eq CN',
+          name: 'Unset Warehouse is CN',
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
@@ -240,8 +242,8 @@ describe('AppliedBar', () => {
 
     const badges = [...document.querySelectorAll('[data-slot="badge"]')];
     expect(badges.map(badge => badge.textContent?.trim())).toEqual([
-      'Warehouse eq CN',
-      'Customer eq c-1 Set by the page',
+      'Warehouse is CN',
+      'Customer is c-1 Set by the page',
     ]);
     // The view's own is removable and dressed as a condition; the page's is
     // worn plainly and offers nothing to press.
@@ -249,10 +251,10 @@ describe('AppliedBar', () => {
     expect(badges[1].hasAttribute('data-scoped')).toBe(true);
     expect(badges[1].className).toContain('border-border');
     expect(
-      screen.queryByRole('button', { name: 'Unset Customer eq c-1' }),
+      screen.queryByRole('button', { name: 'Unset Customer is c-1' }),
     ).toBeNull();
     expect(
-      screen.getByRole('button', { name: 'Unset Warehouse eq CN' }),
+      screen.getByRole('button', { name: 'Unset Warehouse is CN' }),
     ).toBeDefined();
   });
 
@@ -267,7 +269,7 @@ describe('AppliedBar', () => {
     );
 
     expect(screen.queryByText('All records')).toBeNull();
-    expect(screen.getByText(/Customer eq c-1/)).toBeDefined();
+    expect(screen.getByText(/Customer is c-1/)).toBeDefined();
   });
 
   /**
@@ -278,7 +280,7 @@ describe('AppliedBar', () => {
   it('renders no remove at all when it is read-only', () => {
     render(<AppliedBar filter={stub([condition()])} hasResult readOnly />);
 
-    expect(screen.getByText('Warehouse eq CN')).toBeDefined();
+    expect(screen.getByText('Warehouse is CN')).toBeDefined();
     expect(screen.queryByRole('button')).toBeNull();
   });
 });
@@ -321,7 +323,7 @@ describe('a value the way its field shows it', () => {
     const shown = new Intl.DateTimeFormat(undefined, {
       dateStyle: 'medium',
     }).format(instant);
-    expect(screen.getByText(`Shipped gt ${shown}`)).toBeDefined();
+    expect(screen.getByText(`Shipped more than ${shown}`)).toBeDefined();
     expect(screen.queryByText(new RegExp(String(instant)))).toBeNull();
   });
 
