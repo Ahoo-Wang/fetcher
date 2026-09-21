@@ -57,5 +57,18 @@ export const SURFACE = 'rounded-lg border border-border bg-card p-3';
  * or a fourth option, goes in a `Select` instead: a segmented control is
  * read all at once, and there is only so much that can be.
  */
+/**
+ * The focus indicator of a control that is not a vendored `Button` — the
+ * sort button in a table header, the ✕ on an applied condition. The vendored
+ * button shows focus as a 1px `border-ring` plus a 3px halo; a bare button
+ * has no border to colour, so it draws the same token as a 2px outline. One
+ * token, one place, so every focused thing on the surface is the same grey
+ * and clears the same 3:1 (`--ring` in `styles.css`).
+ */
+export const FOCUS_RING =
+  // `outline-none` also sets Tailwind's `--tw-outline-style` to none, which
+  // the width utility reads back — so the focused state names the style too.
+  'outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring';
+
 export const SEGMENTED =
   'gap-0 [&>*]:rounded-none [&>*]:shadow-none [&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md [&>*+*]:-ml-px';

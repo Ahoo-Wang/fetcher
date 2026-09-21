@@ -56,14 +56,21 @@ export interface BorderContrast {
  * theme gives inputs a `bg-input/30` wash, which is the same token at another
  * opacity and therefore moves with it.
  */
-export function measureBorderContrast(element: Element): BorderContrast {
+export function measureBorderContrast(
+  element: Element,
+  side: 'top' | 'bottom' = 'top',
+): BorderContrast {
   const style = getComputedStyle(element);
-  if (parseFloat(style.borderTopWidth) === 0)
+  const width = side === 'top' ? style.borderTopWidth : style.borderBottomWidth;
+  if (parseFloat(width) === 0)
     throw new Error('The element draws no border to measure.');
 
   const surface = surfaceUnder(element.parentElement);
   const fill = composite(layer(style.backgroundColor), surface);
-  const border = composite(layer(style.borderTopColor), fill);
+  const border = composite(
+    layer(side === 'top' ? style.borderTopColor : style.borderBottomColor),
+    fill,
+  );
   const onFill = contrastRatio(border, fill);
   const onSurface = contrastRatio(border, surface);
   return {
@@ -75,6 +82,28 @@ export function measureBorderContrast(element: Element): BorderContrast {
       fill: css(fill),
       surface: css(surface),
     },
+  };
+}
+
+/** What one control's focus outline measured, against what it is drawn over. */
+export interface OutlineContrast {
+  ratio: number;
+  colors: { outline: string; surface: string };
+}
+
+/**
+ * The outline of one element — a focus indicator drawn outside its box, and
+ * so over the surface around it rather than over its own fill.
+ */
+export function measureOutlineContrast(element: Element): OutlineContrast {
+  const style = getComputedStyle(element);
+  if (style.outlineStyle === 'none' || parseFloat(style.outlineWidth) === 0)
+    throw new Error('The element draws no outline to measure.');
+  const surface = surfaceUnder(element.parentElement);
+  const outline = composite(layer(style.outlineColor), surface);
+  return {
+    ratio: contrastRatio(outline, surface),
+    colors: { outline: css(outline), surface: css(surface) },
   };
 }
 

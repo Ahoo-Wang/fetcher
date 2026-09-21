@@ -42,7 +42,7 @@ import displayMeta, {
   WithActions as DisplayWithActions,
   WithData as DisplayWithData,
 } from './RecordWorkbench.stories.js';
-import { measureBorderContrast } from './contrast.js';
+import { measureBorderContrast, measureOutlineContrast } from './contrast.js';
 import { tableSettingsStore } from './fixtures.js';
 import {
   amountOf,
@@ -1996,6 +1996,116 @@ const controlBorders = (theme: 'light' | 'dark'): Story => ({
     ).toBeGreaterThanOrEqual(NON_TEXT_CONTRAST);
   },
 });
+
+/**
+ * 焦点指示在两个主题里都 ≥3:1，而且一屏只有一种画法。
+ *
+ * vendored 的 `Button` 以 1px `border-ring` 加 3px 半透明光晕表示焦点；表头的排序
+ * 按钮与已应用条上的 ✕ 没有边可染，走 `FOCUS_RING` 的 2px 描边——同一个 `--ring`
+ * token。评审量到 `--ring` 在 `0.708` 时边线只有 2.59:1、光晕 1.54:1，三处又各画
+ * 各的（一处还是 UA 的 `outline: auto`）。焦点由 Tab 键送到目标上：脚本调
+ * `focus()` 不一定算 `:focus-visible`，键盘一定算。
+ */
+const focusIndicators = (theme: 'light' | 'dark'): Story => ({
+  ...DisplayWithData,
+  args: { ...DisplayWithData.args, theme },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const table = await canvas.findByRole('table');
+    await expect(
+      canvasElement.querySelector('[data-slot="view-surface"]'),
+    ).toHaveAttribute('data-theme', theme);
+
+    // A vendored `Button` that is always enabled here — the editor's toggle
+    // is a Base UI toggle with an `input` border of its own, not this.
+    const columnsButton = canvas.getByRole('button', {
+      name: defaultMessages['label.toolbar.columns'],
+    });
+    const sortButton = table.querySelector<HTMLElement>('thead button')!;
+    const unset = canvas.getAllByRole('button', {
+      name: new RegExp(
+        `^${defaultMessages['label.filter.unset-of'].split(' ')[0]}`,
+      ),
+    })[0];
+
+    const measured: { name: string; ratio: number; colors: object }[] = [];
+    await tabTo(columnsButton);
+    // The vendored button has `transition-all`: its border reaches the ring
+    // colour over 150ms, so the steady state is what is measured.
+    await settled(() => getComputedStyle(columnsButton).borderTopColor);
+    measured.push({ name: 'button', ...measureBorderContrast(columnsButton) });
+    await tabTo(unset);
+    measured.push({ name: 'unset', ...measureOutlineContrast(unset) });
+    await tabTo(sortButton);
+    measured.push({ name: 'sort', ...measureOutlineContrast(sortButton) });
+
+    const report = measured
+      .map(
+        ({ name, ratio, colors }) =>
+          `${name} ${ratio.toFixed(2)}:1 ${JSON.stringify(colors)}`,
+      )
+      .join('; ');
+    await expect(
+      Math.min(...measured.map(({ ratio }) => ratio)),
+      `${theme} — ${report}`,
+    ).toBeGreaterThanOrEqual(NON_TEXT_CONTRAST);
+    // The same token everywhere: the bare buttons' outline is the colour the
+    // vendored button puts on its border.
+    const outline = getComputedStyle(sortButton).outlineColor;
+    await tabTo(columnsButton);
+    await settled(() => getComputedStyle(columnsButton).borderTopColor);
+    await expect(getComputedStyle(columnsButton).borderTopColor).toBe(outline);
+  },
+});
+
+/**
+ * Resolves once a transitioning value has stopped changing: two reads a few
+ * frames apart that agree, after it has moved off its starting value.
+ */
+async function settled(read: () => string): Promise<void> {
+  const start = read();
+  await waitFor(() => {
+    if (read() === start) throw new Error('The value has not moved yet.');
+  });
+  await waitFor(async () => {
+    const before = read();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    if (read() !== before) throw new Error('The value is still moving.');
+  });
+}
+
+/** Presses Tab until the element has focus, so `:focus-visible` holds. */
+async function tabTo(target: HTMLElement): Promise<void> {
+  for (let presses = 0; presses < 80; presses += 1) {
+    if (document.activeElement === target) return;
+    await userEvent.tab();
+  }
+  throw new Error('Tab never reached the target.');
+}
+
+export const FocusIndicatorsInLightTheme: Story = focusIndicators('light');
+export const FocusIndicatorsInDarkTheme: Story = focusIndicators('dark');
+
+/**
+ * 暗色下的行线看得见。
+ *
+ * 分隔线不是控件，不欠 3:1，但 10% 白在暗色卡片上量到 1.32:1——一张没有行的
+ * 表。这里量的是 `tbody` 行的下边线压在它自己的底色与卡片之上的层叠色。
+ */
+export const DarkHairlines: Story = {
+  ...DisplayWithData,
+  args: { ...DisplayWithData.args, theme: 'dark' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const table = await canvas.findByRole('table');
+    const row = table.querySelector<HTMLElement>('tbody tr')!;
+    const { ratio, colors } = measureBorderContrast(row, 'bottom');
+    await expect(
+      ratio,
+      `${colors.border} on ${colors.fill} over ${colors.surface}`,
+    ).toBeGreaterThanOrEqual(1.5);
+  },
+};
 
 /** The light theme's `--input`, over the card and the header it sits on. */
 export const ControlBordersInLightTheme: Story = controlBorders('light');
