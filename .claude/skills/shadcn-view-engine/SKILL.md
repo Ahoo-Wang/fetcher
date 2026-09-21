@@ -1,13 +1,13 @@
 ---
-name: shadcn
+name: shadcn-view-engine
 description: Manages shadcn components and projects — adding, searching, fixing, debugging, styling, and composing UI, including chat interfaces. Provides project context, component docs, and usage examples. Applies when working with shadcn/ui, component registries, presets, --preset codes, or any project with a components.json file. Also triggers for "shadcn init", "create an app with --preset", or "switch to --preset".
-user-invocable: false
+user-invocable: true
 allowed-tools: Bash(npx shadcn@latest *), Bash(pnpm dlx shadcn@latest *), Bash(bunx --bun shadcn@latest *)
 ---
 
 # shadcn/ui
 
-> **This monorepo's copy** (installed with `npx skills add shadcn/ui -a claude-code --copy`): the only local change is `-c "$(git rev-parse --show-toplevel)/packages/view-engine"` on the `info` command below, because Claude Code runs a skill's shell preamble from the session's working directory (the repository root, or a worktree of it) and `shadcn info` refuses a monorepo root. `packages/view-engine` is the one workspace with a `components.json`; every other CLI command in this file needs the same `-c packages/view-engine` (or `cd packages/view-engine` first). Re-apply this note when updating the skill with `npx skills update`.
+> **This monorepo's copy** (installed with `npx skills add shadcn/ui -a claude-code --copy`, then renamed from `shadcn` to `shadcn-view-engine` because Claude Code resolves a same-named skill to the global `~/.claude/skills/shadcn` copy first — a project copy under the same name is never loaded): the only other local change is `-c "$(git rev-parse --show-toplevel)/packages/view-engine"` on the `info` command below, because Claude Code runs a skill's shell preamble from the session's working directory (the repository root, or a worktree of it) and `shadcn info` refuses a monorepo root. `packages/view-engine` is the one workspace with a `components.json`; every other CLI command in this file needs the same `-c packages/view-engine` (or `cd packages/view-engine` first). Re-apply this note when updating the skill with `npx skills update`.
 
 A framework for building ui, components and design systems. Components are added as source code to the user's project via the CLI.
 
