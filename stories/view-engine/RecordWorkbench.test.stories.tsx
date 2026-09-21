@@ -474,6 +474,53 @@ export const WithActions: Story = {
 };
 
 /**
+ * 一屏只有一个 primary，它是跑查询的那个 Apply——宿主的全局动作不是（D12 Ⅰ）。
+ *
+ * D12 Ⅰ 原本写的是「宿主的主功能按钮，同屏唯一 primary」，而[动作槽位](
+ * packages/view-engine/docs/design/ui/README.md)一直写着相反的规矩：编辑带一
+ * 展开，屏幕上就有两个 primary。2026-09-21 用户裁定了后者——排在最右说的是
+ * 「这是业务的去处」，不是「这是这一屏最该按的东西」。
+ *
+ * 这里不认类名认颜色：把编辑带打开，量遍这一屏上每一颗按钮的实际底色，与
+ * Apply 同色的应当只有 Apply 自己。jsdom 不套样式表，这个数只有真浏览器给得
+ * 出（`test/analysisUi.test.tsx` 按 variant 的类名钉的是结构那一半）。
+ */
+export const OnlyApplyIsPrimary: Story = {
+  ...DisplayWithActions,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole('table');
+
+    const host = canvas.getByRole('button', { name: '新建订单' });
+    await userEvent.click(
+      canvas.getByRole('button', {
+        name: new RegExp(`^${zhCN['label.filter.panel']}`),
+      }),
+    );
+    const apply = await canvas.findByRole('button', {
+      name: zhCN['label.filter.apply'],
+    });
+    // The vendored button has `transition-all`, so the steady colour is what
+    // is read — and the band has just opened.
+    await settled(() => getComputedStyle(apply).backgroundColor);
+    const primary = getComputedStyle(apply).backgroundColor;
+
+    const alike = [...canvasElement.querySelectorAll<HTMLElement>('button')]
+      .filter(button => getComputedStyle(button).backgroundColor === primary)
+      .map(button => button.textContent?.trim());
+
+    await expect(alike, `painted ${primary}`).toEqual([
+      zhCN['label.filter.apply'],
+    ]);
+    // And the host's own action is drawn as an outline button: a fill it
+    // shares with the surface behind it, and an edge of its own.
+    const drawn = getComputedStyle(host);
+    await expect(drawn.backgroundColor).not.toBe(primary);
+    await expect(drawn.borderTopWidth).not.toBe('0px');
+  },
+};
+
+/**
  * Renaming, deleting, reordering and the default view: all of it about the
  * list rather than about the view on screen, so all of it in one dialog
  * behind the sidebar's gear.
@@ -1406,6 +1453,24 @@ export const SaveConflictKeepsMine: Story = {
       zhCN['label.conflict.copy'],
       zhCN['label.conflict.mine'],
     ]);
+
+    // Safest first, and none of the three set apart from the others: the
+    // overwrite used to be the solid primary, which made the most dangerous
+    // way out the only emphasised thing on the screen (D12 Ⅰ). Which of them
+    // costs least depends on what is in each config, and the screen does not
+    // decide that for anyone. Painted colours, which only a browser has.
+    const painted = [...band.querySelectorAll<HTMLElement>('button')].map(
+      button => {
+        const style = getComputedStyle(button);
+        return [style.backgroundColor, style.borderTopColor, style.color].join(
+          ' | ',
+        );
+      },
+    );
+    await expect(new Set(painted), painted.join('; ')).toHaveProperty(
+      'size',
+      1,
+    );
 
     await pressWhenEnabled(
       within(band).getByRole('button', {
