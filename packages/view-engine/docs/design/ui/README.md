@@ -74,10 +74,11 @@
 
 ## 版式：三块、一套间距、一种选项控件
 
-三条规则，后来的改动按它们判。落到代码上是 `ui/layout.ts` 一处（`SPACE`、`TRAY`、`SEGMENTED`），不是各处手写的 class。
+四条规则，后来的改动按它们判。落到代码上是 `ui/layout.ts` 一处（`SPACE`、`TRAY`、`SEGMENTED`、`TEXT_UI`），不是各处手写的 class。
 
 - **主列是三块，不是一摞行**。视图头（identity + 保存 + 视图级控件）是 **banner**：`border-b` 划一条线，不做卡片——给"说明这是哪一页"的那一行套个卡片，等于给整页套卡片。这条线以 `-mx-4 px-4` 穿过 `main` 的内边距通到工作区的边，与侧栏头下那条线（`view-list-header` 的 `border-b`）接成一条：两段各差 16px 的短线读成两个头，一条线读成一个头。条件区是一块**托盘**（`TRAY`：`rounded-lg bg-muted/40 p-3`，一层浅色底、不加边——条件 pill 才是带边的东西，托盘再加边就是框套框）；结果块是**一圈边**（`rounded-lg border`，无内边距）：工具栏是第一行、分页是最后一行、表格通到这圈边（D12）。块只在有内容时才存在：空卡片是一个"这儿有东西"的空头承诺。这条对结果块同样成立——分析视图跑之前既没有结果、也没有已应用条件条、也没有状态条，三样都不画的时候整块就不渲染，而不是留一个空边框。结果块由工作台组合，外壳只给那一圈边——仪表盘以 `resultFramed={false}` 退出，它那一格格面板卡片因此仍只有一层。
 - **间距是一把有级差的尺子**，不是到处 `gap-2`：块与块 16px（`SPACE.BLOCKS`）、块内行与行 12px（`SPACE.ROWS`）、行内控件组之间 8px（`SPACE.GROUPS`）、组内 4px（`SPACE.WITHIN`）。分组要看得见，而两块之间的距离若等于两个按钮之间的距离，就没有什么是成组的，眼睛无处落脚。**主列的块间距归外壳**：`WorkbenchShell` 已经把 `SPACE.BLOCKS` 发给 `<main>`，工作台不再往 `className` 里塞自己的 `gap-*`——`cn` 让调用处赢，Record 曾因此把三块压到 8px，比块里的行还紧。vendored 组件自带的、不在尺子上的间距同样在调用处合缝：`FieldGroup` 的 `gap-5`（20px，比块与块的 16 还宽）由 `AnalysisEditor` 以 `className={SPACE.ROWS}` 覆掉，和 `SEGMENTED` 是同一条规矩。（见 test/recordWorkbench.test.tsx 与 test/analysisUi.test.tsx 钉 class，stories/view-engine/ 的 `BlockSpacing`、`EditorRowSpacing` 量真实像素）
+- **字号只有三档**：13（`TEXT_UI`）、14（`text-sm`：正文、表身、控件）、16（`text-base`：定义名那一级标题）。从前是四档——`text-xs` 的 12（分组标签、列头、徽章、分页、工具栏那句提示）与 shadcn `sm` 控件的 12.8（`text-[0.8rem]`，侧栏视图项与所有小按钮）只差 0.8px。0.8px 不是级差，是同一档画了两遍：侧栏里 12.8 的视图名压在 12 的分组标签上，读起来不像两级，像一级画歪了；12.8px 又不落在像素栅格上，中文在这一档渲染发虚。两档并成 13px，写在 `styles.css` 的 `--text-ui`（`var(--fve-text-ui, 0.8125rem)`，宿主可改；长度不分明暗，和 `radius` 一样不在暗色块里重声明）。自家标签走 `TEXT_UI`（字号连行高）；vendored 的两处——`sm` 控件的 `text-[0.8rem]` 与 `Badge` 的 `text-xs`——由 `.fve-root` 下一条作用域规则钉到同一个变量上，因为它们成打的调用处根本不传 class，而 `ui/components/**` 不手改。**真正低一级的地方仍是 12**：画在图表**里面**的标签（密度就是目的）、vendored 的菜单／选择器分组标题与快捷键提示、加分组菜单里 `AND`／`OR` 那个代码字样——它们都不与上面那一档并排读。（见 stories/view-engine/RecordWorkbench.test.stories.tsx 的 `TypeScaleIsThreeRungs`：真浏览器里量侧栏项、分组标签、列头、徽章与分页都是 13px，表身 14、定义名 16，整屏再没有一个 12.8px）
 - **互斥选项是一个控件，永远不是一排按钮**。判据按选项的多少与长短走：**≤3 个短选项** → 分段控件（segmented），一圈外框、内部无缝（`SEGMENTED`）；**选项是一句话，或多于三个** → `Select`；**同一职责下的几个动作** → `ButtonGroup`；**一个主动作带几种变体** → 拆分按钮（`SaveActions` 就是）。踩过的坑是 `ToggleGroup variant="outline"`：每一项自带边框、组又给了 gap，读起来就是三个各自独立、碰巧挨着的按钮。vendored 的 `ui/components/**` 不手改，所以缝在调用处合——`className={SEGMENTED}`。筛选的简单／高级已经进了标题栏下拉，分组操作符已经是"满足…"选择器，剩下的两处（结果工具栏的布局、分析编辑器的表／图）都用 `SEGMENTED` 合成一个控件。
 
 ## 工作台骨架

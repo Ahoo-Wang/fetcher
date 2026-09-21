@@ -65,8 +65,6 @@
 
 ### 视觉
 
-- **字号阶梯里 12.8 与 12 挨得太近**——为什么：一屏 12 / 12.8 / 14 / 16 四档，12.8（shadcn 的 `sm` 按钮）与 12 只差 0.8px，侧栏视图名 12.8 压在 12 的分组标签上，中文在 12.8 渲染发虚。判据：`sm` 按钮与侧栏项统一到 13 或 12（在调用处或 `styles.css` 的 token 上，不改 vendored 文件），四档变三档；浏览器故事量侧栏项字号。落点：`src/styles.css`、`src/ui/layout.ts`。
-
 ## 功能（legacy 形态）
 
 - **不是列的字段上的汇总够不着**——为什么：列设置的行来自「配置里的列 + 定义里还能当列的字段」，所以 `config.summaries` 里一条指向既不是列、定义也不再声明的字段时，`validateSummaries` 报 `record.field.unknown`、查询与保存都被挡住，而面板里没有任何一行能把它取消——正是"报了错却够不着"那一类（[ui/record.md](ui/record.md)）。本包的界面写不出这种配置，手写或旧版本迁移过来的可以。判据：想清楚它属于列设置还是属于一条"清掉读不出的设置"的通用出口（先在 [decisions.md](decisions.md) 给结论）；若归列设置，则 `columnSettingRows` 的 broken 行也覆盖只被 `summaries` 提到的字段，且它的勾选框取消时只删汇总、不动列；`test/columnSettings.test.tsx` 覆盖。落点：`src/ui/columns/rows.ts`、[ui/record.md](ui/record.md)。
