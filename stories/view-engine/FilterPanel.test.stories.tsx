@@ -336,3 +336,73 @@ export const NumberList: Story = {
     );
   },
 };
+
+/**
+ * F-08: a condition pill keeps its value control inside its own border, and
+ * off the ✕ beside it, at every width the strip is given.
+ *
+ * The value select asked for `min-w-40`, and 160px is a floor a flex item
+ * reports upwards however little room its container has: at 1280 it ran 37px
+ * under the remove button and 6px past the pill's own border, at 420 104px
+ * and 73px, and the chevron was no longer the element at its own
+ * coordinates. Both boxes of a range did the same from the other end — 31px
+ * past the ✕ once the separator was between them. Only a real browser lays
+ * this out, which is why the rule is measured here rather than asserted as a
+ * class name in jsdom.
+ */
+export const TheValueStaysInsideItsPill: Story = {
+  ...DisplayAdvanced,
+  args: { instanceId: 'orders-rich', hostWidth: 420 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // A saved view opens with its editor folded.
+    await userEvent.click(
+      await canvas.findByRole('button', {
+        name: new RegExp(`^${zhCN['label.filter.panel']}`),
+      }),
+    );
+    const host = canvasElement.querySelector<HTMLElement>('[data-pill-host]')!;
+
+    // It mounts at the narrowest of the three and is widened from there: the
+    // view list folds itself away for a narrow column at mount and stays
+    // folded, so every step measures a strip and not the fold.
+    for (const width of [420, 640, 1024]) {
+      host.style.width = `${width}px`;
+      await waitFor(() =>
+        expect(
+          canvasElement.querySelectorAll('[data-slot="filter-condition"]')
+            .length,
+        ).toBeGreaterThan(0),
+      );
+
+      for (const pill of canvasElement.querySelectorAll<HTMLElement>(
+        '[data-slot="filter-condition"]',
+      )) {
+        const frame = pill.getBoundingClientRect();
+        const buttons = [...pill.querySelectorAll('button')];
+        const cross = buttons[buttons.length - 1].getBoundingClientRect();
+        const value =
+          pill.querySelector<HTMLElement>('[data-slot="filter-value"]')!;
+
+        for (const control of value.querySelectorAll<HTMLElement>(
+          '[data-slot="select-trigger"], [data-slot="input"], button',
+        )) {
+          const box = control.getBoundingClientRect();
+          // Base UI keeps a hidden input beside the one on screen.
+          if (box.width === 0) continue;
+          const where = `${pill.getAttribute('aria-label')} @ ${width}`;
+          // Inside the pill it belongs to, on both edges.
+          await expect(box.right, where).toBeLessThanOrEqual(frame.right);
+          await expect(box.left, where).toBeGreaterThanOrEqual(frame.left);
+          // And clear of the ✕ wherever the two share a line: a control the
+          // remove button covers is a control the pointer cannot reach.
+          const sameLine = box.top < cross.bottom && cross.top < box.bottom;
+          if (sameLine)
+            await expect(box.right, `${where} vs ✕`).toBeLessThanOrEqual(
+              cross.left,
+            );
+        }
+      }
+    }
+  },
+};

@@ -253,6 +253,7 @@ export const zhCN: ViewMessages = {
   'label.filter.any-entry': '有任意条目',
   'label.filter.range-from': '{field} 从',
   'label.filter.range-to': '{field} 到',
+  'label.filter.range-join': '~',
   'label.filter.new-value-of': '新的 {field}',
   'label.filter.add-value-of': '添加 {field}',
   'label.filter.add-value': '添加 {value}',

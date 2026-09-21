@@ -16,7 +16,7 @@ import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { EditorDescriptor, FilterValue } from '../src/index.js';
-import { FilterValueEditor, ViewSurface } from '../src/ui/index.js';
+import { en, FilterValueEditor, ViewSurface } from '../src/ui/index.js';
 
 afterEach(cleanup);
 
@@ -183,6 +183,46 @@ describe('FilterValueEditor', () => {
       target: { value: '9' },
     });
     expect(range.changes).toEqual([[1, 9]]);
+  });
+
+  /**
+   * Two boxes side by side are two answers; a range is one. Nothing stood
+   * between them, so «amount between 100 ———— 5,000» read as a pair of
+   * numbers asked for separately — and the summary above the rows had been
+   * printing a `~` between the same two ends all along. One catalogue entry
+   * now, drawn `aria-hidden` because each end is already named.
+   */
+  it('joins the two ends of a range with the separator the summary uses', () => {
+    editor({ input: 'number', range: true }, [1, 2]);
+
+    const from = screen.getByLabelText('amount from');
+    const row = from.closest('div[class*="flex"]') as HTMLElement;
+    const join = row.querySelector(':scope > span[aria-hidden="true"]');
+
+    expect(join).not.toBeNull();
+    expect(join?.textContent).toBe(en['label.filter.range-join']);
+    // It sits between them rather than after both, and neither end is the
+    // one that gives when the pill runs out of room.
+    expect(
+      (join as Element).compareDocumentPosition(from) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+    for (const end of ['amount from', 'amount to'])
+      expect(screen.getByLabelText(end).className).toContain('flex-1');
+  });
+
+  /**
+   * The value select asked for a 160px floor, which a flex item reports
+   * upwards whatever its container has: inside a condition pill it grew past
+   * the pill's own border and under the ✕ beside it. It fills what the pill
+   * has left instead, and clamps.
+   */
+  it('lets the value select shrink to whatever room the pill has', () => {
+    editor({ input: 'select', options: CANDIDATES }, 'CN');
+
+    const trigger = screen.getByLabelText('amount');
+    expect(trigger.className).toContain('min-w-0');
+    expect(trigger.className).not.toMatch(/(^|\s)min-w-(?!0)/);
   });
 
   it('offers true and false for a boolean', async () => {

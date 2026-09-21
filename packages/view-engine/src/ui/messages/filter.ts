@@ -77,6 +77,11 @@ export const filterMessages = {
   'label.filter.any-entry': 'has any entry',
   'label.filter.range-from': '{field} from',
   'label.filter.range-to': '{field} to',
+  // What stands between the two ends of a range, in the editor and in the
+  // applied summary alike — one condition, punctuated the same way wherever
+  // it is read. It is drawn `aria-hidden`, because each end is already named
+  // by the two keys above.
+  'label.filter.range-join': '~',
   // A list of values that grows: what is being typed, the popup that offers
   // it back as the one thing to add, and one remove button per value. Every
   // pill on the panel has all three, so the first two are named after their
