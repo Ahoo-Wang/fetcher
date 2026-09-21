@@ -86,7 +86,6 @@
 - **P-09 标题栏分隔线**：1×16px、`--border` 约 1.2:1 基本看不见。判据：提到 20–24px 用 `--input`，或用间距说话不画线。落点：`src/ui/ViewHeader.tsx`。
 - **P-10 已应用条／徽章**：outline 徽章的边是 `--border`（≈1.2:1），表内徽章已改 `--input`，这里没改。判据：`ToneBadge` outline 档换 `--input`。落点：`src/ui/variants.tsx`。
 - **P-11 表格／宽屏**：四列表在 1600 下金额列 547px。判据：表 `max-width` 或末尾一个吃余量的空列。落点：`src/ui/RecordTable.tsx`、[ui/record.md](ui/record.md)。
-- **P-12 「无法打开」那一屏**：切换器标签空白，定义名在任何宽度都不显示。判据：占位标签「选择视图」；把该分支放进 `@container/header`。落点：`src/ui/workbench/Unopenable.tsx`。
 - **P-13 打开视图时**：整页只有一条 `h-8` 骨架。判据：标题栏 + 结果块骨架，结构与打开后一致。落点：`src/ui/WorkbenchShell.tsx`。
 - **P-14 分页**（拍板 Ⅷ）：只能一页页翻。判据：总数已知时给页码输入。落点：`src/ui/RecordPagination.tsx`。
 - **P-15 筛选／取反**（拍板 Ⅶ）：简单模式写不出「不在这段时间内」。判据：pill 上的取反开关，写成 `nor`。落点：`src/ui/filter/ConditionPill.tsx`、`src/filter/`、[ui/README.md#filterpanel-的布局](ui/README.md#filterpanel-的布局)。
