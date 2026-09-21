@@ -6,6 +6,7 @@
 
 - `DashboardGrid` 不做自动紧凑，面板按配置中的 `layout` 原样摆放；
 - 只有用户拖动或缩放结束时才把几何写回（`edit` + `apply`），库自身在挂载或属性变化时算出的布局不写回，因此打开已保存的 Dashboard 不会变脏。（见 test/dashboardUi.test.tsx「DashboardGrid」「with a stored layout the grid would have compacted」）
+- 栅格要的是像素宽度，而容器只有上了屏才知道自己多宽。量它的是 `react-grid-layout` 自己的 `useContainerWidth`，不是这里另写一个 `ResizeObserver`：同一个观察者、同一套取宽规则，没有 `ResizeObserver` 的环境照样能画，连续几次缩放合并到同一帧。容器报 0（被隐藏时就是这样）时这个 hook 照实上报，栅格自己不收，面板保持上一次能画的宽度。（见 test/dashboardUi.test.tsx「follows the container width once it can be measured」）
 
 - 面板里的 Record 视图以 `selectable={false}` 渲染 `RecordTable`：Dashboard 是读数的地方，没有工具栏也没有行动作，没有任何东西读选择，勾选框因此只是一列点不出结果的控件。
 

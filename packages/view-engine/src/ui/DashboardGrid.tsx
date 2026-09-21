@@ -11,9 +11,12 @@
  * limitations under the License.
  */
 
-import { useEffect, useRef, useState } from 'react';
 import { cn } from 'cn';
-import GridLayout, { noCompactor, type Layout } from 'react-grid-layout';
+import GridLayout, {
+  noCompactor,
+  useContainerWidth,
+  type Layout,
+} from 'react-grid-layout';
 import {
   GripVerticalIcon,
   LayoutDashboardIcon,
@@ -80,7 +83,12 @@ export function DashboardGrid({
   className,
   onRenderFailure,
 }: DashboardGridProps) {
-  const { ref, width } = useContainerWidth();
+  // The grid needs a pixel width and the container only knows it once it is
+  // on screen, so the measuring is the library's own hook rather than a
+  // second `ResizeObserver` written here: it is the same observer the grid
+  // would have used, it survives an environment without `ResizeObserver`,
+  // and it coalesces a burst of resizes into one frame.
+  const { containerRef, width } = useContainerWidth();
   const messages = useViewMessages();
   const placed = (next: Layout) => {
     if (editable) dashboard.place(next.map(toPlacement));
@@ -108,7 +116,7 @@ export function DashboardGrid({
 
   return (
     <div
-      ref={ref}
+      ref={containerRef}
       data-slot="dashboard-grid"
       className={cn('w-full', className)}
     >
@@ -334,27 +342,4 @@ function PanelFailed({ error }: { error: Issue | undefined }) {
       </EmptyHeader>
     </Empty>
   );
-}
-
-/**
- * The grid needs a pixel width, and the container only knows it once it is on
- * screen. `ResizeObserver` is missing in some test and server environments, so
- * the initial width stands rather than the grid failing to render at all.
- */
-function useContainerWidth(initial = 1280) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [width, setWidth] = useState(initial);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(entries => {
-      const measured = entries[0]?.contentRect.width ?? 0;
-      if (measured > 0) setWidth(measured);
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  return { ref, width };
 }
