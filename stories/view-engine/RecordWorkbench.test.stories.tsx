@@ -54,7 +54,11 @@ import displayMeta, {
   WithActions as DisplayWithActions,
   WithData as DisplayWithData,
 } from './RecordWorkbench.stories.js';
-import { measureBorderContrast, measureTextContrast } from './contrast.js';
+import {
+  measureBorderContrast,
+  measureLayerSeparation,
+  measureTextContrast,
+} from './contrast.js';
 import { tableSettingsStore } from './fixtures.js';
 import { outcomesStore } from './outcomesStore.js';
 import { dragEdgeBy, dragHandleOnto } from './pointerDrag.js';
@@ -1687,9 +1691,7 @@ export const DeleteConflictAsksTwice: Story = {
     // The first question is off the screen before the second is asked, which
     // is what makes "twice" mean anything.
     await waitFor(() =>
-      expect(
-        within(document.body).queryByText(zhCN['label.delete.confirm']),
-      ).toBeNull(),
+      expect(within(document.body).queryByRole('alertdialog')).toBeNull(),
     );
 
     await pressWhenEnabled(
@@ -1834,12 +1836,15 @@ async function conflictLine(title: string): Promise<HTMLElement> {
   return managerRow(title);
 }
 
-/** Whichever delete confirmation is on screen. */
+/**
+ * Whichever delete confirmation is on screen.
+ *
+ * By role rather than by the question's words: the question names the view
+ * it is about (`label.delete.confirm` carries `{title}`), and the two
+ * confirmations of a conflicted delete may not name the same one.
+ */
 async function deleteDialog(): Promise<HTMLElement> {
-  const asked = await within(document.body).findByText(
-    zhCN['label.delete.confirm'],
-  );
-  return asked.closest<HTMLElement>('[role="alertdialog"]')!;
+  return within(document.body).findByRole('alertdialog');
 }
 
 /** The data slots the layout is asserted by, in the order they are drawn. */
@@ -4040,6 +4045,89 @@ export const WarningCalloutInDarkTheme: Story = calloutTone(
   DisplayTotalCoversThisPageOnly,
   'warning',
 );
+
+/**
+ * 删除确认上那颗「删除」读得出来，而且它盖住的那张列表看得出被盖住了。
+ *
+ * registry 的 `destructive` 按钮是一抹 10% 淡彩（`bg-destructive/10` 配
+ * `text-destructive`），跟 `ui/record.md` 记过的徽章是同一个陷阱：淡彩把底色
+ * 朝字的那个色相挪过去，字于是压在一个已经被自己染过的底上——这颗按钮在亮色
+ * 下量到 **3.97:1**（14px），够不着 1.4.3 的 4.5。修法也是同一个：拿 token 填
+ * 色、拿 token 自己的 `-foreground` 写字（`ui/variants.tsx` 的
+ * `DestructiveAction`）。
+ *
+ * 顺带量第二件事：这个对话框是从**视图管理器**（一个 `Dialog`）的某一行上抬起
+ * 来的，而 Base UI 默认**根本不画**嵌套弹层的遮罩——下面那张列表一点没被压暗，
+ * 确认框读起来像是掉进列表里的又一张白卡片（两张 `bg-popover` 互量正好
+ * 1.00:1）。所以 `ui/popups.tsx` 的遮罩改成 `forceRender` 并夹到
+ * `ALERT_DIALOG_BACKDROP_DIM`。暗色下这半还是不够：两张卡片都是
+ * `oklch(0.205)`，黑纱再厚也压不出差，靠的是卡片自己那圈
+ * `ALERT_DIALOG_RAISED` 的边——所以这里取「底色差」与「边线差」里大的那个。
+ * jsdom 不套样式表，这些数只有真浏览器给得出。
+ */
+const deleteActionContrast = (theme: 'light' | 'dark'): Story => ({
+  ...DisplayManageViews,
+  args: { ...DisplayManageViews.args, theme },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+      expect(
+        canvasElement.querySelector('[data-slot="view-surface"]'),
+      ).toHaveAttribute('data-theme', theme),
+    );
+    const row = await openManager(canvas, '待出库订单');
+    const manager = within(document.body).getByRole('dialog');
+
+    await userEvent.click(
+      within(row).getByRole('button', { name: zhCN['label.manage.delete'] }),
+    );
+    const dialog = await deleteDialog();
+
+    // Named, so the question survives covering the row it is about.
+    await expect(within(dialog).getByRole('heading').textContent).toBe(
+      formatMessage(zhCN, 'label.delete.confirm', { title: '待出库订单' }),
+    );
+
+    const confirm = within(dialog).getByRole('button', {
+      name: zhCN['label.manage.delete'],
+    });
+    await settled(() => getComputedStyle(confirm).backgroundColor);
+    const { ratio, colors } = measureTextContrast(confirm);
+    await expect(
+      ratio,
+      `${theme} — ${colors.text} on ${colors.background}`,
+    ).toBeGreaterThanOrEqual(CALLOUT_TEXT_CONTRAST);
+
+    // And the list under it reads as being *under* it: two `bg-popover`
+    // cards on their own measure 1.00:1 against each other, which is what
+    // "a white card dropped into the list" is as a number.
+    const backdrop = document.querySelector<HTMLElement>(
+      '[data-slot="alert-dialog-overlay"]',
+    )!;
+    const apart = measureLayerSeparation(dialog, backdrop, manager);
+    await expect(
+      apart.ratio,
+      `${theme} — fill ${apart.colors.front} ${apart.onFill.toFixed(2)}:1, ring ${apart.colors.ring} ${apart.onRing.toFixed(2)}:1, over ${apart.colors.behind}`,
+    ).toBeGreaterThanOrEqual(STACKED_DIALOG_SEPARATION);
+
+    // Called off rather than carried out: this story measures, it does not
+    // delete, and the row is left where the next play expects it.
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: zhCN['label.delete.keep'] }),
+    );
+  },
+});
+
+/**
+ * 叠起来的两张卡片之间的下限：3:1，按 1.4.11 对非文字内容那一档读——这圈边
+ * 界是"这是一个盖住下面那块的问题"唯一的视觉凭据。
+ */
+const STACKED_DIALOG_SEPARATION = 3;
+
+export const DeleteActionContrastInLightTheme: Story =
+  deleteActionContrast('light');
+export const DeleteActionContrastInDarkTheme: Story =
+  deleteActionContrast('dark');
 
 /**
  * The nearest ancestor that would trap this element in a stacking context of
