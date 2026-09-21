@@ -434,7 +434,7 @@ describe('DashboardGrid', () => {
     const card = document.querySelector('[data-slot="dashboard-panel"]');
     expect(card?.hasAttribute('data-warning')).toBe(true);
     expect(
-      screen.getByRole('img', {
+      screen.getByRole('button', {
         name: 'These conditions need the advanced editor to be shown in full.',
       }),
     ).toBeTruthy();
@@ -469,7 +469,7 @@ describe('DashboardGrid', () => {
     expect(screen.getByText('This panel is unavailable')).toBeTruthy();
     expect(screen.getByText(/page size must be a positive/)).toBeTruthy();
     expect(
-      screen.getByRole('img', {
+      screen.getByRole('button', {
         name: 'These conditions need the advanced editor to be shown in full.',
       }),
     ).toBeTruthy();

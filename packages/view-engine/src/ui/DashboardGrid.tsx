@@ -39,7 +39,9 @@ import { AnalysisChart } from './AnalysisChart.js';
 import { AnalysisTable } from './AnalysisTable.js';
 import { ContentPanel } from './DashboardPanels.js';
 import { RenderBoundary, type RenderFailureHandler } from './RenderBoundary.js';
+import { IconTooltip } from './IconButton.js';
 import { useViewMessages } from './MessagesProvider.js';
+import { Button } from './components/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from './components/card.js';
 import {
   Empty,
@@ -180,16 +182,29 @@ export function DashboardPanel({
     >
       <CardHeader className="px-3">
         <CardTitle className="flex items-center gap-1 text-sm">
+          {/*
+            The marker went through `title`, which no keyboard and no touch
+            screen ever opens, so what the warning actually said was reachable
+            only by hovering a mouse over a 16px glyph. It is the package's
+            own `IconTooltip` now: the same string names the control and fills
+            the tooltip, focus opens it, and a tap opens it too. The colour
+            sits on the glyph rather than on the button — `text-warning` is
+            what the marker means, and the vendored ghost variant keeps its
+            own hover and focus colours underneath it.
+          */}
           {warned && (
-            <span
-              data-slot="panel-warning"
-              role="img"
-              aria-label={messages.issues(warnings)}
-              title={messages.issues(warnings)}
-              className="text-warning"
+            <IconTooltip
+              label={messages.issues(warnings)}
+              render={
+                <Button
+                  data-slot="panel-warning"
+                  variant="ghost"
+                  size="icon-sm"
+                />
+              }
             >
-              <TriangleAlertIcon className="size-4" />
-            </span>
+              <TriangleAlertIcon className="text-warning" />
+            </IconTooltip>
           )}
           {/*
             Decorative on purpose. Dragging is a pointer gesture with no
