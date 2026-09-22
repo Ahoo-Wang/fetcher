@@ -11,11 +11,14 @@
  * limitations under the License.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   drillConditions,
+  fitChartSlots,
+  fitCharts,
   focusOn,
   groupFor,
+  shapeChart,
   splitBy,
   type AnalysisView,
 } from '../../analysis/index.js';
@@ -29,6 +32,7 @@ import {
 import { AnalysisChart } from '../AnalysisChart.js';
 import { AnalysisTable } from '../AnalysisTable.js';
 import { AnalysisToolbar } from '../analysis/AnalysisToolbar.js';
+import { ChartPicker, type Picked } from '../analysis/ChartPicker.js';
 import { Tray } from '../analysis/Tray.js';
 import { Button } from '../components/button.js';
 import { DrillMenu, type Pick } from '../analysis/DrillMenu.js';
@@ -73,19 +77,58 @@ export function AnalysisParts({
   const view: AnalysisView | null =
     data?.kind === 'analysis' ? data.view : null;
   /**
-   * The config the result was shaped by, not the draft being edited.
+   * The rows are the config that ran; how they are looked at is the draft.
    *
-   * Everything the result block reads comes from this one place: the layout
-   * that decides between table and chart, and the chart spec whose aliases
-   * name the result's columns. They used to come from two — the layout from
-   * the draft and the spec from the result — so a draft switched to `chart`
-   * before Run asked for a chart of a result shaped as a table, and there was
-   * nothing to draw. One source cannot disagree with itself.
+   * The result's rows and columns come from the config the result was
+   * shaped by, and nothing else can name them. The layout and the chart are
+   * presentation (D20, `ANALYSIS_PRESENTATION_MEMBERS`): they are drawn
+   * from those rows as the draft says, so switching to a chart or picking
+   * another type redraws without a run. The draft's chart is fitted to the
+   * shape that ran first — a dimension added in the tray but not yet run is
+   * no column of these rows.
    */
   const applied = state?.result?.config;
   const shaped = applied?.kind === 'analysis' ? applied : undefined;
-  const layout = shaped?.layout ?? analysis.layout;
-  const chart = shaped?.chart ?? analysis.chart;
+  const layout = analysis.layout;
+  const chart = useMemo(
+    () =>
+      shaped
+        ? fitChartSlots(analysis.chart, shaped.groups, shaped.metrics)
+        : analysis.chart,
+    [analysis.chart, shaped],
+  );
+  const chartData = useMemo(
+    () =>
+      view && shaped
+        ? shapeChart(
+            { ...shaped, chart, layout: 'chart' },
+            view.rows,
+            view.totals,
+          )
+        : undefined,
+    [view, shaped, chart],
+  );
+
+  // The visualization panel (D20 屏 I): open from the result's toolbar, it
+  // takes the sidebar column; the tiles fit the shape that ran.
+  const [visualizing, setVisualizing] = useState(false);
+  const fits = useMemo(
+    () =>
+      fitCharts({
+        groups: shaped?.groups ?? [],
+        metrics: shaped?.metrics ?? [],
+      }),
+    [shaped],
+  );
+  const picked: Picked = layout === 'table' ? 'table' : chart.type;
+  const choose = (next: Picked) => {
+    if (next === 'table') {
+      analysis.setLayout('table');
+      return;
+    }
+    analysis.setLayout('chart');
+    analysis.setChartType(next);
+  };
 
   // The group the user pressed, on the chart or in the table, and the menu
   // over it (D20 追问). Its conditions come from the config the result was
@@ -211,7 +254,20 @@ export function AnalysisParts({
       </Button>
     ),
     toolbar: view && view.rows.length > 0 && (
-      <AnalysisToolbar analysis={analysis} view={view} />
+      <AnalysisToolbar
+        analysis={analysis}
+        view={view}
+        visualizing={visualizing}
+        onVisualize={setVisualizing}
+      />
+    ),
+    panel: visualizing && (
+      <ChartPicker
+        fits={fits}
+        picked={picked}
+        onPick={choose}
+        onBack={() => setVisualizing(false)}
+      />
     ),
     result: view && (
       <>
@@ -221,9 +277,9 @@ export function AnalysisParts({
             nothing. */}
         {view.rows.length === 0 ? (
           <AnalysisEmpty />
-        ) : layout === 'chart' && view.chart ? (
+        ) : layout === 'chart' && chartData ? (
           <AnalysisChart
-            data={view.chart}
+            data={chartData}
             spec={chart}
             columns={view.schema ?? view.columns}
             onPick={onPick}
