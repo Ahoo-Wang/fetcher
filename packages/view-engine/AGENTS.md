@@ -299,7 +299,8 @@ src/
     describeConfig.ts         — One config in a sentence, for a conflict's side-by-side
     display.ts                — A value as its field shows it: enum labels, dates, bucket keys; `summaryFunctionKey` names a summary in its column's vocabulary, `columnTitle` composes an analysis header from its two parts
     download.ts               — Hands a file to the browser; the whole of the DOM the export needs, and the name it is handed under
-    dragAnnounce.ts           — What a screen reader hears while a row is dragged; the column settings and the manager share it
+    dragAnnounce.ts           — What a screen reader hears while a row is dragged, in the shape the drag library takes; the four sortable lists share it
+    dragWording.ts            — `dragWording`: one list's three drag sentences read out of the catalogue under that list's keys; each `drag.ts` names only its keys
     dragDrop.ts               — `dropped()`: what makes a finished drag a drop at all, before any list adds its own rule
     features.ts               — `WorkbenchFeatures`: which of the workbench's own controls exist (D18 XI)
     kinds.ts                  — The icon each kind and audience wears, shared by list and header
@@ -315,6 +316,7 @@ src/
       AnalysisToolbar.tsx     — The result's first row: the reading (dimensions · metrics) and how the result is looked at — table or chart, chart type, totals row
       ChartPicker.tsx         — The visualization panel's first level: the chart types as tiles in the sidebar column, greyed with a reason, the recommended one marked, the table among them (D20 屏 I)
       ChartOptions.tsx        — The visualization panel's second level: the chosen type's options on the data, display and axes pages (D20 屏 J)
+      drag.ts                 — What the series list makes of a drag: `seriesDrop` takes only a drop between two series this chart draws, plus what a reader hears
       DataTab.tsx             — The options' data page: each family's slots, position slots listing dimensions and measure slots listing metrics; a funnel's stages reordered by hand, and a metric-staged one named by hand
       DisplayTab.tsx          — The options' display page: legend and value labels, then each family's own settings; the table's totals row
       AxesTab.tsx             — The options' axes page, cartesian only: title, bounds and number format of each numeric axis
