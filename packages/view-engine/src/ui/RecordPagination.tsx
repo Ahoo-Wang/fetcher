@@ -30,8 +30,6 @@ import {
   PaginationItem,
 } from './components/pagination.js';
 import { useViewMessages } from './MessagesProvider.js';
-import { useSurfaceDisplay } from './ViewSurface.js';
-import { valueText } from './display.js';
 import { TEXT_UI } from './layout.js';
 import { cn } from 'cn';
 
@@ -54,7 +52,6 @@ export interface RecordPaginationProps {
  */
 export function RecordPagination({ table }: RecordPaginationProps) {
   const messages = useViewMessages();
-  const display = useSurfaceDisplay();
   const sizeLabelId = useId();
   const windowId = useId();
   const paging = table.paging;
@@ -100,10 +97,9 @@ export function RecordPagination({ table }: RecordPaginationProps) {
   // "第 1 / 31205 页" offered 31 205 pages and served 500 of them.
   const reachable = paged ? paging.reachable : undefined;
 
-  // Numbers are grouped the surface's way: "共 624000 条记录" is a number
-  // the reader has to count the digits of.
-  const number = (value: number) =>
-    valueText(value, messages, undefined, display.locale);
+  // Numbers go to the catalogue as numbers: it groups them the surface's
+  // way (`formatMessage`), as it does every count on screen — 「共 624000
+  // 条记录」 was a number the reader had to count the digits of.
 
   // Everything fits, so there is nowhere to go and no arrows are drawn (D12).
   // Two dead arrows were the honest version of the same fact and still cost
@@ -120,9 +116,9 @@ export function RecordPagination({ table }: RecordPaginationProps) {
   const count =
     total === undefined
       ? messages.label('label.pagination.on-page', {
-          count: number(table.rows.length),
+          count: table.rows.length,
         })
-      : messages.label('label.pagination.total', { total: number(total) });
+      : messages.label('label.pagination.total', { total });
 
   // The unit belongs to the number, not to the words in front of it: Chinese
   // counts records with a measure word (`20 条`), so the option carries it
@@ -164,7 +160,7 @@ export function RecordPagination({ table }: RecordPaginationProps) {
       {reachable !== undefined && (
         <span id={windowId} data-slot="record-pagination-window">
           {messages.label('label.pagination.window', {
-            count: number(reachable),
+            count: reachable,
           })}
         </span>
       )}
@@ -208,11 +204,11 @@ export function RecordPagination({ table }: RecordPaginationProps) {
           <PaginationItem className="flex items-center gap-2">
             {pages === undefined
               ? messages.label('label.toolbar.page', {
-                  index: number(paging.index),
+                  index: paging.index,
                 })
               : messages.label('label.toolbar.page-of', {
-                  index: number(paging.index),
-                  pages: number(pages),
+                  index: paging.index,
+                  pages,
                 })}
             {/* Only where there is an M to aim at (ruling Ⅷ). A cursor source
                 cannot say how many pages there are, so a box asking for one

@@ -631,7 +631,7 @@ describe('ResultToolbar export', () => {
 
     // 33 whole pages of 300 fit inside 10 000; the 34th would reach 10 200.
     expect((await screen.findByRole('dialog')).textContent).toContain(
-      'That is more than the 9900 one export carries; the file will hold the first 9900.',
+      'That is more than the 9,900 one export carries; the file will hold the first 9,900.',
     );
   });
 
