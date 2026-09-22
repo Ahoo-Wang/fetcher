@@ -347,7 +347,14 @@ export function AnalysisParts({
         // because the next answer is moments away and a blank in between
         // reads as a failure.
         data-stale={analysis.stale || undefined}
-        className="contents data-[stale]:opacity-60 data-[stale]:transition-opacity"
+        // A column of its own rather than `contents`: an element with
+        // `display: contents` generates no box, and a property that paints
+        // one — `opacity` here — is then computed and never rendered, so
+        // the fade above would be a class nobody can see. A flex column
+        // lays the three parts out exactly as the result block laid them
+        // out when they were its own children (no gap, no margin
+        // collapsing, `min-w-0` so a wide table still scrolls inside it).
+        className="flex min-w-0 flex-col data-[stale]:opacity-60 data-[stale]:transition-opacity"
       >
         {/* A grouping nothing fell into is one sentence whichever layout is
             in force; a chart of no rows is a pair of empty axes, which reads
