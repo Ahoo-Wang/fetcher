@@ -37,6 +37,15 @@ export const EXPRESSION_OPERATORS: readonly AnalysisExpressionOperator[] = [
   'DIVIDE',
 ];
 
+/**
+ * How a derived metric's text names a reference to the record count. The
+ * kernel holds no catalogue, so it cannot say 「记录数」; it says this, and
+ * `columnTitle` in the UI puts the catalogue's word in its place. Nothing
+ * a definition labels can start with a control character, so the token
+ * cannot collide with a field's or a metric's name.
+ */
+export const COUNT_NAME_TOKEN = '\u0000count';
+
 /** The sign an operator prints as, in every language. */
 export const OPERATOR_SIGN: Readonly<
   Record<AnalysisExpressionOperator, string>

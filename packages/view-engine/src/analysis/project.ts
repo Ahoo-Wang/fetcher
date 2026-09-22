@@ -30,7 +30,12 @@ import {
   metricFunctionOf,
   type MetricFunction,
 } from './metricFormat.js';
-import { derivedText, expressionText, isFormula } from './formula.js';
+import {
+  COUNT_NAME_TOKEN,
+  derivedText,
+  expressionText,
+  isFormula,
+} from './formula.js';
 
 /** A column of the result table; groups come first, then metrics. */
 export interface AnalysisColumnView {
@@ -360,7 +365,11 @@ function formulaLabel(
     return (
       referenced.label ??
       formulaLabel(referenced, byName, byAlias) ??
-      (source === undefined ? alias : fieldLabel(source))
+      (referenced.type === 'COUNT'
+        ? COUNT_NAME_TOKEN
+        : source === undefined
+          ? alias
+          : fieldLabel(source))
     );
   });
 }
