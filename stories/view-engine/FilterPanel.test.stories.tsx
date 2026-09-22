@@ -435,9 +435,28 @@ export const TheCalendarSpeaksTheSurfaceLanguage: Story = {
     await userEvent.click(trigger);
 
     const popup = within(document.body);
-    const popover = document.body.querySelector<HTMLElement>(
-      '[data-slot="popover-content"]',
-    )!;
+    const popover = await waitFor(() => {
+      const found = document.body.querySelector<HTMLElement>(
+        '[data-slot="popover-content"]',
+      );
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    // A popover appears in two steps, and everything below either measures it
+    // or asks whether something inside it is visible — both of which the
+    // steps answer wrongly. Base UI keeps the positioner hidden until it has
+    // measured where to put the popup, and the popup then fades and scales in
+    // (`data-open:fade-in-0 zoom-in-95` through `animate-in`, whose
+    // `animation-fill-mode: both` pins the computed opacity at 0 until the
+    // first frame). So `toBeVisible` says no, and a box read mid-animation is
+    // 5% short — 271px of the 272 it settles at, and 204 at the start. This
+    // waits for the whole of it rather than racing it; a fixed delay is a
+    // guess a slower machine loses, which is exactly how this passed here and
+    // failed on CI.
+    await waitFor(() => {
+      expect(popover).toBeVisible();
+      expect(popover.getAnimations({ subtree: true })).toHaveLength(0);
+    });
 
     // The month and the weekday heads are `Intl` in the surface's language,
     // which is the same call the trigger above was formatted with.
