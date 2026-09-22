@@ -83,19 +83,33 @@ export function AnalysisParts({
    * shaped by, and nothing else can name them. The layout and the chart are
    * presentation (D20, `ANALYSIS_PRESENTATION_MEMBERS`): they are drawn
    * from those rows as the draft says, so switching to a chart or picking
-   * another type redraws without a run. The draft's chart is fitted to the
-   * shape that ran first — a dimension added in the tray but not yet run is
-   * no column of these rows.
+   * another type redraws without a run.
+   *
+   * The draft's chart is fitted to the shape that ran **only while the two
+   * shapes differ** — a dimension added in the tray but not yet run is no
+   * column of these rows, and a chart addressing it would draw nothing.
+   * While the draft asks the question the rows answer, the chart is drawn
+   * exactly as it is saved: `fitChartSlots` opens a narrowed slot back up
+   * (one series becomes every metric when the second dimension goes), which
+   * is right when the shape moved under the chart and wrong on every render
+   * of a chart whose author narrowed it on purpose.
    */
   const applied = state?.result?.config;
   const shaped = applied?.kind === 'analysis' ? applied : undefined;
   const layout = analysis.layout;
+  const drafted = aliasesOf(analysis.aliases.groups, analysis.aliases.metrics);
+  const ran = shaped
+    ? aliasesOf(
+        shaped.groups.map(group => group.alias),
+        shaped.metrics.map(metric => metric.alias),
+      )
+    : null;
   const chart = useMemo(
     () =>
-      shaped
+      shaped && ran !== drafted
         ? fitChartSlots(analysis.chart, shaped.groups, shaped.metrics)
         : analysis.chart,
-    [analysis.chart, shaped],
+    [analysis.chart, shaped, ran, drafted],
   );
   const chartData = useMemo(
     () =>
@@ -305,4 +319,13 @@ export function AnalysisParts({
       </>
     ),
   });
+}
+
+/**
+ * One shape as the one string a chart addresses it by: a chart names groups
+ * and metrics by alias and by nothing else, so two shapes that spell the
+ * same aliases in the same order are one shape as far as its slots go.
+ */
+function aliasesOf(groups: readonly string[], metrics: readonly string[]) {
+  return `${groups.join(' ')}${metrics.join(' ')}`;
 }

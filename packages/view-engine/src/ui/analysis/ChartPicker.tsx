@@ -66,8 +66,14 @@ export interface ChartPickerProps {
  * the shape reads best as wears a mark. The table is a tile too, so
  * "back to the table" and "as a pie" are one gesture.
  *
- * It is a radiogroup: arrow keys move, Space and Enter choose, and a
- * greyed tile still takes focus so a reader hears its reason.
+ * It is a radiogroup, with the one tab stop a radiogroup has: the arrow
+ * keys move the choice and the focus together over the tiles that can
+ * draw, and Space and Enter choose where they stopped. A greyed tile is
+ * stepped over — there is nothing to choose — and carries its reason in
+ * its own accessible name, so a reader walking the group hears why it is
+ * out of reach rather than only that it is. It is `aria-disabled` and not
+ * `disabled` for that reason: `disabled` takes an element out of the
+ * accessible tree's reach in some readers, reason and all.
  */
 export function ChartPicker({
   fits,
