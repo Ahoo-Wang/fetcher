@@ -31,11 +31,10 @@ import { BulkOutcomeStrip } from '../src/ui/index.js';
 afterEach(cleanup);
 
 /** The slot's context, narrowed to what a command is given. */
-function selection(keys: RecordKey[] = ['a', 'b']): BulkSelection & {
-  clearSelection: ReturnType<typeof vi.fn>;
-  refresh: ReturnType<typeof vi.fn>;
-} {
-  return { keys, clearSelection: vi.fn(), refresh: vi.fn() };
+function selection(keys: RecordKey[] = ['a', 'b']) {
+  const clearSelection = vi.fn<() => void>();
+  const refresh = vi.fn<() => void>();
+  return { keys, clearSelection, refresh } satisfies BulkSelection;
 }
 
 /** A command whose settling this test decides. */
