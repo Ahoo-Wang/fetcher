@@ -28,7 +28,13 @@ import { IconButton } from '../IconButton.js';
 import { useViewMessages } from '../MessagesProvider.js';
 import { DropdownMenuContent } from '../popups.js';
 import { EditorCard, EditorSlot } from '../variants.js';
-import { isFormula } from '../../analysis/index.js';
+import {
+  isFormula,
+  metricOfSummary,
+  summaryChoices,
+  summaryOf,
+  type SummaryChoice,
+} from '../../analysis/index.js';
 import { CardMenu, CardName } from './CardMenu.js';
 import { CompactSelect } from './CompactSelect.js';
 import { DerivedControls, FormulaControls } from './FormulaCard.js';
@@ -47,10 +53,6 @@ import {
   freeAlias,
   metricFallbackName,
   metricReference,
-  metricOfSummary,
-  summaryChoices,
-  summaryOf,
-  type SummaryChoice,
 } from './editing.js';
 import { SortRow } from './SortRow.js';
 

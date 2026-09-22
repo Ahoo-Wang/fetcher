@@ -29,7 +29,7 @@ import {
   type FieldKindRegistry,
 } from '../filter/index.js';
 import { fitChartSlots } from './chartSlots.js';
-import { aliasOf, termsGroup } from './defaults.js';
+import { aliasOf, groupFacts, groupOfType } from './defaults.js';
 
 /**
  * One group of an aggregation result, turned back into the conditions that
@@ -330,9 +330,9 @@ export function splitBy(
 
 /**
  * The dimension a field becomes when a group is split by it: by value where
- * the field offers it, by the finest date unit it offers, else by a unit
- * band. The alias is the one the defaults use, so the split reads as if the
- * user had picked the field in the editor.
+ * the field offers it, else by date, else by band — each shaped by the one
+ * builder, `groupOfType`. The alias is the one a fresh config's dimension
+ * carries (`aliasOf(field, 'group')`), so the split is savable as it stands.
  */
 export function groupFor(
   field: FieldDefinition,
@@ -342,14 +342,14 @@ export function groupFor(
   },
   kind?: Pick<FieldKind, 'singleString'>,
 ): AnalysisGroup {
-  const alias = aliasOf(field.name, 'group');
-  if (offered.groups.includes('TERMS')) return termsGroup(field, alias, kind);
-  if (offered.groups.includes('DATE_HISTOGRAM'))
-    return {
-      type: 'DATE_HISTOGRAM',
-      field: field.name,
-      alias,
-      unit: offered.dateUnits[0] ?? 'DAY',
-    };
-  return { type: 'HISTOGRAM', field: field.name, alias, interval: 1 };
+  const type = offered.groups.includes('TERMS')
+    ? 'TERMS'
+    : offered.groups.includes('DATE_HISTOGRAM')
+      ? 'DATE_HISTOGRAM'
+      : 'HISTOGRAM';
+  return groupOfType(
+    groupFacts(field, offered.dateUnits, kind),
+    type,
+    aliasOf(field.name, 'group'),
+  );
 }
