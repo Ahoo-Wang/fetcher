@@ -59,7 +59,8 @@ import { StoryEngine } from './StoryEngine.js';
 import '@ahoo-wang/fetcher-view-engine/styles.css';
 
 /**
- * The data console: View Engine against a real Wow compensation service: its failed executions
+ * The compensation console — a data console, one workbench for the records
+ * and the analysis over them — against a real Wow compensation service: its failed executions
  * at the volume a service really holds, the analysis over them, and the
  * commands that act on them — one workbench, as an operator uses it. The
  * record views and the analysis views sit in one list; a row carries its own
@@ -345,7 +346,7 @@ const scene = {
 };
 
 const meta = {
-  title: 'View Engine/真实后端/数据控制台',
+  title: 'View Engine/真实后端/补偿控制台',
   component: Console,
   // A live service answers differently every time, so this is never a
   // regression test, and its docs page does not mount it: opening the
@@ -377,4 +378,4 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** Failed executions, the analysis over them, and the commands on either. */
-export const DataConsole: Story = { name: '数据控制台' };
+export const DataConsole: Story = { name: '补偿控制台' };

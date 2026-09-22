@@ -22,7 +22,7 @@ import {
 import { readColumn, readTotal } from './readTable.js';
 
 /**
- * The data console against a recorded service instead of a live one.
+ * The compensation console against a recorded service instead of a live one.
  *
  * The display story stays off CI because a live service answers differently
  * every time. Its data is what varies; the definition, the system views, the
@@ -34,7 +34,7 @@ import { readColumn, readTotal } from './readTable.js';
  */
 const meta = {
   ...displayMeta,
-  title: 'View Engine/真实后端/数据控制台/回归',
+  title: 'View Engine/真实后端/补偿控制台/回归',
   tags: ['!dev', '!autodocs', 'test'],
   args: { host: RECORDED_COMPENSATION_HOST },
   beforeEach: installRecordedCompensationService,
