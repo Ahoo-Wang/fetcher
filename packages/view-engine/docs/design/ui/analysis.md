@@ -19,7 +19,7 @@
 ## 结果第一行：读法与看法
 
 - **结果的第一行是 `AnalysisToolbar`**（`data-slot="result-toolbar"`，D12 Ⅳ）。左边一句「按 仓库 · 记录数、金额 的 合计」（`label.analysis.reading`，无维度时 `label.analysis.reading-flat`，`data-slot="analysis-reading"`）——下面这些数是什么，按**产生这个结果的那份配置**（`view.schema ?? view.columns`）读出来，不是按正在编辑的草稿；右边是怎么看它：表格｜图表、图型、合计行；
-- **这一行改了就跑**，不等托盘的应用：内核只为跑过的那份配置整形图表（`projectAnalysis` 只在 `layout === 'chart'` 时整形），所以换布局本来就是一次新执行而不是重绘。`setLayout` 自己就带 apply，因此工具栏**不**再给它套一层 `submit()`——套了就是同一个问题发两遍；图型与合计行则是 `change(); analysis.submit()`。（见 test/analysisTray.test.tsx「the analysis result toolbar」「reads the result out as dimensions and metrics」与 test/analysisUi.test.tsx「draws the layout the result was shaped by, not the draft」）
+- **表格｜图表是重绘，不是重跑**（D20，`ANALYSIS_PRESENTATION_MEMBERS`）：结果的行来自跑过的那份配置，怎么看它来自草稿，所以换布局只是把同一批行画成表或画成图，不发查询、不算待应用；「可视化」在这一行打开左侧栏的图型网格（下一节），托盘里没有它。合计行是一次自己的查询，所以仍是 `change(); analysis.submit()`。（见 test/analysisTray.test.tsx「the analysis result toolbar」「reads the result out as dimensions and metrics」「keeps the way into the visualization beside the layout switch, not in the tray」与 test/analysisUi.test.tsx「redraws the layout from the rows on hand, without a run」）
 
 ## AnalysisChart 与 shapeChart
 
