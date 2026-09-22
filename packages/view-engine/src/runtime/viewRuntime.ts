@@ -541,7 +541,7 @@ export class DataViewRuntime<
 
   setAutoApply(on: boolean): void {
     if (this.disposed || this.state.autoApply === on) return;
-    this.store.setState({ autoApply: on } as Partial<ViewRuntimeState<C>>);
+    this.store.setState({ autoApply: on });
     this.syncAutoApply();
   }
 

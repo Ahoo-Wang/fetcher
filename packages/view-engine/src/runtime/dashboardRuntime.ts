@@ -303,6 +303,9 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
     this.children.refresh();
   }
 
+  /** A dashboard edits its layout, not a question; nothing runs on its own. */
+  setAutoApply(): void {}
+
   setEditing(active: boolean): void {
     if (this.disposed || this.state.editing === active) return;
     this.store.setState({ editing: active });

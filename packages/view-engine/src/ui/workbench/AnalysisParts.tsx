@@ -279,7 +279,16 @@ export function AnalysisParts({
     /* Not frozen while a query runs: editing never re-queries, and a refresh
        that lands mid-edit must not take the inputs away. */
     editor: (
-      <Tray filter={filter} analysis={analysis} optionsFor={optionsFor} />
+      <Tray
+        filter={filter}
+        analysis={analysis}
+        optionsFor={optionsFor}
+        autoRun={{
+          on: workbench.autoRun,
+          // The write's outcome reaches the list's reload, not this switch.
+          set: on => void workbench.setAutoRun(on),
+        }}
+      />
     ),
     // The way out of a config that will not run: the tray, which is where
     // the finding is about (F11).
@@ -331,7 +340,15 @@ export function AnalysisParts({
         />
       ) : null,
     result: view && (
-      <>
+      <div
+        data-slot="analysis-result"
+        // While the draft is about to run on its own (改了就跑), the rows on
+        // screen answer the last question: kept, faded rather than cleared,
+        // because the next answer is moments away and a blank in between
+        // reads as a failure.
+        data-stale={analysis.stale || undefined}
+        className="contents data-[stale]:opacity-60 data-[stale]:transition-opacity"
+      >
         {/* A grouping nothing fell into is one sentence whichever layout is
             in force; a chart of no rows is a pair of empty axes, which reads
             as a drawing that failed rather than as a range that matched
@@ -363,7 +380,7 @@ export function AnalysisParts({
         {/* Last in the block, where nothing about it can be reached by a
             pointer or a tab: it draws nothing and is read, not seen. */}
         {announcement}
-      </>
+      </div>
     ),
   });
 }
