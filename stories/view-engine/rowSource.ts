@@ -14,21 +14,28 @@
 import { aggregate, find } from 'mingo';
 import type { AnyObject } from 'mingo/types';
 import {
+  AggregationExpressionOperator,
   AggregationExpressionType,
   AggregationFunction,
   AggregationGroupType,
   AggregationMetricType,
+  ComparisonOperator,
   DEFAULT_PAGINATION,
   DeletionState,
+  DerivedExpressionType,
   FilterOperator,
+  HavingExpressionType,
   SortDirection,
   StringComparison,
+  type AggregationExpression,
   type AggregationGroup,
   type AggregationMetric,
   type AggregationQuery,
+  type DerivedExpression,
   type ElementFilterExpression,
   type FieldSort,
   type FilterExpression,
+  type HavingExpression,
 } from '@ahoo-wang/fetcher-wow';
 import type { RecordData, ViewSource } from '@ahoo-wang/fetcher-view-engine';
 
@@ -99,10 +106,16 @@ function summarise(
   rows: readonly RecordData[],
   query: AggregationQuery,
 ): RecordData[] {
-  if (query.elements?.length || query.having)
-    throw new Error('The story source does not evaluate elements or having.');
+  if (query.elements?.length)
+    throw new Error('The story source does not evaluate elements.');
   const groupBy = query.groupBy ?? [];
-  const answered = aggregate(gated(rows, query.metrics), [
+  // A derived metric is arithmetic over the row the group produced, not an
+  // accumulator, so it sits out the `$group` and is computed once the
+  // numbers it reads exist.
+  const accumulated = query.metrics.filter(
+    metric => metric.type !== AggregationMetricType.DERIVED,
+  );
+  const grouped = aggregate(gated(rows, query.metrics), [
     // An aggregation without a filter reads every row.
     {
       $match: withDeletionDefault(
@@ -118,25 +131,136 @@ function summarise(
                 groupBy.map(group => [group.alias, groupKey(group)]),
               ),
         ...Object.fromEntries(
-          query.metrics.map(metric => [metric.alias, accumulator(metric)]),
+          accumulated.map(metric => [metric.alias, accumulator(metric)]),
         ),
       },
     },
     { $replaceWith: { $mergeObjects: ['$_id', '$$ROOT'] } },
     { $unset: '_id' },
-    ...(query.sort?.length ? [{ $sort: sortSpec(query.sort) }] : []),
-    ...(query.limit ? [{ $limit: query.limit }] : []),
-  ]);
-  if (groupBy.length === 0 && answered.length === 0)
+  ]) as RecordData[];
+  const answered = grouped.map(row => withDerived(row, query.metrics));
+  // Wow filters the grouped rows **before** it orders and cuts them, which
+  // is the whole point of a having: the top five of what is kept, not what
+  // is left of the top five.
+  const kept = query.having
+    ? answered.filter(row => keeps(query.having!, row))
+    : answered;
+  const ordered = query.sort?.length
+    ? (aggregate(kept, [{ $sort: sortSpec(query.sort) }]) as RecordData[])
+    : kept;
+  const cut = query.limit ? ordered.slice(0, query.limit) : ordered;
+  if (groupBy.length === 0 && cut.length === 0)
     return [
-      Object.fromEntries(
-        query.metrics.map(metric => [
-          metric.alias,
-          metric.type === AggregationMetricType.COUNT ? 0 : null,
-        ]),
+      withDerived(
+        Object.fromEntries(
+          accumulated.map(metric => [
+            metric.alias,
+            metric.type === AggregationMetricType.COUNT ? 0 : null,
+          ]),
+        ),
+        query.metrics,
       ),
     ];
-  return answered;
+  return cut;
+}
+
+/**
+ * The derived metrics of one grouped row, in declaration order, so a derived
+ * metric may read one declared before it. A number that cannot be computed —
+ * a missing operand, a division by zero — is `null` rather than `NaN` or
+ * `Infinity`: "there is no number here" is what the column has to read as.
+ */
+function withDerived(
+  row: RecordData,
+  metrics: readonly AggregationMetric[],
+): RecordData {
+  const answer: RecordData = { ...row };
+  for (const metric of metrics)
+    if (metric.type === AggregationMetricType.DERIVED)
+      answer[metric.alias] = derive(metric.expression, answer);
+  return answer;
+}
+
+function derive(expression: DerivedExpression, row: RecordData): number | null {
+  switch (expression.type) {
+    case DerivedExpressionType.CONSTANT:
+      return expression.value;
+    case DerivedExpressionType.METRIC_REF: {
+      const value = row[expression.metric];
+      return typeof value === 'number' && Number.isFinite(value) ? value : null;
+    }
+    case DerivedExpressionType.BINARY: {
+      const left = derive(expression.left, row);
+      const right = derive(expression.right, row);
+      if (left === null || right === null) return null;
+      return arithmetic(expression.operator, left, right);
+    }
+    default:
+      throw new Error('The story source does not evaluate this expression.');
+  }
+}
+
+function arithmetic(
+  operator: AggregationExpressionOperator,
+  left: number,
+  right: number,
+): number | null {
+  switch (operator) {
+    case AggregationExpressionOperator.ADD:
+      return left + right;
+    case AggregationExpressionOperator.SUBTRACT:
+      return left - right;
+    case AggregationExpressionOperator.MULTIPLY:
+      return left * right;
+    case AggregationExpressionOperator.DIVIDE:
+      return right === 0 ? null : left / right;
+    default:
+      throw new Error(`The story source does not compute ${operator}.`);
+  }
+}
+
+/**
+ * Whether one grouped row survives the having. A group whose metric has no
+ * number does not pass any comparison — there is nothing to compare — which
+ * is what the tray's note says out loud.
+ */
+function keeps(having: HavingExpression, row: RecordData): boolean {
+  switch (having.type) {
+    case HavingExpressionType.AND:
+      return having.operands.every(operand => keeps(operand, row));
+    case HavingExpressionType.OR:
+      return having.operands.some(operand => keeps(operand, row));
+    case HavingExpressionType.CONDITION: {
+      const value = row[having.metric];
+      if (typeof value !== 'number' || !Number.isFinite(value)) return false;
+      return compares(having.operator, value, having.value);
+    }
+    default:
+      throw new Error(`The story source does not evaluate ${having.type}.`);
+  }
+}
+
+function compares(
+  operator: ComparisonOperator,
+  value: number,
+  against: number,
+): boolean {
+  switch (operator) {
+    case ComparisonOperator.EQ:
+      return value === against;
+    case ComparisonOperator.NE:
+      return value !== against;
+    case ComparisonOperator.GT:
+      return value > against;
+    case ComparisonOperator.GTE:
+      return value >= against;
+    case ComparisonOperator.LT:
+      return value < against;
+    case ComparisonOperator.LTE:
+      return value <= against;
+    default:
+      throw new Error(`The story source does not compare with ${operator}.`);
+  }
 }
 
 /** The mark one gated metric reads, kept out of every field's namespace. */
@@ -200,9 +324,8 @@ function accumulator(metric: AggregationMetric): AnyObject {
     return { $sum: gate ? { $cond: [gate, 1, 0] } : 1 };
   if (metric.type === AggregationMetricType.NUMERIC) {
     const name = ACCUMULATORS[metric.function];
-    const { expression } = metric;
-    if (name && expression.type === AggregationExpressionType.FIELD) {
-      const value = `$${expression.field}`;
+    if (name) {
+      const value = measured(metric.expression);
       // A row the metric's conditions leave out contributes nothing at all.
       // `null` is what every accumulator here skips, where a 0 would be a
       // value: it would drag an average down and win a minimum outright.
@@ -210,6 +333,39 @@ function accumulator(metric: AggregationMetric): AnyObject {
     }
   }
   throw new Error(`The story source does not compute ${metric.alias}.`);
+}
+
+/** MongoDB's arithmetic operator for each of Wow's four. */
+const ARITHMETIC: Record<AggregationExpressionOperator, string> = {
+  [AggregationExpressionOperator.ADD]: '$add',
+  [AggregationExpressionOperator.SUBTRACT]: '$subtract',
+  [AggregationExpressionOperator.MULTIPLY]: '$multiply',
+  [AggregationExpressionOperator.DIVIDE]: '$divide',
+};
+
+/**
+ * What one record contributes, before the function summarises it across the
+ * group: a field, a number, or one operation over two of those — 金额 − 成本
+ * per order, then summed. A formula is computed **per record and then
+ * summarised**, which is not the same number as summarising each side and
+ * then subtracting whenever the function is not additive.
+ */
+function measured(expression: AggregationExpression): unknown {
+  switch (expression.type) {
+    case AggregationExpressionType.FIELD:
+      return `$${expression.field}`;
+    case AggregationExpressionType.CONSTANT:
+      return { $literal: expression.value };
+    case AggregationExpressionType.BINARY:
+      return {
+        [ARITHMETIC[expression.operator]]: [
+          measured(expression.left),
+          measured(expression.right),
+        ],
+      };
+    default:
+      throw new Error('The story source does not compute this expression.');
+  }
 }
 
 type Filter = FilterExpression | ElementFilterExpression;

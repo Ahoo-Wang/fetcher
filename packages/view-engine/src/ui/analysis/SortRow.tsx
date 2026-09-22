@@ -21,9 +21,9 @@ import { metricName } from './editing.js';
 
 /**
  * What the first N groups are the first N of: the sort, and the N, on one
- * row at the bottom of the metrics slot. One sort entry here; Wow takes
- * several, which the tray does not offer yet. A sort needs a dimension, so
- * the row waits for one.
+ * row at the bottom of the metrics slot. The record view's own editor takes
+ * as many entries as there are aliases, so "first by one, then by the next"
+ * is sayable here too. A sort needs a dimension, so the row waits for one.
  */
 export function SortRow({
   analysis,

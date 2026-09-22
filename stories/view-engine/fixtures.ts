@@ -127,6 +127,16 @@ export const ordersDefinition: DataViewDefinition = {
       summary: ['SUM', 'AVG'],
       numberFormat: { style: 'currency', currency: 'CNY' },
     },
+    // 第二个可度量的字段，公式才说得出一句话：「金额 − 成本」是毛利，
+    // 「金额 − 金额」不是。它同样是钱，所以读法与金额一致。
+    {
+      name: 'cost',
+      label: '成本',
+      kind: 'number',
+      sortable: true,
+      summary: ['SUM'],
+      numberFormat: { style: 'currency', currency: 'CNY' },
+    },
     // 一列时刻有最早与最晚，没有合计也没有平均——声明得出来的就只有这两个
     // 加计数，多声明一个也会被准入挡掉（`DATE_SUMMARY_FUNCTIONS`）。
     {
@@ -140,10 +150,15 @@ export const ordersDefinition: DataViewDefinition = {
   record: { rowKey: 'id', paging: 'paged', layouts: ['table', 'card'] },
   analysis: {
     count: true,
+    // 写得出来的指标（D20 屏 B）与「只保留」：两者都是能力说了算，
+    // 声明了托盘才长出「按公式」「按已有指标计算」与那一组比较行。
+    expressions: true,
+    having: true,
     fields: [
       { field: 'warehouse', groups: [TERMS], functions: [] },
       { field: 'status', groups: [TERMS], functions: [] },
       { field: 'amount', groups: [], functions: [SUM, AVG] },
+      { field: 'cost', groups: [], functions: [SUM] },
     ],
   },
   views: [{ id: 'all', title: '全部订单', config: recordConfig() }],
@@ -212,6 +227,7 @@ export const ORDERS: RecordData[] = [
     trackingUrl: 'https://example.com/track/SO-1001',
     note: '客户要求下午三点后送达。\n门卫代收需电话确认。',
     amount: 1280,
+    cost: 900,
     createdAt: '2026-09-15T02:10:00.000Z',
   },
   {
@@ -223,6 +239,7 @@ export const ORDERS: RecordData[] = [
     tags: [],
     note: '客户改约下周同一地址，原单作废。',
     amount: 640,
+    cost: 500,
     createdAt: '2026-09-15T06:40:00.000Z',
   },
   {
@@ -234,6 +251,7 @@ export const ORDERS: RecordData[] = [
     trackingUrl: 'https://example.com/track/SO-1003',
     note: '随单附贺卡，不放价签。',
     amount: 2450,
+    cost: 1500,
     createdAt: '2026-09-16T01:05:00.000Z',
   },
   {
@@ -245,6 +263,7 @@ export const ORDERS: RecordData[] = [
     trackingUrl: 'https://example.com/track/SO-1004',
     note: '已交承运商，预计次日达。',
     amount: 3120,
+    cost: 2600,
     createdAt: '2026-09-16T05:30:00.000Z',
   },
   {
@@ -257,6 +276,7 @@ export const ORDERS: RecordData[] = [
     trackingUrl: 'javascript:alert(1)',
     note: '玻璃器皿，务必加气柱。\n仓库已备双层纸箱。\n第三行用来看截断。\n第四行看不见。',
     amount: 1760,
+    cost: 1400,
     createdAt: '2026-09-17T02:20:00.000Z',
   },
   {
@@ -268,6 +288,7 @@ export const ORDERS: RecordData[] = [
     trackingUrl: 'https://example.com/track/SO-1006',
     note: '',
     amount: 980,
+    cost: 700,
     createdAt: '2026-09-17T08:45:00.000Z',
   },
   // A soft-deleted order. A Wow source answers only the records that are
@@ -282,6 +303,7 @@ export const ORDERS: RecordData[] = [
     tags: [],
     note: '重复下单，已作废。',
     amount: 320,
+    cost: 260,
     createdAt: '2026-09-17T09:10:00.000Z',
     deleted: true,
   },

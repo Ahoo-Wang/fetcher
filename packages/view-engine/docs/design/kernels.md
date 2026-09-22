@@ -269,6 +269,15 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 - **探针不越过天花板**：能力声明的 `maxLimit` 与 Wow 自己的 `AGGREGATION_LIMITS.MAX_LIMIT` 取小，越过任何一个的查询是被**拒绝**而不是被回答，拿整份结果换一行探针不划算。因此**配置上限已经顶到天花板时不探**——没有行可要了——这一种保留旧读法：行数填满上限时记下 `AnalysisView.atLimit`，报成"可能被截断"（`analysis.result.at-limit`）。没有分组时也不探：无分组聚合按定义只答一行，`limit: 1` 于是被每一次成功的查询填满，而没有任何分组可以被截掉。上限缺失或不是正整数时原样发出，把拒绝留在它本来在的地方（Wow）——准入会拒绝这些，但编译是导出的，宿主可能拿没被准入的配置来编译；
 - **`projectAnalysis` 把探针行读回来再丢掉**：回来的行数多于 `limit` 就是 `AnalysisView.truncated: true`，否则 `false`；`rows` 永远至多 `limit` 行，图表整形（占比、饼图的"其他"、漏斗）也只看这些行，否则屏幕上会出现一个表里没有的组的份额。`truncated` 与 `atLimit` 不会同时成立：前者是问出来的答案，后者是问不出来时剩下的那点线索。运行时据此报 `analysis.result.more-groups`（事实）或 `analysis.result.at-limit`（可能），见 [runtime.md#规则](runtime.md#规则)。**合计行不受影响**：它来自无分组查询，截没截断都覆盖范围内全部记录，这正是可见几行之和小于合计的原因。（见 test/analysisCompile.test.ts「the probe row」与 test/analysisProject.test.ts「the probe row read back」）
 
+### 只保留与写出来的指标：`having.ts` 与 `formula.ts`
+
+D20 屏 B 的两件事各有一个内核文件，都只是纯函数——托盘因此只剩标记，而「这份配置说得出来吗」只有一处答案：
+
+- **`analysis/having.ts`** 把 Wow 的 `having` 读成／写成**一行一条比较**。`havingRows(having)` 交出 `{metric, operator, value}[]`：一个 `CONDITION` 是一行，一棵一层的 `AND` 是几行，**其余一律 `null`**——区间、集合、空值判断、任何位置上的 OR、嵌套的 AND 都不摊平。摊平会把作者写的那份配置换成一份他没写过的、下一次保存就覆盖掉原件的配置，而「我读不出来」是一句可以老实说的话。`withHavingRows(rows)` 反过来：一条写成 `CONDITION`，几条写成一棵 `AND`，一条都没有就整个不写；**没有值的行直接落掉**，所以存下去的配置永远是 Wow 收得下的那一份，编辑到一半的状态归组件自己拿着。`HAVING_OPERATORS` 是那六个比较，顺序就是选择框里的顺序；
+- **`analysis/formula.ts`** 是两种写出来的指标的第一形态与它们的读法。`formulaMetric(left, right, fn, taken)` 造 Wow 的 `NUMERIC` 套 `BINARY`（两个字段相减再汇总），`derivedMetric(left, right, taken)` 造 `DERIVED`（前一个指标除以后一个）——都是**一张待改的卡片**，不是一个猜出来的答案。`expressionText`／`derivedText` 把式子说成作者会说的那句话（「金额 − 成本」「金额合计 ÷ 客户数」，嵌套的加括号），列头、图例与图表的文字读法共用它；`isFormula` 是「这条指标是卡片编得动的那一种吗」——一个操作两个操作数。`EXPRESSION_OPERATORS` 与 `OPERATOR_SIGN` 是那四则运算和它们在任何语言里都一样的符号。
+
+两者都不知道目录也不知道语言：`expressionText` 接一个 `nameOf` 回调，字段叫什么由调用处说。（见 test/having.test.ts「having rows」「formulas」；界面见 [ui/analysis.md#只保留一行一条比较](ui/analysis.md) 与 [ui/analysis.md#公式与派生写出来的指标](ui/analysis.md)）
+
 ## Dashboard 内核的规则
 
 `validateDashboard` 的规则：
