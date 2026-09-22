@@ -151,6 +151,7 @@ src/
     fitCharts.ts              — Which chart types can draw a result of this shape and which it reads best as (K3, Q6): the capability says which exist, this says which are greyed and why
     chartOptions.ts           — The rules behind the visualization panel's second level: which pages a type has, a slot swap, one-choice stacking and smoothing, and a funnel's stage order from the rows (D20 屏 J)
     drill.ts                  — One result row back into the conditions that select its records: `bucketRange` (the inverse of date bucketing, K1), `drillConditions`, and the two follow-ups that stay in the view, `focusOn` and `splitBy`; hands out conditions and config patches only (K6)
+    expand.ts                 — The config re-scoped to an expansion chain (D20 屏 G): `withElements` keeps what still names the new unit's fields and starts the metrics again otherwise; `expanded`, `collapsed`, `nextExpansion`
     granularity.ts            — The granularity a new time dimension starts at (K4): `recommendDateUnit` from the applied range's span (`rangeSpan`) or the result's buckets (`resultSpan`)
     defaults.ts               — defaultAnalysisConfig — the first metric the capability can express; `aliasOf`, `termsGroup`, `DEFAULT_MISSING_KEY`
     expressions.ts            — Aggregate and derived expression walks
@@ -315,10 +316,11 @@ src/
       CompactSelect.tsx       — The one select a tray card carries: a named choice among a few words
       CardMenu.tsx            — A tray card's name and the way to rename it (`CardName`), and the card's own menu (`CardMenu`): display name, the sentinel bucket, filling empty periods
       DimensionCard.tsx       — The dimensions slot and its cards: field, and the control its type asks for (granularity, band width)
+      ElementsSlot.tsx        — The expansion slot (D20 屏 G): the chain of arrays counted inside, one card a level with its own gate, 「再展开」 along the declared chain, and the counting unit
       DrillMenu.tsx           — The follow-up menu on one group of a result: the records behind it, split by another dimension, only this group (D20 追问); anchored to the mark or row pressed
       EmptyResult.tsx         — An aggregation that matched no group, one sentence for both layouts
       MetricCard.tsx          — The metrics slot and its cards: field and summary (the six ways Wow measures a field as one list), a percentile's number, the record count
-      MetricCondition.tsx     — A metric's own conditions (D20 屏 H): the funnel on the card, the block of the range's own pills under it, and the 「只算 …」 line at rest
+      MetricCondition.tsx     — Conditions edited in place under a tray card (D20 屏 H): the funnel, the block of the range's own pills, the 「只算 …」 line at rest; a metric's and an expansion level's
       RangeSlot.tsx           — The tray's first slot: the condition panel under a heading that holds the tree's simple/advanced switch
       SortRow.tsx             — The bottom of the metrics slot: what the first N groups are the first N of
       Tray.tsx                — The analysis view's editor: range → dimensions | metrics, one Apply for the whole draft (D20)

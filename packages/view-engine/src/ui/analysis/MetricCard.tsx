@@ -228,7 +228,7 @@ function MetricCard({
       )}
       {metric.type !== 'DERIVED' && (
         <ConditionButton
-          name={name}
+          label={messages.label('label.analysis.condition-of', { name })}
           open={conditioning}
           held={held}
           disabled={disabled}
@@ -250,16 +250,6 @@ function MetricCard({
             {messages.label('label.analysis.copy-with-condition', {
               name: metric.label ?? name,
             })}
-          </DropdownMenuItem>
-        )}
-        {held && (
-          <DropdownMenuItem
-            onClick={() => {
-              analysis.setMetricFilter(index, undefined);
-              setConditioning(false);
-            }}
-          >
-            {messages.label('label.analysis.condition-remove')}
           </DropdownMenuItem>
         )}
       </CardMenu>

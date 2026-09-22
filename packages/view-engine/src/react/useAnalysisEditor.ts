@@ -16,6 +16,7 @@ import type {
   FieldGroupDefinition,
   FilterTree,
   AnalysisDateUnit,
+  AnalysisElement,
   AnalysisFunction,
   AnalysisGroup,
   AnalysisGroupType,
@@ -29,8 +30,15 @@ import type {
 } from '../model/index.js';
 import {
   analysisScope,
+  collapsed,
   DEFAULT_MISSING_KEY,
+  elementFilterFields,
+  expanded,
   fitChartSlots,
+  levelLabel,
+  metricWithCondition,
+  nextLevel,
+  withElements,
   rangeSpan,
   recommendDateUnit,
   resultSpan,
@@ -66,6 +74,27 @@ export interface AnalysisFieldOption {
 }
 
 export interface AnalysisEditorController {
+  /**
+   * The expansion chain in force, outermost first (D20 屏 G): the arrays
+   * the analysis counts inside. Empty when it counts records.
+   */
+  elements: AnalysisElement[];
+  /** The next level the capability declares beyond the chain, or none. */
+  expandable: { path: string; label: string } | null;
+  /** Whether the capability declares a chain at all: the slot exists then. */
+  expansible: boolean;
+  /** What is being counted: the innermost element, or the definition's records. */
+  unit: string;
+  /** The array a level expands, as its field is labelled. */
+  elementLabel(index: number): string;
+  /** The fields a level's own gate may name. */
+  elementFields(index: number): FieldDefinition[];
+  /** One level deeper, along the declared chain; re-scopes the question. */
+  expand(path: string): void;
+  /** Cuts the chain at `index`: that level and every level inside it leave. */
+  collapse(index: number): void;
+  /** A level's gate on the entries it lets through, or none. */
+  setElementFilter(index: number, filter: FilterTree | undefined): void;
   groups: AnalysisGroup[];
   metrics: AnalysisMetric[];
   sort: AnalysisSort[];
@@ -158,20 +187,6 @@ export interface AnalysisEditorController {
 const EMPTY_CHART: ChartSpec = { type: 'bar' };
 
 /**
- * A name no alias is using, for a copy of `alias`: its stem plus the first
- * free number — the tray's own rule, so a copy and an addition are named
- * alike (`ui/analysis/editing.ts` `freeAlias`).
- */
-function freeAliasOf(alias: string, taken: readonly string[]): string {
-  const stem = alias.replace(/_\d+$/, '');
-  const used = new Set(taken);
-  for (let index = 1; ; index += 1) {
-    const candidate = `${stem}_${index}`;
-    if (!used.has(candidate)) return candidate;
-  }
-}
-
-/**
  * Editing of an analysis draft: what to group by, what to measure, and how to
  * draw it.
  *
@@ -233,7 +248,10 @@ export function useAnalysisEditor(
     (
       update: (
         current: AnalysisViewConfig,
-      ) => Pick<AnalysisViewConfig, 'groups' | 'metrics'> | undefined,
+      ) =>
+        | (Pick<AnalysisViewConfig, 'groups' | 'metrics'> &
+            Partial<Pick<AnalysisViewConfig, 'elements'>>)
+        | undefined,
     ) =>
       change(current => {
         const next = update(current);
@@ -260,6 +278,29 @@ export function useAnalysisEditor(
         };
       }),
     [change],
+  );
+
+  /** One dimension changed in place; everything that names it follows. */
+  const patchGroup = useCallback(
+    (index: number, update: (group: AnalysisGroup) => AnalysisGroup) =>
+      reshape(current => ({
+        groups: current.groups.map((group, at) =>
+          at === index ? update(group) : group,
+        ),
+        metrics: current.metrics,
+      })),
+    [reshape],
+  );
+  /** One metric changed in place; everything that names it follows. */
+  const patchMetric = useCallback(
+    (index: number, update: (metric: AnalysisMetric) => AnalysisMetric) =>
+      reshape(current => ({
+        groups: current.groups,
+        metrics: current.metrics.map((metric, at) =>
+          at === index ? update(metric) : metric,
+        ) as AnalysisViewConfig['metrics'],
+      })),
+    [reshape],
   );
 
   const fields = useMemo<AnalysisFieldOption[]>(() => {
@@ -308,6 +349,28 @@ export function useAnalysisEditor(
 
   const groups = config?.groups ?? [];
   const metrics = config?.metrics ?? [];
+  const elements = useMemo(() => config?.elements ?? [], [config?.elements]);
+  const elementLabel = useCallback(
+    (index: number): string =>
+      scope && definition ? levelLabel(definition, scope, index) : '',
+    [scope, definition],
+  );
+  const expandable = useMemo(
+    () =>
+      scope && definition
+        ? (nextLevel(definition, scope, elements) ?? null)
+        : null,
+    [scope, definition, elements],
+  );
+  const rescope = useCallback(
+    (next: AnalysisElement[]) =>
+      reshape(current =>
+        definition && capability
+          ? withElements(current, next, definition, capability)
+          : undefined,
+      ),
+    [reshape, definition, capability],
+  );
   const conditionFields = useMemo<FieldDefinition[]>(() => {
     if (!scope || !runtime) return [];
     return [...scope.fields.values()].filter((field: FieldDefinition) => {
@@ -321,6 +384,39 @@ export function useAnalysisEditor(
   }, [scope, runtime]);
 
   return {
+    elements,
+    expandable,
+    expansible: (scope?.declaredChain.length ?? 0) > 0,
+    unit:
+      elements.length > 0
+        ? elementLabel(elements.length - 1)
+        : (definition?.title ?? ''),
+    elementLabel,
+    elementFields: useCallback(
+      (index: number) => (scope ? elementFilterFields(scope, index) : []),
+      [scope],
+    ),
+    expand: useCallback(
+      (path: string) => rescope(expanded(elements, path)),
+      [rescope, elements],
+    ),
+    collapse: useCallback(
+      (index: number) => rescope(collapsed(elements, index)),
+      [rescope, elements],
+    ),
+    setElementFilter: useCallback(
+      (index: number, filter: FilterTree | undefined) =>
+        change(current => ({
+          elements: (current.elements ?? []).map((element, at) =>
+            at !== index
+              ? element
+              : filter === undefined
+                ? { path: element.path }
+                : { ...element, filter },
+          ),
+        })),
+      [change],
+    ),
     groups,
     metrics,
     sort: config?.sort ?? [],
@@ -357,13 +453,8 @@ export function useAnalysisEditor(
     ),
     updateGroup: useCallback(
       (index: number, patch: Partial<AnalysisGroup>) =>
-        reshape(current => ({
-          groups: current.groups.map((group, at) =>
-            at === index ? ({ ...group, ...patch } as AnalysisGroup) : group,
-          ),
-          metrics: current.metrics,
-        })),
-      [reshape],
+        patchGroup(index, group => ({ ...group, ...patch }) as AnalysisGroup),
+      [patchGroup],
     ),
     removeGroup: useCallback(
       (index: number) =>
@@ -378,45 +469,34 @@ export function useAnalysisEditor(
     // behind, so the config stays what a fresh one would be.
     renameGroup: useCallback(
       (index: number, label: string | undefined) =>
-        reshape(current => ({
-          groups: current.groups.map((group, at) =>
-            at !== index
-              ? group
-              : label === undefined
-                ? (without(group, 'label') as AnalysisGroup)
-                : { ...group, label },
-          ),
-          metrics: current.metrics,
-        })),
-      [reshape],
+        patchGroup(index, group =>
+          label === undefined
+            ? (without(group, 'label') as AnalysisGroup)
+            : { ...group, label },
+        ),
+      [patchGroup],
     ),
     setMissingBucket: useCallback(
       (index: number, on: boolean) =>
-        reshape(current => ({
-          groups: current.groups.map((group, at) =>
-            at !== index || group.type !== 'TERMS'
-              ? group
-              : on
-                ? { ...group, missingKey: DEFAULT_MISSING_KEY }
-                : (without(group, 'missingKey') as AnalysisGroup),
-          ),
-          metrics: current.metrics,
-        })),
-      [reshape],
+        patchGroup(index, group =>
+          group.type !== 'TERMS'
+            ? group
+            : on
+              ? { ...group, missingKey: DEFAULT_MISSING_KEY }
+              : without(group, 'missingKey'),
+        ),
+      [patchGroup],
     ),
     setDense: useCallback(
       (index: number, on: boolean) =>
-        reshape(current => ({
-          groups: current.groups.map((group, at) =>
-            at !== index || group.type !== 'DATE_HISTOGRAM'
-              ? group
-              : on
-                ? { ...group, dense: true }
-                : (without(group, 'dense') as AnalysisGroup),
-          ),
-          metrics: current.metrics,
-        })),
-      [reshape],
+        patchGroup(index, group =>
+          group.type !== 'DATE_HISTOGRAM'
+            ? group
+            : on
+              ? { ...group, dense: true }
+              : without(group, 'dense'),
+        ),
+      [patchGroup],
     ),
 
     addMetric: useCallback(
@@ -432,67 +512,46 @@ export function useAnalysisEditor(
     ),
     updateMetric: useCallback(
       (index: number, patch: Partial<AnalysisMetric>) =>
-        reshape(current => ({
-          groups: current.groups,
-          metrics: current.metrics.map((metric, at) =>
-            at === index ? ({ ...metric, ...patch } as AnalysisMetric) : metric,
-          ) as AnalysisViewConfig['metrics'],
-        })),
-      [reshape],
+        patchMetric(
+          index,
+          metric => ({ ...metric, ...patch }) as AnalysisMetric,
+        ),
+      [patchMetric],
     ),
     replaceMetric: useCallback(
       (index: number, metric: AnalysisMetric) =>
-        reshape(current => ({
-          groups: current.groups,
-          metrics: current.metrics.map((entry, at) =>
-            at === index ? metric : entry,
-          ) as AnalysisViewConfig['metrics'],
-        })),
-      [reshape],
+        patchMetric(index, () => metric),
+      [patchMetric],
     ),
     renameMetric: useCallback(
       (index: number, label: string | undefined) =>
-        reshape(current => ({
-          groups: current.groups,
-          metrics: current.metrics.map((metric, at) =>
-            at !== index
-              ? metric
-              : label === undefined
-                ? (without(metric, 'label') as AnalysisMetric)
-                : { ...metric, label },
-          ) as AnalysisViewConfig['metrics'],
-        })),
-      [reshape],
+        patchMetric(index, metric =>
+          label === undefined
+            ? (without(metric, 'label') as AnalysisMetric)
+            : { ...metric, label },
+        ),
+      [patchMetric],
     ),
     setMetricFilter: useCallback(
       (index: number, filter: FilterTree | undefined) =>
-        reshape(current => ({
-          groups: current.groups,
-          metrics: current.metrics.map((metric, at) =>
-            at !== index || metric.type === 'DERIVED'
-              ? metric
-              : filter === undefined
-                ? (without(metric, 'filter') as AnalysisMetric)
-                : { ...metric, filter },
-          ) as AnalysisViewConfig['metrics'],
-        })),
-      [reshape],
+        patchMetric(index, metric =>
+          metric.type === 'DERIVED'
+            ? metric
+            : filter === undefined
+              ? (without(metric, 'filter') as AnalysisMetric)
+              : { ...metric, filter },
+        ),
+      [patchMetric],
     ),
     duplicateMetric: useCallback(
       (index: number) => {
         const at = index + 1;
         reshape(current => {
-          const source = current.metrics[index];
-          if (!source || source.type === 'DERIVED') return undefined;
-          const taken = [
+          const copy = metricWithCondition(current.metrics[index], [
             ...current.groups.map(group => group.alias),
             ...current.metrics.map(metric => metric.alias),
-          ];
-          const copy = {
-            ...without(source, 'label'),
-            alias: freeAliasOf(source.alias, taken),
-            filter: { op: 'and', children: [] },
-          } as AnalysisMetric;
+          ]);
+          if (!copy) return undefined;
           const metrics = [...current.metrics];
           metrics.splice(at, 0, copy);
           return {

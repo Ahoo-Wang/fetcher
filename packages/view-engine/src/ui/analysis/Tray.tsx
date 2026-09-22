@@ -24,6 +24,7 @@ import { FilterActions } from '../filter/FilterActions.js';
 import { SPACE } from '../layout.js';
 import { useViewMessages } from '../MessagesProvider.js';
 import { DimensionSlot } from './DimensionCard.js';
+import { ElementsSlot } from './ElementsSlot.js';
 import { MetricSlot } from './MetricCard.js';
 import { RangeSlot } from './RangeSlot.js';
 
@@ -64,6 +65,15 @@ export function Tray({ filter, analysis, optionsFor, disabled }: TrayProps) {
       }}
     >
       <RangeSlot filter={filter} optionsFor={optionsFor} disabled={disabled} />
+      {/* Between the range and the question, because it changes what the
+          question is about (D20 屏 G); absent where nothing can be expanded. */}
+      {analysis.expansible && (
+        <ElementsSlot
+          analysis={analysis}
+          disabled={disabled}
+          optionsFor={optionsFor}
+        />
+      )}
       <div className={cn('grid grid-cols-1 md:grid-cols-2', SPACE.BLOCKS)}>
         <DimensionSlot analysis={analysis} disabled={disabled} />
         <MetricSlot

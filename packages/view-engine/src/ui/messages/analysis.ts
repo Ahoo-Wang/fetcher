@@ -34,6 +34,14 @@ export const analysisMessages = {
   'label.analysis.slot.metrics': 'Metrics',
   'label.analysis.hint.dimensions': 'compare by what',
   'label.analysis.hint.metrics': 'which numbers',
+  // The expansion slot (D20 屏 G): the chain of arrays counted inside.
+  'label.analysis.slot.elements': 'Expand',
+  'label.analysis.hint.elements': 'count what',
+  'label.analysis.expand-into': 'Expand into {name}',
+  'label.analysis.collapse': 'Stop expanding {name}',
+  'label.analysis.unit': 'Counting: {name}',
+  'label.analysis.element-condition-of': 'Conditions on the entries of {name}',
+  'label.analysis.element-condition-title': 'Only entries where',
   'label.analysis.conditions-mode': 'Conditions: {mode}',
   'label.analysis.granularity': 'Granularity',
   // A date dimension's granularity, as Wow names the units.
