@@ -74,8 +74,9 @@ describe('chartOptions', () => {
     const stacked = withStacked(cartesian, true);
     expect(stacked.series.map(series => series.stack)).toEqual(['all', 'all']);
     expect(isStacked(stacked)).toBe(true);
-    // Other settings of a series survive the change.
-    expect(stacked.series[1]).toMatchObject({ axis: 'right' });
+    // Joining the stack brings every series onto the one axis: segments
+    // piled on each other are being added up, and two scales do not add.
+    expect(stacked.series[1]).toEqual({ metric: 'amount', stack: 'all' });
     const flat = withStacked(stacked, false);
     expect(flat.series.every(series => !('stack' in series))).toBe(true);
     // Half-stacked is not stacked: the box is unchecked until every series is.

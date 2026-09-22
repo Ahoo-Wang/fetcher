@@ -93,12 +93,22 @@ export function isStacked(spec: CartesianSpec): boolean {
  * Stacking is one choice for the whole chart — series stacked in twos and
  * threes is a spec the panel does not offer — so every series joins the
  * one stack or leaves it.
+ *
+ * Joining it brings every series back onto the one axis: segments that sit
+ * on top of each other are being added up, and two scales cannot be added.
+ * A stack across two axes is one stack per axis, drawn at the same place
+ * and the same width, so the taller one simply hides the other — a chart
+ * that reads as broken rather than as a sum. Unstacking leaves them where
+ * the stack put them; which series is measured against what is a choice,
+ * and the panel does not guess at an old one.
  */
 export function withStacked(spec: CartesianSpec, on: boolean): CartesianSpec {
   return {
     ...spec,
     series: spec.series.map(series =>
-      on ? { ...series, stack: 'all' } : without(series, 'stack'),
+      on
+        ? { ...without(series, 'axis'), stack: 'all' }
+        : without(series, 'stack'),
     ),
   };
 }
