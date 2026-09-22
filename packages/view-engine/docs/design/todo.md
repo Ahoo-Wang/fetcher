@@ -14,8 +14,8 @@
 ### 批 7b 改了就跑
 
 - **为什么**：G7/G9/G14；D20 的运行节奏。内核与界面已在 `claude/ve-b7-auto-run`：`runtime/autoApply.ts`（`autoApplyDue`、300ms 合并）、`ViewRuntime.setAutoApply`、`ViewPreferences.autoRun` 与 `ViewEngine.setAutoRun`、托盘页脚的「改了就跑」、结果 `data-stale` 变淡；缺的是 UI 测试、故事与文档。
-- **判据**：维度／指标／展开／只保留改了 300ms 后自动重算，范围仍走「应用」（范围改了就什么都不自动跑）；旧结果变淡不清空；关掉开关记进个人偏好、跨视图生效；`test/autoRun.test.tsx`、故事 `RunsAsEdited`、`runtime.md`／`management.md`／`react.md`／`ui/analysis.md` 各说一段。
-- **落点**：`test/autoRun.test.tsx`、`stories/view-engine/AnalysisMetrics.test.stories.tsx`、`docs/design/{runtime,management,react}.md`、`docs/design/ui/analysis.md`。
+- **判据**：维度／指标／展开／只保留改了 300ms 后自动重算，范围仍走「应用」（范围改了就什么都不自动跑）；旧结果变淡不清空；关掉开关记进个人偏好、跨视图生效；新建的 UI 测试（`autoRun.test.tsx`）、故事 `RunsAsEdited`、`runtime.md`／`management.md`／`react.md`／`ui/analysis.md` 各说一段。
+- **落点**：新建 `autoRun.test.tsx`（`test/` 下）、`stories/view-engine/AnalysisMetrics.test.stories.tsx`、`docs/design/{runtime,management,react}.md`、`docs/design/ui/analysis.md`。
 
 ### 阶段末：审查与复验
 
