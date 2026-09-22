@@ -179,9 +179,11 @@ useDashboard(runtime): DashboardController
 - **取消一个设置写的是删键，不是 `undefined`**：`renameGroup(index, label | undefined)`、`renameMetric(index, label | undefined)`（显示名）、`setMissingBucket(index, on)`（`missingKey: DEFAULT_MISSING_KEY` 或整个键不在）、`setDense(index, on)`（`dense: true` 或整个键不在）都走 `model/json.ts` 的 `without`。配置是普通 JSON，一个挂着 `undefined` 的成员是任何新建配置都不会长成的样子，`comparePending` 的比较也会为它多报一次「改过没应用」；
 - `dateUnitFor(field)` 是**新时间维度从哪个粒度起步**（K4）：先读已应用范围在这个字段上圈出的跨度（`rangeSpan`），没有就读现有结果的桶（`resultSpan`），再没有就是字段的第一个单位；推荐规则本身在内核里（见 [kernels.md#粒度推荐k4](kernels.md#粒度推荐k4)），控制器只负责把「范围优先于结果」这个顺序说清楚。它只播种，手选过的单位永远优先；
 - `AnalysisFieldOption.missingKey` 是「这个字段担得起哨兵桶吗」（`isSingleStringField` 加运行时的 kind 注册表），托盘据此决定那一项出不出现、新维度带不带哨兵；
+- **指标自己的条件**（D20 屏 H）：`conditionFields` 是这种条件能指名的字段——作用域里 `kind.scalar !== false` 且不是 fieldless 的那些，因为指标条件是逐条记录判「这条算不算」，数组与全文检索拿不出那一个值；`kinds` 与 `optionSource` 让托盘就地拼出一个跟范围一模一样的条件编辑器（`treeController`），而不必把 runtime 传进卡片。`setMetricFilter(index, tree | undefined)`：空树留着（"写了但没写完"，准入据此让查询等着），`undefined` 才是删键；`duplicateMetric(index)` 把复制件插在原件后面并**交出它的别名**（规则本身是内核的 `metricWithCondition`），因为托盘接着要把那张新卡的条件块打开——菜单那一项叫「复制并加条件」，交出一张什么也没开的卡片不算许了这个条件。别名而不是下标：它是卡片的身份（React 的 key 也是它），下标会被后来的增删挪动；
+- **展开链**（D20 屏 G）：`elements` 是在跑的链，`expansible` 说能力声明了链没有（槽在不在），`expandable` 是声明出来的下一步（`{ path, label }` 或 `null`），`unit` 是现在数的是什么——最内层那一层的显示名，没展开就是定义自己的标题。`elementLabel(i)` 与 `elementFields(i)` 是第 i 层的名字与它的门认得的字段；`expand(path)` 与 `collapse(i)` 都走内核的 `withElements` 重新划范围，所以它们跟加减一个维度一样过 `reshape`，图表、排序与表列一起跟上；`setElementFilter(i, tree | undefined)` 与指标那一个同形，`undefined` 把这一层的 `filter` 键删掉、留下光秃秃的 `{ path }`；
 - `DashboardController.loading` 是「任一面板的查询在途」，由控制器自己订阅各个子 runtime 得来：仪表盘不跑自己的查询（`state.query` 恒为 `idle`），而子 runtime 的查询变化**不会**通知仪表盘的订阅者——那是有意的，否则每个面板每次请求都要让整张栅格重渲染——所以栅格之外还要知道这件事的控件（刷新按钮）只能由这里代为订阅。它与 `DashboardViewRuntime` 自己的计时器开火前问的是同一件事。
 
-两者的界面规则见 [ui/analysis.md](ui/analysis.md) 与 [ui/dashboard.md](ui/dashboard.md)。（见 test/analysisTray.test.tsx「swaps the whole metric when the summary changes」与 test/analysisCards.test.tsx「a display name」「the sentinel bucket」「the granularity a new time dimension starts at」）
+两者的界面规则见 [ui/analysis.md](ui/analysis.md) 与 [ui/dashboard.md](ui/dashboard.md)。（见 test/analysisTray.test.tsx「swaps the whole metric when the summary changes」、test/analysisCards.test.tsx「a display name」「the sentinel bucket」「the granularity a new time dimension starts at」、test/metricCondition.test.tsx「a metric’s own conditions」与 test/elementsSlot.test.tsx「the expansion slot」）
 
 ## useAutoRefresh
 

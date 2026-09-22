@@ -143,22 +143,28 @@ export function questionEditing({
             ? (without(metric, 'filter') as AnalysisMetric)
             : { ...metric, filter },
       ),
-    duplicateMetric: (index: number): number => {
-      const at = index + 1;
+    /**
+     * A copy of the metric right after it, answered by the copy's alias —
+     * the card's identity — so the slot can open the copy's block; `reshape`
+     * runs synchronously against the live draft, so the alias is in hand.
+     */
+    duplicateMetric: (index: number): string | undefined => {
+      let alias: string | undefined;
       reshape(current => {
         const copy = metricWithCondition(
           current.metrics[index],
           taken(current),
         );
         if (!copy) return undefined;
+        alias = copy.alias;
         const metrics = [...current.metrics];
-        metrics.splice(at, 0, copy);
+        metrics.splice(index + 1, 0, copy);
         return {
           groups: current.groups,
           metrics: metrics as AnalysisViewConfig['metrics'],
         };
       });
-      return at;
+      return alias;
     },
     removeMetric: (index: number) =>
       reshape(current =>

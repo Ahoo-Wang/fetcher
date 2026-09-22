@@ -149,6 +149,52 @@ export const ordersDefinition: DataViewDefinition = {
   views: [{ id: 'all', title: '全部订单', config: recordConfig() }],
 };
 
+/**
+ * 同一份订单，外加一条声明出来的展开链：订单 → 明细项 → 批次（D20 屏 G）。
+ *
+ * 只有「展开」那个故事用它，别的故事照旧用上面那份——多一个数组字段就会
+ * 多一个可筛的字段，而好几个故事正数着筛选面板里有几个。故事的数据源不会
+ * 求值 `elements`（见 `rowSource.ts`），所以那个故事只走到托盘为止：链怎么
+ * 走、计数单位跟着谁、收起带走哪几层，都是屏幕上看得见的。
+ */
+export const expandableOrdersDefinition: DataViewDefinition = {
+  ...ordersDefinition,
+  fields: [
+    ...ordersDefinition.fields,
+    {
+      name: 'items',
+      label: '明细项',
+      kind: 'array',
+      elements: [
+        { name: 'sku', label: '货号', kind: 'string' },
+        { name: 'qty', label: '数量', kind: 'number' },
+        {
+          name: 'batches',
+          label: '批次',
+          kind: 'array',
+          elements: [{ name: 'lot', label: '批号', kind: 'string' }],
+        },
+      ],
+    },
+  ],
+  analysis: {
+    ...ordersDefinition.analysis!,
+    elements: [
+      {
+        path: 'items',
+        aggregations: [
+          { field: 'sku', groups: [TERMS], functions: [] },
+          { field: 'qty', groups: [], functions: [SUM] },
+        ],
+      },
+      {
+        path: 'batches',
+        aggregations: [{ field: 'lot', groups: [TERMS], functions: [] }],
+      },
+    ],
+  },
+};
+
 /** Dashboards own no data; the definition is only their catalogue entry. */
 export const overviewDefinition: DashboardDefinition = {
   id: 'overview',

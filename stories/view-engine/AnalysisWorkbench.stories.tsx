@@ -19,6 +19,8 @@ import {
   HOST_LANGUAGE,
   analysisConfig,
   createStoryEngine,
+  expandableOrdersDefinition,
+  overviewDefinition,
   savedViews,
   type SourceBehaviour,
 } from './fixtures.js';
@@ -43,6 +45,7 @@ function AnalysisWorkbenchDemo({
   series = 'amount',
   pinned = false,
   records = false,
+  expandable = false,
   limit,
 }: {
   behaviour?: SourceBehaviour;
@@ -57,6 +60,11 @@ function AnalysisWorkbenchDemo({
    * 下钻开出来的是一个记录视图，只在 record 也在 `kinds` 里时开得出来。
    */
   records?: boolean;
+  /**
+   * 这份定义声明不声明一条展开链（D20 屏 G）。声明了，托盘里才有「展开」
+   * 那一槽；它换的是定义而不是配置，因为链是能力说了算的。
+   */
+  expandable?: boolean;
   /**
    * A row limit the four warehouses can actually hit. Ordering the result
    * makes which rows survive the cut a decision rather than an accident.
@@ -118,6 +126,11 @@ function AnalysisWorkbenchDemo({
         createStoryEngine({
           behaviour,
           instances: [{ ...savedViews[1], config }],
+          ...(expandable
+            ? {
+                definitions: [expandableOrdersDefinition, overviewDefinition],
+              }
+            : {}),
         })
       }
     >
@@ -160,10 +173,12 @@ const meta = {
     series: 'amount',
     pinned: false,
     records: false,
+    expandable: false,
   },
   argTypes: {
     limit: { table: { disable: true } },
     records: { control: 'boolean' },
+    expandable: { control: 'boolean' },
     behaviour: {
       control: 'inline-radio',
       options: ['data', 'empty', 'slow', 'failing'],
@@ -239,3 +254,12 @@ export const EmptyResult: Story = {
 
 /** A failed aggregation keeps the configuration on screen. */
 export const QueryFailed: Story = { args: { behaviour: 'failing' } };
+
+/**
+ * 一份声明了展开链的定义：托盘里多出「展开」那一槽（D20 屏 G）。展开改的是
+ * 「数的是什么」——展开到明细项，问题就是关于明细项的，仓库那个维度跟着离开。
+ * 故事的数据源不求值 `elements`，所以这个故事到托盘为止，不按「应用」。
+ */
+export const Expandable: Story = {
+  args: { layout: 'table', expandable: true },
+};

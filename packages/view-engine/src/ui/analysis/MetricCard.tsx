@@ -70,6 +70,11 @@ export function MetricSlot({
   const measurable = analysis.fields.filter(
     field => summaryChoices(field).length > 0,
   );
+  // Which card has its conditions open, by the alias that names it. The
+  // slot holds it rather than each card, because the one gesture that opens
+  // a card's conditions from *another* card is the copy: 「复制并加条件」
+  // makes the copy and opens it, which is the condition it promised.
+  const [conditioning, setConditioning] = useState<string | null>(null);
   return (
     <EditorSlot
       name="metrics"
@@ -84,6 +89,11 @@ export function MetricSlot({
           index={index}
           disabled={disabled}
           optionsFor={optionsFor}
+          conditioning={conditioning === metric.alias}
+          onConditioning={open => setConditioning(open ? metric.alias : null)}
+          onDuplicate={() =>
+            setConditioning(analysis.duplicateMetric(index) ?? null)
+          }
         />
       ))}
       <DropdownMenu>
@@ -172,18 +182,25 @@ function MetricCard({
   index,
   disabled,
   optionsFor,
+  conditioning,
+  onConditioning,
+  onDuplicate,
 }: {
   analysis: AnalysisEditorController;
   metric: AnalysisMetric;
   index: number;
   disabled?: boolean;
   optionsFor?(remote: string): FieldOption[] | undefined;
+  /**
+   * Whether this card's own conditions (D20 屏 H) are open under it. The
+   * slot decides, because a copy opens the card it made rather than itself.
+   */
+  conditioning: boolean;
+  onConditioning(open: boolean): void;
+  onDuplicate(): void;
 }) {
   const messages = useViewMessages();
   const [renaming, setRenaming] = useState(false);
-  // The metric's own conditions (D20 屏 H): open under the card while
-  // being written, and read out on the card at rest.
-  const [conditioning, setConditioning] = useState(false);
   const conditions = conditionItems(analysis, metric);
   const held = metric.type !== 'DERIVED' && metric.filter !== undefined;
   const menu = useRef<HTMLButtonElement>(null);
@@ -275,7 +292,7 @@ function MetricCard({
           onToggle={() => {
             if (!conditioning && !held)
               analysis.setMetricFilter(index, { op: 'and', children: [] });
-            setConditioning(!conditioning);
+            onConditioning(!conditioning);
           }}
         />
       )}
@@ -286,7 +303,7 @@ function MetricCard({
         onRename={() => setRenaming(true)}
       >
         {metric.type !== 'DERIVED' && (
-          <DropdownMenuItem onClick={() => analysis.duplicateMetric(index)}>
+          <DropdownMenuItem onClick={onDuplicate}>
             {messages.label('label.analysis.copy-with-condition', {
               name: metric.label ?? name,
             })}
@@ -319,7 +336,7 @@ function MetricCard({
           name={metric.label ?? name}
           disabled={disabled}
           optionsFor={optionsFor}
-          onClose={() => setConditioning(false)}
+          onClose={() => onConditioning(false)}
         />
       ) : (
         <ConditionLine items={conditions} />

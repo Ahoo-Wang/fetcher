@@ -69,6 +69,12 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 `defaultAnalysisConfig` 按固定优先级取第一个可用者，因此总能返回合法配置：`COUNT` → 首个有非空 `functions` 的字段（取其首个函数）→ 首个 `distinctCount` 字段 → 首个 `percentile` 字段（`percentile: 95`）→ 首个 `any` 字段。分组可以为空，Wow 允许无分组聚合；此时默认配置不带 `sort`，因为 Wow 对无分组的 `sort` 与 `having` 都会抛错。默认的 TERMS 维度若落在单值字符串字段上，带一个 `missingKey`（`DEFAULT_MISSING_KEY`，`'(empty)'`）：**不写它，Wow 把没有该值的记录整条丢出结果**，屏幕上没有任何地方会说这件事。它是存下来、发出去、再作为桶键回来的**数据**，所以是一个固定字符串而不是一句译文；那一组在界面上叫什么由 `/ui` 决定（批 4）。编辑器新建维度走同一个 `termsGroup(field, alias, kind?)`，规则只有一处。（见 test/definition.test.ts「validateDefinition fields」「validateDefinition capabilities」「validateDefinition system views」「field groups」与 test/analysisValidate.test.ts「defaultAnalysisConfig」）
 
+`analysis/defaults.ts` 里还有三样东西是「新建一条」这件事的公共答案，所以它们在内核而不在卡片里：
+
+- `firstMetric(count, fields)` 就是上面那条优先级本身，**从一组聚合能力算起**。新建一份配置问的是根能力，而展开之后 `withElements` 问的是新单位那一层的能力——同一条规则，两处调用；
+- `freeAlias(base, taken)` 是「一个没人在用的别名」：`base` 的词干加上第一个空出来的编号。按行数编号在删掉一行之后立刻撞车（删一加二，两行都叫 `amount_2`，React 当成同一个 key、准入报重复别名），第一个空号则怎么加怎么删都不撞。Wow 的别名是单段的，所以字段路径先拼成一个词；词干末尾已有的编号先剥掉，于是 `amount_2` 的复制件是 `amount_<下一个>` 而不是 `amount_2_1`；
+- `metricWithCondition(metric, taken)` 是「复制并加条件」（D20 屏 H）：拿一个空别名、**不带显示名**（两张卡叫同一个名字正是显示名要消解的歧义）、汇总方式照旧，外加一个空条件等着填。派生指标没有 `filter`，所以返回 `undefined`，界面据此不画那一项。（见 test/metricCondition.test.tsx「copies a metric with an empty condition to fill in」「gives a derived metric no funnel at all」）
+
 ## 未信任的配置：骨架与预算
 
 配置来自持久化端口，不可假设结构可信：
@@ -171,6 +177,18 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 - `TERMS.missingKey` 与 `DATE_HISTOGRAM.timeZone` 若存在则不能为空白字符串，与 Wow 的 `aggregation.terms`／`dateHistogram` 一致；**`missingKey` 只能给单值字符串字段**（Wow 只允许这一种，多值／数字／布尔在 schema 校验处被拒），否则报 `analysis.group.missing-key-unsupported`。判据由 kind 自述 `FieldKind.singleString`（内置里 `string` 与 `enum` 声明它，`reference` 不声明：远端候选的 id 可能是数字），再由字段自己的 `options` 否决——一组数字码是数字字段，不管 kind 叫什么（`isSingleStringField`，`model/field.ts`；见 test/analysisValidate.test.ts「allows a missing-value bucket on single-valued text only」「gives a text dimension a bucket for the records with no value」）；
 - **显示名给了就得是个词**：group 与 metric 的 `label`（`AnalysisNamed`，D20 显示名）不给则罢，给了必须是字符串（否则 `analysis.config.malformed`）且不能是空白（否则 `analysis.label.blank`）——一个空名字顶在列头上什么也没说。它是视图自己的东西，`compileAnalysis` 逐成员拼 Wow 对象，因此永远不会被发出去（见 test/analysisValidate.test.ts「a display name」「is admitted when given, refused when blank, and never sent to Wow」）；
 - `table.columns[].alias` 必须是当前 groups 或 metrics 的别名且不重复。
+
+### 展开链把问题重新划一遍范围：expand.ts
+
+D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 之后，一行是一个明细项，维度与指标只能指明细项的字段，而一个按订单仓库切的维度问的是另一件事——Wow 以「requires its declared element scope」拒绝它。所以进出这条链的每一步都要把配置重新划一遍范围，这就是 `withElements(config, elements, definition, capability)`：
+
+- **不再指向新单位字段的维度与指标离开**。`COUNT` 永远留下（能数记录就能数条目），`ANY` 看它那个字段，其余看它表达式里的每个字段；
+- **指标自己的条件指着外面的字段时，条件离开而指标留下**：那句话问的是错的东西，但这个数本身还问得出来；
+- **操作数都走光的派生指标离开**：它引用的是别名，别名没了就算不出来；
+- **什么都不剩时指标重新起头**：`firstMetric(capability.count, 新单位的聚合能力)`，跟一份全新的分析一样。一份没有指标的聚合查询什么也答不上来，所以"空着"不是一个可选项；
+- **还指得着的东西原样留着**：明细项的货号维度在收起批次之后仍然是明细项的货号维度，不该因为链动了一下就重挑一遍。
+
+图表、排序与表列跟着这次形状变化走的方式，跟它们跟着任何一次分组／指标变化走的方式完全一样（`useAnalysisEditor` 的 `reshape`），所以这里只回答"分什么组、测什么数"。链本身的三个动作也在这儿：`expanded(elements, path)` 往里走一层，`collapsed(elements, index)` 从这一层切断（里面的层一起走），`nextExpansion(declaredChain, elements)` 是能力声明的下一步——链是一条线，所以至多只有一个可展开的东西；`levelLabel` 与 `nextLevel` 把层与下一步按它们的字段显示名说出来，给界面用。（见 test/expand.test.ts「withElements」与 test/elementsSlot.test.tsx「the expansion slot」）
 
 ### 粒度推荐（K4）
 

@@ -156,7 +156,11 @@ export interface AnalysisEditorController extends QuestionEditing {
    * A second card of the same metric, right after it, with an empty
    * condition to fill in: 「复制『金额 合计』并加条件」. The copy keeps no
    * display name — two cards called the same thing is the ambiguity the
-   * name exists to resolve.
+   * name exists to resolve, and the condition it is about to carry is what
+   * resolves it. Answers the copy's alias, which is what names the card, so
+   * the slot can open the copy's conditions on the spot: the menu item
+   * promised a condition, and a second identical card with nothing open is
+   * not one. `undefined` where there was nothing to copy.
    */
   setSort(sort: AnalysisSort[]): void;
   setLimit(limit: number): void;

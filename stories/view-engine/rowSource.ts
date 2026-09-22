@@ -102,34 +102,31 @@ function summarise(
   if (query.elements?.length || query.having)
     throw new Error('The story source does not evaluate elements or having.');
   const groupBy = query.groupBy ?? [];
-  const answered = aggregate(
-    [...rows],
-    [
-      // An aggregation without a filter reads every row.
-      {
-        $match: withDeletionDefault(
-          query.filter ?? { op: FilterOperator.MATCH_ALL },
+  const answered = aggregate(gated(rows, query.metrics), [
+    // An aggregation without a filter reads every row.
+    {
+      $match: withDeletionDefault(
+        query.filter ?? { op: FilterOperator.MATCH_ALL },
+      ),
+    },
+    {
+      $group: {
+        _id:
+          groupBy.length === 0
+            ? null
+            : Object.fromEntries(
+                groupBy.map(group => [group.alias, groupKey(group)]),
+              ),
+        ...Object.fromEntries(
+          query.metrics.map(metric => [metric.alias, accumulator(metric)]),
         ),
       },
-      {
-        $group: {
-          _id:
-            groupBy.length === 0
-              ? null
-              : Object.fromEntries(
-                  groupBy.map(group => [group.alias, groupKey(group)]),
-                ),
-          ...Object.fromEntries(
-            query.metrics.map(metric => [metric.alias, accumulator(metric)]),
-          ),
-        },
-      },
-      { $replaceWith: { $mergeObjects: ['$_id', '$$ROOT'] } },
-      { $unset: '_id' },
-      ...(query.sort?.length ? [{ $sort: sortSpec(query.sort) }] : []),
-      ...(query.limit ? [{ $limit: query.limit }] : []),
-    ],
-  );
+    },
+    { $replaceWith: { $mergeObjects: ['$_id', '$$ROOT'] } },
+    { $unset: '_id' },
+    ...(query.sort?.length ? [{ $sort: sortSpec(query.sort) }] : []),
+    ...(query.limit ? [{ $limit: query.limit }] : []),
+  ]);
   if (groupBy.length === 0 && answered.length === 0)
     return [
       Object.fromEntries(
@@ -140,6 +137,46 @@ function summarise(
       ),
     ];
   return answered;
+}
+
+/** The mark one gated metric reads, kept out of every field's namespace. */
+const GATE = '__gate_';
+
+/** A metric's own conditions, or none (D20 屏 H). */
+function gateOf(metric: AggregationMetric): FilterExpression | undefined {
+  return 'filter' in metric ? metric.filter : undefined;
+}
+
+/**
+ * The rows, each marked with which gated metrics count it.
+ *
+ * A metric's own conditions decide, per record, whether that record counts
+ * toward that one metric — Wow re-expresses them as a guard inside the
+ * accumulator, and a real backend evaluates them there. MongoDB's `$group`
+ * takes an *expression*, not a query predicate, and there is no translation
+ * from one to the other, so each gate is evaluated once per row up front
+ * with the same `criteria` the root filter goes through, and the
+ * accumulator below reads the mark. The answer is the same; only the moment
+ * differs.
+ */
+function gated(
+  rows: readonly RecordData[],
+  metrics: readonly AggregationMetric[],
+): RecordData[] {
+  const gates = metrics.flatMap(metric => {
+    const filter = gateOf(metric);
+    return filter ? [[metric.alias, criteria(filter)] as const] : [];
+  });
+  if (gates.length === 0) return [...rows];
+  return rows.map(row => ({
+    ...row,
+    ...Object.fromEntries(
+      gates.map(([alias, predicate]) => [
+        `${GATE}${alias}`,
+        find<RecordData>([row], predicate).all().length > 0,
+      ]),
+    ),
+  }));
 }
 
 function groupKey(group: AggregationGroup): unknown {
@@ -158,12 +195,19 @@ const ACCUMULATORS: Partial<Record<AggregationFunction, string>> = {
 };
 
 function accumulator(metric: AggregationMetric): AnyObject {
-  if (metric.type === AggregationMetricType.COUNT) return { $sum: 1 };
+  const gate = gateOf(metric) ? `$${GATE}${metric.alias}` : undefined;
+  if (metric.type === AggregationMetricType.COUNT)
+    return { $sum: gate ? { $cond: [gate, 1, 0] } : 1 };
   if (metric.type === AggregationMetricType.NUMERIC) {
     const name = ACCUMULATORS[metric.function];
     const { expression } = metric;
-    if (name && expression.type === AggregationExpressionType.FIELD)
-      return { [name]: `$${expression.field}` };
+    if (name && expression.type === AggregationExpressionType.FIELD) {
+      const value = `$${expression.field}`;
+      // A row the metric's conditions leave out contributes nothing at all.
+      // `null` is what every accumulator here skips, where a 0 would be a
+      // value: it would drag an average down and win a minimum outright.
+      return { [name]: gate ? { $cond: [gate, value, null] } : value };
+    }
   }
   throw new Error(`The story source does not compute ${metric.alias}.`);
 }
