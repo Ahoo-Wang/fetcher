@@ -5220,3 +5220,53 @@ export const ReducedMotionIsHonoured: Story = {
     }).toEqual({ spinner: false, skeleton: false, badge: true });
   },
 };
+
+/**
+ * 没有底色的徽章靠边活着，所以那圈边是 `--input`。
+ *
+ * 主题把两个 token 分在这条线上：`--border` 是**东西之间**的线，可以淡；
+ * `--input` 是**边就是那个东西**的那一档，两个主题都钉在 ≥3:1，因为一个没勾
+ * 的复选框除了那圈边什么都没有。没有底色的徽章是同一种情形——把边拿掉就没有
+ * 徽章了，只剩一个词——而 registry 给它的是 `border-border`：量在标题栏上是
+ * **1.26:1**（暗色 1.77:1）。表内那几枚有语气的徽章早就换过了
+ * （`ui/variants.tsx` 的 `neutral`），这一条是剩下的那些。
+ *
+ * 钉的那一枚正是最难够着的一枚：「已修改」这颗徽章上的 `data-slot` 被调用处
+ * 写成了 `view-unsaved`（`useRender` 的 state 拗不过调用处的 prop），所以
+ * `styles.css` 里那条规则问的是 `group/badge` 与 `data-variant`——两样都是
+ * registry 自己写在每一枚徽章上的。
+ */
+const outlineBadgeEdges = (theme: 'light' | 'dark'): Story => ({
+  ...DisplayWithData,
+  args: { ...DisplayWithData.args, theme },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole('table');
+    await expect(
+      canvasElement.querySelector('[data-slot="view-surface"]'),
+    ).toHaveAttribute('data-theme', theme);
+
+    // 改一下，好让「已修改」那枚徽章上台。
+    await userEvent.click(canvas.getAllByRole('button', { name: /订单号/ })[0]);
+    const mark = await waitFor(() => {
+      const found = canvasElement.querySelector<HTMLElement>(
+        '[data-slot="view-unsaved"]',
+      );
+      if (!found) throw new Error('the "edited" mark did not appear');
+      return found;
+    });
+
+    // registry 自己的两样东西：徽章的组名与它的 variant。
+    await expect(mark.getAttribute('data-variant')).toBe('outline');
+    await expect(mark.getAttribute('class')).toContain('group/badge');
+
+    const { ratio, colors } = measureBorderContrast(mark);
+    await expect(
+      ratio,
+      `${theme} — ${colors.border} on ${colors.surface}`,
+    ).toBeGreaterThanOrEqual(3);
+  },
+});
+
+export const OutlineBadgeEdgesInLightTheme: Story = outlineBadgeEdges('light');
+export const OutlineBadgeEdgesInDarkTheme: Story = outlineBadgeEdges('dark');

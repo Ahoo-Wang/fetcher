@@ -79,7 +79,6 @@
 - **P-04 多值录入框**：chips 后的录入框无 placeholder、无 `inputMode`；文档说的「添加按钮」不存在。判据：placeholder + `inputMode=decimal`；文档删掉按钮那半句。落点：`src/ui/filter/inputs/chips.tsx`。
 - **P-05 工具栏左端**：「清除选择」是 ghost，读起来像标签不像按钮。判据：outline，或做成徽章旁的 ✕ 图标按钮。落点：`src/ui/ResultToolbar.tsx`。
 - **P-07 筛选托盘／高级**：高级模式托盘约 620px 高，800×900 上结果整个掉出首屏。判据：封顶（`max-h-[40vh] overflow-auto`）或多条件时默认折起内层分组。落点：`src/ui/FilterPanel.tsx`、[ui/README.md#filterpanel-的布局](ui/README.md#filterpanel-的布局)。
-- **P-10 已应用条／徽章**：outline 徽章的边是 `--border`（≈1.2:1），表内徽章已改 `--input`，这里没改。判据：`ToneBadge` outline 档换 `--input`。落点：`src/ui/variants.tsx`。
 - **P-11 表格／宽屏**：四列表在 1600 下金额列 547px。判据：表 `max-width` 或末尾一个吃余量的空列。落点：`src/ui/RecordTable.tsx`、[ui/record.md](ui/record.md)。
 - **P-13 打开视图时**：整页只有一条 `h-8` 骨架。判据：标题栏 + 结果块骨架，结构与打开后一致。落点：`src/ui/WorkbenchShell.tsx`。
 - **P-14 分页**（拍板 Ⅷ）：只能一页页翻。判据：总数已知时给页码输入。落点：`src/ui/RecordPagination.tsx`。
