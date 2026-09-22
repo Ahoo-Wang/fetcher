@@ -21,7 +21,11 @@ import {
   within,
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ViewStoreError } from '../src/index.js';
+import { ViewStoreError, type ViewInstance } from '../src/index.js';
+import type {
+  ViewListState,
+  ViewManagerController,
+} from '../src/react/index.js';
 import { ViewManager } from '../src/ui/ViewManager.js';
 import { ViewSurface } from '../src/ui/ViewSurface.js';
 import { deferred, recordConfig } from './fixtures.js';
