@@ -218,7 +218,7 @@ export function RecordWorkbench({
   const { say: announce, region: announcement } = useAnnouncer(
     'record-announcement',
   );
-  useQueryAnnouncement(table, messages, announce);
+  useQueryAnnouncement(table, messages, announce, emptyTitle);
 
   const fields = runtime?.fields ?? [];
   const hasResult = state?.result != null;

@@ -32,10 +32,17 @@ import type { MessageFormatters } from '../MessagesProvider.js';
 export function querySentence(
   table: RecordTableController,
   messages: MessageFormatters,
+  /**
+   * The empty result's title as the screen is drawing it — a host may put
+   * the case in its own words ("no orders are waiting"). Said as heard,
+   * because the two are one sentence and not two.
+   */
+  emptyTitle?: string,
 ): string | null {
   if (table.loading) return messages.label('label.status.querying');
   if (!table.hasResult || table.status === 'error') return null;
-  if (table.rows.length === 0) return messages.label('label.record.empty');
+  if (table.rows.length === 0)
+    return emptyTitle ?? messages.label('label.record.empty');
   // The number the reader asked about when the source gives one, and the
   // number that did arrive when it does not — the rule the pagination bar
   // reads by, so the bar and the announcement never disagree.
@@ -59,8 +66,10 @@ export function useQueryAnnouncement(
   table: RecordTableController,
   messages: MessageFormatters,
   say: (message: string) => void,
+  /** What the empty result is titled on screen, when the host titles it. */
+  emptyTitle?: string,
 ): void {
-  const sentence = querySentence(table, messages);
+  const sentence = querySentence(table, messages, emptyTitle);
   const said = useRef<string | null>(null);
   useEffect(() => {
     if (sentence === null || sentence === said.current) return;

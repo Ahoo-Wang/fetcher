@@ -119,6 +119,21 @@ describe('what a record query says out loud', () => {
    * through the controller rather than a workbench: what a source's paging
    * mode *is* belongs to `recordPagination.test.tsx`.
    */
+  it("says the empty result in the host's own words, where it has some", async () => {
+    render(
+      <RecordWorkbench
+        engine={engineWith(() => Promise.resolve({ total: 0, list: [] }))}
+        definitionId="orders"
+        instanceId="orders-1"
+        emptyTitle="No orders are waiting"
+      />,
+    );
+
+    // The title on screen and the sentence said are one sentence: a host
+    // that put the case in its own words did not put it in one of them.
+    await waitFor(() => expect(announced()).toBe('No orders are waiting'));
+  });
+
   it('counts what arrived when the source gives no total', () => {
     const messages = formattersFor(defaultMessages);
 
