@@ -320,6 +320,9 @@ importers:
       immer:
         specifier: 'catalog:'
         version: 11.1.18
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.47.0(react@19.2.8)
       mingo:
         specifier: 'catalog:'
         version: 7.2.4
