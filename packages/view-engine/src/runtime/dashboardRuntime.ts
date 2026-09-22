@@ -190,6 +190,7 @@ export class DashboardViewRuntime implements ManagedViewRuntime<DashboardViewCon
         selection: [],
         write: null,
         editing: false,
+        autoApply: false,
         nextRefreshAt: null,
         panels: [],
         resolving: false,
