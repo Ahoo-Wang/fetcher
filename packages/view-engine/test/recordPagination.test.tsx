@@ -678,7 +678,7 @@ describe('RecordPagination groups its numbers', () => {
   const large = () =>
     tableController({
       pageSize: 20,
-      paging: { mode: 'paged', index: 1, total: 624082 },
+      paging: pagedPaging({ index: 1, size: 20, total: 624082 }),
     });
 
   it('groups the total and the page count in English', () => {
