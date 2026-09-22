@@ -593,7 +593,6 @@ export const zhCN: ViewMessages = {
   'label.date-unit.SECOND': '按秒',
   'label.analysis.interval': '区间宽度',
   'label.analysis.percentile': '百分位数',
-  'label.analysis.sort': '排序',
   'label.analysis.open-editor': '打开分析',
   'label.analysis.reading': '按 {dimensions} · {metrics}',
   'label.analysis.reading-flat': '{metrics}',

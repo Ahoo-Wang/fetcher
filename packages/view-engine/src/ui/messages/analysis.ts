@@ -55,7 +55,6 @@ export const analysisMessages = {
   'label.date-unit.SECOND': 'By second',
   'label.analysis.interval': 'Band width',
   'label.analysis.percentile': 'Percentile',
-  'label.analysis.sort': 'Sort',
   'label.analysis.open-editor': 'Open analysis',
   'label.analysis.reading': 'By {dimensions} · {metrics}',
   'label.analysis.reading-flat': '{metrics}',

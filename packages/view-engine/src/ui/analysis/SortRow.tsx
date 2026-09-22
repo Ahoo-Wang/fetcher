@@ -70,9 +70,6 @@ export function SortRow({
       data-slot="analysis-sort"
       className={`mt-auto flex flex-wrap items-center gap-2 ${TEXT_UI}`}
     >
-      <span className="text-muted-foreground">
-        {messages.label('label.analysis.sort')}
-      </span>
       <SortSettings table={owner} fields={fields} />
       <NumberInput
         label={messages.label('label.analysis.row-limit')}
