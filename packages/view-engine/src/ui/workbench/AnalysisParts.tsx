@@ -187,7 +187,13 @@ export function AnalysisParts({
     onEditorOpenChange: open => setFold({ id: runtimeId, open }),
     // Edited, not run — whichever slot holds the change: the toggle wears
     // the dot while the tray is folded away.
-    editorPending: filter.pendingCount + (analysis.pending ? 1 : 0),
+    //
+    // `filter.pendingCount` is already the count over the *whole* config
+    // (`comparePending(draft, applied)`), dimensions and metrics included,
+    // so nothing is added for the question's half: adding `analysis.pending`
+    // on top said "3 not applied" for the one dimension that had been added,
+    // and a count nobody can match to what they did is worse than no count.
+    editorPending: filter.pendingCount,
     /* Not frozen while a query runs: editing never re-queries, and a refresh
        that lands mid-edit must not take the inputs away. */
     editor: (

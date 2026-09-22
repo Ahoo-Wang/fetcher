@@ -567,7 +567,11 @@ export function EditorSlot({
       aria-label={title}
       className={cn('flex min-w-0 flex-col', SPACE.GROUPS, className)}
     >
-      <h5
+      {/* `h3`, under the view's own `h2`: the slot names a section of the
+          page, and a reader jumping by heading must not find a level
+          skipped (axe `heading-order`). It is small because it is a label,
+          not because it is deep. */}
+      <h3
         className={cn(
           'text-muted-foreground flex items-center gap-2 font-semibold',
           TEXT_UI,
@@ -576,7 +580,7 @@ export function EditorSlot({
         <span className="text-foreground">{title}</span>
         {hint && <span className="font-normal">· {hint}</span>}
         {aside && <span className="ml-auto font-normal">{aside}</span>}
-      </h5>
+      </h3>
       {children}
     </section>
   );

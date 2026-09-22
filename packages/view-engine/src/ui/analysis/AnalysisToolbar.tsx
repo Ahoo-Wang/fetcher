@@ -80,8 +80,10 @@ export function AnalysisToolbar({
           value={[analysis.layout]}
           onValueChange={value => {
             const next = value[0];
-            if (next === 'table' || next === 'chart')
-              apply(() => analysis.setLayout(next));
+            // `setLayout` runs the query itself — the kernel shapes a chart
+            // only for the layout that ran — so this one is not wrapped in
+            // `apply`, which would send the same question twice.
+            if (next === 'table' || next === 'chart') analysis.setLayout(next);
           }}
           variant="outline"
           size="sm"
