@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { useRef, useState } from 'react';
 import { PlusIcon, XIcon } from 'lucide-react';
 import type { AnalysisMetric } from '../../model/index.js';
 import type { AnalysisEditorController } from '../../react/index.js';
@@ -27,6 +28,7 @@ import { IconButton } from '../IconButton.js';
 import { useViewMessages } from '../MessagesProvider.js';
 import { DropdownMenuContent } from '../popups.js';
 import { EditorCard, EditorSlot } from '../variants.js';
+import { CardMenu, CardName } from './CardMenu.js';
 import { CompactSelect } from './CompactSelect.js';
 import {
   aliasesOf,
@@ -142,6 +144,12 @@ function MetricCard({
   disabled?: boolean;
 }) {
   const messages = useViewMessages();
+  const [renaming, setRenaming] = useState(false);
+  const menu = useRef<HTMLButtonElement>(null);
+  const done = () => {
+    setRenaming(false);
+    menu.current?.focus();
+  };
   const fieldName = fieldOfMetric(metric);
   const field = analysis.fields.find(entry => entry.field === fieldName);
   const name =
@@ -154,7 +162,14 @@ function MetricCard({
     messages.label(`label.summary.fn.${entry}`, undefined, entry.toLowerCase());
   return (
     <EditorCard data-slot="metric-card" data-metric={metric.type}>
-      <span className="truncate font-medium">{name}</span>
+      <CardName
+        name={metric.label ?? name}
+        given={metric.label}
+        renaming={renaming}
+        label={messages.label('label.analysis.display-name', { name })}
+        onRename={label => analysis.renameMetric(index, label)}
+        onDone={done}
+      />
       {field && choice !== null && choices.length > 0 && (
         <CompactSelect
           label={messages.label('label.analysis.function-of', { name })}
@@ -183,11 +198,16 @@ function MetricCard({
           }}
         />
       )}
+      <CardMenu
+        ref={menu}
+        name={metric.label ?? name}
+        disabled={disabled}
+        onRename={() => setRenaming(true)}
+      />
       <IconButton
         label={messages.label('label.analysis.remove-metric', { name })}
         variant="ghost"
         size="icon-xs"
-        className="ml-auto"
         disabled={disabled || analysis.metrics.length <= 1}
         onClick={() => analysis.removeMetric(index)}
       >
