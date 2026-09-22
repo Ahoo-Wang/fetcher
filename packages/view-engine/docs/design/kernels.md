@@ -71,7 +71,7 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 `analysis/defaults.ts` 里还有几样东西是「新建一条」这件事的公共答案，所以它们在内核而不在卡片里：
 
-- **一个字段怎样变成维度，只有一个构造器**：`groupOfType(facts, type, alias, unit?)`。新配置的第一个维度、追问菜单的「按…拆分」（`drill.ts` 的 `groupFor`）、托盘上挑一个字段（`ui/analysis/editing.ts` 的 `defaultGroup`）、卡片上换一种分组方式，都从它造出来，各自只决定**哪种类型**和**哪个别名**。它只要构造所需的事实 `GroupFacts`——字段名、`missingKey`（单值字符串才担得起哨兵桶，`isSingleStringField`）、能力给的日期单位——于是定义里的字段（`groupFacts(field, dateUnits, kind?)` 读出来）与编辑器的 `AnalysisFieldOption` 是同一种输入。每个默认值只说一次：按值带哨兵桶（`DEFAULT_MISSING_KEY`），按日期取调用处推荐的单位、否则能力给的第一个、再否则 `DAY`，按区间宽度为 1；
+- **一个字段怎样变成维度，只有一个构造器**：`groupOfType(facts, type, alias, unit?)`。新配置的第一个维度、追问菜单的「按…拆分」（`drill.ts` 的 `groupFor`）、托盘上挑一个字段（`ui/analysis/editing.ts` 的 `defaultGroup`）、卡片上换一种分组方式，都从它造出来，各自只决定**哪种类型**和**哪个别名**；托盘与拆分选的类型都是定义给这个字段列的**第一种**——声明的顺序是研发在说这个字段首先该怎么看，追问没有理由另有一套偏好（test/analysisBuilders.test.ts「takes the type a definition lists first, in the tray and in a split alike」）。它只要构造所需的事实 `GroupFacts`——字段名、`missingKey`（单值字符串才担得起哨兵桶，`isSingleStringField`）、能力给的日期单位——于是定义里的字段（`groupFacts(field, dateUnits, kind?)` 读出来）与编辑器的 `AnalysisFieldOption` 是同一种输入。每个默认值只说一次：按值带哨兵桶（`DEFAULT_MISSING_KEY`），按日期取调用处推荐的单位、否则能力给的第一个、再否则 `DAY`，按区间宽度为 1；
 - **一个字段怎样变成指标，也只有一个构造器**：`metricOfSummary(facts, choice, alias)`。`choice` 是一个 `SummaryChoice`——数值指标的函数，或另外三种量一个字段的指标类型本身；`summaryChoices(facts)` 是一个字段给得出的那几种，`summaryOf(metric)` 反过来读。`firstMetric`、托盘的 `defaultMetric` 与卡片换汇总方式都走它，百分位统一是 `DEFAULT_PERCENTILE`；
 - `firstMetric(count, fields)` 就是上面那条优先级本身，**从一组聚合能力算起**。新建一份配置问的是根能力，而展开之后 `withElements` 问的是新单位那一层的能力——同一条规则，两处调用；
 - `groupableFields(fields, groups)` 是「还能按哪些字段加维度」：能分组、且 `groups` 还没按它分过的字段，保持原顺序。托盘的「添加维度」读草稿，追问菜单的「按…拆分」读跑出这份结果的配置——同一个函数，两份输入；

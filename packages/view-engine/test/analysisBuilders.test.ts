@@ -26,6 +26,7 @@ import {
   summaryChoices,
   summaryOf,
   type SummaryChoice,
+  groupFor,
 } from '../src/analysis/index.js';
 import { builtinFieldKinds } from '../src/filter/index.js';
 import {
@@ -118,6 +119,25 @@ describe('groupOfType', () => {
     for (const type of ['TERMS', 'HISTOGRAM', 'DATE_HISTOGRAM'] as const)
       expect(groupOfType(option, type, 'w')).toEqual(
         groupOfType(groupFacts(warehouse, ['WEEK']), type, 'w'),
+      );
+  });
+
+  /**
+   * The order a definition lists a field's group types in is its author's
+   * word on how the field is first looked at, so the tray's 「添加维度」 and
+   * the follow-up's 「按…拆一层」 both take the first one. They once
+   * differed: the split preferred a value grouping wherever one was offered,
+   * so a field declared date-first was grouped by date in the tray and by
+   * value from the menu.
+   */
+  it('takes the type a definition lists first, in the tray and in a split alike', () => {
+    for (const groups of [
+      ['DATE_HISTOGRAM', 'TERMS'],
+      ['TERMS', 'DATE_HISTOGRAM'],
+      ['HISTOGRAM', 'TERMS'],
+    ] as AnalysisGroupType[][])
+      expect(groupFor(warehouse, { groups, dateUnits: ['WEEK'] }).type).toBe(
+        groups[0],
       );
   });
 });

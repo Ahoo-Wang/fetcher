@@ -50,7 +50,7 @@ import type {
 export type MetricNaming = Pick<AnalysisEditorController, 'fields' | 'metrics'>;
 
 /** Every alias in use, which is the set an addition must stay clear of. */
-export function aliasesOf(analysis: AnalysisEditorController): string[] {
+export function usedAliases(analysis: AnalysisEditorController): string[] {
   return [...analysis.aliases.groups, ...analysis.aliases.metrics];
 }
 

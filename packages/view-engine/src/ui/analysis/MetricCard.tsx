@@ -47,7 +47,7 @@ import {
   conditionItems,
 } from './MetricCondition.js';
 import {
-  aliasesOf,
+  usedAliases,
   defaultMetric,
   fieldOfMetric,
   freeAlias,
@@ -132,7 +132,7 @@ export function MetricSlot({
                 onClick={() =>
                   analysis.addMetric({
                     type: 'COUNT',
-                    alias: freeAlias('count', aliasesOf(analysis)),
+                    alias: freeAlias('count', usedAliases(analysis)),
                   })
                 }
               >
@@ -148,7 +148,9 @@ export function MetricSlot({
               <DropdownMenuItem
                 key={field.field}
                 onClick={() =>
-                  analysis.addMetric(defaultMetric(field, aliasesOf(analysis)))
+                  analysis.addMetric(
+                    defaultMetric(field, usedAliases(analysis)),
+                  )
                 }
               >
                 {field.label}

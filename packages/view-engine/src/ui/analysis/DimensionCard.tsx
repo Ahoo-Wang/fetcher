@@ -34,7 +34,7 @@ import { DropdownMenuContent } from '../popups.js';
 import { EditorCard, EditorSlot } from '../variants.js';
 import { CardMenu, CardName } from './CardMenu.js';
 import { CompactSelect } from './CompactSelect.js';
-import { aliasesOf, defaultGroup } from './editing.js';
+import { defaultGroup, usedAliases } from './editing.js';
 import { useListFocus, type ListFocus } from './listFocus.js';
 
 /**
@@ -104,7 +104,7 @@ export function DimensionSlot({
                   analysis.addGroup(
                     defaultGroup(
                       field,
-                      aliasesOf(analysis),
+                      usedAliases(analysis),
                       analysis.dateUnitFor(field),
                     ),
                   )
