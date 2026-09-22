@@ -66,7 +66,11 @@ export function Tray({ filter, analysis, optionsFor, disabled }: TrayProps) {
       <RangeSlot filter={filter} optionsFor={optionsFor} disabled={disabled} />
       <div className={cn('grid grid-cols-1 md:grid-cols-2', SPACE.BLOCKS)}>
         <DimensionSlot analysis={analysis} disabled={disabled} />
-        <MetricSlot analysis={analysis} disabled={disabled} />
+        <MetricSlot
+          analysis={analysis}
+          disabled={disabled}
+          optionsFor={optionsFor}
+        />
       </div>
       {/* The pair that runs the query, once for everything above: Clear
           empties the range, Apply runs the whole draft, and the dot says

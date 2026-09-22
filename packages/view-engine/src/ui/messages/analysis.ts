@@ -164,6 +164,14 @@ export const analysisMessages = {
   // The card's own menu (D20 屏 B): a display name for any card, and for a
   // dimension the two choices Wow keeps behind its bucketing.
   'label.analysis.card-menu': 'More settings for {name}',
+  // A metric's own conditions (D20 屏 H): the funnel on the card, the block
+  // under it, and the sentence the card wears at rest.
+  'label.analysis.condition-of': 'Conditions for {name}',
+  'label.analysis.condition-title': 'Only records where',
+  'label.analysis.condition-close': 'Close the conditions',
+  'label.analysis.condition-remove': 'Count every record again',
+  'label.analysis.only-where': 'Only where {conditions}',
+  'label.analysis.copy-with-condition': 'Copy “{name}” with a condition',
   'label.analysis.rename': 'Display name…',
   'label.analysis.display-name': 'Display name for {name}',
   'label.analysis.missing-bucket': 'Missing values as their own group',

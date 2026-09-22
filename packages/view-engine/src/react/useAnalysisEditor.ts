@@ -14,6 +14,7 @@
 import { useCallback, useMemo } from 'react';
 import type {
   FieldGroupDefinition,
+  FilterTree,
   AnalysisDateUnit,
   AnalysisFunction,
   AnalysisGroup,
@@ -35,8 +36,17 @@ import {
   resultSpan,
   type AnalysisScope,
 } from '../analysis/index.js';
-import { isSingleStringField, without } from '../model/index.js';
-import { comparePending, type ViewRuntime } from '../runtime/index.js';
+import {
+  isFieldlessKind,
+  isSingleStringField,
+  without,
+} from '../model/index.js';
+import type { FieldKindRegistry } from '../filter/index.js';
+import {
+  comparePending,
+  type OptionSource,
+  type ViewRuntime,
+} from '../runtime/index.js';
 import { useViewRuntime } from './useViewEngine.js';
 
 /** One field and what the definition allows doing with it. */
@@ -73,6 +83,17 @@ export interface AnalysisEditorController {
   fieldGroups: readonly FieldGroupDefinition[];
   countable: boolean;
   /**
+   * The fields a metric's own condition may name (D20 屏 H): the scalar
+   * fields of the analysis scope — never a search, an array or an element
+   * match, which Wow refuses in metric position — as the range's editor
+   * names them, so the condition is built of the same pills.
+   */
+  conditionFields: readonly FieldDefinition[];
+  /** The kinds those fields are read by; absent without a runtime. */
+  kinds: FieldKindRegistry | undefined;
+  /** Candidates for a remote value editor, as the range's editor has them. */
+  optionSource?(remote: string): OptionSource | null;
+  /**
    * True while the draft says something the last Run did not (D17-6): the
    * groups, metrics, sort, limit, chart and totals all wait for Run, and a
    * Run that was refused leaves them waiting. The same reading as the filter
@@ -108,6 +129,19 @@ export interface AnalysisEditorController {
   removeMetric(index: number): void;
   /** Names a metric on screen, or takes the name back with `undefined`. */
   renameMetric(index: number, label: string | undefined): void;
+  /**
+   * The conditions a metric counts under, or none. An empty tree is kept
+   * while the card is being filled in — validation says it is unfinished
+   * and the query waits — and `undefined` takes the condition away.
+   */
+  setMetricFilter(index: number, filter: FilterTree | undefined): void;
+  /**
+   * A second card of the same metric, right after it, with an empty
+   * condition to fill in: 「复制『金额 合计』并加条件」. The copy keeps no
+   * display name — two cards called the same thing is the ambiguity the
+   * name exists to resolve.
+   */
+  duplicateMetric(index: number): number;
   setSort(sort: AnalysisSort[]): void;
   setLimit(limit: number): void;
   /** A redraw of the same rows, never a run; nor does it count as pending. */
@@ -122,6 +156,20 @@ export interface AnalysisEditorController {
 }
 
 const EMPTY_CHART: ChartSpec = { type: 'bar' };
+
+/**
+ * A name no alias is using, for a copy of `alias`: its stem plus the first
+ * free number — the tray's own rule, so a copy and an addition are named
+ * alike (`ui/analysis/editing.ts` `freeAlias`).
+ */
+function freeAliasOf(alias: string, taken: readonly string[]): string {
+  const stem = alias.replace(/_\d+$/, '');
+  const used = new Set(taken);
+  for (let index = 1; ; index += 1) {
+    const candidate = `${stem}_${index}`;
+    if (!used.has(candidate)) return candidate;
+  }
+}
 
 /**
  * Editing of an analysis draft: what to group by, what to measure, and how to
@@ -260,6 +308,17 @@ export function useAnalysisEditor(
 
   const groups = config?.groups ?? [];
   const metrics = config?.metrics ?? [];
+  const conditionFields = useMemo<FieldDefinition[]>(() => {
+    if (!scope || !runtime) return [];
+    return [...scope.fields.values()].filter((field: FieldDefinition) => {
+      const kind = runtime.kinds.get(field.kind);
+      return (
+        kind !== undefined &&
+        kind.scalar !== false &&
+        !isFieldlessKind(field.kind, kind)
+      );
+    });
+  }, [scope, runtime]);
 
   return {
     groups,
@@ -280,6 +339,9 @@ export function useAnalysisEditor(
     fields,
     fieldGroups: definition?.fieldGroups ?? EMPTY_GROUPS,
     countable: capability?.count === true,
+    conditionFields,
+    kinds: runtime?.kinds,
+    ...(runtime ? { optionSource: runtime.optionSource.bind(runtime) } : {}),
     dateUnitFor,
     pending: state
       ? comparePending(state.draft, state.applied, state.issues).pending
@@ -400,6 +462,46 @@ export function useAnalysisEditor(
                 : { ...metric, label },
           ) as AnalysisViewConfig['metrics'],
         })),
+      [reshape],
+    ),
+    setMetricFilter: useCallback(
+      (index: number, filter: FilterTree | undefined) =>
+        reshape(current => ({
+          groups: current.groups,
+          metrics: current.metrics.map((metric, at) =>
+            at !== index || metric.type === 'DERIVED'
+              ? metric
+              : filter === undefined
+                ? (without(metric, 'filter') as AnalysisMetric)
+                : { ...metric, filter },
+          ) as AnalysisViewConfig['metrics'],
+        })),
+      [reshape],
+    ),
+    duplicateMetric: useCallback(
+      (index: number) => {
+        const at = index + 1;
+        reshape(current => {
+          const source = current.metrics[index];
+          if (!source || source.type === 'DERIVED') return undefined;
+          const taken = [
+            ...current.groups.map(group => group.alias),
+            ...current.metrics.map(metric => metric.alias),
+          ];
+          const copy = {
+            ...without(source, 'label'),
+            alias: freeAliasOf(source.alias, taken),
+            filter: { op: 'and', children: [] },
+          } as AnalysisMetric;
+          const metrics = [...current.metrics];
+          metrics.splice(at, 0, copy);
+          return {
+            groups: current.groups,
+            metrics: metrics as AnalysisViewConfig['metrics'],
+          };
+        });
+        return at;
+      },
       [reshape],
     ),
     removeMetric: useCallback(

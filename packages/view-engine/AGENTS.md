@@ -318,6 +318,7 @@ src/
       DrillMenu.tsx           — The follow-up menu on one group of a result: the records behind it, split by another dimension, only this group (D20 追问); anchored to the mark or row pressed
       EmptyResult.tsx         — An aggregation that matched no group, one sentence for both layouts
       MetricCard.tsx          — The metrics slot and its cards: field and summary (the six ways Wow measures a field as one list), a percentile's number, the record count
+      MetricCondition.tsx     — A metric's own conditions (D20 屏 H): the funnel on the card, the block of the range's own pills under it, and the 「只算 …」 line at rest
       RangeSlot.tsx           — The tray's first slot: the condition panel under a heading that holds the tree's simple/advanced switch
       SortRow.tsx             — The bottom of the metrics slot: what the first N groups are the first N of
       Tray.tsx                — The analysis view's editor: range → dimensions | metrics, one Apply for the whole draft (D20)
