@@ -16,7 +16,7 @@ import { useSortable } from '@dnd-kit/react/sortable';
 import { Accessibility } from '@dnd-kit/dom';
 import { OptimisticSortingPlugin } from '@dnd-kit/dom/sortable';
 import { PlusIcon, XIcon } from 'lucide-react';
-import { movedTo } from '../../analysis/index.js';
+import { withMovedTo } from '../../analysis/index.js';
 import type {
   CartesianSeries,
   CartesianSpec,
@@ -167,7 +167,7 @@ export function SeriesList({ type, spec, metrics, onChange }: SeriesListProps) {
   const moveTo = (from: number, to: number) => {
     const carried = spec.series[from];
     if (!carried || from === to || to < 0 || to >= spec.series.length) return;
-    const order = movedTo(spec.series, from, to);
+    const order = withMovedTo(spec.series, from, to);
     update(order);
     say(
       messages.label('label.chart.series-moved', {
