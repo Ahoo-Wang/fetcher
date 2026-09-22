@@ -17,6 +17,7 @@ import { metricReferenceText, type FilterSummaryItem } from '../src/index.js';
 import {
   badgeEntries,
   cellText,
+  csvCellText,
   displayValue,
   formatNumber,
   isoDay,
@@ -436,6 +437,51 @@ describe('cellText', () => {
     expect(text('two\nlines', { cell: 'text' })).toBe('two\nlines');
     expect(text({ a: 1 })).toBe('{"a":1}');
     expect(text(9007199254740993n)).toBe('9007199254740993');
+  });
+});
+
+describe('csvCellText', () => {
+  const context = { locale: 'en-GB', timeZone: 'UTC' };
+  const words: MessageFormatters = {
+    label: key => formatMessage(en, key),
+    issue: () => '',
+    issues: () => '',
+  };
+
+  it('writes a plain number as the number it is, for a spreadsheet to sum', () => {
+    expect(csvCellText(534897, { kind: 'number' }, words, context)).toBe(
+      '534897',
+    );
+    expect(csvCellText(Number.NaN, { kind: 'number' }, words, context)).toBe(
+      '',
+    );
+  });
+
+  it('keeps a format the field declares, and reads everything else as the screen does', () => {
+    expect(
+      csvCellText(
+        1234.5,
+        {
+          kind: 'number',
+          numberFormat: { style: 'currency', currency: 'CNY' },
+        },
+        words,
+        context,
+      ),
+    ).toBe(
+      cellText(
+        1234.5,
+        {
+          kind: 'number',
+          numberFormat: { style: 'currency', currency: 'CNY' },
+        },
+        words,
+        context,
+      ),
+    );
+    expect(csvCellText(true, { kind: 'boolean' }, words, context)).toBe(
+      cellText(true, { kind: 'boolean' }, words, context),
+    );
   });
 });
 

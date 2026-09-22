@@ -280,6 +280,26 @@ export function cellText(
   return valueText(value, messages, field.numberFormat, context.locale);
 }
 
+/**
+ * One cell as a CSV file holds it: the screen's reading (`cellText`), except
+ * a number no format was declared for, which is written as the number it is.
+ *
+ * On screen such a number is grouped for the reader — 534,897 — but a CSV is
+ * read by a spreadsheet, and `534,897` in a CSV is a string no column sums.
+ * A number whose field *declares* a format (a currency, a percentage) keeps
+ * it: the author said how it reads, and the file says the same.
+ */
+export function csvCellText(
+  value: unknown,
+  field: DisplayField,
+  messages: MessageFormatters,
+  context: DisplayContext,
+): string {
+  if (typeof value === 'number' && field.numberFormat === undefined)
+    return Number.isFinite(value) ? String(value) : '';
+  return cellText(value, field, messages, context);
+}
+
 /** One badge: the value the record holds, the label and tone it wears. */
 export interface BadgeEntry {
   value: unknown;

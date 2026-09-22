@@ -25,7 +25,7 @@ import {
 import { useAnnouncer } from '../Announcer.js';
 import { Button } from '../components/button.js';
 import { ColumnSettings } from '../ColumnSettings.js';
-import { cellText, isoDay, type DisplayContext } from '../display.js';
+import { csvCellText, isoDay, type DisplayContext } from '../display.js';
 import { downloadFile, fileName } from '../download.js';
 import { useQueryAnnouncement } from '../record/queryAnnouncement.js';
 import { FilterPanel } from '../FilterPanel.js';
@@ -255,7 +255,7 @@ export function RecordParts({
   const deliver = useCallback(
     (rows: readonly RecordData[], scope: RecordExportScope, name: string) => {
       const text = serializeCsv(rows, columns, (value, column) =>
-        cellText(value, column, messages, display),
+        csvCellText(value, column, messages, display),
       );
       downloadFile({ name, text, type: CSV_TYPE });
       onExported?.({ name, text, scope, rows: rows.length });
