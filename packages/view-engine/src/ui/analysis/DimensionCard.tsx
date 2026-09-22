@@ -139,9 +139,11 @@ function DimensionCard({
     menu.current?.focus();
   };
   const field = analysis.fields.find(entry => entry.field === group.field);
-  // The field's display name, which is what every control in this card is
-  // named after — an alias names the query and nobody chose it.
-  const name = field?.label ?? group.field;
+  // What the card is called, which is what every control on it is named
+  // after: the name the analyst gave, else the field's display name — an
+  // alias names the query and nobody chose it.
+  const fallback = field?.label ?? group.field;
+  const name = group.label ?? fallback;
   // Only a time dimension standing alone may fill its empty periods: a
   // second dimension would multiply the filling out (Wow refuses it).
   const alone = analysis.groups.length === 1;
@@ -156,7 +158,7 @@ function DimensionCard({
   return (
     <EditorCard data-slot="dimension-card" data-field={group.field}>
       <CardName
-        name={group.label ?? name}
+        name={fallback}
         given={group.label}
         renaming={renaming}
         label={messages.label('label.analysis.display-name', { name })}
@@ -212,7 +214,7 @@ function DimensionCard({
       )}
       <CardMenu
         ref={menu}
-        name={group.label ?? name}
+        name={name}
         disabled={disabled}
         onRename={() => setRenaming(true)}
       >

@@ -152,10 +152,13 @@ function MetricCard({
   };
   const fieldName = fieldOfMetric(metric);
   const field = analysis.fields.find(entry => entry.field === fieldName);
-  const name =
+  // What the card is called, and what every control on it is named after:
+  // the name the analyst gave, else what the field composes (D20 显示名).
+  const fallback =
     metric.type === 'COUNT'
       ? messages.label('label.analysis.row-count')
       : (field?.label ?? fieldName);
+  const name = metric.label ?? fallback;
   const choices = field ? summaryChoices(field) : [];
   const choice = summaryOf(metric);
   const word = (entry: SummaryChoice) =>
@@ -163,7 +166,7 @@ function MetricCard({
   return (
     <EditorCard data-slot="metric-card" data-metric={metric.type}>
       <CardName
-        name={metric.label ?? name}
+        name={fallback}
         given={metric.label}
         renaming={renaming}
         label={messages.label('label.analysis.display-name', { name })}
@@ -200,7 +203,7 @@ function MetricCard({
       )}
       <CardMenu
         ref={menu}
-        name={metric.label ?? name}
+        name={name}
         disabled={disabled}
         onRename={() => setRenaming(true)}
       />

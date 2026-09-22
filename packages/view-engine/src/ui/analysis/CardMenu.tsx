@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useState, type ReactNode, type RefObject } from 'react';
+import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import { EllipsisVerticalIcon } from 'lucide-react';
 import {
   DropdownMenu,
@@ -40,27 +40,53 @@ export function CardName({
   label,
   onRename,
   onDone,
-}: {
-  /** What the card is called right now. */
+}: CardNameProps & { renaming: boolean }) {
+  if (!renaming)
+    return (
+      <span data-slot="card-name" className="truncate font-medium">
+        {given ?? name}
+      </span>
+    );
+  // Mounted only while it is open, so every edit starts from the name that
+  // is stored rather than from whatever the last abandoned one typed.
+  return (
+    <NameBox
+      name={name}
+      given={given}
+      label={label}
+      onRename={onRename}
+      onDone={onDone}
+    />
+  );
+}
+
+interface CardNameProps {
+  /** What the card is called when the analyst has named nothing. */
   name: string;
   /** The name the analyst gave, if any: what the box starts with. */
   given: string | undefined;
-  renaming: boolean;
   /** The box's accessible name. */
   label: string;
   onRename(label: string | undefined): void;
   onDone(): void;
-}) {
+}
+
+function NameBox({ name, given, label, onRename, onDone }: CardNameProps) {
   const [text, setText] = useState(given ?? '');
-  if (!renaming)
-    return (
-      <span data-slot="card-name" className="truncate font-medium">
-        {name}
-      </span>
-    );
-  const commit = () => {
-    const trimmed = text.trim();
-    onRename(trimmed === '' ? undefined : trimmed);
+  /**
+   * Leaving the box is what hands focus back to the menu, and a focus move
+   * is a blur — so a box that committed on blur committed the very text
+   * Escape had just thrown away. It settles once, whichever way it was
+   * left, and the blur that follows has nothing left to do.
+   */
+  const settled = useRef(false);
+  const leave = (keep: boolean) => {
+    if (settled.current) return;
+    settled.current = true;
+    if (keep) {
+      const trimmed = text.trim();
+      onRename(trimmed === '' ? undefined : trimmed);
+    }
     onDone();
   };
   return (
@@ -72,14 +98,14 @@ export function CardName({
       value={text}
       placeholder={name}
       onChange={event => setText(event.target.value)}
-      onBlur={commit}
+      onBlur={() => leave(true)}
       onKeyDown={event => {
         if (event.key === 'Enter') {
           event.preventDefault();
-          commit();
+          leave(true);
         } else if (event.key === 'Escape') {
           event.preventDefault();
-          onDone();
+          leave(false);
         }
       }}
     />
