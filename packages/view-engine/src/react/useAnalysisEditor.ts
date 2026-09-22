@@ -31,12 +31,11 @@ import type {
 import {
   analysisScope,
   collapsed,
-  DEFAULT_MISSING_KEY,
   elementFilterFields,
   expanded,
   fitChartSlots,
+  havingRows,
   levelLabel,
-  metricWithCondition,
   nextLevel,
   withElements,
   rangeSpan,
@@ -44,11 +43,8 @@ import {
   resultSpan,
   type AnalysisScope,
 } from '../analysis/index.js';
-import {
-  isFieldlessKind,
-  isSingleStringField,
-  without,
-} from '../model/index.js';
+import { isFieldlessKind, isSingleStringField } from '../model/index.js';
+import { questionEditing, type QuestionEditing } from './analysisEditing.js';
 import type { FieldKindRegistry } from '../filter/index.js';
 import {
   comparePending,
@@ -73,7 +69,7 @@ export interface AnalysisFieldOption {
   missingKey: boolean;
 }
 
-export interface AnalysisEditorController {
+export interface AnalysisEditorController extends QuestionEditing {
   /**
    * The expansion chain in force, outermost first (D20 屏 G): the arrays
    * the analysis counts inside. Empty when it counts records.
@@ -111,6 +107,15 @@ export interface AnalysisEditorController {
   /** The picker groups the definition declares. */
   fieldGroups: readonly FieldGroupDefinition[];
   countable: boolean;
+  /** Whether 「只保留」 exists here: the capability declares `having`. */
+  havingAllowed: boolean;
+  /** Whether a formula or a derived metric may be written: `expressions`. */
+  expressionsAllowed: boolean;
+  /**
+   * 「只保留」 as rows of one comparison each, or `null` when the stored
+   * having is a shape the rows cannot say (`havingRows`).
+   */
+  having: ReturnType<typeof havingRows>;
   /**
    * The fields a metric's own condition may name (D20 屏 H): the scalar
    * fields of the analysis scope — never a search, an array or an element
@@ -136,41 +141,23 @@ export interface AnalysisEditorController {
    * buckets a result already has on it, else the field's first unit.
    */
   dateUnitFor(field: AnalysisFieldOption): AnalysisDateUnit;
-  addGroup(group: AnalysisGroup): void;
-  updateGroup(index: number, patch: Partial<AnalysisGroup>): void;
-  removeGroup(index: number): void;
-  /** Names a dimension on screen, or takes the name back with `undefined`. */
-  renameGroup(index: number, label: string | undefined): void;
-  /** Keeps records missing the value as a group of their own, or drops them. */
-  setMissingBucket(index: number, on: boolean): void;
-  /** Fills in the empty periods of a time dimension, or leaves them out. */
-  setDense(index: number, on: boolean): void;
-  addMetric(metric: AnalysisMetric): void;
-  updateMetric(index: number, patch: Partial<AnalysisMetric>): void;
   /**
    * Puts a whole metric in a row's place. A change of summary is a change
    * of type — a sum becomes a distinct count — and a patch over the old
    * shape would leave its `function` or `expression` behind for admission
    * to trip over; the card builds the new metric and swaps it in.
    */
-  replaceMetric(index: number, metric: AnalysisMetric): void;
-  /** Refuses the last metric: an aggregation query needs at least one. */
-  removeMetric(index: number): void;
-  /** Names a metric on screen, or takes the name back with `undefined`. */
-  renameMetric(index: number, label: string | undefined): void;
   /**
    * The conditions a metric counts under, or none. An empty tree is kept
    * while the card is being filled in — validation says it is unfinished
    * and the query waits — and `undefined` takes the condition away.
    */
-  setMetricFilter(index: number, filter: FilterTree | undefined): void;
   /**
    * A second card of the same metric, right after it, with an empty
    * condition to fill in: 「复制『金额 合计』并加条件」. The copy keeps no
    * display name — two cards called the same thing is the ambiguity the
    * name exists to resolve.
    */
-  duplicateMetric(index: number): number;
   setSort(sort: AnalysisSort[]): void;
   setLimit(limit: number): void;
   /** A redraw of the same rows, never a run; nor does it count as pending. */
@@ -280,29 +267,6 @@ export function useAnalysisEditor(
     [change],
   );
 
-  /** One dimension changed in place; everything that names it follows. */
-  const patchGroup = useCallback(
-    (index: number, update: (group: AnalysisGroup) => AnalysisGroup) =>
-      reshape(current => ({
-        groups: current.groups.map((group, at) =>
-          at === index ? update(group) : group,
-        ),
-        metrics: current.metrics,
-      })),
-    [reshape],
-  );
-  /** One metric changed in place; everything that names it follows. */
-  const patchMetric = useCallback(
-    (index: number, update: (metric: AnalysisMetric) => AnalysisMetric) =>
-      reshape(current => ({
-        groups: current.groups,
-        metrics: current.metrics.map((metric, at) =>
-          at === index ? update(metric) : metric,
-        ) as AnalysisViewConfig['metrics'],
-      })),
-    [reshape],
-  );
-
   const fields = useMemo<AnalysisFieldOption[]>(() => {
     if (!scope) return [];
     return [...scope.fields.values()].map((field: FieldDefinition) => {
@@ -383,6 +347,11 @@ export function useAnalysisEditor(
     });
   }, [scope, runtime]);
 
+  const editing = useMemo(
+    () => questionEditing({ reshape, edit, scope }),
+    [reshape, edit, scope],
+  );
+
   return {
     elements,
     expandable,
@@ -435,6 +404,9 @@ export function useAnalysisEditor(
     fields,
     fieldGroups: definition?.fieldGroups ?? EMPTY_GROUPS,
     countable: capability?.count === true,
+    havingAllowed: capability?.having === true,
+    expressionsAllowed: capability?.expressions === true,
+    having: havingRows(config?.having),
     conditionFields,
     kinds: runtime?.kinds,
     ...(runtime ? { optionSource: runtime.optionSource.bind(runtime) } : {}),
@@ -443,142 +415,7 @@ export function useAnalysisEditor(
       ? comparePending(state.draft, state.applied, state.issues).pending
       : false,
 
-    addGroup: useCallback(
-      (group: AnalysisGroup) =>
-        reshape(current => ({
-          groups: [...current.groups, group],
-          metrics: current.metrics,
-        })),
-      [reshape],
-    ),
-    updateGroup: useCallback(
-      (index: number, patch: Partial<AnalysisGroup>) =>
-        patchGroup(index, group => ({ ...group, ...patch }) as AnalysisGroup),
-      [patchGroup],
-    ),
-    removeGroup: useCallback(
-      (index: number) =>
-        reshape(current => ({
-          groups: current.groups.filter((_group, at) => at !== index),
-          metrics: current.metrics,
-        })),
-      [reshape],
-    ),
-    // The three settings that come and go rather than change: a name taken
-    // back, a sentinel bucket dropped, a fill switched off leave no key
-    // behind, so the config stays what a fresh one would be.
-    renameGroup: useCallback(
-      (index: number, label: string | undefined) =>
-        patchGroup(index, group =>
-          label === undefined
-            ? (without(group, 'label') as AnalysisGroup)
-            : { ...group, label },
-        ),
-      [patchGroup],
-    ),
-    setMissingBucket: useCallback(
-      (index: number, on: boolean) =>
-        patchGroup(index, group =>
-          group.type !== 'TERMS'
-            ? group
-            : on
-              ? { ...group, missingKey: DEFAULT_MISSING_KEY }
-              : without(group, 'missingKey'),
-        ),
-      [patchGroup],
-    ),
-    setDense: useCallback(
-      (index: number, on: boolean) =>
-        patchGroup(index, group =>
-          group.type !== 'DATE_HISTOGRAM'
-            ? group
-            : on
-              ? { ...group, dense: true }
-              : without(group, 'dense'),
-        ),
-      [patchGroup],
-    ),
-
-    addMetric: useCallback(
-      (metric: AnalysisMetric) =>
-        reshape(current => ({
-          groups: current.groups,
-          metrics: [
-            ...current.metrics,
-            metric,
-          ] as AnalysisViewConfig['metrics'],
-        })),
-      [reshape],
-    ),
-    updateMetric: useCallback(
-      (index: number, patch: Partial<AnalysisMetric>) =>
-        patchMetric(
-          index,
-          metric => ({ ...metric, ...patch }) as AnalysisMetric,
-        ),
-      [patchMetric],
-    ),
-    replaceMetric: useCallback(
-      (index: number, metric: AnalysisMetric) =>
-        patchMetric(index, () => metric),
-      [patchMetric],
-    ),
-    renameMetric: useCallback(
-      (index: number, label: string | undefined) =>
-        patchMetric(index, metric =>
-          label === undefined
-            ? (without(metric, 'label') as AnalysisMetric)
-            : { ...metric, label },
-        ),
-      [patchMetric],
-    ),
-    setMetricFilter: useCallback(
-      (index: number, filter: FilterTree | undefined) =>
-        patchMetric(index, metric =>
-          metric.type === 'DERIVED'
-            ? metric
-            : filter === undefined
-              ? (without(metric, 'filter') as AnalysisMetric)
-              : { ...metric, filter },
-        ),
-      [patchMetric],
-    ),
-    duplicateMetric: useCallback(
-      (index: number) => {
-        const at = index + 1;
-        reshape(current => {
-          const copy = metricWithCondition(current.metrics[index], [
-            ...current.groups.map(group => group.alias),
-            ...current.metrics.map(metric => metric.alias),
-          ]);
-          if (!copy) return undefined;
-          const metrics = [...current.metrics];
-          metrics.splice(at, 0, copy);
-          return {
-            groups: current.groups,
-            metrics: metrics as AnalysisViewConfig['metrics'],
-          };
-        });
-        return at;
-      },
-      [reshape],
-    ),
-    removeMetric: useCallback(
-      (index: number) =>
-        reshape(current =>
-          // An aggregation query without a metric has nothing to return.
-          current.metrics.length <= 1
-            ? undefined
-            : {
-                groups: current.groups,
-                metrics: current.metrics.filter(
-                  (_metric, at) => at !== index,
-                ) as AnalysisViewConfig['metrics'],
-              },
-        ),
-      [reshape],
-    ),
-
+    ...editing,
     setSort: useCallback((sort: AnalysisSort[]) => edit({ sort }), [edit]),
     setLimit: useCallback((limit: number) => edit({ limit }), [edit]),
     // A redraw, not a run: the result's rows are drawn as a table or as a

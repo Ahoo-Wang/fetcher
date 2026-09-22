@@ -28,8 +28,11 @@ import { IconButton } from '../IconButton.js';
 import { useViewMessages } from '../MessagesProvider.js';
 import { DropdownMenuContent } from '../popups.js';
 import { EditorCard, EditorSlot } from '../variants.js';
+import { isFormula } from '../../analysis/index.js';
 import { CardMenu, CardName } from './CardMenu.js';
 import { CompactSelect } from './CompactSelect.js';
+import { DerivedControls, FormulaControls } from './FormulaCard.js';
+import { HavingRows } from './HavingRows.js';
 import {
   ConditionBlock,
   ConditionButton,
@@ -41,6 +44,7 @@ import {
   defaultMetric,
   fieldOfMetric,
   freeAlias,
+  metricFallbackName,
   metricOfSummary,
   summaryChoices,
   summaryOf,
@@ -128,9 +132,30 @@ export function MetricSlot({
               </DropdownMenuItem>
             )}
           />
+          {/* The two metrics written rather than picked, where the
+              capability declares expressions (D20 屏 B). */}
+          {analysis.expressionsAllowed && (
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                disabled={measurable.length === 0}
+                onClick={() => analysis.addFormula()}
+              >
+                {messages.label('label.analysis.add-formula')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={
+                  !analysis.metrics.some(metric => metric.type !== 'ANY')
+                }
+                onClick={() => analysis.addDerived()}
+              >
+                {messages.label('label.analysis.add-derived')}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       <SortRow analysis={analysis} disabled={disabled} />
+      <HavingRows analysis={analysis} disabled={disabled} />
     </EditorSlot>
   );
 }
@@ -170,10 +195,7 @@ function MetricCard({
   const field = analysis.fields.find(entry => entry.field === fieldName);
   // What the card is called, and what every control on it is named after:
   // the name the analyst gave, else what the field composes (D20 显示名).
-  const fallback =
-    metric.type === 'COUNT'
-      ? messages.label('label.analysis.row-count')
-      : (field?.label ?? fieldName);
+  const fallback = metricFallbackName(analysis, metric, messages);
   const name = metric.label ?? fallback;
   const choices = field ? summaryChoices(field) : [];
   const choice = summaryOf(metric);
@@ -198,7 +220,25 @@ function MetricCard({
         onRename={label => analysis.renameMetric(index, label)}
         onDone={done}
       />
-      {field && choice !== null && choices.length > 0 && (
+      {isFormula(metric) && (
+        <FormulaControls
+          analysis={analysis}
+          metric={metric}
+          index={index}
+          name={name}
+          disabled={disabled}
+        />
+      )}
+      {metric.type === 'DERIVED' && (
+        <DerivedControls
+          analysis={analysis}
+          metric={metric}
+          index={index}
+          name={name}
+          disabled={disabled}
+        />
+      )}
+      {field && choice !== null && choices.length > 0 && !isFormula(metric) && (
         <CompactSelect
           label={messages.label('label.analysis.function-of', { name })}
           items={choices.map(entry => ({ value: entry, label: word(entry) }))}

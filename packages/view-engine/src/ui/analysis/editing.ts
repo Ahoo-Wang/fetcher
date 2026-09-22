@@ -11,7 +11,14 @@
  * limitations under the License.
  */
 
-import { DEFAULT_MISSING_KEY, freeAlias } from '../../analysis/index.js';
+import {
+  DEFAULT_MISSING_KEY,
+  derivedText,
+  expressionText,
+  freeAlias,
+  isFormula,
+} from '../../analysis/index.js';
+import type { MessageFormatters } from '../MessagesProvider.js';
 
 export { freeAlias };
 import type {
@@ -147,4 +154,37 @@ export function fieldOfMetric(metric: AnalysisMetric): string {
   if (metric.type === 'COUNT' || metric.type === 'DERIVED') return '';
   if (metric.type === 'ANY') return metric.field;
   return metric.expression.type === 'FIELD' ? metric.expression.field : '';
+}
+
+/**
+ * What a metric is called on the tray: the name the analyst gave, else
+ * what the metric composes — the record count's own word, a formula or a
+ * derived metric said as its author would, a field's label otherwise.
+ */
+export function metricName(
+  analysis: AnalysisEditorController,
+  metric: AnalysisMetric,
+  messages: MessageFormatters,
+): string {
+  return metric.label ?? metricFallbackName(analysis, metric, messages);
+}
+
+/** The name a metric falls back to without one of its own. */
+export function metricFallbackName(
+  analysis: AnalysisEditorController,
+  metric: AnalysisMetric,
+  messages: MessageFormatters,
+): string {
+  const fieldLabel = (field: string) =>
+    analysis.fields.find(entry => entry.field === field)?.label ?? field;
+  if (metric.type === 'COUNT')
+    return messages.label('label.analysis.row-count');
+  if (isFormula(metric)) return expressionText(metric.expression, fieldLabel);
+  if (metric.type === 'DERIVED')
+    return derivedText(metric.expression, alias => {
+      const referenced = analysis.metrics.find(entry => entry.alias === alias);
+      return referenced ? metricName(analysis, referenced, messages) : alias;
+    });
+  const field = fieldOfMetric(metric);
+  return fieldLabel(field);
 }
