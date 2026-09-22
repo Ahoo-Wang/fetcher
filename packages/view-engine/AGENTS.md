@@ -239,7 +239,6 @@ src/
       releaseDeleted.ts       — Lets a workbench's pinned id go once the view is deleted
   ui/                         — Default look; may import every layer
     AnalysisChart.tsx         — Dispatches by chart family; nothing else
-    AnalysisEditor.tsx        — What to group by, what to measure, and how to draw it
     AnalysisTable.tsx         — The aggregation as a table: groups first, then metrics, with the totals row from its own ungrouped query rather than from summing what is on screen
     Announcer.tsx             — `useAnnouncer`: one live region per surface, handed back rather than rendered by the caller
     AppliedBar.tsx            — The conditions the rows on screen were fetched under
@@ -303,8 +302,16 @@ src/
     variants.tsx              — The colours, edges and shapes a vendored component does not ship, in one place (D16-8); `TableDataRow` holds a record row's three states
     index.ts                  — The `/ui` entry: the default look, built on shadcn/ui with Base UI primitives
     analysis/                 — What the analysis view is made of
+      AnalysisToolbar.tsx     — The result's first row: the reading (dimensions · metrics) and how the result is looked at — table or chart, chart type, totals row
+      CompactSelect.tsx       — The one select a tray card carries: a named choice among a few words
+      DimensionCard.tsx       — The dimensions slot and its cards: field, and the control its type asks for (granularity, band width)
       DrillMenu.tsx           — The follow-up menu on one group of a result: the records behind it, split by another dimension, only this group (D20 追问); anchored to the mark or row pressed
       EmptyResult.tsx         — An aggregation that matched no group, one sentence for both layouts
+      MetricCard.tsx          — The metrics slot and its cards: field and summary (the six ways Wow measures a field as one list), a percentile's number, the record count
+      RangeSlot.tsx           — The tray's first slot: the condition panel under a heading that holds the tree's simple/advanced switch
+      SortRow.tsx             — The bottom of the metrics slot: what the first N groups are the first N of
+      Tray.tsx                — The analysis view's editor: range → dimensions | metrics, one Apply for the whole draft (D20)
+      editing.ts              — What the tray builds when a field is picked: default dimension and metric, the summary choice a card shows and the metric it swaps in
     charts/                   — One file per family, plus what they share
       Cartesian.tsx           — Which axis carries the numbers
       ChartReading.tsx        — The chart's numbers as a table, for whoever cannot see the marks
