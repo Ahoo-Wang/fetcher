@@ -740,6 +740,8 @@ export const VisualizePanel: Story = {
     await expect(
       canvasElement.querySelector('[data-slot="view-panel"]'),
     ).toBeNull();
+  },
+};
 
 /**
  * 卡片自己的菜单（D20 屏 B）：显示名与空值单独一组。

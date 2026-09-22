@@ -117,11 +117,9 @@ describe('fitChartSlots', () => {
 
   /**
    * A cartesian chart consumes every dimension, so the second one becomes the
-   * split and the series narrow to the one metric a pivot can draw. When the
-   * split goes, the one series stays: the list is the author's, and a
-   * second metric is one press away in the chart's options.
+   * split and the series narrow to the one metric a pivot can draw.
    */
-  it('pivots on a second dimension and keeps the one series when it goes', () => {
+  it('pivots on a second dimension and opens back up when it goes', () => {
     const one = fitChartSlots({ type: 'bar' }, [WAREHOUSE], [COUNT, TOTAL]);
     const two = fitChartSlots(one, [WAREHOUSE, MONTH], [COUNT, TOTAL]);
 
@@ -135,7 +133,7 @@ describe('fitChartSlots', () => {
     const back = fitChartSlots(two, [WAREHOUSE], [COUNT, TOTAL]);
     expect(back.cartesian).toEqual({
       x: 'wh',
-      series: [{ metric: 'orders' }],
+      series: [{ metric: 'orders' }, { metric: 'total' }],
     });
     expect(issuesOf(back, [WAREHOUSE], [COUNT, TOTAL])).toEqual([]);
   });

@@ -183,7 +183,7 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 
 ### 图表规则
 
-- **系列是作者的**：一张只画两个指标里那一个的笛卡尔图，要熬过其余的每一次编辑——改个显示名、加个维度、旁边添个指标都会各跑一次 `fitChartSlots`，每次都把系列重新铺满，「只看金额」就成了只活一次编辑的选择。所以只有**指标已经没了的系列**才离开，只有**一个都不剩的列表**才重新铺满全部指标（透视时同理：留下的第一个仍是作者选的那个）。（见 test/analysisChartSlots.test.ts「keeps a narrowed series list through unrelated edits」「pivots on a second dimension and keeps the one series when it goes」）
+- **系列是作者的**：一张只画两个指标里那一个的笛卡尔图，要熬过其余的每一次编辑——改个显示名、加个维度、旁边添个指标都会各跑一次 `fitChartSlots`，每次都把系列重新铺满，「只看金额」就成了只活一次编辑的选择。所以只有**指标已经没了的系列**才离开，只有**一个都不剩的列表**才重新铺满全部指标（透视时同理：留下的第一个仍是作者选的那个）。（见 test/analysisChartSlots.test.ts「keeps the series the chart names, and fills the list only when it is empty」「pivots on a second dimension and opens back up when it goes」）
 - `chart[族(type)]` 必须存在；
 - `x`、`splitBy`、`category`、heatmap 的 `x`／`y`、`funnel.group.category` 必须是分组别名，`series[].metric`、`value`、scatter 的 `x`／`y`／`size`、`metric`、`compare.metric`、`funnel.metrics.items[].metric` 必须是指标别名；
 - `splitBy` 不等于 `x`，且存在时 `series` 恰有一个指标；
