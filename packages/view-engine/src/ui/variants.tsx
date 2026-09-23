@@ -685,9 +685,9 @@ export function EditorCard({
  * One tile of the chart picker (D20 屏 I): an icon over a word on the
  * page's ground, the chosen one ringed, an unavailable one framed with its
  * reason under it, and the recommended one marked — the mark centred across
- * the bottom edge, where it has the tile's whole width and the corner the
- * options button takes is free. The colours and states are here so the
- * picker stays markup.
+ * the bottom edge, where it has the tile's whole width and covers neither the
+ * icon nor the name. The colours and states are here so the picker stays
+ * markup.
  *
  * **Unavailable is said by the frame, not by fading.** The tile used to
  * wear `opacity-60` over `text-muted-foreground`, which put the reason line
@@ -707,7 +707,7 @@ export function ChartTile({
       type="button"
       data-slot="chart-tile"
       className={cn(
-        'bg-background border-border text-foreground relative flex flex-col items-center gap-1 rounded-md border px-1 py-2 text-center',
+        'bg-background border-border text-foreground relative flex w-full flex-col items-center gap-1 rounded-md border px-1 py-2 text-center',
         'aria-checked:ring-primary aria-checked:border-primary aria-checked:ring-1',
         'aria-disabled:border-dashed aria-disabled:bg-muted/40 aria-disabled:cursor-not-allowed',
         'focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]',

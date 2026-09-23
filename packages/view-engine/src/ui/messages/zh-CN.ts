@@ -675,7 +675,6 @@ export const zhCN: ViewMessages = {
   'chart.fit.needs-no-dimension': '有维度时不适用',
   'chart.fit.needs-quantity': '要数量指标，时间画不成图',
   'label.chart.options': '{name}选项',
-  'label.chart.options-of': '{name}的选项',
   'label.chart.options-back': '返回图型',
   'label.chart.tab.data': '数据',
   'label.chart.tab.display': '显示',

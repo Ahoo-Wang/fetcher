@@ -337,58 +337,61 @@ describe('the visualization panel', () => {
   });
 
   /**
-   * The gear that opens a type's options is a small control of its own in
-   * the chosen tile's corner (2026-09-23 audit): a `[&>div>button]:w-full`
-   * on the grid, meant for the tiles, caught the gear too — it is a button
-   * in the same cell — and stretched it over the whole tile, hiding the
-   * icon and the 「推荐」 mark under it. Where it sits is measured in a
-   * browser (`VisualizePanel`); this pins what jsdom can see.
+   * The tiles only pick; the way on to the chosen type's options is one
+   * labelled button under them (2026-09-23 review). It used to be a 24px
+   * gear hanging off the chosen tile's corner, which covered nothing and
+   * which nobody saw or understood. Its pixels are measured in a browser
+   * (`VisualizePanel`); this pins what it is and where the keyboard goes.
    */
-  it('keeps the options button a small control of its own, beside the chosen tile', async () => {
+  it('opens the chosen type’s options from one labelled button under the tiles', async () => {
     await open(viewOf({ layout: 'chart' }));
     visualize();
-
-    const gears = () => [
-      ...panel()!.querySelectorAll<HTMLElement>(
+    const named = (type: string) =>
+      label('label.chart.options').replace('{name}', type);
+    const buttons = () => [
+      ...panel()!.querySelectorAll<HTMLButtonElement>(
         '[data-slot="chart-options-open"]',
       ),
     ];
-    // One, on the chosen tile only, and never inside it: a button holds no
-    // button.
-    expect(gears()).toHaveLength(1);
-    const gear = gears()[0]!;
-    expect(gear.parentElement).toBe(tile('bar').parentElement);
-    expect(tile('bar').contains(gear)).toBe(false);
-    expect(gear.getAttribute('aria-label')).toBe(
-      label('label.chart.options-of').replace(
-        '{name}',
-        label('label.chart.type.bar'),
-      ),
-    );
-    // Surviving class assertion: a length and a position, with no state
-    // behind them. The grid reaches into none of its cells — the tile says
-    // its own width — so nothing the grid declares can land on the gear.
-    const grid = screen.getByRole('radiogroup');
-    expect(grid.className).not.toMatch(/\[&/);
-    expect(tile('bar').className).toMatch(/\bw-full\b/);
-    expect(gear.className).not.toMatch(/\bw-full\b/);
-    expect(gear.className).toMatch(/\babsolute\b/);
 
-    // Pressing it opens the options and leaves the choice where it was.
-    fireEvent.click(gear);
+    // One, named by the type it opens, in the words the page is headed with;
+    // after the tile group, inside no tile.
+    expect(buttons()).toHaveLength(1);
+    const button = buttons()[0]!;
+    expect(button.textContent).toBe(named(label('label.chart.type.bar')));
+    expect(screen.getByRole('button', { name: named('bar') })).toBe(button);
+    const group = screen.getByRole('radiogroup');
+    expect(group.contains(button)).toBe(false);
+    expect(
+      group.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Each tile is one button, with nothing inside it but its words.
+    for (const each of group.querySelectorAll('[data-slot="chart-tile"]'))
+      expect(each.querySelector('button')).toBeNull();
+    // In the Tab order, where the group's one stop is not.
+    expect(button.tabIndex).toBe(0);
+
+    // A pick moves the choice and renames the button; it opens nothing.
+    fireEvent.click(tile('pie'));
+    expect(buttons()).toHaveLength(1);
+    expect(buttons()[0]!.textContent).toBe(named('pie'));
+    expect(document.querySelector('[data-slot="chart-options"]')).toBeNull();
+
+    // The table's options are its totals row, and the button says so.
+    fireEvent.click(tile('table'));
+    expect(buttons()[0]!.textContent).toBe(named(label('label.layout.table')));
+
+    // The press opens the options; back comes back to the button.
+    fireEvent.click(buttons()[0]!);
     await waitFor(() =>
       expect(
         document.querySelector('[data-slot="chart-options"]'),
       ).not.toBeNull(),
     );
-
-    // The gear follows the choice: a new pick moves it to that tile.
     fireEvent.click(
       screen.getByRole('button', { name: label('label.chart.options-back') }),
     );
-    fireEvent.click(tile('pie'));
-    expect(gears()).toHaveLength(1);
-    expect(gears()[0]!.parentElement).toBe(tile('pie').parentElement);
+    await waitFor(() => expect(document.activeElement).toBe(buttons()[0]));
   });
 });
 

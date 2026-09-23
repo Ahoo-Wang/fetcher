@@ -814,51 +814,76 @@ const meet = (a: DOMRect, b: DOMRect) =>
   b.top < a.bottom - 0.5;
 
 /**
- * The chosen tile's options button: one small control, beside the tile
- * rather than in it, over none of the icon, the name or the 「推荐」 mark;
- * and the mark over no other tile. `inside` asks the mark to sit inside its
- * tile's own width as well, which 「推荐」 does; "Recommended" is wider than a
- * third of the sidebar and runs into the gap between the columns, which is
- * the room it hangs across the edge for — it still reaches no neighbour.
+ * The tiles and the way on to the chosen type's options, as a browser lays
+ * them out: every tile one height, one button each with nothing inside it,
+ * the 「推荐」 mark over neither the tile's icon nor its name nor another tile
+ * (`inside` asks it to keep within its own tile's width too, which 「推荐」
+ * does; "Recommended" is wider than a third of the sidebar and runs into the
+ * gap between the columns, the room it hangs across the edge for); and under
+ * the last row one labelled button, visible, inside the panel, the panel's
+ * width, over no tile, named after the chosen type.
  */
-async function expectCornerGear(
+async function expectPickerLayout(
   panel: HTMLElement,
   type: string,
   inside = true,
 ) {
-  const tile = chartTile(panel, type);
-  const gears = panel.querySelectorAll<HTMLElement>(
-    '[data-slot="chart-options-open"]',
+  const tiles = [
+    ...panel.querySelectorAll<HTMLElement>('[data-slot="chart-tile"]'),
+  ];
+  const heights = tiles.map(tile =>
+    Math.round(tile.getBoundingClientRect().height),
   );
-  await expect(gears).toHaveLength(1);
-  const gear = gears[0]!;
-  await expect(gear.parentElement).toBe(tile.parentElement);
-  const box = gear.getBoundingClientRect();
-  await expect(box.width).toBeLessThanOrEqual(24.5);
-  await expect(box.height).toBeLessThanOrEqual(24.5);
-  const icon = tile.querySelector('svg')!.getBoundingClientRect();
-  const name = document
-    .getElementById(tile.getAttribute('aria-labelledby')!)!
-    .getBoundingClientRect();
-  await expect(meet(box, icon)).toBe(false);
-  await expect(meet(box, name)).toBe(false);
+  await expect(new Set(heights).size).toBe(1);
+  for (const tile of tiles)
+    await expect(tile.querySelector('button')).toBeNull();
+
+  const tile = chartTile(panel, type);
   const mark = tile.querySelector('[data-slot="chart-recommended"]');
   if (mark) {
     const marked = mark.getBoundingClientRect();
     const own = tile.getBoundingClientRect();
-    await expect(meet(box, marked)).toBe(false);
+    const icon = tile.querySelector('svg')!.getBoundingClientRect();
+    const name = document
+      .getElementById(tile.getAttribute('aria-labelledby')!)!
+      .getBoundingClientRect();
     await expect(meet(marked, name)).toBe(false);
     await expect(meet(marked, icon)).toBe(false);
-    const others = [
-      ...panel.querySelectorAll<HTMLElement>('[data-slot="chart-tile"]'),
-    ].filter(other => other !== tile);
-    for (const other of others)
+    for (const other of tiles.filter(each => each !== tile))
       await expect(meet(marked, other.getBoundingClientRect())).toBe(false);
     if (inside) {
       await expect(marked.left).toBeGreaterThanOrEqual(own.left - 0.5);
       await expect(marked.right).toBeLessThanOrEqual(own.right + 0.5);
     }
   }
+
+  const buttons = panel.querySelectorAll<HTMLElement>(
+    '[data-slot="chart-options-open"]',
+  );
+  await expect(buttons).toHaveLength(1);
+  const button = buttons[0]!;
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAccessibleName(
+    formatMessage(zhCN, 'label.chart.options', {
+      name:
+        type === 'table'
+          ? zhCN['label.layout.table']
+          : zhCN[`label.chart.type.${type}` as keyof typeof zhCN],
+    }),
+  );
+  const box = button.getBoundingClientRect();
+  const grid = panel
+    .querySelector('[role="radiogroup"]')!
+    .getBoundingClientRect();
+  const own = panel.getBoundingClientRect();
+  await expect(box.height).toBeGreaterThanOrEqual(28);
+  await expect(box.left).toBeGreaterThanOrEqual(own.left);
+  await expect(box.right).toBeLessThanOrEqual(own.right);
+  await expect(Math.abs(box.width - grid.width)).toBeLessThan(1);
+  await expect(box.top).toBeGreaterThanOrEqual(grid.bottom);
+  for (const each of tiles)
+    await expect(meet(box, each.getBoundingClientRect())).toBe(false);
+  if (mark) await expect(meet(box, mark.getBoundingClientRect())).toBe(false);
 }
 
 /** One tile of the picker, addressed by the chart type it stands for. */
@@ -931,22 +956,25 @@ export const VisualizePanel: Story = {
       zhCN['chart.fit.needs-two-dimensions'],
     );
 
-    // The options button is a small control of its own in the chosen tile's
-    // corner, covering none of icon, name or mark (2026-09-23 audit: it was
-    // stretched over the whole tile). Every tile is one height.
-    await expectCornerGear(panel, 'bar');
-    const heights = [
-      ...panel.querySelectorAll<HTMLElement>('[data-slot="chart-tile"]'),
-    ].map(tile => Math.round(tile.getBoundingClientRect().height));
-    await expect(new Set(heights).size).toBe(1);
+    // The tiles only pick; the way on to the chosen type's options is one
+    // labelled button under them (2026-09-23 review: a 24px gear hanging off
+    // the tile's corner was seen by nobody). Every tile is one height.
+    await expectPickerLayout(panel, 'bar');
     // And the mark keeps clear in English too, the widest word it has: the
     // same tile with "Recommended" written in it, put back afterwards.
     const mark = chartTile(panel, 'bar').querySelector<HTMLElement>(
       '[data-slot="chart-recommended"]',
     )!;
     mark.textContent = defaultMessages['label.chart.recommended'];
-    await expectCornerGear(panel, 'bar', false);
+    await expectPickerLayout(panel, 'bar', false);
     mark.textContent = zhCN['label.chart.recommended'];
+
+    // Tab after the group lands on the button; the arrows stay the group's.
+    chartTile(panel, 'bar').focus();
+    await userEvent.tab();
+    await expect(
+      panel.querySelector('[data-slot="chart-options-open"]'),
+    ).toHaveFocus();
 
     // A pick is a redraw: the pie is drawn, and no aggregation went out.
     const before = aggregateCalls.current;
@@ -960,8 +988,12 @@ export const VisualizePanel: Story = {
       'aria-checked',
       'true',
     );
-    // The gear moved with the choice, and still covers nothing.
-    await expectCornerGear(panel, 'pie');
+    // The button follows the choice: named after the pie now. A pick opens
+    // nothing by itself.
+    await expectPickerLayout(panel, 'pie');
+    await expect(
+      document.querySelector('[data-slot="chart-options"]'),
+    ).toBeNull();
     // Nothing is waiting to be applied, so the editor's fold wears no dot.
     await expect(
       canvasElement.querySelector(
@@ -974,6 +1006,36 @@ export const VisualizePanel: Story = {
     await canvas.findByRole('table');
     await expect(slices(canvasElement)).toHaveLength(0);
     await expect(aggregateCalls.current).toBe(before);
+
+    // The table's options are its totals row: 「表格选项」 opens that page, and
+    // back from it lands on the button the user left by.
+    await expectPickerLayout(panel, 'table');
+    const options = panel.querySelector<HTMLElement>(
+      '[data-slot="chart-options-open"]',
+    )!;
+    await userEvent.click(options);
+    const page = await waitFor(() => {
+      const found = panel.querySelector<HTMLElement>(
+        '[data-slot="chart-options"]',
+      );
+      if (!found) throw new Error('选项页没有打开');
+      return found;
+    });
+    await expect(
+      within(page).getByRole('checkbox', {
+        name: zhCN['label.analysis.totals'],
+      }),
+    ).toBeVisible();
+    await userEvent.click(
+      within(page).getByRole('button', {
+        name: zhCN['label.chart.options-back'],
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        panel.querySelector('[data-slot="chart-options-open"]'),
+      ).toHaveFocus(),
+    );
 
     // And the way back is the panel's own: the list returns to the column.
     await userEvent.click(

@@ -138,7 +138,6 @@ export const analysisMessages = {
   // The panel's second level (D20 屏 J): the chosen type's options on
   // three pages, and the way in and out.
   'label.chart.options': '{name} options',
-  'label.chart.options-of': 'Options for {name}',
   'label.chart.options-back': 'Back to the chart types',
   'label.chart.tab.data': 'Data',
   'label.chart.tab.display': 'Display',
