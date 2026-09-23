@@ -37,7 +37,7 @@
   - 判据：`HISTOGRAM` 分组的桶按「下界～上界」读，按界面语言写短，表格、图表与读屏表一致，有测试守着。
   - 落点：`src/ui/display.ts`、[ui/analysis.md](ui/analysis.md)。
 
-## 阶段 3：仪表盘（设计已定为 [D22](decisions.md#d22-仪表盘与嵌入视图参照-metabase2026-09-23)，ECharts 迁移完成后开工）
+## 阶段 3：仪表盘（设计已定为 [D22](decisions.md#d22-仪表盘与嵌入视图参照-metabase2026-09-23)；ECharts 迁移已完成，可以开工）
 
 批次按顺序；每批都做到可生产交付、真浏览器走过。起点的缺陷清单在会话记忆 `view-engine-dashboard-walk-2026-09-22`（U1～U11、R1～R18、G1～G10）。
 
