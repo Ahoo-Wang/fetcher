@@ -11,14 +11,10 @@
 
 ECharts 迁移（D21）与两份「数据分析师视角」审查的 P0 已全部合并：#1800、#1817～#1829。下面是已定、未做的，按批次排；动手前先在最新 main 上复现，已顺带修掉的删掉。审查原文的要点都在这里，原报告不在仓库里。
 
-- **三个维度的分析跑不起来，连表格布局也不行**。
-  - 为什么：笛卡尔图最多消化两个维度，第三个报 `chart.group.unconsumed`，而图表在表格布局下也参与校验、拦住整次查询——违背「怎么看是展示、不是问题」（D20）与「表格永远是一条出路」。
-  - 判据：表格布局下图表不参与校验（切到图表布局时再按形态适配，画不了的图型置灰写原因）；三个维度的分析以表格跑出结果，有测试与故事。
-  - 落点：`src/analysis/validateChart.ts`、`src/analysis/fitCharts.ts`、`src/react/useAnalysisResult.ts`。迁移后做。
-- **图表的错误提示写别名而不是列标题**（如 `chart.funnel.not-additive`、`trend-not-additive` 里的 `{metric}` 显示 `avg`）。
-  - 为什么：用户读的是列标题，别名是程序的名字。
-  - 判据：这些提示的参数按 `columnTitle` 读成与表头同一句话；有测试。
-  - 落点：`src/analysis/validateChart.ts` 的参数与 `ui/messages` 的消费处。迁移后做。
+- **仪表盘面板的图表提示也说列标题**。
+  - 为什么：工作台与嵌入视图的图表提示已按列标题说（`ui/analysis/issueNames.ts` 的 `chartIssueNamer`，[ui/analysis.md](ui/analysis.md)「图表的提示说列标题，不说别名」），仪表盘面板的发现（`PanelUnavailable`、面板头的说明、`DashboardWorkbench` 的 `namePanel`）仍按别名说，`chart.as-table` 也只有通用那句。
+  - 判据：面板里渲染出来的图表提示不含别名，`chart.as-table` 说出图型与原因；有测试。
+  - 落点：`src/ui/DashboardGrid.tsx`、`src/ui/PanelUnavailable.tsx`、`src/ui/DashboardWorkbench.tsx`（面板的草稿维度与指标，经 `groupReference`／`metricReference`）。随批 B 做。
 - **记录视图按表头排序会连带应用范围里未应用的条件**。
   - 为什么：与分析视图同一个问题：一次排序不该替用户应用别的修改。分析视图的表头已按这条做了（`useAnalysisEditor` 的 `sortNow`，#1807），记录视图照同一个判法。
   - 判据：草稿里另有待应用修改时，表头排序只进入待应用；有测试。
