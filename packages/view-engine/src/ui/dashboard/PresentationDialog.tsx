@@ -49,6 +49,7 @@ import {
 } from '../components/empty.js';
 import { DialogContent } from '../popups.js';
 import { AnalysisPanel } from './PanelBodies.js';
+import type { FinalFocus } from './commands.js';
 
 export interface PresentationDialogProps {
   /** The panel whose look is changed; `null` while the dialog is shut. */
@@ -58,6 +59,12 @@ export interface PresentationDialogProps {
   /** The board's edits: the look goes through `setPresentation`. */
   editing: Pick<DashboardEditing, 'setPresentation'>;
   onOpenChange(open: boolean): void;
+  /**
+   * Where the keyboard goes as it closes (`FinalFocus`): the control that
+   * asked — a menu's trigger, since the item that was pressed went with the
+   * menu. Base UI's own choice when left out.
+   */
+  finalFocus?: FinalFocus;
 }
 
 /**
@@ -81,10 +88,12 @@ export function PresentationDialog({
   name,
   editing,
   onOpenChange,
+  finalFocus,
 }: PresentationDialogProps) {
   return (
     <Dialog open={panel !== null} onOpenChange={onOpenChange}>
       <DialogContent
+        {...(finalFocus ? { finalFocus } : {})}
         data-slot="panel-presentation-dialog"
         className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-4xl"
       >

@@ -11,14 +11,6 @@
  * limitations under the License.
  */
 
-/**
- * Building a board, the screens of batch B3 (D22 C–E): the tab bar — only
- * the tab on screen runs, the reader's last tab remembered, the host told
- * which tab is shown — a new analysis made in a dialog and put on the
- * board, saved as a view of its own, and a panel's own look chosen with the
- * visualization panel and put back.
- */
-
 import {
   act,
   cleanup,
@@ -28,23 +20,27 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  DashboardViewRuntime,
+  AggregationDateUnit,
+  AggregationGroupType,
+} from '@ahoo-wang/fetcher-wow';
+import type { ReactNode } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { defaultPanelSize } from '../src/dashboard/index.js';
+import {
   MemoryViewStore,
   ViewEngine,
-  isOwnedPanel,
+  type DashboardDefinition,
+  type DashboardRuntime,
   type DashboardPanel,
   type DashboardViewConfig,
   type ViewInstance,
+  type ViewScope,
 } from '../src/index.js';
-import { useDashboard } from '../src/react/index.js';
 import {
-  DashboardTabs,
+  DashboardEditExtensionsContext,
   DashboardWorkbench,
-  EmbeddedView,
-  panelOffers,
-  type DashboardBuilding,
+  type DashboardEditExtensions,
 } from '../src/ui/index.js';
 import {
   analysisConfig,
@@ -53,10 +49,12 @@ import {
   overviewDefinition,
   testSource,
 } from './fixtures.js';
-import { pending } from './fixtures/dashboard.js';
+import { panel, pending } from './fixtures/dashboard.js';
+import { landed, tracked } from './fixtures/writes.js';
 
 afterEach(cleanup);
 
+/** An analysis of the orders by warehouse: a chart, half the board wide. */
 const byWarehouse: ViewInstance = {
   id: 'by-warehouse',
   definitionId: 'orders',
@@ -66,587 +64,806 @@ const byWarehouse: ViewInstance = {
   config: analysisConfig(),
 };
 
-function onAnalysis(
-  id: string,
-  tab?: string,
-  overrides: Partial<DashboardPanel> = {},
-): DashboardPanel {
-  return {
-    id,
-    kind: 'view',
-    instanceId: 'by-warehouse',
-    bindings: [],
-    layout: { x: 0, y: 0, w: 12, h: 4 },
-    ...(tab ? { tab } : {}),
-    ...overrides,
-  } as DashboardPanel;
+/** One reader's own view: on a shared board, seen by that reader alone. */
+const mine: ViewInstance = {
+  ...pending,
+  id: 'mine',
+  title: 'My orders',
+  scope: 'personal',
+};
+
+interface Setup {
+  scope?: ViewScope;
+  panels?: DashboardPanel[];
+  config?: Partial<DashboardViewConfig>;
+  /** Whether this reader may save dashboards. */
+  canSave?: boolean;
+  definition?: DashboardDefinition;
+  extensions?: DashboardEditExtensions;
+  onOpenView?: (instanceId: string, filter: unknown) => void;
+  instanceId?: string;
 }
 
-const tabbed = dashboardConfig({
-  tabs: [
-    { id: 'overview', title: 'Overview' },
-    { id: 'detail', title: 'Detail' },
-  ],
-  panels: [
-    onAnalysis('a', 'overview', { title: 'Orders by warehouse' }),
-    onAnalysis('c', 'detail', { title: 'Detail by warehouse' }),
-  ],
-});
-
-function setup(config: DashboardViewConfig = tabbed) {
-  const source = testSource();
+function open({
+  scope = 'personal',
+  panels = [panel({ title: 'Pending' })],
+  config = {},
+  canSave = true,
+  definition = overviewDefinition(),
+  extensions,
+  onOpenView,
+  instanceId = 'overview-1',
+}: Setup = {}) {
   const board: ViewInstance = {
-    id: 'board',
+    id: 'overview-1',
     definitionId: 'overview',
     title: 'Operations',
-    scope: 'shared',
+    scope,
     revision: '1',
-    config,
+    config: dashboardConfig({ panels, ...config }),
   };
-  const store = new MemoryViewStore({
-    instances: [pending, byWarehouse, board],
-  });
+  const store = tracked(
+    new MemoryViewStore({
+      instances: [pending, byWarehouse, mine, board],
+      ...(canSave
+        ? {}
+        : {
+            permissions: () => ({
+              createPersonal: false,
+              createShared: false,
+              reorder: true,
+              setDefault: true,
+              instance: () => ({ save: false, rename: false, delete: false }),
+            }),
+          }),
+    }),
+  );
   const engine = new ViewEngine({
-    definitions: [ordersDefinition(), overviewDefinition()],
+    definitions: [ordersDefinition(), definition],
     store,
-    resolveSource: () => source,
+    resolveSource: () => testSource(),
   });
-  const asked = () => vi.mocked(source.aggregate).mock.calls.length;
-  const runtime = () =>
-    engine
-      .openRuntimes()
-      .find(
-        (open): open is DashboardViewRuntime =>
-          open instanceof DashboardViewRuntime,
-      ) ?? null;
-  return { engine, source, store, asked, runtime };
+  const wrap = (node: ReactNode) =>
+    extensions ? (
+      <DashboardEditExtensionsContext.Provider value={extensions}>
+        {node}
+      </DashboardEditExtensionsContext.Provider>
+    ) : (
+      node
+    );
+  render(
+    wrap(
+      <DashboardWorkbench
+        engine={engine}
+        definitionId="overview"
+        instanceId={instanceId}
+        onOpenView={onOpenView}
+      />,
+    ),
+  );
+  // A submenu's items are still sliding in when a pointer reaches them.
+  const user = userEvent.setup({ pointerEventsCheck: 0 });
+  return { engine, store, user };
 }
 
-/** Puts the open board into its building state, as the edit bar does. */
-async function startBuilding(runtime: () => DashboardViewRuntime | null) {
-  await waitFor(() => expect(runtime()).not.toBeNull());
-  act(() => runtime()?.setEditing(true));
+const slot = (name: string) =>
+  document.querySelector<HTMLElement>(`[data-slot="${name}"]`);
+const slots = (name: string) => [
+  ...document.querySelectorAll<HTMLElement>(`[data-slot="${name}"]`),
+];
+const titles = () => slots('panel-title').map(title => title.textContent);
+
+/** The dashboard the workbench has open. */
+function boardOf(engine: ViewEngine): DashboardRuntime {
+  const board = engine
+    .openRuntimes()
+    .find(runtime => runtime.kind === 'dashboard');
+  if (!board) throw new Error('no dashboard is open');
+  return board as DashboardRuntime;
 }
 
-describe('the tab bar', () => {
-  it('shows the tabs, runs only the one on screen, and tells the host and the preferences', async () => {
-    const user = userEvent.setup();
-    const { engine, store, asked } = setup();
-    const onTabChange = vi.fn();
+async function enter(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: 'Edit' }));
+  await screen.findByRole('region', { name: 'Editing' });
+}
 
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-        onTabChange={onTabChange}
-      />,
-    );
-    const tabs = await screen.findByRole('tablist', { name: 'Tabs' });
-    expect(
-      within(tabs)
-        .getAllByRole('tab')
-        .map(tab => tab.textContent),
-    ).toEqual(['Overview', 'Detail']);
-    await waitFor(() => expect(onTabChange).toHaveBeenCalledWith('overview'));
-    expect(screen.getByText('Orders by warehouse')).toBeTruthy();
-    expect(screen.queryByText('Detail by warehouse')).toBeNull();
-    await waitFor(() => expect(asked()).toBe(1));
+async function panelMenu(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+) {
+  await user.click(
+    await screen.findByRole('button', { name: `Actions for “${name}”` }),
+  );
+  return screen.findByRole('menu');
+}
 
-    await user.click(within(tabs).getByRole('tab', { name: 'Detail' }));
+async function add(user: ReturnType<typeof userEvent.setup>, item: string) {
+  await user.click(screen.getByRole('button', { name: 'Add' }));
+  await user.click(await screen.findByRole('menuitem', { name: item }));
+}
 
-    await waitFor(() =>
-      expect(screen.getByText('Detail by warehouse')).toBeTruthy(),
-    );
-    expect(screen.queryByText('Orders by warehouse')).toBeNull();
-    expect(screen.getByRole('tabpanel')).toBeTruthy();
-    await waitFor(() => expect(asked()).toBe(2));
-    expect(onTabChange).toHaveBeenLastCalledWith('detail');
-    await waitFor(async () =>
-      expect((await store.getPreferences('overview')).lastTabs).toEqual({
-        board: 'detail',
-      }),
-    );
+describe('reading and building a dashboard (D22 A)', () => {
+  it('offers 编辑 to whoever may save it, and nothing moves until it is pressed', async () => {
+    const { user } = open();
+    await screen.findByText('Pending', { selector: 'h3' });
+
+    // Read: no handle, no corner, no arrange menu — only the way in.
+    expect(slot('panel-grip')).toBeNull();
+    expect(slot('panel-arrange')).toBeNull();
+    expect(slot('panel-resize')).toBeNull();
+    expect(slot('dashboard-edit-bar')).toBeNull();
+
+    await enter(user);
+    expect(slot('panel-grip')).not.toBeNull();
+    expect(slot('panel-arrange')).not.toBeNull();
+    // The bar's 完成 is the save while it is up; Save is not beside it.
+    expect(slot('save-actions')).toBeNull();
+    expect(slot('dashboard-edit')).toBeNull();
+    // Nothing had focus to give back but the pressed button, which went:
+    // the bar that took its place has it.
+    expect(document.activeElement?.textContent).toBe('Editing');
   });
 
-  it('opens on the tab the host names', async () => {
-    const { engine, asked } = setup();
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-        initialTab="detail"
-      />,
-    );
-    await waitFor(() =>
-      expect(screen.getByText('Detail by warehouse')).toBeTruthy(),
-    );
-    expect(
-      screen.getByRole('tab', { name: 'Detail' }).getAttribute('aria-selected'),
-    ).toBe('true');
-    await waitFor(() => expect(asked()).toBe(1));
-  });
-
-  it('hands the host’s tab to the first board an uncontrolled workbench opens', async () => {
-    const { engine } = setup();
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        initialTab="detail"
-      />,
-    );
-    await waitFor(() =>
-      expect(screen.getByText('Detail by warehouse')).toBeTruthy(),
-    );
-  });
-
-  it('draws no bar for one tab or none', async () => {
-    const { engine } = setup(
-      dashboardConfig({ panels: [onAnalysis('a', undefined, { title: 'A' })] }),
-    );
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-      />,
-    );
-    await waitFor(() => expect(screen.getByText('A')).toBeTruthy());
-    expect(screen.queryByRole('tablist')).toBeNull();
-  });
-
-  it('adds, renames, moves and deletes tabs while the board is built', async () => {
-    const user = userEvent.setup();
-    const { engine, runtime } = setup(
-      dashboardConfig({ panels: [onAnalysis('a', undefined, { title: 'A' })] }),
-    );
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-      />,
-    );
-    await waitFor(() => expect(screen.getByText('A')).toBeTruthy());
-    await startBuilding(runtime);
-
-    // One tab or none: the only thing on the bar is the way to add one.
-    await user.click(screen.getByRole('button', { name: 'Add a tab' }));
-    const field = await screen.findByRole('textbox', {
-      name: 'Name of tab “Tab 2”',
-    });
-    // The new tab is shown and its name is ready to be typed over; the
-    // panels already on the board went to the first one.
-    await waitFor(() => expect(document.activeElement).toBe(field));
-    expect(runtime()?.getSnapshot().tab).toBe(
-      runtime()?.getSnapshot().draft.tabs[1].id,
-    );
-    expect(screen.getByText('This tab has no panels yet')).toBeTruthy();
-    await user.clear(field);
-    await user.type(field, 'Retries{Enter}');
-    expect(
-      runtime()
-        ?.getSnapshot()
-        .draft.tabs.map(tab => tab.title),
-    ).toEqual(['Overview', 'Retries']);
-    await waitFor(() =>
-      expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: 'Retries' }),
-      ),
-    );
-
-    // Moved by its menu…
-    await user.click(screen.getByRole('button', { name: 'Tab “Retries”' }));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Move left' }),
-    );
-    expect(
-      runtime()
-        ?.getSnapshot()
-        .draft.tabs.map(tab => tab.title),
-    ).toEqual(['Retries', 'Overview']);
-    // …and by the arrows on its handle.
-    const handle = screen.getByRole('button', { name: 'Reorder “Retries”' });
-    handle.focus();
-    await user.keyboard('{ArrowRight}');
-    expect(
-      runtime()
-        ?.getSnapshot()
-        .draft.tabs.map(tab => tab.title),
-    ).toEqual(['Overview', 'Retries']);
-    expect(
-      document.querySelector('[data-slot="tabs-announcement"]')?.textContent,
-    ).toBe('“Retries” is now tab 2 of 2');
-
-    // A tab that carries panels is asked about before it goes.
-    await user.click(screen.getByRole('button', { name: 'Tab “Overview”' }));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Delete tab' }),
-    );
-    const question = await screen.findByRole('alertdialog');
-    expect(question.textContent).toContain('Its one panel is deleted with it');
-    await user.click(
-      within(question).getByRole('button', { name: 'Delete tab and panels' }),
-    );
-    expect(
-      runtime()
-        ?.getSnapshot()
-        .draft.tabs.map(tab => tab.title),
-    ).toEqual(['Retries']);
-    expect(runtime()?.getSnapshot().draft.panels).toEqual([]);
-    // Nothing is written until the board is saved.
-    expect(runtime()?.getSnapshot().dirty).toBe(true);
-  });
-
-  it('renames a tab by double-clicking it, and Escape keeps the old name', async () => {
-    const user = userEvent.setup();
-    const { engine, runtime } = setup();
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-      />,
-    );
-    await startBuilding(runtime);
-    // Being built, the bar is a list of the tabs to arrange; the tab on
-    // screen is the one pressed in.
-    expect(await screen.findByRole('list', { name: 'Tabs' })).toBeTruthy();
-    expect(
-      screen
-        .getByRole('button', { name: 'Overview' })
-        .getAttribute('aria-current'),
-    ).toBe('true');
-    await user.dblClick(screen.getByRole('button', { name: 'Detail' }));
-    const field = await screen.findByRole('textbox', {
-      name: 'Name of tab “Detail”',
-    });
-    await user.type(field, 'x{Escape}');
-    expect(runtime()?.getSnapshot().draft.tabs[1].title).toBe('Detail');
-    // A tab without panels goes without a question.
-    await user.click(screen.getByRole('button', { name: 'Tab “Detail”' }));
-    act(() => runtime()?.movePanelToTab('c', 'overview'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Delete tab' }),
-    );
-    expect(screen.queryByRole('alertdialog')).toBeNull();
-    expect(runtime()?.getSnapshot().draft.tabs).toHaveLength(1);
-  });
-
-  it('switches tabs in an embed too, and remembers nothing there', async () => {
-    const user = userEvent.setup();
-    const { engine, store } = setup();
-    render(<EmbeddedView engine={engine} instanceId="board" />);
-    await user.click(await screen.findByRole('tab', { name: 'Detail' }));
-    await waitFor(() =>
-      expect(screen.getByText('Detail by warehouse')).toBeTruthy(),
-    );
-    expect(screen.queryByRole('button', { name: 'Add a tab' })).toBeNull();
-    expect((await store.getPreferences('overview')).lastTabs).toBeUndefined();
-  });
-});
-
-describe('the building commands', () => {
-  it('are offered only while the board is built, and say which a panel offers', async () => {
-    const { engine, runtime } = setup();
-    const seen: (DashboardBuilding | null)[] = [];
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-        onBuildingChange={building => seen.push(building)}
-      />,
-    );
-    await waitFor(() => expect(seen[seen.length - 1]).toBeNull());
-    await startBuilding(runtime);
-    await waitFor(() => expect(seen[seen.length - 1]).not.toBeNull());
-
-    const board = runtime();
-    if (!board) throw new Error('no board');
-    function Offers() {
-      const dashboard = useDashboard(board);
-      const first = dashboard.panels[0];
-      return (
-        <output>
-          {JSON.stringify(first ? panelOffers(first, dashboard) : null)}
-        </output>
-      );
-    }
-    render(<Offers />);
-    await waitFor(() =>
-      expect(
-        JSON.parse(document.querySelector('output')?.textContent ?? 'null'),
-      ).toEqual({
-        presentation: true,
-        reset: false,
-        saveAsView: false,
-        tabs: [{ id: 'detail', title: 'Detail' }],
-      }),
-    );
-  });
-
-  it('moves a panel to another tab, and says so', async () => {
-    const { engine, runtime } = setup();
-    let building: DashboardBuilding | null = null;
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-        onBuildingChange={next => (building = next)}
-      />,
-    );
-    await startBuilding(runtime);
-    await waitFor(() => expect(building).not.toBeNull());
-    act(() => building?.onMovePanelToTab('a', 'detail'));
-    expect(
-      runtime()
-        ?.getSnapshot()
-        .draft.panels.find(entry => entry.id === 'a')?.tab,
-    ).toBe('detail');
-    expect(
-      document.querySelector('[data-slot="building-announcement"]')
-        ?.textContent,
-    ).toBe('“Orders by warehouse” moved to the tab “Detail”');
-    expect(screen.getByText('This tab has no panels yet')).toBeTruthy();
-  });
-});
-
-describe('a new analysis made in the dashboard', () => {
-  it('is the analysis view in a dialog, named by its reading, and lands on the tab on screen', async () => {
-    const user = userEvent.setup();
-    const { engine, runtime } = setup();
-    let building: DashboardBuilding | null = null;
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-        initialTab="detail"
-        onBuildingChange={next => (building = next)}
-      />,
-    );
-    await startBuilding(runtime);
-    await waitFor(() => expect(building).not.toBeNull());
-    act(() => building?.onAddOwnedAnalysis());
-
-    const dialog = await screen.findByRole('dialog');
-    // One data can be analysed, so it is chosen already.
-    expect(
-      within(dialog).getByRole('heading', { name: 'New analysis · Orders' }),
-    ).toBeTruthy();
-    // The tray and the result of the analysis view itself.
-    await waitFor(() =>
-      expect(
-        dialog.querySelector('[data-slot="new-analysis-tray"]'),
-      ).not.toBeNull(),
-    );
-    const title = within(dialog).getByRole('textbox', { name: 'Title' });
-    await waitFor(() =>
-      expect((title as HTMLInputElement).value).toBe(
-        'By Warehouse · Record count',
-      ),
-    );
-    // The visualization panel opens beside the result, and its way back
-    // says what it does here, where there is no view list.
-    await user.click(within(dialog).getByRole('button', { name: 'Visualize' }));
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Close the visualization' }),
-    );
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Put on the dashboard' }),
-    );
-
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    const added = runtime()
-      ?.getSnapshot()
-      .draft.panels.find(entry => isOwnedPanel(entry));
-    expect(added).toMatchObject({
-      title: 'By Warehouse · Record count',
-      tab: 'detail',
-    });
-    expect(screen.getByText('By Warehouse · Record count')).toBeTruthy();
-    expect(
-      document.querySelector('[data-slot="building-announcement"]')
-        ?.textContent,
-    ).toBe('“By Warehouse · Record count” was put on the dashboard');
-    // The view it held for the dialog is let go.
-    expect(
-      engine.openRuntimes().filter(open => open.kind === 'analysis'),
-    ).toEqual([]);
-  });
-
-  it('keeps the title its author typed, and cancels without a trace', async () => {
-    const user = userEvent.setup();
-    const { engine, runtime } = setup();
-    let building: DashboardBuilding | null = null;
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-        onBuildingChange={next => (building = next)}
-      />,
-    );
-    await startBuilding(runtime);
-    await waitFor(() => expect(building).not.toBeNull());
-    const before = engine.openRuntimes().length;
-    act(() => building?.onAddOwnedAnalysis());
-    const dialog = await screen.findByRole('dialog');
-    const title = within(dialog).getByRole('textbox', { name: 'Title' });
-    await waitFor(() => expect(engine.openRuntimes().length).toBe(before + 1));
-    await user.type(title, 'x');
-    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(engine.openRuntimes().length).toBe(before);
-    expect(runtime()?.getSnapshot().draft.panels).toHaveLength(2);
-  });
-
-  it('is saved as a view of its own, the panel pointing at it', async () => {
-    const user = userEvent.setup();
-    const { engine, store, runtime } = setup(
-      dashboardConfig({
-        panels: [
+  it('offers a system dashboard 另存为 and no 编辑', async () => {
+    open({
+      definition: overviewDefinition({
+        views: [
           {
-            id: 'mine',
-            kind: 'view',
-            title: 'Mine',
-            owned: { definitionId: 'orders', config: analysisConfig() },
-            bindings: [],
-            layout: { x: 0, y: 0, w: 12, h: 4 },
-          } as DashboardPanel,
+            id: 'ops',
+            title: 'Shipped with the release',
+            config: dashboardConfig({ panels: [panel({ title: 'Pending' })] }),
+          },
         ],
       }),
-    );
-    let building: DashboardBuilding | null = null;
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-        onBuildingChange={next => (building = next)}
-      />,
-    );
-    await startBuilding(runtime);
-    await waitFor(() => expect(building).not.toBeNull());
-    act(() => building?.onSaveOwnedAsView('mine'));
-
-    const dialog = await screen.findByRole('dialog');
-    expect(
-      within(dialog).getByRole('heading', { name: 'Save as a view' }),
-    ).toBeTruthy();
-    expect(dialog.textContent).toContain('It becomes a view of Orders');
-    // The board's audience first.
-    expect(
-      within(dialog)
-        .getByRole('radio', { name: 'Everyone' })
-        .getAttribute('aria-checked'),
-    ).toBe('true');
-    const title = within(dialog).getByRole('textbox', { name: 'Title' });
-    expect((title as HTMLInputElement).value).toBe('Mine');
-    await user.click(within(dialog).getByRole('button', { name: 'Save view' }));
-
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    const saved = (await store.list('orders')).find(
-      summary => summary.title === 'Mine',
-    );
-    expect(saved?.scope).toBe('shared');
-    expect(runtime()?.getSnapshot().draft.panels[0]).toMatchObject({
-      instanceId: saved?.id,
+      instanceId: 'system:overview:ops',
     });
+    await screen.findByText('Pending', { selector: 'h3' });
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+    expect(
+      within(slot('save-actions')!).getByRole('button', { name: 'Save as' }),
+    ).toBeTruthy();
+  });
+
+  it('offers no 编辑 to a reader who may not save the board', async () => {
+    open({ canSave: false });
+    await screen.findByText('Pending', { selector: 'h3' });
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+  });
+
+  it('saves on 完成 and reads the board again', async () => {
+    const { store, user } = open();
+    await enter(user);
+    const menu = await panelMenu(user, 'Pending');
+    await user.click(within(menu).getByRole('menuitem', { name: 'Rename' }));
+    const input = screen.getByRole('textbox', { name: 'Panel title' });
+    expect(document.activeElement).toBe(input);
+    await user.clear(input);
+    await user.type(input, 'Waiting{Enter}');
+    expect(titles()).toEqual(['Waiting']);
+
+    const saved = landed(store);
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    await saved;
+    const stored = await store.get('overview-1');
+    expect(
+      (stored.config as DashboardViewConfig).panels.map(entry => entry.title),
+    ).toEqual(['Waiting']);
+    await waitFor(() => expect(slot('dashboard-edit-bar')).toBeNull());
+    expect(slot('panel-grip')).toBeNull();
+    // The keyboard is back on the way in.
+    expect(document.activeElement).toBe(slot('dashboard-edit'));
+  });
+
+  it('asks before 完成 writes over a shared board, naming it', async () => {
+    const { store, user } = open({ scope: 'shared' });
+    await enter(user);
+    await add(user, 'Heading');
+    await user.keyboard('{Enter}');
+
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    const question = await screen.findByRole('alertdialog');
+    expect(question.textContent).toContain('Operations');
+    const saved = landed(store);
+    await user.click(
+      within(question).getByRole('button', { name: 'Update for everyone' }),
+    );
+    await saved;
+    expect(
+      (await store.get('overview-1')).config.kind === 'dashboard' &&
+        (
+          (await store.get('overview-1')).config as DashboardViewConfig
+        ).panels.some(entry => entry.kind === 'heading'),
+    ).toBe(true);
+  });
+
+  /**
+   * One way to do one thing: while the board is built its edit bar holds
+   * 完成 and 取消, so the title bar's 「已修改 ↺」 is not beside them. Once
+   * the building ends — by 取消 or by 完成 — the title bar says and undoes
+   * an unsaved change as it always has.
+   */
+  it('leaves 「已修改 ↺」 to the edit bar while the board is built', async () => {
+    const { engine, user } = open({
+      config: { fields: [{ name: 'region', label: 'Region', kind: 'string' }] },
+    });
+    const edited = () => slot('view-unsaved');
+    const revert = () => slot('view-revert');
+    /** A change the building did not make: a global condition composed. */
+    const compose = () =>
+      act(() =>
+        boardOf(engine).edit({
+          filter: {
+            op: 'and',
+            children: [{ field: 'region', operator: 'EQ', value: 'north' }],
+          },
+        }),
+      );
+
+    for (const leave of ['Cancel', 'Done'] as const) {
+      await enter(user);
+      await add(user, 'Heading');
+      await user.keyboard('{Enter}');
+      expect(boardOf(engine).getSnapshot().dirty).toBe(true);
+      // Changed, and nothing in the title bar says so or undoes it.
+      expect(edited()).toBeNull();
+      expect(revert()).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: leave }));
+      if (leave === 'Cancel')
+        await user.click(
+          within(await screen.findByRole('alertdialog')).getByRole('button', {
+            name: 'Revert',
+          }),
+        );
+      await waitFor(() => expect(slot('dashboard-edit-bar')).toBeNull());
+
+      // Read again: an unsaved change wears the mark and its ↺ as before.
+      await compose();
+      expect(edited()).not.toBeNull();
+      await user.click(revert()!);
+      await user.click(
+        within(await screen.findByRole('alertdialog')).getByRole('button', {
+          name: 'Revert',
+        }),
+      );
+      await waitFor(() => expect(edited()).toBeNull());
+    }
+  });
+
+  it('leaves at once on 完成 with nothing to save', async () => {
+    const { store, user } = open();
+    await enter(user);
+    const save = vi.spyOn(store, 'save');
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    expect(slot('dashboard-edit-bar')).toBeNull();
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('puts back the saved board on 取消, asking first', async () => {
+    const { user } = open();
+    await enter(user);
+    await add(user, 'Heading');
+    await user.keyboard('{Enter}');
+    expect(titles()).toContain('New section');
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    const question = await screen.findByRole('alertdialog');
+    await user.click(within(question).getByRole('button', { name: 'Revert' }));
+    await waitFor(() => expect(titles()).toEqual(['Pending']));
+    expect(slot('dashboard-edit-bar')).toBeNull();
+    expect(screen.queryByText('Edited')).toBeNull();
   });
 });
 
-describe('a panel’s own look', () => {
-  it('is picked with the visualization panel, marked on the panel, redrawn without a query, and put back', async () => {
-    const user = userEvent.setup();
-    const { engine, runtime, asked } = setup();
-    let building: DashboardBuilding | null = null;
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="board"
-        onBuildingChange={next => (building = next)}
-      />,
-    );
-    await startBuilding(runtime);
-    await waitFor(() => expect(building).not.toBeNull());
-    await waitFor(() => expect(asked()).toBe(1));
-    act(() => building?.onEditPresentation('a'));
-
-    const dialog = await screen.findByRole('dialog');
-    expect(
-      within(dialog).getByRole('heading', { level: 2, name: /looks here/ }),
-    ).toBeTruthy();
-    await user.click(await within(dialog).findByRole('radio', { name: 'pie' }));
-
-    expect(runtime()?.getSnapshot().draft.panels[0]).toMatchObject({
-      presentation: { layout: 'chart', chart: { type: 'pie' } },
+describe('adding to a board (D22 A, B)', () => {
+  it('adds a saved view from the picker, sized by what it shows', async () => {
+    const { engine, user } = open({ scope: 'shared' });
+    await enter(user);
+    await add(user, 'Saved view…');
+    const picker = await screen.findByRole('dialog');
+    const rows = await within(picker).findAllByRole('button', {
+      name: /Pending orders|By warehouse|My orders/,
     });
-    const mark = document.querySelector('[data-slot="panel-presentation"]');
-    expect(mark?.textContent).toBe('Shown here as pie');
-    // Presentation never asks the source (D20).
-    expect(asked()).toBe(1);
+    expect(rows).toHaveLength(3);
+
+    // Grouped as the switcher groups them, with what is true of each here.
+    const groups = within(picker)
+      .getAllByRole('heading', { level: 3 })
+      .map(heading => heading.textContent);
+    expect(groups).toEqual(['System views', 'Shared views', 'My views']);
+    const row = (name: string) =>
+      within(picker).getByRole('button', { name: new RegExp(name) });
+    expect(row('Pending orders').textContent).toContain('On the board');
+    expect(row('My orders').textContent).toContain('Only you can see it');
+    expect(row('By warehouse').textContent).not.toContain('On the board');
+
+    // Searched by name, and narrowed by kind.
+    await user.type(
+      within(picker).getByRole('searchbox', { name: 'Search by name' }),
+      'ware',
+    );
+    expect(
+      within(picker).getAllByRole('button', { name: /orders|warehouse/i }),
+    ).toHaveLength(1);
+    await user.clear(within(picker).getByRole('searchbox'));
+    await user.click(within(picker).getByRole('button', { name: 'Records' }));
+    expect(
+      within(picker).queryByRole('button', { name: /By warehouse/ }),
+    ).toBeNull();
+    await user.click(within(picker).getByRole('button', { name: 'All' }));
+
+    await user.click(row('By warehouse'));
+    await waitFor(() => expect(titles()).toContain('By warehouse'));
+    // Loaded before it was placed, so it starts at the size of what it
+    // shows (D22 A) rather than at a chart's for everything.
+    const board = engine
+      .openRuntimes()
+      .find(runtime => runtime.kind === 'dashboard')!;
+    const config = board.getSnapshot().draft as DashboardViewConfig;
+    const placed = config.panels.find(
+      entry =>
+        entry.kind === 'view' &&
+        'instanceId' in entry &&
+        entry.instanceId === 'by-warehouse',
+    )!;
+    expect({ w: placed.layout.w, h: placed.layout.h }).toEqual(
+      defaultPanelSize({ kind: 'view' }, byWarehouse.config),
+    );
+    expect(screen.getByText('Added “By warehouse”')).toBeTruthy();
+    // Back where it was asked from.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(slot('dashboard-add')),
+    );
+  });
+
+  it('adds a heading and names it in place', async () => {
+    const { user } = open();
+    await enter(user);
+    await add(user, 'Heading');
+    const input = await screen.findByRole('textbox', { name: 'Heading text' });
+    await user.clear(input);
+    await user.type(input, 'Warehouses{Enter}');
+    expect(titles()).toContain('Warehouses');
+    // A section's name, set on no body.
+    const heading = slots('dashboard-panel').find(
+      card => card.dataset.kind === 'heading',
+    )!;
+    expect(heading.querySelector('[role="group"]')).toBeNull();
+  });
+
+  it('writes a note, a picture and links through their forms', async () => {
+    const { user } = open();
+    await enter(user);
+
+    await add(user, 'Text…');
+    let form = await screen.findByRole('dialog');
+    const text = within(form).getByRole('textbox', { name: 'Text' });
+    await user.clear(text);
+    await user.type(text, 'Read me first');
+    await user.click(within(form).getByRole('button', { name: 'Add' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByText('Read me first')).toBeTruthy();
+
+    await add(user, 'Image…');
+    form = await screen.findByRole('dialog');
+    // Nothing typed is a mistake only once it is tried.
+    expect(form.querySelector('[data-invalid]')).toBeNull();
+    await user.click(within(form).getByRole('button', { name: 'Add' }));
+    expect(within(form).getByText('Fill this in.')).toBeTruthy();
+    await user.type(
+      within(form).getByRole('textbox', { name: 'Image address' }),
+      'javascript:alert(1)',
+    );
+    expect(
+      within(form).getByText(
+        'Only http, https, mailto and relative links can be shown.',
+      ),
+    ).toBeTruthy();
+    await user.clear(
+      within(form).getByRole('textbox', { name: 'Image address' }),
+    );
+    await user.type(
+      within(form).getByRole('textbox', { name: 'Image address' }),
+      '/plan.png',
+    );
+    await user.type(
+      within(form).getByRole('textbox', { name: 'Description' }),
+      'Floor plan',
+    );
+    await user.click(within(form).getByRole('button', { name: 'Add' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('img', { name: 'Floor plan' })).toBeTruthy();
+
+    await add(user, 'Links…');
+    form = await screen.findByRole('dialog');
+    await user.type(
+      within(form).getByRole('textbox', { name: 'Text' }),
+      'Runbook',
+    );
+    await user.type(
+      within(form).getByRole('textbox', { name: 'Address' }),
+      'https://example.com/runbook',
+    );
+    await user.click(within(form).getByRole('button', { name: 'Add a link' }));
+    expect(form.querySelectorAll('[data-slot="content-link"]')).toHaveLength(2);
+    await user.click(
+      within(form).getByRole('button', { name: 'Remove link 2' }),
+    );
+    await user.click(within(form).getByRole('button', { name: 'Add' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('link', { name: /^Runbook/ })).toBeTruthy();
+
+    // And edited again from the panel's menu.
+    const menu = await panelMenu(user, 'Links');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Edit content…' }),
+    );
+    form = await screen.findByRole('dialog');
+    const label = within(form).getByRole('textbox', { name: 'Text' });
+    await user.clear(label);
+    await user.type(label, 'On-call runbook');
+    await user.click(within(form).getByRole('button', { name: 'Update' }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('link', { name: /^On-call runbook/ }),
+      ).toBeTruthy(),
+    );
+  });
+
+  it('offers an empty board its first steps, and a reader who cannot build it nothing', async () => {
+    const { user } = open({ panels: [] });
+    const empty = await waitFor(() => {
+      const found = slot('dashboard-empty');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(
+      within(empty)
+        .getAllByRole('button')
+        .map(button => button.textContent),
+      // The workbench provides the new-analysis dialog, so its first step is
+      // there too (`DashboardEditExtensions.onAddOwnedAnalysis`).
+    ).toEqual(['Add a view…', 'New analysis…', 'Add a heading']);
+    await user.click(
+      within(empty).getByRole('button', { name: 'Add a heading' }),
+    );
+    // The first step starts the building with it.
+    expect(slot('dashboard-edit-bar')).not.toBeNull();
+    expect(screen.getByRole('textbox', { name: 'Heading text' })).toBeTruthy();
+    cleanup();
+
+    open({ panels: [], canSave: false });
+    const read = await waitFor(() => {
+      const found = slot('dashboard-empty');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(within(read).queryByRole('button')).toBeNull();
+  });
+});
+
+describe("a panel's menu (D22 D)", () => {
+  it('offers 看 to a reader, and 改 only while the board is built', async () => {
+    const { user } = open();
+    await screen.findByText('Pending', { selector: 'h3' });
+    let menu = await panelMenu(user, 'Pending');
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map(item => item.textContent),
+    ).toEqual(['Refresh this panel']);
+    await user.keyboard('{Escape}');
+
+    await enter(user);
+    menu = await panelMenu(user, 'Pending');
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map(item => item.textContent),
+    ).toEqual([
+      'Refresh this panel',
+      'Rename',
+      'Replace view…',
+      'Duplicate',
+      'Remove from dashboard',
+    ]);
+  });
+
+  it('opens the view in the workbench only where the host has a route, under the board’s condition', async () => {
+    const onOpenView = vi.fn();
+    const { user } = open({
+      onOpenView,
+      config: {
+        fields: [{ name: 'region', label: 'Region', kind: 'string' }],
+        filter: {
+          op: 'and',
+          children: [{ field: 'region', operator: 'EQ', value: 'north' }],
+        },
+      },
+      panels: [
+        panel({
+          title: 'Pending',
+          bindings: [{ globalField: 'region', panelField: 'warehouse' }],
+        }),
+      ],
+    });
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+    const menu = await panelMenu(user, 'Pending');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Open in the workbench' }),
+    );
+    expect(onOpenView).toHaveBeenCalledWith('pending', {
+      op: 'and',
+      children: [{ field: 'warehouse', operator: 'EQ', value: 'north' }],
+    });
+  });
+
+  it('removes a panel after asking, says so, and keeps the keyboard on the bar', async () => {
+    const { user } = open({
+      panels: [
+        panel({ title: 'Pending' }),
+        panel({
+          id: 'chart',
+          title: 'Chart',
+          instanceId: 'by-warehouse',
+          layout: { x: 6, y: 0, w: 6, h: 4 },
+        }),
+      ],
+    });
+    await enter(user);
+    const menu = await panelMenu(user, 'Chart');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Remove from dashboard' }),
+    );
+    const question = await screen.findByRole('alertdialog');
+    expect(question.textContent).toContain('The view it shows is not deleted.');
+    await user.click(
+      within(question).getByRole('button', { name: 'Remove from dashboard' }),
+    );
+    await waitFor(() => expect(titles()).toEqual(['Pending']));
+    expect(screen.getByText('Removed “Chart”')).toBeTruthy();
+    await waitFor(() =>
+      expect(document.activeElement?.textContent).toBe('Editing'),
+    );
+  });
+
+  it('keeps the panel when the question is answered no', async () => {
+    const { user } = open();
+    await enter(user);
+    const menu = await panelMenu(user, 'Pending');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Remove from dashboard' }),
+    );
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Keep it',
+      }),
+    );
+    expect(titles()).toEqual(['Pending']);
+  });
+
+  it('duplicates a panel, and replaces the view one shows', async () => {
+    const { user } = open();
+    await enter(user);
+    let menu = await panelMenu(user, 'Pending');
+    await user.click(within(menu).getByRole('menuitem', { name: 'Duplicate' }));
+    await waitFor(() => expect(titles()).toEqual(['Pending', 'Pending']));
 
     await user.click(
-      within(dialog).getByRole('button', { name: 'Look as the view does' }),
+      screen.getAllByRole('button', { name: 'Actions for “Pending”' })[0],
     );
-    expect(runtime()?.getSnapshot().draft.panels[0]).not.toHaveProperty(
-      'presentation',
+    menu = await screen.findByRole('menu');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Replace view…' }),
     );
-    expect(
-      document.querySelector('[data-slot="panel-presentation"]'),
-    ).toBeNull();
-    await user.click(within(dialog).getByRole('button', { name: 'Done' }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Replace the view in “Pending”',
+    });
+    await user.click(
+      await within(picker).findByRole('button', { name: /By warehouse/ }),
+    );
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('is put back as it was when the dialog is cancelled', async () => {
-    const user = userEvent.setup();
-    const { engine, runtime } = setup();
-    let building: DashboardBuilding | null = null;
+  it('moves a panel to another tab where the board has tabs', async () => {
+    const { engine, user } = open({
+      config: {
+        tabs: [
+          { id: 't1', title: 'Today' },
+          { id: 't2', title: '' },
+        ],
+      },
+      panels: [panel({ title: 'Pending', tab: 't1' })],
+    });
+    await enter(user);
+    const menu = await panelMenu(user, 'Pending');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Move to tab' }),
+    );
+    // A tab without a name is called by its place.
+    await screen.findByRole('menuitem', { name: 'Tab 2' });
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() =>
+      expect(document.activeElement?.textContent).toBe('Tab 2'),
+    );
+    await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(
+        (boardOf(engine).getSnapshot().draft as DashboardViewConfig).panels[0]
+          .tab,
+      ).toBe('t2'),
+    );
+  });
+
+  it('shows the extensions’ entries only where they are provided', async () => {
+    const onAddOwnedAnalysis = vi.fn();
+    const onEditPresentation = vi.fn();
+    const onSaveOwnedAsView = vi.fn();
+    const { user } = open({
+      extensions: {
+        onAddOwnedAnalysis,
+        onEditPresentation,
+        onSaveOwnedAsView,
+        tabBar: <nav aria-label="Tabs">tab bar</nav>,
+      },
+      panels: [
+        panel({ title: 'Pending' }),
+        {
+          id: 'own',
+          kind: 'view',
+          title: 'Own',
+          owned: { definitionId: 'orders', config: analysisConfig() },
+          bindings: [],
+          layout: { x: 6, y: 0, w: 6, h: 4 },
+        } as DashboardPanel,
+      ],
+    });
+    expect(
+      await screen.findByRole('navigation', { name: 'Tabs' }),
+    ).toBeTruthy();
+    await enter(user);
+    await add(user, 'New analysis…');
+    expect(onAddOwnedAnalysis).toHaveBeenCalledWith({ fromRow: 0 });
+
+    // A record panel has no look to change here, nor an analysis to save.
+    let menu = await panelMenu(user, 'Pending');
+    expect(
+      within(menu).queryByRole('menuitem', { name: 'Save as a view…' }),
+    ).toBeNull();
+    expect(
+      within(menu).queryByRole('menuitem', {
+        name: 'Change how it looks here…',
+      }),
+    ).toBeNull();
+    await user.keyboard('{Escape}');
+
+    menu = await panelMenu(user, 'Own');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Change how it looks here…' }),
+    );
+    expect(onEditPresentation).toHaveBeenCalledWith('own');
+
+    menu = await panelMenu(user, 'Own');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Save as a view…' }),
+    );
+    expect(onSaveOwnedAsView).toHaveBeenCalledWith('own');
+  });
+});
+
+describe('a panel that is out, while the board is built', () => {
+  it('offers the way out as buttons rather than a person to ask', async () => {
+    const { user } = open({
+      panels: [panel({ title: 'Gone', instanceId: 'vanished' })],
+    });
+    const out = await waitFor(() => {
+      const found = slot('panel-unavailable');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(out.textContent).toContain('Ask');
+    expect(within(out).queryByRole('button')).toBeNull();
+
+    await enter(user);
+    const buttons = within(slot('panel-unavailable')!)
+      .getAllByRole('button')
+      .map(button => button.textContent);
+    expect(buttons).toEqual(['Replace view…', 'Remove from dashboard']);
+    expect(slot('panel-unavailable')!.textContent).not.toContain('Ask');
+  });
+});
+
+describe('a chart finding in a panel names columns', () => {
+  /**
+   * A bar chart over three dimensions is drawn as its table, and the panel
+   * says so as the workbench does — with the chart's name and the reason,
+   * never an alias (`chartIssueNamer`). It used to say nothing at all: only
+   * a child's warnings reached its panel, and this one is a note.
+   */
+  it('says why a chart shows as its table, in the words of the picker', async () => {
+    const { TERMS, DATE_HISTOGRAM } = AggregationGroupType;
+    const base = ordersDefinition();
+    const definition = ordersDefinition({
+      fields: [
+        ...base.fields,
+        { name: 'createdAt', label: 'Created', kind: 'datetime' },
+      ],
+      analysis: {
+        count: true,
+        fields: [
+          { field: 'warehouse', groups: [TERMS], functions: [] },
+          { field: 'status', groups: [TERMS], functions: [] },
+          {
+            field: 'createdAt',
+            groups: [DATE_HISTOGRAM],
+            functions: [],
+            dateUnits: [AggregationDateUnit.DAY],
+          },
+        ],
+      },
+    });
+    const chart: ViewInstance = {
+      ...byWarehouse,
+      id: 'three',
+      config: analysisConfig({
+        groups: [
+          { alias: 'g_wh', field: 'warehouse', type: 'TERMS' },
+          { alias: 'g_st', field: 'status', type: 'TERMS' },
+          {
+            alias: 'g_day',
+            field: 'createdAt',
+            type: 'DATE_HISTOGRAM',
+            unit: 'DAY',
+          },
+        ],
+        metrics: [{ alias: 'm_n', type: 'COUNT' }],
+        layout: 'chart',
+        chart: {
+          type: 'bar',
+          cartesian: {
+            x: 'g_wh',
+            splitBy: 'g_st',
+            series: [{ metric: 'm_n' }],
+          },
+        },
+      }),
+    };
+    const engine = new ViewEngine({
+      definitions: [definition, overviewDefinition()],
+      store: new MemoryViewStore({
+        instances: [
+          chart,
+          {
+            id: 'overview-1',
+            definitionId: 'overview',
+            title: 'Operations',
+            scope: 'personal',
+            revision: '1',
+            config: dashboardConfig({
+              panels: [panel({ title: 'Three ways', instanceId: 'three' })],
+            }),
+          },
+        ],
+      }),
+      resolveSource: () => testSource(),
+    });
     render(
       <DashboardWorkbench
         engine={engine}
         definitionId="overview"
-        instanceId="board"
-        onBuildingChange={next => (building = next)}
+        instanceId="overview-1"
       />,
     );
-    await startBuilding(runtime);
-    await waitFor(() => expect(building).not.toBeNull());
-    await waitFor(() =>
-      expect(runtime()?.getSnapshot().panels[0].runtime).not.toBeNull(),
+    const marker = await waitFor(() => {
+      const found = slot('panel-note');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    const said = marker.getAttribute('aria-label') ?? '';
+    expect(said).toContain(
+      'The bar chart cannot draw this result (At most two dimensions)',
     );
-    act(() => building?.onEditPresentation('a'));
-    const dialog = await screen.findByRole('dialog');
-    await user.click(await within(dialog).findByRole('radio', { name: 'pie' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(runtime()?.getSnapshot().draft.panels[0]).not.toHaveProperty(
-      'presentation',
-    );
-  });
-});
-
-describe('DashboardTabs alone', () => {
-  it('draws only its content for a board without tabs', async () => {
-    const { engine } = setup(dashboardConfig());
-    const board = (await engine.open('board')) as DashboardViewRuntime;
-    function Harness() {
-      const dashboard = useDashboard(board);
-      return (
-        <DashboardTabs dashboard={dashboard}>
-          <p>grid</p>
-        </DashboardTabs>
-      );
-    }
-    render(<Harness />);
-    expect(screen.getByText('grid')).toBeTruthy();
-    expect(screen.queryByRole('tablist')).toBeNull();
+    for (const alias of ['g_wh', 'g_st', 'g_day', 'm_n'])
+      expect(said).not.toContain(alias);
   });
 });

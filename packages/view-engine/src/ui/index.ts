@@ -29,7 +29,9 @@ export * from './BulkStatus.js';
 export * from './ColumnSettings.js';
 export * from './DashboardArrange.js';
 export * from './DashboardGrid.js';
+export * from './DashboardPanel.js';
 export * from './DashboardPanels.js';
+export * from './dashboard/extensions.js';
 export * from './DashboardWorkbench.js';
 // Building a board, batch B3 (D22 C–E): the tab bar, the commands a board's
 // menus call and the dialogs they open.

@@ -95,6 +95,13 @@ export interface EmbeddedViewProps {
    * says otherwise. Only the host knows its outline.
    */
   headingLevel?: PanelHeadingLevel;
+  /**
+   * The host's route to the workbench, for 在工作台中打开 in a dashboard
+   * panel's menu: the saved view the panel shows, and the board's condition
+   * as the panel carries it, in that view's own field names. Without it the
+   * item does not exist.
+   */
+  onOpenView?(instanceId: string, filter: FilterTree | null): void;
 }
 
 /**
@@ -121,6 +128,7 @@ export function EmbeddedView({
   rowActions,
   onRenderFailure,
   headingLevel = 2,
+  onOpenView,
 }: EmbeddedViewProps) {
   // The condition goes in with the config, not after it: `useOpenView` hands
   // it to `engine.open`, so the opening query is already scoped rather than
@@ -175,6 +183,7 @@ export function EmbeddedView({
             runtime={runtime}
             rowActions={rowActions}
             headingLevel={headingLevel}
+            onOpenView={onOpenView}
           />
         </RenderBoundary>
       )}
@@ -193,10 +202,12 @@ function EmbeddedBody({
   runtime,
   rowActions,
   headingLevel,
+  onOpenView,
 }: {
   runtime: OpenedRuntime;
   rowActions?(row: RecordRow): ReactNode;
   headingLevel: PanelHeadingLevel;
+  onOpenView?(instanceId: string, filter: FilterTree | null): void;
 }) {
   const state = useViewRuntime(runtime);
   const messages = useViewMessages();
@@ -252,7 +263,11 @@ function EmbeddedBody({
       ) : runtime.kind === 'analysis' ? (
         <EmbeddedAnalysis runtime={runtime} />
       ) : (
-        <EmbeddedDashboard runtime={runtime} headingLevel={headingLevel} />
+        <EmbeddedDashboard
+          runtime={runtime}
+          headingLevel={headingLevel}
+          onOpenView={onOpenView}
+        />
       )}
     </>
   );
@@ -349,16 +364,21 @@ function EmbeddedAnalysis({ runtime }: { runtime: OpenedRuntime }) {
 function EmbeddedDashboard({
   runtime,
   headingLevel,
+  onOpenView,
 }: {
   runtime: DashboardRuntime;
   headingLevel: PanelHeadingLevel;
+  onOpenView?(instanceId: string, filter: FilterTree | null): void;
 }) {
   const dashboard = useDashboard(runtime);
   // A board with tabs switches between them here too (D22 E); where a
   // reader was is the workbench's to remember, not an embed's.
   return (
-    <DashboardTabs dashboard={dashboard}>
-      <DashboardGrid dashboard={dashboard} headingLevel={headingLevel} />
-    </DashboardTabs>
+    <DashboardGrid
+      dashboard={dashboard}
+      headingLevel={headingLevel}
+      onOpenView={onOpenView}
+      header={() => <DashboardTabs dashboard={dashboard} />}
+    />
   );
 }

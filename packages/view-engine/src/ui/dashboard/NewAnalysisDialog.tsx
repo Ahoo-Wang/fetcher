@@ -64,6 +64,7 @@ import {
   type AnalysisHost,
 } from '../workbench/AnalysisParts.js';
 import { ShellResult } from '../workbench/ResultBlock.js';
+import type { FinalFocus } from './commands.js';
 
 /** What 「放进仪表盘」 hands the board: the analysis it owns, and its title. */
 export interface NewAnalysis {
@@ -83,6 +84,12 @@ export interface NewAnalysisDialogProps {
    */
   onAdd(analysis: NewAnalysis): boolean;
   optionsFor?(remote: string): FieldOption[] | undefined;
+  /**
+   * Where the keyboard goes as it closes (`FinalFocus`): the control that
+   * asked — a menu's trigger, since the item that was pressed went with the
+   * menu. Base UI's own choice when left out.
+   */
+  finalFocus?: FinalFocus;
 }
 
 /**
@@ -103,10 +110,12 @@ export function NewAnalysisDialog({
   onOpenChange,
   onAdd,
   optionsFor,
+  finalFocus,
 }: NewAnalysisDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        {...(finalFocus ? { finalFocus } : {})}
         data-slot="new-analysis"
         className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-6xl"
       >

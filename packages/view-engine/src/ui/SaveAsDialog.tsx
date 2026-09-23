@@ -42,6 +42,7 @@ import { Spinner } from './components/spinner.js';
 import type { MessageKey } from './messages.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { DialogContent } from './popups.js';
+import type { FinalFocus } from './dashboard/commands.js';
 
 /**
  * What the form needs of the save commands: which audiences a create may go
@@ -76,6 +77,12 @@ export interface SaveAsDialogProps {
   defaultScope?: ViewAudience;
   /** Called with the copy once the store took it. */
   onSaved?(instance: ViewInstance): void;
+  /**
+   * Where the keyboard goes as it closes (`FinalFocus`): the control that
+   * asked — a menu's trigger, since the item that was pressed went with the
+   * menu. Base UI's own choice when left out.
+   */
+  finalFocus?: FinalFocus;
 }
 
 /** One audience on offer, still unworded: the catalogue says all of it. */
@@ -143,10 +150,11 @@ export function SaveAsDialog({
   description,
   defaultScope,
   onSaved,
+  finalFocus,
 }: SaveAsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent {...(finalFocus ? { finalFocus } : {})}>
         {/* Remounted on each opening: a copy is a fresh question, and the
             title left behind by the last one is not its answer. */}
         <SaveAsForm
@@ -172,7 +180,7 @@ function SaveAsForm({
   defaultScope,
   onOpenChange,
   onSaved,
-}: Omit<SaveAsDialogProps, 'open'>) {
+}: Omit<SaveAsDialogProps, 'open' | 'finalFocus'>) {
   const messages = useViewMessages();
   const fieldId = useId();
   const { can, state } = commands;

@@ -11,16 +11,27 @@
  * limitations under the License.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
-import type {
-  DashboardPanel,
-  DashboardViewConfig,
-  FieldOption,
-  Issue,
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { PencilIcon } from 'lucide-react';
+import {
+  audienceOf,
+  type DashboardPanel,
+  type DashboardViewConfig,
+  type FieldOption,
+  type FilterTree,
+  type Issue,
 } from '../model/index.js';
 import type { ViewEngine } from '../runtime/index.js';
 import { useDashboard, useWorkbench } from '../react/index.js';
-import { DashboardGrid, panelName, panelNames } from './DashboardGrid.js';
+import { Button } from './components/button.js';
+import { panelName, panelNames } from './DashboardPanel.js';
+import { DashboardBoard } from './dashboard/Board.js';
 import { FilterPanel } from './FilterPanel.js';
 import { RefreshControl } from './RefreshControl.js';
 import { FilterModes } from './filter/FilterModes.js';
@@ -30,10 +41,11 @@ import { featuresOf, type WorkbenchFeatures } from './features.js';
 import { WorkbenchShell } from './WorkbenchShell.js';
 import type { RenderFailureHandler } from './RenderBoundary.js';
 import { DashboardTabs } from './dashboard/DashboardTabs.js';
+import { useDashboardExtensions } from './dashboard/building.js';
 import {
-  useDashboardBuilding,
-  type DashboardBuilding,
-} from './dashboard/building.js';
+  DashboardEditExtensionsContext,
+  useDashboardEditExtensions,
+} from './dashboard/extensions.js';
 
 export interface DashboardWorkbenchProps {
   engine: ViewEngine;
@@ -68,14 +80,12 @@ export interface DashboardWorkbenchProps {
    */
   onTabChange?(tabId: string | null): void;
   /**
-   * Told the commands for building the board that batch B3 adds — a new
-   * analysis, a panel's own look, saving an owned analysis as a view, moving
-   * a panel to another tab — while the board is being built, and `null`
-   * while it is not: for a host that draws its own way to them.
+   * The host's route to the workbench, for 在工作台中打开 in a panel's menu
+   * (D22 D): the saved view a panel shows, and the board's condition as the
+   * panel carries it — already in that view's own field names, ready to be
+   * handed to it as its scope. Without it the item does not exist.
    */
-  onBuildingChange?(building: DashboardBuilding | null): void;
-  /** Whether panels may be dragged and resized. */
-  editable?: boolean;
+  onOpenView?(instanceId: string, filter: FilterTree | null): void;
   /**
    * What a new dashboard starts from: an empty one when left out. It opens
    * unsaved, and the first save asks for its name and audience.
@@ -138,7 +148,7 @@ export function DashboardWorkbench({
   definitionId,
   instanceId,
   onInstanceChange,
-  editable = false,
+  onOpenView,
   theme,
   messages: wording,
   locale,
@@ -151,7 +161,6 @@ export function DashboardWorkbench({
   features,
   initialTab,
   onTabChange,
-  onBuildingChange,
 }: DashboardWorkbenchProps) {
   const messages = useViewMessages(wording, locale);
   // The host's tab, asked as a board opens: a tab of the board its
@@ -186,16 +195,6 @@ export function DashboardWorkbench({
     if (board) openedOnce.current = true;
   }, [board]);
   const dashboard = useDashboard(board);
-  const { building, dialogs } = useDashboardBuilding({
-    engine,
-    board,
-    dashboard,
-    messages,
-    optionsFor,
-  });
-  useEffect(() => {
-    onBuildingChange?.(building);
-  }, [building, onBuildingChange]);
 
   // The tab on screen, told to the host as it changes, and remembered as the
   // reader's own when they pick one (a preference, never the board's).
@@ -207,6 +206,53 @@ export function DashboardWorkbench({
   const rememberTab = (tabId: string) => {
     if (savedId) void engine.rememberTab(definitionId, savedId, tabId);
   };
+
+  // Reading and building are two states (D22 A): nothing on a board being
+  // read moves, and 「编辑」 is the way in — only for whoever may save the
+  // board, so a system board (read-only, D4) offers 「另存为」 and nothing
+  // else. The state is this opening's: another view opens read.
+  const [buildingId, setBuildingId] = useState<string | null>(null);
+  const editing = board !== null && buildingId === board.id;
+  const canEdit = board !== null && workbench.commands.can.save;
+  const setEditing = (on: boolean) =>
+    setBuildingId(on && board ? board.id : null);
+  // 「编辑」 leaves the bar as the building starts and comes back as it
+  // ends; the keyboard that pressed 完成 or 取消 goes back to it rather than
+  // to the page — only as the building ends, and only when the focus was
+  // lost with the bar: an opening view never takes it.
+  const editButton = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(editing);
+  useLayoutEffect(() => {
+    const ended = wasEditing.current && !editing;
+    wasEditing.current = editing;
+    if (!ended) return;
+    const active = document.activeElement;
+    if (active === null || active === document.body)
+      editButton.current?.focus();
+  }, [editing]);
+
+  // What building a board adds beyond the edit bar and the panel menu (D22
+  // C–E), as the one extension contract the board reads: the new-analysis
+  // dialog, a panel's own look and its reset, promoting an owned analysis,
+  // and the tab bar — which arranges tabs while the board is built, the one
+  // edit state above.
+  // A host that provides an entry of its own around the workbench replaces
+  // that one entry; the rest are the workbench's.
+  const hosted = useDashboardEditExtensions();
+  const { extensions: own, dialogs } = useDashboardExtensions({
+    engine,
+    board,
+    dashboard,
+    messages,
+    optionsFor,
+    tabBar: board && (
+      <DashboardTabs
+        dashboard={dashboard}
+        editing={editing ? board : null}
+        onShow={rememberTab}
+      />
+    ),
+  });
 
   const issues = state?.issues ?? [];
   // The panels carry the warnings of what is applied, each in its own frame.
@@ -274,6 +320,22 @@ export function DashboardWorkbench({
       onSidebarOpenChange={onSidebarOpenChange}
       expandable={expandable}
       manage={featuresOf(features).manage}
+      build={
+        canEdit &&
+        !editing && (
+          <Button
+            ref={editButton}
+            data-slot="dashboard-edit"
+            variant="outline"
+            size="sm"
+            onClick={() => setEditing(true)}
+          >
+            <PencilIcon data-icon="inline-start" />
+            {messages.label('label.dashboard.edit')}
+          </Button>
+        )
+      }
+      commitElsewhere={editing}
       onRenderFailure={onRenderFailure}
       // A grid of cards is not framed again.
       resultFramed={false}
@@ -316,22 +378,26 @@ export function DashboardWorkbench({
         )
       }
       result={
-        <>
-          {/* Under the global filter, which applies to every tab; the grid
-              is the tab on screen. */}
-          <DashboardTabs
-            dashboard={dashboard}
-            editing={building ? board : null}
-            onShow={rememberTab}
+        state && (
+          <DashboardEditExtensionsContext.Provider
+            value={{ ...own, ...hosted }}
           >
-            <DashboardGrid
+            <DashboardBoard
+              engine={engine}
               dashboard={dashboard}
-              editable={editable}
+              commands={workbench.commands}
+              title={state.title}
+              shared={audienceOf(state.scope) === 'shared'}
+              canEdit={canEdit}
+              editing={editing}
+              onEditingChange={setEditing}
+              onSaved={workbench.onSaved}
+              onOpenView={onOpenView}
               onRenderFailure={onRenderFailure}
             />
-          </DashboardTabs>
-          {dialogs}
-        </>
+            {dialogs}
+          </DashboardEditExtensionsContext.Provider>
+        )
       }
     />
   );

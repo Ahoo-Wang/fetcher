@@ -417,6 +417,14 @@ export class DashboardViewRuntime
     this.load(nextDraft);
   }
 
+  async preload(instanceId: string): Promise<void> {
+    if (this.disposed) return;
+    const loading = this.references.fetch(instanceId);
+    if (!loading) return;
+    this.store.setState({ resolving: true });
+    await loading;
+  }
+
   /**
    * Re-runs one panel — the retry a panel whose query failed offers. It is
    * the board's refresh narrowed to one child, so a panel that cannot run

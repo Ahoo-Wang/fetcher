@@ -18,7 +18,6 @@
 export const buildingMessages = {
   // The tab bar (D22 E). A tab with no name is called by its place.
   'label.tabs.name': 'Tabs',
-  'label.tabs.untitled': 'Tab {index}',
   'label.tabs.add': 'Add a tab',
   // What a new tab is called until it is renamed, and what the tab the
   // panels already on the board go onto is called when the first one is
@@ -48,11 +47,9 @@ export const buildingMessages = {
   'label.tabs.empty': 'This tab has no panels yet',
   'label.tabs.empty-hint':
     'Add a view or an analysis while it is shown, or move a panel here from another tab.',
-  'label.panel.move-to-tab': 'Move to tab',
   'label.panel.moved-to-tab': '“{title}” moved to the tab “{tab}”',
 
   // A new analysis made inside the dashboard (D22 C).
-  'label.panel.new-analysis': 'New analysis…',
   'label.panel.new-analysis.heading': 'New analysis',
   'label.panel.new-analysis.heading-of': 'New analysis · {definition}',
   'label.panel.new-analysis.description':
@@ -77,7 +74,6 @@ export const buildingMessages = {
     'This dashboard holds as many panels as it can.',
 
   // Saving an analysis the board owns as a view of its own (D22 C).
-  'label.panel.save-owned': 'Save as a view…',
   'label.panel.save-owned.heading': 'Save as a view',
   'label.panel.save-owned.description':
     'It becomes a view of {definition} that can be opened in the workbench, and this panel shows that view from now on.',
@@ -86,7 +82,6 @@ export const buildingMessages = {
     '“{title}” was saved as a view; this panel shows it now',
 
   // A panel's own look (D22 D).
-  'label.panel.presentation': 'Change how it looks here…',
   'label.panel.presentation.reset': 'Look as the view does',
   'label.panel.presentation.heading': 'How “{title}” looks here',
   'label.panel.presentation.description':

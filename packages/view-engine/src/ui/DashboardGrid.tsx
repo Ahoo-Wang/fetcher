@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useState, type Ref } from 'react';
+import { useState, type ReactNode, type Ref } from 'react';
 import { cn } from 'cn';
 import GridLayout, {
   getBreakpointFromWidth,
@@ -19,7 +19,7 @@ import GridLayout, {
   type Layout,
   type ResizeHandleAxis,
 } from 'react-grid-layout';
-import { InfoIcon, LayoutDashboardIcon, TriangleAlertIcon } from 'lucide-react';
+import { LayoutDashboardIcon } from 'lucide-react';
 import {
   arrangePanel,
   placePanel,
@@ -28,35 +28,24 @@ import {
   type ArrangeStep,
   type PlacedPanel,
 } from '../dashboard/index.js';
-import type { Issue } from '../model/index.js';
-import type {
-  DashboardController,
-  DashboardPanelView,
-} from '../react/index.js';
-import { isRecordRuntime } from '../runtime/index.js';
+import type { FilterTree } from '../model/index.js';
+import type { DashboardController } from '../react/index.js';
+import { PanelGridItem, PanelResizeHandle } from './DashboardArrange.js';
 import {
-  PanelArrangeMenu,
-  PanelGrip,
-  PanelGridItem,
-  PanelResizeHandle,
-} from './DashboardArrange.js';
-import { ContentPanel } from './DashboardPanels.js';
-import {
-  AnalysisPanel,
-  RecordPanel,
-  presentationMark,
-} from './dashboard/PanelBodies.js';
-import { PanelUnavailable } from './PanelUnavailable.js';
+  DashboardPanel,
+  panelNames,
+  type PanelHeadingLevel,
+} from './DashboardPanel.js';
+import { panelCommands, useBoardBuilding } from './dashboard/commands.js';
+import { useDashboardEditExtensions } from './dashboard/extensions.js';
+import { tabTitle } from './dashboard/DashboardTabs.js';
 import { useGridPlacement } from './gridPlacement.js';
-import { RenderBoundary, type RenderFailureHandler } from './RenderBoundary.js';
-import { IconTooltip } from './IconButton.js';
+import type { RenderFailureHandler } from './RenderBoundary.js';
 import { useViewMessages, type MessageFormatters } from './MessagesProvider.js';
 import type { MessageKey } from './messages.js';
-import { Badge } from './components/badge.js';
-import { Button } from './components/button.js';
-import { Card, CardContent, CardHeader, CardTitle } from './components/card.js';
 import {
   Empty,
+  EmptyContent,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
@@ -65,7 +54,11 @@ import {
 
 export interface DashboardGridProps {
   dashboard: DashboardController;
-  /** Whether panels may be dragged and resized; read-only by default. */
+  /**
+   * Whether the board is being built (D22 A): panels may be dragged,
+   * resized and placed by keyboard, and each panel's menu offers 「改」.
+   * Read-only by default — nothing on a board being read moves it.
+   */
   editable?: boolean;
   /** Pixel height of one grid row. */
   rowHeight?: number;
@@ -77,11 +70,28 @@ export interface DashboardGridProps {
    * page calls for, since only the host knows its outline.
    */
   headingLevel?: PanelHeadingLevel;
+  /**
+   * Above the panels, inside the grid's own column: the edit bar while the
+   * board is built. Told whether the board is in its one-column reading,
+   * where building is renaming and removing alone (D22 J).
+   */
+  header?(board: { narrow: boolean }): ReactNode;
+  /**
+   * Under the empty board's words: the first things to add (D22 A). Left
+   * out, an empty board says it has no panels and offers nothing — a reader
+   * who cannot build it has nothing to press.
+   */
+  emptyActions?: ReactNode;
+  /**
+   * The host's route to the workbench: 在工作台中打开 in a panel's menu opens
+   * the view it shows under the board's condition, as the panel carries it —
+   * already in that view's own field names. No route, no item.
+   */
+  onOpenView?(instanceId: string, filter: FilterTree | null): void;
   className?: string;
 }
 
-/** Where a panel title may sit in a page's outline — never above a page title. */
-export type PanelHeadingLevel = 2 | 3 | 4 | 5 | 6;
+export type { PanelHeadingLevel } from './DashboardPanel.js';
 
 /**
  * The panels, placed.
@@ -106,6 +116,9 @@ export function DashboardGrid({
   className,
   onRenderFailure,
   headingLevel = 3,
+  header,
+  emptyActions,
+  onOpenView,
 }: DashboardGridProps) {
   // The grid needs a pixel width and the container only knows it once it is
   // on screen, so the measuring is the library's own hook rather than a
@@ -133,23 +146,33 @@ export function DashboardGrid({
   // commands are on offer there.
   const arranging = editable && !narrow;
   const placement = useGridPlacement(dashboard.place);
+  const building = useBoardBuilding();
+  const extensions = useDashboardEditExtensions();
 
-  // The tab on screen is the grid (D22 E): each tab is a grid of its own,
-  // and a panel on another is neither drawn nor placed against.
-  const onTab = dashboard.panels.filter(panel => panel.tab === dashboard.tab);
+  // The tab on screen (D22 E) is the grid: its panels alone are drawn, and
+  // every placement is judged among them — another tab is another grid. It
+  // is the runtime's, since only that tab runs (`DashboardRuntime.showTab`);
+  // a board without tabs has every panel on screen.
+  const onScreen = dashboard.panels.filter(
+    panel => panel.tab === dashboard.tab,
+  );
+  const at = dashboard.tabs.findIndex(entry => entry.id === dashboard.tab);
+  const shownTab =
+    !editable && dashboard.tabs.length > 1 && at >= 0
+      ? tabTitle(dashboard.tabs[at], at, messages)
+      : null;
+
   // Reading order — rows top to bottom, each left to right — over the layout
   // as stored. The panels are rendered in it too, so the tab order follows
   // what is on screen rather than the order the config happens to list them.
-  const panels = readingOrder(onTab);
-  const byId = new Map(onTab.map(panel => [panel.id, panel]));
-  // Named across the board, so a finding said above the grid names the
-  // same panel whichever tab it is on.
+  const panels = readingOrder(onScreen);
+  const byId = new Map(onScreen.map(panel => [panel.id, panel]));
   const names = panelNames(dashboard.panels, messages);
 
   // The board as the kernel places it: a keyboard command is judged against
   // every panel, since on a board that floats panels up "down" means past
   // the panel below, and the bottom of a column has nowhere down to go.
-  const placed: PlacedPanel[] = onTab.map(panel => ({
+  const placed: PlacedPanel[] = onScreen.map(panel => ({
     id: panel.id,
     ...panel.layout,
   }));
@@ -181,9 +204,6 @@ export function DashboardGrid({
     );
   };
 
-  if (dashboard.panels.length === 0) return <DashboardEmpty />;
-  if (onTab.length === 0) return <DashboardEmpty tab />;
-
   // Below `md`, the kernel's one-column reading of the stored layout; the
   // stored layout itself everywhere else.
   const boxes = panels.map(panel => ({ id: panel.id, ...panel.layout }));
@@ -196,74 +216,109 @@ export function DashboardGrid({
       ref={containerRef}
       data-slot="dashboard-grid"
       data-narrow={narrow || undefined}
-      className={cn('w-full', className)}
+      data-editing={editable || undefined}
+      className={cn('flex w-full flex-col gap-3', className)}
     >
-      <GridLayout
-        // A new grid on either side of the breakpoint: the library holds the
-        // layout in state of its own and catches up with a new one an effect
-        // later, so for one frame it drew the wide layout's six-column panels
-        // in a one-column grid — six times the width of the screen.
-        key={narrow ? 'narrow' : 'wide'}
-        width={width}
-        layout={layout}
-        gridConfig={{ cols: narrow ? 1 : dashboard.columns, rowHeight }}
-        // Dragging by the header alone leaves the panel body clickable.
-        dragConfig={{
-          enabled: arranging,
-          handle: '[data-slot="panel-grip"]',
-        }}
-        resizeConfig={{
-          enabled: arranging,
-          // The corner is a named, focusable control while the layout may
-          // be edited, and nothing at all while it may not — upstream's
-          // bare `span` has no name to give and no key to answer.
-          handleComponent: (axis: ResizeHandleAxis, ref: Ref<HTMLElement>) =>
-            arranging ? (
-              <PanelResizeHandle axis={axis} ref={ref} onStep={arrange} />
-            ) : (
-              <span
-                ref={ref}
-                aria-hidden="true"
-                className={`react-resizable-handle react-resizable-handle-${axis}`}
-              />
-            ),
-        }}
-        compactor={placement.compactor}
-        // The gestures are off in the one-column reading, and so are the
-        // callbacks that would hand a placement to `place`: nothing drawn in
-        // that column is a layout the config could hold.
-        {...(arranging
-          ? {
-              onDragStart: placement.onDragStart,
-              onDragStop: placement.onDragStop,
-              onResizeStart: placement.onResizeStart,
-              onResizeStop: placement.onResizeStop,
-            }
-          : {})}
+      {header?.({ narrow })}
+      {/* The tab on screen's panel, while a tab bar is read above it: the
+          bar is a `tablist`, and what it switches is named after the tab it
+          shows. Being built, the bar is a list to arrange and this a grid. */}
+      <div
+        data-slot="dashboard-tab-panel"
+        className="flex min-w-0 flex-col"
+        {...(shownTab === null
+          ? {}
+          : { role: 'tabpanel', 'aria-label': shownTab })}
       >
-        {panels.map(panel => (
-          // The library appends the resize corner to this item, after the
-          // panel; the item says which panel it holds to whatever lands in
-          // it, so the corner is named after its own panel.
-          <PanelGridItem
-            key={panel.id}
-            panelId={panel.id}
-            name={names.get(panel.id) ?? ''}
-            className="min-h-0"
+        {panels.length === 0 ? (
+          // A tab with nothing on it, on a board with panels elsewhere, says
+          // so of the tab: 「这个仪表盘还没有面板」 would be untrue one tab away.
+          <DashboardEmpty tab={dashboard.panels.length > 0}>
+            {emptyActions}
+          </DashboardEmpty>
+        ) : (
+          <GridLayout
+            // A new grid on either side of the breakpoint: the library holds the
+            // layout in state of its own and catches up with a new one an effect
+            // later, so for one frame it drew the wide layout's six-column panels
+            // in a one-column grid — six times the width of the screen.
+            key={narrow ? 'narrow' : 'wide'}
+            width={width}
+            layout={layout}
+            gridConfig={{ cols: narrow ? 1 : dashboard.columns, rowHeight }}
+            // Dragging by the header alone leaves the panel body clickable.
+            dragConfig={{
+              enabled: arranging,
+              handle: '[data-slot="panel-grip"]',
+            }}
+            resizeConfig={{
+              enabled: arranging,
+              // The corner is a named, focusable control while the layout may
+              // be edited, and nothing at all while it may not — upstream's
+              // bare `span` has no name to give and no key to answer.
+              handleComponent: (
+                axis: ResizeHandleAxis,
+                ref: Ref<HTMLElement>,
+              ) =>
+                arranging ? (
+                  <PanelResizeHandle axis={axis} ref={ref} onStep={arrange} />
+                ) : (
+                  <span
+                    ref={ref}
+                    aria-hidden="true"
+                    className={`react-resizable-handle react-resizable-handle-${axis}`}
+                  />
+                ),
+            }}
+            compactor={placement.compactor}
+            // The gestures are off in the one-column reading, and so are the
+            // callbacks that would hand a placement to `place`: nothing drawn in
+            // that column is a layout the config could hold.
+            {...(arranging
+              ? {
+                  onDragStart: placement.onDragStart,
+                  onDragStop: placement.onDragStop,
+                  onResizeStart: placement.onResizeStart,
+                  onResizeStop: placement.onResizeStop,
+                }
+              : {})}
           >
-            <DashboardPanel
-              panel={panel}
-              name={names.get(panel.id)}
-              headingLevel={headingLevel}
-              editable={arranging}
-              available={step => available(panel.id, step)}
-              onArrange={step => arrange(panel.id, step)}
-              onRetry={() => dashboard.refreshPanel(panel.id)}
-              onRenderFailure={onRenderFailure}
-            />
-          </PanelGridItem>
-        ))}
-      </GridLayout>
+            {panels.map(panel => (
+              // The library appends the resize corner to this item, after the
+              // panel; the item says which panel it holds to whatever lands in
+              // it, so the corner is named after its own panel.
+              <PanelGridItem
+                key={panel.id}
+                panelId={panel.id}
+                name={names.get(panel.id) ?? ''}
+                className="min-h-0"
+              >
+                <DashboardPanel
+                  panel={panel}
+                  name={names.get(panel.id)}
+                  headingLevel={headingLevel}
+                  editable={arranging}
+                  available={step => available(panel.id, step)}
+                  onArrange={step => arrange(panel.id, step)}
+                  onRetry={() => dashboard.refreshPanel(panel.id)}
+                  commands={panelCommands({
+                    panel,
+                    name: names.get(panel.id) ?? '',
+                    dashboard,
+                    building,
+                    editing: editable,
+                    narrow,
+                    extensions,
+                    onOpenView,
+                    messages,
+                  })}
+                  onRenderFailure={onRenderFailure}
+                />
+              </PanelGridItem>
+            ))}
+          </GridLayout>
+        )}
+      </div>
       {/* One region for the whole grid rather than one per panel: only one
           panel is ever being placed, and the rest would be a dozen empty
           regions for a reader to walk past. */}
@@ -299,86 +354,22 @@ function count(
 const COLUMNS = ['label.panel.columns', 'label.panel.columns-one'] as const;
 const ROWS = ['label.panel.rows', 'label.panel.rows-one'] as const;
 
-/** What an untitled content panel is called: what kind of thing it holds. */
-const CONTENT_NAMES: Readonly<Record<string, MessageKey>> = {
-  heading: 'label.panel.kind.heading',
-  markdown: 'label.panel.kind.markdown',
-  image: 'label.panel.kind.image',
-  links: 'label.panel.kind.links',
-};
-
 /**
- * What a panel is called wherever it has to be named — its heading, its
- * handles, the line that says where it landed.
- *
- * Its own title first. A view panel without one is named after the view it
- * shows, which is what its reader sees in it; a heading after the words it
- * says; a content panel after the kind of thing it holds. What is left — a
- * panel whose view could not be opened —
- * is named by where it stands on the board in reading order, counted from
- * one (`index`). Never its id: `panel.id` is a key in a config, and
- * 「orders-2」 is not a word anyone reading the board ever chose.
+ * A dashboard with nothing on it: what a dashboard is, that this one holds
+ * no panel yet, and — for whoever may build it — the first things to add,
+ * as an `EmptyContent` under the header (D22 A). A reader who may not build
+ * it is offered nothing: an entry they cannot use is a door that is not
+ * there (U1).
  */
-export function panelName(
-  panel: Pick<DashboardPanelView, 'title' | 'panel' | 'runtime'>,
-  index: number,
-  messages: MessageFormatters,
-): string {
-  if (panel.title) return panel.title;
-  const shown = panel.runtime?.getSnapshot()?.title;
-  if (shown) return shown;
-  if (panel.panel.kind === 'heading' && panel.panel.content.trim())
-    return panel.panel.content.trim();
-  const kind = CONTENT_NAMES[panel.panel.kind];
-  return kind
-    ? messages.label(kind)
-    : messages.label('label.panel.untitled', { index: index + 1 });
-}
-
-/**
- * Every panel's name by its id, each counted by its place in reading order
- * — rows top to bottom, each left to right — which is the order the grid
- * draws them in and the one a reader counts by.
- *
- * Two panels are never called the same by the board itself: a name the
- * board made up (`panelName` without a title) that another panel already
- * goes by is numbered in reading order — 「笔记」, 「笔记 2」 — so a handle,
- * a finding or a landing announced by name points at one panel. Titles the
- * author gave are theirs and left as they are, even when two agree; a
- * made-up name steps around them.
- */
-export function panelNames(
-  panels: readonly DashboardPanelView[],
-  messages: MessageFormatters,
-): Map<string, string> {
-  const used = new Set(panels.flatMap(panel => panel.title || []));
-  return new Map(
-    readingOrder(panels).map((panel, index) => {
-      if (panel.title) return [panel.id, panel.title];
-      const name = panelName(panel, index, messages);
-      let numbered = name;
-      for (let n = 2; used.has(numbered); n += 1)
-        numbered = messages.label('label.panel.numbered', { name, n });
-      used.add(numbered);
-      return [panel.id, numbered];
-    }),
-  );
-}
-
-/**
- * A dashboard with nothing on it: what a dashboard is, and that this one
- * holds no panel yet.
- *
- * It promises nothing. There is no way to add a panel today, so an empty
- * state that said "add a saved view" pointed at a door that was not there
- * (U1). Adding panels is D22's batch B, and its 「添加」 goes in this
- * component, as an `EmptyContent` under the header — the one place a board
- * with no panels has room for a first action.
- */
-function DashboardEmpty({ tab = false }: { tab?: boolean }) {
+function DashboardEmpty({
+  tab = false,
+  children,
+}: {
+  /** Whether it is one tab that is empty, rather than the whole board. */
+  tab?: boolean;
+  children?: ReactNode;
+}) {
   const messages = useViewMessages();
-  // A tab with nothing on it on a board that has panels elsewhere says so
-  // of the tab: 「这个仪表盘还没有面板」 would be untrue one tab away.
   return (
     <Empty data-slot="dashboard-empty" data-tab={tab || undefined}>
       <EmptyHeader>
@@ -394,211 +385,7 @@ function DashboardEmpty({ tab = false }: { tab?: boolean }) {
           )}
         </EmptyDescription>
       </EmptyHeader>
+      {children != null && <EmptyContent>{children}</EmptyContent>}
     </Empty>
-  );
-}
-
-export interface DashboardPanelProps {
-  panel: DashboardPanelView;
-  editable?: boolean;
-  /**
-   * Whether an arrange command would move the panel at all (`arrangePanel`
-   * over the whole board); the menu disables the ones that would not. Every
-   * command is offered when it is left out.
-   */
-  available?: (step: ArrangeStep) => boolean;
-  /**
-   * What the panel is called on screen; the grid names every panel once
-   * (`panelName`), counting an untitled one by its place among the others.
-   * Left out, the panel names itself the same way, as the first.
-   */
-  name?: string;
-  /** The title's heading level; `3`, under a workbench's `h2`, by default. */
-  headingLevel?: PanelHeadingLevel;
-  /** One arrange command, when the layout may be edited. */
-  onArrange?: (step: ArrangeStep) => void;
-  /**
-   * Re-runs this panel alone. Given, a panel whose query failed offers it
-   * as its retry (`DashboardController.refreshPanel`).
-   */
-  onRetry?: () => void;
-  onRenderFailure?: RenderFailureHandler;
-}
-
-/**
- * One framed panel: a title, the two arrange controls when the layout is
- * editable, a body.
- *
- * The title is a heading, one level under whatever names the board — the
- * view's own `h2` in a workbench (`ViewHeader`), the host's in an embed: a
- * reader who moves through the page by headings reaches each panel by its
- * name, which a styled `div` never let them do.
- */
-export function DashboardPanel({
-  panel,
-  editable,
-  available,
-  name: given,
-  headingLevel = 3,
-  onArrange,
-  onRetry,
-  onRenderFailure,
-}: DashboardPanelProps) {
-  const messages = useViewMessages();
-  const name = given ?? panelName(panel, 0, messages);
-  const Title: `h${PanelHeadingLevel}` = `h${headingLevel}`;
-  // A panel that runs and still has something to say shows its view and
-  // wears the finding in its header. A broken one says why in its body,
-  // where the view would have been; whatever else it has to say — a config
-  // can carry a warning beside its error — still goes in the header, and
-  // only the finding the body shows is left out, so nothing is said twice.
-  const shown = bodyIssue(panel);
-  const warnings = panel.issues.filter(
-    found => found.severity === 'warning' && found !== shown,
-  );
-  const warned = warnings.length > 0;
-  // What is true of the panel's answer and nothing is wrong with — the
-  // groups its own limit left out — rides beside the title quietly: no
-  // warning colour on the glyph, none on the panel's edge.
-  const notes = panel.issues.filter(found => found.severity === 'note');
-  const look = presentationMark(panel, messages);
-  return (
-    <Card
-      data-slot="dashboard-panel"
-      data-warning={warned || undefined}
-      className="h-full gap-2 overflow-hidden py-3 data-[warning]:border-warning"
-    >
-      <CardHeader className="px-3">
-        <CardTitle className="flex items-center gap-1 text-sm">
-          {/*
-            The marker went through `title`, which no keyboard and no touch
-            screen ever opens, so what the warning actually said was reachable
-            only by hovering a mouse over a 16px glyph. It is the package's
-            own `IconTooltip` now: the same string names the control and fills
-            the tooltip, focus opens it, and a tap opens it too. The colour
-            sits on the glyph rather than on the button — `text-warning` is
-            what the marker means, and the vendored ghost variant keeps its
-            own hover and focus colours underneath it.
-          */}
-          {warned && (
-            <IconTooltip
-              label={messages.issues(warnings)}
-              render={
-                <Button
-                  data-slot="panel-warning"
-                  variant="ghost"
-                  size="icon-sm"
-                />
-              }
-            >
-              <TriangleAlertIcon className="text-warning" />
-            </IconTooltip>
-          )}
-          {notes.length > 0 && (
-            <IconTooltip
-              label={messages.issues(notes)}
-              render={
-                <Button data-slot="panel-note" variant="ghost" size="icon-sm" />
-              }
-            >
-              <InfoIcon className="text-muted-foreground" />
-            </IconTooltip>
-          )}
-          {/*
-            The grip was decorative while dragging was a pointer gesture
-            with no keyboard equivalent — naming it would have announced an
-            affordance its user could not reach. It answers the arrow keys
-            now, so it is a named control, and the menu beside it says the
-            same commands in words for anyone who does not know the keys.
-          */}
-          {editable && onArrange && (
-            <>
-              <PanelGrip title={name} onStep={onArrange} />
-              <PanelArrangeMenu
-                title={name}
-                available={available}
-                onStep={onArrange}
-              />
-            </>
-          )}
-          <Title data-slot="panel-title" className="min-w-0 truncate">
-            {name}
-          </Title>
-          {/* The look is this panel's own, on purpose (D22 D): a reader
-              comparing it with the view in the workbench is told so. */}
-          {look && (
-            <Badge
-              data-slot="panel-presentation"
-              variant="secondary"
-              className="shrink-0"
-              title={messages.label('label.panel.presentation.note')}
-            >
-              {look}
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent
-        /*
-          The body scrolls, and a region that scrolls has to be reachable by
-          keyboard. A record panel gets that for free from the controls in its
-          rows; a chart panel has nothing focusable in it at all — the chart
-          is one `role="img"` with nothing inside it that takes focus — so the
-          scroll container itself takes the focus, named by the panel it
-          belongs to.
-        */
-        role="group"
-        tabIndex={0}
-        aria-label={name}
-        className="min-h-0 flex-1 overflow-auto px-3"
-      >
-        {/* One boundary per panel: a markdown body or a row that throws
-            takes this card's body and leaves the rest of the grid alone. */}
-        <RenderBoundary
-          name="panel"
-          panelId={panel.id}
-          resetKeys={[panel.runtime?.id ?? null]}
-          onFailure={onRenderFailure}
-        >
-          <PanelBody panel={panel} onRetry={onRetry} />
-        </RenderBoundary>
-      </CardContent>
-    </Card>
-  );
-}
-
-function PanelBody({
-  panel,
-  onRetry,
-}: {
-  panel: DashboardPanelView;
-  onRetry?: () => void;
-}) {
-  // A panel the dashboard could not open, or one admission refused, says so
-  // and leaves the rest alone. Content panels come through here too: a link
-  // whose scheme was rejected must not reach the document because the rest of
-  // the dashboard happened to be fine.
-  if (panel.broken) return <PanelUnavailable issue={bodyIssue(panel)} />;
-  // A heading's words are already the panel's title element — its name,
-  // `panelName` — so the body would only say them twice.
-  if (panel.panel.kind === 'heading') return null;
-  if (panel.panel.kind !== 'view') return <ContentPanel panel={panel.panel} />;
-  if (!panel.runtime) return <PanelUnavailable issue={panel.issues[0]} />;
-  return isRecordRuntime(panel.runtime) ? (
-    <RecordPanel runtime={panel.runtime} onRetry={onRetry} />
-  ) : (
-    <AnalysisPanel runtime={panel.runtime} onRetry={onRetry} />
-  );
-}
-
-/**
- * The finding a broken panel's body shows as the reason it is out: its
- * first error, else the warning that came alone. A panel that runs shows
- * its view instead, and its findings all belong to the header.
- */
-function bodyIssue(panel: DashboardPanelView): Issue | undefined {
-  if (!panel.broken) return undefined;
-  return (
-    panel.issues.find(found => found.severity === 'error') ?? panel.issues[0]
   );
 }

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DragDropProvider } from '@dnd-kit/react';
 import { useSortable } from '@dnd-kit/react/sortable';
 import { Accessibility } from '@dnd-kit/dom';
@@ -48,12 +48,7 @@ import {
   DropdownMenuTrigger,
 } from '../components/dropdown-menu.js';
 import { Input } from '../components/input.js';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '../components/tabs.js';
+import { Tabs, TabsList, TabsTrigger } from '../components/tabs.js';
 import { AlertDialogContent, DropdownMenuContent } from '../popups.js';
 
 export interface DashboardTabsProps {
@@ -65,16 +60,16 @@ export interface DashboardTabsProps {
   editing?: DashboardEditing | null;
   /** Told when the reader picks a tab — the workbench remembers it. */
   onShow?(tabId: string): void;
-  /** The tab's content: the grid of the tab on screen. */
-  children: ReactNode;
 }
 
 /**
- * A board's tabs (D22 E): a bar under the title bar and above the grid,
- * drawn only when there are two or more — one tab reads as none. The global
- * filter stays above it, since it applies to every tab. The grid below is
- * the tab on screen's panel, so the bar and what it switches are one
- * `tablist` and one `tabpanel` to a screen reader.
+ * A board's tabs (D22 E): a bar over the grid — under the edit bar while the
+ * board is built — drawn only when there are two or more; one tab reads as
+ * none. The global filter stays above it, since it applies to every tab.
+ * Pressing a tab shows it (`DashboardController.showTab`): the grid draws
+ * that tab's panels alone, and only they run. The workbench hands it to the
+ * board as `DashboardEditExtensions.tabBar`; an embed draws it as the
+ * grid's header.
  *
  * While the board is being built the bar is the tabs to arrange: a way to
  * add a tab (on a board with one or none, the only thing on the bar), and
@@ -89,7 +84,6 @@ export function DashboardTabs({
   dashboard,
   editing,
   onShow,
-  children,
 }: DashboardTabsProps) {
   const messages = useViewMessages();
   const { say, region } = useAnnouncer('tabs-announcement');
@@ -167,19 +161,14 @@ export function DashboardTabs({
   const building = editing != null;
   if (tabs.length < 2)
     return building ? (
-      <>
-        <div data-slot="dashboard-tabs" className="flex items-center">
-          <Button variant="ghost" size="sm" onClick={add}>
-            <PlusIcon data-icon="inline-start" />
-            {messages.label('label.tabs.add')}
-          </Button>
-        </div>
-        {children}
+      <div data-slot="dashboard-tabs" className="flex items-center">
+        <Button variant="ghost" size="sm" onClick={add}>
+          <PlusIcon data-icon="inline-start" />
+          {messages.label('label.tabs.add')}
+        </Button>
         {region}
-      </>
-    ) : (
-      children
-    );
+      </div>
+    ) : null;
 
   const shown = current ?? tabs[0].id;
   const confirmation = (
@@ -279,7 +268,6 @@ export function DashboardTabs({
             <PlusIcon />
           </IconButton>
         </div>
-        {children}
         {region}
         {confirmation}
       </div>
@@ -314,9 +302,6 @@ export function DashboardTabs({
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value={shown} className="min-w-0">
-        {children}
-      </TabsContent>
       {region}
     </Tabs>
   );
@@ -330,7 +315,7 @@ export function tabTitle(
 ): string {
   return tab.title.trim()
     ? tab.title
-    : messages.label('label.tabs.untitled', { index: index + 1 });
+    : messages.label('label.dashboard.tab.untitled', { index: index + 1 });
 }
 
 /** Where the tab bar's drag sentences live in the catalogue. */

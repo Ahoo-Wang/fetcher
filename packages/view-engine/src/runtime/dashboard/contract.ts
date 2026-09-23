@@ -77,6 +77,14 @@ export interface DashboardRuntime
   /** Re-runs one panel on what it has applied — a retry after it failed. */
   refreshPanel(panelId: string): void;
   /**
+   * Loads a saved view a panel is about to show, and resolves once it has
+   * settled — read or found unreadable, never rejecting. `addPanel` sizes a
+   * saved view by what it shows only once it is loaded (a metric card a
+   * quarter, a table the full width), so the board's 「添加」 waits for this
+   * first; the child then starts on the reference already in hand.
+   */
+  preload(instanceId: string): Promise<void>;
+  /**
    * Shows one tab: its panels run — those shown before keep their rows and
    * run only when what they ask changed, or a refresh went by while they
    * were away — and the other tabs' panels stand still (D22 E). A tab the
