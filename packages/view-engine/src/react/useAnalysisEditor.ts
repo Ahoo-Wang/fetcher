@@ -30,6 +30,7 @@ import type {
 } from '../model/index.js';
 import {
   analysisScope,
+  limitBounds,
   withoutLevelsFrom,
   elementFilterFields,
   withLevel,
@@ -43,6 +44,7 @@ import {
   rangeSpan,
   recommendDateUnit,
   resultSpan,
+  type AnalysisLimitBounds,
   type AnalysisScope,
 } from '../analysis/index.js';
 import { isFieldlessKind, isSingleStringField } from '../model/index.js';
@@ -104,6 +106,12 @@ export interface AnalysisEditorController extends QuestionEditing {
   metrics: AnalysisMetric[];
   sort: AnalysisSort[];
   limit: number;
+  /**
+   * The range 「前 N 组」 may take and the N a blank stands for, from the one
+   * `limitBounds` admission reads, so a field can say the bounds Apply is
+   * refused by. `{ max: 0, fallback: 0 }` without an analysis capability.
+   */
+  limitBounds: AnalysisLimitBounds;
   layout: AnalysisViewConfig['layout'];
   chart: ChartSpec;
   totals: boolean;
@@ -188,6 +196,7 @@ const NO_MOMENTS: ReadonlySet<string> = new Set();
  * should not be offered the option.
  */
 const EMPTY_GROUPS: readonly FieldGroupDefinition[] = [];
+const NO_LIMIT_BOUNDS: AnalysisLimitBounds = { max: 0, fallback: 0 };
 
 export function useAnalysisEditor(
   runtime: ViewRuntime | null,
@@ -421,6 +430,13 @@ export function useAnalysisEditor(
     metrics,
     sort: config?.sort ?? [],
     limit: config?.limit ?? 0,
+    limitBounds: useMemo(
+      () =>
+        capability && runtime
+          ? limitBounds(capability, runtime.limits)
+          : NO_LIMIT_BOUNDS,
+      [capability, runtime],
+    ),
     layout: config?.layout ?? 'table',
     chart: config?.chart ?? EMPTY_CHART,
     totals: config?.table.totals === true,
