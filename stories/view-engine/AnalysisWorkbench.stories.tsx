@@ -101,7 +101,7 @@ function AnalysisWorkbenchDemo({
    */
   limit?: number;
   /**
-   * 存成「只保留 金额的合计 大于 kept」的视图（Wow `having`）。打开时托盘收着，
+   * 存成「只保留 金额的总和 大于 kept」的视图（Wow `having`）。打开时托盘收着，
    * 于是被筛掉的组只能由结果第一行的读法说出来。
    */
   kept?: number;
@@ -127,7 +127,7 @@ function AnalysisWorkbenchDemo({
   /** Whether the chart writes each value over its mark (`ChartSpec.labels`). */
   labels?: boolean;
   /**
-   * 仓库 × 状态的热力图：两个维度、一个金额合计，格子深浅按金额，底下一条色标
+   * 仓库 × 状态的热力图：两个维度、一个金额总和，格子深浅按金额，底下一条色标
    * （D21 第四批）。
    */
   heatmap?: boolean;
