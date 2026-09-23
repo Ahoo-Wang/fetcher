@@ -32,7 +32,7 @@ compileSummaries(def, cfg, kinds, ctx): AggregationQuery | null    // 全范围�
 projectSummaries(def, cfg, rows | aggregation): SummaryRow        // scope 是结果的一部分：'total' 来自自己的聚合，'page' 来自屏幕上的行
 
 // analysis
-defaultAnalysisConfig(def, limits?: RuntimeLimits): AnalysisViewConfig   // 按固定优先级从已声明能力挑选指标；有可分组字段时取其一并按指标降序排序，否则分组为空且 `sort` 为空（无分组聚合只有一行，Wow 拒绝对其排序）；`limit` 取能力的 `defaultLimit`、能力的 `maxLimit` 与 `limits.maxAnalysisRows` 三者最小值，缺省 `DEFAULT_RUNTIME_LIMITS`
+defaultAnalysisConfig(def, limits?: RuntimeLimits): AnalysisViewConfig   // 按固定优先级从已声明能力挑选指标；有可分组字段时取其一并按指标降序排序，否则分组为空且 `sort` 为空（无分组聚合只有一行，Wow 拒绝对其排序）；`limit` 取 `limitBounds(capability, limits).fallback`——能力的 `defaultLimit`（缺省 100）压到 `max` 以下，`max` 是能力的 `maxLimit`、`limits.maxAnalysisRows` 与 Wow `AGGREGATION_LIMITS.MAX_LIMIT` 三者最小值，`limits` 缺省 `DEFAULT_RUNTIME_LIMITS`
 validateAnalysis(def, cfg: AnalysisViewConfig, kinds): Issue[]   // 见下方规则
 compileAnalysis(def, cfg, kinds, ctx): AggregationQuery          // 同构映射；三处 FilterTree 编译为 FilterExpression
 compileAnalysisTotals(def, cfg, kinds, ctx): AggregationQuery | null   // table.totals 为 true 时的无分组聚合，否则 null
@@ -220,7 +220,7 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 - **展开之后，计数单位是最内层元素**，维度、指标、数值表达式与指标条件的字段只能是那一层的；根字段或外层元素字段写在这些位置报 `analysis.field.outside-scope`（Wow 以「requires its declared element scope」拒绝，字段确实存在，所以不说「未知」）。根 `filter`（范围）反过来只认根字段——它在任何展开之前执行，要问元素里的事由 `elementMatch` 条件去问；第 i 层元素自己的 `filter` 只认该层持有的字段。（见 test/analysisCapability.test.ts「the expansion chain」「element scope」）
 - `any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error；
 - 每个 group 的 `type` 必须在该字段的 `groups` 中，`DATE_HISTOGRAM.unit` 必须在其 `dateUnits` 中，`NUMERIC.function` 必须在该字段的 `functions` 中，能力未声明即报 error；
-- `limit` 必须是不超过 `RuntimeLimits.maxAnalysisRows` 的正整数，`groups`、`metrics`、`elements`、`sort` 的数量与 `limit` 始终受 Wow `AGGREGATION_LIMITS` 约束，`AnalysisCapability.limits` 只能进一步收紧（取更小者）；
+- `limit` 必须是 1～`limitBounds(...).max` 的整数，出界一律是一条 `analysis.limit.out-of-range`（带 `max`）：从前 2.5 得到的是「必须是正数」——它是正数——而 -3 与 20000 犯的是同一条规矩却听到两句话；准入、默认配置与托盘的「前 N 组」读的是同一个 `limitBounds`，界面说出来的范围就是应用被拒的那个范围。`groups`、`metrics`、`elements`、`sort` 的数量与 `limit` 始终受 Wow `AGGREGATION_LIMITS` 约束，`AnalysisCapability.limits` 只能进一步收紧（取更小者）；
 - `sort[].alias` 不得重复（`analysis.sort.duplicate`），`DATE_HISTOGRAM.dense` 只能用于唯一分组（`analysis.group.dense-not-alone`）；
 - `metrics` 不能为空，报 `analysis.metrics.empty`，与 Wow `metrics must not be empty.` 一致；
 - `metrics[].type` 不在六种之内报 `analysis.metric.type-unknown`，`compileMetric` 对此抛错而不发出空洞（定义准入另行检查这些上限与 `defaultLimit` 本身是正整数且 `defaultLimit` 不超过 `maxLimit`）；
@@ -258,6 +258,7 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 - `combo` 的每个系列必须有 `type`；
 - heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；
 - `maxSlices` 必须是不小于 2 的整数（NaN 与小数会让全部分类并入"其他"），且只能用于可加指标（`COUNT` 或 `SUM` 的 `NUMERIC`）：`AVG`、`MIN`／`MAX`、`DISTINCT_COUNT`、百分位无法由各分类结果推出合并值，报 error；
+- **投影在色板用完之前并「其他」**（`shapeChart`，不是准入规则）：`maxSlices` 不写时可加指标的饼图按 `CHART_COLOR_SLOTS`（8）并，写了更大的数也按 8 读——第九片会拿到第一片的颜色；**时间维度坐的轴按时间升序排**（直角坐标横轴、热力图行列、指标卡迷你趋势，以及按时间拆分的系列），不管视图按什么排序，类目与饼图照结果行的次序（[ui/analysis.md#analysischart-与-shapechart](ui/analysis.md#analysischart-与-shapechart)）；
 - `referenceLines` 引用的轴必须有系列；
 - **图表必须消费全部分组别名**（cartesian 用 `x` 加可选 `splitBy`，pie 用 `category`，heatmap 用 `x`／`y`，scatter 用 `category`，group 漏斗用 `category`，metric 卡片要求无分组或仅 `trend.x`），否则结果里同一坐标会有多行，而 AVG、百分位、DISTINCT_COUNT 无法在投影层安全再聚合，报 error；
 - 漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；

@@ -37,6 +37,13 @@ export type ValueLabel = (alias: string | undefined, value: unknown) => string;
 export type OnPick = (
   row: RecordData,
   anchor: Element | { getBoundingClientRect(): DOMRect },
+  /**
+   * Where the keyboard goes back to when the menu closes: the table row that
+   * was pressed. A mark is not focusable and leaves nothing to return to,
+   * and the anchor is no longer that row — it is the cell or the point the
+   * menu hangs from — so the two are said apart.
+   */
+  origin?: HTMLElement,
 ) => void;
 
 export interface FamilyProps<D> {
@@ -55,6 +62,12 @@ export interface FamilyProps<D> {
    * sparkline is a picture.
    */
   name: string;
+  /**
+   * The rows are the first groups of more (`AnalysisView.truncated` or
+   * `atLimit`): a family that draws shares of a whole says they are shares
+   * of the groups shown.
+   */
+  cutShort?: boolean;
 }
 
 export function useValueLabel(

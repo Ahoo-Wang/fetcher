@@ -25,7 +25,7 @@
 export const analysisMessages = {
   'label.analysis.row-count': 'Record count',
   // The result's footer: what is on screen and how long it took to get.
-  'label.analysis.caption': 'Showing {count} rows · took {seconds} s',
+  'label.analysis.caption': 'Showing {count} groups · took {seconds} s',
 
   'label.analysis.editor': 'Analysis',
   // The tray's slots, in the analyst's order (D20): the range, the array
@@ -98,6 +98,10 @@ export const analysisMessages = {
   'label.having.op.NE': 'not equal to',
   'label.analysis.totals': 'Totals row',
   'label.analysis.row-limit': 'Top N groups',
+  // Beside the field, which already says what it is: only the range it
+  // takes. The same bounds as `analysis.limit.out-of-range`, from the same
+  // `limitBounds`.
+  'label.analysis.row-limit-invalid': 'A whole number from 1 to {max}',
   // The three readings D20 asks the screen to say out loud, because each is
   // a number that means something other than what it looks like.
   //
@@ -134,7 +138,6 @@ export const analysisMessages = {
   // The panel's second level (D20 屏 J): the chosen type's options on
   // three pages, and the way in and out.
   'label.chart.options': '{name} options',
-  'label.chart.options-of': 'Options for {name}',
   'label.chart.options-back': 'Back to the chart types',
   'label.chart.tab.data': 'Data',
   'label.chart.tab.display': 'Display',
@@ -206,7 +209,9 @@ export const analysisMessages = {
   'label.chart.reference-value': 'Value of the reference line',
   'label.chart.donut': 'Donut',
   'label.chart.max-slices': 'Slices at most',
-  'label.chart.max-slices.hint': 'The rest merge into “Other”.',
+  // The ceiling is the palette's size: a slice past it would repeat a colour.
+  'label.chart.max-slices.hint':
+    'The rest merge into “Other”. At most {count}, one colour each — and {count} when left empty.',
   'label.chart.scale': 'Colour scale',
   'label.chart.scale.linear': 'Linear',
   'label.chart.scale.log': 'Logarithmic',
@@ -273,6 +278,7 @@ export const analysisMessages = {
 
   // Series names the chart writes itself, for legends and tooltips.
   'label.chart.other': 'Other',
+  'label.chart.share-basis': 'Shares of the groups shown',
   'label.chart.points': 'Points',
   'label.chart.trend': 'Trend',
   'label.chart.cell': '{y} · {x}: {value}',
@@ -366,8 +372,8 @@ export const analysisMessages = {
     'This dataset does not offer filtering the result.',
   'analysis.having.unknown-metric':
     'The filter refers to {metric}, which is not a usable metric.',
-  'analysis.limit.not-positive': 'Top N groups must be a positive number.',
-  'analysis.limit.too-large': 'Top N groups cannot exceed {max}.',
+  'analysis.limit.out-of-range':
+    'Top N groups must be a whole number from 1 to {max}.',
   'analysis.metric.type-unknown': 'The metric type {type} is not available.',
   'analysis.metricFilter.empty':
     'This filter has no conditions, so the metric covers every record.',

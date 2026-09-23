@@ -12,11 +12,17 @@
  */
 import type { StoryObj } from '@storybook/react-vite';
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
-import { formatMessage, zhCN } from '@ahoo-wang/fetcher-view-engine/ui';
+import {
+  defaultMessages,
+  formatMessage,
+  zhCN,
+} from '@ahoo-wang/fetcher-view-engine/ui';
 import displayMeta, {
   BarChart as DisplayBarChart,
   CutShort as DisplayCutShort,
   CutShortTable as DisplayCutShortTable,
+  DailyNewestFirst as DisplayDailyNewestFirst,
+  DailyTrendCard as DisplayDailyTrendCard,
   EmptyResult as DisplayEmptyResult,
   Expandable as DisplayExpandable,
   FollowUps as DisplayFollowUps,
@@ -24,9 +30,11 @@ import displayMeta, {
   PinnedCategoryColor as DisplayPinnedCategoryColor,
   QueryFailed as DisplayQueryFailed,
   TableWithTotals as DisplayTableWithTotals,
+  TenCities as DisplayTenCities,
   TwoMetrics as DisplayTwoMetrics,
   LatestPerWarehouse as DisplayLatestPerWarehouse,
 } from './AnalysisWorkbench.stories.js';
+import { converter } from 'culori';
 import { aggregateCalls } from './fixtures.js';
 import { amountOf, findDataTable, readColumn, readTotal } from './readTable.js';
 
@@ -58,6 +66,8 @@ const AMOUNT_HEADER = formatMessage(zhCN, 'label.summary.of', {
 
 /** A count of records is named by what it counts, in one word. */
 const COUNT_HEADER = zhCN['label.analysis.row-count'];
+
+const toOklch = converter('oklch');
 
 const bars = (canvas: HTMLElement) =>
   canvas.querySelectorAll('.recharts-bar-rectangle');
@@ -127,7 +137,7 @@ export const WholeTicks: Story = {
 };
 
 /**
- * 报表有个底：结果区最后一行固定写「正在显示 N 行，耗时 X 秒」。
+ * 报表有个底：结果区最后一行固定写「正在显示 N 组，耗时 X 秒」。
  *
  * 分析结果从前在最后一根柱子、最后一行下面就结束了，下面的空白读起来像报表
  * 掉了下去（用户 2026-09-23）。这里量三件事：那一行说的是屏幕上的行数与耗时，
@@ -142,7 +152,7 @@ export const CaptionHoldsTheReport: Story = {
       '[data-slot="analysis-caption"]',
     )!;
     await expect(caption.textContent).toMatch(
-      /^正在显示 4 行，耗时 [\d.]+ 秒$/,
+      /^正在显示 4 组，耗时 [\d.]+ 秒$/,
     );
     const block = caption.parentElement!;
     await expect(block.dataset.slot).toBe('result-block');
@@ -162,7 +172,7 @@ export const CaptionHoldsTheReport: Story = {
  * 刻度字以刻度为中心，最后一个会伸出绘图区半个字宽：真实补偿服务上最后一天读成
  * 「2026年9月22E」，横向图最后一个数读成「600,00(」；横向图的分类轴从前是写死的
  * 96px，把长处理器名从左边截成「kEventProcessor」（2026-09-23）。这里量每一个刻度
- * 字的框都在图的 `svg` 之内，且图离结果区的左边留着工作列的 16px。
+ * 字的框都在图的 `svg` 之内，且图离结果区的左右两边都留着工作列的 16px。
  */
 export const TicksInsideTheChart: Story = {
   ...DisplayBarChart,
@@ -177,6 +187,10 @@ export const TicksInsideTheChart: Story = {
       .querySelector('[data-slot="result-block"]')!
       .getBoundingClientRect();
     await expect(surface.left - block.left).toBeGreaterThanOrEqual(15);
+    // On both sides: a chart that is the band's full width and then pushed
+    // 16px in overhangs the right edge, and the band clips its last tick
+    // (「2026年9」 on the real service's monthly line).
+    await expect(block.right - surface.right).toBeGreaterThanOrEqual(15);
     const ticks = [
       ...canvasElement.querySelectorAll('.recharts-cartesian-axis-tick-value'),
     ];
@@ -186,6 +200,118 @@ export const TicksInsideTheChart: Story = {
       await expect(box.left).toBeGreaterThanOrEqual(surface.left - 1);
       await expect(box.right).toBeLessThanOrEqual(surface.right + 1);
     }
+  },
+};
+
+/**
+ * A day as its label writes it, as numbers to compare: 「2026/9/3」,
+ * 「9月3日」 and 「2026-09-03」 all read as their digits in order, which is
+ * all an ordering needs — whichever way the surface's language spells a day.
+ */
+const dayOf = (text: string) => (text.match(/\d+/g) ?? []).map(Number);
+
+/** Whether `later` is a later day than `earlier`, part by part. */
+function after(later: number[], earlier: number[]): boolean {
+  const differs = later.findIndex((part, index) => part !== earlier[index]);
+  return differs !== -1 && later[differs] > earlier[differs];
+}
+
+/** Whether each day comes strictly after the one before it. */
+const runsForward = (days: number[][]) =>
+  days.every((day, index) => index === 0 || after(day, days[index - 1]));
+
+/**
+ * 时间轴从左往右走，不管视图怎么排序。
+ *
+ * 「每日新增失败」按日倒序存着——表格今天在最上面——而同一批行照着这个顺序画成
+ * 柱，今天落在原点、昨天在它右边，整张图读反了（2026-09-23 审查）。这里量画出来
+ * 的横轴：刻度按屏幕上的左右排好，读出来的日子一天比一天晚；再切到表格，同一批
+ * 日子是倒着的——表格仍是视图自己的顺序。
+ */
+export const TimeRunsForward: Story = {
+  ...DisplayDailyNewestFirst,
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(bars(canvasElement).length).toBeGreaterThan(10));
+    const drawn = await waitFor(() => {
+      const ticks = [
+        ...canvasElement.querySelectorAll(
+          '.recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-value',
+        ),
+      ];
+      expect(ticks.length).toBeGreaterThan(2);
+      return ticks
+        .map(tick => ({
+          left: tick.getBoundingClientRect().left,
+          day: dayOf(tick.textContent ?? ''),
+        }))
+        .sort((a, b) => a.left - b.left)
+        .map(tick => tick.day);
+    });
+    await expect(runsForward(drawn)).toBe(true);
+
+    await userEvent.click(
+      within(canvasElement).getByRole('button', {
+        name: zhCN['label.layout.table'],
+      }),
+    );
+    const table = await findDataTable(canvasElement);
+    const listed = readColumn(table, '创建时间').map(dayOf);
+    await expect(listed.length).toBeGreaterThan(10);
+    await expect(runsForward([...listed].reverse())).toBe(true);
+  },
+};
+
+/**
+ * 指标卡的迷你趋势同样从最早的一天画起：它没有刻度，所以读的是图旁边那张读屏
+ * 表——它与那根线出自同一份投影，从前它和线一起倒着走。
+ */
+export const SparklineRunsForward: Story = {
+  ...DisplayDailyTrendCard,
+  play: async ({ canvasElement }) => {
+    const reading = await waitFor(() => {
+      const found = canvasElement.querySelector<HTMLElement>(
+        '[data-slot="chart-reading"] table',
+      );
+      if (!found) throw new Error('指标卡旁边没有读屏表');
+      const days = [...(found as HTMLTableElement).tBodies[0].rows]
+        .map(row => dayOf(row.cells[0]?.textContent ?? ''))
+        // The headline and its comparison are rows too; a day has three
+        // numbers in it, and neither of those names one.
+        .filter(day => day.length === 3);
+      expect(days.length).toBeGreaterThan(10);
+      return days;
+    });
+    await expect(runsForward(reading)).toBe(true);
+  },
+};
+
+/**
+ * 十个目的城市，八种颜色，不重复。
+ *
+ * 色板从前只有五色、循环取用，第六个类目起与前面的同色——两片一个颜色，图例分
+ * 不出谁是谁（2026-09-23 审查）。现在色板八色，饼图在第八片把尾巴并进「其他」：
+ * 这里量浏览器真正画出来的填充色，八片八种；最后一片是「其他」，它是灰的，不占
+ * 任何一个类目的颜色。
+ */
+export const EightColoursThenOther: Story = {
+  ...DisplayTenCities,
+  play: async ({ canvasElement }) => {
+    const drawn = await waitFor(() => {
+      const paths = [
+        ...canvasElement.querySelectorAll<SVGPathElement>(
+          '.recharts-pie-sector path',
+        ),
+      ];
+      expect(paths).toHaveLength(8);
+      return paths.map(path => getComputedStyle(path).fill);
+    });
+    await expect(new Set(drawn).size).toBe(8);
+    // The remainder is grey — no hue to speak of — and every slot has one.
+    const chroma = drawn.map(fill => toOklch(fill)?.c ?? 0);
+    await expect(chroma.at(-1)).toBeLessThan(0.02);
+    await expect(chroma.slice(0, -1).every(c => c > 0.1)).toBe(true);
+    const legend = canvasElement.querySelector('.recharts-legend-wrapper');
+    await expect(legend?.textContent).toContain(zhCN['label.chart.other']);
   },
 };
 
@@ -398,6 +524,65 @@ export const FollowUpSplit: Story = {
   },
 };
 
+/** A menu's box once it has finished opening: it zooms in from 95%. */
+async function settled(menu: HTMLElement): Promise<DOMRect> {
+  await Promise.all(menu.getAnimations().map(animation => animation.finished));
+  return menu.getBoundingClientRect();
+}
+
+/**
+ * 追问菜单按自己的字那么宽，挂在按下去的那一格下面（2026-09-23 审查）。
+ *
+ * 它从前锚在整行上，而弹层配方的宽是 `--anchor-width`，于是菜单和整张表一样
+ * 宽——横在结果上的一条带子。这里量两条路：指针按在一格上，菜单从那一格下面
+ * 弹出、宽度不到表的一半；键盘在行上回车，菜单挂在这一行的第一格下面，左边
+ * 与它对齐。
+ */
+export const FollowUpMenuFitsItsWords: Story = {
+  ...DisplayFollowUps,
+  args: { ...DisplayFollowUps.args, layout: 'table' },
+  play: async ({ canvasElement }) => {
+    const table = await findDataTable(canvasElement);
+    await waitFor(() => expect(readColumn(table, '仓库')).toHaveLength(4));
+    const width = table.getBoundingClientRect().width;
+    const row =
+      canvasElement.querySelectorAll<HTMLTableRowElement>(
+        'tr[data-pickable]',
+      )[1]!;
+
+    // A pointer on the row's second cell: the menu opens under that cell,
+    // as wide as its words and never as wide as the row.
+    const cell = row.cells[1]!;
+    await userEvent.click(cell);
+    let box = await settled(await drillMenu());
+    const pressed = cell.getBoundingClientRect();
+    await expect(box.width).toBeGreaterThanOrEqual(224 - 0.5);
+    await expect(box.width).toBeLessThanOrEqual(320 + 0.5);
+    await expect(box.width).toBeLessThan(width / 2);
+    await expect(box.top).toBeGreaterThanOrEqual(pressed.bottom);
+    await expect(box.left).toBeLessThanOrEqual(pressed.right);
+    await expect(box.right).toBeGreaterThanOrEqual(pressed.left);
+
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(
+        document.body.querySelector('[data-slot="drill-menu"]'),
+      ).toBeNull(),
+    );
+    // Handed back to the row it came from, which is where Enter is pressed.
+    await waitFor(() => expect(document.activeElement).toBe(row));
+
+    // A key has no point: the row's first cell, the menu's start on its start.
+    await userEvent.keyboard('{Enter}');
+    box = await settled(await drillMenu());
+    const first = row.cells[0]!.getBoundingClientRect();
+    await expect(Math.abs(box.left - first.left)).toBeLessThan(1);
+    await expect(box.top).toBeGreaterThanOrEqual(first.bottom);
+    await expect(box.width).toBeLessThan(width / 2);
+    await userEvent.keyboard('{Escape}');
+  },
+};
+
 export const TwoMetrics: Story = {
   ...DisplayTwoMetrics,
   play: async ({ canvasElement }) => {
@@ -490,6 +675,10 @@ export const CutShort: Story = {
       '华北',
     ]);
     await expect(slices(canvasElement).every(slice => slice.drawn)).toBe(true);
+    // The shares are of the two shown, and the pie says so where its key is.
+    await expect(
+      canvasElement.querySelector('[data-slot="pie-measure"]'),
+    ).toHaveTextContent(zhCN['label.chart.share-basis']);
 
     // The strip, not the result's live region: both are `status`, and only
     // the strip is on the status line.
@@ -743,6 +932,86 @@ export const EditorRowSpacing: Story = {
   },
 };
 
+/** Whether two boxes share any area, a half-pixel of rounding aside. */
+const meet = (a: DOMRect, b: DOMRect) =>
+  a.left < b.right - 0.5 &&
+  b.left < a.right - 0.5 &&
+  a.top < b.bottom - 0.5 &&
+  b.top < a.bottom - 0.5;
+
+/**
+ * The tiles and the way on to the chosen type's options, as a browser lays
+ * them out: every tile one height, one button each with nothing inside it,
+ * the 「推荐」 mark over neither the tile's icon nor its name nor another tile
+ * (`inside` asks it to keep within its own tile's width too, which 「推荐」
+ * does; "Recommended" is wider than a third of the sidebar and runs into the
+ * gap between the columns, the room it hangs across the edge for); and under
+ * the last row one labelled button, visible, inside the panel, the panel's
+ * width, over no tile, named after the chosen type.
+ */
+async function expectPickerLayout(
+  panel: HTMLElement,
+  type: string,
+  inside = true,
+) {
+  const tiles = [
+    ...panel.querySelectorAll<HTMLElement>('[data-slot="chart-tile"]'),
+  ];
+  const heights = tiles.map(tile =>
+    Math.round(tile.getBoundingClientRect().height),
+  );
+  await expect(new Set(heights).size).toBe(1);
+  for (const tile of tiles)
+    await expect(tile.querySelector('button')).toBeNull();
+
+  const tile = chartTile(panel, type);
+  const mark = tile.querySelector('[data-slot="chart-recommended"]');
+  if (mark) {
+    const marked = mark.getBoundingClientRect();
+    const own = tile.getBoundingClientRect();
+    const icon = tile.querySelector('svg')!.getBoundingClientRect();
+    const name = document
+      .getElementById(tile.getAttribute('aria-labelledby')!)!
+      .getBoundingClientRect();
+    await expect(meet(marked, name)).toBe(false);
+    await expect(meet(marked, icon)).toBe(false);
+    for (const other of tiles.filter(each => each !== tile))
+      await expect(meet(marked, other.getBoundingClientRect())).toBe(false);
+    if (inside) {
+      await expect(marked.left).toBeGreaterThanOrEqual(own.left - 0.5);
+      await expect(marked.right).toBeLessThanOrEqual(own.right + 0.5);
+    }
+  }
+
+  const buttons = panel.querySelectorAll<HTMLElement>(
+    '[data-slot="chart-options-open"]',
+  );
+  await expect(buttons).toHaveLength(1);
+  const button = buttons[0]!;
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAccessibleName(
+    formatMessage(zhCN, 'label.chart.options', {
+      name:
+        type === 'table'
+          ? zhCN['label.layout.table']
+          : zhCN[`label.chart.type.${type}` as keyof typeof zhCN],
+    }),
+  );
+  const box = button.getBoundingClientRect();
+  const grid = panel
+    .querySelector('[role="radiogroup"]')!
+    .getBoundingClientRect();
+  const own = panel.getBoundingClientRect();
+  await expect(box.height).toBeGreaterThanOrEqual(28);
+  await expect(box.left).toBeGreaterThanOrEqual(own.left);
+  await expect(box.right).toBeLessThanOrEqual(own.right);
+  await expect(Math.abs(box.width - grid.width)).toBeLessThan(1);
+  await expect(box.top).toBeGreaterThanOrEqual(grid.bottom);
+  for (const each of tiles)
+    await expect(meet(box, each.getBoundingClientRect())).toBe(false);
+  if (mark) await expect(meet(box, mark.getBoundingClientRect())).toBe(false);
+}
+
 /** One tile of the picker, addressed by the chart type it stands for. */
 const chartTile = (canvas: HTMLElement, type: string) =>
   canvas.querySelector<HTMLButtonElement>(
@@ -765,9 +1034,13 @@ export const VisualizePanel: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
     // The list is in the column, and the panel is not.
-    await expect(
-      canvasElement.querySelector('[data-slot="view-sidebar"]'),
-    ).not.toBeNull();
+    const list = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="view-sidebar"]',
+    );
+    await expect(list).not.toBeNull();
+    const main = canvasElement.querySelector<HTMLElement>('.fve-root > main')!;
+    const listWidth = list!.getBoundingClientRect().width;
+    const mainLeft = main.getBoundingClientRect().left;
 
     await userEvent.click(
       canvas.getByRole('button', { name: zhCN['label.analysis.visualize'] }),
@@ -781,6 +1054,10 @@ export const VisualizePanel: Story = {
     await expect(
       canvasElement.querySelector('[data-slot="view-sidebar"]'),
     ).toBeNull();
+    // At the list's width, so the work area stays where it was: a panel a
+    // size wider pushed everything right by 32px as it opened.
+    await expect(panel.getBoundingClientRect().width).toBeCloseTo(listWidth, 0);
+    await expect(main.getBoundingClientRect().left).toBeCloseTo(mainLeft, 0);
 
     // Every type the definition declares is a tile, and the table is one too.
     await expect(
@@ -813,6 +1090,26 @@ export const VisualizePanel: Story = {
       zhCN['chart.fit.needs-two-dimensions'],
     );
 
+    // The tiles only pick; the way on to the chosen type's options is one
+    // labelled button under them (2026-09-23 review: a 24px gear hanging off
+    // the tile's corner was seen by nobody). Every tile is one height.
+    await expectPickerLayout(panel, 'bar');
+    // And the mark keeps clear in English too, the widest word it has: the
+    // same tile with "Recommended" written in it, put back afterwards.
+    const mark = chartTile(panel, 'bar').querySelector<HTMLElement>(
+      '[data-slot="chart-recommended"]',
+    )!;
+    mark.textContent = defaultMessages['label.chart.recommended'];
+    await expectPickerLayout(panel, 'bar', false);
+    mark.textContent = zhCN['label.chart.recommended'];
+
+    // Tab after the group lands on the button; the arrows stay the group's.
+    chartTile(panel, 'bar').focus();
+    await userEvent.tab();
+    await expect(
+      panel.querySelector('[data-slot="chart-options-open"]'),
+    ).toHaveFocus();
+
     // A pick is a redraw: the pie is drawn, and no aggregation went out.
     const before = aggregateCalls.current;
     await userEvent.click(chartTile(panel, 'pie'));
@@ -821,10 +1118,35 @@ export const VisualizePanel: Story = {
     );
     await expect(slices(canvasElement).every(slice => slice.drawn)).toBe(true);
     await expect(aggregateCalls.current).toBe(before);
+    // The pie measures what the bars measured: a type is how the numbers are
+    // drawn, not which (audit P0-10). Its legend leads with that column's
+    // title, and each slice says its share.
+    await expect(
+      canvasElement.querySelector('[data-slot="pie-measure"]'),
+    ).toHaveTextContent('金额 的 合计');
+    // Recharts writes a pie's labels only once its sweep has finished (a
+    // 400ms pause, then 1500ms), so they come about 1.5s after the sectors
+    // first appear — past `waitFor`'s one-second default. The story browser
+    // does not ask for less motion, so the pie sweeps as a reader's would.
+    await waitFor(
+      () =>
+        expect(
+          [...canvasElement.querySelectorAll('.recharts-label-list text')].some(
+            label => /%$/.test(label.textContent ?? ''),
+          ),
+        ).toBe(true),
+      { timeout: 4_000 },
+    );
     await expect(chartTile(panel, 'pie')).toHaveAttribute(
       'aria-checked',
       'true',
     );
+    // The button follows the choice: named after the pie now. A pick opens
+    // nothing by itself.
+    await expectPickerLayout(panel, 'pie');
+    await expect(
+      document.querySelector('[data-slot="chart-options"]'),
+    ).toBeNull();
     // Nothing is waiting to be applied, so the editor's fold wears no dot.
     await expect(
       canvasElement.querySelector(
@@ -837,6 +1159,36 @@ export const VisualizePanel: Story = {
     await canvas.findByRole('table');
     await expect(slices(canvasElement)).toHaveLength(0);
     await expect(aggregateCalls.current).toBe(before);
+
+    // The table's options are its totals row: 「表格选项」 opens that page, and
+    // back from it lands on the button the user left by.
+    await expectPickerLayout(panel, 'table');
+    const options = panel.querySelector<HTMLElement>(
+      '[data-slot="chart-options-open"]',
+    )!;
+    await userEvent.click(options);
+    const page = await waitFor(() => {
+      const found = panel.querySelector<HTMLElement>(
+        '[data-slot="chart-options"]',
+      );
+      if (!found) throw new Error('选项页没有打开');
+      return found;
+    });
+    await expect(
+      within(page).getByRole('checkbox', {
+        name: zhCN['label.analysis.totals'],
+      }),
+    ).toBeVisible();
+    await userEvent.click(
+      within(page).getByRole('button', {
+        name: zhCN['label.chart.options-back'],
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        panel.querySelector('[data-slot="chart-options-open"]'),
+      ).toHaveFocus(),
+    );
 
     // And the way back is the panel's own: the list returns to the column.
     await userEvent.click(

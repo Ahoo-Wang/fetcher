@@ -597,7 +597,7 @@ export const zhCN: ViewMessages = {
 
   // 分析编辑器与图表，以及它们背后的两个内核。
   'label.analysis.row-count': '记录数',
-  'label.analysis.caption': '正在显示 {count} 行，耗时 {seconds} 秒',
+  'label.analysis.caption': '正在显示 {count} 组，耗时 {seconds} 秒',
   'label.analysis.editor': '分析',
   'label.analysis.slot.range': '范围',
   'label.analysis.slot.dimensions': '维度',
@@ -658,6 +658,7 @@ export const zhCN: ViewMessages = {
   'label.having.op.NE': '不等于',
   'label.analysis.totals': '合计行',
   'label.analysis.row-limit': '前 N 组',
+  'label.analysis.row-limit-invalid': '须为 1～{max} 的整数',
   'label.analysis.totals-scope': '合计 = 范围内全部记录',
   'label.analysis.approximate': '近似值',
   'label.analysis.any-note': '任一值：每次查询返回的不保证是同一个。',
@@ -674,7 +675,6 @@ export const zhCN: ViewMessages = {
   'chart.fit.needs-no-dimension': '有维度时不适用',
   'chart.fit.needs-quantity': '要数量指标，时间画不成图',
   'label.chart.options': '{name}选项',
-  'label.chart.options-of': '{name}的选项',
   'label.chart.options-back': '返回图型',
   'label.chart.tab.data': '数据',
   'label.chart.tab.display': '显示',
@@ -738,7 +738,8 @@ export const zhCN: ViewMessages = {
   'label.chart.reference-value': '参考线数值',
   'label.chart.donut': '环形',
   'label.chart.max-slices': '最多几片',
-  'label.chart.max-slices.hint': '其余并入「其他」。',
+  'label.chart.max-slices.hint':
+    '其余并入「其他」。至多 {count} 片，一片一种颜色；不填即 {count} 片。',
   'label.chart.scale': '色阶',
   'label.chart.scale.linear': '线性',
   'label.chart.scale.log': '对数',
@@ -784,6 +785,7 @@ export const zhCN: ViewMessages = {
   'label.group.type.HISTOGRAM': '按数值区间',
   'label.group.type.DATE_HISTOGRAM': '按时间粒度',
   'label.chart.other': '其他',
+  'label.chart.share-basis': '占比按显示的组计算',
   'label.chart.points': '数据点',
   'label.chart.trend': '趋势',
   'label.chart.cell': '{y} · {x}：{value}',
@@ -847,8 +849,7 @@ export const zhCN: ViewMessages = {
   'analysis.having.too-many-nodes': '结果筛选超过了 {max} 条。',
   'analysis.having.undeclared': '这份数据不提供筛选结果。',
   'analysis.having.unknown-metric': '筛选引用了 {metric}，它不是可用的指标。',
-  'analysis.limit.not-positive': '前 N 组必须是正数。',
-  'analysis.limit.too-large': '前 N 组不能超过 {max}。',
+  'analysis.limit.out-of-range': '前 N 组须为 1～{max} 的整数。',
   'analysis.metric.type-unknown': '指标类型 {type} 不可用。',
   'analysis.metricFilter.empty': '这组条件是空的，所以指标覆盖全部记录。',
   'analysis.metricFilter.incomplete':
@@ -964,7 +965,7 @@ export const zhCN: ViewMessages = {
     '{field} 搜索 {missing}，定义没有声明它。',
   'definition.field.search-mode-invalid':
     '{field} 声明了未知的搜索模式：{value}。',
-  'definition.analysis.default-limit-too-large': '默认行数上限超过了最大值。',
+  'definition.analysis.default-limit-too-large': '默认组数上限超过了最大值。',
   'definition.analysis.element-field-unknown':
     '{path} 没有声明名为 {field} 的字段。',
   'definition.analysis.element-undeclared':

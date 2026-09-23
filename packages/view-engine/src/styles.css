@@ -86,6 +86,9 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-row-hover: var(--row-hover);
   --color-quiet-foreground: var(--quiet-foreground);
+  --color-chart-8: var(--chart-8);
+  --color-chart-7: var(--chart-7);
+  --color-chart-6: var(--chart-6);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -286,25 +289,40 @@
   --ring: var(--fve-ring, oklch(0.62 0 0deg));
 
   /*
-   * The five chart slots carry the same hues in both modes — blue, orange,
-   * aqua, yellow, magenta — so a series keeps its identity when the surface
-   * changes. The dark steps are picked for the dark surface rather than
-   * flipped from these, and the whole set was validated for
-   * colour-vision-deficiency separation and for contrast on both surfaces.
+   * The eight chart slots carry the same hues in both modes — blue, orange,
+   * aqua, yellow, magenta, green, violet, red — so a series keeps its
+   * identity when the surface changes. The dark steps are picked for the
+   * dark surface rather than flipped from these, and the whole set was
+   * validated for colour-vision-deficiency separation and for contrast on
+   * both card surfaces (white, and the dark card's `0.205`): every
+   * neighbouring pair stays at least 8 apart in OKLab ×100 under simulated
+   * protanopia and deuteranopia (worst 9.1 light, 8.4 dark) and at least 15
+   * apart to a full-colour eye (19.6, 19.3). Every dark slot clears 3:1 on
+   * the dark card; in light, aqua, yellow and magenta sit under it (2.8,
+   * 2.2, 2.7), which the chart answers with its reading table and the
+   * table layout rather than with darker hues that would crowd the others.
    * Slots are handed out in this fixed order, so the first series is always
-   * the blue one.
+   * the blue one — the order is what keeps neighbours apart.
+   *
+   * Eight, not five: with five the sixth category of a pie or a split took
+   * blue again, and two wedges one colour is a legend that cannot say which
+   * is which. Past eight a pie folds its tail into a grey "Other"
+   * (`CHART_COLOR_SLOTS`) rather than invent a ninth hue.
    *
    * Written in `oklch` like every other colour in this file rather than in
    * the hex they were picked as: one notation for the whole palette, so a
    * host tuning a slot reads its lightness beside the lightness of
    * everything around it instead of translating. The values round-trip to
-   * the same sRGB bytes — these are the same ten colours.
+   * the same sRGB bytes — these are the colours that were validated.
    */
   --chart-1: var(--fve-chart-1, oklch(0.5753 0.1626 255.532deg));
   --chart-2: var(--fve-chart-2, oklch(0.6708 0.175 40.642deg));
   --chart-3: var(--fve-chart-3, oklch(0.669 0.1408 162.111deg));
   --chart-4: var(--fve-chart-4, oklch(0.7644 0.1612 75.116deg));
   --chart-5: var(--fve-chart-5, oklch(0.7163 0.1412 357.389deg));
+  --chart-6: var(--fve-chart-6, oklch(0.5285 0.1798 142.495deg));
+  --chart-7: var(--fve-chart-7, oklch(0.4331 0.1671 283.624deg));
+  --chart-8: var(--fve-chart-8, oklch(0.6226 0.1909 24.912deg));
   --radius: var(--fve-radius, 0.625rem);
 
   /*
@@ -509,6 +527,9 @@
   --chart-3: var(--fve-dark-chart-3, oklch(0.6212 0.1283 163.115deg));
   --chart-4: var(--fve-dark-chart-4, oklch(0.6699 0.1425 73.227deg));
   --chart-5: var(--fve-dark-chart-5, oklch(0.6224 0.1712 0.838deg));
+  --chart-6: var(--fve-dark-chart-6, oklch(0.5285 0.1798 142.495deg));
+  --chart-7: var(--fve-dark-chart-7, oklch(0.6696 0.1452 286.827deg));
+  --chart-8: var(--fve-dark-chart-8, oklch(0.6693 0.1586 22.307deg));
 }
 
 @layer base {
@@ -681,6 +702,24 @@
 }
 
 /*
+ * A number on a dashboard is a tile one row tall.
+ *
+ * A metric panel's whole job is its label and its number, and the grid's row
+ * (80px) is the size that says so; at 3xl the number's 36px line did not fit
+ * the 28px the panel leaves under its title, so a tile had either to scroll
+ * or to take two rows (170px) of mostly nothing — which is what the home
+ * page's tiles were, and read as too tall (the user's 2026-09-23 review).
+ * The number steps down to 2xl on a panel, as shadcn's own dashboard cards
+ * start their figure at `text-2xl`, and drops the line's leading: one line
+ * of digits has nothing to space from. A workbench's metric has the whole
+ * result to stand in and keeps its 3xl.
+ */
+.fve-root [data-slot='dashboard-panel'] [data-slot='metric-value'] {
+  font-size: var(--text-2xl);
+  line-height: 1;
+}
+
+/*
  * A drawing keeps the column's gutter; a table runs to the edge.
  *
  * The result is a band that bleeds to the work column's edges (`variants.tsx`,
@@ -688,7 +727,8 @@
  * own — and wrong for a chart: its axis numbers sat against the column's
  * left rule with nothing between (the user's 2026-09-23 review). A chart, a
  * funnel, a heatmap and a metric card stand in the same 16px the toolbar
- * and the caption keep, with a step of air under the toolbar's rule. Inside
+ * and the caption keep, on both sides, with a step of air under the
+ * toolbar's rule. Inside
  * a dashboard panel the card is the gutter, so this is the workbench's
  * alone.
  */
@@ -703,6 +743,11 @@
     [data-slot='metric-card']
   ) {
   margin: 12px 16px 0;
+
+  /* The margin comes out of the width rather than past it: a drawing that
+     is `w-full` of the band and then pushed 16px in overhangs its right
+     edge by 16px, where the band clips it — the last tick read 「2026年9」. */
+  width: auto;
 }
 
 .fve-root
