@@ -161,11 +161,9 @@ function summarise(
         ),
       },
     },
+    ...counted(accumulated),
     { $replaceWith: { $mergeObjects: ['$_id', '$$ROOT'] } },
     { $unset: '_id' },
-    // A distinct count gathered its values as a set; it answers how many
-    // there are, a missing value not being one.
-    ...distinctCounts(accumulated),
   ]) as RecordData[];
   const answered = grouped.map(row => withDerived(row, query.metrics));
   // Wow filters the grouped rows **before** it orders and cuts them, which
@@ -184,7 +182,10 @@ function summarise(
         Object.fromEntries(
           accumulated.map(metric => [
             metric.alias,
-            metric.type === AggregationMetricType.COUNT ? 0 : null,
+            metric.type === AggregationMetricType.COUNT ||
+            metric.type === AggregationMetricType.DISTINCT_COUNT
+              ? 0
+              : null,
           ]),
         ),
         query.metrics,
@@ -470,28 +471,30 @@ function accumulator(metric: AggregationMetric): AnyObject {
       return { [name]: gate ? { $cond: [gate, value, null] } : value };
     }
   }
-  if (metric.type === AggregationMetricType.DISTINCT_COUNT && !gate)
-    return { $addToSet: measured(metric.expression) };
+  // The distinct values, gathered here and counted once the group is done
+  // (`counted`); a row the conditions leave out adds `null`, which is not
+  // counted.
+  if (metric.type === AggregationMetricType.DISTINCT_COUNT) {
+    const value = measured(metric.expression);
+    return { $addToSet: gate ? { $cond: [gate, value, null] } : value };
+  }
   throw new Error(`The story source does not compute ${metric.alias}.`);
 }
 
-/** The stage that turns each distinct count's gathered set into its size. */
-function distinctCounts(metrics: readonly AggregationMetric[]): AnyObject[] {
-  const aliases = metrics
-    .filter(metric => metric.type === AggregationMetricType.DISTINCT_COUNT)
-    .map(metric => metric.alias);
-  if (aliases.length === 0) return [];
+/** How many distinct values each `DISTINCT_COUNT` gathered, nulls aside. */
+function counted(metrics: readonly AggregationMetric[]): AnyObject[] {
+  const distinct = metrics.filter(
+    metric => metric.type === AggregationMetricType.DISTINCT_COUNT,
+  );
+  if (distinct.length === 0) return [];
   return [
     {
       $set: Object.fromEntries(
-        aliases.map(alias => [
+        distinct.map(({ alias }) => [
           alias,
           {
             $size: {
-              $filter: {
-                input: `$${alias}`,
-                cond: { $ne: ['$$this', null] },
-              },
+              $filter: { input: `$${alias}`, cond: { $ne: ['$$this', null] } },
             },
           },
         ]),
