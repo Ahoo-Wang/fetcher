@@ -19,13 +19,7 @@ import GridLayout, {
   type Layout,
   type ResizeHandleAxis,
 } from 'react-grid-layout';
-import {
-  InfoIcon,
-  LayoutDashboardIcon,
-  TriangleAlertIcon,
-  UnplugIcon,
-} from 'lucide-react';
-import type { AnalysisView } from '../analysis/index.js';
+import { InfoIcon, LayoutDashboardIcon, TriangleAlertIcon } from 'lucide-react';
 import {
   arrangePanel,
   placePanel,
@@ -39,18 +33,7 @@ import type {
   DashboardController,
   DashboardPanelView,
 } from '../react/index.js';
-import {
-  useAnalysisEditor,
-  useRecordTable,
-  useViewRuntime,
-} from '../react/index.js';
-import {
-  isRecordRuntime,
-  type DataViewRuntime,
-  type RecordViewRuntime,
-} from '../runtime/index.js';
-import { AnalysisChart } from './AnalysisChart.js';
-import { AnalysisTable } from './AnalysisTable.js';
+import { isRecordRuntime } from '../runtime/index.js';
 import {
   PanelArrangeMenu,
   PanelGrip,
@@ -58,25 +41,27 @@ import {
   PanelResizeHandle,
 } from './DashboardArrange.js';
 import { ContentPanel } from './DashboardPanels.js';
+import {
+  AnalysisPanel,
+  RecordPanel,
+  presentationMark,
+} from './dashboard/PanelBodies.js';
 import { PanelUnavailable } from './PanelUnavailable.js';
 import { useGridPlacement } from './gridPlacement.js';
 import { RenderBoundary, type RenderFailureHandler } from './RenderBoundary.js';
-import { QueryStrip } from './StatusStrip.js';
 import { IconTooltip } from './IconButton.js';
 import { useViewMessages, type MessageFormatters } from './MessagesProvider.js';
 import type { MessageKey } from './messages.js';
+import { Badge } from './components/badge.js';
 import { Button } from './components/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from './components/card.js';
 import {
   Empty,
-  EmptyContent,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
   EmptyDescription,
 } from './components/empty.js';
-import { RecordTable } from './RecordTable.js';
-import { Skeleton } from './components/skeleton.js';
 
 export interface DashboardGridProps {
   dashboard: DashboardController;
@@ -149,17 +134,22 @@ export function DashboardGrid({
   const arranging = editable && !narrow;
   const placement = useGridPlacement(dashboard.place);
 
+  // The tab on screen is the grid (D22 E): each tab is a grid of its own,
+  // and a panel on another is neither drawn nor placed against.
+  const onTab = dashboard.panels.filter(panel => panel.tab === dashboard.tab);
   // Reading order — rows top to bottom, each left to right — over the layout
   // as stored. The panels are rendered in it too, so the tab order follows
   // what is on screen rather than the order the config happens to list them.
-  const panels = readingOrder(dashboard.panels);
-  const byId = new Map(dashboard.panels.map(panel => [panel.id, panel]));
+  const panels = readingOrder(onTab);
+  const byId = new Map(onTab.map(panel => [panel.id, panel]));
+  // Named across the board, so a finding said above the grid names the
+  // same panel whichever tab it is on.
   const names = panelNames(dashboard.panels, messages);
 
   // The board as the kernel places it: a keyboard command is judged against
   // every panel, since on a board that floats panels up "down" means past
   // the panel below, and the bottom of a column has nowhere down to go.
-  const placed: PlacedPanel[] = dashboard.panels.map(panel => ({
+  const placed: PlacedPanel[] = onTab.map(panel => ({
     id: panel.id,
     ...panel.layout,
   }));
@@ -192,6 +182,7 @@ export function DashboardGrid({
   };
 
   if (dashboard.panels.length === 0) return <DashboardEmpty />;
+  if (onTab.length === 0) return <DashboardEmpty tab />;
 
   // Below `md`, the kernel's one-column reading of the stored layout; the
   // stored layout itself everywhere else.
@@ -384,17 +375,23 @@ export function panelNames(
  * component, as an `EmptyContent` under the header — the one place a board
  * with no panels has room for a first action.
  */
-function DashboardEmpty() {
+function DashboardEmpty({ tab = false }: { tab?: boolean }) {
   const messages = useViewMessages();
+  // A tab with nothing on it on a board that has panels elsewhere says so
+  // of the tab: 「这个仪表盘还没有面板」 would be untrue one tab away.
   return (
-    <Empty data-slot="dashboard-empty">
+    <Empty data-slot="dashboard-empty" data-tab={tab || undefined}>
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <LayoutDashboardIcon />
         </EmptyMedia>
-        <EmptyTitle>{messages.label('label.dashboard.empty')}</EmptyTitle>
+        <EmptyTitle>
+          {messages.label(tab ? 'label.tabs.empty' : 'label.dashboard.empty')}
+        </EmptyTitle>
         <EmptyDescription>
-          {messages.label('label.dashboard.empty-hint')}
+          {messages.label(
+            tab ? 'label.tabs.empty-hint' : 'label.dashboard.empty-hint',
+          )}
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
@@ -464,6 +461,7 @@ export function DashboardPanel({
   // groups its own limit left out — rides beside the title quietly: no
   // warning colour on the glyph, none on the panel's edge.
   const notes = panel.issues.filter(found => found.severity === 'note');
+  const look = presentationMark(panel, messages);
   return (
     <Card
       data-slot="dashboard-panel"
@@ -526,6 +524,18 @@ export function DashboardPanel({
           <Title data-slot="panel-title" className="min-w-0 truncate">
             {name}
           </Title>
+          {/* The look is this panel's own, on purpose (D22 D): a reader
+              comparing it with the view in the workbench is told so. */}
+          {look && (
+            <Badge
+              data-slot="panel-presentation"
+              variant="secondary"
+              className="shrink-0"
+              title={messages.label('label.panel.presentation.note')}
+            >
+              {look}
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent
@@ -590,127 +600,5 @@ function bodyIssue(panel: DashboardPanelView): Issue | undefined {
   if (!panel.broken) return undefined;
   return (
     panel.issues.find(found => found.severity === 'error') ?? panel.issues[0]
-  );
-}
-
-/**
- * A record panel is a readout, not a worklist: the dashboard shows rows and
- * offers nothing to do with a pick — no toolbar, no row action, nothing that
- * reads the selection — so the table comes without its checkbox column.
- *
- * The panel is what scrolls here, so the table does not: its own scroll area
- * would be a box nothing ever scrolls, and the header and the summaries would
- * stay put against it while the panel moved them off the top.
- *
- * Nor does it hold its last column on the right. A panel is read where it
- * stands, and a narrow one overflows with only a few columns: the held end
- * then sits over the middle before anything has scrolled, covering the
- * column before it — and the pin cap (D17-4) keeps it, one column being
- * under half the port. The panel is the frame here; the key, if shown,
- * stays held on the left, where it covers nothing at rest.
- *
- * A refresh that fails over rows that are still good says so above them
- * rather than instead of them, the way the workbenches and `EmbeddedView`
- * do (`QueryStrip` with `stale`): a panel that emptied itself on a dropped
- * connection would lose what its reader was reading for no reason they
- * caused. Only a failure with nothing behind it takes the body.
- */
-function RecordPanel({
-  runtime,
-  onRetry,
-}: {
-  runtime: RecordViewRuntime;
-  onRetry?: () => void;
-}) {
-  const table = useRecordTable(runtime);
-  const failed = table.status === 'error';
-  if (failed && !table.hasResult)
-    return <PanelFailed error={table.error ?? undefined} onRetry={onRetry} />;
-  if (table.loading && table.rows.length === 0)
-    return <Skeleton className="h-24 w-full" />;
-  return (
-    <>
-      <QueryStrip error={failed ? table.error : null} stale onRetry={onRetry} />
-      <RecordTable
-        table={table}
-        selectable={false}
-        scrolls={false}
-        holdEnd={false}
-      />
-    </>
-  );
-}
-
-/** The chart or the table an analysis panel shows; stale as a record panel is. */
-function AnalysisPanel({
-  runtime,
-  onRetry,
-}: {
-  runtime: DataViewRuntime;
-  onRetry?: () => void;
-}) {
-  const state = useViewRuntime(runtime);
-  const analysis = useAnalysisEditor(runtime);
-  const data = state?.result?.data;
-  const view: AnalysisView | null =
-    data?.kind === 'analysis' ? data.view : null;
-  const failed = state?.query.status === 'error';
-
-  if (failed && !view)
-    return <PanelFailed error={state.query.error} onRetry={onRetry} />;
-  if (!view) return <Skeleton className="h-24 w-full" />;
-  const body = view.chart ? (
-    <AnalysisChart
-      data={view.chart}
-      spec={analysis.chart}
-      columns={view.schema ?? view.columns}
-      // Under the stale line the chart takes what is left of the panel.
-      className={failed ? 'min-h-0 flex-1' : 'h-full'}
-      cutShort={view.truncated || view.atLimit !== undefined}
-    />
-  ) : (
-    <AnalysisTable view={view} />
-  );
-  if (!failed) return body;
-  return (
-    <div className="flex h-full flex-col gap-2">
-      <QueryStrip error={state.query.error} stale onRetry={onRetry} />
-      {body}
-    </div>
-  );
-}
-
-/**
- * One panel's failed query with no earlier result behind it: reported here,
- * while the others keep running, with the way to run this one again — the
- * board's refresh would re-run every panel to retry one.
- */
-function PanelFailed({
-  error,
-  onRetry,
-}: {
-  error: Issue | undefined;
-  onRetry?: () => void;
-}) {
-  const messages = useViewMessages();
-  return (
-    <Empty data-slot="panel-failed" className="p-4">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <UnplugIcon />
-        </EmptyMedia>
-        <EmptyTitle>{messages.label('label.query.failed')}</EmptyTitle>
-        <EmptyDescription>
-          {error ? messages.issue(error) : undefined}
-        </EmptyDescription>
-      </EmptyHeader>
-      {onRetry && (
-        <EmptyContent>
-          <Button variant="outline" size="sm" onClick={onRetry}>
-            {messages.label('label.query.retry')}
-          </Button>
-        </EmptyContent>
-      )}
-    </Empty>
   );
 }

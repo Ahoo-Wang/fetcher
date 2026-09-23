@@ -13,7 +13,11 @@
 
 import { useId, useState } from 'react';
 import type { ViewAudience, ViewInstance } from '../model/index.js';
-import type { SaveAbilities, SaveCommands } from '../react/index.js';
+import type {
+  SaveAbilities,
+  SaveCommands,
+  SaveCommandState,
+} from '../react/index.js';
 import { Button } from './components/button.js';
 import {
   Dialog,
@@ -39,10 +43,22 @@ import type { MessageKey } from './messages.js';
 import { useViewMessages } from './MessagesProvider.js';
 import { DialogContent } from './popups.js';
 
+/**
+ * What the form needs of the save commands: which audiences a create may go
+ * to, whether a write is out and what the last one said, and the create
+ * itself. The open view's `SaveCommands` are one; a dashboard saving a view
+ * it owns as a view of its own (D22 C) hands in another.
+ */
+export interface SaveAsCommands {
+  can: Pick<SaveAbilities, 'createPersonal' | 'createShared'>;
+  state: Pick<SaveCommandState, 'pending' | 'error'>;
+  saveAs: SaveCommands['saveAs'];
+}
+
 export interface SaveAsDialogProps {
   open: boolean;
   onOpenChange(open: boolean): void;
-  commands: SaveCommands;
+  commands: SaveAsCommands;
   /** The view being copied; the title field opens on `{title} copy`. */
   title: string;
   /**
@@ -50,8 +66,14 @@ export interface SaveAsDialogProps {
    * made from nothing. The form is the same — a title and an audience — and
    * only its words change: a first save opens on the view's own name rather
    * than on "{title} copy", and its heading says "save" rather than "copy".
+   * A `promote` is a dashboard's own analysis saved as a view (D22 C): it
+   * opens on the panel's name, and `description` says what it becomes.
    */
-  intent?: 'copy' | 'first';
+  intent?: 'copy' | 'first' | 'promote';
+  /** The sentence under the heading, where the intent's own does not say enough. */
+  description?: string;
+  /** The audience picked at first; the user's own when they may make one. */
+  defaultScope?: ViewAudience;
   /** Called with the copy once the store took it. */
   onSaved?(instance: ViewInstance): void;
 }
@@ -76,8 +98,30 @@ const SCOPES: readonly ScopeChoice[] = [
   },
 ];
 
+/** The heading, the sentence under it and the button, by intent. */
+const WORDS: Record<
+  NonNullable<SaveAsDialogProps['intent']>,
+  { heading: MessageKey; description: MessageKey; submit: MessageKey }
+> = {
+  copy: {
+    heading: 'label.save-as.heading',
+    description: 'label.save-as.description',
+    submit: 'label.save-as.submit',
+  },
+  first: {
+    heading: 'label.save.first-heading',
+    description: 'label.save.first-description',
+    submit: 'label.save.save',
+  },
+  promote: {
+    heading: 'label.panel.save-owned.heading',
+    description: 'label.panel.save-owned.description',
+    submit: 'label.panel.save-owned.submit',
+  },
+};
+
 /** Whether a copy may be created in this audience. */
-function allows(can: SaveAbilities, scope: ViewAudience): boolean {
+function allows(can: SaveAsCommands['can'], scope: ViewAudience): boolean {
   return scope === 'personal' ? can.createPersonal : can.createShared;
 }
 
@@ -96,6 +140,8 @@ export function SaveAsDialog({
   commands,
   title,
   intent = 'copy',
+  description,
+  defaultScope,
   onSaved,
 }: SaveAsDialogProps) {
   return (
@@ -108,6 +154,8 @@ export function SaveAsDialog({
           commands={commands}
           title={title}
           intent={intent}
+          description={description}
+          defaultScope={defaultScope}
           onOpenChange={onOpenChange}
           onSaved={onSaved}
         />
@@ -120,6 +168,8 @@ function SaveAsForm({
   commands,
   title,
   intent = 'copy',
+  description,
+  defaultScope,
   onOpenChange,
   onSaved,
 }: Omit<SaveAsDialogProps, 'open'>) {
@@ -130,9 +180,14 @@ function SaveAsForm({
   // they may only publish. Both are offered either way — an option that is
   // simply missing reads as a scope this view cannot have.
   const [scope, setScope] = useState<ViewAudience>(
-    can.createPersonal ? 'personal' : 'shared',
+    defaultScope && allows(can, defaultScope)
+      ? defaultScope
+      : can.createPersonal
+        ? 'personal'
+        : 'shared',
   );
-  const first = intent === 'first';
+  const first = intent !== 'copy';
+  const words = WORDS[intent];
   const [next, setNext] = useState(() =>
     first ? title : messages.label('label.save-as.copy-title', { title }),
   );
@@ -158,17 +213,9 @@ function SaveAsForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>
-          {messages.label(
-            first ? 'label.save.first-heading' : 'label.save-as.heading',
-          )}
-        </DialogTitle>
+        <DialogTitle>{messages.label(words.heading)}</DialogTitle>
         <DialogDescription>
-          {messages.label(
-            first
-              ? 'label.save.first-description'
-              : 'label.save-as.description',
-          )}
+          {description ?? messages.label(words.description)}
         </DialogDescription>
       </DialogHeader>
 
@@ -261,7 +308,7 @@ function SaveAsForm({
               aria-label={messages.label('label.status.loading')}
             />
           )}
-          {messages.label(first ? 'label.save.save' : 'label.save-as.submit')}
+          {messages.label(words.submit)}
         </Button>
       </DialogFooter>
     </>

@@ -15,6 +15,7 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import {
   DASHBOARD_GRID_COLUMNS,
   type DashboardPanel,
+  type DashboardTab,
   type Issue,
   type PanelLayout,
 } from '../model/index.js';
@@ -36,12 +37,25 @@ export interface DashboardPanelView {
   issues: Issue[];
   /** True when this panel alone cannot show anything. */
   broken: boolean;
+  /** The tab it is on; `null` on a board without tabs. */
+  tab: string | null;
 }
 
 export interface DashboardController {
   panels: DashboardPanelView[];
   /** Columns a layout is placed in; the kernel admits against the same number. */
   columns: number;
+  /**
+   * The board's tabs, in the bar's order, as they are on screen (D22 E).
+   * Fewer than two draw no bar.
+   */
+  tabs: readonly DashboardTab[];
+  /** The tab on screen, whose panels alone run; `null` without tabs. */
+  tab: string | null;
+  /** Shows another tab (`DashboardRuntime.showTab`). */
+  showTab(tabId: string): void;
+  /** Whether the board is being built — the UI's edit mode (`setEditing`). */
+  editing: boolean;
   /** Issues about the dashboard as a whole, panels excluded. */
   issues: Issue[];
   /** True while a panel reference is still loading. */
@@ -117,6 +131,10 @@ export function useDashboard(
   return {
     panels: useMemo(() => panels.map(toView), [panels]),
     columns: DASHBOARD_GRID_COLUMNS,
+    tabs: useMemo(() => tabsOf(state?.applied.tabs), [state?.applied.tabs]),
+    tab: state?.tab ?? null,
+    showTab: useCallback((tabId: string) => runtime?.showTab(tabId), [runtime]),
+    editing: state?.editing ?? false,
     // A panel's own issues travel with the panel; what is left belongs here.
     issues: (state?.issues ?? []).filter(found => found.path[0] !== 'panels'),
     resolving: state?.resolving ?? false,
@@ -142,12 +160,33 @@ function toView(panel: DashboardPanelState): DashboardPanelView {
     layout: panel.panel.layout,
     runtime: panel.runtime,
     issues: panel.issues,
+    tab: panel.tab,
     // A data panel with no runtime cannot query, and any panel carrying an
     // error was refused by `validateDashboard` — a content panel included,
     // whose markdown, image or link the grid would otherwise render as
     // though nothing were wrong with it.
+    // One on a tab not shown yet was never asked, which is not broken.
     broken:
-      (panel.runtime === null && panel.panel.kind === 'view') ||
+      (panel.runtime === null &&
+        panel.panel.kind === 'view' &&
+        !panel.waiting) ||
       panel.issues.some(found => found.severity === 'error'),
   };
+}
+
+const NO_TABS: readonly DashboardTab[] = [];
+
+/**
+ * The tabs as the bar lists them: a stored config is data, and admission
+ * reports an entry that is no tab — there is nothing to draw it as.
+ */
+function tabsOf(tabs: unknown): readonly DashboardTab[] {
+  if (!Array.isArray(tabs)) return NO_TABS;
+  return tabs.filter(
+    (tab): tab is DashboardTab =>
+      typeof tab === 'object' &&
+      tab !== null &&
+      typeof (tab as { id?: unknown }).id === 'string' &&
+      typeof (tab as { title?: unknown }).title === 'string',
+  );
 }

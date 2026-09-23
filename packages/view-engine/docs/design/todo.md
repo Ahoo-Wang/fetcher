@@ -32,11 +32,11 @@ ECharts 迁移（D21）与两份「数据分析师视角」审查的 P0 已全�
 
 批次按顺序；每批都做到可生产交付、真浏览器走过。起点的缺陷清单在会话记忆 `view-engine-dashboard-walk-2026-09-22`（U1～U11、R1～R18、G1～G10）。
 
-- **批 B 怎么搭**（交互稿 A～E 屏）：**B1 已做完模型、校验、迁移与运行时**（24 列与旧布局迁移、标签页、板内分析视图与「另存为视图」、展示覆盖、标题卡片、`DashboardEditing` 命令走草稿、动手后上浮压紧、保存只被整板 error 挡、同名面板编号；见 [model.md#dashboard-配置](model.md#dashboard-配置)、[runtime.md#dashboard](runtime.md#dashboard)）。剩下的是界面（B2／B3）：编辑模式与编辑条（「编辑」「完成」＝保存并退出、「取消」＝`revert`；系统仪表盘只读、只有「另存为」）；「＋ 添加」——选已保存视图的对话框（分组、搜索、「已在板上」、共享板引用个人视图当场标「只有你看得到」与面板菜单「复制为共享视图并替换」）、在仪表盘里新建分析的大对话框（托盘＋结果，「放进仪表盘」＝`addPanel({ owned })`）、标题／文字／图片／链接；新面板放进当前可见区域（`fromRow`）；面板菜单（改标题、改这里的展示、替换视图、复制、移到标签页、移除、「另存为视图…」＝`ViewEngine.saveOwnedView`、「恢复为视图的样子」＝`setPresentation(null)`）与面板头「此处改为〈图型〉」；标签栏（只画当前标签页的面板、加／改名／排序／删除带确认、记住每人上次的标签＝个人偏好、当前标签进地址）；窄屏编辑只允许改标题、移除、调顺序。
+- **批 B 怎么搭**（交互稿 A～E 屏）：**B1 已做完模型、校验、迁移与运行时**（24 列与旧布局迁移、标签页、板内分析视图与「另存为视图」、展示覆盖、标题卡片、`DashboardEditing` 命令走草稿、动手后上浮压紧、保存只被整板 error 挡、同名面板编号；见 [model.md#dashboard-配置](model.md#dashboard-配置)、[runtime.md#dashboard](runtime.md#dashboard)）。**B3 已做完 C、D 的展示覆盖与 E**：在仪表盘里新建分析的大对话框与「另存为视图…」、「改这里的展示…」与面板头「此处改为〈图型〉」、「恢复为视图的样子」、标签栏（只画当前标签页、加／改名／排序／删除带确认、记住每人上次的标签、当前标签经 `onTabChange`／`initialTab` 交给宿主进地址），以及 B1 留下的两处运行时收口（只改画法的展示覆盖只重画不重跑；只跑当前标签页，切过去再跑、跑过的保留）；见 [ui/dashboard.md](ui/dashboard.md) 的「标签页」「在仪表盘里新建分析」「面板自己的展示」「与批 B2 的接口」。剩下的是 B2：编辑模式与编辑条（「编辑」「完成」＝保存并退出、「取消」＝`revert`；系统仪表盘只读、只有「另存为」）；「＋ 添加」——选已保存视图的对话框（分组、搜索、「已在板上」、共享板引用个人视图当场标「只有你看得到」与面板菜单「复制为共享视图并替换」）、标题／文字／图片／链接，编辑条的「新建分析…」接 B3 的 `onAddOwnedAnalysis`；新面板放进当前可见区域（`fromRow`）；面板菜单（改标题、替换视图、复制、移除，以及按 `panelOffers` 出现的 B3 四项：改这里的展示、恢复为视图的样子、另存为视图、移到标签页）；窄屏编辑只允许改标题、移除、调顺序。
   - 判据：从空仪表盘开始只用界面就能搭出首页那块运营看板；真浏览器逐控件走查。
   - 批 A 走查补进来、留给界面的一件：**不可用面板的出路换成真按钮**（替换视图、移除；`PanelUnavailable.tsx` 现在按角色说「请……」）。
-  - B1 留给 B2 的两处运行时收口：面板改由草稿重画图（`useAnalysisResult` 那条路）之后，展示覆盖里只改 `layout`／`chart` 的那一种从「edit + apply」收窄为只重画不重跑（D20，`runtime/dashboard/children.ts` 的 `sync`）；子 runtime 目前不论在哪个标签页都跑，标签栏上线时改为只跑当前标签页（切过去再跑，跑过的保留）。
-  - 落点：`src/ui/DashboardGrid.tsx`、`src/ui/DashboardWorkbench.tsx` 与新的编辑部件、`src/react/useDashboard.ts`（把 `DashboardEditing` 与 `tabs` 交给界面）、[ui/dashboard.md](ui/dashboard.md)。
+  - B2 接上 B3 之后：`DashboardWorkbench` 的 `onBuildingChange` 只是 B2 之前给故事与宿主够到命令的口子，编辑条与面板菜单接好后看是否还要留。
+  - 落点：`src/ui/DashboardGrid.tsx`、`src/ui/DashboardWorkbench.tsx` 与新的编辑部件、`src/react/useDashboard.ts`（把 `DashboardEditing` 交给界面）、[ui/dashboard.md](ui/dashboard.md)。
 - **批 C 全局筛选**（交互稿 F、G 屏）：筛选的增删改、接线与自动连接、「不受此筛选影响」、默认值与必填、多值、时间分组参数。
   - 判据：新加一个时间筛选自动接上所有有该字段的面板；必填时不跑全量；切粒度整板重算。
   - 落点：`src/model/dashboard.ts`（`DashboardField`、`PanelBinding`）、`src/runtime/dashboard*`、筛选条 UI。

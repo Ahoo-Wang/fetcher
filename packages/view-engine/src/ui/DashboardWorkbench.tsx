@@ -11,6 +11,7 @@
  * limitations under the License.
  */
 
+import { useCallback, useEffect, useRef } from 'react';
 import type {
   DashboardPanel,
   DashboardViewConfig,
@@ -28,6 +29,11 @@ import type { ViewMessages } from './messages.js';
 import { featuresOf, type WorkbenchFeatures } from './features.js';
 import { WorkbenchShell } from './WorkbenchShell.js';
 import type { RenderFailureHandler } from './RenderBoundary.js';
+import { DashboardTabs } from './dashboard/DashboardTabs.js';
+import {
+  useDashboardBuilding,
+  type DashboardBuilding,
+} from './dashboard/building.js';
 
 export interface DashboardWorkbenchProps {
   engine: ViewEngine;
@@ -48,6 +54,26 @@ export interface DashboardWorkbenchProps {
    * link.
    */
   onInstanceChange?(id: string | null): void;
+  /**
+   * The tab the board opens on (D22 E), as a host's route has it: read with
+   * `instanceId` — a tab of the board it names, or with `instanceId` left
+   * out, of the first board this workbench opens. Left out, or a tab the
+   * board does not have, the board opens where its reader last read it.
+   */
+  initialTab?: string | null;
+  /**
+   * Told which tab is on screen whenever that changes — the board opening
+   * included — so a host can write it into its route; `null` for a board
+   * without tabs. The package never touches the address itself.
+   */
+  onTabChange?(tabId: string | null): void;
+  /**
+   * Told the commands for building the board that batch B3 adds — a new
+   * analysis, a panel's own look, saving an owned analysis as a view, moving
+   * a panel to another tab — while the board is being built, and `null`
+   * while it is not: for a host that draws its own way to them.
+   */
+  onBuildingChange?(building: DashboardBuilding | null): void;
   /** Whether panels may be dragged and resized. */
   editable?: boolean;
   /**
@@ -123,12 +149,32 @@ export function DashboardWorkbench({
   onRenderFailure,
   template,
   features,
+  initialTab,
+  onTabChange,
+  onBuildingChange,
 }: DashboardWorkbenchProps) {
   const messages = useViewMessages(wording, locale);
+  // The host's tab, asked as a board opens: a tab of the board its
+  // `instanceId` names, or — left uncontrolled — of the first board opened.
+  const hostTab = useRef({ instanceId, tab: initialTab });
+  useEffect(() => {
+    hostTab.current = { instanceId, tab: initialTab };
+  }, [instanceId, initialTab]);
+  // Whether a board has opened here yet: an uncontrolled workbench hands the
+  // host's tab to that first one only — the next board the reader picks is
+  // one the address never named.
+  const openedOnce = useRef(false);
+  const openTab = useCallback((id: string) => {
+    const { instanceId: named, tab } = hostTab.current;
+    if (tab == null) return undefined;
+    if (named == null) return openedOnce.current ? undefined : tab;
+    return named === id ? tab : undefined;
+  }, []);
   const workbench = useWorkbench(engine, definitionId, {
     kinds: DASHBOARD,
     instanceId,
     onInstanceChange,
+    openTab,
     newView: {
       title: messages.label('label.view.new-title'),
       ...(template ? { templates: { dashboard: template } } : {}),
@@ -136,7 +182,31 @@ export function DashboardWorkbench({
   });
   const { filter, runtime, state } = workbench;
   const board = runtime?.kind === 'dashboard' ? runtime : null;
+  useEffect(() => {
+    if (board) openedOnce.current = true;
+  }, [board]);
   const dashboard = useDashboard(board);
+  const { building, dialogs } = useDashboardBuilding({
+    engine,
+    board,
+    dashboard,
+    messages,
+    optionsFor,
+  });
+  useEffect(() => {
+    onBuildingChange?.(building);
+  }, [building, onBuildingChange]);
+
+  // The tab on screen, told to the host as it changes, and remembered as the
+  // reader's own when they pick one (a preference, never the board's).
+  const shownTab = board ? dashboard.tab : undefined;
+  useEffect(() => {
+    if (shownTab !== undefined) onTabChange?.(shownTab);
+  }, [shownTab, onTabChange]);
+  const savedId = state?.saved?.id;
+  const rememberTab = (tabId: string) => {
+    if (savedId) void engine.rememberTab(definitionId, savedId, tabId);
+  };
 
   const issues = state?.issues ?? [];
   // The panels carry the warnings of what is applied, each in its own frame.
@@ -246,11 +316,22 @@ export function DashboardWorkbench({
         )
       }
       result={
-        <DashboardGrid
-          dashboard={dashboard}
-          editable={editable}
-          onRenderFailure={onRenderFailure}
-        />
+        <>
+          {/* Under the global filter, which applies to every tab; the grid
+              is the tab on screen. */}
+          <DashboardTabs
+            dashboard={dashboard}
+            editing={building ? board : null}
+            onShow={rememberTab}
+          >
+            <DashboardGrid
+              dashboard={dashboard}
+              editable={editable}
+              onRenderFailure={onRenderFailure}
+            />
+          </DashboardTabs>
+          {dialogs}
+        </>
       }
     />
   );
