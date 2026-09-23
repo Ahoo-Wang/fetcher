@@ -25,7 +25,7 @@
 export const analysisMessages = {
   'label.analysis.row-count': 'Record count',
   // The result's footer: what is on screen and how long it took to get.
-  'label.analysis.caption': 'Showing {count} rows · took {seconds} s',
+  'label.analysis.caption': 'Showing {count} groups · took {seconds} s',
 
   'label.analysis.editor': 'Analysis',
   // The tray's slots, in the analyst's order (D20): the range, the array
@@ -206,7 +206,9 @@ export const analysisMessages = {
   'label.chart.reference-value': 'Value of the reference line',
   'label.chart.donut': 'Donut',
   'label.chart.max-slices': 'Slices at most',
-  'label.chart.max-slices.hint': 'The rest merge into “Other”.',
+  // The ceiling is the palette's size: a slice past it would repeat a colour.
+  'label.chart.max-slices.hint':
+    'The rest merge into “Other”. At most {count}, one colour each — and {count} when left empty.',
   'label.chart.scale': 'Colour scale',
   'label.chart.scale.linear': 'Linear',
   'label.chart.scale.log': 'Logarithmic',
