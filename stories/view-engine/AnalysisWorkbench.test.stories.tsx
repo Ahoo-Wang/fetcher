@@ -1124,12 +1124,18 @@ export const VisualizePanel: Story = {
     await expect(
       canvasElement.querySelector('[data-slot="pie-measure"]'),
     ).toHaveTextContent('金额 的 合计');
-    await waitFor(() =>
-      expect(
-        [...canvasElement.querySelectorAll('.recharts-label-list text')].some(label =>
-          /%$/.test(label.textContent ?? ''),
-        ),
-      ).toBe(true),
+    // Recharts writes a pie's labels only once its sweep has finished (a
+    // 400ms pause, then 1500ms), so they come about 1.5s after the sectors
+    // first appear — past `waitFor`'s one-second default. The story browser
+    // does not ask for less motion, so the pie sweeps as a reader's would.
+    await waitFor(
+      () =>
+        expect(
+          [...canvasElement.querySelectorAll('.recharts-label-list text')].some(
+            label => /%$/.test(label.textContent ?? ''),
+          ),
+        ).toBe(true),
+      { timeout: 4_000 },
     );
     await expect(chartTile(panel, 'pie')).toHaveAttribute(
       'aria-checked',

@@ -406,6 +406,78 @@ describe('a type switch keeps the metric', () => {
       leadMetric({ type: 'pie', pie: { category: 'wh', value: 'orders' } }),
     ).toBe('orders');
     expect(leadMetric({ type: 'pie' })).toBeUndefined();
+    expect(leadMetric({ type: 'metric', metric: { metric: 'total' } })).toBe(
+      'total',
+    );
+    expect(
+      leadMetric({
+        type: 'heatmap',
+        heatmap: { x: 'wh', y: 'month', value: 'total' },
+      }),
+    ).toBe('total');
+    expect(
+      leadMetric({
+        type: 'scatter',
+        scatter: { category: 'wh', x: 'total', y: 'orders' },
+      }),
+    ).toBe('total');
+    expect(
+      leadMetric({
+        type: 'funnel',
+        funnel: {
+          stages: { from: 'metrics', items: [{ metric: 'orders' }] },
+        },
+      }),
+    ).toBe('orders');
+  });
+
+  it('carries it into a heatmap and onto a scatter’s horizontal measure', () => {
+    const two = [WAREHOUSE, MONTH];
+    const heat = fitChartSlots(
+      switchChartType(bars, 'heatmap'),
+      two,
+      metrics,
+    ).heatmap;
+    expect(heat?.value).toBe('total');
+    const visited: ChartSpec = {
+      ...bars,
+      heatmap: { x: 'wh', y: 'month', value: 'orders' },
+    };
+    expect(switchChartType(visited, 'heatmap').heatmap).toEqual({
+      x: 'wh',
+      y: 'month',
+      value: 'total',
+    });
+
+    // A scatter reads two measures; the lead takes the horizontal one,
+    // unless it already is the vertical one — a point plotted against
+    // itself is a diagonal line.
+    const scattered: ChartSpec = {
+      ...bars,
+      scatter: { category: 'wh', x: 'orders', y: 'average' },
+    };
+    expect(switchChartType(scattered, 'scatter').scatter?.x).toBe('total');
+    expect(
+      switchChartType(
+        { ...bars, scatter: { category: 'wh', x: 'orders', y: 'total' } },
+        'scatter',
+      ).scatter,
+    ).toEqual({ category: 'wh', x: 'orders', y: 'total' });
+  });
+
+  it('makes it the one series of a pivot', () => {
+    const pie: ChartSpec = {
+      type: 'pie',
+      pie: { category: 'wh', value: 'total' },
+      cartesian: {
+        x: 'wh',
+        splitBy: 'month',
+        series: [{ metric: 'orders', axis: 'right' }],
+      },
+    };
+    expect(switchChartType(pie, 'bar').cartesian?.series).toEqual([
+      { metric: 'total', axis: 'right' },
+    ]);
   });
 
   it('carries it into a family never visited', () => {
