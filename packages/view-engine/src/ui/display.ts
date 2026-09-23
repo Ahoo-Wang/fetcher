@@ -280,10 +280,16 @@ export function formatNumber(
  */
 export function compactFormat(format: NumberFormat | undefined): NumberFormat {
   const short: NumberFormat = { ...format };
-  delete short.minimumFractionDigits;
   delete short.minimumSignificantDigits;
   delete short.maximumSignificantDigits;
-  return { ...short, notation: 'compact', maximumFractionDigits: 1 };
+  // Both ends said: an older ICU (Node 20's) keeps a currency's two
+  // minimum decimals under a maximum of one and writes 「¥1110.0万」.
+  return {
+    ...short,
+    notation: 'compact',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  };
 }
 
 /**
