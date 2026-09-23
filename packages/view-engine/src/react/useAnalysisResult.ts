@@ -22,6 +22,7 @@ import {
   momentColumns,
   shapeChart,
   splitBy,
+  switchChartType,
   withStagesFrom,
   type AnalysisView,
   type ChartData,
@@ -181,7 +182,7 @@ export function useAnalysisResult(
     analysis.updateChart(
       withStagesFrom(
         fitChartSlots(
-          { ...chart, type: next },
+          switchChartType(chart, next),
           ran.groups,
           ran.metrics,
           moments,
