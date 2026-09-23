@@ -584,8 +584,9 @@ describe('DataWorkbench', () => {
   });
 
   it('names chart categories as their field names its values', async () => {
-    // The table shows only the count; the chart still groups by warehouse,
-    // and names its bars through the schema rather than the table's columns.
+    // The table's list puts the count first; the chart still groups by
+    // warehouse, and names its bars through the schema, in the question's
+    // order, rather than through the table's columns.
     const engine = new ViewEngine({
       definitions: [namedOrdersDefinition()],
       store: tracked(
@@ -604,7 +605,7 @@ describe('DataWorkbench', () => {
       resolveSource: () => testSource(),
     });
 
-    // Recharts measures text in a span of its own on the body.
+    // Queries look inside the workbench rendered here.
     const { container } = render(
       <DataWorkbench
         engine={engine}
@@ -708,7 +709,7 @@ describe('DataWorkbench', () => {
         screen
           .getAllByRole('alert')
           .some(alert =>
-            (alert.textContent ?? '').includes('The source answered'),
+            (alert.textContent ?? '').includes('Could not load the data'),
           ),
       ).toBe(true),
     );

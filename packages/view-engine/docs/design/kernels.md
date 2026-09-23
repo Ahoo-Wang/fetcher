@@ -36,7 +36,8 @@ defaultAnalysisConfig(def, limits?: RuntimeLimits): AnalysisViewConfig   // 按�
 validateAnalysis(def, cfg: AnalysisViewConfig, kinds): Issue[]   // 见下方规则
 compileAnalysis(def, cfg, kinds, ctx): AggregationQuery          // 同构映射；三处 FilterTree 编译为 FilterExpression
 compileAnalysisTotals(def, cfg, kinds, ctx): AggregationQuery | null   // table.totals 为 true 时的无分组聚合，否则 null
-projectAnalysis(def, cfg, result, totals?): AnalysisView          // 表格列与行；图表系列；合计行取自 totals，metric 卡片趋势模式的标题值亦取自 totals；多回来的那一行（探针）丢掉并记 truncated，探不成时退回 atLimit
+projectAnalysis(def, cfg, result, totals?, kinds?): AnalysisView  // 表格列与行；图表系列；合计行取自 totals，metric 卡片趋势模式的标题值亦取自 totals；多回来的那一行（探针）丢掉并记 truncated，探不成时退回 atLimit；kinds 读指标自己的条件（列的 condition）
+metricCondition(metric, fields, kinds?): MetricCondition | undefined   // 指标自己的条件怎样进它的名字：整条（items）与「一个字段的一个值」时那个值的名字（value）
 fitChartSlots(chart, groups, metrics, moments?): ChartSpec   // 当前图型的家族子对象，按现有维度与指标装槽；用户选过且仍有效的槽保留；量的槽不放时间点
 metricFormat(metric, field?): NumberFormat | undefined    // 一个聚合值怎么打印（与字段自己的值怎么打印是两回事）
 momentMetrics(metrics, fields): Set<string>              // 哪些指标是时间点（日期字段的最早／最晚／百分位／任一值）
@@ -259,6 +260,10 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 - heatmap 的 `x`、`y` 不同，scatter 的 `x`、`y` 不同；
 - `maxSlices` 必须是不小于 2 的整数（NaN 与小数会让全部分类并入"其他"），且只能用于可加指标（`COUNT` 或 `SUM` 的 `NUMERIC`）：`AVG`、`MIN`／`MAX`、`DISTINCT_COUNT`、百分位无法由各分类结果推出合并值，报 error；
 - **投影在色板用完之前并「其他」**（`shapeChart`，不是准入规则）：`maxSlices` 不写时可加指标的饼图按 `CHART_COLOR_SLOTS`（8）并，写了更大的数也按 8 读——第九片会拿到第一片的颜色；**时间维度坐的轴按时间升序排**（直角坐标横轴、热力图行列、指标卡迷你趋势，以及按时间拆分的系列），不管视图按什么排序，类目与饼图照结果行的次序（[ui/analysis.md#analysischart-与-shapechart](ui/analysis.md#analysischart-与-shapechart)）；
+- **缺的格子是 0 还是「不知道」，由内核说**（`shapeChart` 的 `absenceReader`，2026-09-23 图表审查 P0-3／P0-4）：结果里没有的一组，只有在**确知它没有记录**时才是 0——没有「只保留」（`having` 按数字丢组，丢掉的不知道是多少），且行没有被上限截断（行数少于 `limit`，就是全部分组），或者被截断了但排序的第一键把截断推到了别处（按那个维度排，只有最后一行的那个值可能缺了一部分，排在它前面的值都是完整的——按日倒序的「近三十天」是三十个完整的天）。确知没有记录时，**可加指标**（`isAdditiveMetric`：记录数、合计）补 0，其余（平均、去重计数、百分位、极值……）补 `null`，画成断开——没有记录的平均数不是一个数；不确知时一律 `null`；
+  - **拆分补齐缺的组合**：直角坐标图按 `splitBy` 透视时，某个横轴值上没有某个拆分值的行，按上一条补——「华东没有已取消」是 0，从前留空，堆叠面积与折线只剩悬在累加高度上的孤点。热力图不在此列：它把「没有这一组」画成没有格子（`heatmapOption`）；
+  - **日期轴不留洞**：横轴（以及指标卡迷你趋势、热力图的行或列）是 `DATE_HISTOGRAM` 时，首尾两个桶之间按单位缺的桶补上（`withoutHoles`），值按上一条补。桶用下钻同一个 `bucketRange` 推进，在分组自己的 `timeZone`、没有则引擎时区（`shapeChart` 的 `context.timeZone`，缺省宿主时区，与 `runtime/environment.ts` 的缺省同一个）里走；写成挂钟日期的桶键（`2026-09-18`）按 UTC 走，那是 `readInstant` 读它的时区。补出的桶键照第一个桶的写法（数字、数字串、挂钟日期、ISO 串）。**补不准就不补**：已有的桶有一个不在推进出的格点上（换了时区切的、周从别的日子起算的）、分组开了 `dense`（Wow 已经补过）、补完超过 `AGGREGATION_LIMITS.MAX_LIMIT` 个桶（任何 dense 查询也答不出那么多），都照原样画。读不出时刻的桶（缺值哨兵）仍排在最后；
+- **漏斗缺省不累计**：按维度分阶段时每一段就是这一组自己的数，与表格、柱图、下钻出来的记录数同一个数（与 Metabase 一致）。从前 `cumulative` 不写按 `true` 处理，把后面各段加进前面——那只对「每个对象只停在一个阶段」的流程状态成立，对事件类型、仓库这类维度是错的：补偿服务「事件类型分布」的漏斗写「首次失败 1,831,229」（七类之和），表格写 65.9 万。写了 `cumulative: true` 才累计，`FunnelData.cumulative` 随之为真，图上方写「累计：至少到达这一段」（`label.chart.column.cumulative`），读屏表的数值列同一句。（见 test/analysisChart.test.ts「draws each group stage as its own number by default」与 test/analysisChartGaps.test.ts「a split fills the combinations it lacks」「a date axis runs without holes」）
 - `referenceLines` 引用的轴必须有系列；
 - **图表必须消费全部分组别名**（cartesian 用 `x` 加可选 `splitBy`，pie 用 `category`，heatmap 用 `x`／`y`，scatter 用 `category`，group 漏斗用 `category`，metric 卡片要求无分组或仅 `trend.x`），否则结果里同一坐标会有多行，而 AVG、百分位、DISTINCT_COUNT 无法在投影层安全再聚合，报 error；
 - 漏斗至少两个阶段，每一段量的都是可累加的指标（`group` 形态的 `value`、`metrics` 形态的每个 `items[].metric`：记录数或合计，与 `maxSlices` 同一判据），否则报 `chart.funnel.not-additive`——转化率是一段除以另一段，平均数、去重计数、百分位、极值之间没有这回事；`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复，且它的 `category` 要是**类别维度**（`TERMS`）：阶段是流程里有名字的一步，日期桶与数值区间是一把尺子切成的段，从一天到下一天谈不上转化——它们的桶键也不是文本，按名字读不回阶段（`chart.funnel.stages-need-category`）；
@@ -293,7 +298,7 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 - **有时间维度时指标卡的主数取可加的那个**：选中的主数不可加而另有可加的指标时，取第一个可加的，而不是退成柱状——`fitCharts` 说「可画」是因为形态里有可加的指标，填槽就得用上它；
 - **漏斗的阶段只从可累加的数量里填**：按维度分阶段时的阶段值不可加（换图型带进来的主指标是平均数也一样）就取第一个可加的，按指标分阶段时不可加的那几段离开列表——同一个理由，`fitCharts` 说漏斗「可画」是因为有可累加的数；一个都没有时阶段值留空，由 `validateChart` 说缺什么。按维度分阶段的 `order` 去重（列了两次的一段就是一段）；
 - **不替形态编东西**：一个维度的热力图、一个指标的散点、以及阶段没人命名过的漏斗都不可表达，槽留空，于是 `validateChart` 说的是缺哪个槽而不是整个家族不在。这些是用户对着装不下它的形态选的图型；「某个形态提供哪些图型」是另一个问题，在列出它们的地方回答（阶段 5）；
-- 维度或指标的改动同样带走指向消失别名的 `sort` 与 `table.columns`，没有维度时 `sort` 清空（Wow 拒绝对无分组聚合排序，而它本来就只有一行）——这一步在 `react/useAnalysisEditor.ts` 的 `reshape` 里，它是「一次编辑要捎上什么」的那一处。（见 test/analysisChartSlots.test.ts「fitChartSlots」与 test/analysisUi.test.tsx「re-fits the chart and the sort when the shape changes」）
+- 维度或指标的改动同样带走指向消失别名的 `sort` 与 `table.columns`（新加的别名不必写进 `table.columns`：投影自己把它接在列出的那些后面），没有维度时 `sort` 清空（Wow 拒绝对无分组聚合排序，而它本来就只有一行）——这一步在 `react/useAnalysisEditor.ts` 的 `reshape` 里，它是「一次编辑要捎上什么」的那一处。（见 test/analysisChartSlots.test.ts「fitChartSlots」与 test/analysisUi.test.tsx「re-fits the chart and the sort when the shape changes」）
 
 ### 指标的数怎么读：`metricFormat`
 
@@ -308,6 +313,8 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 | `DERIVED`                         | 不属于任何字段，两位小数的普通数          |
 
 `projectAnalysis` 把结果写进 `AnalysisColumnView.numberFormat`，表格、合计行、坐标轴、提示与指标卡因此都按同一份格式打印；列另带 `fn`（这一列是哪一种汇总），供界面把表头拼成「〈字段〉的〈汇总方式〉」，同一字段的两个汇总方式于是是两个不同的表头。（见 test/analysisProject.test.ts「metricFormat」）
+
+指标带着自己的条件时，列另带 `condition`（`analysis/metricCondition.ts` 的 `metricCondition`，D20 显示名）：`items` 是整条条件，与已应用条件栏同一种读法（`describeFilter`）；`value` 只在条件**恰好是一个字段的一个值**时才有——一个条件、字段还在、操作符是「就是这个值」（`EQ`，或只有一个候选的 `IN`），且这个值自己说得出是什么：选项的标签，或一段文字。「不等于 已发运」不是「已发运」，「· 100」「· 是」在一个点后面说不出它说的是什么，所以这些都只算「有条件」。界面据此把表头说成「金额的合计 · 已发运」或「金额的合计 · 有条件」；分析师起了显示名则显示名就是整个表头，`condition` 仍在，给表头的说明用。读不了条件（没有 `kinds`、条件还全空着）就不带——猜出来的名字比没有更糟。派生指标引用一个带条件的指标时，`metricReferenceText` 把那一段也写进引用（第三段：那个值，或空串表示「有条件」），于是「金额的合计 · 已发运 ÷ 记录数」与不带条件的那个比值是两个表头。托盘里的 `metricReference` 对草稿调同一个 `metricCondition`，排序、「只保留」与卡片上的控件与结果说的是同一个名字。（见 test/metricConditionName.test.ts）
 
 ### 时间的最早与最晚：`readsAsItsField` 与 `momentMetrics`
 
@@ -329,8 +336,8 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 - **名字按作用域剥前缀**：配置存从根起的全名（`state.orders.lines.sku`），Wow 读的是相对名（`sku`），因此 `compileGroup`／`compileMetric`／`compileExpression` 与两处 `compileFilter` 都先把当前作用域的前缀去掉（`relativeName`／`relativeFields`／`relativeTree`，`analysis/capability.ts`；持有谓词的叶子连它的谓词一起剥，因为谓词的名字也是从根拼出来的）。`elements[].path` 本身已是相对上一层的写法，原样发出。原样发全名的后果不是报错而是错数：Wow 按 `parent.append(field)` 解析，`lines.sku` 在 `lines` 之下成了 `lines.lines.sku`；
 - 未声明时区的 DATE_HISTOGRAM 补上 `ctx.timeZone`，否则 Wow 按 UTC 切桶，东八区的"一天"从早上八点算起；
 - `projectAnalysis` 的结果列为全部 group 别名加全部 metric 别名，`DERIVED` 也是普通列。这份别名清单是默认列序与 `schema` 的来源，**不导出**：它从前以 `resultSchema` 的名义对外宣称自己是「结果行的校验依据」，而没有任何人校验过结果行——行从 Wow 回来就直接投影，合同因此删掉而不是改写；
-- 分组列与取字段自己的值的指标列（`MIN`／`MAX`／`PERCENTILE`／`ANY`，`readsAsItsField`）带上字段的 `kind`、`cell`、`options`，DATE_HISTOGRAM 列另带 `dateUnit` 与所声明的 `timeZone`，供界面按字段显示（见 [ui/README.md#值按字段显示](ui/README.md#值按字段显示)），其余指标是算出的数，不带；
-- `columns` 按 `table.columns` 挑选，`schema` 以同样的描述覆盖结果里的每个别名——表格可以只显示计数，而图表仍按表格没显示的分组画，类目要经 `schema` 取名；
+- 分组列与取字段自己的值的指标列（`MIN`／`MAX`／`PERCENTILE`／`ANY`，`readsAsItsField`）带上字段的 `kind`、`cell`、`options`，DATE_HISTOGRAM 列另带 `dateUnit` 与所声明的 `timeZone`，HISTOGRAM 列另带 `interval`（键只是一段的下界，界面凭它读出整段），供界面按字段显示（见 [ui/README.md#值按字段显示](ui/README.md#值按字段显示)），其余指标是算出的数，不带；
+- **`table.columns` 定顺序与宽度，不定有哪些列**（2026-09-23 审查 P0-1，参照 Metabase：新加的汇总或分组总是成为一列，列设置只记住隐藏与顺序）：`columns` 先按 `table.columns` 列出的别名排，其余别名接在后面——维度在前、指标在后，各按配置顺序，也就是列表为空时的那个顺序；列出的别名结果里已经没有就跳过，重复的只画一次（准入会拒绝这两种，但投影是导出的）。它从前是白名单：声明过列的视图在托盘里加一个指标，查询跑了、读法也说了，表里却没有那一列；再加一个维度，同一个仓库出现两行而没有一列分得开。模型里没有「隐藏」，所以没有一列能被藏起来；将来要有，是显式的 `hidden`（记录表 D17-8 那一个词），而不是「没列出」。补在内核而不在编辑器里，所以每个宿主——工作台、嵌入、仪表盘面板——拿到的是同一张表。`schema` 以同样的描述按配置顺序覆盖每个别名——图表的类目与结果那句读法按问题的顺序说，不跟着表被拖成的列序走；（见 test/analysisProject.test.ts「table.columns orders and sizes, never hides」）
 - 合计行来自 `compileAnalysisTotals` 的独立结果，因此 `AVG`、`DISTINCT_COUNT`、百分位等不可加指标也正确；
 - 该查询与主查询共享同一调度预算，失败只使合计行不可用，不影响主结果。图表所需的派生整形也在此完成：`splitBy` 透视、饼图"其他"合并、漏斗累计与转化率、热力图矩阵、metric 卡片的比较值。metric 卡片带 `trend` 时的标题值取自合计行（`projectAnalysis` 的 `totals`），无合计行时按分桶求和；
 - `compare` 与 `target` 在有无 `trend` 时同样生效。
@@ -344,7 +351,7 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 D20 屏 B 的两件事各有一个内核文件，都只是纯函数——托盘因此只剩标记，而「这份配置说得出来吗」只有一处答案：
 
 - **`analysis/having.ts`** 把 Wow 的 `having` 读成／写成**一行一条比较**。`havingRows(having)` 交出 `{metric, operator, value}[]`：一个 `CONDITION` 是一行，一棵一层的 `AND` 是几行，**其余一律 `null`**——区间、集合、空值判断、任何位置上的 OR、嵌套的 AND 都不摊平。摊平会把作者写的那份配置换成一份他没写过的、下一次保存就覆盖掉原件的配置，而「我读不出来」是一句可以老实说的话。`withHavingRows(rows)` 反过来：一条写成 `CONDITION`，几条写成一棵 `AND`，一条都没有就整个不写；**没有值的行直接落掉**，所以存下去的配置永远是 Wow 收得下的那一份，编辑到一半的状态归组件自己拿着。`HAVING_OPERATORS` 是那六个比较，顺序就是选择框里的顺序；
-- **`analysis/formula.ts`** 是两种写出来的指标的第一形态与它们的读法。`formulaMetric(left, right, fn, taken)` 造 Wow 的 `NUMERIC` 套 `BINARY`（两个字段相减再汇总），`derivedMetric(left, right, taken)` 造 `DERIVED`（前一个指标除以后一个）——都是**一张待改的卡片**，不是一个猜出来的答案。`expressionText`／`derivedText` 把式子说成作者会说的那句话（「金额 − 成本」「金额的合计 ÷ 客户数」，嵌套的加括号），列头、图例与图表的文字读法共用它。内核没有文案目录，说不出「金额的合计」或「记录数」，所以派生指标引用别的指标时，`metricReferenceText(fn, label)` 在列头文字里用控制字符标出「这是一个什么汇总的哪个指标」，界面的 `columnTitle` 用 `wordReferences` 把每一处换成那个指标自己列头的说法——被引用的指标有显示名时就是显示名本身，被引用的是派生指标时就是它自己那一句（已经标好）（test/formula.test.ts「wordReferences」、test/analysisProject.test.ts「marks the metrics it reads, each with its summary」）；`isFormula` 是「这条指标是卡片编得动的那一种吗」——一个操作两个操作数。`EXPRESSION_OPERATORS` 与 `OPERATOR_SIGN` 是那四则运算和它们在任何语言里都一样的符号。
+- **`analysis/formula.ts`** 是两种写出来的指标的第一形态与它们的读法。`formulaMetric(left, right, fn, taken)` 造 Wow 的 `NUMERIC` 套 `BINARY`（两个字段相减再汇总），`derivedMetric(left, right, taken)` 造 `DERIVED`（前一个指标除以后一个）——都是**一张待改的卡片**，不是一个猜出来的答案。`expressionText`／`derivedText` 把式子说成作者会说的那句话（「金额 − 成本」「金额的合计 ÷ 客户数」，嵌套的加括号），列头、图例与图表的文字读法共用它。内核没有文案目录，说不出「金额的合计」或「记录数」，所以派生指标引用别的指标时，`metricReferenceText(fn, label, condition?)` 在列头文字里用控制字符标出「这是一个什么汇总的哪个指标」，界面的 `columnTitle` 用 `wordReferences` 把每一处换成那个指标自己列头的说法——被引用的指标有显示名时就是显示名本身，被引用的是派生指标时就是它自己那一句（已经标好）（test/formula.test.ts「wordReferences」、test/analysisProject.test.ts「marks the metrics it reads, each with its summary」）；`isFormula` 是「这条指标是卡片编得动的那一种吗」——一个操作两个操作数。`EXPRESSION_OPERATORS` 与 `OPERATOR_SIGN` 是那四则运算和它们在任何语言里都一样的符号。
 
 两者都不知道目录也不知道语言：`expressionText` 接一个 `nameOf` 回调，字段叫什么由调用处说。（见 test/having.test.ts「having rows」「formulas」；界面见 [ui/analysis.md#只保留一行一条比较](ui/analysis.md) 与 [ui/analysis.md#公式与派生写出来的指标](ui/analysis.md)）
 

@@ -84,8 +84,8 @@ describe('AnalysisChart', () => {
     { alias: 'orders', label: 'Orders', role: 'metric' },
   ];
 
-  // Recharts measures text in a span of its own on the body, so each query
-  // looks inside the chart.
+  // Each query looks inside the chart: the popups and the rest of the page
+  // are not what is asked about.
   it('names a category as its column shows it', () => {
     const { container } = render(
       <ViewSurface>
@@ -145,6 +145,46 @@ describe('AnalysisChart', () => {
 
     expect(within(container).getByText(amount, DRAWN)).toBeDefined();
     expect(within(container).getByText('Yes', DRAWN)).toBeDefined();
+  });
+
+  // A number histogram's key is its band's lower bound: the axis and the
+  // reading table name the band, as the analysis table does.
+  it('names a number band from its key to the key plus the interval', () => {
+    const { container } = render(
+      <ViewSurface messages={zhCN} locale="zh-CN">
+        <AnalysisChart
+          data={{
+            ...cartesian,
+            points: [
+              { x: 0, values: { orders: 2 } },
+              { x: 10000, values: { orders: 1 } },
+            ],
+          }}
+          spec={{
+            type: 'bar',
+            cartesian: { x: 'band', series: [{ metric: 'orders' }] },
+          }}
+          columns={[
+            {
+              alias: 'band',
+              label: '单价',
+              role: 'group',
+              kind: 'number',
+              cell: 'number',
+              numberFormat: { style: 'currency', currency: 'CNY' },
+              interval: 10000,
+            },
+            { alias: 'orders', label: '订单数', role: 'metric' },
+          ]}
+        />
+      </ViewSurface>,
+    );
+
+    expect(within(container).getByText('¥0～1万', DRAWN)).toBeDefined();
+    expect(within(container).getByText('¥1～2万', DRAWN)).toBeDefined();
+    const reading = container.querySelector('[data-slot="chart-reading"]')!;
+    expect(within(reading as HTMLElement).getByText('¥0～1万')).toBeDefined();
+    expect(within(container).queryByText('¥0.00', DRAWN)).toBeNull();
   });
 
   it('names a pivot series by the value it was split by', () => {
@@ -370,9 +410,10 @@ describe('AnalysisChart', () => {
 
     // A tick the domain pins and no row holds, so it can only be the axis —
     // written short, in the column's currency: the reading table beside it
-    // has the whole number.
-    expect(within(container).getByText('¥1000')).toBeDefined();
-    expect(within(container).getByText('¥2000')).toBeDefined();
+    // has the whole number. Grouped as the table groups it: Chinese has no
+    // short word under 万 (audit P2-3).
+    expect(within(container).getByText('¥1,000')).toBeDefined();
+    expect(within(container).getByText('¥2,000')).toBeDefined();
     // The reading beside the marks is the same numbers, so the same text.
     expect(within(container).getAllByText('¥1,234.00').length).toBeGreaterThan(
       0,
@@ -976,6 +1017,76 @@ describe('AnalysisChart', () => {
 
     const first = funnel('first');
     expect(heading(first.container)).toBe('Conversion from first stage');
+  });
+
+  /**
+   * A cumulative stage is not the number the table shows beside it, so the
+   * drawing says what it is over the stages, and the reading table's value
+   * column says the same words; a stage's own number needs no such note.
+   */
+  it('says a funnel accumulates when it does', () => {
+    const drawn = (cumulative: boolean) =>
+      render(
+        <ViewSurface>
+          <AnalysisChart
+            data={{
+              type: 'funnel',
+              stages: [
+                { label: 'Visited', value: 125 },
+                { label: 'Bought', value: 25 },
+              ],
+              ...(cumulative ? { cumulative: true as const } : {}),
+            }}
+            spec={{
+              type: 'funnel',
+              funnel: {
+                conversion: 'none',
+                stages: {
+                  from: 'group',
+                  category: 'step',
+                  value: 'orders',
+                  order: ['Visited', 'Bought'],
+                  cumulative,
+                },
+              },
+            }}
+          />
+        </ViewSurface>,
+      );
+    const note = 'Cumulative: reached at least this stage';
+
+    const { container, unmount } = drawn(true);
+    const frame = container.querySelector('[data-chart="funnel"]')!;
+    expect(frame.getAttribute('data-cumulative')).toBe('on');
+    expect(
+      container.querySelector('[data-slot="funnel-cumulative-note"]')
+        ?.textContent,
+    ).toBe(note);
+    // No conversion was asked for, so the note stands alone.
+    expect(
+      container.querySelector('[data-slot="funnel-conversion-heading"]'),
+    ).toBeNull();
+    expect(
+      within(
+        container.querySelector<HTMLElement>('[data-slot="chart-reading"]')!,
+      ).getByRole('columnheader', { name: note }),
+    ).toBeDefined();
+    unmount();
+
+    const own = drawn(false).container;
+    expect(
+      own
+        .querySelector('[data-chart="funnel"]')!
+        .getAttribute('data-cumulative'),
+    ).toBe('off');
+    expect(
+      own.querySelector('[data-slot="funnel-cumulative-note"]'),
+    ).toBeNull();
+    expect(
+      within(
+        own.querySelector<HTMLElement>('[data-slot="chart-reading"]')!,
+      ).getByRole('columnheader', { name: 'Value' }),
+    ).toBeDefined();
   });
 
   it('says no conversion where the spec asks for none', () => {

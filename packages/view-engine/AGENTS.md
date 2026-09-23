@@ -149,19 +149,21 @@ src/
     budget.ts                 — Depth and node budgets of a walked tree
     capability.ts             — The three scopes the element chain makes: the root's, each element's, the innermost one's; and the renaming a scope implies
     candidates.ts             — A field's values as the data counts them (value candidates): `valueCandidateField` (grouped by `TERMS`, counted, one string, no `options`/`remote`), `valueCandidatesConfig` (an ordinary analysis — the top `valueCandidateLimit` by count, narrowed by `CONTAINS`/`STARTS_WITH` where the field offers one), `readValueCandidates` (whole or not, off the probe row), `narrowValueCandidates`
-    chart.ts                  — Chart-shaped projection for the renderers — a time axis always earliest first, a pie folded before the palette runs out — and `groupKeyText` — a group value as a colour key, the one spelling every chart family reads
-    chartSlots.ts             — `fitChartSlots`: the family sub-object of the current chart type, filled from the groups and metrics in force; `switchChartType`: a type switch carries the lead metric (`leadMetric`) into the new family
+    chart.ts                  — Chart-shaped projection for the renderers — a time axis always earliest first and without holes, a split's missing combination 0 where it is known empty and the metric adds, a funnel's stages its own rows' numbers unless asked to accumulate, a pie folded before the palette runs out — and `groupKeyText` — a group value as a colour key, the one spelling every chart family reads
+    timeAxis.ts               — A time axis for the chart projection: `forwardInTime` (earliest first, the missing-value sentinel last) and `withoutHoles` (every bucket between the first and the last, stepped by `bucketRange` in the histogram's zone; nothing filled it cannot place)
+    chartSlots.ts             — `fitChartSlots`: the family sub-object of the current chart type, filled from the groups and metrics in force; `switchChartType`: a type switch carries the lead metric (`leadMetric`) into the new family; `comboMark`: a combo draws its first metric as bars, the others as lines
     compile.ts                — compileAnalysis → AggregationQuery
     fitCharts.ts              — Which chart types can draw a result of this shape and which it reads best as (K3, Q6): the capability says which exist, this says which are greyed and why
     formula.ts                — Formulas and derived metrics (D20 屏 B): their first shapes, `expressionText`／`derivedText` as the author would say them, `isFormula`
     chartFamilies.ts          — What a chart family is, one row each: its options pages, legend and value labels, and the shapes it can draw — the forward reading of `validateChart`, held to it by a test over every shape
-    chartOptions.ts           — The rules behind the visualization panel's second level: which pages a type has, a slot swap, one-choice stacking and smoothing, and a funnel's stage order from the rows (D20 屏 J)
+    chartOptions.ts           — The rules behind the visualization panel's second level: which pages a type has, a slot swap, one-choice stacking (bars and areas only, `stacks`) and smoothing, and a funnel's stage order from the rows (D20 屏 J)
     drill.ts                  — One result row back into the conditions that select its records: `bucketRange` (the inverse of date bucketing, K1), `drillConditions` and the same by dimension (`drillGroups`), and the two follow-ups' patches, `focusOn` and `splitBy`; hands out conditions and config patches only (K6)
     expand.ts                 — The config re-scoped to an expansion chain (D20 屏 G): `withElements` keeps what still names the new unit's fields and starts the metrics again otherwise; `withLevel`, `withoutLevelsFrom`, `nextExpansion`
     granularity.ts            — The granularity a new time dimension starts at (K4): `recommendDateUnit` from the applied range's span (`rangeSpan`) or the result's buckets (`resultSpan`)
     having.ts                 — 「只保留」 as rows of one comparison each: `havingRows` reads a conjunction, `withHavingRows` writes it, any other shape is declined rather than flattened
     defaults.ts               — defaultAnalysisConfig — the first metric the capability can express; the one builder of a dimension (`groupOfType` over `GroupFacts`) and of a metric (`metricOfSummary`, `summaryChoices`, `summaryOf`), `groupableFields`, `aliasOf`, `DEFAULT_MISSING_KEY`, `DEFAULT_PERCENTILE`; `limitBounds`, the range 「前 N 组」 takes and what a blank stands for
     expressions.ts            — Aggregate and derived expression walks
+    metricCondition.ts        — `metricCondition`: a metric's own condition as its name reads it (D20 显示名) — the whole condition, and the one value of one field that names it (「金额的合计 · 已发运」) when there is one
     metricFormat.ts           — `metricFormat`/`metricFunctionOf`: how an aggregate's number prints, which is not how its field's values print; `readsAsItsField` (MIN/MAX/PERCENTILE/ANY read as the field does) and `momentMetrics` (those over a date: read, never measured by a mark)
     project.ts                — projectAnalysis — table columns and rows
     queryFilter.ts            — A filter in metric or element position, and the scope it may name
@@ -212,7 +214,7 @@ src/
     viewChanges.ts            — The change notifications a list of views subscribes to (D15)
     viewEngine.ts             — ViewEngine — the command surface: admission, then one dispatch
     viewRuntime.ts            — `DataViewRuntime`: one open data view over one `RuntimeStore` — admission, ask, run, land; what only a Record view has comes in through four hooks (`startOver`, `pageNow`, `settle`, `holds`)
-    viewRuntimeTypes.ts       — The runtime contract: `ViewRuntime`, `RecordViewRuntime`, `ManagedViewRuntime`, the state and result shapes; `hasResult`, the one reading of "a result ever arrived"
+    viewRuntimeTypes.ts       — The runtime contract: `ViewRuntime`, `RecordViewRuntime`, `ManagedViewRuntime`, the state and result shapes; `hasResult`, the one reading of "a result ever arrived", and `hasAsked`, of "a question was sent"
     write.ts                  — Write bodies, retry and overwrite replay
     writeLedger.ts            — The write ledger: outcomes by requestId, retry, conflicts
     index.ts                  — Transient state: what is open, what is in flight, what came back
@@ -233,7 +235,7 @@ src/
     recordDraft.ts            — The draft's lists as a control may read them; the controller is the boundary
     recordSelection.ts        — Shift ranges over the rows on screen: `toggledSelection` (the range goes the way the pressed row goes), the anchor and the page of which question it stands on (`RowsMark`, `standingAnchor`)
     useAnalysisEditor.ts      — Analysis controller
-    useAnalysisResult.ts      — The analysis result as a host draws it: the rows that ran, the chart over them, the picker's fits, and the follow-ups on a pressed group — the group by dimension, and what each follow-up opens
+    useAnalysisResult.ts      — The analysis result as a host draws it: the rows that ran, the question before any have (`question`, its `columns`), the chart over them, the picker's fits, and the follow-ups on a pressed group — the group by dimension, and what each follow-up opens
     analysisEditing.ts        — The edits to the question as plain functions over the draft (`questionEditing`): dimensions, metrics, conditions, copies, formulas, derived metrics, having
     useAutoRefresh.ts         — `RefreshController`: refresh now, the cadence ladder cut to the limits, the countdown
     useBulkCommand.ts         — A host's command for one record run over a selection: a few at a time, progress, stop, each refusal's reason, the unfinished rows left selected
@@ -313,6 +315,7 @@ src/
     WorkbenchShell.tsx        — The frame the workbenches share, over one `useWorkbench`: composes its columns and blocks from `workbench/` and holds the state they share; resolves the refresh, the query strip and the warnings itself
     WriteOutcome.tsx          — The open view's last write, and the three ways out of a conflict
     alerts.tsx                — `LineAlert`: one callout one line high, tone deciding colour, icon and role
+    band.ts                   — `bandText`: a number histogram's key as the band it starts, 「¥0～500」, its bounds short when short is exact
     describeConfig.ts         — One config in a sentence, for a conflict's side-by-side
     display.ts                — A value as its field shows it: enum labels, dates, bucket keys, an array of objects by its elements' title or its count (`heldReading`), never JSON; `summaryFunctionKey` names a summary in its column's vocabulary, `columnTitle` composes an analysis header from its two parts, and a time dimension's with its granularity
     download.ts               — Hands a file to the browser; the whole of the DOM the export needs, and the name it is handed under
@@ -345,7 +348,8 @@ src/
       FormulaCard.tsx         — The controls of a formula metric and of a derived metric (D20 屏 B): two operands picked or typed, the operation between, the summary for a formula
       HavingRows.tsx          — 「只保留」: the groups kept, as rows of one comparison each under the result slot's first label; a stored having of another shape is shown and clearable
       DrillMenu.tsx           — The follow-up menu on one group of a result: the records behind it, split by another dimension, only this group (D20 追问); headed by the group as the result reads it (`groupText`: a date bucket as its column prints it), naming what it opens 「{what} · {group}」; as wide as its words, hung from the mark, point or cell pressed, the keyboard handed back to the row
-      EmptyResult.tsx         — An aggregation that matched no group, one sentence for both layouts
+      EmptyResult.tsx         — An aggregation that matched no group, one sentence for both layouts, and in the workbench the record view's one way out (`wayOutOf`) — none with no condition in force
+      SkeletonResult.tsx      — The first answer on its way, in its shape: bars for the table's rows or one chart area, and the caption's bar (`CaptionSkeleton`)
       MetricCard.tsx          — The metrics slot and its cards: field and summary (the six ways Wow measures a field as one list), a percentile's number, the record count
       MetricCondition.tsx     — Conditions edited in place under a tray card (D20 屏 H): the funnel, the block of the range's own pills, the 「只算 …」 line at rest; a metric's and an expansion level's
       SeriesList.tsx          — The data page's 系列 slot: one row per metric drawn, carried by the shared handle into the order the analyst wants (`cartesian.series`, and nothing else about a series)
@@ -358,7 +362,7 @@ src/
       tableColumns.ts         — An analysis column in the record table's terms: its reading (`readingOf`, a plain metric is a number), whether it is an id (`isIdentifier`), a width from the column alone and never from its values (`columnWidthOf`), and the `RecordColumnView` its `SortableHeader` takes
     charts/                   — One file per family, plus what they share
       Cartesian.tsx           — Bar, line, area and combo through `cartesianOption` (D21): the legend, the names fitted to the width, a pressed mark handed back as its group
-      cartesianOption.ts      — `cartesianOption`: a cartesian chart as the library draws it — each series' mark, axes and their titles, short numbers, value labels that hide rather than overlap, stack totals, reference lines; `categoryFit`, the category names side by side or at a slant for the width
+      cartesianOption.ts      — `cartesianOption`: a cartesian chart as the library draws it — each series' mark, axes and their titles, short numbers, value labels that hide rather than overlap, stack totals, reference lines, room for the widest value label; `categoryFit`, the category names side by side or at a slant for the width, a time axis flat and thinned
       ChartLegend.tsx         — The legend as text beside the drawing: a dot per series, on top by default, one line with the rest counted (「还有 N 个」)
       ChartReading.tsx        — The chart's numbers as a table, for whoever cannot see the marks
       EChart.tsx              — The thin binding to the library: create once sized, resize, a whole new option per change, dispose; the frame (`data-slot="chart"`), the named image and the theme read off the element
@@ -374,10 +378,11 @@ src/
       MetricCard.tsx          — The value, the comparison signed, the target, and the trend through `sparklineOption`
       sparklineOption.ts      — `sparklineOption`: a metric card's trend as a line and a faint fill, no axes
       PieSlices.tsx           — A pie or a donut through `pieOption`: the legend beside it, led by the measured column (and, cut short, the share basis), each slice with its share
-      pieOption.ts            — `pieOption`: slices with their shares outside, labels that give way, the remainder grey, a donut's whole in its hole when the measure adds up; `drawnSlices`, `wholeOf`
+      pieOption.ts            — `pieOption`: slices with their shares outside, labels that give way, the remainder grey, a donut's whole in its hole when the measure adds up; `drawnSlices`
       ScatterPoints.tsx       — A scatter through `scatterOption`; a pressed point handed back as its group
       scatterOption.ts        — `scatterOption`: both axes titled by their columns and padded past the extremes, whole ticks where the values are, a third metric as size, a few points named
       axis.ts                 — Value format, whole axes (`allWhole`), a category name cut for its axis, and which axis a series is on
+      dateTicks.ts            — `useDateTicks`/`shortDateTicks`: a time axis's ticks written short (「9月1日」), the year only on the first and where it changes
       family.ts               — `FamilyProps`, the value labeller and the column titler
       legend.ts               — Where the legend beside the chart goes (`legendAt`), from the spec's `legend` and the family's own default
       motion.ts               — Whether a chart animates its marks: not when the reader asked for less motion (`useChartMotion`, read live)
@@ -439,10 +444,10 @@ src/
       CardSummaries.tsx       — The summary lines under the cards, both scopes (D18 V)
       ColumnResizer.tsx       — The handle a column is dragged wider by, and its keyboard
       EmptyResult.tsx         — A query that matched nothing, with one way out
-      emptyWayOut.ts          — Which way out an empty result offers: back to a saved view's conditions, change them, clear them, or add one
+      emptyWayOut.ts          — Which way out an empty result offers: back to a saved view's conditions, change them, clear them, or add one; `wayOutOf`, the press that takes it, shared with the analysis
       Filler.tsx              — The aria-hidden last cell that lets rows fill the frame while columns keep their width (P-11)
       SkeletonCards.tsx       — The cards of a first query still on its way
-      SkeletonRows.tsx        — The rows of a first query still on its way, one bar per column
+      SkeletonRows.tsx        — The rows of a first query still on its way, one bar per column (`SKELETON_ROWS`, `barWidth`, the analysis's skeleton reuses both)
       openRows.ts             — Rows and cards that open their record: a press on the row's own ground, or Enter/Space in the rows' one Tab stop (`useOpenRows`)
       RowCheckbox.tsx         — One row's checkbox, table and cards alike: Shift+press or Shift+Space extends the selection (`{ range }`), and `RangeHint`, the one sentence per surface that says so
       RecordDetail.tsx        — The side panel a record opens in: every field under its group, long values whole, the row's commands in its header

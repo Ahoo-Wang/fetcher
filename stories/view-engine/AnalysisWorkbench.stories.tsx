@@ -56,15 +56,16 @@ function AnalysisWorkbenchDemo({
   pinned = false,
   records = false,
   expandable = false,
-  allColumns = false,
   visualization = true,
   latest = false,
   limit,
+  kept,
   waybills,
   failures,
   savedFunnel,
   labels = false,
   heatmap = false,
+  horizontal = false,
 }: {
   behaviour?: SourceBehaviour;
   layout?: 'table' | 'chart';
@@ -84,12 +85,6 @@ function AnalysisWorkbenchDemo({
    */
   expandable?: boolean;
   /**
-   * 表列不再逐条声明，而是「有什么别名画什么」。托盘里新加的指标因此
-   * 当场多出一列——声明过列的视图只画声明过的那几列，那是作者的选择，
-   * 但它也让「加一条指标」在屏幕上什么也不发生。
-   */
-  allColumns?: boolean;
-  /**
    * 宿主让不让配图（`WorkbenchFeatures.visualization`）。关掉之后结果工具栏上
    * 的「可视化」按钮与左侧栏那块面板一起不在——关掉的功能是不存在，而不是置灰。
    */
@@ -106,9 +101,15 @@ function AnalysisWorkbenchDemo({
    */
   limit?: number;
   /**
+   * 存成「只保留 金额的合计 大于 kept」的视图（Wow `having`）。打开时托盘收着，
+   * 于是被筛掉的组只能由结果第一行的读法说出来。
+   */
+  kept?: number;
+  /**
    * 换成 50 行运单问的那几个问题（`waybillScene`）：按日倒序的单数画成柱或
-   * 指标卡的迷你趋势，或十个目的城市的运费画成饼。订单只有四个仓库、七单，
-   * 「时间朝哪边走」与「第九种颜色」都问不出来。
+   * 指标卡的迷你趋势，两个城市那几天有单、其余几天没有的折线，或十个目的
+   * 城市的运费画成饼。订单只有四个仓库、七单，「时间朝哪边走」「没单的日子
+   * 在哪」与「第九种颜色」都问不出来。
    */
   waybills?: WaybillScene;
   /**
@@ -130,6 +131,8 @@ function AnalysisWorkbenchDemo({
    * （D21 第四批）。
    */
   heatmap?: boolean;
+  /** Whether a cartesian chart lies on its side, the numbers running right. */
+  horizontal?: boolean;
 }) {
   const { groups, metrics } = analysisConfig();
   const fitted = fitChartSlots({ type: chart }, groups, metrics);
@@ -140,6 +143,16 @@ function AnalysisWorkbenchDemo({
       : {
           limit,
           sort: [{ alias: 'amount', direction: SortDirection.DESC }],
+        }),
+    ...(kept === undefined
+      ? {}
+      : {
+          having: {
+            type: 'CONDITION' as const,
+            metric: 'amount',
+            operator: 'GT' as const,
+            value: kept,
+          },
         }),
     // The family comes from the same fitting a press of the chart-type
     // control goes through, and the knobs below only vary what they say they
@@ -166,15 +179,20 @@ function AnalysisWorkbenchDemo({
                       { metric: 'orders', axis: 'right' as const },
                     ]
                   : [{ metric: 'amount' }],
+              ...(horizontal ? { orientation: 'horizontal' as const } : {}),
             },
           }),
       ...(pinned ? { colors: PINNED_COLORS } : {}),
       ...(labels ? { labels: true } : {}),
     },
     table: {
-      columns: allColumns
-        ? []
-        : [{ alias: 'warehouse' }, { alias: 'orders' }, { alias: 'amount' }],
+      // The list orders the columns and nothing more: a dimension or metric
+      // added in the tray is appended after these (audit P0-1).
+      columns: [
+        { alias: 'warehouse' },
+        { alias: 'orders' },
+        { alias: 'amount' },
+      ],
       totals: true,
     },
   });
@@ -373,21 +391,42 @@ function failuresScene(scene: FailuresScene): AnalysisViewConfig {
   });
 }
 
-type WaybillScene = 'daily' | 'daily-card' | 'cities';
+type WaybillScene = 'daily' | 'daily-card' | 'daily-quiet' | 'cities' | 'bands';
 
 /**
- * 运单上的三个问题。
+ * 运单上的五个问题。
  *
  * - `daily`／`daily-card`：每天几单，**按日倒序**——表格要今天在最上面，这是
  *   这类视图最常见的存法（补偿服务的「每日新增失败」就是这样存的）。同一批行
  *   画成柱或迷你趋势，时间轴仍从左往右走：图按时间排，表按视图排。
+ * - `daily-quiet`：同一个问题只看发往杭州、上海的运单，画成折线。这两个城市
+ *   只在少数几天里有单，其余的日子一单也没有——结果里没有那些天的行，图上要有：
+ *   时间轴一天一格，没单的日子是 0。
  * - `cities`：十个目的城市的运费合计。色板八色，第九片会与第一片同色，所以
  *   饼图在第八片把尾巴并进灰色的「其他」。
+ * - `bands`：运费按 500 一档分组，每档几单。一个桶的键是那一档的下界，每一
+ *   行、每根柱读成「¥0～500」这样的一段，而不是「¥0.00」。
  */
 function waybillScene(
   scene: WaybillScene,
   layout: 'table' | 'chart',
 ): AnalysisViewConfig {
+  if (scene === 'bands') {
+    const groups = [
+      { type: 'HISTOGRAM', field: 'amount', alias: 'band', interval: 500 },
+    ] satisfies AnalysisViewConfig['groups'];
+    const metrics = [
+      { alias: 'waybills', type: 'COUNT' },
+    ] satisfies AnalysisViewConfig['metrics'];
+    return analysisConfig({
+      layout,
+      groups,
+      metrics,
+      sort: [{ alias: 'band', direction: SortDirection.ASC }],
+      table: { columns: [] },
+      chart: fitChartSlots({ type: 'bar' }, groups, metrics),
+    });
+  }
   if (scene === 'cities') {
     const groups = [
       { type: 'TERMS', field: 'destination', alias: 'city' },
@@ -415,15 +454,38 @@ function waybillScene(
   const metrics = [
     { alias: 'waybills', type: 'COUNT' },
   ] satisfies AnalysisViewConfig['metrics'];
+  const quiet: Partial<AnalysisViewConfig> =
+    scene === 'daily-quiet'
+      ? {
+          filter: {
+            op: 'and',
+            children: [
+              {
+                field: 'destination',
+                operator: 'IN',
+                value: ['杭州', '上海'],
+              },
+            ],
+          },
+        }
+      : {};
   return analysisConfig({
     layout,
+    ...quiet,
     groups,
     metrics,
     sort: [{ alias: 'day', direction: SortDirection.DESC }],
     limit: 30,
     table: { columns: [] },
     chart: fitChartSlots(
-      { type: scene === 'daily' ? 'bar' : 'metric' },
+      {
+        type:
+          scene === 'daily'
+            ? 'bar'
+            : scene === 'daily-quiet'
+              ? 'line'
+              : 'metric',
+      },
       groups,
       metrics,
     ),
@@ -470,7 +532,6 @@ const meta = {
     pinned: false,
     records: false,
     expandable: false,
-    allColumns: false,
     visualization: true,
     latest: false,
     labels: false,
@@ -481,12 +542,19 @@ const meta = {
     labels: { control: 'boolean' },
     latest: { control: 'boolean' },
     limit: { table: { disable: true } },
+    kept: { table: { disable: true } },
     savedFunnel: { table: { disable: true } },
     waybills: {
       control: 'inline-radio',
-      options: [undefined, 'daily', 'daily-card', 'cities'],
+      options: [
+        undefined,
+        'daily',
+        'daily-card',
+        'daily-quiet',
+        'cities',
+        'bands',
+      ],
     },
-    allColumns: { control: 'boolean' },
     records: { control: 'boolean' },
     expandable: { control: 'boolean' },
     behaviour: {
@@ -516,6 +584,14 @@ export const BarChart: Story = { args: { layout: 'chart', chart: 'bar' } };
  */
 export const FollowUps: Story = {
   args: { layout: 'chart', chart: 'bar', records: true },
+};
+
+/**
+ * 横向柱，每根柱子右端写着它的金额：最长那根的数也整个留在图框里（从前首页
+ * 「活动失败最多的处理器」最长那根的「59.6万」被图框切掉「万」，读成「59.6」）。
+ */
+export const HorizontalBars: Story = {
+  args: { layout: 'chart', chart: 'bar', horizontal: true },
 };
 
 /**
@@ -589,6 +665,18 @@ export const LatestPerWarehouse: Story = {
 };
 
 /**
+ * 第一次的答案还在路上（数据源慢 1.5 秒）：结果区先画出答案的形状——表格是
+ * 几行灰条，图表是一块绘图区——工具栏、条件带与页脚已经在各自的位置上，行落地
+ * 时换的是框里的内容，不是任何东西的位置。
+ */
+export const Loading: Story = { args: { behaviour: 'slow', layout: 'table' } };
+
+/** 同上，保存的是图表：骨架是一块绘图区。 */
+export const LoadingChart: Story = {
+  args: { behaviour: 'slow', layout: 'chart' },
+};
+
+/**
  * 每天几单，按日倒序存着——表格今天在最上面。画成柱，时间仍从左往右：
  * 投影层按时间排时间轴，表格留着视图自己的排序（2026-09-23 审查）。
  */
@@ -627,6 +715,15 @@ export const LineChart: Story = {
  */
 export const OneBar: Story = { args: { layout: 'chart', limit: 1 } };
 
+/**
+ * 只看发往杭州、上海的运单：几天有单，其余的日子一单也没有。折线一天一格，
+ * 没单的日子落到 0，而不是从有单的那天直接连到下一个有单的日子（2026-09-23
+ * 图表审查 P0-4）。
+ */
+export const DailyQuietDays: Story = {
+  args: { layout: 'chart', waybills: 'daily-quiet' },
+};
+
 /** 同一个按日倒序的问题画成指标卡：迷你趋势同样从最早的一天画起。 */
 export const DailyTrendCard: Story = {
   args: { layout: 'chart', waybills: 'daily-card' },
@@ -640,12 +737,28 @@ export const TenCities: Story = {
   args: { layout: 'chart', waybills: 'cities' },
 };
 
-/** An aggregation that matched nothing still has its editor. */
+/**
+ * 运费区间：按 500 一档，每档几单。一档的键只是它的下界，从前读成「¥0.00」
+ * 「¥500.00」，说不出是哪一段（2026-09-23 真实后端走查）；现在横轴、提示、
+ * 读屏表、表格与追问菜单的标题都读成「¥0～500」，按界面语言写短（万、亿）。
+ */
+export const FreightBands: Story = {
+  args: { layout: 'chart', waybills: 'bands' },
+};
+
+/**
+ * An aggregation that matched no group keeps its toolbar. With no condition
+ * in force the range is already every record, so there is nothing to change
+ * in the tray: the empty result says why, and offers no button.
+ */
 export const EmptyResult: Story = {
   args: { behaviour: 'empty', layout: 'table' },
 };
 
-/** A failed aggregation keeps the configuration on screen. */
+/**
+ * A failed aggregation keeps the toolbar and the conditions on screen, and
+ * says the failure under the toolbar with 「重试」.
+ */
 export const QueryFailed: Story = { args: { behaviour: 'failing' } };
 
 /**

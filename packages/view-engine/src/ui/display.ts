@@ -22,7 +22,11 @@ import {
   type EpochTimeUnit,
 } from '../model/index.js';
 import { readInstant } from '../filter/index.js';
-import { wordReferences, type MetricFunction } from '../analysis/index.js';
+import {
+  wordReferences,
+  type MetricCondition,
+  type MetricFunction,
+} from '../analysis/index.js';
 import { recordValue } from '../record/index.js';
 import type { MessageKey } from './messages.js';
 import type { MessageFormatters } from './MessagesProvider.js';
@@ -195,6 +199,12 @@ export function summaryFunctionKey(
  * header does, the chart's axis and legend included. The word behind the sign
  * is `label.analysis.approximate`, which the table header's tooltip and
  * description carry (`SortableHeader`'s `note`).
+ *
+ * A metric with a condition of its own says it after a 「·」 (D20 显示名):
+ * 「金额的合计 · 已发运」 when the condition keeps one value of one field,
+ * 「金额的合计 · 有条件」 otherwise (`metricCondition`). Without it a sum over
+ * the shipped orders wore the header of a sum over all of them, and a
+ * region with none shipped read as a region with no sales.
  */
 export function columnTitle(
   column: {
@@ -205,14 +215,19 @@ export function columnTitle(
     cell?: string;
     /** A time group's granularity: what one of its rows spans. */
     dateUnit?: AnalysisDateUnit;
+    /** A metric's own condition: the one value it keeps, when it is one. */
+    condition?: Pick<MetricCondition, 'value'>;
   },
   messages: MessageFormatters,
 ): string {
   // A name the analyst gave is the whole title (D20 显示名). A derived
   // metric's text marks each metric it refers to (`metricReferenceText`);
-  // each is worded as that metric's own column is.
-  const label = wordReferences(column.label, (fn, referenced) =>
-    columnTitle({ label: referenced, fn }, messages),
+  // each is worded as that metric's own column is, condition included.
+  const label = wordReferences(column.label, (fn, referenced, condition) =>
+    columnTitle(
+      { label: referenced, fn, ...(condition ? { condition } : {}) },
+      messages,
+    ),
   );
   if (column.named) return label;
   if (column.fn === undefined)
@@ -221,15 +236,36 @@ export function columnTitle(
       : messages.label(`label.analysis.dated.${column.dateUnit}`, {
           field: label,
         });
-  if (column.fn === 'COUNT') return messages.label('label.analysis.row-count');
   // A derived metric is arithmetic over other metrics: no field stands behind
   // it, so its stored name is all there is to show.
   if (column.fn === 'DERIVED') return label;
-  const title = messages.label('label.summary.of', {
-    field: label,
-    fn: messages.label(summaryFunctionKey(column.fn, column.cell)),
-  });
-  return column.fn === 'PERCENTILE' ? `${APPROXIMATELY} ${title}` : title;
+  const title =
+    column.fn === 'COUNT'
+      ? messages.label('label.analysis.row-count')
+      : messages.label('label.summary.of', {
+          field: label,
+          fn: messages.label(summaryFunctionKey(column.fn, column.cell)),
+        });
+  return conditionedTitle(
+    column.fn === 'PERCENTILE' ? `${APPROXIMATELY} ${title}` : title,
+    column.condition,
+    messages,
+  );
+}
+
+/** A metric's title and, after a 「·」, the condition it counts under. */
+function conditionedTitle(
+  metric: string,
+  condition: Pick<MetricCondition, 'value'> | undefined,
+  messages: MessageFormatters,
+): string {
+  if (condition === undefined) return metric;
+  return condition.value === undefined
+    ? messages.label('label.analysis.metric-conditioned', { metric })
+    : messages.label('label.analysis.metric-where', {
+        metric,
+        value: condition.value,
+      });
 }
 
 /** The one character that says a number is not exact. */
@@ -284,24 +320,46 @@ export function formatNumber(
 /**
  * A number format written short: the same style, currency or unit, in the
  * language's own compact notation — 万 and 亿 in Chinese, K, M and B in
- * English, which is what Intl's `compact` already knows — with at most one
- * decimal, so 11,100,000 reads 「1110万」 or `11.1M` rather than `11M`. What
- * the format said about decimals is dropped, since it was said about the
- * whole number: two fraction digits on a compact figure would ask for
- * 「1110.00万」.
+ * English, which is what Intl's `compact` already knows — to three
+ * significant digits, as Metabase writes it: 10,230 reads 「1.02万」 and
+ * `10.2K`, and 49,818 beside 50,000 reads 「4.98万」 beside 「5万」 — one
+ * decimal made them 「1万」 and 「5万」, and a week of 4.9万s hid its ups
+ * and downs (audit P1-4). No zero is added to reach three (「5万」, not
+ * 「5.00万」), and none is invented either: a whole part longer than three
+ * digits is written whole (`morePrecision`), so 4,885 reads 「4,885」 and
+ * 12,345,678 「1,235万」 rather than 「4,890」 and 「1,230万」. The whole
+ * part is grouped as every other number on the page is — Chinese has no
+ * short word below 万, and 4,880 was the one 「4880」 beside the table's
+ * 「4,880」 (audit P2-3) — unless the format says its numbers are names
+ * that take no grouping. What the format said about decimals is dropped,
+ * since it was said about the whole number: two fraction digits on a
+ * compact figure would ask for 「1110.00万」.
  */
 export function compactFormat(format: NumberFormat | undefined): NumberFormat {
   const short: NumberFormat = { ...format };
   delete short.minimumSignificantDigits;
   delete short.maximumSignificantDigits;
-  // Both ends said: an older ICU (Node 20's) keeps a currency's two
-  // minimum decimals under a maximum of one and writes 「¥1110.0万」.
-  return {
+  // `roundingPriority` is ES2023's; the Intl types this builds against
+  // predate it, and every engine the package runs on reads it.
+  const compact: NumberFormat & { roundingPriority: 'morePrecision' } = {
     ...short,
     notation: 'compact',
+    // `true` is 「always」: compact's own default groups nothing under five
+    // digits.
+    useGrouping: format?.useGrouping ?? true,
+    minimumSignificantDigits: 1,
+    maximumSignificantDigits: 3,
+    // Both fraction ends said, and said as none: what follows the point is
+    // the significant digits' to give. An older ICU (Node 20's) keeps a
+    // currency's two minimum decimals unless the minimum is spelled out —
+    // it wrote 「¥1110.0万」. An engine without `roundingPriority` reads
+    // the significant digits alone: the same figure, short of the rare
+    // whole part longer than three.
     minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
+    maximumFractionDigits: 0,
+    roundingPriority: 'morePrecision',
   };
+  return compact;
 }
 
 /**
@@ -639,7 +697,7 @@ const numberFormatters = new Map<string, Intl.NumberFormat | null>();
  * the whole table down mid-render. The language gives way first, as a date's
  * does; a format that still fails is dropped, and the number shows unformatted.
  */
-function numberFormatter(
+export function numberFormatter(
   format: NumberFormat,
   surfaceLocale?: string,
 ): Intl.NumberFormat | null {

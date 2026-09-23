@@ -97,8 +97,9 @@ describe('EmbeddedView', () => {
   });
 
   it('names chart categories as their field names its values', async () => {
-    // The table shows only the count; the chart still groups by warehouse,
-    // and names its bars through the schema rather than the table's columns.
+    // The table's list puts the count first; the chart still groups by
+    // warehouse, and names its bars through the schema, in the question's
+    // order, rather than through the table's columns.
     const engine = embed(
       analysisConfig({
         layout: 'chart',
@@ -106,8 +107,7 @@ describe('EmbeddedView', () => {
       }),
     );
 
-    // Recharts measures text in a span of its own on the body; the chart is
-    // what is asked about.
+    // The chart is what is asked about, so queries look inside it.
     const { container } = render(
       <EmbeddedView engine={engine} instanceId="orders-1" />,
     );
@@ -227,7 +227,7 @@ describe('EmbeddedView', () => {
 
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toContain(
-        'The source answered: down',
+        'Could not load the data: down',
       ),
     );
   });
@@ -583,14 +583,14 @@ describe('EmbeddedView', () => {
 
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toContain(
-        'The source answered: down',
+        'Could not load the data: down',
       ),
     );
     // Both at once, the way the workbenches do it: the rows that did come
     // back are still the real ones, and the failure's own line says so —
     // not a fold the reader has to open to learn the rows are old.
     expect(screen.getByRole('alert').textContent).toContain(
-      'The source answered: down · Showing the last successful result',
+      'Could not load the data: down · Showing the last successful result',
     );
     expect(screen.queryByRole('button', { name: '1 more' })).toBeNull();
     expect(screen.getAllByRole('row')).toHaveLength(3);

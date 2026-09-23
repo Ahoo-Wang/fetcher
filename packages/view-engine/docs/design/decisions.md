@@ -12,7 +12,7 @@
 ## D2 三态各有一处凭据
 
 - **日期**：2026-09-19
-- **决定**：**草稿未应用**是条件 pill 与应用按钮上的那个点（`data-pending`，基准是 `state.applied`）；**已应用**是结果上方的 `AppliedBar`，它读 `state.result.own.filter` 而不是 `applied`；**未保存**是标题旁的标记。三处互不重复。
+- **决定**：**草稿未应用**是条件 pill 与应用按钮上的那个点（`data-pending`，基准是 `state.applied`）；**已应用**是结果上方的 `AppliedBar`，它读 `state.result.own.filter` 而不是 `applied`（还没有任何结果、但问过了时读 `applied`，2026-09-23）；**未保存**是标题旁的标记。三处互不重复。
 - **依据**：应用会启动一次查询，在查询答复之前 `applied` 已经走在前面，跟着它的条会描述还没到屏幕上的行。
 - **落点**：[ui/README.md#三态各有一处凭据](ui/README.md#三态各有一处凭据)、[react.md#usefiltereditor](react.md#usefiltereditor)
 
@@ -189,7 +189,7 @@
 - **决定**：`ui/charts/` 的渲染从 recharts（经 shadcn 的 `ui/components/chart.tsx`）换成 **Apache ECharts 6.1.0**，显示对齐 **Metabase**。**SVG 渲染器**；从 `echarts/core` 按需注册（`charts/echarts.ts`，只注册用到的图型与组件）；**自写薄绑定** `charts/EChart.tsx`——有尺寸才 `init(el, null, { renderer: 'svg', width, height })`、`ResizeObserver` 跟尺寸、每次 option 变化 `setOption(opt, { notMerge: true })`、随元素 `dispose`——**不用 `echarts-for-react`**（它在供应链通告 GMS-2026-530 里），也不引 `size-sensor`。版本精确锁定（`pnpm-workspace.yaml` 的 catalog 写 `6.1.0`，与 Metabase 同一版）；图表块**懒加载**（`charts/load.ts` 的 `import('./echarts.js')`，第一张图时才要，之后同一次渲染里就画）；`vite.config.ts` 把 `echarts|zrender` 列为 external。
 - **内核不动**：`analysis/chart.ts` 仍按家族整形 `ChartData`；`ui/charts/` 只是渲染层，每个家族一个纯函数 `xxxOption(ChartData, context, theme) → option`，不用 DOM 就能单测（`test/cartesianOption.test.ts`）。
 - **主题**：CSS 自定义属性仍是唯一真相源（D16）。`charts/theme.ts` 在图自己的元素上 `getComputedStyle` 读 `--chart-1..8`、`--foreground`、`--muted-foreground`、`--border` 与脚下的底色，**转成具体的 `rgb()` 再交给库**——option 里不放 `var()`（库靠解析颜色推导悬停色与标签对比色，自定义属性解析不出，echarts#16044／#19743），也不放 `oklch()`（主题用它写，库的解析器不认）。换肤不重挂载：`ViewSurface` 的观察者本来就盯着祖先的 `class`／`data-theme`（`useSurfaceTheme`），图以它为依赖重读变量、就地重画；不另立主题上下文。
-- **紧凑数字跟界面语言**：刻度与柱上的数写短、提示与读屏表与表格写全，都经同一个 `useValueLabel`（多一个 `compact` 参数，`display.ts` 的 `compactFormat`）：中文「1110万」「1.2亿」、英文「11.1M」「4.2K」，这是 `Intl` 的 `compact` 本来就会的，列的货币与单位保留，列为整数写的小数位不带过去。
+- **紧凑数字跟界面语言**：刻度与柱上的数写短、提示与读屏表与表格写全，都经同一个 `useValueLabel`（多一个 `compact` 参数，`display.ts` 的 `compactFormat`）：中文「1110万」「1.2亿」、英文「11.1M」「4.2K」，这是 `Intl` 的 `compact` 本来就会的，列的货币与单位保留，列为整数写的小数位不带过去。（2026-09-23 审查 P1-4 改为三位有效数字、整数部分分组：「1.02万」「1,110万」「1.23亿」、英文「10.2K」，见 ui/analysis.md「数写短」。）
 - **可达性**：画出来的部分是一张 `role="img"`、以 `readChart` 的名字命名的图（`data-slot="chart-plot"`），库自己的 aria 关着；数字在 `ChartReadingTable`。ECharts 没有键盘导航（echarts#18585），所以键盘到一组的路仍是表格布局的行（F10）。axe 用例保持绿。
 - **追问**：按下标记时库交出 `{seriesIndex, dataIndex, event}`，家族把它换回这一组的行，锚点用原生事件的 `clientX/Y`（`pointAnchor`），调用同一个 `OnPick`。
 - **为什么不是别的**（2026-09-23 评估）：AntV G2（gzip 405KB、按需裁剪无效、jsdom 跑不起、2026-05 AntV 的 npm 账号被盗）；Highcharts（商业 EULA，不能随 Apache-2.0 的库分发）；Vega-Lite（mark 标签没有防碰撞）；Nivo（停更）；visx（等于自造）；Plotly（约 1.5MB）；Chart.js（只有 canvas，读不了 CSS 变量）；Unovis（没有漏斗与缩放）；留在 recharts（标签防碰撞、图例折叠、类目轴自动间隔、热力图色标、dataZoom 全得手写）。Metabase、Superset、Evidence 用的都是 ECharts 6.1，Lightdash 5.6。
@@ -197,6 +197,17 @@
 - **分批**：①绑定 + 主题 + 懒加载 + **柱状图**（含横向、堆叠与合计、值标签防重叠、紧凑刻度、轴标题）；②其余直角坐标（折线、面积、组合、带标题的右轴、参考线、图例折叠／滚动）；③饼／环（中心总计、图例带占比、「其他」）与散点／气泡；④指标卡迷你图、漏斗（换掉自绘，标出转化）、热力图（`visualMap` 色标）；⑤删掉 recharts 与 `ui/components/chart.tsx`、文档与包体说明。迁移期间一张图只由一个库画：第一批时 `charts/Cartesian.tsx` 只把 bar 交给 ECharts，第二批起直角坐标四种都由它画。
 - **包体（第五批收尾实测）**：图表块（六个图型、grid／tooltip／markLine／visualMap／graphic／LabelLayout、SVG 渲染器）esbuild 压缩后 626KB、gzip 214KB，只在第一张图时加载，`/ui` 入口不再带任何图表库；recharts 与注册表的 `chart.tsx` 已删。
 - **落点**：`src/ui/charts/{EChart.tsx,echarts.ts,load.ts,theme.ts,cartesianOption.ts,pieOption.ts,scatterOption.ts,funnelOption.ts,heatmapOption.ts,sparklineOption.ts,ChartLegend.tsx,tooltip.ts,measure.ts}`、`src/ui/display.ts`（`compactFormat`）、`src/styles.css`（图的 svg 按库给的框定尺寸）、[ui/analysis.md](ui/analysis.md)。
+
+## D22 仪表盘与嵌入视图参照 Metabase（2026-09-23）
+
+- **来由**：阶段 3（仪表盘）与阶段 4（嵌入视图）动手前的讨论，用户要求「参照 Metabase 过一遍——那是商业化产品演进的结果」。Metabase 的仪表盘（卡片、筛选接线、点击行为）与嵌入（按资源分组件、按交互层级分档、筛选逐个三态）和本包已有的骨架是同一个模型，所以是补齐而不是推倒：面板、全局字段＋绑定、栅格与整板刷新都保留。与 ECharts 迁移（D21）无关的部分先定设计；图表面板的画法随 D21。
+- **仪表盘·怎么搭**：编辑模式有「添加」——已保存的视图（按记录／分析分组、可搜索），或在仪表盘里**新建一个只属于这个仪表盘的分析视图**（用户拍板：要）；另有标题卡片（分节）、文字、图片、链接；不做 iframe 卡片（安全面太大，宿主可放在板外）。面板菜单：改标题、替换视图、复制、移除、移到标签页。**每个面板可覆盖展示**（布局、图型与图的选项，不动原视图）。**标签页首版就做**（用户拍板）；分区模板不做。**栅格改 24 列**，已保存的布局迁移时 `x`、`w` 乘 2（用户拍板）；可切固定宽度／全宽。系统仪表盘只读，改要先「另存为」。
+- **仪表盘·全局筛选**：类型对齐字段类型、值控件复用条件编辑器与候选值；**接线**逐面板选字段，**自动连接**有同一字段的面板；未接上的面板头部标「不受此筛选影响」（本包补的一步）；默认值与**必填**；多值；**时间分组参数**（整板切按日／周／月，优先）；筛选只放页头；联动筛选、卡片内筛选以后；应用语义与分析视图的「自动运行」一致。
+- **仪表盘·点击**：**默认下钻**——与分析视图同一套追问（查看这些记录、只看这一组、按其他维度细分），在工作台打开并带上当前全局筛选，经宿主的路由钩子；**交叉筛选由作者按面板开启**（点一个值更新接线的全局筛选，被点的面板不变）；也可设自定义目的地（另一个视图／仪表盘带值，或宿主页面）。用户拍板：默认下钻、联动显式开启（修正了「接了线就默认联动」的原提议）。按列的点击行为以后。
+- **仪表盘·运维**：单个面板刷新与重试、刷新失败保留上次数据并注明；单面板导出复用导出；整板 PDF 以后；订阅、版本历史、验证、缓存要服务端，归阶段 6。
+- **嵌入**：按资源分入口——`EmbeddedView`（记录／分析）与 `EmbeddedDashboard`（与工作台拆成 `DataWorkbench`／`DashboardWorkbench` 同一条线），不再是一个入口按种类分派。**交互层级是显式的一档**：数据视图有只读／可交互（排序、翻页、表图切换、下钻、在工作台中打开）；仪表盘有只读／可交互（下钻、交叉筛选、点进背后的视图）／可编辑（嵌入版的仪表盘编辑）。**仪表盘筛选逐个三态**：可编辑（默认显示）、隐藏、锁定；宿主用初值与变更回调同步自己的 URL；现在的 `scopeFilter` 就是「锁定」。开关：标题、面板标题、导出、自动刷新、能否点进背后的视图；记录嵌入可选搜索框。放在卡片里的嵌入按内容定高、设上限，整页嵌入才填满容器。
+- **锁定不是安全边界**：宿主的锁定条件是在浏览器里拼进查询的，只保证读者在界面上改不了、看不到别的；租户、归属与权限必须由 Wow 后端强制——对外页面尤其如此，写进嵌入文档。不照搬 Metabase 的 iframe／签名令牌／SSO：本包是宿主进程内的库，身份与权限属于宿主与后端。
+- **交互稿定稿（2026-09-23）**：[仪表盘交互稿](https://claude.ai/artifact/SVjSG6BH7WVAnqthQDh42y) 逐屏落到 [ui/dashboard.md#阶段-3-的交互定稿待实现](ui/dashboard.md)；稿上十条待拍板用户「全按推荐」：编辑中按草稿实时重跑、完成才写回；共享板可引用个人视图并提醒、给「复制为共享视图并替换」；板内新建的分析可「另存为视图」、首版只新建分析；展示覆盖只管怎么看；记住每人上次的标签、当前标签进地址；筛选值进地址不进配置；自动连接按同名同类型、跨定义也接；没有路由钩子时不出追问菜单；交叉筛选时被点的面板不筛自己、再点撤销；窄屏编辑只改标题、移除、调顺序。
 
 ## 搁置待议
 

@@ -19,6 +19,7 @@ import type {
   FunnelStages,
   RecordData,
 } from '../../model/index.js';
+import { bandText } from '../band.js';
 import {
   columnTitle,
   compactFormat,
@@ -29,6 +30,7 @@ import {
 import type { MessageKey } from '../messages.js';
 import { useViewMessages } from '../MessagesProvider.js';
 import { useSurfaceDisplay } from '../ViewSurface.js';
+import type { DateTicks } from './dateTicks.js';
 
 /**
  * A value as its column shows it, by the alias the chart read it from.
@@ -43,7 +45,7 @@ export type ValueLabel = (
   value: unknown,
   /**
    * Written short, where room is scarce: a tick, a label over a bar. Only a
-   * number is shortened, and still in its column's format — 「¥1110万」 in
+   * number is shortened, and still in its column's format — 「¥1,110万」 in
    * Chinese and `CN¥11.1M` in English (`compactFormat`); a tooltip, the
    * reading table and the table layout keep the whole number.
    */
@@ -77,11 +79,15 @@ export interface FamilyProps<D> {
   /** An alias as its column is titled; `undefined` when no column holds it. */
   column: ColumnTitle;
   /**
-   * What is drawn, in one line. Each family puts it on whatever element is
-   * the picture — the `<svg>` for the three chart-library families, the grid
-   * itself for the two hand-drawn ones — as the name of a `role="img"`. The
-   * metric card is the exception: its value is already text, so only its
-   * sparkline is a picture.
+   * The short ticks of a time axis (`useDateTicks`): an axis of dates
+   * writes 「9月1日」 with the year only where it changes. Left out, every
+   * tick reads as its column does.
+   */
+  dateTicks?: DateTicks;
+  /**
+   * What is drawn, in one line: the name of the `role="img"` every family's
+   * drawing is (`EChart`'s `chart-plot`). The metric card is the exception:
+   * its value is already text, so only its sparkline is a picture.
    */
   name: string;
   /**
@@ -107,13 +113,16 @@ export function useValueLabel(
     const byAlias = new Map(
       (columns ?? []).map(column => [column.alias, column]),
     );
-    // As the analysis table shows the same value: what the field's kind
-    // names first, then a number in its format and a boolean in words, both
-    // in the surface's language.
+    // As the analysis table shows the same value: a number band as the band,
+    // what the field's kind names next, then a number in its format and a
+    // boolean in words, all in the surface's language. A band is short
+    // already, so the axis and the tooltip read it alike.
     return (alias, value, compact) => {
       const column = alias === undefined ? undefined : byAlias.get(alias);
       return (
-        (column && displayValue(value, column, display)) ??
+        (column &&
+          (bandText(value, column, messages, display) ??
+            displayValue(value, column, display))) ??
         (compact && typeof value === 'number'
           ? formatNumber(
               value,

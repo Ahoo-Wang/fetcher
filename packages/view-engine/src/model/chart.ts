@@ -27,9 +27,10 @@ export interface ChartSpec {
   metric?: MetricCardSpec;
   legend?: 'auto' | 'top' | 'bottom' | 'right' | 'none';
   /**
-   * Whether the values are written on the marks. Left out, the family
-   * decides (`valueLabelsOn`): a cartesian chart writes them, the others
-   * do not; `false` is a choice and stands.
+   * Whether the values are written on the marks. Left out, the mark
+   * decides (`valueLabelsOn`): a bar writes them — a combo's bars too — a
+   * line, an area and the other families do not; `true` writes them on
+   * every mark, and `false` is a choice and stands.
    */
   labels?: boolean;
   /**
@@ -113,7 +114,10 @@ export interface CartesianSeries {
   /** Required per series when the chart type is `combo`. */
   type?: 'bar' | 'line' | 'area';
   axis?: 'left' | 'right';
-  /** Series sharing a stack name are stacked. */
+  /**
+   * Series sharing a stack name are stacked — bars and areas; a line draws
+   * its own values whatever it says (`stacks`).
+   */
   stack?: string;
   smooth?: boolean;
 }
@@ -195,7 +199,12 @@ export type FunnelStages =
       value: string;
       /** Business order of the stages, taken from the group values. */
       order: string[];
-      /** Accumulate into "reached at least this stage"; defaults to true. */
+      /**
+       * Accumulate into "reached at least this stage" — each stage plus
+       * every later one, which is right only when each object sits in
+       * exactly one stage. Defaults to false: each stage is its own rows'
+       * number, the one the table shows.
+       */
       cumulative?: boolean;
     };
 

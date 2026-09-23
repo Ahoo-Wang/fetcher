@@ -37,7 +37,9 @@ import {
 import {
   AnalysisTable,
   DataWorkbench,
+  ViewSurface,
   defaultMessages,
+  zhCN,
 } from '../src/ui/index.js';
 import type { DataViewKind } from '../src/ui/index.js';
 import { groupText } from '../src/ui/analysis/DrillMenu.js';
@@ -172,7 +174,7 @@ describe('the follow-up menu on one group', () => {
   /**
    * The pointer presses a mark; the keyboard presses a row. A chart's marks
    * are inside an element that says `role="img"` and holds nothing focusable
-   * (`charts/asImage.ts`), and the reading table beside it is `sr-only` and
+   * (`charts/EChart.tsx`'s `chart-plot`), and the reading table beside it is `sr-only` and
    * deliberately out of reach — so the table layout is where the same menu is
    * opened without a pointer (F10), and the row says it opens one.
    */
@@ -579,5 +581,55 @@ describe('the follow-up menu on one group', () => {
         display,
       ),
     ).toBe(keyless);
+  });
+
+  /**
+   * A number band is named as its row reads — 「单价 在 ¥0～500」 — rather
+   * than as the two comparisons behind it, whose bounds print in full.
+   */
+  it('names a number band as its row reads it', () => {
+    const messages = renderHook(() => useViewMessages(), {
+      wrapper: ({ children }) => (
+        <ViewSurface messages={zhCN} locale="zh-CN">
+          {children}
+        </ViewSurface>
+      ),
+    }).result.current;
+    const display = { locale: 'zh-CN' };
+    const column = {
+      alias: 'band',
+      label: '单价',
+      role: 'group' as const,
+      kind: 'number',
+      cell: 'number',
+      numberFormat: { style: 'currency' as const, currency: 'CNY' },
+      interval: 500,
+    };
+    const conditions = [
+      {
+        path: [0],
+        text: '单价 ≥ ¥0.00',
+        unresolved: false,
+        field: 'price',
+        label: '单价',
+        operator: 'GTE' as const,
+      },
+    ];
+
+    expect(groupText({ column, value: 0, conditions }, messages, display)).toBe(
+      '单价 在 ¥0～500',
+    );
+    // A named dimension says its name, as the date bucket's heading does.
+    expect(
+      groupText(
+        {
+          column: { ...column, label: '价格区间', named: true },
+          value: 500,
+          conditions,
+        },
+        messages,
+        display,
+      ),
+    ).toBe('价格区间 在 ¥500～1,000');
   });
 });

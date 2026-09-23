@@ -22,12 +22,15 @@ import displayMeta, {
   CutShort as DisplayCutShort,
   CutShortTable as DisplayCutShortTable,
   DailyNewestFirst as DisplayDailyNewestFirst,
+  DailyQuietDays as DisplayDailyQuietDays,
   DailyTrendCard as DisplayDailyTrendCard,
   EmptyResult as DisplayEmptyResult,
   Expandable as DisplayExpandable,
   FailingAggregates as DisplayFailingAggregates,
   FailingProcessors as DisplayFailingProcessors,
   FollowUps as DisplayFollowUps,
+  FreightBands as DisplayFreightBands,
+  HorizontalBars as DisplayHorizontalBars,
   PieChart as DisplayPieChart,
   PinnedCategoryColor as DisplayPinnedCategoryColor,
   QueryFailed as DisplayQueryFailed,
@@ -39,6 +42,8 @@ import displayMeta, {
   LineChart as DisplayLineChart,
   OneBar as DisplayOneBar,
   ValueLabels as DisplayValueLabels,
+  Loading as DisplayLoading,
+  LoadingChart as DisplayLoadingChart,
 } from './AnalysisWorkbench.stories.js';
 import { converter } from 'culori';
 import { aggregateCalls } from './fixtures.js';
@@ -47,6 +52,7 @@ import {
   columnIndex,
   findDataTable,
   readColumn,
+  readHeaders,
   readTotal,
 } from './readTable.js';
 import {
@@ -238,6 +244,114 @@ export const TicksInsideTheChart: Story = {
   },
 };
 
+/** Every box of these texts lies within `frame`, a pixel of rounding aside. */
+async function allWithin(texts: readonly Element[], frame: DOMRect) {
+  for (const text of texts) {
+    const box = text.getBoundingClientRect();
+    await expect(box.left).toBeGreaterThanOrEqual(frame.left - 1);
+    await expect(box.right).toBeLessThanOrEqual(frame.right + 1);
+    await expect(box.top).toBeGreaterThanOrEqual(frame.top - 1);
+    await expect(box.bottom).toBeLessThanOrEqual(frame.bottom + 1);
+  }
+}
+
+/**
+ * 横向柱最长那根的数也整个在图里：首页「活动失败最多的处理器」最长那根的
+ * 「59.6万」越过图框，「万」被切掉一半，读成「59.6」（2026-09-23 审查 P0-5）。
+ * 这里量每一个数值标签、每一个刻度字都在图的 `svg` 之内，且最长那根的标签
+ * 在它的柱子右边。
+ */
+export const HorizontalLabelsInFrame: Story = {
+  ...DisplayHorizontalBars,
+  play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
+    await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
+    const labels = await waitFor(() => {
+      const found = valueLabels(canvasElement);
+      expect(found).toHaveLength(4);
+      return found;
+    });
+    const surface = canvasElement
+      .querySelector('[data-slot="chart-plot"] svg')!
+      .getBoundingClientRect();
+    await allWithin(labels, surface);
+    await allWithin(axisTexts(canvasElement), surface);
+    // The longest bar's label stands past its end, whole.
+    const longest = bars(canvasElement)
+      .map(bar => bar.getBoundingClientRect())
+      .reduce((a, b) => (b.right > a.right ? b : a));
+    const beside = labels
+      .map(label => label.getBoundingClientRect())
+      .find(box => box.top < longest.bottom && box.bottom > longest.top)!;
+    await expect(beside.left).toBeGreaterThanOrEqual(longest.right);
+  },
+};
+
+/**
+ * The gap between the title under the plot and the lowest tick above it.
+ */
+function titleGap(canvas: HTMLElement): number {
+  const ticks = axisTicks(canvas, 'bottom').map(tick =>
+    tick.getBoundingClientRect(),
+  );
+  const floor = Math.max(...ticks.map(box => box.bottom));
+  const title = axisTitles(canvas)
+    .map(text => text.getBoundingClientRect())
+    .find(box => box.top >= floor - 1);
+  if (!title) throw new Error('no title under the ticks');
+  return title.top - floor;
+}
+
+/**
+ * 横轴标题离刻度字一整行空：从前标题落在居中那个刻度字下面 4px，类目数为奇数
+ * 时「已成功」叠在「状态」上，读成一个两行的类目名（2026-09-23 审查 P1-2）。
+ * 平排的刻度。
+ */
+export const TitleClearOfTicks: Story = {
+  ...DisplayBarChart,
+  play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
+    await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
+    const ticks = axisTicks(canvasElement, 'bottom');
+    await expect(ticks).toHaveLength(4);
+    // Flat: each tick a single line of text.
+    await expect(
+      ticks.every(tick => tick.getBoundingClientRect().height < 20),
+    ).toBe(true);
+    await waitFor(() => expect(titleGap(canvasElement)).toBeGreaterThan(10));
+  },
+};
+
+/**
+ * 同一条规矩，刻度斜排时：九个聚合 ID 在自己那一格里放不下，斜 45°，标题
+ * 被推到它们下面，中间仍隔着一段空。
+ */
+export const TitleClearOfSlantedTicks: Story = {
+  ...DisplayFailingAggregates,
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      await within(canvasElement).findByRole('button', {
+        name: zhCN['label.layout.chart'],
+      }),
+    );
+    await chartsDrawn(canvasElement);
+    await waitFor(() => expect(bars(canvasElement)).toHaveLength(9));
+    // Slanted: a tick's box is taller than a line of text.
+    await waitFor(() =>
+      expect(
+        axisTicks(canvasElement, 'bottom').some(
+          tick => tick.getBoundingClientRect().height > 30,
+        ),
+      ).toBe(true),
+    );
+    await waitFor(() => expect(titleGap(canvasElement)).toBeGreaterThan(10));
+    const surface = canvasElement
+      .querySelector('[data-slot="chart-plot"] svg')!
+      .getBoundingClientRect();
+    await allWithin(axisTexts(canvasElement), surface);
+  },
+};
+
 /**
  * 每根柱上的数：三十天里写得下的都写了，没有两个压在一起，也没有一个跑出图外。
  * 数写得短——与刻度同一个读法（D21）。
@@ -423,16 +537,30 @@ export const TimeRunsForward: Story = {
   play: async ({ canvasElement }) => {
     await chartsDrawn(canvasElement);
     await waitFor(() => expect(bars(canvasElement).length).toBeGreaterThan(10));
-    const drawn = await waitFor(() => {
-      const ticks = axisTicks(canvasElement, 'bottom');
-      expect(ticks.length).toBeGreaterThan(2);
-      return ticks
-        .map(tick => ({
-          left: tick.getBoundingClientRect().left,
-          day: dayOf(tick.textContent ?? ''),
-        }))
-        .sort((a, b) => a.left - b.left)
-        .map(tick => tick.day);
+    const ticks = await waitFor(() => {
+      const found = axisTicks(canvasElement, 'bottom');
+      expect(found.length).toBeGreaterThan(2);
+      return found.sort(
+        (a, b) =>
+          a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+      );
+    });
+    // A time axis writes its ticks short and flat (audit P1-1): the year on
+    // the first alone — these thirty days are all of one year — and each
+    // tick one line of text rather than a slant.
+    const written = ticks.map(tick => tick.textContent ?? '');
+    await expect(written[0]).toMatch(/^\d{4}年\d{1,2}月\d{1,2}日$/);
+    await expect(
+      written.slice(1).every(text => /^\d{1,2}月\d{1,2}日$/.test(text)),
+    ).toBe(true);
+    await expect(
+      ticks.every(tick => tick.getBoundingClientRect().height < 20),
+    ).toBe(true);
+    // Read with the year the first tick names, a day later each.
+    const [year] = dayOf(written[0]);
+    const drawn = written.map(text => {
+      const parts = dayOf(text);
+      return parts.length === 3 ? parts : [year, ...parts];
     });
     await expect(runsForward(drawn)).toBe(true);
 
@@ -474,6 +602,58 @@ export const SparklineRunsForward: Story = {
       return days;
     });
     await expect(runsForward(reading)).toBe(true);
+  },
+};
+
+/**
+ * 没单的日子也占一格，读作 0。
+ *
+ * 「每日重试成功」的横轴从 8/20 直接接到 8/23：画出来的只有有行的那几天，点与点
+ * 挨得一样近，折线把中间三天的 0 抹成一道斜坡（2026-09-23 图表审查 P0-4）。这里
+ * 只看发往杭州、上海的运单，只有几天有单：量读屏表——它与那条线出自同一份投影
+ * ——一行一天、一天不缺，没单的日子写 0，加起来仍是那十单；再量画出来的点，
+ * 一天一颗，左右等距。
+ */
+export const DailyHolesRunEvenly: Story = {
+  ...DisplayDailyQuietDays,
+  play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
+    const read = await waitFor(() => {
+      const found = canvasElement.querySelector<HTMLTableElement>(
+        '[data-slot="chart-reading"] table',
+      );
+      if (!found) throw new Error('折线旁边没有读屏表');
+      const rows = [...found.tBodies[0].rows].map(row => ({
+        day: dayOf(row.cells[0]?.textContent ?? ''),
+        count: Number((row.cells[1]?.textContent ?? '').replace(/[^\d]/g, '')),
+      }));
+      expect(rows.length).toBeGreaterThan(10);
+      return rows;
+    });
+    // One row a day, not one skipped.
+    const DAY = 86_400_000;
+    const at = read.map(({ day: [year, month, date] }) =>
+      Date.UTC(year!, month! - 1, date),
+    );
+    await expect(
+      at.every((ms, index) => index === 0 || ms - at[index - 1]! === DAY),
+    ).toBe(true);
+    // The quiet days are there as 0, and the busy ones still add up to the
+    // ten waybills sent to the two cities.
+    await expect(read.filter(row => row.count === 0).length).toBeGreaterThan(5);
+    await expect(read.reduce((sum, row) => sum + row.count, 0)).toBe(10);
+
+    // A dot a day, evenly spaced: a quiet day is a step along the axis.
+    const dots = await waitFor(() => {
+      const found = drawnMarks(canvasElement);
+      expect(found).toHaveLength(read.length);
+      return found.map(dot => {
+        const box = dot.getBoundingClientRect();
+        return (box.left + box.right) / 2;
+      });
+    });
+    const steps = dots.slice(1).map((x, index) => x - dots[index]!);
+    await expect(Math.max(...steps) - Math.min(...steps)).toBeLessThan(1);
   },
 };
 
@@ -660,10 +840,15 @@ export const FollowUpFocus: Story = {
   ...DisplayPieChart,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(slices(canvasElement)).toHaveLength(3));
-    const before = slices(canvasElement).map(slice => slice.name);
-
     await chartsDrawn(canvasElement);
+    // Named once the legend has listed every slice, not as the first one
+    // lands: under load the pie drew before its legend had all three.
+    const before = await waitFor(() => {
+      const names = slices(canvasElement).map(slice => slice.name);
+      expect(names).toHaveLength(3);
+      expect(names.every(name => name !== null)).toBe(true);
+      return names;
+    });
     pressMark(slicesInOrder(canvasElement)[0]!);
 
     const menu = await drillMenu();
@@ -701,6 +886,59 @@ export const FollowUpFocus: Story = {
       document.body.querySelector('[data-slot="origin-bar"]'),
     ).toBeNull();
     await expect(aggregateCalls.current).toBe(ran);
+  },
+};
+
+/**
+ * 运费区间读成一段一段（2026-09-23 真实后端走查）。
+ *
+ * 按 500 一档分组，一档的键是它的下界，从前横轴与表格读成「¥0.00」「¥500.00」，
+ * 说不出一行是哪一段。这里量画出来的横轴、读屏表、切到表格后的那一列与按下
+ * 一行弹出的追问菜单标题：都读成「¥0～500」「¥500～1,000」「¥1,000～1,500」。
+ */
+export const BandsReadAsRanges: Story = {
+  ...DisplayFreightBands,
+  play: async ({ canvasElement }) => {
+    const bands = ['¥0～500', '¥500～1,000', '¥1,000～1,500'];
+    await chartsDrawn(canvasElement);
+    await waitFor(() => expect(bars(canvasElement)).toHaveLength(3));
+    const ticks = await waitFor(() => {
+      const found = axisTicks(canvasElement, 'bottom')
+        .sort(
+          (a, b) =>
+            a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+        )
+        .map(tick => tick.textContent);
+      expect(found).toHaveLength(3);
+      return found;
+    });
+    await expect(ticks).toEqual(bands);
+    const reading = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="chart-reading"] table',
+    );
+    await expect(reading).not.toBeNull();
+    for (const band of bands)
+      await expect(within(reading!).getByText(band)).toBeInTheDocument();
+
+    await userEvent.click(
+      within(canvasElement).getByRole('button', {
+        name: zhCN['label.layout.table'],
+      }),
+    );
+    const table = await findDataTable(canvasElement);
+    await waitFor(() => expect(readColumn(table, '运费')).toEqual(bands));
+
+    const row =
+      canvasElement.querySelector<HTMLTableRowElement>('tr[data-pickable]');
+    await userEvent.click(row!.cells[1]!);
+    const menu = await drillMenu();
+    await expect(
+      menu.querySelector('[data-slot="drill-group"]'),
+    ).toHaveTextContent(
+      new RegExp(
+        `^${formatMessage(zhCN, 'label.drill.bucket', { field: '运费', bucket: bands[0] })}$`,
+      ),
+    );
   },
 };
 
@@ -942,6 +1180,59 @@ export const PieChart: Story = {
     );
     // Drawn, not merely present: the legend alone is not a pie.
     await expect(slices(canvasElement).every(slice => slice.drawn)).toBe(true);
+  },
+};
+
+/** A share written whole: one decimal, or a sliver's 「<0.1%」. */
+const WHOLE_SHARE = /^[<>]?\d{1,3}\.\d%$/;
+
+/**
+ * 手机宽度（414）上的饼图（2026-09-23 图表审查 P0-6）：图例原来贴在饼的右侧，
+ * 占掉两成宽度，饼挤在剩下的地方，片外的占比没处写——47.7% 被库截成「4」，
+ * 28.3% 成了「28....」。一个「4」也是一个数，比不写还糟。现在图框窄于 480px
+ * 时图例到饼的下方，饼拿到整个宽度；片外标签要么整条写得下，要么不写（饼先
+ * 让出一些位置，让不出就交给图例与提示框）。这里量：图例在绘图区下面，每条
+ * 片外标签都是完整的占比、都在绘图区里，图例里三片的占比都在。
+ */
+export const PieOnAPhone: Story = {
+  ...DisplayPieChart,
+  decorators: [
+    Story => (
+      <div style={{ width: 414 }}>
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
+    const frame = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="chart"]',
+    )!;
+    await expect(frame.getBoundingClientRect().width).toBeLessThan(480);
+    await expect(frame).toHaveAttribute('data-legend', 'bottom');
+    const plot = frame
+      .querySelector('[data-slot="chart-plot"]')!
+      .getBoundingClientRect();
+    const legend = frame
+      .querySelector('[data-slot="chart-legend"]')!
+      .getBoundingClientRect();
+    await expect(legend.top).toBeGreaterThanOrEqual(plot.bottom - 1);
+
+    // Each label outside a slice is a whole share, inside the drawing.
+    const labels = valueLabels(canvasElement).filter(
+      label => label.getBoundingClientRect().width > 0,
+    );
+    for (const label of labels) {
+      await expect((label.textContent ?? '').trim()).toMatch(WHOLE_SHARE);
+      const box = label.getBoundingClientRect();
+      await expect(box.left).toBeGreaterThanOrEqual(plot.left - 1);
+      await expect(box.right).toBeLessThanOrEqual(plot.right + 1);
+    }
+    // The legend holds every share, whatever the labels could say.
+    const shares = [
+      ...frame.querySelectorAll('[data-slot="chart-legend-item"]'),
+    ].map(item => item.lastElementChild?.textContent ?? '');
+    await expect(shares).toEqual(['47.7%', '23.9%', '28.3%']);
   },
 };
 
@@ -1229,21 +1520,170 @@ export const IdentifiersInMonospace: Story = {
   },
 };
 
-export const EmptyResult: Story = {
-  ...DisplayEmptyResult,
+/** The result block's toolbar — not the opening skeleton's hidden stand-in. */
+const resultToolbar = (canvasElement: HTMLElement) =>
+  canvasElement.querySelector<HTMLElement>(
+    '[data-slot="result-toolbar"]:not([aria-hidden])',
+  );
+
+/** Where a part of the frame stands, to the pixel that matters here. */
+const edges = (element: Element) => {
+  const rect = element.getBoundingClientRect();
+  return { top: Math.round(rect.top), bottom: Math.round(rect.bottom) };
+};
+
+/**
+ * 第一次的答案在路上时，框已经站好了（2026-09-23 审查 P1）。
+ *
+ * 从前结果区在数据回来之前是空白的，回来那一刻工具栏、条件带与页脚一起冒出来，
+ * 结果被往下推。这里在骨架还在时量一次工具栏、条件带与页脚的位置，数据落地后
+ * 再量一次：三者都在原地，骨架是表格那几行灰条，页脚先是一根灰条再换成那句话。
+ */
+export const LoadingKeepsItsPlace: Story = {
+  ...DisplayLoading,
   play: async ({ canvasElement }) => {
+    const skeleton = await waitFor(() => {
+      const found = canvasElement.querySelector<HTMLElement>(
+        '[data-slot="analysis-table-skeleton"]',
+      );
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    await expect(skeleton.querySelectorAll('tr')).toHaveLength(3);
+    const toolbar = resultToolbar(canvasElement)!;
+    // The reading is the question's, before any row has said it.
+    await expect(toolbar).toHaveTextContent('仓库');
+    const applied = canvasElement.querySelector('[data-slot="applied-bar"]')!;
+    await expect(applied).toBeVisible();
+    const caption = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="analysis-caption"]',
+    )!;
+    await expect(caption.dataset.loading).toBe('');
+    const before = {
+      toolbar: edges(toolbar),
+      applied: edges(applied),
+      caption: edges(caption),
+    };
+
+    // The source answers after 1.5 s; the skeleton is itself a `table`, so
+    // the rows are waited for by their own slot.
+    await waitFor(
+      () =>
+        expect(
+          canvasElement.querySelector('[data-slot="analysis-table"]'),
+        ).not.toBeNull(),
+      { timeout: 5_000 },
+    );
     await expect(
-      await within(canvasElement).findByText(zhCN['label.analysis.empty']),
-    ).toBeVisible();
+      canvasElement.querySelector('[data-slot="analysis-table-skeleton"]'),
+    ).toBeNull();
+    const landed = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="analysis-caption"]',
+    )!;
+    await expect(landed.dataset.loading).toBeUndefined();
+    await expect(resultToolbar(canvasElement)).toBe(toolbar);
+    await expect({
+      toolbar: edges(toolbar),
+      applied: edges(applied),
+      caption: edges(landed),
+    }).toEqual(before);
   },
 };
 
+/** 保存的是图表时，骨架是一块绘图区，工具栏与页脚同样不动。 */
+export const LoadingChartKeepsItsPlace: Story = {
+  ...DisplayLoadingChart,
+  play: async ({ canvasElement }) => {
+    const area = await waitFor(() => {
+      const found = canvasElement.querySelector<HTMLElement>(
+        '[data-slot="analysis-chart-skeleton"]',
+      );
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    // An area, not a sliver: it takes the height the chart will take.
+    await expect(area.getBoundingClientRect().height).toBeGreaterThan(150);
+    const toolbar = resultToolbar(canvasElement)!;
+    const caption = canvasElement.querySelector(
+      '[data-slot="analysis-caption"]',
+    )!;
+    const before = { toolbar: edges(toolbar), caption: edges(caption) };
+
+    // The source answers after 1.5 s.
+    await waitFor(() => expect(bars(canvasElement)).toHaveLength(4), {
+      timeout: 5_000,
+    });
+    await chartsDrawn(canvasElement);
+    await expect({
+      toolbar: edges(resultToolbar(canvasElement)!),
+      caption: edges(
+        canvasElement.querySelector('[data-slot="analysis-caption"]')!,
+      ),
+    }).toEqual(before);
+  },
+};
+
+/**
+ * 没有组落进来：工具栏还在，空状态说清是什么情况。没有任何条件时范围已是全部
+ * 记录，托盘里做什么都分不出组，所以只有标题与那一句原因，没有按钮（用户对
+ * #1800 的裁定）；页脚照样说「正在显示 0 组」。
+ */
+export const EmptyResult: Story = {
+  ...DisplayEmptyResult,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      await canvas.findByText(zhCN['label.analysis.empty']),
+    ).toBeVisible();
+    await expect(resultToolbar(canvasElement)).toBeVisible();
+    await expect(
+      canvas.getByText(zhCN['label.analysis.empty-none']),
+    ).toBeVisible();
+    const empty = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="analysis-empty"]',
+    )!;
+    await expect(within(empty).queryByRole('button')).toBeNull();
+    await expect(
+      canvasElement.querySelector('[data-slot="analysis-caption"]'),
+    ).toHaveTextContent(/^正在显示 0 组/);
+  },
+};
+
+/**
+ * 查询失败：工具栏、条件带都还在，失败说在工具栏下面那一行里，用读者的话，
+ * 末尾是「重试」；表格／图表照样能切，重试会重新去问。
+ */
 export const QueryFailed: Story = {
   ...DisplayQueryFailed,
   play: async ({ canvasElement }) => {
-    // The strip says the failure itself, in one line above the result.
-    const alert = await within(canvasElement).findByRole('alert');
-    await expect(alert).toHaveTextContent('仓储服务暂时不可用');
+    const canvas = within(canvasElement);
+    const alert = await canvas.findByRole('alert');
+    await expect(alert).toHaveTextContent('没能加载数据：仓储服务暂时不可用');
+    const toolbar = resultToolbar(canvasElement)!;
+    await expect(toolbar).toBeVisible();
+    // Under the toolbar, inside the result block.
+    await expect(edges(alert).top).toBeGreaterThanOrEqual(
+      edges(toolbar).bottom,
+    );
+    await expect(
+      canvasElement.querySelector('[data-slot="applied-bar"]'),
+    ).toBeVisible();
+
+    await userEvent.click(
+      within(toolbar).getByRole('button', { name: zhCN['label.layout.table'] }),
+    );
+    await expect(
+      within(toolbar).getByRole('button', {
+        name: zhCN['label.layout.table'],
+        pressed: true,
+      }),
+    ).toBeVisible();
+
+    const asked = aggregateCalls.current;
+    await userEvent.click(
+      within(alert).getByRole('button', { name: zhCN['label.query.retry'] }),
+    );
+    await waitFor(() => expect(aggregateCalls.current).toBeGreaterThan(asked));
   },
 };
 
@@ -1400,6 +1840,81 @@ export const TrayEdits: Story = {
     await waitFor(() => expect(apply).not.toHaveAttribute('data-pending'));
     // The reading is the result's, so it only moves once the query lands.
     await waitFor(() => expect(reading()).not.toBe(before));
+  },
+};
+
+/** 「成本的合计」: the metric the regression below adds. */
+const COST_HEADER = formatMessage(zhCN, 'label.summary.of', {
+  field: '成本',
+  fn: zhCN['label.summary.fn.SUM'],
+});
+
+/**
+ * 加进来的就是一列（2026-09-23 审查 P0-1）。这个视图钉住了
+ * `table.columns`——仓库、记录数、金额——而那份列表只管顺序与宽度：托盘里
+ * 加的指标与维度跑完就在表里，接在列出的那几列后面，维度在前、指标在后。
+ * 它从前是白名单：读法说了「按仓库、状态」，表里却只有仓库一列，同一个
+ * 「华东」出现两行而没有一列分得开。
+ */
+export const AddedColumnsShow: Story = {
+  ...DisplayTableWithTotals,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const before = await findDataTable(canvasElement);
+    await waitFor(() =>
+      expect(readHeaders(before)).toEqual([
+        '仓库',
+        COUNT_HEADER,
+        AMOUNT_HEADER,
+      ]),
+    );
+
+    await openTray(canvasElement);
+    // One Apply runs both edits, so the table is read once, after both.
+    await userEvent.click(autoRunBox(canvasElement));
+    await waitFor(() =>
+      expect(autoRunBox(canvasElement)).toHaveAttribute(
+        'aria-checked',
+        'false',
+      ),
+    );
+
+    await userEvent.click(
+      canvas.getByRole('button', { name: zhCN['label.analysis.add-metric'] }),
+    );
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: '成本' }),
+    );
+    await userEvent.click(
+      canvas.getByRole('button', { name: zhCN['label.analysis.add-group'] }),
+    );
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: '状态' }),
+    );
+    await userEvent.click(applyButton(canvasElement));
+
+    await waitFor(async () =>
+      expect(readHeaders(await findDataTable(canvasElement))).toEqual([
+        '仓库',
+        COUNT_HEADER,
+        AMOUNT_HEADER,
+        '状态',
+        COST_HEADER,
+      ]),
+    );
+    // Every row says which group it is: no two rows share a warehouse and a
+    // status, and 华东 now has a row per status instead of two alike.
+    const after = await findDataTable(canvasElement);
+    const warehouses = readColumn(after, '仓库');
+    const statuses = readColumn(after, '状态');
+    const keys = warehouses.map(
+      (warehouse, row) => `${warehouse}|${statuses[row]}`,
+    );
+    await expect(new Set(keys).size).toBe(keys.length);
+    await expect(
+      warehouses.filter(warehouse => warehouse === '华东').length,
+    ).toBeGreaterThan(1);
+    await expect(readColumn(after, COST_HEADER).every(Boolean)).toBe(true);
   },
 };
 
@@ -1957,26 +2472,31 @@ export const TrayCardMenu: Story = {
  * ——条件属于它收窄的那个指标，就长在那儿；写完收起来，卡片上留下一句
  * 「只算 …」，于是一屏卡片里两个「金额的合计」为什么不一样，读得出来。
  * 条件是这一个指标自己的：应用之后金额跟着变，旁边的记录数一颗不落。
+ *
+ * 它也换了名字（审计 P0-3，D20 显示名）：表头、读法那一行、卡片上每个控件
+ * 都说「金额的合计 · 已发运」。从前表头还是「金额的合计」，没有发运的地区
+ * 一格 ¥0.00，读起来就是「没有销售」；而「只算 …」那一句只在托盘的卡片上，
+ * 打开一个存好的视图时托盘是收着的。表头的说明（悬停与读屏）说出整条条件。
  */
 export const MetricCondition: Story = {
   ...DisplayTableWithTotals,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const amounts = async () =>
-      readColumn(await findDataTable(canvasElement), AMOUNT_HEADER).map(
-        amountOf,
-      );
+    const shippedHeader = formatMessage(zhCN, 'label.analysis.metric-where', {
+      metric: AMOUNT_HEADER,
+      value: '已发运',
+    });
+    const amounts = async (header = AMOUNT_HEADER) =>
+      readColumn(await findDataTable(canvasElement), header).map(amountOf);
     const counts = async () =>
       readColumn(await findDataTable(canvasElement), COUNT_HEADER);
     const beforeAmounts = await amounts();
     const beforeCounts = await counts();
     await openTray(canvasElement);
 
-    const funnel = () =>
+    const funnel = (name = AMOUNT_HEADER) =>
       canvas.getByRole('button', {
-        name: formatMessage(zhCN, 'label.analysis.condition-of', {
-          name: AMOUNT_HEADER,
-        }),
+        name: formatMessage(zhCN, 'label.analysis.condition-of', { name }),
       });
     await expect(funnel()).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(funnel());
@@ -2026,11 +2546,27 @@ export const MetricCondition: Story = {
         )!,
       ).getByRole('button', { name: zhCN['label.filter.apply'] }),
     );
+    // 表头按它算的是什么改了名：没有发运的地区那一格 ¥0.00 是「没有已发运
+    // 的销售」，不是「没有销售」。
     await waitFor(async () =>
-      expect(await amounts()).not.toEqual(beforeAmounts),
+      expect(await amounts(shippedHeader)).not.toEqual(beforeAmounts),
     );
-    // 只有这一个指标被收窄：记录数还是全部。
+    // 只有这一个指标被收窄：记录数还是全部，名字也还是原来的。
     await expect(await counts()).toEqual(beforeCounts);
+    const table = (await findDataTable(canvasElement)) as HTMLTableElement;
+    const header =
+      table.tHead!.rows[0]!.cells[columnIndex(table, shippedHeader)]!;
+    // 整条条件在表头的说明里：悬停读得到，读屏也念得到。
+    const described = header.querySelector('[aria-describedby]');
+    const sentences = (described?.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map(id => canvasElement.ownerDocument.getElementById(id)?.textContent);
+    await expect(sentences.join('\n')).toContain('只算 状态');
+    await expect(sentences.join('\n')).toContain('已发运');
+    // 读法那一行说的是同一个名字。
+    await expect(
+      canvasElement.querySelector('[data-slot="analysis-reading"]'),
+    ).toHaveTextContent(shippedHeader);
 
     // 收起条件，卡片上留下那句「只算 …」——一个数的读法不该藏在图标后面。
     await userEvent.click(
@@ -2047,7 +2583,8 @@ export const MetricCondition: Story = {
     });
     await expect(line).toHaveTextContent('状态');
     await expect(line).toHaveTextContent('已发运');
-    await expect(funnel()).toHaveAttribute('data-held');
+    // 卡片上的控件也按新名字自称：两张同字段的卡差在条件上，名字就差在那儿。
+    await expect(funnel(shippedHeader)).toHaveAttribute('data-held');
   },
 };
 
