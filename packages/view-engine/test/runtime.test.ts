@@ -156,6 +156,32 @@ describe('DataViewRuntime state', () => {
 });
 
 describe('DataViewRuntime execution', () => {
+  /**
+   * How long the answer took is part of the answer: the analysis result's
+   * footer says it. Measured on the environment's clock, from asking to
+   * landing — a source that takes 400ms is a result that says 400.
+   */
+  it('says how long the answer took', async () => {
+    let answer: (rows: { total: number; list: unknown[] }) => void = () => {};
+    const source = testSource({
+      paged: vi.fn(
+        () =>
+          new Promise<{ total: number; list: unknown[] }>(resolve => {
+            answer = resolve;
+          }),
+      ),
+    });
+    const { runtime, clock } = harness({ source });
+
+    runtime.apply();
+    await flush();
+    clock.advance(400);
+    answer({ total: 0, list: [] });
+    await flush();
+
+    expect(runtime.getSnapshot().result?.elapsedMs).toBe(400);
+  });
+
   it('queries the first page and keeps the config that produced the result', async () => {
     const { runtime, source } = harness();
 
