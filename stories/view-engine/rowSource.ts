@@ -163,6 +163,9 @@ function summarise(
     },
     { $replaceWith: { $mergeObjects: ['$_id', '$$ROOT'] } },
     { $unset: '_id' },
+    // A distinct count gathered its values as a set; it answers how many
+    // there are, a missing value not being one.
+    ...distinctCounts(accumulated),
   ]) as RecordData[];
   const answered = grouped.map(row => withDerived(row, query.metrics));
   // Wow filters the grouped rows **before** it orders and cuts them, which
@@ -467,7 +470,34 @@ function accumulator(metric: AggregationMetric): AnyObject {
       return { [name]: gate ? { $cond: [gate, value, null] } : value };
     }
   }
+  if (metric.type === AggregationMetricType.DISTINCT_COUNT && !gate)
+    return { $addToSet: measured(metric.expression) };
   throw new Error(`The story source does not compute ${metric.alias}.`);
+}
+
+/** The stage that turns each distinct count's gathered set into its size. */
+function distinctCounts(metrics: readonly AggregationMetric[]): AnyObject[] {
+  const aliases = metrics
+    .filter(metric => metric.type === AggregationMetricType.DISTINCT_COUNT)
+    .map(metric => metric.alias);
+  if (aliases.length === 0) return [];
+  return [
+    {
+      $set: Object.fromEntries(
+        aliases.map(alias => [
+          alias,
+          {
+            $size: {
+              $filter: {
+                input: `$${alias}`,
+                cond: { $ne: ['$$this', null] },
+              },
+            },
+          },
+        ]),
+      ),
+    },
+  ];
 }
 
 /** MongoDB's arithmetic operator for each of Wow's four. */
