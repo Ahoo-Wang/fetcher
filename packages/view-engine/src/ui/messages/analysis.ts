@@ -36,6 +36,11 @@ export const analysisMessages = {
   'label.analysis.slot.metrics': 'Metrics',
   'label.analysis.hint.dimensions': 'compare by what',
   'label.analysis.hint.metrics': 'which numbers',
+  // The step after the question (2026-09-23 audit): which groups the result
+  // keeps, in which order, and how many — Wow's having, sort and limit, in
+  // the order it applies them.
+  'label.analysis.slot.result': 'Result',
+  'label.analysis.hint.result': 'which groups, in what order',
   // The expansion slot (D20 屏 G): the chain of arrays counted inside.
   'label.analysis.slot.elements': 'Expand',
   'label.analysis.hint.elements': 'count what',
@@ -55,9 +60,22 @@ export const analysisMessages = {
   'label.date-unit.HOUR': 'By hour',
   'label.date-unit.MINUTE': 'By minute',
   'label.date-unit.SECOND': 'By second',
+  // A time dimension's column says what one of its rows spans: 「创建时间
+  // （按日）」, "Created (by day)". One key a unit rather than the unit's
+  // own word in a pattern, because the English select says "By day" and a
+  // header in the middle of a title says "by day".
+  'label.analysis.dated.YEAR': '{field} (by year)',
+  'label.analysis.dated.QUARTER': '{field} (by quarter)',
+  'label.analysis.dated.MONTH': '{field} (by month)',
+  'label.analysis.dated.WEEK': '{field} (by week)',
+  'label.analysis.dated.DAY': '{field} (by day)',
+  'label.analysis.dated.HOUR': '{field} (by hour)',
+  'label.analysis.dated.MINUTE': '{field} (by minute)',
+  'label.analysis.dated.SECOND': '{field} (by second)',
   'label.analysis.interval': 'Band width',
   'label.analysis.percentile': 'Percentile',
   'label.analysis.open-editor': 'Open analysis',
+  'label.analysis.open-chart-options': 'Open chart options',
   'label.analysis.reading': 'By {dimensions} · {metrics}',
   'label.analysis.reading-flat': '{metrics}',
   'label.analysis.layout': 'Show result as',
@@ -75,13 +93,16 @@ export const analysisMessages = {
   // says and leaves it alone, rather than drawing nothing at all.
   'label.analysis.expression-unreadable':
     'This metric is written with an expression the card cannot show.',
-  // 「只保留」: the groups kept, as rows of one comparison each.
-  'label.analysis.having': 'Keep only…',
-  'label.analysis.having-title': 'Keep only the groups where',
+  // 「只保留」: the groups kept, as rows of one comparison each. The title
+  // is the field's visible label in the result slot; the button adds a row
+  // under it, so it says what it adds rather than repeating the title.
+  'label.analysis.having': 'Add condition',
+  'label.analysis.having-title': 'Keep only',
   // Every row is four controls with the same four names, so the row itself
   // is a named group and its number is where a reader is.
   'label.analysis.having-row': 'Keep-only condition {index}',
-  'label.analysis.having-keep': 'Keep where',
+  // Between two rows: every one of them must hold.
+  'label.analysis.having-and': 'and',
   'label.analysis.having-metric': 'Metric to keep by',
   'label.analysis.having-operator': 'Comparison',
   'label.analysis.having-value': 'Value to compare with',
@@ -98,6 +119,10 @@ export const analysisMessages = {
   'label.having.op.NE': 'not equal to',
   'label.analysis.totals': 'Totals row',
   'label.analysis.row-limit': 'Top N groups',
+  // Beside the field, which already says what it is: only the range it
+  // takes. The same bounds as `analysis.limit.out-of-range`, from the same
+  // `limitBounds`.
+  'label.analysis.row-limit-invalid': 'A whole number from 1 to {max}',
   // The three readings D20 asks the screen to say out loud, because each is
   // a number that means something other than what it looks like.
   //
@@ -105,7 +130,7 @@ export const analysisMessages = {
   // range — the groups past the top N and the groups 「只保留」 dropped
   // included. That is why the rows above it can add up to less than it does
   // without either number being wrong.
-  'label.analysis.totals-scope': 'Totals = every record in the range',
+  'label.analysis.totals-scope': 'Every record in the range',
   // Wow computes a percentile approximately, so the column says so: 「≈」 in
   // the header (`columnTitle`) and this word where there is room for one.
   'label.analysis.approximate': 'Approximate',
@@ -117,8 +142,11 @@ export const analysisMessages = {
   // The visualization panel (D20 屏 I): the way in from the result's
   // toolbar, its title, the way back, and why a tile is greyed.
   'label.analysis.visualize': 'Visualize',
-  // 「改了就跑」 (D20): the switch on the tray's footer.
-  'label.analysis.auto-run': 'Run as I change the question',
+  // Auto-run (D20): the switch on the tray's footer, and what it does and
+  // does not cover — the range's conditions still wait for Apply.
+  'label.analysis.auto-run': 'Run automatically',
+  'label.analysis.auto-run-hint':
+    'Changes to dimensions, metrics and the result run on their own; the range waits for Apply.',
   'label.chart.picker': 'Visualization',
   'label.chart.picker-back': 'Back to the views',
   'label.chart.recommended': 'Recommended',
@@ -131,10 +159,15 @@ export const analysisMessages = {
   // Every metric left is the earliest or the latest of a date: a moment,
   // which a mark has no length, share or shade for (`momentMetrics`).
   'chart.fit.needs-quantity': 'Needs an amount; a time is not drawn',
+  // A funnel's stages are steps: the values of a category, two at least.
+  'chart.fit.needs-category': 'Stages need a category dimension',
+  'chart.fit.needs-two-stages': 'Needs two groups or more as stages',
+  // A funnel counts what entered and what remained: a record count or a
+  // sum, never an average, a distinct count or an extreme.
+  'chart.fit.needs-additive': 'Needs a count or a sum',
   // The panel's second level (D20 屏 J): the chosen type's options on
   // three pages, and the way in and out.
   'label.chart.options': '{name} options',
-  'label.chart.options-of': 'Options for {name}',
   'label.chart.options-back': 'Back to the chart types',
   'label.chart.tab.data': 'Data',
   'label.chart.tab.display': 'Display',
@@ -288,9 +321,11 @@ export const analysisMessages = {
 
   // Series names the chart writes itself, for legends and tooltips.
   'label.chart.other': 'Other',
-  'label.chart.points': 'Points',
+  'label.chart.share-basis': 'Shares of the groups shown',
+  'label.chart.legend.more': '{count} more',
+  'label.chart.legend.less': 'Show less',
+  'label.chart.total': 'Total',
   'label.chart.trend': 'Trend',
-  'label.chart.cell': '{y} · {x}: {value}',
 
   // What a chart says about itself. The drawing is one image with a name —
   // the marks are a picture, not an application — and the numbers it draws
@@ -304,7 +339,9 @@ export const analysisMessages = {
   'label.chart.column.x': 'X',
   'label.chart.column.y': 'Y',
   'label.chart.column.stage': 'Stage',
-  'label.chart.column.conversion': 'Conversion',
+  // Which stage a conversion is relative to, said where the percentages are.
+  'label.chart.column.conversion.previous': 'Conversion from previous stage',
+  'label.chart.column.conversion.first': 'Conversion from first stage',
   'label.chart.column.compare': 'Compared with',
   'label.chart.column.target': 'Target',
 
@@ -381,8 +418,8 @@ export const analysisMessages = {
     'This dataset does not offer filtering the result.',
   'analysis.having.unknown-metric':
     'The filter refers to {metric}, which is not a usable metric.',
-  'analysis.limit.not-positive': 'Top N groups must be a positive number.',
-  'analysis.limit.too-large': 'Top N groups cannot exceed {max}.',
+  'analysis.limit.out-of-range':
+    'Top N groups must be a whole number from 1 to {max}.',
   'analysis.metric.type-unknown': 'The metric type {type} is not available.',
   'analysis.metricFilter.empty':
     'This filter has no conditions, so the metric covers every record.',
@@ -421,6 +458,10 @@ export const analysisMessages = {
   'chart.funnel.metrics-need-no-group':
     'A funnel staged by metrics can carry no dimension.',
   'chart.funnel.too-few-stages': 'A funnel needs at least two stages.',
+  'chart.funnel.not-additive':
+    'A funnel needs a metric that adds up (a record count or a sum), not {metric}.',
+  'chart.funnel.stages-need-category':
+    'A funnel’s stages are the values of a category, not dates or number ranges.',
   'chart.group.unconsumed': 'The chart does not use every dimension: {groups}.',
   'chart.group.unknown':
     'The chart uses {alias}, which is not a dimension of this analysis.',

@@ -229,7 +229,7 @@ function FunnelData({ chart, shape, rows, label, onChange }: OptionsPageProps) {
         }
         /**
          * What the stage is called on the drawing. A metric's column title
-         * names what was measured — 「金额 的 合计」 — and a funnel's stage
+         * names what was measured — 「金额的合计」 — and a funnel's stage
          * names a step of a business — 「下单」 — which is rarely the same
          * sentence and is knowledge only the analyst has. An emptied box
          * takes the name back rather than storing a blank, so the drawing
@@ -274,9 +274,13 @@ function FunnelData({ chart, shape, rows, label, onChange }: OptionsPageProps) {
           )
         }
       />
+      {/* A stage counts what entered and remained: only a metric that adds
+          up is one (`chart.funnel.not-additive`). */}
       <SlotSelect
         label={messages.label('label.chart.slot.value')}
-        items={shape.quantities}
+        items={shape.quantities.filter(metric =>
+          shape.additive.has(metric.value),
+        )}
         value={stages.value}
         onChange={value => update({ ...spec, stages: { ...stages, value } })}
       />

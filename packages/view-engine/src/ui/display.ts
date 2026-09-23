@@ -178,9 +178,12 @@ export function summaryFunctionKey(
 /**
  * What an analysis column is called on screen.
  *
- * A group is its field. A metric is two words the kernel hands over separately
- * — the field and the summary — because only a catalogue knows their order:
- * 「金额 的 平均」 and "Average of Amount" are the same header. Composing it
+ * A group is its field — and a time group says what one of its rows spans,
+ * 「创建时间（按日）」, because a bucket key reads as a moment and a column of
+ * 「9月1日」 does not say whether each row is that day or that month. A metric
+ * is two words the kernel hands over separately — the field and the summary
+ * — because only a catalogue knows their order: 「金额的平均」 and "Average
+ * of Amount" are the same header. Composing it
  * here is what makes two summaries of one field two different headers, where
  * the alias (`amount_1`) named the machine and the label named them both the
  * same. A count is neither: it counts records rather than summarising a
@@ -190,7 +193,8 @@ export function summaryFunctionKey(
  * approximately, and a p95 that prints to two decimals beside an exact sum
  * reads as exact — the sign is one character and travels everywhere the
  * header does, the chart's axis and legend included. The word behind the sign
- * is `label.analysis.approximate`, which the header's `title` carries.
+ * is `label.analysis.approximate`, which the table header's tooltip and
+ * description carry (`SortableHeader`'s `note`).
  */
 export function columnTitle(
   column: {
@@ -199,6 +203,8 @@ export function columnTitle(
     named?: true;
     /** The reading of the values under it: a date's `MIN` is its earliest. */
     cell?: string;
+    /** A time group's granularity: what one of its rows spans. */
+    dateUnit?: AnalysisDateUnit;
   },
   messages: MessageFormatters,
 ): string {
@@ -208,7 +214,13 @@ export function columnTitle(
   const label = wordReferences(column.label, (fn, referenced) =>
     columnTitle({ label: referenced, fn }, messages),
   );
-  if (column.named || column.fn === undefined) return label;
+  if (column.named) return label;
+  if (column.fn === undefined)
+    return column.dateUnit === undefined
+      ? label
+      : messages.label(`label.analysis.dated.${column.dateUnit}`, {
+          field: label,
+        });
   if (column.fn === 'COUNT') return messages.label('label.analysis.row-count');
   // A derived metric is arithmetic over other metrics: no field stands behind
   // it, so its stored name is all there is to show.
@@ -267,6 +279,29 @@ export function formatNumber(
   const formatter =
     (format && numberFormatter(format, locale)) ?? numberFormatter({}, locale);
   return formatter ? formatter.format(value) : String(value);
+}
+
+/**
+ * A number format written short: the same style, currency or unit, in the
+ * language's own compact notation — 万 and 亿 in Chinese, K, M and B in
+ * English, which is what Intl's `compact` already knows — with at most one
+ * decimal, so 11,100,000 reads 「1110万」 or `11.1M` rather than `11M`. What
+ * the format said about decimals is dropped, since it was said about the
+ * whole number: two fraction digits on a compact figure would ask for
+ * 「1110.00万」.
+ */
+export function compactFormat(format: NumberFormat | undefined): NumberFormat {
+  const short: NumberFormat = { ...format };
+  delete short.minimumSignificantDigits;
+  delete short.maximumSignificantDigits;
+  // Both ends said: an older ICU (Node 20's) keeps a currency's two
+  // minimum decimals under a maximum of one and writes 「¥1110.0万」.
+  return {
+    ...short,
+    notation: 'compact',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  };
 }
 
 /**

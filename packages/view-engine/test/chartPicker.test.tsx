@@ -67,8 +67,8 @@ function viewOf(overrides: Partial<AnalysisViewConfig> = {}): ViewInstance {
 function setup(
   instance: ViewInstance = viewOf(),
   definition: DataViewDefinition = ordersDefinition(),
+  source: ViewSource = testSource(),
 ) {
-  const source = testSource();
   const engine = new ViewEngine({
     definitions: [definition],
     store: new MemoryViewStore({ instances: [instance] }),
@@ -78,8 +78,8 @@ function setup(
 }
 
 /** The workbench over one saved analysis view, waited for its first result. */
-async function open(instance?: ViewInstance) {
-  const { engine, source } = setup(instance);
+async function open(instance?: ViewInstance, answer?: ViewSource) {
+  const { engine, source } = setup(instance, undefined, answer);
   render(
     <DataWorkbench
       engine={engine}
@@ -335,6 +335,64 @@ describe('the visualization panel', () => {
     heatmap.focus();
     expect(document.activeElement).toBe(heatmap);
   });
+
+  /**
+   * The tiles only pick; the way on to the chosen type's options is one
+   * labelled button under them (2026-09-23 review). It used to be a 24px
+   * gear hanging off the chosen tile's corner, which covered nothing and
+   * which nobody saw or understood. Its pixels are measured in a browser
+   * (`VisualizePanel`); this pins what it is and where the keyboard goes.
+   */
+  it('opens the chosen type’s options from one labelled button under the tiles', async () => {
+    await open(viewOf({ layout: 'chart' }));
+    visualize();
+    const named = (type: string) =>
+      label('label.chart.options').replace('{name}', type);
+    const buttons = () => [
+      ...panel()!.querySelectorAll<HTMLButtonElement>(
+        '[data-slot="chart-options-open"]',
+      ),
+    ];
+
+    // One, named by the type it opens, in the words the page is headed with;
+    // after the tile group, inside no tile.
+    expect(buttons()).toHaveLength(1);
+    const button = buttons()[0]!;
+    expect(button.textContent).toBe(named(label('label.chart.type.bar')));
+    expect(screen.getByRole('button', { name: named('bar') })).toBe(button);
+    const group = screen.getByRole('radiogroup');
+    expect(group.contains(button)).toBe(false);
+    expect(
+      group.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Each tile is one button, with nothing inside it but its words.
+    for (const each of group.querySelectorAll('[data-slot="chart-tile"]'))
+      expect(each.querySelector('button')).toBeNull();
+    // In the Tab order, where the group's one stop is not.
+    expect(button.tabIndex).toBe(0);
+
+    // A pick moves the choice and renames the button; it opens nothing.
+    fireEvent.click(tile('pie'));
+    expect(buttons()).toHaveLength(1);
+    expect(buttons()[0]!.textContent).toBe(named('pie'));
+    expect(document.querySelector('[data-slot="chart-options"]')).toBeNull();
+
+    // The table's options are its totals row, and the button says so.
+    fireEvent.click(tile('table'));
+    expect(buttons()[0]!.textContent).toBe(named(label('label.layout.table')));
+
+    // The press opens the options; back comes back to the button.
+    fireEvent.click(buttons()[0]!);
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="chart-options"]'),
+      ).not.toBeNull(),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: label('label.chart.options-back') }),
+    );
+    await waitFor(() => expect(document.activeElement).toBe(buttons()[0]));
+  });
 });
 
 describe('a layout is a redraw, not a run', () => {
@@ -389,5 +447,139 @@ describe('a layout is a redraw, not a run', () => {
     // question is what it was.
     expect({ ...draft, chart: applied.chart }).toEqual(applied);
     expect(result.current.analysis.pending).toBe(false);
+  });
+});
+
+describe('a funnel is offered where it draws', () => {
+  /** Two warehouses: two groups, so two stages a funnel can start from. */
+  const twoWarehouses = () =>
+    testSource({
+      aggregate: vi.fn(() =>
+        Promise.resolve([
+          { warehouse: 'CN', orders: 5, amount_sum: 30 },
+          { warehouse: 'JP', orders: 2, amount_sum: 10 },
+        ]),
+      ),
+    });
+
+  /**
+   * One group is one stage, and a funnel of one stage has nothing to convert
+   * from. It used to be offered anyway, and picking it drew nothing but
+   * 「漏斗至少要有两个阶段」 (the 2026-09-23 audit): the tile is greyed and
+   * says why, as every other tile the shape cannot fill does.
+   */
+  it('greys the funnel over one group, and says why', async () => {
+    await open(viewOf({ layout: 'chart' }));
+    await screen.findByRole('img', { name: /^bar:/ });
+    visualize();
+
+    const funnel = tile('funnel');
+    expect(funnel.getAttribute('aria-disabled')).toBe('true');
+    expect(
+      funnel.querySelector('[data-slot="chart-reason"]')?.textContent,
+    ).toBe(label('chart.fit.needs-two-stages'));
+    expect(describedText(funnel)).toBe(label('chart.fit.needs-two-stages'));
+
+    fireEvent.click(funnel);
+    expect(funnel.getAttribute('aria-checked')).toBe('false');
+    expect(await screen.findByRole('img', { name: /^bar:/ })).toBeDefined();
+  });
+
+  it('draws the funnel at once where the rows give it stages', async () => {
+    await open(viewOf({ layout: 'chart' }), twoWarehouses());
+    await screen.findByRole('img', { name: /^bar:/ });
+    visualize();
+    expect(tile('funnel').getAttribute('aria-disabled')).toBeNull();
+
+    fireEvent.click(tile('funnel'));
+
+    // The stages are the groups in the order they came, filled on the pick:
+    // the reading table beside the drawing lists them as it draws them.
+    await screen.findByRole('img', { name: /^funnel:/ });
+    const reading = document.querySelector<HTMLElement>(
+      '[data-slot="chart-reading"] tbody',
+    )!;
+    expect(
+      [...reading.querySelectorAll('tr')].map(
+        row => row.querySelector('th, td')?.textContent,
+      ),
+    ).toEqual(['CN', 'JP']);
+    // Nothing is left to fix, so the status line says nothing.
+    expect(
+      screen.queryByRole('button', {
+        name: label('label.analysis.open-chart-options'),
+      }),
+    ).toBeNull();
+  });
+
+  /**
+   * A chart the config cannot draw is the visualization panel's to fix, and
+   * the tray holds nothing about it: the strip's way out used to be
+   * 「打开分析」, which opened the tray. A saved funnel of one stage is such a
+   * chart — the panel no longer offers a way to make one, but a store can
+   * still hold it.
+   */
+  it('sends a chart that will not draw to the visualization panel, not to the tray', async () => {
+    const { engine } = setup(
+      viewOf({
+        layout: 'chart',
+        chart: {
+          type: 'funnel',
+          funnel: {
+            stages: {
+              from: 'group',
+              category: 'warehouse',
+              value: 'orders',
+              order: ['CN'],
+            },
+          },
+        },
+      }),
+    );
+    render(
+      <DataWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+        kinds={['analysis']}
+      />,
+    );
+
+    const way = await screen.findByRole('button', {
+      name: label('label.analysis.open-chart-options'),
+    });
+    expect(
+      screen.queryByRole('button', {
+        name: label('label.analysis.open-editor'),
+      }),
+    ).toBeNull();
+
+    fireEvent.click(way);
+
+    await waitFor(() =>
+      expect(
+        within(panel()!).getByRole('radiogroup', {
+          name: label('label.chart.picker'),
+        }),
+      ).toBeDefined(),
+    );
+  });
+
+  it('keeps the tray as the way out of a finding that is not the chart’s', async () => {
+    const { engine } = setup(viewOf({ limit: 0 }));
+    render(
+      <DataWorkbench
+        engine={engine}
+        definitionId="orders"
+        instanceId="orders-1"
+        kinds={['analysis']}
+      />,
+    );
+
+    expect(
+      await screen.findByRole('button', {
+        name: label('label.analysis.open-editor'),
+      }),
+    ).toBeDefined();
   });
 });

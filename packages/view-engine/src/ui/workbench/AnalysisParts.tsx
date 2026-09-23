@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type {
+  AnalysisSort,
   AnalysisViewConfig,
   FieldOption,
   RecordData,
@@ -32,6 +33,7 @@ import { ChartPicker } from '../analysis/ChartPicker.js';
 import { Tray } from '../analysis/Tray.js';
 import { Button } from '../components/button.js';
 import { DrillMenu, type Pick } from '../analysis/DrillMenu.js';
+import { useHeaderSort } from '../analysis/headerSort.js';
 import { AnalysisEmpty } from '../analysis/EmptyResult.js';
 import {
   AnalysisSkeleton,
@@ -98,6 +100,11 @@ export function AnalysisParts({
   const result = useAnalysisResult(runtime, analysis, workbench);
   const { view, question, chart, chartData, fits, picked } = result;
   const layout = analysis.layout;
+  // The headers order the groups by the column pressed, and run (the
+  // record table's header does the same). A sort needs a dimension — Wow
+  // refuses one over an ungrouped aggregation, which is one row anyway.
+  const headerSort = useHeaderSort(analysis, result.ran?.sort ?? NO_SORT);
+  const sortable = (result.ran?.groups.length ?? 0) > 0;
 
   // The visualization panel (D20 屏 I／J): open from the result's toolbar,
   // it takes the sidebar column, first as the chart types, then as the
@@ -113,29 +120,35 @@ export function AnalysisParts({
    * The panel takes the sidebar's column and replaces its own contents as
    * the level changes, so every one of those changes used to leave the
    * focus on an element that is no longer on the page — the press that
-   * opened it, the gear, the way back — and a focus with nothing under it
-   * falls to `<body>`. Each level therefore takes the keyboard to its own
-   * heading, and closing the panel hands it back to the button that opened
-   * it, which is where the user was.
+   * opened it, the options button, the way back — and a focus with nothing
+   * under it falls to `<body>`. Each level therefore takes the keyboard to
+   * its own heading, except coming back from the options, which lands on the
+   * options button the user left by; closing the panel hands it back to the
+   * button that opened it. Both are where the user was.
    *
    * It is an effect keyed on the level rather than anything done inside the
    * press: the heading does not exist until React has drawn the level, and
    * a timer waiting for that would be a guess.
    */
   const heading = useRef<HTMLHeadingElement | null>(null);
+  const optionsButton = useRef<HTMLButtonElement | null>(null);
   const visualizeRef = useRef<HTMLButtonElement | null>(null);
-  // The button is always there to go back to: the toolbar stands from the
-  // moment a question is sent — an empty result and a failed one keep it —
-  // and the panel only opens from it. It used to go with the rows, so this
-  // effect kept a second landing (the result block) for a result that came
-  // back empty under an open panel; that state no longer exists.
+  // Once anything was asked the button is there to go back to: the toolbar
+  // stands from the moment a question is sent — an empty result and a
+  // failed one keep it. It used to go with the rows, so this effect kept a
+  // second landing (the result block) for a result that came back empty
+  // under an open panel; that state no longer exists. The one other way in,
+  // the status line's chart options over a chart refused before it ran, has
+  // no result block to land on either: nothing was asked.
   const was = useRef(level);
   useEffect(() => {
     const before = was.current;
     if (before === level) return;
     was.current = level;
     if (level !== null) {
-      heading.current?.focus();
+      if (before === 'options' && level === 'picker' && optionsButton.current)
+        optionsButton.current.focus();
+      else heading.current?.focus();
       return;
     }
     if (before !== null) visualizeRef.current?.focus();
@@ -146,7 +159,8 @@ export function AnalysisParts({
   const [pick, setPick] = useState<Pick | null>(null);
   const followUp = pick ? result.followUp(pick.row) : null;
   const onPick = result.pickable
-    ? (row: Pick['row'], anchor: Pick['anchor']) => setPick({ row, anchor })
+    ? (row: Pick['row'], anchor: Pick['anchor'], origin?: HTMLElement) =>
+        setPick({ row, anchor, ...(origin ? { origin } : {}) })
     : undefined;
   const close = () => setPick(null);
 
@@ -192,6 +206,11 @@ export function AnalysisParts({
     openEditor: () => setFold({ id: runtimeId, open: true }),
   });
 
+  // Whether every finding the strip shows is about the chart.
+  const chartOnly =
+    filter.unmarked.length > 0 &&
+    filter.unmarked.every(found => found.path[0] === 'chart');
+
   if (!runtime) return children(NO_PARTS);
   return children({
     // The caption is this kind's furniture in the frame (`resultSlots`).
@@ -226,9 +245,23 @@ export function AnalysisParts({
         }}
       />
     ),
-    // The way out of a config that will not run: the tray, which is where
-    // the finding is about (F11).
-    errorAction: (
+    // The way out of a config that will not run: wherever the finding is
+    // about (F11). A chart's are the visualization panel's — its options,
+    // where the stages and slots are set — and the tray holds none of them:
+    // sending a funnel short of stages to 「打开分析」 opened the one place
+    // that could not fix it (the 2026-09-23 audit). With the panel switched
+    // off by the host there is no way to it, so no button.
+    errorAction: chartOnly ? (
+      shown.visualization && (
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => setPanel(question ? 'options' : 'picker')}
+        >
+          {messages.label('label.analysis.open-chart-options')}
+        </Button>
+      )
+    ) : (
       <Button
         variant="outline"
         size="xs"
@@ -261,6 +294,7 @@ export function AnalysisParts({
       level === 'picker' ? (
         <ChartPicker
           headingRef={heading}
+          optionsRef={optionsButton}
           fits={fits}
           picked={picked}
           onPick={result.choose}
@@ -326,9 +360,14 @@ export function AnalysisParts({
               spec={chart}
               columns={view.schema ?? view.columns}
               onPick={onPick}
+              cutShort={view.truncated || view.atLimit !== undefined}
             />
           ) : (
-            <AnalysisTable view={view} onPick={onPick} />
+            <AnalysisTable
+              view={view}
+              onPick={onPick}
+              {...(sortable ? { sorting: headerSort } : {})}
+            />
           )}
           {result.pickable && (
             <DrillMenu
@@ -368,6 +407,9 @@ const NO_ROWS: readonly RecordData[] = [];
 
 /** What the analysis result hands the frame to dress (`ResultBlock.slots`). */
 const RESULT_SLOTS = resultSlots('caption');
+
+/** No sort has run yet: the order before any result. */
+const NO_SORT: readonly AnalysisSort[] = [];
 
 /**
  * The analysis result's footer: 「正在显示 12 组，耗时 0.38 秒」.

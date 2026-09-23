@@ -16,7 +16,12 @@ import type { AnalysisColumnView, ChartData } from '../analysis/index.js';
 import type { ChartSpec } from '../model/index.js';
 import { Cartesian } from './charts/Cartesian.js';
 import { ChartReadingTable } from './charts/ChartReading.js';
-import { useColumnTitle, useValueLabel, type OnPick } from './charts/family.js';
+import {
+  useAdds,
+  useColumnTitle,
+  useValueLabel,
+  type OnPick,
+} from './charts/family.js';
 import { Funnel } from './charts/Funnel.js';
 import { Heatmap } from './charts/Heatmap.js';
 import { MetricCard } from './charts/MetricCard.js';
@@ -43,6 +48,11 @@ export interface AnalysisChartProps {
    * where a row is a row (F10).
    */
   onPick?: OnPick;
+  /**
+   * The rows are the first groups of more — the result says so beside the
+   * chart; a pie also says its shares are of the groups shown.
+   */
+  cutShort?: boolean;
 }
 
 /**
@@ -64,10 +74,12 @@ export function AnalysisChart({
   className,
   columns,
   onPick,
+  cutShort,
 }: AnalysisChartProps) {
   const messages = useViewMessages();
   const label = useValueLabel(columns);
   const column = useColumnTitle(columns);
+  const adds = useAdds(columns);
   const { locale } = useSurfaceDisplay();
   const reading = useMemo(
     () => readChart(data, spec, { messages, label, column, locale }),
@@ -78,8 +90,10 @@ export function AnalysisChart({
     className,
     label,
     column,
+    adds,
     name: reading.name,
     onPick,
+    cutShort,
   };
   return (
     <>

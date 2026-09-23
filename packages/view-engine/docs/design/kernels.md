@@ -32,7 +32,7 @@ compileSummaries(def, cfg, kinds, ctx): AggregationQuery | null    // 全范围�
 projectSummaries(def, cfg, rows | aggregation): SummaryRow        // scope 是结果的一部分：'total' 来自自己的聚合，'page' 来自屏幕上的行
 
 // analysis
-defaultAnalysisConfig(def, limits?: RuntimeLimits): AnalysisViewConfig   // 按固定优先级从已声明能力挑选指标；有可分组字段时取其一并按指标降序排序，否则分组为空且 `sort` 为空（无分组聚合只有一行，Wow 拒绝对其排序）；`limit` 取能力的 `defaultLimit`、能力的 `maxLimit` 与 `limits.maxAnalysisRows` 三者最小值，缺省 `DEFAULT_RUNTIME_LIMITS`
+defaultAnalysisConfig(def, limits?: RuntimeLimits): AnalysisViewConfig   // 按固定优先级从已声明能力挑选指标；有可分组字段时取其一并按指标降序排序，否则分组为空且 `sort` 为空（无分组聚合只有一行，Wow 拒绝对其排序）；`limit` 取 `limitBounds(capability, limits).fallback`——能力的 `defaultLimit`（缺省 100）压到 `max` 以下，`max` 是能力的 `maxLimit`、`limits.maxAnalysisRows` 与 Wow `AGGREGATION_LIMITS.MAX_LIMIT` 三者最小值，`limits` 缺省 `DEFAULT_RUNTIME_LIMITS`
 validateAnalysis(def, cfg: AnalysisViewConfig, kinds): Issue[]   // 见下方规则
 compileAnalysis(def, cfg, kinds, ctx): AggregationQuery          // 同构映射；三处 FilterTree 编译为 FilterExpression
 compileAnalysisTotals(def, cfg, kinds, ctx): AggregationQuery | null   // table.totals 为 true 时的无分组聚合，否则 null
@@ -220,7 +220,7 @@ mergeGlobalFilter(panel, dashboardFilter, bindings): FilterTree   // 把 Dashboa
 - **展开之后，计数单位是最内层元素**，维度、指标、数值表达式与指标条件的字段只能是那一层的；根字段或外层元素字段写在这些位置报 `analysis.field.outside-scope`（Wow 以「requires its declared element scope」拒绝，字段确实存在，所以不说「未知」）。根 `filter`（范围）反过来只认根字段——它在任何展开之前执行，要问元素里的事由 `elementMatch` 条件去问；第 i 层元素自己的 `filter` 只认该层持有的字段。（见 test/analysisCapability.test.ts「the expansion chain」「element scope」）
 - `any`、`distinctCount`、`percentile`、`expressions`、`having` 等未在能力中声明却被使用报 error；
 - 每个 group 的 `type` 必须在该字段的 `groups` 中，`DATE_HISTOGRAM.unit` 必须在其 `dateUnits` 中，`NUMERIC.function` 必须在该字段的 `functions` 中，能力未声明即报 error；
-- `limit` 必须是不超过 `RuntimeLimits.maxAnalysisRows` 的正整数，`groups`、`metrics`、`elements`、`sort` 的数量与 `limit` 始终受 Wow `AGGREGATION_LIMITS` 约束，`AnalysisCapability.limits` 只能进一步收紧（取更小者）；
+- `limit` 必须是 1～`limitBounds(...).max` 的整数，出界一律是一条 `analysis.limit.out-of-range`（带 `max`）：从前 2.5 得到的是「必须是正数」——它是正数——而 -3 与 20000 犯的是同一条规矩却听到两句话；准入、默认配置与托盘的「前 N 组」读的是同一个 `limitBounds`，界面说出来的范围就是应用被拒的那个范围。`groups`、`metrics`、`elements`、`sort` 的数量与 `limit` 始终受 Wow `AGGREGATION_LIMITS` 约束，`AnalysisCapability.limits` 只能进一步收紧（取更小者）；
 - `sort[].alias` 不得重复（`analysis.sort.duplicate`），`DATE_HISTOGRAM.dense` 只能用于唯一分组（`analysis.group.dense-not-alone`）；
 - `metrics` 不能为空，报 `analysis.metrics.empty`，与 Wow `metrics must not be empty.` 一致；
 - `metrics[].type` 不在六种之内报 `analysis.metric.type-unknown`，`compileMetric` 对此抛错而不发出空洞（定义准入另行检查这些上限与 `defaultLimit` 本身是正整数且 `defaultLimit` 不超过 `maxLimit`）；
@@ -261,7 +261,7 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 - **投影在色板用完之前并「其他」**（`shapeChart`，不是准入规则）：`maxSlices` 不写时可加指标的饼图按 `CHART_COLOR_SLOTS`（8）并，写了更大的数也按 8 读——第九片会拿到第一片的颜色；**时间维度坐的轴按时间升序排**（直角坐标横轴、热力图行列、指标卡迷你趋势，以及按时间拆分的系列），不管视图按什么排序，类目与饼图照结果行的次序（[ui/analysis.md#analysischart-与-shapechart](ui/analysis.md#analysischart-与-shapechart)）；
 - `referenceLines` 引用的轴必须有系列；
 - **图表必须消费全部分组别名**（cartesian 用 `x` 加可选 `splitBy`，pie 用 `category`，heatmap 用 `x`／`y`，scatter 用 `category`，group 漏斗用 `category`，metric 卡片要求无分组或仅 `trend.x`），否则结果里同一坐标会有多行，而 AVG、百分位、DISTINCT_COUNT 无法在投影层安全再聚合，报 error；
-- 漏斗至少两个阶段，`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复；
+- 漏斗至少两个阶段，每一段量的都是可累加的指标（`group` 形态的 `value`、`metrics` 形态的每个 `items[].metric`：记录数或合计，与 `maxSlices` 同一判据），否则报 `chart.funnel.not-additive`——转化率是一段除以另一段，平均数、去重计数、百分位、极值之间没有这回事；`metrics` 形态要求分组为空，`group` 形态的 `order` 无重复，且它的 `category` 要是**类别维度**（`TERMS`）：阶段是流程里有名字的一步，日期桶与数值区间是一把尺子切成的段，从一天到下一天谈不上转化——它们的桶键也不是文本，按名字读不回阶段（`chart.funnel.stages-need-category`）；
 - `metric` 无 `trend` 时要求分组为空，有 `trend` 时要求恰有一个 DATE_HISTOGRAM 分组且别名等于 `trend.x`，且 `metric` 与 `compare.metric` 必须是可加指标（与 `maxSlices` 同一判据），否则报 `chart.metric.trend-not-additive`。
 
 ### 哪些图型画得了这个形态：`fitCharts`（K3）
@@ -270,13 +270,15 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 
 - 直角坐标系的四个（bar／line／area／combo）各要一个维度当横轴——没有维度就没有轴（`chart.fit.needs-dimension`）；再多只能拆一层（`splitBy`），所以**最多两个维度**，第三个会让每个点下有几行，平均、去重计数这类指标在投影里加不回去——置灰并写「最多两个维度」（`chart.fit.too-many-dimensions`），而不是悄悄丢掉一个维度（D20，用户 2026-09-22 定）；
 - 饼图与按维度分阶段的漏斗要**恰好**一个维度（`chart.fit.needs-one-dimension`），漏斗另有「按指标分阶段」的形态，那一种要零维度加两个以上指标；
+- **按维度分阶段的漏斗还要看行**（`fitCharts` 的 `rows`）：一选中，阶段就按结果行来的顺序从那个维度的文本值里填（`withStagesFrom`），所以画不画得出是行说了算——维度不是类别（`TERMS`）、或行里一个文本值都没有时写 `chart.fit.needs-category`（「阶段要一个类别维度」），只有一个不同的值时写 `chart.fit.needs-two-stages`（「要至少两组作阶段」）。从前只按形态判，结果只有一组时漏斗照样可选，选中只得到一句「漏斗至少要有两个阶段」和一张空图（2026-09-23 审查）。没有行（还没跑、或一组也没有）不算零个阶段，只按类型判——除非同时交来图本身（`fitCharts` 的 `chart`）：一个配置被拒、从没跑过的视图没有行可填阶段，它的漏斗就只有图已经点名的那几段（`order`，去重计），于是一段的漏斗写「要至少两组作阶段」。这是从图型网格修一个存下来画不出的视图时的读法（[ui/analysis.md](ui/analysis.md)「存下来画不出的漏斗能从图型网格修好」）；
+- **漏斗只量可累加的数**：漏斗是「进来多少、留下多少」，平均、去重计数、百分位、极值与任一值之间没有转化可谈，所以按维度分阶段时要至少一个、按指标分阶段时要至少两个可累加的数量（`isAdditiveMetric`：记录数或合计），不够时写 `chart.fit.needs-additive`（「要记录数或合计」）。有可累加的数而主指标不是时仍可选：填槽时取第一个可累加的；
 - 热力图要两个维度（`chart.fit.needs-two-dimensions`）；
 - 散点把两个指标画成一个点、一个维度值一个点，所以要**恰好**一个维度（多了写 `chart.fit.needs-one-dimension`）再加两个指标（`chart.fit.needs-two-metrics`）；
 - 指标卡是一个数：没有维度时成立，有**恰好一个时间维度且主数可加**时也成立（那是迷你趋势，判据与 `maxSlices` 同一条），其余写 `chart.fit.needs-no-dimension`；
 - **图形量的是数量，不量时间点**：`fitCharts` 另收 `moments`（`momentMetrics`，见下「时间的最早与最晚」），除指标卡外每个家族只数不是时间点的指标——维度对得上而可量的指标不够时写 `chart.fit.needs-quantity`（「要数量指标，时间画不成图」）；指标卡把主数写出来，时间点可以是它的主数；
 - **推荐只有一个，而且只推荐画得出来的那个**：没有维度推指标卡，一个日期维度推折线，其余推柱状；三个维度起、或者指标全是时间点时不推荐任何一个——那是表格的活。推荐是记号不是动作，不自动换图（D20）。
 
-表格不经过这里：它画得了任何形态，所以它在列出图型的地方是一张永远可选的卡片，而不是一条规则。（见 test/fitCharts.test.ts「fitCharts」、test/chartFamilies.test.ts「chartFamilies」与 test/chartPicker.test.tsx「the visualization panel」）
+表格不经过这里：它画得了任何形态，所以它在列出图型的地方是一张永远可选的卡片，而不是一条规则。（见 test/fitCharts.test.ts「fitCharts」「a funnel’s fit」、test/chartFamilies.test.ts「chartFamilies」与 test/chartPicker.test.tsx「the visualization panel」「a funnel is offered where it draws」；遍历形态的那个测试同时遍历两组、一组与桶键不是文本的行，另一个「one rule, before anything ran」遍历没有行、只有存下的漏斗点名两段／一段／重复一段／零段时的形态）
 
 可视化面板第二层上那些"改一个设置不许弄坏另一个"的规则同样是内核的，不在组件里：`analysis/chartOptions.ts`（D20 屏 J）。`optionTabs` 说一个图型有哪几页；`withSlot` 让两个槽对调而不是重复（选中另一个槽正拿着的别名时）；`without` 是"取消一项"的写法；`isStacked`／`withStacked` 与 `isSmooth`／`withSmooth` 把堆叠与平滑当作整张图的一个选择，全体加入或全体退出；`withMoved`／`withMovedTo` 排阶段与系列；`stageValues`／`withStagesFrom`／`withStageOrder` 让按分组值分阶段的漏斗一被选中就有顺序可画——业务顺序内核不知道，但"结果行来的顺序"总好过空白。它们都是纯函数，不用 DOM 就能钉住；面板怎么用它们见 [ui/analysis.md#可视化的第二层选中图型的选项三个页签](ui/analysis.md#可视化的第二层选中图型的选项三个页签)。（见 test/chartOptions.test.ts「chartOptions」）
 
@@ -289,6 +291,7 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 - **形态放不下时图型跟着动，而不是把配置变红**：除了指标卡与按指标分阶段的漏斗，每个家族都要靠维度寻址，所以没有任何维度时只有指标卡画得出来；而指标卡是一个数，所以有一个它画不成迷你趋势的维度时它就不是指标卡了（趋势要恰好一个时间维度，且主数可加——无合计行时主数就是各桶之和）。删掉最后一个维度改的是问题不是图，用户没有放弃过哪个选择；
 - **量的槽只从数量里填**（`moments` 参数）：系列、饼的值、热力格子、散点的两轴与大小、漏斗的阶段都跳过时间点；指标卡的主数可以是时间点，但那时比较、目标与数值格式都拿掉——没有什么跟一个时刻比，也没有数值格式印得出它。**有维度而一个数量都没有时**，任何图型都变成没有系列的柱状图：一张合法而什么也不量的图（拆分维度下一个系列都没有也合法，`chart.splitBy.needs-one-series` 只拒两个以上），于是只看表格的这份配置照样过准入；列图型的地方把它判灰，结果区把它画成表格（`useAnalysisResult` 在当前图型不可画时交出表格）；
 - **有时间维度时指标卡的主数取可加的那个**：选中的主数不可加而另有可加的指标时，取第一个可加的，而不是退成柱状——`fitCharts` 说「可画」是因为形态里有可加的指标，填槽就得用上它；
+- **漏斗的阶段只从可累加的数量里填**：按维度分阶段时的阶段值不可加（换图型带进来的主指标是平均数也一样）就取第一个可加的，按指标分阶段时不可加的那几段离开列表——同一个理由，`fitCharts` 说漏斗「可画」是因为有可累加的数；一个都没有时阶段值留空，由 `validateChart` 说缺什么。按维度分阶段的 `order` 去重（列了两次的一段就是一段）；
 - **不替形态编东西**：一个维度的热力图、一个指标的散点、以及阶段没人命名过的漏斗都不可表达，槽留空，于是 `validateChart` 说的是缺哪个槽而不是整个家族不在。这些是用户对着装不下它的形态选的图型；「某个形态提供哪些图型」是另一个问题，在列出它们的地方回答（阶段 5）；
 - 维度或指标的改动同样带走指向消失别名的 `sort` 与 `table.columns`，没有维度时 `sort` 清空（Wow 拒绝对无分组聚合排序，而它本来就只有一行）——这一步在 `react/useAnalysisEditor.ts` 的 `reshape` 里，它是「一次编辑要捎上什么」的那一处。（见 test/analysisChartSlots.test.ts「fitChartSlots」与 test/analysisUi.test.tsx「re-fits the chart and the sort when the shape changes」）
 
@@ -304,7 +307,7 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 | `MIN`、`MAX`、`PERCENTILE`、`ANY` | 字段格式与字段自己的 `cell`／`options`    |
 | `DERIVED`                         | 不属于任何字段，两位小数的普通数          |
 
-`projectAnalysis` 把结果写进 `AnalysisColumnView.numberFormat`，表格、合计行、坐标轴、提示与指标卡因此都按同一份格式打印；列另带 `fn`（这一列是哪一种汇总），供界面把表头拼成「〈字段〉 的 〈汇总方式〉」，同一字段的两个汇总方式于是是两个不同的表头。（见 test/analysisProject.test.ts「metricFormat」）
+`projectAnalysis` 把结果写进 `AnalysisColumnView.numberFormat`，表格、合计行、坐标轴、提示与指标卡因此都按同一份格式打印；列另带 `fn`（这一列是哪一种汇总），供界面把表头拼成「〈字段〉的〈汇总方式〉」，同一字段的两个汇总方式于是是两个不同的表头。（见 test/analysisProject.test.ts「metricFormat」）
 
 ### 时间的最早与最晚：`readsAsItsField` 与 `momentMetrics`
 
@@ -341,7 +344,7 @@ D20 屏 G。展开一个数组就是换掉计数单位：`订单 → 明细项` 
 D20 屏 B 的两件事各有一个内核文件，都只是纯函数——托盘因此只剩标记，而「这份配置说得出来吗」只有一处答案：
 
 - **`analysis/having.ts`** 把 Wow 的 `having` 读成／写成**一行一条比较**。`havingRows(having)` 交出 `{metric, operator, value}[]`：一个 `CONDITION` 是一行，一棵一层的 `AND` 是几行，**其余一律 `null`**——区间、集合、空值判断、任何位置上的 OR、嵌套的 AND 都不摊平。摊平会把作者写的那份配置换成一份他没写过的、下一次保存就覆盖掉原件的配置，而「我读不出来」是一句可以老实说的话。`withHavingRows(rows)` 反过来：一条写成 `CONDITION`，几条写成一棵 `AND`，一条都没有就整个不写；**没有值的行直接落掉**，所以存下去的配置永远是 Wow 收得下的那一份，编辑到一半的状态归组件自己拿着。`HAVING_OPERATORS` 是那六个比较，顺序就是选择框里的顺序；
-- **`analysis/formula.ts`** 是两种写出来的指标的第一形态与它们的读法。`formulaMetric(left, right, fn, taken)` 造 Wow 的 `NUMERIC` 套 `BINARY`（两个字段相减再汇总），`derivedMetric(left, right, taken)` 造 `DERIVED`（前一个指标除以后一个）——都是**一张待改的卡片**，不是一个猜出来的答案。`expressionText`／`derivedText` 把式子说成作者会说的那句话（「金额 − 成本」「金额 的 合计 ÷ 客户数」，嵌套的加括号），列头、图例与图表的文字读法共用它。内核没有文案目录，说不出「金额 的 合计」或「记录数」，所以派生指标引用别的指标时，`metricReferenceText(fn, label)` 在列头文字里用控制字符标出「这是一个什么汇总的哪个指标」，界面的 `columnTitle` 用 `wordReferences` 把每一处换成那个指标自己列头的说法——被引用的指标有显示名时就是显示名本身，被引用的是派生指标时就是它自己那一句（已经标好）（test/formula.test.ts「wordReferences」、test/analysisProject.test.ts「marks the metrics it reads, each with its summary」）；`isFormula` 是「这条指标是卡片编得动的那一种吗」——一个操作两个操作数。`EXPRESSION_OPERATORS` 与 `OPERATOR_SIGN` 是那四则运算和它们在任何语言里都一样的符号。
+- **`analysis/formula.ts`** 是两种写出来的指标的第一形态与它们的读法。`formulaMetric(left, right, fn, taken)` 造 Wow 的 `NUMERIC` 套 `BINARY`（两个字段相减再汇总），`derivedMetric(left, right, taken)` 造 `DERIVED`（前一个指标除以后一个）——都是**一张待改的卡片**，不是一个猜出来的答案。`expressionText`／`derivedText` 把式子说成作者会说的那句话（「金额 − 成本」「金额的合计 ÷ 客户数」，嵌套的加括号），列头、图例与图表的文字读法共用它。内核没有文案目录，说不出「金额的合计」或「记录数」，所以派生指标引用别的指标时，`metricReferenceText(fn, label)` 在列头文字里用控制字符标出「这是一个什么汇总的哪个指标」，界面的 `columnTitle` 用 `wordReferences` 把每一处换成那个指标自己列头的说法——被引用的指标有显示名时就是显示名本身，被引用的是派生指标时就是它自己那一句（已经标好）（test/formula.test.ts「wordReferences」、test/analysisProject.test.ts「marks the metrics it reads, each with its summary」）；`isFormula` 是「这条指标是卡片编得动的那一种吗」——一个操作两个操作数。`EXPRESSION_OPERATORS` 与 `OPERATOR_SIGN` 是那四则运算和它们在任何语言里都一样的符号。
 
 两者都不知道目录也不知道语言：`expressionText` 接一个 `nameOf` 回调，字段叫什么由调用处说。（见 test/having.test.ts「having rows」「formulas」；界面见 [ui/analysis.md#只保留一行一条比较](ui/analysis.md) 与 [ui/analysis.md#公式与派生写出来的指标](ui/analysis.md)）
 

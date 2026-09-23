@@ -77,7 +77,7 @@ const groupRows = (table: HTMLElement) =>
 /**
  * 指标卡片上写的是它测量的那个字段——「金额」——汇总方式由旁边那个控件说；
  * 一旦在别处**提到**这个指标（「只保留」、排序、派生指标的操作数），旁边
- * 没有那个控件，于是提到它的地方和结果表的列头说同一句话：「金额 的 合计」
+ * 没有那个控件，于是提到它的地方和结果表的列头说同一句话：「金额的合计」
  * （`columnTitle` / `metricReference`）。
  */
 const AMOUNT_METRIC = formatMessage(zhCN, 'label.summary.of', {
@@ -85,7 +85,7 @@ const AMOUNT_METRIC = formatMessage(zhCN, 'label.summary.of', {
   fn: zhCN['label.summary.fn.SUM'],
 });
 
-/** 「金额 − 成本 的 合计」: a formula's own words, then how it was summarised. */
+/** 「金额 − 成本的合计」: a formula's own words, then how it was summarised. */
 const MARGIN_HEADER = formatMessage(zhCN, 'label.summary.of', {
   field: '金额 − 成本',
   fn: zhCN['label.summary.fn.SUM'],
@@ -94,7 +94,7 @@ const MARGIN_HEADER = formatMessage(zhCN, 'label.summary.of', {
 /**
  * 「只保留」：一行一条比较，跑完之后表上真的少了两组。
  *
- * 四个仓库的金额合计是 1920／2450／4880／980，「金额 的 合计 大于 2000」
+ * 四个仓库的金额合计是 1920／2450／4880／980，「金额的合计 大于 2000」
  * 之后只剩华北与华南。它是聚合之后、排序与截断之前的一道筛选，所以它减少
  * 的是**组**，不是记录——一条画在条件面板里的筛选做不到这件事，这也是它
  * 为什么不在范围里。
@@ -232,6 +232,83 @@ export const SortedByTwo: Story = {
 };
 
 /**
+ * 「前 N 组」的框（2026-09-23 审查）：草稿里只放 Wow 收得下的 N。
+ *
+ * 从前清空之后弹回刚才的 -3；2.5 被说成「必须是正数」；删掉最后一个维度把这一
+ * 行带走之后，那个 -3 还留在草稿里拦着应用。这里在真浏览器里走一遍：出界的字
+ * 照原样留在框里，框下面一句「须为 1～10,000 的整数」，读得见、在框下面；清空
+ * 就是空着（占位字写着起步的 100）；带着一个出界的字删掉维度，框与那句话一起
+ * 走，应用照跑，表上只剩一行。
+ */
+export const TopNField: Story = {
+  ...DisplayTableWithTotals,
+  play: async ({ canvasElement }) => {
+    const table = await findDataTable(canvasElement);
+    await waitFor(() => expect(groupRows(table)).toBe(4));
+    const opened = await openTray(canvasElement);
+    const box = () =>
+      within(opened).getByLabelText<HTMLInputElement>(
+        zhCN['label.analysis.row-limit'],
+      );
+    const refusal = formatMessage(zhCN, 'label.analysis.row-limit-invalid', {
+      max: 10_000,
+    });
+
+    for (const typed of ['-3', '2.5']) {
+      await userEvent.clear(box());
+      await userEvent.type(box(), typed);
+      await expect(box()).toHaveValue(typed);
+      await expect(box()).toHaveAttribute('aria-invalid', 'true');
+      // A fraction is told the range, not that it must be positive.
+      const said = await within(opened).findByText(refusal);
+      await expect(said).toBeVisible();
+      await expect(box()).toHaveAccessibleDescription(refusal);
+      // Under its box, and inside the tray rather than cut off at its edge.
+      const where = said.getBoundingClientRect();
+      await expect(where.top).toBeGreaterThanOrEqual(
+        box().getBoundingClientRect().bottom,
+      );
+      await expect(where.right).toBeLessThanOrEqual(
+        opened.getBoundingClientRect().right,
+      );
+    }
+
+    // Emptied, it stays empty: the N a view starts at, said as the placeholder.
+    await userEvent.clear(box());
+    await userEvent.tab();
+    await expect(box()).toHaveValue('');
+    await expect(box()).toHaveAttribute('placeholder', '100');
+    await expect(box()).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(within(opened).queryByText(refusal)).toBeNull();
+
+    // A refused N left in the box goes with the box when the last dimension
+    // takes the row away — and nothing is left behind to refuse Apply.
+    await userEvent.type(box(), '-3');
+    await within(opened).findByText(refusal);
+    await userEvent.click(
+      within(opened).getByRole('button', {
+        name: formatMessage(zhCN, 'label.analysis.remove-group', {
+          name: '仓库',
+        }),
+      }),
+    );
+    await waitFor(() =>
+      expect(opened.querySelector('[data-slot="analysis-limit"]')).toBeNull(),
+    );
+    await expect(within(canvasElement).queryByText(refusal)).toBeNull();
+    await expect(applyButton(canvasElement)).toBeEnabled();
+    await userEvent.click(applyButton(canvasElement));
+    await waitFor(async () =>
+      expect(groupRows(await findDataTable(canvasElement))).toBe(1),
+    );
+    // Nor does the status line say anything about the N.
+    await expect(canvasElement.textContent ?? '').not.toContain(
+      formatMessage(zhCN, 'analysis.limit.out-of-range', { max: 10_000 }),
+    );
+  },
+};
+
+/**
  * 「改了就跑」（D20，todo 批 7）：托盘里改一下问题，没人按应用，表自己重画。
  *
  * jsdom 那边钉的是**什么时候**跑——一次编辑之后那 300 毫秒、一串编辑并成一次
@@ -244,7 +321,7 @@ export const SortedByTwo: Story = {
  * 不会漏给下一个故事，末尾不必再收拾一遍。
  */
 
-/** 「成本 的 合计」：关掉开关之后那次编辑要带出来的那一列。 */
+/** 「成本的合计」：关掉开关之后那次编辑要带出来的那一列。 */
 const COST_HEADER = formatMessage(zhCN, 'label.summary.of', {
   field: '成本',
   fn: zhCN['label.summary.fn.SUM'],
@@ -394,7 +471,7 @@ export const RunsAsEdited: Story = {
   },
 };
 
-/** 「创建时间 的 最晚」: a moment's own word, not 「最大」. */
+/** 「创建时间的最晚」: a moment's own word, not 「最大」. */
 const LATEST_HEADER = formatMessage(zhCN, 'label.summary.of', {
   field: '创建时间',
   fn: zhCN['label.summary.fn.date.MAX'],

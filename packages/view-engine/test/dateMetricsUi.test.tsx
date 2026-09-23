@@ -108,7 +108,7 @@ describe('the earliest and the latest of a date, on screen', () => {
       </ViewSurface>,
     );
     expect(
-      screen.getByRole('columnheader', { name: 'Created 的 最晚' }),
+      screen.getByRole('columnheader', { name: 'Created的最晚' }),
     ).toBeDefined();
   });
 
@@ -327,9 +327,7 @@ describe('an analysis view over the latest of a date', () => {
     });
     expect(card.textContent).not.toContain(String(INSTANT));
     await user.click(await screen.findByRole('button', { name: 'Visualize' }));
-    await user.click(
-      screen.getByRole('button', { name: 'Options for metric' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'metric options' }));
     const panel = document.querySelector<HTMLElement>(
       '[data-slot="chart-options"]',
     )!;

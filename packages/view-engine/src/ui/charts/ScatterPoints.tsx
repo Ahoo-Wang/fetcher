@@ -11,112 +11,66 @@
  * limitations under the License.
  */
 
-import {
-  CartesianGrid,
-  Scatter,
-  ScatterChart,
-  XAxis,
-  YAxis,
-  ZAxis,
-} from 'recharts';
-import { useChartMotion } from './motion.js';
+import { useCallback, useMemo } from 'react';
 import type { ScatterData } from '../../analysis/index.js';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '../components/chart.js';
-import { cn } from 'cn';
-import { useViewMessages } from '../MessagesProvider.js';
-import { asImage } from './asImage.js';
-import type { MouseEvent as ReactMouseEvent } from 'react';
 import { pointAnchor } from '../analysis/DrillMenu.js';
+import { useViewMessages } from '../MessagesProvider.js';
+import { EChart, type ChartClick } from './EChart.js';
 import type { FamilyProps } from './family.js';
-import { color } from './palette.js';
-import { TooltipValue } from './TooltipValue.js';
-import { CHART_MARGIN } from './axis.js';
+import { useChartMotion } from './motion.js';
+import { scatterOption } from './scatterOption.js';
+import type { ChartTheme } from './theme.js';
 
+/** A scatter, drawn by ECharts from `scatterOption` (D21). */
 export function ScatterPoints({
   data,
   spec,
   className,
   label,
+  column,
   name,
   onPick,
 }: FamilyProps<ScatterData>) {
   const animate = useChartMotion();
   const messages = useViewMessages();
-  const rows = data.points.map(point => ({
-    name: label(spec?.scatter?.category, point.category),
-    x: point.x,
-    y: point.y,
-    size: point.size ?? 1,
-  }));
-  // Both axes carry a metric each, so their ticks and the tooltip read as
-  // those columns read rather than as bare numbers.
-  const measured: Record<string, string | undefined> = {
-    x: spec?.scatter?.x,
-    y: spec?.scatter?.y,
-    size: spec?.scatter?.size,
-  };
-
+  const x = messages.label('label.chart.column.x');
+  const y = messages.label('label.chart.column.y');
+  const pickable = onPick !== undefined;
+  const option = useCallback(
+    (theme: ChartTheme) =>
+      scatterOption(
+        data,
+        { spec, label, column, fallback: { x, y }, animate, pickable },
+        theme,
+      ),
+    [data, spec, label, column, x, y, animate, pickable],
+  );
+  const onClick = useMemo(
+    () =>
+      onPick &&
+      ((click: ChartClick) => {
+        const point = data.points[click.dataIndex];
+        const category = spec?.scatter?.category;
+        if (
+          click.componentType !== 'series' ||
+          !point ||
+          category === undefined
+        )
+          return;
+        onPick(
+          { [category]: point.category },
+          pointAnchor(click.event?.event ?? { clientX: 0, clientY: 0 }),
+        );
+      }),
+    [onPick, data, spec],
+  );
   return (
-    <ChartContainer
-      config={{
-        points: {
-          label: messages.label('label.chart.points'),
-          color: color(0),
-        },
-      }}
-      className={cn('min-h-52 w-full', className)}
-    >
-      <ScatterChart margin={CHART_MARGIN} {...asImage(name)}>
-        <CartesianGrid />
-        <XAxis
-          type="number"
-          dataKey="x"
-          tickFormatter={(value: number) => label(measured.x, value)}
-        />
-        <YAxis
-          type="number"
-          dataKey="y"
-          width="auto"
-          tickFormatter={(value: number) => label(measured.y, value)}
-        />
-        <ZAxis type="number" dataKey="size" range={[40, 260]} />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              nameKey="name"
-              formatter={(value, name, item) => (
-                <TooltipValue
-                  color={item.color}
-                  name={name}
-                  value={label(measured[String(item.dataKey)], value)}
-                />
-              )}
-            />
-          }
-        />
-        <Scatter
-          data={rows}
-          fill="var(--color-points)"
-          isAnimationActive={animate}
-          className={onPick ? 'cursor-pointer' : undefined}
-          onClick={
-            onPick &&
-            ((_: unknown, index: number, event: ReactMouseEvent) => {
-              const point = data.points[index];
-              const category = spec?.scatter?.category;
-              if (!point || category === undefined) return;
-              onPick(
-                { [category]: point.category },
-                pointAnchor(event.nativeEvent),
-              );
-            })
-          }
-        />
-      </ScatterChart>
-    </ChartContainer>
+    <EChart
+      name={name}
+      className={className}
+      option={option}
+      onClick={onClick}
+      data={{ 'data-chart': 'scatter', 'data-marks': data.points.length }}
+    />
   );
 }

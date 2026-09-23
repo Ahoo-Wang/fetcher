@@ -308,6 +308,7 @@ function EmbeddedAnalysis({ runtime }: { runtime: OpenedRuntime }) {
           data={view.chart}
           spec={analysis.chart}
           columns={view.schema ?? view.columns}
+          cutShort={view.truncated || view.atLimit !== undefined}
         />
       ) : (
         <AnalysisTable view={view} />

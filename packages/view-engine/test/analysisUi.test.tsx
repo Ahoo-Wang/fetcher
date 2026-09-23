@@ -107,6 +107,7 @@ describe('useAnalysisEditor', () => {
       result.current.setSort([]);
       result.current.submit();
     }).not.toThrow();
+    expect(result.current.sortNow([])).toBe(false);
   });
 
   it('offers only what the capability declares', async () => {
@@ -180,6 +181,38 @@ describe('useAnalysisEditor', () => {
       groups: ['warehouse'],
       metrics: ['orders'],
     });
+  });
+
+  /**
+   * A type is how the numbers are drawn, not which (audit P0-10): bars of
+   * the total switched to a pie used to come back as a pie of the first
+   * metric, the order count, with nothing on screen saying the number had
+   * changed.
+   */
+  it('keeps the metric the chart measured across a type switch', async () => {
+    const result = await editor();
+
+    act(() => {
+      result.current.analysis.addMetric({
+        type: 'NUMERIC',
+        alias: 'total',
+        function: 'SUM',
+        expression: { type: 'FIELD', field: 'amount' },
+      });
+      result.current.analysis.updateChart({
+        cartesian: { x: 'warehouse', series: [{ metric: 'total' }] },
+      });
+    });
+    act(() => result.current.analysis.setChartType('pie'));
+
+    expect(result.current.analysis.chart.pie?.value).toBe('total');
+    expect(result.current.analysis.issues).toEqual([]);
+
+    act(() => result.current.analysis.setChartType('bar'));
+
+    expect(result.current.analysis.chart.cartesian?.series[0]?.metric).toBe(
+      'total',
+    );
   });
 
   /** Every type the editor offers, switched into from the same draft. */

@@ -24,6 +24,9 @@ import {
   createStoryEngine,
   datedOrdersDefinition,
   expandableOrdersDefinition,
+  failedEventsDefinition,
+  failedEventsSource,
+  failedEventsView,
   overviewDefinition,
   savedViews,
   waybillAnalysisDefinition,
@@ -58,6 +61,10 @@ function AnalysisWorkbenchDemo({
   latest = false,
   limit,
   waybills,
+  failures,
+  savedFunnel,
+  labels = false,
+  heatmap = false,
 }: {
   behaviour?: SourceBehaviour;
   layout?: 'table' | 'chart';
@@ -104,6 +111,25 @@ function AnalysisWorkbenchDemo({
    * 「时间朝哪边走」与「第九种颜色」都问不出来。
    */
   waybills?: WaybillScene;
+  /**
+   * 换成十个失败事件问的问题（`failuresScene`）：按处理器数失败次数——名字有
+   * 长有短，前两组降序是两个长名字、升序是两个短的——或按聚合 ID 分组，一串
+   * 要一个字一个字抄走的码。
+   */
+  failures?: FailuresScene;
+  /**
+   * 存成一个漏斗的视图：按仓库分阶段，量这些阶段的是 `value`，阶段是 `order`。
+   * 一个阶段的漏斗、量平均数的漏斗都是早先存得下、如今画不出的样子——打开它
+   * 什么也不跑，从状态行进图型网格修。
+   */
+  savedFunnel?: { value: 'orders' | 'amount'; order: string[] };
+  /** Whether the chart writes each value over its mark (`ChartSpec.labels`). */
+  labels?: boolean;
+  /**
+   * 仓库 × 状态的热力图：两个维度、一个金额合计，格子深浅按金额，底下一条色标
+   * （D21 第四批）。
+   */
+  heatmap?: boolean;
 }) {
   const { groups, metrics } = analysisConfig();
   const fitted = fitChartSlots({ type: chart }, groups, metrics);
@@ -143,6 +169,7 @@ function AnalysisWorkbenchDemo({
             },
           }),
       ...(pinned ? { colors: PINNED_COLORS } : {}),
+      ...(labels ? { labels: true } : {}),
     },
     table: {
       columns: allColumns
@@ -151,10 +178,58 @@ function AnalysisWorkbenchDemo({
       totals: true,
     },
   });
-  const config = latest ? latestConfig(layout) : saved;
+  const config = heatmap
+    ? heatmapConfig(layout, labels)
+    : latest
+      ? latestConfig(layout)
+      : savedFunnel
+        ? {
+            ...saved,
+            chart: {
+              type: 'funnel' as const,
+              funnel: {
+                stages: {
+                  from: 'group' as const,
+                  category: 'warehouse',
+                  ...savedFunnel,
+                },
+              },
+            },
+          }
+        : saved;
+
+  if (failures) {
+    const view = failedEventsView(failuresScene(failures));
+    return (
+      <StoryEngine
+        create={() =>
+          createStoryEngine({
+            behaviour,
+            definitions: [failedEventsDefinition, overviewDefinition],
+            source: failedEventsSource(behaviour),
+            instances: [view],
+          })
+        }
+      >
+        {engine => (
+          <DataWorkbench
+            engine={engine}
+            definitionId={failedEventsDefinition.id}
+            instanceId={view.id}
+            {...HOST_LANGUAGE}
+            kinds={['analysis']}
+            features={{ visualization }}
+          />
+        )}
+      </StoryEngine>
+    );
+  }
 
   if (waybills) {
-    const view = waybillAnalysisView(waybillScene(waybills, layout));
+    const scene = waybillScene(waybills, layout);
+    const view = waybillAnalysisView(
+      labels ? { ...scene, chart: { ...scene.chart, labels: true } } : scene,
+    );
     return (
       <StoryEngine
         create={() =>
@@ -210,6 +285,33 @@ function AnalysisWorkbenchDemo({
   );
 }
 
+/** Orders by warehouse and status, as a heatmap. */
+function heatmapConfig(layout: 'table' | 'chart', labels: boolean) {
+  const groups = [
+    { alias: 'warehouse', field: 'warehouse', type: 'TERMS' },
+    { alias: 'status', field: 'status', type: 'TERMS' },
+  ] satisfies AnalysisViewConfig['groups'];
+  // The amounts differ cell to cell where the counts are all one.
+  const metrics = [
+    {
+      alias: 'amount',
+      type: 'NUMERIC',
+      function: 'SUM',
+      expression: { type: 'FIELD', field: 'amount' },
+    },
+  ] satisfies AnalysisViewConfig['metrics'];
+  return analysisConfig({
+    layout,
+    groups,
+    metrics,
+    table: { columns: [] },
+    chart: {
+      ...fitChartSlots({ type: 'heatmap' }, groups, metrics),
+      ...(labels ? { labels: true } : {}),
+    },
+  });
+}
+
 /** The order count and the latest order per warehouse, the latest first. */
 function latestConfig(layout: 'table' | 'chart') {
   const { groups } = analysisConfig();
@@ -229,6 +331,45 @@ function latestConfig(layout: 'table' | 'chart') {
     table: { columns: [] },
     // The latest is a moment, which no mark measures: the bars count orders.
     chart: fitChartSlots({ type: 'bar' }, groups, metrics, new Set(['latest'])),
+  });
+}
+
+type FailuresScene = 'processor' | 'aggregate';
+
+/**
+ * 失败事件上的两个问题，都画成表。
+ *
+ * - `processor`：每个处理器失败几次、重试了几次，**失败最多的前两组**。按表头
+ *   把次数改成升序，留下的就是失败最少的两组——名字从三十几个字母变成五六个，
+ *   列一格也不该挪。
+ * - `aggregate`：每个聚合失败几次。聚合 ID 在记录视图里读作可复制的值，在这里
+ *   用同一个等宽字。
+ */
+function failuresScene(scene: FailuresScene): AnalysisViewConfig {
+  const byProcessor = scene === 'processor';
+  const groups = [
+    byProcessor
+      ? { type: 'TERMS', field: 'processor', alias: 'processor' }
+      : { type: 'TERMS', field: 'aggregateId', alias: 'aggregate' },
+  ] satisfies AnalysisViewConfig['groups'];
+  const failures = { alias: 'failures', type: 'COUNT' } as const;
+  const retries = {
+    alias: 'retries',
+    type: 'NUMERIC',
+    function: 'SUM',
+    expression: { type: 'FIELD', field: 'retries' },
+  } as const;
+  const metrics: AnalysisViewConfig['metrics'] = byProcessor
+    ? [failures, retries]
+    : [failures];
+  return analysisConfig({
+    layout: 'table',
+    groups,
+    metrics,
+    sort: [{ alias: 'failures', direction: SortDirection.DESC }],
+    limit: byProcessor ? 2 : 100,
+    table: { columns: [] },
+    chart: fitChartSlots({ type: 'bar' }, groups, metrics),
   });
 }
 
@@ -332,10 +473,15 @@ const meta = {
     allColumns: false,
     visualization: true,
     latest: false,
+    labels: false,
+    heatmap: false,
   },
   argTypes: {
+    heatmap: { control: 'boolean' },
+    labels: { control: 'boolean' },
     latest: { control: 'boolean' },
     limit: { table: { disable: true } },
+    savedFunnel: { table: { disable: true } },
     waybills: {
       control: 'inline-radio',
       options: [undefined, 'daily', 'daily-card', 'cities'],
@@ -364,9 +510,9 @@ export const BarChart: Story = { args: { layout: 'chart', chart: 'bar' } };
 
 /**
  * 追问（D20 Ⅳ）：按下一根柱子——或表格布局里的一行——弹出三项，
- * 「查看这些记录」「再按…拆一层」「只看这一组」。这个工作台同时列着记录视图，
- * 所以第一项在：它在同一个工作台里开出一个未保存的记录视图，标题栏下多一条
- * 「返回／来自」。另外两项改的是当前这个分析视图。
+ * 「查看这些记录」「按其他维度细分…」「只看这一组」。这个工作台同时列着记录视图，
+ * 所以第一项在：它在同一个工作台里开出一个未保存的记录视图，叫「订单 · 这一组」，
+ * 标题栏下一颗「返回」。另外两项同样开在旁边、同样能返回，原来那个视图不变脏。
  */
 export const FollowUps: Story = {
   args: { layout: 'chart', chart: 'bar', records: true },
@@ -422,9 +568,22 @@ export const CutShortTable: Story = { args: { layout: 'table', limit: 2 } };
 
 /**
  * 每个仓库最晚的一单（生产审查）：创建时间的最大值是一个时刻，读作界面
- * 语言与时区下的日期时间，而不是十三位毫秒；表头说「创建时间 的 最晚」。
+ * 语言与时区下的日期时间，而不是十三位毫秒；表头说「创建时间的最晚」。
  * 切到图表，柱子量的是订单数——时刻没有零点可以让柱子从那里长。
  */
+/**
+ * 失败最多的两个处理器（2026-09-23 审查 P1）：名字很长，表一打开就合身；按表头
+ * 把次数改成升序，留下失败最少的两个，名字只有几个字母——列宽是第一次画时量
+ * 的，之后钉住，列一格不挪。
+ */
+export const FailingProcessors: Story = { args: { failures: 'processor' } };
+
+/**
+ * 每个聚合失败几次：聚合 ID 在记录视图里读作可复制的值，这里用与它同一个
+ * 等宽字，0 和 O、l 和 1 分得开，一列码上下对齐。
+ */
+export const FailingAggregates: Story = { args: { failures: 'aggregate' } };
+
 export const LatestPerWarehouse: Story = {
   args: { layout: 'table', latest: true },
 };
@@ -448,6 +607,37 @@ export const LoadingChart: Story = {
 export const DailyNewestFirst: Story = {
   args: { layout: 'chart', waybills: 'daily' },
 };
+
+/**
+ * 三十天的柱，每根柱上写着它的数：写得下的都写，会压到别的数上的那一个不写
+ * ——而不是叠在一起（ECharts 的 `labelLayout.hideOverlap`，D21）。数写得短，
+ * 与刻度同一个读法。
+ */
+export const ValueLabels: Story = {
+  args: { layout: 'chart', waybills: 'daily', labels: true },
+};
+
+/**
+ * 仓库 × 状态的热力图：格子铺满绘图区、第一行在上，深浅按金额，底下一条色标
+ * 读得回数；格子上写着金额（从前是挤在一角的灰格子，没有色标也没有数）。
+ */
+export const HeatmapChart: Story = {
+  args: { layout: 'chart', heatmap: true, labels: true },
+};
+
+/**
+ * 两个指标画成折线：每个点一颗圆点，线的两端各离绘图区的边半格，金额在左轴、
+ * 订单数在右轴，两根轴各有标题（D21 第二批）。
+ */
+export const LineChart: Story = {
+  args: { layout: 'chart', chart: 'line', series: 'both' },
+};
+
+/**
+ * 只剩一组时柱子也只有它该有的宽：从前一组就是一整块铺满绘图区的色板
+ * （定价「按状态分布」，真实后端 2026-09-23）。
+ */
+export const OneBar: Story = { args: { layout: 'chart', limit: 1 } };
 
 /** 同一个按日倒序的问题画成指标卡：迷你趋势同样从最早的一天画起。 */
 export const DailyTrendCard: Story = {

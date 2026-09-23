@@ -18,7 +18,9 @@ import {
   fitChartSlots,
   fitCharts,
   optionTabs,
+  switchChartType,
   validateChart,
+  valueLabelsOn,
   withStagesFrom,
 } from '../src/analysis/index.js';
 import {
@@ -81,23 +83,52 @@ const METRICS: AnalysisMetric[][] = [
   [latest],
   [count, latest],
   [latest, sum, average],
+  // A lead that does not add up beside one that does: a funnel takes the
+  // second (`chart.funnel.not-additive`).
+  [average, count],
+  [average, sum, latest],
+];
+
+/**
+ * The rows a result of these groups could answer with: one per value, each
+ * group keyed by it — text for a category, a bucket's start for a date, as
+ * a source hands them back.
+ */
+function rowsOf(groups: AnalysisGroup[], values: readonly string[]) {
+  return values.map((value, index) =>
+    Object.fromEntries(
+      groups.map(group => [
+        group.alias,
+        group.type === 'TERMS' ? value : Date.UTC(2026, index, 1),
+      ]),
+    ),
+  );
+}
+
+/** Two groups, one group, and two whose values are none of them text. */
+const ROWS: readonly (readonly string[])[] = [['a', 'b'], ['a']];
+
+/** The stages a saved funnel names: two, one, one listed twice, none. */
+const ORDERS: readonly (readonly string[])[] = [
+  ['a', 'b'],
+  ['a'],
+  ['a', 'a'],
+  [],
 ];
 
 /**
  * The chart the panel would draw on picking `type` for this shape: its
  * slots filled the way `fitChartSlots` fills them, and — a funnel whose
- * stages are group values names them once rows arrive — two rows' worth of
- * stages, as the result block supplies them.
+ * stages are group values names them from the rows on the pick — the
+ * stages those rows give, as the result block supplies them.
  */
 function drawn(
   type: ChartType,
   groups: AnalysisGroup[],
   metrics: AnalysisMetric[],
+  rows: readonly Record<string, unknown>[],
 ): ChartSpec {
   const chart = fitChartSlots({ type }, groups, metrics, MOMENTS);
-  const rows = ['a', 'b'].map(value =>
-    Object.fromEntries(groups.map(group => [group.alias, value])),
-  );
   return withStagesFrom(chart, rows);
 }
 
@@ -120,33 +151,93 @@ describe('chartFamilies', () => {
   it('one rule, read forward and after the fact', () => {
     const drift: string[] = [];
     for (const groups of GROUPS)
-      for (const metrics of METRICS) {
-        const fits = fitCharts({ groups, metrics, moments: MOMENTS });
-        for (const type of CHART_TYPES) {
-          const chart = drawn(type, groups, metrics);
-          const errors = validateChart(
-            analysisConfig({
-              groups,
-              metrics: metrics as [AnalysisMetric, ...AnalysisMetric[]],
-              chart,
-            }),
-            MOMENTS,
-          ).filter(issue => issue.severity === 'error');
-          // Valid is not drawn: a shape with nothing to measure keeps a
-          // valid chart that measures nothing (`fitChartSlots`), which the
-          // result block shows as its table.
-          const draws =
-            chart.type === type && errors.length === 0 && measures(chart);
-          if (draws !== fits[type].available)
-            drift.push(
-              `${groups.map(group => group.alias).join('+') || '∅'} × ${metrics
-                .map(metric => metric.alias)
-                .join(
-                  '+',
-                )} → ${type}: offered ${fits[type].available}, draws ${draws}`,
-            );
+      for (const metrics of METRICS)
+        for (const values of ROWS) {
+          const rows = rowsOf(groups, values);
+          const fits = fitCharts({ groups, metrics, moments: MOMENTS, rows });
+          for (const type of CHART_TYPES) {
+            const chart = drawn(type, groups, metrics, rows);
+            const errors = validateChart(
+              analysisConfig({
+                groups,
+                metrics: metrics as [AnalysisMetric, ...AnalysisMetric[]],
+                chart,
+              }),
+              MOMENTS,
+            ).filter(issue => issue.severity === 'error');
+            // Valid is not drawn: a shape with nothing to measure keeps a
+            // valid chart that measures nothing (`fitChartSlots`), which the
+            // result block shows as its table.
+            const draws =
+              chart.type === type && errors.length === 0 && measures(chart);
+            if (draws !== fits[type].available)
+              drift.push(
+                `${groups.map(group => group.alias).join('+') || '∅'} (${values.length} rows) × ${metrics
+                  .map(metric => metric.alias)
+                  .join(
+                    '+',
+                  )} → ${type}: offered ${fits[type].available}, draws ${draws}`,
+              );
+          }
         }
-      }
+    expect(drift).toEqual([]);
+  });
+
+  /**
+   * Before anything ran there are no rows: a saved chart that is refused
+   * runs nothing, and picking a type is how it is repaired. The picker then
+   * reads the draft's shape and the stages its chart already names, and a
+   * pick is fitted to that shape — offered exactly when that draws.
+   */
+  it('one rule, before anything ran', () => {
+    const drift: string[] = [];
+    for (const groups of GROUPS)
+      for (const metrics of METRICS)
+        for (const order of ORDERS) {
+          const saved: ChartSpec = {
+            type: 'funnel',
+            funnel: {
+              stages: {
+                from: 'group',
+                category: groups[0]?.alias ?? '',
+                value: metrics[0].alias,
+                order: [...order],
+              },
+            },
+          };
+          const fits = fitCharts({
+            groups,
+            metrics,
+            moments: MOMENTS,
+            chart: saved,
+          });
+          for (const type of CHART_TYPES) {
+            const chart = fitChartSlots(
+              switchChartType(saved, type),
+              groups,
+              metrics,
+              MOMENTS,
+            );
+            const errors = validateChart(
+              analysisConfig({
+                groups,
+                metrics: metrics as [AnalysisMetric, ...AnalysisMetric[]],
+                chart,
+              }),
+              MOMENTS,
+            ).filter(issue => issue.severity === 'error');
+            const draws =
+              chart.type === type && errors.length === 0 && measures(chart);
+            if (draws !== fits[type].available)
+              drift.push(
+                `${groups.map(group => group.alias).join('+') || '∅'} [${order.join(',')}] × ${metrics
+                  .map(metric => metric.alias)
+                  .join(
+                    '+',
+                  )} → ${type}: offered ${fits[type].available}, draws ${draws}`,
+              );
+          }
+        }
     expect(drift).toEqual([]);
   });
 
@@ -190,5 +281,21 @@ describe('chartFamilies', () => {
         .map(([family]) => family),
     ).toEqual(['cartesian', 'pie', 'heatmap']);
     expect(optionTabs('table')).toEqual(['display']);
+  });
+});
+
+describe('valueLabelsOn', () => {
+  it('writes a cartesian chart’s values unasked, and no other family’s', () => {
+    expect(valueLabelsOn({ type: 'bar' })).toBe(true);
+    expect(valueLabelsOn({ type: 'line' })).toBe(true);
+    expect(valueLabelsOn({ type: 'pie' })).toBe(false);
+    expect(valueLabelsOn({ type: 'heatmap' })).toBe(false);
+    expect(valueLabelsOn(undefined)).toBe(false);
+  });
+
+  it('takes the analyst’s word, but never for a family that cannot write them', () => {
+    expect(valueLabelsOn({ type: 'bar', labels: false })).toBe(false);
+    expect(valueLabelsOn({ type: 'pie', labels: true })).toBe(true);
+    expect(valueLabelsOn({ type: 'scatter', labels: true })).toBe(false);
   });
 });

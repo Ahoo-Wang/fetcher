@@ -11,18 +11,21 @@
  * limitations under the License.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
-  drillConditions,
+  CHART_PICKER_ORDER,
+  drillGroups,
   fitChartSlots,
   fitCharts,
   focusOn,
   groupFor,
   groupableFields,
   momentColumns,
+  asksForWhole,
   projectAnalysis,
   shapeChart,
   splitBy,
+  switchChartType,
   withStagesFrom,
   type AnalysisColumnView,
   type AnalysisView,
@@ -59,17 +62,49 @@ export interface SplitOption {
  * and one more entry in `followUp`, not another pair of props on the menu.
  */
 export type FollowUpAction =
-  /** Open the records behind the group, in a record view of their own. */
-  | { kind: 'records'; run(): void }
-  /** Ask the same question of the group, by one more dimension. */
-  | { kind: 'split'; options: readonly SplitOption[]; run(field: string): void }
-  /** Narrow the range to the group, and run. */
-  | { kind: 'focus'; run(): void };
+  /**
+   * Open the records behind the group, in a record view of their own. The
+   * view is named `title`: wording, so the menu says it — of `subject`, the
+   * definition's name for its records, and the group.
+   */
+  | { kind: 'records'; subject: string; run(title: string): void }
+  /**
+   * Ask the same question of the group by another dimension, as a view of
+   * its own beside this one (`WorkbenchController.follow`), as `focus`
+   * does. Named `title`, of `subject` — this view's name — and the group.
+   */
+  | {
+      kind: 'split';
+      subject: string;
+      options: readonly SplitOption[];
+      run(field: string, title: string): void;
+    }
+  /**
+   * Ask the same question of the group alone, as a view of its own beside
+   * this one (`WorkbenchController.follow`), so the way back is this result
+   * as it stands. Named `title`, of `subject` — this view's name — and the
+   * group.
+   */
+  | { kind: 'focus'; subject: string; run(title: string): void };
+
+/** One dimension of the group pressed, for the menu to name it by. */
+export interface FollowUpGroup {
+  /**
+   * The dimension's column in the result — its header and how its values
+   * read, a date bucket's width among them — or undefined where the result
+   * drew none.
+   */
+  column: AnalysisColumnView | undefined;
+  /** The row's value in that column: a key, a bucket's start. */
+  value: unknown;
+  /** The conditions that select it, as the applied bar names them. */
+  conditions: readonly FilterSummaryItem[];
+}
 
 /** What the menu over one pressed group shows. */
 export interface FollowUp {
-  /** The group, named by its conditions as the applied bar names them. */
-  conditions: readonly FilterSummaryItem[];
+  /** The group, one dimension each, in the order the result is grouped. */
+  groups: readonly FollowUpGroup[];
   actions: readonly FollowUpAction[];
 }
 
@@ -101,11 +136,20 @@ export interface AnalysisResultController {
   chart: ChartSpec;
   /** The rows shaped for `chart`, or undefined while there is nothing to draw. */
   chartData: ChartData | undefined;
-  /** Which chart types the question's shape can draw (`fitCharts`). */
+  /**
+   * Which chart types the question's shape can draw, its rows included once
+   * there are any (`fitCharts`); before anything was asked, the draft's
+   * shape and the stages its chart names.
+   */
   fits: Record<ChartType, ChartFit>;
   /** What the visualization panel shows as chosen. */
   picked: Picked;
-  /** Draw the rows as this type, or as the table. Redraws; never runs. */
+  /**
+   * Draw the rows as this type, or as the table. Over a question — rows on
+   * screen, the first answer on its way, or a query that failed — it
+   * redraws and never runs; with none asked — a saved chart refused, so
+   * nothing ran — it fits the type to the draft's shape and runs (`repair`).
+   */
   choose(next: Picked): void;
   /**
    * Whether a group of this result can be followed up at all: an analysis
@@ -142,7 +186,10 @@ export interface AnalysisResultController {
 export function useAnalysisResult(
   runtime: ViewRuntime<AnalysisViewConfig> | null,
   analysis: AnalysisEditorController,
-  workbench: Pick<WorkbenchController, 'state' | 'canDrill' | 'drill'>,
+  workbench: Pick<
+    WorkbenchController,
+    'state' | 'canDrill' | 'drill' | 'follow'
+  >,
 ): AnalysisResultController {
   const result = workbench.state?.result;
   const data = result?.data;
@@ -195,14 +242,36 @@ export function useAnalysisResult(
         : analysis.chart,
     [analysis.chart, question, shapeAsked, drafted, moments],
   );
+  // What the picker offers. Over rows, the shape that ran and the rows
+  // themselves: a funnel over one dimension takes its stages from them the
+  // moment it is picked (`withStagesFrom`), so only they say whether it has
+  // the two it needs. Before anything ran — a saved view whose chart is
+  // refused runs nothing — the draft's shape, and the stages its chart
+  // already names: picking from there is how such a view is repaired.
   const fits = useMemo(
     () =>
-      fitCharts({
-        groups: question?.groups ?? [],
-        metrics: question?.metrics ?? [],
-        moments,
-      }),
-    [question, moments],
+      question
+        ? fitCharts({
+            groups: question.groups,
+            metrics: question.metrics,
+            moments,
+            ...(view ? { rows: view.rows } : {}),
+          })
+        : fitCharts({
+            groups: analysis.groups,
+            metrics: analysis.metrics,
+            moments: analysis.moments,
+            chart: analysis.chart,
+          }),
+    [
+      question,
+      view,
+      moments,
+      analysis.groups,
+      analysis.metrics,
+      analysis.moments,
+      analysis.chart,
+    ],
   );
   // A chart the question's shape cannot draw — every metric a moment,
   // nothing to measure — is its table: the rows are there, and an empty
@@ -212,26 +281,55 @@ export function useAnalysisResult(
   const chartData = useMemo(
     () =>
       view && ran && drawable
-        ? shapeChart({ ...ran, chart, layout: 'chart' }, view.rows, view.totals)
+        ? shapeChart(
+            { ...ran, chart, layout: 'chart' },
+            view.rows,
+            view.overall,
+          )
         : undefined,
     [view, ran, chart, drawable],
   );
   const picked: Picked =
     analysis.layout === 'table' || !drawable ? 'table' : chart.type;
 
+  // A chart that headlines the whole — a metric card over a trend — is one
+  // the rows cannot draw alone: the buckets are only the groups that fit the
+  // limit (`asksForWhole`). Picked over rows that ran without the whole, it
+  // runs once, as the totals switch does. Not while the draft holds another
+  // edit waiting for Apply — running would apply that too, which is not this
+  // gesture's to do; the card adds up its buckets until then — and never
+  // again for a config that asked and did not get it, which is a failed
+  // query and not a missing question.
+  const { submit, pending } = analysis;
+  const wantsWhole =
+    ran !== undefined &&
+    analysis.layout === 'chart' &&
+    drawable &&
+    !asksForWhole(ran) &&
+    asksForWhole({ ...ran, chart });
+  useEffect(() => {
+    if (wantsWhole && !pending) submit();
+  }, [wantsWhole, pending, submit]);
+
   const choose = (next: Picked) => {
+    // Nothing asked — a saved chart refused, so nothing ran — is a repair.
+    // A question on its way or one that failed is not: its shape is known,
+    // and a pick redraws over it as it would over rows.
+    if (!question) {
+      repair(analysis, next, fits);
+      return;
+    }
     if (next === 'table') {
       analysis.setLayout('table');
       return;
     }
     analysis.setLayout('chart');
-    if (!question) return;
     // Fitted to the question's shape, so a type picked while the first
     // answer is on its way — or after it failed — is the chart the rows
     // land in; and a funnel of a group's values given the order they came
     // in, once there are rows to take it from.
     const fitted = fitChartSlots(
-      { ...chart, type: next },
+      switchChartType(chart, next),
       question.groups,
       question.metrics,
       moments,
@@ -246,17 +344,18 @@ export function useAnalysisResult(
 
   const followUp = (row: RecordData): FollowUp | null => {
     if (!pickable || !ran || !runtime) return null;
-    const conditions = drillConditions(
-      ran,
-      runtime.fields,
-      runtime.kinds,
-      row,
-      { timeZone: runtime.environment.timeZone },
-    );
-    if (!conditions) return null;
+    const drilled = drillGroups(ran, runtime.fields, runtime.kinds, row, {
+      timeZone: runtime.environment.timeZone,
+    });
+    if (!drilled) return null;
+    const conditions = drilled.flatMap(entry => entry.conditions);
     const actions: FollowUpAction[] = [];
     if (workbench.canDrill)
-      actions.push({ kind: 'records', run: () => workbench.drill(conditions) });
+      actions.push({
+        kind: 'records',
+        subject: runtime.definition.title,
+        run: title => workbench.drill(conditions, title),
+      });
     // Groupable fields the result is not already grouped by — the list the
     // tray adds a dimension from (`groupableFields`) — read off the config
     // that ran, for the reason the conditions are.
@@ -264,25 +363,53 @@ export function useAnalysisResult(
       analysis.fields,
       ran.groups,
     ).map(option => ({ field: option.field, label: option.label }));
+    // Both open beside this view: the question that ran, drawn as the screen
+    // draws it — the layout and the chart are the draft's, and nothing else
+    // the draft holds is applied by a gesture that did not ask for it.
+    const drawn: AnalysisViewConfig = {
+      ...ran,
+      layout: analysis.layout,
+      chart,
+    };
+    const subject = workbench.state?.title ?? '';
     if (options.length > 0)
       actions.push({
         kind: 'split',
+        subject,
         options,
-        run: name => split(runtime, analysis, ran, conditions, name, moments),
+        run: (name, title) => {
+          const patch = split(
+            runtime,
+            analysis,
+            drawn,
+            conditions,
+            name,
+            moments,
+          );
+          if (patch)
+            workbench.follow({ ...drawn, ...patch }, title, conditions);
+        },
       });
     actions.push({
       kind: 'focus',
-      run: () => {
-        runtime.edit(focusOn(ran, conditions));
-        runtime.apply();
-      },
+      subject,
+      run: title =>
+        workbench.follow(
+          { ...drawn, ...focusOn(ran, conditions) },
+          title,
+          conditions,
+        ),
     });
     return {
-      conditions: describeFilter(
-        runtime.fields,
-        { op: 'and', children: conditions },
-        runtime.kinds,
-      ),
+      groups: drilled.map(entry => ({
+        column: columns.find(column => column.alias === entry.group.alias),
+        value: entry.value,
+        conditions: describeFilter(
+          runtime.fields,
+          { op: 'and', children: entry.conditions },
+          runtime.kinds,
+        ),
+      })),
       actions,
     };
   };
@@ -303,26 +430,69 @@ export function useAnalysisResult(
   };
 }
 
+/**
+ * A pick with no rows on screen. Nothing has run — most often because the
+ * saved chart is refused (a funnel of one stage, or of averages), and a
+ * refused config never runs — so there is nothing to redraw: the pick is
+ * fitted to the shape of the draft (`setChartType`), which makes the config
+ * one that validates, and then it runs.
+ *
+ * The table is always a way out, but the chart is validated under a table
+ * too, so a refused chart would keep the table from running as well: it is
+ * replaced by the type the shape reads best as, or else the first it can
+ * draw. The run is left to Apply while the draft holds another edit, as a
+ * chart that asks for the whole is (`wantsWhole`): running would apply that
+ * too, which is not this gesture's to do.
+ */
+function repair(
+  analysis: AnalysisEditorController,
+  next: Picked,
+  fits: Record<ChartType, ChartFit>,
+): void {
+  if (next === 'table') {
+    analysis.setLayout('table');
+    const refused = analysis.issues.some(
+      found => found.severity === 'error' && found.path[0] === 'chart',
+    );
+    const fallback = refused ? drawableType(fits) : undefined;
+    if (fallback) analysis.setChartType(fallback);
+  } else {
+    analysis.setLayout('chart');
+    analysis.setChartType(next);
+  }
+  if (!analysis.pending) analysis.submit();
+}
+
+/** The type a shape reads best as, else the first it can draw at all. */
+function drawableType(
+  fits: Record<ChartType, ChartFit>,
+): ChartType | undefined {
+  const types = CHART_PICKER_ORDER.filter(type => fits[type].available);
+  return types.find(type => fits[type].recommended) ?? types[0];
+}
+
+/**
+ * The patch that asks `config` of the group by the field named, or null
+ * where the field is not one to split by. The chart's slots follow the new
+ * shape; the metrics do not change, so neither do the moments among them.
+ */
 function split(
   runtime: ViewRuntime<AnalysisViewConfig>,
   analysis: AnalysisEditorController,
-  ran: AnalysisViewConfig,
+  config: AnalysisViewConfig,
   conditions: readonly FilterNode[],
   name: string,
   moments: ReadonlySet<string>,
-): void {
+): ReturnType<typeof splitBy> | null {
   const field = runtime.fields.find(entry => entry.name === name);
   const option = analysis.fields.find(entry => entry.field === name);
-  if (!field || !option) return;
-  runtime.edit(
-    splitBy(
-      ran,
-      conditions,
-      groupFor(field, option, runtime.kinds.get(field.kind)),
-      moments,
-    ),
+  if (!field || !option) return null;
+  return splitBy(
+    config,
+    conditions,
+    groupFor(field, option, runtime.kinds.get(field.kind)),
+    moments,
   );
-  runtime.apply();
 }
 
 /**

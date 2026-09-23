@@ -30,10 +30,12 @@ import type {
 } from '../model/index.js';
 import {
   analysisScope,
+  limitBounds,
   withoutLevelsFrom,
   elementFilterFields,
   withLevel,
   fitChartSlots,
+  switchChartType,
   havingRows,
   levelLabel,
   momentMetrics,
@@ -42,6 +44,7 @@ import {
   rangeSpan,
   recommendDateUnit,
   resultSpan,
+  type AnalysisLimitBounds,
   type AnalysisScope,
 } from '../analysis/index.js';
 import { isFieldlessKind, isSingleStringField } from '../model/index.js';
@@ -103,6 +106,12 @@ export interface AnalysisEditorController extends QuestionEditing {
   metrics: AnalysisMetric[];
   sort: AnalysisSort[];
   limit: number;
+  /**
+   * The range 「前 N 组」 may take and the N a blank stands for, from the one
+   * `limitBounds` admission reads, so a field can say the bounds Apply is
+   * refused by. `{ max: 0, fallback: 0 }` without an analysis capability.
+   */
+  limitBounds: AnalysisLimitBounds;
   layout: AnalysisViewConfig['layout'];
   chart: ChartSpec;
   totals: boolean;
@@ -163,6 +172,16 @@ export interface AnalysisEditorController extends QuestionEditing {
    */
   dateUnitFor(field: AnalysisFieldOption): AnalysisDateUnit;
   setSort(sort: AnalysisSort[]): void;
+  /**
+   * Sets the sort and runs it now — unless something else in the draft is
+   * waiting for Apply. A press on a result header asks to see *this* result
+   * in another order; running would apply the other edits too (a range
+   * condition not yet applied, a dimension added in the tray), which is not
+   * that gesture's to do. Then the sort joins them, the pending dot shows,
+   * and Apply runs them together — the rule the metric card's whole
+   * (`useAnalysisResult`) keeps. Whether it ran is returned.
+   */
+  sortNow(sort: AnalysisSort[]): boolean;
   setLimit(limit: number): void;
   /** A redraw of the same rows, never a run; nor does it count as pending. */
   setLayout(layout: AnalysisViewConfig['layout']): void;
@@ -187,6 +206,7 @@ const NO_MOMENTS: ReadonlySet<string> = new Set();
  * should not be offered the option.
  */
 const EMPTY_GROUPS: readonly FieldGroupDefinition[] = [];
+const NO_LIMIT_BOUNDS: AnalysisLimitBounds = { max: 0, fallback: 0 };
 
 export function useAnalysisEditor(
   runtime: ViewRuntime | null,
@@ -420,6 +440,13 @@ export function useAnalysisEditor(
     metrics,
     sort: config?.sort ?? [],
     limit: config?.limit ?? 0,
+    limitBounds: useMemo(
+      () =>
+        capability && runtime
+          ? limitBounds(capability, runtime.limits)
+          : NO_LIMIT_BOUNDS,
+      [capability, runtime],
+    ),
     layout: config?.layout ?? 'table',
     chart: config?.chart ?? EMPTY_CHART,
     totals: config?.table.totals === true,
@@ -449,6 +476,27 @@ export function useAnalysisEditor(
 
     ...editing,
     setSort: useCallback((sort: AnalysisSort[]) => edit({ sort }), [edit]),
+    sortNow: useCallback(
+      (sort: AnalysisSort[]) => {
+        if (!runtime) return false;
+        const { draft, applied, issues } = runtime.getSnapshot();
+        if (draft.kind !== 'analysis' || applied.kind !== 'analysis')
+          return false;
+        // What waits besides the sort: the two sides compared with this
+        // sort on both, so a sort edited in the tray and not yet run —
+        // which this one replaces — does not hold it back.
+        const others = comparePending(
+          { ...draft, sort },
+          { ...applied, sort },
+          issues,
+        ).pending;
+        runtime.edit({ sort });
+        if (others) return false;
+        runtime.apply();
+        return true;
+      },
+      [runtime],
+    ),
     setLimit: useCallback((limit: number) => edit({ limit }), [edit]),
     // A redraw, not a run: the result's rows are drawn as a table or as a
     // chart from the same answer (`ANALYSIS_PRESENTATION_MEMBERS`).
@@ -464,7 +512,7 @@ export function useAnalysisEditor(
         // type and back returns to the settings that family had.
         change(current => ({
           chart: fitChartSlots(
-            { ...current.chart, type },
+            switchChartType(current.chart, type),
             current.groups,
             current.metrics,
             momentsOf(current),

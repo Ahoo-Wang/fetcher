@@ -307,11 +307,16 @@ function scatter(spec: ScatterSpec | undefined, shape: Shape): ScatterSpec {
 
 /**
  * Stages come from metrics when there is nothing to group by, and otherwise
- * from the values of the one group — whose business order is data this layer
+ * from the values of the one group, whose business order is data this layer
  * has never seen, so an order already written down is kept and an absent one
- * stays absent for the editor to ask about.
+ * stays absent for the editor to ask about. Either way a stage measures only
+ * what adds up — a record count or a sum.
  */
 function funnel(spec: FunnelSpec | undefined, shape: Shape): FunnelSpec {
+  // A stage is a count of what entered or remained: only a metric that adds
+  // up is one (`chart.funnel.not-additive`), so a lead that does not gives
+  // way to the first that does.
+  const counted = shape.quantities.filter(alias => shape.additive.has(alias));
   const rest = {
     ...(spec?.conversion === undefined ? {} : { conversion: spec.conversion }),
     ...(spec?.orientation === undefined
@@ -325,9 +330,7 @@ function funnel(spec: FunnelSpec | undefined, shape: Shape): FunnelSpec {
     // the end, where it can be moved from.
     const named =
       spec?.stages.from === 'metrics'
-        ? spec.stages.items.filter(item =>
-            shape.quantities.includes(item.metric),
-          )
+        ? spec.stages.items.filter(item => counted.includes(item.metric))
         : [];
     const taken = new Set(named.map(item => item.metric));
     return {
@@ -335,7 +338,7 @@ function funnel(spec: FunnelSpec | undefined, shape: Shape): FunnelSpec {
         from: 'metrics',
         items: [
           ...named,
-          ...shape.quantities
+          ...counted
             .filter(metric => !taken.has(metric))
             .map(metric => ({ metric })),
         ],
@@ -352,8 +355,9 @@ function funnel(spec: FunnelSpec | undefined, shape: Shape): FunnelSpec {
     stages: {
       from: 'group',
       category,
-      value: slot(kept?.value, shape.quantities),
-      order: kept?.order ?? [],
+      value: slot(kept?.value, counted),
+      // A stage listed twice is one stage (`chart.funnel.duplicate-stage`).
+      order: [...new Set(kept?.order ?? [])],
       ...(kept?.cumulative === undefined
         ? {}
         : { cumulative: kept.cumulative }),
@@ -393,4 +397,104 @@ function metricCard(
     ...(spec?.format === undefined || !quantity ? {} : { format: spec.format }),
     ...(trending ? { trend: { x: shape.dateGroups[0] } } : {}),
   };
+}
+
+/**
+ * The metric a chart is about: the one its first mark measures.
+ *
+ * A cartesian chart's first series, a pie's or a heatmap's value, a
+ * scatter's horizontal measure, a funnel's stage value (or its first stage),
+ * a card's headline. Undefined when the family has not been filled yet.
+ */
+export function leadMetric(chart: ChartSpec): string | undefined {
+  switch (CHART_FAMILY[chart.type]) {
+    case 'cartesian':
+      return chart.cartesian?.series[0]?.metric;
+    case 'pie':
+      return chart.pie?.value;
+    case 'heatmap':
+      return chart.heatmap?.value;
+    case 'scatter':
+      return chart.scatter?.x;
+    case 'funnel':
+      return chart.funnel?.stages.from === 'group'
+        ? chart.funnel.stages.value
+        : chart.funnel?.stages.items[0]?.metric;
+    case 'metric':
+      return chart.metric?.metric;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * The chart as `type` draws it, measuring what the chart being left measured.
+ *
+ * Picking another type changes how the numbers are drawn, not which numbers
+ * (the user's 2026-09-23 decision, audit P0-10): a bar chart of 「金额的合计」
+ * turned into a pie used to become a pie of 「记录数」, because a family
+ * never visited fills its value slot with the first metric, and one visited
+ * before kept whatever it measured then. So the lead metric is carried into
+ * the new family's slot; everything else the family had — a pie's donut, a
+ * card's target, a funnel's order — stays as it was, and `fitChartSlots`
+ * still judges the result, so a metric the new family cannot measure (a
+ * moment, or one that does not add up under a card's trend) falls back there
+ * as before.
+ *
+ * A cartesian chart draws a list: the lead joins it at the front when it is
+ * not already drawn, and is the one series of a pivot. A family with nothing
+ * written yet draws every metric, which already includes it.
+ */
+export function switchChartType(chart: ChartSpec, type: ChartType): ChartSpec {
+  const next: ChartSpec = { ...chart, type };
+  const lead = leadMetric(chart);
+  if (lead === undefined || lead === '' || type === chart.type) return next;
+  switch (CHART_FAMILY[type]) {
+    case 'cartesian': {
+      const spec = chart.cartesian;
+      if (!spec) return next;
+      if (spec.splitBy !== undefined)
+        return {
+          ...next,
+          cartesian: {
+            ...spec,
+            series: [{ ...spec.series[0], metric: lead }],
+          },
+        };
+      if (spec.series.some(series => series.metric === lead)) return next;
+      return {
+        ...next,
+        cartesian: { ...spec, series: [{ metric: lead }, ...spec.series] },
+      };
+    }
+    case 'pie':
+      return chart.pie
+        ? { ...next, pie: { ...chart.pie, value: lead } }
+        : { ...next, pie: { category: '', value: lead } };
+    case 'heatmap':
+      return chart.heatmap
+        ? { ...next, heatmap: { ...chart.heatmap, value: lead } }
+        : { ...next, heatmap: { x: '', y: '', value: lead } };
+    case 'scatter':
+      return chart.scatter && chart.scatter.y !== lead
+        ? { ...next, scatter: { ...chart.scatter, x: lead } }
+        : next;
+    case 'funnel':
+      return chart.funnel?.stages.from === 'group'
+        ? {
+            ...next,
+            funnel: {
+              ...chart.funnel,
+              stages: { ...chart.funnel.stages, value: lead },
+            },
+          }
+        : next;
+    case 'metric':
+      return {
+        ...next,
+        metric: { ...chart.metric, metric: lead },
+      };
+    default:
+      return next;
+  }
 }

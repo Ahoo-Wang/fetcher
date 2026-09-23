@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { ChartFamily, ChartType } from '../model/index.js';
+import type { ChartFamily, ChartSpec, ChartType } from '../model/index.js';
 import { CHART_FAMILY } from '../model/index.js';
 
 /**
@@ -44,7 +44,10 @@ export type ChartUnfit =
   | 'chart.fit.too-many-dimensions'
   | 'chart.fit.needs-two-metrics'
   | 'chart.fit.needs-no-dimension'
-  | 'chart.fit.needs-quantity';
+  | 'chart.fit.needs-quantity'
+  | 'chart.fit.needs-category'
+  | 'chart.fit.needs-two-stages'
+  | 'chart.fit.needs-additive';
 
 /** The facts of a result's shape a family's fit reads. */
 export interface ShapeFacts {
@@ -59,8 +62,29 @@ export interface ShapeFacts {
   quantities: number;
   /** One dimension, and it is a date bucket. */
   dated: boolean;
-  /** At least one metric may be added up across rows. */
-  additive: boolean;
+  /**
+   * How many of the quantities may be added up across rows
+   * (`isAdditiveMetric`): a record count or a sum. A trend's headline and a
+   * funnel's stages are counted from these alone.
+   */
+  additive: number;
+  /**
+   * One dimension, and it names categories (`TERMS`) rather than cutting a
+   * scale into buckets: only a category's values can be a funnel's stages.
+   */
+  categorical: boolean;
+  /**
+   * Rows are known and none of the one dimension's values is text: nothing
+   * a stage could be named by.
+   */
+  textless: boolean;
+  /**
+   * How many stages a funnel over the one dimension would have: the text
+   * values the rows on hand give, once each (`stageValues`, what picking the
+   * funnel fills its order with); with no rows, the stages the chart already
+   * names; `undefined` while neither is known.
+   */
+  stages?: number;
 }
 
 export interface ChartFamilyTraits {
@@ -70,6 +94,14 @@ export interface ChartFamilyTraits {
   legend: boolean;
   /** Whether it can write the values on its marks. */
   labels: boolean;
+  /**
+   * Whether it writes them while nobody has said (`ChartSpec.labels` left
+   * out). A bar or a line does, as Metabase's do: a length is compared at a
+   * glance, but read off the axis only roughly, and the labels give way
+   * where they would land on each other. A pie already writes its shares on
+   * its slices, and a heatmap's cells are too many for a number each.
+   */
+  labelsByDefault: boolean;
   /** Why it cannot draw this shape, or `null` when it can. */
   unfit(shape: ShapeFacts): ChartUnfit | null;
 }
@@ -81,8 +113,10 @@ export interface ChartFamilyTraits {
  * DISTINCT_COUNT cannot be added back up over — D20 left that a table's
  * job rather than drop a dimension silently); a pie needs exactly one; a
  * heatmap two; a scatter plots two metrics per value of one dimension; a
- * funnel's stages are the values of one dimension or, with none, the
- * metrics themselves; a card is one number, or a sparkline over the one
+ * funnel's stages are the values of one category dimension — two of them at
+ * least, counted in the rows when there are rows — or, with none, the
+ * metrics themselves, and either way it counts only what adds up (a record
+ * count or a sum); a card is one number, or a sparkline over the one
  * date dimension when its headline adds up.
  *
  * Every family but the card measures its metrics as marks — a length, a
@@ -97,6 +131,7 @@ export const CHART_FAMILIES: Readonly<Record<ChartFamily, ChartFamilyTraits>> =
       tabs: ['data', 'display', 'axes'],
       legend: true,
       labels: true,
+      labelsByDefault: true,
       unfit: ({ groups, quantities }) =>
         groups === 0
           ? 'chart.fit.needs-dimension'
@@ -108,6 +143,7 @@ export const CHART_FAMILIES: Readonly<Record<ChartFamily, ChartFamilyTraits>> =
       tabs: ['data', 'display'],
       legend: true,
       labels: true,
+      labelsByDefault: false,
       unfit: ({ groups, quantities }) =>
         groups === 1
           ? measured(quantities, 1)
@@ -117,6 +153,7 @@ export const CHART_FAMILIES: Readonly<Record<ChartFamily, ChartFamilyTraits>> =
       tabs: ['data', 'display'],
       legend: false,
       labels: true,
+      labelsByDefault: false,
       unfit: ({ groups, quantities }) =>
         groups === 2
           ? measured(quantities, 1)
@@ -126,6 +163,7 @@ export const CHART_FAMILIES: Readonly<Record<ChartFamily, ChartFamilyTraits>> =
       tabs: ['data'],
       legend: false,
       labels: false,
+      labelsByDefault: false,
       unfit: ({ groups, metrics, quantities }) =>
         groups === 0
           ? 'chart.fit.needs-dimension'
@@ -139,11 +177,22 @@ export const CHART_FAMILIES: Readonly<Record<ChartFamily, ChartFamilyTraits>> =
       tabs: ['data', 'display'],
       legend: false,
       labels: false,
-      unfit: ({ groups, metrics, quantities }) =>
+      labelsByDefault: false,
+      unfit: ({
+        groups,
+        metrics,
+        quantities,
+        additive,
+        categorical,
+        textless,
+        stages,
+      }) =>
         groups === 1
-          ? measured(quantities, 1)
+          ? (staged(categorical, textless, stages) ??
+            measured(quantities, 1) ??
+            counted(additive, 1))
           : groups === 0 && metrics >= 2
-            ? measured(quantities, 2)
+            ? (measured(quantities, 2) ?? counted(additive, 2))
             : groups === 0
               ? 'chart.fit.needs-two-metrics'
               : 'chart.fit.needs-one-dimension',
@@ -152,8 +201,9 @@ export const CHART_FAMILIES: Readonly<Record<ChartFamily, ChartFamilyTraits>> =
       tabs: ['data', 'display'],
       legend: false,
       labels: false,
+      labelsByDefault: false,
       unfit: ({ groups, dated, additive }) =>
-        groups === 0 || (dated && additive)
+        groups === 0 || (dated && additive > 0)
           ? null
           : 'chart.fit.needs-no-dimension',
     },
@@ -165,6 +215,47 @@ export const CHART_FAMILIES: Readonly<Record<ChartFamily, ChartFamilyTraits>> =
  */
 function measured(quantities: number, needed: number): ChartUnfit | null {
   return quantities >= needed ? null : 'chart.fit.needs-quantity';
+}
+
+/**
+ * A funnel, asked whether it has enough that adds up: its stages are counts
+ * of what entered and what remained, and a conversion of averages, distinct
+ * counts, percentiles or extremes means nothing (`chart.funnel.not-additive`).
+ */
+function counted(additive: number, needed: number): ChartUnfit | null {
+  return additive >= needed ? null : 'chart.fit.needs-additive';
+}
+
+/**
+ * Whether one dimension's values can be a funnel's stages. A stage is a step
+ * of a process, named — a status, a page — so a date bucket or a number band
+ * is a scale rather than steps (`chart.funnel.stages-need-category`), and so
+ * are rows whose values are none of them text: a stage is read back by its
+ * name, which a number or a yes/no never matches. Two steps at least, or
+ * there is nothing to convert from (`chart.funnel.too-few-stages`) — and the
+ * rows are what the order is filled from when the funnel is picked, so they
+ * are what is counted.
+ */
+function staged(
+  categorical: boolean,
+  textless: boolean,
+  stages: number | undefined,
+): ChartUnfit | null {
+  if (!categorical || textless) return 'chart.fit.needs-category';
+  return stages !== undefined && stages < 2
+    ? 'chart.fit.needs-two-stages'
+    : null;
+}
+
+/**
+ * Whether a chart writes the values on its marks: what the spec says, and
+ * its family's default where it says nothing. An explicit `false` is a
+ * choice and stands; a family that cannot write them never does.
+ */
+export function valueLabelsOn(chart: ChartSpec | undefined): boolean {
+  if (!chart) return false;
+  const family = familyOf(chart.type);
+  return family.labels && (chart.labels ?? family.labelsByDefault);
 }
 
 /** The traits of the family a chart type belongs to. */
