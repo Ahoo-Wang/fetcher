@@ -675,6 +675,10 @@ export const CutShort: Story = {
       '华北',
     ]);
     await expect(slices(canvasElement).every(slice => slice.drawn)).toBe(true);
+    // The shares are of the two shown, and the pie says so where its key is.
+    await expect(
+      canvasElement.querySelector('[data-slot="pie-measure"]'),
+    ).toHaveTextContent(zhCN['label.chart.share-basis']);
 
     // The strip, not the result's live region: both are `status`, and only
     // the strip is on the status line.
@@ -1114,6 +1118,19 @@ export const VisualizePanel: Story = {
     );
     await expect(slices(canvasElement).every(slice => slice.drawn)).toBe(true);
     await expect(aggregateCalls.current).toBe(before);
+    // The pie measures what the bars measured: a type is how the numbers are
+    // drawn, not which (audit P0-10). Its legend leads with that column's
+    // title, and each slice says its share.
+    await expect(
+      canvasElement.querySelector('[data-slot="pie-measure"]'),
+    ).toHaveTextContent('金额 的 合计');
+    await waitFor(() =>
+      expect(
+        [...canvasElement.querySelectorAll('.recharts-label-list text')].some(label =>
+          /%$/.test(label.textContent ?? ''),
+        ),
+      ).toBe(true),
+    );
     await expect(chartTile(panel, 'pie')).toHaveAttribute(
       'aria-checked',
       'true',

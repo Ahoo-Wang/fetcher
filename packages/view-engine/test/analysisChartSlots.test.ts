@@ -15,6 +15,8 @@ import { describe, expect, it } from 'vitest';
 import {
   CHART_TYPES,
   fitChartSlots,
+  leadMetric,
+  switchChartType,
   validateChart,
   type AnalysisGroup,
   type AnalysisMetric,
@@ -380,5 +382,72 @@ describe('fitChartSlots', () => {
     const unknown = { type: 'sankey' as ChartType };
 
     expect(fitChartSlots(unknown, [WAREHOUSE], [COUNT])).toBe(unknown);
+  });
+});
+
+/**
+ * Picking another type changes how the numbers are drawn, not which numbers
+ * (the user's 2026-09-23 decision, audit P0-10): bars of the amount turned
+ * into a pie used to become a pie of the record count.
+ */
+describe('a type switch keeps the metric', () => {
+  const groups = [WAREHOUSE];
+  const metrics = [COUNT, TOTAL];
+  const bars: ChartSpec = {
+    type: 'bar',
+    cartesian: { x: 'wh', series: [{ metric: 'total' }] },
+  };
+  const switched = (chart: ChartSpec, type: ChartType) =>
+    fitChartSlots(switchChartType(chart, type), groups, metrics);
+
+  it('reads the metric a chart is about off its first mark', () => {
+    expect(leadMetric(bars)).toBe('total');
+    expect(
+      leadMetric({ type: 'pie', pie: { category: 'wh', value: 'orders' } }),
+    ).toBe('orders');
+    expect(leadMetric({ type: 'pie' })).toBeUndefined();
+  });
+
+  it('carries it into a family never visited', () => {
+    expect(switched(bars, 'pie').pie?.value).toBe('total');
+    expect(switched(bars, 'funnel').funnel?.stages).toMatchObject({
+      from: 'group',
+    });
+  });
+
+  it('carries it into a family visited before, keeping the rest', () => {
+    const visited: ChartSpec = {
+      ...bars,
+      pie: { category: 'wh', value: 'orders', donut: true },
+    };
+    const pie = switched(visited, 'pie').pie;
+    expect(pie?.value).toBe('total');
+    expect(pie?.donut).toBe(true);
+  });
+
+  it('brings it back to the bars, at the front of the list', () => {
+    const pie: ChartSpec = {
+      type: 'pie',
+      pie: { category: 'wh', value: 'total' },
+      cartesian: { x: 'wh', series: [{ metric: 'orders' }] },
+    };
+    expect(
+      switched(pie, 'bar').cartesian?.series.map(series => series.metric),
+    ).toEqual(['total', 'orders']);
+  });
+
+  it('leaves the fit to fall back where the new family cannot measure it', () => {
+    // A card over a trend headlines the buckets' whole: an average does not
+    // add up, so the card takes the first metric that does.
+    const averages: ChartSpec = {
+      type: 'bar',
+      cartesian: { x: 'month', series: [{ metric: 'average' }] },
+    };
+    const card = fitChartSlots(
+      switchChartType(averages, 'metric'),
+      [MONTH],
+      [AVERAGE, COUNT],
+    );
+    expect(card.metric?.metric).toBe('orders');
   });
 });
