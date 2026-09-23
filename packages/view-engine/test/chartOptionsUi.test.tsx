@@ -632,7 +632,18 @@ describe('the chart options’ display page', () => {
     await choose(user, 'Legend', 'Right');
     await waitFor(() => expect(draft().chart.legend).toBe('right'));
     // A pie always has one, so the legend is still drawn — on its side.
-    expect(document.querySelector('.recharts-legend-wrapper')).not.toBeNull();
+    await waitFor(() =>
+      expect(
+        document
+          .querySelector('[data-slot="chart"]')
+          ?.getAttribute('data-legend'),
+      ).toBe('right'),
+    );
+    expect(document.querySelector('[data-slot="chart-legend"]')).not.toBeNull();
+    // And the hole is drawn: the frame says what it draws.
+    expect(
+      document.querySelector('[data-slot="chart"]')?.getAttribute('data-chart'),
+    ).toBe('donut');
   });
 
   it('turns a cartesian chart on its side and smooths its lines', async () => {
@@ -738,9 +749,11 @@ describe('the chart options’ axes page', () => {
     );
     // The title reaches the drawing.
     await waitFor(() =>
-      expect(document.querySelector('.recharts-label')?.textContent).toBe(
-        'Money',
-      ),
+      expect(
+        [...document.querySelectorAll('[data-slot="chart-plot"] svg text')].map(
+          text => text.textContent,
+        ),
+      ).toContain('Money'),
     );
 
     fireEvent.change(within(axis).getByLabelText('Axis title'), {
@@ -953,6 +966,34 @@ describe('the chart options of the other families', () => {
     });
   });
 
+  /**
+   * A stage counts what entered and remained, so its value is a record
+   * count or a sum (`chart.funnel.not-additive`): an average is not offered
+   * where the funnel's value is chosen.
+   */
+  it('offers a funnel only the metrics that add up', async () => {
+    const { user } = await open(
+      {
+        type: 'funnel',
+        funnel: {
+          stages: {
+            from: 'group',
+            category: 'warehouse',
+            value: 'orders',
+            order: ['CN', 'US'],
+          },
+        },
+      },
+      { metrics: [ORDERS, AVERAGE, TOTAL] },
+    );
+    await user.click(gear('funnel'));
+    await user.click(within(panel()!).getByLabelText('Value'));
+    const offered = (await screen.findAllByRole('option')).map(
+      option => option.textContent,
+    );
+    expect(offered).toEqual(['Record count', 'Sum of Amount']);
+  });
+
   it('puts a heatmap on a log scale and writes its numbers in the cells', async () => {
     const { user, draft, queries } = await open(
       {
@@ -965,18 +1006,15 @@ describe('the chart options of the other families', () => {
     const ran = queries();
     await user.click(within(panel()!).getByRole('tab', { name: 'Display' }));
 
-    // A grid, not a chart library: its value labels are the cells' own.
-    expect(
-      document.querySelectorAll('[data-slot="heatmap-label"]'),
-    ).toHaveLength(0);
+    // A cell's number is written on it, with the halo every value label
+    // wears.
+    const written = () =>
+      document.querySelectorAll('[data-slot="chart-plot"] svg text[stroke]');
+    expect(written()).toHaveLength(0);
     fireEvent.click(
       within(panel()!).getByRole('checkbox', { name: 'Value labels' }),
     );
-    await waitFor(() =>
-      expect(
-        document.querySelectorAll('[data-slot="heatmap-label"]').length,
-      ).toBeGreaterThan(0),
-    );
+    await waitFor(() => expect(written().length).toBeGreaterThan(0));
 
     fireEvent.click(
       within(panel()!).getByRole('button', { name: 'Logarithmic' }),
@@ -1016,8 +1054,11 @@ describe('the chart options of the other families', () => {
 });
 
 describe('what the chart options change on screen', () => {
-  const legend = () => document.querySelector('.recharts-legend-wrapper');
-  const labels = () => document.querySelectorAll('.recharts-label-list');
+  const legend = () => document.querySelector('[data-slot="chart-legend"]');
+  // A value label is drawn with a halo of the ground under it, and a tick is
+  // not: the halo is what tells the two texts of the drawing apart.
+  const labels = () =>
+    document.querySelectorAll('[data-slot="chart-plot"] svg text[stroke]');
 
   it('takes the legend away and writes the values on the marks', async () => {
     const { user, queries, draft } = await open({
@@ -1042,12 +1083,17 @@ describe('what the chart options change on screen', () => {
     fireEvent.click(
       within(panel()!).getByRole('checkbox', { name: 'Value labels' }),
     );
-    // One list per mark, each value read as its own column reads it. The
-    // suites ask for less motion, so the marks and their labels land at once.
+    // One label per bar, each value read as its own column reads it —
+    // written short, where it has only the bar's width.
     await waitFor(() => expect(draft().chart.labels).toBe(true));
-    await waitFor(() => expect(labels()).toHaveLength(2));
-    expect([...labels()].map(list => list.textContent).join('|')).toBe(
-      '21|3010',
+    await waitFor(() => expect(labels().length).toBeGreaterThan(0));
+    expect(
+      document
+        .querySelector('[data-slot="chart"]')!
+        .getAttribute('data-labels'),
+    ).toBe('on');
+    expect([...labels()].map(text => text.textContent)).toEqual(
+      expect.arrayContaining(['2', '1', '30', '10']),
     );
     expect(queries()).toBe(ran);
   });

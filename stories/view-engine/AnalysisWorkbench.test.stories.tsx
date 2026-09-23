@@ -33,10 +33,34 @@ import displayMeta, {
   TenCities as DisplayTenCities,
   TwoMetrics as DisplayTwoMetrics,
   LatestPerWarehouse as DisplayLatestPerWarehouse,
+  HeatmapChart as DisplayHeatmapChart,
+  LineChart as DisplayLineChart,
+  OneBar as DisplayOneBar,
+  ValueLabels as DisplayValueLabels,
 } from './AnalysisWorkbench.stories.js';
 import { converter } from 'culori';
 import { aggregateCalls } from './fixtures.js';
 import { amountOf, findDataTable, readColumn, readTotal } from './readTable.js';
+import {
+  axisTexts,
+  axisTicks,
+  axisTitles,
+  chartsDrawn,
+  drawnMarks,
+  legendNames,
+  overlaps,
+  pressMark,
+  slicesInOrder,
+  valueLabels,
+} from './chartDom.js';
+
+/** Whether no two of these texts are drawn over each other. */
+const apart = (texts: readonly Element[]) => {
+  const boxes = texts.map(text => text.getBoundingClientRect());
+  return boxes.every((box, index) =>
+    boxes.slice(index + 1).every(other => !overlaps(box, other)),
+  );
+};
 
 const meta = {
   ...displayMeta,
@@ -69,8 +93,7 @@ const COUNT_HEADER = zhCN['label.analysis.row-count'];
 
 const toOklch = converter('oklch');
 
-const bars = (canvas: HTMLElement) =>
-  canvas.querySelectorAll('.recharts-bar-rectangle');
+const bars = (canvas: HTMLElement) => drawnMarks(canvas);
 
 /**
  * Each slice's category and fill, in the order the pie draws them.
@@ -79,12 +102,15 @@ const bars = (canvas: HTMLElement) =>
  * legend entry per category renders from the same config, so a chart whose
  * container never got a size shows the words and none of the marks.
  */
-const slices = (canvas: HTMLElement) =>
-  [...canvas.querySelectorAll('.recharts-pie-sector path')].map(path => ({
-    name: path.getAttribute('name'),
+const slices = (canvas: HTMLElement) => {
+  // The legend names the slices in the order the pie drew them.
+  const names = legendNames(canvas);
+  return slicesInOrder(canvas).map((path, index) => ({
+    name: names[index] ?? null,
     fill: path.getAttribute('fill'),
     drawn: (path.getAttribute('d') ?? '').length > 0,
   }));
+};
 
 /**
  * One bar per warehouse: the source grouped the rows it was asked to. The
@@ -97,15 +123,16 @@ export const BarChart: Story = {
   play: async ({ canvasElement }) => {
     await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
 
-    // The ticks sit in their own layer beside the axis, not inside it.
-    const ticks = canvasElement.querySelector('.recharts-yAxis-tick-labels');
-    await waitFor(() => expect(ticks?.textContent ?? '').toContain('¥'));
-
-    // The legend a second series earns is named by its column too — never by
-    // the alias the query carried. The tooltip reads the same two through the
-    // same labeller; synthesised pointer events do not open a recharts
-    // tooltip, so what it says is pinned in the package
-    // (test/analysisChart.test.tsx) and looked at in a browser by hand.
+    // The numbers on the axis are the column's: money, written short.
+    await waitFor(() =>
+      expect(
+        axisTicks(canvasElement, 'left')
+          .map(tick => tick.textContent)
+          .join(' '),
+      ).toContain('¥'),
+    );
+    // The tooltip reads through the same labeller, whole; what it says is
+    // pinned in the package (test/cartesianOption.test.ts).
   },
 };
 
@@ -121,13 +148,12 @@ export const WholeTicks: Story = {
   ...DisplayLatestPerWarehouse,
   args: { ...DisplayLatestPerWarehouse.args, layout: 'chart' },
   play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
     await waitFor(() => expect(bars(canvasElement).length).toBeGreaterThan(0));
     const labels = await waitFor(() => {
-      const found = [
-        ...canvasElement.querySelectorAll(
-          '.recharts-yAxis-tick-labels .recharts-cartesian-axis-tick-value',
-        ),
-      ].map(tick => (tick.textContent ?? '').trim());
+      const found = axisTicks(canvasElement, 'left').map(tick =>
+        (tick.textContent ?? '').trim(),
+      );
       expect(found.length).toBeGreaterThan(1);
       return found;
     });
@@ -177,9 +203,10 @@ export const CaptionHoldsTheReport: Story = {
 export const TicksInsideTheChart: Story = {
   ...DisplayBarChart,
   play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
     await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
     const surface = canvasElement
-      .querySelector('.recharts-surface')!
+      .querySelector('[data-slot="chart-plot"] svg')!
       .getBoundingClientRect();
     // And the drawing keeps the column's 16px gutter: the result band runs
     // to the edge, and the axis numbers used to sit against it.
@@ -191,15 +218,156 @@ export const TicksInsideTheChart: Story = {
     // 16px in overhangs the right edge, and the band clips its last tick
     // (「2026年9」 on the real service's monthly line).
     await expect(block.right - surface.right).toBeGreaterThanOrEqual(15);
-    const ticks = [
-      ...canvasElement.querySelectorAll('.recharts-cartesian-axis-tick-value'),
-    ];
+    const ticks = axisTexts(canvasElement);
     await expect(ticks.length).toBeGreaterThan(0);
+    // And no two of them on each other.
+    await expect(apart(ticks)).toBe(true);
     for (const tick of ticks) {
       const box = tick.getBoundingClientRect();
       await expect(box.left).toBeGreaterThanOrEqual(surface.left - 1);
       await expect(box.right).toBeLessThanOrEqual(surface.right + 1);
     }
+  },
+};
+
+/**
+ * 每根柱上的数：三十天里写得下的都写了，没有两个压在一起，也没有一个跑出图外。
+ * 数写得短——与刻度同一个读法（D21）。
+ */
+export const ValueLabelsApart: Story = {
+  ...DisplayValueLabels,
+  play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
+    await waitFor(() => expect(bars(canvasElement).length).toBeGreaterThan(10));
+    const labels = await waitFor(() => {
+      const found = valueLabels(canvasElement);
+      expect(found.length).toBeGreaterThan(5);
+      return found;
+    });
+    await expect(apart(labels)).toBe(true);
+    const surface = canvasElement
+      .querySelector('[data-slot="chart-plot"] svg')!
+      .getBoundingClientRect();
+    for (const label of labels) {
+      const box = label.getBoundingClientRect();
+      await expect(box.left).toBeGreaterThanOrEqual(surface.left - 1);
+      await expect(box.right).toBeLessThanOrEqual(surface.right + 1);
+      await expect(box.top).toBeGreaterThanOrEqual(surface.top - 1);
+    }
+    // The labels read as the ticks do: whole counts, never 「1.0」.
+    await expect(
+      labels.every(label => /^\d+$/.test(label.textContent ?? '')),
+    ).toBe(true);
+  },
+};
+
+/**
+ * 折线的每个点都有一颗圆点，两端的点离左右两根轴都有距离——线不贴着绘图区的
+ * 边（另一会话在真实服务上报：折线碰到两端、没有点），两根数值轴各有标题。
+ */
+export const LineKeepsOffTheEdges: Story = {
+  ...DisplayLineChart,
+  play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
+    // Two metrics over four warehouses: a dot on every point.
+    const dots = await waitFor(() => {
+      const found = drawnMarks(canvasElement);
+      expect(found).toHaveLength(8);
+      return found.map(dot => dot.getBoundingClientRect());
+    });
+    const left = axisTicks(canvasElement, 'left').map(tick =>
+      tick.getBoundingClientRect(),
+    );
+    const right = axisTicks(canvasElement, 'right').map(tick =>
+      tick.getBoundingClientRect(),
+    );
+    const firstDot = Math.min(...dots.map(dot => dot.left));
+    const lastDot = Math.max(...dots.map(dot => dot.right));
+    await expect(
+      firstDot - Math.max(...left.map(tick => tick.right)),
+    ).toBeGreaterThan(20);
+    await expect(
+      Math.min(...right.map(tick => tick.left)) - lastDot,
+    ).toBeGreaterThan(20);
+    await expect(
+      axisTitles(canvasElement).map(title => title.textContent),
+    ).toEqual(expect.arrayContaining([AMOUNT_HEADER, COUNT_HEADER]));
+  },
+};
+
+/**
+ * 热力图铺满它的绘图区，格子上的数两两不相交，底下有一条色标：量的是格子占了
+ * 图的大半宽，而不是挤在一角。
+ */
+export const HeatmapFillsItsPlot: Story = {
+  ...DisplayHeatmapChart,
+  play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
+    const frame = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="chart"][data-chart="heatmap"]',
+    )!;
+    // A cell is as see-through as its value is low, so every shade counts.
+    const cells = await waitFor(() => {
+      const found = [
+        ...frame.querySelectorAll('[data-slot="chart-plot"] svg path'),
+      ].filter(
+        path =>
+          (path.getAttribute('fill') ?? '').startsWith('rgb') &&
+          Number(path.getAttribute('fill-opacity') ?? 1) > 0,
+      );
+      expect(found.length).toBe(Number(frame.getAttribute('data-marks')));
+      return found.map(cell => cell.getBoundingClientRect());
+    });
+    const plot = frame
+      .querySelector('[data-slot="chart-plot"]')!
+      .getBoundingClientRect();
+    const span =
+      Math.max(...cells.map(cell => cell.right)) -
+      Math.min(...cells.map(cell => cell.left));
+    await expect(span / plot.width).toBeGreaterThan(0.6);
+    await expect(apart(valueLabels(frame))).toBe(true);
+    await expect(valueLabels(frame).length).toBeGreaterThan(0);
+  },
+};
+
+/** 一组也只是一根柱子的宽，不是一整块（`BAR_MAX_WIDTH`）。 */
+export const OneBarKeepsItsWidth: Story = {
+  ...DisplayOneBar,
+  play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
+    await waitFor(() => expect(bars(canvasElement)).toHaveLength(1));
+    const [bar] = bars(canvasElement);
+    await expect(bar!.getBoundingClientRect().width).toBeLessThanOrEqual(48.5);
+  },
+};
+
+/**
+ * 按下一根柱子，追问菜单挂在按下的那一点上（D20 追问）：柱子是图库画的，
+ * 按下交出的是这一组与指针的位置，与表格的一行交出的是同一个菜单。
+ */
+export const FollowUpFromABar: Story = {
+  ...DisplayFollowUps,
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
+    await chartsDrawn(canvasElement);
+    const [bar] = bars(canvasElement);
+    const box = bar!.getBoundingClientRect();
+    pressMark(bar!);
+    const menu = await drillMenu();
+    const opened = await settled(menu);
+    // Hung from the point pressed — an edge of the menu at it — not from
+    // the chart's corner.
+    const x = box.left + box.width / 2;
+    const y = box.top + box.height / 2;
+    const near = (a: number, b: number) => Math.abs(a - b) < 24;
+    await expect(near(opened.left, x) || near(opened.right, x)).toBe(true);
+    await expect(near(opened.top, y) || near(opened.bottom, y)).toBe(true);
+    await expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map(item => item.textContent),
+    ).toContain(zhCN['label.drill.records']);
+    await userEvent.keyboard('{Escape}');
   },
 };
 
@@ -231,13 +399,10 @@ const runsForward = (days: number[][]) =>
 export const TimeRunsForward: Story = {
   ...DisplayDailyNewestFirst,
   play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
     await waitFor(() => expect(bars(canvasElement).length).toBeGreaterThan(10));
     const drawn = await waitFor(() => {
-      const ticks = [
-        ...canvasElement.querySelectorAll(
-          '.recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-value',
-        ),
-      ];
+      const ticks = axisTicks(canvasElement, 'bottom');
       expect(ticks.length).toBeGreaterThan(2);
       return ticks
         .map(tick => ({
@@ -301,12 +466,9 @@ export const SparklineRunsForward: Story = {
 export const EightColoursThenOther: Story = {
   ...DisplayTenCities,
   play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
     const drawn = await waitFor(() => {
-      const paths = [
-        ...canvasElement.querySelectorAll<SVGPathElement>(
-          '.recharts-pie-sector path',
-        ),
-      ];
+      const paths = slicesInOrder(canvasElement);
       expect(paths).toHaveLength(8);
       return paths.map(path => getComputedStyle(path).fill);
     });
@@ -315,8 +477,9 @@ export const EightColoursThenOther: Story = {
     const chroma = drawn.map(fill => toOklch(fill)?.c ?? 0);
     await expect(chroma.at(-1)).toBeLessThan(0.02);
     await expect(chroma.slice(0, -1).every(c => c > 0.1)).toBe(true);
-    const legend = canvasElement.querySelector('.recharts-legend-wrapper');
-    await expect(legend?.textContent).toContain(zhCN['label.chart.other']);
+    await expect(legendNames(canvasElement)).toContain(
+      zhCN['label.chart.other'],
+    );
   },
 };
 
@@ -370,7 +533,8 @@ export const FollowUpToRecords: Story = {
     await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
 
     // 第三根是华南：结果按仓库分的四组，顺序就是画上去的顺序。
-    await userEvent.click(bars(canvasElement)[2]);
+    await chartsDrawn(canvasElement);
+    pressMark(bars(canvasElement)[2]!);
 
     const menu = await drillMenu();
     await expect(
@@ -434,9 +598,8 @@ export const FollowUpFocus: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => expect(slices(canvasElement)).toHaveLength(3));
 
-    await userEvent.click(
-      canvasElement.querySelectorAll('.recharts-pie-sector path')[0],
-    );
+    await chartsDrawn(canvasElement);
+    pressMark(slicesInOrder(canvasElement)[0]!);
 
     const menu = await drillMenu();
     await expect(
@@ -591,11 +754,13 @@ export const FollowUpMenuFitsItsWords: Story = {
 export const TwoMetrics: Story = {
   ...DisplayTwoMetrics,
   play: async ({ canvasElement }) => {
+    await chartsDrawn(canvasElement);
     await waitFor(() => expect(bars(canvasElement)).toHaveLength(8));
     // The count has an axis of its own on the right, beside the amount's.
-    await expect(
-      canvasElement.querySelectorAll('.recharts-yAxis'),
-    ).toHaveLength(2);
+    await waitFor(() =>
+      expect(axisTicks(canvasElement, 'right').length).toBeGreaterThan(1),
+    );
+    await expect(axisTicks(canvasElement, 'left').length).toBeGreaterThan(1);
   },
 };
 
@@ -645,8 +810,14 @@ export const PinnedCategoryColor: Story = {
   play: async ({ canvasElement }) => {
     await waitFor(() => expect(slices(canvasElement)).toHaveLength(3));
     const [south, ...others] = slices(canvasElement);
-    await expect(south).toEqual({ name: '华南', fill: '#7c3aed', drawn: true });
-    for (const slice of others) await expect(slice.fill).not.toBe('#7c3aed');
+    // Pinned as `#7c3aed`, handed to the drawing as the colour it is.
+    await expect(south).toEqual({
+      name: '华南',
+      fill: 'rgb(124, 58, 237)',
+      drawn: true,
+    });
+    for (const slice of others)
+      await expect(slice.fill).not.toBe('rgb(124, 58, 237)');
   },
 };
 
@@ -1278,15 +1449,13 @@ export const VisualizePanel: Story = {
     await expect(
       canvasElement.querySelector('[data-slot="pie-measure"]'),
     ).toHaveTextContent(AMOUNT_HEADER);
-    // Recharts writes a pie's labels only once its sweep has finished (a
-    // 400ms pause, then 1500ms), so they come about 1.5s after the sectors
-    // first appear — past `waitFor`'s one-second default. The story browser
-    // does not ask for less motion, so the pie sweeps as a reader's would.
+    // The labels land with the sweep; the story browser does not ask for
+    // less motion, so the pie sweeps as a reader's would.
     await waitFor(
       () =>
         expect(
-          [...canvasElement.querySelectorAll('.recharts-label-list text')].some(
-            label => /%$/.test(label.textContent ?? ''),
+          valueLabels(canvasElement).some(label =>
+            /%$/.test(label.textContent ?? ''),
           ),
         ).toBe(true),
       { timeout: 4_000 },

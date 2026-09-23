@@ -58,6 +58,9 @@ function AnalysisWorkbenchDemo({
   latest = false,
   limit,
   waybills,
+  savedFunnel,
+  labels = false,
+  heatmap = false,
 }: {
   behaviour?: SourceBehaviour;
   layout?: 'table' | 'chart';
@@ -104,6 +107,19 @@ function AnalysisWorkbenchDemo({
    * 「时间朝哪边走」与「第九种颜色」都问不出来。
    */
   waybills?: WaybillScene;
+  /**
+   * 存成一个漏斗的视图：按仓库分阶段，量这些阶段的是 `value`，阶段是 `order`。
+   * 一个阶段的漏斗、量平均数的漏斗都是早先存得下、如今画不出的样子——打开它
+   * 什么也不跑，从状态行进图型网格修。
+   */
+  savedFunnel?: { value: 'orders' | 'amount'; order: string[] };
+  /** Whether the chart writes each value over its mark (`ChartSpec.labels`). */
+  labels?: boolean;
+  /**
+   * 仓库 × 状态的热力图：两个维度、一个金额合计，格子深浅按金额，底下一条色标
+   * （D21 第四批）。
+   */
+  heatmap?: boolean;
 }) {
   const { groups, metrics } = analysisConfig();
   const fitted = fitChartSlots({ type: chart }, groups, metrics);
@@ -143,6 +159,7 @@ function AnalysisWorkbenchDemo({
             },
           }),
       ...(pinned ? { colors: PINNED_COLORS } : {}),
+      ...(labels ? { labels: true } : {}),
     },
     table: {
       columns: allColumns
@@ -151,10 +168,31 @@ function AnalysisWorkbenchDemo({
       totals: true,
     },
   });
-  const config = latest ? latestConfig(layout) : saved;
+  const config = heatmap
+    ? heatmapConfig(layout, labels)
+    : latest
+      ? latestConfig(layout)
+      : savedFunnel
+        ? {
+            ...saved,
+            chart: {
+              type: 'funnel' as const,
+              funnel: {
+                stages: {
+                  from: 'group' as const,
+                  category: 'warehouse',
+                  ...savedFunnel,
+                },
+              },
+            },
+          }
+        : saved;
 
   if (waybills) {
-    const view = waybillAnalysisView(waybillScene(waybills, layout));
+    const scene = waybillScene(waybills, layout);
+    const view = waybillAnalysisView(
+      labels ? { ...scene, chart: { ...scene.chart, labels: true } } : scene,
+    );
     return (
       <StoryEngine
         create={() =>
@@ -208,6 +246,33 @@ function AnalysisWorkbenchDemo({
       )}
     </StoryEngine>
   );
+}
+
+/** Orders by warehouse and status, as a heatmap. */
+function heatmapConfig(layout: 'table' | 'chart', labels: boolean) {
+  const groups = [
+    { alias: 'warehouse', field: 'warehouse', type: 'TERMS' },
+    { alias: 'status', field: 'status', type: 'TERMS' },
+  ] satisfies AnalysisViewConfig['groups'];
+  // The amounts differ cell to cell where the counts are all one.
+  const metrics = [
+    {
+      alias: 'amount',
+      type: 'NUMERIC',
+      function: 'SUM',
+      expression: { type: 'FIELD', field: 'amount' },
+    },
+  ] satisfies AnalysisViewConfig['metrics'];
+  return analysisConfig({
+    layout,
+    groups,
+    metrics,
+    table: { columns: [] },
+    chart: {
+      ...fitChartSlots({ type: 'heatmap' }, groups, metrics),
+      ...(labels ? { labels: true } : {}),
+    },
+  });
 }
 
 /** The order count and the latest order per warehouse, the latest first. */
@@ -332,10 +397,15 @@ const meta = {
     allColumns: false,
     visualization: true,
     latest: false,
+    labels: false,
+    heatmap: false,
   },
   argTypes: {
+    heatmap: { control: 'boolean' },
+    labels: { control: 'boolean' },
     latest: { control: 'boolean' },
     limit: { table: { disable: true } },
+    savedFunnel: { table: { disable: true } },
     waybills: {
       control: 'inline-radio',
       options: [undefined, 'daily', 'daily-card', 'cities'],
@@ -436,6 +506,37 @@ export const LatestPerWarehouse: Story = {
 export const DailyNewestFirst: Story = {
   args: { layout: 'chart', waybills: 'daily' },
 };
+
+/**
+ * 三十天的柱，每根柱上写着它的数：写得下的都写，会压到别的数上的那一个不写
+ * ——而不是叠在一起（ECharts 的 `labelLayout.hideOverlap`，D21）。数写得短，
+ * 与刻度同一个读法。
+ */
+export const ValueLabels: Story = {
+  args: { layout: 'chart', waybills: 'daily', labels: true },
+};
+
+/**
+ * 仓库 × 状态的热力图：格子铺满绘图区、第一行在上，深浅按金额，底下一条色标
+ * 读得回数；格子上写着金额（从前是挤在一角的灰格子，没有色标也没有数）。
+ */
+export const HeatmapChart: Story = {
+  args: { layout: 'chart', heatmap: true, labels: true },
+};
+
+/**
+ * 两个指标画成折线：每个点一颗圆点，线的两端各离绘图区的边半格，金额在左轴、
+ * 订单数在右轴，两根轴各有标题（D21 第二批）。
+ */
+export const LineChart: Story = {
+  args: { layout: 'chart', chart: 'line', series: 'both' },
+};
+
+/**
+ * 只剩一组时柱子也只有它该有的宽：从前一组就是一整块铺满绘图区的色板
+ * （定价「按状态分布」，真实后端 2026-09-23）。
+ */
+export const OneBar: Story = { args: { layout: 'chart', limit: 1 } };
 
 /** 同一个按日倒序的问题画成指标卡：迷你趋势同样从最早的一天画起。 */
 export const DailyTrendCard: Story = {

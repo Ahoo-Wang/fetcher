@@ -11,10 +11,24 @@
  * limitations under the License.
  */
 
+import { useCallback } from 'react';
 import type { FunnelData } from '../../analysis/index.js';
-import { cn } from 'cn';
-import { stageName, type FamilyProps } from './family.js';
+import { useViewMessages } from '../MessagesProvider.js';
+import { useSurfaceDisplay } from '../ViewSurface.js';
+import { EChart } from './EChart.js';
+import { conversionHeading, type FamilyProps } from './family.js';
+import { funnelOption } from './funnelOption.js';
+import { useChartMotion } from './motion.js';
+import type { ChartTheme } from './theme.js';
 
+/**
+ * A funnel, drawn by ECharts from `funnelOption` (D21): the centred shape
+ * Metabase draws rather than the left-aligned bars it replaced, each stage
+ * with its name, value and conversion beside it. What the percentages are
+ * relative to is said once, over the drawing, where the heading of their
+ * column used to stand (`conversionHeading`) — a bare 「25%」 reads as a
+ * share of the whole, which it is only against the first stage.
+ */
 export function Funnel({
   data,
   spec,
@@ -23,58 +37,47 @@ export function Funnel({
   column,
   name,
 }: FamilyProps<FunnelData>) {
-  const widest = Math.max(...data.stages.map(stage => stage.value), 1);
-  // Stages taken from a group are named by its values, which show as the
-  // group's column does; metric stages carry the labels they were given,
-  // and fall back to the metric's column title (`stageName`).
-  const stages = spec?.funnel?.stages;
-  // Which metric a stage measures: one for the whole funnel when the stages
-  // are values of a dimension, one per stage when each is its own metric.
-  const measured = (index: number) =>
-    stages === undefined
-      ? undefined
-      : stages.from === 'group'
-        ? stages.value
-        : stages.items[index]?.metric;
-  const horizontal = spec?.funnel?.orientation === 'horizontal';
-
+  const animate = useChartMotion();
+  const messages = useViewMessages();
+  const { locale } = useSurfaceDisplay();
+  const converts = data.stages.some(stage => stage.conversion !== undefined);
+  const conversion = messages.label(
+    conversionHeading(spec?.funnel?.conversion),
+  );
+  const option = useCallback(
+    (theme: ChartTheme) =>
+      funnelOption(
+        data,
+        { spec, label, column, locale, conversion, animate },
+        theme,
+      ),
+    [data, spec, label, column, locale, conversion, animate],
+  );
   return (
-    <div
-      data-slot="funnel"
-      role="img"
-      aria-label={name}
-      className={cn(
-        'gap-2',
-        horizontal ? 'flex items-end' : 'flex flex-col',
-        className,
-      )}
-    >
-      {data.stages.map((stage, index) => (
-        <div
-          key={stage.label}
-          className={cn(
-            'flex gap-2',
-            horizontal ? 'flex-col-reverse' : 'items-center',
-          )}
-        >
-          <span className="text-muted-foreground w-28 shrink-0 truncate text-xs">
-            {stageName(stages, index, stage.label, label, column)}
-          </span>
-          <div
-            className="bg-primary/80 flex h-7 items-center justify-end rounded-sm px-2"
-            style={{ width: `${Math.max(4, (stage.value / widest) * 100)}%` }}
-          >
-            <span className="text-primary-foreground text-xs">
-              {label(measured(index), stage.value)}
-            </span>
-          </div>
-          {stage.conversion !== undefined && (
-            <span className="text-muted-foreground w-12 shrink-0 text-xs">
-              {Math.round(stage.conversion * 100)}%
-            </span>
-          )}
-        </div>
-      ))}
-    </div>
+    <EChart
+      name={name}
+      className={className}
+      option={option}
+      legend={
+        converts
+          ? {
+              at: 'top',
+              node: (
+                <span
+                  data-slot="funnel-conversion-heading"
+                  className="text-muted-foreground"
+                >
+                  {conversion}
+                </span>
+              ),
+            }
+          : undefined
+      }
+      data={{
+        'data-chart': 'funnel',
+        'data-marks': data.stages.length,
+        'data-orientation': spec?.funnel?.orientation ?? 'vertical',
+      }}
+    />
   );
 }

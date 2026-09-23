@@ -352,6 +352,98 @@ describe('validateChart', () => {
       expect(codes(spec(['A']))).toEqual(['chart.funnel.too-few-stages']);
       expect(codes(spec(['A', 'A']))).toEqual(['chart.funnel.duplicate-stage']);
     });
+
+    /**
+     * A funnel is how many entered and how many remained: a conversion of
+     * averages, distinct counts, percentiles or extremes means nothing, and
+     * a cumulative funnel adds later stages into earlier ones. The stage
+     * value of a funnel over a dimension, and every metric stage, adds up.
+     */
+    it('counts only a metric that adds up', () => {
+      const metrics = [METRICS.orders, METRICS.total, METRICS.average];
+      const over = (value: string) =>
+        validateChart(
+          config(
+            {
+              type: 'funnel',
+              funnel: {
+                stages: {
+                  from: 'group',
+                  category: 'wh',
+                  value,
+                  order: ['A', 'B'],
+                },
+              },
+            },
+            [GROUPS.wh],
+            metrics,
+          ),
+        );
+      expect(over('orders')).toEqual([]);
+      expect(over('total')).toEqual([]);
+      expect(over('average')).toEqual([
+        {
+          code: 'chart.funnel.not-additive',
+          severity: 'error',
+          path: ['chart', 'funnel', 'stages', 'value'],
+          params: { metric: 'average' },
+        },
+      ]);
+      // An unknown alias is said once, as unknown.
+      expect(over('gone').map(issue => issue.code)).toEqual([
+        'chart.metric.unknown',
+      ]);
+
+      const staged = validateChart(
+        config(
+          {
+            type: 'funnel',
+            funnel: {
+              stages: {
+                from: 'metrics',
+                items: [
+                  { metric: 'orders' },
+                  { metric: 'average' },
+                  { metric: 'total' },
+                ],
+              },
+            },
+          },
+          [],
+          metrics,
+        ),
+      );
+      expect(staged.map(issue => [issue.code, issue.path])).toEqual([
+        [
+          'chart.funnel.not-additive',
+          ['chart', 'funnel', 'stages', 'items', 1, 'metric'],
+        ],
+      ]);
+    });
+
+    /**
+     * A stage is a step, named: a month is a bucket of a scale, and the
+     * "conversion" from one month to the next is no conversion — nor could
+     * its bucket keys be read back as stage names.
+     */
+    it('takes its stages from a category, never from buckets of a scale', () => {
+      expect(
+        codes(
+          {
+            type: 'funnel',
+            funnel: {
+              stages: {
+                from: 'group',
+                category: 'month',
+                value: 'orders',
+                order: ['2026-01', '2026-02'],
+              },
+            },
+          },
+          [GROUPS.month],
+        ),
+      ).toEqual(['chart.funnel.stages-need-category']);
+    });
   });
 
   describe('metric card', () => {

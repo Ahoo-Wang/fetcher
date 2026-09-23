@@ -17,6 +17,14 @@ import displayMeta, {
   TwoMetrics as DisplayTwoMetrics,
 } from './AnalysisWorkbench.stories.js';
 import { dragHandleOnto } from './pointerDrag.js';
+import {
+  axisTexts,
+  chartsDrawn,
+  drawnMarks,
+  overlaps,
+  slicesInOrder,
+  valueLabels,
+} from './chartDom.js';
 
 const meta = {
   ...displayMeta,
@@ -52,7 +60,7 @@ const panel = () =>
  * rather than by what the config says.
  */
 const arcsPerSlice = () =>
-  [...document.querySelectorAll('.recharts-pie-sector path')].map(
+  slicesInOrder(document).map(
     path => (path.getAttribute('d')?.match(/A/g) ?? []).length,
   );
 
@@ -63,9 +71,29 @@ const seriesOrder = () =>
   );
 
 /** The legend entries in the order the chart draws them. */
-const legendOrder = () => {
-  const legend = document.querySelector('.recharts-legend-wrapper > div');
-  return legend ? [...legend.children].map(item => item.textContent) : [];
+const legendOrder = () =>
+  [...document.querySelectorAll('[data-slot="chart-legend-item"]')].map(
+    item => item.textContent,
+  );
+
+/** Every two value labels on screen, apart: none drawn over another. */
+/** Every two value labels drawn over each other, by their text and box. */
+const labelsOver = (root: HTMLElement) => {
+  const labels = valueLabels(root).map(label => ({
+    text: label.textContent,
+    box: label.getBoundingClientRect(),
+  }));
+  return labels.flatMap((one, index) =>
+    labels
+      .slice(index + 1)
+      .filter(other => overlaps(one.box, other.box))
+      .map(other => ({
+        pair: [one.text, other.text],
+        boxes: [one.box, other.box].map(box =>
+          [box.left, box.top, box.right, box.bottom].map(Math.round),
+        ),
+      })),
+  );
 };
 
 /**
@@ -85,11 +113,7 @@ export const SeriesOrder: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(document.body);
-    await waitFor(() =>
-      expect(
-        canvasElement.querySelectorAll('.recharts-bar-rectangle'),
-      ).toHaveLength(8),
-    );
+    await waitFor(() => expect(drawnMarks(canvasElement)).toHaveLength(8));
     const drawn = legendOrder();
     await expect(drawn).toHaveLength(2);
 
@@ -112,9 +136,7 @@ export const SeriesOrder: Story = {
     // Only the order moved: each series kept the axis it is measured on,
     // and the chart still draws both.
     await waitFor(() => expect(legendOrder()).toEqual([...drawn].reverse()));
-    await expect(
-      canvasElement.querySelectorAll('.recharts-bar-rectangle'),
-    ).toHaveLength(8);
+    await expect(drawnMarks(canvasElement)).toHaveLength(8);
   },
 };
 
@@ -135,11 +157,7 @@ export const ChartOptionsPages: Story = {
     const canvas = within(canvasElement);
     const body = within(document.body);
     // Two metrics, so there are two series to stack and a legend to read.
-    await waitFor(() =>
-      expect(
-        canvasElement.querySelectorAll('.recharts-bar-rectangle'),
-      ).toHaveLength(8),
-    );
+    await waitFor(() => expect(drawnMarks(canvasElement)).toHaveLength(8));
 
     // Level one: the panel takes the sidebar column, where the view list was.
     await userEvent.click(
@@ -180,19 +198,19 @@ export const ChartOptionsPages: Story = {
         name: zhCN['label.chart.tab.display'],
       }),
     );
-    await expect(
-      canvasElement.querySelectorAll('.recharts-label-list'),
-    ).toHaveLength(0);
+    await expect(valueLabels(canvasElement)).toHaveLength(0);
     await userEvent.click(
       within(panel()!).getByRole('checkbox', {
         name: zhCN['label.chart.labels'],
       }),
     );
+    // A label over every bar there is room for, and none over another.
     await waitFor(() =>
-      expect(
-        canvasElement.querySelectorAll('.recharts-label-list'),
-      ).toHaveLength(2),
+      expect(valueLabels(canvasElement).length).toBeGreaterThan(0),
     );
+    // Measured once the redraw the labels came with has landed.
+    await chartsDrawn(canvasElement);
+    await expect(labelsOver(canvasElement)).toEqual([]);
 
     await userEvent.click(
       within(panel()!).getByRole('checkbox', {
@@ -216,7 +234,9 @@ export const ChartOptionsPages: Story = {
     );
     await waitFor(() =>
       expect(
-        canvasElement.querySelectorAll('.recharts-reference-line'),
+        canvasElement.querySelectorAll(
+          '[data-slot="chart-plot"] path[stroke-dasharray]',
+        ),
       ).toHaveLength(1),
     );
 
@@ -229,11 +249,9 @@ export const ChartOptionsPages: Story = {
       '金额',
     );
     await waitFor(() =>
-      expect(
-        [...canvasElement.querySelectorAll('.recharts-label')].map(
-          label => label.textContent,
-        ),
-      ).toContain('金额'),
+      expect(axisTexts(canvasElement).map(text => text.textContent)).toContain(
+        '金额',
+      ),
     );
 
     // Back to the types, and on to another family: a pie of the same rows,
@@ -248,6 +266,7 @@ export const ChartOptionsPages: Story = {
     );
     // One slice per warehouse: a type picked here is fitted to the rows on
     // screen, and nothing has asked for a tail to be merged.
+    await chartsDrawn(canvasElement);
     await waitFor(() => expect(arcsPerSlice()).toHaveLength(4));
     await expect(arcsPerSlice().every(arcs => arcs === 1)).toBe(true);
 
@@ -269,9 +288,16 @@ export const ChartOptionsPages: Story = {
         name: zhCN['label.chart.donut'],
       }),
     );
-    // A hole in the middle: every sector now has an inner arc as well.
+    // A hole in the middle: every sector now has an inner arc as well,
+    // and the hole says the whole — the amount adds up.
+    await chartsDrawn(canvasElement);
     await waitFor(() =>
       expect(arcsPerSlice().every(arcs => arcs === 2)).toBe(true),
+    );
+    await waitFor(() =>
+      expect(axisTexts(canvasElement).map(text => text.textContent)).toContain(
+        zhCN['label.chart.total'],
+      ),
     );
 
     // Out the way it came in: the types, then the view list back in the
