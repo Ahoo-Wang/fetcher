@@ -12,7 +12,11 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { AnalysisViewConfig, FieldOption } from '../../model/index.js';
+import type {
+  AnalysisViewConfig,
+  FieldOption,
+  RecordData,
+} from '../../model/index.js';
 import type { ViewRuntime } from '../../runtime/index.js';
 import {
   useAnalysisEditor,
@@ -29,6 +33,11 @@ import { Tray } from '../analysis/Tray.js';
 import { Button } from '../components/button.js';
 import { DrillMenu, type Pick } from '../analysis/DrillMenu.js';
 import { AnalysisEmpty } from '../analysis/EmptyResult.js';
+import {
+  AnalysisSkeleton,
+  CaptionSkeleton,
+} from '../analysis/SkeletonResult.js';
+import { wayOutOf } from '../record/emptyWayOut.js';
 import { useAnnouncer } from '../Announcer.js';
 import { featuresOf, type WorkbenchFeatures } from '../features.js';
 import type { ViewMessages } from '../messages.js';
@@ -87,7 +96,7 @@ export function AnalysisParts({
   const searchBox = useSearchBox(runtime);
 
   const result = useAnalysisResult(runtime, analysis, workbench);
-  const { view, chart, chartData, fits, picked } = result;
+  const { view, question, chart, chartData, fits, picked } = result;
   const layout = analysis.layout;
 
   // The visualization panel (D20 屏 I／J): open from the result's toolbar,
@@ -115,37 +124,21 @@ export function AnalysisParts({
    */
   const heading = useRef<HTMLHeadingElement | null>(null);
   const visualizeRef = useRef<HTMLButtonElement | null>(null);
-  // Whatever the panel is a panel *of*, remembered while it is open: with
-  // the toolbar gone there is no button to go back to, and the result the
-  // panel is about is the next best place — found through the panel's own
-  // surface, because a page may hold more than one view (a dashboard does).
-  const surface = useRef<HTMLElement | null>(null);
+  // The button is always there to go back to: the toolbar stands from the
+  // moment a question is sent — an empty result and a failed one keep it —
+  // and the panel only opens from it. It used to go with the rows, so this
+  // effect kept a second landing (the result block) for a result that came
+  // back empty under an open panel; that state no longer exists.
   const was = useRef(level);
   useEffect(() => {
     const before = was.current;
     if (before === level) return;
     was.current = level;
     if (level !== null) {
-      surface.current =
-        heading.current?.closest<HTMLElement>('[data-slot="view-surface"]') ??
-        surface.current;
       heading.current?.focus();
       return;
     }
-    if (before === null) return;
-    const button = visualizeRef.current;
-    if (button) {
-      button.focus();
-      return;
-    }
-    const block = surface.current?.querySelector<HTMLElement>(
-      '[data-slot="result-block"]',
-    );
-    if (!block) return;
-    // The section is not a control and owns no `tabindex` of its own; it is
-    // given one for this landing only, the way a skip link's target is.
-    block.setAttribute('tabindex', '-1');
-    block.focus();
+    if (before !== null) visualizeRef.current?.focus();
   }, [level]);
   // The group the user pressed, on the chart or in the table, and the menu
   // over it (D20 追问). What the menu offers is the controller's; which row
@@ -181,6 +174,23 @@ export function AnalysisParts({
   const [fold, setFold] = useState<{ id: string | null; open: boolean } | null>(
     null,
   );
+
+  // The first answer on its way: a question was sent and nothing is on
+  // screen yet. A refresh with rows on screen is not this — those rows stay
+  // until the new ones replace them; a skeleton over them would throw away
+  // what the reader was reading for a moment of grey.
+  const firstLoad = querying && !view;
+
+  // What the empty result offers, and the press that takes it: the record
+  // view's rule and press (`wayOutOf`), under the analysis's own sentences.
+  // Asking something else opens the tray, which is where the range is.
+  const empty = wayOutOf({
+    state,
+    hasConditions: filter.applied.length > 0,
+    filter,
+    runtime,
+    openEditor: () => setFold({ id: runtimeId, open: true }),
+  });
 
   if (!runtime) return children(NO_PARTS);
   return children({
@@ -227,10 +237,17 @@ export function AnalysisParts({
         {messages.label('label.analysis.open-editor')}
       </Button>
     ),
-    toolbar: view && view.rows.length > 0 && (
+    // From the moment a question is sent, whatever comes of it: the reading
+    // is the question's (`useAnalysisResult().columns`), and the switches
+    // beside it redraw and never run, so they work while the first answer
+    // is on its way, after it failed and over a range that matched no
+    // group. It used to wait for rows — which put it on screen as they
+    // landed and pushed the result down, and took 表格／图表 and 可视化 away
+    // from exactly the reader who had nothing else to act on.
+    toolbar: question && (
       <AnalysisToolbar
         analysis={analysis}
-        view={view}
+        columns={result.columns}
         visualizing={level !== null}
         visualizeRef={visualizeRef}
         {...(shown.visualization
@@ -250,15 +267,18 @@ export function AnalysisParts({
           onOptions={() => setPanel('options')}
           onBack={() => setPanel(null)}
         />
-      ) : level === 'options' && view ? (
+      ) : level === 'options' && question ? (
+        // Over the question, so the options work before the first answer
+        // and after it failed: the slots name its columns, and what reads
+        // rows — a funnel's stages in the order they came — has none yet.
         <ChartOptions
           headingRef={heading}
           picked={picked}
           chart={chart}
-          groups={result.ran?.groups ?? []}
-          metrics={result.ran?.metrics ?? []}
-          columns={view.schema ?? view.columns}
-          rows={view.rows}
+          groups={question.groups}
+          metrics={question.metrics}
+          columns={result.columns}
+          rows={view?.rows ?? NO_ROWS}
           totals={analysis.totals}
           onTotals={on => {
             analysis.setTotals(on);
@@ -268,7 +288,7 @@ export function AnalysisParts({
           onBack={() => setPanel('picker')}
         />
       ) : null,
-    result: view && (
+    result: question && (
       <>
         <div
           data-slot="analysis-result"
@@ -290,8 +310,16 @@ export function AnalysisParts({
               in force; a chart of no rows is a pair of empty axes, which reads
               as a drawing that failed rather than as a range that matched
               nothing. */}
-          {view.rows.length === 0 ? (
-            <AnalysisEmpty />
+          {!view ? (
+            // Before the first answer, its shape; after a first query that
+            // failed, nothing — the failure is the query strip's to say, under
+            // the toolbar and with its retry, exactly as it is for the record
+            // view, whose rows draw nothing in that state either.
+            firstLoad && (
+              <AnalysisSkeleton layout={layout} columns={result.tableColumns} />
+            )
+          ) : view.rows.length === 0 ? (
+            <AnalysisEmpty wayOut={empty.wayOut} onAction={empty.take} />
           ) : layout === 'chart' && chartData ? (
             <AnalysisChart
               data={chartData}
@@ -318,14 +346,25 @@ export function AnalysisParts({
             report up from the bottom edge — without it a short table or a
             chart ended wherever it ended, and the space under it read as
             the report having dropped off (the user's 2026-09-23 review). */}
-        <AnalysisCaption
-          rows={view.rows.length}
-          elapsedMs={state?.result?.elapsedMs ?? null}
-        />
+        {view ? (
+          <AnalysisCaption
+            rows={view.rows.length}
+            elapsedMs={state?.result?.elapsedMs ?? null}
+          />
+        ) : (
+          // In its place and at its height while the first answer is on its
+          // way, so the rows landing change what is in the frame and not
+          // where anything is. A first query that failed has nothing to
+          // count, and says nothing here — as the record view's pager does.
+          firstLoad && <CaptionSkeleton />
+        )}
       </>
     ),
   });
 }
+
+/** Stable identity for "no rows yet", so the options' memos stay quiet. */
+const NO_ROWS: readonly RecordData[] = [];
 
 /** What the analysis result hands the frame to dress (`ResultBlock.slots`). */
 const RESULT_SLOTS = resultSlots('caption');

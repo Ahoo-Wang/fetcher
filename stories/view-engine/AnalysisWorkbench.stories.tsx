@@ -331,12 +331,31 @@ export const LatestPerWarehouse: Story = {
   args: { layout: 'table', latest: true },
 };
 
-/** An aggregation that matched nothing still has its editor. */
+/**
+ * 第一次的答案还在路上（数据源慢 1.5 秒）：结果区先画出答案的形状——表格是
+ * 几行灰条，图表是一块绘图区——工具栏、条件带与页脚已经在各自的位置上，行落地
+ * 时换的是框里的内容，不是任何东西的位置。
+ */
+export const Loading: Story = { args: { behaviour: 'slow', layout: 'table' } };
+
+/** 同上，保存的是图表：骨架是一块绘图区。 */
+export const LoadingChart: Story = {
+  args: { behaviour: 'slow', layout: 'chart' },
+};
+
+/**
+ * An aggregation that matched no group keeps its toolbar, and offers the one
+ * next step: here, with no conditions on a saved view, 「设定范围」 opens the
+ * tray.
+ */
 export const EmptyResult: Story = {
   args: { behaviour: 'empty', layout: 'table' },
 };
 
-/** A failed aggregation keeps the configuration on screen. */
+/**
+ * A failed aggregation keeps the toolbar and the conditions on screen, and
+ * says the failure under the toolbar with 「重试」.
+ */
 export const QueryFailed: Story = { args: { behaviour: 'failing' } };
 
 /**
