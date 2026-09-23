@@ -926,7 +926,7 @@ export const HeldAtItsFloor: Story = {
   ],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const table = await canvas.findByRole('table');
+    const table = (await canvas.findByRole('table')) as HTMLTableElement;
     await waitFor(() =>
       expect(table.tBodies[0].rows.length).toBeGreaterThan(10),
     );
