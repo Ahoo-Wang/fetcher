@@ -28,10 +28,6 @@
   - 为什么：嵌入视图的根画 `--background`，宿主卡片是 `--card`，暗色下两者不同，嵌入块在卡片里是一块更深的区域（明色两者都是白所以看不出）。主题决策是 CSS 变量为唯一真相源（不加主题上下文 API）。
   - 判据：定下由谁对齐（宿主为嵌入设 `--fve-dark-background`，或嵌入视图不画自己的底、行与吸附带改用可被宿主覆盖的 token），暗色下嵌入块与所在卡片同底、吸附带仍不透明；「嵌入视图」故事亮暗截图对照。
   - 落点：`src/ui/EmbeddedView.tsx`、`src/styles.css`、`stories/view-engine/EmbeddedView.stories.tsx`、[ui/README.md](ui/README.md)。
-- **仪表盘窄面板里的宽表：冻结的末列压住前面的列**。
-  - 为什么：首页「最近的活动失败」面板里「已重试次数」被冻结的「最近更新」盖住一半，表头读成「已重试次」。
-  - 判据：窄面板里冻结列的上限（D17-4 的 pin cap）同样生效，或面板表格不冻结末列；故事量出没有列被覆盖。
-  - 落点：`src/ui/DashboardGrid.tsx`、`src/ui/record/pinCap.ts`、`stories/view-engine/Home.test.stories.tsx`。
 
 ## 阶段 3：仪表盘
 
