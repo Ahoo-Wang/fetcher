@@ -49,10 +49,19 @@ export interface AnalysisEmptyProps {
  * Inside the workbench it also says what to do next, exactly as the record
  * view's empty result does (`record/EmptyResult.tsx`) and chosen by the same
  * rule: back to a saved view's own conditions when the reader added to
- * them, clear the conditions of a view never saved, and otherwise open the
- * tray — where the range is — to ask something else. A dead end with no way
- * off it left the reader hunting for the control that caused it, on a tray
- * that is folded away more often than not. One action, never two.
+ * them, clear the conditions of a view never saved, and a saved view asking
+ * what it was saved to ask opens the tray — where the range is — to ask
+ * something else. A dead end with no way off it left the reader hunting for
+ * the control that caused it, on a tray that is folded away more often than
+ * not. One action, never two.
+ *
+ * With **no condition in force** there is no way out, and it offers none
+ * (the user's ruling on #1800): the range is already every record, so
+ * nothing the tray can do produces a group, and a 「设定范围」 that only
+ * narrows an empty range further is a button that leads nowhere. The title
+ * and the one-line reason are the whole of it — 「范围里没有记录可以分组」.
+ * The record view differs here on purpose: there, adding a condition is at
+ * least a question somebody might want to ask of the rows that arrive.
  */
 export function AnalysisEmpty({ wayOut, onAction }: AnalysisEmptyProps = {}) {
   const messages = useViewMessages();
@@ -67,7 +76,7 @@ export function AnalysisEmpty({ wayOut, onAction }: AnalysisEmptyProps = {}) {
           <EmptyDescription>{messages.label(HINT[wayOut])}</EmptyDescription>
         )}
       </EmptyHeader>
-      {wayOut && onAction && (
+      {wayOut && wayOut !== 'add' && onAction && (
         <EmptyContent>
           <Button variant="outline" size="sm" onClick={onAction}>
             {messages.label(ACTION[wayOut])}
@@ -80,8 +89,8 @@ export function AnalysisEmpty({ wayOut, onAction }: AnalysisEmptyProps = {}) {
 
 /**
  * What the sentence under the title says: the conditions left nothing to
- * group, the saved view itself has nothing right now, or there is nothing
- * at all. The same three readings the record view gives, in the words of a
+ * group, the saved view itself has nothing right now, or the range — every
+ * record, with no condition in force — holds nothing to group. The same three readings the record view gives, in the words of a
  * result counted in groups.
  */
 const HINT: Record<EmptyWayOut, MessageKey> = {
@@ -91,9 +100,9 @@ const HINT: Record<EmptyWayOut, MessageKey> = {
   add: 'label.analysis.empty-none',
 };
 
-const ACTION: Record<EmptyWayOut, MessageKey> = {
+/** The one way out, where there is one: none with no condition in force. */
+const ACTION: Record<Exclude<EmptyWayOut, 'add'>, MessageKey> = {
   restore: 'label.analysis.empty-restore',
   clear: 'label.analysis.empty-clear',
   edit: 'label.analysis.empty-edit',
-  add: 'label.analysis.empty-add',
 };

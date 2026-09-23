@@ -25,7 +25,7 @@
 export const analysisMessages = {
   'label.analysis.row-count': 'Record count',
   // The result's footer: what is on screen and how long it took to get.
-  'label.analysis.caption': 'Showing {count} rows · took {seconds} s',
+  'label.analysis.caption': 'Showing {count} groups · took {seconds} s',
 
   'label.analysis.editor': 'Analysis',
   // The tray's slots, in the analyst's order (D20): the range, the array
@@ -206,7 +206,9 @@ export const analysisMessages = {
   'label.chart.reference-value': 'Value of the reference line',
   'label.chart.donut': 'Donut',
   'label.chart.max-slices': 'Slices at most',
-  'label.chart.max-slices.hint': 'The rest merge into “Other”.',
+  // The ceiling is the palette's size: a slice past it would repeat a colour.
+  'label.chart.max-slices.hint':
+    'The rest merge into “Other”. At most {count}, one colour each — and {count} when left empty.',
   'label.chart.scale': 'Colour scale',
   'label.chart.scale.linear': 'Linear',
   'label.chart.scale.log': 'Logarithmic',
@@ -249,18 +251,18 @@ export const analysisMessages = {
   // nothing": the analysis is fine, the range simply matched no group.
   'label.analysis.empty': 'No groups match',
   // Under the title, which of the three it is — the conditions left nothing
-  // to group, the saved view has nothing right now, there is nothing at all
-  // — and the one way out, as the record view's empty result words them
-  // (`record/emptyWayOut.ts`). The range is what the tray calls the
-  // conditions, so the two ways into it name it.
+  // to group, the saved view has nothing right now, the range is everything
+  // and still holds nothing — and the way out where there is one, as the
+  // record view's empty result words them (`record/emptyWayOut.ts`). The
+  // range is what the tray calls the conditions, so the way into it names
+  // it. With no condition in force there is no way out to name.
   'label.analysis.empty-hint':
     'No record under the current conditions falls into a group.',
   'label.analysis.empty-view': 'This view has no records to group right now.',
-  'label.analysis.empty-none': 'There are no records to group yet.',
+  'label.analysis.empty-none': 'There are no records in the range to group',
   'label.analysis.empty-clear': 'Clear the conditions',
   'label.analysis.empty-restore': 'Back to the saved conditions',
   'label.analysis.empty-edit': 'Change the range',
-  'label.analysis.empty-add': 'Set a range',
 
   // The two closed enums the editor offers as choices. They used to reach
   // the screen as the identifier itself — `bar`, `date histogram` — which is

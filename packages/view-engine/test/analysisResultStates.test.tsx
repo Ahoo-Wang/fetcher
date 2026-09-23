@@ -264,7 +264,12 @@ describe('the analysis result when its query fails', () => {
 describe('the analysis result when no group matched', () => {
   const nothing = () => testSource({ aggregate: vi.fn(async () => []) });
 
-  it('keeps the toolbar and sends a saved view with no conditions to the tray', async () => {
+  /**
+   * With no condition in force the range is every record, and nothing the
+   * tray can do produces a group: the reason, and no button (the user's
+   * ruling on #1800).
+   */
+  it('keeps the toolbar and, with no condition in force, says why and offers nothing', async () => {
     open(nothing());
     const bar = await toolbar();
     const empty = await waitFor(() => {
@@ -277,14 +282,8 @@ describe('the analysis result when no group matched', () => {
     expect(empty.textContent).toContain(
       defaultMessages['label.analysis.empty-none'],
     );
-    expect(slot('analysis-caption')?.textContent).toMatch(/Showing 0/);
-
-    fireEvent.click(
-      within(empty).getByRole('button', {
-        name: defaultMessages['label.analysis.empty-add'],
-      }),
-    );
-    await waitFor(() => expect(slot('analysis-tray')).not.toBeNull());
+    expect(within(empty).queryByRole('button')).toBeNull();
+    expect(slot('analysis-caption')?.textContent).toMatch(/Showing 0 groups/);
   });
 
   it('asks a saved view under its own conditions to change the range', async () => {

@@ -597,7 +597,7 @@ export const zhCN: ViewMessages = {
 
   // 分析编辑器与图表，以及它们背后的两个内核。
   'label.analysis.row-count': '记录数',
-  'label.analysis.caption': '正在显示 {count} 行，耗时 {seconds} 秒',
+  'label.analysis.caption': '正在显示 {count} 组，耗时 {seconds} 秒',
   'label.analysis.editor': '分析',
   'label.analysis.slot.range': '范围',
   'label.analysis.slot.dimensions': '维度',
@@ -738,7 +738,8 @@ export const zhCN: ViewMessages = {
   'label.chart.reference-value': '参考线数值',
   'label.chart.donut': '环形',
   'label.chart.max-slices': '最多几片',
-  'label.chart.max-slices.hint': '其余并入「其他」。',
+  'label.chart.max-slices.hint':
+    '其余并入「其他」。至多 {count} 片，一片一种颜色；不填即 {count} 片。',
   'label.chart.scale': '色阶',
   'label.chart.scale.linear': '线性',
   'label.chart.scale.log': '对数',
@@ -773,11 +774,10 @@ export const zhCN: ViewMessages = {
   'label.analysis.empty': '没有符合条件的组',
   'label.analysis.empty-hint': '当前条件下没有记录可以分组。',
   'label.analysis.empty-view': '这个视图现在没有可以分组的记录。',
-  'label.analysis.empty-none': '还没有任何记录可以分组。',
+  'label.analysis.empty-none': '范围里没有记录可以分组',
   'label.analysis.empty-clear': '清空条件',
   'label.analysis.empty-restore': '回到保存的条件',
   'label.analysis.empty-edit': '调整范围',
-  'label.analysis.empty-add': '设定范围',
   'label.chart.type.bar': '柱状图',
   'label.chart.type.line': '折线图',
   'label.chart.type.area': '面积图',
@@ -971,7 +971,7 @@ export const zhCN: ViewMessages = {
     '{field} 搜索 {missing}，定义没有声明它。',
   'definition.field.search-mode-invalid':
     '{field} 声明了未知的搜索模式：{value}。',
-  'definition.analysis.default-limit-too-large': '默认行数上限超过了最大值。',
+  'definition.analysis.default-limit-too-large': '默认组数上限超过了最大值。',
   'definition.analysis.element-field-unknown':
     '{path} 没有声明名为 {field} 的字段。',
   'definition.analysis.element-undeclared':
