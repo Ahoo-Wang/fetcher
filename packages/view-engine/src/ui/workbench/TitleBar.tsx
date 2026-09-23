@@ -28,7 +28,7 @@ export interface TitleBarProps extends Pick<
   | 'editorModes'
   | 'onRenderFailure'
   | 'build'
-  | 'saveHidden'
+  | 'commitElsewhere'
 > {
   /** The commands, the refresh and the write callbacks the bar is drawn from. */
   workbench: WorkbenchController;
@@ -82,7 +82,7 @@ export function TitleBar({
   expandViewRef,
   onCreated,
   build,
-  saveHidden,
+  commitElsewhere,
 }: TitleBarProps) {
   return (
     <div
@@ -115,7 +115,7 @@ export function TitleBar({
         namesView={namesView}
         leading={leading}
         build={build}
-        saveHidden={saveHidden}
+        commitElsewhere={commitElsewhere}
         trailing={
           // All three are answers to *how am I looking at this*,
           // which is what this group is, and they read outwards: the

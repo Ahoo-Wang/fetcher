@@ -86,11 +86,14 @@ export interface ViewHeaderProps extends ViewWriteCallbacks {
    */
   build?: ReactNode;
   /**
-   * Leaves the save commands off the bar: while a dashboard is being built,
-   * its edit bar's 「完成」 is the save, and a second Save beside it would
-   * be the same command under another name.
+   * Whether the view is committed and rolled back somewhere other than this
+   * bar — a dashboard being built, whose edit bar holds 「完成」 and
+   * 「取消」 (D22 A). The bar then leaves off its save commands and the
+   * "edited" mark with its ↺: one way to do one thing, and a second Save or
+   * a second revert beside the edit bar's would be the same command under
+   * another name.
    */
-  saveHidden?: boolean;
+  commitElsewhere?: boolean;
   /**
    * Whether this bar is the thing that says which view is open. False when
    * something in `leading` already does — a view switcher shows the kind and
@@ -146,7 +149,7 @@ export function ViewHeader({
   leading,
   trailing,
   build,
-  saveHidden = false,
+  commitElsewhere = false,
   namesView = true,
   titleId,
   headingLevel = 2,
@@ -338,14 +341,15 @@ export function ViewHeader({
             // ask about. So it is asked, in the same words and the same
             // shape; a dialog would be friction over an action that could
             // be taken back, and this one cannot.
-            state.dirty && (
+            state.dirty &&
+            !commitElsewhere && (
               <UnsavedMark
                 commands={{ ...commands, revert: () => setAsking(true) }}
               />
             )
           )}
 
-          {!saveHidden && (
+          {!commitElsewhere && (
             <SaveActions
               commands={commands}
               title={state.title}

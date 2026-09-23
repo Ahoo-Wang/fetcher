@@ -12,6 +12,7 @@
  */
 
 import {
+  act,
   cleanup,
   render,
   screen,
@@ -30,6 +31,7 @@ import {
   MemoryViewStore,
   ViewEngine,
   type DashboardDefinition,
+  type DashboardRuntime,
   type DashboardPanel,
   type DashboardViewConfig,
   type ViewInstance,
@@ -151,6 +153,15 @@ const slots = (name: string) => [
 ];
 const titles = () => slots('panel-title').map(title => title.textContent);
 
+/** The dashboard the workbench has open. */
+function boardOf(engine: ViewEngine): DashboardRuntime {
+  const board = engine
+    .openRuntimes()
+    .find(runtime => runtime.kind === 'dashboard');
+  if (!board) throw new Error('no dashboard is open');
+  return board as DashboardRuntime;
+}
+
 async function enter(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: 'Edit' }));
   await screen.findByRole('region', { name: 'Editing' });
@@ -263,6 +274,60 @@ describe('reading and building a dashboard (D22 A)', () => {
           (await store.get('overview-1')).config as DashboardViewConfig
         ).panels.some(entry => entry.kind === 'heading'),
     ).toBe(true);
+  });
+
+  /**
+   * One way to do one thing: while the board is built its edit bar holds
+   * 完成 and 取消, so the title bar's 「已修改 ↺」 is not beside them. Once
+   * the building ends — by 取消 or by 完成 — the title bar says and undoes
+   * an unsaved change as it always has.
+   */
+  it('leaves 「已修改 ↺」 to the edit bar while the board is built', async () => {
+    const { engine, user } = open({
+      config: { fields: [{ name: 'region', label: 'Region', kind: 'string' }] },
+    });
+    const edited = () => slot('view-unsaved');
+    const revert = () => slot('view-revert');
+    /** A change the building did not make: a global condition composed. */
+    const compose = () =>
+      act(() =>
+        boardOf(engine).edit({
+          filter: {
+            op: 'and',
+            children: [{ field: 'region', operator: 'EQ', value: 'north' }],
+          },
+        }),
+      );
+
+    for (const leave of ['Cancel', 'Done'] as const) {
+      await enter(user);
+      await add(user, 'Heading');
+      await user.keyboard('{Enter}');
+      expect(boardOf(engine).getSnapshot().dirty).toBe(true);
+      // Changed, and nothing in the title bar says so or undoes it.
+      expect(edited()).toBeNull();
+      expect(revert()).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: leave }));
+      if (leave === 'Cancel')
+        await user.click(
+          within(await screen.findByRole('alertdialog')).getByRole('button', {
+            name: 'Revert',
+          }),
+        );
+      await waitFor(() => expect(slot('dashboard-edit-bar')).toBeNull());
+
+      // Read again: an unsaved change wears the mark and its ↺ as before.
+      await compose();
+      expect(edited()).not.toBeNull();
+      await user.click(revert()!);
+      await user.click(
+        within(await screen.findByRole('alertdialog')).getByRole('button', {
+          name: 'Revert',
+        }),
+      );
+      await waitFor(() => expect(edited()).toBeNull());
+    }
   });
 
   it('leaves at once on 完成 with nothing to save', async () => {
@@ -599,7 +664,7 @@ describe("a panel's menu (D22 D)", () => {
   });
 
   it('moves a panel to another tab where the board has tabs', async () => {
-    const { user } = open({
+    const { engine, user } = open({
       config: {
         tabs: [
           { id: 't1', title: 'Today' },
@@ -620,7 +685,12 @@ describe("a panel's menu (D22 D)", () => {
       expect(document.activeElement?.textContent).toBe('Tab 2'),
     );
     await user.keyboard('{Enter}');
-    await waitFor(() => expect(screen.getByText('Edited')).toBeTruthy());
+    await waitFor(() =>
+      expect(
+        (boardOf(engine).getSnapshot().draft as DashboardViewConfig).panels[0]
+          .tab,
+      ).toBe('t2'),
+    );
   });
 
   it('shows the extensions’ entries only where they are provided', async () => {

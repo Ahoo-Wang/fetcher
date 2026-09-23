@@ -254,7 +254,7 @@ export function DashboardWorkbench({
           </Button>
         )
       }
-      saveHidden={editing}
+      commitElsewhere={editing}
       onRenderFailure={onRenderFailure}
       // A grid of cards is not framed again.
       resultFramed={false}

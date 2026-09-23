@@ -79,8 +79,11 @@ export interface WorkbenchShellProps {
    * bar — a dashboard's 「编辑」 (D22 A).
    */
   build?: ReactNode;
-  /** Leaves the save commands off the title bar — see `ViewHeader`. */
-  saveHidden?: boolean;
+  /**
+   * The view is saved and reverted elsewhere: the title bar leaves off its
+   * save commands and the "edited" mark's ↺ — see `ViewHeader`.
+   */
+  commitElsewhere?: boolean;
   /** The view's own editor, between the title bar and the strips. */
   editor?: ReactNode;
   /**
@@ -294,7 +297,7 @@ export function WorkbenchShell({
   actions,
   freshness,
   build,
-  saveHidden,
+  commitElsewhere,
   editor,
   editorLabel,
   search,
@@ -598,7 +601,7 @@ export function WorkbenchShell({
                   created.current = true;
                 }}
                 build={build}
-                saveHidden={saveHidden}
+                commitElsewhere={commitElsewhere}
               />
 
               {/* Where this view came from, when it was opened out of another

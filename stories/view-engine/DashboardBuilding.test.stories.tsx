@@ -84,6 +84,27 @@ async function pick(title: string): Promise<HTMLElement> {
   return row;
 }
 
+/**
+ * Whether the title bar commits and rolls back the board itself — its Save
+ * group on screen — or leaves both to the edit bar, with no 「已修改 ↺」
+ * either (D22 A: one way to do one thing).
+ */
+async function expectTitleBarCommits(
+  canvasElement: HTMLElement,
+  commits: boolean,
+) {
+  const bar = canvasElement.querySelector<HTMLElement>(
+    '[data-slot="view-header"]',
+  )!;
+  await expect(bar.querySelector('[data-slot="save-actions"]') !== null).toBe(
+    commits,
+  );
+  if (!commits) {
+    await expect(bar.querySelector('[data-slot="view-unsaved"]')).toBeNull();
+    await expect(bar.querySelector('[data-slot="view-revert"]')).toBeNull();
+  }
+}
+
 /** One panel's 「⋯」, then one of its entries. */
 async function fromPanelMenu(
   canvasElement: HTMLElement,
@@ -154,6 +175,9 @@ export const BuildFromEmpty: Story = {
     await userEvent.clear(heading);
     await userEvent.type(heading, '出库{Enter}');
     await waitFor(() => expect(titles(canvasElement)).toContain('出库'));
+    // Changed, and the title bar neither says so nor undoes it: 完成 and
+    // 取消 on the edit bar are the one way to commit or roll back.
+    await expectTitleBarCommits(canvasElement, false);
 
     await fromPanelMenu(
       canvasElement,
@@ -205,6 +229,7 @@ export const BuildFromEmpty: Story = {
     await expect(
       canvas.getByRole('button', { name: zhCN['label.dashboard.edit'] }),
     ).toHaveFocus();
+    await expectTitleBarCommits(canvasElement, true);
   },
 };
 
@@ -224,6 +249,9 @@ export const CancelReverts: Story = {
         zhCN['label.dashboard.new-heading'],
       ),
     );
+    // One way to do one thing: the edit bar holds 完成 and 取消, so the
+    // title bar has neither its Save nor its 「已修改 ↺」 beside them.
+    await expectTitleBarCommits(canvasElement, false);
 
     await userEvent.click(
       canvas.getByRole('button', { name: zhCN['label.dialog.cancel'] }),
@@ -242,6 +270,8 @@ export const CancelReverts: Story = {
     await expect(
       canvasElement.querySelector('[data-slot="dashboard-edit-bar"]'),
     ).toBeNull();
+    // Read again: the title bar saves as it did before 编辑.
+    await expectTitleBarCommits(canvasElement, true);
   },
 };
 
