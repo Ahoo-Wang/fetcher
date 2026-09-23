@@ -106,7 +106,9 @@ export interface PlacedPanel extends PanelLayout {
 
 /** Whether two boxes share at least one cell. */
 export function overlaps(a: PanelLayout, b: PanelLayout): boolean {
-  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  return (
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+  );
 }
 
 /**
@@ -149,8 +151,7 @@ export function placePanel(
     .map((_, index) => index)
     .filter(index => index !== at)
     .sort(
-      (a, b) =>
-        panels[a].y - panels[b].y || panels[a].x - panels[b].x || a - b,
+      (a, b) => panels[a].y - panels[b].y || panels[a].x - panels[b].x || a - b,
     );
   for (const index of order) {
     let box = panels[index];
@@ -204,9 +205,7 @@ export function placePanelIn(
     changed = true;
     return { ...panel, layout: geometry(box) };
   });
-  return changed
-    ? { ...config, panels: next as DashboardPanel[] }
-    : config;
+  return changed ? { ...config, panels: next as DashboardPanel[] } : config;
 }
 
 /** Whether two layouts are the same four numbers. */

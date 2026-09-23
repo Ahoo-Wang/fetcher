@@ -90,7 +90,9 @@ function LiveGrid({
   runtime: DashboardRuntime;
   editable?: boolean;
 }) {
-  return <DashboardGrid dashboard={useDashboard(runtime)} editable={editable} />;
+  return (
+    <DashboardGrid dashboard={useDashboard(runtime)} editable={editable} />
+  );
 }
 
 function layouts(runtime: DashboardRuntime): Record<string, PanelLayout> {
@@ -122,7 +124,10 @@ describe('placing a panel', () => {
    */
   it('applies the placement and leaves a global filter being edited unapplied', async () => {
     const { controller, runtime } = await openDashboard(
-      dashboardConfig({ fields: [REGION], panels: [panel({ bindings: BOUND })] }),
+      dashboardConfig({
+        fields: [REGION],
+        panels: [panel({ bindings: BOUND })],
+      }),
     );
 
     act(() => {
@@ -144,7 +149,10 @@ describe('placing a panel', () => {
     const { runtime } = await openDashboard(column);
     render(<LiveGrid runtime={runtime} />);
 
-    await press(screen.getByLabelText('Move Below with the arrow keys'), 'ArrowUp');
+    await press(
+      screen.getByLabelText('Move Below with the arrow keys'),
+      'ArrowUp',
+    );
 
     expect(layouts(runtime)).toEqual({
       top: { x: 0, y: 7, w: 6, h: 4 },
@@ -188,14 +196,16 @@ describe('placing a panel', () => {
         return this.parentElement;
       },
     );
-    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
-      1280,
-    );
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1280);
     const { runtime } = await openDashboard(
       dashboardConfig({
         panels: [
           panel({ id: 'left', title: 'Left' }),
-          panel({ id: 'right', title: 'Right', layout: { x: 6, y: 0, w: 6, h: 4 } }),
+          panel({
+            id: 'right',
+            title: 'Right',
+            layout: { x: 6, y: 0, w: 6, h: 4 },
+          }),
         ],
       }),
     );
@@ -255,7 +265,10 @@ describe('placing a panel', () => {
     );
     render(<LiveGrid runtime={runtime} />);
 
-    await press(screen.getByLabelText('Move Fine with the arrow keys'), 'ArrowDown');
+    await press(
+      screen.getByLabelText('Move Fine with the arrow keys'),
+      'ArrowDown',
+    );
 
     expect(layouts(runtime).fine).toEqual({ x: 0, y: 1, w: 6, h: 4 });
   });
@@ -305,9 +318,7 @@ describe('a panel whose query failed', () => {
 
     expect(screen.getByRole('table')).toBeTruthy();
     expect(
-      screen.getByText(
-        'The source answered: boom · Showing the last successful result',
-      ),
+      screen.getByText(/boom · Showing the last successful result$/),
     ).toBeTruthy();
     expect(document.querySelector('[data-slot="panel-failed"]')).toBeNull();
 
@@ -316,9 +327,7 @@ describe('a panel whose query failed', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     await settle();
 
-    expect(
-      screen.queryByText(/Showing the last successful result/),
-    ).toBeNull();
+    expect(screen.queryByText(/Showing the last successful result/)).toBeNull();
     expect(screen.getByRole('table')).toBeTruthy();
   });
 
@@ -344,9 +353,7 @@ describe('a panel whose query failed', () => {
     await settle();
 
     expect(
-      screen.getByText(
-        'The source answered: boom · Showing the last successful result',
-      ),
+      screen.getByText(/boom · Showing the last successful result$/),
     ).toBeTruthy();
     expect(document.querySelector('[role="img"]')).toBeTruthy();
     expect(document.querySelector('[data-slot="panel-failed"]')).toBeNull();

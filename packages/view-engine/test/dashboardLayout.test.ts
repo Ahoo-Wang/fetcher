@@ -153,8 +153,18 @@ describe('placePanel', () => {
 
 describe('placePanelIn', () => {
   const panels = [
-    { id: 'a', kind: 'markdown', content: '', layout: { x: 0, y: 0, w: 6, h: 4 } },
-    { id: 'b', kind: 'markdown', content: '', layout: { x: 0, y: 4, w: 6, h: 4 } },
+    {
+      id: 'a',
+      kind: 'markdown',
+      content: '',
+      layout: { x: 0, y: 0, w: 6, h: 4 },
+    },
+    {
+      id: 'b',
+      kind: 'markdown',
+      content: '',
+      layout: { x: 0, y: 4, w: 6, h: 4 },
+    },
   ] as DashboardPanel[];
 
   it('writes the placed panel and the ones it pushed, and nothing else', () => {

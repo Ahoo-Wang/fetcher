@@ -123,8 +123,7 @@ export function useDashboard(
     loading,
     dirty: state?.dirty ?? false,
     place: useCallback(
-      (panelId: string, layout: PanelLayout) =>
-        runtime?.place(panelId, layout),
+      (panelId: string, layout: PanelLayout) => runtime?.place(panelId, layout),
       [runtime],
     ),
     refresh: useCallback(() => runtime?.refresh(), [runtime]),

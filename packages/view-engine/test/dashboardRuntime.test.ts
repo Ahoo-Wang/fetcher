@@ -167,6 +167,12 @@ function pagedQueries(source: ViewSource): FilterPagedQuery[] {
     .mock.calls.map(call => call[0] as FilterPagedQuery);
 }
 
+/** The newest paged query the source was asked for. */
+function lastQuery(source: ViewSource): FilterPagedQuery {
+  const queries = pagedQueries(source);
+  return queries[queries.length - 1];
+}
+
 function codes(issues: readonly Issue[]): string[] {
   return issues.map(found => found.code);
 }
@@ -1271,7 +1277,7 @@ describe('DashboardViewRuntime a panel in error', () => {
     const state = runtime.getSnapshot();
 
     expect(state.applied.filter).toEqual(EU_FILTER);
-    expect(pagedQueries(board.source).at(-1)?.filter).toMatchObject({
+    expect(lastQuery(board.source).filter).toMatchObject({
       field: 'warehouse',
       value: 'EU',
     });
@@ -1367,7 +1373,7 @@ describe('DashboardViewRuntime placing', () => {
     // The filter still applies when asked, under the new geometry.
     runtime.apply();
     await flush();
-    expect(pagedQueries(board.source).at(-1)?.filter).toMatchObject({
+    expect(lastQuery(board.source).filter).toMatchObject({
       value: 'EU',
     });
     expect(runtime.getSnapshot().applied.panels[0].layout.x).toBe(6);
