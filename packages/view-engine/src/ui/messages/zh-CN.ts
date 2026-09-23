@@ -784,7 +784,7 @@ export const zhCN: ViewMessages = {
   'label.chart.missing.zero': '补 0',
   'label.chart.missing.gap': '留空（断开）',
   'label.chart.missing.zero.hint':
-    '确知这一组没有记录、且指标可累加（记录数、合计）时补 0，其余留空',
+    '确知这一组没有记录、且指标可累加（记录数、总和）时补 0，其余留空',
   'label.chart.missing.gap.hint': '没有数据的点一律不画，折线在那里断开',
   'label.chart.reference-lines': '参考线',
   'label.chart.reference-row': '参考线 {index}',
@@ -942,7 +942,7 @@ export const zhCN: ViewMessages = {
   'analysis.sort.too-many': '结果最多按 {max} 个维度或指标排序。',
   'analysis.sort.unknown-alias': '排序依据的 {alias} 不在这个结果里。',
   'chart.cartesian.percent-not-additive':
-    '百分比堆叠要可累加的指标（记录数或合计），{metric} 不是。',
+    '百分比堆叠要可累加的指标（记录数或总和），{metric} 不是。',
   'chart.combo.series-type-missing': '组合图的每个系列都要有自己的类型。',
   'chart.colors.invalid': '这不是图表画得出的颜色。',
   'chart.colors.malformed': '钉住的图表颜色要按系列或类别逐个列出。',
