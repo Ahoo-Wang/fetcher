@@ -7,6 +7,31 @@
 - 做完就**删掉**这一条，不打勾、不留归档。历史在 git 里。
 - 改行为之前先看这里有没有对应项；有就接着做，别另起一条。
 
+## 交接（2026-09-23 换账号）：先把这一节做完
+
+接手第一件事：按 [progress.md#上一个暂停点](progress.md) 看清 #1787／#1788 是否已合并。每一条合并前都在真实浏览器里对受影响的视图逐控件走一遍（亮／暗、1440 与窄屏），门禁逐条看退出码（`pnpm test` 末尾还有 `test:type`）。
+
+- **在真实服务上核验分析表的合计行吸底**（#1787）。
+  - 为什么：#1787 把分析表改成自己的滚动口、表头与合计行做成吸附带、行少时补 `row-room`，但只有单测与故事覆盖，交接前的实地脚本没跑完。
+  - 判据：`localhost:8080` 快照控制台 →「按状态分布」→ 表格：合计行的下边等于表格滚动口的下边、紧挨「正在显示 N 行，耗时 X 秒」（靠右）；行多时表头与合计行都吸住、中间滚动；页面不滚动；暗色同样；键盘能滚动这个口（`tabIndex`）。有偏差就修并补故事断言。
+  - 落点：`src/ui/AnalysisTable.tsx`、`src/styles.css`（「A workbench fills its container」）、`stories/view-engine/AnalysisWorkbench.test.stories.tsx`。
+- **把三个新真实场景接进来并开 PR**。
+  - 为什么：用户要求 CRM、交易、定价各一个快照控制台与事件流分析台，仿补偿场景。三个子代理在各自 worktree 里做完了定义、系统视图、回归孪生与录制数据，**未推送**，且被要求不改共享文件。
+  - 判据：三条分支（`claude/ve-scene-customer`、`claude/ve-scene-trade-order`、`claude/ve-scene-product-pricing`，worktree 在 `.claude/worktrees/agent-*`；若已不在，按同名分支或重做）合进一个或三个 PR；`stories/shared/AppShell.tsx` 的导航按目录加上「真实后端」下的 客户／交易订单／商品定价 各两项，「服务」一行写各自 host；`stories/README.md` 的真实后端一节补三段；默认 host 分别是 `http://localhost:8085`、`8088`、`8089`（集群地址写在注释里；内置浏览器解析不了 `*.svc.cluster.local`）；每个场景的每个系统视图在真实服务上亮暗走过（无截断、无原始 JSON／毫秒数、图表画出）；四道故事门禁全绿。
+  - 落点：`stories/view-engine/` 下各场景文件、`stories/shared/AppShell.tsx`、`stories/README.md`。
+- **分析视图全面审查，修到企业生产交付级别**。
+  - 为什么：用户原话「分析视图的 UI、UX 需要全面审查，还没有达到企业生产交付级别」「这些问题应该是你审查出的，而不是由我来主动发现」。交接时一个只出清单的审查子代理还在跑，结果可能随账号切换丢失。
+  - 判据：拿到（或重做）一份按 P0／P1／P2 排的清单——覆盖标题栏与「分析」开关、托盘各槽、已应用带、结果工具栏、可视化面板每页、每种图型（刻度、图例、颜色、留白、tooltip、暗色）、分析表、追问与下钻、页脚、加载／空／错误／截断、键盘与焦点、铺满、视图切换时的跳动、与记录视图同概念同表达、文案——先给用户看、拍板；P0／P1 全部修掉并有故事或测试守着；P2 进本页。
+  - 落点：`src/ui/analysis/*`、`src/ui/workbench/AnalysisParts.tsx`、`src/ui/AnalysisTable.tsx`、`src/ui/AnalysisChart.tsx`、`src/ui/charts/*`、[ui/analysis.md](ui/analysis.md)。
+- **暗色下嵌入视图的底色与宿主卡片对齐**。
+  - 为什么：嵌入视图的根画 `--background`，宿主卡片是 `--card`，暗色下两者不同，嵌入块在卡片里是一块更深的区域（明色两者都是白所以看不出）。主题决策是 CSS 变量为唯一真相源（不加主题上下文 API）。
+  - 判据：定下由谁对齐（宿主为嵌入设 `--fve-dark-background`，或嵌入视图不画自己的底、行与吸附带改用可被宿主覆盖的 token），暗色下嵌入块与所在卡片同底、吸附带仍不透明；「嵌入视图」故事亮暗截图对照。
+  - 落点：`src/ui/EmbeddedView.tsx`、`src/styles.css`、`stories/view-engine/EmbeddedView.stories.tsx`、[ui/README.md](ui/README.md)。
+- **仪表盘窄面板里的宽表：冻结的末列压住前面的列**。
+  - 为什么：首页「最近的活动失败」面板里「已重试次数」被冻结的「最近更新」盖住一半，表头读成「已重试次」。
+  - 判据：窄面板里冻结列的上限（D17-4 的 pin cap）同样生效，或面板表格不冻结末列；故事量出没有列被覆盖。
+  - 落点：`src/ui/DashboardGrid.tsx`、`src/ui/record/pinCap.ts`、`stories/view-engine/Home.test.stories.tsx`。
+
 ## 阶段 3：仪表盘
 
 从审计清单起：按五个维度（用户、研发、演进、可达性、文案）把仪表盘现状过一遍，清单先给用户看、拍板，再按批次写进这一节。
