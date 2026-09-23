@@ -70,7 +70,7 @@ Beyond the six:
 
 - `model` through `store` contain no React, DOM, `window` or `document`
 - `runtime` reaches `store` only as a **type-only import of `store/ViewStore`** — the port, never an implementation
-- Third-party landing spots are fixed by `HEADLESS_DEPENDENCIES` in `test/architecture.test.ts`, and a dependency the manifest carries but that list does not name is **UI-only**: `@ahoo-wang/fetcher-wow` only at the root entry and in `model`, `filter`, `record`, `analysis`, `runtime` (not `dashboard`, not `store`); `dayjs` in `filter`, `record`, `analysis`, `runtime`, `ui`; `dequal` in `runtime` alone; `culori` in `analysis` alone. UI-only is therefore all the rest — `@base-ui/react`, `@dnd-kit/dom`, `@dnd-kit/react`, `class-variance-authority`, `cn`, `lucide-react`, `react-day-picker`, `react-error-boundary`, `react-grid-layout`, `react-markdown`, `recharts` — while `react` / `react-dom` are optional peers and reach `react` and `ui`. There is no table library: D16-1 declined `@tanstack/react-table`. A new React dependency cannot reach a headless layer without being listed explicitly in the test
+- Third-party landing spots are fixed by `HEADLESS_DEPENDENCIES` in `test/architecture.test.ts`, and a dependency the manifest carries but that list does not name is **UI-only**: `@ahoo-wang/fetcher-wow` only at the root entry and in `model`, `filter`, `record`, `analysis`, `runtime` (not `dashboard`, not `store`); `dayjs` in `filter`, `record`, `analysis`, `runtime`, `ui`; `dequal` in `runtime` alone; `culori` in `analysis` and `ui`. UI-only is therefore all the rest — `@base-ui/react`, `@dnd-kit/dom`, `@dnd-kit/react`, `class-variance-authority`, `cn`, `lucide-react`, `react-day-picker`, `react-error-boundary`, `react-grid-layout`, `react-markdown`, `echarts` — while `react` / `react-dom` are optional peers and reach `react` and `ui`. There is no table library: D16-1 declined `@tanstack/react-table`. A new React dependency cannot reach a headless layer without being listed explicitly in the test
 - **Deprecated Wow APIs are banned.** The test derives the deprecated export set from the wow sources themselves and fails on any import of it. Use `FilterExpression` and the `Filter*Query` family — never `Condition`, `PagedQuery`, `ListQuery` or `SingleQuery`
 - Wow must be imported from its root entry, by name, so every binding can be checked
 
@@ -357,18 +357,29 @@ src/
       headerSort.ts           — The result table's header sort: `headerSorted` (ascending, descending, back to the order the presses began from — an analysis's sort decides which groups the first N are) and `useHeaderSort`, which writes it through the editor and runs, as the record header does
       tableColumns.ts         — An analysis column in the record table's terms: its reading (`readingOf`, a plain metric is a number), whether it is an id (`isIdentifier`), a width from the column alone and never from its values (`columnWidthOf`), and the `RecordColumnView` its `SortableHeader` takes
     charts/                   — One file per family, plus what they share
-      Cartesian.tsx           — Which axis carries the numbers
+      Cartesian.tsx           — Bar, line, area and combo through `cartesianOption` (D21): the legend, the names fitted to the width, a pressed mark handed back as its group
+      cartesianOption.ts      — `cartesianOption`: a cartesian chart as the library draws it — each series' mark, axes and their titles, short numbers, value labels that hide rather than overlap, stack totals, reference lines; `categoryFit`, the category names side by side or at a slant for the width
+      ChartLegend.tsx         — The legend as text beside the drawing: a dot per series, on top by default, one line with the rest counted (「还有 N 个」)
       ChartReading.tsx        — The chart's numbers as a table, for whoever cannot see the marks
-      Funnel.tsx
-      Heatmap.tsx             — A grid rather than a chart library: a heatmap is cells with a background, and every library's version of that costs more than it saves
-      MetricCard.tsx          — The comparison, signed
-      PieSlices.tsx           — A pie or a donut: each slice labelled with its share, the legend led by the measured column (and, cut short, the share basis)
-      ScatterPoints.tsx
-      TooltipValue.tsx        — One measured value inside a tooltip, read as its column reads it
-      asImage.ts              — What every chart family spreads onto its drawing: a named image
-      axis.ts                 — Value format, axis domain and ticks
+      EChart.tsx              — The thin binding to the library: create once sized, resize, a whole new option per change, dispose; the frame (`data-slot="chart"`), the named image and the theme read off the element
+      echarts.ts              — The chart chunk: the library's pieces registered on demand, SVG renderer; imported by `load.ts` only
+      load.ts                 — `loadCharts`: the chart chunk loaded on first use and kept
+      measure.ts              — How wide a line of tick text is: a canvas where there is one, an estimate elsewhere
+      theme.ts                — `readChartTheme`: the stylesheet's tokens read back off the chart's element as concrete colours
+      tooltip.ts              — The tooltip as the registry draws one, in HTML, every data text escaped
+      Funnel.tsx              — A funnel through `funnelOption`, the conversion's basis said over it
+      funnelOption.ts         — `funnelOption`: a centred funnel in the order given, each stage's name, value and conversion beside it; `drawnStages`
+      Heatmap.tsx             — A heatmap through `heatmapOption`; a pressed cell handed back as its row's and column's group
+      heatmapOption.ts        — `heatmapOption`: cells filling the plot, a `visualMap` colour scale, a log scale shading by the log, values on the cells
+      MetricCard.tsx          — The value, the comparison signed, the target, and the trend through `sparklineOption`
+      sparklineOption.ts      — `sparklineOption`: a metric card's trend as a line and a faint fill, no axes
+      PieSlices.tsx           — A pie or a donut through `pieOption`: the legend beside it, led by the measured column (and, cut short, the share basis), each slice with its share
+      pieOption.ts            — `pieOption`: slices with their shares outside, labels that give way, the remainder grey, a donut's whole in its hole when the measure adds up; `drawnSlices`, `wholeOf`
+      ScatterPoints.tsx       — A scatter through `scatterOption`; a pressed point handed back as its group
+      scatterOption.ts        — `scatterOption`: both axes titled by their columns and padded past the extremes, whole ticks where the values are, a third metric as size, a few points named
+      axis.ts                 — Value format, whole axes (`allWhole`), a category name cut for its axis, and which axis a series is on
       family.ts               — `FamilyProps`, the value labeller and the column titler
-      legend.ts               — Where a legend goes as the chart library takes it, from the spec's `legend` and the family's own default
+      legend.ts               — Where the legend beside the chart goes (`legendAt`), from the spec's `legend` and the family's own default
       motion.ts               — Whether a chart animates its marks: not when the reader asked for less motion (`useChartMotion`, read live)
       palette.ts              — The eight slot colours, the grey of a pie's "Other", and the spec's overrides
       reading.ts              — A chart as text: its name and the numbers it draws
@@ -377,7 +388,7 @@ src/
       drag.ts                 — What the settings make of a drag: `columnDrop` refuses one across the areas, plus what a reader hears
       rows.ts                 — The column settings' model: rows, the two areas (D19), order
       sections.ts             — Rows of one area by catalogue group; the search over them
-    components/               — 34 shadcn/ui primitives — vendored, see below
+    components/               — 33 shadcn/ui primitives — vendored, see below
     filter/                   — What the panel is made of
       AddEntry.tsx            — The field picker a group is added to from
       ConditionPill.tsx       — One condition; the element-match block; `PendingDot`
@@ -486,8 +497,8 @@ src/
 
 - `@ahoo-wang/fetcher-wow` — query protocol (`FilterExpression`, `FilterPagedQuery`, `CursorQuery`, `AggregationQuery`)
 - `react` / `react-dom` — **optional peer dependencies**; the root entry works without React
-- UI-only: `@base-ui/react`, `@dnd-kit/dom`, `@dnd-kit/react`, `recharts`, `react-grid-layout`, `react-markdown`, `react-day-picker`, `react-error-boundary`, `lucide-react`, `class-variance-authority`, `cn`
-- Headless: `dayjs` (time), `dequal` (runtime equality), `culori` (colour syntax, `analysis` only — a saved chart colour is validated before it reaches a `<style>` element)
+- UI-only: `@base-ui/react`, `@dnd-kit/dom`, `@dnd-kit/react`, `echarts` (every chart, loaded on first use; D21), `react-grid-layout`, `react-markdown`, `react-day-picker`, `react-error-boundary`, `lucide-react`, `class-variance-authority`, `cn`
+- Headless: `dayjs` (time), `dequal` (runtime equality), `culori` (colour syntax: in `analysis` a saved chart colour is validated, in `ui` the theme's colours are converted to `rgb()` for the chart library)
 
 ## Code Style
 

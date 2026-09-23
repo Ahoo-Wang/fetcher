@@ -60,12 +60,12 @@
     "culori": "catalog:",
     "dayjs": "catalog:",
     "dequal": "catalog:",
+    "echarts": "catalog:",
     "lucide-react": "catalog:",
     "react-day-picker": "catalog:",
     "react-error-boundary": "catalog:",
     "react-grid-layout": "catalog:",
-    "react-markdown": "catalog:",
-    "recharts": "catalog:"
+    "react-markdown": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:",

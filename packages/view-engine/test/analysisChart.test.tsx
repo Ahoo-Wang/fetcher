@@ -21,7 +21,6 @@ import type {
 } from '../src/index.js';
 import { CHART_COLOR_SLOTS, groupKeyText, shapeChart } from '../src/index.js';
 import { AnalysisChart, ViewSurface } from '../src/ui/index.js';
-import { TooltipValue } from '../src/ui/charts/TooltipValue.js';
 import { DRAWN, analysisConfig } from './fixtures.js';
 
 afterEach(cleanup);
@@ -32,6 +31,31 @@ function chartOf(data: ChartData) {
       <AnalysisChart data={data} />
     </ViewSurface>,
   );
+}
+
+/** The colour each legend entry wears, as the CSS the page resolves. */
+function legendColours(container: HTMLElement): string[] {
+  return [
+    ...container.querySelectorAll<HTMLElement>(
+      '[data-slot="chart-legend-item"] > [aria-hidden]',
+    ),
+  ].map(dot => dot.style.background);
+}
+
+/** A CSS colour as the page's own style object writes it back. */
+function asStyled(color: string): string {
+  const probe = document.createElement('span');
+  probe.style.background = color;
+  return probe.style.background;
+}
+
+/** The painted shapes of the drawing: bars, and nothing that is only air. */
+function fills(container: HTMLElement): string[] {
+  return [
+    ...container.querySelectorAll('[data-slot="chart-plot"] svg path[fill]'),
+  ]
+    .map(path => path.getAttribute('fill')!)
+    .filter(fill => fill !== 'none' && fill !== 'transparent');
 }
 
 describe('AnalysisChart', () => {
@@ -243,11 +267,15 @@ describe('AnalysisChart', () => {
         referenceLines: [{ axis: 'left' as const, value: 2 }],
       },
     });
+    // The one dashed rule in the drawing, and whether it runs up the plot.
     const bounds = (container: HTMLElement) => {
-      const line = container.querySelector('.recharts-reference-line-line');
-      return {
-        vertical: line?.getAttribute('x1') === line?.getAttribute('x2'),
-      };
+      const line = container.querySelector(
+        '[data-slot="chart-plot"] path[stroke-dasharray]',
+      );
+      const [x1, y1, x2, y2] = (line?.getAttribute('d') ?? '')
+        .match(/-?[\d.]+/g)!
+        .map(Number);
+      return { vertical: x1 === x2 && y1 !== y2 };
     };
 
     const upright = render(
@@ -288,13 +316,12 @@ describe('AnalysisChart', () => {
       </ViewSurface>,
     );
 
-    // The axes size themselves to their labels (`width="auto"`), and jsdom
-    // measures no text, so an axis with nothing on it is not drawn here;
-    // that the right-hand one stands beside the left is the browser
-    // story's (`分析工作台/回归 › TwoMetrics`).
-    expect(container.querySelector('.recharts-yAxis')).not.toBeNull();
-    // The bounds the spec pinned, printed the way it asked for.
-    expect(screen.getByText('900%')).toBeDefined();
+    // The bounds the spec pinned, printed the way it asked for: 0 to 10 as
+    // a share, on the only numeric axis there is to write it on. That the
+    // right-hand axis stands beside the left is the browser story's
+    // (`分析工作台/回归 › TwoMetrics`).
+    expect(within(container).getByText('1,000%')).toBeDefined();
+    expect(within(container).getByText('0%')).toBeDefined();
   });
 
   /**
@@ -341,63 +368,60 @@ describe('AnalysisChart', () => {
       </ViewSurface>,
     );
 
-    // A tick the domain pins and no row holds, so it can only be the axis.
-    expect(screen.getByText('¥1,000.00')).toBeDefined();
+    // A tick the domain pins and no row holds, so it can only be the axis —
+    // written short, in the column's currency: the reading table beside it
+    // has the whole number.
+    expect(within(container).getByText('¥1000')).toBeDefined();
+    expect(within(container).getByText('¥2000')).toBeDefined();
     // The reading beside the marks is the same numbers, so the same text.
     expect(within(container).getAllByText('¥1,234.00').length).toBeGreaterThan(
       0,
     );
   });
 
-  /**
-   * The row a tooltip shows is drawn here rather than by the vendored
-   * content, whose only hook replaces the whole row — see
-   * `ui/charts/TooltipValue.tsx`. What each row reads it through is the
-   * series' own metric, which is the same labeller the ticks and the reading
-   * table go through, asserted above.
-   */
-  it('draws a tooltip row as the swatch, the series and the number', () => {
-    render(
+  it('writes a data-valued series name as text, never into a stylesheet', () => {
+    // A pivot names its series by raw group values. The drawing is handed
+    // concrete colours rather than custom properties keyed by them, so no
+    // style element is written at all, and the name is the legend's text.
+    const hostile = 'a} *{background:url(//evil/)}<b>';
+    const { container } = render(
       <ViewSurface>
-        <TooltipValue color="#0f766e" name="Amount" value="¥1,234.00" />
+        <AnalysisChart
+          data={{
+            type: 'cartesian',
+            chart: 'bar',
+            points: [{ x: 'CN', values: { [hostile]: 2 } }],
+            series: [{ key: hostile, label: hostile, metric: 'orders' }],
+          }}
+          spec={{
+            type: 'bar',
+            cartesian: { x: 'warehouse', series: [{ metric: 'orders' }] },
+            legend: 'top',
+          }}
+        />
       </ViewSurface>,
     );
 
-    expect(screen.getByText('Amount')).toBeDefined();
-    expect(screen.getByText('¥1,234.00')).toBeDefined();
+    expect(container.querySelector('style')).toBeNull();
+    expect(container.querySelector('b')).toBeNull();
     expect(
-      document.querySelector<HTMLElement>('[data-slot="chart-tooltip-swatch"]')
-        ?.style.background,
-    ).toBe('rgb(15, 118, 110)');
+      container.querySelector('[data-slot="chart-legend-item"]')?.textContent,
+    ).toBe(hostile);
+    expect(fills(container)).toContain('rgb(42, 120, 214)');
   });
 
-  it('maps a data-valued series key to a synthetic one before CSS sees it', () => {
-    // A pivot names its series by raw group values, which the style element
-    // interpolates into custom properties; anything but an identifier breaks
-    // the rule or breaks out of it.
-    const hostile = 'a} *{background:url(//evil/)}';
-    const { container } = chartOf({
-      type: 'cartesian',
-      chart: 'bar',
-      points: [{ x: 'CN', values: { [hostile]: 2 } }],
-      series: [{ key: hostile, label: hostile, metric: 'orders' }],
-    });
-
-    const css = container.querySelector('style')?.textContent ?? '';
-    expect(css).not.toContain(hostile);
-    // The series keeps its colour: the config carries a synthetic key.
-    expect(css).toContain('--color-s0');
-  });
-
-  it('maps a pie category to a synthetic key before CSS sees it', () => {
-    const hostile = 'x} *{color:red}';
+  it('writes a pie category as text, never into a stylesheet', () => {
+    const hostile = 'x} *{color:red}<b>';
     const { container } = chartOf({
       type: 'pie',
       slices: [{ category: hostile, value: 2 }],
     });
 
-    const css = container.querySelector('style')?.textContent ?? '';
-    expect(css).not.toContain(hostile);
+    expect(container.querySelector('style')).toBeNull();
+    expect(container.querySelector('b')).toBeNull();
+    expect(
+      container.querySelector('[data-slot="chart-legend-item"]')?.textContent,
+    ).toContain(hostile);
   });
 
   it('draws a pie and a donut', () => {
@@ -439,14 +463,13 @@ describe('AnalysisChart', () => {
       </ViewSurface>,
     );
 
-    // recharts draws no sector in jsdom — the pie layer comes out empty — so
-    // the colours are read where they are declared: the custom properties the
-    // container emits, which are the same values the cells are given.
-    const css = container.querySelector('style')?.textContent ?? '';
-    expect(css).toContain('--color-p0: #eb6834;');
-    expect(css).toContain('--color-p1: var(--chart-2);');
-    // The remainder is no category, so it wears the neutral, not a slot.
-    expect(css).toContain('--color-p2: var(--muted-foreground);');
+    // The legend wears the colours as written; the remainder is no
+    // category, so it wears the neutral, not a slot.
+    expect(legendColours(container)).toEqual(
+      ['#eb6834', 'var(--chart-2)', 'var(--muted-foreground)'].map(asStyled),
+    );
+    // And the slice is drawn in it.
+    expect(fills(container)).toContain('rgb(235, 104, 52)');
   });
 
   /**
@@ -471,13 +494,10 @@ describe('AnalysisChart', () => {
       </ViewSurface>,
     );
 
-    const css = container.querySelector('style')?.textContent ?? '';
-    const slots = [...css.matchAll(/--color-p\d+: (var\(--chart-\d+\));/g)]
-      .map(([, slot]) => slot)
-      // The container writes one block per mode; one is enough to read.
-      .slice(0, CHART_COLOR_SLOTS);
+    const slots = legendColours(container);
     expect(slots).toHaveLength(CHART_COLOR_SLOTS);
     expect(new Set(slots).size).toBe(CHART_COLOR_SLOTS);
+    expect(new Set(fills(container)).size).toBe(CHART_COLOR_SLOTS);
   });
 
   it('colours a cartesian series by its metric alias', () => {
@@ -488,16 +508,14 @@ describe('AnalysisChart', () => {
           spec={{
             type: 'bar',
             cartesian: { x: 'warehouse', series: [{ metric: 'orders' }] },
-            colors: { orders: '#2a78d6' },
+            colors: { orders: '#0f766e' },
           }}
         />
       </ViewSurface>,
     );
 
-    // The series is drawn from the custom property the container emits, so
-    // that is where a configured colour has to land.
-    const css = container.querySelector('style')?.textContent ?? '';
-    expect(css).toContain('--color-s0: #2a78d6');
+    // Pinned by its alias, and handed to the drawing as a concrete colour.
+    expect(fills(container)).toContain('rgb(15, 118, 110)');
   });
 
   /**
@@ -540,9 +558,10 @@ describe('AnalysisChart', () => {
       </ViewSurface>,
     );
 
-    const css = container.querySelector('style')?.textContent ?? '';
-    expect(css).toContain('--color-s0: #eb6834');
-    expect(css).toContain('--color-s1: var(--chart-2)');
+    // Two series earn a legend, which wears the colours as written.
+    expect(legendColours(container)).toEqual(
+      ['#eb6834', 'var(--chart-2)'].map(asStyled),
+    );
   });
 
   /**
@@ -593,16 +612,15 @@ describe('AnalysisChart', () => {
         </ViewSurface>,
       );
       const css = container.querySelector('style')?.textContent ?? '';
+      const legend = legendColours(container);
       unmount();
-      return css;
+      return { css, legend };
     };
 
-    const pie = drawn(pieSpec);
-    const split = drawn(splitSpec);
-    Object.values(colors).forEach((pinned, index) => {
-      expect(pie).toContain(`--color-p${index}: ${pinned};`);
-      expect(split).toContain(`--color-s${index}: ${pinned};`);
-    });
+    const pie = drawn(pieSpec).legend;
+    const split = drawn(splitSpec).legend;
+    expect(pie).toEqual(Object.values(colors).map(asStyled));
+    expect(split).toEqual(Object.values(colors).map(asStyled));
   });
 
   /**
@@ -620,14 +638,15 @@ describe('AnalysisChart', () => {
             type: 'bar',
             cartesian: { x: 'warehouse', series: [{ metric: 'orders' }] },
             colors: { orders: hostile },
+            legend: 'top',
           }}
         />
       </ViewSurface>,
     );
 
-    const css = container.querySelector('style')?.textContent ?? '';
-    expect(css).not.toContain(hostile);
-    expect(css).toContain('--color-s0: var(--chart-1)');
+    expect(container.innerHTML).not.toContain(hostile);
+    expect(legendColours(container)).toEqual([asStyled('var(--chart-1)')]);
+    expect(fills(container)).toContain('rgb(42, 120, 214)');
   });
 
   it('draws a scatter', () => {
@@ -638,8 +657,162 @@ describe('AnalysisChart', () => {
     expect(container.querySelector('[data-slot="chart"]')).not.toBeNull();
   });
 
+  describe('a scatter', () => {
+    const regions: AnalysisView['columns'] = [
+      { alias: 'region', label: 'Region', role: 'group' },
+      { alias: 'orders', label: 'Orders', role: 'metric' },
+      {
+        alias: 'amount',
+        label: 'Amount',
+        role: 'metric',
+        fn: 'SUM',
+        numberFormat: { style: 'currency', currency: 'CNY' },
+      },
+    ];
+    const spec: ChartSpec = {
+      type: 'scatter',
+      scatter: { category: 'region', x: 'orders', y: 'amount' },
+    };
+    const scatterOf = (points: { category: string; x: number; y: number }[]) =>
+      render(
+        <ViewSurface locale="zh-CN">
+          <AnalysisChart
+            data={{ type: 'scatter', points }}
+            spec={spec}
+            columns={regions}
+          />
+        </ViewSurface>,
+      );
+    // The drawing's texts: a point's name carries a halo, an axis title a
+    // heavier weight, and a tick neither — centred under the plot on X,
+    // right-aligned beside it on Y.
+    const texts = (container: HTMLElement) => [
+      ...container.querySelectorAll('[data-slot="chart-plot"] svg text'),
+    ];
+    const titled = (text: Element) =>
+      /font-weight/.test(text.getAttribute('style') ?? '');
+    const ticks = (container: HTMLElement, axis: 'x' | 'y') =>
+      texts(container)
+        .filter(
+          text =>
+            !text.hasAttribute('stroke') &&
+            !titled(text) &&
+            text.getAttribute('text-anchor') ===
+              (axis === 'x' ? 'middle' : 'end'),
+        )
+        .map(tick => tick.textContent ?? '');
+
+    /**
+     * Counts from 0 to 2 used to tick at 0.5 and 1.5, which the count's own
+     * format rounds: an axis reading 0 1 1 2 2 (the 2026-09-23 audit).
+     */
+    it('ticks a whole-numbered axis at whole numbers, each once', () => {
+      const { container } = scatterOf([
+        { category: 'East', x: 0, y: 1200 },
+        { category: 'West', x: 1, y: 800 },
+        { category: 'North', x: 2, y: 300 },
+      ]);
+      const xs = ticks(container, 'x');
+      expect(xs.length).toBeGreaterThan(1);
+      expect(xs.every(tick => /^\d+$/.test(tick))).toBe(true);
+      expect(new Set(xs).size).toBe(xs.length);
+    });
+
+    it('titles each axis as the table heads its column', () => {
+      const { container } = scatterOf([
+        { category: 'East', x: 1, y: 1200 },
+        { category: 'West', x: 3, y: 800 },
+      ]);
+      const titles = texts(container)
+        .filter(titled)
+        .map(title => title.textContent);
+      expect(titles).toContain('Orders');
+      expect(titles).toContain('Sum of Amount');
+    });
+
+    /**
+     * A point is one group, and nothing about a dot says which: the tooltip
+     * is headed by it, and a few points are named where they are drawn.
+     */
+    it('says which group a point is', () => {
+      const { container } = scatterOf([
+        { category: 'East', x: 1, y: 1200 },
+        { category: 'West', x: 3, y: 800 },
+      ]);
+      expect(
+        texts(container)
+          .filter(text => text.hasAttribute('stroke'))
+          .map(name => name.textContent)
+          .sort(),
+      ).toEqual(['East', 'West']);
+      // The tooltip is headed by the group: test/scatterOption.test.ts.
+    });
+
+    /**
+     * The point at the largest value sat on the plot's edge, half of it cut
+     * by the chart's own box (the 2026-09-23 audit). The scale is laid out
+     * even in jsdom, so where each point's centre falls against the grid is
+     * a number here: at least a point's radius in from every edge.
+     */
+    it('keeps the extreme points off the plot’s edges', () => {
+      const { container } = scatterOf([
+        { category: 'East', x: 0, y: 0 },
+        { category: 'West', x: 4, y: 4000 },
+      ]);
+      // The rules across the plot mark its edges; a point is a unit circle
+      // placed and scaled by its transform.
+      const rules = [
+        ...container.querySelectorAll('[data-slot="chart-plot"] svg path'),
+      ]
+        .filter(path => path.getAttribute('fill') === 'none')
+        .map(path =>
+          (path.getAttribute('d') ?? '').match(/-?[\d.]+/g)!.map(Number),
+        )
+        .filter(numbers => numbers.length === 4);
+      const flat = rules.filter(([, y1, , y2]) => y1 === y2);
+      const upright = rules.filter(([x1, , x2]) => x1 === x2);
+      const left = Math.min(...flat.map(([x1]) => x1));
+      const right = Math.max(...flat.map(([, , x2]) => x2));
+      const top = Math.min(...upright.map(([, y1, , y2]) => Math.min(y1, y2)));
+      const bottom = Math.max(
+        ...upright.map(([, y1, , y2]) => Math.max(y1, y2)),
+      );
+      const centres = [
+        ...container.querySelectorAll('[data-slot="chart-plot"] svg path'),
+      ]
+        .filter(path => path.getAttribute('fill') === 'rgb(42, 120, 214)')
+        .map(point => {
+          const matrix = (point.getAttribute('transform') ?? '')
+            .match(/-?[\d.]+/g)!
+            .map(Number);
+          return { x: matrix[4], y: matrix[5] };
+        });
+      expect(centres).toHaveLength(2);
+      // A point is 10px across: a radius of 5 in from every edge.
+      for (const { x, y } of centres) {
+        expect(x - left).toBeGreaterThanOrEqual(5);
+        expect(right - x).toBeGreaterThanOrEqual(5);
+        expect(y - top).toBeGreaterThanOrEqual(5);
+        expect(bottom - y).toBeGreaterThanOrEqual(5);
+      }
+    });
+
+    it('names no point on the plot once there are many', () => {
+      const { container } = scatterOf(
+        Array.from({ length: 9 }, (_, index) => ({
+          category: `R${index}`,
+          x: index,
+          y: index * 100,
+        })),
+      );
+      expect(
+        texts(container).filter(text => text.hasAttribute('stroke')),
+      ).toHaveLength(0);
+    });
+  });
+
   it('draws a heatmap as a grid of cells', () => {
-    chartOf({
+    const { container } = chartOf({
       type: 'heatmap',
       xs: ['Mon', 'Tue'],
       ys: ['CN', 'JP'],
@@ -649,13 +822,27 @@ describe('AnalysisChart', () => {
       ],
     });
 
-    expect(screen.getByTitle('CN · Mon: 1')).toBeDefined();
-    // A missing cell says so rather than pretending to be zero.
-    expect(screen.getByTitle('JP · Tue: —')).toBeDefined();
+    // A cell per value, none where nothing fell — a hole is no zero.
+    expect(
+      container
+        .querySelector('[data-chart="heatmap"]')
+        ?.getAttribute('data-marks'),
+    ).toBe('3');
+    expect(fills(container).length).toBeGreaterThanOrEqual(3);
+    for (const name of ['Mon', 'Tue', 'CN', 'JP'])
+      expect(
+        within(container).getAllByText(name, DRAWN).length,
+      ).toBeGreaterThan(0);
+    // The hole is said in the reading table rather than drawn as zero.
+    expect(
+      within(
+        container.querySelector<HTMLElement>('[data-slot="chart-reading"]')!,
+      ).getAllByText('—').length,
+    ).toBeGreaterThan(0);
   });
 
   it('labels every kind of category value', () => {
-    chartOf({
+    const { container } = chartOf({
       type: 'heatmap',
       xs: [null, true, { id: 1 }],
       ys: [3],
@@ -663,8 +850,11 @@ describe('AnalysisChart', () => {
     });
 
     // A boolean reads as the analysis table writes it, in the catalogue's words.
-    expect(screen.getByTitle('3 · Yes: 2')).toBeDefined();
-    expect(screen.getByTitle('3 · {"id":1}: 3')).toBeDefined();
+    const plot = container.querySelector<HTMLElement>(
+      '[data-slot="chart-plot"]',
+    )!;
+    expect(within(plot).getByText('Yes', DRAWN)).toBeDefined();
+    expect(within(plot).getByText('{"id":1}', DRAWN)).toBeDefined();
   });
 
   it('draws a funnel with its conversions', () => {
@@ -678,6 +868,68 @@ describe('AnalysisChart', () => {
 
     expect(screen.getByText('Visited', DRAWN)).toBeDefined();
     expect(screen.getByText('25%', DRAWN)).toBeDefined();
+  });
+
+  /**
+   * A bare 「25%」 beside a bar reads as a share of the whole; the kernel
+   * divides by the stage before unless the spec asks for the first. The
+   * heading over the percentages says which, drawing and reading alike, and
+   * the bars wear the palette's first slot rather than the button colour.
+   */
+  it('says what a funnel’s percentages are relative to, and paints from the palette', () => {
+    const stages = [
+      { label: 'Visited', value: 100, conversion: 1 },
+      { label: 'Bought', value: 25, conversion: 0.25 },
+    ];
+    const funnel = (conversion?: 'first') =>
+      render(
+        <ViewSurface>
+          <AnalysisChart
+            data={{ type: 'funnel', stages }}
+            spec={{
+              type: 'funnel',
+              funnel: {
+                stages: { from: 'metrics', items: [] },
+                ...(conversion ? { conversion } : {}),
+              },
+            }}
+          />
+        </ViewSurface>,
+      );
+    const heading = (container: HTMLElement) =>
+      container.querySelector('[data-slot="funnel-conversion-heading"]')
+        ?.textContent;
+
+    const { container, unmount } = funnel();
+    expect(heading(container)).toBe('Conversion from previous stage');
+    // The reading table's column says the same words.
+    expect(
+      within(
+        container.querySelector<HTMLElement>('[data-slot="chart-reading"]')!,
+      ).getByText('Conversion from previous stage'),
+    ).toBeDefined();
+    // Both stages in the palette's first slot.
+    expect(fills(container)).toEqual([
+      'rgb(42, 120, 214)',
+      'rgb(42, 120, 214)',
+    ]);
+    unmount();
+
+    const first = funnel('first');
+    expect(heading(first.container)).toBe('Conversion from first stage');
+  });
+
+  it('says no conversion where the spec asks for none', () => {
+    const { container } = chartOf({
+      type: 'funnel',
+      stages: [
+        { label: 'Visited', value: 100 },
+        { label: 'Bought', value: 25 },
+      ],
+    });
+    expect(
+      container.querySelector('[data-slot="funnel-conversion-heading"]'),
+    ).toBeNull();
   });
 
   /**

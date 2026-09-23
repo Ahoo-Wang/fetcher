@@ -197,6 +197,11 @@ export function AnalysisParts({
     null,
   );
 
+  // Whether every finding the strip shows is about the chart.
+  const chartOnly =
+    filter.unmarked.length > 0 &&
+    filter.unmarked.every(found => found.path[0] === 'chart');
+
   if (!runtime) return children(NO_PARTS);
   return children({
     // The caption is this kind's furniture in the frame (`resultSlots`).
@@ -231,9 +236,23 @@ export function AnalysisParts({
         }}
       />
     ),
-    // The way out of a config that will not run: the tray, which is where
-    // the finding is about (F11).
-    errorAction: (
+    // The way out of a config that will not run: wherever the finding is
+    // about (F11). A chart's are the visualization panel's — its options,
+    // where the stages and slots are set — and the tray holds none of them:
+    // sending a funnel short of stages to 「打开分析」 opened the one place
+    // that could not fix it (the 2026-09-23 audit). With the panel switched
+    // off by the host there is no way to it, so no button.
+    errorAction: chartOnly ? (
+      shown.visualization && (
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => setPanel(view ? 'options' : 'picker')}
+        >
+          {messages.label('label.analysis.open-chart-options')}
+        </Button>
+      )
+    ) : (
       <Button
         variant="outline"
         size="xs"
