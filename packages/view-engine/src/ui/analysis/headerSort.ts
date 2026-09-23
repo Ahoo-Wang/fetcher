@@ -54,50 +54,55 @@ export function headerSorted(
 
 /**
  * The header's half of the analysis editor: the order on screen, and a press
- * written through `setSort` and run at once.
+ * written through the editor.
  *
- * **It runs, as the record table's header does** (`toggleSort`: edit, then
- * apply). A sort is a question member, so a tray edit to it runs on its own
- * a moment later (「改了就跑」) — but not while the range waits for Apply,
- * nor with auto-run switched off, and a header that answered a press by
- * changing nothing on screen would be a header that looks broken. A press
- * on the result is a request to see the result that way, now: the one other
- * gesture on the result that asks a question, the totals switch, is
- * `setTotals` + `submit` for the same reason.
+ * **It runs when nothing else waits** (`sortNow`). A sort is a question
+ * member, so a tray edit to it runs on its own a moment later (「改了就跑」)
+ * — but not while the range waits for Apply, nor with auto-run switched off,
+ * and a header that answered a press by changing nothing on screen would
+ * look broken; so a press on its own runs at once, as the record table's
+ * header does. But it never applies what else the draft holds: with a range
+ * condition or a tray edit waiting, the sort joins them, the pending dot
+ * shows on Apply, and Apply runs them together — the metric card's whole
+ * keeps the same rule.
  *
- * The next sort is read off the order on screen (the config that ran), not
- * the draft: the arrow the user pressed is the arrow they saw. `base`
- * remembers the order the presses started from, for as long as the sort in
- * force is the one a press wrote; a sort that arrived any other way — the
- * tray, a saved view, a revert — starts a new run of presses from itself.
+ * Two readings of the sort, on purpose. The arrows and `aria-sort` say the
+ * order of the rows on screen (`shown`, the config that ran): a header that
+ * pointed down over rows that go up would be lying about them. The next
+ * press is worked out from the draft's sort, which is that same order
+ * whenever nothing waits and otherwise the order Apply is about to run —
+ * so pressing twice while it waits still goes ascending, then descending.
+ * `base` remembers the order the presses started from, for as long as the
+ * draft's sort is the one a press wrote; a sort that arrived any other way
+ * — the tray, a saved view, a revert — starts a new run of presses from
+ * itself.
  */
 export function useHeaderSort(
   analysis: AnalysisEditorController,
-  applied: readonly AnalysisSort[],
+  shown: readonly AnalysisSort[],
 ): HeaderSorting {
   const presses = useRef<{
     base: readonly AnalysisSort[];
     wrote: readonly AnalysisSort[];
   } | null>(null);
-  const { setSort, submit } = analysis;
+  const { sort: drafted, sortNow } = analysis;
   const onToggle = useCallback(
     (alias: string, options?: { exclusive?: boolean }) => {
       const last = presses.current;
-      const base = last && sameSort(last.wrote, applied) ? last.base : applied;
+      const base = last && sameSort(last.wrote, drafted) ? last.base : drafted;
       const next =
         options?.exclusive === false
-          ? cycledSort(asFields(applied), alias, false).map(entry => ({
+          ? cycledSort(asFields(drafted), alias, false).map(entry => ({
               alias: entry.field,
               direction: entry.direction,
             }))
-          : headerSorted(applied, alias, base);
+          : headerSorted(drafted, alias, base);
       presses.current = { base, wrote: next };
-      setSort(next);
-      submit();
+      sortNow(next);
     },
-    [applied, setSort, submit],
+    [drafted, sortNow],
   );
-  return { sort: applied, onToggle };
+  return { sort: shown, onToggle };
 }
 
 /** Whether two sorts order the groups the same way. */

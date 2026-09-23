@@ -354,7 +354,7 @@ src/
       Tray.tsx                — The analysis view's editor: range → dimensions | metrics, one Apply for the whole draft (D20)
       editing.ts              — What the tray picks when a field is picked — its alias and the type or summary it starts as (`defaultGroup`, `defaultMetric`), the shapes being the kernel builders' — and what a metric is called
       listFocus.ts            — Where the keyboard stands after the card it was on leaves the page: `useListFocus`, shared by every remove and move in the tray and the options panel (A2)
-      headerSort.ts           — The result table's header sort: `headerSorted` (ascending, descending, back to the order the presses began from — an analysis's sort decides which groups the first N are) and `useHeaderSort`, which writes it through the editor and runs, as the record header does
+      headerSort.ts           — The result table's header sort: `headerSorted` (ascending, descending, back to the order the presses began from — an analysis's sort decides which groups the first N are) and `useHeaderSort`, which writes it through the editor's `sortNow` — run at once, as the record header does, unless the draft holds another edit waiting for Apply
       tableColumns.ts         — An analysis column in the record table's terms: its reading (`readingOf`, a plain metric is a number), whether it is an id (`isIdentifier`), a width from the column alone and never from its values (`columnWidthOf`), and the `RecordColumnView` its `SortableHeader` takes
     charts/                   — One file per family, plus what they share
       Cartesian.tsx           — Bar, line, area and combo through `cartesianOption` (D21): the legend, the names fitted to the width, a pressed mark handed back as its group

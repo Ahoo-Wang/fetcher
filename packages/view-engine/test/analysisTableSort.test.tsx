@@ -12,9 +12,11 @@
  */
 
 import {
+  act,
   cleanup,
   fireEvent,
   render,
+  renderHook,
   screen,
   waitFor,
   within,
@@ -26,8 +28,10 @@ import {
   ViewEngine,
   type AnalysisSort,
   type AnalysisViewConfig,
+  type FilterTree,
   type ViewSource,
 } from '../src/index.js';
+import { useAnalysisEditor, useOpenView } from '../src/react/index.js';
 import { DataWorkbench } from '../src/ui/index.js';
 import { headerSorted } from '../src/ui/analysis/headerSort.js';
 import {
@@ -35,7 +39,13 @@ import {
   headerColumnOf,
   readingOf,
 } from '../src/ui/analysis/tableColumns.js';
-import { analysisConfig, ordersDefinition, testSource } from './fixtures.js';
+import {
+  analysisConfig,
+  mine,
+  ordersDefinition,
+  testSource,
+} from './fixtures.js';
+import { analysisToggle, openTray } from './fixtures/workbench.js';
 
 afterEach(cleanup);
 
@@ -153,7 +163,8 @@ describe('an analysis column’s own width', () => {
  * and runs — a sort is a question member, and a header that answered a press
  * with nothing on screen would look broken, so it runs as the record table's
  * header does rather than waiting for 「改了就跑」 (which a pending range, or
- * auto-run switched off, would hold back).
+ * auto-run switched off, would hold back). It runs only the sort, though:
+ * with anything else in the draft waiting for Apply, the press joins it.
  */
 describe('sorting an analysis from its header', () => {
   function open(config: Partial<AnalysisViewConfig> = {}) {
@@ -189,8 +200,12 @@ describe('sorting an analysis from its header', () => {
         kinds={['analysis']}
       />,
     );
-    return source;
+    return { source, engine };
   }
+
+  /** What the open view's draft holds, as the runtime has it. */
+  const draftOf = (engine: ViewEngine) =>
+    engine.openRuntimes()[0].getSnapshot().draft as AnalysisViewConfig;
 
   /** The sort the last aggregation asked the source for. */
   const asked = (source: ViewSource) =>
@@ -201,7 +216,7 @@ describe('sorting an analysis from its header', () => {
     fireEvent.click(within(header(name)).getByRole('button'));
 
   it('runs ascending, descending, then the view’s own order', async () => {
-    const source = open({ sort: [desc('warehouse')] });
+    const { source } = open({ sort: [desc('warehouse')] });
     await waitFor(() => expect(screen.getByRole('table')).toBeDefined());
     expect(header('Warehouse').getAttribute('aria-sort')).toBe('descending');
 
@@ -233,7 +248,7 @@ describe('sorting an analysis from its header', () => {
   });
 
   it('adds a column to the order with Shift held', async () => {
-    const source = open({ sort: [desc('warehouse')] });
+    const { source } = open({ sort: [desc('warehouse')] });
     await waitFor(() => expect(screen.getByRole('table')).toBeDefined());
 
     fireEvent.click(within(header('Record count')).getByRole('button'), {
@@ -250,7 +265,7 @@ describe('sorting an analysis from its header', () => {
 
   it('is reached and pressed from the keyboard', async () => {
     const user = userEvent.setup();
-    const source = open();
+    const { source } = open();
     await waitFor(() => expect(screen.getByRole('table')).toBeDefined());
 
     const first = within(header('Warehouse')).getByRole('button');
@@ -276,5 +291,85 @@ describe('sorting an analysis from its header', () => {
     expect(within(screen.getByRole('table')).queryAllByRole('button')).toEqual(
       [],
     );
+  });
+
+  /**
+   * The rule the metric card's whole and the funnel repair keep: a gesture
+   * on the result never applies an edit it did not make. A range condition
+   * waiting for Apply would run along with the sort, so the sort joins it
+   * instead — the arrows keep saying the order on screen, the pending dot
+   * says there is more to run, and Apply runs the two together.
+   */
+  it('leaves the run to Apply while the draft holds another edit', async () => {
+    const { source, engine } = open({ sort: [desc('warehouse')] });
+    await waitFor(() => expect(screen.getByRole('table')).toBeDefined());
+    const ran = vi.mocked(source.aggregate).mock.calls.length;
+    const paid: FilterTree = {
+      op: 'and',
+      children: [{ field: 'status', operator: 'EQ', value: 'PAID' }],
+    };
+    act(() => engine.openRuntimes()[0].edit({ filter: paid }));
+
+    press('Record count');
+    await waitFor(() => expect(draftOf(engine).sort).toEqual([asc('orders')]));
+    // A second press goes on from the sort waiting, not the one on screen.
+    press('Record count');
+    await waitFor(() => expect(draftOf(engine).sort).toEqual([desc('orders')]));
+
+    expect(vi.mocked(source.aggregate).mock.calls.length).toBe(ran);
+    expect(header('Warehouse').getAttribute('aria-sort')).toBe('descending');
+    expect(header('Record count').getAttribute('aria-sort')).toBeNull();
+    expect(
+      analysisToggle().querySelector('[data-slot="pending-dot"]'),
+    ).not.toBeNull();
+
+    const tray = await openTray();
+    fireEvent.click(within(tray).getByRole('button', { name: /^Apply/ }));
+    await waitFor(() =>
+      expect(header('Record count').getAttribute('aria-sort')).toBe(
+        'descending',
+      ),
+    );
+    const [query] = vi.mocked(source.aggregate).mock.lastCall!;
+    expect(query.sort).toEqual([{ field: 'orders', direction: 'DESC' }]);
+    expect(JSON.stringify(query)).toContain('PAID');
+  });
+
+  /**
+   * A sort the tray changed and has not run is not "something else": the
+   * press replaces it, so nothing is left waiting and the press runs.
+   */
+  it('runs over a sort the tray has not run yet, which it replaces', async () => {
+    const { source, engine } = open({ sort: [desc('warehouse')] });
+    await waitFor(() => expect(screen.getByRole('table')).toBeDefined());
+    act(() => engine.openRuntimes()[0].edit({ sort: [asc('warehouse')] }));
+
+    press('Record count');
+
+    await waitFor(() =>
+      expect(asked(source)).toEqual([{ field: 'orders', direction: 'ASC' }]),
+    );
+    expect(engine.openRuntimes()[0].getSnapshot().applied).toMatchObject({
+      sort: [asc('orders')],
+    });
+  });
+
+  /** Over a record view there is no analysis sort to write or run. */
+  it('writes nothing through a view that is not an analysis', async () => {
+    const source = testSource();
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store: new MemoryViewStore({ instances: [mine] }),
+      resolveSource: () => source,
+    });
+    const { result } = renderHook(() => {
+      const opened = useOpenView(engine, mine.id);
+      return { opened, analysis: useAnalysisEditor(opened.runtime) };
+    });
+    await waitFor(() => expect(result.current.opened.runtime).not.toBeNull());
+    const before = result.current.opened.runtime!.getSnapshot().draft;
+
+    expect(result.current.analysis.sortNow([asc('orders')])).toBe(false);
+    expect(result.current.opened.runtime!.getSnapshot().draft).toBe(before);
   });
 });
