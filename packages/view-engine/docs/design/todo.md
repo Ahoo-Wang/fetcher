@@ -32,11 +32,6 @@
   - 判据：草稿里另有待应用修改时，表头排序只进入待应用；有测试。
   - 落点：`src/ui/record/SortableHeader.tsx` 的调用处、`src/react/useRecordTable.ts`。
 
-- **直方图维度的桶读成区间**：桶读成「¥0.00」「¥500.00」，应读成区间「¥0～500」且按界面语言写短——是 `display.ts` 对 `HISTOGRAM` 分组的读法，与渲染库无关；随第 2 批一起修或单开。
-  - 为什么：真实后端走查（2026-09-23）看到「¥0.00」「¥500.00」这样的桶，读不出是哪一段。
-  - 判据：`HISTOGRAM` 分组的桶按「下界～上界」读，按界面语言写短，表格、图表与读屏表一致，有测试守着。
-  - 落点：`src/ui/display.ts`、[ui/analysis.md](ui/analysis.md)。
-
 ## 阶段 3：仪表盘（设计已定为 [D22](decisions.md#d22-仪表盘与嵌入视图参照-metabase2026-09-23)，交互见 [ui/dashboard.md](ui/dashboard.md) 的定稿一节）
 
 **暂停（2026-09-23）**：用户要求等迁移会话（分析视图审查修复）结束后再开工，额度不足以并行。批 A 两路已做了一半、停在本地 WIP 提交：运行时一路在 `.claude/worktrees/agent-ab6a2199257c3890a`（分支 `claude/ve-dashboard-a-runtime`，R1 R2 R5 R6、单面板重试、`DashboardGrid` 里过时的 recharts 注释），界面一路在 `.claude/worktrees/agent-a4f7f7a8c10954071`（分支 `claude/ve-dashboard-a-ui`，R3、空态、不可用面板、手柄命名、文案，另加窄于 md 退成单列）。恢复时各自合 `origin/main`、续完、跑门禁、开 PR。
