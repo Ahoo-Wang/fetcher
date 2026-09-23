@@ -95,7 +95,11 @@ export interface ChartPickerProps {
  * 推荐」 and 「热力图, 需要两个维度」, which is what the tile says on screen.
  *
  * The chosen tile wears the gear that opens its options (D20 屏 J),
- * beside the tile rather than inside it — a button holds no button.
+ * beside the tile rather than inside it — a button holds no button — and
+ * across its top-right corner, a small control of its own that covers
+ * nothing the tile says. The 「推荐」 mark hangs from the bottom edge instead
+ * of the top-left corner it once shared with the gear: 「推荐」 fits beside a
+ * gear on a sidebar's third, "Recommended" does not.
  */
 export function ChartPicker({
   fits,
@@ -151,7 +155,12 @@ export function ChartPicker({
       <div
         role="radiogroup"
         aria-label={messages.label('label.chart.picker')}
-        className="grid grid-cols-3 gap-2 *:min-w-0 [&>div>button]:w-full"
+        // Rows of one height (`auto-rows-fr`), so a tile that writes a reason
+        // under itself does not make its row a different shape from the
+        // next. The rows stand further apart than the columns: the options
+        // button hangs over its tile's top edge and the mark under its
+        // bottom one, and in adjacent rows the two must not meet.
+        className="grid auto-rows-fr grid-cols-3 gap-x-2 gap-y-5 *:min-w-0"
       >
         {tiles.map(({ value, fit }, index) => {
           const Icon = ICON[value];
@@ -171,6 +180,12 @@ export function ChartPicker({
           return (
             <div key={value} className="relative flex">
               <ChartTile
+                // The tile's own width, and nothing reaching down from the
+                // grid: a `[&>div>button]:w-full` there once caught the
+                // options button beside the tile too — it is a button in
+                // the same cell — and stretched it over the whole tile,
+                // icon, name and mark.
+                className="w-full"
                 ref={node => {
                   if (node) refs.current.set(value, node);
                   else refs.current.delete(value);
@@ -217,9 +232,15 @@ export function ChartPicker({
               {picked === value && (
                 <IconButton
                   label={messages.label('label.chart.options-of', { name })}
-                  variant="ghost"
+                  // Outlined, because it sits across the tile's edge and has
+                  // to read as a control of its own over the border line.
+                  variant="outline"
                   size="icon-xs"
-                  className="absolute top-0.5 right-0.5"
+                  // Across the top-right corner, half outside the tile: the
+                  // tile's content is centred and the mark hangs from the
+                  // bottom edge, so the corner is the one place that covers
+                  // none of icon, name or mark, in any language's width.
+                  className="absolute -top-2 -right-1.5"
                   data-slot="chart-options-open"
                   onClick={onOptions}
                 >

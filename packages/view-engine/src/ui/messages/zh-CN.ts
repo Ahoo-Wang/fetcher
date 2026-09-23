@@ -658,6 +658,7 @@ export const zhCN: ViewMessages = {
   'label.having.op.NE': '不等于',
   'label.analysis.totals': '合计行',
   'label.analysis.row-limit': '前 N 组',
+  'label.analysis.row-limit-invalid': '须为 1～{max} 的整数',
   'label.analysis.totals-scope': '合计 = 范围内全部记录',
   'label.analysis.approximate': '近似值',
   'label.analysis.any-note': '任一值：每次查询返回的不保证是同一个。',
@@ -847,8 +848,7 @@ export const zhCN: ViewMessages = {
   'analysis.having.too-many-nodes': '结果筛选超过了 {max} 条。',
   'analysis.having.undeclared': '这份数据不提供筛选结果。',
   'analysis.having.unknown-metric': '筛选引用了 {metric}，它不是可用的指标。',
-  'analysis.limit.not-positive': '前 N 组必须是正数。',
-  'analysis.limit.too-large': '前 N 组不能超过 {max}。',
+  'analysis.limit.out-of-range': '前 N 组须为 1～{max} 的整数。',
   'analysis.metric.type-unknown': '指标类型 {type} 不可用。',
   'analysis.metricFilter.empty': '这组条件是空的，所以指标覆盖全部记录。',
   'analysis.metricFilter.incomplete':

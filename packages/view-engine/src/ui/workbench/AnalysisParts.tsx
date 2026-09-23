@@ -153,7 +153,8 @@ export function AnalysisParts({
   const [pick, setPick] = useState<Pick | null>(null);
   const followUp = pick ? result.followUp(pick.row) : null;
   const onPick = result.pickable
-    ? (row: Pick['row'], anchor: Pick['anchor']) => setPick({ row, anchor })
+    ? (row: Pick['row'], anchor: Pick['anchor'], origin?: HTMLElement) =>
+        setPick({ row, anchor, ...(origin ? { origin } : {}) })
     : undefined;
   const close = () => setPick(null);
 

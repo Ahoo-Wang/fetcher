@@ -98,6 +98,10 @@ export const analysisMessages = {
   'label.having.op.NE': 'not equal to',
   'label.analysis.totals': 'Totals row',
   'label.analysis.row-limit': 'Top N groups',
+  // Beside the field, which already says what it is: only the range it
+  // takes. The same bounds as `analysis.limit.out-of-range`, from the same
+  // `limitBounds`.
+  'label.analysis.row-limit-invalid': 'A whole number from 1 to {max}',
   // The three readings D20 asks the screen to say out loud, because each is
   // a number that means something other than what it looks like.
   //
@@ -366,8 +370,8 @@ export const analysisMessages = {
     'This dataset does not offer filtering the result.',
   'analysis.having.unknown-metric':
     'The filter refers to {metric}, which is not a usable metric.',
-  'analysis.limit.not-positive': 'Top N groups must be a positive number.',
-  'analysis.limit.too-large': 'Top N groups cannot exceed {max}.',
+  'analysis.limit.out-of-range':
+    'Top N groups must be a whole number from 1 to {max}.',
   'analysis.metric.type-unknown': 'The metric type {type} is not available.',
   'analysis.metricFilter.empty':
     'This filter has no conditions, so the metric covers every record.',

@@ -12,7 +12,11 @@
  */
 import type { StoryObj } from '@storybook/react-vite';
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
-import { formatMessage, zhCN } from '@ahoo-wang/fetcher-view-engine/ui';
+import {
+  defaultMessages,
+  formatMessage,
+  zhCN,
+} from '@ahoo-wang/fetcher-view-engine/ui';
 import displayMeta, {
   BarChart as DisplayBarChart,
   CutShort as DisplayCutShort,
@@ -398,6 +402,65 @@ export const FollowUpSplit: Story = {
   },
 };
 
+/** A menu's box once it has finished opening: it zooms in from 95%. */
+async function settled(menu: HTMLElement): Promise<DOMRect> {
+  await Promise.all(menu.getAnimations().map(animation => animation.finished));
+  return menu.getBoundingClientRect();
+}
+
+/**
+ * 追问菜单按自己的字那么宽，挂在按下去的那一格下面（2026-09-23 审查）。
+ *
+ * 它从前锚在整行上，而弹层配方的宽是 `--anchor-width`，于是菜单和整张表一样
+ * 宽——横在结果上的一条带子。这里量两条路：指针按在一格上，菜单从那一格下面
+ * 弹出、宽度不到表的一半；键盘在行上回车，菜单挂在这一行的第一格下面，左边
+ * 与它对齐。
+ */
+export const FollowUpMenuFitsItsWords: Story = {
+  ...DisplayFollowUps,
+  args: { ...DisplayFollowUps.args, layout: 'table' },
+  play: async ({ canvasElement }) => {
+    const table = await findDataTable(canvasElement);
+    await waitFor(() => expect(readColumn(table, '仓库')).toHaveLength(4));
+    const width = table.getBoundingClientRect().width;
+    const row =
+      canvasElement.querySelectorAll<HTMLTableRowElement>(
+        'tr[data-pickable]',
+      )[1]!;
+
+    // A pointer on the row's second cell: the menu opens under that cell,
+    // as wide as its words and never as wide as the row.
+    const cell = row.cells[1]!;
+    await userEvent.click(cell);
+    let box = await settled(await drillMenu());
+    const pressed = cell.getBoundingClientRect();
+    await expect(box.width).toBeGreaterThanOrEqual(224 - 0.5);
+    await expect(box.width).toBeLessThanOrEqual(320 + 0.5);
+    await expect(box.width).toBeLessThan(width / 2);
+    await expect(box.top).toBeGreaterThanOrEqual(pressed.bottom);
+    await expect(box.left).toBeLessThanOrEqual(pressed.right);
+    await expect(box.right).toBeGreaterThanOrEqual(pressed.left);
+
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(
+        document.body.querySelector('[data-slot="drill-menu"]'),
+      ).toBeNull(),
+    );
+    // Handed back to the row it came from, which is where Enter is pressed.
+    await waitFor(() => expect(document.activeElement).toBe(row));
+
+    // A key has no point: the row's first cell, the menu's start on its start.
+    await userEvent.keyboard('{Enter}');
+    box = await settled(await drillMenu());
+    const first = row.cells[0]!.getBoundingClientRect();
+    await expect(Math.abs(box.left - first.left)).toBeLessThan(1);
+    await expect(box.top).toBeGreaterThanOrEqual(first.bottom);
+    await expect(box.width).toBeLessThan(width / 2);
+    await userEvent.keyboard('{Escape}');
+  },
+};
+
 export const TwoMetrics: Story = {
   ...DisplayTwoMetrics,
   play: async ({ canvasElement }) => {
@@ -743,6 +806,61 @@ export const EditorRowSpacing: Story = {
   },
 };
 
+/** Whether two boxes share any area, a half-pixel of rounding aside. */
+const meet = (a: DOMRect, b: DOMRect) =>
+  a.left < b.right - 0.5 &&
+  b.left < a.right - 0.5 &&
+  a.top < b.bottom - 0.5 &&
+  b.top < a.bottom - 0.5;
+
+/**
+ * The chosen tile's options button: one small control, beside the tile
+ * rather than in it, over none of the icon, the name or the 「推荐」 mark;
+ * and the mark over no other tile. `inside` asks the mark to sit inside its
+ * tile's own width as well, which 「推荐」 does; "Recommended" is wider than a
+ * third of the sidebar and runs into the gap between the columns, which is
+ * the room it hangs across the edge for — it still reaches no neighbour.
+ */
+async function expectCornerGear(
+  panel: HTMLElement,
+  type: string,
+  inside = true,
+) {
+  const tile = chartTile(panel, type);
+  const gears = panel.querySelectorAll<HTMLElement>(
+    '[data-slot="chart-options-open"]',
+  );
+  await expect(gears).toHaveLength(1);
+  const gear = gears[0]!;
+  await expect(gear.parentElement).toBe(tile.parentElement);
+  const box = gear.getBoundingClientRect();
+  await expect(box.width).toBeLessThanOrEqual(24.5);
+  await expect(box.height).toBeLessThanOrEqual(24.5);
+  const icon = tile.querySelector('svg')!.getBoundingClientRect();
+  const name = document
+    .getElementById(tile.getAttribute('aria-labelledby')!)!
+    .getBoundingClientRect();
+  await expect(meet(box, icon)).toBe(false);
+  await expect(meet(box, name)).toBe(false);
+  const mark = tile.querySelector('[data-slot="chart-recommended"]');
+  if (mark) {
+    const marked = mark.getBoundingClientRect();
+    const own = tile.getBoundingClientRect();
+    await expect(meet(box, marked)).toBe(false);
+    await expect(meet(marked, name)).toBe(false);
+    await expect(meet(marked, icon)).toBe(false);
+    const others = [
+      ...panel.querySelectorAll<HTMLElement>('[data-slot="chart-tile"]'),
+    ].filter(other => other !== tile);
+    for (const other of others)
+      await expect(meet(marked, other.getBoundingClientRect())).toBe(false);
+    if (inside) {
+      await expect(marked.left).toBeGreaterThanOrEqual(own.left - 0.5);
+      await expect(marked.right).toBeLessThanOrEqual(own.right + 0.5);
+    }
+  }
+}
+
 /** One tile of the picker, addressed by the chart type it stands for. */
 const chartTile = (canvas: HTMLElement, type: string) =>
   canvas.querySelector<HTMLButtonElement>(
@@ -813,6 +931,23 @@ export const VisualizePanel: Story = {
       zhCN['chart.fit.needs-two-dimensions'],
     );
 
+    // The options button is a small control of its own in the chosen tile's
+    // corner, covering none of icon, name or mark (2026-09-23 audit: it was
+    // stretched over the whole tile). Every tile is one height.
+    await expectCornerGear(panel, 'bar');
+    const heights = [
+      ...panel.querySelectorAll<HTMLElement>('[data-slot="chart-tile"]'),
+    ].map(tile => Math.round(tile.getBoundingClientRect().height));
+    await expect(new Set(heights).size).toBe(1);
+    // And the mark keeps clear in English too, the widest word it has: the
+    // same tile with "Recommended" written in it, put back afterwards.
+    const mark = chartTile(panel, 'bar').querySelector<HTMLElement>(
+      '[data-slot="chart-recommended"]',
+    )!;
+    mark.textContent = defaultMessages['label.chart.recommended'];
+    await expectCornerGear(panel, 'bar', false);
+    mark.textContent = zhCN['label.chart.recommended'];
+
     // A pick is a redraw: the pie is drawn, and no aggregation went out.
     const before = aggregateCalls.current;
     await userEvent.click(chartTile(panel, 'pie'));
@@ -825,6 +960,8 @@ export const VisualizePanel: Story = {
       'aria-checked',
       'true',
     );
+    // The gear moved with the choice, and still covers nothing.
+    await expectCornerGear(panel, 'pie');
     // Nothing is waiting to be applied, so the editor's fold wears no dot.
     await expect(
       canvasElement.querySelector(

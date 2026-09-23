@@ -684,8 +684,10 @@ export function EditorCard({
 /**
  * One tile of the chart picker (D20 屏 I): an icon over a word on the
  * page's ground, the chosen one ringed, an unavailable one framed with its
- * reason under it, and the recommended one marked. The colours and states
- * are here so the picker stays markup.
+ * reason under it, and the recommended one marked — the mark centred across
+ * the bottom edge, where it has the tile's whole width and the corner the
+ * options button takes is free. The colours and states are here so the
+ * picker stays markup.
  *
  * **Unavailable is said by the frame, not by fading.** The tile used to
  * wear `opacity-60` over `text-muted-foreground`, which put the reason line
@@ -710,7 +712,7 @@ export function ChartTile({
         'aria-disabled:border-dashed aria-disabled:bg-muted/40 aria-disabled:cursor-not-allowed',
         'focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]',
         '[&_[data-slot=chart-reason]]:text-foreground/70 [&_[data-slot=chart-reason]]:text-xs [&_[data-slot=chart-reason]]:leading-tight',
-        '[&_[data-slot=chart-recommended]]:bg-primary [&_[data-slot=chart-recommended]]:text-primary-foreground [&_[data-slot=chart-recommended]]:absolute [&_[data-slot=chart-recommended]]:-top-2 [&_[data-slot=chart-recommended]]:left-1 [&_[data-slot=chart-recommended]]:rounded-full [&_[data-slot=chart-recommended]]:px-1.5 [&_[data-slot=chart-recommended]]:text-[10px]',
+        '[&_[data-slot=chart-recommended]]:bg-primary [&_[data-slot=chart-recommended]]:text-primary-foreground [&_[data-slot=chart-recommended]]:absolute [&_[data-slot=chart-recommended]]:-bottom-2 [&_[data-slot=chart-recommended]]:left-1/2 [&_[data-slot=chart-recommended]]:-translate-x-1/2 [&_[data-slot=chart-recommended]]:whitespace-nowrap [&_[data-slot=chart-recommended]]:rounded-full [&_[data-slot=chart-recommended]]:px-1.5 [&_[data-slot=chart-recommended]]:text-[10px]',
         TEXT_UI,
         className,
       )}

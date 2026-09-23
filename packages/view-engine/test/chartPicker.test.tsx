@@ -335,6 +335,61 @@ describe('the visualization panel', () => {
     heatmap.focus();
     expect(document.activeElement).toBe(heatmap);
   });
+
+  /**
+   * The gear that opens a type's options is a small control of its own in
+   * the chosen tile's corner (2026-09-23 audit): a `[&>div>button]:w-full`
+   * on the grid, meant for the tiles, caught the gear too — it is a button
+   * in the same cell — and stretched it over the whole tile, hiding the
+   * icon and the 「推荐」 mark under it. Where it sits is measured in a
+   * browser (`VisualizePanel`); this pins what jsdom can see.
+   */
+  it('keeps the options button a small control of its own, beside the chosen tile', async () => {
+    await open(viewOf({ layout: 'chart' }));
+    visualize();
+
+    const gears = () => [
+      ...panel()!.querySelectorAll<HTMLElement>(
+        '[data-slot="chart-options-open"]',
+      ),
+    ];
+    // One, on the chosen tile only, and never inside it: a button holds no
+    // button.
+    expect(gears()).toHaveLength(1);
+    const gear = gears()[0]!;
+    expect(gear.parentElement).toBe(tile('bar').parentElement);
+    expect(tile('bar').contains(gear)).toBe(false);
+    expect(gear.getAttribute('aria-label')).toBe(
+      label('label.chart.options-of').replace(
+        '{name}',
+        label('label.chart.type.bar'),
+      ),
+    );
+    // Surviving class assertion: a length and a position, with no state
+    // behind them. The grid reaches into none of its cells — the tile says
+    // its own width — so nothing the grid declares can land on the gear.
+    const grid = screen.getByRole('radiogroup');
+    expect(grid.className).not.toMatch(/\[&/);
+    expect(tile('bar').className).toMatch(/\bw-full\b/);
+    expect(gear.className).not.toMatch(/\bw-full\b/);
+    expect(gear.className).toMatch(/\babsolute\b/);
+
+    // Pressing it opens the options and leaves the choice where it was.
+    fireEvent.click(gear);
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="chart-options"]'),
+      ).not.toBeNull(),
+    );
+
+    // The gear follows the choice: a new pick moves it to that tile.
+    fireEvent.click(
+      screen.getByRole('button', { name: label('label.chart.options-back') }),
+    );
+    fireEvent.click(tile('pie'));
+    expect(gears()).toHaveLength(1);
+    expect(gears()[0]!.parentElement).toBe(tile('pie').parentElement);
+  });
 });
 
 describe('a layout is a redraw, not a run', () => {

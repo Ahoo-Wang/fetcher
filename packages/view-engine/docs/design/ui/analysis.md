@@ -99,8 +99,8 @@ D20 屏 G。订单里有明细项，明细项里有批次——「按货号看�
 - **键盘那条路是表格布局，不是图旁边那张 `sr-only` 表（F10）。** 画出来的部分整块是一张 `role="img"` 的图，里面一个可聚焦元素都没有（[图表怎么被读出来](#图表怎么被读出来)），而 `ChartReadingTable` 是读屏用的替代文本，本来就摆在指针与 Tab 都够不到的地方——把它做成可操作的，等于把"读得到"和"点得动"混成一件事。两种布局回答的是同一个问题，所以键盘的入口是切到表格：那里一行就是一组；
 - **三项**（`ui/analysis/DrillMenu.tsx`，画的是 `useAnalysisResult().followUp(row)` 交出的动作列表，哪几项、什么顺序、按下去做什么都由控制器定）：**查看这些记录**（`workbench.drill(conditions)`，在同一个工作台里开出未保存的记录视图，带「来自」那一条，见 [react.md](../react.md) 的「持有的视图」；`canDrill` 为假时这一项不在——不是禁用，是不画）、**再按…拆一层**（一层子菜单，列出能分组、当前结果又还没按它分的字段；选中即 `splitBy` 后 `apply`）、**只看这一组**（`focusOn` 后 `apply`）。后两项改的是当前这个分析视图的配置，所以它们和手改编辑器一样会变脏、可撤、可保存；
 - **菜单的标题就是这一组的条件**，由 `drillConditions` 交出、`describeFilter` 描述、`summaryText` 说出来——与「正在显示」那条用的是同一套词，所以"我点的是哪一组"和"现在筛的是什么"读起来是一句话的两半。标题写在菜单组**里面**：它标的就是组里这几项，读屏进到组里先听见条件；
-- **贴着按下去的那个东西弹**：标记交出自己的元素，柱子、扇区与散点交出按下的那个点（`pointAnchor`），`ui/popups.tsx` 的 `DropdownMenuContent` 因此多一个 `anchor`。菜单**没有**自己的触发控件，但 Base UI 把菜单在浮动树里的节点挂在 Trigger 上，没有 Trigger 的根会把自己的子菜单当成兄弟菜单、一展开就把自己关掉——所以 `DrillMenu` 画一个谁也够不到的 Trigger 只为占住那个节点，焦点去哪儿由 `finalFocus` 说了算：关掉菜单，键盘回到按下的那一行；
-- **展开了 elements 的分析不可按**（`pickable` 为假）：它的一行是最内层元素的一组，根文档上没有哪条条件选得出来，`drillConditions` 也交不出条件——于是标记与行根本不带这个手势，而不是弹一个三项都不灵的菜单。（见 test/drillMenu.test.tsx「the follow-up menu on one group」与 stories/view-engine 的 `FollowUpToRecords`／`FollowUpFocus`／`FollowUpSplit`）
+- **贴着按下去的那个东西弹，宽度按自己的字**：标记交出自己的元素，柱子、扇区与散点交出按下的那个点（`pointAnchor`），表格交出**按下的那一格**，键盘打开时交出**这一行的第一格**——从不是整行（`AnalysisTable.tsx` 的 `cellOf`）。`ui/popups.tsx` 的 `DropdownMenuContent` 因此多一个 `anchor`。弹层配方的宽是 `--anchor-width`，对从触发按钮垂下来的菜单是对的，对挂在表格行上的菜单是错的：从前追问菜单锚在整行上，于是和整张表一样宽，读起来是横在结果上的一条带子而不是一张菜单（2026-09-23 审查）。现在菜单自己说宽度（`w-auto min-w-56 max-w-80`，注册表菜单的尺寸写法），长条件在标题里换行而不是把它撑回去。锚点与焦点因此分开说：`onPick(row, anchor, origin)` 的 `origin` 是关菜单时键盘回去的那一行（`Pick.origin`），标记没有它，焦点就不动。菜单**没有**自己的触发控件，但 Base UI 把菜单在浮动树里的节点挂在 Trigger 上，没有 Trigger 的根会把自己的子菜单当成兄弟菜单、一展开就把自己关掉——所以 `DrillMenu` 画一个谁也够不到的 Trigger 只为占住那个节点，焦点去哪儿由 `finalFocus` 说了算：关掉菜单，键盘回到按下的那一行；
+- **展开了 elements 的分析不可按**（`pickable` 为假）：它的一行是最内层元素的一组，根文档上没有哪条条件选得出来，`drillConditions` 也交不出条件——于是标记与行根本不带这个手势，而不是弹一个三项都不灵的菜单。（见 test/drillMenu.test.tsx「the follow-up menu on one group」「hangs from the cell pressed, or the row’s first cell for a key — never the row」「sizes the menu to its words, not to what it hangs from」与 stories/view-engine 的 `FollowUpToRecords`／`FollowUpFocus`／`FollowUpSplit`／`FollowUpMenuFitsItsWords`）
 
 ## 刷新落在标题栏
 
@@ -161,7 +161,10 @@ D20 把可视化定为分析的**最后一步**：结果先是表格，确认完
 
 ## 可视化的第二层：选中图型的选项，三个页签
 
-- **齿轮在磁贴旁边，不在磁贴里面。** 第一层的每块磁贴本身是一颗按钮（`role="radio"`），而一颗按钮里装不下另一颗按钮——嵌套的可交互元素读屏说不清、指针也分不出按的是哪一个。所以齿轮是磁贴的邻居而不是它的孩子：`IconButton`（`data-slot="chart-options-open"`，名字是「{图型}的选项」）浮在被选中那块磁贴的右上角，且只有被选中的那一块有它——没选中的图型谈不上"它的选项"。推荐标记因此让到磁贴左上角，两枚角标各占一头；
+- **齿轮在磁贴旁边，不在磁贴里面。** 第一层的每块磁贴本身是一颗按钮（`role="radio"`），而一颗按钮里装不下另一颗按钮——嵌套的可交互元素读屏说不清、指针也分不出按的是哪一个。所以齿轮是磁贴的邻居而不是它的孩子：`IconButton`（`data-slot="chart-options-open"`，名字是「{图型}的选项」，`outline` 变体、`icon-xs` 大小）**跨在被选中那块磁贴的右上角**、一半在框外，且只有被选中的那一块有它——没选中的图型谈不上"它的选项"；
+  - **它是一个自己的小控件，不盖住磁贴说的任何东西**（2026-09-23 审查）。网格上从前有一条 `[&>div>button]:w-full`，本意是让磁贴撑满格子，可齿轮也是那一格里的按钮，于是被拉成整块磁贴那么宽，压在图标上、把「推荐」整个盖住。现在网格**不向格子里伸任何选择器**，磁贴自己说自己的宽（`w-full`），齿轮只按自己的尺寸画；
+  - **推荐标记挂在磁贴下沿正中**（`ChartTile` 的配方），不再与齿轮分占上沿两角：侧栏的三分之一宽里，「推荐」放得下齿轮旁边，"Recommended" 放不下——一个只在中文里成立的布局是缺陷。下沿给了它整块磁贴的宽，而推荐的磁贴总是画得出来的，下沿没有理由那一行；
+  - **每一行一样高**（`auto-rows-fr`）：写着理由的灰磁贴不会让它那一行变成另一种形状。行距（`gap-y-5`）大于列距，因为上一行的标记挂出下沿、下一行的齿轮挂出上沿，两者在同一列时不能碰上。（见 test/chartPicker.test.tsx「keeps the options button a small control of its own, beside the chosen tile」与故事 `VisualizePanel` 量的那几个盒子：齿轮不压图标、名字与标记，标记在磁贴宽度之内，十块磁贴一样高）
 - **不论哪个家族，页都是同样那三页**：数据（哪个别名坐哪个槽）、显示（这张图怎么画）、坐标轴（数值轴的标题与范围）。`optionTabs(picked)` 说一个图型有哪几页：笛卡尔家族三页；散点只有"画哪两个指标"，一页；表格只有合计行，那是显示，一页；其余家族两页。**只有一页时不画页签条**——一条只有一项的页签条是个按不动的控件。结构按家族走而不是每个图型另起一套，是因为换图型换的是画法而不是这块面板：从柱状图换到饼图，"数据"仍然在第一页上；
 - **数据页只有一条规则：位置槽列维度，度量槽列指标。** 横轴／拆分／类别／行／列／每个点是／阶段取自只列分组别名，系列／数值／横／纵／大小／对比只列指标别名，于是一个槽装不进不该装的东西，`validateChart` 的那几条别名规则在界面上根本无从触发。每个选项写的是**列标题**而不是别名（`useColumnTitle`）：「金额 的 合计」，而 `amount_1` 命名的是查询；漏斗的阶段写的是那个分组值自己的读法（`useValueLabel`）；
 - **选另一个槽已经拿着的别名，两个槽对调**（`withSlot`）。按横轴拆分的图是 `chart.splitBy.same-as-x`，画不出来；而用户的动作分明是"把这个维度放到横轴上"。对调是唯一一种不丢东西的解释——两个槽仍各有人坐，没有谁需要重新选。热力图的行／列与散点的横／纵走同一条规则；
@@ -208,8 +211,13 @@ D20 把可视化定为分析的**最后一步**：结果先是表格，确认完
 - **一句话只该有一个控件。** 从前这里是一个只装得下一条排序的选择框，于是「先按记录数、再按金额」说不出来：两组记录数相同的时候，谁在前面全凭数据源。记录视图早就有一个能说这句话的控件，再写第二个只会让两处对「先按哪个」给出两种解释；
 - **「前 N 组」紧挨着它**，因为「前 N」只有在「按什么排」旁边才读得懂。没有维度就整行不画——Wow 拒绝对无分组聚合排序，而它本来也只有一行；
 - **上限是别名的总数**（`maxSortFields`）：每个维度与指标至多排一次，排完就没有可加的了，「排序字段」那颗按钮自己灰掉。
+- **「前 N 组」的框：草稿里只放 Wow 收得下的 N**（`SortRow.tsx` 的 `LimitField`，`data-slot="analysis-limit"`，2026-09-23 审查）。规则是 1～`limitBounds.max` 的整数，界与准入读的是同一个 `limitBounds`（[kernels.md](../kernels.md)），所以框边说出来的范围就是应用被拒的那个范围。从前框里一解析出数就写进草稿、空了就什么也不写，一次造出三个缺陷：清空之后弹回刚才的 -3，2.5 被准入说成「必须是正数」（它是正数），删掉最后一个维度把这一行带走之后，那个 -3 还留在草稿里拦着应用，屏幕上却已无处可改。现在：
+  - **空着是合法的，意思是视图起步时的那个 N**（`limitBounds.fallback`，能力的 `defaultLimit`，缺省 100）。模型里没有「不限」——Wow 不论问多少都至多回 `MAX_LIMIT` 行——所以空框唯一诚实的读法是"没人说过，就用起步的那个"。空框写进草稿的是它，框里保持空着，占位字就是那个数，而不是在光标底下把它填回去；
+  - **出界的字照原样留在框里，就地标出**：`aria-invalid`，`Field` 上 `data-invalid`，框下一句 `FieldError`（`label.analysis.row-limit-invalid`「须为 1～{max} 的整数」，`aria-describedby` 指着它），**不进草稿**，应用跑的仍是上一个合法的 N——与「只保留」没写完的那一行同一条口径：编辑器的是编辑器的，配置的永远是 Wow 收得下的那一份；
+  - **框藏起来，它的字与它的错一起走**：这些都是框自己的 state，没有维度时整行不画，它们随之卸掉；再加回维度，框从草稿的 N 起步。框里的字记着它是对着草稿哪一个 N 打的，草稿的 N 在底下变了（放弃改动、追问、换视图），框跟着草稿走；
+  - **存下来的 N 出界同样就地标出**，准入也以 `analysis.limit.out-of-range`（「前 N 组须为 1～{max} 的整数。」，取代原来的 `not-positive`／`too-large` 两条）拒绝它，状态行照说。
 
-（见 test/formulaCard.test.tsx「ordering the groups」「orders by several aliases, in the priority the editor lists them」与 test/sortSettings.test.tsx「what the sort button says」；浏览器里换行序的是 stories/view-engine 的 `SortedByTwo`）
+（见 test/formulaCard.test.tsx「ordering the groups」「orders by several aliases, in the priority the editor lists them」、test/sortSettings.test.tsx「what the sort button says」与 test/limitField.test.tsx「the top-N groups field」；浏览器里换行序的是 stories/view-engine 的 `SortedByTwo`，框的三种状态是 `TopNField`）
 
 ## 焦点：键盘不该被丢回页面开头
 
