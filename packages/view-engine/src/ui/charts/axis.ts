@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import type { AxisSpec, ValueFormat } from '../../model/index.js';
-import { formatNumber } from '../display.js';
+import type { ValueFormat } from '../../model/index.js';
+import { compactFormat, formatNumber } from '../display.js';
 
 /**
  * A number as the spec asks for it, in the surface's language — through the
@@ -33,39 +33,9 @@ export function formatValue(
       locale,
     );
   if (format === 'compact')
-    return formatNumber(value, { notation: 'compact' }, locale);
+    return formatNumber(value, compactFormat(undefined), locale);
   return formatNumber(value, undefined, locale);
 }
-
-/** A bound the spec pinned; the other end is left to the data. */
-export function domainOf(axis: AxisSpec | undefined) {
-  if (!axis || (axis.min === undefined && axis.max === undefined))
-    return undefined;
-  return [axis.min ?? 'auto', axis.max ?? 'auto'] as [
-    number | 'auto',
-    number | 'auto',
-  ];
-}
-
-export function tickFormatterOf(
-  axis: AxisSpec | undefined,
-  locale: string | undefined,
-) {
-  if (!axis?.format) return undefined;
-  return (value: number) => formatValue(value, axis.format, locale);
-}
-
-/** Which numeric axis a series or a line belongs to; the left one by default. */
-/**
- * Room a chart keeps at its edges for the labels that sit on them.
- *
- * A tick label is centred on its tick, so the last one hangs half its width
- * past the plot: a date under the last bar read 「2026年9月22E」 and a
- * horizontal chart's last number 「600,00(」, cut by the chart's own box
- * (found on the real compensation service, 2026-09-23). The right-hand room
- * is half the widest such label the package draws — a full date at 12px.
- */
-export const CHART_MARGIN = { top: 8, right: 40, bottom: 0, left: 0 } as const;
 
 /**
  * The longest a category name is drawn on an axis before it is cut with an
@@ -100,6 +70,7 @@ export function allWhole(values: Iterable<number | null | undefined>): boolean {
   return true;
 }
 
+/** Which numeric axis a series or a line belongs to; the left one by default. */
 export function axisId(axis: 'left' | 'right' | undefined): 'left' | 'right' {
   return axis === 'right' ? 'right' : 'left';
 }

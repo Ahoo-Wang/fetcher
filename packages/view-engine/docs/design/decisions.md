@@ -183,6 +183,21 @@
 - **依据**：用户 2026-09-22 的裁定（顺序、可视化在左侧栏、分析视图无业务操作、不拆简单／高级）与第一原理：托盘只装问题、图是结果的属性、能力决定在不在而配置决定灰不灰、条件是定义的一部分所以静止时也要看得见。
 - **落点**：阶段 2 的批次在 [todo.md](todo.md)；组合工作台的设计在 D18-1；D9 的「只列自己那一种」由 `kinds` 取代。
 
+## D21 图表渲染层换成 Apache ECharts 6.1（2026-09-23）
+
+- **日期**：2026-09-23（用户拍板；迁移分五批，本条随第一批落地）
+- **决定**：`ui/charts/` 的渲染从 recharts（经 shadcn 的 `ui/components/chart.tsx`）换成 **Apache ECharts 6.1.0**，显示对齐 **Metabase**。**SVG 渲染器**；从 `echarts/core` 按需注册（`charts/echarts.ts`，只注册用到的图型与组件）；**自写薄绑定** `charts/EChart.tsx`——有尺寸才 `init(el, null, { renderer: 'svg', width, height })`、`ResizeObserver` 跟尺寸、每次 option 变化 `setOption(opt, { notMerge: true })`、随元素 `dispose`——**不用 `echarts-for-react`**（它在供应链通告 GMS-2026-530 里），也不引 `size-sensor`。版本精确锁定（`pnpm-workspace.yaml` 的 catalog 写 `6.1.0`，与 Metabase 同一版）；图表块**懒加载**（`charts/load.ts` 的 `import('./echarts.js')`，第一张图时才要，之后同一次渲染里就画）；`vite.config.ts` 把 `echarts|zrender` 列为 external。
+- **内核不动**：`analysis/chart.ts` 仍按家族整形 `ChartData`；`ui/charts/` 只是渲染层，每个家族一个纯函数 `xxxOption(ChartData, context, theme) → option`，不用 DOM 就能单测（`test/cartesianOption.test.ts`）。
+- **主题**：CSS 自定义属性仍是唯一真相源（D16）。`charts/theme.ts` 在图自己的元素上 `getComputedStyle` 读 `--chart-1..8`、`--foreground`、`--muted-foreground`、`--border` 与脚下的底色，**转成具体的 `rgb()` 再交给库**——option 里不放 `var()`（库靠解析颜色推导悬停色与标签对比色，自定义属性解析不出，echarts#16044／#19743），也不放 `oklch()`（主题用它写，库的解析器不认）。换肤不重挂载：`ViewSurface` 的观察者本来就盯着祖先的 `class`／`data-theme`（`useSurfaceTheme`），图以它为依赖重读变量、就地重画；不另立主题上下文。
+- **紧凑数字跟界面语言**：刻度与柱上的数写短、提示与读屏表与表格写全，都经同一个 `useValueLabel`（多一个 `compact` 参数，`display.ts` 的 `compactFormat`）：中文「1110万」「1.2亿」、英文「11.1M」「4.2K」，这是 `Intl` 的 `compact` 本来就会的，列的货币与单位保留，列为整数写的小数位不带过去。
+- **可达性**：画出来的部分是一张 `role="img"`、以 `readChart` 的名字命名的图（`data-slot="chart-plot"`），库自己的 aria 关着；数字在 `ChartReadingTable`。ECharts 没有键盘导航（echarts#18585），所以键盘到一组的路仍是表格布局的行（F10）。axe 用例保持绿。
+- **追问**：按下标记时库交出 `{seriesIndex, dataIndex, event}`，家族把它换回这一组的行，锚点用原生事件的 `clientX/Y`（`pointAnchor`），调用同一个 `OnPick`。
+- **为什么不是别的**（2026-09-23 评估）：AntV G2（gzip 405KB、按需裁剪无效、jsdom 跑不起、2026-05 AntV 的 npm 账号被盗）；Highcharts（商业 EULA，不能随 Apache-2.0 的库分发）；Vega-Lite（mark 标签没有防碰撞）；Nivo（停更）；visx（等于自造）；Plotly（约 1.5MB）；Chart.js（只有 canvas，读不了 CSS 变量）；Unovis（没有漏斗与缩放）；留在 recharts（标签防碰撞、图例折叠、类目轴自动间隔、热力图色标、dataZoom 全得手写）。Metabase、Superset、Evidence 用的都是 ECharts 6.1，Lightdash 5.6。
+- **实测**：recharts 现用量 gzip 130KB；ECharts SVG 带六个家族与 grid／tooltip／legend／markLine／visualMap／graphic／LabelLayout 231KB（加 dataZoom／brush／aria／dataset／title／markArea 为 269KB）。1 万点散点 380ms → 7ms；10 万点折线 247ms → 19～91ms。30 天 × 2 系列每柱一个标签，`labelLayout.hideOverlap` 画出约 43／60 个且互不重叠（估算字宽带来个别 2～4px 的擦边）。ECharts SVG 在 jsdom 里能渲染（点击参数带 `{name, seriesName, value, dataIndex, event.offsetX/Y}`），`ssr: true` + `renderToSVGString()` 在 Node 里无 DOM 可用。
+- **分批**：①绑定 + 主题 + 懒加载 + **柱状图**（含横向、堆叠与合计、值标签防重叠、紧凑刻度、轴标题）；②其余直角坐标（折线、面积、组合、带标题的右轴、参考线、图例折叠／滚动）；③饼／环（中心总计、图例带占比、「其他」）与散点／气泡；④指标卡迷你图、漏斗（换掉自绘，标出转化）、热力图（`visualMap` 色标）；⑤删掉 recharts 与 `ui/components/chart.tsx`、文档与包体说明。迁移期间一张图只由一个库画：第一批时 `charts/Cartesian.tsx` 只把 bar 交给 ECharts，第二批起直角坐标四种都由它画。
+- **包体（第五批收尾实测）**：图表块（六个图型、grid／tooltip／markLine／visualMap／graphic／LabelLayout、SVG 渲染器）esbuild 压缩后 626KB、gzip 214KB，只在第一张图时加载，`/ui` 入口不再带任何图表库；recharts 与注册表的 `chart.tsx` 已删。
+- **落点**：`src/ui/charts/{EChart.tsx,echarts.ts,load.ts,theme.ts,cartesianOption.ts,pieOption.ts,scatterOption.ts,funnelOption.ts,heatmapOption.ts,sparklineOption.ts,ChartLegend.tsx,tooltip.ts,measure.ts}`、`src/ui/display.ts`（`compactFormat`）、`src/styles.css`（图的 svg 按库给的框定尺寸）、[ui/analysis.md](ui/analysis.md)。
+
 ## 搁置待议
 
 尚无结论，不要当作规则执行。
@@ -190,4 +205,5 @@
 - **Q3 提交的措辞**：「应用／未应用」还是「查询／未生效」？现状是措辞集中在 `ui/messages.ts`，按 key 可覆盖，换词不动行为（[ui/README.md#措辞与-messagesprovider](ui/README.md#措辞与-messagesprovider)）。
 - **Q7 「还有更多未列出」的精确组数**：要多发一次 DISTINCT_COUNT(维度)，两个维度时口径难定义；D20 先做探针行。
 - **Q8 透视表**：两个维度只做平铺表 + 图；透视表留线索。
+- **Q13 真实场景的业务口径**（2026-09-23，三个真实服务场景的子代理提出）：客户场景里「租户」是一列／一个维度，还是宿主固定的范围；「年营业额」的单位（Schema 未写）；定价的单价是否一律按人民币、「半年内到期」的窗口；交易订单的商品列用货号还是商品名；真实数据还没有「履约中」的订单，要不要预置视图。现状：租户按字段原样作为一列与可选维度；年营业额原样显示不带单位；单价按元；「半年内到期」是「未来 6 个月」的相对区间；订单列表的商品列显示货号；没有「履约中」视图。
 - **Q9 超过八个类目、又并不成「其他」的图**：色板八色（`CHART_COLOR_SLOTS`），可加指标的饼图在第八片并「其他」，但两种图仍会重色——**不可加指标的饼图**（平均、去重计数、百分位的「其他」不是任何东西的值，[ui/analysis.md#analysischart-与-shapechart](ui/analysis.md#analysischart-与-shapechart)）与**拆成八条以上系列的直角坐标图**（拆分值的「其他」要再发一次查询，或在投影里加回去——后者只对可加指标成立）。可选的口径：饼图对不可加指标置灰（份额本来就只对可加的数有意义）；拆分只画前七条加一条「其他」系列；或超出时改用小多图。现状是它们循环取色。

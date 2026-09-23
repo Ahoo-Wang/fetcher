@@ -19,7 +19,13 @@ import type {
   FunnelStages,
   RecordData,
 } from '../../model/index.js';
-import { columnTitle, displayValue, valueText } from '../display.js';
+import {
+  columnTitle,
+  compactFormat,
+  displayValue,
+  formatNumber,
+  valueText,
+} from '../display.js';
 import type { MessageKey } from '../messages.js';
 import { useViewMessages } from '../MessagesProvider.js';
 import { useSurfaceDisplay } from '../ViewSurface.js';
@@ -32,7 +38,17 @@ import { useSurfaceDisplay } from '../ViewSurface.js';
  * function on purpose — a table showing ¥1,234.00 beside a tooltip showing
  * 1234 is two readings of one number, and only one of them is the column's.
  */
-export type ValueLabel = (alias: string | undefined, value: unknown) => string;
+export type ValueLabel = (
+  alias: string | undefined,
+  value: unknown,
+  /**
+   * Written short, where room is scarce: a tick, a label over a bar. Only a
+   * number is shortened, and still in its column's format — 「¥1110万」 in
+   * Chinese and `CN¥11.1M` in English (`compactFormat`); a tooltip, the
+   * reading table and the table layout keep the whole number.
+   */
+  compact?: boolean,
+) => string;
 
 /** What `AnalysisChart` hands whichever family the data asked for. */
 /**
@@ -69,6 +85,12 @@ export interface FamilyProps<D> {
    */
   name: string;
   /**
+   * Whether a column's numbers add up across groups — a count, a sum — so a
+   * whole written over them (a donut's centre) is a number at all: the
+   * total of some averages is not an average of anything.
+   */
+  adds?: (alias: string | undefined) => boolean;
+  /**
    * The rows are the first groups of more (`AnalysisView.truncated` or
    * `atLimit`): a family that draws shares of a whole says they are shares
    * of the groups shown.
@@ -88,14 +110,35 @@ export function useValueLabel(
     // As the analysis table shows the same value: what the field's kind
     // names first, then a number in its format and a boolean in words, both
     // in the surface's language.
-    return (alias, value) => {
+    return (alias, value, compact) => {
       const column = alias === undefined ? undefined : byAlias.get(alias);
       return (
         (column && displayValue(value, column, display)) ??
-        valueText(value, messages, column?.numberFormat, display.locale)
+        (compact && typeof value === 'number'
+          ? formatNumber(
+              value,
+              compactFormat(column?.numberFormat),
+              display.locale,
+            )
+          : valueText(value, messages, column?.numberFormat, display.locale))
       );
     };
   }, [columns, display, messages]);
+}
+
+/** Whether a column's numbers add up across groups: a count or a sum. */
+export function useAdds(
+  columns: readonly AnalysisColumnView[] | undefined,
+): (alias: string | undefined) => boolean {
+  return useMemo(() => {
+    const byAlias = new Map(
+      (columns ?? []).map(column => [column.alias, column]),
+    );
+    return alias => {
+      const fn = alias === undefined ? undefined : byAlias.get(alias)?.fn;
+      return fn === 'COUNT' || fn === 'SUM';
+    };
+  }, [columns]);
 }
 
 /**

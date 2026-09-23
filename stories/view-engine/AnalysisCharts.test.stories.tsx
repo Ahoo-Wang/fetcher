@@ -17,6 +17,15 @@ import displayMeta, {
   BarChart as DisplayBarChart,
   DailyNewestFirst as DisplayDailyNewestFirst,
 } from './AnalysisWorkbench.stories.js';
+import {
+  axisTexts,
+  axisTicks,
+  axisTitles,
+  chartsDrawn,
+  drawnMarks,
+  valueLabels,
+} from './chartDom.js';
+import { formatRgb, parse } from 'culori';
 
 const meta = {
   ...displayMeta,
@@ -41,8 +50,7 @@ const AMOUNT_HEADER = formatMessage(zhCN, 'label.summary.of', {
 const COUNT_HEADER = zhCN['label.analysis.row-count'];
 const WAREHOUSES = ['华东', '华南', '华北', '西南'];
 
-const bars = (canvas: HTMLElement) =>
-  canvas.querySelectorAll('.recharts-bar-rectangle');
+const bars = (canvas: HTMLElement) => drawnMarks(canvas);
 
 const chartTile = (canvas: HTMLElement, type: string) =>
   canvas.querySelector<HTMLButtonElement>(
@@ -83,13 +91,11 @@ const outside = (found: readonly Element[], outer: DOMRect) =>
       outer: [outer.left, outer.top, outer.right, outer.bottom].map(Math.round),
     }));
 
-/** The tick texts of one axis, as drawn. */
+/** The tick texts of one axis, as drawn: under the points, or beside them. */
 const ticksOf = (canvas: HTMLElement, axis: 'x' | 'y') =>
-  [
-    ...canvas.querySelectorAll(
-      `.recharts-${axis}Axis-tick-labels .recharts-cartesian-axis-tick-value`,
-    ),
-  ].map(tick => (tick.textContent ?? '').trim());
+  axisTicks(canvas, axis === 'x' ? 'bottom' : 'left').map(tick =>
+    (tick.textContent ?? '').trim(),
+  );
 
 /**
  * 散点：刻度不重复，点不出界，两根轴各有标题，点说得出自己是哪一组。
@@ -112,10 +118,9 @@ export const ScatterReadsItsPoints: Story = {
     );
     await userEvent.click(chartTile(panel, 'scatter'));
 
+    await chartsDrawn(canvasElement);
     const symbols = await waitFor(() => {
-      const found = [
-        ...canvasElement.querySelectorAll('.recharts-scatter-symbol'),
-      ];
+      const found = drawnMarks(canvasElement);
       expect(found).toHaveLength(4);
       return found;
     });
@@ -130,25 +135,24 @@ export const ScatterReadsItsPoints: Story = {
       await expect(new Set(ticks).size).toBe(ticks.length);
     }
 
-    // Every point inside the plot: the grid spans exactly the plot area.
-    const plot = canvasElement
-      .querySelector('.recharts-cartesian-grid')!
+    // Every point inside the drawing, whole; that each sits a radius in from
+    // the plot's edges is measured by coordinate in the package
+    // (test/analysisChart.test.tsx「a scatter」).
+    const surface = canvasElement
+      .querySelector('[data-slot="chart-plot"] svg')!
       .getBoundingClientRect();
-    await expect(outside(symbols, plot)).toEqual([]);
+    await expect(outside(symbols, surface)).toEqual([]);
 
     // Each axis titled as the table heads its column, inside the drawing.
-    const surface = canvasElement
-      .querySelector('.recharts-surface')!
-      .getBoundingClientRect();
-    const titles = [...canvasElement.querySelectorAll('.recharts-label')];
+    const titles = axisTitles(canvasElement);
     await expect(titles.map(title => title.textContent).sort()).toEqual(
       [AMOUNT_HEADER, COUNT_HEADER].sort(),
     );
     await expect(outside(titles, surface)).toEqual([]);
     // And clear of the numbers on its own axis.
-    const tickBoxes = [
-      ...canvasElement.querySelectorAll('.recharts-cartesian-axis-tick-value'),
-    ].map(tick => tick.getBoundingClientRect());
+    const tickBoxes = axisTexts(canvasElement)
+      .filter(text => !titles.includes(text))
+      .map(tick => tick.getBoundingClientRect());
     for (const title of titles) {
       const box = title.getBoundingClientRect();
       await expect(
@@ -165,9 +169,7 @@ export const ScatterReadsItsPoints: Story = {
     // Four points are four named things, each name inside the drawing.
     // They land once the points have finished moving in.
     const names = await waitFor(() => {
-      const found = [
-        ...canvasElement.querySelectorAll('.recharts-label-list text'),
-      ];
+      const found = valueLabels(canvasElement);
       expect(found.map(name => name.textContent).sort()).toEqual(
         [...WAREHOUSES].sort(),
       );
@@ -175,10 +177,8 @@ export const ScatterReadsItsPoints: Story = {
     });
     await expect(outside(names, surface)).toEqual([]);
 
-    // The tooltip is headed by the group the point is. Synthesised pointer
-    // events open no recharts tooltip in a real browser, so what it says is
-    // pinned in the package (test/analysisChart.test.tsx「a scatter」),
-    // where recharts takes a synthetic `mouseenter` on the point.
+    // The tooltip is headed by the group the point is: pinned in the
+    // package (test/scatterOption.test.ts).
   },
 };
 
@@ -203,14 +203,13 @@ export const FunnelFromTheRows: Story = {
 
     const funnel = await waitFor(() => {
       const found = canvasElement.querySelector<HTMLElement>(
-        '[data-slot="funnel"]',
+        '[data-slot="chart"][data-chart="funnel"]',
       );
       expect(found).not.toBeNull();
       return found!;
     });
-    const stageBars = [
-      ...funnel.querySelectorAll<HTMLElement>('[data-slot="funnel-bar"]'),
-    ];
+    await chartsDrawn(canvasElement);
+    const stageBars = drawnMarks(funnel);
     await expect(stageBars).toHaveLength(4);
     await expect(
       canvasElement.querySelector('[data-slot="status-line"] [role="alert"]'),
@@ -224,9 +223,22 @@ export const FunnelFromTheRows: Story = {
     await expect(box.left - block.left).toBeGreaterThanOrEqual(15);
     await expect(block.right - box.right).toBeGreaterThanOrEqual(15);
     await expect(outside(stageBars, box)).toEqual([]);
-    // The palette's first slot, as a lone series wears it.
+    // The palette's first slot, as a lone series wears it — read back off
+    // the stylesheet, as the drawing was handed it.
+    const first = formatRgb(
+      parse(getComputedStyle(funnel).getPropertyValue('--chart-1').trim()),
+    );
     for (const bar of stageBars)
-      await expect(bar.style.background).toBe('var(--chart-1)');
+      await expect(getComputedStyle(bar).fill).toBe(first);
+    // A funnel, not bars: each stage narrower than the one above it, and
+    // all of them centred on one line.
+    const boxes = stageBars
+      .map(bar => bar.getBoundingClientRect())
+      .sort((a, b) => a.top - b.top);
+    const centres = boxes.map(one => (one.left + one.right) / 2);
+    await expect(
+      centres.every(centre => Math.abs(centre - centres[0]!) < 1),
+    ).toBe(true);
 
     await expect(
       funnel.querySelector('[data-slot="funnel-conversion-heading"]'),
@@ -277,5 +289,89 @@ export const FunnelNeedsCategory: Story = {
     await expect(
       funnel.querySelector('[data-slot="chart-reason"]'),
     ).toHaveTextContent(zhCN['chart.fit.needs-category']);
+  },
+};
+
+/**
+ * 存下来画不出的漏斗，从图型网格修好：换一个画得出的图型就跑，跑出行来漏斗又可选。
+ *
+ * 漏斗只在画得出的地方给选（#1803）之前，一个阶段的漏斗是存得下来的。打开它
+ * 什么也不跑——配置被拒——状态行说「漏斗至少要有两个阶段」，按钮「打开图表选项」
+ * 打开的是图型网格；可网格上按什么都不起作用，因为没有行可重画。现在：漏斗那张
+ * 卡片照它自己点名的阶段判，灰着说缺什么；按柱状图，图按草稿的形态装槽、视图
+ * 变合法、当场跑，四根柱子出来，状态行不再报错；有了行，漏斗可选，选中它时存
+ * 下的那一个阶段排第一，其余从行里补齐，四段都画出来。
+ */
+export const SavedFunnelRepaired: Story = {
+  ...DisplayBarChart,
+  args: {
+    ...DisplayBarChart.args,
+    savedFunnel: { value: 'amount', order: ['CN-EAST'] },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Refused, so nothing ran: the status line says why, and no bar is drawn.
+    const alert = await waitFor(() => {
+      const found = canvasElement.querySelector(
+        '[data-slot="status-line"] [role="alert"]',
+      );
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    await expect(alert).toHaveTextContent(zhCN['chart.funnel.too-few-stages']);
+    await expect(bars(canvasElement)).toHaveLength(0);
+
+    await userEvent.click(
+      canvas.getByRole('button', {
+        name: zhCN['label.analysis.open-chart-options'],
+      }),
+    );
+    const panel = await waitFor(() => {
+      const found = canvasElement.querySelector<HTMLElement>(
+        '[data-slot="view-panel"]',
+      );
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    // The funnel is judged by the one stage it names; bars are offered.
+    const funnel = chartTile(panel, 'funnel');
+    await expect(funnel).toHaveAttribute('aria-disabled', 'true');
+    await expect(
+      funnel.querySelector('[data-slot="chart-reason"]'),
+    ).toHaveTextContent(zhCN['chart.fit.needs-two-stages']);
+    await expect(chartTile(panel, 'bar')).not.toHaveAttribute('aria-disabled');
+
+    // A pick with no rows fits the draft and runs: a bar chart over the four
+    // warehouses, a series for each metric the family had never measured.
+    await userEvent.click(chartTile(panel, 'bar'));
+    await chartsDrawn(canvasElement);
+    await waitFor(() =>
+      expect(axisTicks(canvasElement, 'bottom')).toHaveLength(4),
+    );
+    await expect(bars(canvasElement).length).toBeGreaterThan(0);
+    await expect(
+      canvasElement.querySelector('[data-slot="status-line"] [role="alert"]'),
+    ).toBeNull();
+
+    // With rows on screen the funnel draws: the stage it was saved with
+    // first, the rest from the rows.
+    const offered = chartTile(
+      canvasElement.querySelector<HTMLElement>('[data-slot="view-panel"]')!,
+      'funnel',
+    );
+    await waitFor(() => expect(offered).not.toHaveAttribute('aria-disabled'));
+    await userEvent.click(offered);
+    const drawn = await waitFor(() => {
+      const found = canvasElement.querySelector<HTMLElement>(
+        '[data-slot="chart"][data-chart="funnel"]',
+      );
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    await chartsDrawn(canvasElement);
+    await expect(drawnMarks(drawn)).toHaveLength(4);
+    await expect(
+      canvasElement.querySelector('[data-slot="status-line"] [role="alert"]'),
+    ).toBeNull();
   },
 };
