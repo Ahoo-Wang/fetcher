@@ -15,11 +15,6 @@ ECharts 迁移（D21）与两份「数据分析师视角」审查的 P0 已全�
   - 为什么：工作台与嵌入视图的图表提示已按列标题说（`ui/analysis/issueNames.ts` 的 `chartIssueNamer`，[ui/analysis.md](ui/analysis.md)「图表的提示说列标题，不说别名」），仪表盘面板的发现（`PanelUnavailable`、面板头的说明、`DashboardWorkbench` 的 `namePanel`）仍按别名说，`chart.as-table` 也只有通用那句。
   - 判据：面板里渲染出来的图表提示不含别名，`chart.as-table` 说出图型与原因；有测试。
   - 落点：`src/ui/DashboardGrid.tsx`、`src/ui/PanelUnavailable.tsx`、`src/ui/DashboardWorkbench.tsx`（面板的草稿维度与指标，经 `groupReference`／`metricReference`）。随批 B 做。
-- **记录视图按表头排序会连带应用范围里未应用的条件**。
-  - 为什么：与分析视图同一个问题：一次排序不该替用户应用别的修改。分析视图的表头已按这条做了（`useAnalysisEditor` 的 `sortNow`，#1807），记录视图照同一个判法。
-  - 判据：草稿里另有待应用修改时，表头排序只进入待应用；有测试。
-  - 落点：`src/ui/record/SortableHeader.tsx` 的调用处、`src/react/useRecordTable.ts`。
-
 - **P2 打磨（线索，先复现再做）**：托盘与表格——读法行「按创建时间」与列头「创建时间（按日）」不一致；单值措辞「属于／等于」统一为「是」；「排序」标签下又是「排序」按钮、排序弹层说「字段」；托盘残留记录视图用词（「选择筛选字段」「撤销筛选修改」「清空」）；「删除／移除」混用、英文 “Count every record again”“Showing 1 groups”；「添加指标」可重复加记录数、字段与「按公式」之间无分组、公式卡片移除按钮换行；「只看这一组」后移除条件 chip 标题仍带这一组；下钻记录视图标题与已应用条两种说法；「耗时 0 秒」写「<0.01 秒」；查询失败时两条横线夹空带；暗色「收起视图列表」按钮背景常亮；按「分析」打开托盘后 Tab 先经过刷新、自动刷新、铺满；短视图名与「共享」之间空一大段。图表——浅色悬停把柱子变浅像被禁用；堆叠段内标签发糊、单段堆叠同一个数写两遍；双轴刻度不对齐网格；饼图图例离饼太远；散点有一圈外框；中文纵轴标题侧躺；坐标轴页「轴标题」框空着看不出缺省；数值标签被 hideOverlap 随机藏掉像缺值；长名字排行默认竖柱斜排（该推荐横向）；窄屏可视化面板压在结果上方（应为抽屉）；磁贴下半截留白；漏斗梯形用面积编码两个数；选项页标题聚焦时一圈框。部分可能已由 #1826～#1828 顺带修掉。
   - 落点：`src/ui/analysis/*`、`src/ui/charts/*`、`src/ui/messages/*`。
 
