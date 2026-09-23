@@ -59,10 +59,9 @@ export interface DrillMenuProps {
 /**
  * The follow-up menu on one group of an analysis result (D20 追问): see the
  * records behind it, ask the same question by another dimension, or ask it
- * of this group alone. The first and the last open a view of their own
- * beside this one — which is why they wear a way back, and are named by
- * what they are, 「{what} · {the group}」 — and the split is an edit to
- * this one.
+ * of this group alone. Each opens a view of its own beside this one — which
+ * is why each wears a way back, and is named by what it is, 「{what} · {the
+ * group}」 — and none edits this one.
  *
  * It has no trigger of its own: a chart mark or a table row opens it and
  * hands over what to anchor to, so one menu serves every layout and every
@@ -153,7 +152,9 @@ export function DrillMenu({ pick, onClose, followUp }: DrillMenuProps) {
                       {action.options.map(option => (
                         <DropdownMenuItem
                           key={option.field}
-                          onClick={done(() => action.run(option.field))}
+                          onClick={done(() =>
+                            action.run(option.field, titled(action.subject)),
+                          )}
                         >
                           {option.label}
                         </DropdownMenuItem>

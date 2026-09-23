@@ -318,11 +318,11 @@ export function drillFilter(
 }
 
 /**
- * The two follow-up questions that stay in the analysis view (D20 追问):
- * "only this group" narrows the range to the row, "split by" narrows it and
- * asks the same question by another dimension. Both are edits to the view's
- * own config, so they land as a patch the runtime applies — undoable,
- * savable, and marked as a change like any other.
+ * The two follow-up questions that stay analyses (D20 追问): "only this
+ * group" narrows the range to the row, "split by" narrows it and asks the
+ * same question by another dimension. Each is a patch over the config that
+ * ran; the workbench opens the patched config as a view of its own beside
+ * the one pressed, which it leaves as it was.
  */
 export function focusOn(
   config: AnalysisViewConfig,

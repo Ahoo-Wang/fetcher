@@ -414,18 +414,44 @@ describe('the follow-up menu on one group', () => {
         .map(entry => entry.textContent),
     ).toEqual(['Status']);
 
+    const saved = analysisRuntime(engine);
     fireEvent.click(within(split).getByRole('menuitem', { name: 'Status' }));
 
     // The same question, of the group the user pressed, by the other
-    // dimension: one group, and the range narrowed to the row.
+    // dimension: one group, and the range narrowed to the row — asked as a
+    // view of its own beside this one, which stays as it ran (the user's
+    // 2026-09-23 ruling: all three follow-ups open beside).
     await waitFor(() => expect(source.aggregate).toHaveBeenCalledTimes(2));
-    const applied = appliedIn(analysisRuntime(engine));
+    const followed = engine
+      .openRuntimes()
+      .find(runtime => runtime !== saved && runtime.kind === 'analysis')!;
+    const applied = appliedIn(followed);
     expect(applied.groups.map(group => group.field)).toEqual(['status']);
     expect(applied.filter).toEqual({
       op: 'and',
       children: [{ field: 'warehouse', operator: 'EQ', value: 'CN' }],
     });
     await waitFor(() => expect(menu()).toBeNull());
+    expect(saved.getSnapshot().dirty).toBe(false);
+    expect(appliedIn(saved).groups.map(group => group.field)).toEqual([
+      'warehouse',
+    ]);
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: 'By warehouse · Warehouse is CN',
+      }),
+    ).toBeDefined();
+
+    // Back is the result it came from, without a run.
+    const bar = await originBar();
+    fireEvent.click(within(bar).getByRole('button'));
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="origin-bar"]')).toBeNull(),
+    );
+    expect(source.aggregate).toHaveBeenCalledTimes(2);
+    expect(followed.disposed).toBe(true);
+    expect(analysisRuntime(engine)).toBe(saved);
   });
 
   /**

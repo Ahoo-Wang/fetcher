@@ -377,6 +377,49 @@ describe('following a group into a view of its own', () => {
     expect(result.current.runtime).toBe(saved);
   });
 
+  it('chains a split after a focus, and steps back one question at a time', async () => {
+    const { result, source } = setup();
+    await waitFor(() =>
+      expect(result.current.state?.query.status).toBe('success'),
+    );
+    const saved = result.current.runtime!;
+    act(() => {
+      result.current.follow(focused(), NARROWED, ROW);
+    });
+    await waitFor(() =>
+      expect(result.current.state?.query.status).toBe('success'),
+    );
+    const narrowed = result.current.runtime!;
+    const narrowedResult = narrowed.getSnapshot().result;
+
+    // A second follow-up of the group already narrowed to. This fixture
+    // offers one dimension, so the question it asks is the split's shape —
+    // a new config handed over whole — rather than a split's dimension;
+    // which config a follow-up builds is `useAnalysisResult`'s to test.
+    const byStatus = { ...focused(), limit: 5, sort: [] };
+    act(() => {
+      result.current.follow(byStatus, `${NARROWED} · by status`, ROW);
+    });
+    expect(result.current.held?.origin?.runtime).toBe(narrowed);
+    await waitFor(() =>
+      expect(result.current.state?.query.status).toBe('success'),
+    );
+    const ran = vi.mocked(source.aggregate).mock.calls.length;
+
+    act(() => {
+      result.current.back();
+    });
+    expect(result.current.runtime).toBe(narrowed);
+    expect(narrowed.getSnapshot().result).toBe(narrowedResult);
+    act(() => {
+      result.current.back();
+    });
+    expect(result.current.runtime).toBe(saved);
+    expect(result.current.held).toBeNull();
+    expect(vi.mocked(source.aggregate).mock.calls.length).toBe(ran);
+    expect(saved.getSnapshot().dirty).toBe(false);
+  });
+
   it('leaves nothing behind, so asks nothing: the origin keeps its unsaved edits', async () => {
     const { result } = setup();
     await waitFor(() => expect(result.current.runtime?.kind).toBe('analysis'));

@@ -448,7 +448,7 @@ export const FollowUpToRecords: Story = {
     await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
     await expect(
       canvas.getByRole('heading', { level: 2, name: '仓库金额分布' }),
-    ).toBeVisible();
+    ).not.toHaveAttribute('data-dirty');
     await expect(
       document.body.querySelector('[data-slot="origin-bar"]'),
     ).toBeNull();
@@ -506,7 +506,7 @@ export const FollowUpFocus: Story = {
     );
     await expect(
       canvas.getByRole('heading', { level: 2, name: '仓库金额分布' }),
-    ).toBeVisible();
+    ).not.toHaveAttribute('data-dirty');
     await expect(
       document.body.querySelector('[data-slot="origin-bar"]'),
     ).toBeNull();
@@ -562,6 +562,9 @@ export const FollowUpOnADay: Story = {
  *
  * 拆完之后是同一个问题换一个维度问：范围收到这一组，维度换成状态，上一维度
  * 的名字从排序、表列与图表槽位里一并退场（`analysis/drill.ts` 的 `splitBy`）。
+ * 它和另外两项一样开在旁边（用户 2026-09-23 拍板）：一个未保存的分析视图，
+ * 叫「仓库金额分布 · 仓库 属于 华南」，带「返回」；按下去是原来那次按仓库分的
+ * 结果，不重跑，原来那个视图也没被改脏。
  */
 export const FollowUpSplit: Story = {
   ...DisplayFollowUps,
@@ -611,12 +614,31 @@ export const FollowUpSplit: Story = {
     await waitFor(() =>
       expect(readColumn(after, '状态')).toEqual(['已发运', '待出库']),
     );
-    const applied = canvas.getByRole('region', {
-      name: zhCN['label.applied.title'],
-    });
+    const line = await saysEachThingOnce(
+      canvasElement,
+      titled('仓库金额分布', SOUTH),
+      SOUTH,
+    );
+    const ran = aggregateCalls.current;
+
+    await userEvent.click(within(line).getByRole('button', { name: BACK }));
+
+    // 原来那次按仓库分的结果，原样回来：不重跑，标题栏也没有未保存的改动。
+    await waitFor(async () =>
+      expect(readColumn(await findDataTable(canvasElement), '仓库')).toEqual([
+        '华东',
+        '华北',
+        '华南',
+        '西南',
+      ]),
+    );
     await expect(
-      within(applied).getByText(`仓库 ${zhCN['label.operator.IN']} 华南`),
-    ).toBeVisible();
+      canvas.getByRole('heading', { level: 2, name: '仓库金额分布' }),
+    ).not.toHaveAttribute('data-dirty');
+    await expect(
+      document.body.querySelector('[data-slot="origin-bar"]'),
+    ).toBeNull();
+    await expect(aggregateCalls.current).toBe(ran);
   },
 };
 

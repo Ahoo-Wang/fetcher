@@ -63,8 +63,17 @@ export type FollowUpAction =
    * definition's name for its records, and the group.
    */
   | { kind: 'records'; subject: string; run(title: string): void }
-  /** Ask the same question of the group, by one more dimension. */
-  | { kind: 'split'; options: readonly SplitOption[]; run(field: string): void }
+  /**
+   * Ask the same question of the group by another dimension, as a view of
+   * its own beside this one (`WorkbenchController.follow`), as `focus`
+   * does. Named `title`, of `subject` — this view's name — and the group.
+   */
+  | {
+      kind: 'split';
+      subject: string;
+      options: readonly SplitOption[];
+      run(field: string, title: string): void;
+    }
   /**
    * Ask the same question of the group alone, as a view of its own beside
    * this one (`WorkbenchController.follow`), so the way back is this result
@@ -269,26 +278,35 @@ export function useAnalysisResult(
       analysis.fields,
       ran.groups,
     ).map(option => ({ field: option.field, label: option.label }));
+    // Both open beside this view: the question that ran, drawn as the screen
+    // draws it — the layout and the chart are the draft's, and nothing else
+    // the draft holds is applied by a gesture that did not ask for it.
+    const drawn: AnalysisViewConfig = { ...ran, layout: analysis.layout, chart };
+    const subject = workbench.state?.title ?? '';
     if (options.length > 0)
       actions.push({
         kind: 'split',
+        subject,
         options,
-        run: name => split(runtime, analysis, ran, conditions, name, moments),
+        run: (name, title) => {
+          const patch = split(
+            runtime,
+            analysis,
+            drawn,
+            conditions,
+            name,
+            moments,
+          );
+          if (patch)
+            workbench.follow({ ...drawn, ...patch }, title, conditions);
+        },
       });
     actions.push({
       kind: 'focus',
-      subject: workbench.state?.title ?? '',
-      // The question that ran, narrowed, drawn as the screen draws it: the
-      // layout and the chart are the draft's, and nothing else the draft
-      // holds is applied by a gesture that did not ask for it.
+      subject,
       run: title =>
         workbench.follow(
-          {
-            ...ran,
-            layout: analysis.layout,
-            chart,
-            ...focusOn(ran, conditions),
-          },
+          { ...drawn, ...focusOn(ran, conditions) },
           title,
           conditions,
         ),
@@ -321,26 +339,28 @@ export function useAnalysisResult(
   };
 }
 
+/**
+ * The patch that asks `config` of the group by the field named, or null
+ * where the field is not one to split by. The chart's slots follow the new
+ * shape; the metrics do not change, so neither do the moments among them.
+ */
 function split(
   runtime: ViewRuntime<AnalysisViewConfig>,
   analysis: AnalysisEditorController,
-  ran: AnalysisViewConfig,
+  config: AnalysisViewConfig,
   conditions: readonly FilterNode[],
   name: string,
   moments: ReadonlySet<string>,
-): void {
+): ReturnType<typeof splitBy> | null {
   const field = runtime.fields.find(entry => entry.name === name);
   const option = analysis.fields.find(entry => entry.field === name);
-  if (!field || !option) return;
-  runtime.edit(
-    splitBy(
-      ran,
-      conditions,
-      groupFor(field, option, runtime.kinds.get(field.kind)),
-      moments,
-    ),
+  if (!field || !option) return null;
+  return splitBy(
+    config,
+    conditions,
+    groupFor(field, option, runtime.kinds.get(field.kind)),
+    moments,
   );
-  runtime.apply();
 }
 
 /**

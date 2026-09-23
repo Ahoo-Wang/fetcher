@@ -142,11 +142,10 @@ describe('useAnalysisResult', () => {
     // What the two views a follow-up opens are of: the definition's records,
     // and this view.
     expect(
-      followUp?.actions.flatMap(action =>
-        action.kind === 'split' ? [] : [[action.kind, action.subject]],
-      ),
+      followUp?.actions.map(action => [action.kind, action.subject]),
     ).toEqual([
       ['records', 'Orders'],
+      ['split', 'By warehouse'],
       ['focus', 'By warehouse'],
     ]);
     // A split is by a field the result is not grouped by already.
@@ -172,7 +171,8 @@ describe('useAnalysisResult', () => {
     })!.actions;
     const run = (kind: string, field?: string) => {
       const action = actions.find(entry => entry.kind === kind)!;
-      if (action.kind === 'split') action.run(field ?? action.options[0].field);
+      if (action.kind === 'split')
+        action.run(field ?? action.options[0].field, `named ${kind}`);
       else action.run(`named ${kind}`);
     };
     const row = [expect.objectContaining({ field: 'warehouse' })];
@@ -197,16 +197,31 @@ describe('useAnalysisResult', () => {
     expect(result.current.runtime?.getSnapshot().dirty).toBe(false);
     expect(vi.mocked(source.aggregate).mock.calls.length).toBe(before);
 
+    // Split: the group narrowed to, asked again by the dimension chosen —
+    // beside this view too, which stays as it ran.
     run('split');
-    await waitFor(() =>
-      expect(vi.mocked(source.aggregate).mock.calls.length).toBe(before + 1),
-    );
-    // The group narrowed to, and asked again by the dimension chosen.
+    expect(follow).toHaveBeenCalledTimes(2);
+    const [split, splitTitle, splitConditions] = follow.mock.calls[1];
+    expect(splitTitle).toBe('named split');
+    expect(splitConditions).toEqual(row);
+    expect(split).toMatchObject({
+      kind: 'analysis',
+      groups: [expect.objectContaining({ field: 'status' })],
+      filter: { op: 'and', children: row },
+      sort: [],
+    });
+    expect(result.current.runtime?.getSnapshot().dirty).toBe(false);
     expect(
       result.current.runtime
         ?.getSnapshot()
         .applied.groups.map(group => group.field),
-    ).toEqual(['status']);
+    ).toEqual(['warehouse']);
+    expect(vi.mocked(source.aggregate).mock.calls.length).toBe(before);
+
+    // A field that is no dimension here opens nothing.
+    const offer = actions.find(entry => entry.kind === 'split')!;
+    if (offer.kind === 'split') offer.run('nowhere', 'named nothing');
+    expect(follow).toHaveBeenCalledTimes(2);
   });
 
   it('redraws for a type picked, and never runs for it', async () => {
