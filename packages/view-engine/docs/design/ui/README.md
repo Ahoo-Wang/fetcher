@@ -36,7 +36,7 @@
 
 - 规则在 `ui/display.ts` 的 `displayValue`（已应用条的措辞在 `ui/summary.ts`）：Wow 把时间存为毫秒时间戳、枚举存为代码，原样打印没法读。声明了 `options` 的字段按选项标签显示（数组逐项，未知的码原样）。
 - `cell ?? kind` 为 `datetime` 时经 `Intl.DateTimeFormat`（`dateStyle`／`timeStyle: 'medium'`），为 `date` 时只显示日期；`datetime` 上不带时刻的挂钟字符串（`2026-01-31`）只显示到日——它指一整天（[kernels.md](../kernels.md#日期条件一个字符串算哪一刻)），印 `00:00:00` 是陈述一个没人选过的时刻。不带偏移的字符串（`LocalDate`／`LocalDateTime`）是挂钟时间，原样显示不换算时区；日历上不存在的挂钟时间（`2025-02-29`、`24:00`）原样显示，不交给 `Date` 顺延。
-- DATE_HISTOGRAM 的键显示为桶起始的年、季度（`2026 Q3`）、月、日或时刻，按公历命名（Wow 按公历切桶）。
+- DATE_HISTOGRAM 的键显示为桶起始的年、季度（`2026 Q3`）、月、日或时刻，按公历命名（Wow 按公历切桶）。HISTOGRAM 的键读成它起头的那一段（`bandText`，见 [analysis.md#数字按它自己的列读](analysis.md#数字按它自己的列读)）。
 - 分析的表格、坐标轴、提示、热力图与指标卡共用 `valueText`（图表侧经 `useValueLabel`），指标的格式来自 `metricFormat`（[kernels.md#指标的数怎么读](../kernels.md#指标的数怎么读metricformat)）；宿主给了 `renderCell` 就由宿主决定。
 - 语言取 `ViewSurface` 的 `locale`（缺省为运行环境），时区取 `timeZone`；工作台透传同名属性，并把时区交给引擎的 `environment.timeZone`——相对日期按它解析、未声明时区的 DATE_HISTOGRAM 按它切桶、界面按它显示，一行按什么时钟被筛选，就按什么时钟显示。分组自己声明了时区的按那个时区读。
 - 表格、卡片与图表的类目共用这套规则：`RecordColumnView` 带 `options`，`RecordCardField` 带 `kind`、`cell`、`options` 与 `numberFormat`，`AnalysisColumnView` 见 [kernels.md#compileanalysis-与-projectanalysis](../kernels.md#compileanalysis-与-projectanalysis)，`AnalysisChart` 经 `AnalysisView.schema` 拿到它们。`spec.colors` 的键仍是原值。`numberFormat` 构造不出来时先放弃语言、再放弃格式，不让整张表抛错。（见 test/display.test.ts「displayValue」）
@@ -158,12 +158,12 @@
 
 - 三处，不是四处：刷新的 cadence 说「这个视图在自己刷新」（见[刷新是一个拆分按钮](#刷新是一个拆分按钮)），不参与下面这三处说的「屏幕上的东西走到哪一步了」。
 - **草稿未应用**是 pill 与应用按钮上的点（`data-pending`），折起时是 `label.editor.pending` 计数。**基准是整份配置**（D17-6，`runtime/pending.ts` 的 `comparePending`：条件按节点比、其余成员各算一项；在 runtime 层因为 `dequal` 与 `revert` 在那里）：只 `edit` 不 `apply` 的控件与 apply 被拒的控件都算「没应用」。`useFilterEditor.pending`／`pendingCount` 读整份配置，pill 的 `isPending(path)` 只比那一节点，「撤销筛选修改」只在条件不同（`conditionsPending`）时出现。超预算的树算一项。**不进查询的成员不算**（筛选的简单／高级、记录视图的表格／卡片——切换即完成；分析的布局当场应用 `setLayout`，因为图表只为跑过的布局整形）：它们由模型声明（`*_PRESENTATION_MEMBERS`，经 `presentationMembers(kind)` 合并），`comparePending` 只读这份清单。
-- **已应用**是结果块顶部的 `AppliedBar`，读 `state.result.own.filter` 而不是 `applied`——查询答复之前 `applied` 已走在前面。Dashboard 没有自己的结果，读 `state.applied.filter`，是否有结果可描述看面板。
+- **已应用**是结果块顶部的 `AppliedBar`，读 `state.result.own.filter` 而不是 `applied`——查询答复之前 `applied` 已走在前面。**还没有任何结果时**（第一次的答案在路上，或第一次就失败了），它读 `state.applied.filter`：屏幕上没有行可以被它说错，而等第一批行落地才冒出来的条件带会把整个结果块往下推（2026-09-23 审查 P1）。何时算「问过了」由 `hasAsked` 一处说（`runtime/viewRuntimeTypes.ts`：有结果、在途、或失败；被拒而没跑的配置不算）。Dashboard 没有自己的结果，读 `state.applied.filter`，是否有结果可描述看面板。
 - **未保存**是标题旁的标记，Save 只在 `dirty && can.save && !pending` 时可按。
 - AppliedBar 保留树的逻辑：根下每个直接子节点一个 badge，分组合成一个。文字由 `ui/summary.ts` 的 `summaryText` 拼（不用内核的英文兜底 `FilterSummaryItem.text`）：字段名来自定义，操作符走 `label.operator.<OP>`，值按[值按字段显示](#值按字段显示)的规则（`cell`、`kind`、`numberFormat` 跟着摘要项走）。相对值区间用 `label.relative.window.<direction>`、边界用 `label.relative.instant.<direction>`，命名时段用 `label.relative.preset.*`；分隔符 `label.filter.join`。
 - 分组以操作符词起头（`label.filter.all-of`／`any-of`／`none-of`），嵌套加括号；只有一条时 `all-of`／`any-of` 省略，`none-of` 是否定、总要说。谓词条件（`ELEMENT_MATCH`）同样读出它的条件，空谓词说 `label.filter.any-entry`。值读不出只说字段名（`blank`），字段消失的连操作符一起说。✕ 的可访问名用同一段文字。
 - 每个 badge 的 ✕ 把对应条件的值设回未填写并重新应用（`clearValue(path)` + `submit()`），字段行留在编辑器里。
-- 没有条件而有结果时显示 `label.applied.all`，还没有结果时整条不渲染。宿主的作用域条件（`scoped`，`variant="outline"` + `data-scoped`，`label.applied.scoped`）另成一组、不带 ✕——它不在 draft 里。再往后是**没人写下却在生效的口径**（`implied`，`data-implied`，读屏附 `label.applied.implied`）：定义声明了 `deletion` 一维而无人作答时，条上说「仅未删除」（D17-2），改口径要把字段加进条件。`EmbeddedView` 整条只读（`readOnly`）。（见 test/appliedBar.test.tsx「AppliedBar」）
+- 没有条件而问过了时显示 `label.applied.all`，什么都还没问时整条不渲染（`AppliedBar` 的 `asked`，外壳传 `hasAsked(state)`，`EmbeddedView` 同）。宿主的作用域条件（`scoped`，`variant="outline"` + `data-scoped`，`label.applied.scoped`）另成一组、不带 ✕——它不在 draft 里。再往后是**没人写下却在生效的口径**（`implied`，`data-implied`，读屏附 `label.applied.implied`）：定义声明了 `deletion` 一维而无人作答时，条上说「仅未删除」（D17-2），改口径要把字段加进条件。`EmbeddedView` 整条只读（`readOnly`）。（见 test/appliedBar.test.tsx「AppliedBar」）
 
 ## 保存与视图管理
 

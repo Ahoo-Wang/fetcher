@@ -72,6 +72,8 @@ export const analysisMessages = {
   'label.analysis.dated.HOUR': '{field} (by hour)',
   'label.analysis.dated.MINUTE': '{field} (by minute)',
   'label.analysis.dated.SECOND': '{field} (by second)',
+  // A number band: its lower bound to its upper, an en dash between.
+  'label.analysis.band': '{from}–{to}',
   'label.analysis.interval': 'Band width',
   'label.analysis.percentile': 'Percentile',
   'label.analysis.open-editor': 'Open analysis',
@@ -280,6 +282,16 @@ export const analysisMessages = {
   'label.analysis.condition-close': 'Close the conditions',
   'label.analysis.condition-remove': 'Count every record again',
   'label.analysis.only-where': 'Only where {conditions}',
+  // A conditioned metric's default name (D20 显示名), wherever the metric is
+  // named — its column, the chart, the sort, 「只保留」: the one value the
+  // condition keeps, else that it has one. `{metric}` is the metric as it
+  // reads without one ("Sum of Amount"). Metabase says "Sum of Total where
+  // Status is Shipped"; the whole condition is the header's description.
+  'label.analysis.metric-where': '{metric} · {value}',
+  'label.analysis.metric-conditioned': '{metric} · conditioned',
+  // Said on a card whose condition has no one value to name it by, so the
+  // name stays 「… · conditioned」 until the analyst gives it one.
+  'label.analysis.name-it': 'Give it a display name',
   'label.analysis.copy-with-condition': 'Copy “{name}” with a condition',
   'label.analysis.rename': 'Display name…',
   'label.analysis.display-name': 'Display name for {name}',
@@ -293,6 +305,19 @@ export const analysisMessages = {
   // Not "nothing to aggregate", which reads as "this analysis computes
   // nothing": the analysis is fine, the range simply matched no group.
   'label.analysis.empty': 'No groups match',
+  // Under the title, which of the three it is — the conditions left nothing
+  // to group, the saved view has nothing right now, the range is everything
+  // and still holds nothing — and the way out where there is one, as the
+  // record view's empty result words them (`record/emptyWayOut.ts`). The
+  // range is what the tray calls the conditions, so the way into it names
+  // it. With no condition in force there is no way out to name.
+  'label.analysis.empty-hint':
+    'No record under the current conditions falls into a group.',
+  'label.analysis.empty-view': 'This view has no records to group right now.',
+  'label.analysis.empty-none': 'There are no records in the range to group',
+  'label.analysis.empty-clear': 'Clear the conditions',
+  'label.analysis.empty-restore': 'Back to the saved conditions',
+  'label.analysis.empty-edit': 'Change the range',
 
   // The two closed enums the editor offers as choices. They used to reach
   // the screen as the identifier itself — `bar`, `date histogram` — which is

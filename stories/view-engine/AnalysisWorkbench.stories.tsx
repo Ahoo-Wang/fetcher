@@ -56,7 +56,6 @@ function AnalysisWorkbenchDemo({
   pinned = false,
   records = false,
   expandable = false,
-  allColumns = false,
   visualization = true,
   latest = false,
   limit,
@@ -84,12 +83,6 @@ function AnalysisWorkbenchDemo({
    * 那一槽；它换的是定义而不是配置，因为链是能力说了算的。
    */
   expandable?: boolean;
-  /**
-   * 表列不再逐条声明，而是「有什么别名画什么」。托盘里新加的指标因此
-   * 当场多出一列——声明过列的视图只画声明过的那几列，那是作者的选择，
-   * 但它也让「加一条指标」在屏幕上什么也不发生。
-   */
-  allColumns?: boolean;
   /**
    * 宿主让不让配图（`WorkbenchFeatures.visualization`）。关掉之后结果工具栏上
    * 的「可视化」按钮与左侧栏那块面板一起不在——关掉的功能是不存在，而不是置灰。
@@ -188,9 +181,13 @@ function AnalysisWorkbenchDemo({
       ...(labels ? { labels: true } : {}),
     },
     table: {
-      columns: allColumns
-        ? []
-        : [{ alias: 'warehouse' }, { alias: 'orders' }, { alias: 'amount' }],
+      // The list orders the columns and nothing more: a dimension or metric
+      // added in the tray is appended after these (audit P0-1).
+      columns: [
+        { alias: 'warehouse' },
+        { alias: 'orders' },
+        { alias: 'amount' },
+      ],
       totals: true,
     },
   });
@@ -389,21 +386,39 @@ function failuresScene(scene: FailuresScene): AnalysisViewConfig {
   });
 }
 
-type WaybillScene = 'daily' | 'daily-card' | 'cities';
+type WaybillScene = 'daily' | 'daily-card' | 'cities' | 'bands';
 
 /**
- * 运单上的三个问题。
+ * 运单上的四个问题。
  *
  * - `daily`／`daily-card`：每天几单，**按日倒序**——表格要今天在最上面，这是
  *   这类视图最常见的存法（补偿服务的「每日新增失败」就是这样存的）。同一批行
  *   画成柱或迷你趋势，时间轴仍从左往右走：图按时间排，表按视图排。
  * - `cities`：十个目的城市的运费合计。色板八色，第九片会与第一片同色，所以
  *   饼图在第八片把尾巴并进灰色的「其他」。
+ * - `bands`：运费按 500 一档分组，每档几单。一个桶的键是那一档的下界，每一
+ *   行、每根柱读成「¥0～500」这样的一段，而不是「¥0.00」。
  */
 function waybillScene(
   scene: WaybillScene,
   layout: 'table' | 'chart',
 ): AnalysisViewConfig {
+  if (scene === 'bands') {
+    const groups = [
+      { type: 'HISTOGRAM', field: 'amount', alias: 'band', interval: 500 },
+    ] satisfies AnalysisViewConfig['groups'];
+    const metrics = [
+      { alias: 'waybills', type: 'COUNT' },
+    ] satisfies AnalysisViewConfig['metrics'];
+    return analysisConfig({
+      layout,
+      groups,
+      metrics,
+      sort: [{ alias: 'band', direction: SortDirection.ASC }],
+      table: { columns: [] },
+      chart: fitChartSlots({ type: 'bar' }, groups, metrics),
+    });
+  }
   if (scene === 'cities') {
     const groups = [
       { type: 'TERMS', field: 'destination', alias: 'city' },
@@ -486,7 +501,6 @@ const meta = {
     pinned: false,
     records: false,
     expandable: false,
-    allColumns: false,
     visualization: true,
     latest: false,
     labels: false,
@@ -501,9 +515,8 @@ const meta = {
     savedFunnel: { table: { disable: true } },
     waybills: {
       control: 'inline-radio',
-      options: [undefined, 'daily', 'daily-card', 'cities'],
+      options: [undefined, 'daily', 'daily-card', 'cities', 'bands'],
     },
-    allColumns: { control: 'boolean' },
     records: { control: 'boolean' },
     expandable: { control: 'boolean' },
     behaviour: {
@@ -606,6 +619,18 @@ export const LatestPerWarehouse: Story = {
 };
 
 /**
+ * 第一次的答案还在路上（数据源慢 1.5 秒）：结果区先画出答案的形状——表格是
+ * 几行灰条，图表是一块绘图区——工具栏、条件带与页脚已经在各自的位置上，行落地
+ * 时换的是框里的内容，不是任何东西的位置。
+ */
+export const Loading: Story = { args: { behaviour: 'slow', layout: 'table' } };
+
+/** 同上，保存的是图表：骨架是一块绘图区。 */
+export const LoadingChart: Story = {
+  args: { behaviour: 'slow', layout: 'chart' },
+};
+
+/**
  * 每天几单，按日倒序存着——表格今天在最上面。画成柱，时间仍从左往右：
  * 投影层按时间排时间轴，表格留着视图自己的排序（2026-09-23 审查）。
  */
@@ -657,12 +682,28 @@ export const TenCities: Story = {
   args: { layout: 'chart', waybills: 'cities' },
 };
 
-/** An aggregation that matched nothing still has its editor. */
+/**
+ * 运费区间：按 500 一档，每档几单。一档的键只是它的下界，从前读成「¥0.00」
+ * 「¥500.00」，说不出是哪一段（2026-09-23 真实后端走查）；现在横轴、提示、
+ * 读屏表、表格与追问菜单的标题都读成「¥0～500」，按界面语言写短（万、亿）。
+ */
+export const FreightBands: Story = {
+  args: { layout: 'chart', waybills: 'bands' },
+};
+
+/**
+ * An aggregation that matched no group keeps its toolbar. With no condition
+ * in force the range is already every record, so there is nothing to change
+ * in the tray: the empty result says why, and offers no button.
+ */
 export const EmptyResult: Story = {
   args: { behaviour: 'empty', layout: 'table' },
 };
 
-/** A failed aggregation keeps the configuration on screen. */
+/**
+ * A failed aggregation keeps the toolbar and the conditions on screen, and
+ * says the failure under the toolbar with 「重试」.
+ */
 export const QueryFailed: Story = { args: { behaviour: 'failing' } };
 
 /**

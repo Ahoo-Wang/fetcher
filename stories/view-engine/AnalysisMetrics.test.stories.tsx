@@ -195,7 +195,6 @@ export const KeepOnlySaved: Story = {
  */
 export const Formula: Story = {
   ...DisplayTableWithTotals,
-  args: { ...DisplayTableWithTotals.args, allColumns: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const table = await findDataTable(canvasElement);
@@ -434,7 +433,6 @@ function watchFading(canvasElement: HTMLElement): {
 
 export const RunsAsEdited: Story = {
   ...DisplayTableWithTotals,
-  args: { ...DisplayTableWithTotals.args, allColumns: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const table = await findDataTable(canvasElement);
