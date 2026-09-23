@@ -86,7 +86,7 @@ export default meta;
 type Story = StoryObj<typeof displayMeta>;
 
 /**
- * 「金额 的 合计」: the two parts a metric header is composed of (D20), and
+ * 「金额的合计」: the two parts a metric header is composed of (D20), and
  * the same sentence anything that *names* that metric says — the funnel,
  * the menu, the removal — since none of them has the summary control
  * beside it the way the card's own title does.
@@ -360,9 +360,23 @@ export const FollowUpFromABar: Story = {
     await chartsDrawn(canvasElement);
     const [bar] = bars(canvasElement);
     const box = bar!.getBoundingClientRect();
+    // The pointer over the bar raises its tooltip first, as a reader's does.
+    bar!.dispatchEvent(
+      new MouseEvent('mousemove', {
+        bubbles: true,
+        clientX: box.left + box.width / 2,
+        clientY: box.top + box.height / 2,
+      }),
+    );
+    const tooltip = () =>
+      canvasElement.querySelector<HTMLElement>('[data-slot="chart-tooltip"]');
+    await waitFor(() => expect(tooltip()).toBeVisible());
     pressMark(bar!);
     const menu = await drillMenu();
     const opened = await settled(menu);
+    // The menu is the answer to the press: the tooltip steps aside rather
+    // than sit over its first items.
+    await waitFor(() => expect(tooltip()).not.toBeVisible());
     // Hung from the point pressed — an edge of the menu at it — not from
     // the chart's corner.
     const x = box.left + box.width / 2;
@@ -428,7 +442,12 @@ export const TimeRunsForward: Story = {
       }),
     );
     const table = await findDataTable(canvasElement);
-    const listed = readColumn(table, '创建时间').map(dayOf);
+    // The time dimension's header says what one row spans: 「创建时间（按日）」
+    // (2026-09-23 audit) — a column of dates does not say it alone.
+    const listed = readColumn(
+      table,
+      formatMessage(zhCN, 'label.analysis.dated.DAY', { field: '创建时间' }),
+    ).map(dayOf);
     await expect(listed.length).toBeGreaterThan(10);
     await expect(runsForward([...listed].reverse())).toBe(true);
   },
@@ -501,22 +520,67 @@ const drillMenu = () =>
     return found;
   });
 
-/** 下钻出来的视图头上那条「返回／来自」。 */
+/** 从一组开出来的视图头上那条「返回 X」。 */
 const originBar = () =>
   waitFor(() => {
     const found = document.body.querySelector<HTMLElement>(
       '[data-slot="origin-bar"]',
     );
-    if (!found) throw new Error('没有「来自」那一条');
+    if (!found) throw new Error('没有「返回」那一条');
     return found;
   });
 
-const FROM = formatMessage(zhCN, 'label.origin.from', {
-  title: '仓库金额分布',
-});
+/**
+ * 从一组开出来的视图每件事只说一遍（2026-09-23 审查）：标题说它是什么，
+ * 「返回」那条说从哪来、怎么回去，这一组的条件只在「正在显示」那条上，
+ * 编辑器收着。从前来源的名字说两遍（「返回 X · 来自 X」），条件说三遍——
+ * 「来自」那条、「正在显示」那条、再加上自动展开的编辑器。
+ */
+async function saysEachThingOnce(
+  canvasElement: HTMLElement,
+  title: string,
+  condition: string,
+) {
+  const line = await originBar();
+  await expect(line).toHaveTextContent(new RegExp(`^${BACK}$`));
+  await expect(
+    within(canvasElement).getByRole('heading', { level: 2, name: title }),
+  ).toBeVisible();
+  await waitFor(() =>
+    expect(
+      within(appliedBar(canvasElement)).getByText(condition),
+    ).toBeVisible(),
+  );
+  // 屏幕上除了标题里那一次，条件只在「正在显示」那条上出现。
+  await expect(
+    within(canvasElement)
+      .getAllByText(condition)
+      .filter(found => found.closest('h2') === null),
+  ).toHaveLength(1);
+  await expect(
+    canvasElement.querySelector(
+      '[data-slot="editor-toggle"] [aria-expanded="true"]',
+    ),
+  ).toBeNull();
+  return line;
+}
+
 const BACK = formatMessage(zhCN, 'label.origin.back', {
   title: '仓库金额分布',
 });
+
+/** 按下的那一组，用菜单标题与「正在显示」那条共用的词说出来。 */
+const SOUTH = `仓库 ${zhCN['label.operator.IN']} 华南`;
+
+/** 从一组开出来的视图叫什么：「{是什么} · {这一组}」。 */
+const titled = (subject: string, group: string) =>
+  formatMessage(zhCN, 'label.drill.titled', { subject, group });
+
+/** 「正在显示」那条：结果的行是在哪些条件下取来的。 */
+const appliedBar = (canvasElement: HTMLElement) =>
+  within(canvasElement).getByRole('region', {
+    name: zhCN['label.applied.title'],
+  });
 
 /**
  * 追问（D20 Ⅳ）：按下一根柱子，弹出这一组的三项。
@@ -525,9 +589,10 @@ const BACK = formatMessage(zhCN, 'label.origin.back', {
  * 的点击打开的，而不是被某个按钮打开的；标题是这一组的条件，用的是「正在显示」
  * 那条用的同一套词。
  *
- * 「查看这些记录」在同一个工作台里开出一个未保存的记录视图：标题栏下多一条
- * 「返回 仓库金额分布 · 来自 仓库金额分布 · 仓库 属于 华南」，下面是华南那两单。
- * 按「返回」回到原来那次聚合结果——图还在，没有重跑。
+ * 「查看这些记录」在同一个工作台里开出一个未保存的记录视图，叫「订单 · 仓库
+ * 属于 华南」——它是订单里华南那一组；标题栏下一颗「返回 仓库金额分布」，条件
+ * 只在「正在显示」那条上，编辑器收着；下面是华南那两单。按「返回」回到原来
+ * 那次聚合结果——图还在，没有重跑。
  */
 export const FollowUpToRecords: Story = {
   ...DisplayFollowUps,
@@ -540,9 +605,7 @@ export const FollowUpToRecords: Story = {
     pressMark(bars(canvasElement)[2]!);
 
     const menu = await drillMenu();
-    await expect(
-      within(menu).getByText(`仓库 ${zhCN['label.operator.IN']} 华南`),
-    ).toBeVisible();
+    await expect(within(menu).getByText(SOUTH)).toBeVisible();
     await expect(
       within(menu)
         .getAllByRole('menuitem')
@@ -559,32 +622,28 @@ export const FollowUpToRecords: Story = {
       }),
     );
 
-    const line = await originBar();
-    await expect(within(line).getByText(FROM)).toBeVisible();
-    await expect(
-      within(line).getByRole('button', { name: BACK }),
-    ).toBeVisible();
-    await expect(
-      [...line.querySelectorAll('[data-slot="origin-condition"]')].map(
-        badge => badge.textContent,
-      ),
-    ).toEqual([`仓库 ${zhCN['label.operator.IN']} 华南`]);
-
     // 记录视图，不是聚合：华南的两单，按明细列出来。
     const table = await findDataTable(canvasElement);
     await waitFor(() =>
       expect(readColumn(table, '订单号')).toEqual(['SO-1004', 'SO-1005']),
     );
+    const line = await saysEachThingOnce(
+      canvasElement,
+      titled('订单', SOUTH),
+      SOUTH,
+    );
+    const ran = aggregateCalls.current;
 
     await userEvent.click(within(line).getByRole('button', { name: BACK }));
 
     await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
     await expect(
       canvas.getByRole('heading', { level: 2, name: '仓库金额分布' }),
-    ).toBeVisible();
+    ).not.toHaveAttribute('data-dirty');
     await expect(
       document.body.querySelector('[data-slot="origin-bar"]'),
     ).toBeNull();
+    await expect(aggregateCalls.current).toBe(ran);
   },
 };
 
@@ -592,14 +651,17 @@ export const FollowUpToRecords: Story = {
  * 同一个菜单，从一枚扇区上弹出来——图表家族换了，手势没换。
  *
  * 这个工作台只列分析视图，所以没有「查看这些记录」：下钻开出来的是记录视图，
- * 开不出来的地方就不摆这一项。「只看这一组」改的是当前这个视图：条件进范围、
- * 立刻重跑，「正在显示」那条随即说出它。
+ * 开不出来的地方就不摆这一项。「只看这一组」是同一个问题只问这一组，开在
+ * 原来那个旁边（2026-09-23 审查）：一个未保存的分析视图，叫「仓库金额分布 ·
+ * 仓库 属于 华南」，图上只剩华南，和「查看这些记录」一样有一颗「返回」——
+ * 按下去是原来那次结果，四个仓库都在，不重跑，原来那个视图也没被改脏。
  */
 export const FollowUpFocus: Story = {
   ...DisplayPieChart,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => expect(slices(canvasElement)).toHaveLength(3));
+    const before = slices(canvasElement).map(slice => slice.name);
 
     await chartsDrawn(canvasElement);
     pressMark(slicesInOrder(canvasElement)[0]!);
@@ -615,28 +677,84 @@ export const FollowUpFocus: Story = {
       within(menu).getByRole('menuitem', { name: zhCN['label.drill.focus'] }),
     );
 
-    // 范围里多了这一组，图上只剩它自己。
-    const applied = canvas.getByRole('region', {
-      name: zhCN['label.applied.title'],
-    });
-    await waitFor(() =>
-      expect(
-        within(applied).getByText(`仓库 ${zhCN['label.operator.IN']} 华南`),
-      ).toBeVisible(),
-    );
+    // 图上只剩这一组；它是一个自己的视图，每件事只说一遍。
     await waitFor(() =>
       expect(slices(canvasElement).map(slice => slice.name)).toEqual(['华南']),
     );
+    const line = await saysEachThingOnce(
+      canvasElement,
+      titled('仓库金额分布', SOUTH),
+      SOUTH,
+    );
+    const ran = aggregateCalls.current;
+
+    await userEvent.click(within(line).getByRole('button', { name: BACK }));
+
+    // 原来那次结果，原样回来：不重跑，也没有什么要保存的。
+    await waitFor(() =>
+      expect(slices(canvasElement).map(slice => slice.name)).toEqual(before),
+    );
+    await expect(
+      canvas.getByRole('heading', { level: 2, name: '仓库金额分布' }),
+    ).not.toHaveAttribute('data-dirty');
+    await expect(
+      document.body.querySelector('[data-slot="origin-bar"]'),
+    ).toBeNull();
+    await expect(aggregateCalls.current).toBe(ran);
   },
 };
 
 /**
- * 「再按…拆一层」是一层子菜单，而子菜单在真浏览器里是**悬停**展开的（点一下
+ * 按日分组的一行，菜单标题读作表格那一格读的样子——「创建时间 在 2026年9月
+ * 21日」——而不是它背后那两个精确到毫秒的时刻（2026-09-23 审查）。只看这一组
+ * 开出来的视图也照这个说法起名。
+ */
+export const FollowUpOnADay: Story = {
+  ...DisplayDailyNewestFirst,
+  args: { ...DisplayDailyNewestFirst.args, layout: 'table' },
+  play: async ({ canvasElement }) => {
+    const row = await waitFor(() => {
+      const found =
+        canvasElement.querySelector<HTMLTableRowElement>('tr[data-pickable]');
+      if (!found) throw new Error('结果还没有行');
+      return found;
+    });
+    const day = row.cells[0]!.textContent ?? '';
+    await expect(day).toMatch(/^\d{4}年\d{1,2}月\d{1,2}日$/);
+    const group = formatMessage(zhCN, 'label.drill.bucket', {
+      field: '创建时间',
+      bucket: day,
+    });
+
+    await userEvent.click(row.cells[1]!);
+    const menu = await drillMenu();
+    await expect(
+      menu.querySelector('[data-slot="drill-group"]'),
+    ).toHaveTextContent(new RegExp(`^${group}$`));
+
+    await userEvent.click(
+      within(menu).getByRole('menuitem', { name: zhCN['label.drill.focus'] }),
+    );
+    await originBar();
+    await expect(
+      within(canvasElement).getByRole('heading', {
+        level: 2,
+        name: titled('运单分析', group),
+      }),
+    ).toBeVisible();
+  },
+};
+
+/**
+ * 「按其他维度细分…」是一层子菜单，而子菜单在真浏览器里是**悬停**展开的（点一下
  * 反而是在开与关之间来回）——这是只有真指针验得了的一条，jsdom 里点开与悬停
  * 展开是同一回事。
  *
  * 拆完之后是同一个问题换一个维度问：范围收到这一组，维度换成状态，上一维度
  * 的名字从排序、表列与图表槽位里一并退场（`analysis/drill.ts` 的 `splitBy`）。
+ * 它和另外两项一样开在旁边（用户 2026-09-23 拍板）：一个未保存的分析视图，
+ * 叫「仓库金额分布 · 仓库 属于 华南」，带「返回」；按下去是原来那次按仓库分的
+ * 结果，不重跑，原来那个视图也没被改脏。
  */
 export const FollowUpSplit: Story = {
   ...DisplayFollowUps,
@@ -664,7 +782,7 @@ export const FollowUpSplit: Story = {
     await userEvent.hover(
       within(menu).getByRole('menuitem', { name: zhCN['label.drill.split'] }),
     );
-    // 已经分了的那一维不在里面：按它再拆一层拆不出东西来。
+    // 已经分了的那一维不在里面：按它再细分分不出东西来。
     const split = await waitFor(() => {
       const found = document.body.querySelector<HTMLElement>(
         '[data-slot="dropdown-menu-sub-content"]',
@@ -686,12 +804,31 @@ export const FollowUpSplit: Story = {
     await waitFor(() =>
       expect(readColumn(after, '状态')).toEqual(['已发运', '待出库']),
     );
-    const applied = canvas.getByRole('region', {
-      name: zhCN['label.applied.title'],
-    });
+    const line = await saysEachThingOnce(
+      canvasElement,
+      titled('仓库金额分布', SOUTH),
+      SOUTH,
+    );
+    const ran = aggregateCalls.current;
+
+    await userEvent.click(within(line).getByRole('button', { name: BACK }));
+
+    // 原来那次按仓库分的结果，原样回来：不重跑，标题栏也没有未保存的改动。
+    await waitFor(async () =>
+      expect(readColumn(await findDataTable(canvasElement), '仓库')).toEqual([
+        '华东',
+        '华北',
+        '华南',
+        '西南',
+      ]),
+    );
     await expect(
-      within(applied).getByText(`仓库 ${zhCN['label.operator.IN']} 华南`),
-    ).toBeVisible();
+      canvas.getByRole('heading', { level: 2, name: '仓库金额分布' }),
+    ).not.toHaveAttribute('data-dirty');
+    await expect(
+      document.body.querySelector('[data-slot="origin-bar"]'),
+    ).toBeNull();
+    await expect(aggregateCalls.current).toBe(ran);
   },
 };
 
@@ -780,7 +917,7 @@ export const TableWithTotals: Story = {
       ]),
     );
     // A metric is headed by its two parts, never by the alias the query
-    // carried: 「金额 的 合计」, and a count of records by what it counts.
+    // carried: 「金额的合计」, and a count of records by what it counts.
     await expect(readColumn(table, COUNT_HEADER)).toEqual(['2', '1', '2', '1']);
     await expect(readColumn(table, AMOUNT_HEADER).map(amountOf)).toEqual([
       1920, 2450, 4880, 980,
@@ -1155,23 +1292,26 @@ export const TrayFolds: Story = {
       'analysis-slot-range',
       'analysis-slot-dimensions',
       'analysis-slot-metrics',
+      'analysis-slot-result',
     ]);
     for (const name of [
       zhCN['label.analysis.slot.range'],
       zhCN['label.analysis.slot.dimensions'],
       zhCN['label.analysis.slot.metrics'],
+      zhCN['label.analysis.slot.result'],
     ])
       await expect(canvas.getByRole('region', { name })).toBeVisible();
 
-    // One primary on the screen, and it is Apply (D17-3): there is no Run
-    // any more, because the range and the question are one execution. The
-    // fill is what "primary" comes to, so it is read off the pixels here
-    // and nothing else on screen may share it.
-    const apply = within(
-      canvasElement.querySelector<HTMLElement>(
-        '[data-slot="analysis-tray-actions"]',
-      )!,
-    ).getByRole('button', { name: zhCN['label.filter.apply'] });
+    // One primary on the screen at most, and it is Apply (D17-3): there is
+    // no Run any more, because the range and the question are one
+    // execution. With auto-run on it rests until something waits for it;
+    // switched off, it is the one filled button — read off the pixels,
+    // since the fill is what "primary" comes to.
+    await userEvent.click(autoRunBox(canvasElement));
+    const apply = applyButton(canvasElement);
+    await waitFor(() =>
+      expect(apply).toHaveAttribute('data-emphasis', 'primary'),
+    );
     const fill = getComputedStyle(apply).backgroundColor;
     const sharing = [
       ...canvasElement.querySelectorAll<HTMLElement>('[data-slot="button"]'),
@@ -1181,6 +1321,20 @@ export const TrayFolds: Story = {
     ]);
   },
 };
+
+/** The tray's Apply, in its footer. */
+const applyButton = (canvasElement: HTMLElement) =>
+  within(
+    canvasElement.querySelector<HTMLElement>(
+      '[data-slot="analysis-tray-actions"]',
+    )!,
+  ).getByRole('button', { name: zhCN['label.filter.apply'] });
+
+/** The tray's auto-run checkbox. */
+const autoRunBox = (canvasElement: HTMLElement) =>
+  within(
+    canvasElement.querySelector<HTMLElement>('[data-slot="auto-run"]')!,
+  ).getByRole('checkbox');
 
 /**
  * The tray edited: a dimension out of the menu, a metric's summary changed,
@@ -1201,6 +1355,15 @@ export const TrayEdits: Story = {
     await expect(
       opened.querySelectorAll('[data-slot="dimension-card"]'),
     ).toHaveLength(1);
+    // Apply is how the question runs in this story: with auto-run on each
+    // edit below would run itself (`RunsAsEdited`).
+    await userEvent.click(autoRunBox(canvasElement));
+    await waitFor(() =>
+      expect(autoRunBox(canvasElement)).toHaveAttribute(
+        'aria-checked',
+        'false',
+      ),
+    );
 
     // A dimension from the menu of groupable fields.
     await userEvent.click(
@@ -1317,6 +1480,129 @@ export const EditorRowSpacing: Story = {
         )!,
       ).rowGap,
     ).toBe('8px');
+  },
+};
+
+/**
+ * 托盘读得清（2026-09-23 审查，P1）。
+ *
+ * 一、「只保留」「排序」「前 N 组」自成「结果」一步，排在维度与指标后面，每一项
+ * 都有看得见的名字，按 Wow 施加它们的顺序从上到下：只保留在上，排序与前 N 组
+ * 同一行、排序在前。
+ * 二、「自动运行」开着、没有东西等应用时，应用是描边按钮，不是全屏最实的那一
+ * 颗；范围里加了条件（它要等应用）才回到实心。开关名下一行说它管什么。
+ * 三、托盘封顶工作列的一半，槽在里面滚，底行（自动运行／清空／应用）不滚、总看
+ * 得见；结果不再被挤到它的下限。
+ */
+export const TrayReadsClearly: Story = {
+  ...DisplayTableWithTotals,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole('table');
+    const opened = await openTray(canvasElement);
+
+    // 一、the result step, each part labelled on the screen, in Wow's order.
+    const result = canvas.getByRole('region', {
+      name: zhCN['label.analysis.slot.result'],
+    });
+    const metrics = canvas.getByRole('region', {
+      name: zhCN['label.analysis.slot.metrics'],
+    });
+    await expect(result.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      metrics.getBoundingClientRect().bottom,
+    );
+    const keep = within(result).getByRole('group', {
+      name: zhCN['label.analysis.having-title'],
+    });
+    const sort = within(result).getByRole('group', {
+      name: zhCN['label.sort.title'],
+    });
+    const limitBox = within(result).getByLabelText(
+      zhCN['label.analysis.row-limit'],
+    );
+    const limit = limitBox.closest<HTMLElement>(
+      '[data-slot="analysis-limit"]',
+    )!;
+    // The names are text a sighted analyst reads, not only a reader's.
+    const visible = [
+      keep.querySelector('legend'),
+      sort.querySelector('[data-slot="field-label"]'),
+      result.querySelector(`label[for="${limitBox.id}"]`),
+    ];
+    await expect(visible.map(label => label?.textContent)).toEqual([
+      zhCN['label.analysis.having-title'],
+      zhCN['label.sort.title'],
+      zhCN['label.analysis.row-limit'],
+    ]);
+    for (const label of visible) await expect(label).toBeVisible();
+    const box = (element: HTMLElement) => element.getBoundingClientRect();
+    await expect(box(keep).bottom).toBeLessThanOrEqual(box(sort).top);
+    await expect(Math.abs(box(sort).top - box(limit).top)).toBeLessThan(1);
+    await expect(box(sort).right).toBeLessThanOrEqual(box(limit).left);
+
+    // 二、Apply rests while auto-run leaves it nothing to do. The checked
+    // box wears the primary fill, which is what a filled Apply would share.
+    const primary = getComputedStyle(autoRunBox(canvasElement)).backgroundColor;
+    const apply = applyButton(canvasElement);
+    await expect(apply).toHaveAttribute('data-emphasis', 'quiet');
+    await expect(getComputedStyle(apply).backgroundColor).not.toBe(primary);
+    await expect(
+      within(
+        canvasElement.querySelector<HTMLElement>('[data-slot="auto-run"]')!,
+      ).getByText(zhCN['label.analysis.auto-run-hint']),
+    ).toBeVisible();
+
+    // A condition in the range waits for Apply, so Apply fills again.
+    const range = canvas.getByRole('region', {
+      name: zhCN['label.analysis.slot.range'],
+    });
+    await userEvent.click(
+      within(range).getByRole('button', { name: zhCN['label.filter.add'] }),
+    );
+    const picker = await screen.findByRole('dialog', {
+      name: zhCN['label.filter.pick-fields'],
+    });
+    for (const field of ['订单号', '仓库', '状态', '标记', '备注', '金额'])
+      await userEvent.click(
+        within(picker).getByRole('checkbox', { name: field }),
+      );
+    await userEvent.click(
+      within(picker).getByRole('button', {
+        name: zhCN['label.filter.pick-done'],
+      }),
+    );
+    await waitFor(() =>
+      expect(apply).toHaveAttribute('data-emphasis', 'primary'),
+    );
+    await expect(getComputedStyle(apply).backgroundColor).toBe(primary);
+
+    // Two rows kept on top of six conditions: a tray taller than half.
+    for (let i = 0; i < 2; i++)
+      await userEvent.click(
+        opened.querySelector<HTMLElement>('[data-slot="add-having"]')!,
+      );
+
+    // 三、capped at half the work column, the slots scrolling inside and
+    // the footer standing where it can be pressed.
+    const main = canvasElement.querySelector<HTMLElement>('.fve-root > main')!;
+    const band = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="editor-band"]',
+    )!;
+    const slots = opened.querySelector<HTMLElement>(
+      '[data-slot="analysis-tray-slots"]',
+    )!;
+    const footer = opened.querySelector<HTMLElement>(
+      '[data-slot="analysis-tray-actions"]',
+    )!;
+    await waitFor(() =>
+      expect(slots.scrollHeight).toBeGreaterThan(slots.clientHeight),
+    );
+    await expect(box(band).height).toBeLessThanOrEqual(
+      main.getBoundingClientRect().height / 2 + 1,
+    );
+    await expect(box(footer).top).toBeGreaterThanOrEqual(box(band).top);
+    await expect(box(footer).bottom).toBeLessThanOrEqual(box(band).bottom);
+    await expect(apply).toBeVisible();
   },
 };
 
@@ -1511,7 +1797,7 @@ export const VisualizePanel: Story = {
     // title, and each slice says its share.
     await expect(
       canvasElement.querySelector('[data-slot="pie-measure"]'),
-    ).toHaveTextContent('金额 的 合计');
+    ).toHaveTextContent(AMOUNT_HEADER);
     // The labels land with the sweep; the story browser does not ask for
     // less motion, so the pie sweeps as a reader's would.
     await waitFor(
@@ -1599,7 +1885,7 @@ export const VisualizePanel: Story = {
  * 卡片上只放问题本身的那两三个控件，别的都收进一颗按卡片命名的菜单里——
  * 一张摆着六个控件的卡片读起来是张表单，不是一句话。改完名字，列头、结果
  * 那句读法与图例都跟着改（`columnTitle`：给了名字，名字就是整个标题，后面
- * 不再缀「的 合计」）；空值单独一组是分析师的选择，勾上 Wow 才会把缺值的
+ * 不再缀「的合计」）；空值单独一组是分析师的选择，勾上 Wow 才会把缺值的
  * 记录单独归一组，而不是悄悄把它们丢掉。
  */
 export const TrayCardMenu: Story = {
@@ -1669,7 +1955,7 @@ export const TrayCardMenu: Story = {
  * 一个数是在哪些记录上算出来的，这件事只有两处说得清楚：算它之前，和算它的
  * 那张卡上。所以入口是卡片上的漏斗，而不是菜单里的一项、更不是一个对话框
  * ——条件属于它收窄的那个指标，就长在那儿；写完收起来，卡片上留下一句
- * 「只算 …」，于是一屏卡片里两个「金额 的 合计」为什么不一样，读得出来。
+ * 「只算 …」，于是一屏卡片里两个「金额的合计」为什么不一样，读得出来。
  * 条件是这一个指标自己的：应用之后金额跟着变，旁边的记录数一颗不落。
  */
 export const MetricCondition: Story = {
@@ -1796,6 +2082,7 @@ export const TrayExpansion: Story = {
       'analysis-slot-elements',
       'analysis-slot-dimensions',
       'analysis-slot-metrics',
+      'analysis-slot-result',
     ]);
     await expect(unit()).toBe(
       formatMessage(zhCN, 'label.analysis.unit', { name: '订单' }),
