@@ -428,6 +428,7 @@ describe('useAnalysisResult', () => {
             state,
             canDrill: true,
             drill: vi.fn(),
+            follow: vi.fn(),
           }),
         };
       });
