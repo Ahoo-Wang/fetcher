@@ -74,6 +74,13 @@ export interface WorkbenchShellProps {
    * its panels are what run and what the note beside the control names.
    */
   freshness?: ReactNode;
+  /**
+   * The way into building the view, beside its save commands on the title
+   * bar — a dashboard's 「编辑」 (D22 A).
+   */
+  build?: ReactNode;
+  /** Leaves the save commands off the title bar — see `ViewHeader`. */
+  saveHidden?: boolean;
   /** The view's own editor, between the title bar and the strips. */
   editor?: ReactNode;
   /**
@@ -286,6 +293,8 @@ export function WorkbenchShell({
   timeZone,
   actions,
   freshness,
+  build,
+  saveHidden,
   editor,
   editorLabel,
   search,
@@ -588,6 +597,8 @@ export function WorkbenchShell({
                 onCreated={() => {
                   created.current = true;
                 }}
+                build={build}
+                saveHidden={saveHidden}
               />
 
               {/* Where this view came from, when it was opened out of another
