@@ -162,11 +162,13 @@ describe('DataViewRuntime execution', () => {
    * landing — a source that takes 400ms is a result that says 400.
    */
   it('says how long the answer took', async () => {
-    let answer: (rows: { total: number; list: unknown[] }) => void = () => {};
+    let answer: (
+      rows: Awaited<ReturnType<ViewSource['paged']>>,
+    ) => void = () => {};
     const source = testSource({
       paged: vi.fn(
         () =>
-          new Promise<{ total: number; list: unknown[] }>(resolve => {
+          new Promise<Awaited<ReturnType<ViewSource['paged']>>>(resolve => {
             answer = resolve;
           }),
       ),
