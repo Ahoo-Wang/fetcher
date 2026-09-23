@@ -96,9 +96,10 @@ const meta = {
   },
   decorators: [
     (Story, context) => (
-      // The shell has no page of its own for this scene yet; the snapshot
-      // console is the page it is one of.
-      <AppShell current="snapshots" service={{ host: context.args.host }}>
+      <AppShell
+        current="customer-snapshots"
+        service={{ host: context.args.host }}
+      >
         <Story />
       </AppShell>
     ),

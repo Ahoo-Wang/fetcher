@@ -95,7 +95,10 @@ const meta = {
   },
   decorators: [
     (Story, context) => (
-      <AppShell current="event-streams" service={{ host: context.args.host }}>
+      <AppShell
+        current="trade-order-event-streams"
+        service={{ host: context.args.host }}
+      >
         <Story />
       </AppShell>
     ),

@@ -97,9 +97,10 @@ const meta = {
   },
   decorators: [
     (Story, context) => (
-      // The shell has no page of its own for this scene yet; the event
-      // stream console is the page it is one of.
-      <AppShell current="event-streams" service={{ host: context.args.host }}>
+      <AppShell
+        current="customer-event-streams"
+        service={{ host: context.args.host }}
+      >
         <Story />
       </AppShell>
     ),
