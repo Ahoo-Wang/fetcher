@@ -281,7 +281,11 @@ export function useAnalysisResult(
     // Both open beside this view: the question that ran, drawn as the screen
     // draws it — the layout and the chart are the draft's, and nothing else
     // the draft holds is applied by a gesture that did not ask for it.
-    const drawn: AnalysisViewConfig = { ...ran, layout: analysis.layout, chart };
+    const drawn: AnalysisViewConfig = {
+      ...ran,
+      layout: analysis.layout,
+      chart,
+    };
     const subject = workbench.state?.title ?? '';
     if (options.length > 0)
       actions.push({
