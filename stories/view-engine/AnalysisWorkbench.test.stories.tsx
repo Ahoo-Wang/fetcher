@@ -21,6 +21,8 @@ import displayMeta, {
   BarChart as DisplayBarChart,
   CutShort as DisplayCutShort,
   CutShortTable as DisplayCutShortTable,
+  DailyNewestFirst as DisplayDailyNewestFirst,
+  DailyTrendCard as DisplayDailyTrendCard,
   EmptyResult as DisplayEmptyResult,
   Expandable as DisplayExpandable,
   FollowUps as DisplayFollowUps,
@@ -28,9 +30,11 @@ import displayMeta, {
   PinnedCategoryColor as DisplayPinnedCategoryColor,
   QueryFailed as DisplayQueryFailed,
   TableWithTotals as DisplayTableWithTotals,
+  TenCities as DisplayTenCities,
   TwoMetrics as DisplayTwoMetrics,
   LatestPerWarehouse as DisplayLatestPerWarehouse,
 } from './AnalysisWorkbench.stories.js';
+import { converter } from 'culori';
 import { aggregateCalls } from './fixtures.js';
 import { amountOf, findDataTable, readColumn, readTotal } from './readTable.js';
 
@@ -62,6 +66,8 @@ const AMOUNT_HEADER = formatMessage(zhCN, 'label.summary.of', {
 
 /** A count of records is named by what it counts, in one word. */
 const COUNT_HEADER = zhCN['label.analysis.row-count'];
+
+const toOklch = converter('oklch');
 
 const bars = (canvas: HTMLElement) =>
   canvas.querySelectorAll('.recharts-bar-rectangle');
@@ -131,7 +137,7 @@ export const WholeTicks: Story = {
 };
 
 /**
- * 报表有个底：结果区最后一行固定写「正在显示 N 行，耗时 X 秒」。
+ * 报表有个底：结果区最后一行固定写「正在显示 N 组，耗时 X 秒」。
  *
  * 分析结果从前在最后一根柱子、最后一行下面就结束了，下面的空白读起来像报表
  * 掉了下去（用户 2026-09-23）。这里量三件事：那一行说的是屏幕上的行数与耗时，
@@ -146,7 +152,7 @@ export const CaptionHoldsTheReport: Story = {
       '[data-slot="analysis-caption"]',
     )!;
     await expect(caption.textContent).toMatch(
-      /^正在显示 4 行，耗时 [\d.]+ 秒$/,
+      /^正在显示 4 组，耗时 [\d.]+ 秒$/,
     );
     const block = caption.parentElement!;
     await expect(block.dataset.slot).toBe('result-block');
@@ -166,7 +172,7 @@ export const CaptionHoldsTheReport: Story = {
  * 刻度字以刻度为中心，最后一个会伸出绘图区半个字宽：真实补偿服务上最后一天读成
  * 「2026年9月22E」，横向图最后一个数读成「600,00(」；横向图的分类轴从前是写死的
  * 96px，把长处理器名从左边截成「kEventProcessor」（2026-09-23）。这里量每一个刻度
- * 字的框都在图的 `svg` 之内，且图离结果区的左边留着工作列的 16px。
+ * 字的框都在图的 `svg` 之内，且图离结果区的左右两边都留着工作列的 16px。
  */
 export const TicksInsideTheChart: Story = {
   ...DisplayBarChart,
@@ -181,6 +187,10 @@ export const TicksInsideTheChart: Story = {
       .querySelector('[data-slot="result-block"]')!
       .getBoundingClientRect();
     await expect(surface.left - block.left).toBeGreaterThanOrEqual(15);
+    // On both sides: a chart that is the band's full width and then pushed
+    // 16px in overhangs the right edge, and the band clips its last tick
+    // (「2026年9」 on the real service's monthly line).
+    await expect(block.right - surface.right).toBeGreaterThanOrEqual(15);
     const ticks = [
       ...canvasElement.querySelectorAll('.recharts-cartesian-axis-tick-value'),
     ];
@@ -190,6 +200,118 @@ export const TicksInsideTheChart: Story = {
       await expect(box.left).toBeGreaterThanOrEqual(surface.left - 1);
       await expect(box.right).toBeLessThanOrEqual(surface.right + 1);
     }
+  },
+};
+
+/**
+ * A day as its label writes it, as numbers to compare: 「2026/9/3」,
+ * 「9月3日」 and 「2026-09-03」 all read as their digits in order, which is
+ * all an ordering needs — whichever way the surface's language spells a day.
+ */
+const dayOf = (text: string) => (text.match(/\d+/g) ?? []).map(Number);
+
+/** Whether `later` is a later day than `earlier`, part by part. */
+function after(later: number[], earlier: number[]): boolean {
+  const differs = later.findIndex((part, index) => part !== earlier[index]);
+  return differs !== -1 && later[differs] > earlier[differs];
+}
+
+/** Whether each day comes strictly after the one before it. */
+const runsForward = (days: number[][]) =>
+  days.every((day, index) => index === 0 || after(day, days[index - 1]));
+
+/**
+ * 时间轴从左往右走，不管视图怎么排序。
+ *
+ * 「每日新增失败」按日倒序存着——表格今天在最上面——而同一批行照着这个顺序画成
+ * 柱，今天落在原点、昨天在它右边，整张图读反了（2026-09-23 审查）。这里量画出来
+ * 的横轴：刻度按屏幕上的左右排好，读出来的日子一天比一天晚；再切到表格，同一批
+ * 日子是倒着的——表格仍是视图自己的顺序。
+ */
+export const TimeRunsForward: Story = {
+  ...DisplayDailyNewestFirst,
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(bars(canvasElement).length).toBeGreaterThan(10));
+    const drawn = await waitFor(() => {
+      const ticks = [
+        ...canvasElement.querySelectorAll(
+          '.recharts-xAxis-tick-labels .recharts-cartesian-axis-tick-value',
+        ),
+      ];
+      expect(ticks.length).toBeGreaterThan(2);
+      return ticks
+        .map(tick => ({
+          left: tick.getBoundingClientRect().left,
+          day: dayOf(tick.textContent ?? ''),
+        }))
+        .sort((a, b) => a.left - b.left)
+        .map(tick => tick.day);
+    });
+    await expect(runsForward(drawn)).toBe(true);
+
+    await userEvent.click(
+      within(canvasElement).getByRole('button', {
+        name: zhCN['label.layout.table'],
+      }),
+    );
+    const table = await findDataTable(canvasElement);
+    const listed = readColumn(table, '创建时间').map(dayOf);
+    await expect(listed.length).toBeGreaterThan(10);
+    await expect(runsForward([...listed].reverse())).toBe(true);
+  },
+};
+
+/**
+ * 指标卡的迷你趋势同样从最早的一天画起：它没有刻度，所以读的是图旁边那张读屏
+ * 表——它与那根线出自同一份投影，从前它和线一起倒着走。
+ */
+export const SparklineRunsForward: Story = {
+  ...DisplayDailyTrendCard,
+  play: async ({ canvasElement }) => {
+    const reading = await waitFor(() => {
+      const found = canvasElement.querySelector<HTMLElement>(
+        '[data-slot="chart-reading"] table',
+      );
+      if (!found) throw new Error('指标卡旁边没有读屏表');
+      const days = [...(found as HTMLTableElement).tBodies[0].rows]
+        .map(row => dayOf(row.cells[0]?.textContent ?? ''))
+        // The headline and its comparison are rows too; a day has three
+        // numbers in it, and neither of those names one.
+        .filter(day => day.length === 3);
+      expect(days.length).toBeGreaterThan(10);
+      return days;
+    });
+    await expect(runsForward(reading)).toBe(true);
+  },
+};
+
+/**
+ * 十个目的城市，八种颜色，不重复。
+ *
+ * 色板从前只有五色、循环取用，第六个类目起与前面的同色——两片一个颜色，图例分
+ * 不出谁是谁（2026-09-23 审查）。现在色板八色，饼图在第八片把尾巴并进「其他」：
+ * 这里量浏览器真正画出来的填充色，八片八种；最后一片是「其他」，它是灰的，不占
+ * 任何一个类目的颜色。
+ */
+export const EightColoursThenOther: Story = {
+  ...DisplayTenCities,
+  play: async ({ canvasElement }) => {
+    const drawn = await waitFor(() => {
+      const paths = [
+        ...canvasElement.querySelectorAll<SVGPathElement>(
+          '.recharts-pie-sector path',
+        ),
+      ];
+      expect(paths).toHaveLength(8);
+      return paths.map(path => getComputedStyle(path).fill);
+    });
+    await expect(new Set(drawn).size).toBe(8);
+    // The remainder is grey — no hue to speak of — and every slot has one.
+    const chroma = drawn.map(fill => toOklch(fill)?.c ?? 0);
+    await expect(chroma.at(-1)).toBeLessThan(0.02);
+    await expect(chroma.slice(0, -1).every(c => c > 0.1)).toBe(true);
+    const legend = canvasElement.querySelector('.recharts-legend-wrapper');
+    await expect(legend?.textContent).toContain(zhCN['label.chart.other']);
   },
 };
 
@@ -908,9 +1030,13 @@ export const VisualizePanel: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => expect(bars(canvasElement)).toHaveLength(4));
     // The list is in the column, and the panel is not.
-    await expect(
-      canvasElement.querySelector('[data-slot="view-sidebar"]'),
-    ).not.toBeNull();
+    const list = canvasElement.querySelector<HTMLElement>(
+      '[data-slot="view-sidebar"]',
+    );
+    await expect(list).not.toBeNull();
+    const main = canvasElement.querySelector<HTMLElement>('.fve-root > main')!;
+    const listWidth = list!.getBoundingClientRect().width;
+    const mainLeft = main.getBoundingClientRect().left;
 
     await userEvent.click(
       canvas.getByRole('button', { name: zhCN['label.analysis.visualize'] }),
@@ -924,6 +1050,10 @@ export const VisualizePanel: Story = {
     await expect(
       canvasElement.querySelector('[data-slot="view-sidebar"]'),
     ).toBeNull();
+    // At the list's width, so the work area stays where it was: a panel a
+    // size wider pushed everything right by 32px as it opened.
+    await expect(panel.getBoundingClientRect().width).toBeCloseTo(listWidth, 0);
+    await expect(main.getBoundingClientRect().left).toBeCloseTo(mainLeft, 0);
 
     // Every type the definition declares is a tile, and the table is one too.
     await expect(
