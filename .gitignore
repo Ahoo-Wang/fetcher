@@ -28,6 +28,8 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+# Vitest blob reports of a sharded run (merged by CI)
+.vitest-reports
 *.lcov
 
 # nyc test coverage

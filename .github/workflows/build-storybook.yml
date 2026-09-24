@@ -54,11 +54,16 @@ jobs:
         run: pnpm build-storybook
 
   interactions:
-    name: Storybook interactions
+    name: Storybook interactions (${{ matrix.shard }}/2)
     needs: changes
     if: needs.changes.outputs.storybook == 'true'
     timeout-minutes: 15
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
 
     steps:
       - name: Checkout code
@@ -81,9 +86,21 @@ jobs:
       - name: Build
         run: pnpm -r --filter './packages/*' build
 
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      # The download is keyed on the Playwright version; system libraries still
+      # come from --with-deps on every run.
+      - name: Cache Playwright browser
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
       # STORYBOOK_BROWSERS widens this to firefox/webkit; see the workflow README.
       - name: Test Storybook interactions
-        run: pnpm test:storybook
+        run: pnpm test:storybook --shard=${{ matrix.shard }}/2

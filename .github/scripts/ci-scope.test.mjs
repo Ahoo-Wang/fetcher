@@ -26,6 +26,7 @@ test('isolated changes retain their relevant validation', () => {
     integration: false,
     generator: false,
     wiki: true,
+    docs: false,
   });
   assert.deepEqual(scopes(['stories/order.tsx']), {
     code: false,
@@ -33,8 +34,27 @@ test('isolated changes retain their relevant validation', () => {
     integration: false,
     generator: false,
     wiki: true,
+    docs: false,
   });
   assert.equal(scopes(['integration-test/package.json']).integration, true);
+  assert.deepEqual(scopes(['packages/view-engine/docs/design/decisions.md']), {
+    code: false,
+    storybook: false,
+    integration: false,
+    generator: false,
+    wiki: false,
+    docs: true,
+  });
+  assert.equal(scopes(['packages/wow/README.zh-CN.md']).docs, true);
+  assert.ok(
+    Object.values(
+      scopes([
+        'packages/view-engine/README.md',
+        'packages/view-engine/src/a.ts',
+      ]),
+    ).every(Boolean),
+    'Markdown next to a source change still runs every gate',
+  );
   assert.ok(Object.values(scopes(['README.md'])).every(value => !value));
   assert.ok(
     Object.values(scopes(['wiki/index.md', 'package.json'])).every(Boolean),

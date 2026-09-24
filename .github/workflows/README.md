@@ -5,19 +5,19 @@ PR updates cancel superseded runs; pushes to main and releases are not cancelled
 Jobs have explicit timeouts (5 minutes for scope/labels, 20 for quality/service
 tests, 30 for browser acceptance and 45 for the Node test matrix).
 
-| Workflow                         | Responsibility                                                                                                                                                                                            |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                         | Build packages and run all package tests on Node 20/22/24. Node 24 collects and uploads coverage; Node 20/22 run the same assertions, compiler/type checks and timeouts without coverage instrumentation. |
-| `quality.yml`                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                         |
-| `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                     |
-| `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                             |
-| `build-storybook.yml`            | Package build, story type check, one Storybook production build with its static index check, and Chromium interaction tests on a separate runner. `STORYBOOK_BROWSERS` widens the matrix; see below.      |
-| `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                         |
-| `generator-test.yml`             | Verify generation against both supported Wow versions.                                                                                                                                                    |
-| `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                  |
-| `deploy-wiki.yml`                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                        |
-| `release.yml`                    | Admit the checked-out SHA against successful full CI and trusted quality checks before build/publish.                                                                                                     |
-| `gitee-sync.yml`, `renovate.yml` | Existing repository automation; unchanged.                                                                                                                                                                |
+| Workflow                         | Responsibility                                                                                                                                                                                                                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                         | Build packages and run all package tests on Node 20/22/24. Node 24 collects and uploads coverage; Node 20/22 run the same assertions, compiler/type checks and timeouts without coverage instrumentation. Node 24 view-engine runs as three shards merged by one job; Markdown-only package changes run `Package docs`. |
+| `quality.yml`                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                                                                                                                                       |
+| `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                                                                                                                                   |
+| `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                                                                                                                                           |
+| `build-storybook.yml`            | Package build, story type check, one Storybook production build with its static index check, and Chromium interaction tests in two shards on separate runners. `STORYBOOK_BROWSERS` widens the matrix; see below.                                                                                                       |
+| `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                                                                                                                                       |
+| `generator-test.yml`             | Verify generation against both supported Wow versions.                                                                                                                                                                                                                                                                  |
+| `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                                                                                                                                |
+| `deploy-wiki.yml`                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                                                                                                                                      |
+| `release.yml`                    | Admit the checked-out SHA against successful full CI and trusted quality checks before build/publish.                                                                                                                                                                                                                   |
+| `gitee-sync.yml`, `renovate.yml` | Existing repository automation; unchanged.                                                                                                                                                                                                                                                                              |
 
 ## Scope and gates
 
@@ -27,6 +27,11 @@ verification scopes. Only known independent paths narrow the work:
 - `wiki/**`: documentation build.
 - `stories/**`, `.storybook/**`: Storybook acceptance and documentation build.
 - `integration-test/**`: integration tests and static checks.
+- Markdown anywhere under `packages/<name>/`: only the tests that read it, via
+  each package's `test:docs` script (view-engine's design pages, `AGENTS.md`
+  and README checks). A regression test requires every package test that
+  reads a `.md` file to be listed there. Markdown next to any other change
+  still runs every scope.
 - Root README/license, Markdown in `docs/**` and `skills/**`, and PR/issue templates: formatting
   and metadata checks. Changes to executable root scripts remain full scope.
 
@@ -152,6 +157,27 @@ table header reports `pointer-events: none`, and an Ant Design Select emits a
 dangling `aria-activedescendant`).
 This trades one additional setup/build for overlap. Actual wall-clock savings
 must be measured on the new CI run, not inferred from local hardware.
+
+## Shard the longest runs
+
+Node 24 view-engine (the coverage run, and the longest job) runs as
+`Node 24 / view-engine (n/3)`: three runners each run a Vitest `--shard` with
+the blob reporter. `Node 24 / view-engine` downloads the three blobs, runs
+`vitest run --merge-reports --coverage`, which holds the coverage thresholds on
+the merged report (`vitest.config.ts` skips them per shard), then `test:type`.
+The shards plus the merge run exactly the package's `test` script; a
+regression test pins that script so a new step cannot be dropped. Node 20/22
+view-engine stay unsharded.
+
+Storybook interactions run as `Storybook interactions (n/2)`, each a Vitest
+`--shard` of the same suite, with the Playwright browser download cached by
+version.
+
+Local check on 2026-09-23 (two Vitest workers): view-engine 205s unsharded,
+three shards of about 70s each whose merge reports the same 3958 tests and the
+same coverage (statements 13347/13731); Storybook 182s unsharded, two shards of
+83s and 86s adding up to the same 69 files and 486 tests. CI timings still need
+a real run.
 
 ## Isolate the heavy suites
 
