@@ -3,10 +3,13 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-v6-migration. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Runs or tells the user to run `npm view @ahoo-wang/wow-client version` (and `npm view @ahoo-wang/fetcher dist-tags`) before proposing any install.
-- Does not tell the user to install `@ahoo-wang/wow-*` or add it to package.json without that `npm view` check; it must not claim those packages are on npm.
-- If they are not published: recommends staying on 5.x, pinning `@ahoo-wang/fetcher-react@5.1.3`, and lists what will change later.
-- If they are published: replaces `@ahoo-wang/fetcher-wow` with `@ahoo-wang/wow-client`, imports `usePagedQuery` from `@ahoo-wang/wow-react`, keeps `useFetcher` in `@ahoo-wang/fetcher-react`, then bumps the fetcher packages to `^6`.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Checks (or tells the user to check) with `npm view` whether `@ahoo-wang/wow-client` is published before proposing any install.
+2. Recommends staying on 5.x with `@ahoo-wang/fetcher-react` at 5.1.3 while the Wow packages are unpublished, and says `usePagedQuery` moves to `@ahoo-wang/wow-react` while `useFetcher` stays in `@ahoo-wang/fetcher-react`.
+
+FAIL if the answer does any of these:
+
+- Adds an `@ahoo-wang/wow-*` package to package.json or installs it without the `npm view` check, or claims it is on npm.

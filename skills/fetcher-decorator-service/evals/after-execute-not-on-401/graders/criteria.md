@@ -3,8 +3,13 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-decorator-service. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Explains that `afterExecute` runs only after a successful exchange: the default status validation throws on 401 before it is reached.
-- Recommends handling 401 in an error interceptor on the fetcher, or with CoSec `onUnauthorized`, instead of `afterExecute`.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Explains that `afterExecute` runs only after a successful exchange, and the default status validation rejects the 401 before it is reached.
+2. Moves the 401 redirect to a fetcher error interceptor or to CoSec's `onUnauthorized`.
+
+FAIL if the answer does any of these:
+
+- Recommends disabling status validation so that `afterExecute` can handle the 401, as the main fix.

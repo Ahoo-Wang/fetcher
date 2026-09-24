@@ -3,8 +3,9 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-cosec-auth. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Identifies the cause: the refresh request goes through the same fetcher, so the auth interceptors try to refresh it again.
-- Fixes it by sending the refresh request with `attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]])`, or by switching to `CoSecTokenRefresher`, which already sets that attribute.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Identifies the cause: the refresh request goes through the same CoSec-configured fetcher, so its auth interceptors try to refresh the refresh call again.
+2. Fixes it by marking the refresh request with the `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` attribute, or by switching to `CoSecTokenRefresher` (which already sets it).

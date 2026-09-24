@@ -3,8 +3,13 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-llm-streaming. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Explains that `JsonEventStreamResultExtractor` passes no terminate detector, so the terminal line is parsed as JSON and throws.
-- Writes a custom `ResultExtractor` calling `exchange.requiredResponse.requiredJsonEventStream(detector)` and sets it on the endpoint.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Explains that `JsonEventStreamResultExtractor` passes no terminate detector, so the end-of-stream line (such as `[DONE]`) is parsed as JSON and throws.
+2. Replaces it on that endpoint with a custom result extractor that calls `requiredJsonEventStream(detector)` (or `jsonEventStream(detector)`) with a terminate detector.
+
+FAIL if the answer does any of these:
+
+- Claims `JsonEventStreamResultExtractor` or `ResultExtractors` accepts a detector option.

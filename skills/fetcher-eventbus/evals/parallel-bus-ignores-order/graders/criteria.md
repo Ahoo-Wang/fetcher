@@ -3,8 +3,9 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-eventbus. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- `ParallelTypedEventBus` ignores `order`.
-- Switches to `SerialTypedEventBus`, which awaits handlers one after another sorted by `order` (lower first).
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Says `ParallelTypedEventBus` ignores `order` entirely.
+2. Switches to `SerialTypedEventBus`, which awaits handlers one by one sorted by `order` (lower first).

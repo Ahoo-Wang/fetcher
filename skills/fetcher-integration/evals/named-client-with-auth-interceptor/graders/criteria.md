@@ -3,10 +3,14 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-integration. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Creates `new NamedFetcher('api', { baseURL: 'https://api.example.com', timeout: 5000 })`.
-- Registers `interceptors.request.use({ name, order, intercept })` whose `intercept(exchange)` mutates the exchange with `setHeader(exchange.ensureRequestHeaders(), 'Authorization', `Bearer ...`)` and returns nothing.
-- Other modules retrieve it with `fetcherRegistrar.get('api')` or `fetcherRegistrar.requiredGet('api')`.
-- Does not assign to `exchange.request.headers` directly.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Creates a `NamedFetcher` with a name, `baseURL: 'https://api.example.com'` and `timeout: 5000`.
+2. Registers a request interceptor with `interceptors.request.use({ name, intercept })` whose `intercept(exchange)` sets the `Authorization: Bearer <token>` header on the exchange's request, reading the token from `localStorage`.
+3. Shows other modules getting the client by name through `fetcherRegistrar` (`get` or `requiredGet`).
+
+FAIL if the answer does any of these:
+
+- Writes an Axios-style interceptor that receives and returns a config object (`use(config => config)`).

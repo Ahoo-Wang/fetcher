@@ -3,10 +3,14 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-v6-migration. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- States that `@ahoo-wang/fetcher-generator` became `@ahoo-wang/wow-generator` (command `wow-generator`; `fetcher-generator` stays an alias until Wow v10).
-- States that it is not on npm yet, so the `npm view` check comes before any install; does not tell the user to install `@ahoo-wang/wow-*` without that check.
-- Says generated code must be regenerated (it then imports `@ahoo-wang/wow-client`) or have its `@ahoo-wang/fetcher-wow` import rewritten.
-- Ends with a type-check of `src/generated`.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Says `@ahoo-wang/fetcher-generator` became `@ahoo-wang/wow-generator` (command `wow-generator`).
+2. Says to check with `npm view` whether the Wow packages are published before installing anything.
+3. Says the generated code must be regenerated (it then imports `@ahoo-wang/wow-client`) or its `@ahoo-wang/fetcher-wow` import rewritten.
+
+FAIL if the answer does any of these:
+
+- Tells the user to install an `@ahoo-wang/wow-*` package without the `npm view` check, or states a version for one.

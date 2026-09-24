@@ -1,8 +1,8 @@
 ---
 type: regex
-pattern: 'useDebouncedFetcherQuery'
+pattern: 'useDebounced(?:Fetcher)?(?:Query)?\b'
 match: contains
 target: last_message
 ---
 
-The answer names `useDebouncedFetcherQuery`.
+The answer names a debounced hook (`useDebouncedFetcherQuery`, `useDebouncedFetcher` or `useDebouncedQuery`).

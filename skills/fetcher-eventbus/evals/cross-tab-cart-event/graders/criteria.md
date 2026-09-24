@@ -3,9 +3,14 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-eventbus. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Creates the bus as `new BroadcastTypedEventBus({ delegate: new SerialTypedEventBus('cart-updated') })`.
-- Registers the audit and UI handlers with unique `name`s and an `order` so the audit handler (lower `order`) runs first on the serial delegate.
-- Notes that local handlers run first and that the sending tab does not receive its own broadcast message.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Creates the bus as a `BroadcastTypedEventBus` whose `delegate` is a `SerialTypedEventBus`.
+2. Registers the audit and UI handlers with distinct `name`s and gives the audit handler the lower `order`, so it runs first.
+
+FAIL if the answer does any of these:
+
+- Uses a `ParallelTypedEventBus` as the delegate while relying on `order`.
+- Uses raw `BroadcastChannel` or `storage` events instead of the event bus.

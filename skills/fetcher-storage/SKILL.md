@@ -1,7 +1,7 @@
 ---
 name: fetcher-storage
 description: >
-  Persist one typed value per key with `@ahoo-wang/fetcher-storage`: `KeyStorage` with defaults, serializers, change listeners, caching, `InMemoryStorage` for tests/SSR, and optional cross-tab sync through a broadcast bus. Use for "remember this setting/token/draft" or storage that must stay in sync across tabs. For notifications without a stored value use fetcher-eventbus.
+  Persist one typed value per key with `@ahoo-wang/fetcher-storage`: `KeyStorage` with defaults, serializers, change listeners, caching, `InMemoryStorage` for tests/SSR, and optional cross-tab sync through a broadcast bus. Use for "remember this setting/token/draft" or to keep a stored value such as a theme in sync across browser tabs. For notifications without a stored value use fetcher-eventbus.
 ---
 
 # fetcher-storage

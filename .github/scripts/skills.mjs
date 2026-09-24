@@ -337,6 +337,13 @@ export const GRADER_TYPES = new Set([
   'llm',
   'baseline',
 ]);
+/**
+ * Grader `arm` values `claude plugin eval` accepts. Under the default
+ * `--ablation with-without`, `with-only` graders — including any `tool_used:
+ * Skill` grader without an `arm` — are an unscored "plugin fired" indicator;
+ * `both` scores the grader in both arms.
+ */
+export const GRADER_ARMS = new Set(['with-only', 'both']);
 /** `prompt.md` frontmatter keys `claude plugin eval` reads. */
 export const PROMPT_KEYS = new Set([
   'name',
@@ -424,6 +431,11 @@ export function evalProblems(dir, skill) {
           report(graderFile, `unknown grader type '${data.type}'`);
           continue;
         }
+        if (data.arm !== undefined && !GRADER_ARMS.has(data.arm))
+          report(
+            graderFile,
+            `unknown arm '${data.arm}' (use ${[...GRADER_ARMS].join(' or ')})`,
+          );
         if (data.type === 'llm' && body.trim() === '')
           report(graderFile, 'llm grader has no criteria');
         if (data.type === 'regex' && typeof data.pattern !== 'string')
@@ -433,8 +445,17 @@ export function evalProblems(dir, skill) {
           data.tool === 'Skill' &&
           ownSkill.test(data.input_match ?? '')
         ) {
-          if (data.max === '0') negatives++;
-          else fires++;
+          if (data.max === '0') {
+            negatives++;
+            // Only the skill under test is loaded, so "it did not fire" is
+            // the whole verdict of a negative case — and without `arm: both`
+            // the ablation leaves it unscored.
+            if (data.arm !== 'both')
+              report(
+                graderFile,
+                'a negative trigger check must set `arm: both`, or `--ablation with-without` leaves it unscored',
+              );
+          } else fires++;
         }
       } catch (error) {
         report(graderFile, error.message);

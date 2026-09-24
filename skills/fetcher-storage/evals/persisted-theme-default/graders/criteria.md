@@ -3,9 +3,14 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-storage. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Creates `new KeyStorage<Theme>({ key: 'app:theme', defaultValue: { mode: 'light' } })` (the default JSON serializer is fine).
-- Logs changes with `addListener({ name, handle })`, and notes it returns a remover function.
-- Notes that `defaultValue` is not written to storage.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Creates a `KeyStorage` with a key and `defaultValue: { mode: 'light' }`.
+2. Logs changes with `addListener({ name, handle })`.
+
+FAIL if the answer does any of these:
+
+- Says `defaultValue` is written to storage when the `KeyStorage` is created.
+- Uses a listener method other than `addListener` (such as `on`, `subscribe` or `watch`).

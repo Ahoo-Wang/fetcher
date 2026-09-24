@@ -3,8 +3,13 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-llm-streaming. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Uses `toServerSentEventStream(response)` and `toJsonServerSentEventStream(stream, detector)` explicitly.
-- Does not use the side-effect import of `'@ahoo-wang/fetcher-eventstream'` or `response.eventStream()`/`jsonEventStream()`.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Says no: importing anything from `@ahoo-wang/fetcher-eventstream`, the standalone converters included, runs the module's side effect that patches `Response.prototype`.
+2. Concludes that a library which must not patch the prototype cannot depend on the package, and offers an alternative such as its own SSE parser.
+
+FAIL if the answer does any of these:
+
+- Claims that importing only the named converters avoids the prototype patch.

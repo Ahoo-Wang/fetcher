@@ -3,9 +3,14 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-openapi-types. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Narrows `Schema | Reference` with a type guard on `$ref`.
-- Looks the schema up in `components.schemas` by the name taken from the `$ref`.
-- Warns not to apply that guard to `PathItem`, which has its own `$ref` field.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Narrows `Schema | Reference` with a type guard on `$ref`.
+2. Looks the schema up in `components.schemas` by the name taken from the `$ref` (`#/components/schemas/<Name>`).
+3. Warns not to use that `$ref` check on a `PathItem`, which has its own `$ref` field.
+
+FAIL if the answer does any of these:
+
+- Imports a `$ref` resolver from `@ahoo-wang/fetcher-openapi`; the package has none.

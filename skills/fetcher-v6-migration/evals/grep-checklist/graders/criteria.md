@@ -3,9 +3,14 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-v6-migration. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Gives grep patterns for manifests and lockfiles (`fetcher-wow`, `fetcher-generator`, `fetcher-viewer`).
-- Covers imports of the moved packages, the Wow query hooks (`use(Fetcher)?(Single|List|Paged|Count|ListStream)Query` and their Options/Return types) without matching `useFetcherQuery`, the data-monitor symbols, and the `fetcher-generator` command in scripts and CI.
-- Maps each kind of hit to "stay on 5.x" or "rewrite".
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Its grep commands cover the removed packages (`fetcher-wow`, `fetcher-generator`, `fetcher-viewer`), the removed Wow query hooks and the data-monitor hooks.
+2. It says what a hit means: stay on 5.x, or move to the Wow packages once they are published.
+
+FAIL if the answer does any of these:
+
+- Treats `useFetcher`, `useFetcherQuery` or `useQuery` as removed in 6.0.
+- Tells the user to install an `@ahoo-wang/wow-*` package without checking `npm view` first.

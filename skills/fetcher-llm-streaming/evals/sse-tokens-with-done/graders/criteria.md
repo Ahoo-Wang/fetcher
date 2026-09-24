@@ -3,10 +3,13 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-llm-streaming. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Imports `'@ahoo-wang/fetcher-eventstream'` for its side effect (it patches `Response.prototype`).
-- Defines a `TerminateDetector` that stops on `'[DONE]'`.
-- Iterates `response.requiredJsonEventStream(detector)` with `for await`, reading `event.data.token`.
-- Notes that without the detector the `[DONE]` line reaches `JSON.parse` and throws.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Defines a terminate detector that stops on `[DONE]` and passes it to the JSON event stream (`requiredJsonEventStream(detector)`, `jsonEventStream(detector)` or `toJsonServerSentEventStream(stream, detector)`).
+2. Iterates with `for await` and appends `event.data.token`.
+
+FAIL if the answer does any of these:
+
+- Parses every `data:` line as JSON with no terminator, or reads `event.token` instead of `event.data.token`.

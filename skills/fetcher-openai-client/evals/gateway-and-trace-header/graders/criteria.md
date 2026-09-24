@@ -3,9 +3,13 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-openai-client. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Sets `baseURL` to the gateway URL including `/v1`.
-- Adds `openai.fetcher.interceptors.request.use({ name, order, intercept })` (with an `order`) that sets the `X-Trace-Id` header on the exchange.
-- Notes that the client only sends Bearer auth (`apiKey`).
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Sets `baseURL` to the gateway URL, including the `/v1` segment.
+2. Adds a request interceptor with `openai.fetcher.interceptors.request.use({ name, order, intercept })` that sets the `X-Trace-Id` header.
+
+FAIL if the answer does any of these:
+
+- Reassigns `openai.fetcher`, or passes a headers or `defaultHeaders` option to the `OpenAI` constructor.

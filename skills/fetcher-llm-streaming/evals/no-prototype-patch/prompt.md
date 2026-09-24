@@ -6,4 +6,4 @@ max_turns: 8
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 
-I must not patch Response.prototype in this library. How do I parse the SSE body?
+I maintain a library that must not patch Response.prototype. Can I import toServerSentEventStream / toJsonServerSentEventStream from @ahoo-wang/fetcher-eventstream to parse the SSE body without that side effect?

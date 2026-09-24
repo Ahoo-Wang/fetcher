@@ -44,7 +44,7 @@ function write(root, files) {
 }
 
 const firedGrader = (name, negative = false) =>
-  `---\ntype: tool_used\ntool: Skill\ninput_match: '"skill"\\s*:\\s*"(?:[\\w-]+:)?${name}"'\n${negative ? 'min: 0\nmax: 0\n' : ''}---\n\nFired.\n`;
+  `---\ntype: tool_used\ntool: Skill\ninput_match: '"skill"\\s*:\\s*"(?:[\\w-]+:)?${name}"'\n${negative ? 'min: 0\nmax: 0\narm: both\n' : ''}---\n\nFired.\n`;
 
 function evalCase(name, caseName, { negative = false } = {}) {
   const dir = `skills/${name}/evals/${caseName}`;
@@ -169,15 +169,23 @@ test('eval suites must be in the claude plugin eval format', () => {
     'skills/evals/evals/second/graders/criteria.md':
       '---\ntype: judge\n---\n\nx\n',
     'skills/evals/evals/second/graders/empty.md': '---\ntype: llm\n---\n\n',
+    'skills/evals/evals/second/graders/arm.md':
+      '---\ntype: regex\npattern: x\narm: without\n---\n\nx\n',
+    'skills/evals/evals/elsewhere/graders/skill.md': firedGrader(
+      'evals',
+      true,
+    ).replace('arm: both\n', ''),
     'skills/evals/evals/results/2026-01-01/aggregate-result.json': '{}',
   });
   assert.deepEqual(skillProblems(root), [
     'skills/evals/evals/evals.json: skill-creator format is not read by `claude plugin eval`; use evals/<case>/prompt.md + graders/',
+    'skills/evals/evals/elsewhere/graders/skill.md: a negative trigger check must set `arm: both`, or `--ablation with-without` leaves it unscored',
     'skills/evals/evals/first/prompt.md: unknown key turns',
     "skills/evals/evals/first/prompt.md: name 'other' ≠ directory 'first'",
     'skills/evals/evals/first/prompt.md: runs must be a positive integer',
     'skills/evals/evals/first/prompt.md: tags must be a list',
     'skills/evals/evals/first/prompt.md: prompt body is empty',
+    "skills/evals/evals/second/graders/arm.md: unknown arm 'without' (use with-only or both)",
     "skills/evals/evals/second/graders/criteria.md: unknown grader type 'judge'",
     'skills/evals/evals/second/graders/empty.md: llm grader has no criteria',
   ]);

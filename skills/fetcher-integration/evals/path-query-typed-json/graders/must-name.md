@@ -1,8 +1,8 @@
 ---
 type: regex
-pattern: 'ResultExtractors\.Json'
+pattern: 'ResultExtractors\.Json|\.json\(\)'
 match: contains
 target: last_message
 ---
 
-The answer names `ResultExtractors.Json`.
+The answer parses the body (`ResultExtractors.Json` or `.json()`).

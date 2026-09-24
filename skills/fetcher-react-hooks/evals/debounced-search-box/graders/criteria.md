@@ -3,10 +3,15 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-react-hooks. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Uses `useDebouncedFetcherQuery` with `debounce: { delay: 300 }`.
-- Sets `autoExecute: true` explicitly (it is off by default for debounced hooks).
-- Updates the keyword with `setQuery` on input and uses `run`/`cancel`/`isPending()` as needed.
-- Renders `loading`, `result` and `error`.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Uses a debounced hook from `@ahoo-wang/fetcher-react` (`useDebouncedFetcherQuery`, or `useDebouncedFetcher`/`useDebouncedQuery`) with `debounce: { delay: 300 }`.
+2. Makes it run as the user types: with a query hook, sets `autoExecute: true` explicitly and updates the keyword with `setQuery`; or calls the hook's `run(...)` from the input handler.
+3. Renders the loading, result and error states.
+
+FAIL if the answer does any of these:
+
+- Hand-rolls the debounce with `setTimeout`/`useEffect` instead of a debounced hook.
+- Uses a debounced query hook without `autoExecute: true` and without calling `run`, expecting it to fire on input.

@@ -3,8 +3,9 @@ type: llm
 weight: 1
 ---
 
-Grade the final answer against $fetcher-react-hooks. Pass only if every point holds:
+Judge only the agent's final answer. It worked in an empty, read-only directory, so ignore that it wrote no files, could not find the user's code, hedged, or asked follow-up questions: grade the code and explanation it gave. Accept any wording and any equivalent code.
 
-- Explains that `useFetcher`'s default result is the `FetchExchange`, not the parsed body.
-- Passes `resultExtractor: ResultExtractors.Json` (or reads the exchange response) to get the user.
-- Invents no API: every `@ahoo-wang/*` import, class, function, option and constant it uses is one the skill documents (in `SKILL.md` or `references/api.md`). Fail the response if it relies on a symbol, option or package that does not exist.
+PASS only if the answer does all of these:
+
+1. Explains that `useFetcher`'s default `result` is the `FetchExchange`, not the parsed body.
+2. Passes `resultExtractor: ResultExtractors.Json` to `useFetcher` (or reads the body from the exchange's response) to get the user.

@@ -1,14 +1,14 @@
 ---
 name: fetcher-llm-streaming
 description: >
-  Consume Server-Sent Events and LLM token streams with `@ahoo-wang/fetcher-eventstream`: the `Response.prototype` helpers (`eventStream`, `jsonEventStream`), standalone converters, `TerminateDetector` for `[DONE]`, SSE result extractors and `for await` iteration. Use for any SSE endpoint or non-OpenAI streaming API. For OpenAI-style chat completions use fetcher-openai-client.
+  Consume Server-Sent Events and LLM token streams with `@ahoo-wang/fetcher-eventstream`: the `Response.prototype` helpers (`eventStream`, `jsonEventStream`), standalone converters, `TerminateDetector` for `[DONE]`, SSE result extractors and `for await` iteration. Use for a custom SSE endpoint or non-OpenAI token stream. Not for OpenAI/GPT chat completions, even streamed — fetcher-openai-client handles those and their `[DONE]`.
 ---
 
 # fetcher-llm-streaming
 
 ## Decisions
 
-- **Prototype helpers vs converters**: `import '@ahoo-wang/fetcher-eventstream'` patches `Response.prototype` (`contentType`, `isEventStream`, `eventStream()`, `requiredEventStream()`, `jsonEventStream()`, `requiredJsonEventStream()`, skipping members that already exist) and polyfills `ReadableStream` async iteration. When global mutation is unwanted, use `toServerSentEventStream(response)` and `toJsonServerSentEventStream(stream, detector)`.
+- **Prototype helpers vs converters**: `import '@ahoo-wang/fetcher-eventstream'` patches `Response.prototype` (`contentType`, `isEventStream`, `eventStream()`, `requiredEventStream()`, `jsonEventStream()`, `requiredJsonEventStream()`, skipping members that already exist) and polyfills `ReadableStream` async iteration. The standalone converters `toServerSentEventStream(response)` and `toJsonServerSentEventStream(stream, detector)` avoid _calling_ the patched members, but importing them (or anything else from the package) still runs the patch — there is no side-effect-free entry. If `Response.prototype` must stay untouched, do not depend on this package.
 - **Nullable vs required**: `eventStream()` / `jsonEventStream()` return `null` for a non-SSE Content-Type; the `required*` variants throw `EventStreamConvertError` (with `.response`).
 - **OpenAI chat completions** already handle `[DONE]` and typing — use `$fetcher-openai-client` instead of rebuilding it here.
 
