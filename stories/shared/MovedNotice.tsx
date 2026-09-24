@@ -15,6 +15,11 @@ import { useId } from 'react';
 /** The Wow repository's Storybook, where the moved stories now live. */
 export const WOW_STORYBOOK = 'https://wow.ahoo.me/storybook/';
 
+/** A docs page in the Wow Storybook, by its story id (as its `index.json` lists it). */
+export function wowStory(id: string): string {
+  return `${WOW_STORYBOOK}?path=/docs/${encodeURIComponent(id)}`;
+}
+
 interface MovedNoticeProps {
   /** What used to be here, e.g. "View Engine". */
   subject: string;
@@ -31,6 +36,8 @@ interface MovedNoticeProps {
   /** Whether the packages are on npm yet, and what to use until they are. */
   availability: string;
   link: { href: string; label: string };
+  /** Direct links to the moved pages, when there are several worth naming. */
+  pages?: readonly { href: string; label: string }[];
 }
 
 /**
@@ -44,6 +51,7 @@ export function MovedNotice({
   packagesLabel = '迁移后的包名',
   availability,
   link,
+  pages = [],
 }: MovedNoticeProps) {
   const headingId = useId();
   return (
@@ -68,6 +76,17 @@ export function MovedNotice({
           <a href={link.href} target="_top">
             {link.label}
           </a>
+          {pages.length > 0 && (
+            <ul aria-label="迁移后的页面">
+              {pages.map(page => (
+                <li key={page.href}>
+                  <a href={page.href} target="_top">
+                    {page.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </article>

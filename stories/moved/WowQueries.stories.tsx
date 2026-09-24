@@ -12,7 +12,9 @@
  */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
-import { MovedNotice, WOW_STORYBOOK } from '../shared/MovedNotice.js';
+import { MovedNotice, wowStory } from '../shared/MovedNotice.js';
+
+const DOCS = wowStory('react-hooks-wow-queries--docs');
 
 const meta = {
   title: 'React Hooks/Wow Queries',
@@ -32,7 +34,7 @@ const meta = {
     packages: ['@ahoo-wang/wow-react', '@ahoo-wang/wow-client'],
     availability:
       '随 Wow 的首个稳定版发布到 npm。在此之前继续用 5.x 版本线（npm 上的 5.1.x，分支 5.x）：@ahoo-wang/fetcher-wow，以及 @ahoo-wang/fetcher-react 里的 Wow 查询 Hook。',
-    link: { href: WOW_STORYBOOK, label: '打开 Wow Storybook' },
+    link: { href: DOCS, label: '打开 Wow 查询 Hook 的文档' },
   },
 } satisfies Meta<typeof MovedNotice>;
 export default meta;
@@ -43,7 +45,7 @@ export const Moved: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole('link', { name: '打开 Wow Storybook' }),
-    ).toHaveAttribute('href', WOW_STORYBOOK);
+      canvas.getByRole('link', { name: '打开 Wow 查询 Hook 的文档' }),
+    ).toHaveAttribute('href', DOCS);
   },
 };
