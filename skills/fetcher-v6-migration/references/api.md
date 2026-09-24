@@ -25,10 +25,13 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
 - The Wow packages declare fetcher peers `^5.1.3 || ^6` (`wow-react` on
   `fetcher-react`) and `^5.1.0 || ^6` (the rest), so they can be adopted on
   5.1.3 before upgrading fetcher.
-- 6.0 changes no core API. `@ahoo-wang/fetcher`, `fetcher-decorator`,
-  `fetcher-eventbus`, `fetcher-eventstream`, `fetcher-openai`,
-  `fetcher-openapi`, `fetcher-storage` and `fetcher-cosec` are
-  source-identical to 5.1.3.
+- 6.0 makes no breaking API change to `@ahoo-wang/fetcher`,
+  `fetcher-decorator`, `fetcher-eventbus`, `fetcher-eventstream`,
+  `fetcher-openai`, `fetcher-openapi`, `fetcher-storage` or `fetcher-cosec`;
+  the only removals are in `fetcher-react` and the packages that left. These
+  packages do receive bug fixes — see **Fixed** in the 6.0 release notes
+  (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
+  longer re-running the error phase (#1249).
 
 ## Package mapping
 
