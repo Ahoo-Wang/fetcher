@@ -1,7 +1,7 @@
 ---
 name: fetcher-openai-client
 description: >
-  Call OpenAI-compatible chat completions through `@ahoo-wang/fetcher-openai`: `OpenAI` and `ChatClient`, streaming vs non-streaming results, `DoneDetector`, auth and tracing interceptors, HTTP errors. Use when code in this ecosystem talks to `/chat/completions`. For other SSE or LLM APIs use fetcher-llm-streaming; for OpenAI platform features beyond chat, consult OpenAI's docs.
+  Call OpenAI-compatible chat completions through `@ahoo-wang/fetcher-openai`: `OpenAI`, `ChatClient`, streaming vs non-streaming results, `DoneDetector`, interceptors, HTTP errors. Use whenever a Fetcher app streams or requests a chat completion from GPT or any OpenAI-compatible gateway (`/chat/completions`), including printing tokens as they arrive. For other SSE or LLM APIs use fetcher-llm-streaming; for OpenAI platform features beyond chat, consult OpenAI's docs.
 ---
 
 # fetcher-openai-client

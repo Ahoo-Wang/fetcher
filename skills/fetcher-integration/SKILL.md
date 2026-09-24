@@ -1,7 +1,7 @@
 ---
 name: fetcher-integration
 description: >
-  Set up and call the core `@ahoo-wang/fetcher` HTTP client: `Fetcher`/`NamedFetcher`, baseURL, timeouts, path and query params, request/response/error interceptors, status validation, result extractors, cancellation and the named registry. Use for "Axios-like" client setup or request-pipeline bugs. For endpoint classes use fetcher-decorator-service; for React state use fetcher-react-hooks.
+  Set up and call the core `@ahoo-wang/fetcher` HTTP client: `Fetcher`/`NamedFetcher`, baseURL, timeouts, path and query params, request/response/error interceptors, status validation, result extractors, cancellation and the named registry. Use for "Axios-like" client setup or request-pipeline bugs. Not for service classes with `@api`/`@get`/`@post` decorators (fetcher-decorator-service) or React state (fetcher-react-hooks).
 ---
 
 # fetcher-integration

@@ -1,7 +1,7 @@
 ---
 name: fetcher-react-hooks
 description: >
-  Drive React component state from requests with `@ahoo-wang/fetcher-react`: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, CoSec `SecurityProvider`/`RouteGuard`, and hooks generated from decorator services. Use for loading/error state, abort on unmount, stale-result races or search-as-you-type. Missing Wow or data-monitor hooks after upgrading: use fetcher-v6-migration.
+  Drive React component state from requests with `@ahoo-wang/fetcher-react`: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, CoSec `SecurityProvider`/`RouteGuard`, and hooks generated from decorator services. Use for React components in a Fetcher app: loading/error state, abort on unmount, stale-result races, debounced search boxes. Not when a hook is no longer exported after the Fetcher 6 upgrade — load fetcher-v6-migration instead.
 ---
 
 # fetcher-react-hooks

@@ -21,6 +21,10 @@ import { pathToFileURL } from 'node:url';
  * Engineering Quality's first step, which comes before both — and on a
  * skills-only change, which never builds packages.
  *
+ * Eval suites (`evals/<case>/prompt.md` + `graders/*.md`) are only checked for
+ * shape here; running them costs money and needs a login, so that is the
+ * local `pnpm eval:skills` (`scripts/eval-skills.mjs`), never CI.
+ *
  * Runs in Engineering Quality via `node --test .github/scripts/*.test.mjs`.
  */
 
@@ -164,6 +168,22 @@ function scalar(value, line) {
     return value.slice(1, -1).replace(/''/g, "'");
   }
   if (value.startsWith('"')) return JSON.parse(value);
+  // A flow sequence of scalars, e.g. `tags: [trigger, pitfall]`.
+  const flow = value.match(/^\[(.*)\]$/);
+  if (flow)
+    return flow[1].trim() === ''
+      ? []
+      : [
+          ...flow[1].matchAll(
+            /\s*('(?:[^']|'')*'|"(?:[^"\\]|\\.)*"|[^,]*?)\s*(?:,|$)/gy,
+          ),
+        ]
+          .filter(([match]) => match !== '')
+          .map(([, item]) => {
+            if (/^[[{]/.test(item))
+              throw new Error(`line ${line}: unsupported YAML value: ${value}`);
+            return scalar(item, line);
+          });
   if (/^[[{&*!|>@`]/.test(value))
     throw new Error(`line ${line}: unsupported YAML value: ${value}`);
   return value;
@@ -304,6 +324,157 @@ function markdownFiles(skillDir) {
   return files.filter(file => existsSync(file));
 }
 
+// -------------------------------------------------------------------- evals
+
+/** Minimum eval cases per skill. */
+export const MIN_EVAL_CASES = 3;
+/** Grader types `claude plugin eval` accepts (its schema rejects the rest). */
+export const GRADER_TYPES = new Set([
+  'regex',
+  'tool_order',
+  'tool_used',
+  'file_exists',
+  'llm',
+  'baseline',
+]);
+/**
+ * Grader `arm` values `claude plugin eval` accepts. Under the default
+ * `--ablation with-without`, `with-only` graders — including any `tool_used:
+ * Skill` grader without an `arm` — are an unscored "plugin fired" indicator;
+ * `both` scores the grader in both arms.
+ */
+export const GRADER_ARMS = new Set(['with-only', 'both']);
+/** `prompt.md` frontmatter keys `claude plugin eval` reads. */
+export const PROMPT_KEYS = new Set([
+  'name',
+  'tags',
+  'runs',
+  'max_turns',
+  'timeout_seconds',
+  'allowed_tools',
+  'model',
+  'append_system_prompt',
+  'env',
+]);
+const POSITIVE_INTEGER_KEYS = ['runs', 'max_turns', 'timeout_seconds'];
+
+/**
+ * Problems with a skill's `claude plugin eval` suite: `evals/<case>/prompt.md`
+ * plus `evals/<case>/graders/*.md`. `evals/results/` is run output and is
+ * skipped. Each problem is `[file relative to the skill, message]`.
+ */
+export function evalProblems(dir, skill) {
+  const problems = [];
+  const report = (file, message) => problems.push([file, message]);
+  const evalsDir = join(dir, 'evals');
+  if (existsSync(join(evalsDir, 'evals.json')))
+    report(
+      'evals/evals.json',
+      'skill-creator format is not read by `claude plugin eval`; use evals/<case>/prompt.md + graders/',
+    );
+  const cases = existsSync(evalsDir)
+    ? readdirSync(evalsDir, { withFileTypes: true })
+        .filter(entry => entry.isDirectory() && entry.name !== 'results')
+        .map(entry => entry.name)
+        .sort()
+    : [];
+  if (cases.length < MIN_EVAL_CASES)
+    report(
+      'evals',
+      `needs at least ${MIN_EVAL_CASES} cases (evals/<case>/prompt.md), found ${cases.length}`,
+    );
+
+  const ownSkill = new RegExp(`(?<![\\w-])${skill}(?![\\w-])`);
+  let fires = 0;
+  let negatives = 0;
+  for (const name of cases) {
+    const caseDir = join(evalsDir, name);
+    const promptFile = `evals/${name}/prompt.md`;
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name))
+      report(`evals/${name}`, 'case directory is not kebab-case');
+    if (!existsSync(join(caseDir, 'prompt.md'))) report(promptFile, 'missing');
+    else
+      try {
+        const { data, body } = frontmatter(
+          readFileSync(join(caseDir, 'prompt.md'), 'utf8'),
+        );
+        for (const key of Object.keys(data))
+          if (!PROMPT_KEYS.has(key)) report(promptFile, `unknown key ${key}`);
+        if (data.name !== undefined && data.name !== name)
+          report(promptFile, `name '${data.name}' ≠ directory '${name}'`);
+        for (const key of POSITIVE_INTEGER_KEYS)
+          if (data[key] !== undefined && !/^[1-9]\d*$/.test(data[key]))
+            report(promptFile, `${key} must be a positive integer`);
+        for (const key of ['tags', 'allowed_tools'])
+          if (data[key] !== undefined && !Array.isArray(data[key]))
+            report(promptFile, `${key} must be a list`);
+        if (body.trim() === '') report(promptFile, 'prompt body is empty');
+      } catch (error) {
+        report(promptFile, error.message);
+      }
+
+    const gradersDir = join(caseDir, 'graders');
+    const graders = existsSync(gradersDir)
+      ? readdirSync(gradersDir)
+          .filter(file => file.endsWith('.md'))
+          .sort()
+      : [];
+    if (graders.length === 0)
+      report(`evals/${name}/graders`, 'needs at least one grader');
+    for (const file of graders) {
+      const graderFile = `evals/${name}/graders/${file}`;
+      try {
+        const { data, body } = frontmatter(
+          readFileSync(join(gradersDir, file), 'utf8'),
+        );
+        if (!GRADER_TYPES.has(data.type)) {
+          report(graderFile, `unknown grader type '${data.type}'`);
+          continue;
+        }
+        if (data.arm !== undefined && !GRADER_ARMS.has(data.arm))
+          report(
+            graderFile,
+            `unknown arm '${data.arm}' (use ${[...GRADER_ARMS].join(' or ')})`,
+          );
+        if (data.type === 'llm' && body.trim() === '')
+          report(graderFile, 'llm grader has no criteria');
+        if (data.type === 'regex' && typeof data.pattern !== 'string')
+          report(graderFile, 'regex grader has no pattern');
+        if (
+          data.type === 'tool_used' &&
+          data.tool === 'Skill' &&
+          ownSkill.test(data.input_match ?? '')
+        ) {
+          if (data.max === '0') {
+            negatives++;
+            // Only the skill under test is loaded, so "it did not fire" is
+            // the whole verdict of a negative case — and without `arm: both`
+            // the ablation leaves it unscored.
+            if (data.arm !== 'both')
+              report(
+                graderFile,
+                'a negative trigger check must set `arm: both`, or `--ablation with-without` leaves it unscored',
+              );
+          } else fires++;
+        }
+      } catch (error) {
+        report(graderFile, error.message);
+      }
+    }
+  }
+  if (cases.length > 0 && fires === 0)
+    report(
+      'evals',
+      `no case asserts that ${skill} fires (a tool_used Skill grader naming it)`,
+    );
+  if (cases.length > 0 && negatives === 0)
+    report(
+      'evals',
+      `no negative case (a tool_used Skill grader naming ${skill} with max: 0)`,
+    );
+  return problems;
+}
+
 /** Every problem with the skills under `root/skills`, as readable lines. */
 export function skillProblems(root) {
   const problems = [];
@@ -346,7 +517,6 @@ export function skillProblems(root) {
       'SKILL.md',
       'references/api.md',
       'agents/openai.yaml',
-      'evals/evals.json',
     ])
       if (!existsSync(join(dir, required))) report(required, 'missing');
     if (!existsSync(join(dir, 'SKILL.md'))) continue;
@@ -433,36 +603,7 @@ export function skillProblems(root) {
         report('agents/openai.yaml', error.message);
       }
 
-    // evals/evals.json
-    const evalsFile = join(dir, 'evals/evals.json');
-    if (existsSync(evalsFile))
-      try {
-        const evals = JSON.parse(readFileSync(evalsFile, 'utf8'));
-        if (evals.skill_name !== skill)
-          report(
-            'evals/evals.json',
-            `skill_name '${evals.skill_name}' ≠ '${skill}'`,
-          );
-        if (
-          !Array.isArray(evals.evals) ||
-          evals.evals.length < 3 ||
-          evals.evals.length > 5
-        )
-          report('evals/evals.json', 'needs 3–5 evals');
-        const ids = new Set();
-        for (const [index, item] of (evals.evals ?? []).entries()) {
-          if (ids.has(item.id))
-            report('evals/evals.json', `duplicate id ${item.id}`);
-          ids.add(item.id);
-          for (const field of ['prompt', 'expected_output'])
-            if (typeof item[field] !== 'string' || item[field].trim() === '')
-              report('evals/evals.json', `evals[${index}].${field} is empty`);
-          if (!Array.isArray(item.files))
-            report('evals/evals.json', `evals[${index}].files is not a list`);
-        }
-      } catch (error) {
-        report('evals/evals.json', error.message);
-      }
+    for (const problem of evalProblems(dir, skill)) report(...problem);
 
     const texts = markdownFiles(dir).map(file => ({
       file: relative(dir, file),

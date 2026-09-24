@@ -138,3 +138,6 @@ skills/*-workspace/
 
 # isolated workspaces
 .worktrees/
+
+# claude plugin eval run output (pnpm eval:skills)
+skills/*/evals/results/
