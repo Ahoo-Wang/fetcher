@@ -339,6 +339,38 @@ describe('the follow-up menu on one group', () => {
   });
 
   /**
+   * The name says the group only while the group is in force (2026-09-23
+   * review P2): taking its chip off the applied bar used to leave the title
+   * — and 「另存为」 prefilled from it — naming a group the view no longer
+   * shows.
+   */
+  it('stops naming the group once its chip is taken off the applied bar', async () => {
+    open();
+    fireEvent.click(await groupRow());
+    fireEvent.click(await item(defaultMessages['label.drill.focus']));
+    await screen.findByRole('heading', {
+      level: 2,
+      name: 'By warehouse · Warehouse is CN',
+    });
+
+    const applied = await appliedBar();
+    fireEvent.click(
+      await within(applied).findByRole('button', {
+        name: 'Unset Warehouse is CN',
+      }),
+    );
+
+    await screen.findByRole('heading', { level: 2, name: 'By warehouse' });
+    fireEvent.click(
+      screen.getByRole('button', { name: defaultMessages['label.save.save'] }),
+    );
+    const named = await screen.findByRole('textbox', {
+      name: defaultMessages['label.save.title'],
+    });
+    expect((named as HTMLInputElement).value).toBe('By warehouse');
+  });
+
+  /**
    * A date bucket reads as its column prints it (2026-09-23 audit): the
    * heading used to be its condition, the two instants bounding the month
    * written out in full. The records it opens are named the same way.
