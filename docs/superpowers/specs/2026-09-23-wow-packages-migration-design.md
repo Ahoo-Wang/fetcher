@@ -88,7 +88,7 @@ Wow/
 - **npm 这一路**：
   - 走 OIDC 可信发布并带上 `--provenance`，不用长期有效的 token；
   - 要能重复执行：先用 `npm view <name>@<ver>` 查，已经发过的版本直接跳过，所以 Maven 成功、npm 失败时可以重跑补发；
-  - 给老版本线发补丁时，加对应的 dist-tag（比如 `--tag v9.0`），避免覆盖 `latest`。
+  - 给老版本线发补丁时，加对应的 dist-tag（比如 `--tag release-9.0`），避免覆盖 `latest`。npm 拒收能被解析成 semver 范围的 dist-tag（`v9.0`、`v5` 都会被拒），所以一律用 `release-` 前缀（2026-09-24 迁移中发现）。
 - **哪些包发布**：
   - 发布：`wow-client`、`wow-react`、`wow-generator`；
   - view-engine 稳定之前不发布：`wow-view-engine`、`wow-view-store`；
@@ -100,7 +100,7 @@ Wow/
 **Wow v9 期间保持兼容旧版，到 v10 统一清理兼容债务。** v9 期间要兼容的有两项：
 
 1. **生成器和客户端要能连 Wow 8.x 的服务端**（#1359 "support legacy and latest Wow query fields"）。
-2. **已经标记弃用的 Condition API**：`packages/wow/src/query/condition.ts` 里大约 20 处 `@deprecated`（指引改用 `FilterExpression` 和 `filter.*`），以及 `filter.ts` 里的 `QueryField`。
+2. **已经标记弃用的 Condition API**：`packages/wow/src/query/condition.ts` 里大约 20 处 `@deprecated`（指引改用 `FilterExpression` 和 `filter.*`），以及 `filter.ts` 里的 `LogicalField`（弃用的别名，现行的是 `QueryField`）。
 
 记账方式：
 
@@ -115,7 +115,7 @@ Wow/
 ### 原则
 
 1. Gradle 那几条流水线不动，JS 部分另开一组。
-2. **每条流水线都会被触发，由流水线里的一个 scope job 决定哪些 job 要跑**（从 fetcher 的 `ci-scope.mjs` 移植，遇到识别不了的路径就全部都跑）。最后用一个汇总 job `typescript-gate` 作为自主合并的依据；以后开启分支保护时，也要求它通过。现在 Wow 的 main 没有开分支保护，不会出现"检查一直卡在等待"的情况，但是否可以合并需要有一个统一的信号。
+2. **每条流水线都会被触发，由流水线里的一个 scope job 决定哪些 job 要跑**（从 fetcher 的 `ci-scope.mjs` 移植，遇到识别不了的路径就全部都跑）。最后用一个汇总 job `typescript-gate` 作为自主合并的依据；Wow 的 main 由 ruleset（16907411）保护，合并方式也由它决定；是否可以合并需要有一个统一的信号，ruleset 要求检查时也用它。
 3. **契约测试直接对着 Wow 本仓源码构建出来的服务端跑。**
 
 ### Wow 仓
@@ -137,7 +137,7 @@ renovate 把 `@ahoo-wang/fetcher*` 归成一组来升级。
 - `ci.yml` 的 suite 只剩 `core`；删掉 `generator-test.yml`；`integration-test` 只保留核心包的用例。decorator、fetcher、openai 的用例继续拿 wow-example-server 镜像当普通 HTTP 后端，这种测试时的依赖可以接受。
 - 新增 `downstream-wow.yml`：改到 Wow 会用到的核心包时触发（fetcher、decorator、eventstream、react/core、openapi）。它 checkout Wow，通过 `pnpm overrides` 把依赖链接到这次 PR 的构建产物，然后跑 Wow 的 JS 单测和类型检查。一开始只作提示，不作为必须通过的检查。
 - 发版准入检查要求的五条流水线（`ci.yml`、`quality.yml`、`build-storybook.yml`、`integration-test.yml`、`generator-test.yml`）分支过滤都加上 `5.x`，否则 5.x 分支的提交没有这些 push 运行，发版准入检查就过不去（`release-admission.mjs` 的 `requiredWorkflows`；3′ 删掉 `generator-test.yml` 时要从这张表里一起拿掉）。
-- fetcher 6.0 发布以后，`5.x` 的补丁一律加 `--tag v5` 发布（现在的 `publish-npm.sh` 没有指定 dist-tag），否则会把 `latest` 改回 5.x。
+- fetcher 6.0 发布以后，`5.x` 的补丁一律加 `--tag release-5` 发布（现在的 `publish-npm.sh` 没有指定 dist-tag；`v5` 会被 npm 拒收，见「发布策略」），否则会把 `latest` 改回 5.x。这一改在 `5.x` 分支上、随第 4a 步做：6.0 发布之前 5.x 的补丁仍发到 `latest`。
 
 ### 耗时预期
 
@@ -202,7 +202,7 @@ Wow 文档站（wow.ahoo.me，VitePress）已经这样挂了一份 dokka：放�
 | 4a   | 两边    | Wow 发出**首个稳定版**之后，fetcher 发 6.0。首个稳定版的判据：①wow-client、wow-react、wow-generator 发出第一个正式（非预发布）版本；②这个版本上的契约测试全部通过，包括 8.x 矩阵；③`wow-project-template/client` 已经切换到新包，并且端到端跑通。6.0 发布当天：wiki 里 wow 和 generator 的页面改成指向 Wow 文档的跳转页；viewer 的使用指南标注"仅适用于 5.x"；对 fetcher-wow、fetcher-generator 执行 `npm deprecate`（对外操作，执行前向用户确认） |
 | 4b   | 两边    | view-engine 正式发布后：停止维护 `5.x`，对 fetcher-viewer 执行 `npm deprecate`；Wow 把 view-engine 和 view-store 从 `incubatingProjects` 与 npm 的排除名单里拿掉                                                                                                                                                                                                                                                                                   |
 
-**带历史迁移**：在一个临时的 fetcher 克隆里跑 `git filter-repo`（本机已通过 Homebrew 安装 2.47.0），用 `--path-rename` 映射到 `typescript/…`，用 `--message-callback` 把提交信息里的 `(#1234)` 改写成 `(Ahoo-Wang/fetcher#1234)`，否则这些编号在 Wow 里会链接到别的 PR。**Wow 仓现在只允许 squash 和 rebase 合并**（`allow_merge_commit: false`）。squash 会把历史压成一个提交，rebase 要重放上千个提交。所以第 2、3 步的导入 PR 需要**临时开启 merge commit**。用户已于 2026-09-23 开启；W3 合并后由用户关掉。开启期间，其余 PR 一律显式用 `gh pr merge --squash` 合并。
+**带历史迁移**：在一个临时的 fetcher 克隆里跑 `git filter-repo`（本机已通过 Homebrew 安装 2.47.0），用 `--path-rename` 映射到 `typescript/…`，用 `--message-callback` 把提交信息里的 `(#1234)` 改写成 `(Ahoo-Wang/fetcher#1234)`，否则这些编号在 Wow 里会链接到别的 PR。**Wow 仓现在只允许 squash 和 rebase 合并**（`allow_merge_commit: false`）。squash 会把历史压成一个提交，rebase 要重放上千个提交。所以第 2、3 步的导入 PR 需要**临时开启 merge commit**。用户已于 2026-09-23 开启；实际起作用的是 main 的 ruleset 16907411，2026-09-24 经用户同意在 ruleset 里临时允许 merge commit，W3 合并后恢复。开启期间，其余 PR 一律显式用 `gh pr merge --squash` 合并。
 
 ## 任务分派
 
@@ -229,5 +229,5 @@ Wow 文档站（wow.ahoo.me，VitePress）已经这样挂了一份 dokka：放�
 - `react/src/wow` 的相对引用只指向 `core`、`fetcher`，两者都已经从 fetcher-react 公开导出。
 - `generator-test.yml` 的 8.10.8、8.11.5 矩阵由 #1359 建立，这两个版本分别对应旧版和新版查询字段。
 - Wow 的 `package-deploy.yml` 已经有 preflight 和三路发布的结构，可以直接在上面扩展。
-- Wow 的 main 分支没有开分支保护，只允许 squash 和 rebase 合并。
+- Wow 的 main 分支由 ruleset 16907411 保护，允许的合并方式由它决定（原来写「没开分支保护」不准确，2026-09-24 迁移中更正；W2、W3 的导入期间经用户同意临时允许 merge commit，W3 合并后恢复）。
 - 本机的下游项目：`wow-project-template/client`、`CoSky/dashboard`、`PrajnaBot/client`、`ai/client` 用了 fetcher-wow 或 fetcher-generator，脚本里写的是 `fetcher-generator generate`；这几个项目都没有用 dataMonitor。
