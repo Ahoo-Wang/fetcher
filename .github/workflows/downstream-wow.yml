@@ -1,0 +1,115 @@
+# Advisory: does Wow's TypeScript still build and pass against this commit's
+# core packages? The Wow packages (wow-client, wow-react, wow-view-engine,
+# wow-generator) moved to Ahoo-Wang/Wow under typescript/ and depend on the
+# published fetcher packages; this runs them against the packages built here
+# first. Not a required check — a failure says Wow will need a change when it
+# picks up this fetcher version.
+name: Downstream Wow
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/fetcher/**'
+      - 'packages/decorator/**'
+      - 'packages/eventstream/**'
+      - 'packages/openapi/**'
+      # @ahoo-wang/wow-react imports only these two subpaths.
+      - 'packages/react/src/core/**'
+      - 'packages/react/src/fetcher/**'
+      - 'packages/react/package.json'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/downstream-wow.yml'
+      - '.github/scripts/downstream-overrides.mjs'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/fetcher/**'
+      - 'packages/decorator/**'
+      - 'packages/eventstream/**'
+      - 'packages/openapi/**'
+      - 'packages/react/src/core/**'
+      - 'packages/react/src/fetcher/**'
+      - 'packages/react/package.json'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/downstream-wow.yml'
+      - '.github/scripts/downstream-overrides.mjs'
+  workflow_dispatch:
+    inputs:
+      wow-ref:
+        description: Ahoo-Wang/Wow branch, tag or SHA to test against
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  wow-typescript:
+    name: Wow TypeScript against this fetcher
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fetcher
+        uses: actions/checkout@v7
+        with:
+          path: fetcher
+          persist-credentials: false
+
+      - name: Checkout Wow
+        uses: actions/checkout@v7
+        with:
+          repository: Ahoo-Wang/Wow
+          ref: ${{ inputs.wow-ref || 'main' }}
+          path: wow
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10.34.5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Build fetcher packages
+        working-directory: fetcher
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm -r --filter './packages/*' build
+
+      # pnpm pack rewrites workspace: and catalog: ranges, so each tarball
+      # installs in Wow like the package npm would serve.
+      - name: Pack fetcher packages
+        working-directory: fetcher
+        run: |
+          mkdir -p "$RUNNER_TEMP/fetcher-packs"
+          for package in packages/*/; do
+            (cd "$package" && pnpm pack --pack-destination "$RUNNER_TEMP/fetcher-packs")
+          done
+
+      - name: Override Wow's fetcher dependencies with the packed builds
+        run: node fetcher/.github/scripts/downstream-overrides.mjs "$RUNNER_TEMP/fetcher-packs" wow
+
+      # The overrides change resolution, so Wow's lockfile cannot be frozen.
+      - name: Install Wow
+        working-directory: wow
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build Wow TypeScript packages
+        working-directory: wow
+        run: pnpm build:typescript
+
+      - name: Type-check Wow TypeScript packages
+        working-directory: wow
+        run: pnpm typecheck
+
+      - name: Run Wow TypeScript unit tests
+        working-directory: wow
+        run: pnpm test

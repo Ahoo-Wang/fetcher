@@ -1,9 +1,0 @@
----
-# Generated code snapshots (generator e2e baselines) and generator output are
-# not hand-written source — linting them produces noise, not signal.
-exclude_paths:
-  - 'packages/generator/expected/**'
-  - 'packages/generator/test-output/**'
-  # Vendored from the shadcn registry, updated with `shadcn add --diff`.
-  - 'packages/view-engine/src/ui/components/**'
-  - 'packages/view-engine/src/ui/lib/**'

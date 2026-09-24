@@ -13,10 +13,7 @@
 - [Generic Query Hooks](#generic-query-hooks)
   - [useQuery](#usequery)
   - [useQueryState](#usequerystate)
-- [Wow Query Hooks](#wow-query-hooks)
-  - [useListQuery](#uselistquery)
-  - [usePagedQuery / useSingleQuery / useCountQuery / useListStreamQuery](#usepagedquery--usesinglequery--usecountquery--useliststreamquery)
-  - [Fetcher-based Variants](#fetcher-based-variants)
+- [Wow Query Hooks (moved)](#wow-query-hooks-moved)
 - [Utility Hooks](#utility-hooks)
   - [useMounted](#usemounted)
   - [useLatest](#uselatest)
@@ -28,9 +25,6 @@
   - [useImmerKeyStorage](#useimmerkeystorage)
 - [Event Hooks](#event-hooks)
   - [useEventSubscription](#useeventsubscription)
-- [Data Monitor Hooks](#data-monitor-hooks)
-  - [useDataMonitor](#usedatamonitor)
-  - [useDataMonitorEventBus](#usedatamonitoreventbus)
 - [API Hooks Generation](#api-hooks-generation)
   - [createExecuteApiHooks](#createexecuteapihooks)
   - [createQueryApiHooks](#createqueryapihooks)
@@ -47,8 +41,6 @@ usePromiseState          (raw state machine: PromiseStatus transitions)
         ├─> useFetcher         (HTTP-specific: wraps Fetcher with FetchExchange)
         │     └─> useFetcherQuery  (POST query with setQuery/getQuery)
         └─> useQuery           (generic query with custom execute function)
-              ├─> useListQuery / usePagedQuery / useSingleQuery / useCountQuery / useListStreamQuery
-              └─> useFetcherListQuery / useFetcherPagedQuery / ... (Fetcher-based variants)
 ```
 
 ---
@@ -226,65 +218,14 @@ const { getQuery, setQuery } = useQueryState<UserQuery>({
 
 ---
 
-## Wow Query Hooks
+## Wow Query Hooks (moved)
 
-Wow-specific query hooks from `@ahoo-wang/fetcher-react`. These wrap `useQuery`
-with Wow request unions (`ListQueryRequest`, `PagedQueryRequest`, etc.), so both
-`FilterExpression` queries and deprecated `Condition` queries are accepted. They
-require a custom `execute` function.
-
-The hooks preserve the concrete request subtype across `initialQuery`, `execute`,
-`getQuery`, and `setQuery`. Existing generic option/return types default to the
-legacy query subtype; passing a filter query selects the filter-specific overload.
-
-### useListQuery
-
-```tsx
-const { result, loading, execute, setQuery } = useListQuery<
-  User,
-  'id' | 'name'
->({
-  initialQuery: {
-    filter: filter.matchAll(),
-    projection: {},
-    sort: [],
-    limit: 10,
-  },
-  execute: async listQuery => fetchListData(listQuery),
-  autoExecute: true,
-});
-```
-
-### usePagedQuery / useSingleQuery / useCountQuery / useListStreamQuery
-
-Same pattern, typed for paged results, single items, counts, and streams
-respectively. Count hooks accept `FilterExpression | Condition`; the other hooks
-use their corresponding `*QueryRequest` union.
-
-### Fetcher-based Variants
-
-These use `useFetcherQuery` internally (POST-based) and take a `url` option instead of a custom `execute`:
-
-- `useFetcherListQuery` - POST list query via Fetcher
-- `useFetcherPagedQuery` - POST paged query via Fetcher
-- `useFetcherSingleQuery` - POST single query via Fetcher
-- `useFetcherCountQuery` - POST count query via Fetcher
-- `useFetcherListStreamQuery` - POST stream query via Fetcher
-
-```tsx
-const { result, loading, execute, setQuery } = useFetcherListQuery<
-  User,
-  keyof User
->({
-  url: '/api/users/list',
-  initialQuery: listQuery({
-    filter: filter.matchAll(),
-    sort: [desc('createdAt')],
-    limit: 10,
-  }),
-  autoExecute: true,
-});
-```
+The Wow query hooks (`useListQuery`, `usePagedQuery`, `useSingleQuery`,
+`useCountQuery`, `useListStreamQuery` and their `useFetcher*` variants) moved to
+`@ahoo-wang/wow-react` in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript),
+versioned with Wow. It builds on `@ahoo-wang/fetcher-react/core` and
+`@ahoo-wang/fetcher-react/fetcher`. `@ahoo-wang/fetcher-react` 5.x still exports
+them, together with the retired data-monitor hooks.
 
 ---
 
@@ -389,43 +330,6 @@ useEventSubscription({
   handler: { name: 'myEvent', handle: event => console.log(event) },
 });
 // auto-subscribes on mount, unsubscribes on unmount
-```
-
----
-
-## Data Monitor Hooks
-
-### useDataMonitor
-
-Monitors data changes via periodic count queries with notification support.
-Set `notification.title` and an optional `notification.navigationUrl`. Clicking
-a browser notification focuses its receiving window and follows HTTP/HTTPS
-navigation. Relative URLs resolve against the receiving page; invalid URLs and
-other protocols are ignored. Each context sends its polling notifications locally,
-so parallel monitors do not rebroadcast the same notification to each other.
-Notification construction and delivery failures do not prevent data-change events.
-
-```tsx
-import { useDataMonitor } from '@ahoo-wang/fetcher-react';
-import { eq } from '@ahoo-wang/fetcher-wow';
-
-const { isEnabled, enable, disable, toggle } = useDataMonitor({
-  viewId: 'orders',
-  countUrl: '/api/orders/count',
-  viewName: 'Orders',
-  condition: eq('status', 'pending'),
-  notification: { title: 'New Orders', navigationUrl: '/orders' },
-  interval: 30000,
-});
-```
-
-### useDataMonitorEventBus
-
-Subscribe to `DataChangedEvent` across components.
-
-```tsx
-const { subscribe, unsubscribe } = useDataMonitorEventBus();
-subscribe({ name: 'onDataChanged', handle: event => console.log(event) });
 ```
 
 ---
@@ -576,24 +480,9 @@ import {
   useImmerKeyStorage,
   // Events
   useEventSubscription,
-  // Wow queries (require custom execute function)
-  useListQuery,
-  usePagedQuery,
-  useSingleQuery,
-  useCountQuery,
-  useListStreamQuery,
-  // Wow fetcher queries (POST-based, take url option)
-  useFetcherListQuery,
-  useFetcherPagedQuery,
-  useFetcherSingleQuery,
-  useFetcherCountQuery,
-  useFetcherListStreamQuery,
   // API generation
   createExecuteApiHooks,
   createQueryApiHooks,
-  // Data monitor
-  useDataMonitor,
-  useDataMonitorEventBus,
   // Security
   SecurityProvider,
   useSecurity,

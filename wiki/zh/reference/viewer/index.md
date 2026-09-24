@@ -34,7 +34,7 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-decorato
 
 运行步骤、服务夹具与预期结果见[接入指南](../../guides/viewer/index.md).
 
-<<< @/../stories/docs/LocalViewer.tsx
+该文件在维护 `@ahoo-wang/fetcher-viewer` 的 `5.x` 分支上：[`stories/docs/LocalViewer.tsx`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/stories/docs/LocalViewer.tsx)。
 
 ## 专题
 

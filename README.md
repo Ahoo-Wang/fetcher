@@ -16,8 +16,8 @@
 
 Fetcher is a TypeScript HTTP-client ecosystem built around the platform
 `fetch` API. Start with typed requests, interceptors, timeouts, and streaming;
-add React, OpenAPI generation, authentication, Wow CQRS, or data-viewer packages
-only when the application needs them.
+add React, OpenAPI types, authentication, or storage packages only when the
+application needs them.
 
 ## Install
 
@@ -60,24 +60,37 @@ try {
 
 ## Choose packages by job
 
-| Job                                          | Package                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------ |
-| HTTP client and interceptors                 | `@ahoo-wang/fetcher`                                               |
-| Declarative service classes                  | `@ahoo-wang/fetcher-decorator`                                     |
-| Typed events                                 | `@ahoo-wang/fetcher-eventbus`                                      |
-| Server-Sent Events                           | `@ahoo-wang/fetcher-eventstream`                                   |
-| OpenAI Chat Completions                      | `@ahoo-wang/fetcher-openai`                                        |
-| OpenAPI TypeScript types                     | `@ahoo-wang/fetcher-openapi`                                       |
-| OpenAPI client generation                    | `@ahoo-wang/fetcher-generator`                                     |
-| React hooks                                  | `@ahoo-wang/fetcher-react`                                         |
-| Typed storage                                | `@ahoo-wang/fetcher-storage`                                       |
-| CoSec authentication                         | `@ahoo-wang/fetcher-cosec`                                         |
-| Wow commands and queries                     | `@ahoo-wang/fetcher-wow`                                           |
-| Data views (new projects)                    | [`@ahoo-wang/fetcher-view-engine`](packages/view-engine/README.md) |
-| Legacy Viewer (maintenance mode, deprecated) | [`@ahoo-wang/fetcher-viewer`](packages/viewer/README.md)           |
+| Job                          | Package                          |
+| ---------------------------- | -------------------------------- |
+| HTTP client and interceptors | `@ahoo-wang/fetcher`             |
+| Declarative service classes  | `@ahoo-wang/fetcher-decorator`   |
+| Typed events                 | `@ahoo-wang/fetcher-eventbus`    |
+| Server-Sent Events           | `@ahoo-wang/fetcher-eventstream` |
+| OpenAI Chat Completions      | `@ahoo-wang/fetcher-openai`      |
+| OpenAPI TypeScript types     | `@ahoo-wang/fetcher-openapi`     |
+| React hooks                  | `@ahoo-wang/fetcher-react`       |
+| Typed storage                | `@ahoo-wang/fetcher-storage`     |
+| CoSec authentication         | `@ahoo-wang/fetcher-cosec`       |
 
 [Choose packages](https://fetcher.ahoo.me/architecture/package-boundaries) explains peer
 dependencies and the smallest useful combination.
+
+### Moved to the Wow repository
+
+The packages coupled to Wow now live in the
+[Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), are
+versioned with Wow, and depend on the fetcher packages above:
+
+| Was                                      | Now                                                                                    |
+| ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-wow`                 | `@ahoo-wang/wow-client`                                                                |
+| Wow query hooks in `fetcher-react`       | `@ahoo-wang/wow-react`                                                                 |
+| `@ahoo-wang/fetcher-generator`           | `@ahoo-wang/wow-generator` (command `wow-generator`)                                   |
+| `@ahoo-wang/fetcher-view-engine`         | `@ahoo-wang/wow-view-engine`                                                           |
+| `@ahoo-wang/fetcher-viewer` (deprecated) | Not moved: frozen on the [`5.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/5.x) |
+
+The fetcher 5.x line, including these packages, keeps receiving fixes from the
+`5.x` branch.
 
 ## Learn and build
 

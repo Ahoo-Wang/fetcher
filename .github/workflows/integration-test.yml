@@ -1,4 +1,6 @@
 # Integration Test Workflow
+# Core packages against real HTTP services (JSONPlaceholder, an optional LLM
+# provider). The Wow client and generated-code cases run in the Wow repository.
 name: Integration Test
 
 on:
@@ -23,33 +25,6 @@ jobs:
     if: needs.changes.outputs.integration == 'true'
     timeout-minutes: 20
     runs-on: ubuntu-latest
-    services:
-      mongo:
-        image: mongo:8.3.11
-        ports:
-          - 27017:27017
-        env:
-          MONGO_INITDB_ROOT_USERNAME: root
-          MONGO_INITDB_ROOT_PASSWORD: root
-          MONGO_INITDB_DATABASE: wow_example_db
-        options: >-
-          --health-cmd="mongosh -u root -p root --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-      wow:
-        image: ghcr.io/ahoo-wang/wow-example-server:9.1.5
-        ports:
-          - 8080:8080
-        env:
-          SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchClientAutoConfiguration,org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration
-          SPRING_MONGODB_URI: mongodb://root:root@mongo:27017/wow_example_db?authSource=admin&maxIdleTimeMS=60000
-          WOW_EVENTSOURCING_STORE_STORAGE: mongo
-          WOW_EVENTSOURCING_SNAPSHOT_STORAGE: mongo
-        options: --health-cmd "curl -f http://localhost:8080/actuator/health"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -71,11 +46,7 @@ jobs:
       - name: Build
         run: pnpm --filter @ahoo-wang/fetcher-integration-test... build
 
-      - name: Generate Code
-        working-directory: ./integration-test
-        run: node ../packages/generator/dist/cli.js generate -i http://localhost:8080/v3/api-docs
-
-      - name: Check generated integration types
+      - name: Check integration types
         working-directory: ./integration-test
         run: pnpm exec tsc --noEmit --incremental false --composite false
 

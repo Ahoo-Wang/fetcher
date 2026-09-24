@@ -32,7 +32,7 @@ This explicitly includes the complete declared Viewer peer graph, including CoSe
 
 Create `src/LocalViewer.tsx` with the entire file below. It includes the data, definition, saved views and application component; no Storybook fixture is required.
 
-<<< @/../stories/docs/LocalViewer.tsx
+The file lives on the `5.x` branch, where `@ahoo-wang/fetcher-viewer` is maintained: [`stories/docs/LocalViewer.tsx`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/stories/docs/LocalViewer.tsx).
 
 Replace `src/main.tsx` with this complete entry. The scaffold's `index.html` already provides `<div id="root"></div>`; the default demo CSS is not imported.
 

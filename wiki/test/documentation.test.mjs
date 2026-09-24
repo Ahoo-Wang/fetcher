@@ -128,7 +128,6 @@ test('LLM corpus expands the actual shared examples', () => {
   for (const path of [
     'examples/http/client.ts',
     '../stories/docs/ReactRequests.tsx',
-    '../stories/docs/LocalViewer.tsx',
   ]) {
     const source = readFileSync(
       new URL(`../${path}`, import.meta.url),

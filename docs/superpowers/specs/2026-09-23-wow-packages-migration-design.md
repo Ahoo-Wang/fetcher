@@ -2,7 +2,9 @@
 
 ## 状态与依据
 
-方案已与用户逐条确认（2026-09-23），经两轮自审，补充项均已并入。**尚未动手**；执行从「时机与步骤」开始。
+方案已与用户逐条确认（2026-09-23），经两轮自审，补充项均已并入。执行见「时机与步骤」。
+
+**进度（2026-09-24）**：第 3′ 步完成——fetcher 这边删掉了已迁走的路径、viewer 与 dataMonitor，suite 只剩 core，加了依赖方向检查与 `downstream-wow.yml`。此后的实时进度以 Wow 仓的 `typescript/MIGRATION.md` 为准，本文不再更新。
 
 - Fetcher 基线：`2f47af0f7`（#1849）。Wow 基线：`8eb3fe580`（#3277），版本 `9.1.5`。
 - 耦合度：2026-03 以来 wow 相关路径（`packages/wow`、`view-engine`、`generator`、`viewer`、`react/src/wow`、`react/src/dataMonitor`）共 547 个非合并提交，其中只有 13 个同时改了核心包源码（约 2.4%）；view-engine 的 341 个提交里只有 4 个动了别的包。

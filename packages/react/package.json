@@ -70,15 +70,9 @@
     "@ahoo-wang/fetcher-eventstream": "workspace:^5.0.0",
     "@ahoo-wang/fetcher-eventbus": "workspace:^5.0.0",
     "@ahoo-wang/fetcher-storage": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-wow": "workspace:^",
     "@ahoo-wang/fetcher-cosec": "workspace:^5.0.0",
     "react": "catalog:",
     "react-dom": "catalog:"
-  },
-  "peerDependenciesMeta": {
-    "@ahoo-wang/fetcher-wow": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

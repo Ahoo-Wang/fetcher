@@ -55,7 +55,7 @@ src/
 - **Pure Type Definitions**: This package contains only TypeScript type definitions — no runtime code
 - **OpenAPI 3.x**: Types model the OpenAPI 3.0+ specification
 - **No Dependencies**: Standalone package with no internal or external dependencies
-- **Consumed by**: fetcher-generator for code generation, and any package needing OpenAPI type safety
+- **Consumed by**: `@ahoo-wang/wow-generator` (Wow repository) for code generation, and any package needing OpenAPI type safety
 
 ## Dependencies
 

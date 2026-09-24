@@ -1,8 +1,7 @@
 # `@ahoo-wang/fetcher-react`
 
-React hooks for Fetcher requests, query state, storage, events, Wow queries,
-CoSec security, and data monitoring. Use them when a component should own async
-state and cancellation.
+React hooks for Fetcher requests, query state, storage, events, and CoSec
+security. Use them when a component should own async state and cancellation.
 
 ## Install
 
@@ -11,7 +10,15 @@ pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 ```
 
 Install the peer package for each integration you import: event stream, event
-bus, storage, Wow, or CoSec.
+bus, storage, or CoSec.
+
+> **Wow query hooks have moved.** `useSingleQuery`, `useListQuery`,
+> `usePagedQuery`, `useCountQuery`, `useListStreamQuery` and the other Wow
+> hooks now live in `@ahoo-wang/wow-react`, published from the
+> [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) and
+> versioned with Wow. The data-monitor hooks (`useDataMonitor`,
+> `DataMonitorService`) were retired with `@ahoo-wang/fetcher-viewer`. Both
+> remain available in `@ahoo-wang/fetcher-react` 5.x.
 
 ## Example
 
@@ -50,9 +57,7 @@ export function UserProfile({ id }: { id: string }) {
 - Fetcher: request execution, JSON queries, manual or debounced refresh.
 - API objects: derive execute/query hooks from promise-returning methods.
 - State: typed KeyStorage and event-bus subscriptions.
-- Wow: single, list, paged, count, and list-stream queries.
 - CoSec: security provider, user state, and route guards.
-- Monitoring: polling and data-change notifications.
 
 ## Documentation
 
@@ -66,7 +71,7 @@ export function UserProfile({ id }: { id: string }) {
 
 Generic hooks are also available through the ESM subpath `@ahoo-wang/fetcher-react/core`, including `useExecutePromise`, `useQuery`, and `useDebouncedCallback`. This entry avoids loading HTTP, security, storage and event integrations just to use core hooks. Existing root ESM/UMD exports remain unchanged.
 
-The fetcher hooks (`useFetcher`, `useFetcherQuery` and their debounced forms) are also available through `@ahoo-wang/fetcher-react/fetcher`. Its types and modules load no Wow, security, storage or event integration, which is what integrations built on these hooks — such as the Wow hooks after they move to the Wow repository — should import. `@ahoo-wang/fetcher-wow` is an optional peer: the root entry only references its types.
+The fetcher hooks (`useFetcher`, `useFetcherQuery` and their debounced forms) are also available through `@ahoo-wang/fetcher-react/fetcher`. Its types and modules load no security, storage or event integration, which is what integrations built on these hooks — such as `@ahoo-wang/wow-react` — import.
 
 `useExecutePromise.abort()` invalidates the active request before cancellation callbacks run. A source that ignores AbortSignal cannot publish late success/error, and asynchronous onAbort callbacks cannot reorder newer executions.
 

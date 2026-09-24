@@ -9,7 +9,7 @@ import { scopes } from './ci-scope.mjs';
 
 test('shared source, configuration and unknown paths run every gate', () => {
   for (const path of [
-    'packages/wow/src/index.ts',
+    'packages/fetcher/src/index.ts',
     'pnpm-lock.yaml',
     '.github/workflows/ci.yml',
     'scripts/build.mjs',
@@ -24,34 +24,26 @@ test('isolated changes retain their relevant validation', () => {
     code: false,
     storybook: false,
     integration: false,
-    generator: false,
     wiki: true,
-    docs: false,
   });
   assert.deepEqual(scopes(['stories/order.tsx']), {
     code: false,
     storybook: true,
     integration: false,
-    generator: false,
     wiki: true,
-    docs: false,
   });
   assert.equal(scopes(['integration-test/package.json']).integration, true);
-  assert.deepEqual(scopes(['packages/view-engine/docs/design/decisions.md']), {
-    code: false,
-    storybook: false,
-    integration: false,
-    generator: false,
-    wiki: false,
-    docs: true,
-  });
-  assert.equal(scopes(['packages/wow/README.zh-CN.md']).docs, true);
+  for (const path of [
+    'packages/react/README.zh-CN.md',
+    'packages/fetcher/docs/design.md',
+  ])
+    assert.ok(
+      Object.values(scopes([path])).every(value => !value),
+      `${path} is documentation only`,
+    );
   assert.ok(
     Object.values(
-      scopes([
-        'packages/view-engine/README.md',
-        'packages/view-engine/src/a.ts',
-      ]),
+      scopes(['packages/react/README.md', 'packages/react/src/a.ts']),
     ).every(Boolean),
     'Markdown next to a source change still runs every gate',
   );

@@ -34,7 +34,7 @@ This reference targets 5.0.0. The library package declares Node >=18.20.8; repos
 
 For setup, fixtures and expected results follow [the guide](../../guides/viewer/index.md).
 
-<<< @/../stories/docs/LocalViewer.tsx
+The file lives on the `5.x` branch, where `@ahoo-wang/fetcher-viewer` is maintained: [`stories/docs/LocalViewer.tsx`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/stories/docs/LocalViewer.tsx).
 
 ## Topics
 

@@ -32,7 +32,7 @@ pnpm add @ahoo-wang/fetcher@5.0.0 @ahoo-wang/fetcher-viewer@5.0.0 \
 
 创建 `src/LocalViewer.tsx`，复制下列完整文件。数据、定义、已保存视图和应用组件都在其中，无需 Storybook fixture。
 
-<<< @/../stories/docs/LocalViewer.tsx
+该文件在维护 `@ahoo-wang/fetcher-viewer` 的 `5.x` 分支上：[`stories/docs/LocalViewer.tsx`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/stories/docs/LocalViewer.tsx)。
 
 将 `src/main.tsx` 替换为以下完整入口。脚手架的 `index.html` 已包含 `<div id="root"></div>`；这里不导入默认演示 CSS。
 

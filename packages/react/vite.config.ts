@@ -43,7 +43,6 @@ export default defineConfig({
         '@ahoo-wang/fetcher-eventstream',
         '@ahoo-wang/fetcher-eventbus',
         '@ahoo-wang/fetcher-storage',
-        '@ahoo-wang/fetcher-wow',
         '@ahoo-wang/fetcher-cosec',
       ],
       output: {
@@ -60,7 +59,6 @@ export default defineConfig({
           '@ahoo-wang/fetcher-eventstream': 'FetcherEventStream',
           '@ahoo-wang/fetcher-eventbus': 'FetcherEventBus',
           '@ahoo-wang/fetcher-storage': 'FetcherStorage',
-          '@ahoo-wang/fetcher-wow': 'FetcherWow',
           '@ahoo-wang/fetcher-cosec': 'FetcherCoSec',
         },
       },

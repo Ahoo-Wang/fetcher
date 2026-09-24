@@ -11,18 +11,6 @@
  * limitations under the License.
  */
 
-import type {
-  CommandResult,
-  MaterializedSnapshot,
-} from '@ahoo-wang/fetcher-wow';
-import { CommandStage, ErrorCodes, FunctionKind } from '@ahoo-wang/fetcher-wow';
-import type { ViewState, ViewType } from '@ahoo-wang/fetcher-viewer';
-import {
-  fixturePagedUsers,
-  fixtureViewerDefinition,
-  fixtureViews,
-} from './viewer';
-
 export interface FixtureUser {
   id: string;
   name: string;
@@ -39,13 +27,6 @@ export const fixtureSseChunks: readonly string[] = [
   'event: message\nid: chunk-2\ndata: {"id":"chat-1","choices":[{"index":0,"delta":{"content":" Fetcher"},"finish_reason":null}]}\n\n',
   'data: [DONE]\n\n',
 ];
-
-export type ViewerFixtureScenario =
-  | 'success'
-  | 'loading'
-  | 'missing-definition'
-  | 'definition-error'
-  | 'empty-views';
 
 function jsonResponse(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
@@ -91,68 +72,8 @@ function toRequest(input: RequestInfo | URL, init?: RequestInit): Request {
   return new Request(url, init);
 }
 
-function viewSnapshot(
-  view: ViewState,
-  tenantId = '(0)',
-  ownerId = view.type === 'SHARED' ? '(shared)' : '(0)',
-): MaterializedSnapshot<ViewState> {
-  return {
-    contextName: 'viewer',
-    aggregateName: 'view',
-    aggregateId: view.id,
-    tenantId,
-    ownerId,
-    spaceId: '(0)',
-    version: 1,
-    eventId: `event-${view.id}-1`,
-    firstOperator: 'fixture',
-    operator: 'fixture',
-    firstEventTime: 0,
-    eventTime: 0,
-    snapshotTime: 0,
-    tags: {},
-    deleted: false,
-    state: view,
-  };
-}
-
-function installFixture(
-  viewerScenario: ViewerFixtureScenario,
-  slowResponseDelay = 80,
-): () => void {
+function installFixture(slowResponseDelay = 80): () => void {
   const originalFetch = globalThis.fetch;
-  let pagedRequestCount = 0;
-  let commandCount = 0;
-  const views = viewerScenario === 'empty-views' ? [] : fixtureViews;
-  const snapshots = views.map(view => viewSnapshot(view));
-
-  const commandResult = (
-    snapshot: MaterializedSnapshot<ViewState>,
-  ): CommandResult => {
-    const commandId = `story-command-${++commandCount}`;
-    return {
-      id: `result-${commandId}`,
-      commandId,
-      waitCommandId: commandId,
-      requestId: `request-${commandId}`,
-      contextName: snapshot.contextName,
-      aggregateName: snapshot.aggregateName,
-      tenantId: snapshot.tenantId,
-      aggregateId: snapshot.aggregateId,
-      aggregateVersion: snapshot.version,
-      stage: CommandStage.PROCESSED,
-      signalTime: 0,
-      errorCode: ErrorCodes.SUCCEEDED,
-      errorMsg: ErrorCodes.SUCCEEDED_MESSAGE,
-      result: {},
-      function: {
-        contextName: 'viewer',
-        name: 'view',
-        processorName: 'view',
-        functionKind: FunctionKind.COMMAND,
-      },
-    };
-  };
 
   globalThis.fetch = async (input, init) => {
     const request = toRequest(input, init);
@@ -184,7 +105,7 @@ function installFixture(
     }
 
     const userMatch = pathname.match(/^\/users\/([^/]+)$/);
-    if (userMatch && !['count', 'paged'].includes(userMatch[1])) {
+    if (userMatch) {
       if (url.searchParams.has('include')) {
         return jsonResponse({ requestUrl: url.href });
       }
@@ -227,101 +148,6 @@ function installFixture(
       });
     }
 
-    if (pathname === '/viewer/viewer_definition/snapshot/single/state') {
-      if (viewerScenario === 'loading') {
-        return new Promise<Response>((_resolve, reject) => {
-          request.signal.addEventListener(
-            'abort',
-            () => reject(request.signal.reason),
-            { once: true },
-          );
-        });
-      }
-      if (viewerScenario === 'missing-definition') return jsonResponse(null);
-      if (viewerScenario === 'definition-error') {
-        return jsonResponse({ message: 'Definition unavailable' }, 500);
-      }
-      return jsonResponse(fixtureViewerDefinition);
-    }
-    if (pathname === '/viewer/view/snapshot/list/state') {
-      return jsonResponse(snapshots.map(snapshot => snapshot.state));
-    }
-    if (pathname === '/viewer/view/snapshot/list') {
-      return jsonResponse(snapshots);
-    }
-    if (pathname === '/users/snapshot/single/state') {
-      return jsonResponse(fixturePagedUsers.list[0]);
-    }
-    if (pathname === '/users/snapshot/list/state') {
-      if (request.headers.get('Accept')?.includes('text/event-stream')) {
-        return eventStreamResponse([
-          `data: ${JSON.stringify(fixturePagedUsers.list)}\n\n`,
-        ]);
-      }
-      return jsonResponse(fixturePagedUsers.list);
-    }
-    if (pathname === '/users/snapshot/paged/state') {
-      return jsonResponse(fixturePagedUsers);
-    }
-    if (pathname === '/users/snapshot/count') {
-      return jsonResponse(fixturePagedUsers.total);
-    }
-    if (pathname === '/users/paged') {
-      pagedRequestCount += 1;
-      if (pagedRequestCount === 1) return jsonResponse(fixturePagedUsers);
-      return jsonResponse({
-        ...fixturePagedUsers,
-        list: fixturePagedUsers.list.map((user, index) =>
-          index === 0 ? { ...user, name: 'Ada (refreshed)' } : user,
-        ),
-      });
-    }
-    if (pathname === '/users/count') {
-      return new Response(String(fixturePagedUsers.total), {
-        headers: { 'Content-Type': 'text/plain' },
-      });
-    }
-    const createView = pathname.match(
-      /^\/viewer\/tenant\/([^/]+)\/owner\/([^/]+)\/view\/type\/(PERSONAL|SHARED)$/,
-    );
-    if (request.method === 'POST' && createView) {
-      const [, tenantId, ownerId, type] = createView;
-      const view: ViewState = {
-        ...(await request.json()),
-        id: `view-created-${commandCount + 1}`,
-        type: type as ViewType,
-      };
-      const snapshot = viewSnapshot(
-        view,
-        decodeURIComponent(tenantId),
-        decodeURIComponent(ownerId),
-      );
-      snapshots.push(snapshot);
-      return jsonResponse(commandResult(snapshot));
-    }
-    const updateView = pathname.match(
-      /^\/viewer\/tenant\/([^/]+)\/owner\/([^/]+)\/view\/([^/]+)\/type\/(PERSONAL|SHARED)$/,
-    );
-    if (request.method === 'PUT' && updateView) {
-      const [, tenantId, ownerId, id, type] = updateView;
-      const snapshot = snapshots.find(
-        view =>
-          view.tenantId === decodeURIComponent(tenantId) &&
-          view.ownerId === decodeURIComponent(ownerId) &&
-          view.aggregateId === decodeURIComponent(id),
-      );
-      if (!snapshot) return jsonResponse({ message: 'View not found' }, 404);
-      snapshot.state = {
-        ...snapshot.state,
-        ...(await request.json()),
-        id: snapshot.aggregateId,
-        type: type as ViewType,
-      };
-      snapshot.version += 1;
-      snapshot.eventId = `event-${snapshot.aggregateId}-${snapshot.version}`;
-      return jsonResponse(commandResult(snapshot));
-    }
-
     throw new Error(
       `Unexpected fixture request: ${request.method} ${url.href}`,
     );
@@ -333,15 +159,9 @@ function installFixture(
 }
 
 export function installFetchFixture(): () => void {
-  return installFixture('success');
+  return installFixture();
 }
 
 export function installDocumentationFetchFixture(): () => void {
-  return installFixture('success', 2000);
-}
-
-export function installViewerFetchFixture(
-  scenario: ViewerFixtureScenario,
-): () => void {
-  return installFixture(scenario);
+  return installFixture(2000);
 }

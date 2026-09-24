@@ -11,19 +11,27 @@ TypeScript HTTP-client ecosystem built around `Fetcher`.
 
 ## Repository Map
 
-| Path                                                                 | Responsibility                                                                 |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `packages/fetcher/`                                                  | Core HTTP client; no internal dependencies                                     |
-| `packages/decorator/`, `packages/eventbus/`, `packages/eventstream/` | API decorators, event bus, SSE streams                                         |
-| `packages/openapi/`, `packages/generator/`                           | OpenAPI types and TypeScript client generation                                 |
-| `packages/openai/`, `packages/cosec/`                                | OpenAI client and CoSec authentication                                         |
-| `packages/storage/`                                                  | Cross-environment storage                                                      |
-| `packages/wow/`                                                      | Wow command/query clients and query DSLs                                       |
-| `packages/react/`, `packages/viewer/`                                | React hooks and Ant Design viewer components                                   |
-| `packages/view-engine/`                                              | Data view engine over Wow queries; rewrite in progress, see its `docs/design/` |
-| `stories/`, `.storybook/`                                            | Shared Storybook stories and configuration                                     |
-| `integration-test/`                                                  | Integration tests; service setup in its README files                           |
-| `skills/`, `wiki/`                                                   | Agent skills and bilingual VitePress documentation                             |
+| Path                                                                 | Responsibility                                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------- |
+| `packages/fetcher/`                                                  | Core HTTP client; no internal dependencies           |
+| `packages/decorator/`, `packages/eventbus/`, `packages/eventstream/` | API decorators, event bus, SSE streams               |
+| `packages/openapi/`                                                  | OpenAPI types                                        |
+| `packages/openai/`, `packages/cosec/`                                | OpenAI client and CoSec authentication               |
+| `packages/storage/`                                                  | Cross-environment storage                            |
+| `packages/react/`                                                    | React hooks                                          |
+| `stories/`, `.storybook/`                                            | Shared Storybook stories and configuration           |
+| `integration-test/`                                                  | Integration tests; service setup in its README files |
+| `skills/`, `wiki/`                                                   | Agent skills and bilingual VitePress documentation   |
+
+The Wow client, the Wow React hooks, the view engine and the generator moved to
+the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)
+(`@ahoo-wang/wow-*`); the deprecated viewer stays on the `5.x` branch, which
+also carries fetcher 5.x fixes. Dependencies run one way, Wow → fetcher: no
+package here may depend on `@ahoo-wang/wow-*` (`.github/scripts/dependency-direction.mjs`,
+run in Engineering Quality). `@ahoo-wang/wow-react` imports only
+`@ahoo-wang/fetcher-react/core` and `/fetcher`, so keep those subpaths free of
+other integrations. `downstream-wow.yml` runs Wow's TypeScript tests against
+changes to the core packages Wow consumes; it is advisory.
 
 ## Commands and Verification
 
@@ -45,7 +53,7 @@ pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 ```
 
 - Run affected package tests and builds. **Before committing, `pnpm test:unit` must pass.** Report checks run and any blocked validation.
-- Follow each package's Vitest configuration, test imports, and `test/` layout. React/viewer use jsdom; viewer loads `test/setup.ts`. Storybook browser tests run separately from `test:unit`.
+- Follow each package's Vitest configuration, test imports, and `test/` layout. React uses jsdom. Storybook browser tests run separately from `test:unit`.
 - `pnpm lint` runs ESLint with `--fix`; `pnpm format` rewrites the repository. Prefer file-scoped checks/formatting and inspect the diff.
 
 ## Code and Change Boundaries
@@ -54,26 +62,11 @@ pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 - **Ask first** before adding packages, changing root `tsconfig.json`, or modifying build configuration, unless already authorized for the task.
 - Add external dependencies to the `pnpm-workspace.yaml` catalog and use `catalog:`; use the workspace protocol for internal dependencies.
 - Keep package versions aligned with `pnpm update-version <version>`. Never break a public API without a version bump.
-- Exception for `packages/view-engine/`: it is under active development and its API is not yet stable. Breaking API changes do not require compatibility preservation or a version bump solely for the break. Always prioritize a clean architecture and codebase; remove obsolete APIs and code instead of retaining compatibility layers, and update affected callers, tests, and documentation together.
 - Branch new work from `main`; use conventional commits (`feat:`, `fix:`, `chore:`, `test:`, `refactor:`, `docs:`). Merge PRs with squash only.
-
-## Migration Checkpoint: Packages Moving to Wow
-
-`packages/wow`, `packages/view-engine`, `packages/generator` and `packages/react/src/wow` move to the Wow repository; the plan is `docs/superpowers/specs/2026-09-23-wow-packages-migration-design.md`.
-
-- **Stop at the checkpoint.** Once view-engine phases 3 and 4 close — phase 3's remaining batch items merged, then one review of phases 3 and 4 together and that review's refactor merged — do not start phase 5 or other new work on these paths here. Tell the user the migration window is next. (Phase 4 merged here before the checkpoint was written, #1863; the user moved the stop to after it on 2026-09-23.)
-- **Frozen once tagged.** If `git ls-remote --tags origin wow-migration-base` prints the tag, the paths above, plus `packages/viewer`, `packages/react/src/dataMonitor`, `stories/view-engine` and `stories/react/WowQuery*`, are frozen: change nothing under them in this repository. Work resumes in Wow after the import.
-- Step 3′ of the plan, which deletes the migrated paths, also removes this section.
 
 ## Skills and Documentation
 
 - Verify documented symbols, signatures, defaults, and examples against `packages/<package>/src/index.ts` and its exported implementations.
 - Public API changes must update the matching `skills/<skill>/references/api.md` in the same change. Plugin manifest: `skills/plugins.json`.
-- CQRS evals in `skills/fetcher-openapi-generator/evals/` must match `packages/generator/src/aggregate/aggregateResolver.ts`: root-level `tags`, inline command `requestBody`, `responses['200'].$ref` → `#/components/responses/wow.CommandOk`, and both `.snapshot_state.single` and `.snapshot.count` operations. Build the generator and its dependencies, then run from `packages/generator/`:
-
-  ```bash
-  node dist/cli.js generate -i <absolute-spec-path> -o <temporary-output-dir> -t tsconfig.json
-  ```
-
 - Update English wiki pages and their `wiki/zh/` counterparts together; follow `wiki/AGENTS.md` and validate with `pnpm --dir wiki build`.
 - Never hand-edit generated `wiki/llms.txt`, `wiki/llms-full.txt`, or `wiki/.vitepress/dist/`.

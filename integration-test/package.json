@@ -40,19 +40,16 @@
     "build": "vite build",
     "test": "vitest run --coverage",
     "lint": "eslint . --fix",
-    "clean": "rm -rf dist",
-    "generate": "pnpm exec fetcher-generator generate -i http://localhost:8080/v3/api-docs"
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:^",
     "@ahoo-wang/fetcher-cosec": "workspace:^",
     "@ahoo-wang/fetcher-decorator": "workspace:^",
     "@ahoo-wang/fetcher-eventstream": "workspace:^",
-    "@ahoo-wang/fetcher-wow": "workspace:^",
     "@ahoo-wang/fetcher-openai": "workspace:^"
   },
   "devDependencies": {
-    "@ahoo-wang/fetcher-generator": "workspace:^",
     "@eslint/js": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",

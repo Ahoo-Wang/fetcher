@@ -1,0 +1,64 @@
+/*
+ * Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { useId } from 'react';
+
+/** The Wow repository's Storybook, where the moved stories now live. */
+export const WOW_STORYBOOK = 'https://wow.ahoo.me/storybook/';
+
+interface MovedNoticeProps {
+  /** What used to be here, e.g. "View Engine". */
+  subject: string;
+  /** Where it went, in one sentence. */
+  summary: string;
+  /** The package names readers should install now. */
+  packages: readonly string[];
+  link: { href: string; label: string };
+}
+
+/**
+ * The page left behind for a story group that moved out of this repository,
+ * so an old bookmark or a link in the docs lands on directions, not a 404.
+ */
+export function MovedNotice({
+  subject,
+  summary,
+  packages,
+  link,
+}: MovedNoticeProps) {
+  const headingId = useId();
+  return (
+    <article aria-labelledby={headingId} className="story-scene">
+      <header className="story-scene-header">
+        <p className="story-scene-domain">已迁移</p>
+        <h2 id={headingId}>{subject}</h2>
+        <p className="story-scene-summary">{summary}</p>
+      </header>
+      <div className="story-scene-stage">
+        <div className="story-stack">
+          <p>
+            现在安装：
+            {packages.map((name, index) => (
+              <span key={name}>
+                {index > 0 && '、'}
+                <code>{name}</code>
+              </span>
+            ))}
+          </p>
+          <a href={link.href} target="_top">
+            {link.label}
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+}

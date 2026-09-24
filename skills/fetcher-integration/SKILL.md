@@ -27,5 +27,4 @@ description: >
 ## Related Skills
 
 - $fetcher-decorator-service: Use when services should be declared with TypeScript decorators.
-- $fetcher-openapi-generator: Use when clients should be generated from an OpenAPI document.
 - $fetcher-cosec-auth: Use when interceptors need CoSec authentication behavior.

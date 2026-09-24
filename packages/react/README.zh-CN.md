@@ -1,7 +1,6 @@
 # `@ahoo-wang/fetcher-react`
 
-面向 Fetcher 请求、查询状态、存储、事件、Wow 查询、CoSec 安全与数据监控的 React
-Hooks。组件需要持有异步状态和取消行为时使用。
+面向 Fetcher 请求、查询状态、存储、事件与 CoSec 安全的 React Hooks。组件需要持有异步状态和取消行为时使用。
 
 ## 安装
 
@@ -9,7 +8,14 @@ Hooks。组件需要持有异步状态和取消行为时使用。
 pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 ```
 
-按导入的集成安装对应 peer 包：EventStream、EventBus、Storage、Wow 或 CoSec。
+按导入的集成安装对应 peer 包：EventStream、EventBus、Storage 或 CoSec。
+
+> **Wow 查询 Hook 已迁出。** `useSingleQuery`、`useListQuery`、`usePagedQuery`、
+> `useCountQuery`、`useListStreamQuery` 等 Wow Hook 现在由
+> [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) 发布的
+> `@ahoo-wang/wow-react` 提供，版本跟随 Wow。数据监控 Hook（`useDataMonitor`、
+> `DataMonitorService`）随 `@ahoo-wang/fetcher-viewer` 一起退役。两者在
+> `@ahoo-wang/fetcher-react` 5.x 中仍然可用。
 
 ## 示例
 
@@ -48,9 +54,7 @@ export function UserProfile({ id }: { id: string }) {
 - Fetcher：请求执行、JSON 查询、手动或防抖刷新。
 - API 对象：从返回 Promise 的方法派生 execute/query Hooks。
 - 状态：类型化 KeyStorage 与事件总线订阅。
-- Wow：单条、列表、分页、计数与列表流查询。
 - CoSec：安全 Provider、用户状态与路由守卫。
-- 监控：轮询与数据变化通知。
 
 ## 文档
 
@@ -64,7 +68,7 @@ export function UserProfile({ id }: { id: string }) {
 
 通用 Hook 可通过 ESM 子路径 `@ahoo-wang/fetcher-react/core` 导入，包括 `useExecutePromise`、`useQuery` 和 `useDebouncedCallback`。仅使用核心 Hook 时无需加载 HTTP、安全、存储和事件集成模块；原根入口的 ESM/UMD 导出不变。
 
-Fetcher Hook（`useFetcher`、`useFetcherQuery` 及其防抖版本）也可通过 `@ahoo-wang/fetcher-react/fetcher` 导入，它的类型和模块都不加载 Wow、安全、存储与事件集成——基于这些 Hook 的集成（例如迁往 Wow 仓之后的 Wow Hook）应从这里导入。`@ahoo-wang/fetcher-wow` 是可选的 peer 依赖：根入口只引用它的类型。
+Fetcher Hook（`useFetcher`、`useFetcherQuery` 及其防抖版本）也可通过 `@ahoo-wang/fetcher-react/fetcher` 导入，它的类型和模块都不加载安全、存储与事件集成——基于这些 Hook 的集成（例如 `@ahoo-wang/wow-react`）从这里导入。
 
 `useExecutePromise.abort()` 会先使当前请求失效，再执行取消回调。即使数据源忽略 AbortSignal，迟到的成功或失败也不会发布；异步 onAbort 回调不会颠倒新请求的调用顺序。
 

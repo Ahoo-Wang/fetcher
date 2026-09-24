@@ -15,12 +15,7 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vite/client"],
-    "paths": {
-      // The alias .storybook/main.ts gives the compensation console: View
-      // Engine's vendored primitives, which the package does not export.
-      "@/ui/*": ["../packages/view-engine/src/ui/*"]
-    }
+    "types": ["vite/client"]
   },
   "include": [
     "**/*",
