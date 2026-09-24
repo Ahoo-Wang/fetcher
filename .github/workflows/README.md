@@ -143,8 +143,7 @@ Use the locally validated scheduler (one workspace at a time, two Vitest workers
 instead of several workspaces each with one worker. All assertions remain.
 
 Storybook run 34415983847 took about eight minutes: interactions 111s and
-delivery 285s were sequential. They now use independent runners, each retaining
-its required package build.
+delivery 285s were sequential. They now use independent runners; the delivery job keeps its package build and the interaction shards run from source.
 
 The Chromium/Firefox/WebKit acceptance that this file used to promise belonged
 to the deleted view-engine delivery verifier, which ran a view-engine readiness
