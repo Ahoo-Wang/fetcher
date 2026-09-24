@@ -184,12 +184,13 @@ export interface KeyStorageOptions<Deserialized> {
 
   /**
    * Optional serializer for converting values to and from storage format
-   * Defaults to IdentitySerializer if not provided
+   * Defaults to jsonSerializer if not provided
    */
   serializer?: Serializer<string, Deserialized>;
 
   /**
-   * Optional storage instance. Defaults to localStorage
+   * Optional storage instance. Defaults to localStorage in a browser, or a new
+   * InMemoryStorage when `window` is undefined (see getStorage())
    */
   storage?: Storage;
 
