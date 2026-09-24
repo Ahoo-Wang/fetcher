@@ -242,10 +242,12 @@ describe('describeFilter parts', () => {
     });
     // Without a zone of its own, whose calendar it is on is the engine's to
     // say: two bounds, as ever.
-    const { timeZone: _zone, ...unzoned } = day;
     expect(
-      partsOf({ field: 'createdAt', operator: 'BETWEEN', value: unzoned })
-        .value,
+      partsOf({
+        field: 'createdAt',
+        operator: 'BETWEEN',
+        value: { type: 'absolute', from: day.from, to: day.to },
+      }).value,
     ).toEqual({ kind: 'range', from: day.from, to: day.to });
   });
 

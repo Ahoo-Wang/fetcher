@@ -626,11 +626,7 @@ describe('the follow-up menu on one group', () => {
     }).format(start);
 
     expect(
-      groupText(
-        { column, value: start, conditions: week },
-        messages,
-        display,
-      ),
+      groupText({ column, value: start, conditions: week }, messages, display),
     ).toBe(`Created in the week of ${day}`);
     const keyless = groupText(
       { column, value: null, conditions },

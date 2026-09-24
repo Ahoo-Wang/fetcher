@@ -795,7 +795,9 @@ describe('periodOf', () => {
       '2026-09-22T00:00:00+08:00',
       '2026-09-23T00:00:00+08:00',
     );
-    expect(periodOf(from, new Date(Date.parse(to) - 1).toISOString(), SHANGHAI)).toBeNull();
+    expect(
+      periodOf(from, new Date(Date.parse(to) - 1).toISOString(), SHANGHAI),
+    ).toBeNull();
     // The same instants are 16:00 to 16:00 in UTC: a range, not a day.
     expect(periodOf(from, to, 'UTC')).toBeNull();
     expect(periodOf(from, to, 'Not/AZone')).toBeNull();
@@ -803,7 +805,10 @@ describe('periodOf', () => {
     expect(periodOf(to, from, SHANGHAI)).toBeNull();
     // Two days is a range; a date alone names its whole day, in the zone.
     expect(
-      periodOf(...range('2026-09-22T00:00:00+08:00', '2026-09-24T00:00:00+08:00'), SHANGHAI),
+      periodOf(
+        ...range('2026-09-22T00:00:00+08:00', '2026-09-24T00:00:00+08:00'),
+        SHANGHAI,
+      ),
     ).toBeNull();
     expect(periodOf('2026-09-22', '2026-09-22', SHANGHAI)).toBe('DAY');
   });

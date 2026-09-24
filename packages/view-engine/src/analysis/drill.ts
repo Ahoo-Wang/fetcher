@@ -343,7 +343,8 @@ export function narrowsTo(
   const pending: FilterNode[] = [filter];
   while (pending.length > 0) {
     const node = pending.pop() as FilterNode;
-    if (isFilterGroup(node) && node.op === 'and') pending.push(...node.children);
+    if (isFilterGroup(node) && node.op === 'and')
+      pending.push(...node.children);
     else conjuncts.push(node);
   }
   return conditions.every(condition =>

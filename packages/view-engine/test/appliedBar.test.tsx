@@ -511,10 +511,7 @@ describe('the applied badge in another language', () => {
    * millisecond — two wordings of one condition on one screen.
    */
   it('says a range that is one period as the period, a week as a week', () => {
-    const period = (
-      unit: 'DAY' | 'WEEK',
-      from: string,
-    ): FilterSummaryItem =>
+    const period = (unit: 'DAY' | 'WEEK', from: string): FilterSummaryItem =>
       condition({
         text: 'Event time BETWEEN …',
         field: 'createTime',

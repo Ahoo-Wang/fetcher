@@ -83,7 +83,8 @@ export function summaryText(
   // One period is said as the period, relation and all: 「在 2026年9月22日」
   // rather than 「介于」 two instants — the words a date bucket was pressed
   // under, so the records opened from it and their applied bar read alike.
-  if (value.kind === 'period') return periodText(value, item, messages, context);
+  if (value.kind === 'period')
+    return periodText(value, item, messages, context);
 
   pushWord(said, conditionWord(item, messages));
   const shown = summaryValue(value, item, messages, context);

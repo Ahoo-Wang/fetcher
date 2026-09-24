@@ -304,7 +304,9 @@ export const HeaderSortWaitsForApply: Story = {
     await expect(headerOf(table, '订单号')).not.toHaveAttribute('aria-sort');
     // The header's name says what its next press does from what waits, and
     // that it waits — the arrow still says what ran.
-    await expect(headerOf(table, '订单号').querySelector('button')).toHaveAttribute(
+    await expect(
+      headerOf(table, '订单号').querySelector('button'),
+    ).toHaveAttribute(
       'aria-label',
       `${say('label.sort.descending', { field: '订单号' })} · ${zhCN['label.sort.waiting.asc']}`,
     );

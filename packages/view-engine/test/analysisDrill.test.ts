@@ -449,7 +449,10 @@ describe('narrowsTo', () => {
       narrowsTo(
         {
           op: 'and',
-          children: [{ field: 'warehouse', operator: 'EQ', value: 'US' }, status],
+          children: [
+            { field: 'warehouse', operator: 'EQ', value: 'US' },
+            status,
+          ],
         },
         group,
       ),
@@ -466,7 +469,10 @@ describe('narrowsTo', () => {
     const [warehouse, status] = group;
     expect(
       narrowsTo(
-        { op: 'and', children: [{ op: 'or', children: [warehouse, own] }, status] },
+        {
+          op: 'and',
+          children: [{ op: 'or', children: [warehouse, own] }, status],
+        },
         group,
       ),
     ).toBe(false);

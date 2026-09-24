@@ -183,9 +183,12 @@ export function SortableHeader({
   const after = upcoming
     ? upcoming(column.field)
     : cycledSort(drafted, column.field, true);
-  const name = messages.label(`label.sort.${pressAction(after, column.field)}`, {
-    field: column.label,
-  });
+  const name = messages.label(
+    `label.sort.${pressAction(after, column.field)}`,
+    {
+      field: column.label,
+    },
+  );
   // A position is only meaningful against another one.
   const position = sort.length > 1 && at >= 0 ? at + 1 : null;
   // The arrow says what ran; a different direction waiting for Apply is
@@ -217,7 +220,9 @@ export function SortableHeader({
               }),
           waits
             ? messages.label(
-                waiting ? WAITING[waiting.direction] : 'label.sort.waiting.none',
+                waiting
+                  ? WAITING[waiting.direction]
+                  : 'label.sort.waiting.none',
               )
             : null,
         ]

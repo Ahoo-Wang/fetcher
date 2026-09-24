@@ -233,9 +233,9 @@ describe('sorting an analysis from its header', () => {
 
     // Named by its next press: descending, then back to the view's order.
     const named = () =>
-      within(header('Record count')).getByRole('button').getAttribute(
-        'aria-label',
-      );
+      within(header('Record count'))
+        .getByRole('button')
+        .getAttribute('aria-label');
     expect(named()).toBe('Sort by Record count, descending');
     press('Record count');
     await waitFor(() =>
@@ -244,9 +244,7 @@ describe('sorting an analysis from its header', () => {
       ),
     );
     expect(asked(source)).toEqual([{ field: 'orders', direction: 'DESC' }]);
-    expect(named()).toBe(
-      'Back to the order before sorting by Record count',
-    );
+    expect(named()).toBe('Back to the order before sorting by Record count');
 
     press('Record count');
     await waitFor(() =>

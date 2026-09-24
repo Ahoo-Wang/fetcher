@@ -38,11 +38,7 @@ import { stickyBand } from './record/sticky.js';
 import { onlyWhereText } from './summary.js';
 import { useSurfaceDisplay } from './ViewSurface.js';
 import type { AnalysisView } from '../analysis/index.js';
-import type {
-  AnalysisSort,
-  RecordData,
-  RecordSort,
-} from '../model/index.js';
+import type { AnalysisSort, RecordData, RecordSort } from '../model/index.js';
 import { AnalysisEmpty } from './analysis/EmptyResult.js';
 import type { HeaderSorting } from './analysis/headerSort.js';
 import {
@@ -295,7 +291,10 @@ export function AnalysisTable({
                 sort={sort}
                 drafted={drafted}
                 {...(sorting
-                  ? { upcoming: (alias: string) => asFields(sorting.next(alias)) }
+                  ? {
+                      upcoming: (alias: string) =>
+                        asFields(sorting.next(alias)),
+                    }
                   : {})}
                 onToggle={(alias, options) => sorting?.onToggle(alias, options)}
                 additiveId={additiveId}
@@ -480,5 +479,8 @@ function cellOf(
 
 /** An analysis sort in the record header's terms: an alias is its field. */
 function asFields(sort: readonly AnalysisSort[]) {
-  return sort.map(entry => ({ field: entry.alias, direction: entry.direction }));
+  return sort.map(entry => ({
+    field: entry.alias,
+    direction: entry.direction,
+  }));
 }
