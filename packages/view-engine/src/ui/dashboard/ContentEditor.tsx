@@ -138,12 +138,16 @@ interface LinkDraft {
   description: string;
 }
 
-/** A form's starting values: the panel's own, or a new one's. */
-function draftOf(target: ContentTarget, placeholder: string) {
+/**
+ * A form's starting values: the panel's own, or a new one's — empty, so what
+ * the author types is all there is. The hint for a new note is the box's
+ * placeholder, never text to delete first (the keyboard starts in the box).
+ */
+function draftOf(target: ContentTarget) {
   const panel = target.mode === 'edit' ? target.panel : undefined;
   return {
     title: panel?.title ?? '',
-    content: panel?.kind === 'markdown' ? panel.content : placeholder,
+    content: panel?.kind === 'markdown' ? panel.content : '',
     src: panel?.kind === 'image' ? panel.src : '',
     alt: panel?.kind === 'image' ? (panel.alt ?? '') : '',
     href: panel?.kind === 'image' ? (panel.href ?? '') : '',
@@ -173,9 +177,7 @@ function ContentForm({
   const messages = useViewMessages();
   const ids = useId();
   const kind = target.mode === 'add' ? target.kind : target.panel.kind;
-  const [draft, setDraft] = useState(() =>
-    draftOf(target, messages.label('label.content.markdown.default')),
-  );
+  const [draft, setDraft] = useState(() => draftOf(target));
   // Nothing is marked before the first try: an empty box a moment after it
   // appeared is not a mistake yet.
   const [tried, setTried] = useState(false);
@@ -278,6 +280,7 @@ function ContentForm({
               rows={8}
               maxLength={MAX_MARKDOWN_LENGTH}
               value={draft.content}
+              placeholder={messages.label('label.content.markdown.placeholder')}
               aria-invalid={tried && problems.content}
               onChange={event => set({ content: event.target.value })}
             />

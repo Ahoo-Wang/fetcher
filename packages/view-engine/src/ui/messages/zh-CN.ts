@@ -1261,7 +1261,7 @@ export const zhCN: ViewMessages = {
   'label.content.markdown.field': '文字',
   'label.content.markdown.hint':
     '支持 Markdown：**粗体**、列表、[链接](https://…)。',
-  'label.content.markdown.default': '在这里写这块板子是做什么的。',
+  'label.content.markdown.placeholder': '在这里写这块板子是做什么的。',
   'label.content.image.add': '添加图片',
   'label.content.image.edit': '编辑图片',
   'label.content.image.src': '图片地址',

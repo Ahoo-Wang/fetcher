@@ -437,7 +437,15 @@ describe('adding to a board (D22 A, B)', () => {
     await add(user, 'Text…');
     let form = await screen.findByRole('dialog');
     const text = within(form).getByRole('textbox', { name: 'Text' });
-    await user.clear(text);
+    // The keyboard starts in an empty box: the hint is a placeholder, not
+    // text the author would type onto.
+    await waitFor(() => expect(document.activeElement).toBe(text));
+    expect((text as HTMLTextAreaElement).value).toBe('');
+    expect(text.getAttribute('placeholder')).toBe(
+      'Write what this part of the board is for.',
+    );
+    await user.click(within(form).getByRole('button', { name: 'Add' }));
+    expect(within(form).getByText('Fill this in.')).toBeTruthy();
     await user.type(text, 'Read me first');
     await user.click(within(form).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());

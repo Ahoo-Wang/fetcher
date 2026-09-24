@@ -171,7 +171,8 @@ export const dashboardMessages = {
   'label.content.markdown.field': 'Text',
   'label.content.markdown.hint':
     'Markdown: **bold**, lists, [links](https://…).',
-  'label.content.markdown.default': 'Write what this part of the board is for.',
+  'label.content.markdown.placeholder':
+    'Write what this part of the board is for.',
   'label.content.image.add': 'Add an image',
   'label.content.image.edit': 'Edit image',
   'label.content.image.src': 'Image address',
