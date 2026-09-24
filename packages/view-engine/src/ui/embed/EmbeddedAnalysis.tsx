@@ -80,7 +80,10 @@ export function EmbeddedAnalysis({
   const sortable = interactive && (result.ran?.groups.length ?? 0) > 0;
   const [pick, setPick] = useState<Pressed | null>(null);
   const followUp = pick ? result.followUp(pick.row) : null;
-  const onPick = result.pickable
+  // A group is pressable in the interactive tier, with a route for what the
+  // menu opens: a menu whose every item goes nowhere is not one to offer.
+  const pressable = interactive && onNavigate !== undefined && result.pickable;
+  const onPick = pressable
     ? (row: Pressed['row'], anchor: Pressed['anchor'], origin?: HTMLElement) =>
         setPick({ row, anchor, ...(origin ? { origin } : {}) })
     : undefined;
@@ -122,7 +125,7 @@ export function EmbeddedAnalysis({
             />
           )}
         </div>
-        {result.pickable && (
+        {pressable && (
           <DrillMenu
             pick={followUp ? pick : null}
             onClose={() => setPick(null)}

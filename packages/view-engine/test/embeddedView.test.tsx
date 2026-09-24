@@ -769,6 +769,9 @@ describe('EmbeddedView tiers and switches', () => {
     );
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
     expect(screen.queryByRole('group', { name: 'Show result as' })).toBeNull();
+    // Nothing on it opens a menu: the follow-ups are the interactive tier's.
+    const group = await screen.findByRole('row', { name: /CN/ });
+    expect(group.getAttribute('aria-haspopup')).toBeNull();
 
     rerender(
       <EmbeddedView

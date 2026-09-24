@@ -342,6 +342,43 @@ describe('EmbeddedDashboard', () => {
     );
   });
 
+  it('reads a locked time grouping as its unit, and draws a hidden one not at all', async () => {
+    const grouped = board();
+    grouped.timeGrouping = { units: ['DAY', 'WEEK'], default: 'DAY' };
+    const engine = engineOf(grouped);
+    const { runtime, rerender } = embed({
+      engine,
+      groupingMode: 'locked',
+      filterValues: { values: {}, unit: 'WEEK' },
+    });
+
+    const locked = await screen.findByRole('group', {
+      name: 'Time grouping (set by this page)',
+    });
+    expect(locked.textContent).toContain('By week');
+    expect(screen.queryByRole('group', { name: 'Time grouping' })).toBeNull();
+    runtime().setGroupingUnit('DAY');
+    expect(runtime().getSnapshot().filters.unit).toBe('WEEK');
+    // The reader's filters are still theirs to clear.
+    expect(screen.getByRole('button', { name: 'Clear' })).toBeDefined();
+
+    rerender({ groupingMode: 'hidden' });
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="dashboard-grouping"]'),
+      ).toBeNull(),
+    );
+  });
+
+  it('reads a locked filter that holds nothing as any value', async () => {
+    embed({ filterModes: { region: 'locked' } });
+
+    const locked = await screen.findByRole('group', {
+      name: 'Region (set by this page)',
+    });
+    expect(locked.textContent).toContain('Any');
+  });
+
   it('follows the host address as it changes, and tells it what the filters hold', async () => {
     const onFiltersChange = vi.fn();
     const first: DashboardFilters = { values: { region: ['CN'] } };
