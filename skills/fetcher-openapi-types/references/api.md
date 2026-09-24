@@ -22,7 +22,7 @@ The `@ahoo-wang/fetcher-openapi` package provides type-only source definitions f
 - **npm:** `@ahoo-wang/fetcher-openapi`
 - **Type:** TypeScript types only
 - **OpenAPI Support:** The 3.x shapes represented by the exported interfaces
-- **Consumed by:** `@ahoo-wang/fetcher-generator` for code generation
+- **Consumed by:** `@ahoo-wang/wow-generator` (Wow repository) for code generation
 - **Imports:** Single entry point — `import type { ... } from '@ahoo-wang/fetcher-openapi'`
 
 ## All Exported Types

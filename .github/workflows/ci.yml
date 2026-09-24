@@ -31,7 +31,7 @@ jobs:
       fail-fast: false
       matrix:
         node-version: [22]
-        suite: [core, view-engine, viewer]
+        suite: [core]
 
     steps:
       - name: Checkout code
@@ -64,7 +64,7 @@ jobs:
           VITEST_MAX_WORKERS: 2
           npm_config_workspace_concurrency: 1
 
-  # Node 24 carries coverage; its view-engine suite is sharded below.
+  # Node 24 carries coverage.
   node24:
     name: Node 24 / ${{ matrix.suite }}
     needs: changes
@@ -75,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [core, viewer]
+        suite: [core]
 
     steps:
       - name: Checkout code
@@ -127,151 +127,9 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  view-engine-shard:
-    name: Node 24 / view-engine (${{ matrix.shard }}/3)
-    needs: changes
-    if: needs.changes.outputs.code == 'true'
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
-        with:
-          version: 10.34.5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build suite and dependencies
-        run: node .github/scripts/ci-suite.mjs build
-        env:
-          CI_SUITE: view-engine
-
-      - name: Test shard
-        run: node .github/scripts/ci-suite.mjs shard
-        env:
-          CI_SUITE: view-engine
-          CI_SHARD: ${{ matrix.shard }}/3
-          VITEST_MAX_WORKERS: 2
-
-      - name: Preserve shard report
-        uses: actions/upload-artifact@v6
-        with:
-          name: view-engine-blob-${{ matrix.shard }}
-          path: packages/view-engine/.vitest-reports/
-          include-hidden-files: true
-          retention-days: 1
-          if-no-files-found: error
-
-  view-engine:
-    # Keeps the check name of the unsharded job: the merged shards are that job.
-    name: Node 24 / view-engine
-    needs: [changes, view-engine-shard]
-    if: needs.changes.outputs.code == 'true'
-    timeout-minutes: 20
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
-        with:
-          version: 10.34.5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # test:type checks the package against its built dependencies.
-      - name: Build suite and dependencies
-        run: node .github/scripts/ci-suite.mjs build
-        env:
-          CI_SUITE: view-engine
-
-      - uses: actions/download-artifact@v7
-        with:
-          pattern: view-engine-blob-*
-          merge-multiple: true
-          path: packages/view-engine/.vitest-reports
-
-      - name: Merge shards, hold coverage thresholds, check types
-        run: node .github/scripts/ci-suite.mjs merge
-        env:
-          CI_SUITE: view-engine
-
-      - name: Stage coverage with package paths
-        if: always()
-        run: |
-          mkdir -p coverage-artifact
-          for report in packages/*/coverage/coverage-final.json; do
-            if [ -f "$report" ]; then
-              cp --parents "$report" coverage-artifact/
-            fi
-          done
-
-      - name: Preserve suite coverage
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: unit-coverage-node24-view-engine
-          path: coverage-artifact/
-          retention-days: 7
-          if-no-files-found: ignore
-
-  package-docs:
-    # Markdown-only package changes: run just the tests that read it.
-    name: Package docs
-    needs: changes
-    if: needs.changes.outputs.docs == 'true' && needs.changes.outputs.code != 'true'
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
-        with:
-          version: 10.34.5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build and run the tests that read package Markdown
-        run: node .github/scripts/ci-suite.mjs docs
-
   coverage:
     name: Combined coverage
-    needs: [changes, node24, view-engine]
+    needs: [changes, node24]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10

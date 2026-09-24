@@ -58,13 +58,6 @@ src/
     useFetcherQuery.ts        — Fetcher-based query hook
     debounced/                — Debounced fetcher hooks
       useDebouncedFetcher.ts, useDebouncedFetcherQuery.ts
-  wow/
-    useCountQuery.ts          — Wow count query hook
-    useListQuery.ts           — Wow list query hook
-    useListStreamQuery.ts     — Wow list stream query hook (SSE)
-    usePagedQuery.ts          — Wow paged query hook
-    useSingleQuery.ts         — Wow single entity query hook
-    fetcher/                  — Fetcher-specific wow query implementations
   cosec/
     SecurityContext.tsx       — Security context provider
     RouteGuard.tsx            — Route guard component (auth)
@@ -75,24 +68,15 @@ src/
   storage/
     useKeyStorage.ts          — KeyStorage hook
     useImmerKeyStorage.ts     — Immer-based KeyStorage hook
-  dataMonitor/
-    DataMonitorService.ts     — Data monitor service
-    useDataMonitor.ts         — Data monitor hook
-    useDataMonitorEventBus.ts — Data monitor event bus hook
-  notification/
-    notificationCenter.ts     — Notification center
-    channel/                  — Notification channel implementations
-      browserNotification.ts, notificationChannel.ts, notificationChannelRegistry.ts
 ```
 
 ### Key Concepts
 
 - **React 19 + React Compiler**: Uses React Compiler for automatic memoization
 - **Hooks-first API**: All functionality exposed as React hooks
-- **Wow Query Hooks**: Type-safe hooks for Wow CQRS queries (list, paged, single, count, stream)
 - **API Hooks Factory**: `createQueryApiHooks` / `createExecuteApiHooks` generate typed hook sets
 - **Security**: CoSec integration via SecurityContext and RouteGuard components
-- **Data Monitor**: Real-time data monitoring via EventBus
+- **Wow hooks moved**: the Wow query hooks now live in `@ahoo-wang/wow-react` in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript); it builds on the `/core` and `/fetcher` subpaths, so keep those free of other integrations
 
 ## Dependencies
 
@@ -100,7 +84,6 @@ src/
 - `@ahoo-wang/fetcher-eventstream` — SSE streaming
 - `@ahoo-wang/fetcher-eventbus` — event bus
 - `@ahoo-wang/fetcher-storage` — storage
-- `@ahoo-wang/fetcher-wow` — Wow CQRS types and clients
 - `@ahoo-wang/fetcher-cosec` — authentication
 
 ## Code Style
@@ -119,10 +102,9 @@ src/
 ## Boundaries
 
 - ✅ Adding new React hooks
-- ✅ Adding new Wow query hook variants
 - ✅ Writing new tests and stories
 - ⚠️ Changing hook return types — consumers depend on these
 - ⚠️ Modifying SecurityContext/RouteGuard — affects app-level auth flows
 - 🚫 Breaking existing hook APIs (useQuery, useFetcher, etc.)
 - 🚫 Removing React Compiler integration without team discussion
-- 🚫 Changing Wow query hook signatures — affects generated code
+- 🚫 Breaking the `/core` or `/fetcher` subpaths — `@ahoo-wang/wow-react` imports only from them

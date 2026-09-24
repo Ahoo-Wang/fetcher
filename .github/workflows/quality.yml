@@ -33,6 +33,9 @@ jobs:
           cache: pnpm
       - name: Check CI policy regressions
         run: node --test .github/scripts/*.test.mjs
+      # Wow → fetcher only: no workspace may depend on @ahoo-wang/wow-*.
+      - name: Check dependency direction
+        run: node .github/scripts/dependency-direction.mjs
       - run: pnpm install --frozen-lockfile
       - name: Check changed-file formatting
         env:

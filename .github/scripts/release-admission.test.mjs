@@ -4,9 +4,11 @@
  * you may obtain a copy at http://www.apache.org/licenses/LICENSE-2.0
  */
 import assert from 'node:assert/strict';
+import { existsSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 import {
   mergedPullRequestHead,
+  requiredWorkflows,
   requireSuccessfulRun,
   requireSuccessfulCodecov,
   requireSuccessfulCheck,
@@ -95,4 +97,19 @@ test('Codacy may fall back only to the head of the pull request merged as this c
     [pull, { ...pull, head: { sha: 'b'.repeat(40) } }],
   ])
     assert.equal(mergedPullRequestHead('target', pulls), undefined);
+});
+
+test('release admission requires exactly the workflows this repository runs on push', () => {
+  const workflows = new URL('../workflows/', import.meta.url);
+  for (const workflow of requiredWorkflows)
+    assert.ok(existsSync(new URL(workflow, workflows)), workflow);
+  // generator-test.yml moved to the Wow repository (migration step 3′); a
+  // required workflow that no longer exists would block every release.
+  assert.ok(!readdirSync(workflows).includes('generator-test.yml'));
+  assert.deepEqual(requiredWorkflows, [
+    'ci.yml',
+    'quality.yml',
+    'build-storybook.yml',
+    'integration-test.yml',
+  ]);
 });

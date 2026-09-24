@@ -16,7 +16,7 @@ description: >
 
 ## Key Practices
 
-- Do not use this skill to generate clients; hand off to `fetcher-openapi-generator` for generation workflows.
+- Do not use this skill to generate clients; generation lives in `@ahoo-wang/wow-generator` and its `wow-generator` skill in the Wow repository.
 - Prefer precise OpenAPI vocabulary over informal API terms when naming types.
 - Keep schema composition and polymorphism explicit so generator behavior remains predictable.
 
@@ -26,6 +26,4 @@ description: >
 
 ## Related Skills
 
-- $fetcher-openapi-generator: Use when the task must generate Fetcher client code.
-- $fetcher-wow-cqrs: Use when OpenAPI metadata maps to Wow CQRS clients.
 - $fetcher-integration: Use for runtime HTTP client behavior.

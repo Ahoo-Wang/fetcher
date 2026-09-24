@@ -65,23 +65,14 @@ documentation:
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/openapi/**'
-          - 'packages/generator/**'
 
 'area: clients':
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/openai/**'
           - 'packages/cosec/**'
-          - 'packages/wow/**'
 
 'area: react':
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/react/**'
-          - 'packages/viewer/**'
-
-'area: view-engine':
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'packages/view-engine/**'
-          - 'stories/view-engine/**'

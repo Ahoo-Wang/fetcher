@@ -21,7 +21,7 @@ test('compatibility jobs execute the same tests, compiler/type steps and timeout
 });
 
 test('Combined coverage waits for the Node 24 jobs only, and they cover every suite', async () => {
-  const { suites, shardedSuites } = await import('./ci-suite.mjs');
+  const { suites } = await import('./ci-suite.mjs');
   const ci = readFileSync(
     new URL('../workflows/ci.yml', import.meta.url),
     'utf8',
@@ -38,14 +38,9 @@ test('Combined coverage waits for the Node 24 jobs only, and they cover every su
   assert.equal(root.engines.node, '>=22.12.0');
   assert.deepEqual(list(compat.match(/suite: \[([^\]]+)\]/)[1]), suites);
   assert.match(compat, /COLLECT_COVERAGE: 'false'/);
-  // Node 24 runs the unsharded suites with coverage; the sharded ones merge
-  // in the `view-engine` job.
+  // Node 24 runs every suite with coverage.
   const node24 = job('node24');
-  assert.deepEqual(
-    list(node24.match(/suite: \[([^\]]+)\]/)[1]),
-    suites.filter(suite => !shardedSuites.includes(suite)),
-  );
+  assert.deepEqual(list(node24.match(/suite: \[([^\]]+)\]/)[1]), suites);
   assert.match(node24, /COLLECT_COVERAGE: 'true'/);
-  assert.deepEqual(shardedSuites, ['view-engine']);
-  assert.match(job('coverage'), /needs: \[changes, node24, view-engine\]/);
+  assert.match(job('coverage'), /needs: \[changes, node24\]/);
 });

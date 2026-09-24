@@ -13,10 +13,7 @@ export function scopes(paths) {
     code: false,
     storybook: false,
     integration: false,
-    generator: false,
     wiki: false,
-    // Markdown inside a package: only the tests that read it (`test:docs`).
-    docs: false,
   };
   for (const path of paths) {
     if (path.startsWith('wiki/')) result.wiki = true;
@@ -24,9 +21,9 @@ export function scopes(paths) {
       result.storybook = true;
       result.wiki = true;
     } else if (path.startsWith('integration-test/')) result.integration = true;
-    else if (/^packages\/[^/]+\/.+\.md$/.test(path)) result.docs = true;
     else if (
-      /^(?:docs\/|skills\/).*\.md$|^\.github\/(?:ISSUE_TEMPLATE|PULL_REQUEST_TEMPLATE)\//.test(
+      // Package Markdown is documentation: no test reads it (ci-suite.test.mjs).
+      /^(?:docs\/|skills\/|packages\/[^/]+\/).*\.md$|^\.github\/(?:ISSUE_TEMPLATE|PULL_REQUEST_TEMPLATE)\//.test(
         path,
       ) ||
       /^(README[^/]*\.md|LICENSE|NOTICE|AGENTS\.md)$/.test(path)

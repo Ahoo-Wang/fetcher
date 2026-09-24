@@ -23,14 +23,5 @@ Thumbs.db
 # Generated lockfile (pnpm style conflicts with Prettier's YAML formatting)
 pnpm-lock.yaml
 
-# Vendored from the shadcn registry and updated with `shadcn add --diff`;
-# reformatting them turns every future update into a whole-file diff.
-packages/view-engine/src/ui/components/
-packages/view-engine/src/ui/lib/
-
-# Byte-for-byte generator snapshots, compared against ts-morph's own output by
-# the e2e test; reformatting them would fail every regeneration.
-packages/generator/expected/
-
 # Vendored agent skills (copied from npx skills add; kept verbatim so updates diff cleanly)
 .claude/skills/

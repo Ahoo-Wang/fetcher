@@ -7,5 +7,5 @@
     "rootDir": "..",
     "types": ["vitest/globals", "react", "react-dom"]
   },
-  "include": ["../src/**/*", "./wow/filterQueryTypes.test.ts"]
+  "include": ["../src/**/*"]
 }

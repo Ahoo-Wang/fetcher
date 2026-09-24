@@ -27,5 +27,4 @@ description: >
 ## Related Skills
 
 - $fetcher-integration: Use for the underlying Fetcher and NamedFetcher setup.
-- $fetcher-openapi-generator: Use when service code should come from an OpenAPI spec.
 - $fetcher-llm-streaming: Use when a decorator endpoint returns SSE or streaming data.

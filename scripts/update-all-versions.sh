@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Simple script to update version for stable packages in the workspace
+# Simple script to update version for all packages in the workspace
 # Usage: ./scripts/update-all-versions.sh <version>
 
 set -e  # Exit on any error
@@ -13,7 +13,7 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-echo "Updating stable packages to version $VERSION..."
+echo "Updating all packages to version $VERSION..."
 
 # Use Node.js to update package.json files
 UPDATE_SCRIPT="
@@ -39,10 +39,6 @@ node -e "$UPDATE_SCRIPT" package.json "$VERSION"
 # Update all workspace packages
 echo "Updating workspace packages..."
 for package in packages/*/; do
-  # view-engine is under active development and excluded from stable releases.
-  if [ "$package" = "packages/view-engine/" ]; then
-    continue
-  fi
   if [ -f "$package/package.json" ]; then
     echo "Updating ${package}package.json..."
     node -e "$UPDATE_SCRIPT" "${package}package.json" "$VERSION"
@@ -54,4 +50,4 @@ if [ -f "integration-test/package.json" ]; then
   node -e "$UPDATE_SCRIPT" integration-test/package.json "$VERSION"
 fi
 
-echo "Stable packages updated to version $VERSION"
+echo "All packages updated to version $VERSION"

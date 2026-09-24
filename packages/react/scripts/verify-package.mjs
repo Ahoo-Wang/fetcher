@@ -81,9 +81,8 @@ for (const file of coreModules) {
   }
 }
 assert.ok(usesCompiler, 'Core hooks must retain React Compiler output');
-// The fetcher hooks are what the Wow integrations build on (wow-react after
-// the migration); reaching them must not load @ahoo-wang/fetcher-wow, which
-// the root entry does and which is an optional peer.
+// The fetcher hooks are what @ahoo-wang/wow-react (Wow repository) builds
+// on; reaching them must not load any other integration.
 const fetcherModules = new Set([
   import.meta.resolve(manifest.name + '/fetcher'),
 ]);
@@ -98,7 +97,7 @@ for (const file of fetcherModules) {
     } else {
       assert.doesNotMatch(
         fileName,
-        /^@ahoo-wang\/fetcher-(wow|cosec|storage|eventbus)(?:\/|$)/,
+        /^@ahoo-wang\/fetcher-(cosec|storage|eventbus)(?:\/|$)/,
         `The fetcher entry loads an integration from ${fileURLToPath(file)}`,
       );
     }
@@ -110,7 +109,7 @@ try {
   const file = `${typeProbe}/consumer.ts`;
   writeFileSync(
     file,
-    `import { ${Object.keys(core).join(', ')} } from '${manifest.name}';\nimport type { UseFullscreenOptions, UseDebouncedCallbackOptions } from '${manifest.name}';\nimport { useSingleQuery } from '${manifest.name}';\ndeclare const query: ReturnType<typeof useSingleQuery>;\nquery.result; query.loading; query.error;`,
+    `import { ${Object.keys(core).join(', ')} } from '${manifest.name}';\nimport type { UseFullscreenOptions, UseDebouncedCallbackOptions } from '${manifest.name}';\nimport { useFetcher } from '${manifest.name}';\ndeclare const query: ReturnType<typeof useFetcher>;\nquery.result; query.loading; query.error;`,
   );
   const program = ts.createProgram([file], {
     noEmit: true,

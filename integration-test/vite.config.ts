@@ -28,7 +28,6 @@ export default defineConfig({
         '@ahoo-wang/fetcher-decorator',
         '@ahoo-wang/fetcher-eventstream',
         '@ahoo-wang/fetcher-cosec',
-        '@ahoo-wang/fetcher-wow',
       ],
       output: {
         globals: {
@@ -36,7 +35,6 @@ export default defineConfig({
           '@ahoo-wang/fetcher-decorator': 'FetcherDecorator',
           '@ahoo-wang/fetcher-eventstream': 'FetcherEventStream',
           '@ahoo-wang/fetcher-cosec': 'FetcherCoSec',
-          '@ahoo-wang/fetcher-wow': 'FetcherWow',
         },
       },
     },

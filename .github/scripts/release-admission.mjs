@@ -12,7 +12,6 @@ export const requiredWorkflows = [
   'quality.yml',
   'build-storybook.yml',
   'integration-test.yml',
-  'generator-test.yml',
 ];
 export function requireSuccessfulRun(runs, sha, workflow) {
   const latest = runs

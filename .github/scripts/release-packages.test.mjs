@@ -16,21 +16,17 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 
-test('stable versioning and publishing exclude view-engine', () => {
+test('versioning and publishing cover every scoped workspace package', () => {
   const dir = mkdtempSync(join(tmpdir(), 'fetcher-release-'));
+  const paths = ['', 'integration-test', 'packages/fetcher', 'packages/react'];
   try {
-    for (const path of [
-      '',
-      'integration-test',
-      'packages/fetcher',
-      'packages/view-engine',
-    ]) {
+    for (const path of paths) {
       mkdirSync(join(dir, path), { recursive: true });
       writeFileSync(
         join(dir, path, 'package.json'),
         JSON.stringify({
           name: path.startsWith('packages/')
-            ? `@ahoo-wang/fetcher${path.endsWith('view-engine') ? '-view-engine' : ''}`
+            ? `@ahoo-wang/${path.endsWith('react') ? 'fetcher-react' : 'fetcher'}`
             : 'workspace',
           version: '5.0.0',
         }),
@@ -39,15 +35,10 @@ test('stable versioning and publishing exclude view-engine', () => {
     execFileSync('bash', [resolve('scripts/update-all-versions.sh'), '5.1.0'], {
       cwd: dir,
     });
-    for (const path of [
-      '',
-      'integration-test',
-      'packages/fetcher',
-      'packages/view-engine',
-    ]) {
+    for (const path of paths) {
       assert.equal(
         JSON.parse(readFileSync(join(dir, path, 'package.json'))).version,
-        path.endsWith('view-engine') ? '5.0.0' : '5.1.0',
+        '5.1.0',
       );
     }
     mkdirSync(join(dir, 'bin'));
@@ -67,7 +58,8 @@ test('stable versioning and publishing exclude view-engine', () => {
     });
     assert.equal(
       readFileSync(log, 'utf8'),
-      'publish packages/fetcher/ --access public --no-git-checks\n',
+      'publish packages/fetcher/ --access public --no-git-checks\n' +
+        'publish packages/react/ --access public --no-git-checks\n',
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });

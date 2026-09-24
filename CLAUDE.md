@@ -23,7 +23,7 @@ pnpm test:it
 
 # Run tests for a single package
 pnpm --filter @ahoo-wang/fetcher test
-pnpm --filter @ahoo-wang/fetcher-viewer test
+pnpm --filter @ahoo-wang/fetcher-react test
 
 # Run a single test file
 pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
@@ -37,7 +37,7 @@ pnpm format
 # Clean all build artifacts
 pnpm clean
 
-# Storybook (for viewer/react components)
+# Storybook (http, events, storage and react stories)
 pnpm storybook
 
 # Update version across all packages
@@ -48,7 +48,7 @@ Each package also supports its own scripts directly: `pnpm --filter <package-nam
 
 ## Monorepo Structure
 
-pnpm workspaces monorepo with 12 packages in `packages/` plus `integration-test/`. Dependency versions are centralized via the `catalog:` protocol in `pnpm-workspace.yaml`.
+pnpm workspaces monorepo with 9 packages in `packages/` plus `integration-test/` and `wiki/`. Dependency versions are centralized via the `catalog:` protocol in `pnpm-workspace.yaml`.
 
 ### Package Dependency Graph
 
@@ -62,14 +62,17 @@ fetcher (core HTTP client, no internal deps)
   +-- eventstream (depends on fetcher, adds SSE/LLM streaming via side-effect import)
   |
   +-- openai  (depends on fetcher + eventstream + decorator)
-  +-- wow     (depends on fetcher + eventstream + decorator)
   +-- storage (depends on eventbus)
   +-- cosec   (depends on fetcher + eventbus + storage)
   |
-  +-- react    (depends on fetcher + eventstream + eventbus + storage + wow + cosec)
-  +-- viewer   (depends on all above + antd + @ant-design/icons)
-  +-- generator (depends on fetcher + eventstream + decorator + openapi + wow)
+  +-- react    (depends on fetcher + eventstream + eventbus + storage + cosec)
 ```
+
+### Moved to the Wow repository
+
+The Wow-coupled packages live in [Ahoo-Wang/Wow](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) under `typescript/`, versioned with Wow: `@ahoo-wang/wow-client` (was `fetcher-wow`), `@ahoo-wang/wow-react` (the Wow hooks from `fetcher-react`), `@ahoo-wang/wow-view-engine` (was `fetcher-view-engine`) and `@ahoo-wang/wow-generator` (was `fetcher-generator`). `@ahoo-wang/fetcher-viewer` and the data-monitor hooks were not moved; they stay on the `5.x` branch, which keeps the 5.x line. The new packages are published to npm with Wow's first stable release; until then the 5.x line (`5.x` branch, 5.1.x on npm) keeps `@ahoo-wang/fetcher-wow`, the Wow hooks in `@ahoo-wang/fetcher-react` and `@ahoo-wang/fetcher-generator`. `@ahoo-wang/wow-view-engine` is not published until view-engine is declared stable.
+
+Dependencies run one way, **Wow → fetcher**: no package here may depend on `@ahoo-wang/wow-*` (checked by `.github/scripts/dependency-direction.mjs` in Engineering Quality). `@ahoo-wang/wow-react` imports only the `@ahoo-wang/fetcher-react/core` and `/fetcher` subpaths. `downstream-wow.yml` runs Wow's TypeScript tests against changes to the core packages Wow uses (advisory).
 
 ### Package Build Config
 
@@ -79,16 +82,16 @@ All packages use Vite for building with `unplugin-dts` for type declarations. Ea
 - UMD: `dist/index.umd.js`
 - Types: `dist/index.d.ts`
 
-Packages with React (viewer, react) also use `@vitejs/plugin-react` with React Compiler and `@babel/plugin-proposal-decorators` (legacy mode).
+The React package also uses `@vitejs/plugin-react` with React Compiler.
 
 ### Testing
 
 - **Unit tests**: Vitest with `@vitest/coverage-v8` for coverage
-- **Browser tests**: `@vitest/browser` with Playwright (viewer package)
+- **Browser tests**: `@vitest/browser` with Playwright (Storybook interaction tests, `pnpm test:storybook`)
 - **Integration tests**: Separate `integration-test` workspace with real API calls
 - **MSW**: Used for HTTP mocking in unit tests (fetcher package)
 - **Vitest globals**: `globals: true` — use `describe`, `it`, `expect`, `vi` without imports
-- **Viewer tests**: Run in `jsdom` environment with `test/setup.ts`
+- **React tests**: Run in `jsdom` environment
 - Test files follow `*.test.ts` / `*.test.tsx` naming convention alongside source files
 - ESLint ignores `**/**.test.ts` files — test files are not linted
 
@@ -116,23 +119,6 @@ Uses `reflect-metadata` to create declarative API service classes:
 ### EventStream (`packages/eventstream`)
 
 **Side-effect module** - importing `@ahoo-wang/fetcher-eventstream` patches `Response.prototype` with `eventStream()` and `jsonEventStream()` methods. This is the mechanism for SSE/LLM streaming support.
-
-### Generator (`packages/generator`)
-
-CLI tool (`fetcher-generator`) that reads OpenAPI 3.x specs (JSON/YAML/URL) and generates:
-
-- TypeScript interfaces/enums from schemas
-- Decorator-based API client classes
-- Wow CQRS-specific clients (command/event-stream)
-- Uses `ts-morph` for code generation, `commander` for CLI, `yaml` for YAML parsing
-
-### Viewer (`packages/viewer`)
-
-React + Ant Design component library for API documentation viewing:
-
-- Filter panel components, table components with cell renderers
-- Uses React Compiler (`babel-plugin-react-compiler`)
-- Less for styling (Ant Design integration)
 
 ## Code Style
 

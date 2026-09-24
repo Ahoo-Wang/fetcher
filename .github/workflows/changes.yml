@@ -8,12 +8,8 @@ on:
         value: ${{ jobs.changes.outputs.storybook }}
       integration:
         value: ${{ jobs.changes.outputs.integration }}
-      generator:
-        value: ${{ jobs.changes.outputs.generator }}
       wiki:
         value: ${{ jobs.changes.outputs.wiki }}
-      docs:
-        value: ${{ jobs.changes.outputs.docs }}
 permissions:
   contents: read
 jobs:
@@ -24,9 +20,7 @@ jobs:
       code: ${{ steps.scope.outputs.code }}
       storybook: ${{ steps.scope.outputs.storybook }}
       integration: ${{ steps.scope.outputs.integration }}
-      generator: ${{ steps.scope.outputs.generator }}
       wiki: ${{ steps.scope.outputs.wiki }}
-      docs: ${{ steps.scope.outputs.docs }}
     steps:
       - uses: actions/checkout@v7
         with:
