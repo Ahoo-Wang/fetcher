@@ -35,8 +35,8 @@ Continue with [Your first request](./first-request.md).
 
 ## React and Viewer starting points
 
-For an existing React application, follow the [React example peer installation and mounting steps](../examples/react.md). For a table, use [your first data view](./first-view.md). These UI paths require additional peers beyond the core HTTP installation; [choose your starting point](./index.md) first.
+For an existing React application, follow the [React example peer installation and mounting steps](../examples/react.md). For a table on the 5.x line, use [your first data view](./first-view.md). These UI paths require additional peers beyond the core HTTP installation; [choose your starting point](./index.md) first.
 
-## View Engine
+## Packages in the Wow repository
 
-View Engine is being rewritten and has not yet had its first public registry release; the [rewrite status](../guides/view-engine/index.md) lists the target entries and delivery order.
+The Wow client, the Wow React hooks, the generator and the data-view components moved to the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript). Their successors are not on npm yet; they ship with Wow's first stable release. Until then use the 5.x line (npm 5.1.x); see [packages that moved](../architecture/package-boundaries.md#packages-that-moved-to-the-wow-repository).

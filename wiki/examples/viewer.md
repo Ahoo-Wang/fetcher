@@ -1,12 +1,13 @@
 ---
+next: false
 title: Local Viewer example
 description: Filter, sort, page and save a local data view with application-owned state.
 ---
 
 # Local Viewer example
 
-::: warning Maintenance mode (deprecated)
-`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+::: warning 5.x only (frozen)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
 :::
 
 This browser example uses four users and no backend. The application filters and sorts the full dataset, then slices the requested page. `Viewer` receives the resulting `{ list, total }`; it does not transform the supplied rows for you.
@@ -66,13 +67,14 @@ The application owns `savedViews` in React memory and invokes each mutation's su
 
 `dataUrl` and `countUrl` are required definition metadata. Normal data loading and the view-count callback here use local functions. The toolbar also exposes server-oriented data monitoring: leave the bell monitor disabled in this example, because its count polling needs a real compatible endpoint. There is no local monitor service or backend in this sample.
 
-For remote rows, replace the application calculation with a request and pass the returned `PagedList` to `dataSource`. Authentication, authorization, error handling and durable storage remain application/server responsibilities. Choose [View, Viewer or FetcherViewer](../architecture/integration-decisions) based on the protocol you actually have.
+For remote rows, replace the application calculation with a request and pass the returned `PagedList` to `dataSource`. Authentication, authorization, error handling and durable storage remain application/server responsibilities. Choose [View or Viewer](../reference/viewer/view-and-viewer.md) or [FetcherViewer](../reference/viewer/fetcher-viewer.md) based on the protocol you actually have.
 
-## Run and verify in this repository
+## Run and verify on the 5.x branch
 
-Repository development requires Node >=22.12.0 and pnpm 10.34.5. From the repository root:
+The Viewer stories live on the `5.x` branch only. Repository development requires Node >=22.12.0 and pnpm 10.34.5. From a checkout of that branch:
 
 ```bash
+git checkout 5.x
 pnpm install
 pnpm storybook
 ```

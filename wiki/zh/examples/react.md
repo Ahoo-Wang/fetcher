@@ -25,21 +25,21 @@ Storybook fixture 会拦截发往 `https://api.example.test` 的 `fetch`：`/use
 
 ## 在 Vite 应用中使用
 
-下面的消费者设置假设已有 React + TypeScript Vite 应用。本仓库使用 Node `>=22.12.0`、pnpm `10.34.5`、Vite `^8.2.2`、TypeScript `^6.0.3` 以及 React/React DOM `^19.2.8` 验证。已发布的 Fetcher 包自身声明 Node `>=18.20.8`。
+下面的消费者设置假设已有 React + TypeScript Vite 应用。本仓库使用 Node `>=22.12.0`、pnpm `10.34.5`、Vite `^8.2.2`、TypeScript `^6.0.3` 以及 React/React DOM `^19.3.0` 验证。已发布的 Fetcher 包自身声明 Node `>=18.20.8`。
 
 显式安装 React 包及其声明的 peer 包图：
 
 ```bash
 pnpm add @ahoo-wang/fetcher@^5.0.0 \
-  @ahoo-wang/fetcher-react@^5.0.0 \
+  @ahoo-wang/fetcher-react@^5.1.3 \
   @ahoo-wang/fetcher-eventstream@^5.0.0 \
   @ahoo-wang/fetcher-eventbus@^5.0.0 \
   @ahoo-wang/fetcher-storage@^5.0.0 \
-  @ahoo-wang/fetcher-wow@^5.0.0 \
-  @ahoo-wang/fetcher-decorator@^5.0.0 \
   @ahoo-wang/fetcher-cosec@^5.0.0 \
-  react@^19.2.8 react-dom@^19.2.8
+  react@^19.3.0 react-dom@^19.3.0
 ```
+
+从 5.1.3 起，`@ahoo-wang/fetcher-wow` 是可选 peer，本示例不需要它。它启用的 Wow 查询 Hook 只属于 5.x 线；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）。
 
 本节把现有 Vite 应用接入现有 API；它不会安装或创建后端。将上面的组件复制到 `src/ReactRequests.tsx`。它默认使用 `/api` 作为基础 URL；请把该路径指向提供以下演示路由的后端，或传入其他 `baseURL`：
 

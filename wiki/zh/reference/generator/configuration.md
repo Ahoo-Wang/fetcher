@@ -5,6 +5,10 @@ description: '生成器配置 — Fetcher 5.0.0'
 
 # 生成器配置
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-generator` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 生成器有两类独立输入：构造器/CLI 的执行选项，以及可选的 JSON/YAML 自定义配置文件。自定义文件不能覆盖 inputPath、outputDir、logger 或 tsconfig。
 
 ## 配置契约
@@ -45,8 +49,8 @@ pnpm exec fetcher-generator generate -i ./openapi.json -c ./fetcher-generator.co
 
 ## 实现源码
 
-[packages/generator/src/generateContext.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/generateContext.ts#L24)
+[packages/generator/src/generateContext.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/generateContext.ts#L24)
 
-[packages/generator/src/types.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)
+[packages/generator/src/types.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/types.ts#L21)
 
-[packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L35)
+[packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/index.ts#L35)

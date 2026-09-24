@@ -1,12 +1,13 @@
 ---
+next: false
 title: 本地 Viewer 示例
 description: 使用应用持有的状态，对本地数据过滤、排序、分页并保存视图。
 ---
 
 # 本地 Viewer 示例
 
-::: warning 维护期（已弃用）
-`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+::: warning 仅适用于 5.x（已冻结）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），尚未发布。两者模型与 API 不同，迁移需要适配。
 :::
 
 这个浏览器示例使用四个用户，无需后端。应用先对完整数据集过滤、排序，再截取请求页。`Viewer` 接收计算后的 `{ list, total }`；它不会替你转换传入的行数据。
@@ -66,13 +67,14 @@ pnpm dev
 
 `dataUrl` 和 `countUrl` 是定义要求的元数据。此处的普通数据加载和视图计数回调使用本地函数。工具栏还提供面向服务端的数据监控：本例应保持铃铛监控关闭，它的计数轮询需要真实兼容接口。本例不提供本地监控服务或后端。
 
-需要远端行数据时，将应用的计算函数替换为请求，再把返回的 `PagedList` 传给 `dataSource`。身份认证、授权、错误处理和持久存储仍由应用与服务端负责。根据实际协议选择 [View、Viewer 或 FetcherViewer](../architecture/integration-decisions)。
+需要远端行数据时，将应用的计算函数替换为请求，再把返回的 `PagedList` 传给 `dataSource`。身份认证、授权、错误处理和持久存储仍由应用与服务端负责。根据实际协议选择 [View 或 Viewer](../reference/viewer/view-and-viewer.md)，或 [FetcherViewer](../reference/viewer/fetcher-viewer.md)。
 
-## 在本仓库运行与验证
+## 在 5.x 分支运行与验证
 
-仓库开发要求 Node >=22.12.0、pnpm 10.34.5。在仓库根目录执行：
+Viewer 的故事只在 `5.x` 分支上。仓库开发要求 Node >=22.12.0、pnpm 10.34.5。在该分支的检出目录执行：
 
 ```bash
+git checkout 5.x
 pnpm install
 pnpm storybook
 ```

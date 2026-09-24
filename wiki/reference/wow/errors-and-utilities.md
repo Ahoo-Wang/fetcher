@@ -5,6 +5,10 @@ description: 'Business errors and document utilities — @ahoo-wang/fetcher-wow 
 
 # Business errors and document utilities
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-wow` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 A successful HTTP response can carry a failed Wow business result. Inspect its errorCode before treating a write as completed. These helpers classify wire data; they do not throw a domain exception or choose a retry policy for you.
 
 | Contract                                           | Meaning, default and boundary                                                                                                                             |
@@ -40,7 +44,7 @@ Read [command results](./commands) for the surrounding execution stage and [fail
 export type DynamicDocument = Record<string, any>;
 ```
 
-[packages/wow/src/query/types.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/types.ts#L14)
+[packages/wow/src/query/types.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/types.ts#L14)
 
 ### DynamicDocumentArray {#api-DynamicDocumentArray}
 
@@ -48,7 +52,7 @@ export type DynamicDocument = Record<string, any>;
 export type DynamicDocumentArray = DynamicDocument[];
 ```
 
-[packages/wow/src/query/types.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/types.ts#L16)
+[packages/wow/src/query/types.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/types.ts#L16)
 
 ### RecoverableType {#api-RecoverableType}
 
@@ -60,7 +64,7 @@ export enum RecoverableType {
 }
 ```
 
-[packages/wow/src/types/error.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/error.ts#L22)
+[packages/wow/src/types/error.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/error.ts#L22)
 
 ### BindingError {#api-BindingError}
 
@@ -71,7 +75,7 @@ export interface BindingError {
 }
 ```
 
-[packages/wow/src/types/error.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/error.ts#L55)
+[packages/wow/src/types/error.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/error.ts#L55)
 
 ### ErrorInfo {#api-ErrorInfo}
 
@@ -83,7 +87,7 @@ export interface ErrorInfo {
 }
 ```
 
-[packages/wow/src/types/error.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/error.ts#L66)
+[packages/wow/src/types/error.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/error.ts#L66)
 
 ### ErrorCodes {#api-ErrorCodes}
 
@@ -122,7 +126,7 @@ export class ErrorCodes {
 
 :::
 
-[packages/wow/src/types/error.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/error.ts#L85)
+[packages/wow/src/types/error.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/error.ts#L85)
 
 ### getPropertyValue {#api-getPropertyValue}
 
@@ -134,6 +138,6 @@ export function getPropertyValue<T = any>(
 ): T | undefined;
 ```
 
-[packages/wow/src/getPropertyValue.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/getPropertyValue.ts#L50)
+[packages/wow/src/getPropertyValue.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/getPropertyValue.ts#L50)
 
 [Complete symbol index](./symbols)

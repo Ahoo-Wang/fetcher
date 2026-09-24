@@ -5,6 +5,10 @@ description: 'Generated output and regeneration — Fetcher 5.0.0'
 
 # Generated output and regeneration
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-generator` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 Generation produces TypeScript source, not a standalone HTTP implementation. Compile decorator classes with `experimentalDecorators: true`; install the packages imported by the actual output.
 
 ## Output families
@@ -41,10 +45,10 @@ An invalid manifest or a generated path escaping the output root throws. Saves a
 
 ## Implementation sources
 
-[packages/generator/src/utils/sourceFiles.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/sourceFiles.ts#L33)
+[packages/generator/src/utils/sourceFiles.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/sourceFiles.ts#L33)
 
-[packages/generator/src/client/apiClientGenerator.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/client/apiClientGenerator.ts#L73)
+[packages/generator/src/client/apiClientGenerator.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/client/apiClientGenerator.ts#L73)
 
-[packages/generator/src/client/queryClientGenerator.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/client/queryClientGenerator.ts#L35)
+[packages/generator/src/client/queryClientGenerator.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/client/queryClientGenerator.ts#L35)
 
-[packages/generator/src/model/modelGenerator.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/model/modelGenerator.ts#L33)
+[packages/generator/src/model/modelGenerator.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/model/modelGenerator.ts#L33)

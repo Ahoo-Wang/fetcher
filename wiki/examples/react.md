@@ -25,21 +25,21 @@ The Storybook fixture intercepts `fetch` for `https://api.example.test`: `/users
 
 ## Use it in a Vite application
 
-The consumer setup below assumes an existing React + TypeScript Vite application. This repository is validated with Node `>=22.12.0`, pnpm `10.34.5`, Vite `^8.2.2`, TypeScript `^6.0.3`, and React/React DOM `^19.2.8`. The published Fetcher packages themselves declare Node `>=18.20.8`.
+The consumer setup below assumes an existing React + TypeScript Vite application. This repository is validated with Node `>=22.12.0`, pnpm `10.34.5`, Vite `^8.2.2`, TypeScript `^6.0.3`, and React/React DOM `^19.3.0`. The published Fetcher packages themselves declare Node `>=18.20.8`.
 
 Install the React package and its declared peer package graph explicitly:
 
 ```bash
 pnpm add @ahoo-wang/fetcher@^5.0.0 \
-  @ahoo-wang/fetcher-react@^5.0.0 \
+  @ahoo-wang/fetcher-react@^5.1.3 \
   @ahoo-wang/fetcher-eventstream@^5.0.0 \
   @ahoo-wang/fetcher-eventbus@^5.0.0 \
   @ahoo-wang/fetcher-storage@^5.0.0 \
-  @ahoo-wang/fetcher-wow@^5.0.0 \
-  @ahoo-wang/fetcher-decorator@^5.0.0 \
   @ahoo-wang/fetcher-cosec@^5.0.0 \
-  react@^19.2.8 react-dom@^19.2.8
+  react@^19.3.0 react-dom@^19.3.0
 ```
+
+Since 5.1.3, `@ahoo-wang/fetcher-wow` is an optional peer: this example does not need it. The Wow query hooks it enables belong to the 5.x line only; from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)).
 
 This section connects an existing Vite application to an existing API; it does not install or create a backend. Copy the component above to `src/ReactRequests.tsx`. Its default base URL is `/api`; point that path at a backend with these demo routes, or pass another `baseURL`:
 

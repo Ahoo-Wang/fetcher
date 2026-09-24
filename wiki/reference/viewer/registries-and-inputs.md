@@ -5,8 +5,8 @@ description: 'Registries, inputs and fullscreen button — @ahoo-wang/fetcher-vi
 
 # Registries, inputs and fullscreen button
 
-::: warning Maintenance mode (deprecated)
-`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+::: warning 5.x only (frozen)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
 :::
 
 `TypedComponentRegistry<Type,Props>` stores React FunctionComponents by a type key. `create(entries = [])` constructs and registers entries. register throws for duplicates; get returns undefined when missing, unregister is a no-op for missing keys, clear empties the registry. types/entries return arrays and size/has inspect current state. Registries are mutable nonreactive objects; registering after a component renders does not itself force a rerender. Register application extensions once before rendering and unregister only registrations you own.
@@ -23,7 +23,7 @@ The singleton filterRegistry and cellRegistry share this contract. TypedFilter c
 
 RemoteSelect merges result (or initial options) before additionalOptions, keeps the first duplicate key, and disables local text filtering. It empties displayed options while loading. After a result exists, an empty trimmed search is ignored. Hook state suppresses stale results, but search has no controller argument: the component cannot guarantee physical cancellation of your request. Default executor handling absorbs failures; no explicit search-error UI is exposed, so implement notification in search if needed. Unmount clears the debounce timer and invalidates execution state. Stable option arrays avoid unnecessary recomputation.
 
-Input callbacks and serializers may throw and are not globally caught. Browser fullscreen permission failures remain rejecting promises from the React fullscreen hook. See [input stories](https://github.com/Ahoo-Wang/fetcher/blob/main/stories/viewer/Inputs.stories.tsx#L1).
+Input callbacks and serializers may throw and are not globally caught. Browser fullscreen permission failures remain rejecting promises from the React fullscreen hook. See [input stories](https://github.com/Ahoo-Wang/fetcher/blob/5.x/stories/viewer/Inputs.stories.tsx#L1).
 
 ## Complete example
 
@@ -67,13 +67,13 @@ export function TagInput<ValueItemType = string[]>(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/components/TagInput.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L69)
+[packages/viewer/src/components/TagInput.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L69)
 
 ```ts
 TagInput;
 ```
 
-[packages/viewer/src/components/TagInput.tsx:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L109)
+[packages/viewer/src/components/TagInput.tsx:109](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L109)
 
 ### TagValueItemSerializer {#api-TagValueItemSerializer}
 
@@ -84,7 +84,7 @@ export interface TagValueItemSerializer<ValueItemType = string> {
 }
 ```
 
-[packages/viewer/src/components/TagInput.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L19)
+[packages/viewer/src/components/TagInput.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L19)
 
 ### StringTagValueItemSerializer {#api-StringTagValueItemSerializer}
 
@@ -92,7 +92,7 @@ export interface TagValueItemSerializer<ValueItemType = string> {
 declare const StringTagValueItemSerializer: TagValueItemSerializer<string>;
 ```
 
-[packages/viewer/src/components/TagInput.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L25)
+[packages/viewer/src/components/TagInput.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L25)
 
 ### NumberTagValueItemSerializer {#api-NumberTagValueItemSerializer}
 
@@ -100,7 +100,7 @@ declare const StringTagValueItemSerializer: TagValueItemSerializer<string>;
 declare const NumberTagValueItemSerializer: TagValueItemSerializer<number>;
 ```
 
-[packages/viewer/src/components/TagInput.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L34)
+[packages/viewer/src/components/TagInput.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L34)
 
 ### TagInputProps {#api-TagInputProps}
 
@@ -116,7 +116,7 @@ export interface TagInputProps<ValueItemType = string> extends Omit<
 }
 ```
 
-[packages/viewer/src/components/TagInput.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L47)
+[packages/viewer/src/components/TagInput.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L47)
 
 ### NumberRange {#api-NumberRange}
 
@@ -126,7 +126,7 @@ export function NumberRange(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/components/NumberRange.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/NumberRange.tsx#L40)
+[packages/viewer/src/components/NumberRange.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/NumberRange.tsx#L40)
 
 ### NumberRangeProps {#api-NumberRangeProps}
 
@@ -142,7 +142,7 @@ export interface NumberRangeProps {
 }
 ```
 
-[packages/viewer/src/components/NumberRange.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/NumberRange.tsx#L19)
+[packages/viewer/src/components/NumberRange.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/NumberRange.tsx#L19)
 
 ### RemoteSelect {#api-RemoteSelect}
 
@@ -153,13 +153,13 @@ export function RemoteSelect<
 >(props: RemoteSelectProps<ValueType, OptionType>): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/components/RemoteSelect.tsx:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L118)
+[packages/viewer/src/components/RemoteSelect.tsx:118](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/RemoteSelect.tsx#L118)
 
 ```ts
 RemoteSelect;
 ```
 
-[packages/viewer/src/components/RemoteSelect.tsx:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L175)
+[packages/viewer/src/components/RemoteSelect.tsx:175](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/RemoteSelect.tsx#L175)
 
 ### RemoteSelectProps {#api-RemoteSelectProps}
 
@@ -180,7 +180,7 @@ export interface RemoteSelectProps<
 }
 ```
 
-[packages/viewer/src/components/RemoteSelect.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L29)
+[packages/viewer/src/components/RemoteSelect.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/RemoteSelect.tsx#L29)
 
 ### Fullscreen {#api-Fullscreen}
 
@@ -188,13 +188,13 @@ export interface RemoteSelectProps<
 export function Fullscreen(props: FullScreenProps): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/components/fullscreen/Fullscreen.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L42)
+[packages/viewer/src/components/fullscreen/Fullscreen.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L42)
 
 ```ts
 Fullscreen;
 ```
 
-[packages/viewer/src/components/fullscreen/Fullscreen.tsx:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L63)
+[packages/viewer/src/components/fullscreen/Fullscreen.tsx:63](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L63)
 
 ### FullScreenProps {#api-FullScreenProps}
 
@@ -209,7 +209,7 @@ export interface FullScreenProps extends Omit<
 }
 ```
 
-[packages/viewer/src/components/fullscreen/Fullscreen.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L20)
+[packages/viewer/src/components/fullscreen/Fullscreen.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L20)
 
 ### TypeCapable {#api-TypeCapable}
 
@@ -219,7 +219,7 @@ export interface TypeCapable<Type = string> {
 }
 ```
 
-[packages/viewer/src/registry/componentRegistry.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/registry/componentRegistry.ts#L22)
+[packages/viewer/src/registry/componentRegistry.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/registry/componentRegistry.ts#L22)
 
 ### TypedComponentRegistry {#api-TypedComponentRegistry}
 
@@ -239,7 +239,7 @@ export class TypedComponentRegistry<Type, Props> {
 }
 ```
 
-[packages/viewer/src/registry/componentRegistry.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/registry/componentRegistry.ts#L37)
+[packages/viewer/src/registry/componentRegistry.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/registry/componentRegistry.ts#L37)
 
 ## Related topics
 

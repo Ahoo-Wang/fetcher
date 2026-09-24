@@ -5,6 +5,10 @@ description: Configure application aggregate routes, inspect command results, an
 
 # Send a Wow Command and Read State
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-wow` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 Use this guide with a server that implements Wow commands and snapshot queries. Command completion and a query result are separate contracts; keep both visible to your application.
 
 Installation must also resolve every declared peer dependency; see the [package prerequisites](../../reference/wow/index.md) for the complete graph. Application routes and identities below are supplied by your application, not created by installation.
@@ -132,6 +136,6 @@ Array-first filter builders require one nonempty array; empty input throws befor
 
 See [commands](../../reference/wow/commands), [snapshot queries](../../reference/wow/snapshot-queries), [filters](../../reference/wow/filters), and [pagination/projection/sort](../../reference/wow/query-options).
 
-[snapshotQueryClient.ts:326](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L326) defines the stream arguments.
+[snapshotQueryClient.ts:326](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L326) defines the stream arguments.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).

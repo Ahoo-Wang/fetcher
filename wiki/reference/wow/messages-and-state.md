@@ -5,6 +5,10 @@ description: 'Message payloads and state metadata — @ahoo-wang/fetcher-wow 5.0
 
 # Message payloads and state metadata
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-wow` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 These small interfaces compose command, event and snapshot envelopes. They carry metadata supplied by the service; importing or assigning a type never loads history, executes a processor or creates timestamps.
 
 | Field family                                                          | Meaning and constraint                                                                                                                                        |
@@ -36,7 +40,7 @@ export enum FunctionKind {
 }
 ```
 
-[packages/wow/src/types/function.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/function.ts#L21)
+[packages/wow/src/types/function.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/function.ts#L21)
 
 ### FunctionInfo {#api-FunctionInfo}
 
@@ -47,7 +51,7 @@ export interface FunctionInfo extends NamedBoundedContext, Named {
 }
 ```
 
-[packages/wow/src/types/function.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/function.ts#L51)
+[packages/wow/src/types/function.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/function.ts#L51)
 
 ### FunctionInfoCapable {#api-FunctionInfoCapable}
 
@@ -57,7 +61,7 @@ export interface FunctionInfoCapable {
 }
 ```
 
-[packages/wow/src/types/function.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/function.ts#L59)
+[packages/wow/src/types/function.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/function.ts#L59)
 
 ### BodyCapable {#api-BodyCapable}
 
@@ -67,7 +71,7 @@ export interface BodyCapable<T> {
 }
 ```
 
-[packages/wow/src/types/messaging.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/messaging.ts#L14)
+[packages/wow/src/types/messaging.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/messaging.ts#L14)
 
 ### CreateTimeCapable {#api-CreateTimeCapable}
 
@@ -77,7 +81,7 @@ export interface CreateTimeCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L19)
+[packages/wow/src/types/modeling.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L19)
 
 ### DeletedCapable {#api-DeletedCapable}
 
@@ -87,7 +91,7 @@ export interface DeletedCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L29)
+[packages/wow/src/types/modeling.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L29)
 
 ### EventIdCapable {#api-EventIdCapable}
 
@@ -97,7 +101,7 @@ export interface EventIdCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L39)
+[packages/wow/src/types/modeling.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L39)
 
 ### EventTimeCapable {#api-EventTimeCapable}
 
@@ -107,7 +111,7 @@ export interface EventTimeCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L49)
+[packages/wow/src/types/modeling.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L49)
 
 ### FirstEventTimeCapable {#api-FirstEventTimeCapable}
 
@@ -117,7 +121,7 @@ export interface FirstEventTimeCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L59)
+[packages/wow/src/types/modeling.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L59)
 
 ### FirstOperatorCapable {#api-FirstOperatorCapable}
 
@@ -127,7 +131,7 @@ export interface FirstOperatorCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L69)
+[packages/wow/src/types/modeling.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L69)
 
 ### OperatorCapable {#api-OperatorCapable}
 
@@ -137,7 +141,7 @@ export interface OperatorCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L122)
+[packages/wow/src/types/modeling.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L122)
 
 ### SnapshotTimeCapable {#api-SnapshotTimeCapable}
 
@@ -147,7 +151,7 @@ export interface SnapshotTimeCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L148)
+[packages/wow/src/types/modeling.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L148)
 
 ### StateCapable {#api-StateCapable}
 
@@ -157,7 +161,7 @@ export interface StateCapable<S> {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L165)
+[packages/wow/src/types/modeling.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L165)
 
 ### MessageHeaderSqlType {#api-MessageHeaderSqlType}
 
@@ -168,6 +172,6 @@ export enum MessageHeaderSqlType {
 }
 ```
 
-[packages/wow/src/types/bi.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/bi.ts#L14)
+[packages/wow/src/types/bi.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/bi.ts#L14)
 
 [Complete symbol index](./symbols)

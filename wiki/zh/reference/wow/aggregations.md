@@ -5,6 +5,10 @@ description: '聚合构造器 — @ahoo-wang/fetcher-wow 5.0.0'
 
 # 聚合构造器
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 AggregationQuery 描述服务端聚合，不是 JavaScript reducer，至少提供一个 metric。`aggregate(query, attributes?, controller?)` 返回以 alias 为键的扁平行；`aggregateStream` 返回 JSON SSE 行，需要显式消费。泛型描述行但不校验内容。
 
 | 构造器                                                         | 输入 / 结果                                                                                 |
@@ -107,7 +111,7 @@ export enum AggregationGroupType {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L22)
+[packages/wow/src/query/aggregation.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L22)
 
 ### AggregationMetricType {#api-AggregationMetricType}
 
@@ -122,7 +126,7 @@ export enum AggregationMetricType {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L28)
+[packages/wow/src/query/aggregation.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L28)
 
 ### AggregationExpressionType {#api-AggregationExpressionType}
 
@@ -134,7 +138,7 @@ export enum AggregationExpressionType {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L37)
+[packages/wow/src/query/aggregation.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L37)
 
 ### AggregationExpressionOperator {#api-AggregationExpressionOperator}
 
@@ -147,7 +151,7 @@ export enum AggregationExpressionOperator {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L43)
+[packages/wow/src/query/aggregation.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L43)
 
 ### AggregationDateUnit {#api-AggregationDateUnit}
 
@@ -164,7 +168,7 @@ export enum AggregationDateUnit {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L50)
+[packages/wow/src/query/aggregation.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L50)
 
 ### AggregationFunction {#api-AggregationFunction}
 
@@ -179,7 +183,7 @@ export enum AggregationFunction {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L61)
+[packages/wow/src/query/aggregation.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L61)
 
 ### AggregationElement {#api-AggregationElement}
 
@@ -190,7 +194,7 @@ export interface AggregationElement {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L70)
+[packages/wow/src/query/aggregation.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L70)
 
 ### TermsAggregationGroup {#api-TermsAggregationGroup}
 
@@ -203,7 +207,7 @@ export interface TermsAggregationGroup<
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L80)
+[packages/wow/src/query/aggregation.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L80)
 
 ### HistogramAggregationGroup {#api-HistogramAggregationGroup}
 
@@ -216,7 +220,7 @@ export interface HistogramAggregationGroup<
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L87)
+[packages/wow/src/query/aggregation.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L87)
 
 ### DateHistogramAggregationGroup {#api-DateHistogramAggregationGroup}
 
@@ -231,7 +235,7 @@ export interface DateHistogramAggregationGroup<
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L94)
+[packages/wow/src/query/aggregation.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L94)
 
 ### AggregationGroup {#api-AggregationGroup}
 
@@ -242,7 +246,7 @@ export type AggregationGroup<FIELDS extends string = string> =
   | DateHistogramAggregationGroup<FIELDS>;
 ```
 
-[packages/wow/src/query/aggregation.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L103)
+[packages/wow/src/query/aggregation.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L103)
 
 ### FieldAggregationExpression {#api-FieldAggregationExpression}
 
@@ -253,7 +257,7 @@ export interface FieldAggregationExpression<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L108)
+[packages/wow/src/query/aggregation.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L108)
 
 ### ConstantAggregationExpression {#api-ConstantAggregationExpression}
 
@@ -264,7 +268,7 @@ export interface ConstantAggregationExpression {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L113)
+[packages/wow/src/query/aggregation.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L113)
 
 ### BinaryAggregationExpression {#api-BinaryAggregationExpression}
 
@@ -277,7 +281,7 @@ export interface BinaryAggregationExpression<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L118)
+[packages/wow/src/query/aggregation.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L118)
 
 ### AggregationExpression {#api-AggregationExpression}
 
@@ -288,7 +292,7 @@ export type AggregationExpression<FIELDS extends string = string> =
   | BinaryAggregationExpression<FIELDS>;
 ```
 
-[packages/wow/src/query/aggregation.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L125)
+[packages/wow/src/query/aggregation.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L125)
 
 ### CountAggregationMetric {#api-CountAggregationMetric}
 
@@ -300,7 +304,7 @@ export interface CountAggregationMetric<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L130)
+[packages/wow/src/query/aggregation.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L130)
 
 ### NumericAggregationMetric {#api-NumericAggregationMetric}
 
@@ -314,7 +318,7 @@ export interface NumericAggregationMetric<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L136)
+[packages/wow/src/query/aggregation.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L136)
 
 ### AnyAggregationMetric {#api-AnyAggregationMetric}
 
@@ -327,7 +331,7 @@ export interface AnyAggregationMetric<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L144)
+[packages/wow/src/query/aggregation.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L144)
 
 ### DistinctCountAggregationMetric {#api-DistinctCountAggregationMetric}
 
@@ -342,7 +346,7 @@ export interface DistinctCountAggregationMetric<
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L151)
+[packages/wow/src/query/aggregation.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L151)
 
 ### PercentileAggregationMetric {#api-PercentileAggregationMetric}
 
@@ -356,7 +360,7 @@ export interface PercentileAggregationMetric<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L160)
+[packages/wow/src/query/aggregation.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L160)
 
 ### DerivedExpressionType {#api-DerivedExpressionType}
 
@@ -368,7 +372,7 @@ export enum DerivedExpressionType {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L168)
+[packages/wow/src/query/aggregation.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L168)
 
 ### DerivedExpression {#api-DerivedExpression}
 
@@ -384,7 +388,7 @@ export type DerivedExpression =
     };
 ```
 
-[packages/wow/src/query/aggregation.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L175)
+[packages/wow/src/query/aggregation.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L175)
 
 ### DerivedAggregationMetric {#api-DerivedAggregationMetric}
 
@@ -396,7 +400,7 @@ export interface DerivedAggregationMetric {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:185](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L185)
+[packages/wow/src/query/aggregation.ts:185](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L185)
 
 ### HavingExpressionType {#api-HavingExpressionType}
 
@@ -411,7 +415,7 @@ export enum HavingExpressionType {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L191)
+[packages/wow/src/query/aggregation.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L191)
 
 ### ComparisonOperator {#api-ComparisonOperator}
 
@@ -426,7 +430,7 @@ export enum ComparisonOperator {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L200)
+[packages/wow/src/query/aggregation.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L200)
 
 ### HavingExpression {#api-HavingExpression}
 
@@ -456,7 +460,7 @@ export type HavingExpression =
     };
 ```
 
-[packages/wow/src/query/aggregation.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L210)
+[packages/wow/src/query/aggregation.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L210)
 
 ### AggregationMetric {#api-AggregationMetric}
 
@@ -470,7 +474,7 @@ export type AggregationMetric<FIELDS extends string = string> =
   | DerivedAggregationMetric;
 ```
 
-[packages/wow/src/query/aggregation.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L234)
+[packages/wow/src/query/aggregation.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L234)
 
 ### AggregationQuery {#api-AggregationQuery}
 
@@ -492,7 +496,7 @@ export interface AggregationQuery<
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L242)
+[packages/wow/src/query/aggregation.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L242)
 
 ### HistogramAggregationOptions {#api-HistogramAggregationOptions}
 
@@ -503,7 +507,7 @@ export interface HistogramAggregationOptions {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:258](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L258)
+[packages/wow/src/query/aggregation.ts:258](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L258)
 
 ### DateHistogramAggregationOptions {#api-DateHistogramAggregationOptions}
 
@@ -516,7 +520,7 @@ export interface DateHistogramAggregationOptions {
 }
 ```
 
-[packages/wow/src/query/aggregation.ts:263](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L263)
+[packages/wow/src/query/aggregation.ts:263](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L263)
 
 ### aggregation {#api-aggregation}
 
@@ -616,4 +620,4 @@ export declare const aggregation: {
 };
 ```
 
-[packages/wow/src/query/aggregation.ts:310](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/aggregation.ts#L310)
+[packages/wow/src/query/aggregation.ts:310](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/aggregation.ts#L310)

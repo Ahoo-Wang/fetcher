@@ -5,8 +5,8 @@ description: 'Models and state ownership — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # Models and state ownership
 
-::: warning Maintenance mode (deprecated)
-`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+::: warning 5.x only (frozen)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
 :::
 
 A ViewDefinition describes the fields and available filters for a data endpoint; ViewState describes one saved arrangement of that definition. The root package's model is `ViewDefinition`/`ViewState`; an unrelated view-engine package is not part of this API.
@@ -88,7 +88,7 @@ export interface ViewDefinition {
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L15)
+[packages/viewer/src/viewer/types.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L15)
 
 ### FieldDefinition {#api-FieldDefinition}
 
@@ -107,7 +107,7 @@ export interface FieldDefinition
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L24)
+[packages/viewer/src/viewer/types.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L24)
 
 ### ViewType {#api-ViewType}
 
@@ -115,7 +115,7 @@ export interface FieldDefinition
 export type ViewType = 'PERSONAL' | 'SHARED';
 ```
 
-[packages/viewer/src/viewer/types.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L32)
+[packages/viewer/src/viewer/types.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L32)
 
 ### ViewSource {#api-ViewSource}
 
@@ -123,7 +123,7 @@ export type ViewType = 'PERSONAL' | 'SHARED';
 export type ViewSource = 'SYSTEM' | 'CUSTOM';
 ```
 
-[packages/viewer/src/viewer/types.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L33)
+[packages/viewer/src/viewer/types.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L33)
 
 ### ViewState {#api-ViewState}
 
@@ -145,7 +145,7 @@ export interface ViewState {
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L35)
+[packages/viewer/src/viewer/types.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L35)
 
 ### ViewColumn {#api-ViewColumn}
 
@@ -158,7 +158,7 @@ export interface ViewColumn extends NamedCapable, KeyCapable {
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L51)
+[packages/viewer/src/viewer/types.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L51)
 
 ## Application actions and persistence {#action-contracts}
 
@@ -171,7 +171,7 @@ export type ViewMutationAction = (
 ) => void;
 ```
 
-[packages/viewer/src/viewer/types.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L65)
+[packages/viewer/src/viewer/types.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L65)
 
 ### ViewMutationActionsCapable {#api-ViewMutationActionsCapable}
 
@@ -183,7 +183,7 @@ export interface ViewMutationActionsCapable {
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L86)
+[packages/viewer/src/viewer/types.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L86)
 
 ### GetRecordCountAction {#api-GetRecordCountAction}
 
@@ -194,7 +194,7 @@ export type GetRecordCountAction = (
 ) => Promise<number>;
 ```
 
-[packages/viewer/src/viewer/types.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L60)
+[packages/viewer/src/viewer/types.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L60)
 
 ### GetRecordCountActionCapable {#api-GetRecordCountActionCapable}
 
@@ -204,7 +204,7 @@ export interface GetRecordCountActionCapable {
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L82)
+[packages/viewer/src/viewer/types.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L82)
 
 ### TopBarActionItem {#api-TopBarActionItem}
 
@@ -212,7 +212,7 @@ export interface GetRecordCountActionCapable {
 export interface TopBarActionItem<RecordType> extends ActionItem<RecordType> {}
 ```
 
-[packages/viewer/src/viewer/types.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L58)
+[packages/viewer/src/viewer/types.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L58)
 
 ### BatchActionsConfig {#api-BatchActionsConfig}
 
@@ -224,7 +224,7 @@ export interface BatchActionsConfig<RecordType> {
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L70)
+[packages/viewer/src/viewer/types.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L70)
 
 ### TopbarActionsCapable {#api-TopbarActionsCapable}
 
@@ -236,7 +236,7 @@ export interface TopbarActionsCapable<RecordType> {
 }
 ```
 
-[packages/viewer/src/viewer/types.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/types.ts#L76)
+[packages/viewer/src/viewer/types.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/types.ts#L76)
 
 ## State hooks and controlled dimensions {#state-contracts}
 
@@ -250,7 +250,7 @@ export function useActiveViewState(
 
 Implementation defaults: `defaultPage = 1`; `defaultPageSize = 10`; `defaultTableSize = 'middle'`; `defaultCondition = DEFAULT_CONDITION`; `defaultSorter = []`.
 
-[packages/viewer/src/hooks/useActiveViewState.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L43)
+[packages/viewer/src/hooks/useActiveViewState.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/hooks/useActiveViewState.ts#L43)
 
 ### DEFAULT_CONDITION {#api-DEFAULT_CONDITION}
 
@@ -258,7 +258,7 @@ Implementation defaults: `defaultPage = 1`; `defaultPageSize = 10`; `defaultTabl
 declare const DEFAULT_CONDITION: Condition<string>;
 ```
 
-[packages/viewer/src/hooks/useActiveViewState.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L8)
+[packages/viewer/src/hooks/useActiveViewState.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/hooks/useActiveViewState.ts#L8)
 
 ### UseActiveViewStateOptions {#api-UseActiveViewStateOptions}
 
@@ -274,7 +274,7 @@ export interface UseActiveViewStateOptions {
 }
 ```
 
-[packages/viewer/src/hooks/useActiveViewState.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L10)
+[packages/viewer/src/hooks/useActiveViewState.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/hooks/useActiveViewState.ts#L10)
 
 ### UseActiveViewStateReturn {#api-UseActiveViewStateReturn}
 
@@ -298,7 +298,7 @@ export interface UseActiveViewStateReturn {
 }
 ```
 
-[packages/viewer/src/hooks/useActiveViewState.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useActiveViewState.ts#L22)
+[packages/viewer/src/hooks/useActiveViewState.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/hooks/useActiveViewState.ts#L22)
 
 ### useViewState {#api-useViewState}
 
@@ -308,7 +308,7 @@ export function useViewState(options: UseViewStateOptions): UseViewStateReturn;
 
 Implementation defaults: `defaultPage = DEFAULT_PAGE`; `defaultPageSize = DEFAULT_PAGE_SIZE`.
 
-[packages/viewer/src/view/hooks/useViewState.ts:219](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L219)
+[packages/viewer/src/view/hooks/useViewState.ts:219](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/view/hooks/useViewState.ts#L219)
 
 ### ViewChangeAction {#api-ViewChangeAction}
 
@@ -321,7 +321,7 @@ export type ViewChangeAction = (
 ) => void;
 ```
 
-[packages/viewer/src/view/hooks/useViewState.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L32)
+[packages/viewer/src/view/hooks/useViewState.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/view/hooks/useViewState.ts#L32)
 
 ### UseViewStateOptions {#api-UseViewStateOptions}
 
@@ -361,7 +361,7 @@ export interface UseViewStateOptions {
 
 :::
 
-[packages/viewer/src/view/hooks/useViewState.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L65)
+[packages/viewer/src/view/hooks/useViewState.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/view/hooks/useViewState.ts#L65)
 
 ### UseViewStateReturn {#api-UseViewStateReturn}
 
@@ -396,7 +396,7 @@ export interface UseViewStateReturn {
 
 :::
 
-[packages/viewer/src/view/hooks/useViewState.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/hooks/useViewState.ts#L127)
+[packages/viewer/src/view/hooks/useViewState.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/view/hooks/useViewState.ts#L127)
 
 ### useViewerState {#api-useViewerState}
 
@@ -408,7 +408,7 @@ export function useViewerState(
 
 Implementation defaults: `defaultShowFilter = true`; `defaultShowViewPanel = true`.
 
-[packages/viewer/src/viewer/hooks/useViewerState.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L77)
+[packages/viewer/src/viewer/hooks/useViewerState.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/hooks/useViewerState.ts#L77)
 
 ### UseViewerStateOptions {#api-UseViewerStateOptions}
 
@@ -422,7 +422,7 @@ export interface UseViewerStateOptions {
 }
 ```
 
-[packages/viewer/src/viewer/hooks/useViewerState.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L33)
+[packages/viewer/src/viewer/hooks/useViewerState.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/hooks/useViewerState.ts#L33)
 
 ### UseViewerStateReturn {#api-UseViewerStateReturn}
 
@@ -464,7 +464,7 @@ export interface UseViewerStateReturn {
 
 :::
 
-[packages/viewer/src/viewer/hooks/useViewerState.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/hooks/useViewerState.ts#L41)
+[packages/viewer/src/viewer/hooks/useViewerState.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/hooks/useViewerState.ts#L41)
 
 ## Presentation types and utilities {#utility-contracts}
 
@@ -474,7 +474,7 @@ export interface UseViewerStateReturn {
 export type Optional<T = any> = T | undefined;
 ```
 
-[packages/viewer/src/types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L19)
+[packages/viewer/src/types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L19)
 
 ### DataSourceCapable {#api-DataSourceCapable}
 
@@ -485,7 +485,7 @@ export interface DataSourceCapable<RecordType = any> {
 }
 ```
 
-[packages/viewer/src/types.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L21)
+[packages/viewer/src/types.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L21)
 
 ### StyleCapable {#api-StyleCapable}
 
@@ -496,7 +496,7 @@ export interface StyleCapable {
 }
 ```
 
-[packages/viewer/src/types.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L26)
+[packages/viewer/src/types.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L26)
 
 ### AttributesCapable {#api-AttributesCapable}
 
@@ -506,7 +506,7 @@ export interface AttributesCapable<Attributes = any> {
 }
 ```
 
-[packages/viewer/src/types.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L31)
+[packages/viewer/src/types.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L31)
 
 ### PrimaryKeyClickHandlerCapable {#api-PrimaryKeyClickHandlerCapable}
 
@@ -516,7 +516,7 @@ export interface PrimaryKeyClickHandlerCapable<RecordType = any> {
 }
 ```
 
-[packages/viewer/src/types.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L35)
+[packages/viewer/src/types.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L35)
 
 ### ViewTableSetting {#api-ViewTableSetting}
 
@@ -526,7 +526,7 @@ export interface ViewTableSetting {
 }
 ```
 
-[packages/viewer/src/types.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L39)
+[packages/viewer/src/types.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L39)
 
 ### ViewTableSettingCapable {#api-ViewTableSettingCapable}
 
@@ -536,7 +536,7 @@ export interface ViewTableSettingCapable {
 }
 ```
 
-[packages/viewer/src/types.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L43)
+[packages/viewer/src/types.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L43)
 
 ### TableSizeCapable {#api-TableSizeCapable}
 
@@ -546,7 +546,7 @@ export interface TableSizeCapable {
 }
 ```
 
-[packages/viewer/src/types.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L47)
+[packages/viewer/src/types.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L47)
 
 ### KeyCapable {#api-KeyCapable}
 
@@ -556,7 +556,7 @@ export interface KeyCapable {
 }
 ```
 
-[packages/viewer/src/types.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L51)
+[packages/viewer/src/types.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L51)
 
 ### ReducerActionCapable {#api-ReducerActionCapable}
 
@@ -567,7 +567,7 @@ export interface ReducerActionCapable<TYPE = any> {
 }
 ```
 
-[packages/viewer/src/types.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L55)
+[packages/viewer/src/types.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L55)
 
 ### TableRecordType {#api-TableRecordType}
 
@@ -575,7 +575,7 @@ export interface ReducerActionCapable<TYPE = any> {
 export type TableRecordType<RecordType> = RecordType & KeyCapable;
 ```
 
-[packages/viewer/src/types.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L60)
+[packages/viewer/src/types.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L60)
 
 ### ActionItem {#api-ActionItem}
 
@@ -589,7 +589,7 @@ export interface ActionItem<RecordType> extends AttributesCapable<
 }
 ```
 
-[packages/viewer/src/types.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L62)
+[packages/viewer/src/types.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L62)
 
 ### SaveViewMethod {#api-SaveViewMethod}
 
@@ -597,7 +597,7 @@ export interface ActionItem<RecordType> extends AttributesCapable<
 export type SaveViewMethod = 'Update' | 'SaveAs';
 ```
 
-[packages/viewer/src/types.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/types.ts#L70)
+[packages/viewer/src/types.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/types.ts#L70)
 
 ### deepEqual {#api-deepEqual}
 
@@ -605,7 +605,7 @@ export type SaveViewMethod = 'Update' | 'SaveAs';
 export function deepEqual(left: any, right: any): boolean;
 ```
 
-[packages/viewer/src/utils.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/utils.ts#L34)
+[packages/viewer/src/utils.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/utils.ts#L34)
 
 ### mapToTableRecord {#api-mapToTableRecord}
 
@@ -616,7 +616,7 @@ export function mapToTableRecord<RecordType = any>(
 ): TableRecordType<RecordType>[];
 ```
 
-[packages/viewer/src/utils.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/utils.ts#L112)
+[packages/viewer/src/utils.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/utils.ts#L112)
 
 ### format {#api-format}
 
@@ -624,7 +624,7 @@ export function mapToTableRecord<RecordType = any>(
 export function format(str: string, ...args: any[]): string;
 ```
 
-[packages/viewer/src/utils.ts:137](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/utils.ts#L137)
+[packages/viewer/src/utils.ts:137](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/utils.ts#L137)
 
 ## Related topics
 

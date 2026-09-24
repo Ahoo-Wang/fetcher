@@ -8,10 +8,10 @@ pageClass: skills-page
 
 Choose a skill from the task’s inputs and outputs. An application can compose packages while keeping each change focused on one responsibility.
 
-| Task              | Skill                                                                                                                    | API reference                                |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| OpenAPI types     | [`$fetcher-openapi-types`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/SKILL.md)         | [openapi](../reference/openapi/index.md)     |
-| Client generation | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-generator/SKILL.md) | [generator](../reference/generator/index.md) |
+| Task                    | Skill                                                                                                                   | API reference                                |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| OpenAPI types           | [`$fetcher-openapi-types`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/SKILL.md)        | [openapi](../reference/openapi/index.md)     |
+| Client generation (5.x) | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-openapi-generator/SKILL.md) | [generator](../reference/generator/index.md) |
 
 ## Provide this context
 

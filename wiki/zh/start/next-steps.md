@@ -16,9 +16,9 @@ description: 从已成功运行的请求或数据表继续完成具体应用能�
 | 为重复使用的端点提供具名方法       | [服务客户端](../guides/services/index.md)                                           |
 | 逐步展示事件或生成文本             | [流式消费](../guides/streaming/index.md)                                            |
 | 用 React 输入驱动请求              | [React 查询](../guides/react/queries.md) → [防抖](../guides/react/debounce.md)      |
-| 让表格控件真正改变显示行           | [Viewer 数据任务](../guides/viewer/index.md)                                        |
-| 接入已有平台服务                   | [Wow、CoSec、存储与事件](../guides/integrations/index.md)                           |
+| 让表格控件真正改变显示行           | [Viewer 数据任务](../guides/viewer/index.md)（5.x）                                 |
+| 接入已有平台服务                   | [CoSec、存储与事件](../guides/integrations/index.md)；Wow（5.x）                    |
 
 通过[架构与选型](../architecture/index.md)决定状态、取消和持久化的所有者。已知操作、需要精确契约时查询 [API 参考](../reference/index.md)；[完整示例](../examples/index.md)继续作为可执行基线。
 
-基于 Wow 查询的可配置数据视图见 [View Engine 重写状态](../guides/view-engine/index.md)：设计、目标 API 与交付顺序。
+从 6.0 起，Wow、生成器与数据视图组件在 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)中继续演进，文档见 [wow.ahoo.me](https://wow.ahoo.me)。

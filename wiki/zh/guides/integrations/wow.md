@@ -5,6 +5,10 @@ description: 配置应用聚合路由、检查命令结果，并查询或流式�
 
 # 发送 Wow 命令并读取状态
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 适用于实现 Wow 命令和快照查询的服务端。命令完成和查询结果是独立契约，应用应分别处理。
 
 安装时还需要解析该包声明的全部 peer 依赖；完整清单见[包接入前提](../../reference/wow/index.md)。以下服务路由和身份由应用提供，不由安装过程创建。
@@ -132,6 +136,6 @@ export async function printActiveStates(
 
 参见[命令](../../reference/wow/commands)、[快照查询](../../reference/wow/snapshot-queries)、[过滤器](../../reference/wow/filters)及[分页、投影和排序](../../reference/wow/query-options)。
 
-[snapshotQueryClient.ts:326](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L326) 定义流方法参数。
+[snapshotQueryClient.ts:326](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L326) 定义流方法参数。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。

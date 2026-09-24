@@ -5,6 +5,10 @@ description: 'Generator CLI — Fetcher 5.0.0'
 
 # Generator CLI
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-generator` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 `fetcher-generator generate` reads JSON/YAML and writes TypeScript models and decorator clients. Run it from a directory where your TypeScript configuration and installed Fetcher packages resolve.
 
 ## Options
@@ -120,10 +124,10 @@ HTTP loading uses fetch then text without checking response.ok; an HTTP error bo
 
 ## Implementation sources
 
-[packages/generator/src/cli.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/cli.ts#L17)
+[packages/generator/src/cli.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/cli.ts#L17)
 
-[packages/generator/src/utils/clis.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)
+[packages/generator/src/utils/clis.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/clis.ts#L90)
 
-[packages/generator/src/utils/parsers.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/parsers.ts#L25)
+[packages/generator/src/utils/parsers.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/parsers.ts#L25)
 
-[packages/generator/src/utils/resources.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/resources.ts#L16)
+[packages/generator/src/utils/resources.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/resources.ts#L16)

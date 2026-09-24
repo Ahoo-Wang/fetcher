@@ -5,6 +5,10 @@ description: 'Cursor queries — @ahoo-wang/fetcher-wow 5.0.0'
 
 # Cursor queries
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-wow` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 Cursor pagination uses an opaque server token and a filter; it does not use page indexes. `cursorQuery(options)` validates size and sort-count locally and returns a plain CursorQuery. Use SnapshotQueryClient.cursor/cursorState or EventStreamQueryClient.cursor to send it.
 
 | Field / constant    | Contract                                                                          |
@@ -73,7 +77,7 @@ export function cursorQuery<FIELDS extends string = string>(
 
 Implementation defaults: `projection = {}`; `sort = []`; `size = DEFAULT_CURSOR_SIZE`; `cursor = null`.
 
-[packages/wow/src/query/cursorQuery.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L37)
+[packages/wow/src/query/cursorQuery.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L37)
 
 ### DEFAULT_CURSOR_SIZE {#api-DEFAULT_CURSOR_SIZE}
 
@@ -81,7 +85,7 @@ Implementation defaults: `projection = {}`; `sort = []`; `size = DEFAULT_CURSOR_
 declare const DEFAULT_CURSOR_SIZE: 10;
 ```
 
-[packages/wow/src/query/cursorQuery.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L18)
+[packages/wow/src/query/cursorQuery.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L18)
 
 ### MAX_CURSOR_SIZE {#api-MAX_CURSOR_SIZE}
 
@@ -89,7 +93,7 @@ declare const DEFAULT_CURSOR_SIZE: 10;
 declare const MAX_CURSOR_SIZE: 2147483646;
 ```
 
-[packages/wow/src/query/cursorQuery.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L19)
+[packages/wow/src/query/cursorQuery.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L19)
 
 ### MAX_CURSOR_SORT_FIELDS {#api-MAX_CURSOR_SORT_FIELDS}
 
@@ -97,7 +101,7 @@ declare const MAX_CURSOR_SIZE: 2147483646;
 declare const MAX_CURSOR_SORT_FIELDS: 32;
 ```
 
-[packages/wow/src/query/cursorQuery.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L20)
+[packages/wow/src/query/cursorQuery.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L20)
 
 ### CursorQuery {#api-CursorQuery}
 
@@ -111,7 +115,7 @@ export interface CursorQuery<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/cursorQuery.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L23)
+[packages/wow/src/query/cursorQuery.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L23)
 
 ### CursorPage {#api-CursorPage}
 
@@ -122,7 +126,7 @@ export interface CursorPage<T> {
 }
 ```
 
-[packages/wow/src/query/cursorQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L32)
+[packages/wow/src/query/cursorQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L32)
 
 ## Related topics
 

@@ -5,8 +5,8 @@ description: 'Saved-view panels and persistence callbacks — @ahoo-wang/fetcher
 
 # Saved-view panels and persistence callbacks
 
-::: warning Maintenance mode (deprecated)
-`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+::: warning 5.x only (frozen)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
 :::
 
 The saved-view components are UI building blocks around ViewState. A mutation callback requests persistence; the success callback acknowledges that the application has completed it. Do not call success before the write is confirmed if closing the editor would hide a failed save.
@@ -66,7 +66,7 @@ These signatures follow declarations reachable from the current root entry. `?` 
 export function ViewItem(props: ViewItemProps): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewItem.tsx:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewItem.tsx#L93)
+[packages/viewer/src/viewer/panel/ViewItem.tsx:93](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewItem.tsx#L93)
 
 ### ViewItemProps {#api-ViewItemProps}
 
@@ -78,7 +78,7 @@ export interface ViewItemProps extends GetRecordCountActionCapable {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewItem.tsx:12](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewItem.tsx#L12)
+[packages/viewer/src/viewer/panel/ViewItem.tsx:12](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewItem.tsx#L12)
 
 ### ViewItemGroup {#api-ViewItemGroup}
 
@@ -88,7 +88,7 @@ export function ViewItemGroup(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewItemGroup.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewItemGroup.tsx#L21)
+[packages/viewer/src/viewer/panel/ViewItemGroup.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewItemGroup.tsx#L21)
 
 ### ViewItemGroupProps {#api-ViewItemGroupProps}
 
@@ -101,7 +101,7 @@ export interface ViewItemGroupProps extends GetRecordCountActionCapable {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewItemGroup.tsx:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewItemGroup.tsx#L10)
+[packages/viewer/src/viewer/panel/ViewItemGroup.tsx:10](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewItemGroup.tsx#L10)
 
 ### ViewPanel {#api-ViewPanel}
 
@@ -109,7 +109,7 @@ export interface ViewItemGroupProps extends GetRecordCountActionCapable {
 export function ViewPanel(props: ViewPanelProps): React.JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewPanel.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewPanel.tsx#L32)
+[packages/viewer/src/viewer/panel/ViewPanel.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewPanel.tsx#L32)
 
 ### ViewPanelProps {#api-ViewPanelProps}
 
@@ -127,7 +127,7 @@ export interface ViewPanelProps extends GetRecordCountActionCapable {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewPanel.tsx:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewPanel.tsx#L18)
+[packages/viewer/src/viewer/panel/ViewPanel.tsx:18](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewPanel.tsx#L18)
 
 ### SaveViewModal {#api-SaveViewModal}
 
@@ -137,7 +137,7 @@ export function SaveViewModal(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/SaveViewModal.tsx:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/SaveViewModal.tsx#L17)
+[packages/viewer/src/viewer/panel/SaveViewModal.tsx:17](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/SaveViewModal.tsx#L17)
 
 ### SaveViewModalProps {#api-SaveViewModalProps}
 
@@ -152,7 +152,7 @@ export interface SaveViewModalProps {
 }
 ```
 
-[packages/viewer/src/viewer/panel/SaveViewModal.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/SaveViewModal.tsx#L7)
+[packages/viewer/src/viewer/panel/SaveViewModal.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/SaveViewModal.tsx#L7)
 
 ### ViewManageItem {#api-ViewManageItem}
 
@@ -162,7 +162,7 @@ export function ViewManageItem(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewManageItem.tsx:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewManageItem.tsx#L16)
+[packages/viewer/src/viewer/panel/ViewManageItem.tsx:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewManageItem.tsx#L16)
 
 ### ViewManageItemProps {#api-ViewManageItemProps}
 
@@ -177,7 +177,7 @@ export interface ViewManageItemProps {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewManageItem.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewManageItem.tsx#L7)
+[packages/viewer/src/viewer/panel/ViewManageItem.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewManageItem.tsx#L7)
 
 ### ViewManageModal {#api-ViewManageModal}
 
@@ -187,7 +187,7 @@ export function ViewManageModal(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewManageModal.tsx:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewManageModal.tsx#L15)
+[packages/viewer/src/viewer/panel/ViewManageModal.tsx:15](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewManageModal.tsx#L15)
 
 ### ViewManageModalProps {#api-ViewManageModalProps}
 
@@ -202,7 +202,7 @@ export interface ViewManageModalProps {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewManageModal.tsx:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewManageModal.tsx#L6)
+[packages/viewer/src/viewer/panel/ViewManageModal.tsx:6](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewManageModal.tsx#L6)
 
 ## Related topics
 

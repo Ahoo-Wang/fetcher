@@ -5,6 +5,10 @@ description: '程序化 API — Fetcher 5.0.0'
 
 # 程序化 API
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-generator` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 包根恰好导出 `CodeGenerator` 与 `DEFAULT_CONFIG_PATH`。可执行文件单独通过 `fetcher-generator` binary 暴露。不要从包根或未公开子路径导入内部 AggregateResolver、ModelGenerator、GenerateContext、ConsoleLogger、setupCLI、解析辅助函数或内部选项类型。
 
 ## CodeGenerator
@@ -51,8 +55,8 @@ try {
 
 <span id="default_config_path"></span>
 
-**`DEFAULT_CONFIG_PATH`** — [packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L35)
+**`DEFAULT_CONFIG_PATH`** — [packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/index.ts#L35)
 
 <span id="codegenerator-api"></span>
 
-**`CodeGenerator`** — [packages/generator/src/index.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L53)
+**`CodeGenerator`** — [packages/generator/src/index.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/index.ts#L53)

@@ -16,9 +16,9 @@ After the first example succeeds, choose the change your application needs next.
 | Give repeated endpoints named methods           | [Service clients](../guides/services/index.md)                                                    |
 | Display events or completion text incrementally | [Streaming](../guides/streaming/index.md)                                                         |
 | Drive requests from React inputs                | [React queries](../guides/react/queries.md) → [debounce](../guides/react/debounce.md)             |
-| Make table controls change displayed rows       | [Viewer data tasks](../guides/viewer/index.md)                                                    |
-| Connect an existing platform service            | [Wow, CoSec, storage and events](../guides/integrations/index.md)                                 |
+| Make table controls change displayed rows       | [Viewer data tasks](../guides/viewer/index.md) (5.x)                                              |
+| Connect an existing platform service            | [CoSec, storage and events](../guides/integrations/index.md); Wow (5.x)                           |
 
 Use [architecture and selection](../architecture/index.md) to decide who owns state, cancellation, and persistence. Use [API reference](../reference/index.md) when you know the operation and need its exact contract; the [complete examples](../examples/index.md) remain the executable baseline.
 
-For configurable data views over Wow queries, follow the [View Engine rewrite status](../guides/view-engine/index.md): design, target API and delivery order.
+Wow, the generator and the data-view components continue in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) from 6.0; see [wow.ahoo.me](https://wow.ahoo.me).

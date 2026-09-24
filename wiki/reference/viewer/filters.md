@@ -5,8 +5,8 @@ description: 'Filters and editable panels — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # Filters and editable panels
 
-::: warning Maintenance mode (deprecated)
-`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+::: warning 5.x only (frozen)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
 :::
 
 Viewer filters currently produce legacy Wow Condition objects. They do not emit the new FilterExpression format. A FilterValue wraps `{condition}`, while a FilterState retains the UI operator and raw value even when that value is not a valid query.
@@ -75,7 +75,7 @@ These signatures follow declarations reachable from the current root entry. `?` 
 declare const OPERATOR_zh_CN: SelectOperatorLocale;
 ```
 
-[packages/viewer/src/filter/operator/locale/operator.zh_CN.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/operator/locale/operator.zh_CN.ts#L16)
+[packages/viewer/src/filter/operator/locale/operator.zh_CN.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/operator/locale/operator.zh_CN.ts#L16)
 
 ### ExtendedOperator {#api-ExtendedOperator}
 
@@ -85,7 +85,7 @@ export enum ExtendedOperator {
 }
 ```
 
-[packages/viewer/src/filter/operator/types.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/operator/types.ts#L16)
+[packages/viewer/src/filter/operator/types.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/operator/types.ts#L16)
 
 ### SelectOperator {#api-SelectOperator}
 
@@ -93,7 +93,7 @@ export enum ExtendedOperator {
 export type SelectOperator = ExtendedOperator | Operator;
 ```
 
-[packages/viewer/src/filter/operator/types.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/operator/types.ts#L20)
+[packages/viewer/src/filter/operator/types.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/operator/types.ts#L20)
 
 ### SelectOperatorLocale {#api-SelectOperatorLocale}
 
@@ -105,7 +105,7 @@ export type SelectOperatorLocale = {
 };
 ```
 
-[packages/viewer/src/filter/operator/types.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/operator/types.ts#L22)
+[packages/viewer/src/filter/operator/types.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/operator/types.ts#L22)
 
 ### AvailableFilterSelect {#api-AvailableFilterSelect}
 
@@ -115,7 +115,7 @@ export function AvailableFilterSelect(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L57)
+[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L57)
 
 ### AvailableFilter {#api-AvailableFilter}
 
@@ -130,7 +130,7 @@ export interface AvailableFilter extends AttributesCapable {
 }
 ```
 
-[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L31)
+[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:31](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L31)
 
 ### AvailableFilterGroup {#api-AvailableFilterGroup}
 
@@ -141,7 +141,7 @@ export interface AvailableFilterGroup {
 }
 ```
 
-[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L40)
+[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L40)
 
 ### AvailableFilterSelectRef {#api-AvailableFilterSelectRef}
 
@@ -151,7 +151,7 @@ export interface AvailableFilterSelectRef {
 }
 ```
 
-[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L45)
+[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L45)
 
 ### AvailableFilterSelectProps {#api-AvailableFilterSelectProps}
 
@@ -163,7 +163,7 @@ export interface AvailableFilterSelectProps
 }
 ```
 
-[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L49)
+[packages/viewer/src/filter/panel/AvailableFilterSelect.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/AvailableFilterSelect.tsx#L49)
 
 ### AvailableFilterSelectModal {#api-AvailableFilterSelectModal}
 
@@ -173,7 +173,7 @@ export function AvailableFilterSelectModal(
 ): React.JSX.Element;
 ```
 
-[packages/viewer/src/filter/panel/AvailableFilterSelectModal.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/AvailableFilterSelectModal.tsx#L29)
+[packages/viewer/src/filter/panel/AvailableFilterSelectModal.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/AvailableFilterSelectModal.tsx#L29)
 
 ### AvailableFiltersModalProps {#api-AvailableFiltersModalProps}
 
@@ -184,7 +184,7 @@ export interface AvailableFiltersModalProps extends Omit<ModalProps, 'onOk'> {
 }
 ```
 
-[packages/viewer/src/filter/panel/AvailableFilterSelectModal.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/AvailableFilterSelectModal.tsx#L24)
+[packages/viewer/src/filter/panel/AvailableFilterSelectModal.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/AvailableFilterSelectModal.tsx#L24)
 
 ### EditableFilterPanel {#api-EditableFilterPanel}
 
@@ -194,7 +194,7 @@ export function EditableFilterPanel(
 ): React.JSX.Element;
 ```
 
-[packages/viewer/src/filter/panel/EditableFilterPanel.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/EditableFilterPanel.tsx#L35)
+[packages/viewer/src/filter/panel/EditableFilterPanel.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/EditableFilterPanel.tsx#L35)
 
 ### EditableFilterPanelProps {#api-EditableFilterPanelProps}
 
@@ -208,7 +208,7 @@ export interface EditableFilterPanelProps extends Omit<
 }
 ```
 
-[packages/viewer/src/filter/panel/EditableFilterPanel.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/EditableFilterPanel.tsx#L27)
+[packages/viewer/src/filter/panel/EditableFilterPanel.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/EditableFilterPanel.tsx#L27)
 
 ### FilterPanel {#api-FilterPanel}
 
@@ -216,7 +216,7 @@ export interface EditableFilterPanelProps extends Omit<
 export function FilterPanel(props: FilterPanelProps): React.JSX.Element;
 ```
 
-[packages/viewer/src/filter/panel/FilterPanel.tsx:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/FilterPanel.tsx#L92)
+[packages/viewer/src/filter/panel/FilterPanel.tsx:92](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/FilterPanel.tsx#L92)
 
 ### ActiveFilter {#api-ActiveFilter}
 
@@ -230,7 +230,7 @@ export interface ActiveFilter extends Omit<
 }
 ```
 
-[packages/viewer/src/filter/panel/FilterPanel.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/FilterPanel.tsx#L29)
+[packages/viewer/src/filter/panel/FilterPanel.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/FilterPanel.tsx#L29)
 
 ### FilterPanelConditionCapableRef {#api-FilterPanelConditionCapableRef}
 
@@ -240,7 +240,7 @@ export interface FilterPanelConditionCapableRef {
 }
 ```
 
-[packages/viewer/src/filter/panel/FilterPanel.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/FilterPanel.tsx#L37)
+[packages/viewer/src/filter/panel/FilterPanel.tsx:37](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/FilterPanel.tsx#L37)
 
 ### FilterPanelRef {#api-FilterPanelRef}
 
@@ -251,7 +251,7 @@ export interface FilterPanelRef extends FilterPanelConditionCapableRef {
 }
 ```
 
-[packages/viewer/src/filter/panel/FilterPanel.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/FilterPanel.tsx#L47)
+[packages/viewer/src/filter/panel/FilterPanel.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/FilterPanel.tsx#L47)
 
 ### FilterPanelProps {#api-FilterPanelProps}
 
@@ -272,7 +272,7 @@ export interface FilterPanelProps extends RefAttributes<FilterPanelRef> {
 }
 ```
 
-[packages/viewer/src/filter/panel/FilterPanel.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/FilterPanel.tsx#L61)
+[packages/viewer/src/filter/panel/FilterPanel.tsx:61](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/FilterPanel.tsx#L61)
 
 ### RemovableTypedFilter {#api-RemovableTypedFilter}
 
@@ -282,7 +282,7 @@ export function RemovableTypedFilter(
 ): React.JSX.Element;
 ```
 
-[packages/viewer/src/filter/panel/RemovableTypedFilter.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/RemovableTypedFilter.tsx#L26)
+[packages/viewer/src/filter/panel/RemovableTypedFilter.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/RemovableTypedFilter.tsx#L26)
 
 ### RemovableTypedFilterProps {#api-RemovableTypedFilterProps}
 
@@ -292,7 +292,7 @@ export interface RemovableTypedFilterProps extends TypedFilterProps {
 }
 ```
 
-[packages/viewer/src/filter/panel/RemovableTypedFilter.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/panel/RemovableTypedFilter.tsx#L22)
+[packages/viewer/src/filter/panel/RemovableTypedFilter.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/panel/RemovableTypedFilter.tsx#L22)
 
 ### AssemblyFilter {#api-AssemblyFilter}
 
@@ -302,7 +302,7 @@ export function AssemblyFilter(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/filter/AssemblyFilter.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/AssemblyFilter.tsx#L45)
+[packages/viewer/src/filter/AssemblyFilter.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/AssemblyFilter.tsx#L45)
 
 ### ValueInputRender {#api-ValueInputRender}
 
@@ -312,7 +312,7 @@ export type ValueInputRender = (
 ) => ReactNode | null;
 ```
 
-[packages/viewer/src/filter/AssemblyFilter.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/AssemblyFilter.tsx#L30)
+[packages/viewer/src/filter/AssemblyFilter.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/AssemblyFilter.tsx#L30)
 
 ### AssemblyFilterProps {#api-AssemblyFilterProps}
 
@@ -329,7 +329,7 @@ export interface AssemblyFilterProps<
 }
 ```
 
-[packages/viewer/src/filter/AssemblyFilter.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/AssemblyFilter.tsx#L34)
+[packages/viewer/src/filter/AssemblyFilter.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/AssemblyFilter.tsx#L34)
 
 ### BoolFilter {#api-BoolFilter}
 
@@ -337,13 +337,13 @@ export interface AssemblyFilterProps<
 export function BoolFilter(props: FilterProps): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/filter/BoolFilter.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/BoolFilter.tsx#L28)
+[packages/viewer/src/filter/BoolFilter.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/BoolFilter.tsx#L28)
 
 ```ts
 BoolFilter;
 ```
 
-[packages/viewer/src/filter/BoolFilter.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/BoolFilter.tsx#L42)
+[packages/viewer/src/filter/BoolFilter.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/BoolFilter.tsx#L42)
 
 ### BOOL_FILTER {#api-BOOL_FILTER}
 
@@ -351,7 +351,7 @@ BoolFilter;
 declare const BOOL_FILTER: 'bool';
 ```
 
-[packages/viewer/src/filter/BoolFilter.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/BoolFilter.tsx#L22)
+[packages/viewer/src/filter/BoolFilter.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/BoolFilter.tsx#L22)
 
 ### FallbackFilter {#api-FallbackFilter}
 
@@ -359,13 +359,13 @@ declare const BOOL_FILTER: 'bool';
 export function FallbackFilter(options: TypedFilterProps): React.JSX.Element;
 ```
 
-[packages/viewer/src/filter/FallbackFilter.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/FallbackFilter.tsx#L20)
+[packages/viewer/src/filter/FallbackFilter.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/FallbackFilter.tsx#L20)
 
 ```ts
 FallbackFilter;
 ```
 
-[packages/viewer/src/filter/FallbackFilter.tsx:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/FallbackFilter.tsx#L44)
+[packages/viewer/src/filter/FallbackFilter.tsx:44](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/FallbackFilter.tsx#L44)
 
 ### filterRegistry {#api-filterRegistry}
 
@@ -376,7 +376,7 @@ declare const filterRegistry: TypedComponentRegistry<
 >;
 ```
 
-[packages/viewer/src/filter/filterRegistry.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/filterRegistry.ts#L73)
+[packages/viewer/src/filter/filterRegistry.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/filterRegistry.ts#L73)
 
 ### IdFilter {#api-IdFilter}
 
@@ -384,13 +384,13 @@ declare const filterRegistry: TypedComponentRegistry<
 export function IdFilter(props: FilterProps): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/filter/IdFilter.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/IdFilter.tsx#L48)
+[packages/viewer/src/filter/IdFilter.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/IdFilter.tsx#L48)
 
 ```ts
 IdFilter;
 ```
 
-[packages/viewer/src/filter/IdFilter.tsx:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/IdFilter.tsx#L73)
+[packages/viewer/src/filter/IdFilter.tsx:73](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/IdFilter.tsx#L73)
 
 ### ID_FILTER {#api-ID_FILTER}
 
@@ -398,7 +398,7 @@ IdFilter;
 declare const ID_FILTER: 'id';
 ```
 
-[packages/viewer/src/filter/IdFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/IdFilter.tsx#L25)
+[packages/viewer/src/filter/IdFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/IdFilter.tsx#L25)
 
 ### IdOnOperatorChangeValueConverter {#api-IdOnOperatorChangeValueConverter}
 
@@ -406,7 +406,7 @@ declare const ID_FILTER: 'id';
 declare const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter;
 ```
 
-[packages/viewer/src/filter/IdFilter.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/IdFilter.tsx#L27)
+[packages/viewer/src/filter/IdFilter.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/IdFilter.tsx#L27)
 
 ### NumberFilter {#api-NumberFilter}
 
@@ -414,13 +414,13 @@ declare const IdOnOperatorChangeValueConverter: OnOperatorChangeValueConverter;
 export function NumberFilter(props: FilterProps): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/filter/NumberFilter.tsx:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/NumberFilter.tsx#L67)
+[packages/viewer/src/filter/NumberFilter.tsx:67](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/NumberFilter.tsx#L67)
 
 ```ts
 NumberFilter;
 ```
 
-[packages/viewer/src/filter/NumberFilter.tsx:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/NumberFilter.tsx#L141)
+[packages/viewer/src/filter/NumberFilter.tsx:141](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/NumberFilter.tsx#L141)
 
 ### NUMBER_FILTER {#api-NUMBER_FILTER}
 
@@ -428,7 +428,7 @@ NumberFilter;
 declare const NUMBER_FILTER: 'number';
 ```
 
-[packages/viewer/src/filter/NumberFilter.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/NumberFilter.tsx#L26)
+[packages/viewer/src/filter/NumberFilter.tsx:26](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/NumberFilter.tsx#L26)
 
 ### NumberOnOperatorChangeValueConverter {#api-NumberOnOperatorChangeValueConverter}
 
@@ -436,7 +436,7 @@ declare const NUMBER_FILTER: 'number';
 declare const NumberOnOperatorChangeValueConverter: OnOperatorChangeValueConverter;
 ```
 
-[packages/viewer/src/filter/NumberFilter.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/NumberFilter.tsx#L49)
+[packages/viewer/src/filter/NumberFilter.tsx:49](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/NumberFilter.tsx#L49)
 
 ### SelectFilter {#api-SelectFilter}
 
@@ -446,13 +446,13 @@ export function SelectFilter(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/filter/SelectFilter.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/SelectFilter.tsx#L48)
+[packages/viewer/src/filter/SelectFilter.tsx:48](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/SelectFilter.tsx#L48)
 
 ```ts
 SelectFilter;
 ```
 
-[packages/viewer/src/filter/SelectFilter.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/SelectFilter.tsx#L69)
+[packages/viewer/src/filter/SelectFilter.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/SelectFilter.tsx#L69)
 
 ### SELECT_FILTER {#api-SELECT_FILTER}
 
@@ -460,7 +460,7 @@ SelectFilter;
 declare const SELECT_FILTER: 'select';
 ```
 
-[packages/viewer/src/filter/SelectFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/SelectFilter.tsx#L25)
+[packages/viewer/src/filter/SelectFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/SelectFilter.tsx#L25)
 
 ### SelectFilterValueProps {#api-SelectFilterValueProps}
 
@@ -479,7 +479,7 @@ export interface SelectFilterValueProps
     > {}
 ```
 
-[packages/viewer/src/filter/SelectFilter.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/SelectFilter.tsx#L27)
+[packages/viewer/src/filter/SelectFilter.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/SelectFilter.tsx#L27)
 
 ### SelectOnOperatorChangeValueConverter {#api-SelectOnOperatorChangeValueConverter}
 
@@ -487,7 +487,7 @@ export interface SelectFilterValueProps
 declare const SelectOnOperatorChangeValueConverter: OnOperatorChangeValueConverter;
 ```
 
-[packages/viewer/src/filter/SelectFilter.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/SelectFilter.tsx#L40)
+[packages/viewer/src/filter/SelectFilter.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/SelectFilter.tsx#L40)
 
 ### TextFilter {#api-TextFilter}
 
@@ -495,13 +495,13 @@ declare const SelectOnOperatorChangeValueConverter: OnOperatorChangeValueConvert
 export function TextFilter(props: FilterProps): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/filter/TextFilter.tsx:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TextFilter.tsx#L53)
+[packages/viewer/src/filter/TextFilter.tsx:53](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/TextFilter.tsx#L53)
 
 ```ts
 TextFilter;
 ```
 
-[packages/viewer/src/filter/TextFilter.tsx:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TextFilter.tsx#L97)
+[packages/viewer/src/filter/TextFilter.tsx:97](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/TextFilter.tsx#L97)
 
 ### TEXT_FILTER {#api-TEXT_FILTER}
 
@@ -509,7 +509,7 @@ TextFilter;
 declare const TEXT_FILTER: 'text';
 ```
 
-[packages/viewer/src/filter/TextFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TextFilter.tsx#L25)
+[packages/viewer/src/filter/TextFilter.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/TextFilter.tsx#L25)
 
 ### TextOnOperatorChangeValueConverter {#api-TextOnOperatorChangeValueConverter}
 
@@ -517,7 +517,7 @@ declare const TEXT_FILTER: 'text';
 declare const TextOnOperatorChangeValueConverter: OnOperatorChangeValueConverter;
 ```
 
-[packages/viewer/src/filter/TextFilter.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TextFilter.tsx#L27)
+[packages/viewer/src/filter/TextFilter.tsx:27](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/TextFilter.tsx#L27)
 
 ### TypedFilter {#api-TypedFilter}
 
@@ -527,13 +527,13 @@ export function TypedFilter(
 ): React.FunctionComponentElement<TypedFilterProps>;
 ```
 
-[packages/viewer/src/filter/TypedFilter.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TypedFilter.tsx#L30)
+[packages/viewer/src/filter/TypedFilter.tsx:30](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/TypedFilter.tsx#L30)
 
 ```ts
 TypedFilter;
 ```
 
-[packages/viewer/src/filter/TypedFilter.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TypedFilter.tsx#L45)
+[packages/viewer/src/filter/TypedFilter.tsx:45](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/TypedFilter.tsx#L45)
 
 ### FilterType {#api-FilterType}
 
@@ -541,7 +541,7 @@ TypedFilter;
 export type FilterType = string;
 ```
 
-[packages/viewer/src/filter/TypedFilter.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TypedFilter.tsx#L20)
+[packages/viewer/src/filter/TypedFilter.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/TypedFilter.tsx#L20)
 
 ### TypedFilterProps {#api-TypedFilterProps}
 
@@ -550,7 +550,7 @@ export interface TypedFilterProps
   extends FilterProps, TypeCapable<FilterType> {}
 ```
 
-[packages/viewer/src/filter/TypedFilter.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/TypedFilter.tsx#L22)
+[packages/viewer/src/filter/TypedFilter.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/TypedFilter.tsx#L22)
 
 ### FilterField {#api-FilterField}
 
@@ -562,7 +562,7 @@ export interface FilterField extends NamedCapable {
 }
 ```
 
-[packages/viewer/src/filter/types.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L28)
+[packages/viewer/src/filter/types.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L28)
 
 ### FilterRef {#api-FilterRef}
 
@@ -574,7 +574,7 @@ export interface FilterRef {
 }
 ```
 
-[packages/viewer/src/filter/types.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L34)
+[packages/viewer/src/filter/types.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L34)
 
 ### FilterState {#api-FilterState}
 
@@ -585,7 +585,7 @@ export interface FilterState {
 }
 ```
 
-[packages/viewer/src/filter/types.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L42)
+[packages/viewer/src/filter/types.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L42)
 
 ### FilterLabelProps {#api-FilterLabelProps}
 
@@ -593,7 +593,7 @@ export interface FilterState {
 export interface FilterLabelProps extends StyleCapable {}
 ```
 
-[packages/viewer/src/filter/types.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L47)
+[packages/viewer/src/filter/types.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L47)
 
 ### FilterOperatorProps {#api-FilterOperatorProps}
 
@@ -607,7 +607,7 @@ export interface FilterOperatorProps extends Omit<
 }
 ```
 
-[packages/viewer/src/filter/types.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L49)
+[packages/viewer/src/filter/types.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L49)
 
 ### FilterValueProps {#api-FilterValueProps}
 
@@ -619,7 +619,7 @@ export interface FilterValueProps extends StyleCapable {
 }
 ```
 
-[packages/viewer/src/filter/types.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L57)
+[packages/viewer/src/filter/types.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L57)
 
 ### FilterValue {#api-FilterValue}
 
@@ -627,7 +627,7 @@ export interface FilterValueProps extends StyleCapable {
 export interface FilterValue extends ConditionCapable {}
 ```
 
-[packages/viewer/src/filter/types.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L64)
+[packages/viewer/src/filter/types.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L64)
 
 ### FilterProps {#api-FilterProps}
 
@@ -645,7 +645,7 @@ export interface FilterProps<
 }
 ```
 
-[packages/viewer/src/filter/types.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L66)
+[packages/viewer/src/filter/types.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L66)
 
 ### FilterComponent {#api-FilterComponent}
 
@@ -653,7 +653,7 @@ export interface FilterProps<
 export type FilterComponent = React.FunctionComponent<FilterProps>;
 ```
 
-[packages/viewer/src/filter/types.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/types.ts#L78)
+[packages/viewer/src/filter/types.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/types.ts#L78)
 
 ### useFilterState {#api-useFilterState}
 
@@ -663,7 +663,7 @@ export function useFilterState(
 ): UseFilterStateReturn;
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L101)
+[packages/viewer/src/filter/useFilterState.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L101)
 
 ### OnOperatorChangeValueConverter {#api-OnOperatorChangeValueConverter}
 
@@ -675,7 +675,7 @@ export type OnOperatorChangeValueConverter = (
 ) => Optional;
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L24)
+[packages/viewer/src/filter/useFilterState.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L24)
 
 ### OnChange {#api-OnChange}
 
@@ -683,7 +683,7 @@ export type OnOperatorChangeValueConverter = (
 export type OnChange = (condition: Optional<FilterValue>) => void;
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L29)
+[packages/viewer/src/filter/useFilterState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L29)
 
 ### ValidateValue {#api-ValidateValue}
 
@@ -691,7 +691,7 @@ export type OnChange = (condition: Optional<FilterValue>) => void;
 export type ValidateValue = (operator: Operator, value: Optional) => boolean;
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L30)
+[packages/viewer/src/filter/useFilterState.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L30)
 
 ### ConditionValueParser {#api-ConditionValueParser}
 
@@ -702,7 +702,7 @@ export type ConditionValueParser = (
 ) => Optional;
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L31)
+[packages/viewer/src/filter/useFilterState.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L31)
 
 ### FilterValueConverter {#api-FilterValueConverter}
 
@@ -712,7 +712,7 @@ export type FilterValueConverter = (
 ) => Optional<FilterValue>;
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L35)
+[packages/viewer/src/filter/useFilterState.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L35)
 
 ### TrueValidateValue {#api-TrueValidateValue}
 
@@ -720,7 +720,7 @@ export type FilterValueConverter = (
 declare const TrueValidateValue: ValidateValue;
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L38)
+[packages/viewer/src/filter/useFilterState.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L38)
 
 ### UseFilterStateOptions {#api-UseFilterStateOptions}
 
@@ -738,7 +738,7 @@ export interface UseFilterStateOptions extends RefAttributes<FilterRef> {
 }
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L42)
+[packages/viewer/src/filter/useFilterState.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L42)
 
 ### UseFilterStateReturn {#api-UseFilterStateReturn}
 
@@ -752,7 +752,7 @@ export interface UseFilterStateReturn {
 }
 ```
 
-[packages/viewer/src/filter/useFilterState.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/useFilterState.ts#L54)
+[packages/viewer/src/filter/useFilterState.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/useFilterState.ts#L54)
 
 ### isValidBetweenValue {#api-isValidBetweenValue}
 
@@ -760,7 +760,7 @@ export interface UseFilterStateReturn {
 export function isValidBetweenValue(value: any): boolean;
 ```
 
-[packages/viewer/src/filter/utils.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/utils.ts#L29)
+[packages/viewer/src/filter/utils.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/utils.ts#L29)
 
 ### isValidValue {#api-isValidValue}
 
@@ -768,7 +768,7 @@ export function isValidBetweenValue(value: any): boolean;
 export function isValidValue(value: any): boolean;
 ```
 
-[packages/viewer/src/filter/utils.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/utils.ts#L57)
+[packages/viewer/src/filter/utils.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/utils.ts#L57)
 
 ### currentTimeZone {#api-currentTimeZone}
 
@@ -776,7 +776,7 @@ export function isValidValue(value: any): boolean;
 export function currentTimeZone(): string;
 ```
 
-[packages/viewer/src/filter/utils.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/filter/utils.ts#L78)
+[packages/viewer/src/filter/utils.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/filter/utils.ts#L78)
 
 ## Related topics
 

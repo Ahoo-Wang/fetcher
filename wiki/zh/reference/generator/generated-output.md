@@ -5,6 +5,10 @@ description: '生成产物与重新生成 — Fetcher 5.0.0'
 
 # 生成产物与重新生成
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-generator` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 生成的是 TypeScript 源码，不是独立 HTTP 实现。装饰器类需启用 `experimentalDecorators: true` 编译；安装实际输出 import 的包。
 
 ## 产物类型
@@ -41,10 +45,10 @@ pnpm exec tsc --noEmit -p ./tsconfig.json
 
 ## 实现源码
 
-[packages/generator/src/utils/sourceFiles.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/sourceFiles.ts#L33)
+[packages/generator/src/utils/sourceFiles.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/sourceFiles.ts#L33)
 
-[packages/generator/src/client/apiClientGenerator.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/client/apiClientGenerator.ts#L73)
+[packages/generator/src/client/apiClientGenerator.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/client/apiClientGenerator.ts#L73)
 
-[packages/generator/src/client/queryClientGenerator.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/client/queryClientGenerator.ts#L35)
+[packages/generator/src/client/queryClientGenerator.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/client/queryClientGenerator.ts#L35)
 
-[packages/generator/src/model/modelGenerator.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/model/modelGenerator.ts#L33)
+[packages/generator/src/model/modelGenerator.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/model/modelGenerator.ts#L33)

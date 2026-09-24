@@ -5,6 +5,10 @@ description: 'Projection, sorting and pagination — @ahoo-wang/fetcher-wow 5.0.
 
 # Projection, sorting and pagination
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-wow` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 Query builders return plain serializable objects and do not execute HTTP. The new filter form and legacy condition form have distinct request types and different list defaults. Prefer an explicit limit when migrating.
 
 | Builder / model                     | Defaults and precedence                                                                                          |
@@ -56,7 +60,7 @@ export function pagination(options?: Partial<Pagination>): Pagination;
 
 Implementation defaults: `index = DEFAULT_PAGINATION.index`; `size = DEFAULT_PAGINATION.size`; `options = DEFAULT_PAGINATION`.
 
-[packages/wow/src/query/pagination.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/pagination.ts#L46)
+[packages/wow/src/query/pagination.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/pagination.ts#L46)
 
 ### Pagination {#api-Pagination}
 
@@ -67,7 +71,7 @@ export interface Pagination {
 }
 ```
 
-[packages/wow/src/query/pagination.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/pagination.ts#L20)
+[packages/wow/src/query/pagination.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/pagination.ts#L20)
 
 ### DEFAULT_PAGINATION {#api-DEFAULT_PAGINATION}
 
@@ -75,7 +79,7 @@ export interface Pagination {
 declare const DEFAULT_PAGINATION: Pagination;
 ```
 
-[packages/wow/src/query/pagination.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/pagination.ts#L29)
+[packages/wow/src/query/pagination.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/pagination.ts#L29)
 
 ### defaultProjection {#api-defaultProjection}
 
@@ -85,7 +89,7 @@ export function defaultProjection<
 >(): Projection<FIELDS>;
 ```
 
-[packages/wow/src/query/projection.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts#L28)
+[packages/wow/src/query/projection.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/projection.ts#L28)
 
 ### projection {#api-projection}
 
@@ -97,7 +101,7 @@ export function projection<FIELDS extends string = string>(
 
 Implementation defaults: `options = defaultProjection()`.
 
-[packages/wow/src/query/projection.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts#L46)
+[packages/wow/src/query/projection.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/projection.ts#L46)
 
 ### Projection {#api-Projection}
 
@@ -108,7 +112,7 @@ export interface Projection<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/projection.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts#L17)
+[packages/wow/src/query/projection.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/projection.ts#L17)
 
 ### DEFAULT_PROJECTION {#api-DEFAULT_PROJECTION}
 
@@ -116,7 +120,7 @@ export interface Projection<FIELDS extends string = string> {
 declare const DEFAULT_PROJECTION: Projection<string>;
 ```
 
-[packages/wow/src/query/projection.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts#L26)
+[packages/wow/src/query/projection.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/projection.ts#L26)
 
 ### ProjectionCapable {#api-ProjectionCapable}
 
@@ -126,7 +130,7 @@ export interface ProjectionCapable<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/projection.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/projection.ts#L58)
+[packages/wow/src/query/projection.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/projection.ts#L58)
 
 ### singleQuery {#api-singleQuery}
 
@@ -136,7 +140,7 @@ export function singleQuery<FIELDS extends string = string>(
 ): FilterSingleQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L91)
+[packages/wow/src/query/queryable.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L91)
 
 ```ts
 export function singleQuery<FIELDS extends string = string>(
@@ -144,7 +148,7 @@ export function singleQuery<FIELDS extends string = string>(
 ): SingleQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L95)
+[packages/wow/src/query/queryable.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L95)
 
 ### listQuery {#api-listQuery}
 
@@ -154,7 +158,7 @@ export function listQuery<FIELDS extends string = string>(
 ): FilterListQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L149)
+[packages/wow/src/query/queryable.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L149)
 
 ```ts
 export function listQuery<FIELDS extends string = string>(
@@ -162,7 +166,7 @@ export function listQuery<FIELDS extends string = string>(
 ): ListQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L153)
+[packages/wow/src/query/queryable.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L153)
 
 ### pagedQuery {#api-pagedQuery}
 
@@ -172,7 +176,7 @@ export function pagedQuery<FIELDS extends string = string>(
 ): FilterPagedQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:208](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L208)
+[packages/wow/src/query/queryable.ts:208](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L208)
 
 ```ts
 export function pagedQuery<FIELDS extends string = string>(
@@ -180,7 +184,7 @@ export function pagedQuery<FIELDS extends string = string>(
 ): PagedQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L212)
+[packages/wow/src/query/queryable.ts:212](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L212)
 
 ### pagedList {#api-pagedList}
 
@@ -190,7 +194,7 @@ export function pagedList<T>(options?: Partial<PagedList<T>>): PagedList<T>;
 
 Implementation defaults: `list = []`; `options = EMPTY_PAGED_LIST`.
 
-[packages/wow/src/query/queryable.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L257)
+[packages/wow/src/query/queryable.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L257)
 
 ### Queryable {#api-Queryable}
 
@@ -202,7 +206,7 @@ export interface Queryable<FIELDS extends string = string>
     SortCapable<FIELDS> {}
 ```
 
-[packages/wow/src/query/queryable.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L24)
+[packages/wow/src/query/queryable.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L24)
 
 ### FilterQueryable {#api-FilterQueryable}
 
@@ -214,7 +218,7 @@ export interface FilterQueryable<FIELDS extends string = string>
     SortCapable<FIELDS> {}
 ```
 
-[packages/wow/src/query/queryable.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L31)
+[packages/wow/src/query/queryable.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L31)
 
 ### SingleQuery {#api-SingleQuery}
 
@@ -224,7 +228,7 @@ export interface SingleQuery<
 > extends Queryable<FIELDS> {}
 ```
 
-[packages/wow/src/query/queryable.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L42)
+[packages/wow/src/query/queryable.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L42)
 
 ### FilterSingleQuery {#api-FilterSingleQuery}
 
@@ -234,7 +238,7 @@ export interface FilterSingleQuery<
 > extends FilterQueryable<FIELDS> {}
 ```
 
-[packages/wow/src/query/queryable.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L47)
+[packages/wow/src/query/queryable.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L47)
 
 ### SingleQueryRequest {#api-SingleQueryRequest}
 
@@ -243,7 +247,7 @@ export type SingleQueryRequest<FIELDS extends string = string> =
   SingleQuery<FIELDS> | FilterSingleQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L51)
+[packages/wow/src/query/queryable.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L51)
 
 ### ListQuery {#api-ListQuery}
 
@@ -255,7 +259,7 @@ export interface ListQuery<
 }
 ```
 
-[packages/wow/src/query/queryable.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L119)
+[packages/wow/src/query/queryable.ts:119](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L119)
 
 ### FilterListQuery {#api-FilterListQuery}
 
@@ -267,7 +271,7 @@ export interface FilterListQuery<
 }
 ```
 
-[packages/wow/src/query/queryable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L125)
+[packages/wow/src/query/queryable.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L125)
 
 ### ListQueryRequest {#api-ListQueryRequest}
 
@@ -276,7 +280,7 @@ export type ListQueryRequest<FIELDS extends string = string> =
   ListQuery<FIELDS> | FilterListQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L132)
+[packages/wow/src/query/queryable.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L132)
 
 ### PagedQuery {#api-PagedQuery}
 
@@ -288,7 +292,7 @@ export interface PagedQuery<
 }
 ```
 
-[packages/wow/src/query/queryable.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L178)
+[packages/wow/src/query/queryable.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L178)
 
 ### FilterPagedQuery {#api-FilterPagedQuery}
 
@@ -300,7 +304,7 @@ export interface FilterPagedQuery<
 }
 ```
 
-[packages/wow/src/query/queryable.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L184)
+[packages/wow/src/query/queryable.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L184)
 
 ### PagedQueryRequest {#api-PagedQueryRequest}
 
@@ -309,7 +313,7 @@ export type PagedQueryRequest<FIELDS extends string = string> =
   PagedQuery<FIELDS> | FilterPagedQuery<FIELDS>;
 ```
 
-[packages/wow/src/query/queryable.ts:190](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L190)
+[packages/wow/src/query/queryable.ts:190](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L190)
 
 ### PagedList {#api-PagedList}
 
@@ -320,7 +324,7 @@ export interface PagedList<T> {
 }
 ```
 
-[packages/wow/src/query/queryable.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L236)
+[packages/wow/src/query/queryable.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L236)
 
 ### EMPTY_PAGED_LIST {#api-EMPTY_PAGED_LIST}
 
@@ -328,7 +332,7 @@ export interface PagedList<T> {
 declare const EMPTY_PAGED_LIST: PagedList<any>;
 ```
 
-[packages/wow/src/query/queryable.ts:241](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryable.ts#L241)
+[packages/wow/src/query/queryable.ts:241](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryable.ts#L241)
 
 ### asc {#api-asc}
 
@@ -338,7 +342,7 @@ export function asc<FIELDS extends string = string>(
 ): FieldSort<FIELDS>;
 ```
 
-[packages/wow/src/query/sort.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/sort.ts#L36)
+[packages/wow/src/query/sort.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/sort.ts#L36)
 
 ### desc {#api-desc}
 
@@ -348,7 +352,7 @@ export function desc<FIELDS extends string = string>(
 ): FieldSort<FIELDS>;
 ```
 
-[packages/wow/src/query/sort.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/sort.ts#L50)
+[packages/wow/src/query/sort.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/sort.ts#L50)
 
 ### SortDirection {#api-SortDirection}
 
@@ -359,7 +363,7 @@ export enum SortDirection {
 }
 ```
 
-[packages/wow/src/query/sort.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/sort.ts#L18)
+[packages/wow/src/query/sort.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/sort.ts#L18)
 
 ### FieldSort {#api-FieldSort}
 
@@ -370,7 +374,7 @@ export interface FieldSort<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/sort.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/sort.ts#L26)
+[packages/wow/src/query/sort.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/sort.ts#L26)
 
 ### SortCapable {#api-SortCapable}
 
@@ -380,7 +384,7 @@ export interface SortCapable<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/sort.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/sort.ts#L62)
+[packages/wow/src/query/sort.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/sort.ts#L62)
 
 ## Related topics
 

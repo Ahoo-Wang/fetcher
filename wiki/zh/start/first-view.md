@@ -1,20 +1,17 @@
 ---
 title: 第一个数据视图
-description: 新项目从 View Engine 开始，存量 Viewer 接入进入维护期。
+description: 在 5.x 线上用 Ant Design Viewer 搭建本地表格；后继位于 Wow 仓库。
 ---
 
 # 第一个数据视图
 
-新项目请使用 View Engine，数据视图能力的后续演进由它承担。Viewer 已进入维护期（弃用），不再新增功能；下方 Viewer 路径仅供存量项目维护参考。两者模型与 API 不同，迁移需要适配。
+::: warning 仅适用于 5.x（已冻结）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），尚未发布。两者模型与 API 不同，迁移需要适配。
+:::
 
-| UI 与所有权                                                                          | 入口                                                                                   |
-| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| 代码声明的定义、可保存的视图配置、无样式钩子与 shadcn/Base UI 默认组件（重写进行中） | [View Engine 状态](../guides/view-engine/index.md)及[示例](../examples/view-engine.md) |
-| Ant Design、应用控制表格数据和 Viewer 状态                                           | [Viewer 示例](../examples/viewer.md)                                                   |
+Fetcher main 不提供数据视图组件。在 Wow 视图引擎发布之前，存量项目用下面的 5.x Ant Design Viewer 搭建表格；新表格也可以把 [React 请求状态](../guides/react/index.md)与应用已在使用的表格组件组合起来。
 
-View Engine 正在重写，尚未在注册表发布；状态页描述目标入口与交付顺序。根入口可独立于 React UI 使用。
-
-## 旧版 Ant Design Viewer 路径（已弃用）
+## Ant Design Viewer 路径
 
 从[完整的本地 Viewer 示例](../examples/viewer)开始。该页提供消费者安装命令、一个完整组件、React 入口和运行命令，无需服务端、认证设置或 Storybook fixture。
 
@@ -28,6 +25,6 @@ View Engine 正在重写，尚未在注册表发布；状态页描述目标入�
 | 已保存设置及成功回调         | 应用的内存状态          |
 | 永久存储与访问控制           | 你的应用和后端          |
 
-使用示例页的 Storybook 入口和浏览器命令，在本仓库验证同一行为。该示例是本页唯一的可执行来源；刷新会丢失已保存视图。可选的服务端数据监控不在此本地示例范围内。
+在 `5.x` 分支上使用示例页的 Storybook 入口和浏览器命令验证同一行为。该示例是本页唯一的可执行来源；刷新会丢失已保存视图。可选的服务端数据监控不在此本地示例范围内。
 
-单张表格可能只需要 `View`。需要管理多个视图，并由应用加载和保存时，使用 `Viewer`。只有服务端实现预期协议时才考虑 `FetcherViewer`，参见[集成决策](../architecture/integration-decisions)。
+单张表格可能只需要 `View`。需要管理多个视图，并由应用加载和保存时，使用 `Viewer`。只有服务端实现预期协议时才考虑 `FetcherViewer`，参见 [FetcherViewer 参考](../reference/viewer/fetcher-viewer.md)。
