@@ -13,7 +13,16 @@ const { BASE_SHA, HEAD_SHA } = process.env;
 const base = BASE_SHA && !/^0+$/.test(BASE_SHA) ? BASE_SHA : 'HEAD^';
 const files = execFileSync(
   'git',
-  ['diff', '--name-only', '--diff-filter=ACMR', '-z', base, HEAD_SHA || 'HEAD'],
+  // Three dots: what the head changed since it left the base. Two dots would
+  // also list files the base deleted after the head branched off, which the
+  // checked-out merge no longer has.
+  [
+    'diff',
+    '--name-only',
+    '--diff-filter=ACMR',
+    '-z',
+    `${base}...${HEAD_SHA || 'HEAD'}`,
+  ],
   { encoding: 'utf8' },
 )
   .split('\0')
