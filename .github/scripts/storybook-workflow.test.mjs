@@ -45,3 +45,21 @@ test('interaction tests and delivery run on separate jobs without dropping eithe
   assert.match(interactions, /needs: changes/);
   assert.doesNotMatch(interactions, /build-storybook/);
 });
+
+test('interaction shards together run the whole suite once', () => {
+  const [, interactions] = workflow.split('\n  interactions:\n');
+  const shards = interactions.match(/shard: \[([\d, ]+)\]/);
+  assert.ok(shards, 'Interactions declare a shard matrix');
+  const indexes = shards[1].split(',').map(Number);
+  assert.deepEqual(
+    indexes,
+    indexes.map((_, index) => index + 1),
+  );
+  // Every runner is one slice of the same total, so no story runs twice or never.
+  assert.match(
+    interactions,
+    new RegExp(
+      `run: pnpm test:storybook --shard=\\$\\{\\{ matrix.shard \\}\\}/${indexes.length}\\n`,
+    ),
+  );
+});

@@ -15,6 +15,8 @@ export function scopes(paths) {
     integration: false,
     generator: false,
     wiki: false,
+    // Markdown inside a package: only the tests that read it (`test:docs`).
+    docs: false,
   };
   for (const path of paths) {
     if (path.startsWith('wiki/')) result.wiki = true;
@@ -22,6 +24,7 @@ export function scopes(paths) {
       result.storybook = true;
       result.wiki = true;
     } else if (path.startsWith('integration-test/')) result.integration = true;
+    else if (/^packages\/[^/]+\/.+\.md$/.test(path)) result.docs = true;
     else if (
       /^(?:docs\/|skills\/).*\.md$|^\.github\/(?:ISSUE_TEMPLATE|PULL_REQUEST_TEMPLATE)\//.test(
         path,
