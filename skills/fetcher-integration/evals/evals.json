@@ -3,20 +3,26 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Set up a Fetcher instance with baseURL https://api.example.com, timeout 5000ms, and a request interceptor that adds a Bearer token from localStorage",
-      "expected_output": "NamedFetcher setup with interceptor code",
+      "prompt": "Set up a Fetcher client for https://api.example.com with a 5 second timeout and a request interceptor that adds a Bearer token from localStorage; other modules should get it by name.",
+      "expected_output": "Creates `new NamedFetcher('api', { baseURL, timeout: 5000 })` and registers `interceptors.request.use({ name, order, intercept })` that mutates the exchange with `setHeader(exchange.ensureRequestHeaders(), 'Authorization', …)` and returns nothing; retrieval via `fetcherRegistrar.get('api')`/`requiredGet`.",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "I need to make a GET request to /users/{id} with path param id=123 and query param include=profile, then get the JSON response",
-      "expected_output": "Fetcher GET request with path and query parameters",
+      "prompt": "GET /users/{id} with id=123 and query include=profile, and give me the parsed JSON typed as User.",
+      "expected_output": "Uses `urlParams: { path: { id: 123 }, query: { include: 'profile' } }` and passes `{ resultExtractor: ResultExtractors.Json }` as the third argument (the default extractor returns a Response).",
       "files": []
     },
     {
       "id": 3,
-      "prompt": "Create multiple named fetchers for different services (auth, api, files) and show how to retrieve them from the registry",
-      "expected_output": "Multiple NamedFetcher instances with registry pattern",
+      "prompt": "Our /orders endpoint returns 404 for an empty cart and I want to treat that as data, not an exception. Also my error interceptor logs twice. What should I change?",
+      "expected_output": "Explains non-2xx rejects with ExchangeError via ValidateStatusInterceptor; skips validation per call with `attributes: new Map([[IGNORE_VALIDATE_STATUS, true]])` or per client with `validateStatus`; points out duplicate interceptor names are ignored by `use()` (returns false) and that an error interceptor recovers only by clearing `exchange.error`.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Create a UserService class with @get and @post methods for /users.",
+      "expected_output": "Should NOT primarily use this skill: $fetcher-decorator-service covers declarative service classes; this skill only supplies the NamedFetcher underneath.",
       "files": []
     }
   ]

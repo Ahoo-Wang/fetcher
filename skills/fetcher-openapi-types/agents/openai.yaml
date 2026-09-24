@@ -1,4 +1,4 @@
 interface:
   display_name: 'Fetcher OpenAPI Types'
-  short_description: 'OpenAPI type modeling for Fetcher'
-  default_prompt: 'Use $fetcher-openapi-types to model OpenAPI schemas and operations in TypeScript.'
+  short_description: 'TypeScript types for OpenAPI 3.x documents'
+  default_prompt: 'Use $fetcher-openapi-types to read or build an OpenAPI 3.x document with typed schemas and operations.'

@@ -1,4 +1,4 @@
 interface:
   display_name: 'Fetcher Eventbus'
-  short_description: 'Typed event buses for Fetcher'
-  default_prompt: 'Use $fetcher-eventbus to design a typed event bus or cross-tab messenger.'
+  short_description: 'Typed in-memory and cross-tab events'
+  default_prompt: 'Use $fetcher-eventbus to publish typed events to components or other browser tabs.'

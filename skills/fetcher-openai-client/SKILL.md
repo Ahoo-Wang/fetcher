@@ -1,31 +1,50 @@
 ---
 name: fetcher-openai-client
 description: >
-  Call Chat Completions through `@ahoo-wang/fetcher-openai` with `OpenAI` or `ChatClient`, streaming or non-streaming results, Fetcher interceptors, and exchange errors. Use for this repository's OpenAI client rather than general OpenAI platform questions.
+  Call OpenAI-compatible chat completions through `@ahoo-wang/fetcher-openai`: `OpenAI` and `ChatClient`, streaming vs non-streaming results, `DoneDetector`, auth and tracing interceptors, HTTP errors. Use when code in this ecosystem talks to `/chat/completions`. For other SSE or LLM APIs use fetcher-llm-streaming; for OpenAI platform features beyond chat, consult OpenAI's docs.
 ---
 
 # fetcher-openai-client
 
-## Workflow
+## Decisions
 
-1. Configure the Fetcher-backed `OpenAI` entry point before using `ChatClient` directly.
-2. Choose streaming or non-streaming result extraction based on the caller contract.
-3. Use interceptors for auth, tracing, or request customization rather than scattering request changes.
-4. For current OpenAI platform behavior, verify against official docs before changing package semantics.
-5. Load `references/api.md` for class APIs, type shapes, streaming examples, and error handling patterns.
+- **Entry point**: `new OpenAI({ baseURL, apiKey })` builds its own `Fetcher` with `Authorization: Bearer <apiKey>`. Both fields are required and there is no default URL; requests go to `${baseURL}/chat/completions`, so the base URL must include `/v1`. Use `new ChatClient({ fetcher })` directly when you already have a configured (e.g. named) fetcher.
+- **Streaming is chosen by the request**, not by an extractor: `chat.completions(req)` returns a `JsonServerSentEventStream<ChatResponse>` (already terminated by `DoneDetector`) when `stream: true`, otherwise a `ChatResponse`. A `stream` typed as plain `boolean` yields the union.
+- **Non-chat endpoints** (embeddings, images, Azure `api-version`) are not covered; build them with `$fetcher-decorator-service` or `$fetcher-llm-streaming`.
 
-## Key Practices
+## Gotchas a capable model gets wrong
 
-- Keep this skill scoped to Fetcher integration code; route generic OpenAI API questions to official docs workflows.
-- Do not duplicate SSE parsing logic here when `fetcher-llm-streaming` covers the stream mechanics.
-- Make streaming consumers handle partial data and errors explicitly.
+- `completions` is a method: `openai.chat.completions({...})`, not `openai.chat.completions.create(...)`.
+- Stream chunks: `event.data.choices[0]?.delta?.content`; non-streaming: `response.choices[0].message?.content`.
+- `openai.fetcher` is `readonly`; customize it through `openai.fetcher.interceptors.request.use({ name, order, intercept })` — `order` is required.
+- A non-2xx status rejects with `HttpStatusValidationError` (an `ExchangeError`; status at `error.exchange.response?.status`). Mid-stream failures surface from `for await` as `SyntaxError` or network errors — rethrow what you don't handle.
+- `ChatRequest` and `Message` are a loose subset of the OpenAI schema with an index signature; don't assume every OpenAI field is typed.
+
+## Minimal example
+
+```ts
+import { OpenAI } from '@ahoo-wang/fetcher-openai';
+
+const openai = new OpenAI({
+  baseURL: 'https://api.openai.com/v1',
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+const stream = await openai.chat.completions({
+  model: 'gpt-4o-mini',
+  messages: [{ role: 'user', content: 'Hi' }],
+  stream: true,
+});
+let text = '';
+for await (const event of stream)
+  text += event.data.choices[0]?.delta?.content ?? '';
+```
 
 ## References
 
-- `references/api.md`: Detailed package API, examples, and edge-case guidance. Load it only when the task needs OpenAI and ChatClient APIs, chat completion types, streaming and non-streaming examples, interceptors, and error handling snippets.
+- `references/api.md`: `OpenAI`, `ChatClient`, request/response types, streaming and non-streaming examples, interceptors and error handling. Load it for exact types.
 
 ## Related Skills
 
-- $fetcher-llm-streaming: Use for lower-level SSE and token stream handling.
-- $fetcher-integration: Use for core Fetcher interceptors and request lifecycle behavior.
-- $fetcher-react-hooks: Use when OpenAI calls are exposed through React state hooks.
+- $fetcher-llm-streaming: SSE parsing and termination for any other stream.
+- $fetcher-integration: interceptors and the request lifecycle of the underlying Fetcher.
+- $fetcher-react-hooks: exposing completions through React state.

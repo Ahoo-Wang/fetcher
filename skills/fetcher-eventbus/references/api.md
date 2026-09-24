@@ -113,7 +113,7 @@ await bus.emit('hello'); // Executes in order: logger then processor
 
 ### 2. ParallelTypedEventBus
 
-Handlers execute **concurrently** regardless of order. Use when handlers are independent.
+Handlers execute **concurrently**; `order` is ignored (`on()` appends without sorting, so `handlers` is in registration order). Use when handlers are independent.
 
 ```typescript
 import { ParallelTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
@@ -157,7 +157,9 @@ bus.on({
 await bus.emit('broadcast-message'); // Local + cross-tab
 ```
 
-Default messenger channel: `_broadcast_:{type}`. Pass a custom `messenger` option to override.
+Default messenger: `createCrossTabMessenger()` on channel `_broadcast_:{type}`, where `type` is the delegate's `type`. Pass a custom `messenger` option to override. If no messenger is supplied and neither backend is available, the constructor throws `Error('Messenger setup failed')`.
+
+`emit()` awaits the delegate (local handlers) first, then posts. Neither backend echoes a message back to the posting context, so local handlers run exactly once per local `emit()`, and a remote message is dispatched only to the delegate (it is not re-broadcast). `on`/`off`/`handlers` all forward to the delegate.
 
 `BroadcastTypedEventBusOptions<EVENT>` also accepts an optional message conversion:
 
@@ -212,6 +214,8 @@ appBus.on('user:login', {
 await appBus.emit('user:login', { username: 'john-doe' });
 ```
 
+The per-type bus is created lazily by the first `on(type, ...)`. `emit()` for a type that never had `on()` called is a silent no-op returning `undefined`. `off()` never destroys the per-type bus; `destroy()` destroys all of them and clears the map.
+
 ## Cross-Tab Messengers
 
 ### CrossTabMessenger Interface
@@ -237,9 +241,11 @@ messenger.postMessage('Hello from another tab!');
 messenger.close();
 ```
 
+`onmessage` is a setter only (no getter); assigning it replaces the previous handler.
+
 ### StorageMessenger
 
-Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. It retains the legacy raw channel key format and validates the full timestamp/random suffix to isolate channels, including arbitrary UTF-16 names. Supports TTL and cleanup. Throws outside a browser environment (no `localStorage`); probe `isStorageEventSupported()` first if that matters. Options also include `storage` (defaults to `localStorage`).
+Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. It retains the legacy raw channel key format and validates the full timestamp/random suffix to isolate channels, including arbitrary UTF-16 names. Messages are `JSON.stringify`-ed into `{ data, timestamp }` under a per-message key, so payloads must be JSON-safe, and the writing tab does not receive its own messages (native `storage` event semantics). Supports TTL and cleanup. Throws outside a browser environment (no `localStorage`); probe `isStorageEventSupported()` first if that matters. Options also include `storage` (defaults to `localStorage`).
 
 ```typescript
 import { StorageMessenger } from '@ahoo-wang/fetcher-eventbus';
@@ -285,11 +291,13 @@ Notes:
 
 - The generic `EventBus` differs slightly: `on(type, handler)` / `off(type, name)` take a leading event-type argument, and `emit` may return `void | Promise<void>`.
 - A throwing handler is caught and logged with `console.warn`; it never rejects `emit()` or blocks other handlers.
+- `on()` with an already-registered `name` returns `false` silently and keeps the existing handler; it does not replace it.
+- `nameGenerator` is one module-level counter shared by every caller (including `KeyStorage`); generated names are unique per module instance, not stable across reloads.
 
 ## Ecosystem Usage
 
-- **Storage** (`@ahoo-wang/fetcher-storage`): Uses EventBus for cross-tab cache synchronization
-- **CoSec** (`@ahoo-wang/fetcher-cosec`): Uses EventBus for token change notifications
+- **Storage** (`@ahoo-wang/fetcher-storage`): `KeyStorage` defaults to a local `SerialTypedEventBus`; it syncs across tabs only when given a `BroadcastTypedEventBus`
+- **CoSec** (`@ahoo-wang/fetcher-cosec`): token, device-id, and space-id storages are built on `KeyStorage` with `BroadcastTypedEventBus`
 
 ## Further Reading
 

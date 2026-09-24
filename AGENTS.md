@@ -68,5 +68,6 @@ pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 
 - Verify documented symbols, signatures, defaults, and examples against `packages/<package>/src/index.ts` and its exported implementations.
 - Public API changes must update the matching `skills/<skill>/references/api.md` in the same change. Plugin manifest: `skills/plugins.json`.
+- `node --test .github/scripts/skills.test.mjs` (run in Engineering Quality) enforces this: frontmatter and description budget, `$skill` links, `agents/openai.yaml`, `evals/evals.json`, and that every `@ahoo-wang/*` import in a skill and backticked API name in its `SKILL.md` is exported by the package source today. Only `fetcher-v6-migration` may name packages that left fetcher or `@ahoo-wang/wow-*`.
 - Update English wiki pages and their `wiki/zh/` counterparts together; follow `wiki/AGENTS.md` and validate with `pnpm --dir wiki build`.
 - Never hand-edit generated `wiki/llms.txt`, `wiki/llms-full.txt`, or `wiki/.vitepress/dist/`.

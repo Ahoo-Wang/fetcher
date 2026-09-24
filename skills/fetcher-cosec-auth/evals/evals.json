@@ -1,0 +1,35 @@
+{
+  "skill_name": "fetcher-cosec-auth",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add CoSec JWT auth to our Fetcher: refresh tokens at /auth/refresh, redirect to /login when refresh fails, and warn on 403.",
+      "expected_output": "`new CoSecConfigurer({ appId, tokenStorage, tokenRefresher: new CoSecTokenRefresher({ fetcher, endpoint: '/auth/refresh' }), onUnauthorized, onForbidden }).applyTo(fetcher)`, `tokenStorage.signIn(...)` after login; notes both callbacks do not clear the error.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I configured CoSecConfigurer with appId and tokenStorage but requests never carry an Authorization header.",
+      "expected_output": "Explains Authorization interceptors are only registered when `tokenRefresher` is configured, and that a token must be stored with `signIn`.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Our custom TokenRefresher calls the same fetcher and requests hang in a refresh loop.",
+      "expected_output": "Passes `attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]])` on the refresh request, or uses CoSecTokenRefresher which does it.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Requests to /tenant/{tenantId}/orders should use the tenant from the logged-in JWT.",
+      "expected_output": "Keeps the `{tenantId}` placeholder in the URL and lets ResourceAttributionRequestInterceptor fill it from the token; does not interpolate the value manually.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Add a generic retry interceptor for 503 responses.",
+      "expected_output": "Should NOT use this skill: generic interceptors are $fetcher-integration.",
+      "files": []
+    }
+  ]
+}

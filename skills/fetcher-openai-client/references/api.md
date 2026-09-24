@@ -71,6 +71,8 @@ export class OpenAI {
 }
 ```
 
+`OpenAIOptions` is `{ baseURL: string; apiKey: string }` -- both required, there is no default `baseURL`. Requests go to `${baseURL}/chat/completions`, so include the version segment (e.g. `https://api.openai.com/v1`). The API key is sent only as `Authorization: Bearer <apiKey>`.
+
 **`fetcher` is `readonly`** -- do NOT reassign it. Use interceptors on the existing instance instead.
 
 ### ChatClient Class
@@ -110,9 +112,10 @@ export class ChatClient implements ApiMetadataCapable, ExecuteLifeCycle {
 
 Key behaviors:
 
-- `beforeExecute` automatically assigns `CompletionStreamResultExtractor` for streaming requests
+- `beforeExecute` swaps in `CompletionStreamResultExtractor` when the request body's `stream` is truthy at runtime; otherwise the decorator default `JsonResultExtractor` returns the parsed `ChatResponse`
+- The constructor takes optional `ApiMetadata`, so `new ChatClient({ fetcher })` accepts a `Fetcher` instance or a registered fetcher name; omitting it uses the default registered fetcher
 - Conditional return type: literal `stream: true` yields `JsonServerSentEventStream<ChatResponse>`; literal `false`, `undefined`, or an omitted flag yields `ChatResponse`. A broad `boolean` flag, `ChatRequest`, or a union of streaming and non-streaming requests yields their union; narrow with `result instanceof ReadableStream` before consuming it.
-- Stream terminates when `DoneDetector` detects `event.data === '[DONE]'`
+- Stream terminates when `DoneDetector` detects `event.data === '[DONE]'`; that event is not yielded
 
 ### DoneDetector and CompletionStreamResultExtractor
 
@@ -145,23 +148,23 @@ interface ChatRequest {
   frequency_penalty?: number;
   presence_penalty?: number;
   n?: number;
-  seed?: number; // deterministic sampling (beta)
-  stop?: string | string[] | null; // up to 4 sequences
-  logit_bias?: Record<string, number> | null; // token ID → bias (-100..100)
-  tools?: ChatTool[]; // function tool objects
-  tool_choice?: ChatToolChoice; // 'none' | 'auto' | { type: 'function', function: { name } }
+  seed?: number;
+  stop?: string | string[] | null;
+  logit_bias?: Record<string, number> | null;
+  tools?: ChatTool[];
+  tool_choice?: ChatToolChoice;
   response_format?: Record<string, unknown>;
   user?: string;
 }
 
 interface ChatToolFunction {
-  name: string; // a-z, A-Z, 0-9, underscores/dashes, max 64 chars
+  name: string;
   description?: string;
   parameters?: Record<string, unknown>; // JSON Schema object
 }
 
 interface ChatTool {
-  type: 'function'; // only 'function' is currently supported
+  type: 'function';
   function: ChatToolFunction;
 }
 
@@ -212,15 +215,9 @@ const openai = new OpenAI({
 });
 ```
 
-**Custom endpoints (Azure, proxy, local):**
+**OpenAI-compatible endpoints (proxy, local)** -- any server that accepts `POST {baseURL}/chat/completions` with a Bearer token and ends streams with `data: [DONE]`. Servers that need a different auth header or query parameters (e.g. `api-version`) need an interceptor on `openai.fetcher`.
 
 ```typescript
-const azure = new OpenAI({
-  baseURL:
-    'https://your-resource.openai.azure.com/openai/deployments/your-deployment',
-  apiKey: 'your-azure-key',
-});
-
 const local = new OpenAI({
   baseURL: 'http://localhost:8000/v1',
   apiKey: 'not-needed',
@@ -283,7 +280,7 @@ const response = await chatClient.completions({
 
 ### Adding Interceptors
 
-`openai.fetcher` is readonly -- add interceptors to the existing fetcher instance:
+`openai.fetcher` is readonly -- add interceptors to the existing fetcher instance. `Interceptor` requires `name`, `order` (ascending; built-ins sit near `Number.MIN_SAFE_INTEGER` / `Number.MAX_SAFE_INTEGER`) and `intercept`:
 
 ```typescript
 import type { FetchExchange } from '@ahoo-wang/fetcher';
@@ -291,6 +288,7 @@ import type { FetchExchange } from '@ahoo-wang/fetcher';
 // Request interceptor
 openai.fetcher.interceptors.request.use({
   name: 'log-request',
+  order: 0,
   intercept(exchange: FetchExchange): void {
     console.log('Request:', exchange.request.url);
   },
@@ -299,6 +297,7 @@ openai.fetcher.interceptors.request.use({
 // Response interceptor
 openai.fetcher.interceptors.response.use({
   name: 'log-response',
+  order: 0,
   intercept(exchange: FetchExchange): void {
     console.log('Response status:', exchange.response?.status);
   },
@@ -307,7 +306,7 @@ openai.fetcher.interceptors.response.use({
 
 ### Error Handling
 
-Use `ExchangeError` from `@ahoo-wang/fetcher`, not Axios-style patterns:
+Use `ExchangeError` from `@ahoo-wang/fetcher`, not Axios-style patterns. A non-2xx status (default `validateStatus`) rejects with `HttpStatusValidationError`, a subclass of `ExchangeError`; the response is on `error.exchange.response`:
 
 ```typescript
 import { ExchangeError } from '@ahoo-wang/fetcher';
@@ -339,6 +338,8 @@ try {
 
 ### Streaming Error Handling
 
+HTTP and connection failures reject the `completions()` promise. Failures after the stream starts surface from `for await`: a chunk that is not JSON throws `SyntaxError`, and a dropped connection throws the underlying stream error -- neither is an `ExchangeError`, so rethrow them. Breaking out of the loop cancels the stream.
+
 ```typescript
 try {
   const stream = await openai.chat.completions({
@@ -355,6 +356,8 @@ try {
 } catch (error) {
   if (error instanceof ExchangeError) {
     console.error('Exchange failed:', error.exchange.response?.status);
+  } else {
+    throw error; // mid-stream SyntaxError / network error
   }
 }
 ```

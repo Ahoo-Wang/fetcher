@@ -34,6 +34,8 @@ isBrowser(); // true in browser, false in Node/SSR
 const storage = getStorage(); // window.localStorage or InMemoryStorage
 ```
 
+`getStorage()` checks only `typeof window !== 'undefined'`; it does not probe whether `localStorage` is accessible. Each call without a window returns a new, unshared `InMemoryStorage`.
+
 ## Core Interfaces
 
 ### `StorageEvent<Deserialized>`
@@ -63,7 +65,9 @@ interface StorageListenable<Deserialized> {
 ```
 
 `EventHandler` requires `name` and `handle` properties (from `@ahoo-wang/fetcher-eventbus`).
-`RemoveStorageListener` is `() => void`.
+`RemoveStorageListener` is `() => void` and calls `eventBus.off(listener.name)`.
+
+This `StorageEvent` type shadows the DOM global `StorageEvent`; import it explicitly (`import type { StorageEvent } from '@ahoo-wang/fetcher-storage'`).
 
 ## KeyStorage
 
@@ -87,11 +91,12 @@ const userStorage = new KeyStorage<{ name: string; age: number }>({
 
 ### Methods
 
-- `get(): T | null` — Get value (cached, or deserialized from storage). Returns `defaultValue` if key missing.
+- `get(): T | null` — Returns the in-memory cache if non-null; otherwise reads and deserializes the key (and caches it). Returns `defaultValue` (or `null`) if the key is missing; the default is neither cached nor written. The cache is updated only by this instance's `set`/`remove` and by events on its bus; writes that bypass the bus (another code path calling `storage.setItem`, or the native `storage` event from other tabs) are not seen once a value is cached.
 - `set(value: T): void` — Store value with caching and emit change event.
 - `remove(): void` — Remove value, clear cache, emit change event.
-- `destroy(): void` — Remove the internal event handler and release this storage's share of the default message transformer. The automatic codec stays on the supplied bus so its direct subscribers can decode messages already in transit. Call when done.
-- `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener`
+- `destroy(): void` — Only removes this instance's internal cache handler from the bus. It does not destroy the bus, does not remove listeners added with `addListener`, and leaves any automatic codec installed on a broadcast bus.
+- `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener` — Registers on `eventBus` via `on()`. A duplicate `name` is silently ignored, yet the returned remover still calls `off(name)` and so removes the handler that was registered first.
+- `eventBus` — Public readonly; the supplied bus or a default `SerialTypedEventBus` with type `KeyStorage:{key}`.
 
 ### Example: Basic Usage with defaultValue
 
@@ -260,8 +265,10 @@ Full `Storage` interface implementation using a `Map` backend. Used automaticall
 
 ## Installation
 
+`@ahoo-wang/fetcher-eventbus` is a peer dependency (and it peers on `@ahoo-wang/fetcher`):
+
 ```bash
-pnpm add @ahoo-wang/fetcher-storage
+pnpm add @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher
 ```
 
 ## Quick Start

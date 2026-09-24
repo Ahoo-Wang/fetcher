@@ -1,0 +1,29 @@
+{
+  "skill_name": "fetcher-openapi-types",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a function that lists every operationId in an OpenAPI 3.1 document, typed with the fetcher OpenAPI types.",
+      "expected_output": "Uses `import type { OpenAPI, Operation } from '@ahoo-wang/fetcher-openapi'`, iterates `doc.paths` PathItems and their method fields, handles optional fields; no runtime import.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Resolve schema references: given a Schema | Reference from components, return the Schema.",
+      "expected_output": "Narrows with a `$ref` type guard on `Schema | Reference` slots, looks up `components.schemas` by the ref name, and warns not to apply the guard to PathItem (which has its own `$ref`).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Add typed x-internal and x-tags extensions to operations and filter out internal ones.",
+      "expected_output": "Uses `Operation & CommonExtensions` (or Extensible `x-*` keys) and filters on `x-internal`.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Generate a TypeScript client from our openapi.yaml.",
+      "expected_output": "Should NOT use this skill: client generation left fetcher in 6.0; $fetcher-v6-migration explains where it went.",
+      "files": []
+    }
+  ]
+}

@@ -55,14 +55,21 @@ export const apiFetcher = new NamedFetcher('api', {
 ### Adding Interceptors
 
 IMPORTANT: `intercept()` returns `void | Promise<void>`. Modify `exchange` directly -- do NOT return it.
+`name` and `order` are both required; `use()` returns `false` and silently ignores an interceptor whose `name` is already registered in that phase.
 
 ```typescript
-// Request interceptor
+import { FetchTimeoutError, setHeader } from '@ahoo-wang/fetcher';
+
+// Request interceptor (`request.headers` is optional in the type; use ensureRequestHeaders())
 apiFetcher.interceptors.request.use({
   name: 'auth-request-interceptor',
   order: 100,
   intercept(exchange) {
-    exchange.request.headers.Authorization = 'Bearer ' + getAuthToken();
+    setHeader(
+      exchange.ensureRequestHeaders(),
+      'Authorization',
+      'Bearer ' + getAuthToken(),
+    );
   },
 });
 
@@ -110,9 +117,9 @@ Key FetchExchange methods:
 
 ### InterceptorManager.exchange() Three-Phase Flow
 
-1. **Request phase** -- request interceptors in ascending `order` (body serialization runs first, then URL resolve, then the actual fetch)
-2. **Response phase** -- response interceptors (validate status), only if request phase succeeded
-3. **Error phase** -- error interceptors run if any phase threw. Clearing `exchange.error` resolves successfully.
+1. **Request phase** -- request interceptors in ascending `order`. `RequestBodyInterceptor` (`Number.MIN_SAFE_INTEGER + 10000`) runs before any interceptor with an ordinary order, so a plain object you assign to `request.body` in your own request interceptor is **not** JSON-serialized. Your interceptor still sees the unresolved template URL and `urlParams` (use `ensureRequestUrlParams()` to add path/query values); `UrlResolveInterceptor` then builds the final URL and sets `urlParams` to `undefined`, and `FetchInterceptor` performs the fetch.
+2. **Response phase** -- response interceptors (including `ValidateStatusInterceptor`), only if the request phase did not throw.
+3. **Error phase** -- if either phase threw, the thrown value is stored in `exchange.error` and error interceptors run. If they clear `exchange.error`, the exchange is returned as recovered **without re-running the response phase**; otherwise `new ExchangeError(exchange)` is thrown (its `cause` is the original error).
 
 ```text
 // InterceptorRegistry methods
@@ -207,9 +214,13 @@ interface UrlParams {
 }
 ```
 
+- A placeholder with no matching `path` value (value `undefined`) throws `Error('Missing required path parameter: <name>')` during the request phase (surfaces as `ExchangeError`).
+- `query` goes through `new URLSearchParams(query)`, so `undefined` values are sent as the literal string `"undefined"` and arrays are joined with commas. Drop undefined keys before passing them.
+
 ## 5. Timeout Configuration
 
-Default timeout is `undefined` (no timeout). Per-request timeout overrides the instance default.
+Default timeout is `undefined` (no timeout); `0` also means no timeout. Per-request `timeout` overrides the instance default.
+If the request carries a `signal`, `timeoutFetch` hands it straight to `fetch` and **no timeout is applied**. To combine caller cancellation with a timeout, pass `abortController` instead of `signal`. On timeout the controller is aborted with a `FetchTimeoutError`.
 
 ```typescript
 // Instance-level timeout
@@ -280,7 +291,7 @@ const response = await fetcher.get(
 ### Token Refresh on 401
 
 ```typescript
-import { timeoutFetch } from '@ahoo-wang/fetcher';
+import { setHeader, timeoutFetch } from '@ahoo-wang/fetcher';
 
 fetcher.interceptors.response.use({
   name: 'token-refresh-interceptor',
@@ -288,7 +299,12 @@ fetcher.interceptors.response.use({
   async intercept(exchange) {
     if (exchange.response?.status === 401) {
       const newToken = await refreshToken();
-      exchange.request.headers.Authorization = `Bearer ${newToken}`;
+      setHeader(
+        exchange.ensureRequestHeaders(),
+        'Authorization',
+        `Bearer ${newToken}`,
+      );
+      // request.url is already resolved and body already serialized here
       exchange.response = await timeoutFetch(exchange.request);
     }
   },
@@ -333,25 +349,28 @@ fetcher.interceptors.error.use({
 });
 ```
 
+This runs before `ValidateStatusInterceptor` (order `MAX_SAFE_INTEGER - 10000`), so the replayed response is still status-validated.
+
 Recovered responses do not re-enter the response interceptor chain, so validate the retry result before clearing `exchange.error`. This example retries only GET requests and skips caller cancellation; replace `response.ok` with the same predicate as a custom `validateStatus` when needed.
 
 ### Interceptor Order Reference
 
-| Order Value                | Interceptor               | Phase    |
-| -------------------------- | ------------------------- | -------- |
-| `MIN_SAFE_INTEGER + 10000` | RequestBodyInterceptor    | Request  |
-| `MAX_SAFE_INTEGER - 20000` | UrlResolveInterceptor     | Request  |
-| `MAX_SAFE_INTEGER - 10000` | FetchInterceptor          | Request  |
-| `MAX_SAFE_INTEGER - 10000` | ValidateStatusInterceptor | Response |
+| Order Value                | Exported constant                   | Interceptor               | Phase    |
+| -------------------------- | ----------------------------------- | ------------------------- | -------- |
+| `MIN_SAFE_INTEGER + 10000` | `REQUEST_BODY_INTERCEPTOR_ORDER`    | RequestBodyInterceptor    | Request  |
+| `MAX_SAFE_INTEGER - 20000` | `URL_RESOLVE_INTERCEPTOR_ORDER`     | UrlResolveInterceptor     | Request  |
+| `MAX_SAFE_INTEGER - 10000` | `FETCH_INTERCEPTOR_ORDER`           | FetchInterceptor          | Request  |
+| `MAX_SAFE_INTEGER - 10000` | `VALIDATE_STATUS_INTERCEPTOR_ORDER` | ValidateStatusInterceptor | Response |
 
-Choose custom order values relative to the exported built-in order constants; lower values run first within each phase.
+Lower values run first within each phase. To run after URL resolution but before the fetch, use an order between `URL_RESOLVE_INTERCEPTOR_ORDER` and `FETCH_INTERCEPTOR_ORDER`; to see a response before status validation, use any order below `VALIDATE_STATUS_INTERCEPTOR_ORDER`. The error registry has no built-in interceptors.
 
 ## 9. Named Fetcher Registry Pattern
 
 ```typescript
 import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
 
-// NamedFetcher auto-registers with fetcherRegistrar on construction
+// NamedFetcher auto-registers with fetcherRegistrar on construction;
+// a second NamedFetcher with the same name silently replaces the first.
 new NamedFetcher('users', {
   baseURL: 'https://api.example.com/users',
   timeout: 5000,
@@ -366,7 +385,7 @@ const usersFetcher = fetcherRegistrar.get('users'); // Fetcher | undefined
 const ordersFetcher = fetcherRegistrar.requiredGet('orders'); // Fetcher (throws if not found)
 
 // Default fetcher getter/setter
-fetcherRegistrar.default; // gets the 'default' named fetcher
+fetcherRegistrar.default; // gets the 'default' named fetcher (throws if unregistered)
 fetcherRegistrar.default = myFetcher; // sets the 'default' named fetcher
 fetcherRegistrar.fetchers; // Map<string, Fetcher> (copy of all)
 
@@ -382,7 +401,7 @@ const response = await fetcher.get('/users');
 
 ```typescript
 // src/services/api.ts
-import { NamedFetcher, FetchTimeoutError } from '@ahoo-wang/fetcher';
+import { NamedFetcher, FetchTimeoutError, setHeader } from '@ahoo-wang/fetcher';
 
 export const apiFetcher = new NamedFetcher('api', {
   baseURL: 'https://api.example.com/v1',
@@ -396,7 +415,11 @@ apiFetcher.interceptors.request.use({
   intercept(exchange) {
     const token = getAccessToken();
     if (token) {
-      exchange.request.headers.Authorization = `Bearer ${token}`;
+      setHeader(
+        exchange.ensureRequestHeaders(),
+        'Authorization',
+        `Bearer ${token}`,
+      );
     }
   },
 });
@@ -477,14 +500,14 @@ export const userService = {
 
 ### Constructor Options
 
-| Option             | Type                          | Default                            | Description                            |
-| ------------------ | ----------------------------- | ---------------------------------- | -------------------------------------- |
-| `baseURL`          | `string`                      | `''`                               | Base URL for all requests              |
-| `timeout`          | `number`                      | `undefined`                        | Timeout in ms (undefined = no timeout) |
-| `headers`          | `Record<string, string>`      | `{Content-Type: application/json}` | Default headers                        |
-| `urlTemplateStyle` | `UrlTemplateStyle`            | `UriTemplate`                      | Path param style                       |
-| `validateStatus`   | `(status: number) => boolean` | `status >= 200 && status < 300`    | Status validation¹                     |
-| `interceptors`     | `InterceptorManager`          | new InterceptorManager()           | Custom interceptor manager             |
+| Option             | Type                          | Default                                | Description                                                                                           |
+| ------------------ | ----------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `baseURL`          | `string`                      | `''`                                   | Base URL; **required** in the `FetcherOptions` type whenever you pass options                         |
+| `timeout`          | `number`                      | `undefined`                            | Timeout in ms (undefined = no timeout)                                                                |
+| `headers`          | `RequestHeaders`              | `{'Content-Type': 'application/json'}` | Default headers; passing `headers` **replaces** the default (no `Content-Type` unless you include it) |
+| `urlTemplateStyle` | `UrlTemplateStyle`            | `UriTemplate`                          | Path param style                                                                                      |
+| `validateStatus`   | `(status: number) => boolean` | `status >= 200 && status < 300`        | Status validation¹                                                                                    |
+| `interceptors`     | `InterceptorManager`          | new InterceptorManager()               | Custom interceptor manager                                                                            |
 
 ¹ `validateStatus` has no effect when a custom `interceptors` manager is provided — the default `ValidateStatusInterceptor` is only installed by the default manager. Register it yourself in that case.
 
@@ -512,7 +535,12 @@ abortController.abort(); // cancels the in-flight request
 
 ### HTTP Methods
 
-All methods: `fetcher.get<R>(url, requestInit?, requestOptions?): Promise<R>`
+All verb methods: `fetcher.get<R = Response>(url, requestInit?, requestOptions?): Promise<R>` (default extractor `ResultExtractors.Response`).
+
+- `fetch<R = Response>(url, requestInit?, options?)` -- method taken from `requestInit.method`
+- `request<R = FetchExchange>(request: FetchRequest, options?)` -- default extractor `ResultExtractors.Exchange`
+- `exchange(request, options?): Promise<FetchExchange>` -- runs the interceptors, never extracts
+- `resolveExchange(request, options?): FetchExchange` -- merges instance headers/timeout and builds the exchange without running it
 
 | Method                               | Description                 |
 | ------------------------------------ | --------------------------- |

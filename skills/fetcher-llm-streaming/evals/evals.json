@@ -1,0 +1,29 @@
+{
+  "skill_name": "fetcher-llm-streaming",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Our /generate endpoint streams SSE lines like data: {\"token\":\"he\"} and ends with data: [DONE]. Stream the tokens into a string.",
+      "expected_output": "Imports '@ahoo-wang/fetcher-eventstream' for side effects, defines a TerminateDetector for '[DONE]', iterates `response.requiredJsonEventStream(detector)` with for await reading `event.data.token`; notes that without the detector JSON.parse throws.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I must not patch Response.prototype in this library. How do I parse the SSE body?",
+      "expected_output": "Uses `toServerSentEventStream(response)` and `toJsonServerSentEventStream(stream, detector)` without the side-effect import.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "My decorator endpoint uses JsonEventStreamResultExtractor and crashes at the end of every stream.",
+      "expected_output": "Explains JsonEventStreamResultExtractor passes no terminator; writes a custom ResultExtractor calling `exchange.requiredResponse.requiredJsonEventStream(detector)` and sets it on the endpoint.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Stream a GPT-4o chat completion with an API key.",
+      "expected_output": "Should NOT primarily use this skill: $fetcher-openai-client handles OpenAI chat completions with DoneDetector built in.",
+      "files": []
+    }
+  ]
+}

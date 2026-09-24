@@ -1,29 +1,51 @@
 ---
 name: fetcher-openapi-types
 description: >
-  Model OpenAPI 3.x documents with `@ahoo-wang/fetcher-openapi` types for schemas, operations, parameters, responses, security, components, references, and extensions. Use for the type layer or generator internals, not client generation execution.
+  Type OpenAPI 3.x documents in TypeScript with `@ahoo-wang/fetcher-openapi`: `OpenAPI`, `PathItem`, `Operation`, `Schema`, `Parameter`, `Response`, `Components`, `Reference` unions and `x-*` extensions. Use when reading, writing, validating or transforming an OpenAPI spec in code. Not a client generator and not an HTTP client — for calls use fetcher-integration.
 ---
 
 # fetcher-openapi-types
 
-## Workflow
+## Decisions
 
-1. Identify the OpenAPI object category first: document, path, operation, schema, parameter, response, security, component, or extension.
-2. Use reference-aware types when values may be inline objects or `$ref` references.
-3. Keep extension fields behind explicit extension types instead of broad untyped records when possible.
-4. Use generator-focused types only when the task needs code generation metadata.
-5. Load `references/api.md` for the full exported type map and quick reference.
+- **Type-only package**: import with `import type { … } from '@ahoo-wang/fetcher-openapi'` (single entry; the built JS is empty). There are no runtime guards or `$ref` resolvers — write your own narrowing.
+- **Client generation is not here**: it left fetcher in 6.0 (see `$fetcher-v6-migration`). Use these types to inspect or build specs, not to produce clients.
 
-## Key Practices
+## Gotchas a capable model gets wrong
 
-- Do not use this skill to generate clients; generation lives in `@ahoo-wang/wow-generator` and its `wow-generator` skill in the Wow repository.
-- Prefer precise OpenAPI vocabulary over informal API terms when naming types.
-- Keep schema composition and polymorphism explicit so generator behavior remains predictable.
+- Reference-able slots are `X | Reference` — `Components` values, `Operation.parameters`, `requestBody`, `Schema.items`, `properties`, `allOf`/`anyOf`/`oneOf`/`not`, response and header maps. Narrow before reading fields.
+- `PathItem` has its own optional `$ref`, so a bare `'$ref' in obj` check misclassifies path items; only use it on slots typed `X | Reference`.
+- `Schema.type` is `SchemaType | SchemaType[]` (3.1 `['string', 'null']`), and `exclusiveMinimum`/`exclusiveMaximum` are `boolean | number` (3.0 vs 3.1).
+- These types are looser than the spec in places: `Info.title`/`version` and `Response.description` are optional; `Operation.responses`, `RequestBody.content` and `OAuthFlow.scopes` are required.
+- Every object type except `Reference` accepts `` `x-${string}` `` keys via `Extensible`; intersect with `CommonExtensions` for typed `x-internal`, `x-deprecated`, `x-tags` and friends.
+- `ComponentTypeMap` maps each `Components` key to its non-reference type (e.g. `schemas` → `Schema`) for generic component lookups.
+
+## Minimal example
+
+```ts
+import type {
+  OpenAPI,
+  Operation,
+  Reference,
+  Schema,
+} from '@ahoo-wang/fetcher-openapi';
+
+const isRef = (s: Schema | Reference): s is Reference => '$ref' in s;
+
+export function operations(doc: OpenAPI): Operation[] {
+  return Object.values(doc.paths ?? {}).flatMap(item =>
+    [item.get, item.post, item.put, item.patch, item.delete].filter(
+      (op): op is Operation => op !== undefined,
+    ),
+  );
+}
+```
 
 ## References
 
-- `references/api.md`: Detailed package API, examples, and edge-case guidance. Load it only when the task needs complete exported type lists, schema variants, operation fields, parameter and response types, security types, components, references, and extension utilities.
+- `references/api.md`: every exported type grouped by area, field-level notes and extension types. Load it when you need exact field names.
 
 ## Related Skills
 
-- $fetcher-integration: Use for runtime HTTP client behavior.
+- $fetcher-integration: runtime HTTP calls against the described API.
+- $fetcher-decorator-service: hand-written typed services for the operations.
