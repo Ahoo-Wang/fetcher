@@ -4,7 +4,13 @@
  * you may obtain a copy at http://www.apache.org/licenses/LICENSE-2.0
  */
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -23,6 +29,11 @@ const repository = fileURLToPath(new URL('../..', import.meta.url));
 
 function write(root, files) {
   for (const [path, content] of Object.entries(files)) {
+    // `null` removes a file or directory a fixture wrote earlier.
+    if (content === null) {
+      rmSync(join(root, path), { recursive: true, force: true });
+      continue;
+    }
     mkdirSync(join(root, path, '..'), { recursive: true });
     writeFileSync(
       join(root, path),
@@ -32,20 +43,27 @@ function write(root, files) {
   return root;
 }
 
-function skill(name, { body = '', description, evalsName = name } = {}) {
+const firedGrader = (name, negative = false) =>
+  `---\ntype: tool_used\ntool: Skill\ninput_match: '"skill"\\s*:\\s*"(?:[\\w-]+:)?${name}"'\n${negative ? 'min: 0\nmax: 0\n' : ''}---\n\nFired.\n`;
+
+function evalCase(name, caseName, { negative = false } = {}) {
+  const dir = `skills/${name}/evals/${caseName}`;
+  return {
+    [`${dir}/prompt.md`]: `---\nname: ${caseName}\ntags: [${negative ? 'negative' : 'trigger'}]\nruns: 3\nmax_turns: 8\nallowed_tools: [Read, Glob, Grep, Skill]\n---\n\nPrompt for ${caseName}.\n`,
+    [`${dir}/graders/skill.md`]: firedGrader(name, negative),
+    [`${dir}/graders/criteria.md`]:
+      '---\ntype: llm\nweight: 1\n---\n\nNames `Client`.\n',
+  };
+}
+
+function skill(name, { body = '', description } = {}) {
   return {
     [`skills/${name}/SKILL.md`]: `---\nname: ${name}\ndescription: >\n  ${description ?? `Use ${name} when testing.`}\n---\n\n${body}\n`,
     [`skills/${name}/references/api.md`]: '# API\n',
     [`skills/${name}/agents/openai.yaml`]: `interface:\n  display_name: 'X'\n  short_description: 'Y'\n  default_prompt: 'Use $${name} to test.'\n`,
-    [`skills/${name}/evals/evals.json`]: {
-      skill_name: evalsName,
-      evals: [1, 2, 3].map(id => ({
-        id,
-        prompt: `prompt ${id}`,
-        expected_output: `output ${id}`,
-        files: [],
-      })),
-    },
+    ...evalCase(name, 'first'),
+    ...evalCase(name, 'second'),
+    ...evalCase(name, 'elsewhere', { negative: true }),
   };
 }
 
@@ -127,7 +145,7 @@ test('backticked API names in SKILL.md must be exported somewhere', () => {
 test('frontmatter, links, agents and evals are checked', () => {
   const long = Array.from({ length: 61 }, () => 'word').join(' ');
   const root = workspace({
-    ...skill('wrong', { description: long, evalsName: 'other' }),
+    ...skill('wrong', { description: long }),
     'skills/wrong/SKILL.md': `---\nname: renamed\ndescription: ${long}\n---\n\nLoad \`references/missing.md\`; see $no-such-skill.\n`,
     'skills/wrong/agents/openai.yaml': "interface:\n  display_name: 'X'\n",
   });
@@ -138,8 +156,54 @@ test('frontmatter, links, agents and evals are checked', () => {
     'skills/wrong/agents/openai.yaml: interface.short_description missing',
     'skills/wrong/agents/openai.yaml: interface.default_prompt missing',
     'skills/wrong/agents/openai.yaml: interface.default_prompt does not name $wrong',
-    "skills/wrong/evals/evals.json: skill_name 'other' ≠ 'wrong'",
     'skills/wrong/SKILL.md: $no-such-skill is not a skill here',
+  ]);
+});
+
+test('eval suites must be in the claude plugin eval format', () => {
+  const root = workspace({
+    ...skill('evals'),
+    'skills/evals/evals/evals.json': { skill_name: 'evals', evals: [] },
+    'skills/evals/evals/first/prompt.md':
+      '---\nname: other\nruns: many\ntags: trigger\nturns: 3\n---\n\n',
+    'skills/evals/evals/second/graders/criteria.md':
+      '---\ntype: judge\n---\n\nx\n',
+    'skills/evals/evals/second/graders/empty.md': '---\ntype: llm\n---\n\n',
+    'skills/evals/evals/results/2026-01-01/aggregate-result.json': '{}',
+  });
+  assert.deepEqual(skillProblems(root), [
+    'skills/evals/evals/evals.json: skill-creator format is not read by `claude plugin eval`; use evals/<case>/prompt.md + graders/',
+    'skills/evals/evals/first/prompt.md: unknown key turns',
+    "skills/evals/evals/first/prompt.md: name 'other' ≠ directory 'first'",
+    'skills/evals/evals/first/prompt.md: runs must be a positive integer',
+    'skills/evals/evals/first/prompt.md: tags must be a list',
+    'skills/evals/evals/first/prompt.md: prompt body is empty',
+    "skills/evals/evals/second/graders/criteria.md: unknown grader type 'judge'",
+    'skills/evals/evals/second/graders/empty.md: llm grader has no criteria',
+  ]);
+});
+
+test('a skill needs three cases, a firing case and a negative case', () => {
+  const root = workspace({
+    ...skill('thin'),
+    'skills/thin/evals/elsewhere/graders/skill.md': firedGrader('other', true),
+    'skills/thin/evals/second/prompt.md': null,
+    'skills/thin/evals/second/graders/skill.md': null,
+  });
+  assert.deepEqual(skillProblems(root), [
+    'skills/thin/evals/second/prompt.md: missing',
+    'skills/thin/evals: no negative case (a tool_used Skill grader naming thin with max: 0)',
+  ]);
+  const bare = workspace({
+    ...skill('bare'),
+    'skills/bare/evals/second': null,
+    'skills/bare/evals/elsewhere': null,
+    'skills/bare/evals/first/graders/skill.md': null,
+  });
+  assert.deepEqual(skillProblems(bare), [
+    'skills/bare/evals: needs at least 3 cases (evals/<case>/prompt.md), found 1',
+    'skills/bare/evals: no case asserts that bare fires (a tool_used Skill grader naming it)',
+    'skills/bare/evals: no negative case (a tool_used Skill grader naming bare with max: 0)',
   ]);
 });
 
@@ -181,8 +245,13 @@ test('the YAML subset parser reads block scalars and rejects the rest', () => {
     parseYaml("a:\n  b: 'it''s'\n  c: >\n    one\n    two\nd: \"x\"\n"),
     { a: { b: "it's", c: 'one two' }, d: 'x' },
   );
+  assert.deepEqual(parseYaml('a: [Read, \'b, c\', "d"]\nb: []\n'), {
+    a: ['Read', 'b, c', 'd'],
+    b: [],
+  });
   assert.throws(() => parseYaml('- item\n'), /unsupported YAML/);
-  assert.throws(() => parseYaml('a: [1]\n'), /unsupported YAML value/);
+  assert.throws(() => parseYaml('a: [[1]]\n'), /unsupported YAML value/);
+  assert.throws(() => parseYaml('a: {b: 1}\n'), /unsupported YAML value/);
   assert.throws(() => parseYaml('a: 1\na: 2\n'), /duplicate key/);
 });
 

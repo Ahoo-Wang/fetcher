@@ -73,6 +73,11 @@ root does not declare a direct Prettier dependency. Only changed files are check
 no repository-wide rewrite is performed. Manual dispatch formats HEAD's diff
 against its parent.
 
+The skill drift guard (`skills.test.mjs`) checks only the shape of each skill's
+`claude plugin eval` suite (`skills/<skill>/evals/<case>/`). Running the suites
+is `pnpm eval:skills`: it needs a Claude login and spends money per run, so it
+is local only and no workflow calls it.
+
 The React package build checks generated declaration imports as a real consumer,
 without source aliases, in addition to ESM context identity. The core runtime output
 uses `core.es.js` so relative declaration imports of `./core` resolve to the
