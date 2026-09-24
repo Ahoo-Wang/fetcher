@@ -14,7 +14,7 @@ description: '使用显式结果提取、有序拦截器和原生 Fetch 取消�
 pnpm add @ahoo-wang/fetcher
 ```
 
-5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=20.20.2 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
+5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=22.12.0 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
 
 ## 选择入口
 

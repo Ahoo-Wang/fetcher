@@ -16,7 +16,7 @@ pnpm add @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher
 
 消费项目需要启用旧版 TypeScript 装饰器：`experimentalDecorators: true`、`emitDecoratorMetadata: true`。`reflect-metadata` 是包自身导入的普通依赖，会自动安装。
 
-5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=20.20.2 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
+5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=22.12.0 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
 
 ## 选择入口
 

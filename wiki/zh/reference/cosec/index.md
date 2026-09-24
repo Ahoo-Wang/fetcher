@@ -16,7 +16,7 @@ pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus
 
 命令包含 CoSec → Storage/EventBus → Fetcher；nanoid 作为普通依赖自动安装。默认 token/device 存储会立即创建广播传输。SSR 请求隔离应注入请求独有的存储与本地总线，见[配置](./configuration.md)。
 
-版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=20.20.2** 和 pnpm **10.34.5**。
+版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
 ## 最小示例
 

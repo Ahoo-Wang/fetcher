@@ -14,7 +14,7 @@ Static OpenAPI document types for authoring specifications and generator inputs.
 pnpm add @ahoo-wang/fetcher-openapi
 ```
 
-Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=20.20.2** and pnpm **10.34.5**.
+Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
 
 ## Minimal example
 

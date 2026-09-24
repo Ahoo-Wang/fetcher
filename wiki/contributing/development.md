@@ -7,7 +7,7 @@ description: Set up the monorepo — Fetcher
 
 ## Match the toolchain
 
-Use Node `>=20.20.2` and pnpm `10.34.5`, as declared by the root package.json. Package consumers have their own engine and peer requirements; see [Installation](../start/installation.md).
+Use Node `>=22.12.0` and pnpm `10.34.5`, as declared by the root package.json. Package consumers have their own engine and peer requirements; see [Installation](../start/installation.md).
 
 ```bash
 pnpm install --frozen-lockfile

@@ -70,7 +70,7 @@ For remote rows, replace the application calculation with a request and pass the
 
 ## Run and verify in this repository
 
-Repository development requires Node >=20.20.2 and pnpm 10.34.5. From the repository root:
+Repository development requires Node >=22.12.0 and pnpm 10.34.5. From the repository root:
 
 ```bash
 pnpm install

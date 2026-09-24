@@ -13,7 +13,7 @@ This component uses a stable `Fetcher` instance and the real `useFetcher` hook. 
 
 ## Run the verified fixture
 
-Contributors need Node `>=20.20.2`, pnpm `10.34.5`, and the repository dependencies installed. From the repository root, run:
+Contributors need Node `>=22.12.0`, pnpm `10.34.5`, and the repository dependencies installed. From the repository root, run:
 
 ```bash
 pnpm exec vitest run --project=storybook stories/docs/ReactRequests.test.stories.tsx
@@ -25,7 +25,7 @@ The Storybook fixture intercepts `fetch` for `https://api.example.test`: `/users
 
 ## Use it in a Vite application
 
-The consumer setup below assumes an existing React + TypeScript Vite application. This repository is validated with Node `>=20.20.2`, pnpm `10.34.5`, Vite `^8.2.2`, TypeScript `^6.0.3`, and React/React DOM `^19.2.8`. The published Fetcher packages themselves declare Node `>=18.20.8`.
+The consumer setup below assumes an existing React + TypeScript Vite application. This repository is validated with Node `>=22.12.0`, pnpm `10.34.5`, Vite `^8.2.2`, TypeScript `^6.0.3`, and React/React DOM `^19.2.8`. The published Fetcher packages themselves declare Node `>=18.20.8`.
 
 Install the React package and its declared peer package graph explicitly:
 

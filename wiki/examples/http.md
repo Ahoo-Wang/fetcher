@@ -19,7 +19,7 @@ The client selects JSON extraction in the third argument to `get`. It also confi
 
 ## Run in this repository
 
-From the repository root, use the repository's Node `>=20.20.2` and pnpm `10.34.5` toolchain:
+From the repository root, use the repository's Node `>=22.12.0` and pnpm `10.34.5` toolchain:
 
 ```bash
 pnpm --filter @ahoo-wang/fetcher build

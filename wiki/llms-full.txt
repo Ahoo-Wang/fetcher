@@ -1,6 +1,6 @@
 # Fetcher Wiki — Full Content
 
-> All documentation pages inlined for LLM consumption. Generated 2026-09-16.
+> All documentation pages inlined for LLM consumption. Generated 2026-09-24.
 
 ## Overview
 
@@ -73,7 +73,7 @@ pnpm add @ahoo-wang/fetcher
 pnpm add -D typescript
 ```
 
-This is a consumer setup. Contributors to this repository instead need Node `>=20.20.2`, pnpm `10.34.5`, and the commands in [Development](../contributing/development.md).
+This is a consumer setup. Contributors to this repository instead need Node `>=22.12.0`, pnpm `10.34.5`, and the commands in [Development](../contributing/development.md).
 
 Continue with [Your first request](./first-request.md).
 
@@ -1343,7 +1343,7 @@ See [promise lifecycle](../../reference/react/promise-and-query-state.md), [HTTP
 
 # View Engine tasks
 
-View Engine is being rewritten. The previous implementation is frozen at the git tag `view-engine-legacy`; the new package grows from an empty tree following the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md).
+View Engine is being rewritten. The previous implementation is frozen at the git tag `view-engine-legacy`; the new package grows from an empty tree following the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/).
 
 The design fixes three facts and derives everything else from them:
 
@@ -2154,7 +2154,7 @@ Follow [declarative services](../guides/services/declarative-client.md), [genera
 
 ## View Engine entries
 
-`@ahoo-wang/fetcher-view-engine` declares direct dependencies on Wow and its UI implementation packages; these are separate from the peer-only arrows above. The package is being rewritten in the layers `model → filter → record | analysis | dashboard → runtime → react → ui`, with `store → model`, enforced by architecture tests. The root entry (models, pure kernels, runtime, the `ViewStore` port and `MemoryViewStore`) imports no React, DOM or CSS; `/react` provides headless hooks and `/ui` the shadcn/Base UI defaults. Durable persistence is the application's `ViewStore` implementation, and query sources remain application runtime adapters. See the [View Engine reference](../reference/view-engine/index.md) and the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md).
+`@ahoo-wang/fetcher-view-engine` declares direct dependencies on Wow and its UI implementation packages; these are separate from the peer-only arrows above. The package is being rewritten in the layers `model → filter → record | analysis | dashboard → runtime → react → ui`, with `store → model`, enforced by architecture tests. The root entry (models, pure kernels, runtime, the `ViewStore` port and `MemoryViewStore`) imports no React, DOM or CSS; `/react` provides headless hooks and `/ui` the shadcn/Base UI defaults. Durable persistence is the application's `ViewStore` implementation, and query sources remain application runtime adapters. See the [View Engine reference](../reference/view-engine/index.md) and the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/).
 
 </doc>
 
@@ -2169,7 +2169,7 @@ Choose the environment before deciding which client objects to share. The core d
 | Browser HTTP           | Fetch and the native request/response APIs used by the endpoint                                                               | Configure origin, CORS, cookies, and response validation with the server                                           |
 | Browser SSE            | A readable response body and the stream APIs used by the pipeline                                                             | Own stream consumption and cancellation                                                                            |
 | Node consumer          | Library manifests declare Node `>=18.20.8`                                                                                    | Check the selected package and its actual dependency chain; this declaration is not a tested matrix for every tool |
-| Repository development | Node `>=20.20.2`, pnpm `10.34.5`                                                                                              | Use the repository toolchain for building and tests                                                                |
+| Repository development | Node `>=22.12.0`, pnpm `10.34.5`                                                                                              | Use the repository toolchain for building and tests                                                                |
 | React / Viewer         | Matching peer dependencies; repository catalog uses React/ReactDOM `^19.2.8`, antd `^6.6.3`, icons `^6.3.4`, dayjs `^1.11.23` | Validate your framework and SSR import/render/hydration path; do not infer React 18 support                        |
 
 Requirements come from [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31), [package.json:39](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L39), [pnpm-workspace.yaml:7](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L7), and the [package manifests](./package-boundaries.md). Stream extraction checks the body in [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38). Generator dependencies may impose stricter runtime requirements than a library's engine declaration.
@@ -2192,7 +2192,7 @@ Continue with [shared clients](../guides/http/shared-client.md), [storage and ev
 
 ## View Engine runtime
 
-The view-engine package declares Node >=20.20.2 and is being rewritten. Its root entry stays independent of React and browser globals and is type-checked without the DOM library; hooks live in `/react` and browser controls in `/ui` with React 19. Engines are owned by the application or by `useViewEngine`, and open views are `ViewRuntime` instances that are disposed explicitly. Clipboard, page visibility and layout APIs remain browser capabilities. `MemoryViewStore` serves in-process examples and Node services; durable persistence is the application's `ViewStore` implementation against its own backend. Validate a framework-specific SSR/hydration integration instead of treating headless import support as certification of every UI component.
+The view-engine package declares Node >=22.12.0 and is being rewritten. Its root entry stays independent of React and browser globals and is type-checked without the DOM library; hooks live in `/react` and browser controls in `/ui` with React 19. Engines are owned by the application or by `useViewEngine`, and open views are `ViewRuntime` instances that are disposed explicitly. Clipboard, page visibility and layout APIs remain browser capabilities. `MemoryViewStore` serves in-process examples and Node services; durable persistence is the application's `ViewStore` implementation against its own backend. Validate a framework-specific SSR/hydration integration instead of treating headless import support as certification of every UI component.
 
 </doc>
 
@@ -2515,7 +2515,7 @@ The client selects JSON extraction in the third argument to `get`. It also confi
 
 ## Run in this repository
 
-From the repository root, use the repository's Node `>=20.20.2` and pnpm `10.34.5` toolchain:
+From the repository root, use the repository's Node `>=22.12.0` and pnpm `10.34.5` toolchain:
 
 ```bash
 pnpm --filter @ahoo-wang/fetcher build
@@ -2614,7 +2614,7 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 
 ## Run the verified fixture
 
-Contributors need Node `>=20.20.2`, pnpm `10.34.5`, and the repository dependencies installed. From the repository root, run:
+Contributors need Node `>=22.12.0`, pnpm `10.34.5`, and the repository dependencies installed. From the repository root, run:
 
 ```bash
 pnpm exec vitest run --project=storybook stories/docs/ReactRequests.test.stories.tsx
@@ -2626,7 +2626,7 @@ The Storybook fixture intercepts `fetch` for `https://api.example.test`: `/users
 
 ## Use it in a Vite application
 
-The consumer setup below assumes an existing React + TypeScript Vite application. This repository is validated with Node `>=20.20.2`, pnpm `10.34.5`, Vite `^8.2.2`, TypeScript `^6.0.3`, and React/React DOM `^19.2.8`. The published Fetcher packages themselves declare Node `>=18.20.8`.
+The consumer setup below assumes an existing React + TypeScript Vite application. This repository is validated with Node `>=22.12.0`, pnpm `10.34.5`, Vite `^8.2.2`, TypeScript `^6.0.3`, and React/React DOM `^19.2.8`. The published Fetcher packages themselves declare Node `>=18.20.8`.
 
 Install the React package and its declared peer package graph explicitly:
 
@@ -2935,7 +2935,7 @@ For remote rows, replace the application calculation with a request and pass the
 
 ## Run and verify in this repository
 
-Repository development requires Node >=20.20.2 and pnpm 10.34.5. From the repository root:
+Repository development requires Node >=22.12.0 and pnpm 10.34.5. From the repository root:
 
 ```bash
 pnpm install
@@ -2958,7 +2958,7 @@ The checks assert table row collections and order, filtered results, and restore
 
 # Complete View Engine example
 
-The shared runnable example is being rebuilt together with the package. It returns when the Record workbench ships, which is the first user-visible step of the [rewrite](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md): filter pending orders, adjust columns and sorting, save a personal view, reopen it.
+The shared runnable example is being rebuilt together with the package. It returns when the Record workbench ships, which is the first user-visible step of the [rewrite](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/): filter pending orders, adjust columns and sorting, save a personal view, reopen it.
 
 Until then, the target usage is shown in the package [README](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/README.md), and the previous example is available at the git tag `view-engine-legacy`.
 
@@ -3138,7 +3138,7 @@ For documentation-only work, follow [Documentation maintenance](./documentation.
 
 ## Match the toolchain
 
-Use Node `>=20.20.2` and pnpm `10.34.5`, as declared by the root package.json. Package consumers have their own engine and peer requirements; see [Installation](../start/installation.md).
+Use Node `>=22.12.0` and pnpm `10.34.5`, as declared by the root package.json. Package consumers have their own engine and peer requirements; see [Installation](../start/installation.md).
 
 ```bash
 pnpm install --frozen-lockfile
@@ -3285,7 +3285,7 @@ HTTP requests with explicit result extraction, ordered interceptors, and native 
 pnpm add @ahoo-wang/fetcher
 ```
 
-Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=20.20.2 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
+Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=22.12.0 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
 
 ## Choose an entry point
 
@@ -3944,7 +3944,7 @@ pnpm add @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher
 
 Enable legacy TypeScript decorators in the consuming project: `experimentalDecorators: true` and `emitDecoratorMetadata: true`. `reflect-metadata` is a regular dependency imported by the package; it is installed automatically.
 
-Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=20.20.2 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
+Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=22.12.0 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
 
 ## Choose an entry point
 
@@ -4354,7 +4354,7 @@ Local serial/parallel delivery and optional cross-context broadcasting.
 pnpm add @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher
 ```
 
-Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=20.20.2 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
+Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=22.12.0 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
 
 ## Choose an entry point
 
@@ -4609,7 +4609,7 @@ pnpm add @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher
 
 The selected runtime needs `Response`, `ReadableStream`, `TransformStream` and `TextDecoderStream` before importing this package. Root import installs the documented Response helpers; it does not supply these Web APIs.
 
-Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=20.20.2 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
+Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=22.12.0 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
 
 ## Choose an entry point
 
@@ -4943,7 +4943,7 @@ pnpm add @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-eventbus @ahoo-wang/fetch
 
 The command includes the recursive peer chain: Storage → EventBus → Fetcher. Browser persistence needs accessible localStorage; non-browser defaults use a fresh memory store.
 
-Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=20.20.2 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
+Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=22.12.0 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
 
 ## Choose an entry point
 
@@ -5197,7 +5197,7 @@ Static OpenAPI document types for authoring specifications and generator inputs.
 pnpm add @ahoo-wang/fetcher-openapi
 ```
 
-Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=20.20.2** and pnpm **10.34.5**.
+Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
 
 ## Minimal example
 
@@ -6014,7 +6014,7 @@ Generate TypeScript models and decorator clients from an OpenAPI document, with 
 pnpm add -D @ahoo-wang/fetcher-generator @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-openapi @ahoo-wang/fetcher-wow typescript
 ```
 
-Version **5.0.0** itself declares Node **>=18.20.8**, but its CLI dependency commander 14 requires Node **>=20**. Use Node **>=20.20.2** for this toolchain; repository development additionally pins pnpm **10.34.5**. The command includes all recursive peers (Generator → Wow/Decorator/EventStream/OpenAPI → Fetcher) and the compiler used below. ts-morph, commander and yaml install automatically as regular dependencies. These are generation-time dependencies; generated clients need their imported packages installed as runtime dependencies in the consuming application, as listed under [generated output](./generated-output.md).
+Version **5.0.0** itself declares Node **>=18.20.8**, but its CLI dependency commander 14 requires Node **>=20**. Use Node **>=22.12.0** for this toolchain; repository development additionally pins pnpm **10.34.5**. The command includes all recursive peers (Generator → Wow/Decorator/EventStream/OpenAPI → Fetcher) and the compiler used below. ts-morph, commander and yaml install automatically as regular dependencies. These are generation-time dependencies; generated clients need their imported packages installed as runtime dependencies in the consuming application, as listed under [generated output](./generated-output.md).
 
 ## Minimal example
 
@@ -6515,7 +6515,7 @@ pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-eventst
 
 The command includes OpenAI → Decorator/EventStream → Fetcher. Prebuilt clients do not require decorator syntax in your application; custom decorated classes do. Streaming additionally needs the [EventStream runtime APIs](../eventstream/index.md).
 
-Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=20.20.2** and pnpm **10.34.5**.
+Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
 
 ## Minimal example
 
@@ -6769,7 +6769,7 @@ pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus
 
 The command includes CoSec → Storage/EventBus → Fetcher; nanoid is installed as a regular dependency. Default token/device storages construct broadcast transports immediately. For SSR request isolation, inject request-owned storage and local buses as described in [configuration](./configuration.md).
 
-Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=20.20.2** and pnpm **10.34.5**.
+Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
 
 ## Minimal example
 
@@ -7462,7 +7462,7 @@ React hooks connect an asynchronous operation to one mounted component: state, e
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-wow react react-dom
 ```
 
-This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=20.20.2 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically. External peer ranges are React/ReactDOM ^19.2.8. They are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
+This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically. External peer ranges are React/ReactDOM ^19.2.8. They are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
 
 ## Runnable core example
 
@@ -10115,7 +10115,7 @@ Use Wow clients with a service that implements the Wow command and query protoco
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-wow
 ```
 
-This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=20.20.2 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically.
+This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically.
 
 ## Core request
 
@@ -14615,7 +14615,7 @@ Both dictionaries are declared as `export const <locale>: OperatorLocale`. The f
 
 # View Engine reference
 
-The package is being rewritten and has no published API yet. The target entries are fixed by the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md):
+The package is being rewritten and has no published API yet. The target entries are fixed by the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/):
 
 | Entry                            | Contents                                                                                                        |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -14632,7 +14632,7 @@ Reference pages for models, kernels, runtime, store and components are added as 
 
 # View Engine symbol index
 
-The package is being rewritten and currently exports no public symbols. This index is regenerated from `packages/view-engine/src/index.ts` and the `/react` and `/ui` entries as each delivery step of the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md) lands. The previous symbol index is available at the git tag `view-engine-legacy`.
+The package is being rewritten and currently exports no public symbols. This index is regenerated from `packages/view-engine/src/index.ts` and the `/react` and `/ui` entries as each delivery step of the [architecture design](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/) lands. The previous symbol index is available at the git tag `view-engine-legacy`.
 
 </doc>
 
@@ -14662,7 +14662,7 @@ Viewer supplies Ant Design filter, table and saved-view UI. Begin with the compo
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-openapi @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-viewer @ahoo-wang/fetcher-wow @ant-design/icons antd dayjs react react-dom
 ```
 
-This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=20.20.2 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically. External peer ranges are React/ReactDOM ^19.2.8, antd ^6.6.3, @ant-design/icons ^6.3.4 and dayjs ^1.11.23. They are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
+This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically. External peer ranges are React/ReactDOM ^19.2.8, antd ^6.6.3, @ant-design/icons ^6.3.4 and dayjs ^1.11.23. They are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
 
 ## Runnable core example
 
@@ -19151,7 +19151,7 @@ pnpm add @ahoo-wang/fetcher
 pnpm add -D typescript
 ```
 
-以上是消费者项目的设置。参与本仓库开发则需要 Node `>=20.20.2`、pnpm `10.34.5`，并使用[开发指南](../contributing/development.md)中的命令。
+以上是消费者项目的设置。参与本仓库开发则需要 Node `>=22.12.0`、pnpm `10.34.5`，并使用[开发指南](../contributing/development.md)中的命令。
 
 安装后继续[第一个请求](./first-request.md)。
 
@@ -20409,7 +20409,7 @@ const load = () =>
 
 # View Engine 数据视图
 
-View Engine 正在重写。旧实现以 git tag `view-engine-legacy` 冻结；新包按[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)从空树自下而上生长。
+View Engine 正在重写。旧实现以 git tag `view-engine-legacy` 冻结；新包按[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/)从空树自下而上生长。
 
 设计以三个事实为基础，其余全部由此推出：
 
@@ -21214,7 +21214,7 @@ React 到 CoSec 的 peer 箭头不表示每个 Hook 都通过 CoSec 认证。Vie
 
 ## View Engine 入口
 
-`@ahoo-wang/fetcher-view-engine` 直接依赖 Wow 及其 UI 实现包，与上图只描述 peer 的箭头不同。该包正按 `model → filter → record | analysis | dashboard → runtime → react → ui` 与 `store → model` 的分层重写，规则由架构测试强制。根入口（模型、纯内核、运行时、`ViewStore` 端口与 `MemoryViewStore`）不导入 React、DOM 或 CSS；`/react` 提供无样式钩子，`/ui` 提供 shadcn/Base UI 默认组件。持久化由应用实现 `ViewStore`，查询数据源仍是应用的运行时适配器。参阅 [View Engine 参考](../reference/view-engine/index.md)与[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)。
+`@ahoo-wang/fetcher-view-engine` 直接依赖 Wow 及其 UI 实现包，与上图只描述 peer 的箭头不同。该包正按 `model → filter → record | analysis | dashboard → runtime → react → ui` 与 `store → model` 的分层重写，规则由架构测试强制。根入口（模型、纯内核、运行时、`ViewStore` 端口与 `MemoryViewStore`）不导入 React、DOM 或 CSS；`/react` 提供无样式钩子，`/ui` 提供 shadcn/Base UI 默认组件。持久化由应用实现 `ViewStore`，查询数据源仍是应用的运行时适配器。参阅 [View Engine 参考](../reference/view-engine/index.md)与[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/)。
 
 </doc>
 
@@ -21229,7 +21229,7 @@ React 到 CoSec 的 peer 箭头不表示每个 Hook 都通过 CoSec 认证。Vie
 | 浏览器 HTTP    | Fetch 及端点所用的原生请求/响应 API                                                                  | 与服务端一起配置来源、CORS、Cookie 和响应验证                |
 | 浏览器 SSE     | 可读响应体及管线所用的流 API                                                                         | 管理流消费与取消                                             |
 | Node 消费者    | 库清单声明 Node `>=18.20.8`                                                                          | 检查所选包及实际依赖链；声明不等于每个工具的实测矩阵         |
-| 仓库开发       | Node `>=20.20.2`、pnpm `10.34.5`                                                                     | 使用仓库工具链构建和测试                                     |
+| 仓库开发       | Node `>=22.12.0`、pnpm `10.34.5`                                                                     | 使用仓库工具链构建和测试                                     |
 | React / Viewer | 匹配 peer；仓库 catalog 为 React/ReactDOM `^19.2.8`、antd `^6.6.3`、icons `^6.3.4`、dayjs `^1.11.23` | 验证框架的 SSR 导入/渲染/水合路径；不能据此推断支持 React 18 |
 
 要求来源为 [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)、[package.json:39](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L39)、[pnpm-workspace.yaml:7](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L7) 及[包清单](./package-boundaries.md)。流提取检查响应体的实现见 [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)。生成器依赖可能比库的引擎声明要求更高的运行环境。
@@ -21252,7 +21252,7 @@ FetcherViewer 在模块作用域创建默认视图 ID 存储，固定键为 `fet
 
 ## View Engine 运行环境
 
-view-engine 包声明 Node >=20.20.2，正在重写。根入口独立于 React 和浏览器全局对象，并在不含 DOM 库的条件下做类型检查；钩子位于 `/react`，浏览器控件位于 `/ui`，使用 React 19。引擎由应用或 `useViewEngine` 持有，打开的视图是需显式释放的 `ViewRuntime`。剪贴板、页面可见性和布局 API 属于浏览器能力。`MemoryViewStore` 服务于内存示例和 Node 服务；持久化由应用针对自己的后端实现 `ViewStore`。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
+view-engine 包声明 Node >=22.12.0，正在重写。根入口独立于 React 和浏览器全局对象，并在不含 DOM 库的条件下做类型检查；钩子位于 `/react`，浏览器控件位于 `/ui`，使用 React 19。引擎由应用或 `useViewEngine` 持有，打开的视图是需显式释放的 `ViewRuntime`。剪贴板、页面可见性和布局 API 属于浏览器能力。`MemoryViewStore` 服务于内存示例和 Node 服务；持久化由应用针对自己的后端实现 `ViewStore`。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
 
 </doc>
 
@@ -21574,7 +21574,7 @@ console.log(user.name);
 
 ## 在本仓库运行
 
-在仓库根目录使用仓库规定的 Node `>=20.20.2` 与 pnpm `10.34.5`：
+在仓库根目录使用仓库规定的 Node `>=22.12.0` 与 pnpm `10.34.5`：
 
 ```bash
 pnpm --filter @ahoo-wang/fetcher build
@@ -21673,7 +21673,7 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 
 ## 运行已验证的 fixture
 
-仓库贡献者需要 Node `>=20.20.2`、pnpm `10.34.5`，并已安装仓库依赖。在仓库根目录运行：
+仓库贡献者需要 Node `>=22.12.0`、pnpm `10.34.5`，并已安装仓库依赖。在仓库根目录运行：
 
 ```bash
 pnpm exec vitest run --project=storybook stories/docs/ReactRequests.test.stories.tsx
@@ -21685,7 +21685,7 @@ Storybook fixture 会拦截发往 `https://api.example.test` 的 `fetch`：`/use
 
 ## 在 Vite 应用中使用
 
-下面的消费者设置假设已有 React + TypeScript Vite 应用。本仓库使用 Node `>=20.20.2`、pnpm `10.34.5`、Vite `^8.2.2`、TypeScript `^6.0.3` 以及 React/React DOM `^19.2.8` 验证。已发布的 Fetcher 包自身声明 Node `>=18.20.8`。
+下面的消费者设置假设已有 React + TypeScript Vite 应用。本仓库使用 Node `>=22.12.0`、pnpm `10.34.5`、Vite `^8.2.2`、TypeScript `^6.0.3` 以及 React/React DOM `^19.2.8` 验证。已发布的 Fetcher 包自身声明 Node `>=18.20.8`。
 
 显式安装 React 包及其声明的 peer 包图：
 
@@ -21994,7 +21994,7 @@ pnpm dev
 
 ## 在本仓库运行与验证
 
-仓库开发要求 Node >=20.20.2、pnpm 10.34.5。在仓库根目录执行：
+仓库开发要求 Node >=22.12.0、pnpm 10.34.5。在仓库根目录执行：
 
 ```bash
 pnpm install
@@ -22017,7 +22017,7 @@ pnpm exec vitest run --project=storybook stories/docs/LocalViewer.test.stories.t
 
 # 完整 View Engine 示例
 
-共享的可运行示例正与包一起重建。它将随 Record 工作台一起回归，那是[重写](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)第一个用户可见的步骤：筛选待出库订单、调整列与排序、保存为个人视图、重新打开。
+共享的可运行示例正与包一起重建。它将随 Record 工作台一起回归，那是[重写](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/)第一个用户可见的步骤：筛选待出库订单、调整列与排序、保存为个人视图、重新打开。
 
 在此之前，目标用法见包内 [README](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/README.zh-CN.md)，旧示例见 git tag `view-engine-legacy`。
 
@@ -22193,7 +22193,7 @@ Base URL、已有具名或直接 Fetcher、请求与响应结构、头部所有�
 
 ## 使用仓库声明的工具链
 
-根 package.json 声明 Node `>=20.20.2`、pnpm `10.34.5`。库消费者有各自的 engines 和 peer 要求，见[安装](../start/installation.md)。
+根 package.json 声明 Node `>=22.12.0`、pnpm `10.34.5`。库消费者有各自的 engines 和 peer 要求，见[安装](../start/installation.md)。
 
 ```bash
 pnpm install --frozen-lockfile
@@ -22338,7 +22338,7 @@ node --test wiki/test/documentation.test.mjs
 pnpm add @ahoo-wang/fetcher
 ```
 
-5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=20.20.2 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
+5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=22.12.0 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
 
 ## 选择入口
 
@@ -22997,7 +22997,7 @@ pnpm add @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher
 
 消费项目需要启用旧版 TypeScript 装饰器：`experimentalDecorators: true`、`emitDecoratorMetadata: true`。`reflect-metadata` 是包自身导入的普通依赖，会自动安装。
 
-5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=20.20.2 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
+5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=22.12.0 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
 
 ## 选择入口
 
@@ -23407,7 +23407,7 @@ console.assert((await new Health().check()).ok);
 pnpm add @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher
 ```
 
-5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=20.20.2 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
+5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=22.12.0 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
 
 ## 选择入口
 
@@ -23662,7 +23662,7 @@ pnpm add @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher
 
 所选运行时必须在导入本包前提供 `Response`、`ReadableStream`、`TransformStream`、`TextDecoderStream`。根导入安装文档中的 Response 辅助方法，不提供这些 Web API。
 
-5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=20.20.2 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
+5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=22.12.0 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
 
 ## 选择入口
 
@@ -23996,7 +23996,7 @@ pnpm add @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-eventbus @ahoo-wang/fetch
 
 命令包含递归 peer 链：Storage → EventBus → Fetcher。浏览器持久化要求 localStorage 可访问；非浏览器默认创建独立内存存储。
 
-5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=20.20.2 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
+5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=22.12.0 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
 
 ## 选择入口
 
@@ -24250,7 +24250,7 @@ token.eventBus.destroy();
 pnpm add @ahoo-wang/fetcher-openapi
 ```
 
-版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=20.20.2** 和 pnpm **10.34.5**。
+版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
 ## 最小示例
 
@@ -25067,7 +25067,7 @@ export interface CommonExtensions {
 pnpm add -D @ahoo-wang/fetcher-generator @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-openapi @ahoo-wang/fetcher-wow typescript
 ```
 
-版本 **5.0.0** 自身声明 Node **>=18.20.8**，但 CLI 依赖 commander 14 要求 Node **>=20**。此工具链使用 Node **>=20.20.2**；仓库开发另固定 pnpm **10.34.5**。命令包含全部递归 peer（Generator → Wow/Decorator/EventStream/OpenAPI → Fetcher）及下文使用的编译器。ts-morph、commander、yaml 作为普通依赖自动安装。这些是生成阶段依赖；消费应用需把生成客户端导入的包作为运行时依赖安装，见[生成产物](./generated-output.md)。
+版本 **5.0.0** 自身声明 Node **>=18.20.8**，但 CLI 依赖 commander 14 要求 Node **>=20**。此工具链使用 Node **>=22.12.0**；仓库开发另固定 pnpm **10.34.5**。命令包含全部递归 peer（Generator → Wow/Decorator/EventStream/OpenAPI → Fetcher）及下文使用的编译器。ts-morph、commander、yaml 作为普通依赖自动安装。这些是生成阶段依赖；消费应用需把生成客户端导入的包作为运行时依赖安装，见[生成产物](./generated-output.md)。
 
 ## 最小示例
 
@@ -25568,7 +25568,7 @@ pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-eventst
 
 命令包含 OpenAI → Decorator/EventStream → Fetcher。使用预构建客户端无需在应用中编写装饰器；自定义装饰器类才需要对应编译配置。流式调用还需要 [EventStream 运行时 API](../eventstream/index.md)。
 
-版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=20.20.2** 和 pnpm **10.34.5**。
+版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
 ## 最小示例
 
@@ -25822,7 +25822,7 @@ pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus
 
 命令包含 CoSec → Storage/EventBus → Fetcher；nanoid 作为普通依赖自动安装。默认 token/device 存储会立即创建广播传输。SSR 请求隔离应注入请求独有的存储与本地总线，见[配置](./configuration.md)。
 
-版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=20.20.2** 和 pnpm **10.34.5**。
+版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
 ## 最小示例
 
@@ -26515,7 +26515,7 @@ React Hook 将异步操作连接到一个挂载组件：状态、执行、查询
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-wow react react-dom
 ```
 
-本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=20.20.2、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。 外部 peer 范围为 React/ReactDOM ^19.2.8；即使不使用某项功能，仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
+本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。 外部 peer 范围为 React/ReactDOM ^19.2.8；即使不使用某项功能，仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
 
 ## 可运行核心示例
 
@@ -29168,7 +29168,7 @@ Wow 客户端适用于实现 Wow 命令与查询协议的服务。构建器在�
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-wow
 ```
 
-本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=20.20.2、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。
+本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。
 
 ## 核心调用
 
@@ -33668,7 +33668,7 @@ console.log(zh_CN.EQ);
 
 # View Engine API 参考
 
-该包正在重写，尚无已发布的 API。目标入口由[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)固定：
+该包正在重写，尚无已发布的 API。目标入口由[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/)固定：
 
 | 入口                             | 内容                                                                                                   |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -33685,7 +33685,7 @@ console.log(zh_CN.EQ);
 
 # View Engine 符号索引
 
-该包正在重写，目前没有公开导出。本索引将随[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design.md)各交付步骤落地，从 `packages/view-engine/src/index.ts` 以及 `/react`、`/ui` 入口重新生成。旧版符号索引见 git tag `view-engine-legacy`。
+该包正在重写，目前没有公开导出。本索引将随[架构设计](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/view-engine/docs/design/)各交付步骤落地，从 `packages/view-engine/src/index.ts` 以及 `/react`、`/ui` 入口重新生成。旧版符号索引见 git tag `view-engine-legacy`。
 
 </doc>
 
@@ -33715,7 +33715,7 @@ Viewer 提供 Ant Design 过滤、表格和保存视图 UI。先根据谁拥有�
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-openapi @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-viewer @ahoo-wang/fetcher-wow @ant-design/icons antd dayjs react react-dom
 ```
 
-本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=20.20.2、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。 外部 peer 范围为 React/ReactDOM ^19.2.8、antd ^6.6.3、@ant-design/icons ^6.3.4、dayjs ^1.11.23；即使不使用某项功能，仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
+本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。 外部 peer 范围为 React/ReactDOM ^19.2.8、antd ^6.6.3、@ant-design/icons ^6.3.4、dayjs ^1.11.23；即使不使用某项功能，仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
 
 ## 可运行核心示例
 

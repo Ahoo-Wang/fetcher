@@ -29,7 +29,7 @@ pnpm add @ahoo-wang/fetcher
 pnpm add -D typescript
 ```
 
-以上是消费者项目的设置。参与本仓库开发则需要 Node `>=20.20.2`、pnpm `10.34.5`，并使用[开发指南](../contributing/development.md)中的命令。
+以上是消费者项目的设置。参与本仓库开发则需要 Node `>=22.12.0`、pnpm `10.34.5`，并使用[开发指南](../contributing/development.md)中的命令。
 
 安装后继续[第一个请求](./first-request.md)。
 

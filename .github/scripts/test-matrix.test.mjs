@@ -28,12 +28,14 @@ test('Combined coverage waits for the Node 24 jobs only, and they cover every su
   );
   const job = id => ci.split(`\n  ${id}:\n`)[1].split(/\n {2}[a-z0-9-]+:\n/)[0];
   const list = text => text.split(',').map(value => value.trim());
-  // Node 20/22 compatibility runs every suite without coverage.
+  // Node 22 compatibility runs every suite without coverage. Node 20 reached
+  // end of life on 2026-04-30; the root `engines` asks for Node >=22.12.0.
   const compat = job('build-and-test');
-  assert.deepEqual(list(compat.match(/node-version: \[([^\]]+)\]/)[1]), [
-    '20',
-    '22',
-  ]);
+  assert.deepEqual(list(compat.match(/node-version: \[([^\]]+)\]/)[1]), ['22']);
+  const root = JSON.parse(
+    readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+  );
+  assert.equal(root.engines.node, '>=22.12.0');
   assert.deepEqual(list(compat.match(/suite: \[([^\]]+)\]/)[1]), suites);
   assert.match(compat, /COLLECT_COVERAGE: 'false'/);
   // Node 24 runs the unsharded suites with coverage; the sharded ones merge

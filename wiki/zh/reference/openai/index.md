@@ -16,7 +16,7 @@ pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-eventst
 
 命令包含 OpenAI → Decorator/EventStream → Fetcher。使用预构建客户端无需在应用中编写装饰器；自定义装饰器类才需要对应编译配置。流式调用还需要 [EventStream 运行时 API](../eventstream/index.md)。
 
-版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=20.20.2** 和 pnpm **10.34.5**。
+版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
 ## 最小示例
 

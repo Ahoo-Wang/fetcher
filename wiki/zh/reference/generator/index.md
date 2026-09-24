@@ -14,7 +14,7 @@ description: 'Generator 参考 — Fetcher 5.0.0'
 pnpm add -D @ahoo-wang/fetcher-generator @ahoo-wang/fetcher @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-openapi @ahoo-wang/fetcher-wow typescript
 ```
 
-版本 **5.0.0** 自身声明 Node **>=18.20.8**，但 CLI 依赖 commander 14 要求 Node **>=20**。此工具链使用 Node **>=20.20.2**；仓库开发另固定 pnpm **10.34.5**。命令包含全部递归 peer（Generator → Wow/Decorator/EventStream/OpenAPI → Fetcher）及下文使用的编译器。ts-morph、commander、yaml 作为普通依赖自动安装。这些是生成阶段依赖；消费应用需把生成客户端导入的包作为运行时依赖安装，见[生成产物](./generated-output.md)。
+版本 **5.0.0** 自身声明 Node **>=18.20.8**，但 CLI 依赖 commander 14 要求 Node **>=20**。此工具链使用 Node **>=22.12.0**；仓库开发另固定 pnpm **10.34.5**。命令包含全部递归 peer（Generator → Wow/Decorator/EventStream/OpenAPI → Fetcher）及下文使用的编译器。ts-morph、commander、yaml 作为普通依赖自动安装。这些是生成阶段依赖；消费应用需把生成客户端导入的包作为运行时依赖安装，见[生成产物](./generated-output.md)。
 
 ## 最小示例
 

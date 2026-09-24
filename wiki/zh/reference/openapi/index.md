@@ -14,7 +14,7 @@ description: 'Openapi 参考 — Fetcher 5.0.0'
 pnpm add @ahoo-wang/fetcher-openapi
 ```
 
-版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=20.20.2** 和 pnpm **10.34.5**。
+版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
 ## 最小示例
 

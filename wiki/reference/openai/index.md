@@ -16,7 +16,7 @@ pnpm add @ahoo-wang/fetcher-openai @ahoo-wang/fetcher @ahoo-wang/fetcher-eventst
 
 The command includes OpenAI → Decorator/EventStream → Fetcher. Prebuilt clients do not require decorator syntax in your application; custom decorated classes do. Streaming additionally needs the [EventStream runtime APIs](../eventstream/index.md).
 
-Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=20.20.2** and pnpm **10.34.5**.
+Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
 
 ## Minimal example
 
