@@ -20,7 +20,7 @@ import {
 } from '../src';
 import { ResponseCodes, type CoSecOptions } from '../src';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
-import { type Fetcher } from '@ahoo-wang/fetcher';
+import { InterceptorRegistry, type Fetcher } from '@ahoo-wang/fetcher';
 import { JwtTokenManager } from '../src';
 import type { TokenStorage } from '../src';
 import type { TokenRefresher } from '../src';
@@ -36,7 +36,8 @@ describe('AuthorizationResponseInterceptor', () => {
   beforeEach(() => {
     mockFetcher = {
       interceptors: {
-        exchange: vi.fn(),
+        request: { intercept: vi.fn() },
+        response: new InterceptorRegistry(),
       },
     } as unknown as Fetcher;
 
@@ -83,7 +84,7 @@ describe('AuthorizationResponseInterceptor', () => {
     await interceptor.intercept(exchange);
 
     expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
-    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+    expect(mockFetcher.interceptors.request.intercept).not.toHaveBeenCalled();
   });
 
   it('should not intercept when response status is not 401', async () => {
@@ -96,7 +97,7 @@ describe('AuthorizationResponseInterceptor', () => {
     await interceptor.intercept(exchange);
 
     expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
-    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+    expect(mockFetcher.interceptors.request.intercept).not.toHaveBeenCalled();
   });
 
   it('should not intercept when token is not refreshable', async () => {
@@ -114,7 +115,7 @@ describe('AuthorizationResponseInterceptor', () => {
     await interceptor.intercept(exchange);
 
     expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
-    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+    expect(mockFetcher.interceptors.request.intercept).not.toHaveBeenCalled();
   });
 
   it('should attempt to refresh token and retry request on 401 response', async () => {
@@ -135,7 +136,9 @@ describe('AuthorizationResponseInterceptor', () => {
 
     expect(mockTokenStorage.get).toHaveBeenCalled();
     expect(mockTokenRefresher.refresh).toHaveBeenCalledWith('current-token');
-    expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange);
+    expect(mockFetcher.interceptors.request.intercept).toHaveBeenCalledWith(
+      exchange,
+    );
   });
 
   it('should clear tokens and throw error when token refresh fails', async () => {
@@ -161,7 +164,7 @@ describe('AuthorizationResponseInterceptor', () => {
     expect(mockTokenStorage.get).toHaveBeenCalled();
     expect(mockTokenRefresher.refresh).toHaveBeenCalledWith('current-token');
     expect(mockTokenStorage.remove).toHaveBeenCalled();
-    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+    expect(mockFetcher.interceptors.request.intercept).not.toHaveBeenCalled();
   });
 
   // A failure of the retried request itself (network error, another 401, ...)
@@ -181,7 +184,7 @@ describe('AuthorizationResponseInterceptor', () => {
     });
 
     mockTokenRefresher.refresh = vi.fn().mockResolvedValue('new-token');
-    mockFetcher.interceptors.exchange = vi
+    mockFetcher.interceptors.request.intercept = vi
       .fn()
       .mockRejectedValue(new Error('Network error'));
 
@@ -190,7 +193,9 @@ describe('AuthorizationResponseInterceptor', () => {
     );
 
     expect(mockTokenRefresher.refresh).toHaveBeenCalled();
-    expect(mockFetcher.interceptors.exchange).toHaveBeenCalledWith(exchange);
+    expect(mockFetcher.interceptors.request.intercept).toHaveBeenCalledWith(
+      exchange,
+    );
     expect(mockTokenStorage.remove).not.toHaveBeenCalled();
   });
 
@@ -213,11 +218,11 @@ describe('AuthorizationResponseInterceptor', () => {
     expect(mockTokenStorage.get).toHaveBeenCalled();
     expect(mockTokenRefresher.refresh).not.toHaveBeenCalled();
     expect(mockTokenStorage.remove).not.toHaveBeenCalled();
-    expect(mockFetcher.interceptors.exchange).not.toHaveBeenCalled();
+    expect(mockFetcher.interceptors.request.intercept).not.toHaveBeenCalled();
   });
 
   // BUG: the interceptor retries a 401 by re-running the whole interceptor
-  // chain (exchange.fetcher.interceptors.exchange), which re-invokes THIS SAME
+  // response chain, which re-invokes THIS SAME
   // interceptor. With no retry bound, a retried request that STILL returns 401
   // recurses refresh indefinitely — hammering the refresh endpoint until the
   // refresh token expires or the call stack overflows.
@@ -246,9 +251,7 @@ describe('AuthorizationResponseInterceptor', () => {
 
     // Simulate the real chain: retrying re-runs response interceptors, and
     // the retried response is STILL 401.
-    mockFetcher.interceptors.exchange = vi
-      .fn()
-      .mockImplementation(() => interceptor.intercept(exchange));
+    mockFetcher.interceptors.response.use(interceptor);
 
     try {
       await interceptor.intercept(exchange);
