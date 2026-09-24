@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import type { FinalFocus } from './commands.js';
 import {
@@ -96,9 +96,19 @@ export function ContentEditor({
 }: ContentEditorProps) {
   const messages = useViewMessages();
   const kind = target?.mode === 'add' ? target.kind : target?.panel.kind;
+  const form = useRef<HTMLFormElement>(null);
   return (
     <Dialog open={open} onOpenChange={next => !next && onClose()}>
-      <DialogContent data-slot="content-editor" finalFocus={finalFocus}>
+      <DialogContent
+        data-slot="content-editor"
+        // The keyboard starts in the first box, whatever the kind: typing is
+        // what the form is for. A list of links would otherwise open on its
+        // first link's 「移除」, the first thing that takes the keyboard.
+        initialFocus={() =>
+          form.current?.querySelector<HTMLElement>('input, textarea') ?? true
+        }
+        finalFocus={finalFocus}
+      >
         {/* Remounted on each opening: a form is a fresh question. */}
         {open && target && kind && (
           <>
@@ -108,6 +118,7 @@ export function ContentEditor({
               </DialogTitle>
             </DialogHeader>
             <ContentForm
+              ref={form}
               target={target}
               onSubmit={content => {
                 onSubmit(content);
@@ -151,9 +162,11 @@ function draftOf(target: ContentTarget, placeholder: string) {
 const optional = (value: string) => value.trim() || undefined;
 
 function ContentForm({
+  ref,
   target,
   onSubmit,
 }: {
+  ref: Ref<HTMLFormElement>;
   target: ContentTarget;
   onSubmit: ContentEditorProps['onSubmit'];
 }) {
@@ -245,6 +258,7 @@ function ContentForm({
 
   return (
     <form
+      ref={ref}
       noValidate
       onSubmit={event => {
         event.preventDefault();

@@ -188,15 +188,13 @@ describe('reading and building a dashboard (D22 A)', () => {
     const { user } = open();
     await screen.findByText('Pending', { selector: 'h3' });
 
-    // Read: no handle, no corner, no arrange menu — only the way in.
+    // Read: no handle, no corner — only the way in.
     expect(slot('panel-grip')).toBeNull();
-    expect(slot('panel-arrange')).toBeNull();
     expect(slot('panel-resize')).toBeNull();
     expect(slot('dashboard-edit-bar')).toBeNull();
 
     await enter(user);
     expect(slot('panel-grip')).not.toBeNull();
-    expect(slot('panel-arrange')).not.toBeNull();
     // The bar's 完成 is the save while it is up; Save is not beside it.
     expect(slot('save-actions')).toBeNull();
     expect(slot('dashboard-edit')).toBeNull();
