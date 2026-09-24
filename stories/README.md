@@ -119,7 +119,7 @@ PLAYWRIGHT_BROWSERS_PATH=$HOME/Library/Caches/ms-playwright-user pnpm test:story
 PLAYWRIGHT_BROWSERS_PATH=$HOME/Library/Caches/ms-playwright-user pnpm exec playwright install chromium
 ```
 
-机器同时跑多组测试时给 vitest 限并发，例如 `pnpm test:storybook -- --maxWorkers=3`；某个故事因超时失败，先单独重跑那一个文件再判断是不是真失败。
+机器同时跑多组测试时给 vitest 限并发，例如 `pnpm test:storybook --maxWorkers=3`（包里的 `pnpm test` 同理拆成 `pnpm exec vitest run --coverage --maxWorkers=3` 加 `pnpm test:type`，两个退出码都要看）；某个故事因超时失败，先单独重跑那一个文件再判断是不是真失败。
 
 **3. 格式：** 对每个改动过的文件跑 `prettier --check`，失败时 `--write` 后再查一遍。仓库根没有 `prettier` 的可执行入口（它是各包的开发依赖，版本在 `pnpm-workspace.yaml` 的 catalog 里），在根目录直接用 pnpm 存储里的那份，路径里的版本号按 catalog 填：
 
