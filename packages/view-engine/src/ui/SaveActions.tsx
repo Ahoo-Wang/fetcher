@@ -204,7 +204,7 @@ export function SaveActions({
         {menuSaveAs && (
           <DropdownMenu>
             <IconTooltip
-              label={messages.label('label.header.more')}
+              label={messages.label(word('label.header.more'))}
               render={
                 <DropdownMenuTrigger
                   render={

@@ -34,7 +34,7 @@ import {
   type FieldKind,
   type ViewInstance,
 } from '../src/index.js';
-import { DashboardWorkbench } from '../src/ui/index.js';
+import { DashboardWorkbench, zhCN } from '../src/ui/index.js';
 import {
   INSTANT,
   ZONE,
@@ -463,7 +463,9 @@ describe('DashboardWorkbench', () => {
     );
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
 
-    fireEvent.click(screen.getByRole('button', { name: 'More view actions' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'More dashboard actions' }),
+    );
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Save as' }));
     const dialog = await screen.findByRole('dialog');
     fireEvent.change(within(dialog).getByLabelText('Title'), {
@@ -536,7 +538,7 @@ describe('DashboardWorkbench', () => {
     /** The save-as dialog, opened from the title bar's menu. */
     async function openCopy() {
       fireEvent.click(
-        await screen.findByRole('button', { name: 'More view actions' }),
+        await screen.findByRole('button', { name: 'More dashboard actions' }),
       );
       fireEvent.click(await screen.findByRole('menuitem', { name: 'Save as' }));
       return screen.findByRole('dialog');
@@ -785,6 +787,41 @@ describe('DashboardWorkbench', () => {
     expect(screen.queryByRole('button', { name: '1 more' })).toBeNull();
     // Nothing ran: an error blocks the apply that would have created panels.
     expect(source.paged).not.toHaveBeenCalled();
+  });
+
+  /**
+   * D26 Q34: the chrome around a board names a board — the sidebar's fold,
+   * its list, the switcher and the save button's menu among them — never
+   * 「视图」, which on this page is what the panels show.
+   */
+  it('names the board in its chrome: the list, its fold, the switcher, the save menu (Q34)', async () => {
+    const { engine } = setup();
+
+    render(
+      <DashboardWorkbench
+        engine={engine}
+        definitionId="overview"
+        instanceId="overview-1"
+        messages={zhCN}
+      />,
+    );
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+
+    expect(screen.getByRole('button', { name: '收起仪表盘列表' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '更多仪表盘操作' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '我的仪表盘' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '管理仪表盘' })).toBeTruthy();
+    // Folded, the list gives way to the switcher and the way back.
+    fireEvent.click(screen.getByRole('button', { name: '收起仪表盘列表' }));
+    expect(
+      await screen.findByRole('button', { name: '展开仪表盘列表' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: '切换仪表盘' })).toBeTruthy();
+    // Nothing on the chrome calls the board a view.
+    const named = [...document.querySelectorAll('[aria-label]')]
+      .map(element => element.getAttribute('aria-label') ?? '')
+      .filter(name => name.includes('视图'));
+    expect(named).toEqual([]);
   });
 
   /**

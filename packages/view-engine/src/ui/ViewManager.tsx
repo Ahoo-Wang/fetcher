@@ -224,7 +224,7 @@ export function ViewManager({
                 defaults.map(plugin =>
                   plugin === Accessibility
                     ? Accessibility.configure(
-                        manageDragAccessibility(messages, titleOf),
+                        manageDragAccessibility(messages, titleOf, word),
                       )
                     : plugin,
                 )

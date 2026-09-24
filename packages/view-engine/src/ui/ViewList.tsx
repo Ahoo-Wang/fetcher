@@ -166,7 +166,7 @@ export function ViewList({
             data-slot="view-list-title"
             className="min-w-0 flex-1 truncate px-1.5 text-base font-semibold"
           >
-            {title || messages.label('label.view.list')}
+            {title || messages.label(word('label.view.list'))}
           </h1>
           {create && (
             <NewViewControl
@@ -196,7 +196,7 @@ export function ViewList({
           {onCollapse && (
             <IconButton
               ref={collapseRef}
-              label={messages.label('label.workbench.collapse-sidebar')}
+              label={messages.label(word('label.workbench.collapse-sidebar'))}
               variant="ghost"
               size="icon-sm"
               aria-expanded

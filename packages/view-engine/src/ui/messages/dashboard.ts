@@ -20,6 +20,23 @@ export const dashboardMessages = {
   'label.dashboard.new': 'New dashboard',
   'label.dashboard.new-title': 'Untitled dashboard',
   'label.dashboard.none': 'No dashboard yet',
+  'label.dashboard.more': 'More dashboard actions',
+  'label.dashboard.leave-heading': 'Leave this dashboard?',
+  'label.dashboard.refresh-on':
+    'This dashboard refreshes itself every {interval}.',
+  'label.dashboard.list': 'Dashboards',
+  'label.dashboard.manage-group': 'What to do with this dashboard',
+  'label.dashboard.manage-instructions':
+    'Press the arrow keys to move this dashboard one place. Press space to pick it up, the arrow keys to move it, space again to drop it and escape to cancel.',
+  'label.dashboard.collapse-sidebar': 'Hide the dashboard list',
+  'label.dashboard.expand-sidebar': 'Show the dashboard list',
+  'label.dashboard.switch': 'Switch dashboard',
+  'label.dashboard.choose': 'Choose a dashboard',
+  'label.dashboard.opening': 'Opening the dashboard',
+  'label.dashboard.write-conflict': 'Someone else saved this dashboard first',
+  'label.dashboard.scope-refused': 'This page could not narrow this dashboard',
+  'label.dashboard.render-hint':
+    'The rest of the dashboard still works. Try again to draw this part.',
   'label.dashboard.unopenable': 'This dashboard could not be opened',
   'label.dashboard.open-default': 'Open the default dashboard',
   'label.dashboard.save-group': 'Dashboard actions',

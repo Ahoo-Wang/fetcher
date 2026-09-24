@@ -103,7 +103,9 @@ export function ViewSwitcher({
   // view that is not there and offers to leave it.
   const choosing = currentTitle === '';
   const name = messages.label(
-    choosing ? 'label.workbench.choose-view' : 'label.workbench.switch-view',
+    word(
+      choosing ? 'label.workbench.choose-view' : 'label.workbench.switch-view',
+    ),
   );
 
   return (

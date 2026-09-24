@@ -90,6 +90,21 @@ const DASHBOARD_WORDS: Partial<Record<MessageKey, MessageKey>> = {
   'label.scope.group.personal': 'label.dashboard.group.personal',
   'label.scope.group.shared': 'label.dashboard.group.shared',
   'label.scope.group.system': 'label.dashboard.group.system',
+  'label.header.more': 'label.dashboard.more',
+  'label.leave.heading': 'label.dashboard.leave-heading',
+  'label.refresh.on': 'label.dashboard.refresh-on',
+  'label.view.list': 'label.dashboard.list',
+  'label.manage.view-group': 'label.dashboard.manage-group',
+  'label.manage.instructions': 'label.dashboard.manage-instructions',
+  'label.workbench.collapse-sidebar': 'label.dashboard.collapse-sidebar',
+  'label.workbench.expand-sidebar': 'label.dashboard.expand-sidebar',
+  'label.workbench.switch-view': 'label.dashboard.switch',
+  'label.workbench.choose-view': 'label.dashboard.choose',
+  'label.workbench.opening': 'label.dashboard.opening',
+  'label.write.conflict': 'label.dashboard.write-conflict',
+  'label.scope.refused': 'label.dashboard.scope-refused',
+  'label.render.failed-hint': 'label.dashboard.render-hint',
+  'label.view.needs-fixing': 'label.dashboard.needs-fixing',
 };
 
 /** The key a kind says `key` with: its own where it has one. */
