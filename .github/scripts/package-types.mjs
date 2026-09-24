@@ -7,6 +7,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import {
   closeSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   openSync,
   readdirSync,
@@ -130,6 +131,41 @@ export function publishedPackages(root) {
     });
 }
 
+/**
+ * 5.x packages that published their UMD bundle as `dist/index.umd.js`. The
+ * `require` target is now `dist/index.umd.cjs`; the old path keeps the same
+ * bundle for CDN users who load it by URL (scripts/legacy-umd-path.mjs), and
+ * must not be what `exports` or `main` resolve to.
+ */
+export const LEGACY_UMD_PACKAGES = [
+  '@ahoo-wang/fetcher-cosec',
+  '@ahoo-wang/fetcher-eventbus',
+  '@ahoo-wang/fetcher-openai',
+  '@ahoo-wang/fetcher-openapi',
+  '@ahoo-wang/fetcher-react',
+  '@ahoo-wang/fetcher-storage',
+  '@ahoo-wang/fetcher-viewer',
+];
+
+/**
+ * What is wrong with the legacy UMD copy of a packed package: `manifest` is
+ * its package.json, `read(path)` returns a packed file's contents or
+ * undefined when the tarball lacks it.
+ */
+export function legacyUmdProblems(manifest, read) {
+  if (!LEGACY_UMD_PACKAGES.includes(manifest.name)) return [];
+  const problems = [];
+  const umd = read('dist/index.umd.cjs');
+  const legacy = read('dist/index.umd.js');
+  if (umd === undefined) problems.push('dist/index.umd.cjs is not packed');
+  if (legacy === undefined) problems.push('dist/index.umd.js is not packed');
+  else if (umd !== undefined && !legacy.equals(umd))
+    problems.push('dist/index.umd.js differs from dist/index.umd.cjs');
+  if (/index\.umd\.js/.test(JSON.stringify([manifest.main, manifest.exports])))
+    problems.push('main or exports reference dist/index.umd.js');
+  return problems;
+}
+
 function pack(directory, destination) {
   const before = new Set(readdirSync(destination));
   // pnpm pack rewrites workspace: and catalog: ranges as publishing does.
@@ -176,18 +212,32 @@ if (
       const name = JSON.parse(
         readFileSync(join(directory, 'package.json'), 'utf8'),
       ).name;
-      const analysis = analyze(root, pack(directory, destination));
+      const tarball = pack(directory, destination);
+      const analysis = analyze(root, tarball);
       const { unexpected, accepted } = classify({
         packageName: name,
         ...analysis,
       });
-      failed ||= unexpected.length > 0;
+      const contents = `${tarball}.contents`;
+      mkdirSync(contents);
+      execFileSync('tar', ['-xzf', tarball, '-C', contents]);
+      const packed = join(contents, 'package');
+      const legacy = legacyUmdProblems(
+        JSON.parse(readFileSync(join(packed, 'package.json'), 'utf8')),
+        path =>
+          existsSync(join(packed, path))
+            ? readFileSync(join(packed, path))
+            : undefined,
+      );
+      const bad = unexpected.length + legacy.length > 0;
+      failed ||= bad;
       console.log(
-        `${unexpected.length > 0 ? 'FAIL' : 'ok  '} ${name}` +
+        `${bad ? 'FAIL' : 'ok  '} ${name}` +
           (accepted.length > 0 ? ` (${accepted.length} ignored)` : ''),
       );
       for (const problem of unexpected)
         console.log(`       ${describe(problem)}`);
+      for (const problem of legacy) console.log(`       ${problem}`);
     }
   } finally {
     rmSync(destination, { recursive: true, force: true });
@@ -195,8 +245,10 @@ if (
   if (failed) {
     console.error(
       '\nPublished declarations must resolve under node10, node16 (CommonJS ' +
-        'and ES modules) and bundler. Fix the build output, or add a rule ' +
-        'with its reason to IGNORED in .github/scripts/package-types.mjs.',
+        'and ES modules) and bundler, and 5.x keeps the old ' +
+        'dist/index.umd.js as a copy of dist/index.umd.cjs. Fix the build ' +
+        'output, or add a rule with its reason to IGNORED in ' +
+        '.github/scripts/package-types.mjs.',
     );
     process.exit(1);
   }

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import dts from 'unplugin-dts/vite';
+import { legacyUmdPath } from '../../scripts/legacy-umd-path.mjs';
 
 export default defineConfig({
   build: {
@@ -26,6 +27,8 @@ export default defineConfig({
     },
   },
   plugins: [
+    // 5.x: also write the UMD bundle to its old dist/index.umd.js URL.
+    legacyUmdPath(),
     dts({
       // `.d.cts` for the `require` condition and `.d.ts` for `import`, so
       // node16/nodenext consumers get CommonJS and ES module types for the

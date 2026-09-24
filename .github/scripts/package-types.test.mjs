@@ -13,6 +13,7 @@ import {
   IGNORED,
   classify,
   describe,
+  legacyUmdProblems,
   publishedPackages,
 } from './package-types.mjs';
 
@@ -122,4 +123,49 @@ test('this repository checks its published packages', () => {
   const checked = publishedPackages(repository);
   for (const name of ['fetcher', 'react', 'wow', 'generator', 'viewer'])
     assert.ok(checked.includes(join(repository, 'packages', name)), name);
+});
+
+test('5.x packs the old dist/index.umd.js as a copy nothing resolves to', () => {
+  const bundle = Buffer.from('(function(){})();');
+  const manifest = {
+    name: '@ahoo-wang/fetcher-cosec',
+    main: './dist/index.umd.cjs',
+    exports: {
+      '.': {
+        require: {
+          types: './dist/index.d.cts',
+          default: './dist/index.umd.cjs',
+        },
+      },
+    },
+  };
+  const packed = files => path => files[path];
+  const both = {
+    'dist/index.umd.cjs': bundle,
+    'dist/index.umd.js': Buffer.from(bundle),
+  };
+  assert.deepEqual(legacyUmdProblems(manifest, packed(both)), []);
+  assert.deepEqual(
+    legacyUmdProblems(manifest, packed({ 'dist/index.umd.cjs': bundle })),
+    ['dist/index.umd.js is not packed'],
+  );
+  assert.deepEqual(
+    legacyUmdProblems(
+      manifest,
+      packed({ ...both, 'dist/index.umd.js': Buffer.from('other') }),
+    ),
+    ['dist/index.umd.js differs from dist/index.umd.cjs'],
+  );
+  assert.deepEqual(
+    legacyUmdProblems(
+      { ...manifest, main: './dist/index.umd.js' },
+      packed(both),
+    ),
+    ['main or exports reference dist/index.umd.js'],
+  );
+  // Packages that never had the old path are not checked.
+  assert.deepEqual(
+    legacyUmdProblems({ name: '@ahoo-wang/fetcher' }, packed({})),
+    [],
+  );
 });
