@@ -200,7 +200,7 @@ Wow 文档站（wow.ahoo.me，VitePress）已经这样挂了一份 dokka：放�
 | 4a   | 两边    | Wow 发出**首个稳定版**之后，fetcher 发 6.0。首个稳定版的判据：①wow-client、wow-react、wow-generator 发出第一个正式（非预发布）版本；②这个版本上的契约测试全部通过，包括 8.x 矩阵；③`wow-project-template/client` 已经切换到新包，并且端到端跑通。6.0 发布当天：wiki 里 wow 和 generator 的页面改成指向 Wow 文档的跳转页；viewer 的使用指南标注"仅适用于 5.x"；对 fetcher-wow、fetcher-generator 执行 `npm deprecate`（对外操作，执行前向用户确认） |
 | 4b   | 两边    | view-engine 正式发布后：停止维护 `5.x`，对 fetcher-viewer 执行 `npm deprecate`；Wow 把 view-engine 和 view-store 从 `incubatingProjects` 与 npm 的排除名单里拿掉                                                                                                                                                                                                                                                                                   |
 
-**带历史迁移**：在一个临时的 fetcher 克隆里跑 `git filter-repo`（本机已通过 Homebrew 安装 2.47.0），用 `--path-rename` 映射到 `typescript/…`，用 `--message-callback` 把提交信息里的 `(#1234)` 改写成 `(Ahoo-Wang/fetcher#1234)`，否则这些编号在 Wow 里会链接到别的 PR。**Wow 仓现在只允许 squash 和 rebase 合并**（`allow_merge_commit: false`）。squash 会把历史压成一个提交，rebase 要重放上千个提交。所以第 2、3 步的导入 PR 需要**临时开启 merge commit**，合并后再关掉。这是仓库设置，由用户操作。
+**带历史迁移**：在一个临时的 fetcher 克隆里跑 `git filter-repo`（本机已通过 Homebrew 安装 2.47.0），用 `--path-rename` 映射到 `typescript/…`，用 `--message-callback` 把提交信息里的 `(#1234)` 改写成 `(Ahoo-Wang/fetcher#1234)`，否则这些编号在 Wow 里会链接到别的 PR。**Wow 仓现在只允许 squash 和 rebase 合并**（`allow_merge_commit: false`）。squash 会把历史压成一个提交，rebase 要重放上千个提交。所以第 2、3 步的导入 PR 需要**临时开启 merge commit**。用户已于 2026-09-23 开启；W3 合并后由用户关掉。开启期间，其余 PR 一律显式用 `gh pr merge --squash` 合并。
 
 ## 任务分派
 
