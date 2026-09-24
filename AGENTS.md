@@ -57,6 +57,14 @@ pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 - Exception for `packages/view-engine/`: it is under active development and its API is not yet stable. Breaking API changes do not require compatibility preservation or a version bump solely for the break. Always prioritize a clean architecture and codebase; remove obsolete APIs and code instead of retaining compatibility layers, and update affected callers, tests, and documentation together.
 - Branch new work from `main`; use conventional commits (`feat:`, `fix:`, `chore:`, `test:`, `refactor:`, `docs:`). Merge PRs with squash only.
 
+## Migration Checkpoint: Packages Moving to Wow
+
+`packages/wow`, `packages/view-engine`, `packages/generator` and `packages/react/src/wow` move to the Wow repository; the plan is `docs/superpowers/specs/2026-09-23-wow-packages-migration-design.md`.
+
+- **Stop at the checkpoint.** Once view-engine phase 3 closes (its remaining batch items, the phase review and that review's refactor all merged), do not start phase 4 or other new work on these paths here. Tell the user the migration window is next.
+- **Frozen once tagged.** If `git ls-remote --tags origin wow-migration-base` prints the tag, the paths above, plus `packages/viewer`, `packages/react/src/dataMonitor`, `stories/view-engine` and `stories/react/WowQuery*`, are frozen: change nothing under them in this repository. Work resumes in Wow after the import.
+- Step 3′ of the plan, which deletes the migrated paths, also removes this section.
+
 ## Skills and Documentation
 
 - Verify documented symbols, signatures, defaults, and examples against `packages/<package>/src/index.ts` and its exported implementations.
