@@ -25,7 +25,7 @@ Wow 客户端适用于实现 Wow 命令与查询协议的服务。构建器在�
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-wow
 ```
 
-本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=20.20.2、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。
+本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。
 
 ## 核心调用
 

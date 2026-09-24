@@ -7,7 +7,7 @@ description: 准备 Monorepo 开发环境 — Fetcher
 
 ## 使用仓库声明的工具链
 
-根 package.json 声明 Node `>=20.20.2`、pnpm `10.34.5`。库消费者有各自的 engines 和 peer 要求，见[安装](../start/installation.md)。
+根 package.json 声明 Node `>=22.12.0`、pnpm `10.34.5`。库消费者有各自的 engines 和 peer 要求，见[安装](../start/installation.md)。
 
 ```bash
 pnpm install --frozen-lockfile

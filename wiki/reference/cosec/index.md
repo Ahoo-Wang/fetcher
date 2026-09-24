@@ -16,7 +16,7 @@ pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus
 
 The command includes CoSec → Storage/EventBus → Fetcher; nanoid is installed as a regular dependency. Default token/device storages construct broadcast transports immediately. For SSR request isolation, inject request-owned storage and local buses as described in [configuration](./configuration.md).
 
-Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=20.20.2** and pnpm **10.34.5**.
+Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
 
 ## Minimal example
 

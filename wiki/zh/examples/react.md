@@ -13,7 +13,7 @@ description: 使用真实 React Hook 状态验证 Fetcher 请求的成功、失�
 
 ## 运行已验证的 fixture
 
-仓库贡献者需要 Node `>=20.20.2`、pnpm `10.34.5`，并已安装仓库依赖。在仓库根目录运行：
+仓库贡献者需要 Node `>=22.12.0`、pnpm `10.34.5`，并已安装仓库依赖。在仓库根目录运行：
 
 ```bash
 pnpm exec vitest run --project=storybook stories/docs/ReactRequests.test.stories.tsx
@@ -25,7 +25,7 @@ Storybook fixture 会拦截发往 `https://api.example.test` 的 `fetch`：`/use
 
 ## 在 Vite 应用中使用
 
-下面的消费者设置假设已有 React + TypeScript Vite 应用。本仓库使用 Node `>=20.20.2`、pnpm `10.34.5`、Vite `^8.2.2`、TypeScript `^6.0.3` 以及 React/React DOM `^19.2.8` 验证。已发布的 Fetcher 包自身声明 Node `>=18.20.8`。
+下面的消费者设置假设已有 React + TypeScript Vite 应用。本仓库使用 Node `>=22.12.0`、pnpm `10.34.5`、Vite `^8.2.2`、TypeScript `^6.0.3` 以及 React/React DOM `^19.2.8` 验证。已发布的 Fetcher 包自身声明 Node `>=18.20.8`。
 
 显式安装 React 包及其声明的 peer 包图：
 

@@ -12,7 +12,7 @@ description: 检查平台能力，并在共享客户端前界定可变身份状�
 | 浏览器 HTTP    | Fetch 及端点所用的原生请求/响应 API                                                                  | 与服务端一起配置来源、CORS、Cookie 和响应验证                |
 | 浏览器 SSE     | 可读响应体及管线所用的流 API                                                                         | 管理流消费与取消                                             |
 | Node 消费者    | 库清单声明 Node `>=18.20.8`                                                                          | 检查所选包及实际依赖链；声明不等于每个工具的实测矩阵         |
-| 仓库开发       | Node `>=20.20.2`、pnpm `10.34.5`                                                                     | 使用仓库工具链构建和测试                                     |
+| 仓库开发       | Node `>=22.12.0`、pnpm `10.34.5`                                                                     | 使用仓库工具链构建和测试                                     |
 | React / Viewer | 匹配 peer；仓库 catalog 为 React/ReactDOM `^19.2.8`、antd `^6.6.3`、icons `^6.3.4`、dayjs `^1.11.23` | 验证框架的 SSR 导入/渲染/水合路径；不能据此推断支持 React 18 |
 
 要求来源为 [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)、[package.json:39](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L39)、[pnpm-workspace.yaml:7](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L7) 及[包清单](./package-boundaries.md)。流提取检查响应体的实现见 [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)。生成器依赖可能比库的引擎声明要求更高的运行环境。
@@ -35,4 +35,4 @@ FetcherViewer 在模块作用域创建默认视图 ID 存储，固定键为 `fet
 
 ## View Engine 运行环境
 
-view-engine 包声明 Node >=20.20.2，正在重写。根入口独立于 React 和浏览器全局对象，并在不含 DOM 库的条件下做类型检查；钩子位于 `/react`，浏览器控件位于 `/ui`，使用 React 19。引擎由应用或 `useViewEngine` 持有，打开的视图是需显式释放的 `ViewRuntime`。剪贴板、页面可见性和布局 API 属于浏览器能力。`MemoryViewStore` 服务于内存示例和 Node 服务；持久化由应用针对自己的后端实现 `ViewStore`。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。
+view-engine 包声明 Node >=22.12.0，正在重写。根入口独立于 React 和浏览器全局对象，并在不含 DOM 库的条件下做类型检查；钩子位于 `/react`，浏览器控件位于 `/ui`，使用 React 19。引擎由应用或 `useViewEngine` 持有，打开的视图是需显式释放的 `ViewRuntime`。剪贴板、页面可见性和布局 API 属于浏览器能力。`MemoryViewStore` 服务于内存示例和 Node 服务；持久化由应用针对自己的后端实现 `ViewStore`。框架的 SSR/hydration 需要单独验证，无头导入通过不能证明所有 UI 组件的集成。

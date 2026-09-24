@@ -17,8 +17,9 @@ concurrency:
 jobs:
   changes:
     uses: ./.github/workflows/changes.yml
-  # Node 20/22: the same assertions, compiler/type steps and timeouts, without
-  # coverage. Split from Node 24 so Combined coverage does not wait for them.
+  # Node 22: the same assertions, compiler/type steps and timeouts, without
+  # coverage. Split from Node 24 so Combined coverage does not wait for it.
+  # Node 20 reached end of life on 2026-04-30 and is no longer tested.
   build-and-test:
     name: Node ${{ matrix.node-version }} / ${{ matrix.suite }}
     needs: changes
@@ -29,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22]
         suite: [core, view-engine, viewer]
 
     steps:

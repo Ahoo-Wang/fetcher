@@ -25,7 +25,7 @@ Use Wow clients with a service that implements the Wow command and query protoco
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-wow
 ```
 
-This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=20.20.2 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically.
+This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically.
 
 ## Core request
 

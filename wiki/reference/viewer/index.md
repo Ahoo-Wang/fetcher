@@ -28,7 +28,7 @@ Viewer supplies Ant Design filter, table and saved-view UI. Begin with the compo
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-openapi @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-viewer @ahoo-wang/fetcher-wow @ant-design/icons antd dayjs react react-dom
 ```
 
-This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=20.20.2 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically. External peer ranges are React/ReactDOM ^19.2.8, antd ^6.6.3, @ant-design/icons ^6.3.4 and dayjs ^1.11.23. They are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
+This reference targets 5.0.0. The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers, including packages reached through Wow/React/CoSec. Direct runtime dependencies are installed automatically. External peer ranges are React/ReactDOM ^19.2.8, antd ^6.6.3, @ant-design/icons ^6.3.4 and dayjs ^1.11.23. They are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
 
 ## Runnable core example
 

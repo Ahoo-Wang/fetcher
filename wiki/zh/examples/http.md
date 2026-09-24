@@ -19,7 +19,7 @@ description: 运行本地确定性服务，验证 Fetcher 的成功结果与 HTT
 
 ## 在本仓库运行
 
-在仓库根目录使用仓库规定的 Node `>=20.20.2` 与 pnpm `10.34.5`：
+在仓库根目录使用仓库规定的 Node `>=22.12.0` 与 pnpm `10.34.5`：
 
 ```bash
 pnpm --filter @ahoo-wang/fetcher build

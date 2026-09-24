@@ -29,7 +29,7 @@ pnpm add @ahoo-wang/fetcher
 pnpm add -D typescript
 ```
 
-This is a consumer setup. Contributors to this repository instead need Node `>=20.20.2`, pnpm `10.34.5`, and the commands in [Development](../contributing/development.md).
+This is a consumer setup. Contributors to this repository instead need Node `>=22.12.0`, pnpm `10.34.5`, and the commands in [Development](../contributing/development.md).
 
 Continue with [Your first request](./first-request.md).
 

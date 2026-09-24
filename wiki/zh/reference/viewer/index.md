@@ -28,7 +28,7 @@ Viewer 提供 Ant Design 过滤、表格和保存视图 UI。先根据谁拥有�
 pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-openapi @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-viewer @ahoo-wang/fetcher-wow @ant-design/icons antd dayjs react react-dom
 ```
 
-本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=20.20.2、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。 外部 peer 范围为 React/ReactDOM ^19.2.8、antd ^6.6.3、@ant-design/icons ^6.3.4、dayjs ^1.11.23；即使不使用某项功能，仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
+本参考针对 5.0.0。库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含递归内部 peer，包括经 Wow/React/CoSec 引入的包；直接运行依赖自动安装。 外部 peer 范围为 React/ReactDOM ^19.2.8、antd ^6.6.3、@ant-design/icons ^6.3.4、dayjs ^1.11.23；即使不使用某项功能，仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
 
 ## 可运行核心示例
 

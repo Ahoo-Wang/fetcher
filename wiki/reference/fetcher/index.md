@@ -14,7 +14,7 @@ HTTP requests with explicit result extraction, ordered interceptors, and native 
 pnpm add @ahoo-wang/fetcher
 ```
 
-Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=20.20.2 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
+Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=22.12.0 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
 
 ## Choose an entry point
 
