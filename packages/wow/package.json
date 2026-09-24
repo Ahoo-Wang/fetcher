@@ -29,23 +29,39 @@
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.es.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.es.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./query/locale/zh_CN": {
-      "types": "./dist/query/locale/zh_CN.d.ts",
-      "import": "./dist/query/locale/zh_CN.es.js",
-      "require": "./dist/query/locale/zh_CN.cjs"
+      "import": {
+        "types": "./dist/query/locale/zh_CN.d.ts",
+        "default": "./dist/query/locale/zh_CN.es.js"
+      },
+      "require": {
+        "types": "./dist/query/locale/zh_CN.d.cts",
+        "default": "./dist/query/locale/zh_CN.cjs"
+      }
     },
     "./query/locale/en_US": {
-      "types": "./dist/query/locale/en_US.d.ts",
-      "import": "./dist/query/locale/en_US.es.js",
-      "require": "./dist/query/locale/en_US.cjs"
-    }
+      "import": {
+        "types": "./dist/query/locale/en_US.d.ts",
+        "default": "./dist/query/locale/en_US.es.js"
+      },
+      "require": {
+        "types": "./dist/query/locale/en_US.d.cts",
+        "default": "./dist/query/locale/en_US.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"

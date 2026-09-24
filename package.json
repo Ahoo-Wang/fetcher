@@ -22,7 +22,8 @@
     "update-version": "sh ./scripts/update-all-versions.sh",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build --docs && node scripts/verify-storybook.mjs",
-    "test:storybook": "vitest run --project=storybook"
+    "test:storybook": "vitest run --project=storybook",
+    "check:package-types": "node .github/scripts/package-types.mjs"
   },
   "keywords": [
     "fetcher",
@@ -56,6 +57,7 @@
     "@ahoo-wang/fetcher-view-engine": "workspace:*",
     "@ahoo-wang/fetcher-viewer": "workspace:*",
     "@ahoo-wang/fetcher-wow": "workspace:*",
+    "@arethetypeswrong/cli": "catalog:",
     "@ant-design/icons": "catalog:",
     "@babel/plugin-proposal-decorators": "^7.29.7",
     "@chromatic-com/storybook": "^5.3.1",

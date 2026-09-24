@@ -75,9 +75,10 @@ fetcher (core HTTP client, no internal deps)
 
 All packages use Vite for building with `unplugin-dts` for type declarations. Each package outputs:
 
-- ESM: `dist/index.es.js`
-- UMD: `dist/index.umd.js`
-- Types: `dist/index.d.ts`
+- ESM: `dist/index.es.js`, typed by `dist/index.d.ts` (`exports[...].import`)
+- UMD: `dist/index.umd.cjs` (wow, generator: CommonJS `dist/index.cjs`), typed by `dist/index.d.cts` (`exports[...].require`)
+
+unplugin-dts emits both declaration sets (`outDirs: [{ dir: 'dist', moduleFormat: 'cjs' }, 'dist']`) with runtime extensions on relative specifiers, so types resolve under node16/nodenext. `pnpm check:package-types` (after `pnpm build`) packs every published package and checks it with `@arethetypeswrong/cli`; it runs in Engineering Quality.
 
 Packages with React (viewer, react) also use `@vitejs/plugin-react` with React Compiler and `@babel/plugin-proposal-decorators` (legacy mode).
 
