@@ -76,7 +76,16 @@ function workspace(files) {
       name: '@ahoo-wang/fetcher',
       exports: {
         '.': { types: './dist/index.d.ts' },
-        './extra': { types: './dist/extra/index.d.ts' },
+        './extra': {
+          import: {
+            types: './dist/extra/index.d.ts',
+            default: './dist/extra.es.js',
+          },
+          require: {
+            types: './dist/extra/index.d.cts',
+            default: './dist/extra.cjs',
+          },
+        },
       },
     },
     'packages/core/src/index.ts':

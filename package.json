@@ -23,7 +23,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build --docs && node scripts/verify-storybook.mjs",
     "test:storybook": "vitest run --project=storybook",
-    "eval:skills": "node scripts/eval-skills.mjs"
+    "eval:skills": "node scripts/eval-skills.mjs",
+    "check:package-types": "node .github/scripts/package-types.mjs"
   },
   "keywords": [
     "fetcher",
@@ -53,6 +54,7 @@
     "@ahoo-wang/fetcher-openapi": "workspace:*",
     "@ahoo-wang/fetcher-react": "workspace:*",
     "@ahoo-wang/fetcher-storage": "workspace:*",
+    "@arethetypeswrong/cli": "catalog:",
     "@chromatic-com/storybook": "^5.3.1",
     "@eslint/js": "catalog:",
     "@storybook/addon-a11y": "^10.6.0",
