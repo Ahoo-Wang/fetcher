@@ -61,7 +61,7 @@ pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 
 `packages/wow`, `packages/view-engine`, `packages/generator` and `packages/react/src/wow` move to the Wow repository; the plan is `docs/superpowers/specs/2026-09-23-wow-packages-migration-design.md`.
 
-- **Stop at the checkpoint.** Once view-engine phase 3 closes (its remaining batch items, the phase review and that review's refactor all merged), do not start further phases or other new work on these paths here. Phase 4 (embedded views) already merged here with the user's approval on 2026-09-23 (#1863), since it was finished before this checkpoint was written. Tell the user the migration window is next.
+- **Stop at the checkpoint.** Once view-engine phases 3 and 4 close — phase 3's remaining batch items merged, then one review of phases 3 and 4 together and that review's refactor merged — do not start phase 5 or other new work on these paths here. Tell the user the migration window is next. (Phase 4 merged here before the checkpoint was written, #1863; the user moved the stop to after it on 2026-09-23.)
 - **Frozen once tagged.** If `git ls-remote --tags origin wow-migration-base` prints the tag, the paths above, plus `packages/viewer`, `packages/react/src/dataMonitor`, `stories/view-engine` and `stories/react/WowQuery*`, are frozen: change nothing under them in this repository. Work resumes in Wow after the import.
 - Step 3′ of the plan, which deletes the migrated paths, also removes this section.
 
