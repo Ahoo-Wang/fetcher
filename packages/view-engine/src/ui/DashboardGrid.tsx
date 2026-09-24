@@ -49,6 +49,10 @@ import type { MessageKey } from './messages.js';
 import { PanelWiring, useFilterWiring } from './dashboard/FilterWiring.js';
 import { panelPress } from './dashboard/press.js';
 import {
+  filterModeOf,
+  type BoardFilterModes,
+} from './dashboard/filterModes.js';
+import {
   Empty,
   EmptyContent,
   EmptyHeader,
@@ -93,6 +97,26 @@ export interface DashboardGridProps {
    * route, none of them — a panel that cross-filters still does.
    */
   onNavigate?(to: DashboardNavigation): void;
+  /**
+   * Whether a press on a panel's group does anything at all (on by
+   * default): off, the board is read and nothing on it answers a press — no
+   * follow-up menu, no cross-filtering, no destination (an embed's
+   * read-only tier, D22).
+   */
+  pressable?: boolean;
+  /**
+   * Whether a panel's 「⋯」 offers 在工作台中打开 — the view behind it — when
+   * there is a route (on by default).
+   */
+  openInWorkbench?: boolean;
+  /** Whether panel titles are drawn (on by default; `DashboardPanel.titled`). */
+  panelTitles?: boolean;
+  /**
+   * How an embedding page offers each filter: a panel says nothing of a
+   * filter the page hid (「不受…影响」 would name what the reader cannot
+   * see).
+   */
+  filterModes?: BoardFilterModes;
   className?: string;
 }
 
@@ -124,6 +148,10 @@ export function DashboardGrid({
   header,
   emptyActions,
   onNavigate,
+  pressable = true,
+  openInWorkbench = true,
+  panelTitles = true,
+  filterModes,
 }: DashboardGridProps) {
   // The grid needs a pixel width and the container only knows it once it is
   // on screen, so the measuring is the library's own hook rather than a
@@ -305,12 +333,19 @@ export function DashboardGrid({
                   panel={panel}
                   name={names.get(panel.id)}
                   headingLevel={headingLevel}
+                  titled={panelTitles}
                   editable={arranging}
                   available={step => available(panel.id, step)}
                   onArrange={step => arrange(panel.id, step)}
                   onRetry={() => dashboard.refreshPanel(panel.id)}
-                  press={panelPress(panel, dashboard, onNavigate, say)}
-                  pressesFilter={pressedFilter(panel, dashboard)}
+                  press={
+                    pressable
+                      ? panelPress(panel, dashboard, onNavigate, say)
+                      : undefined
+                  }
+                  pressesFilter={
+                    pressable ? pressedFilter(panel, dashboard) : undefined
+                  }
                   commands={panelCommands({
                     panel,
                     name: names.get(panel.id) ?? '',
@@ -319,10 +354,10 @@ export function DashboardGrid({
                     editing: editable,
                     narrow,
                     extensions,
-                    onNavigate,
+                    onNavigate: openInWorkbench ? onNavigate : undefined,
                     messages,
                   })}
-                  unreached={unreachedBy(panel, dashboard)}
+                  unreached={unreachedBy(panel, dashboard, filterModes)}
                   footer={
                     wiring &&
                     editable && (
@@ -419,10 +454,12 @@ function DashboardEmpty({
 function unreachedBy(
   panel: DashboardPanelView,
   dashboard: DashboardController,
+  modes: BoardFilterModes | undefined,
 ): string[] {
   if (panel.panel.kind !== 'view' || panel.broken) return [];
   return dashboard.filterFields.flatMap(field =>
     dashboard.filters.values[field.name] !== undefined &&
+    filterModeOf(modes, field.name) !== 'hidden' &&
     panel.reach[field.name]?.wired === false
       ? [field.label]
       : [],

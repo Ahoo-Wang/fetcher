@@ -54,6 +54,18 @@ export abstract class BoardCommands
   protected abstract readonly presses: PanelPresses;
   abstract get disposed(): boolean;
   abstract showTab(tabId: string | null): void;
+  /** Reads the panels again — their clicks among them — once they were read. */
+  protected abstract reread(): void;
+  /** Arms or holds the board's one timer again (`RuntimeStore.retime`). */
+  protected abstract retime(): void;
+  /** Whether the board refreshes itself on its interval (`setAutoRefresh`). */
+  protected autoRefresh = true;
+
+  setAutoRefresh(on: boolean): void {
+    if (this.disposed || this.autoRefresh === on) return;
+    this.autoRefresh = on;
+    this.retime();
+  }
 
   addPanel(panel: NewPanel, placement?: NewPanelPlacement): string | null {
     return this.edits.addPanel(panel, placement);
@@ -150,10 +162,15 @@ export abstract class BoardCommands
     if (!this.disposed) this.values.unit(unit);
   }
   clearFilters(): void {
-    if (!this.disposed) this.values.put({ values: {} });
+    if (!this.disposed) this.values.clear();
   }
   setFilters(filters: DashboardFilters): Issue[] {
     return this.disposed ? [] : this.values.put(filters);
+  }
+  holdFilters(names: readonly string[], grouping = false): void {
+    // A click that sets a filter the host now holds is set aside, and one
+    // let go is in force again: the panels' clicks are read again.
+    if (!this.disposed && this.values.hold(names, grouping)) this.reread();
   }
   wiredOptions(name: string): FieldOption[] | null {
     return this.values.optionsOf(name);

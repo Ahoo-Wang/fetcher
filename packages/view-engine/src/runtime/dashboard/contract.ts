@@ -119,9 +119,22 @@ export interface DashboardRuntime
   setGroupingUnit(unit: AnalysisDateUnit): void;
   /**
    * Clears every filter (「清空」): the required ones go back to their
-   * defaults, the time grouping to its default unit.
+   * defaults, the time grouping to its default unit — but for what the host
+   * holds (`holdFilters`), which stays.
    */
   clearFilters(): void;
+  /**
+   * The filters a host holds — an embed's locked and hidden ones (D22) —
+   * and, with `grouping`, the time grouping: what they hold is the host's
+   * to put (`setFilters`, or `OpenOptions.filters` as the board opens), and
+   * the reader's commands leave them as they are: `setFilterValue` refuses
+   * one (`dashboard.filter.held`), `clearFilters` and `setGroupingUnit`
+   * pass it by, and a panel whose click sets one opens the follow-up menu
+   * instead (`DashboardPanelState.click`). Each call replaces the last; a
+   * filter let go keeps its value and is the reader's again. The values a
+   * text filter offers are counted under what the host holds.
+   */
+  holdFilters(names: readonly string[], grouping?: boolean): void;
   /**
    * Puts every filter at once, as a host's address has them: what the
    * board does not take is left out, and said in the answer.

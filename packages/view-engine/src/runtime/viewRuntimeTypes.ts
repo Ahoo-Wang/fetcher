@@ -115,6 +115,14 @@ export interface ViewRuntime<C extends ViewConfig = ViewConfig> {
   /** Called when an editor takes or loses focus; pauses auto-refresh. */
   setEditing(active: boolean): void;
   /**
+   * Whether the view refreshes itself on the interval it applied (on when
+   * opened). Off, the timer is held for good — the interval stays what it
+   * was, and saving writes it unchanged — until it is on again: an embed
+   * whose host asked for no auto-refresh (`EmbeddedView`'s `autoRefresh`).
+   * A refresh asked for still runs.
+   */
+  setAutoRefresh(on: boolean): void;
+  /**
    * Whether the draft runs on its own a moment after its question changes
    * (`autoApply.ts`); which members are the question is declared per kind
    * by the model (`autoRunMembers`), and the range still waits for `apply`.

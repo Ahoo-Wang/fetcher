@@ -100,6 +100,8 @@ export interface PressHost {
   child(panelId: string): DataViewRuntime | null;
   /** Sets a filter by a press (`FilterValues.press`). */
   press(name: string, value: FilterValue | null, panelId: string): Issue[];
+  /** Whether the host holds a filter, which no press then sets. */
+  holds(name: string): boolean;
   /** A saved view, loaded: what a destination carries its group into. */
   reference(instanceId: string): Promise<PanelReference | null>;
 }
@@ -303,7 +305,8 @@ export class PanelPresses {
   ): { filter: DashboardField; field: string } | null {
     const panel = this.panelOf(panelId)?.panel;
     const click = panel && clickOf(panel);
-    if (!panel || click?.kind !== 'filter') return null;
+    if (!panel || click?.kind !== 'filter' || this.host.holds(click.filter))
+      return null;
     const filter = filtersOf(this.host.applied()).find(
       field => field.name === click.filter,
     );
