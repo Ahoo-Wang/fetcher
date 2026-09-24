@@ -333,7 +333,7 @@ function panelTitles(canvasElement: HTMLElement): string[] {
 /**
  * The team page, the editable tier end to end (D22 A): 「编辑」 builds the
  * board where it sits; a text added from 「添加」 is on the board at once
- * and in the store only once 「完成」 has asked and saved — the host's
+ * and in the store only once 「保存」 has asked and saved — the host's
  * footer reads the store, not the screen. 「取消」 then puts back what was
  * saved and writes nothing, and each time the keyboard is back on 「编辑」.
  */
@@ -397,9 +397,9 @@ export const EditableBoard: Story = {
     // On the board, not yet in the store.
     await expect(stored).toHaveTextContent('还没保存过');
 
-    // 「完成」 over a shared board asks, as Save does, and saves.
+    // 「保存」 over a shared board asks, as Save does, and saves.
     await userEvent.click(
-      canvas.getByRole('button', { name: zhCN['label.dashboard.done'] }),
+      canvas.getByRole('button', { name: zhCN['label.dashboard.save'] }),
     );
     const confirm = await screen.findByRole('alertdialog');
     await userEvent.click(
