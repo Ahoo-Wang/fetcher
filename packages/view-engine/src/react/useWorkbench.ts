@@ -51,6 +51,7 @@ import { useInstanceSync } from './workbench/instanceSync.js';
 import { useLeaveGuard, type LeaveGuard } from './workbench/leaveGuard.js';
 import { blankView, type NewViewOptions } from './workbench/newView.js';
 import { useReleaseDeleted } from './workbench/releaseDeleted.js';
+import { useUnsavedView, type UnsavedView } from './workbench/unsavedView.js';
 
 export interface WorkbenchOptions {
   /**
@@ -112,6 +113,13 @@ export interface WorkbenchOptions {
    * (`ViewEngine.open`).
    */
   opening?(instanceId: string): DashboardOpening | undefined;
+  /**
+   * A view nobody saved, to open here (D22 H): what a dashboard handed the
+   * host's route — a follow-up on a panel's group, or an analysis the board
+   * owns (`DashboardNavigation`'s `unsaved`). Each new object opens once,
+   * through the leave guard, as a view made from nothing (`UnsavedView`).
+   */
+  unsaved?: UnsavedView | null;
 }
 
 /**
@@ -433,6 +441,13 @@ export function useWorkbench(
       }),
     [request, hold],
   );
+  useUnsavedView(options.unsaved, {
+    engine,
+    definitionId,
+    kinds,
+    request,
+    hold,
+  });
   // Which view is open is the one piece of workbench state a host may also
   // hold — a route, a link somebody shares — so the two are kept in
   // agreement here, once, for every workbench and every hand-built one.
