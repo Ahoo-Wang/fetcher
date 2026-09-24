@@ -429,10 +429,48 @@ describe('a view nobody saved, opened in the workbench', () => {
       level: 2,
       name: /Orders · Warehouse is CN/,
     });
+    // Opened from elsewhere, with its conditions in hand: the editor stays
+    // folded, as it does for a view opened from another's group.
+    expect(folded()).toBe(true);
     const held = engine.openRuntimes().length;
     rerender(
       <DataWorkbench engine={engine} definitionId="orders" unsaved={unsaved} />,
     );
     expect(engine.openRuntimes().length).toBe(held);
   });
+
+  it('opens an analysis handed to it folded too, and a new view unfolded', async () => {
+    const store = new MemoryViewStore({ instances: views });
+    const engine = new ViewEngine({
+      definitions: [ordersDefinition()],
+      store,
+      resolveSource: () => testSource(),
+    });
+    const { unmount } = render(
+      <DataWorkbench
+        engine={engine}
+        definitionId="orders"
+        unsaved={{ title: 'By warehouse · CN', config: analysisConfig() }}
+      />,
+    );
+    await screen.findByRole('heading', { level: 2, name: /By warehouse · CN/ });
+    expect(folded()).toBe(true);
+    unmount();
+
+    // What it is set apart from: a view made from nothing opens unfolded.
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    render(<DataWorkbench engine={engine} definitionId="orders" />);
+    await user.click(await screen.findByRole('button', { name: 'New view' }));
+    await user.click(
+      await screen.findByRole('menuitem', { name: /Record view/ }),
+    );
+    await waitFor(() => expect(folded()).toBe(false));
+  });
 });
+
+/** Whether the workbench's editor band is folded away. */
+function folded(): boolean {
+  const toggle = document.querySelector('[data-slot="editor-toggle"]');
+  if (!toggle) throw new Error('no editor toggle');
+  return toggle.querySelector('[aria-expanded="true"]') === null;
+}

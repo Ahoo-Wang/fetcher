@@ -287,7 +287,7 @@ src/
       leaveGuard.ts           — Headless leave protection; `/ui` draws `LeaveDialog` from it
       newView.ts              — What `create` makes: the kind's default config and the audience it goes to
       releaseDeleted.ts       — Lets a workbench's pinned id go once the view is deleted
-      unsavedView.ts          — `useUnsavedView`: a view nobody saved a host hands the workbench (a dashboard's follow-up), opened once per object through the leave guard
+      unsavedView.ts          — `useUnsavedView`: a view nobody saved a host hands the workbench (a dashboard's follow-up), opened once per object through the leave guard, held as `handed` so the shell opens it folded
   ui/                         — Default look; may import every layer
     AnalysisChart.tsx         — Dispatches by chart family; nothing else
     AnalysisTable.tsx         — The aggregation as a table: groups first, then metrics, with the totals row from its own ungrouped query rather than from summing what is on screen, and its scope said under 「合计」; read with the record table's recipes — numbers on the right, ids in monospace, `SortableHeader`, held widths and the filler

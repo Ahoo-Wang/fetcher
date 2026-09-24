@@ -79,7 +79,8 @@ async function bars(canvasElement: HTMLElement): Promise<SVGPathElement[]> {
  * Screen H: a bar of 「按仓库汇总」 opens the analysis view's follow-up menu,
  * headed by the group and the board's filters over it, each item marked as
  * opening in the workbench; 「查看这些记录」 goes through the host's route,
- * which opens the records in the workbench under 仓库 and the board's value.
+ * which opens the records in the workbench under 仓库 and the board's value,
+ * its editor folded.
  */
 export const BarOpensFollowUps: Story = {
   ...DisplayClicks,
@@ -109,6 +110,18 @@ export const BarOpensFollowUps: Story = {
       level: 2,
       name: /^订单 · 仓库 是 /,
     });
+    // Opened with its conditions in hand, as a view opened from another's
+    // group is: the editor stays folded, and the group is said once, on
+    // 「正在显示」, not again in an unfolded band.
+    const toggle = await waitFor(() => {
+      const found = canvasElement.querySelector('[data-slot="editor-toggle"]');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    await expect(toggle.querySelector('[aria-expanded="true"]')).toBeNull();
+    await expect(
+      canvasElement.querySelector('[data-slot="editor-band"]'),
+    ).toBeNull();
     await userEvent.click(
       within(canvasElement).getByRole('button', { name: /回到出库概览/ }),
     );

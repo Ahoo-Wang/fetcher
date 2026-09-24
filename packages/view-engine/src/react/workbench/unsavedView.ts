@@ -76,6 +76,7 @@ export function useUnsavedView(
         draft: made.getSnapshot().draft,
         origin: null,
         from: null,
+        handed: true,
       });
     });
   }, [unsaved, kinds, request, engine, definitionId, hold]);

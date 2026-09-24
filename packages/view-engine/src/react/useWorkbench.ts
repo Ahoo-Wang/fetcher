@@ -166,6 +166,13 @@ export interface HeldView {
    * let that view go, so going back puts it back as it was held.
    */
   from: HeldView | null;
+  /**
+   * Handed over by a host (`WorkbenchOptions.unsaved`) — a dashboard's
+   * follow-up on a group, a board's own analysis — rather than made here:
+   * like a view opened from another's group, its conditions are what it was
+   * opened with, so the shell opens it with its editor folded.
+   */
+  handed?: true;
 }
 
 /**
