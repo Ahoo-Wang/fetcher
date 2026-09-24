@@ -69,7 +69,7 @@ function note(id: string, layout = { x: 0, y: 0, w: 24, h: 2 }) {
   return { id, kind: 'markdown', content: id, layout } as DashboardPanel;
 }
 
-function harness() {
+function harness(scope: 'personal' | 'shared' = 'personal') {
   const store = new MemoryViewStore({ instances: [pending] });
   const engine = new ViewEngine({
     definitions: [ordersDefinition(), overviewDefinition()],
@@ -79,12 +79,13 @@ function harness() {
   });
   return {
     engine,
+    store,
     async open(config: DashboardViewConfig) {
       const instance = await store.create(
         {
           definitionId: 'overview',
           title: 'Overview',
-          scope: 'personal',
+          scope,
           config,
         },
         { requestId: 'r' },
@@ -239,6 +240,31 @@ describe('the history of building a board', () => {
     expect(runtime.getSnapshot().draft.panels[0]).toEqual({
       ...note('n'),
       title: 'Old',
+    });
+  });
+
+  it('takes a copy-and-replace back to the view the panel showed, and keeps the copy', async () => {
+    const board = harness('shared');
+    const runtime = await board.open(dashboardConfig({ panels: [saved('a')] }));
+
+    const copy = await board.engine.copyPanelView(runtime, 'a', {
+      title: 'Shared copy',
+      scope: 'shared',
+    });
+    expect(runtime.getSnapshot().history.undo).toEqual({
+      command: 'referToSaved',
+      subject: 'a',
+    });
+    expect(runtime.undo()).toEqual({ command: 'referToSaved', subject: 'a' });
+    expect(runtime.getSnapshot().draft.panels[0]).toMatchObject({
+      id: 'a',
+      instanceId: 'pending',
+    });
+    // The board's draft is what undo takes back; the view written stays.
+    expect((await board.store.get(copy.id)).title).toBe('Shared copy');
+    runtime.redo();
+    expect(runtime.getSnapshot().draft.panels[0]).toMatchObject({
+      instanceId: copy.id,
     });
   });
 
