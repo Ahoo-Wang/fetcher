@@ -1,10 +1,10 @@
 name: Engineering Quality
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 5.x]
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [main]
+    branches: [main, 5.x]
   workflow_dispatch:
 permissions:
   contents: read

@@ -36,7 +36,7 @@ for (const entry of Object.values(manifest.exports)) {
     assert.ok(statSync(new URL(path, packageRoot)).size > 0, path);
   }
 }
-for (const specifier of ['', '/core']) {
+for (const specifier of ['', '/core', '/fetcher']) {
   assert.equal(
     import.meta.resolve(manifest.name + specifier),
     new URL(manifest.exports['.' + specifier].import, packageRoot).href,
@@ -81,6 +81,29 @@ for (const file of coreModules) {
   }
 }
 assert.ok(usesCompiler, 'Core hooks must retain React Compiler output');
+// The fetcher hooks are what the Wow integrations build on (wow-react after
+// the migration); reaching them must not load @ahoo-wang/fetcher-wow, which
+// the root entry does and which is an optional peer.
+const fetcherModules = new Set([
+  import.meta.resolve(manifest.name + '/fetcher'),
+]);
+for (const file of fetcherModules) {
+  const code = readFileSync(new URL(file), 'utf8');
+  for (const { fileName } of ts.preProcessFile(code, true, true)
+    .importedFiles) {
+    if (fileName.startsWith('.')) {
+      const target = new URL(fileName, file);
+      assert.ok(target.href.startsWith(new URL('dist/', packageRoot).href));
+      fetcherModules.add(target.href);
+    } else {
+      assert.doesNotMatch(
+        fileName,
+        /^@ahoo-wang\/fetcher-(wow|cosec|storage|eventbus)(?:\/|$)/,
+        `The fetcher entry loads an integration from ${fileURLToPath(file)}`,
+      );
+    }
+  }
+}
 // Resolve declarations as a consumer does, without source aliases.
 const typeProbe = mkdtempSync(new URL('.package-types-', packageRoot));
 try {
