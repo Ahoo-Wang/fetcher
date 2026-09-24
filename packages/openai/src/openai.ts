@@ -54,7 +54,7 @@ export interface OpenAIOptions extends BaseURLCapable {
  * });
  *
  * // Use the chat client for completions
- * const response = await client.chat.completions.create({
+ * const response = await client.chat.completions({
  *   model: 'gpt-3.5-turbo',
  *   messages: [{ role: 'user', content: 'Hello!' }]
  * });
