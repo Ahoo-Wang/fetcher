@@ -5,8 +5,8 @@ description: 'FetcherViewer remote integration — @ahoo-wang/fetcher-viewer 5.0
 
 # FetcherViewer remote integration
 
-::: warning Maintenance mode (deprecated)
-`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+::: warning 5.x only (frozen)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
 :::
 
 FetcherViewer connects three remote resources: a viewer definition, its visible saved views, and paged data from the definition's dataUrl. Configure the default Fetcher for your service/authentication before mounting. The backend must implement the `viewer` bounded-context endpoints; this is not a generic URL-only grid.
@@ -86,7 +86,7 @@ These signatures follow declarations reachable from the current root entry. `?` 
 declare const VIEWER_BOUNDED_CONTEXT_ALIAS: 'viewer';
 ```
 
-[packages/viewer/src/fetcherviewer/client/boundedContext.ts:1](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/boundedContext.ts#L1)
+[packages/viewer/src/fetcherviewer/client/boundedContext.ts:1](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/boundedContext.ts#L1)
 
 ### SecurityContext {#api-SecurityContext}
 
@@ -94,7 +94,7 @@ declare const VIEWER_BOUNDED_CONTEXT_ALIAS: 'viewer';
 export type SecurityContext = Record<string, any>;
 ```
 
-[packages/viewer/src/fetcherviewer/client/types.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/types.ts#L10)
+[packages/viewer/src/fetcherviewer/client/types.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/types.ts#L10)
 
 ### ViewCommandEndpointPaths {#api-ViewCommandEndpointPaths}
 
@@ -107,7 +107,7 @@ export enum ViewCommandEndpointPaths {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L26)
+[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L26)
 
 ### CreateViewCommand {#api-CreateViewCommand}
 
@@ -115,7 +115,7 @@ export enum ViewCommandEndpointPaths {
 export type CreateViewCommand = CommandBody<CreateView>;
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L33)
+[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L33)
 
 ### EditViewCommand {#api-EditViewCommand}
 
@@ -123,7 +123,7 @@ export type CreateViewCommand = CommandBody<CreateView>;
 export type EditViewCommand = CommandBody<EditView>;
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L34)
+[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L34)
 
 ### ViewCommandClient {#api-ViewCommandClient}
 
@@ -137,7 +137,7 @@ export class ViewCommandClient<R = CommandResult> implements ApiMetadataCapable 
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L40)
+[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L40)
 
 ### ViewStreamCommandClient {#api-ViewStreamCommandClient}
 
@@ -147,7 +147,7 @@ export class ViewStreamCommandClient extends ViewCommandClient<CommandResultEven
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L106)
+[packages/viewer/src/fetcherviewer/client/view/commandClient.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/commandClient.ts#L106)
 
 ### ViewDomainEventTypeMapTitle {#api-ViewDomainEventTypeMapTitle}
 
@@ -158,7 +158,7 @@ export enum ViewDomainEventTypeMapTitle {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/queryClient.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/queryClient.ts#L16)
+[packages/viewer/src/fetcherviewer/client/view/queryClient.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/queryClient.ts#L16)
 
 ### ViewDomainEventType {#api-ViewDomainEventType}
 
@@ -166,7 +166,7 @@ export enum ViewDomainEventTypeMapTitle {
 export type ViewDomainEventType = ViewCreated | ViewEdited;
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/queryClient.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/queryClient.ts#L21)
+[packages/viewer/src/fetcherviewer/client/view/queryClient.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/queryClient.ts#L21)
 
 ### viewQueryClientFactory {#api-viewQueryClientFactory}
 
@@ -178,7 +178,7 @@ declare const viewQueryClientFactory: QueryClientFactory<
 >;
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/queryClient.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/queryClient.ts#L23)
+[packages/viewer/src/fetcherviewer/client/view/queryClient.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/queryClient.ts#L23)
 
 ### CreateView {#api-CreateView}
 
@@ -198,7 +198,7 @@ export interface CreateView {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/types.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/types.ts#L75)
+[packages/viewer/src/fetcherviewer/client/view/types.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/types.ts#L75)
 
 ### EditView {#api-EditView}
 
@@ -218,7 +218,7 @@ export interface EditView {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/types.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/types.ts#L149)
+[packages/viewer/src/fetcherviewer/client/view/types.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/types.ts#L149)
 
 ### ViewCreated {#api-ViewCreated}
 
@@ -238,7 +238,7 @@ export interface ViewCreated {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/types.ts:226](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/types.ts#L226)
+[packages/viewer/src/fetcherviewer/client/view/types.ts:226](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/types.ts#L226)
 
 ### ViewEdited {#api-ViewEdited}
 
@@ -258,7 +258,7 @@ export interface ViewEdited {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/view/types.ts:303](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/types.ts#L303)
+[packages/viewer/src/fetcherviewer/client/view/types.ts:303](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/types.ts#L303)
 
 ### ViewAggregatedFields {#api-ViewAggregatedFields}
 
@@ -363,7 +363,7 @@ export enum ViewAggregatedFields {
 
 :::
 
-[packages/viewer/src/fetcherviewer/client/view/types.ts:421](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/view/types.ts#L421)
+[packages/viewer/src/fetcherviewer/client/view/types.ts:421](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/view/types.ts#L421)
 
 ### ViewerDefinitionDomainEventTypeMapTitle {#api-ViewerDefinitionDomainEventTypeMapTitle}
 
@@ -373,7 +373,7 @@ export enum ViewerDefinitionDomainEventTypeMapTitle {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts#L16)
+[packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts#L16)
 
 ### ViewerDefinitionDomainEventType {#api-ViewerDefinitionDomainEventType}
 
@@ -381,7 +381,7 @@ export enum ViewerDefinitionDomainEventTypeMapTitle {
 export type ViewerDefinitionDomainEventType = any;
 ```
 
-[packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts#L20)
+[packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts#L20)
 
 ### viewerDefinitionQueryClientFactory {#api-viewerDefinitionQueryClientFactory}
 
@@ -393,7 +393,7 @@ declare const viewerDefinitionQueryClientFactory: QueryClientFactory<
 >;
 ```
 
-[packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts#L22)
+[packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/viewer_definition/queryClient.ts#L22)
 
 ### ViewerDefinitionAggregatedFields {#api-ViewerDefinitionAggregatedFields}
 
@@ -447,7 +447,7 @@ export enum ViewerDefinitionAggregatedFields {
 
 :::
 
-[packages/viewer/src/fetcherviewer/client/viewer_definition/types.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/client/viewer_definition/types.ts#L54)
+[packages/viewer/src/fetcherviewer/client/viewer_definition/types.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/client/viewer_definition/types.ts#L54)
 
 ### useViewerDefinition {#api-useViewerDefinition}
 
@@ -457,7 +457,7 @@ export function useViewerDefinition(
 ): UseViewerDefinitionResult;
 ```
 
-[packages/viewer/src/fetcherviewer/hooks/useViewerDefinition.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerDefinition.ts#L31)
+[packages/viewer/src/fetcherviewer/hooks/useViewerDefinition.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/hooks/useViewerDefinition.ts#L31)
 
 ### UseViewerDefinitionResult {#api-UseViewerDefinitionResult}
 
@@ -469,7 +469,7 @@ export interface UseViewerDefinitionResult {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/hooks/useViewerDefinition.ts:9](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerDefinition.ts#L9)
+[packages/viewer/src/fetcherviewer/hooks/useViewerDefinition.ts:9](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/hooks/useViewerDefinition.ts#L9)
 
 ### useViewerViews {#api-useViewerViews}
 
@@ -482,7 +482,7 @@ export function useViewerViews(
 ): UseViewerViewsResult;
 ```
 
-[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L39)
+[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L39)
 
 ### ViewSnapshotTarget {#api-ViewSnapshotTarget}
 
@@ -492,7 +492,7 @@ export type ViewSnapshotTarget = AggregateId & {
 };
 ```
 
-[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L28)
+[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L28)
 
 ### UseViewerViewsResult {#api-UseViewerViewsResult}
 
@@ -506,7 +506,7 @@ export interface UseViewerViewsResult {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L30)
+[packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/hooks/useViewerViews.ts#L30)
 
 ### useFetchData {#api-useFetchData}
 
@@ -516,7 +516,7 @@ export function useFetchData<RecordType>(
 ): UseFetchDataReturn<RecordType>;
 ```
 
-[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L48)
+[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L48)
 
 ### UseFetchDataOptions {#api-UseFetchDataOptions}
 
@@ -527,7 +527,7 @@ export interface UseFetchDataOptions {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L28)
+[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L28)
 
 ### UseFetchDataReturn {#api-UseFetchDataReturn}
 
@@ -542,7 +542,7 @@ export interface UseFetchDataReturn<RecordType> {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L33)
+[packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L33)
 
 ### FetcherViewer {#api-FetcherViewer}
 
@@ -552,7 +552,7 @@ export function FetcherViewer<RecordType = any>(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L103)
+[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:103](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L103)
 
 ### FetcherViewerRef {#api-FetcherViewerRef}
 
@@ -566,7 +566,7 @@ export interface FetcherViewerRef {
 }
 ```
 
-[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L62)
+[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:62](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L62)
 
 ### FetcherViewerProps {#api-FetcherViewerProps}
 
@@ -596,7 +596,7 @@ export interface FetcherViewerProps<RecordType>
 
 :::
 
-[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L70)
+[packages/viewer/src/fetcherviewer/FetcherViewer.tsx:70](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/fetcherviewer/FetcherViewer.tsx#L70)
 
 ## Related topics
 

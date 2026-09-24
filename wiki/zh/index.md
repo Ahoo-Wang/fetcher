@@ -34,7 +34,7 @@ features:
     link: /zh/guides/react/
     linkText: 了解更多
   - title: 数据视图
-    details: 使用 View Engine 接入表格、筛选和已保存视图；Viewer 已进入维护期（弃用）。
+    details: 用 Ant Design Viewer 接入表格、筛选和已保存视图；Viewer 冻结在 5.x 线，后继位于 Wow 仓库。
     link: /zh/start/first-view
     linkText: 了解更多
   - title: 架构与选型

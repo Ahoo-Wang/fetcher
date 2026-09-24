@@ -5,8 +5,8 @@ description: '注册表、输入与全屏按钮 — @ahoo-wang/fetcher-viewer 5.
 
 # 注册表、输入与全屏按钮
 
-::: warning 维护期（已弃用）
-`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+::: warning 仅适用于 5.x（已冻结）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），尚未发布。两者模型与 API 不同，迁移需要适配。
 :::
 
 `TypedComponentRegistry<Type,Props>` 按类型键存储 React FunctionComponent；create(entries = []) 创建并注册。register 遇到重复键抛错，get 缺失时 undefined，unregister 缺失键无操作，clear 清空。types/entries 返回数组，size/has 查询当前状态。注册表可变且不响应式，渲染后注册不会自动重渲染；扩展在渲染前注册一次，只退注册自己拥有的项。
@@ -23,7 +23,7 @@ description: '注册表、输入与全屏按钮 — @ahoo-wang/fetcher-viewer 5.
 
 RemoteSelect 将 result（没有时用初始 options）放在 additionalOptions 前，重复键保留首项，禁用本地文本过滤，loading 时清空显示选项。已有 result 后忽略 trim 为空的搜索。Hook 丢弃旧结果，但 search 没有 controller 参数，不能保证物理取消请求。默认执行器吸收失败，没有专门搜索错误 UI，需要时由 search 报告。卸载清除定时器并作废执行状态。稳定数组避免无谓重算。
 
-输入回调/serializer 可以抛错，不被统一捕获。浏览器全屏权限失败仍通过 React Hook 的 promise 拒绝。见 [输入 stories](https://github.com/Ahoo-Wang/fetcher/blob/main/stories/viewer/Inputs.stories.tsx#L1)。
+输入回调/serializer 可以抛错，不被统一捕获。浏览器全屏权限失败仍通过 React Hook 的 promise 拒绝。见 [输入 stories](https://github.com/Ahoo-Wang/fetcher/blob/5.x/stories/viewer/Inputs.stories.tsx#L1)。
 
 ## 完整示例
 
@@ -67,13 +67,13 @@ export function TagInput<ValueItemType = string[]>(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/components/TagInput.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L69)
+[packages/viewer/src/components/TagInput.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L69)
 
 ```ts
 TagInput;
 ```
 
-[packages/viewer/src/components/TagInput.tsx:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L109)
+[packages/viewer/src/components/TagInput.tsx:109](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L109)
 
 ### TagValueItemSerializer {#api-TagValueItemSerializer}
 
@@ -84,7 +84,7 @@ export interface TagValueItemSerializer<ValueItemType = string> {
 }
 ```
 
-[packages/viewer/src/components/TagInput.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L19)
+[packages/viewer/src/components/TagInput.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L19)
 
 ### StringTagValueItemSerializer {#api-StringTagValueItemSerializer}
 
@@ -92,7 +92,7 @@ export interface TagValueItemSerializer<ValueItemType = string> {
 declare const StringTagValueItemSerializer: TagValueItemSerializer<string>;
 ```
 
-[packages/viewer/src/components/TagInput.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L25)
+[packages/viewer/src/components/TagInput.tsx:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L25)
 
 ### NumberTagValueItemSerializer {#api-NumberTagValueItemSerializer}
 
@@ -100,7 +100,7 @@ declare const StringTagValueItemSerializer: TagValueItemSerializer<string>;
 declare const NumberTagValueItemSerializer: TagValueItemSerializer<number>;
 ```
 
-[packages/viewer/src/components/TagInput.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L34)
+[packages/viewer/src/components/TagInput.tsx:34](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L34)
 
 ### TagInputProps {#api-TagInputProps}
 
@@ -116,7 +116,7 @@ export interface TagInputProps<ValueItemType = string> extends Omit<
 }
 ```
 
-[packages/viewer/src/components/TagInput.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/TagInput.tsx#L47)
+[packages/viewer/src/components/TagInput.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/TagInput.tsx#L47)
 
 ### NumberRange {#api-NumberRange}
 
@@ -126,7 +126,7 @@ export function NumberRange(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/components/NumberRange.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/NumberRange.tsx#L40)
+[packages/viewer/src/components/NumberRange.tsx:40](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/NumberRange.tsx#L40)
 
 ### NumberRangeProps {#api-NumberRangeProps}
 
@@ -142,7 +142,7 @@ export interface NumberRangeProps {
 }
 ```
 
-[packages/viewer/src/components/NumberRange.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/NumberRange.tsx#L19)
+[packages/viewer/src/components/NumberRange.tsx:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/NumberRange.tsx#L19)
 
 ### RemoteSelect {#api-RemoteSelect}
 
@@ -153,13 +153,13 @@ export function RemoteSelect<
 >(props: RemoteSelectProps<ValueType, OptionType>): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/components/RemoteSelect.tsx:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L118)
+[packages/viewer/src/components/RemoteSelect.tsx:118](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/RemoteSelect.tsx#L118)
 
 ```ts
 RemoteSelect;
 ```
 
-[packages/viewer/src/components/RemoteSelect.tsx:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L175)
+[packages/viewer/src/components/RemoteSelect.tsx:175](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/RemoteSelect.tsx#L175)
 
 ### RemoteSelectProps {#api-RemoteSelectProps}
 
@@ -180,7 +180,7 @@ export interface RemoteSelectProps<
 }
 ```
 
-[packages/viewer/src/components/RemoteSelect.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/RemoteSelect.tsx#L29)
+[packages/viewer/src/components/RemoteSelect.tsx:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/RemoteSelect.tsx#L29)
 
 ### Fullscreen {#api-Fullscreen}
 
@@ -188,13 +188,13 @@ export interface RemoteSelectProps<
 export function Fullscreen(props: FullScreenProps): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/components/fullscreen/Fullscreen.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L42)
+[packages/viewer/src/components/fullscreen/Fullscreen.tsx:42](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L42)
 
 ```ts
 Fullscreen;
 ```
 
-[packages/viewer/src/components/fullscreen/Fullscreen.tsx:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L63)
+[packages/viewer/src/components/fullscreen/Fullscreen.tsx:63](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L63)
 
 ### FullScreenProps {#api-FullScreenProps}
 
@@ -209,7 +209,7 @@ export interface FullScreenProps extends Omit<
 }
 ```
 
-[packages/viewer/src/components/fullscreen/Fullscreen.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L20)
+[packages/viewer/src/components/fullscreen/Fullscreen.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/components/fullscreen/Fullscreen.tsx#L20)
 
 ### TypeCapable {#api-TypeCapable}
 
@@ -219,7 +219,7 @@ export interface TypeCapable<Type = string> {
 }
 ```
 
-[packages/viewer/src/registry/componentRegistry.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/registry/componentRegistry.ts#L22)
+[packages/viewer/src/registry/componentRegistry.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/registry/componentRegistry.ts#L22)
 
 ### TypedComponentRegistry {#api-TypedComponentRegistry}
 
@@ -239,7 +239,7 @@ export class TypedComponentRegistry<Type, Props> {
 }
 ```
 
-[packages/viewer/src/registry/componentRegistry.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/registry/componentRegistry.ts#L37)
+[packages/viewer/src/registry/componentRegistry.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/registry/componentRegistry.ts#L37)
 
 ## 相关专题
 

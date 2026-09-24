@@ -5,6 +5,10 @@ description: '游标查询 — @ahoo-wang/fetcher-wow 5.0.0'
 
 # 游标查询
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 游标分页使用不透明服务端 token 和 filter，不使用页码。`cursorQuery(options)` 本地校验 size 与排序字段数量，返回普通 CursorQuery，再由 SnapshotQueryClient.cursor/cursorState 或 EventStreamQueryClient.cursor 发送。
 
 | 字段 / 常量         | 契约                                                                        |
@@ -73,7 +77,7 @@ export function cursorQuery<FIELDS extends string = string>(
 
 实现默认值: `projection = {}`; `sort = []`; `size = DEFAULT_CURSOR_SIZE`; `cursor = null`.
 
-[packages/wow/src/query/cursorQuery.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L37)
+[packages/wow/src/query/cursorQuery.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L37)
 
 ### DEFAULT_CURSOR_SIZE {#api-DEFAULT_CURSOR_SIZE}
 
@@ -81,7 +85,7 @@ export function cursorQuery<FIELDS extends string = string>(
 declare const DEFAULT_CURSOR_SIZE: 10;
 ```
 
-[packages/wow/src/query/cursorQuery.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L18)
+[packages/wow/src/query/cursorQuery.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L18)
 
 ### MAX_CURSOR_SIZE {#api-MAX_CURSOR_SIZE}
 
@@ -89,7 +93,7 @@ declare const DEFAULT_CURSOR_SIZE: 10;
 declare const MAX_CURSOR_SIZE: 2147483646;
 ```
 
-[packages/wow/src/query/cursorQuery.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L19)
+[packages/wow/src/query/cursorQuery.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L19)
 
 ### MAX_CURSOR_SORT_FIELDS {#api-MAX_CURSOR_SORT_FIELDS}
 
@@ -97,7 +101,7 @@ declare const MAX_CURSOR_SIZE: 2147483646;
 declare const MAX_CURSOR_SORT_FIELDS: 32;
 ```
 
-[packages/wow/src/query/cursorQuery.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L20)
+[packages/wow/src/query/cursorQuery.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L20)
 
 ### CursorQuery {#api-CursorQuery}
 
@@ -111,7 +115,7 @@ export interface CursorQuery<FIELDS extends string = string> {
 }
 ```
 
-[packages/wow/src/query/cursorQuery.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L23)
+[packages/wow/src/query/cursorQuery.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L23)
 
 ### CursorPage {#api-CursorPage}
 
@@ -122,7 +126,7 @@ export interface CursorPage<T> {
 }
 ```
 
-[packages/wow/src/query/cursorQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/cursorQuery.ts#L32)
+[packages/wow/src/query/cursorQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/cursorQuery.ts#L32)
 
 ## 相关专题
 

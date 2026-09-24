@@ -5,8 +5,8 @@ description: '已保存视图面板与持久化回调 — @ahoo-wang/fetcher-vie
 
 # 已保存视图面板与持久化回调
 
-::: warning 维护期（已弃用）
-`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+::: warning 仅适用于 5.x（已冻结）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），尚未发布。两者模型与 API 不同，迁移需要适配。
 :::
 
 已保存视图组件围绕 ViewState 提供 UI。mutation 回调请求持久化，success 回调表示应用已完成；如果关闭编辑器会隐藏保存失败，不要在写入确认前调用 success。
@@ -66,7 +66,7 @@ export function SaveDialog({
 export function ViewItem(props: ViewItemProps): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewItem.tsx:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewItem.tsx#L93)
+[packages/viewer/src/viewer/panel/ViewItem.tsx:93](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewItem.tsx#L93)
 
 ### ViewItemProps {#api-ViewItemProps}
 
@@ -78,7 +78,7 @@ export interface ViewItemProps extends GetRecordCountActionCapable {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewItem.tsx:12](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewItem.tsx#L12)
+[packages/viewer/src/viewer/panel/ViewItem.tsx:12](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewItem.tsx#L12)
 
 ### ViewItemGroup {#api-ViewItemGroup}
 
@@ -88,7 +88,7 @@ export function ViewItemGroup(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewItemGroup.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewItemGroup.tsx#L21)
+[packages/viewer/src/viewer/panel/ViewItemGroup.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewItemGroup.tsx#L21)
 
 ### ViewItemGroupProps {#api-ViewItemGroupProps}
 
@@ -101,7 +101,7 @@ export interface ViewItemGroupProps extends GetRecordCountActionCapable {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewItemGroup.tsx:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewItemGroup.tsx#L10)
+[packages/viewer/src/viewer/panel/ViewItemGroup.tsx:10](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewItemGroup.tsx#L10)
 
 ### ViewPanel {#api-ViewPanel}
 
@@ -109,7 +109,7 @@ export interface ViewItemGroupProps extends GetRecordCountActionCapable {
 export function ViewPanel(props: ViewPanelProps): React.JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewPanel.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewPanel.tsx#L32)
+[packages/viewer/src/viewer/panel/ViewPanel.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewPanel.tsx#L32)
 
 ### ViewPanelProps {#api-ViewPanelProps}
 
@@ -127,7 +127,7 @@ export interface ViewPanelProps extends GetRecordCountActionCapable {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewPanel.tsx:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewPanel.tsx#L18)
+[packages/viewer/src/viewer/panel/ViewPanel.tsx:18](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewPanel.tsx#L18)
 
 ### SaveViewModal {#api-SaveViewModal}
 
@@ -137,7 +137,7 @@ export function SaveViewModal(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/SaveViewModal.tsx:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/SaveViewModal.tsx#L17)
+[packages/viewer/src/viewer/panel/SaveViewModal.tsx:17](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/SaveViewModal.tsx#L17)
 
 ### SaveViewModalProps {#api-SaveViewModalProps}
 
@@ -152,7 +152,7 @@ export interface SaveViewModalProps {
 }
 ```
 
-[packages/viewer/src/viewer/panel/SaveViewModal.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/SaveViewModal.tsx#L7)
+[packages/viewer/src/viewer/panel/SaveViewModal.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/SaveViewModal.tsx#L7)
 
 ### ViewManageItem {#api-ViewManageItem}
 
@@ -162,7 +162,7 @@ export function ViewManageItem(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewManageItem.tsx:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewManageItem.tsx#L16)
+[packages/viewer/src/viewer/panel/ViewManageItem.tsx:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewManageItem.tsx#L16)
 
 ### ViewManageItemProps {#api-ViewManageItemProps}
 
@@ -177,7 +177,7 @@ export interface ViewManageItemProps {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewManageItem.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewManageItem.tsx#L7)
+[packages/viewer/src/viewer/panel/ViewManageItem.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewManageItem.tsx#L7)
 
 ### ViewManageModal {#api-ViewManageModal}
 
@@ -187,7 +187,7 @@ export function ViewManageModal(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/viewer/panel/ViewManageModal.tsx:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewManageModal.tsx#L15)
+[packages/viewer/src/viewer/panel/ViewManageModal.tsx:15](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewManageModal.tsx#L15)
 
 ### ViewManageModalProps {#api-ViewManageModalProps}
 
@@ -202,7 +202,7 @@ export interface ViewManageModalProps {
 }
 ```
 
-[packages/viewer/src/viewer/panel/ViewManageModal.tsx:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/panel/ViewManageModal.tsx#L6)
+[packages/viewer/src/viewer/panel/ViewManageModal.tsx:6](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/panel/ViewManageModal.tsx#L6)
 
 ## 相关专题
 

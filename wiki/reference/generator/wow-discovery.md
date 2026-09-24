@@ -5,6 +5,10 @@ description: 'Wow aggregate discovery — Fetcher 5.0.0'
 
 # Wow aggregate discovery
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-generator` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 Discovery is a generator behavior, not a public AggregateResolver API. A dotted operation name alone is insufficient. The table reflects the current implementation, including component request-body references and response-reference aliases.
 
 ## Recognition matrix
@@ -150,8 +154,8 @@ Save this as `wow.json`, then use the same CLI invocation with `-i ./wow.json`. 
 
 ## Implementation sources
 
-[packages/generator/src/aggregate/aggregateResolver.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L51)
+[packages/generator/src/aggregate/aggregateResolver.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/aggregate/aggregateResolver.ts#L51)
 
-[packages/generator/src/aggregate/utils.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/utils.ts#L27)
+[packages/generator/src/aggregate/utils.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/aggregate/utils.ts#L27)
 
-[packages/generator/src/utils/components.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/components.ts#L25)
+[packages/generator/src/utils/components.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/components.ts#L25)

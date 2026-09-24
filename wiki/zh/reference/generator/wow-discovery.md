@@ -5,6 +5,10 @@ description: 'Wow 聚合识别 — Fetcher 5.0.0'
 
 # Wow 聚合识别
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-generator` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 识别属于生成器行为，不是公开的 AggregateResolver API。仅有带点号的 operationId 不够。下表反映当前实现，包括 requestBody 组件引用和 response 引用别名链。
 
 ## 识别矩阵
@@ -150,8 +154,8 @@ description: 'Wow 聚合识别 — Fetcher 5.0.0'
 
 ## 实现源码
 
-[packages/generator/src/aggregate/aggregateResolver.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/aggregateResolver.ts#L51)
+[packages/generator/src/aggregate/aggregateResolver.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/aggregate/aggregateResolver.ts#L51)
 
-[packages/generator/src/aggregate/utils.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/aggregate/utils.ts#L27)
+[packages/generator/src/aggregate/utils.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/aggregate/utils.ts#L27)
 
-[packages/generator/src/utils/components.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/components.ts#L25)
+[packages/generator/src/utils/components.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/components.ts#L25)

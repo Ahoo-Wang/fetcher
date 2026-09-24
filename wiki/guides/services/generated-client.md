@@ -6,6 +6,10 @@ description: Generate a real ItemsApiClient from a complete minimal schema and t
 
 # Generate and Use an OpenAPI Client
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-generator` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 Start with a checked-in document, generate into a dedicated directory, and compile a caller. This example produces a known class and method rather than assuming generated names.
 
 ## 1. Prepare a consumer project
@@ -132,6 +136,6 @@ Missing methods usually require checking tags and operation IDs; missing return 
 
 See [CLI options](../../reference/generator/cli), [output and regeneration](../../reference/generator/generated-output), [OpenAPI documents](../../reference/openapi/documents-and-operations), and the distinct [Wow discovery rules](../../reference/generator/wow-discovery).
 
-[apiClientGenerator.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/client/apiClientGenerator.ts#L73) implements ordinary client generation.
+[apiClientGenerator.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/client/apiClientGenerator.ts#L73) implements ordinary client generation.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).

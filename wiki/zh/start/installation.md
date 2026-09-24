@@ -35,8 +35,8 @@ pnpm add -D typescript
 
 ## React 与 Viewer 起点
 
-已有 React 应用请使用 [React 示例的完整 peer 安装与挂载步骤](../examples/react.md)。需要表格时使用[第一张数据表](./first-view.md)。这两条路径的 UI 依赖与核心 HTTP 安装不同；先按[起点选择](./index.md)确定任务。
+已有 React 应用请使用 [React 示例的完整 peer 安装与挂载步骤](../examples/react.md)。需要在 5.x 线上使用表格时见[第一张数据表](./first-view.md)。这两条路径的 UI 依赖与核心 HTTP 安装不同；先按[起点选择](./index.md)确定任务。
 
-## View Engine
+## Wow 仓库中的包
 
-View Engine 正在重写，尚未在公共注册表首次发布；[重写状态](../guides/view-engine/index.md)列出目标入口与交付顺序。
+Wow 客户端、Wow React Hook、生成器和数据视图组件已迁往 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)。它们的后继包尚未发布到 npm，随 Wow 首个稳定版发布；在此之前使用 5.x 线（npm 5.1.x），见[已迁出的包](../architecture/package-boundaries.md#packages-that-moved-to-the-wow-repository)。

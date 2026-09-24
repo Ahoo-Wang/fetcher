@@ -282,4 +282,4 @@ export type QueryAPIHooks<API extends Record<string, any>, E = FetcherError> = {
 
 ## Related topics
 
-[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [Debounced execution](./debounce) · [Storage and event subscriptions](./storage-and-events) · [Security hooks and route guards](./cosec) · [Wow query hooks](./wow) · [Monitoring, refs and fullscreen](./monitoring-and-utilities)
+[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [Debounced execution](./debounce) · [Storage and event subscriptions](./storage-and-events) · [Security hooks and route guards](./cosec) · [Refs, request IDs and fullscreen](./utilities)

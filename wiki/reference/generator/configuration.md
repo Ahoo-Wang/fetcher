@@ -5,6 +5,10 @@ description: 'Generator configuration — Fetcher 5.0.0'
 
 # Generator configuration
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-generator` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 The generator has two separate inputs: constructor/CLI execution options and an optional JSON/YAML customization file. A customization file cannot override inputPath, outputDir, logger, or tsconfig.
 
 ## Configuration contract
@@ -45,8 +49,8 @@ Inspect generated method signatures: Items retains tenantId/ownerId; Orders omit
 
 ## Implementation sources
 
-[packages/generator/src/generateContext.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/generateContext.ts#L24)
+[packages/generator/src/generateContext.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/generateContext.ts#L24)
 
-[packages/generator/src/types.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/types.ts#L21)
+[packages/generator/src/types.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/types.ts#L21)
 
-[packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/index.ts#L35)
+[packages/generator/src/index.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/index.ts#L35)

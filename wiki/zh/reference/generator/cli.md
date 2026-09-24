@@ -5,6 +5,10 @@ description: '生成器 CLI — Fetcher 5.0.0'
 
 # 生成器 CLI
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-generator` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 `fetcher-generator generate` 读取 JSON/YAML 并写入 TypeScript 模型和装饰器客户端。请在可解析 TypeScript 配置及已安装 Fetcher 包的目录运行。
 
 ## 选项
@@ -120,10 +124,10 @@ HTTP 加载使用 fetch 后读取 text，不检查 response.ok；HTTP 错误正�
 
 ## 实现源码
 
-[packages/generator/src/cli.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/cli.ts#L17)
+[packages/generator/src/cli.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/cli.ts#L17)
 
-[packages/generator/src/utils/clis.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/clis.ts#L90)
+[packages/generator/src/utils/clis.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/clis.ts#L90)
 
-[packages/generator/src/utils/parsers.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/parsers.ts#L25)
+[packages/generator/src/utils/parsers.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/parsers.ts#L25)
 
-[packages/generator/src/utils/resources.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/generator/src/utils/resources.ts#L16)
+[packages/generator/src/utils/resources.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/utils/resources.ts#L16)

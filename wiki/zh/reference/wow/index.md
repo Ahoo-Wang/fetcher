@@ -6,6 +6,10 @@ description: 'Wow 入口选择、安装与行为契约'
 
 # Wow
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 Wow 客户端适用于实现 Wow 命令与查询协议的服务。构建器在本地创建可序列化数据，构造查询或客户端不会发送 HTTP。泛型描述预期响应，不保证服务端授权、结构校验或投影新鲜度。
 
 ## 选择入口

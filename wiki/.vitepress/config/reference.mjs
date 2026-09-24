@@ -103,10 +103,9 @@ export const referencePackages = [
       'promise-and-query-state',
       'api-hooks',
       'debounce',
-      'wow',
       'storage-and-events',
       'cosec',
-      'monitoring-and-utilities',
+      'utilities',
       'symbols',
     ],
   },
@@ -128,10 +127,6 @@ export const referencePackages = [
       'operator-locales',
       'symbols',
     ],
-  },
-  {
-    name: 'view-engine',
-    topics: ['index', 'symbols'],
   },
   {
     name: 'viewer',

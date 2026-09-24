@@ -5,6 +5,10 @@ description: 'Snapshot queries — @ahoo-wang/fetcher-wow 5.0.0'
 
 # Snapshot queries
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-wow` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 `SnapshotQueryClient<S,FIELDS>(apiMetadata?)` queries materialized snapshots. Every query method is POST. The final optional controller allows cancellation; attributes are execution metadata, not JSON body fields. Request projection can make a result partial: the generic T must honestly describe selected fields rather than asserting missing fields exist.
 
 | Method                       | Relative endpoint                      | Promise result                                         |
@@ -108,7 +112,7 @@ export interface QueryApi<R, FIELDS extends string = string> {
 
 :::
 
-[packages/wow/src/query/queryApi.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryApi.ts#L36)
+[packages/wow/src/query/queryApi.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryApi.ts#L36)
 
 ### MaterializedSnapshot {#api-MaterializedSnapshot}
 
@@ -131,7 +135,7 @@ export interface MaterializedSnapshot<S>
     DeletedCapable {}
 ```
 
-[packages/wow/src/query/snapshot/snapshot.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshot.ts#L35)
+[packages/wow/src/query/snapshot/snapshot.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshot.ts#L35)
 
 ### MediumMaterializedSnapshot {#api-MediumMaterializedSnapshot}
 
@@ -152,7 +156,7 @@ export interface MediumMaterializedSnapshot<S>
     AbacTaggable {}
 ```
 
-[packages/wow/src/query/snapshot/snapshot.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshot.ts#L60)
+[packages/wow/src/query/snapshot/snapshot.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshot.ts#L60)
 
 ### SmallMaterializedSnapshot {#api-SmallMaterializedSnapshot}
 
@@ -161,7 +165,7 @@ export interface SmallMaterializedSnapshot<S>
   extends StateCapable<S>, NamedAggregate, Version, FirstEventTimeCapable {}
 ```
 
-[packages/wow/src/query/snapshot/snapshot.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshot.ts#L80)
+[packages/wow/src/query/snapshot/snapshot.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshot.ts#L80)
 
 ### SnapshotMetadataFields {#api-SnapshotMetadataFields}
 
@@ -183,7 +187,7 @@ export class SnapshotMetadataFields {
 }
 ```
 
-[packages/wow/src/query/snapshot/snapshot.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshot.ts#L89)
+[packages/wow/src/query/snapshot/snapshot.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshot.ts#L89)
 
 ### SnapshotQueryApi {#api-SnapshotQueryApi}
 
@@ -224,7 +228,7 @@ export interface SnapshotQueryApi<
 
 :::
 
-[packages/wow/src/query/snapshot/snapshotQueryApi.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryApi.ts#L31)
+[packages/wow/src/query/snapshot/snapshotQueryApi.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshotQueryApi.ts#L31)
 
 ### SnapshotQueryEndpointPaths {#api-SnapshotQueryEndpointPaths}
 
@@ -244,7 +248,7 @@ export class SnapshotQueryEndpointPaths {
 }
 ```
 
-[packages/wow/src/query/snapshot/snapshotQueryApi.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryApi.ts#L118)
+[packages/wow/src/query/snapshot/snapshotQueryApi.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshotQueryApi.ts#L118)
 
 ### SnapshotQueryClient {#api-SnapshotQueryClient}
 
@@ -275,7 +279,7 @@ export class SnapshotQueryClient<S, FIELDS extends string = string> implements S
 
 :::
 
-[packages/wow/src/query/snapshot/snapshotQueryClient.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L121)
+[packages/wow/src/query/snapshot/snapshotQueryClient.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/snapshot/snapshotQueryClient.ts#L121)
 
 ## Related topics
 

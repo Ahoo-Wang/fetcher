@@ -8,15 +8,14 @@ description: Start with HTTP, a React request, or a local data table according t
 
 Fetcher adds reusable request configuration and result handling to native Fetch. Choose the first result you need; a plain HTTP application does not need a UI framework or platform backend.
 
-| Your starting point                        | Prerequisites                                           | First result                                                                                                 |
-| ------------------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package               | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
-| Existing React application                 | Compatible React and Fetcher peers, a bundler           | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
-| Existing React application needing a table | View Engine peers, CSS-capable bundling, local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering                                |
-| Configurable data views over Wow queries   | Rewrite in progress; not yet published                  | [View Engine status](../guides/view-engine/index.md)                                                         |
+| Your starting point                        | Prerequisites                                 | First result                                                                                                 |
+| ------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| TypeScript or JavaScript HTTP client       | A Fetch-capable runtime; the core package     | [Install](./installation.md), then [run a first request](./first-request.md) against a supplied local server |
+| Existing React application                 | Compatible React and Fetcher peers, a bundler | [Run the React example](../examples/react.md) and display loading, data, errors, and cancellation            |
+| Existing React application needing a table | 5.x Viewer peers (Ant Design), local row data | [Build a first view](./first-view.md) with pagination, sorting, and filtering on the 5.x line                |
 
 The runnable HTTP and Storybook examples have deterministic fixtures. When you move them into your application, supply the routes and response JSON documented in each example. Installing a client does not create a server.
 
-Already have an API contract? [Declare service methods](../guides/services/declarative-client.md) or [generate from OpenAPI](../guides/services/generated-client.md). Before adopting Wow, CoSec, or remote Viewer, check their [integration requirements](../guides/integrations/index.md).
+Already have an API contract? [Declare service methods](../guides/services/declarative-client.md) or [generate from OpenAPI](../guides/services/generated-client.md). Before adopting CoSec or storage events, check their [integration requirements](../guides/integrations/index.md). Wow, the generator and Viewer belong to the 5.x line; from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript).
 
 Continue with [next tasks](./next-steps.md), or [evaluate the architecture](../architecture/index.md) before choosing components.

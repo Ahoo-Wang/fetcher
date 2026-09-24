@@ -11,7 +11,7 @@
 - [Choose your starting point](/start/) — Start with HTTP, a React request, or a local data table according to your existing application.
 - [Install Fetcher](/start/installation) — Create an independent ESM project and install the core HTTP client.
 - [Your first request](/start/first-request) — Run a typed JSON request and verify the HTTP 404 failure path.
-- [Your first data view](/start/first-view) — Start with View Engine; maintain existing Viewer integrations.
+- [Your first data view](/start/first-view) — Build a local Ant Design Viewer table on the 5.x line; its successor lives in the Wow repository.
 - [Choose your next task](/start/next-steps) — Extend the first successful request or table with one concrete application capability.
 
 ## guides
@@ -48,10 +48,6 @@
 - [Debounce input-driven requests](/guides/react/debounce) — Delay changing input and distinguish queued execution from an active request.
 - [Clean up React async work](/guides/react/cleanup) — Connect cancellation to the actual operation and distinguish abort, reset, and debounce cancellation.
 
-## guides/view-engine
-
-- [View Engine tasks](/guides/view-engine/) — A configurable data view engine for Wow-based applications, being rewritten from a first-principles design.
-
 ## guides/viewer
 
 - [Data view tasks](/guides/viewer/) — Choose a concrete task for data view tasks.
@@ -71,20 +67,19 @@
 ## architecture
 
 - [Architecture and choices](/architecture/) — Choose the smallest client layer and identify the responsibilities that remain in your application.
-- [Package boundaries](/architecture/package-boundaries) — Separate declared installation dependencies from runtime request paths and code generation.
+- [Package boundaries](/architecture/package-boundaries) — Separate declared installation dependencies from runtime request paths, and see which packages moved to the Wow repository.
 - [Runtime support and SSR](/architecture/runtime-support) — Check platform capabilities and scope mutable identity state before sharing clients.
 - [Request lifecycle](/architecture/request-lifecycle) — Place interception and extraction at the correct stage of a Fetcher request.
-- [State and resource ownership](/architecture/state-and-resources) — Assign request state, table data, saved-view confirmation, and cleanup to their actual owners.
+- [State and resource ownership](/architecture/state-and-resources) — Assign request state, stale results, subscriptions and cleanup to their actual owners.
 - [Failure model](/architecture/failure-model) — Handle transport, HTTP, extraction, Hook, and stream failures at the boundary where they occur.
-- [Integration decisions](/architecture/integration-decisions) — Compare client styles and table layers by the contracts and maintenance they require.
+- [Integration decisions](/architecture/integration-decisions) — Compare client styles and service integrations by the contracts and maintenance they require.
 
 ## examples
 
-- [Run complete examples](/examples/) — Run deterministic HTTP, React, Viewer, and View Engine examples with clear consumer and repository instructions.
+- [Run complete examples](/examples/) — Run deterministic HTTP, React, and 5.x Viewer examples with clear consumer and repository instructions.
 - [Runnable HTTP example](/examples/http) — Run a local deterministic server and verify Fetcher success and HTTP failure behavior.
 - [Runnable React request example](/examples/react) — Exercise successful, failed, and cancelled Fetcher requests with real React hook state.
 - [Local Viewer example](/examples/viewer) — Filter, sort, page and save a local data view with application-owned state.
-- [Complete View Engine example](/examples/view-engine) — The runnable example returns with the Record workbench delivery of the rewrite.
 
 ## skills
 
@@ -156,11 +151,10 @@
 - [Promise and query state](/reference/react/promise-and-query-state) — Promise and query state — @ahoo-wang/fetcher-react 5.0.0
 - [API hook factories](/reference/react/api-hooks) — API hook factories — @ahoo-wang/fetcher-react 5.0.0
 - [Debounced execution](/reference/react/debounce) — Debounced execution — @ahoo-wang/fetcher-react 5.0.0
-- [Wow query hooks](/reference/react/wow) — Wow query hooks — @ahoo-wang/fetcher-react 5.0.0
 - [Storage and event subscriptions](/reference/react/storage-and-events) — Storage and event subscriptions — @ahoo-wang/fetcher-react 5.0.0
 - [Security hooks and route guards](/reference/react/cosec) — Security hooks and route guards — @ahoo-wang/fetcher-react 5.0.0
-- [Monitoring, refs and fullscreen](/reference/react/monitoring-and-utilities) — Monitoring, refs and fullscreen — @ahoo-wang/fetcher-react 5.0.0
-- [React symbol index](/reference/react/symbols) — React symbol index — @ahoo-wang/fetcher-react 5.0.0
+- [Refs, request IDs and fullscreen](/reference/react/utilities) — Refs, request IDs and fullscreen — @ahoo-wang/fetcher-react
+- [React symbol index](/reference/react/symbols) — React symbol index — @ahoo-wang/fetcher-react root, /core and /fetcher entries
 - [Wow reference](/reference/wow/) — Wow entry selection, installation and behavior contracts
 - [Client configuration and metadata](/reference/wow/configuration) — Client configuration and metadata — @ahoo-wang/fetcher-wow 5.0.0
 - [Commands and wait results](/reference/wow/commands) — Commands and wait results — @ahoo-wang/fetcher-wow 5.0.0
@@ -175,8 +169,6 @@
 - [Business errors and document utilities](/reference/wow/errors-and-utilities) — Business errors and document utilities — @ahoo-wang/fetcher-wow 5.0.0
 - [Legacy operator locales](/reference/wow/operator-locales) — Legacy operator locales — @ahoo-wang/fetcher-wow 5.0.0
 - [Wow symbol index](/reference/wow/symbols) — Wow symbol index — @ahoo-wang/fetcher-wow 5.0.0
-- [View Engine reference](/reference/view-engine/) — Public entries and contracts of the view engine; the reference follows the rewrite step by step.
-- [View Engine symbol index](/reference/view-engine/symbols) — Public export names of the view engine; the index is regenerated as the rewrite ships each entry.
 - [Viewer reference](/reference/viewer/) — Viewer entry selection, installation and behavior contracts
 - [View and Viewer composition](/reference/viewer/view-and-viewer) — View and Viewer composition — @ahoo-wang/fetcher-viewer 5.0.0
 - [Models and state ownership](/reference/viewer/models-and-state) — Models and state ownership — @ahoo-wang/fetcher-viewer 5.0.0

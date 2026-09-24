@@ -5,6 +5,10 @@ description: '事件与历史状态 — @ahoo-wang/fetcher-wow 5.0.0'
 
 # 事件与历史状态
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 事件查询返回 Wow 存储的事件流记录；历史状态加载器通过专用端点重建/选择聚合状态。类型名称带 stream 不表示自动订阅未来所有领域变化。
 
 | 客户端 / 方法                               | 端点 / 结果                                                                  |
@@ -68,7 +72,7 @@ export interface DomainEvent<BODY>
 }
 ```
 
-[packages/wow/src/query/event/domainEventStream.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/domainEventStream.ts#L37)
+[packages/wow/src/query/event/domainEventStream.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/domainEventStream.ts#L37)
 
 ### DomainEventStreamHeader {#api-DomainEventStreamHeader}
 
@@ -85,7 +89,7 @@ export interface DomainEventStreamHeader {
 }
 ```
 
-[packages/wow/src/query/event/domainEventStream.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/domainEventStream.ts#L54)
+[packages/wow/src/query/event/domainEventStream.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/domainEventStream.ts#L54)
 
 ### DomainEventStream {#api-DomainEventStream}
 
@@ -105,7 +109,7 @@ export interface DomainEventStream<DomainEventBody = any>
 }
 ```
 
-[packages/wow/src/query/event/domainEventStream.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/domainEventStream.ts#L95)
+[packages/wow/src/query/event/domainEventStream.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/domainEventStream.ts#L95)
 
 ### StateEvent {#api-StateEvent}
 
@@ -119,7 +123,7 @@ export interface StateEvent<DomainEventBody = any, S = any>
     DeletedCapable {}
 ```
 
-[packages/wow/src/query/event/domainEventStream.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/domainEventStream.ts#L112)
+[packages/wow/src/query/event/domainEventStream.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/domainEventStream.ts#L112)
 
 ### DomainEventStreamMetadataFields {#api-DomainEventStreamMetadataFields}
 
@@ -144,7 +148,7 @@ export class DomainEventStreamMetadataFields {
 }
 ```
 
-[packages/wow/src/query/event/domainEventStream.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/domainEventStream.ts#L127)
+[packages/wow/src/query/event/domainEventStream.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/domainEventStream.ts#L127)
 
 ### ReadableDomainEventStream {#api-ReadableDomainEventStream}
 
@@ -154,7 +158,7 @@ export type ReadableDomainEventStream = ReadableStream<
 >;
 ```
 
-[packages/wow/src/query/event/domainEventStream.ts:152](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/domainEventStream.ts#L152)
+[packages/wow/src/query/event/domainEventStream.ts:152](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/domainEventStream.ts#L152)
 
 ### EventStreamQueryApi {#api-EventStreamQueryApi}
 
@@ -168,7 +172,7 @@ export interface EventStreamQueryApi<
 > {}
 ```
 
-[packages/wow/src/query/event/eventStreamQueryApi.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/eventStreamQueryApi.ts#L24)
+[packages/wow/src/query/event/eventStreamQueryApi.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/eventStreamQueryApi.ts#L24)
 
 ### EventStreamQueryEndpointPaths {#api-EventStreamQueryEndpointPaths}
 
@@ -183,7 +187,7 @@ export class EventStreamQueryEndpointPaths {
 }
 ```
 
-[packages/wow/src/query/event/eventStreamQueryApi.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/eventStreamQueryApi.ts#L39)
+[packages/wow/src/query/event/eventStreamQueryApi.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/eventStreamQueryApi.ts#L39)
 
 ### EventStreamQueryClient {#api-EventStreamQueryClient}
 
@@ -200,7 +204,7 @@ export class EventStreamQueryClient<DomainEventBody = any, FIELDS extends string
 }
 ```
 
-[packages/wow/src/query/event/eventStreamQueryClient.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/event/eventStreamQueryClient.ts#L85)
+[packages/wow/src/query/event/eventStreamQueryClient.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/event/eventStreamQueryClient.ts#L85)
 
 ### LoadStateAggregateEndpointPaths {#api-LoadStateAggregateEndpointPaths}
 
@@ -212,7 +216,7 @@ export class LoadStateAggregateEndpointPaths {
 }
 ```
 
-[packages/wow/src/query/state/loadStateAggregateClient.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/state/loadStateAggregateClient.ts#L26)
+[packages/wow/src/query/state/loadStateAggregateClient.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/state/loadStateAggregateClient.ts#L26)
 
 ### LoadStateAggregateClient {#api-LoadStateAggregateClient}
 
@@ -225,7 +229,7 @@ export class LoadStateAggregateClient<S> implements ApiMetadataCapable {
 }
 ```
 
-[packages/wow/src/query/state/loadStateAggregateClient.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/state/loadStateAggregateClient.ts#L32)
+[packages/wow/src/query/state/loadStateAggregateClient.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/state/loadStateAggregateClient.ts#L32)
 
 ### LoadOwnerStateAggregateEndpointPaths {#api-LoadOwnerStateAggregateEndpointPaths}
 
@@ -237,7 +241,7 @@ export class LoadOwnerStateAggregateEndpointPaths {
 }
 ```
 
-[packages/wow/src/query/state/loadOwnerStateAggregateClient.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/state/loadOwnerStateAggregateClient.ts#L26)
+[packages/wow/src/query/state/loadOwnerStateAggregateClient.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/state/loadOwnerStateAggregateClient.ts#L26)
 
 ### LoadOwnerStateAggregateClient {#api-LoadOwnerStateAggregateClient}
 
@@ -250,7 +254,7 @@ export class LoadOwnerStateAggregateClient<S> implements ApiMetadataCapable {
 }
 ```
 
-[packages/wow/src/query/state/loadOwnerStateAggregateClient.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/state/loadOwnerStateAggregateClient.ts#L32)
+[packages/wow/src/query/state/loadOwnerStateAggregateClient.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/state/loadOwnerStateAggregateClient.ts#L32)
 
 ## 相关专题
 

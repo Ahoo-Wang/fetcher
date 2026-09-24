@@ -10,21 +10,22 @@ pageClass: reference-index-page
 
 每个包提供入口页和专题目录。先选择职责，再进入需要的 API 家族；复杂包拆分更细，简单包保持紧凑。
 
-| 包                                    | 职责                       | 专题数 |
-| ------------------------------------- | -------------------------- | ------ |
-| [fetcher](./fetcher/index.md)         | HTTP 请求                  | 6      |
-| [decorator](./decorator/index.md)     | 声明式服务                 | 3      |
-| [eventbus](./eventbus/index.md)       | 事件投递                   | 2      |
-| [eventstream](./eventstream/index.md) | SSE 消费                   | 3      |
-| [storage](./storage/index.md)         | 值存储                     | 2      |
-| [openapi](./openapi/index.md)         | OpenAPI 类型契约           | 3      |
-| [generator](./generator/index.md)     | 生成客户端                 | 5      |
-| [openai](./openai/index.md)           | 对话与 token 流            | 2      |
-| [cosec](./cosec/index.md)             | 认证与刷新                 | 3      |
-| [react](./react/index.md)             | 组件请求状态               | 8      |
-| [wow](./wow/index.md)                 | 命令与查询                 | 9      |
-| [viewer（已弃用）](./viewer/index.md) | 数据视图与持久化           | 8      |
-| [view-engine](./view-engine/index.md) | 可配置数据视图；重写进行中 | 2      |
+| 包                                         | 职责             | 专题数 |
+| ------------------------------------------ | ---------------- | ------ |
+| [fetcher](./fetcher/index.md)              | HTTP 请求        | 6      |
+| [decorator](./decorator/index.md)          | 声明式服务       | 3      |
+| [eventbus](./eventbus/index.md)            | 事件投递         | 2      |
+| [eventstream](./eventstream/index.md)      | SSE 消费         | 3      |
+| [storage](./storage/index.md)              | 值存储           | 2      |
+| [openapi](./openapi/index.md)              | OpenAPI 类型契约 | 3      |
+| [generator](./generator/index.md)（5.x）   | 生成客户端       | 5      |
+| [openai](./openai/index.md)                | 对话与 token 流  | 2      |
+| [cosec](./cosec/index.md)                  | 认证与刷新       | 3      |
+| [react](./react/index.md)                  | 组件请求状态     | 7      |
+| [wow](./wow/index.md)（5.x）               | 命令与查询       | 9      |
+| [viewer](./viewer/index.md)（5.x，已冻结） | 数据视图与持久化 | 8      |
+
+标注 5.x 的包只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，Wow 与生成器位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）；Viewer 已冻结，由尚未发布的 `@ahoo-wang/wow-view-engine` 接替。
 
 ## 如何使用参考
 

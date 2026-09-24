@@ -5,6 +5,10 @@ description: '身份与资源归属 — @ahoo-wang/fetcher-wow 5.0.0'
 
 # 身份与资源归属
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 构造聚合身份或资源归属路径时使用这些类型。它们描述传输字段，不从认证令牌推断身份，也不执行权限检查。下表字段除精确声明标记为可选外均必填；接口不提供运行时默认值。
 
 | 契约                                          | 含义与约束                                                                                                     |
@@ -30,7 +34,7 @@ description: '身份与资源归属 — @ahoo-wang/fetcher-wow 5.0.0'
 export type AbacTagKey = string;
 ```
 
-[packages/wow/src/types/abac.ts:13](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/abac.ts#L13)
+[packages/wow/src/types/abac.ts:13](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/abac.ts#L13)
 
 ### AbacTagValue {#api-AbacTagValue}
 
@@ -38,7 +42,7 @@ export type AbacTagKey = string;
 export type AbacTagValue = string[];
 ```
 
-[packages/wow/src/types/abac.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/abac.ts#L14)
+[packages/wow/src/types/abac.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/abac.ts#L14)
 
 ### AbacTags {#api-AbacTags}
 
@@ -46,7 +50,7 @@ export type AbacTagValue = string[];
 export type AbacTags = Record<AbacTagKey, AbacTagValue>;
 ```
 
-[packages/wow/src/types/abac.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/abac.ts#L15)
+[packages/wow/src/types/abac.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/abac.ts#L15)
 
 ### EMPTY_ABAC_TAGS {#api-EMPTY_ABAC_TAGS}
 
@@ -54,7 +58,7 @@ export type AbacTags = Record<AbacTagKey, AbacTagValue>;
 declare const EMPTY_ABAC_TAGS: AbacTags;
 ```
 
-[packages/wow/src/types/abac.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/abac.ts#L16)
+[packages/wow/src/types/abac.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/abac.ts#L16)
 
 ### WILDCARD_ABAC_TAG_VALUES {#api-WILDCARD_ABAC_TAG_VALUES}
 
@@ -62,7 +66,7 @@ declare const EMPTY_ABAC_TAGS: AbacTags;
 declare const WILDCARD_ABAC_TAG_VALUES: string[];
 ```
 
-[packages/wow/src/types/abac.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/abac.ts#L17)
+[packages/wow/src/types/abac.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/abac.ts#L17)
 
 ### AbacTaggable {#api-AbacTaggable}
 
@@ -72,7 +76,7 @@ export interface AbacTaggable {
 }
 ```
 
-[packages/wow/src/types/abac.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/abac.ts#L19)
+[packages/wow/src/types/abac.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/abac.ts#L19)
 
 ### ApplyAbacTags {#api-ApplyAbacTags}
 
@@ -80,7 +84,7 @@ export interface AbacTaggable {
 export interface ApplyAbacTags extends AbacTaggable {}
 ```
 
-[packages/wow/src/types/abac.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/abac.ts#L24)
+[packages/wow/src/types/abac.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/abac.ts#L24)
 
 ### AbacTagsApplied {#api-AbacTagsApplied}
 
@@ -88,7 +92,7 @@ export interface ApplyAbacTags extends AbacTaggable {}
 export interface AbacTagsApplied extends AbacTaggable {}
 ```
 
-[packages/wow/src/types/abac.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/abac.ts#L27)
+[packages/wow/src/types/abac.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/abac.ts#L27)
 
 ### Identifier {#api-Identifier}
 
@@ -98,7 +102,7 @@ export interface Identifier {
 }
 ```
 
-[packages/wow/src/types/common.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/common.ts#L17)
+[packages/wow/src/types/common.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/common.ts#L17)
 
 ### Version {#api-Version}
 
@@ -108,7 +112,7 @@ export interface Version {
 }
 ```
 
-[packages/wow/src/types/common.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/common.ts#L31)
+[packages/wow/src/types/common.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/common.ts#L31)
 
 ### UrlPathParams {#api-UrlPathParams}
 
@@ -121,7 +125,7 @@ export interface UrlPathParams {
 }
 ```
 
-[packages/wow/src/types/endpoints.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/endpoints.ts#L19)
+[packages/wow/src/types/endpoints.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/endpoints.ts#L19)
 
 ### ResourceAttributionPathSpec {#api-ResourceAttributionPathSpec}
 
@@ -134,7 +138,7 @@ export enum ResourceAttributionPathSpec {
 }
 ```
 
-[packages/wow/src/types/endpoints.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/endpoints.ts#L57)
+[packages/wow/src/types/endpoints.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/endpoints.ts#L57)
 
 ### AggregateNameCapable {#api-AggregateNameCapable}
 
@@ -144,7 +148,7 @@ export interface AggregateNameCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L79)
+[packages/wow/src/types/modeling.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L79)
 
 ### NamedAggregate {#api-NamedAggregate}
 
@@ -153,7 +157,7 @@ export interface NamedAggregate
   extends NamedBoundedContext, AggregateNameCapable {}
 ```
 
-[packages/wow/src/types/modeling.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L89)
+[packages/wow/src/types/modeling.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L89)
 
 ### AliasAggregate {#api-AliasAggregate}
 
@@ -162,7 +166,7 @@ export interface AliasAggregate
   extends AliasBoundedContext, AggregateNameCapable {}
 ```
 
-[packages/wow/src/types/modeling.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L92)
+[packages/wow/src/types/modeling.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L92)
 
 ### AggregateId {#api-AggregateId}
 
@@ -172,7 +176,7 @@ export interface AggregateId extends TenantId, NamedAggregate {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L98)
+[packages/wow/src/types/modeling.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L98)
 
 ### AggregateIdCapable {#api-AggregateIdCapable}
 
@@ -182,7 +186,7 @@ export interface AggregateIdCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L109)
+[packages/wow/src/types/modeling.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L109)
 
 ### DEFAULT_OWNER_ID {#api-DEFAULT_OWNER_ID}
 
@@ -190,7 +194,7 @@ export interface AggregateIdCapable {
 declare const DEFAULT_OWNER_ID: '';
 ```
 
-[packages/wow/src/types/modeling.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L129)
+[packages/wow/src/types/modeling.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L129)
 
 ### OwnerId {#api-OwnerId}
 
@@ -200,7 +204,7 @@ export interface OwnerId {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L134)
+[packages/wow/src/types/modeling.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L134)
 
 ### SpaceIdCapable {#api-SpaceIdCapable}
 
@@ -210,7 +214,7 @@ export interface SpaceIdCapable {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L141)
+[packages/wow/src/types/modeling.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L141)
 
 ### TenantId {#api-TenantId}
 
@@ -220,7 +224,7 @@ export interface TenantId {
 }
 ```
 
-[packages/wow/src/types/modeling.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/modeling.ts#L158)
+[packages/wow/src/types/modeling.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/modeling.ts#L158)
 
 ### NamedBoundedContext {#api-NamedBoundedContext}
 
@@ -230,7 +234,7 @@ export interface NamedBoundedContext {
 }
 ```
 
-[packages/wow/src/types/naming.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/naming.ts#L17)
+[packages/wow/src/types/naming.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/naming.ts#L17)
 
 ### AliasBoundedContext {#api-AliasBoundedContext}
 
@@ -240,7 +244,7 @@ export interface AliasBoundedContext {
 }
 ```
 
-[packages/wow/src/types/naming.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/naming.ts#L21)
+[packages/wow/src/types/naming.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/naming.ts#L21)
 
 ### Named {#api-Named}
 
@@ -250,7 +254,7 @@ export interface Named {
 }
 ```
 
-[packages/wow/src/types/naming.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/naming.ts#L28)
+[packages/wow/src/types/naming.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/naming.ts#L28)
 
 ### DescriptionCapable {#api-DescriptionCapable}
 
@@ -260,6 +264,6 @@ export interface DescriptionCapable {
 }
 ```
 
-[packages/wow/src/types/naming.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/naming.ts#L39)
+[packages/wow/src/types/naming.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/naming.ts#L39)
 
 [完整符号索引](./symbols)

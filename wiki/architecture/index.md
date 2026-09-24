@@ -8,20 +8,22 @@ description: Choose the smallest client layer and identify the responsibilities 
 
 Start with the layer that solves your current problem. `Fetcher` sends HTTP requests and provides shared defaults, interceptors, and result extraction. It does not require React, a Wow backend, or an authentication service. Its configuration and request pipeline live in [packages/fetcher/src/fetcher.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L145).
 
-| Your decision                             | Read                                                | What you will decide                                                     |
-| ----------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
-| Which packages belong in the application? | [Package boundaries](./package-boundaries.md)       | Runtime clients, peer installation requirements, and development tools   |
-| Where will the client run?                | [Runtime support](./runtime-support.md)             | Browser capabilities, Node requirements, and SSR identity scope          |
-| Where should cross-cutting behavior run?  | [Request lifecycle](./request-lifecycle.md)         | Request/response interception versus result extraction                   |
-| Who owns data and cleanup?                | [State and resources](./state-and-resources.md)     | Hook state, table data, view persistence, and resource disposal          |
-| What does a rejected request mean?        | [Failure model](./failure-model.md)                 | Transport, status, decoding, cancellation, and stream failures           |
-| Which API style or table component fits?  | [Integration decisions](./integration-decisions.md) | Direct calls, declared/generated services, and View/Viewer/FetcherViewer |
+| Your decision                             | Read                                                | What you will decide                                                   |
+| ----------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------- |
+| Which packages belong in the application? | [Package boundaries](./package-boundaries.md)       | Runtime clients, peer installation requirements, and development tools |
+| Where will the client run?                | [Runtime support](./runtime-support.md)             | Browser capabilities, Node requirements, and SSR identity scope        |
+| Where should cross-cutting behavior run?  | [Request lifecycle](./request-lifecycle.md)         | Request/response interception versus result extraction                 |
+| Who owns data and cleanup?                | [State and resources](./state-and-resources.md)     | Hook state, stale results, subscriptions, and resource disposal        |
+| What does a rejected request mean?        | [Failure model](./failure-model.md)                 | Transport, status, decoding, cancellation, and stream failures         |
+| Which API style fits?                     | [Integration decisions](./integration-decisions.md) | Direct calls, declared services, and service-specific integrations     |
 
 ## Add a layer for a concrete responsibility
 
-Use the [HTTP guides](../guides/http/index.md) for ordinary endpoints, [service guides](../guides/services/index.md) when endpoint declarations repeat, and [React guides](../guides/react/index.md) when components need request state. [Viewer guides](../guides/viewer/index.md) begin with application-owned data; remote saved views are a separate integration choice.
+Use the [HTTP guides](../guides/http/index.md) for ordinary endpoints, [service guides](../guides/services/index.md) when endpoint declarations repeat, and [React guides](../guides/react/index.md) when components need request state.
 
-Each added layer has a contract. SSE needs a readable event stream; FetcherViewer needs its view-definition, query, and command backend. Installing a client does not create those server capabilities. The actual remote row query is visible in [packages/viewer/src/fetcherviewer/hooks/useFetchData.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/fetcherviewer/hooks/useFetchData.ts#L53).
+Each added layer has a contract. SSE needs a readable event stream; CoSec needs its token and refresh endpoints. Installing a client does not create those server capabilities. Stream extraction checks for a readable body in [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38).
+
+The Wow client, its React hooks, the generator and the data-view components moved to the Wow repository; see [packages that moved](./package-boundaries.md#packages-that-moved-to-the-wow-repository).
 
 ## Keep guarantees at their boundary
 

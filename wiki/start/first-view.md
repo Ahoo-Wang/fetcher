@@ -1,20 +1,17 @@
 ---
 title: Your first data view
-description: Start with View Engine; maintain existing Viewer integrations.
+description: Build a local Ant Design Viewer table on the 5.x line; its successor lives in the Wow repository.
 ---
 
 # Your first data view
 
-Use View Engine for new projects and further data-view development. Viewer is deprecated and in maintenance mode, with no new features; the Viewer path below is retained for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+::: warning 5.x only (frozen)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
+:::
 
-| UI and ownership                                                                                          | Entry                                                                                          |
-| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Definitions in code, saved view configs, headless hooks and shadcn/Base UI defaults (rewrite in progress) | [View Engine status](../guides/view-engine/index.md) and [example](../examples/view-engine.md) |
-| Ant Design, application-controlled table data and Viewer state                                            | [Viewer example](../examples/viewer.md)                                                        |
+Fetcher main ships no data-view component. Until the Wow view engine publishes, existing consumers build tables with the 5.x Ant Design Viewer below; a new table can also compose [React request state](../guides/react/index.md) with the table component your application already uses.
 
-View Engine is being rewritten and has no registry release yet; its status pages describe the target entries and the delivery order. The root entry stays usable without the React UI.
-
-## Legacy Ant Design Viewer path (deprecated)
+## Ant Design Viewer path
 
 Start with the [complete local Viewer example](../examples/viewer). It supplies a consumer installation, one complete component, the React entry and a run command. No server, authentication setup or Storybook fixtures are needed.
 
@@ -28,6 +25,6 @@ Follow its five actions: inspect the first page, change pages, sort Name, filter
 | Saved settings and success callback    | Application's in-memory state   |
 | Permanent storage and access control   | Your application and backend    |
 
-Use the linked example's Storybook entry and browser check to verify the same behavior in this repository. It is the single executable source for this page; refreshing loses saved views. The optional server data monitor is outside this local example.
+Use the linked example's Storybook entry and browser check on the `5.x` branch to verify the same behavior. It is the single executable source for this page; refreshing loses saved views. The optional server data monitor is outside this local example.
 
-A single table may only need `View`. Use `Viewer` for a collection of views with application-owned loading and saving. Consider `FetcherViewer` only when your service implements its expected protocol; see [integration decisions](../architecture/integration-decisions).
+A single table may only need `View`. Use `Viewer` for a collection of views with application-owned loading and saving. Consider `FetcherViewer` only when your service implements its expected protocol; see the [FetcherViewer reference](../reference/viewer/fetcher-viewer.md).

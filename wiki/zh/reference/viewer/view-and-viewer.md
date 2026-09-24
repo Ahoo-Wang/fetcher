@@ -5,8 +5,8 @@ description: 'View 与 Viewer 组合 — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # View 与 Viewer 组合
 
-::: warning 维护期（已弃用）
-`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+::: warning 仅适用于 5.x（已冻结）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），尚未发布。两者模型与 API 不同，迁移需要适配。
 :::
 
 View 提供过滤/表格/分页，数据行由你提供；Viewer 增加已保存视图选择和工具栏。服务实现本包远端定义/视图端点时才选择 [FetcherViewer](./fetcher-viewer)。
@@ -88,7 +88,7 @@ export function View<RecordType>(
 ): React.JSX.Element;
 ```
 
-[packages/viewer/src/view/View.tsx:212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L212)
+[packages/viewer/src/view/View.tsx:212](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/view/View.tsx#L212)
 
 ### ViewRef {#api-ViewRef}
 
@@ -99,7 +99,7 @@ export interface ViewRef extends ViewTableRef, FilterPanelConditionCapableRef {
 }
 ```
 
-[packages/viewer/src/view/View.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L47)
+[packages/viewer/src/view/View.tsx:47](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/view/View.tsx#L47)
 
 ### FilterMode {#api-FilterMode}
 
@@ -107,7 +107,7 @@ export interface ViewRef extends ViewTableRef, FilterPanelConditionCapableRef {
 export type FilterMode = 'none' | 'normal' | 'editable';
 ```
 
-[packages/viewer/src/view/View.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L66)
+[packages/viewer/src/view/View.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/view/View.tsx#L66)
 
 ### ViewProps {#api-ViewProps}
 
@@ -162,7 +162,7 @@ export interface ViewProps<RecordType>
 
 :::
 
-[packages/viewer/src/view/View.tsx:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/view/View.tsx#L106)
+[packages/viewer/src/view/View.tsx:106](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/view/View.tsx#L106)
 
 ### Viewer {#api-Viewer}
 
@@ -172,7 +172,7 @@ export function Viewer<RecordType = any>(
 ): React.JSX.Element;
 ```
 
-[packages/viewer/src/viewer/Viewer.tsx:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L74)
+[packages/viewer/src/viewer/Viewer.tsx:74](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/Viewer.tsx#L74)
 
 ### ViewerRef {#api-ViewerRef}
 
@@ -183,7 +183,7 @@ export interface ViewerRef extends FilterPanelConditionCapableRef {
 }
 ```
 
-[packages/viewer/src/viewer/Viewer.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L36)
+[packages/viewer/src/viewer/Viewer.tsx:36](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/Viewer.tsx#L36)
 
 ### ViewerProps {#api-ViewerProps}
 
@@ -215,7 +215,7 @@ export interface ViewerProps<RecordType>
 
 :::
 
-[packages/viewer/src/viewer/Viewer.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L41)
+[packages/viewer/src/viewer/Viewer.tsx:41](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/Viewer.tsx#L41)
 
 ## 相关专题
 

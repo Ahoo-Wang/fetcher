@@ -5,6 +5,10 @@ description: 'Commands and wait results — @ahoo-wang/fetcher-wow 5.0.0'
 
 # Commands and wait results
 
+::: warning 5.x only
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-wow` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+:::
+
 `CommandClient<C>` is a decorator-backed transport. `send(request, attributes?)` returns Promise&lt;CommandResult&gt;. `sendAndWaitStream` returns Promise&lt;ReadableStream&lt;JsonServerSentEvent&lt;CommandResult&gt;&gt;&gt; with Accept text/event-stream and JSON SSE extraction. Supply ApiMetadata and/or a CommandRequest with the endpoint required by your service; no universal command URL is inferred from C.
 
 ## Requests and wait stages
@@ -73,7 +77,7 @@ export class CommandClient<C extends object = object> implements ApiMetadataCapa
 }
 ```
 
-[packages/wow/src/command/commandClient.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandClient.ts#L76)
+[packages/wow/src/command/commandClient.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandClient.ts#L76)
 
 ### CommandHeaders {#api-CommandHeaders}
 
@@ -109,7 +113,7 @@ export class CommandHeaders {
 
 :::
 
-[packages/wow/src/command/commandHeaders.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandHeaders.ts#L33)
+[packages/wow/src/command/commandHeaders.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandHeaders.ts#L33)
 
 ### CommandRequestHeaders {#api-CommandRequestHeaders}
 
@@ -141,7 +145,7 @@ export interface CommandRequestHeaders extends RequestHeaders {
 
 :::
 
-[packages/wow/src/command/commandRequest.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandRequest.ts#L36)
+[packages/wow/src/command/commandRequest.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandRequest.ts#L36)
 
 ### CommandUrlParams {#api-CommandUrlParams}
 
@@ -151,7 +155,7 @@ export interface CommandUrlParams extends Omit<UrlParams, 'path' | 'query'> {
 }
 ```
 
-[packages/wow/src/command/commandRequest.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandRequest.ts#L148)
+[packages/wow/src/command/commandRequest.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandRequest.ts#L148)
 
 ### CommandRequest {#api-CommandRequest}
 
@@ -165,7 +169,7 @@ export interface CommandRequest<
 }
 ```
 
-[packages/wow/src/command/commandRequest.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandRequest.ts#L158)
+[packages/wow/src/command/commandRequest.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandRequest.ts#L158)
 
 ### WaitSignal {#api-WaitSignal}
 
@@ -183,7 +187,7 @@ export interface WaitSignal
     FunctionInfoCapable {}
 ```
 
-[packages/wow/src/command/commandResult.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandResult.ts#L52)
+[packages/wow/src/command/commandResult.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandResult.ts#L52)
 
 ### CommandResult {#api-CommandResult}
 
@@ -206,7 +210,7 @@ export interface CommandResult
     NullableAggregateVersionCapable {}
 ```
 
-[packages/wow/src/command/commandResult.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandResult.ts#L74)
+[packages/wow/src/command/commandResult.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandResult.ts#L74)
 
 ### CommandResultArray {#api-CommandResultArray}
 
@@ -214,7 +218,7 @@ export interface CommandResult
 export type CommandResultArray = CommandResult[];
 ```
 
-[packages/wow/src/command/commandResult.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandResult.ts#L91)
+[packages/wow/src/command/commandResult.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandResult.ts#L91)
 
 ### CommandResultEventStream {#api-CommandResultEventStream}
 
@@ -224,7 +228,7 @@ export type CommandResultEventStream = ReadableStream<
 >;
 ```
 
-[packages/wow/src/command/commandResult.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/commandResult.ts#L108)
+[packages/wow/src/command/commandResult.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/commandResult.ts#L108)
 
 ### CommandId {#api-CommandId}
 
@@ -234,7 +238,7 @@ export interface CommandId {
 }
 ```
 
-[packages/wow/src/command/types.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L27)
+[packages/wow/src/command/types.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L27)
 
 ### WaitCommandIdCapable {#api-WaitCommandIdCapable}
 
@@ -244,7 +248,7 @@ export interface WaitCommandIdCapable {
 }
 ```
 
-[packages/wow/src/command/types.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L36)
+[packages/wow/src/command/types.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L36)
 
 ### RequestId {#api-RequestId}
 
@@ -254,7 +258,7 @@ export interface RequestId {
 }
 ```
 
-[packages/wow/src/command/types.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L45)
+[packages/wow/src/command/types.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L45)
 
 ### CommandStage {#api-CommandStage}
 
@@ -269,7 +273,7 @@ export enum CommandStage {
 }
 ```
 
-[packages/wow/src/command/types.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L54)
+[packages/wow/src/command/types.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L54)
 
 ### CommandStageCapable {#api-CommandStageCapable}
 
@@ -279,7 +283,7 @@ export interface CommandStageCapable {
 }
 ```
 
-[packages/wow/src/command/types.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L91)
+[packages/wow/src/command/types.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L91)
 
 ### CommandResultCapable {#api-CommandResultCapable}
 
@@ -289,7 +293,7 @@ export interface CommandResultCapable {
 }
 ```
 
-[packages/wow/src/command/types.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L100)
+[packages/wow/src/command/types.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L100)
 
 ### SignalTimeCapable {#api-SignalTimeCapable}
 
@@ -299,7 +303,7 @@ export interface SignalTimeCapable {
 }
 ```
 
-[packages/wow/src/command/types.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L109)
+[packages/wow/src/command/types.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L109)
 
 ### NullableAggregateVersionCapable {#api-NullableAggregateVersionCapable}
 
@@ -309,7 +313,7 @@ export interface NullableAggregateVersionCapable {
 }
 ```
 
-[packages/wow/src/command/types.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L118)
+[packages/wow/src/command/types.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L118)
 
 ### CompensationTarget {#api-CompensationTarget}
 
@@ -318,7 +322,7 @@ export interface CompensationTarget
   extends PartialBy<Identifier, 'id'>, FunctionInfoCapable {}
 ```
 
-[packages/wow/src/command/types.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L135)
+[packages/wow/src/command/types.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L135)
 
 ### DeleteAggregate {#api-DeleteAggregate}
 
@@ -326,7 +330,7 @@ export interface CompensationTarget
 export interface DeleteAggregate {}
 ```
 
-[packages/wow/src/command/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L146)
+[packages/wow/src/command/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L146)
 
 ### CommandBody {#api-CommandBody}
 
@@ -334,7 +338,7 @@ export interface DeleteAggregate {}
 export type CommandBody<C> = RemoveReadonlyFields<C>;
 ```
 
-[packages/wow/src/command/types.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L148)
+[packages/wow/src/command/types.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L148)
 
 ### DeleteAggregateCommand {#api-DeleteAggregateCommand}
 
@@ -342,7 +346,7 @@ export type CommandBody<C> = RemoveReadonlyFields<C>;
 export type DeleteAggregateCommand = CommandBody<DeleteAggregate>;
 ```
 
-[packages/wow/src/command/types.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L150)
+[packages/wow/src/command/types.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L150)
 
 ### RecoverAggregate {#api-RecoverAggregate}
 
@@ -350,7 +354,7 @@ export type DeleteAggregateCommand = CommandBody<DeleteAggregate>;
 export interface RecoverAggregate {}
 ```
 
-[packages/wow/src/command/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L160)
+[packages/wow/src/command/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L160)
 
 ### RecoverAggregateCommand {#api-RecoverAggregateCommand}
 
@@ -358,7 +362,7 @@ export interface RecoverAggregate {}
 export type RecoverAggregateCommand = CommandBody<RecoverAggregate>;
 ```
 
-[packages/wow/src/command/types.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L162)
+[packages/wow/src/command/types.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L162)
 
 ### ApplyResourceTags {#api-ApplyResourceTags}
 
@@ -366,7 +370,7 @@ export type RecoverAggregateCommand = CommandBody<RecoverAggregate>;
 export interface ApplyResourceTags extends ApplyAbacTags {}
 ```
 
-[packages/wow/src/command/types.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L165)
+[packages/wow/src/command/types.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L165)
 
 ### ApplyResourceTagsCommand {#api-ApplyResourceTagsCommand}
 
@@ -374,7 +378,7 @@ export interface ApplyResourceTags extends ApplyAbacTags {}
 export type ApplyResourceTagsCommand = CommandBody<ApplyResourceTags>;
 ```
 
-[packages/wow/src/command/types.ts:167](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L167)
+[packages/wow/src/command/types.ts:167](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L167)
 
 ### BatchResult {#api-BatchResult}
 
@@ -385,7 +389,7 @@ export interface BatchResult extends ErrorInfo {
 }
 ```
 
-[packages/wow/src/command/types.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/command/types.ts#L175)
+[packages/wow/src/command/types.ts:175](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/command/types.ts#L175)
 
 ## Related topics
 

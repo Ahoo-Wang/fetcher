@@ -5,6 +5,10 @@ description: '客户端配置与元数据 — @ahoo-wang/fetcher-wow 5.0.0'
 
 # 客户端配置与元数据
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 当快照、事件和历史状态客户端共享聚合路由时，使用 `QueryClientFactory<S,FIELDS,DomainEventBody>`。构造时传入 `QueryClientOptions`，各 create 方法可覆盖。构造只组合元数据，不发现服务端、不请求 schema，也不验证部署。
 
 | 输入 / 方法                                      | 契约                                                 |
@@ -54,7 +58,7 @@ export interface ScopesCapable {
 }
 ```
 
-[packages/wow/src/configuration/wowMetadata.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/configuration/wowMetadata.ts#L16)
+[packages/wow/src/configuration/wowMetadata.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/configuration/wowMetadata.ts#L16)
 
 ### Aggregate {#api-Aggregate}
 
@@ -68,7 +72,7 @@ export interface Aggregate extends ScopesCapable {
 }
 ```
 
-[packages/wow/src/configuration/wowMetadata.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/configuration/wowMetadata.ts#L20)
+[packages/wow/src/configuration/wowMetadata.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/configuration/wowMetadata.ts#L20)
 
 ### BoundedContext {#api-BoundedContext}
 
@@ -79,7 +83,7 @@ export interface BoundedContext extends ScopesCapable, DescriptionCapable {
 }
 ```
 
-[packages/wow/src/configuration/wowMetadata.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/configuration/wowMetadata.ts#L43)
+[packages/wow/src/configuration/wowMetadata.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/configuration/wowMetadata.ts#L43)
 
 ### WowMetadata {#api-WowMetadata}
 
@@ -89,7 +93,7 @@ export interface WowMetadata extends DescriptionCapable {
 }
 ```
 
-[packages/wow/src/configuration/wowMetadata.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/configuration/wowMetadata.ts#L48)
+[packages/wow/src/configuration/wowMetadata.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/configuration/wowMetadata.ts#L48)
 
 ### createQueryApiMetadata {#api-createQueryApiMetadata}
 
@@ -99,7 +103,7 @@ export function createQueryApiMetadata(
 ): ApiMetadata;
 ```
 
-[packages/wow/src/query/queryClients.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryClients.ts#L49)
+[packages/wow/src/query/queryClients.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryClients.ts#L49)
 
 ### QueryClientOptions {#api-QueryClientOptions}
 
@@ -114,7 +118,7 @@ export interface QueryClientOptions
 }
 ```
 
-[packages/wow/src/query/queryClients.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryClients.ts#L31)
+[packages/wow/src/query/queryClients.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryClients.ts#L31)
 
 ### QueryClientFactory {#api-QueryClientFactory}
 
@@ -128,7 +132,7 @@ export class QueryClientFactory<S, FIELDS extends string = string, DomainEventBo
 }
 ```
 
-[packages/wow/src/query/queryClients.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/queryClients.ts#L62)
+[packages/wow/src/query/queryClients.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/queryClients.ts#L62)
 
 ## 相关专题
 

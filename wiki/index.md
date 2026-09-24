@@ -34,7 +34,7 @@ features:
     link: /guides/react/
     linkText: Learn more
   - title: Data views
-    details: Use View Engine for tables, filters, and saved views. Viewer is deprecated and in maintenance mode.
+    details: Tables, filters and saved views with the Ant Design Viewer, frozen in the 5.x line; its successor lives in the Wow repository.
     link: /start/first-view
     linkText: Learn more
   - title: Architecture and choices

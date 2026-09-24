@@ -5,6 +5,10 @@ description: '业务错误与文档工具 — @ahoo-wang/fetcher-wow 5.0.0'
 
 # 业务错误与文档工具
 
+::: warning 仅适用于 5.x
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+:::
+
 HTTP 成功响应也可能携带失败的 Wow 业务结果。确认写入完成前应检查 errorCode。这些工具分类传输数据，不替你抛出领域异常或选择重试策略。
 
 | 契约                                               | 含义、默认值与边界                                                                                     |
@@ -40,7 +44,7 @@ console.assert(
 export type DynamicDocument = Record<string, any>;
 ```
 
-[packages/wow/src/query/types.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/types.ts#L14)
+[packages/wow/src/query/types.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/types.ts#L14)
 
 ### DynamicDocumentArray {#api-DynamicDocumentArray}
 
@@ -48,7 +52,7 @@ export type DynamicDocument = Record<string, any>;
 export type DynamicDocumentArray = DynamicDocument[];
 ```
 
-[packages/wow/src/query/types.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/query/types.ts#L16)
+[packages/wow/src/query/types.ts:16](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/query/types.ts#L16)
 
 ### RecoverableType {#api-RecoverableType}
 
@@ -60,7 +64,7 @@ export enum RecoverableType {
 }
 ```
 
-[packages/wow/src/types/error.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/error.ts#L22)
+[packages/wow/src/types/error.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/error.ts#L22)
 
 ### BindingError {#api-BindingError}
 
@@ -71,7 +75,7 @@ export interface BindingError {
 }
 ```
 
-[packages/wow/src/types/error.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/error.ts#L55)
+[packages/wow/src/types/error.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/error.ts#L55)
 
 ### ErrorInfo {#api-ErrorInfo}
 
@@ -83,7 +87,7 @@ export interface ErrorInfo {
 }
 ```
 
-[packages/wow/src/types/error.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/error.ts#L66)
+[packages/wow/src/types/error.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/error.ts#L66)
 
 ### ErrorCodes {#api-ErrorCodes}
 
@@ -122,7 +126,7 @@ export class ErrorCodes {
 
 :::
 
-[packages/wow/src/types/error.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/types/error.ts#L85)
+[packages/wow/src/types/error.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/types/error.ts#L85)
 
 ### getPropertyValue {#api-getPropertyValue}
 
@@ -134,6 +138,6 @@ export function getPropertyValue<T = any>(
 ): T | undefined;
 ```
 
-[packages/wow/src/getPropertyValue.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/wow/src/getPropertyValue.ts#L50)
+[packages/wow/src/getPropertyValue.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/wow/src/getPropertyValue.ts#L50)
 
 [完整符号索引](./symbols)

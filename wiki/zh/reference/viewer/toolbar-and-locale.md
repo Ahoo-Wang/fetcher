@@ -5,8 +5,8 @@ description: '工具栏、刷新与本地化 — @ahoo-wang/fetcher-viewer 5.0.0
 
 # 工具栏、刷新与本地化
 
-::: warning 维护期（已弃用）
-`@ahoo-wang/fetcher-viewer` 已进入维护期（弃用），仅维护现有功能，不再新增功能。数据视图能力的后续演进由 [`@ahoo-wang/fetcher-view-engine`](../../guides/view-engine/index.md) 承担，新项目请使用 View Engine。本页保留供存量项目维护参考；两者模型与 API 不同，迁移需要适配。
+::: warning 仅适用于 5.x（已冻结）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），尚未发布。两者模型与 API 不同，迁移需要适配。
 :::
 
 TopBar 组合视图操作、过滤/面板开关、行密度、刷新、监控、分享、全屏。props 包含 activeView/views/viewerDefinitionId、选中记录、mutation 回调。按钮调用应用回调，保存不是隐式 localStorage 操作。
@@ -60,7 +60,7 @@ export function useRefreshDataEventBus(
 ): RefreshDataEventBusReturn;
 ```
 
-[packages/viewer/src/hooks/useRefreshDataEventBus.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L29)
+[packages/viewer/src/hooks/useRefreshDataEventBus.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L29)
 
 ### RefreshDataEvent {#api-RefreshDataEvent}
 
@@ -71,7 +71,7 @@ export interface RefreshDataEvent {
 }
 ```
 
-[packages/viewer/src/hooks/useRefreshDataEventBus.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L10)
+[packages/viewer/src/hooks/useRefreshDataEventBus.ts:10](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L10)
 
 ### RefreshDataEventBusReturn {#api-RefreshDataEventBusReturn}
 
@@ -86,7 +86,7 @@ export interface RefreshDataEventBusReturn {
 }
 ```
 
-[packages/viewer/src/hooks/useRefreshDataEventBus.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L15)
+[packages/viewer/src/hooks/useRefreshDataEventBus.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/hooks/useRefreshDataEventBus.ts#L15)
 
 ### AutoRefreshBarItem {#api-AutoRefreshBarItem}
 
@@ -98,7 +98,7 @@ export function AutoRefreshBarItem(
 
 实现默认值: `items = DefaultAutoRefreshItems`.
 
-[packages/viewer/src/topbar/AutoRefreshBarItem.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/AutoRefreshBarItem.tsx#L52)
+[packages/viewer/src/topbar/AutoRefreshBarItem.tsx:52](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/AutoRefreshBarItem.tsx#L52)
 
 ### AutoRefreshItem {#api-AutoRefreshItem}
 
@@ -110,7 +110,7 @@ export interface AutoRefreshItem {
 }
 ```
 
-[packages/viewer/src/topbar/AutoRefreshBarItem.tsx:9](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/AutoRefreshBarItem.tsx#L9)
+[packages/viewer/src/topbar/AutoRefreshBarItem.tsx:9](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/AutoRefreshBarItem.tsx#L9)
 
 ### AutoRefreshBarItemProps {#api-AutoRefreshBarItemProps}
 
@@ -122,7 +122,7 @@ export interface AutoRefreshBarItemProps {
 }
 ```
 
-[packages/viewer/src/topbar/AutoRefreshBarItem.tsx:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/AutoRefreshBarItem.tsx#L15)
+[packages/viewer/src/topbar/AutoRefreshBarItem.tsx:15](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/AutoRefreshBarItem.tsx#L15)
 
 ### BarItem {#api-BarItem}
 
@@ -130,7 +130,7 @@ export interface AutoRefreshBarItemProps {
 export function BarItem(props: BarItemProps): React.JSX.Element;
 ```
 
-[packages/viewer/src/topbar/BarItem.tsx:9](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/BarItem.tsx#L9)
+[packages/viewer/src/topbar/BarItem.tsx:9](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/BarItem.tsx#L9)
 
 ### BarItemProps {#api-BarItemProps}
 
@@ -141,7 +141,7 @@ export interface BarItemProps {
 }
 ```
 
-[packages/viewer/src/topbar/BarItem.tsx:4](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/BarItem.tsx#L4)
+[packages/viewer/src/topbar/BarItem.tsx:4](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/BarItem.tsx#L4)
 
 ### ColumnHeightBarItem {#api-ColumnHeightBarItem}
 
@@ -151,7 +151,7 @@ export function ColumnHeightBarItem(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/topbar/ColumnHeightBarItem.tsx:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/ColumnHeightBarItem.tsx#L15)
+[packages/viewer/src/topbar/ColumnHeightBarItem.tsx:15](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/ColumnHeightBarItem.tsx#L15)
 
 ### ColumnHeightBarItemProps {#api-ColumnHeightBarItemProps}
 
@@ -162,7 +162,7 @@ export interface ColumnHeightBarItemProps extends TopBarItemProps {
 }
 ```
 
-[packages/viewer/src/topbar/ColumnHeightBarItem.tsx:10](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/ColumnHeightBarItem.tsx#L10)
+[packages/viewer/src/topbar/ColumnHeightBarItem.tsx:10](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/ColumnHeightBarItem.tsx#L10)
 
 ### DataMonitorBarItem {#api-DataMonitorBarItem}
 
@@ -172,7 +172,7 @@ export function DataMonitorBarItem(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/topbar/DataMonitorBarItem.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/DataMonitorBarItem.tsx#L20)
+[packages/viewer/src/topbar/DataMonitorBarItem.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/DataMonitorBarItem.tsx#L20)
 
 ### DataMonitorBarItemProps {#api-DataMonitorBarItemProps}
 
@@ -187,7 +187,7 @@ export interface DataMonitorBarItemProps extends TopBarItemProps {
 }
 ```
 
-[packages/viewer/src/topbar/DataMonitorBarItem.tsx:11](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/DataMonitorBarItem.tsx#L11)
+[packages/viewer/src/topbar/DataMonitorBarItem.tsx:11](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/DataMonitorBarItem.tsx#L11)
 
 ### FilterBarItem {#api-FilterBarItem}
 
@@ -197,7 +197,7 @@ export function FilterBarItem(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/topbar/FilterBarItem.tsx:12](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/FilterBarItem.tsx#L12)
+[packages/viewer/src/topbar/FilterBarItem.tsx:12](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/FilterBarItem.tsx#L12)
 
 ### FilterBarItemProps {#api-FilterBarItemProps}
 
@@ -208,7 +208,7 @@ export interface FilterBarItemProps extends TopBarItemProps {
 }
 ```
 
-[packages/viewer/src/topbar/FilterBarItem.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/FilterBarItem.tsx#L7)
+[packages/viewer/src/topbar/FilterBarItem.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/FilterBarItem.tsx#L7)
 
 ### FullscreenBarItem {#api-FullscreenBarItem}
 
@@ -218,7 +218,7 @@ export function FullscreenBarItem(
 ): import('react').JSX.Element | null;
 ```
 
-[packages/viewer/src/topbar/FullscreenBarItem.tsx:11](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/FullscreenBarItem.tsx#L11)
+[packages/viewer/src/topbar/FullscreenBarItem.tsx:11](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/FullscreenBarItem.tsx#L11)
 
 ### FullscreenBarItemProps {#api-FullscreenBarItemProps}
 
@@ -227,7 +227,7 @@ export interface FullscreenBarItemProps
   extends UseFullscreenOptions, TopBarItemProps {}
 ```
 
-[packages/viewer/src/topbar/FullscreenBarItem.tsx:8](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/FullscreenBarItem.tsx#L8)
+[packages/viewer/src/topbar/FullscreenBarItem.tsx:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/FullscreenBarItem.tsx#L8)
 
 ### Point {#api-Point}
 
@@ -235,7 +235,7 @@ export interface FullscreenBarItemProps
 export function Point(): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/topbar/Point.tsx:1](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/Point.tsx#L1)
+[packages/viewer/src/topbar/Point.tsx:1](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/Point.tsx#L1)
 
 ### RefreshDataBarItem {#api-RefreshDataBarItem}
 
@@ -245,7 +245,7 @@ export function RefreshDataBarItem(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/topbar/RefreshDataBarItem.tsx:11](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/RefreshDataBarItem.tsx#L11)
+[packages/viewer/src/topbar/RefreshDataBarItem.tsx:11](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/RefreshDataBarItem.tsx#L11)
 
 ### RefreshDataBarItemProps {#api-RefreshDataBarItemProps}
 
@@ -255,7 +255,7 @@ export interface RefreshDataBarItemProps extends TopBarItemProps {
 }
 ```
 
-[packages/viewer/src/topbar/RefreshDataBarItem.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/RefreshDataBarItem.tsx#L7)
+[packages/viewer/src/topbar/RefreshDataBarItem.tsx:7](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/RefreshDataBarItem.tsx#L7)
 
 ### ShareLinkBarItem {#api-ShareLinkBarItem}
 
@@ -265,7 +265,7 @@ export function ShareLinkBarItem(
 ): import('react').JSX.Element;
 ```
 
-[packages/viewer/src/topbar/ShareLinkBarItem.tsx:8](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/ShareLinkBarItem.tsx#L8)
+[packages/viewer/src/topbar/ShareLinkBarItem.tsx:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/ShareLinkBarItem.tsx#L8)
 
 ### ShareLinkBarItemProps {#api-ShareLinkBarItemProps}
 
@@ -273,7 +273,7 @@ export function ShareLinkBarItem(
 export interface ShareLinkBarItemProps extends TopBarItemProps {}
 ```
 
-[packages/viewer/src/topbar/ShareLinkBarItem.tsx:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/ShareLinkBarItem.tsx#L6)
+[packages/viewer/src/topbar/ShareLinkBarItem.tsx:6](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/ShareLinkBarItem.tsx#L6)
 
 ### TopBar {#api-TopBar}
 
@@ -283,7 +283,7 @@ export function TopBar<RecordType>(
 ): React.JSX.Element;
 ```
 
-[packages/viewer/src/topbar/TopBar.tsx:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/TopBar.tsx#L107)
+[packages/viewer/src/topbar/TopBar.tsx:107](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/TopBar.tsx#L107)
 
 ### TopBarProps {#api-TopBarProps}
 
@@ -322,7 +322,7 @@ export interface TopBarProps<
 
 :::
 
-[packages/viewer/src/topbar/TopBar.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/TopBar.tsx#L35)
+[packages/viewer/src/topbar/TopBar.tsx:35](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/TopBar.tsx#L35)
 
 ### TopBarItemProps {#api-TopBarItemProps}
 
@@ -330,7 +330,7 @@ export interface TopBarProps<
 export interface TopBarItemProps extends StyleCapable {}
 ```
 
-[packages/viewer/src/topbar/types.ts:3](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/topbar/types.ts#L3)
+[packages/viewer/src/topbar/types.ts:3](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/topbar/types.ts#L3)
 
 ### Locale {#api-Locale}
 
@@ -375,7 +375,7 @@ export interface Locale {
 
 :::
 
-[packages/viewer/src/locale/Locale.ts:1](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/locale/Locale.ts#L1)
+[packages/viewer/src/locale/Locale.ts:1](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/locale/Locale.ts#L1)
 
 ### useLocale {#api-useLocale}
 
@@ -383,7 +383,7 @@ export interface Locale {
 export function useLocale(): UseLocaleReturn;
 ```
 
-[packages/viewer/src/locale/useLocale.ts:12](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/locale/useLocale.ts#L12)
+[packages/viewer/src/locale/useLocale.ts:12](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/locale/useLocale.ts#L12)
 
 ### UseLocaleReturn {#api-UseLocaleReturn}
 
@@ -394,7 +394,7 @@ export interface UseLocaleReturn {
 }
 ```
 
-[packages/viewer/src/locale/useLocale.ts:7](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/locale/useLocale.ts#L7)
+[packages/viewer/src/locale/useLocale.ts:7](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/locale/useLocale.ts#L7)
 
 ## 相关专题
 

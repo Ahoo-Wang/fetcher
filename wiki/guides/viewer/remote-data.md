@@ -6,8 +6,8 @@ description: Render a paged Viewer with application-owned fetching, cancellation
 
 # Connect remote rows to a Viewer
 
-::: warning Maintenance mode (deprecated)
-`@ahoo-wang/fetcher-viewer` is deprecated and in maintenance mode: existing functionality is maintained, with no new features. Further data-view development belongs to [`@ahoo-wang/fetcher-view-engine`](../view-engine/index.md); use View Engine for new projects. This page remains a maintenance reference for existing consumers. The packages use different models and APIs, so migration requires adaptation.
+::: warning 5.x only (frozen)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
 :::
 
 Create a React page that renders a saved default view, loads data and responds to paging/sorting. `Viewer` owns presentation state; your application supplies data and persistence callbacks.
@@ -164,7 +164,7 @@ For saved view mutations, provide `onCreateView`, `onUpdateView` and `onDeleteVi
 
 Use [FetcherViewer](../../reference/viewer/fetcher-viewer) when the server implements its definition and Wow saved-view contracts and the required client Fetcher configuration is installed. A generic paged endpoint alone is insufficient. See [models and state](../../reference/viewer/models-and-state) and [View versus Viewer](../../reference/viewer/view-and-viewer) for ownership boundaries.
 
-[Viewer.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/viewer/src/viewer/Viewer.tsx#L57) documents data and persistence ownership.
+[Viewer.tsx:57](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/viewer/src/viewer/Viewer.tsx#L57) documents data and persistence ownership.
 
 ## Confirm contracts before adopting FetcherViewer
 
