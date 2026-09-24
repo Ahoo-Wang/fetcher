@@ -20,11 +20,15 @@ export default defineConfig({
   build: {
     sourcemap: true,
     lib: {
-      entry: { index: 'src/index.ts', core: 'src/core/index.ts' },
+      entry: {
+        index: 'src/index.ts',
+        core: 'src/core/index.ts',
+        fetcher: 'src/fetcher/index.ts',
+      },
       formats: ['es'],
       name: 'FetcherReact',
       fileName: (format, entry) =>
-        entry === 'core' ? 'core.es.js' : `index.${format}.js`,
+        entry === 'index' ? `index.${format}.js` : `${entry}.es.js`,
     },
     rolldownOptions: {
       external: [

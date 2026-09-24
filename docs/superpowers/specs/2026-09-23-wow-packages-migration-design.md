@@ -62,9 +62,9 @@ Wow/
 - **依赖只能是单向的：Wow → fetcher。** Wow 里用到的 `@ahoo-wang/fetcher*` 一律通过 catalog 引用 npm 上已发布的版本，都写成 peer 依赖（现在已经是这样）。fetcher 的 CI 加一条检查：任何包都不允许依赖 `@ahoo-wang/wow-*`。
 - **`wow-*` 首发时，fetcher 6.0 还没发布**，所以 peer 依赖写成 `^5.1 || ^6`。由此有两条约束：
   - fetcher 6.0 只做删除，不带核心 API 的破坏性改动（有的话留到 7.0），否则 `^6` 这个范围就不成立；
-  - 迁移窗口里先发一个 fetcher 5.x 补丁，把 fetcher-react 对 fetcher-wow 的 peer 依赖标成可选（`peerDependenciesMeta`）。否则装 wow-react 会连带装上 fetcher-wow，项目里就有两份 Wow 类型和两套同名的查询 hook。
+  - 迁移窗口里先发一个 fetcher 5.x 补丁（5.1.3），把 fetcher-react 对 fetcher-wow 的 peer 依赖标成可选（`peerDependenciesMeta`），并新增子路径 `/fetcher`（见下一条）。否则装 wow-react 会连带装上 fetcher-wow，项目里就有两份 Wow 类型和两套同名的查询 hook。
 - **Wow 内部包之间**（比如 view-engine 依赖 wow-client）也用 peer 依赖，范围写 `workspace:~`，发布后是 `~x.y.z`，即同一个小版本内兼容。现在 view-engine 对 fetcher-wow 是普通依赖、范围是 `^`，迁移时一起改。
-- 拆出去的 `wow-react` 只依赖 fetcher-react 已经公开导出的 `core` 和 `fetcher`，fetcher-react 这边不用新增导出。
+- 拆出去的 `wow-react` 只依赖 fetcher-react 的 `core` 和 `fetcher` 两处。`core` 早有子路径 `@ahoo-wang/fetcher-react/core`；`fetcher`（`useFetcher`、`useFetcherQuery` 等）原来只能从根入口拿到，而根入口的类型声明引用 `@ahoo-wang/fetcher-wow`、还导出一套与 wow-react 同名的查询 hook。所以第 0 步的 5.x 补丁新增子路径 `@ahoo-wang/fetcher-react/fetcher`（构建产物校验它不加载任何集成），**wow-react 只从 `/core` 与 `/fetcher` 两个子路径导入**，peer 依赖写 `^5.1.3 || ^6`。（2026-09-24 准备第 0 步时补上；运行时根入口对 fetcher-wow 只有 `import type`，不装它也不会找不到模块，问题只在类型层。）
 
 ## 发布策略
 
@@ -136,7 +136,7 @@ renovate 把 `@ahoo-wang/fetcher*` 归成一组来升级。
 
 - `ci.yml` 的 suite 只剩 `core`；删掉 `generator-test.yml`；`integration-test` 只保留核心包的用例。decorator、fetcher、openai 的用例继续拿 wow-example-server 镜像当普通 HTTP 后端，这种测试时的依赖可以接受。
 - 新增 `downstream-wow.yml`：改到 Wow 会用到的核心包时触发（fetcher、decorator、eventstream、react/core、openapi）。它 checkout Wow，通过 `pnpm overrides` 把依赖链接到这次 PR 的构建产物，然后跑 Wow 的 JS 单测和类型检查。一开始只作提示，不作为必须通过的检查。
-- `ci.yml`、`quality.yml` 的分支过滤加上 `5.x`，否则 5.x 分支的 PR 不会跑 CI，发版准入检查也就过不去。
+- 发版准入检查要求的五条流水线（`ci.yml`、`quality.yml`、`build-storybook.yml`、`integration-test.yml`、`generator-test.yml`）分支过滤都加上 `5.x`，否则 5.x 分支的提交没有这些 push 运行，发版准入检查就过不去（`release-admission.mjs` 的 `requiredWorkflows`；3′ 删掉 `generator-test.yml` 时要从这张表里一起拿掉）。
 - fetcher 6.0 发布以后，`5.x` 的补丁一律加 `--tag v5` 发布（现在的 `publish-npm.sh` 没有指定 dist-tag），否则会把 `latest` 改回 5.x。
 
 ### 耗时预期
@@ -194,7 +194,7 @@ Wow 文档站（wow.ahoo.me，VitePress）已经这样挂了一份 dokka：放�
 
 | 步骤 | 仓库    | 内容                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | fetcher | 发一个 5.x 补丁，把 fetcher-react 对 fetcher-wow 的 peer 依赖标成可选；`ci.yml`、`quality.yml` 的分支过滤加上 `5.x`。合并后在 main 上打 tag `wow-migration-base`，并从同一个提交拉出 `5.x` 分支。**从这一刻起冻结要迁走的路径**                                                                                                                                                                                                                    |
+| 0    | fetcher | 发 5.x 补丁 5.1.3：fetcher-react 对 fetcher-wow 的 peer 依赖标成可选、新增子路径 `/fetcher`；发版准入要求的五条流水线分支过滤加上 `5.x`。合并后在 main 上打 tag `wow-migration-base`，并从同一个提交拉出 `5.x` 分支。**从这一刻起冻结要迁走的路径**                                                                                                                                                                                                |
 | 1    | Wow     | 搭好根目录工作区、工具链和 CI 骨架（`typescript.yml` 和 gate），把 dashboard 和 documentation 并进来，复制 `.claude/skills/shadcn`，新增 `typescript/AGENTS.md`                                                                                                                                                                                                                                                                                    |
 | 2    | Wow     | 从 `wow-migration-base` 带历史迁入 wow-client、wow-react、wow-generator 和 integration-test：改包名、peer 依赖范围和版本号；接上契约测试（同源 + 8.x 旧服务端矩阵）；新增 npm 发布 job、兼容债务清单、发版准入检查、`incubatingProjects`                                                                                                                                                                                                           |
 | 3    | Wow     | 迁入 view-engine 和 storybook，重建 `view-engine-legacy` tag；文档站接入 Storybook；fetcher wiki 的对应章节并进 Wow 文档                                                                                                                                                                                                                                                                                                                           |

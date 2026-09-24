@@ -66,6 +66,8 @@ export function UserProfile({ id }: { id: string }) {
 
 Generic hooks are also available through the ESM subpath `@ahoo-wang/fetcher-react/core`, including `useExecutePromise`, `useQuery`, and `useDebouncedCallback`. This entry avoids loading HTTP, security, storage and event integrations just to use core hooks. Existing root ESM/UMD exports remain unchanged.
 
+The fetcher hooks (`useFetcher`, `useFetcherQuery` and their debounced forms) are also available through `@ahoo-wang/fetcher-react/fetcher`. Its types and modules load no Wow, security, storage or event integration, which is what integrations built on these hooks — such as the Wow hooks after they move to the Wow repository — should import. `@ahoo-wang/fetcher-wow` is an optional peer: the root entry only references its types.
+
 `useExecutePromise.abort()` invalidates the active request before cancellation callbacks run. A source that ignores AbortSignal cannot publish late success/error, and asynchronous onAbort callbacks cannot reorder newer executions.
 
 The root ESM entry and `/core` share the same core modules, including FullscreenContext; providers and hooks can be mixed across the two ESM entries. `pnpm test:package` verifies this on built artifacts and is included in `build`. `abort()` detaches the previous controller before notifying synchronous listeners, preserving cancellation of a replacement request started by a listener.
