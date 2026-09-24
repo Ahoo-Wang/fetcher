@@ -17,6 +17,8 @@ concurrency:
 jobs:
   changes:
     uses: ./.github/workflows/changes.yml
+  # Node 20/22: the same assertions, compiler/type steps and timeouts, without
+  # coverage. Split from Node 24 so Combined coverage does not wait for them.
   build-and-test:
     name: Node ${{ matrix.node-version }} / ${{ matrix.suite }}
     needs: changes
@@ -27,12 +29,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22, 24]
+        node-version: [20, 22]
         suite: [core, view-engine, viewer]
-        exclude:
-          # Node 24 view-engine carries the coverage run; it is sharded below.
-          - node-version: 24
-            suite: view-engine
 
     steps:
       - name: Checkout code
@@ -61,12 +59,56 @@ jobs:
         run: node .github/scripts/ci-suite.mjs test
         env:
           CI_SUITE: ${{ matrix.suite }}
-          COLLECT_COVERAGE: ${{ matrix.node-version == 24 }}
+          COLLECT_COVERAGE: 'false'
+          VITEST_MAX_WORKERS: 2
+          npm_config_workspace_concurrency: 1
+
+  # Node 24 carries coverage; its view-engine suite is sharded below.
+  node24:
+    name: Node 24 / ${{ matrix.suite }}
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [core, viewer]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10.34.5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build suite and dependencies
+        run: node .github/scripts/ci-suite.mjs build
+        env:
+          CI_SUITE: ${{ matrix.suite }}
+
+      - name: Test suite
+        run: node .github/scripts/ci-suite.mjs test
+        env:
+          CI_SUITE: ${{ matrix.suite }}
+          COLLECT_COVERAGE: 'true'
           VITEST_MAX_WORKERS: 2
           npm_config_workspace_concurrency: 1
 
       - name: Stage coverage with package paths
-        if: always() && matrix.node-version == 24
+        if: always()
         run: |
           mkdir -p coverage-artifact
           for report in packages/*/coverage/coverage-final.json; do
@@ -76,7 +118,7 @@ jobs:
           done
 
       - name: Preserve suite coverage
-        if: always() && matrix.node-version == 24
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: unit-coverage-node24-${{ matrix.suite }}
@@ -228,7 +270,7 @@ jobs:
 
   coverage:
     name: Combined coverage
-    needs: [changes, build-and-test, view-engine]
+    needs: [changes, node24, view-engine]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
