@@ -211,7 +211,12 @@ export function workspacePackages(root) {
     const entries = new Map();
     const exportsMap = pkg.exports ?? { '.': { types: pkg.types } };
     for (const [subpath, target] of Object.entries(exportsMap)) {
-      const types = typeof target === 'string' ? target : target?.types;
+      // Types sit at the top of an entry, or under its `import` condition
+      // (`{ import: { types, default }, require: { types, default } }`).
+      const types =
+        typeof target === 'string'
+          ? target
+          : (target?.types ?? target?.import?.types);
       if (typeof types !== 'string' || !types.endsWith('.d.ts')) continue;
       const source = types
         .replace(/^\.\/dist\//, 'src/')
