@@ -264,7 +264,9 @@ function HostPage({
             ? `打开视图 ${route.instanceId} · ${JSON.stringify(route.filter)}`
             : route.kind === 'unsaved'
               ? `打开「${route.title}」 · ${JSON.stringify(route.config.filter)}`
-              : route.url}
+              : route.kind === 'dashboard'
+                ? `打开仪表盘 ${route.instanceId}`
+                : route.url}
         </p>
       )}
     </div>

@@ -82,6 +82,8 @@ function routeOf(to: DashboardNavigation | null): string {
   if (to.kind === 'url') return to.url;
   if (to.kind === 'view')
     return `打开视图 ${to.instanceId} · ${JSON.stringify(to.filter)}`;
+  if (to.kind === 'dashboard')
+    return `打开仪表盘 ${to.instanceId} · ${JSON.stringify(to.filters.values)}`;
   return `打开「${to.title}」 · ${JSON.stringify(to.config.filter)}`;
 }
 
