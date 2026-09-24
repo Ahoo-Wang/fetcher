@@ -46,13 +46,6 @@ const entries = [
     description: '加载、失败、重试与取消。',
     href: './?path=/docs/react-hooks-async-state--docs',
   },
-  {
-    title: 'Wow',
-    task: '查看已迁移的 Wow 集成',
-    description:
-      'Wow 查询 Hook 与 View Engine 已迁到 Wow 仓，故事在 Wow 文档站。',
-    href: './?path=/docs/view-engine-已迁移--docs',
-  },
 ];
 
 export const StartHere: Story = {
@@ -101,7 +94,6 @@ export const StartHere: Story = {
       '订阅与消费事件',
       '保存与观察状态',
       '驱动异步状态',
-      '查看已迁移的 Wow 集成',
     ]) {
       await expect(
         navigation.getByRole('link', { name: new RegExp(name) }),
