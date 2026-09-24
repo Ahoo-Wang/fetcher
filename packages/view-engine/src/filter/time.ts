@@ -16,6 +16,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
+import type { AnalysisDateUnit } from '../model/index.js';
 import type {
   DateTimeFilterValue,
   DateTimePreset,
@@ -254,4 +255,51 @@ export function resolveDateTimeBound(
   return edge === 'start'
     ? instantIn(value.from, zone, 'start')
     : instantIn(value.to ?? value.from, zone, 'end');
+}
+
+/** dayjs's name for each calendar a period may be one of. */
+const PERIOD_UNITS = {
+  SECOND: 'second',
+  MINUTE: 'minute',
+  HOUR: 'hour',
+  DAY: 'day',
+  MONTH: 'month',
+  QUARTER: 'quarter',
+  YEAR: 'year',
+} as const;
+
+/**
+ * Which period of the calendar in `timeZone` a range is exactly, if any:
+ * the one a date bucket names (`bucketRange`), written as a closed range —
+ * its first instant to the last millisecond before the next period starts.
+ * A week is the seven days from a midnight, whichever day that is: it reads
+ * as 「9月21日 起的一周」, which is true of any seven such days, where a
+ * week day of our choosing would not match a source that starts weeks on
+ * another one.
+ *
+ * Both edges must match to the millisecond, so an answer is never a
+ * rounding: a range a millisecond short of a day is a range. A string that
+ * names no instant, or a zone the runtime cannot resolve, is no period.
+ */
+export function periodOf(
+  from: string,
+  to: string,
+  timeZone: string,
+): AnalysisDateUnit | null {
+  if (!isValidTimeZone(timeZone)) return null;
+  const start = Date.parse(instantIn(from, timeZone, 'start'));
+  const end = Date.parse(instantIn(to, timeZone, 'end'));
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return null;
+  const at = dayjs(start).tz(timeZone);
+  const day = at.startOf('day');
+  if (day.valueOf() === start && day.add(7, 'day').valueOf() - 1 === end)
+    return 'WEEK';
+  for (const [unit, name] of Object.entries(PERIOD_UNITS)) {
+    const first = at.startOf(name);
+    if (first.valueOf() !== start) continue;
+    const next =
+      name === 'quarter' ? first.add(3, 'month') : first.add(1, name);
+    if (next.valueOf() - 1 === end) return unit as AnalysisDateUnit;
+  }
+  return null;
 }
