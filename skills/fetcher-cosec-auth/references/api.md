@@ -460,6 +460,7 @@ fetcher.interceptors.response.use(
 2. Calls `tokenManager.refresh(exchange)` to reuse a known successor from the same session, or refreshes the current token if it is refreshable
 3. Removes only the managed Authorization header and retries with the new token — at most once per exchange
 4. On refresh failure: the manager clears only the original, unchanged session and throws. The response interceptor does not clear a replacement session. A failure of the retried request itself propagates normally without clearing the freshly refreshed token
+5. The retry replays the request phase and only the response interceptors up to this one; later response interceptors (status validation, body readers) run once on the fresh response. The error phase is not replayed: when the retry fails, error interceptors run once and `error.exchange.error` is the retry's own error (for example `HttpStatusValidationError`), not a nested `ExchangeError`
 
 ### Skip Token Refresh for Specific Requests
 

@@ -141,6 +141,27 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     // Retry the original request with the new token. A failure of the retry
     // itself (network error, another 401, ...) propagates unchanged: it must
     // not clear the freshly refreshed and still valid token.
-    await exchange.fetcher.interceptors.exchange(exchange);
+    await this.retry(exchange);
+  }
+
+  /**
+   * Re-sends the request inside the current response phase.
+   *
+   * Only the request phase and the response interceptors up to and including
+   * this one are replayed; the outer response chain then carries on with the
+   * remaining interceptors (status validation, body readers, ...) against the
+   * fresh response, so each of them runs once. The error phase is not
+   * replayed either: a failed retry propagates to the outer exchange, whose
+   * error interceptors run once and see the original error unwrapped.
+   */
+  private async retry(exchange: FetchExchange): Promise<void> {
+    const { request, response } = exchange.fetcher.interceptors;
+    await request.intercept(exchange);
+    for (const interceptor of response.interceptors) {
+      await interceptor.intercept(exchange);
+      if (interceptor.name === this.name) {
+        return;
+      }
+    }
   }
 }
