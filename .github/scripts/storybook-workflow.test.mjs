@@ -63,3 +63,22 @@ test('interaction shards together run the whole suite once', () => {
     ),
   );
 });
+
+test('interactions run from source, so every package must resolve to source', async () => {
+  const { readdirSync } = await import('node:fs');
+  const [, interactions] = workflow.split('\n  interactions:\n');
+  assert.doesNotMatch(interactions, /pnpm -r .*\bbuild\b/);
+  // A package missing here would resolve to its dist/, which this job no
+  // longer builds.
+  const main = readFileSync(
+    new URL('../../.storybook/main.ts', import.meta.url),
+    'utf8',
+  );
+  const aliased = [
+    ...main
+      .match(/const workspaceAliases = Object\.fromEntries\(\s*\[([^\]]*)\]/)[1]
+      .matchAll(/'([^']+)'/g),
+  ].map(([, name]) => name);
+  const packages = readdirSync(new URL('../../packages/', import.meta.url));
+  assert.deepEqual(aliased.sort(), packages.sort());
+});

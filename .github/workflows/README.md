@@ -11,7 +11,7 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `quality.yml`                    | CI policy tests, changed-file formatting, read-only lint, all-package source type checks and documentation build.                                                                                                                                                                                                       |
 | `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                                                                                                                                   |
 | `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                                                                                                                                           |
-| `build-storybook.yml`            | Package build, story type check, one Storybook production build with its static index check, and Chromium interaction tests in two shards on separate runners. `STORYBOOK_BROWSERS` widens the matrix; see below.                                                                                                       |
+| `build-storybook.yml`            | Package build, story type check, one Storybook production build with its static index check, and Chromium interaction tests in two shards on separate runners, run from source without a package build. `STORYBOOK_BROWSERS` widens the matrix; see below.                                                              |
 | `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                                                                                                                                       |
 | `generator-test.yml`             | Verify generation against both supported Wow versions.                                                                                                                                                                                                                                                                  |
 | `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                                                                                                                                |
@@ -171,13 +171,23 @@ view-engine stay unsharded.
 
 Storybook interactions run as `Storybook interactions (n/2)`, each a Vitest
 `--shard` of the same suite, with the Playwright browser download cached by
-version.
+version. They build no package: `.storybook/main.ts` resolves every workspace
+package to its source, and a regression test requires that alias list to name
+every directory in `packages/`. The delivery job still builds, because
+`typecheck:stories` checks the stories against the built declarations.
 
 Local check on 2026-09-23 (two Vitest workers): view-engine 205s unsharded,
 three shards of about 70s each whose merge reports the same 3958 tests and the
 same coverage (statements 13347/13731); Storybook 182s unsharded, two shards of
-83s and 86s adding up to the same 69 files and 486 tests. CI timings still need
-a real run.
+83s and 86s adding up to the same 69 files and 486 tests. With every `dist/`
+removed, the unsharded interactions still pass (70 files, 491 tests on the
+later main).
+
+First CI run (#1855): the three shards ran 3.3 to 3.8 minutes and the merge 1.3,
+so `Node 24 / view-engine` reported about 6.2 minutes after the run started,
+against 8 to 10.8 minutes for the old single job before queueing. The
+interaction shards ran 4.8 and 4.4 minutes, of which about a minute was the
+package build this job no longer runs.
 
 ## Isolate the heavy suites
 
@@ -189,7 +199,10 @@ include their dependencies. `view-engine` is being rewritten from an empty tree
 growing test set does not lengthen the core runner.
 
 Node 24 artifacts preserve `packages/<name>/coverage/coverage-final.json` paths.
-The combined coverage job waits for all test jobs, merges the disjoint reports,
+Node 24 (`node24`, plus the sharded `view-engine`) is split from the Node 20/22
+compatibility matrix (`build-and-test`), so the combined coverage job waits for
+the Node 24 jobs only: in #1855 it waited 10 minutes for the unsharded Node 22
+view-engine. Compatibility jobs still gate CI. It merges the disjoint reports,
 and requires a valid JSON report from every package before uploading once.
 This adds build/runner overhead in exchange for a shorter critical path; timing
 claims remain pending measurement. Required job names now include the suite.
