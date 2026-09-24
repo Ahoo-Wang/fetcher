@@ -98,12 +98,13 @@ export interface DashboardGridProps {
    */
   onNavigate?(to: DashboardNavigation): void;
   /**
-   * Whether a press on a panel's group does anything at all (on by
-   * default): off, the board is read and nothing on it answers a press — no
-   * follow-up menu, no cross-filtering, no destination (an embed's
-   * read-only tier, D22).
+   * Whether the board is only read (off by default): nothing on it answers
+   * — no press on a group (no follow-up menu, no cross-filtering, no
+   * destination), no 「⋯」 on a panel, no retry on one that failed; the
+   * board re-runs on its own timer. An embed's read-only tier (D22), a
+   * wall screen.
    */
-  pressable?: boolean;
+  readOnly?: boolean;
   /**
    * Whether a panel's 「⋯」 offers 在工作台中打开 — the view behind it — when
    * there is a route (on by default).
@@ -148,7 +149,7 @@ export function DashboardGrid({
   header,
   emptyActions,
   onNavigate,
-  pressable = true,
+  readOnly = false,
   openInWorkbench = true,
   panelTitles = true,
   filterModes,
@@ -337,26 +338,34 @@ export function DashboardGrid({
                   editable={arranging}
                   available={step => available(panel.id, step)}
                   onArrange={step => arrange(panel.id, step)}
-                  onRetry={() => dashboard.refreshPanel(panel.id)}
+                  onRetry={
+                    readOnly
+                      ? undefined
+                      : () => dashboard.refreshPanel(panel.id)
+                  }
                   press={
-                    pressable
-                      ? panelPress(panel, dashboard, onNavigate, say)
-                      : undefined
+                    readOnly
+                      ? undefined
+                      : panelPress(panel, dashboard, onNavigate, say)
                   }
                   pressesFilter={
-                    pressable ? pressedFilter(panel, dashboard) : undefined
+                    readOnly ? undefined : pressedFilter(panel, dashboard)
                   }
-                  commands={panelCommands({
-                    panel,
-                    name: names.get(panel.id) ?? '',
-                    dashboard,
-                    building,
-                    editing: editable,
-                    narrow,
-                    extensions,
-                    onNavigate: openInWorkbench ? onNavigate : undefined,
-                    messages,
-                  })}
+                  commands={
+                    readOnly
+                      ? undefined
+                      : panelCommands({
+                          panel,
+                          name: names.get(panel.id) ?? '',
+                          dashboard,
+                          building,
+                          editing: editable,
+                          narrow,
+                          extensions,
+                          onNavigate: openInWorkbench ? onNavigate : undefined,
+                          messages,
+                        })
+                  }
                   unreached={unreachedBy(panel, dashboard, filterModes)}
                   footer={
                     wiring &&

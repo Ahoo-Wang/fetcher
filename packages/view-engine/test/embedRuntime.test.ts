@@ -206,11 +206,14 @@ describe('setAutoRefresh', () => {
 
 describe('holdFilters', () => {
   it('keeps the reader off what the page holds: a value, 「清空」 and the grouping', async () => {
-    const { runtime } = await harness({
-      values: { region: ['CN'] },
+    const { runtime } = await harness();
+    expect(
+      runtime.holdFilters({ values: { region: ['CN'] }, unit: 'WEEK' }),
+    ).toEqual([]);
+    expect(runtime.getSnapshot().filters).toEqual({
+      values: { region: ['CN'], status: ['PENDING'] },
       unit: 'WEEK',
     });
-    runtime.holdFilters(['region'], true);
 
     expect(runtime.setFilterValue('region', ['EU'])).toEqual([
       expect.objectContaining({
@@ -232,18 +235,42 @@ describe('holdFilters', () => {
     });
   });
 
-  it('lets the page put what it holds, and lets go of it', async () => {
-    const { runtime, clock, scope } = await harness({
-      values: { region: ['CN'] },
-    });
-    runtime.holdFilters(['region']);
+  it('is in force from the first query when the board opens under it', async () => {
+    const { engine, store, source } = await engineWith();
+    const saved = await store.create(
+      {
+        definitionId: 'overview',
+        title: 'Board',
+        scope: 'shared',
+        config: board(),
+      },
+      { requestId: 'board' },
+    );
+    await engine.open(saved.id, { held: { values: { region: ['EU'] } } });
+    await flush();
 
-    expect(runtime.setFilters({ values: { region: ['EU'] } })).toEqual([]);
+    const asked = vi.mocked(source.paged).mock.calls;
+    expect(asked.length).toBeGreaterThan(0);
+    for (const [query] of asked)
+      expect(JSON.stringify(query.filter)).toContain('"EU"');
+  });
+
+  it('follows the page, puts a default back for null, and lets go', async () => {
+    const { runtime, clock, scope } = await harness();
+    runtime.holdFilters({ values: { region: ['CN'] } });
+    runtime.holdFilters({ values: { region: ['EU'] } });
     clock.advance(AUTO_APPLY_DELAY_MS);
     expect(scope('list')).toContain('"EU"');
 
+    // `null` is the filter's default: a required one's, or none at all.
+    runtime.holdFilters({ values: { region: null, status: null } });
+    expect(runtime.getSnapshot().filters.values).toEqual({
+      status: ['PENDING'],
+    });
+
     // Let go, it is the reader's again, value and all.
-    runtime.holdFilters([]);
+    runtime.holdFilters({ values: { region: ['EU'] } });
+    runtime.holdFilters(null);
     expect(runtime.getSnapshot().filters.values.region).toEqual(['EU']);
     expect(runtime.setFilterValue('region', ['CN'])).toEqual([]);
     expect(runtime.getSnapshot().filters.values.region).toEqual(['CN']);
@@ -252,11 +279,23 @@ describe('holdFilters', () => {
     expect(runtime.getSnapshot().filters.unit).toBe('DAY');
   });
 
+  it('answers what the board refuses of the page, every time it is asked, and takes the rest', async () => {
+    const { runtime } = await harness();
+    const held = { values: { ghost: ['x'], region: ['CN'] } };
+
+    const refused = runtime.holdFilters(held);
+    expect(refused.map(found => found.code)).toEqual([
+      'dashboard.filter.unknown',
+    ]);
+    expect(runtime.getSnapshot().filters.values.region).toEqual(['CN']);
+    expect(runtime.holdFilters(held)).toEqual(refused);
+  });
+
   it('sets aside a click that sets a filter the page holds: a press does what a panel without one does', async () => {
     const { runtime, panel } = await harness();
     expect(panel('chart').click).toEqual({ kind: 'filter', filter: 'region' });
 
-    runtime.holdFilters(['region']);
+    runtime.holdFilters({ values: { region: null } });
     expect(panel('chart').click).toBeNull();
     expect(runtime.crossFilter('chart', { warehouse: 'CN' })).toEqual({
       kind: 'none',
@@ -264,19 +303,17 @@ describe('holdFilters', () => {
     expect(runtime.getSnapshot().filters.values.region).toBeUndefined();
     // Holding the same again changes nothing.
     const panels = runtime.getSnapshot().panels;
-    runtime.holdFilters(['region']);
+    runtime.holdFilters({ values: { region: null } });
     expect(runtime.getSnapshot().panels).toBe(panels);
 
-    runtime.holdFilters([]);
+    runtime.holdFilters(null);
     expect(panel('chart').click).toEqual({ kind: 'filter', filter: 'region' });
     expect(runtime.crossFilter('chart', { warehouse: 'CN' }).kind).toBe('set');
   });
 
   it('counts what a text filter offers under what the page holds', async () => {
-    const { runtime, source } = await harness({
-      values: { status: ['SHIPPED'] },
-    });
-    runtime.holdFilters(['status']);
+    const { runtime, source } = await harness();
+    runtime.holdFilters({ values: { status: ['SHIPPED'] } });
 
     const offered = runtime.valueCandidates('region');
     expect(offered).not.toBeNull();

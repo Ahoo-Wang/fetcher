@@ -282,6 +282,8 @@ describe('EmbeddedDashboard', () => {
     expect(
       document.querySelector('[data-slot="panel-click-filter"]'),
     ).toBeNull();
+    // No 「⋯」 either: nothing on a board being read answers.
+    expect(document.querySelector('[data-slot="panel-menu"]')).toBeNull();
     expect(screen.queryByRole('button', { name: /^Edit$/ })).toBeNull();
     expect(onNavigate).not.toHaveBeenCalled();
   });
@@ -368,6 +370,41 @@ describe('EmbeddedDashboard', () => {
       (await screen.findByRole('group', { name: 'Region (set by this page)' }))
         .textContent,
     ).toContain('EU');
+  });
+
+  it('opens the reader’s filters at their defaults when the page names only what it holds', async () => {
+    const withDefault = board();
+    withDefault.fields = withDefault.fields.map(field =>
+      field.name === 'status' ? { ...field, default: ['PENDING'] } : field,
+    );
+    const { runtime } = embed({
+      engine: engineOf(withDefault),
+      filterModes: { region: 'locked' },
+      filterValues: { values: { region: ['CN'] } },
+    });
+
+    await waitFor(() =>
+      expect(runtime().getSnapshot().filters.values).toEqual({
+        region: ['CN'],
+        status: ['PENDING'],
+      }),
+    );
+  });
+
+  it('says what the board refuses of the page’s values, as a refused narrowing', async () => {
+    embed({
+      filterModes: { ghost: 'locked', region: 'locked' },
+      filterValues: { values: { ghost: ['x'], region: ['CN'] } },
+    });
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('This page could not narrow this view');
+    expect(alert.textContent).toContain('This dashboard has no filter ghost.');
+    // What it could take, it took.
+    expect(
+      (await screen.findByRole('group', { name: 'Region (set by this page)' }))
+        .textContent,
+    ).toContain('CN');
   });
 
   it('builds in place in the editable tier, for whoever may save the board', async () => {

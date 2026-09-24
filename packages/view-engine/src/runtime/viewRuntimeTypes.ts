@@ -39,6 +39,7 @@ import type { ExportRowsOptions, ExportedRows } from './exportRows.js';
 import type { ValueCandidateSource } from './valueCandidates.js';
 import type { WriteState } from './write.js';
 import type { DashboardRuntime } from './dashboardRuntime.js';
+import type { HeldFilters } from './dashboard/contract.js';
 
 /**
  * One open view. A small store with `subscribe` and `getSnapshot`, so React
@@ -407,4 +408,10 @@ export interface OpenOptions {
    * not take is left out. Nothing else reads it.
    */
   filters?: DashboardFilters | null;
+  /**
+   * The filters a host holds as the dashboard opens (`holdFilters`): in
+   * force from the first query, over `filters` or the defaults. Nothing
+   * else reads it.
+   */
+  held?: HeldFilters | null;
 }

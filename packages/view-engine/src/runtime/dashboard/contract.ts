@@ -125,16 +125,16 @@ export interface DashboardRuntime
   clearFilters(): void;
   /**
    * The filters a host holds — an embed's locked and hidden ones (D22) —
-   * and, with `grouping`, the time grouping: what they hold is the host's
-   * to put (`setFilters`, or `OpenOptions.filters` as the board opens), and
-   * the reader's commands leave them as they are: `setFilterValue` refuses
-   * one (`dashboard.filter.held`), `clearFilters` and `setGroupingUnit`
-   * pass it by, and a panel whose click sets one opens the follow-up menu
-   * instead (`DashboardPanelState.click`). Each call replaces the last; a
-   * filter let go keeps its value and is the reader's again. The values a
-   * text filter offers are counted under what the host holds.
+   * and what they hold (`HeldFilters`): the values go in at once, and the
+   * reader's commands leave them as they are — `setFilterValue` refuses one
+   * (`dashboard.filter.held`), `clearFilters` and `setGroupingUnit` pass it
+   * by, and a panel whose click sets one opens the follow-up menu instead
+   * (`DashboardPanelState.click`). Each call replaces the last; a filter let
+   * go keeps its value and is the reader's again. The values a text filter
+   * offers are counted under what the host holds. Answers what the board
+   * refused of the values, left out — every time it is asked.
    */
-  holdFilters(names: readonly string[], grouping?: boolean): void;
+  holdFilters(held: HeldFilters | null): Issue[];
   /**
    * Puts every filter at once, as a host's address has them: what the
    * board does not take is left out, and said in the answer.
@@ -172,6 +172,17 @@ export interface DashboardRuntime
    * when this board opens. `null` for one gone, unreadable or not a board.
    */
   destinationBoard(instanceId: string): Promise<DestinationBoard | null>;
+}
+
+/**
+ * What a host holds of a board's filters (`DashboardRuntime.holdFilters`):
+ * each filter named, at the value given — `null` for its default — and,
+ * with `unit` present, the time grouping at that unit (`null` for its
+ * default).
+ */
+export interface HeldFilters {
+  values: Readonly<Record<string, FilterValue | null>>;
+  unit?: AnalysisDateUnit | null;
 }
 
 /**

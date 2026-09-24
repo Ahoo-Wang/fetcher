@@ -11,6 +11,9 @@
  * limitations under the License.
  */
 
+import type { DashboardFilters } from '../../model/index.js';
+import type { HeldFilters } from '../../runtime/index.js';
+
 /**
  * How an embedding page offers each of a board's filters (D22, the
  * embedding half): Metabase's three states, one per filter.
@@ -75,4 +78,43 @@ function sorted(value: unknown): unknown {
       .sort(([a], [b]) => (a < b ? -1 : 1))
       .map(([key, entry]) => [key, sorted(entry)]),
   );
+}
+
+/**
+ * What a page's values come to (`EmbeddedDashboard.filterValues`): what it
+ * holds — each locked or hidden filter at the value it names, its default
+ * where it names none, and the time grouping likewise when that is held —
+ * and, apart, what the reader's filters open at. Those are the address's,
+ * read as a workbench reads `initialFilters`: when the page names any of
+ * them it is the whole of what they hold; when it names none, they start at
+ * their defaults. `null` for a page that holds nothing.
+ */
+export function pageFilters(
+  modes: BoardFilterModes | undefined,
+  values: DashboardFilters | null | undefined,
+): { held: HeldFilters | null; reader: DashboardFilters | null } {
+  const heldNames = heldFilters(modes);
+  const grouping = holdsGrouping(modes);
+  const given = values?.values ?? {};
+  const held: HeldFilters | null =
+    heldNames.length > 0 || grouping
+      ? {
+          values: Object.fromEntries(
+            heldNames.map(name => [name, given[name] ?? null]),
+          ),
+          ...(grouping ? { unit: values?.unit ?? null } : {}),
+        }
+      : null;
+  const readers = Object.entries(given).filter(
+    ([name]) => !heldNames.includes(name),
+  );
+  const unit = grouping ? undefined : values?.unit;
+  const reader: DashboardFilters | null =
+    readers.length > 0 || unit !== undefined
+      ? {
+          values: Object.fromEntries(readers),
+          ...(unit === undefined ? {} : { unit }),
+        }
+      : null;
+  return { held, reader };
 }

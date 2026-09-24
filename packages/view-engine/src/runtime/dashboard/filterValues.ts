@@ -26,6 +26,7 @@ import {
 import {
   admitFilters,
   bindingsOf,
+  defaultFilters,
   filtersOf,
   isViewPanel,
   mapGlobalFilter,
@@ -43,6 +44,7 @@ import type { RuntimeEnvironment } from '../environment.js';
 import { RefreshTimer } from '../refreshTimer.js';
 import type { ValueCandidateSource } from '../valueCandidates.js';
 import type { PanelView } from './children.js';
+import type { HeldFilters } from './contract.js';
 import {
   FilterCandidates,
   type CandidateSourceFactory,
@@ -110,25 +112,48 @@ export class FilterValues {
   }
 
   /**
-   * The filters a host holds (an embed's locked and hidden ones, D22), and
-   * whether it holds the time grouping: what they hold is the host's to put
-   * (`put`), and the reader's commands — a value set, a press, 「清空」, a
-   * unit picked — leave them as they are. A filter let go keeps its value
-   * and is the reader's again. Answers whether anything changed.
+   * The filters a host holds (an embed's locked and hidden ones, D22) and
+   * what they hold — `null` for a filter's default — and, with `unit`, the
+   * time grouping: the reader's commands — a value set, a press, 「清空」, a
+   * unit picked — leave them as they are. The values go in at once, as
+   * admitted: what the board refuses is left out and answered, every time
+   * it is asked, so a host that says the same again hears the same. Answers
+   * too whether which filters are held changed, which is what the panels'
+   * clicks read. A filter let go keeps its value and is the reader's again.
    */
-  hold(names: readonly string[], grouping: boolean): boolean {
-    const next = new Set(names);
-    const same =
-      next.size === this.held.size &&
-      [...next].every(name => this.held.has(name)) &&
-      grouping === this.heldUnit;
-    if (same) return false;
+  hold(held: HeldFilters | null): { refused: Issue[]; moved: boolean } {
+    const values = held?.values ?? {};
+    const next = new Set(Object.keys(values));
+    const grouping = held !== null && held.unit !== undefined;
+    const moved =
+      next.size !== this.held.size ||
+      [...next].some(name => !this.held.has(name)) ||
+      grouping !== this.heldUnit;
     this.held = next;
     this.heldUnit = grouping;
     // What was counted under the held values is counted again under the
     // new ones.
-    this.candidates.reset();
-    return true;
+    if (moved) this.candidates.reset();
+
+    const applied = this.host.applied();
+    const current = this.host.current();
+    const defaults = defaultFilters(applied);
+    const wanted: DashboardFilters = {
+      ...current,
+      values: { ...current.values },
+    };
+    for (const [name, value] of Object.entries(values)) {
+      const start = value ?? defaults.values[name];
+      if (start === undefined) delete wanted.values[name];
+      else wanted.values[name] = start;
+    }
+    if (grouping) {
+      const unit = held?.unit ?? defaults.unit;
+      if (unit !== undefined) wanted.unit = unit;
+    }
+    const { filters, refused } = admitFilters(applied, wanted, this.host.kinds);
+    if (!dequal(filters, current)) this.commit(filters);
+    return { refused, moved };
   }
 
   /** Whether the host holds this filter (`hold`). */
@@ -184,13 +209,17 @@ export class FilterValues {
       this.host.kinds,
     );
     if (refused.length > 0) return refused;
-    if (dequal(filters, this.host.current())) return [];
+    if (!dequal(filters, this.host.current())) this.commit(filters);
+    return [];
+  }
+
+  /** Shows what the filters hold at once, and runs it a moment later. */
+  private commit(filters: DashboardFilters): void {
     this.host.commit(filters);
     if (this.host.started()) {
       this.timer.stop();
       this.timer.sync(AUTO_APPLY_DELAY_MS);
     }
-    return [];
   }
 
   /**

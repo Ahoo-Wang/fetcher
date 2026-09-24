@@ -15,6 +15,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -23,9 +24,15 @@ import {
   audienceOf,
   type DashboardFilters,
   type FieldOption,
+  type Issue,
   type ViewKind,
 } from '../model/index.js';
-import type { AnyViewRuntime, DashboardRuntime } from '../runtime/index.js';
+import { admitFilters } from '../dashboard/index.js';
+import type {
+  AnyViewRuntime,
+  DashboardRuntime,
+  HeldFilters,
+} from '../runtime/index.js';
 import {
   useDashboard,
   useLeaveGuard,
@@ -33,6 +40,7 @@ import {
   useSaveCommands,
   useViewRuntime,
 } from '../react/index.js';
+import { Alert, AlertDescription, AlertTitle } from './components/alert.js';
 import { Button } from './components/button.js';
 import type { PanelHeadingLevel } from './DashboardPanel.js';
 import { DashboardBoard, type BoardReading } from './dashboard/Board.js';
@@ -40,9 +48,7 @@ import { useDashboardExtensions } from './dashboard/building.js';
 import { DashboardTabs } from './dashboard/DashboardTabs.js';
 import { DashboardEditExtensionsContext } from './dashboard/extensions.js';
 import {
-  heldFilters,
-  holdsGrouping,
-  sameValue,
+  pageFilters,
   type DashboardFilterMode,
 } from './dashboard/filterModes.js';
 import { EmbedFrame } from './embed/EmbedFrame.js';
@@ -84,12 +90,15 @@ export interface EmbeddedDashboardProps extends EmbedBaseProps {
   /** The time grouping's mode, likewise; `editable` when left out. */
   groupingMode?: DashboardFilterMode;
   /**
-   * What the filters hold, as the host's address has them (D22 F): in force
-   * as the board opens, and put again whenever what it says changes — a
-   * customer page moving to the next customer, the host's back button — so
-   * a host that writes `onFiltersChange` into its address and reads this
-   * back from it has the board follow the address. A new object saying the
-   * same thing changes nothing. What the board does not take is left out.
+   * What the filters hold, as the page has them (D22 F). A locked or hidden
+   * filter holds what this names — its default where it names nothing — and
+   * follows it as it changes: a customer page moving to the next customer.
+   * The reader's filters open at what it names of them, read once as the
+   * board opens, as `DashboardWorkbench` reads `initialFilters`: when it
+   * names any of them it is the whole of what they hold; when it names none
+   * they start at their defaults. What the board does not take is left out,
+   * and what it refuses of a locked or hidden filter is said above the
+   * board, as a refused narrowing is.
    */
   filterValues?: DashboardFilters | null;
   /**
@@ -109,6 +118,9 @@ export interface EmbeddedDashboardProps extends EmbedBaseProps {
   optionsFor?(remote: string): FieldOption[] | undefined;
 }
 
+/** Nothing refused, as one object. */
+const NO_ISSUES: Issue[] = [];
+
 /** The one kind this entry draws; a record or analysis is `EmbeddedView`'s. */
 const DASHBOARD: readonly ViewKind[] = ['dashboard'];
 
@@ -121,18 +133,26 @@ const DASHBOARD: readonly ViewKind[] = ['dashboard'];
  * view named here is refused as one this entry cannot show.
  */
 export function EmbeddedDashboard(props: EmbeddedDashboardProps) {
-  const { engine, instanceId, filterValues, initialTab } = props;
-  // Where the board opens and what its filters hold as it does, read as it
-  // opens: a later change of `filterValues` is followed by the board below.
-  const latest = useRef({ filterValues, initialTab });
+  const { engine, instanceId } = props;
+  // Where the board opens and what its filters hold as it does — the
+  // page's held filters among them, so the first query is already under
+  // them — read as it opens; what the page holds is followed below.
+  const latest = useRef(props);
   useEffect(() => {
-    latest.current = { filterValues, initialTab };
-  }, [filterValues, initialTab]);
+    latest.current = props;
+  });
   const opening = useCallback(() => {
-    const { filterValues: filters, initialTab: tab } = latest.current;
+    const {
+      filterValues: values,
+      filterModes: filters,
+      groupingMode: grouping,
+      initialTab: tab,
+    } = latest.current;
+    const { held, reader } = pageFilters({ filters, grouping }, values);
     return {
       ...(tab == null ? {} : { tab }),
-      ...(filters == null ? {} : { filters }),
+      ...(reader ? { filters: reader } : {}),
+      ...(held ? { held } : {}),
     };
   }, []);
   const opened = useOpenView(engine, instanceId, null, opening);
@@ -173,31 +193,30 @@ function EmbeddedBoard({
   const commands = useSaveCommands(engine, runtime);
   const reads = interaction !== 'read-only';
 
-  // What the page holds, handed to the runtime, which keeps every command of
-  // the reader's off it. Keyed by content, so a host writing its modes out
-  // in render does not re-hold them every time.
+  // What the page holds, handed to the runtime, which keeps every command
+  // of the reader's off it — followed as the page changes it (a customer
+  // page moving to the next customer), keyed by what it says, so a host
+  // writing its modes and values out in render does not hold them again
+  // every time. What the board refuses of it is said, as a refused scope
+  // is (D17-5): the page asked for one customer and must not quietly get
+  // everyone's.
   const modes = { filters: filterModes, grouping: groupingMode };
-  const held = heldFilters(modes);
-  const heldGrouping = holdsGrouping(modes);
-  const heldKey = JSON.stringify([held, heldGrouping]);
+  const heldKey = JSON.stringify(pageFilters(modes, filterValues).held);
   useEffect(() => {
-    const [names, grouping] = JSON.parse(heldKey) as [string[], boolean];
-    runtime.holdFilters(names, grouping);
+    runtime.holdFilters(JSON.parse(heldKey) as HeldFilters | null);
   }, [runtime, heldKey]);
-
-  // What the host's address says, followed: put again only when it says
-  // something else than it last said. As the board opens it went in with
-  // the opening, so the first reading is only noted.
-  const said = useRef<{ runtime: DashboardRuntime; values: unknown } | null>(
-    null,
-  );
-  useEffect(() => {
-    const last = said.current;
-    said.current = { runtime, values: filterValues ?? null };
-    if (last?.runtime !== runtime) return;
-    if (sameValue(last.values, filterValues ?? null)) return;
-    runtime.setFilters(filterValues ?? { values: {} });
-  }, [runtime, filterValues]);
+  // The refusal is the kernel's answer to the page's values over the board
+  // on screen, worked out here rather than kept from the command: the same
+  // question, the same answer, whenever either side moves.
+  const applied = state?.applied;
+  const refused = useMemo(() => {
+    const held = JSON.parse(heldKey) as HeldFilters | null;
+    if (!held || !applied) return NO_ISSUES;
+    const values = Object.fromEntries(
+      Object.entries(held.values).filter(([, value]) => value !== null),
+    ) as DashboardFilters['values'];
+    return admitFilters(applied, { values }, runtime.kinds).refused;
+  }, [applied, heldKey, runtime]);
 
   // What the filters hold and the tab on screen, told to the host as they
   // change — the board opening included — for its address.
@@ -256,7 +275,7 @@ function EmbeddedBoard({
   const reading: BoardReading = {
     headingLevel: panelLevel,
     panelTitles: withPanelTitles,
-    pressable: reads,
+    readOnly: !reads,
     openInWorkbench,
     filterModes: modes,
   };
@@ -292,6 +311,12 @@ function EmbeddedBoard({
           </Button>
         )}
       </EmbedHead>
+      {refused.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTitle>{messages.label('label.scope.refused')}</AlertTitle>
+          <AlertDescription>{messages.issues(refused)}</AlertDescription>
+        </Alert>
+      )}
       {canEdit && <WriteOutcome commands={commands} title={title} />}
       {errors.length > 0 && <ErrorStrip issues={errors} />}
       <WarningStrip issues={warnings} />

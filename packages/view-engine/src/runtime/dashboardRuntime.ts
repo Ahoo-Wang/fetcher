@@ -24,10 +24,7 @@ import {
   type ViewInstance,
   type ViewScope,
 } from '../model/index.js';
-import {
-  isPlainObject,
-  type FieldKindRegistry,
-} from '../filter/index.js';
+import { isPlainObject, type FieldKindRegistry } from '../filter/index.js';
 import {
   NO_REFUSAL,
   scopeRefusal,
@@ -89,6 +86,7 @@ export type {
 export type { PanelGrouping } from './dashboard/grouping.js';
 export type {
   DashboardNavigation,
+  HeldFilters,
   DashboardRuntime,
   DashboardRuntimeOptions,
   DashboardRuntimeState,

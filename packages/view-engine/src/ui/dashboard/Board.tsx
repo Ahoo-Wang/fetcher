@@ -59,7 +59,7 @@ export interface DashboardBoardProps {
   onRenderFailure?: RenderFailureHandler;
   /**
    * How a page that embeds the board reads it (D22): the grid's switches —
-   * the panels' heading level and titles, whether a press does anything,
+   * the panels' heading level and titles, whether the board is only read,
    * whether 在工作台中打开 is offered — and each filter's mode. The
    * workbench's reading when left out.
    */
@@ -71,7 +71,7 @@ export type BoardReading = Pick<
   DashboardGridProps,
   | 'headingLevel'
   | 'panelTitles'
-  | 'pressable'
+  | 'readOnly'
   | 'openInWorkbench'
   | 'filterModes'
 >;

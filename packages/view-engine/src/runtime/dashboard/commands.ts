@@ -31,6 +31,7 @@ import type {
   NewPanel,
   NewPanelPlacement,
 } from '../../dashboard/index.js';
+import type { HeldFilters } from './contract.js';
 import type { DashboardEditing, DashboardFilterEditing } from './editing.js';
 import type { FilterValues } from './filterValues.js';
 import type {
@@ -167,10 +168,13 @@ export abstract class BoardCommands
   setFilters(filters: DashboardFilters): Issue[] {
     return this.disposed ? [] : this.values.put(filters);
   }
-  holdFilters(names: readonly string[], grouping = false): void {
+  holdFilters(held: HeldFilters | null): Issue[] {
+    if (this.disposed) return [];
+    const { refused, moved } = this.values.hold(held);
     // A click that sets a filter the host now holds is set aside, and one
     // let go is in force again: the panels' clicks are read again.
-    if (!this.disposed && this.values.hold(names, grouping)) this.reread();
+    if (moved) this.reread();
+    return refused;
   }
   wiredOptions(name: string): FieldOption[] | null {
     return this.values.optionsOf(name);
@@ -199,8 +203,13 @@ export abstract class BoardCommands
    * Where a board opens, and what its filters hold as it does
    * (`ViewEngine.open`: a host's address says both).
    */
-  opensOn(tab: string | null, filters?: DashboardFilters | null): void {
+  opensOn(
+    tab: string | null,
+    filters?: DashboardFilters | null,
+    held?: HeldFilters | null,
+  ): void {
     if (tab !== null) this.showTab(tab);
     if (filters) this.setFilters(filters);
+    if (held) this.holdFilters(held);
   }
 }
