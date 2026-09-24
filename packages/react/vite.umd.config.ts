@@ -24,7 +24,7 @@ export default defineConfig({
       entry: 'src/index.ts',
       name: 'FetcherReact',
       formats: ['umd'],
-      fileName: () => 'index.umd.js',
+      fileName: () => 'index.umd.cjs',
     },
   },
 });

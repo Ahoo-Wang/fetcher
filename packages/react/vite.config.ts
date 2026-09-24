@@ -13,6 +13,7 @@
 
 import { defineConfig } from 'vite';
 import dts from 'unplugin-dts/vite';
+import { legacyUmdPath } from '../../scripts/legacy-umd-path.mjs';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
 
@@ -67,8 +68,16 @@ export default defineConfig({
     },
   },
   plugins: [
+    // 5.x: also write the UMD bundle to its old dist/index.umd.js URL.
+    legacyUmdPath(),
     dts({
-      outDirs: 'dist',
+      // `.d.cts` for the `require` condition and `.d.ts` for `import`, so
+      // node16/nodenext consumers get CommonJS and ES module types for the
+      // matching build. A primary out dir with a module format makes the
+      // plugin write every relative specifier with its runtime extension
+      // (`./fetcher.js` in `.d.ts`, `./fetcher.cjs` in `.d.cts`), whatever
+      // the source wrote.
+      outDirs: [{ dir: 'dist', moduleFormat: 'cjs' }, 'dist'],
       tsconfigPath: './tsconfig.json',
     }),
     react(),
