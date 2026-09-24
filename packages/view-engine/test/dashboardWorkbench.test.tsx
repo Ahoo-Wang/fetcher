@@ -291,7 +291,7 @@ describe('DashboardWorkbench', () => {
       ).toBe('true'),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Manage views' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Manage dashboards' }));
     const manager = await screen.findByRole('dialog');
     const row = Array.from(
       manager.querySelectorAll('[data-slot="view-manager-row"]'),
@@ -300,6 +300,11 @@ describe('DashboardWorkbench', () => {
     ) as HTMLElement;
     fireEvent.click(within(row).getByRole('button', { name: 'Delete' }));
     const confirm = await screen.findByRole('alertdialog');
+    // What deleting a board costs, said as a board's (D26 Q34): the
+    // analyses made inside it go with it.
+    expect(confirm.textContent).toContain(
+      'Only the dashboard is removed: its records and the saved views its panels show stay, and the analyses made inside it go with it.',
+    );
     fireEvent.click(within(confirm).getByRole('button', { name: 'Delete' }));
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
 
@@ -316,13 +321,12 @@ describe('DashboardWorkbench', () => {
   });
 
   /**
-   * A dashboard has no result of its own — every panel runs its own query —
-   * so the bar over the panels reads the applied config rather than a
-   * result's, and shows once any panel has been asked. Reading a result that
-   * is always null, it never showed at all.
+   * D27: a board draws no 「正在显示」 band. Its filters run as they change,
+   * so the filter bar is what the panels show; a standing condition the
+   * board still carries reaches the panels all the same.
    */
-  it('says what the panels were asked under', async () => {
-    const { engine } = setup({
+  it('draws no applied band: the filter bar is what the panels show (D27)', async () => {
+    const { engine, source } = setup({
       ...overview,
       config: dashboardConfig({
         fields: [{ name: 'region', label: 'Region', kind: 'string' }],
@@ -348,42 +352,19 @@ describe('DashboardWorkbench', () => {
     );
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
 
-    const bar = screen.getByRole('region', { name: 'Showing' });
-    expect(bar.textContent).toContain('Region');
-    expect(bar.textContent).toContain('north');
-  });
-
-  it('draws the applied band only for a standing condition the bar does not hold', async () => {
-    const { engine } = setup({
-      ...overview,
-      config: {
-        ...overview.config,
-        filter: {
-          op: 'and',
-          children: [{ field: 'region', operator: 'NE', value: 'CN' }],
-        },
-      } as typeof overview.config,
-    });
-
-    render(
-      <DashboardWorkbench
-        engine={engine}
-        definitionId="overview"
-        instanceId="overview-1"
-      />,
+    expect(screen.getByRole('region', { name: 'Filters' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Showing' })).toBeNull();
+    expect(JSON.stringify(vi.mocked(source.paged).mock.lastCall)).toContain(
+      '"north"',
     );
-    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
-
-    expect(
-      screen.getByRole('region', { name: 'Showing' }).textContent,
-    ).toContain('Region');
   });
 
   /**
    * D26 Q31: a board stored before batch C opens with what no filter could
-   * hold as its fixed scope. The band says it, worn as the board's and with
-   * no ✕ — no reader takes it out — while the leaf a filter could hold is
-   * that filter's default, the reader's to change as any filter's value.
+   * hold as its fixed scope. The filter bar's row says it (D27), as the
+   * board's 「Fixed scope」 and with no ✕ — no reader takes it out — while
+   * the leaf a filter could hold is that filter's default, the reader's to
+   * change as any filter's value.
    */
   it('shows a pre-C board’s fixed scope read-only, beside the reader’s own filters', async () => {
     const { engine, source } = setup({
@@ -411,13 +392,20 @@ describe('DashboardWorkbench', () => {
     );
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
 
-    const band = screen.getByRole('region', { name: 'Showing' });
-    const badges = [...band.querySelectorAll('[data-slot="badge"]')];
-    expect(badges.map(badge => badge.textContent?.trim())).toEqual([
-      'Region is not north Fixed by the dashboard',
+    const bar = screen.getByRole('region', { name: 'Filters' });
+    const fixed = within(bar).getByRole('group', { name: 'Fixed scope' });
+    expect(
+      fixed.querySelector('[data-slot="filter-reading"]')?.textContent,
+    ).toBe('Region is not north');
+    // Its one button says why it stays, and takes nothing out.
+    expect(
+      within(fixed)
+        .getAllByRole('button')
+        .map(button => button.getAttribute('aria-label')),
+    ).toEqual([
+      'The dashboard itself holds every panel to this; it cannot be changed here.',
     ]);
-    expect(badges[0].hasAttribute('data-fixed')).toBe(true);
-    expect(within(band).queryAllByRole('button')).toEqual([]);
+    expect(screen.queryByRole('region', { name: 'Showing' })).toBeNull();
     // Both halves reach the panel: the fixed scope, and the filter's value.
     const asked = JSON.stringify(vi.mocked(source.paged).mock.lastCall);
     expect(asked).toContain('"north"');
@@ -436,7 +424,10 @@ describe('DashboardWorkbench', () => {
     expect(again).toContain('"north"');
     expect(again).not.toContain('"CN"');
     expect(
-      screen.getByRole('region', { name: 'Showing' }).textContent,
+      within(screen.getByRole('region', { name: 'Filters' })).getByRole(
+        'group',
+        { name: 'Fixed scope' },
+      ).textContent,
     ).toContain('north');
     expect(runtime.getSnapshot().dirty).toBe(false);
   });
@@ -479,7 +470,7 @@ describe('DashboardWorkbench', () => {
       target: { value: 'Night shift' },
     });
     fireEvent.click(
-      within(dialog).getByRole('button', { name: 'Create view' }),
+      within(dialog).getByRole('button', { name: 'Create dashboard' }),
     );
 
     await landed(store);
@@ -566,7 +557,7 @@ describe('DashboardWorkbench', () => {
       });
       fireEvent.click(within(dialog).getByRole('radio', { name: 'Everyone' }));
       fireEvent.click(
-        within(dialog).getByRole('button', { name: 'Create view' }),
+        within(dialog).getByRole('button', { name: 'Create dashboard' }),
       );
 
       await landed(store);
@@ -589,7 +580,7 @@ describe('DashboardWorkbench', () => {
       });
       fireEvent.click(within(dialog).getByRole('radio', { name: 'Everyone' }));
       fireEvent.click(
-        within(dialog).getByRole('button', { name: 'Create view' }),
+        within(dialog).getByRole('button', { name: 'Create dashboard' }),
       );
 
       expect(
@@ -621,7 +612,7 @@ describe('DashboardWorkbench', () => {
       });
       fireEvent.click(within(dialog).getByRole('radio', { name: 'Only me' }));
       fireEvent.click(
-        within(dialog).getByRole('button', { name: 'Create view' }),
+        within(dialog).getByRole('button', { name: 'Create dashboard' }),
       );
 
       await landed(store);
@@ -642,13 +633,13 @@ describe('DashboardWorkbench', () => {
         definitionId="overview"
         instanceId="missing"
         messages={{
-          'label.view.unopenable': '打不开这个视图',
-          'label.scope.group.personal': '仅自己',
+          'label.dashboard.unopenable': '打不开这个仪表盘',
+          'label.dashboard.group.personal': '仅自己',
         }}
       />,
     );
 
-    expect(await screen.findByText('打不开这个视图')).toBeDefined();
+    expect(await screen.findByText('打不开这个仪表盘')).toBeDefined();
     // The sidebar is named by the definition rather than by the catalogue;
     // what it says about itself still comes from the wording handed in.
     expect(screen.getByRole('navigation', { name: 'Overview' })).toBeDefined();
@@ -793,6 +784,44 @@ describe('DashboardWorkbench', () => {
     );
     expect(screen.queryByRole('button', { name: '1 more' })).toBeNull();
     // Nothing ran: an error blocks the apply that would have created panels.
+    expect(source.paged).not.toHaveBeenCalled();
+  });
+
+  /**
+   * X-03: the kernel says a filter by its key, and a filter added on the bar
+   * is keyed `filter-1` — a word no reader typed. The status line says it by
+   * its name on the bar.
+   */
+  it('says a filter by its name on the bar, never its key (X-03)', async () => {
+    const { engine, source } = setup({
+      ...overview,
+      config: dashboardConfig({
+        fields: [
+          {
+            name: 'filter-1',
+            label: 'Shipped on',
+            kind: 'datetime',
+            required: true,
+          },
+        ],
+        panels: [panel({ title: 'Pending' })],
+      }),
+    });
+
+    render(
+      <DashboardWorkbench
+        engine={engine}
+        definitionId="overview"
+        instanceId="overview-1"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain(
+        'The filter Shipped on always has a value, so it needs a default to start at.',
+      ),
+    );
+    expect(screen.getByRole('alert').textContent).not.toContain('filter-1');
     expect(source.paged).not.toHaveBeenCalled();
   });
 

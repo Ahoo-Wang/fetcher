@@ -33,7 +33,7 @@ import { LineAlert } from './alerts.js';
 import { IconButton } from './IconButton.js';
 import { NewViewControl, type NewViewCommand } from './workbench/NewView.js';
 import { SidebarItem } from './variants.js';
-import { KIND_ICON } from './kinds.js';
+import { KIND_ICON, useKindWord } from './kinds.js';
 import { SystemMark } from './SystemMark.js';
 import { SPACE, TEXT_UI } from './layout.js';
 import { useViewMessages } from './MessagesProvider.js';
@@ -120,6 +120,7 @@ export function ViewList({
   collapseRef,
 }: ViewListProps) {
   const messages = useViewMessages();
+  const word = useKindWord();
   const headingId = useId();
   return (
     <nav
@@ -172,7 +173,7 @@ export function ViewList({
               command={create}
               trigger={props => (
                 <IconButton
-                  label={messages.label('label.view.new')}
+                  label={messages.label(word('label.view.new'))}
                   variant="ghost"
                   size="icon-sm"
                   {...props}
@@ -184,7 +185,7 @@ export function ViewList({
           )}
           {onManage && (
             <IconButton
-              label={messages.label('label.manage.open')}
+              label={messages.label(word('label.manage.open'))}
               variant="ghost"
               size="icon-sm"
               onClick={onManage}
@@ -239,6 +240,7 @@ function ViewListBody({
   onRetry?(): void;
 }) {
   const messages = useViewMessages();
+  const word = useKindWord();
   // The way to ask again, drawn wherever the failure is said.
   const retry = onRetry && (
     <Button variant="outline" size="xs" onClick={onRetry}>
@@ -288,7 +290,7 @@ function ViewListBody({
           data-slot="view-list-empty"
           className={cn('text-sidebar-foreground/70 px-1.5', TEXT_UI)}
         >
-          {messages.label('label.view.none')}
+          {messages.label(word('label.view.none'))}
         </p>
       )
     );
@@ -341,6 +343,7 @@ function ViewGroup({
   onOpen(instanceId: string): void;
 }) {
   const messages = useViewMessages();
+  const word = useKindWord();
   const labelId = useId();
   return (
     <div
@@ -362,7 +365,7 @@ function ViewGroup({
         data-slot="view-group-heading"
         className={cn('text-sidebar-foreground/70 px-1.5 font-medium', TEXT_UI)}
       >
-        {messages.label(`label.scope.group.${audience}`)}
+        {messages.label(word(`label.scope.group.${audience}`))}
       </h2>
       {items.map(item => (
         <ViewListItem

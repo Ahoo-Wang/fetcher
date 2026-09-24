@@ -79,7 +79,7 @@ export function SidebarColumn({
           showCloseButton={false}
           // Dimmed, not blurred: the result above is what a pick here
           // redraws, and a reader looks up to see it change.
-          overlayClassName="backdrop-blur-none"
+          overlayClassName="supports-backdrop-filter:backdrop-blur-none"
           // The keyboard lands where the panel's own levels land it: on the
           // heading it is sent to (`tabIndex={-1}`), which exists only once
           // the drawer has drawn its content — the panel's own effect runs
