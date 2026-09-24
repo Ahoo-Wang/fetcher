@@ -1,32 +1,56 @@
 ---
 name: fetcher-react-hooks
 description: >
-  Build React request and state flows with `@ahoo-wang/fetcher-react`: promise state, `useFetcher`, generic queries, storage/event hooks, CoSec context, debouncing, AbortController, and unmount/race safety. Use when a task mentions these hooks or Fetcher-backed React state.
+  Drive React component state from requests with `@ahoo-wang/fetcher-react`: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, CoSec `SecurityProvider`/`RouteGuard`, and hooks generated from decorator services. Use for loading/error state, abort on unmount, stale-result races or search-as-you-type. Missing Wow or data-monitor hooks after upgrading: use fetcher-v6-migration.
 ---
 
 # fetcher-react-hooks
 
-## Workflow
+## Decisions
 
-1. Choose the lowest hook layer that matches the task: promise state, generic execution, Fetcher HTTP, or query helpers.
-2. Pass `PromiseSupplier` functions to `execute`; do not pass raw promises.
-3. Use `setQuery` to update query state and `execute()` to rerun current Fetcher queries.
-4. Keep abort, unmount safety, and stale-result behavior explicit in examples and tests.
-5. Load `references/api.md` for hook signatures, state machine details, storage hooks, event hooks, and generated hook helpers.
-6. Wow query hooks moved to `@ahoo-wang/wow-react` in the Wow repository; point Wow CQRS work there.
+- **Pick the lowest layer that fits**: `usePromiseState` (raw state) → `useExecutePromise` (execute/abort, unmount-safe) → `useFetcher` (one Fetcher request) / `useQuery` (your own query function) → `useFetcherQuery` (POST a query object). Debounced variants wrap each.
+- **Entry points**: the root entry has everything; `@ahoo-wang/fetcher-react/core` (state, query, debounce, utility hooks) and `@ahoo-wang/fetcher-react/fetcher` (`useFetcher`, `useFetcherQuery` and their debounced forms) are ESM-only subpaths without CoSec, storage or event-bus code.
+- **From a decorator service**: `createQueryApiHooks({ api: service })` or `createExecuteApiHooks({ api: service })` generate `use<Method>` hooks instead of hand-written wrappers.
 
-## Key Practices
+## Gotchas a capable model gets wrong
 
-- Separate query state from rendering state in reusable components.
-- Use Fetcher-based query variants when the backend endpoint accepts POST query objects.
+- `useFetcher`'s `result` is the whole `FetchExchange` unless you pass `resultExtractor: ResultExtractors.Json`; `useFetcherQuery` defaults to JSON and sends `POST` with the query as the body.
+- `useQuery`, `useFetcherQuery` and `useQueryState` default `autoExecute` to `true` (run on mount); the debounced query hooks run automatically only with an explicit `autoExecute: true`.
+- `execute` takes a `PromiseSupplier` — `(abortController) => promise` — never a promise, and resolves to `void`: read data from `result` or `onSuccess`. Errors are kept in `error`, not thrown, unless `propagateError: true`.
+- Query hooks: change input with `setQuery` (it re-runs while `autoExecute` is on); `execute()` takes no arguments.
+- Debounced hooks expose `run`, `cancel` and `isPending()` (a function); `debounce: { delay }` is required.
+- `createExecuteApiHooks` hooks do not pass the AbortController to the service method, so `abort()` only drops the state update.
+- `useEventSubscription` re-subscribes when the `handler` object identity changes — memoize it.
+
+## Minimal example
+
+```tsx
+import { useFetcherQuery } from '@ahoo-wang/fetcher-react';
+
+export function Search() {
+  const { loading, result, error, setQuery } = useFetcherQuery<
+    { keyword: string },
+    { items: string[] }
+  >({ url: '/api/search', initialQuery: { keyword: '' } });
+  if (error) return <p>{String(error)}</p>;
+  return (
+    <>
+      <input onChange={e => setQuery({ keyword: e.target.value })} />
+      {loading ? '…' : result?.items.join(', ')}
+    </>
+  );
+}
+```
 
 ## References
 
-- `references/api.md`: Detailed package API, examples, and edge-case guidance. Load it only when the task needs hook architecture, PromiseStatus transitions, hook signatures, utility hooks, storage hooks, event hooks, and API hook generation.
+- `references/api.md`: hook signatures and return fields, `PromiseStatus` transitions, debounced options, storage and event hooks, API hook generation and CoSec components. Load it for exact options.
 
 ## Related Skills
 
-- $fetcher-integration: Use for core Fetcher request configuration.
-- $fetcher-storage: Use for the underlying storage abstraction.
-- $fetcher-eventbus: Use for event bus behavior behind event subscriptions.
-- $fetcher-decorator-service: Use for decorator APIs behind generated hook helpers.
+- $fetcher-integration: the Fetcher, interceptors and result extractors underneath.
+- $fetcher-decorator-service: services that `createExecuteApiHooks` / `createQueryApiHooks` wrap.
+- $fetcher-storage: `KeyStorage` behind `useKeyStorage`.
+- $fetcher-eventbus: buses behind `useEventSubscription`.
+- $fetcher-cosec-auth: tokens behind `SecurityProvider`.
+- $fetcher-v6-migration: hooks removed in 6.0.

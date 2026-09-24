@@ -13,7 +13,7 @@
 - [Generic Query Hooks](#generic-query-hooks)
   - [useQuery](#usequery)
   - [useQueryState](#usequerystate)
-- [Wow Query Hooks (moved)](#wow-query-hooks-moved)
+- [Removed in 6.0 and Subpath Entries](#removed-in-60-and-subpath-entries)
 - [Utility Hooks](#utility-hooks)
   - [useMounted](#usemounted)
   - [useLatest](#uselatest)
@@ -57,6 +57,7 @@ enum PromiseStatus {
 ```
 
 All promise hooks share this state: `status`, `loading` (boolean), `result`, `error`.
+The error type parameter `E` defaults to `FetcherError` (from `@ahoo-wang/fetcher`).
 
 ---
 
@@ -65,6 +66,7 @@ All promise hooks share this state: `status`, `loading` (boolean), `result`, `er
 ### usePromiseState
 
 Raw state management for promises without execution logic. Provides `setLoading`, `setSuccess`, `setError`, `setIdle` transitions with unmount-safe checks.
+Options: `initialStatus` (default `PromiseStatus.IDLE`), `onSuccess`, `onError`.
 
 ```tsx
 const {
@@ -78,15 +80,15 @@ const {
   setIdle,
 } = usePromiseState<string>();
 
-setLoading(); // status = LOADING, error cleared
+setLoading(); // status = LOADING, error cleared, previous result kept
 setSuccess('data'); // status = SUCCESS, result set (async, calls onSuccess)
-setError(new Error()); // status = ERROR, error set (async, calls onError)
+setError(err); // status = ERROR, error set, result cleared (async, calls onError)
 setIdle(); // status = IDLE, all cleared
 ```
 
 ### useExecutePromise
 
-Manages async operations with race condition protection, AbortController, and unmount safety. Race protection is built on `useRequestId` — each execution gets an id, and stale resolutions are discarded. Manual cancellation invalidates the id even when the supplier ignores its signal, so late results and errors cannot restore state. Accepts a `PromiseSupplier<R>`:
+Manages async operations with race condition protection, AbortController, and unmount safety. Options: `propagateError` (default off: `execute()` resolves even on error), `onAbort`, plus `onSuccess`/`onError`/`initialStatus`. Returns `status`, `loading`, `result`, `error`, `execute`, `reset`, `abort`; unmount aborts the in-flight request. Race protection is built on `useRequestId` — each execution gets an id, and stale resolutions are discarded. Manual cancellation invalidates the id even when the supplier ignores its signal, so late results and errors cannot restore state. Accepts a `PromiseSupplier<R>`:
 
 ```typescript
 type PromiseSupplier<R> = (abortController: AbortController) => Promise<R>;
@@ -131,7 +133,12 @@ reset(); // reset to IDLE
 
 ### useFetcher
 
-HTTP-specific hook wrapping Fetcher with `FetchExchange` support. Exchange
+HTTP-specific hook wrapping Fetcher with `FetchExchange` support. Options are
+`RequestOptions` (`resultExtractor`, `attributes`) + `fetcher` (name or instance,
+default `fetcherRegistrar.default`) + the `useExecutePromise` options.
+`execute(request: FetchRequest)` sets `request.abortController` itself.
+**The default `resultExtractor` is the Fetcher default (`ResultExtractors.Exchange`),
+so `result` is the `FetchExchange` unless you pass `ResultExtractors.Json`.** Exchange
 snapshots follow the same cancellation and stale-request rules as result state.
 An exchange remains visible while its result is being extracted. When the current
 execution settles after its controller was externally aborted, the exchange is
@@ -159,7 +166,7 @@ function UserProfile({ userId }: { userId: string }) {
 
 ### useFetcherQuery
 
-POST-based query hook with `setQuery`/`getQuery` management. `execute()` takes no argument -- it uses the current query from `getQuery()`.
+POST-based query hook with `setQuery`/`getQuery` management. `url` is required; each run sends `POST url` with the query as the JSON body. `resultExtractor` defaults to `ResultExtractors.Json` here, and `autoExecute` defaults to `true` (runs on mount with `initialQuery`). A controlled `query` option is also accepted. `execute()` takes no argument -- it uses the current query from `getQuery()` and does nothing while the query is `undefined`.
 
 ```tsx
 const { loading, result, execute, setQuery, getQuery } = useFetcherQuery<
@@ -171,7 +178,7 @@ const { loading, result, execute, setQuery, getQuery } = useFetcherQuery<
   autoExecute: true,
 });
 
-setQuery({ keyword: 'hello', limit: 10 }); // auto-executes if autoExecute
+setQuery({ keyword: 'hello', limit: 10 }); // executes immediately while autoExecute is on
 execute(); // manual re-execute with current query
 ```
 
@@ -183,14 +190,14 @@ execute(); // manual re-execute with current query
 
 ### useQuery
 
-Generic query hook with a custom `execute` function and request cancellation.
+Generic query hook with a custom `execute(query, attributes?, abortController?)` function and request cancellation. `autoExecute` defaults to `true`; `attributes` is an option passed through as the second argument. The returned `execute()` takes no argument.
 
 ```tsx
 const { loading, result, execute, setQuery } = useQuery<UserQuery, User>({
   initialQuery: { id: '1' },
   execute: async (query, attributes, abortController) => {
     const res = await fetch(`/api/users/${query.id}`, {
-      signal: abortController.signal,
+      signal: abortController?.signal,
     });
     return res.json();
   },
@@ -200,7 +207,7 @@ const { loading, result, execute, setQuery } = useQuery<UserQuery, User>({
 
 ### useQueryState
 
-Standalone query state management (getQuery/setQuery) with optional autoExecute.
+Standalone query state management; returns only `{ getQuery, setQuery }`. `execute` is required (`(query) => Promise<void>`) and `autoExecute` defaults to `true`.
 When `query` is supplied, equal committed values stay deduplicated during
 StrictMode replay; this hook does not cancel `execute`. `useQuery` and
 `useFetcherQuery` restart their cancelled automatic requests during replay.
@@ -218,14 +225,10 @@ const { getQuery, setQuery } = useQueryState<UserQuery>({
 
 ---
 
-## Wow Query Hooks (moved)
+## Removed in 6.0 and Subpath Entries
 
-The Wow query hooks (`useListQuery`, `usePagedQuery`, `useSingleQuery`,
-`useCountQuery`, `useListStreamQuery` and their `useFetcher*` variants) moved to
-`@ahoo-wang/wow-react` in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript),
-versioned with Wow. It builds on `@ahoo-wang/fetcher-react/core` and
-`@ahoo-wang/fetcher-react/fetcher`. `@ahoo-wang/fetcher-react` 5.x still exports
-them, together with the retired data-monitor hooks.
+The Wow query hooks and the data-monitor hooks are no longer exported in 6.0; see `$fetcher-v6-migration`.
+Two ESM-only subpaths exist besides the root: `@ahoo-wang/fetcher-react/core` (promise/query state, `useRequestId`, utility, fullscreen and debounce hooks — no HTTP, security, storage or event integrations) and `@ahoo-wang/fetcher-react/fetcher` (`useFetcher`, `useFetcherQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery`).
 
 ---
 
@@ -273,7 +276,7 @@ const el = refs.get('myDiv');
 
 ### useFullscreen
 
-Fullscreen toggle hook with `enter`, `exit`, `toggle`, and `fullscreen` state.
+Fullscreen toggle hook returning `fullscreen`, `getTarget`, `enter(target?)`, `exit`, `toggle(target?)`; the target defaults to `document.documentElement`. `FullscreenProvider` / `useFullscreenContext` share one instance through context.
 
 ```tsx
 const { fullscreen, toggle, enter, exit } = useFullscreen({
@@ -287,11 +290,11 @@ const { fullscreen, toggle, enter, exit } = useFullscreen({
 
 ### useKeyStorage
 
-Reactive state for `KeyStorage` with automatic subscription.
+Reactive state for `KeyStorage` with automatic subscription. Returns `[value, set, remove]`; `value` is `T | null` without a default.
 
 ```tsx
-const [theme, setTheme, clearTheme] = useKeyStorage(themeStorage);
-const [theme, setTheme, clearTheme] = useKeyStorage(themeStorage, 'light'); // with default
+const [theme, setTheme, removeTheme] = useKeyStorage(themeStorage); // theme: T | null
+const [theme2, setTheme2] = useKeyStorage(themeStorage, 'light'); // theme2: T
 ```
 
 ### useImmerKeyStorage
@@ -302,7 +305,7 @@ The updater stays stable while its `KeyStorage` instance is unchanged, including
 with inline default objects, and reads the latest committed default when storage
 is empty. Defaults are available before descendant layout effects run; a render
 that suspends without committing does not change the retained updater's default.
-Only `null` selects the default; a serializer-produced `undefined` is passed to
+An updater returning `null` removes the key. Only a stored `null` selects the default; a serializer-produced `undefined` is passed to
 the updater unchanged. After switching storage instances, a retained updater
 continues using its original storage and that storage's last committed default.
 
@@ -322,14 +325,19 @@ updatePrefs(draft => {
 
 ### useEventSubscription
 
-Subscribe to typed event buses with automatic lifecycle management.
+Subscribe to a `TypedEventBus` with automatic lifecycle management. The effect
+re-subscribes whenever `bus` or `handler` identity changes, so keep the handler
+stable (module constant or `useMemo`). `bus.on` rejects a duplicate handler
+`name` (returns `false`, logged as a warning). Returns `{ subscribe, unsubscribe }`
+for manual control.
 
 ```tsx
-useEventSubscription({
-  bus: eventBus,
-  handler: { name: 'myEvent', handle: event => console.log(event) },
-});
-// auto-subscribes on mount, unsubscribes on unmount
+const handler = useMemo(
+  () => ({ name: 'myEvent', handle: (event: MyEvent) => console.log(event) }),
+  [],
+);
+useEventSubscription({ bus: eventBus, handler });
+// auto-subscribes on mount, unsubscribes (by handler.name) on unmount
 ```
 
 ---
@@ -375,19 +383,26 @@ class UserApi {
 }
 
 const apiHooks = createExecuteApiHooks({ api: new UserApi() });
-// apiHooks.useGetUser() -> { loading, result, execute }
-// execute('123') - fully typed
+// apiHooks.useGetUser(options?) -> { loading, result, error, status, execute, reset, abort }
+// execute('123') - fully typed; returns Promise<void>
 ```
+
+Every promise-returning method becomes a `use<Method>` hook. Hook options are the
+`useExecutePromise` options plus `onBeforeExecute(abortController, params)`.
+The generated `execute` calls `method(...params)` without the AbortController, so
+`abort()` only discards the state update; to cancel the HTTP request, push the
+controller into `params` in `onBeforeExecute` (decorator methods detect an
+`AbortController` argument).
 
 ### createQueryApiHooks
 
-Generate query hooks with `useQuery`-based state management (the generated hook wraps a typed `executeQuery` and calls `useQuery`).
+Generate query hooks with `useQuery`-based state management. Each method is called as `method(query, attributes, abortController)`, so the first parameter is the query and decorator methods receive the controller. Hook options are the `useQuery` options minus `execute`, plus `onBeforeExecute(abortController, query)`.
 Function-valued getters have the same lazy resolution and instance binding as
 `createExecuteApiHooks`.
 
 ```tsx
-const apiHooks = createQueryApiHooks({ api: new UserApi() });
-// apiHooks.useListUsers({ initialQuery: {...}, autoExecute: true })
+const queryHooks = createQueryApiHooks({ api: new UserApi() });
+// queryHooks.useGetUser({ initialQuery: '123' }) -> useQuery return; autoExecute defaults to true
 ```
 
 ---
@@ -396,13 +411,14 @@ const apiHooks = createQueryApiHooks({ api: new UserApi() });
 
 ### SecurityProvider / useSecurityContext / useSecurity / RouteGuard
 
-Wrap app with `SecurityProvider` for auth context. Use `useSecurityContext` to access `currentUser`, `authenticated`, `signOut`. `RouteGuard` conditionally renders based on auth status.
+Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>` (`TokenStorage` from `@ahoo-wang/fetcher-cosec`). `useSecurityContext()` (throws outside the provider) and `useSecurity(tokenStorage, options?)` return `currentUser` (`ANONYMOUS_USER` when signed out), `authenticated`, `signIn(compositeTokenOrAsyncProvider)`, `signOut()`. `RouteGuard` (`children`, `fallback?`, `onUnauthorized?`) renders children only when authenticated; `RefreshableRouteGuard` (`tokenManager: JwtTokenManager`, `fallback?`, `refreshing?`) tries a token refresh first.
 
 ```tsx
 import {
   SecurityProvider,
   useSecurityContext,
   RouteGuard,
+  RefreshableRouteGuard,
 } from '@ahoo-wang/fetcher-react';
 ```
 
@@ -410,7 +426,13 @@ import {
 
 ## Debounced Hooks
 
-Rate-limiting variants of core hooks. With `autoExecute: true`, controlled query
+Rate-limiting variants of core hooks. All take a required
+`debounce: { delay, leading?, trailing? }` (`leading` defaults to `false`,
+`trailing` to `true`; both `false` throws). They return `run`, `cancel`, and
+`isPending` (a function, call `isPending()`) instead of `execute`.
+**`useDebouncedQuery` and `useDebouncedFetcherQuery` only auto-execute with an
+explicit `autoExecute: true`** (unlike `useQuery`/`useFetcherQuery`, which default
+to `true`); their `run()` takes no argument. With `autoExecute: true`, controlled query
 changes schedule execution; equal query values do not schedule duplicate work.
 Changing a controlled query to `undefined` cancels pending automatic work instead
 of rescheduling the last stored query.
@@ -437,18 +459,21 @@ value just passed to `setQuery` does not schedule it again, including with
 marks an automatic query as scheduled; a call suppressed by a leading-only
 cooldown does not suppress a later controlled commit of that query. Restoring cancelled automatic work starts a fresh leading window.
 
-- `useDebouncedCallback` - Debounce any callback
-- `useDebouncedExecutePromise` - Debounce promise execution
-- `useDebouncedQuery` - Debounce query execution
-- `useDebouncedFetcher` - Debounce HTTP fetches
+- `useDebouncedCallback(callback, options)` - Debounce any callback
+- `useDebouncedExecutePromise` - `run(supplier)` debounces promise execution
+- `useDebouncedQuery` - Debounce `useQuery` execution
+- `useDebouncedFetcher` - `run(request)` debounces HTTP fetches
 - `useDebouncedFetcherQuery` - Debounce fetcher queries
 
 ```tsx
-const { loading, result, run, cancel, isPending } = useDebouncedFetcherQuery({
-  url: '/api/search',
-  initialQuery: { keyword: '' },
-  debounce: { delay: 300 },
-});
+const { loading, result, setQuery, run, cancel, isPending } =
+  useDebouncedFetcherQuery<SearchQuery, SearchResult>({
+    url: '/api/search',
+    initialQuery: { keyword: '' },
+    autoExecute: true, // otherwise only run() executes
+    debounce: { delay: 300 },
+  });
+setQuery({ keyword: 'hel' }); // scheduled after 300 ms of quiet
 ```
 
 ---
@@ -483,18 +508,25 @@ import {
   // API generation
   createExecuteApiHooks,
   createQueryApiHooks,
+  // Debounce
+  useDebouncedCallback,
+  useDebouncedExecutePromise,
+  useDebouncedQuery,
+  useDebouncedFetcher,
+  useDebouncedFetcherQuery,
   // Security
   SecurityProvider,
   useSecurity,
   useSecurityContext,
   RouteGuard,
+  RefreshableRouteGuard,
 } from '@ahoo-wang/fetcher-react';
 ```
 
 ## Lightweight core import
 
-`@ahoo-wang/fetcher-react/core` is an ESM export of `src/core/index.ts`, with runtime `dist/core.es.js` and types `dist/core/index.d.ts`. It provides the existing generic hooks without initializing HTTP/security/storage/event integrations; root ESM and UMD exports remain unchanged. Prefer this entry for generic execution and debounce in UI libraries.
+`@ahoo-wang/fetcher-react/core` (runtime `dist/core.es.js`, types `dist/core/index.d.ts`) and `@ahoo-wang/fetcher-react/fetcher` (`dist/fetcher.es.js`) are ESM-only (no `require` condition). `/core` provides the generic hooks without initializing HTTP/security/storage/event integrations; prefer it for generic execution and debounce in UI libraries.
 
 `useExecutePromise` assigns request order synchronously before awaiting onAbort. Manual abort invalidates useRequestId before releasing the controller, so even sources ignoring cancellation cannot publish stale results or callbacks. There is no return-type change: execute still returns Promise<void>; use state or onSuccess for results.
 
-The root ESM entry and `/core` are generated together and share module identity, including FullscreenContext. UMD is built separately. `pnpm --filter @ahoo-wang/fetcher-react test:package` checks built export targets, cross-entry providers/consumers and the core dependency boundary; build runs it automatically. `useExecutePromise.abort` clears its old controller reference before abort notification so synchronous listeners can start a replacement request without losing its cancellation handle.
+The root ESM entry, `/core` and `/fetcher` are generated together and share module identity, including FullscreenContext. UMD is built separately. `pnpm --filter @ahoo-wang/fetcher-react test:package` checks built export targets, cross-entry providers/consumers and the core dependency boundary; build runs it automatically. `useExecutePromise.abort` clears its old controller reference before abort notification so synchronous listeners can start a replacement request without losing its cancellation handle.

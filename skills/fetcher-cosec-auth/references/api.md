@@ -4,6 +4,7 @@
 
 - [Core Concepts](#core-concepts)
   - [CoSec Authentication Flow](#cosec-authentication-flow)
+  - [Interceptor Names and Orders](#interceptor-names-and-orders)
 - [CoSecConfigurer (Recommended Setup)](#cosecconfigurer-recommended-setup)
   - [Basic Usage](#basic-usage)
   - [Configuration Options](#configuration-options)
@@ -23,8 +24,8 @@
 - [JwtTokenManager](#jwttokenmanager)
 - [TokenRefresher Interface](#tokenrefresher-interface)
   - [CoSecTokenRefresher (Built-in Implementation)](#cosectokenrefresher-built-in-implementation)
-  - [Custom TokenRefresher with Retry](#custom-tokenrefresher-with-retry)
 - [CoSecHeaders Constants](#cosecheaders-constants)
+- [CoSecRequestInterceptor](#cosecrequestinterceptor)
 - [ResourceAttributionRequestInterceptor](#resourceattributionrequestinterceptor)
 - [AuthorizationRequestInterceptor](#authorizationrequestinterceptor)
 - [AuthorizationResponseInterceptor](#authorizationresponseinterceptor)
@@ -45,18 +46,37 @@
 ### CoSec Authentication Flow
 
 ```
-Request → CoSecRequestInterceptor (CoSec-* headers) → AuthorizationRequestInterceptor (Bearer) → Server
-                                                                                                         ↓
-Response ← AuthorizationResponseInterceptor (401 retry with fresh token)
+Request phase (ascending order):
+  CoSecRequestInterceptor (CoSec-* headers)
+  → AuthorizationRequestInterceptor (proactive refresh, Bearer header)
+  → RequestBodyInterceptor → … → ResourceAttributionRequestInterceptor ({tenantId}/{ownerId})
+  → UrlResolveInterceptor → FetchInterceptor → Server
+Response phase:
+  AuthorizationResponseInterceptor (401 → refresh → retry once) → … → ValidateStatusInterceptor
+Error phase (only when something threw, e.g. non-2xx status):
+  UnauthorizedErrorInterceptor (401 / RefreshTokenError), ForbiddenErrorInterceptor (403)
 ```
 
-Interceptor order matters: CoSec headers are attached first (`Number.MIN_SAFE_INTEGER + step`), then the Authorization header.
+### Interceptor Names and Orders
+
+Every interceptor's `name` and `order` are exported constants (`DEFAULT_INTERCEPTOR_ORDER_STEP` = 1000, from `@ahoo-wang/fetcher`):
+
+| Interceptor                             | Phase    | Name constant / value                                          | Order constant / value                                                                    |
+| --------------------------------------- | -------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `CoSecRequestInterceptor`               | request  | `COSEC_REQUEST_INTERCEPTOR_NAME` = `'CoSecRequestInterceptor'` | `COSEC_REQUEST_INTERCEPTOR_ORDER` = `Number.MIN_SAFE_INTEGER + 1000`                      |
+| `AuthorizationRequestInterceptor`       | request  | `AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`                       | `AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER` = `COSEC_REQUEST_INTERCEPTOR_ORDER + 1000`      |
+| `ResourceAttributionRequestInterceptor` | request  | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`                | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER` = `URL_RESOLVE_INTERCEPTOR_ORDER - 1000` |
+| `AuthorizationResponseInterceptor`      | response | `AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME`                      | `AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER` = `Number.MIN_SAFE_INTEGER + 1000`             |
+| `UnauthorizedErrorInterceptor`          | error    | `UNAUTHORIZED_ERROR_INTERCEPTOR_NAME`                          | `UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER` = `0`                                              |
+| `ForbiddenErrorInterceptor`             | error    | `FORBIDDEN_ERROR_INTERCEPTOR_NAME`                             | `FORBIDDEN_ERROR_INTERCEPTOR_ORDER` = `0`                                                 |
+
+Consequences: CoSec and Authorization headers are set before the built-in `RequestBodyInterceptor` (`MIN_SAFE_INTEGER + 10000`); resource attribution runs just before URL resolution, so it sees path params added by earlier interceptors; `AuthorizationResponseInterceptor` runs before the built-in `ValidateStatusInterceptor`, so a 401 is retried before it can throw. Custom request interceptors that must see the `Authorization` header need an order above `AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`.
 
 ---
 
 ## CoSecConfigurer (Recommended Setup)
 
-Declarative configuration for all CoSec features via a single `applyTo(fetcher)` call.
+Declarative configuration for all CoSec features via a single `applyTo(fetcher)` call. It implements `FetcherConfigurer`; one configurer can be applied to several fetchers, which then share its `tokenStorage`, `deviceIdStorage`, and `tokenManager`.
 
 ### Basic Usage
 
@@ -70,14 +90,17 @@ new CoSecConfigurer({
   appId: 'your-app-id',
   tokenRefresher: {
     refresh: async token => {
+      // Plain fetch bypasses Fetcher interceptors, so no refresh loop.
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
-        body: JSON.stringify({ refreshToken: token.refreshToken }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(token),
       });
-      return response.json();
+      if (!response.ok) throw new Error(`Refresh failed: ${response.status}`);
+      return response.json(); // must be { accessToken, refreshToken }
     },
   },
-  onUnauthorized: async exchange => {
+  onUnauthorized: exchange => {
     window.location.href = '/login';
   },
   onForbidden: async exchange => {
@@ -88,27 +111,33 @@ new CoSecConfigurer({
 
 ### Configuration Options
 
-| Option            | Type                                  | Description                                                    |
-| ----------------- | ------------------------------------- | -------------------------------------------------------------- |
-| `appId`           | `string`                              | **Required.** Application identifier for CoSec headers         |
-| `tokenStorage`    | `TokenStorage`                        | Custom token storage (defaults to `new TokenStorage()`)        |
-| `deviceIdStorage` | `DeviceIdStorage`                     | Custom device ID storage (defaults to `new DeviceIdStorage()`) |
-| `tokenRefresher`  | `TokenRefresher`                      | Enables JWT auth interceptors when provided                    |
-| `spaceIdProvider` | `SpaceIdProvider`                     | Enables multi-tenant support                                   |
-| `onUnauthorized`  | `(exchange) => Promise<void> \| void` | Custom 401 error handler (async supported)                     |
-| `onForbidden`     | `(exchange) => Promise<void>`         | Custom 403 error handler (async)                               |
+`CoSecConfig`:
+
+| Option            | Type                                                 | Description                                                                  |
+| ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `appId`           | `string`                                             | **Required.** Sent as `CoSec-App-Id`                                         |
+| `tokenStorage`    | `TokenStorage`                                       | Defaults to `new TokenStorage()`                                             |
+| `deviceIdStorage` | `DeviceIdStorage`                                    | Defaults to `new DeviceIdStorage()`                                          |
+| `tokenRefresher`  | `TokenRefresher`                                     | Creates `configurer.tokenManager` and enables the Authorization interceptors |
+| `spaceIdProvider` | `SpaceIdProvider`                                    | Defaults to `NoneSpaceIdProvider`                                            |
+| `onUnauthorized`  | `(exchange: FetchExchange) => Promise<void> \| void` | Registers `UnauthorizedErrorInterceptor`                                     |
+| `onForbidden`     | `(exchange: FetchExchange) => Promise<void>`         | Registers `ForbiddenErrorInterceptor` (must return a Promise)                |
+
+The configurer exposes `config`, `tokenStorage`, `deviceIdStorage`, `tokenManager?`, and `spaceIdProvider` as readonly fields.
 
 ### Conditional Interceptor Registration
 
 **Always added:**
 
-- `CoSecRequestInterceptor` - Adds CoSec headers (appId, deviceId, requestId)
-- `ResourceAttributionRequestInterceptor` - Adds tenant/owner path parameters from JWT
+- `CoSecRequestInterceptor` - Adds CoSec headers (appId, deviceId, requestId, spaceId when resolved)
+- `ResourceAttributionRequestInterceptor` - Fills `{tenantId}`/`{ownerId}` URL path params from the stored JWT
 
 **Only when `tokenRefresher` is provided:**
 
 - `AuthorizationRequestInterceptor` - Adds Bearer token authentication
 - `AuthorizationResponseInterceptor` - Handles token refresh on 401
+
+Without a `tokenRefresher`, no `Authorization` header is sent at all, even if `TokenStorage` holds a token.
 
 **Only when handlers are provided:**
 
@@ -127,17 +156,18 @@ Parses a JWT string and provides typed payload access with expiration checking.
 import { JwtToken } from '@ahoo-wang/fetcher-cosec';
 import type { CoSecJwtPayload } from '@ahoo-wang/fetcher-cosec';
 
-const token = new JwtToken<CoSecJwtPayload>('eyJ...', 300); // 5 min early period
+const token = new JwtToken<CoSecJwtPayload>('eyJ...', 300); // earlyPeriod seconds, default 0
 
 token.token; // raw JWT string
-token.payload; // CoSecJwtPayload | null
-token.isExpired; // boolean (considers earlyPeriod)
+token.payload; // CoSecJwtPayload | null (null when parsing fails)
+token.isExpired; // true when unparseable or now >= exp - earlyPeriod; false when no exp claim
 ```
 
 ### CoSecJwtPayload Interface
 
 ```typescript
 interface CoSecJwtPayload extends JwtPayload {
+  // JwtPayload: jti, sub, exp, iat (+ optional iss, aud, nbf, arbitrary keys)
   tenantId?: string;
   policies?: string[];
   roles?: string[];
@@ -148,7 +178,7 @@ interface CoSecJwtPayload extends JwtPayload {
 ### JwtCompositeToken
 
 Manages access/refresh token pairs as a single unit. Each instance has a readonly
-`sessionId` generated for a new login. The optional third constructor argument
+`sessionId` (a new nanoid by default). The optional third constructor argument
 restores an existing session generation; managed refreshes preserve it.
 
 ```typescript
@@ -156,9 +186,10 @@ import { JwtCompositeToken } from '@ahoo-wang/fetcher-cosec';
 
 const composite = new JwtCompositeToken(
   { accessToken: 'eyJ...', refreshToken: 'eyJ...' },
-  300, // earlyPeriod in seconds
+  300, // earlyPeriod in seconds, default 0
 );
 
+composite.token; // the CompositeToken passed in
 composite.authenticated; // true if access token not expired
 composite.isRefreshNeeded; // true if access token expired
 composite.isRefreshable; // true if refresh token not expired
@@ -176,29 +207,26 @@ const serialized = serializer.serialize(compositeToken);
 const restored = serializer.deserialize(serialized);
 ```
 
-The stored JSON contains `accessToken`, `refreshToken`, and `sessionId`. The
-session generation survives storage restoration and cross-tab broadcasts;
-`restored.token` still contains only the original token fields. Legacy JSON
-without `sessionId` derives a stable, non-cryptographic 128-bit fingerprint of the exact token pair
-so independent tabs retain the same generation during migration. The ID contains
-no raw JWT, does not infer identity from the subject, and survives later
-refreshes. Every explicit `signIn()` still creates a fresh random generation,
-even when the same token pair is reused. This legacy record identifier is not an
-authentication or integrity check; the server still validates JWTs.
+The stored JSON is `{ accessToken, refreshToken, sessionId }`; `restored.token`
+contains only the two token fields. Legacy JSON without `sessionId` gets a
+deterministic `legacy:<128-bit hex>` fingerprint of the exact token pair, so
+independent tabs agree on the generation during migration (not an integrity
+check). Every explicit `signIn()` creates a fresh random generation, even for
+the same token pair. A default instance with `earlyPeriod` 0 is exported as
+`jwtCompositeTokenSerializer`.
+
+`deserializeLegacy(value: unknown)` restores the plain-object shape broadcast by
+older TokenStorage tabs (`value.token.accessToken` / `value.token.refreshToken`
+must be strings, otherwise `TypeError`). KeyStorage uses it only for cross-tab
+messages that carry no serialized snapshot.
 
 ---
 
 ## TokenStorage
 
-Token storage with a localStorage backend and cross-tab synchronization.
+Token storage (a `KeyStorage<JwtCompositeToken>`) with cross-tab synchronization.
 
-TokenStorage instances sharing one supplied `eventBus` must use the same storage key and `earlyPeriod`; they reuse one serializer object, including across duplicate package modules in the same JavaScript global. A different `earlyPeriod` on that bus throws, including after an earlier instance is destroyed. For independent expiration policies, use separate buses on the same channel. The default creates one bus per TokenStorage instance with a channel derived from its key, so each receiver keeps its own `earlyPeriod` while synchronizing the same token record.
-
-`JwtCompositeTokenSerializer.deserializeLegacy(value: unknown)` restores the known plain-object shape broadcast
-by older TokenStorage tabs. It requires string `value.token.accessToken` and
-`value.token.refreshToken`, then reuses the normal serializer to restore getters,
-the receiving serializer's `earlyPeriod`, and session identity. Malformed legacy
-shapes throw `TypeError`; this hook is used only when no serialized snapshot exists.
+TokenStorage instances sharing one supplied `eventBus` must use the same `earlyPeriod`; they reuse one serializer object, including across duplicate package modules in the same JavaScript global. A different `earlyPeriod` on that bus throws, including after an earlier instance is destroyed. For independent expiration policies, use separate buses. The default creates one bus per instance with a channel derived from its key, so each receiver keeps its own `earlyPeriod` while synchronizing the same token record.
 
 ### Constructor
 
@@ -206,13 +234,13 @@ shapes throw `TypeError`; this hook is used only when no serialized snapshot exi
 new TokenStorage(options?: TokenStorageOptions)
 ```
 
-`TokenStorageOptions` extends `KeyStorageOptions<JwtCompositeToken>` (excluding `serializer`) with:
+`TokenStorageOptions` = `Partial<Omit<KeyStorageOptions<JwtCompositeToken>, 'serializer'>>` + `Partial<EarlyPeriodCapable>`:
 
 ```text
 {
-  key?: string;              // defaults to 'cosec-token'
-  eventBus?: TypedEventBus;  // defaults to BroadcastTypedEventBus
-  earlyPeriod?: number;      // defaults to 0
+  key?: string;              // defaults to DEFAULT_COSEC_TOKEN_KEY = 'cosec-token'
+  eventBus?: TypedEventBus;  // defaults to BroadcastTypedEventBus({ delegate: new SerialTypedEventBus(key) })
+  earlyPeriod?: number;      // seconds, defaults to 0
   storage?: Storage;         // defaults to getStorage(): localStorage in browsers, in-memory elsewhere
 }
 ```
@@ -230,11 +258,14 @@ const tokenStorage = new TokenStorage({
 tokenStorage.signIn({ accessToken: 'eyJ...', refreshToken: 'eyJ...' });
 
 if (tokenStorage.authenticated) {
-  const user = tokenStorage.currentUser; // CoSecJwtPayload | null
+  const user = tokenStorage.currentUser; // CoSecJwtPayload | null (null when access token expired)
 }
 
-tokenStorage.signOut();
+tokenStorage.get(); // JwtCompositeToken | null (even when expired)
+tokenStorage.signOut(); // remove()
 ```
+
+`setCompositeToken()` is deprecated; use `signIn()`.
 
 ### Listening for Changes (EventHandler pattern)
 
@@ -254,7 +285,7 @@ removeListener();
 
 ## DeviceIdStorage
 
-Manages persistent device identification with localStorage and cross-tab sync.
+Manages persistent device identification with cross-tab sync.
 
 ### Constructor
 
@@ -262,12 +293,12 @@ Manages persistent device identification with localStorage and cross-tab sync.
 new DeviceIdStorage(options?: DeviceIdStorageOptions)
 ```
 
-`DeviceIdStorageOptions` extends `Partial<KeyStorageOptions<string>>`:
+`DeviceIdStorageOptions` extends `Partial<KeyStorageOptions<string>>` (the serializer is always the identity serializer):
 
 ```text
 {
-  key?: string;              // defaults to 'cosec-device-id'
-  eventBus?: TypedEventBus;  // defaults to BroadcastTypedEventBus
+  key?: string;              // defaults to DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id'
+  eventBus?: TypedEventBus;  // defaults to BroadcastTypedEventBus({ delegate: new SerialTypedEventBus(key) })
   storage?: Storage;         // defaults to getStorage(): localStorage in browsers, in-memory elsewhere
 }
 ```
@@ -279,7 +310,7 @@ import { DeviceIdStorage } from '@ahoo-wang/fetcher-cosec';
 
 const deviceStorage = new DeviceIdStorage({ key: 'my-app-device' });
 
-const deviceId = deviceStorage.getOrCreate(); // get existing or generate new
+const deviceId = deviceStorage.getOrCreate(); // get existing or generate (nanoid) and store
 deviceStorage.set('custom-device-id');
 deviceStorage.get(); // string | null
 ```
@@ -288,45 +319,27 @@ deviceStorage.get(); // string | null
 
 ## JwtTokenManager
 
-Manages JWT token lifecycle with concurrent refresh calls deduplicated only for
-the same current token instance. A replacement session starts its own refresh
-without waiting for an older session. A refresh only writes or removes the
-token instance that started it; signing out or replacing the session prevents
-an old result from overwriting the new state.
-If the session changes while refreshing, `RefreshSessionChangedError` rejects
-the original request without sending or retrying it as the replacement user.
-It does not trigger `onUnauthorized`, including when the original response was 401.
-This protection also covers sign-in from token-storage write/removal listeners.
-Each exchange keeps the concrete refresh result and rechecks ownership after
-awaiting refresh, before selecting Authorization, and before unauthorized
-notification. An old `RefreshTokenError` may still propagate after cleanup,
-but its callback cannot sign out a replacement session.
-The request interceptor also records an anonymous start when no token is present.
-A later login cannot replay that earlier anonymous request with the new session;
-a response-only interceptor configuration keeps its existing behavior.
-Tokens created by a successful managed refresh inherit the same login session.
-If another tab finishes refreshing that session first, the pending refresh
-reuses the already stored successor when its duplicate request succeeds or fails.
-A late 401 for an earlier token reuses the stored successor without refreshing
-it again, including successors received from another tab. `signIn` starts a separate session even for the same user or composite
-token object.
-
-`refresh(exchange?: FetchExchange): Promise<void>` accepts the originating
-exchange from authorization interceptors to reuse its session's newer token and
-identify its notification handler.
-Direct calls can continue to omit it.
-
 ```typescript
 import { JwtTokenManager, TokenStorage } from '@ahoo-wang/fetcher-cosec';
 
 const tokenManager = new JwtTokenManager(tokenStorage, tokenRefresher);
 
-tokenManager.currentToken; // JwtCompositeToken | null
-tokenManager.isRefreshNeeded; // boolean
-tokenManager.isRefreshable; // boolean
+tokenManager.currentToken; // JwtCompositeToken | null (tokenStorage.get())
+tokenManager.isRefreshNeeded; // boolean, false without a token
+tokenManager.isRefreshable; // boolean, false without a token
 
-await tokenManager.refresh(); // deduplicates calls for the same session
+await tokenManager.refresh(); // throws Error('No token found') when there is no token
 ```
+
+`refresh(exchange?: FetchExchange): Promise<void>`: the authorization
+interceptors pass the originating exchange; direct calls can omit it.
+
+- Concurrent refreshes of the same current token instance share one refresher call; a replacement session starts its own.
+- On success the result is stored as a new `JwtCompositeToken` with the storage's `earlyPeriod` and the same `sessionId`.
+- On failure, the stored token is removed only if it is still the token that started the refresh, and `RefreshTokenError` (with `.token`) is thrown.
+- If the session changes (sign-out, `signIn`, another user) while refreshing, `RefreshSessionChangedError` rejects the original request; it is not sent or retried as the new user and does not trigger `onUnauthorized`.
+- If another tab already stored a successor for the same session, the pending refresh (or a late 401 for an older token) reuses it without refreshing again.
+- A request started with no token records an anonymous session; a later login cannot replay it with the new session.
 
 ---
 
@@ -336,24 +349,26 @@ await tokenManager.refresh(); // deduplicates calls for the same session
 interface TokenRefresher {
   refresh(token: CompositeToken): Promise<CompositeToken>;
 }
+// CompositeToken = { accessToken: string; refreshToken: string }
 ```
+
+A refresher that uses a Fetcher carrying the CoSec interceptors must pass
+`attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]])`, or the
+refresh request can trigger refresh recursively. A plain `fetch` is unaffected.
 
 ### CoSecTokenRefresher (Built-in Implementation)
 
-Sends POST requests via a Fetcher instance. Automatically includes
-`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` to prevent infinite loops. Direct calls
-retain the refresh Fetcher's `onUnauthorized` callback. A manager suppresses
-that callback when the session changed or any request waiting on that refresh
-has its own unauthorized interceptor. Otherwise the refresh Fetcher retains
-notification responsibility. Concurrent waiters share one failure notification;
-a notification already started by the refresh Fetcher is not repeated, even
-if its callback throws or rejects. Notification ownership is claimed before
-the callback starts; unrelated refresh errors do not claim it.
+`new CoSecTokenRefresher({ fetcher, endpoint })` POSTs the whole
+`CompositeToken` as the JSON body to `endpoint` via `fetcher.post`, with
+`ResultExtractors.Json` and `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` set, and
+expects a `CompositeToken` back.
 
-The built-in method accepts an optional coordination guard:
-`refresh(token: CompositeToken, shouldNotifyUnauthorized?: () => boolean)`.
-The manager supplies it; ordinary callers can omit it. The `TokenRefresher`
-interface remains the single-token contract above.
+Its method accepts an optional coordination guard:
+`refresh(token, shouldNotifyUnauthorized?: () => boolean)`. `JwtTokenManager`
+supplies it so that one failure produces one unauthorized notification:
+the refresh request's own `onUnauthorized` is suppressed when the session
+changed or when a waiting request's fetcher has an `UnauthorizedErrorInterceptor`.
+Ordinary callers omit it.
 
 ```typescript
 import { CoSecTokenRefresher } from '@ahoo-wang/fetcher-cosec';
@@ -369,60 +384,58 @@ const newToken = await refresher.refresh({
 });
 ```
 
-### Custom TokenRefresher with Retry
-
-```typescript
-class ResilientTokenRefresher implements TokenRefresher {
-  async refresh(token: CompositeToken): Promise<CompositeToken> {
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const res = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: token.refreshToken }),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      } catch (error) {
-        if (attempt === 3) throw error;
-        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
-      }
-    }
-    throw new Error('Max retries');
-  }
-}
-```
-
 ---
 
 ## CoSecHeaders Constants
 
 ```typescript
-import { CoSecHeaders } from '@ahoo-wang/fetcher-cosec';
+import { CoSecHeaders, ResponseCodes } from '@ahoo-wang/fetcher-cosec';
 
 CoSecHeaders.DEVICE_ID; // 'CoSec-Device-Id'
 CoSecHeaders.APP_ID; // 'CoSec-App-Id'
 CoSecHeaders.SPACE_ID; // 'CoSec-Space-Id'
 CoSecHeaders.AUTHORIZATION; // 'Authorization'
 CoSecHeaders.REQUEST_ID; // 'CoSec-Request-Id'
+
+ResponseCodes.UNAUTHORIZED; // 401
+ResponseCodes.FORBIDDEN; // 403
 ```
+
+---
+
+## CoSecRequestInterceptor
+
+```typescript
+fetcher.interceptors.request.use(
+  new CoSecRequestInterceptor({ appId, deviceIdStorage, spaceIdProvider }),
+);
+```
+
+`CoSecRequestOptions`: `appId` and `deviceIdStorage` required, `spaceIdProvider`
+optional (defaults to `NoneSpaceIdProvider`). Each request gets a new nanoid
+`CoSec-Request-Id`; `CoSec-Device-Id` comes from `deviceIdStorage.getOrCreate()`;
+`CoSec-Space-Id` is set only when the provider returns a non-empty value.
 
 ---
 
 ## ResourceAttributionRequestInterceptor
 
-Injects `tenantId` and `ownerId` from JWT payload into URL template placeholders `{tenantId}`/`{ownerId}`.
+Fills URL template path params from the stored access token: `{tenantId}` from `payload.tenantId`, `{ownerId}` from `payload.sub`.
 
 ```typescript
 import { ResourceAttributionRequestInterceptor } from '@ahoo-wang/fetcher-cosec';
 
-// Reads tenantId from JWT payload.tenantId and ownerId from payload.sub
 fetcher.interceptors.request.use(
   new ResourceAttributionRequestInterceptor({ tokenStorage }),
 );
 
 // Request to /api/tenants/{tenantId}/resources will auto-fill tenantId from token
 ```
+
+Options: `tokenStorage` (required), `tenantId?` / `ownerId?` rename the
+placeholder keys (defaults `'tenantId'` / `'ownerId'`). A param is filled only
+when the placeholder appears in the URL template and the caller did not supply
+it; nothing happens without a stored token (expiry is not checked).
 
 ---
 
@@ -438,9 +451,10 @@ fetcher.interceptors.request.use(
 
 **Behavior:**
 
-1. Skips if Authorization header already present (case-insensitive, including an empty value)
-2. Refreshes token if `isRefreshNeeded && isRefreshable` (unless `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` set)
-3. Adds `Authorization: Bearer <access-token>`
+1. Skips if an Authorization header is already present (case-insensitive, including an empty value); caller-supplied credentials stay outside the managed session
+2. Does nothing (records an anonymous session) when there is no stored token
+3. Refreshes first if `isRefreshNeeded && isRefreshable`, unless the exchange has `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`
+4. Adds `Authorization: Bearer <access-token>`
 
 ---
 
@@ -456,11 +470,12 @@ fetcher.interceptors.response.use(
 
 **Behavior:**
 
-1. Detects 401 responses (skips when the exchange carries `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`, Authorization was supplied by the caller, or a later interceptor replaced or removed the injected header)
-2. Calls `tokenManager.refresh(exchange)` to reuse a known successor from the same session, or refreshes the current token if it is refreshable
-3. Removes only the managed Authorization header and retries with the new token — at most once per exchange
-4. On refresh failure: the manager clears only the original, unchanged session and throws. The response interceptor does not clear a replacement session. A failure of the retried request itself propagates normally without clearing the freshly refreshed token
-5. The retry replays the request phase and only the response interceptors up to this one; later response interceptors (status validation, body readers) run once on the fresh response. The error phase is not replayed: when the retry fails, error interceptors run once and `error.exchange.error` is the retry's own error (for example `HttpStatusValidationError`), not a nested `ExchangeError`
+1. Acts only on a 401 response; skips when the exchange carries `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`, when Authorization was supplied by the caller, or when a later interceptor replaced or removed the injected header
+2. Skips (lets the 401 continue) when the token is not refreshable and no newer token from the same session exists
+3. Calls `tokenManager.refresh(exchange)`, which reuses a known successor from the same session or refreshes the current token
+4. Removes the managed Authorization header and retries — at most once per exchange (`AUTHORIZATION_RESPONSE_MAX_RETRY` = 1)
+5. On refresh failure: the manager clears only the original, unchanged session and throws `RefreshTokenError`. A failure of the retried request itself propagates without clearing the freshly refreshed token
+6. The retry replays the whole request phase (new `CoSec-Request-Id`, re-sent fetch) and only the response interceptors up to this one; later response interceptors (status validation, body readers) run once on the fresh response. The error phase is not replayed: when the retry fails, error interceptors run once and `error.exchange.error` is the retry's own error (for example `HttpStatusValidationError`), not a nested `ExchangeError`
 
 ### Skip Token Refresh for Specific Requests
 
@@ -476,6 +491,10 @@ fetcher.get(
 );
 ```
 
+The key's value is `'Ignore-Refresh-Token'` and only its presence is checked
+(`attributes.has`), so `false` also skips. It disables proactive refresh and the
+401 retry; the Bearer header is still attached.
+
 ---
 
 ## SpaceIdProvider (Multi-Tenant Support)
@@ -490,7 +509,7 @@ interface SpaceIdProvider {
 
 ### DefaultSpaceIdProvider
 
-Combines predicate-based filtering with persistent storage.
+Returns `spaceIdStorage.get()` when the predicate matches, otherwise `null`.
 
 ```typescript
 import {
@@ -498,24 +517,29 @@ import {
   SpaceIdStorage,
 } from '@ahoo-wang/fetcher-cosec';
 
+const spaceIdStorage = new SpaceIdStorage(); // key defaults to DEFAULT_COSEC_SPACE_ID_KEY = 'cosec-space-id'
 const spaceIdProvider = new DefaultSpaceIdProvider({
   spacedResourcePredicate: {
     test: exchange => exchange.request.url.includes('/spaces/'),
   },
-  spaceIdStorage: new SpaceIdStorage(),
+  spaceIdStorage,
 });
+
+spaceIdStorage.set('workspace-alpha'); // cross-tab synchronized
 ```
 
 ### NoneSpaceIdProvider (Default)
 
-```typescript
-import { NoneSpaceIdProvider } from '@ahoo-wang/fetcher-cosec';
-// Always returns null - used when space identification is not needed
-```
+`NoneSpaceIdProvider` is a constant object (not a class) whose `resolveSpaceId` always returns `null`.
 
 ---
 
 ## Error Handling
+
+Error interceptors only run when the exchange threw — for a 401/403 that means
+the built-in `ValidateStatusInterceptor` rejected the status. Neither CoSec
+error interceptor clears `exchange.error`, so the original call still rejects
+with `ExchangeError` after the callback runs.
 
 ### UnauthorizedErrorInterceptor (401)
 
@@ -532,12 +556,11 @@ fetcher.interceptors.error.use(
 );
 ```
 
-**Triggers on:** HTTP 401 responses and `RefreshTokenError` exceptions, once
-per exchange, with one notification shared by requests whose token refresh
-failed together. The built-in refresh request defers notification when any
-waiting request has an unauthorized handler. `RefreshSessionChangedError`
-does not notify the replacement session. `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`
-alone only disables refresh and does not suppress normal 401 notifications.
+**Triggers on:** `exchange.response.status === 401` or `exchange.error instanceof RefreshTokenError`,
+at most once per exchange, with one notification shared by requests whose
+token refresh failed together. `RefreshSessionChangedError` never notifies.
+`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` only disables refresh; it does not
+suppress normal 401 notifications.
 
 ### ForbiddenErrorInterceptor (403)
 
@@ -553,19 +576,19 @@ fetcher.interceptors.error.use(
 );
 ```
 
-**Triggers on:** HTTP 403 responses.
+**Triggers on:** HTTP 403 responses only. No refresh or retry is attempted for 403.
 
 ---
 
 ## Headers Summary
 
-| Header             | Constant                     | Added By                                    |
-| ------------------ | ---------------------------- | ------------------------------------------- |
-| `CoSec-App-Id`     | `CoSecHeaders.APP_ID`        | `CoSecRequestInterceptor`                   |
-| `CoSec-Device-Id`  | `CoSecHeaders.DEVICE_ID`     | `CoSecRequestInterceptor`                   |
-| `CoSec-Request-Id` | `CoSecHeaders.REQUEST_ID`    | `CoSecRequestInterceptor`                   |
-| `CoSec-Space-Id`   | `CoSecHeaders.SPACE_ID`      | `CoSecRequestInterceptor` (when configured) |
-| `Authorization`    | `CoSecHeaders.AUTHORIZATION` | `AuthorizationRequestInterceptor`           |
+| Header             | Constant                     | Added By                                  |
+| ------------------ | ---------------------------- | ----------------------------------------- |
+| `CoSec-App-Id`     | `CoSecHeaders.APP_ID`        | `CoSecRequestInterceptor`                 |
+| `CoSec-Device-Id`  | `CoSecHeaders.DEVICE_ID`     | `CoSecRequestInterceptor`                 |
+| `CoSec-Request-Id` | `CoSecHeaders.REQUEST_ID`    | `CoSecRequestInterceptor`                 |
+| `CoSec-Space-Id`   | `CoSecHeaders.SPACE_ID`      | `CoSecRequestInterceptor` (when resolved) |
+| `Authorization`    | `CoSecHeaders.AUTHORIZATION` | `AuthorizationRequestInterceptor`         |
 
 ---
 
@@ -581,16 +604,17 @@ import {
 } from '@ahoo-wang/fetcher-cosec';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
+const tokenStorage = new TokenStorage({ earlyPeriod: 300 });
 
 new CoSecConfigurer({
   appId: 'my-enterprise-app',
-  tokenStorage: new TokenStorage({ earlyPeriod: 300 }),
+  tokenStorage,
   deviceIdStorage: new DeviceIdStorage(),
   tokenRefresher: new CoSecTokenRefresher({
-    fetcher,
+    fetcher, // the refresh POST carries IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY
     endpoint: '/auth/refresh',
   }),
-  onUnauthorized: async exchange => {
+  onUnauthorized: exchange => {
     window.location.href = '/login?reason=session_expired';
   },
   onForbidden: async exchange => {
@@ -598,6 +622,8 @@ new CoSecConfigurer({
   },
 }).applyTo(fetcher);
 
+// After login:
+tokenStorage.signIn({ accessToken: '...', refreshToken: '...' });
 const data = await fetcher.get('/api/protected-resource');
 ```
 
@@ -605,28 +631,32 @@ const data = await fetcher.get('/api/protected-resource');
 
 ## Key Classes and Exports
 
-| Class / Export                          | Purpose                                                                              |
-| --------------------------------------- | ------------------------------------------------------------------------------------ |
-| `CoSecConfigurer`                       | Declarative configuration for all CoSec features                                     |
-| `CoSecHeaders`                          | Header name constants (DEVICE_ID, APP_ID, etc.)                                      |
-| `JwtToken<Payload>`                     | Parse JWT with typed payload and expiration check                                    |
-| `JwtCompositeToken`                     | Access/refresh token pair with status checks                                         |
-| `JwtCompositeTokenSerializer`           | Serialize/deserialize composite tokens                                               |
-| `CoSecJwtPayload`                       | Extended JWT payload (tenantId, roles, policies)                                     |
-| `JwtTokenManager`                       | Token lifecycle management with dedup refresh                                        |
-| `CoSecTokenRefresher`                   | Built-in TokenRefresher using Fetcher POST                                           |
-| `TokenStorage`                          | JWT token persistence with cross-tab sync                                            |
-| `DeviceIdStorage`                       | Device ID persistence and generation                                                 |
-| `SpaceIdStorage`                        | Space ID persistence (used by space providers)                                       |
-| `parseJwtPayload` / `isTokenExpired`    | Low-level JWT utilities for custom token logic                                       |
-| `AuthorizationRequestInterceptor`       | Adds Bearer token to requests                                                        |
-| `AuthorizationResponseInterceptor`      | Handles 401 and retries with fresh token                                             |
-| `CoSecRequestInterceptor`               | Adds CoSec headers (appId, deviceId, requestId)                                      |
-| `ResourceAttributionRequestInterceptor` | Injects tenantId/ownerId into URL path params                                        |
-| `UnauthorizedErrorInterceptor`          | Custom 401 error handling                                                            |
-| `ForbiddenErrorInterceptor`             | Custom 403 error handling                                                            |
-| `SpaceIdProvider`                       | Multi-tenant space resolution interface                                              |
-| `DefaultSpaceIdProvider`                | Predicate + storage based space resolution                                           |
-| `RefreshTokenError`                     | Error thrown when token refresh fails                                                |
-| `RefreshSessionChangedError`            | Stops a refresh request after its session changes, without unauthorized side effects |
-| `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`    | Attribute key to skip auto-refresh for a request                                     |
+| Class / Export                                                                           | Purpose                                                                              |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `CoSecConfigurer` / `CoSecConfig`                                                        | Declarative configuration for all CoSec features                                     |
+| `CoSecHeaders` / `ResponseCodes`                                                         | Header name constants / 401 and 403 status constants                                 |
+| `JwtToken<Payload>`                                                                      | Parse JWT with typed payload and expiration check                                    |
+| `JwtCompositeToken`                                                                      | Access/refresh token pair with status checks and `sessionId`                         |
+| `JwtCompositeTokenSerializer`                                                            | Serialize/deserialize composite tokens                                               |
+| `CoSecJwtPayload` / `JwtPayload`                                                         | JWT payload types (tenantId, roles, policies, attributes)                            |
+| `CompositeToken`                                                                         | `{ accessToken, refreshToken }` exchanged with the refresher                         |
+| `JwtTokenManager`                                                                        | Token lifecycle management with dedup refresh                                        |
+| `TokenRefresher` / `CoSecTokenRefresher`                                                 | Refresh contract / built-in implementation using Fetcher POST                        |
+| `TokenStorage`                                                                           | JWT token persistence with cross-tab sync (`'cosec-token'`)                          |
+| `DeviceIdStorage`                                                                        | Device ID persistence and generation (`'cosec-device-id'`)                           |
+| `SpaceIdStorage`                                                                         | Space ID persistence (`'cosec-space-id'`)                                            |
+| `DEFAULT_COSEC_TOKEN_KEY` / `DEFAULT_COSEC_DEVICE_ID_KEY` / `DEFAULT_COSEC_SPACE_ID_KEY` | Default storage keys                                                                 |
+| `parseJwtPayload` / `isTokenExpired`                                                     | Low-level JWT utilities for custom token logic                                       |
+| `idGenerator` / `NanoIdGenerator`                                                        | nanoid-based ID generator used for request, device, and session IDs                  |
+| `AuthorizationRequestInterceptor`                                                        | Adds Bearer token to requests                                                        |
+| `AuthorizationResponseInterceptor`                                                       | Handles 401 and retries once with a fresh token                                      |
+| `CoSecRequestInterceptor`                                                                | Adds CoSec headers (appId, deviceId, requestId, spaceId)                             |
+| `ResourceAttributionRequestInterceptor`                                                  | Fills `{tenantId}`/`{ownerId}` URL path params                                       |
+| `UnauthorizedErrorInterceptor`                                                           | Custom 401 error handling                                                            |
+| `ForbiddenErrorInterceptor`                                                              | Custom 403 error handling                                                            |
+| `SpaceIdProvider`                                                                        | Space resolution interface                                                           |
+| `DefaultSpaceIdProvider` / `NoneSpaceIdProvider`                                         | Predicate + storage resolution / always-null default                                 |
+| `RefreshTokenError`                                                                      | Thrown when token refresh fails (extends `FetcherError`, has `.token`)               |
+| `RefreshSessionChangedError`                                                             | Stops a refresh request after its session changes, without unauthorized side effects |
+| `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`                                                     | `'Ignore-Refresh-Token'`; attribute key to skip auto-refresh for a request           |
+| `AuthorizeResult` / `AuthorizeResults`                                                   | Authorization result type and constants (ALLOW, EXPLICIT_DENY, …)                    |

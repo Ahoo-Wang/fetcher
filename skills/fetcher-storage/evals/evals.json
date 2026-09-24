@@ -1,0 +1,29 @@
+{
+  "skill_name": "fetcher-storage",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Persist the user's theme ({ mode: 'light' | 'dark' }) with a light default and log every change.",
+      "expected_output": "`new KeyStorage<Theme>({ key: 'app:theme', defaultValue: { mode: 'light' } })` (default jsonSerializer), `addListener({ name, handle })` returning a remover; notes defaultValue is not written to storage.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Make that theme stay in sync across browser tabs.",
+      "expected_output": "Passes `eventBus: new BroadcastTypedEventBus({ delegate: new SerialTypedEventBus('app:theme') })`; explains the default bus is local only and native storage events are not used; one bus per key.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "My KeyStorage unit tests leak state between tests and behave differently under SSR.",
+      "expected_output": "Uses `storage: new InMemoryStorage()` per test; explains getStorage() returns a fresh InMemoryStorage per call only when window is undefined and that get() caches values.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Notify other components when an order is placed; nothing needs to be stored.",
+      "expected_output": "Should NOT use this skill: pure notifications are $fetcher-eventbus.",
+      "files": []
+    }
+  ]
+}

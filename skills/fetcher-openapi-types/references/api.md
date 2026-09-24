@@ -22,27 +22,27 @@ The `@ahoo-wang/fetcher-openapi` package provides type-only source definitions f
 - **npm:** `@ahoo-wang/fetcher-openapi`
 - **Type:** TypeScript types only
 - **OpenAPI Support:** The 3.x shapes represented by the exported interfaces
-- **Consumed by:** `@ahoo-wang/wow-generator` (Wow repository) for code generation
+- **Client generation:** moved out of fetcher in 6.0; this package is only the type layer (see `$fetcher-v6-migration`)
 - **Imports:** Single entry point — `import type { ... } from '@ahoo-wang/fetcher-openapi'`
 
 ## All Exported Types
 
 ### Document Structure
 
-| Type                    | Description                                                                  |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| `OpenAPI`               | Root OpenAPI document object                                                 |
-| `Info`                  | API metadata (title, version, description, termsOfService, contact, license) |
-| `Contact`               | Contact information (name, url, email)                                       |
-| `License`               | License information (name, url)                                              |
-| `Server`                | Server configuration with URL template variables                             |
-| `ServerVariable`        | Variable substitution for server URLs (enum, default, description)           |
-| `Paths`                 | Map of API paths to PathItem objects                                         |
-| `PathItem`              | Operations available on a single path (get, post, put, delete, etc.)         |
-| `Components`            | Reusable components (schemas, responses, parameters, and more)               |
-| `ComponentTypeMap`      | Maps component type names to their interfaces                                |
-| `Tag`                   | API grouping and documentation tags                                          |
-| `ExternalDocumentation` | External docs link (url, description)                                        |
+| Type                    | Description                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `OpenAPI`               | Root OpenAPI document object                                                                                      |
+| `Info`                  | API metadata (title, version, description, termsOfService, contact, license) — all optional here, unlike the spec |
+| `Contact`               | Contact information (name, url, email)                                                                            |
+| `License`               | License information (name, url)                                                                                   |
+| `Server`                | Server configuration with URL template variables                                                                  |
+| `ServerVariable`        | Variable substitution for server URLs (enum, default, description)                                                |
+| `Paths`                 | Map of API paths to PathItem objects (plus `x-*` keys)                                                            |
+| `PathItem`              | Per-path `get`…`trace` operations, `$ref`, `summary`, `servers`, `parameters`                                     |
+| `Components`            | Reusable components (schemas, responses, parameters, and more)                                                    |
+| `ComponentTypeMap`      | Maps each `Components` key to its non-reference interface (e.g. `schemas` → `Schema`)                             |
+| `Tag`                   | API grouping and documentation tags                                                                               |
+| `ExternalDocumentation` | External docs link (url, description)                                                                             |
 
 ```typescript
 import type {
@@ -81,11 +81,11 @@ const doc: OpenAPI = {
 
 **Schema property categories:**
 
-- **General:** `title`, `description`, `type`, `format`, `nullable`, `readOnly`, `writeOnly`, `deprecated`, `example`, `const`, `default`, `$schema`
-- **Numeric:** `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`
+- **General:** `title`, `description`, `type` (`SchemaType | SchemaType[]`), `format`, `nullable`, `readOnly`, `writeOnly`, `deprecated`, `example`, `const`, `default`, `$schema`
+- **Numeric:** `minimum`, `maximum`, `exclusiveMinimum` / `exclusiveMaximum` (`boolean | number`, 3.0 and 3.1 styles), `multipleOf`
 - **String:** `minLength`, `maxLength`, `pattern`
 - **Array:** `items` (Schema | Reference), `minItems`, `maxItems`, `uniqueItems`
-- **Object:** `properties`, `required`, `minProperties`, `maxProperties`, `additionalProperties`
+- **Object:** `properties`, `required` (string[]), `minProperties`, `maxProperties`, `additionalProperties` (`boolean | Schema | Reference`)
 - **Composition:** `allOf`, `anyOf`, `oneOf` (each: Array<Schema | Reference>); `not` is a single `Schema | Reference`
 - **Enumeration:** `enum` (any[])
 - **Polymorphism:** `discriminator` (Discriminator)
@@ -193,12 +193,12 @@ const userIdParam: Parameter = {
 
 ### Response Types
 
-| Type        | Description                                                                            |
-| ----------- | -------------------------------------------------------------------------------------- |
-| `Response`  | Response definition: `description`, `headers`, `content`, `links`                      |
-| `Responses` | Map of HTTP status codes to Response objects                                           |
-| `Link`      | Design-time link: `operationRef`, `operationId`, `parameters`, `requestBody`, `server` |
-| `Example`   | Example object: `summary`, `description`, `value`, `externalValue`                     |
+| Type        | Description                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------- |
+| `Response`  | Response definition: `description` (optional here), `headers`, `content`, `links`                     |
+| `Responses` | `default` plus status-code keys, each `Response \| Reference`                                         |
+| `Link`      | Design-time link: `operationRef`, `operationId`, `parameters`, `requestBody`, `description`, `server` |
+| `Example`   | Example object: `summary`, `description`, `value`, `externalValue`                                    |
 
 ```typescript
 import type { Response, Link } from '@ahoo-wang/fetcher-openapi';
@@ -226,12 +226,12 @@ const errorResponse: Response = {
 
 ### Security Types
 
-| Type                  | Description                                                                  |
-| --------------------- | ---------------------------------------------------------------------------- |
-| `SecurityScheme`      | Auth scheme: `apiKey`, `http`, `oauth2`, `openIdConnect`                     |
-| `SecurityRequirement` | Map of scheme names to required scopes                                       |
-| `OAuthFlows`          | OAuth flow configs: implicit, password, clientCredentials, authorizationCode |
-| `OAuthFlow`           | Single OAuth flow: authorizationUrl, tokenUrl, refreshUrl, scopes            |
+| Type                  | Description                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `SecurityScheme`      | `type`: `'apiKey' \| 'http' \| 'oauth2' \| 'openIdConnect'`; plus `name`, `in`, `scheme`, `bearerFormat`, `flows`, `openIdConnectUrl` |
+| `SecurityRequirement` | Map of scheme names to required scopes                                                                                                |
+| `OAuthFlows`          | OAuth flow configs: implicit, password, clientCredentials, authorizationCode                                                          |
+| `OAuthFlow`           | Single OAuth flow: authorizationUrl, tokenUrl, refreshUrl, `scopes` (required)                                                        |
 
 ```typescript
 import type {
@@ -284,8 +284,8 @@ import type {
   SchemaType,
 } from '@ahoo-wang/fetcher-openapi';
 
-// Distinguish $ref from inline definitions
-type ResolvedOrRef<T> = T | Reference;
+// Distinguish $ref from inline definitions (no runtime guard is exported).
+// Do not use this on PathItem: it has its own optional `$ref` field.
 function isRef<T extends object>(obj: T | Reference): obj is Reference {
   return '$ref' in obj;
 }
@@ -378,7 +378,7 @@ import type {
 
 **Key characteristics:**
 
-- Pure type definitions — no runtime JavaScript, zero bundle size
+- Pure type definitions — no runtime JavaScript (the built ESM file is empty); use `import type`
 - Single entry point import (`@ahoo-wang/fetcher-openapi`)
 - Object types extend `Extensible` for `x-*` extension support (exceptions: `Reference` and type aliases like `IsReference`/`ComponentTypeMap`)
 - Framework agnostic — works with any TypeScript project

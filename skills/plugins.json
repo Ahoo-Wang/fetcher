@@ -3,7 +3,7 @@
   "plugins": [
     {
       "name": "ahoo-fetcher-skills",
-      "description": "Skills for building with the Fetcher TypeScript ecosystem, including HTTP clients, decorators, event buses, SSE/OpenAI streaming, storage, CoSec authentication, OpenAPI types, and React hooks. Wow CQRS clients and OpenAPI generation moved to the Wow repository's skills.",
+      "description": "Skills for building with the Fetcher TypeScript ecosystem: the core HTTP client, decorator services, typed event buses, persisted storage, SSE/LLM streaming, OpenAI chat completions, OpenAPI types, React hooks and CoSec authentication, plus upgrading from Fetcher 5.x to 6.0. Wow CQRS clients and OpenAPI client generation live in the Wow repository's skills.",
       "skills": {
         "include": ["*"],
         "exclude": ["*-workspace"]
@@ -12,16 +12,22 @@
         "fetcher",
         "typescript",
         "http-client",
-        "openapi",
+        "decorators",
+        "eventbus",
+        "storage",
         "sse",
+        "llm-streaming",
+        "openai",
+        "openapi",
         "react",
-        "cosec"
+        "cosec",
+        "migration"
       ],
       "category": "development",
       "interface": {
         "displayName": "Ahoo Fetcher Skills",
         "capabilities": ["Skills"],
-        "defaultPrompt": "Help me use Fetcher skills for TypeScript HTTP clients, OpenAPI types, streaming, React hooks, storage, and CoSec authentication."
+        "defaultPrompt": "Help me use Fetcher skills for TypeScript HTTP clients, decorator services, streaming, React hooks, storage, CoSec authentication, OpenAPI types, or upgrading from Fetcher 5.x to 6.0."
       },
       "policy": {
         "installation": "AVAILABLE",

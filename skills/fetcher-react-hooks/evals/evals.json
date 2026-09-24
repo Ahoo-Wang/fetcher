@@ -1,0 +1,35 @@
+{
+  "skill_name": "fetcher-react-hooks",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Build a search box component that POSTs { keyword } to /api/search as the user types (300 ms debounce) and shows loading, results and errors.",
+      "expected_output": "Uses `useDebouncedFetcherQuery` with `debounce: { delay: 300 }` and an explicit `autoExecute: true` (off by default for debounced hooks), `setQuery` on input, `run`/`cancel`/`isPending()`; renders `loading`, `result`, `error`.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "useFetcher gives me result.data undefined for GET /users/1 — how do I get the parsed user?",
+      "expected_output": "Explains `useFetcher`'s default result is the FetchExchange; pass `resultExtractor: ResultExtractors.Json` (or read the exchange's response).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I call execute(fetch(\"/api/x\")) with useExecutePromise and it runs twice and ignores abort.",
+      "expected_output": "Passes a PromiseSupplier `(abortController) => fetch(url, { signal: abortController.signal })`, not a promise; reads data from `result`/`onSuccess` because execute resolves to void.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Generate React hooks from my decorator-based UserService so components can call getUser and updateUser.",
+      "expected_output": "`createQueryApiHooks({ api: userService })` for query-style methods and/or `createExecuteApiHooks({ api: userService })` producing `use<Method>` hooks; notes execute hooks do not forward the AbortController.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "After upgrading to Fetcher 6, usePagedQuery is no longer exported from @ahoo-wang/fetcher-react.",
+      "expected_output": "Should NOT primarily use this skill: removed hooks are covered by $fetcher-v6-migration.",
+      "files": []
+    }
+  ]
+}

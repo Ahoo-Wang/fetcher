@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher 6.0 Migration'
+  short_description: 'Upgrade a project from Fetcher 5.x to 6.0'
+  default_prompt: 'Use $fetcher-v6-migration to check whether this project can upgrade to Fetcher 6.0 and plan the changes.'

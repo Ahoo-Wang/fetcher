@@ -30,6 +30,8 @@ Create clean, declarative API services using `@ahoo-wang/fetcher-decorator`.
 import 'reflect-metadata';
 ```
 
+The decorators are legacy TypeScript decorators (parameter decorators do not exist in TC39 standard decorators): the consuming `tsconfig.json` needs `"experimentalDecorators": true`. Babel builds need `@babel/plugin-proposal-decorators` in `legacy` mode.
+
 ## Installation
 
 ```bash
@@ -71,7 +73,7 @@ export class UserService {
 }
 ```
 
-**@api(basePath, options)** — `basePath` is the first positional argument; options:
+**@api(basePath = '', options = {})** — `basePath` is the first positional argument; `options` is `Omit<ApiMetadata, 'basePath'>`:
 
 - `fetcher` (string | Fetcher) - Name or instance of the fetcher to use
 - `timeout` (number) - Default timeout for all requests (ms)
@@ -91,15 +93,17 @@ export class UserService {
 @del(path, options)      // DELETE request
 @head(path, options)     // HEAD request
 @options(path, options)  // OPTIONS request
-@endpoint(HttpMethod.TRACE, '/path', options) // Generic: any HTTP method
+@endpoint(HttpMethod.TRACE, '/path', options) // Generic: any HTTP method (there is no @trace)
 ```
+
+`path` defaults to `''`. The DELETE decorator is `del` (not `delete`). `HttpMethod` comes from `@ahoo-wang/fetcher`.
 
 **Method decorator options** (`@get(path, options)` — `path` is the first positional argument, not an option field):
 
 - `timeout` (number) - Per-method timeout override (ms)
 - `headers` (RequestHeaders) - Method-specific headers; header names are matched case-insensitively across API, method and parameter layers (later values win).
 - `fetcher` (string | Fetcher) - Override the fetcher for this method
-- `basePath` (string) - Per-method base path override (falls back to the class-level `@api()` basePath)
+- `basePath` (string) - Per-method base path override (falls back to the class-level `@api()` basePath); the final URL is `combineURLs(basePath, path)`, then joined to the fetcher's `baseURL`
 - `resultExtractor` - Override result extractor for this method
 - `returnType` (EndpointReturnType) - Override return type for this method
 - `attributes` (Record<string, any>) - Method-specific attributes
@@ -108,6 +112,11 @@ export class UserService {
 ### 3. Parameter Decorators
 
 All parameter decorators (`@path`, `@query`, `@header`, `@attribute`) support **object expansion**: pass a plain object and its keys are expanded into individual parameters. `@attribute` also supports `Map` objects.
+
+- Any `typeof value === 'object'` argument is expanded, **including arrays**: `@query('ids') ids: string[]` becomes `0=…&1=…`, not `ids=…`. Pass a joined string (or build the query yourself) for array parameters.
+- `undefined`/`null` arguments to `@path`/`@query`/`@header` are skipped.
+- When the name is omitted (`@path()`), it is read from the compiled function source (`Function.prototype.toString`). Minifiers rename parameters, so pass explicit names in bundled code; an unbound `{placeholder}` in the endpoint path logs a `[fetcher-decorator]` warning and then fails URL resolution with `Missing required path parameter`.
+- Only one body is sent: if several arguments carry `@body()`, the right-most one wins. `@request()` takes a `ParameterRequest` (`FetchRequestInit` plus `path`) that is merged over the decorator-built request with `mergeRequest`, so its `method`, `body`, `timeout`, headers and `urlParams` win; its `path` replaces the endpoint path.
 
 ```text
 @get('/{userId}/posts')
@@ -150,7 +159,7 @@ batchOperation(@request() request: ParameterRequest): Promise<Response> { throw 
 
 ### 4. AbortSignal / AbortController Auto-Detection
 
-If a method argument is an `AbortSignal` or `AbortController`, it is automatically used for request cancellation -- no decorator needed:
+If a method argument is an `AbortSignal` or `AbortController`, it is automatically used for request cancellation -- no decorator needed. Passing an `AbortSignal` disables the fetcher timeout for that call (core `timeoutFetch` hands a caller `signal` straight to `fetch`); pass an `AbortController` to keep both cancellation and timeout.
 
 ```text
 @get('/{id}')
@@ -166,7 +175,7 @@ const user = await userService.getUser('123', controller.signal);
 
 ### 5. EndpointReturnType
 
-Controls what decorated methods return. Set via `@api()` or method decorator options.
+Controls what decorated methods return. Set via `@api()` or method decorator options. Enum values: `EndpointReturnType.RESULT = 'Result'` (default) and `EndpointReturnType.EXCHANGE = 'Exchange'`. With `EXCHANGE` the exchange is returned after the interceptors run, and the result extractor is not invoked.
 
 ```typescript
 import { EndpointReturnType } from '@ahoo-wang/fetcher-decorator';
@@ -191,15 +200,15 @@ export class UserService {
 
 Core extractors from `@ahoo-wang/fetcher`:
 
-| Extractor                      | Returns         | Use Case                     |
-| ------------------------------ | --------------- | ---------------------------- |
-| `ResultExtractors.Json`        | Parsed JSON     | REST APIs (default)          |
-| `ResultExtractors.Response`    | `Response`      | Need status/headers          |
-| `ResultExtractors.Exchange`    | `FetchExchange` | Full request/response access |
-| `ResultExtractors.Text`        | Plain text      | Text responses               |
-| `ResultExtractors.Blob`        | `Blob`          | Binary data                  |
-| `ResultExtractors.ArrayBuffer` | `ArrayBuffer`   | Raw binary data              |
-| `ResultExtractors.Bytes`       | `Uint8Array`    | Byte arrays                  |
+| Extractor                      | Returns         | Use Case                                                                        |
+| ------------------------------ | --------------- | ------------------------------------------------------------------------------- |
+| `ResultExtractors.Json`        | Parsed JSON     | REST APIs (**decorator default**; plain `fetcher.get()` defaults to `Response`) |
+| `ResultExtractors.Response`    | `Response`      | Need status/headers                                                             |
+| `ResultExtractors.Exchange`    | `FetchExchange` | Full request/response access                                                    |
+| `ResultExtractors.Text`        | Plain text      | Text responses                                                                  |
+| `ResultExtractors.Blob`        | `Blob`          | Binary data                                                                     |
+| `ResultExtractors.ArrayBuffer` | `ArrayBuffer`   | Raw binary data                                                                 |
+| `ResultExtractors.Bytes`       | `Uint8Array`    | Byte arrays                                                                     |
 
 Event stream extractors from `@ahoo-wang/fetcher-eventstream`:
 
@@ -234,7 +243,7 @@ export class UserService {
 Implement `ExecuteLifeCycle` to hook into request execution:
 
 ```typescript
-import { ExecuteLifeCycle } from '@ahoo-wang/fetcher-decorator';
+import type { ExecuteLifeCycle } from '@ahoo-wang/fetcher-decorator';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 
 @api('/users', { fetcher: myFetcher })
@@ -249,21 +258,20 @@ export class UserService implements ExecuteLifeCycle {
   }
 
   afterExecute(exchange: FetchExchange): void | Promise<void> {
-    if (exchange.response?.status === 401) {
-      // Handle unauthorized
-    }
+    // Only reached when the exchange succeeded (or an error interceptor recovered it).
+    console.debug(exchange.request.url, exchange.response?.status);
   }
 }
 ```
 
 **Execution flow:**
 
-1. Method arguments resolved into request config
-2. `FetchExchange` created
-3. `beforeExecute` hook called
-4. Interceptors process the exchange
-5. `afterExecute` hook called
-6. Result extracted and returned
+1. Fetcher resolved (`getFetcher(endpoint.fetcher ?? api.fetcher)`), then method arguments resolved into request config
+2. `FetchExchange` created with `fetcher.resolveExchange()` (fetcher default headers/timeout merged in); attributes also carry the service instance under `DECORATOR_TARGET_ATTRIBUTE_KEY` and the `FunctionMetadata` under `DECORATOR_METADATA_ATTRIBUTE_KEY`
+3. `beforeExecute` hook called -- before any request interceptor, so `request.url` is still the unresolved template and `urlParams` are editable
+4. `fetcher.interceptors.exchange()` runs request, response and error phases
+5. `afterExecute` hook called -- **skipped when step 4 throws** (e.g. `ExchangeError` wrapping `HttpStatusValidationError` for a 401 under the default `validateStatus`); handle failures in an error interceptor or a `try/catch` at the call site
+6. `EXCHANGE` return type returns the exchange; otherwise `exchange.extractResult()` is returned
 
 ### 8. Service Inheritance
 
@@ -278,27 +286,31 @@ export class BaseUserService {
   }
 }
 
-@api('/users/{userId}', { fetcher: myFetcher })
-export class UserPostService extends BaseUserService {
-  @get('/posts')
+@api('/admin/users', { fetcher: myFetcher })
+export class AdminUserService extends BaseUserService {
+  @get('/{userId}/posts')
   getPosts(@path('userId') userId: string): Promise<Post[]> {
     throw autoGeneratedError();
   }
 }
+// new AdminUserService().getStatus() -> GET /admin/users/status
 ```
 
-Note: Inherited methods are rebound on the child class with the child's `@api()` metadata, so parent and child may use different fetchers or base paths — inherited endpoints then simply use the child's configuration.
+Note: `@api()` walks the whole prototype chain and rebinds every decorated method on the child class with the child's `@api()` metadata, so inherited endpoints use the child's fetcher and base path. A child base path with a path placeholder (e.g. `/users/{userId}`) therefore breaks every inherited endpoint that has no matching `@path` argument.
 
 ### 9. Fetcher Resolution Priority
 
 Resolution is `getFetcher(endpoint.fetcher ?? api.fetcher)`, where `api` is the class-level `@api()` metadata merged with any instance-level `apiMetadata` override:
 
 1. **Endpoint-level fetcher** (method decorator options, highest priority)
-2. **Instance `apiMetadata` property** (`ApiMetadataCapable` — shallow-merges over class metadata per service instance)
+2. **Instance `apiMetadata` property** (`ApiMetadataCapable` — shallow-merges over class metadata per service instance; applies to every `ApiMetadata` field, not only `fetcher`)
 3. **Class-level fetcher** (from `@api()` decorator)
-4. **Default fetcher** (registered as `'default'`)
+4. **Default fetcher** (`fetcherRegistrar.default`, registered as `'default'`)
+
+A string name resolves through `fetcherRegistrar.requiredGet()` at call time and throws `Fetcher <name> not found` if unregistered. The merged metadata is captured the **first time each method is called** on an instance (cached in the instance's `requestExecutors` map), so set `apiMetadata` in the constructor or before the first call; later reassignments do not affect methods already called.
 
 ```typescript
+import { Fetcher } from '@ahoo-wang/fetcher';
 import type {
   ApiMetadata,
   ApiMetadataCapable,
@@ -323,7 +335,7 @@ service.apiMetadata = { fetcher: customFetcher }; // overrides class-level for t
 
 ## Auto-Generated Error Pattern
 
-The `throw autoGeneratedError()` in method bodies is a placeholder. The decorator system replaces these at runtime with the actual HTTP call implementation. Never put real logic in these methods. Arguments passed to `autoGeneratedError(...)` are accepted but **ignored** -- they exist only to prevent ESLint `no-unused-vars` errors.
+The `throw autoGeneratedError()` in method bodies is a placeholder. `@api()` replaces every method that has endpoint metadata on the class prototype at decoration time. Never put real logic in these methods. `autoGeneratedError(...)` returns an `AutoGenerated` error; its arguments are **ignored** -- they exist only to prevent ESLint `no-unused-vars` errors. If an `AutoGenerated` error is actually thrown, the class is missing `@api()` or the method is missing an endpoint decorator.
 
 ```text
 // CORRECT - placeholder for auto-generation
@@ -435,7 +447,7 @@ import type {
   ParameterRequest,
   ParameterMetadata,
 } from '@ahoo-wang/fetcher-decorator';
-import { ResultExtractors } from '@ahoo-wang/fetcher';
+import { HttpMethod, ResultExtractors } from '@ahoo-wang/fetcher';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 import {
   EventStreamResultExtractor,

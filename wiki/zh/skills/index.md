@@ -22,26 +22,27 @@ Claude Code 使用 `/plugin marketplace add https://github.com/Ahoo-Wang/skills`
 
 ## 选择任务边界
 
-| 任务                  | Skill                                                                                                                    | API 参考                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| HTTP 客户端           | [`$fetcher-integration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/SKILL.md)             | [fetcher](../reference/fetcher/index.md)         |
-| 声明式服务            | [`$fetcher-decorator-service`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-decorator-service/SKILL.md) | [decorator](../reference/decorator/index.md)     |
-| 事件投递              | [`$fetcher-eventbus`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-eventbus/SKILL.md)                   | [eventbus](../reference/eventbus/index.md)       |
-| 值存储                | [`$fetcher-storage`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-storage/SKILL.md)                     | [storage](../reference/storage/index.md)         |
-| SSE 消费              | [`$fetcher-llm-streaming`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/SKILL.md)         | [eventstream](../reference/eventstream/index.md) |
-| 对话补全              | [`$fetcher-openai-client`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openai-client/SKILL.md)         | [openai](../reference/openai/index.md)           |
-| OpenAPI 类型          | [`$fetcher-openapi-types`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/SKILL.md)         | [openapi](../reference/openapi/index.md)         |
-| 客户端生成（5.x）     | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-openapi-generator/SKILL.md)  | [generator](../reference/generator/index.md)     |
-| React 请求状态        | [`$fetcher-react-hooks`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/SKILL.md)             | [react](../reference/react/index.md)             |
-| 数据视图（5.x）       | [`$fetcher-viewer-components`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-viewer-components/SKILL.md)  | [viewer](../reference/viewer/index.md)           |
-| CoSec 认证            | [`$fetcher-cosec-auth`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-cosec-auth/SKILL.md)               | [cosec](../reference/cosec/index.md)             |
-| Wow 命令与查询（5.x） | [`$fetcher-wow-cqrs`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-wow-cqrs/SKILL.md)                    | [wow](../reference/wow/index.md)                 |
+| 任务                  | Skill                                                                                                                    | API 参考                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| HTTP 客户端           | [`$fetcher-integration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/SKILL.md)             | [fetcher](../reference/fetcher/index.md)                                               |
+| 声明式服务            | [`$fetcher-decorator-service`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-decorator-service/SKILL.md) | [decorator](../reference/decorator/index.md)                                           |
+| 事件投递              | [`$fetcher-eventbus`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-eventbus/SKILL.md)                   | [eventbus](../reference/eventbus/index.md)                                             |
+| 值存储                | [`$fetcher-storage`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-storage/SKILL.md)                     | [storage](../reference/storage/index.md)                                               |
+| SSE 消费              | [`$fetcher-llm-streaming`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/SKILL.md)         | [eventstream](../reference/eventstream/index.md)                                       |
+| 对话补全              | [`$fetcher-openai-client`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openai-client/SKILL.md)         | [openai](../reference/openai/index.md)                                                 |
+| OpenAPI 类型          | [`$fetcher-openapi-types`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/SKILL.md)         | [openapi](../reference/openapi/index.md)                                               |
+| 客户端生成（5.x）     | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-openapi-generator/SKILL.md)  | [generator](../reference/generator/index.md)                                           |
+| React 请求状态        | [`$fetcher-react-hooks`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/SKILL.md)             | [react](../reference/react/index.md)                                                   |
+| 数据视图（5.x）       | [`$fetcher-viewer-components`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-viewer-components/SKILL.md)  | [viewer](../reference/viewer/index.md)                                                 |
+| CoSec 认证            | [`$fetcher-cosec-auth`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-cosec-auth/SKILL.md)               | [cosec](../reference/cosec/index.md)                                                   |
+| Wow 命令与查询（5.x） | [`$fetcher-wow-cqrs`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-wow-cqrs/SKILL.md)                    | [wow](../reference/wow/index.md)                                                       |
+| 从 5.x 升级到 6.0     | [`$fetcher-v6-migration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-v6-migration/SKILL.md)           | [6.0 发布说明](https://github.com/Ahoo-Wang/fetcher/blob/main/docs/releases/v6.0.0.md) |
 
 ## 写一个可验证的请求
 
 ```text
-$fetcher-openapi-generator 从 ./openapi.yaml 生成客户端到 src/generated，
-使用现有 tsconfig，不修改输入契约，并验证生成代码的类型检查。
+$fetcher-v6-migration 检查这个仓库能否升级到 Fetcher 6.0。
+逐条列出阻塞的用法（文件与行号），判断留在 5.x 还是升级，改写后做类型检查。
 ```
 
 给出输入、目标目录、已有客户端、运行环境和验收标准。Skill 的 references/api.md 是 Agent 可按需加载的详细材料；人类参考页同样提供准确 API 契约，不要求读者转去 Skill 才能完成开发。
