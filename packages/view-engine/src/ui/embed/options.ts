@@ -12,7 +12,7 @@
  */
 
 import type { Ref } from 'react';
-import type { DashboardNavigation, ViewEngine } from '../../runtime/index.js';
+import type { ViewNavigation, ViewEngine } from '../../runtime/index.js';
 import type { PanelHeadingLevel } from '../DashboardPanel.js';
 import type { ViewMessages } from '../messages.js';
 import type { RenderFailureHandler } from '../RenderBoundary.js';
@@ -85,10 +85,10 @@ export interface EmbedBaseProps {
   openInWorkbench?: boolean;
   /**
    * The host's route: 在工作台中打开, the follow-up menu on a group and a
-   * panel's destination go through it (`DashboardNavigation`). The package
+   * panel's destination go through it (`ViewNavigation`). The package
    * never touches the address; without it none of them exist.
    */
-  onNavigate?(to: DashboardNavigation): void;
+  onNavigate?(to: ViewNavigation): void;
   /** Follows the host page when left out. */
   theme?: 'light' | 'dark';
   /** Wording, merged over what is already in force: where a host translates. */

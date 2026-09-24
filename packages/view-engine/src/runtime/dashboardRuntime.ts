@@ -85,7 +85,7 @@ export type {
 } from './dashboard/editing.js';
 export type { PanelGrouping } from './dashboard/grouping.js';
 export type {
-  DashboardNavigation,
+  ViewNavigation,
   HeldFilters,
   DashboardRuntime,
   DashboardRuntimeOptions,

@@ -14,7 +14,7 @@ import { useState, type CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type {
   DashboardFilters,
-  DashboardNavigation,
+  ViewNavigation,
   ViewEngine,
 } from '@ahoo-wang/fetcher-view-engine';
 import { EmbeddedDashboard } from '@ahoo-wang/fetcher-view-engine/ui';
@@ -33,7 +33,7 @@ import { Separator } from '@/ui/components/separator';
 import { AppShell } from '../shared/AppShell.js';
 import {
   CUSTOMER,
-  CUSTOMER_ADDRESS,
+  CUSTOMER_PAGE,
   EMBED_ENVIRONMENT,
   boardWithAPanelOut,
   customerBoard,
@@ -50,8 +50,9 @@ import '@ahoo-wang/fetcher-view-engine/styles.css';
  * 与 `EmbeddedView` 按资源分开：宿主嵌一块板就用 `EmbeddedDashboard`。它有明
  * 确的一档交互——只读、可交互、可编辑——每个筛选各自三态：可编辑（在筛选条上、
  * 归读者）、锁定（在筛选条上读作它的值，改不了）、隐藏（不在筛选条上，照样收
- * 窄接上的面板）。筛选值是宿主的地址：`filterValues` 进、`onFiltersChange`
- * 出，包本身从不碰地址。
+ * 窄接上的面板）。读者的筛选值是宿主的地址：`initialFilters` 进、
+ * `onFiltersChange` 出；锁定与隐藏的值是页面自己的（`pageValues`），从不进地
+ * 址。包本身从不碰地址。
  *
  * 锁定不是安全边界：条件是在浏览器里拼进查询的，租户、归属与权限必须由 Wow 后
  * 端强制。
@@ -77,7 +78,7 @@ function addressOf(filters: DashboardFilters): string {
 }
 
 /** Where the host's route last went, as the page says it. */
-function routeOf(to: DashboardNavigation | null): string {
+function routeOf(to: ViewNavigation | null): string {
   if (!to) return '（还没去过哪里）';
   if (to.kind === 'url') return to.url;
   if (to.kind === 'view')
@@ -89,11 +90,13 @@ function routeOf(to: DashboardNavigation | null): string {
 
 /**
  * 客户详情页：嵌一块「客户订单」板，可交互。客户由页面锁定成这一页的客户，下
- * 单时间归读者；筛选值经宿主的地址来回；追问与「在工作台中打开」经宿主的路由。
+ * 单时间归读者、经宿主的地址来回（客户不进地址，它是页面自己的）；追问与「在工作台中打开」经宿主的路由。
  */
 function CustomerPage({ engine }: { engine: ViewEngine }) {
-  const [address, setAddress] = useState<DashboardFilters>(CUSTOMER_ADDRESS);
-  const [route, setRoute] = useState<DashboardNavigation | null>(null);
+  // The reader's filters, as the host's address keeps them; the customer
+  // is the page's own and never goes into it.
+  const [address, setAddress] = useState<DashboardFilters>({ values: {} });
+  const [route, setRoute] = useState<ViewNavigation | null>(null);
   return (
     <div
       data-host-page
@@ -139,7 +142,8 @@ function CustomerPage({ engine }: { engine: ViewEngine }) {
               instanceId={customerBoard.id}
               interaction="interactive"
               filterModes={{ customer: 'locked' }}
-              filterValues={address}
+              pageValues={CUSTOMER_PAGE}
+              initialFilters={address}
               onFiltersChange={setAddress}
               onNavigate={setRoute}
               {...HOST_LANGUAGE}
@@ -151,13 +155,13 @@ function CustomerPage({ engine }: { engine: ViewEngine }) {
       <dl className="text-muted-foreground grid gap-1 text-xs">
         <div className="flex gap-2">
           <dt>宿主地址</dt>
-          <dd data-host-address className="min-w-0 truncate font-mono">
+          <dd data-host-address className="min-w-0 font-mono break-all">
             {addressOf(address)}
           </dd>
         </div>
         <div className="flex gap-2">
           <dt>宿主路由</dt>
-          <dd data-host-route className="min-w-0 truncate font-mono">
+          <dd data-host-route className="min-w-0 font-mono break-all">
             {routeOf(route)}
           </dd>
         </div>
@@ -191,7 +195,7 @@ function WallScreen({ engine }: { engine: ViewEngine }) {
             size="fill"
             withTitle
             filterModes={{ region: 'locked' }}
-            filterValues={{ values: { region: ['CN-EAST'] } }}
+            pageValues={{ values: { region: ['CN-EAST'] } }}
             {...HOST_LANGUAGE}
           />
         </div>
@@ -264,7 +268,7 @@ const description = `**仪表盘视图 · 嵌入仪表盘**
 - **数据源**：${FIXTURE}；时钟钉在 2026-09-18 上午（Asia/Shanghai），「本月」每次都一样。
 - **准备**：每次挂载都新建引擎与存储。
 - **操作**：客户详情页可交互——客户锁定、下单时间可改、点一组经宿主路由追问；大屏全只读、铺满；第三个场景里一个面板出不来。
-- **观察**：锁定的筛选读作它的值、没有控件；筛选值在页脚的「宿主地址」里来回；锁定不是安全边界——租户、归属与权限归 Wow 后端。`;
+- **观察**：锁定的筛选读作它的值、没有控件；读者的筛选值在页脚的「宿主地址」里来回，锁定的客户不在里面；锁定不是安全边界——租户、归属与权限归 Wow 后端。`;
 
 const meta = {
   title: 'View Engine/仪表盘视图/EmbeddedDashboard',
@@ -297,7 +301,7 @@ type Story = StoryObj<typeof meta>;
  *
  * 筛选条上「客户」是锁定的：读作「晨光食品」、带一把锁、没有控件；「下单时间」
  * 是读者的，默认本月。点「按仓库金额」的一行弹出追问菜单，「查看这些记录」经
- * 宿主的路由打开——带着这位客户与这段时间。页脚的「宿主地址」跟着筛选变。
+ * 宿主的路由打开——带着这位客户与这段时间。页脚的「宿主地址」跟着下单时间变，锁定的客户从不进去。
  */
 export const CustomerDetail: Story = {
   name: '客户详情页（可交互）',

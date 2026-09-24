@@ -13,7 +13,7 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type {
-  DashboardNavigation,
+  ViewNavigation,
   DataViewDefinition,
   FilterTree,
   ViewEngine,
@@ -160,7 +160,7 @@ function HostPage({
   const surface = useRef<HTMLDivElement>(null);
   // Where the host's route last went: 在工作台中打开 and a group's
   // follow-ups come here, and the page says so under the card.
-  const [route, setRoute] = useState<DashboardNavigation | null>(null);
+  const [route, setRoute] = useState<ViewNavigation | null>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   const expansion = useViewExpansion(surface, toggle);
   return (
@@ -258,7 +258,10 @@ function HostPage({
         数据来自运单中心 · 每 5 分钟同步一次
       </p>
       {route && (
-        <p data-host-route className="text-muted-foreground font-mono text-xs">
+        <p
+          data-host-route
+          className="text-muted-foreground font-mono text-xs break-all"
+        >
           宿主路由：
           {route.kind === 'view'
             ? `打开视图 ${route.instanceId} · ${JSON.stringify(route.filter)}`

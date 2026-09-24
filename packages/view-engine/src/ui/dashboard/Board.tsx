@@ -19,7 +19,7 @@ import {
 } from '../../dashboard/index.js';
 import type { ViewInstance } from '../../model/index.js';
 import type { DashboardController, SaveCommands } from '../../react/index.js';
-import type { DashboardNavigation, ViewEngine } from '../../runtime/index.js';
+import type { ViewNavigation, ViewEngine } from '../../runtime/index.js';
 import { DashboardGrid, type DashboardGridProps } from '../DashboardGrid.js';
 import { panelNames } from '../DashboardPanel.js';
 import { useViewMessages } from '../MessagesProvider.js';
@@ -55,7 +55,7 @@ export interface DashboardBoardProps {
   editing: boolean;
   onEditingChange(editing: boolean): void;
   onSaved?(instance: ViewInstance): void;
-  onNavigate?(to: DashboardNavigation): void;
+  onNavigate?(to: ViewNavigation): void;
   onRenderFailure?: RenderFailureHandler;
   /**
    * How a page that embeds the board reads it (D22): the grid's switches —

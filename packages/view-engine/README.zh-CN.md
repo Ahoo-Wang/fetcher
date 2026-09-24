@@ -230,9 +230,10 @@ import {
   instanceId="customer-board"
   interaction="interactive"
   filterModes={{ customer: 'locked' }}
-  filterValues={{
+  pageValues={{
     values: { customer: { items: [{ id: customerId, label: customerName }] } },
   }}
+  initialFilters={readFromAddress()}
   onFiltersChange={writeToAddress}
   onNavigate={to => router.push(routeFor(to))}
 />
@@ -246,7 +247,7 @@ import {
 | `interactive` | 表头排序、翻页；分析的表格｜图表切换、按一组追问；「在工作台中打开」 | 追问菜单、交叉筛选、自定义目的地、「在工作台中打开」      |
 | `editable`    | —                                                                    | 「编辑」，给能保存这块板的人：就地搭板子，「完成」保存    |
 
-离开嵌入的每一条路都经宿主的**一个**路由 `onNavigate(to)`——与仪表盘工作台交出的同一个 `DashboardNavigation`；不给就一条也没有。
+离开嵌入的每一条路都经宿主的**一个**路由 `onNavigate(to)`——与仪表盘工作台交出的同一个 `ViewNavigation`；不给就一条也没有。
 
 **开关**——关掉就是不存在，不是置灰：
 
@@ -261,13 +262,13 @@ import {
 | `openInWorkbench`           | 开        | 可交互、可编辑两档里给不给「在工作台中打开」                                                                |
 | `size`                      | `content` | `content` 按内容定高、有上限（记录表格在 `--fve-record-table-max-h` 里滚）；`fill` 填满容器——整页嵌入、大屏 |
 
-**仪表盘的筛选逐个三态**（`filterModes` 按筛选名，时间粒度用 `groupingMode`）：`editable`——在筛选条上、归读者，与工作台一样，也是缺省；`locked`——在筛选条上读作它的值，带一把锁、没有控件；`hidden`——不在筛选条上，照样收窄接上的面板。锁定与隐藏由 runtime 持有，读者做什么——改值、「清空」、点一组交叉筛选——都改不了它们。它们取 `filterValues` 里的值（没写就是默认值），从第一次查询起就在，并**跟着这个属性变**：客户页换到下一位客户，板子跟着换。读者的筛选在打开时读一次 `filterValues` 里写到它们的那部分，读法与 `DashboardWorkbench` 的 `initialFilters` 相同；`onFiltersChange` 报出所有筛选此刻的值（打开那一刻也报），供宿主写进地址。原来 `scopeFilter` 对仪表盘做的事，现在是一个锁定的筛选：在板上声明那个筛选，再锁定它。
+**仪表盘的筛选逐个三态**（`filterModes` 按筛选名，时间粒度用 `groupingMode`）：`editable`——在筛选条上、归读者，与工作台一样，也是缺省；`locked`——在筛选条上读作它的值，带一把锁、没有控件；`hidden`——不在筛选条上，照样收窄接上的面板。锁定与隐藏由 runtime 持有，读者做什么——改值、「清空」、点一组交叉筛选——都改不了它们。它们的值是页面自己的 `pageValues`（没写就是默认值）：从第一次查询起就在，并**跟着这个属性变**——客户页换到下一位客户，板子跟着换。读者的筛选是宿主地址里的那一份：`initialFilters` 与 `onFiltersChange`，读法、报法与 `DashboardWorkbench` 相同。**锁定与隐藏的值从不走地址**：`initialFilters` 里写到它们的条目不算，`onFiltersChange` 只报读者能设的筛选——否则读者改一下地址就换了客户，与「锁定」正相反。原来 `scopeFilter` 对仪表盘做的事，现在是一个锁定的筛选：在板上声明那个筛选，再锁定它。
 
 **锁定不是安全边界。** 页面锁定的条件是在浏览器里拼进查询的，只保证读者在界面上改不了、在这里看不到别的。改一下页面脚本、直接调接口，就能问到别的客户。租户、归属与权限必须由 Wow 后端强制——对外的页面尤其如此。本包是宿主进程里的库，不照搬 Metabase 的 iframe、签名令牌或 SSO：身份与权限属于宿主与后端。
 
 铺满屏幕仍是宿主的事（嵌入不长自己的开关）：传一个 `ref`，在自己的 chrome 里用 `useViewExpansion` 指向它。
 
-**从单一的 `EmbeddedView` 迁过来。** 它原来什么视图都收、按种类分派，只有一种读法。现在：仪表盘用 `EmbeddedDashboard`——给 `EmbeddedView` 一块板，它会说这种视图显示不了；缺省一档是 `read-only`，原来能按表头排序的，要 `interaction="interactive"`；行只在 `withExport` 时可勾选；收窄一块板是锁定它的一个筛选，不再用 `scopeFilter`。`headingLevel` 是两个入口的正式开关。没有兼容层：换组件名、补属性即可。
+**从单一的 `EmbeddedView` 迁过来。** 它原来什么视图都收、按种类分派，只有一种读法。现在：仪表盘用 `EmbeddedDashboard`——给 `EmbeddedView` 一块板，它会说这种视图显示不了；缺省一档是 `read-only`，原来能按表头排序的，要 `interaction="interactive"`；行只在 `withExport` 时可勾选；收窄一块板是锁定它的一个筛选（`filterModes` 加 `pageValues`），不再用 `scopeFilter`。路由类型 `DashboardNavigation` 改名为 `ViewNavigation`。`headingLevel` 是两个入口的正式开关。没有兼容层：换组件名、补属性即可。
 
 #### 定制主题
 

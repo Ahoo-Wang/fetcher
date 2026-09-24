@@ -233,9 +233,10 @@ import {
   instanceId="customer-board"
   interaction="interactive"
   filterModes={{ customer: 'locked' }}
-  filterValues={{
+  pageValues={{
     values: { customer: { items: [{ id: customerId, label: customerName }] } },
   }}
+  initialFilters={readFromAddress()}
   onFiltersChange={writeToAddress}
   onNavigate={to => router.push(routeFor(to))}
 />
@@ -249,7 +250,7 @@ import {
 | `interactive` | Header sort and pages; an analysis's table｜chart switch and the follow-up menu on a group; **Open in the workbench** | The follow-up menu, cross-filtering, destinations, **Open in the workbench**       |
 | `editable`    | —                                                                                                                     | **Edit**, for whoever may save the board: it is built in place, and **Done** saves |
 
-Every way off the embed goes through your one route, `onNavigate(to)` — the same `DashboardNavigation` the dashboard workbench hands over; without it, none of those ways exist.
+Every way off the embed goes through your one route, `onNavigate(to)` — the same `ViewNavigation` the dashboard workbench hands over; without it, none of those ways exist.
 
 **The switches** — each absent, not greyed, when off:
 
@@ -264,13 +265,13 @@ Every way off the embed goes through your one route, `onNavigate(to)` — the sa
 | `openInWorkbench`             | on        | Whether **Open in the workbench** is offered in the interactive and editable tiers                                                                                      |
 | `size`                        | `content` | `content` sizes to what it shows, with a cap (a record table scrolls inside `--fve-record-table-max-h`); `fill` fills its container — a whole-page embed, a wall screen |
 
-**A board's filters, each in one of three modes** (`filterModes`, by filter name; `groupingMode` for the time grouping): `editable` — on the bar, the reader's, as in the workbench, and the default; `locked` — on the bar as what it holds, with a lock and no control; `hidden` — not on the bar, still narrowing the panels wired to it. Locked and hidden filters are held by the runtime, so nothing the reader does — a value, **Clear**, a press that cross-filters — changes them. They take their values from `filterValues` (their default where it names none), are in force from the first query, and follow the prop as it changes: a customer page moving to the next customer takes the board with it. The reader's filters open at what `filterValues` names of them, read once, the way `DashboardWorkbench` reads `initialFilters`; `onFiltersChange` reports what they all hold, the opening included, for your address. What `scopeFilter` used to do for a board is now a locked filter: declare the filter on the board, and lock it.
+**A board's filters, each in one of three modes** (`filterModes`, by filter name; `groupingMode` for the time grouping): `editable` — on the bar, the reader's, as in the workbench, and the default; `locked` — on the bar as what it holds, with a lock and no control; `hidden` — not on the bar, still narrowing the panels wired to it. Locked and hidden filters are held by the runtime, so nothing the reader does — a value, **Clear**, a press that cross-filters — changes them. Their values are the page's own, `pageValues` (their default where it names none): in force from the first query, and followed as the prop changes — a customer page moving to the next customer takes the board with it. The reader's filters are your address's, `initialFilters` and `onFiltersChange`, read and reported exactly as `DashboardWorkbench` does. **A locked or hidden value never travels through the address**: an entry for one in `initialFilters` is ignored, and `onFiltersChange` reports only the filters the reader can set — otherwise a reader who edits the address changes the customer, the opposite of locking it. What `scopeFilter` used to do for a board is now a locked filter: declare the filter on the board, and lock it.
 
 **Locking is not a security boundary.** The condition a page locks is put together in the browser and sent with the query; it only keeps the reader from changing it on screen, or seeing anything else there. Anyone who edits the page's script or calls the API directly can ask for another customer. Tenancy, ownership and permission must be enforced by the Wow backend — above all on a page outside your organisation. This package is a library in your host's process: it does not do what Metabase does with iframes, signed tokens or SSO, because identity and permission belong to your host and your backend.
 
 Filling the screen stays yours (an embed grows no control of its own): pass a `ref` and point `useViewExpansion` at it from your own chrome.
 
-**Moving from the single `EmbeddedView`.** It used to take any view and dispatch on its kind, and had one reading. Now a dashboard is `EmbeddedDashboard` — handed a board, `EmbeddedView` says it cannot show that kind; the default tier is `read-only`, so headers that used to sort need `interaction="interactive"`; rows are pickable only with `withExport`; and a board is narrowed by locking one of its filters rather than by `scopeFilter`. `headingLevel` is a formal switch of both entries. There is no compatibility layer: rename the component and add the props.
+**Moving from the single `EmbeddedView`.** It used to take any view and dispatch on its kind, and had one reading. Now a dashboard is `EmbeddedDashboard` — handed a board, `EmbeddedView` says it cannot show that kind; the default tier is `read-only`, so headers that used to sort need `interaction="interactive"`; rows are pickable only with `withExport`; and a board is narrowed by locking one of its filters (`filterModes` + `pageValues`) rather than by `scopeFilter`. The route type `DashboardNavigation` is now `ViewNavigation`. `headingLevel` is a formal switch of both entries. There is no compatibility layer: rename the component and add the props.
 
 #### Customising the theme
 

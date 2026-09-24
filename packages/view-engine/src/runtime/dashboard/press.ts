@@ -58,7 +58,7 @@ import {
   type PanelReference,
 } from '../../dashboard/index.js';
 import type { DataViewRuntime } from '../viewRuntime.js';
-import type { DashboardNavigation } from './contract.js';
+import type { ViewNavigation } from './contract.js';
 import { panelsOf } from './panels.js';
 
 /** What a press that sets a filter did (D22 I). */
@@ -77,7 +77,7 @@ export type CrossFilterOutcome =
 
 /** Where a press on a custom destination goes, or why it goes nowhere. */
 export type PressDestination =
-  | { to: DashboardNavigation }
+  | { to: ViewNavigation }
   | { refused: Issue }
   /**
    * The click cannot do what it says — a board it opens is gone, or a

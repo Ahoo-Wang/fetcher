@@ -32,7 +32,7 @@ import type {
   DashboardController,
   DashboardPanelView,
 } from '../react/index.js';
-import type { DashboardNavigation } from '../runtime/index.js';
+import type { ViewNavigation } from '../runtime/index.js';
 import { PanelGridItem, PanelResizeHandle } from './DashboardArrange.js';
 import {
   DashboardPanel,
@@ -92,11 +92,11 @@ export interface DashboardGridProps {
    */
   emptyActions?: ReactNode;
   /**
-   * The host's route (`DashboardNavigation`): 在工作台中打开 in a panel's
+   * The host's route (`ViewNavigation`): 在工作台中打开 in a panel's
    * menu, the follow-up menu on a group, a panel's custom destination. No
    * route, none of them — a panel that cross-filters still does.
    */
-  onNavigate?(to: DashboardNavigation): void;
+  onNavigate?(to: ViewNavigation): void;
   /**
    * Whether the board is only read (off by default): nothing on it answers
    * — no press on a group (no follow-up menu, no cross-filtering, no

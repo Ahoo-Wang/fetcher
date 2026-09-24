@@ -191,7 +191,7 @@ export interface HeldFilters {
  * a follow-up on a group and a panel's custom destination are all the
  * host's to take.
  */
-export type DashboardNavigation =
+export type ViewNavigation =
   /**
    * A saved record or analysis view, under `filter` in its own field names:
    * the board's filters as they reach the panel (在工作台中打开), or the

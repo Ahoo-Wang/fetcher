@@ -13,7 +13,7 @@
 
 import type { ReactNode } from 'react';
 import { ArrowUpRightIcon } from 'lucide-react';
-import type { DashboardNavigation } from '../../runtime/index.js';
+import type { ViewNavigation } from '../../runtime/index.js';
 import { Button } from '../components/button.js';
 import type { PanelHeadingLevel } from '../DashboardPanel.js';
 import { useViewMessages } from '../MessagesProvider.js';
@@ -71,8 +71,8 @@ export function OpenInWorkbench({
   to,
   onNavigate,
 }: {
-  to: DashboardNavigation;
-  onNavigate(to: DashboardNavigation): void;
+  to: ViewNavigation;
+  onNavigate(to: ViewNavigation): void;
 }) {
   const messages = useViewMessages();
   return (

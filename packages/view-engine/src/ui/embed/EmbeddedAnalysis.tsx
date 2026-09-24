@@ -15,7 +15,7 @@ import { useState, type ReactNode } from 'react';
 import type { AnalysisSort, AnalysisViewConfig } from '../../model/index.js';
 import {
   hasAsked,
-  type DashboardNavigation,
+  type ViewNavigation,
   type DataViewRuntime,
   type ViewRuntime,
 } from '../../runtime/index.js';
@@ -56,7 +56,7 @@ export function EmbeddedAnalysis({
 }: {
   runtime: DataViewRuntime;
   interactive: boolean;
-  onNavigate?: ((to: DashboardNavigation) => void) | undefined;
+  onNavigate?: ((to: ViewNavigation) => void) | undefined;
   head(actions: ReactNode): ReactNode;
   notices: ReactNode;
 }) {

@@ -263,7 +263,7 @@ src/
     useBulkCommand.ts         — A host's command for one record run over a selection: a few at a time, progress, stop, each refusal's reason, the unfinished rows left selected
     useSearchBox.ts           — The view's search kept on hand: the definition's search field, the draft's and the applied text, set / submit / clear
     useDashboard.ts           — Dashboard panels, geometry and state; the board's edit commands, its tabs, `preload` for a view about to be added, and a press on a panel's group (`crossFilter`, `pressed`, `destination`, `destinationBoard`)
-    usePanelFollowUps.ts      — The follow-up menu on a dashboard panel (D22 H): `useAnalysisResult`'s workbench half routed to the host (`DashboardNavigation` of kind `unsaved`, the board's filters folded into the view's own), and `ownedNavigation` for a board's own analysis
+    usePanelFollowUps.ts      — The follow-up menu on a dashboard panel (D22 H): `useAnalysisResult`'s workbench half routed to the host (`ViewNavigation` of kind `unsaved`, the board's filters folded into the view's own), and `ownedNavigation` for a board's own analysis
     useFilterEditor.ts        — Filter tree editor controller
     useRecordExport.ts        — The export run: scope, progress, the ceiling, delivery
     useRecordDetail.ts        — One record's detail: open, read whole (`fetchRecord`) and read again when the view's result lands; the page's row until then
@@ -307,7 +307,7 @@ src/
     DeleteDialog.tsx          — What a delete costs, said before it happens
     DragHandle.tsx            — The handle a sortable row is carried by, and the arrow keys that move it; the three lists share it
     EditorBand.tsx            — The fold a view's editor lives in
-    EmbeddedDashboard.tsx     — A saved board on a business page (D22): a tier (read-only, interactive, editable), each filter editable, locked or hidden (`filterModes`), its values the host's address and followed (`filterValues`/`onFiltersChange`), the title and panel-title switches
+    EmbeddedDashboard.tsx     — A saved board on a business page (D22): a tier (read-only, interactive, editable), each filter editable, locked or hidden (`filterModes`) — the locked and hidden values the page's own and followed (`pageValues`), the reader's the host's address (`initialFilters`/`onFiltersChange`, never a held one) — the title and panel-title switches
     EmbeddedView.tsx          — A saved record or analysis view on a business page (D22): a tier (read-only, interactive), the page's narrowing ANDed onto the view's own (`scopeFilter`), and the title, search, export, auto-refresh and 在工作台中打开 switches; a dashboard is `EmbeddedDashboard`'s
     ExportDialog.tsx          — The export window: scope, name, progress and outcome in one journey (D14)
     FieldMenu.tsx             — A picker's entries by catalogue group; shared by the field pickers
@@ -437,7 +437,7 @@ src/
       commands.ts             — `panelCommands`: what one panel's menu offers — 「看」 always, 「改」 while the board is built (「恢复为视图的样子」 only over a look of its own), renaming and removing alone in the one-column reading — and the builder the grid reaches through context
       ContentEditor.tsx       — The small form a note, a picture or a list of links is written in, what the kernel would refuse said at the field
       DashboardTabs.tsx       — The tab bar over the grid, two tabs or more: switch; while building, add, rename in place, carry by handle or arrows, delete (asked first when it holds panels); `tabTitle`
-      filterModes.ts          — How an embedding page offers each filter (`DashboardFilterMode`: editable, locked, hidden) and the time grouping; `sameValue`
+      filterModes.ts          — How an embedding page offers each filter (`DashboardFilterMode`: editable, locked, hidden) and the time grouping; what the page holds (`heldOf`) and what is the reader's (`readersOf`); `sameValue`
       FilterBar.tsx           — The filter bar (D22 F): a chip a filter with the condition editor's value controls, required ones starred and never empty, 按日｜周｜月, 「清空」, a filter reaching nothing on the tab drawn quieter and saying why, 「来自「〈面板〉」」 on a value a press set; on an embedding page a locked filter read as what it holds, with a lock, and a hidden one not at all
       FilterSettings.tsx      — 「筛选 ＋」 (`AddFilterMenu`) and one filter's settings popover: type, name, default, several values, required, where its values come from, 接线 and 移除
       FilterWiring.tsx        — Wiring a filter (D22 G): the context the grid reads, each panel's strip (same-type fields, 「没有可接的字段」, 「手动」), the wiring bar, the toasts in the board's own root
