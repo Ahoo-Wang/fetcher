@@ -111,8 +111,11 @@ export const customerBoard: ViewInstance = {
   }),
 };
 
-/** What the customer page's address holds as it opens: the customer. */
-export const CUSTOMER_ADDRESS: DashboardFilters = {
+/**
+ * What the customer page holds: the customer it is about. The page's own —
+ * from its route, never from the filters in its address.
+ */
+export const CUSTOMER_PAGE: DashboardFilters = {
   values: { customer: { items: [{ ...CUSTOMER }] } },
 };
 

@@ -48,7 +48,10 @@ import { useDashboardExtensions } from './dashboard/building.js';
 import { DashboardTabs } from './dashboard/DashboardTabs.js';
 import { DashboardEditExtensionsContext } from './dashboard/extensions.js';
 import {
-  pageFilters,
+  heldFilters,
+  heldOf,
+  holdsGrouping,
+  readersOf,
   type DashboardFilterMode,
 } from './dashboard/filterModes.js';
 import { EmbedFrame } from './embed/EmbedFrame.js';
@@ -82,7 +85,7 @@ export interface EmbeddedDashboardProps extends EmbedBaseProps {
    * (`DashboardFilterMode`): `editable` — on the bar, the reader's — unless
    * named here; `locked` — on the bar as what it holds, fixed; `hidden` —
    * not on the bar, still narrowing what it is wired to. A locked or hidden
-   * filter holds what `filterValues` gives it, or its default, whatever the
+   * filter holds what `pageValues` gives it, or its default, whatever the
    * reader does. Not a security boundary: see the README's embedding
    * section.
    */
@@ -90,21 +93,29 @@ export interface EmbeddedDashboardProps extends EmbedBaseProps {
   /** The time grouping's mode, likewise; `editable` when left out. */
   groupingMode?: DashboardFilterMode;
   /**
-   * What the filters hold, as the page has them (D22 F). A locked or hidden
-   * filter holds what this names — its default where it names nothing — and
-   * follows it as it changes: a customer page moving to the next customer.
-   * The reader's filters open at what it names of them, read once as the
-   * board opens, as `DashboardWorkbench` reads `initialFilters`: when it
-   * names any of them it is the whole of what they hold; when it names none
-   * they start at their defaults. What the board does not take is left out,
-   * and what it refuses of a locked or hidden filter is said above the
-   * board, as a refused narrowing is.
+   * What the page holds (D22): the value of each locked or hidden filter —
+   * its default where this names none — and, with `groupingMode` locked or
+   * hidden, the time grouping's unit. In force from the first query, and
+   * followed as it changes: a customer page moving to the next customer. It
+   * is the page's own, never the address's — a reader can edit an address.
+   * An entry for an editable filter is ignored. What the board refuses of
+   * it is said above the board, as a refused narrowing is.
    */
-  filterValues?: DashboardFilters | null;
+  pageValues?: DashboardFilters | null;
   /**
-   * Told what the filters hold whenever that changes — the board opening
-   * included — so a host can write it into its address. The package never
-   * touches the address itself.
+   * What the reader's filters open at, as the host's address has them (D22
+   * F), read as the board opens — as `DashboardWorkbench` reads it: when it
+   * names any of them it is the whole of what they hold; when it names none
+   * they start at their defaults. An entry for a locked or hidden filter is
+   * ignored: `pageValues` holds those.
+   */
+  initialFilters?: DashboardFilters | null;
+  /**
+   * Told what the reader's filters hold whenever that changes — the board
+   * opening included — so a host can write them into its address. Only the
+   * editable filters, and the time grouping unless the page holds it: a
+   * locked or hidden value is the page's, and written into an address it
+   * would come back as the reader's. The package never touches the address.
    */
   onFiltersChange?(filters: DashboardFilters): void;
   /** The tab the board opens on, as the host's route has it (D22 E). */
@@ -143,15 +154,21 @@ export function EmbeddedDashboard(props: EmbeddedDashboardProps) {
   });
   const opening = useCallback(() => {
     const {
-      filterValues: values,
+      pageValues,
+      initialFilters,
       filterModes: filters,
       groupingMode: grouping,
       initialTab: tab,
     } = latest.current;
-    const { held, reader } = pageFilters({ filters, grouping }, values);
+    const modes = { filters, grouping };
+    const held = heldOf(modes, pageValues);
+    const reader = initialFilters ? readersOf(modes, initialFilters) : null;
+    const named =
+      reader !== null &&
+      (Object.keys(reader.values).length > 0 || reader.unit !== undefined);
     return {
       ...(tab == null ? {} : { tab }),
-      ...(reader ? { filters: reader } : {}),
+      ...(named ? { filters: reader } : {}),
       ...(held ? { held } : {}),
     };
   }, []);
@@ -181,7 +198,7 @@ function EmbeddedBoard({
     onRenderFailure,
     filterModes,
     groupingMode,
-    filterValues,
+    pageValues,
     onFiltersChange,
     onTabChange,
     optionsFor,
@@ -201,7 +218,8 @@ function EmbeddedBoard({
   // is (D17-5): the page asked for one customer and must not quietly get
   // everyone's.
   const modes = { filters: filterModes, grouping: groupingMode };
-  const heldKey = JSON.stringify(pageFilters(modes, filterValues).held);
+  const heldKey = JSON.stringify(heldOf(modes, pageValues));
+  const heldNames = JSON.stringify([heldFilters(modes), holdsGrouping(modes)]);
   useEffect(() => {
     runtime.holdFilters(JSON.parse(heldKey) as HeldFilters | null);
   }, [runtime, heldKey]);
@@ -220,10 +238,22 @@ function EmbeddedBoard({
 
   // What the filters hold and the tab on screen, told to the host as they
   // change — the board opening included — for its address.
-  const heldValues = dashboard.filters;
+  // The reader's alone: what the page holds is its own, and would come back
+  // from the address as the reader's.
+  const filtersNow = dashboard.filters;
+  const readerValues = useMemo(() => {
+    const [names, grouping] = JSON.parse(heldNames) as [string[], boolean];
+    return readersOf(
+      {
+        filters: Object.fromEntries(names.map(name => [name, 'locked'])),
+        grouping: grouping ? 'locked' : 'editable',
+      },
+      filtersNow,
+    );
+  }, [filtersNow, heldNames]);
   useEffect(() => {
-    onFiltersChange?.(heldValues);
-  }, [heldValues, onFiltersChange]);
+    onFiltersChange?.(readerValues);
+  }, [readerValues, onFiltersChange]);
   const shownTab = dashboard.tab;
   useEffect(() => {
     onTabChange?.(shownTab);

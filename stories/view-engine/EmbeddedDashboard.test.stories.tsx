@@ -102,15 +102,22 @@ export const CustomerDetail: Story = {
     await waitFor(() =>
       expect(orders).toHaveTextContent(zhCN['label.record.empty']),
     );
-    // The host's address follows, the customer still in it.
+    // The host's address follows the reader's filter — and never holds the
+    // locked customer, which would come back from it as the reader's.
     const address = canvasElement.querySelector('[data-host-address]')!;
     await waitFor(() =>
       expect(decodeURIComponent(address.textContent ?? '')).toContain(
         'lastMonth',
       ),
     );
-    await expect(decodeURIComponent(address.textContent ?? '')).toContain(
+    await expect(decodeURIComponent(address.textContent ?? '')).not.toContain(
       'c-03',
+    );
+    // However long the address, the page does not scroll sideways.
+    const area = canvasElement.querySelector<HTMLElement>('.story-app-page')!;
+    await expect(area.scrollWidth).toBeLessThanOrEqual(area.clientWidth);
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      document.documentElement.clientWidth,
     );
 
     // 「清空」 clears what the reader holds and leaves the customer: every
@@ -149,6 +156,8 @@ export const CustomerDetail: Story = {
     );
     await waitFor(() => expect(route).toHaveTextContent('customer-orders'));
     await expect(route).toHaveTextContent('c-03');
+    // A long route wraps too.
+    await expect(area.scrollWidth).toBeLessThanOrEqual(area.clientWidth);
   },
 };
 

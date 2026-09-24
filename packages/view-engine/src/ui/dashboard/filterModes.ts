@@ -81,40 +81,48 @@ function sorted(value: unknown): unknown {
 }
 
 /**
- * What a page's values come to (`EmbeddedDashboard.filterValues`): what it
- * holds — each locked or hidden filter at the value it names, its default
- * where it names none, and the time grouping likewise when that is held —
- * and, apart, what the reader's filters open at. Those are the address's,
- * read as a workbench reads `initialFilters`: when the page names any of
- * them it is the whole of what they hold; when it names none, they start at
- * their defaults. `null` for a page that holds nothing.
+ * What the page holds (`EmbeddedDashboard.pageValues`): each locked or
+ * hidden filter at the value the page names — its default where it names
+ * none — and, when the time grouping is held, the unit likewise; `null` for
+ * a page that holds nothing. Entries for a filter the reader holds are no
+ * part of it.
  */
-export function pageFilters(
+export function heldOf(
   modes: BoardFilterModes | undefined,
-  values: DashboardFilters | null | undefined,
-): { held: HeldFilters | null; reader: DashboardFilters | null } {
-  const heldNames = heldFilters(modes);
+  page: DashboardFilters | null | undefined,
+): HeldFilters | null {
+  const names = heldFilters(modes);
   const grouping = holdsGrouping(modes);
-  const given = values?.values ?? {};
-  const held: HeldFilters | null =
-    heldNames.length > 0 || grouping
-      ? {
-          values: Object.fromEntries(
-            heldNames.map(name => [name, given[name] ?? null]),
-          ),
-          ...(grouping ? { unit: values?.unit ?? null } : {}),
-        }
-      : null;
-  const readers = Object.entries(given).filter(
-    ([name]) => !heldNames.includes(name),
+  if (names.length === 0 && !grouping) return null;
+  const given = page?.values ?? {};
+  return {
+    values: Object.fromEntries(names.map(name => [name, given[name] ?? null])),
+    ...(grouping ? { unit: page?.unit ?? null } : {}),
+  };
+}
+
+/**
+ * What of the filters is the reader's (`EmbeddedDashboard.initialFilters`,
+ * `onFiltersChange`): the editable filters, and the time grouping unless the
+ * page holds it. A locked or hidden filter's value never travels as the
+ * reader's — not in from the address, where a reader could edit it, and not
+ * out to it, where it would be read back as theirs.
+ */
+export function readersOf(
+  modes: BoardFilterModes | undefined,
+  filters: DashboardFilters,
+): DashboardFilters {
+  const held = new Set(heldFilters(modes));
+  const values = Object.fromEntries(
+    Object.entries(filters.values ?? {}).filter(([name]) => !held.has(name)),
   );
-  const unit = grouping ? undefined : values?.unit;
-  const reader: DashboardFilters | null =
-    readers.length > 0 || unit !== undefined
-      ? {
-          values: Object.fromEntries(readers),
-          ...(unit === undefined ? {} : { unit }),
-        }
-      : null;
-  return { held, reader };
+  const from = Object.entries(filters.from ?? {}).filter(
+    ([name]) => !held.has(name),
+  );
+  const unit = holdsGrouping(modes) ? undefined : filters.unit;
+  return {
+    values,
+    ...(from.length > 0 ? { from: Object.fromEntries(from) } : {}),
+    ...(unit === undefined ? {} : { unit }),
+  };
 }

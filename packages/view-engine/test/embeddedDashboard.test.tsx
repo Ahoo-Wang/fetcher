@@ -304,7 +304,7 @@ describe('EmbeddedDashboard', () => {
     const { runtime } = embed({
       interaction: 'interactive',
       filterModes: { region: 'locked', status: 'hidden' },
-      filterValues: { values: { region: ['CN'], status: ['PENDING'] } },
+      pageValues: { values: { region: ['CN'], status: ['PENDING'] } },
     });
 
     const locked = await screen.findByRole('group', {
@@ -349,7 +349,7 @@ describe('EmbeddedDashboard', () => {
     const { runtime, rerender } = embed({
       engine,
       groupingMode: 'locked',
-      filterValues: { values: {}, unit: 'WEEK' },
+      pageValues: { values: {}, unit: 'WEEK' },
     });
 
     const locked = await screen.findByRole('group', {
@@ -379,37 +379,68 @@ describe('EmbeddedDashboard', () => {
     expect(locked.textContent).toContain('Any');
   });
 
-  it('follows the host address as it changes, and tells it what the filters hold', async () => {
+  it('follows what the page holds as it changes, and never tells the address a held value', async () => {
     const onFiltersChange = vi.fn();
-    const first: DashboardFilters = { values: { region: ['CN'] } };
     const { runtime, rerender } = embed({
       filterModes: { region: 'locked' },
-      filterValues: first,
+      pageValues: { values: { region: ['CN'] } },
+      initialFilters: { values: { status: ['SHIPPED'] } },
       onFiltersChange,
     });
 
+    // The reader's filter goes out to the address; the locked one does not.
     await waitFor(() =>
-      expect(onFiltersChange).toHaveBeenLastCalledWith(
-        expect.objectContaining({ values: { region: ['CN'] } }),
-      ),
+      expect(onFiltersChange).toHaveBeenLastCalledWith({
+        values: { status: ['SHIPPED'] },
+      }),
     );
+    expect(runtime().getSnapshot().filters.values.region).toEqual(['CN']);
     // The same thing said again in a new object changes nothing.
-    rerender({ filterValues: { values: { region: ['CN'] } } });
-    // Another customer: the locked filter follows the page.
-    rerender({ filterValues: { values: { region: ['EU'] } } });
+    rerender({ pageValues: { values: { region: ['CN'] } } });
+    // Another customer: the locked filter follows the page …
+    rerender({ pageValues: { values: { region: ['EU'] } } });
     await waitFor(() =>
       expect(runtime().getSnapshot().filters.values.region).toEqual(['EU']),
-    );
-    expect(onFiltersChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ values: { region: ['EU'] } }),
     );
     expect(
       (await screen.findByRole('group', { name: 'Region (set by this page)' }))
         .textContent,
     ).toContain('EU');
+    // … and the address still hears nothing of it.
+    for (const [told] of onFiltersChange.mock.calls as [DashboardFilters][])
+      expect(told.values).not.toHaveProperty('region');
   });
 
-  it('opens the reader’s filters at their defaults when the page names only what it holds', async () => {
+  it('ignores an address that names a held filter: the page’s value wins', async () => {
+    const onFiltersChange = vi.fn();
+    const grouped = board();
+    grouped.timeGrouping = { units: ['DAY', 'WEEK'], default: 'DAY' };
+    const { runtime } = embed({
+      engine: engineOf(grouped),
+      filterModes: { region: 'locked', status: 'hidden' },
+      groupingMode: 'locked',
+      pageValues: { values: { region: ['CN'] }, unit: 'WEEK' },
+      // A reader who edited the address to another customer, a hidden value
+      // and another unit.
+      initialFilters: {
+        values: { region: ['EU'], status: ['SHIPPED'] },
+        unit: 'DAY',
+      },
+      onFiltersChange,
+    });
+
+    await waitFor(() =>
+      expect(runtime().getSnapshot().filters).toEqual({
+        values: { region: ['CN'] },
+        unit: 'WEEK',
+      }),
+    );
+    await waitFor(() =>
+      expect(onFiltersChange).toHaveBeenLastCalledWith({ values: {} }),
+    );
+  });
+
+  it('opens the reader’s filters at their defaults when the address names none of them', async () => {
     const withDefault = board();
     withDefault.fields = withDefault.fields.map(field =>
       field.name === 'status' ? { ...field, default: ['PENDING'] } : field,
@@ -417,7 +448,8 @@ describe('EmbeddedDashboard', () => {
     const { runtime } = embed({
       engine: engineOf(withDefault),
       filterModes: { region: 'locked' },
-      filterValues: { values: { region: ['CN'] } },
+      pageValues: { values: { region: ['CN'] } },
+      initialFilters: { values: { region: ['EU'] } },
     });
 
     await waitFor(() =>
@@ -431,7 +463,7 @@ describe('EmbeddedDashboard', () => {
   it('says what the board refuses of the page’s values, as a refused narrowing', async () => {
     embed({
       filterModes: { ghost: 'locked', region: 'locked' },
-      filterValues: { values: { ghost: ['x'], region: ['CN'] } },
+      pageValues: { values: { ghost: ['x'], region: ['CN'] } },
     });
 
     const alert = await screen.findByRole('alert');
