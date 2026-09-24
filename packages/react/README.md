@@ -14,11 +14,16 @@ bus, storage, or CoSec.
 
 > **Wow query hooks have moved.** `useSingleQuery`, `useListQuery`,
 > `usePagedQuery`, `useCountQuery`, `useListStreamQuery` and the other Wow
-> hooks now live in `@ahoo-wang/wow-react`, published from the
-> [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) and
+> hooks moved to `@ahoo-wang/wow-react` in the
+> [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript),
 > versioned with Wow. The data-monitor hooks (`useDataMonitor`,
-> `DataMonitorService`) were retired with `@ahoo-wang/fetcher-viewer`. Both
-> remain available in `@ahoo-wang/fetcher-react` 5.x.
+> `DataMonitorService`) were retired with `@ahoo-wang/fetcher-viewer`.
+> `@ahoo-wang/wow-react` is published to npm with Wow's first stable release;
+> until then the 5.x line (`5.x` branch, 5.1.x on npm) keeps
+> `@ahoo-wang/fetcher-wow`, the Wow hooks and the data-monitor hooks in
+> `@ahoo-wang/fetcher-react`, and `@ahoo-wang/fetcher-generator`.
+> `@ahoo-wang/wow-view-engine` is not published until view-engine is declared
+> stable.
 
 ## Example
 

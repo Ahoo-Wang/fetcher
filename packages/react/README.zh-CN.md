@@ -11,11 +11,15 @@ pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 按导入的集成安装对应 peer 包：EventStream、EventBus、Storage 或 CoSec。
 
 > **Wow 查询 Hook 已迁出。** `useSingleQuery`、`useListQuery`、`usePagedQuery`、
-> `useCountQuery`、`useListStreamQuery` 等 Wow Hook 现在由
-> [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) 发布的
-> `@ahoo-wang/wow-react` 提供，版本跟随 Wow。数据监控 Hook（`useDataMonitor`、
-> `DataMonitorService`）随 `@ahoo-wang/fetcher-viewer` 一起退役。两者在
-> `@ahoo-wang/fetcher-react` 5.x 中仍然可用。
+> `useCountQuery`、`useListStreamQuery` 等 Wow Hook 已迁往
+> [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) 的
+> `@ahoo-wang/wow-react`，版本跟随 Wow。数据监控 Hook（`useDataMonitor`、
+> `DataMonitorService`）随 `@ahoo-wang/fetcher-viewer` 一起退役。
+> `@ahoo-wang/wow-react` 随 Wow 的首个稳定版发布到 npm；在此之前，5.x 版本线
+> （`5.x` 分支，npm 上的 5.1.x）继续提供 `@ahoo-wang/fetcher-wow`、
+> `@ahoo-wang/fetcher-react` 里的 Wow Hook 与数据监控 Hook，以及
+> `@ahoo-wang/fetcher-generator`。`@ahoo-wang/wow-view-engine` 要等 view-engine
+> 宣布稳定后才发布。
 
 ## 示例
 

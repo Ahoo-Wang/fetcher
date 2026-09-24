@@ -21,7 +21,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Wow 查询 Hook（单条、列表、分页、计数与列表流）已迁到 Wow 仓的 `@ahoo-wang/wow-react`，建立在本仓 `@ahoo-wang/fetcher-react/core` 与 `/fetcher` 两个子路径之上。',
+          'Wow 查询 Hook（单条、列表、分页、计数与列表流）已迁到 Wow 仓，将以 `@ahoo-wang/wow-react` 发布（随 Wow 的首个稳定版），建立在本仓 `@ahoo-wang/fetcher-react/core` 与 `/fetcher` 两个子路径之上。',
       },
     },
   },
@@ -30,6 +30,8 @@ const meta = {
     summary:
       'useSingleQuery、useListQuery、usePagedQuery、useCountQuery 与 useListStreamQuery 迁到了 Wow 仓（typescript/wow-react），版本跟随 Wow。',
     packages: ['@ahoo-wang/wow-react', '@ahoo-wang/wow-client'],
+    availability:
+      '随 Wow 的首个稳定版发布到 npm。在此之前继续用 5.x 版本线（npm 上的 5.1.x，分支 5.x）：@ahoo-wang/fetcher-wow，以及 @ahoo-wang/fetcher-react 里的 Wow 查询 Hook。',
     link: { href: WOW_STORYBOOK, label: '打开 Wow Storybook' },
   },
 } satisfies Meta<typeof MovedNotice>;

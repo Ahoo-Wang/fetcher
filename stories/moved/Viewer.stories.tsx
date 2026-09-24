@@ -24,7 +24,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '`@ahoo-wang/fetcher-viewer` 已被 View Engine 取代，冻结在 5.x 分支，不再随 main 发布；它的故事留在 5.x 分支。新项目使用 Wow 仓的 `@ahoo-wang/wow-view-engine`。',
+          '`@ahoo-wang/fetcher-viewer` 已被 View Engine 取代，冻结在 5.x 分支，不再随 main 发布；它的故事留在 5.x 分支。取代它的是 Wow 仓的 View Engine（`@ahoo-wang/wow-view-engine`，稳定后发布到 npm）。',
       },
     },
   },
@@ -32,7 +32,10 @@ const meta = {
     subject: 'Viewer',
     summary:
       'fetcher-viewer 冻结在 5.x 分支，只接收补丁；新的数据视图由 Wow 仓的 View Engine 提供。',
-    packages: ['@ahoo-wang/fetcher-viewer@5', '@ahoo-wang/wow-view-engine'],
+    packages: ['@ahoo-wang/wow-view-engine'],
+    packagesLabel: '取代它的包',
+    availability:
+      '@ahoo-wang/wow-view-engine 还没有发布到 npm（View Engine 稳定后发布）；现有项目继续用 npm 上的 @ahoo-wang/fetcher-viewer 5.1.x。',
     link: { href: FIVE_X_STORIES, label: '查看 5.x 分支上的 Viewer 故事' },
   },
 } satisfies Meta<typeof MovedNotice>;

@@ -70,7 +70,7 @@ fetcher (core HTTP client, no internal deps)
 
 ### Moved to the Wow repository
 
-The Wow-coupled packages live in [Ahoo-Wang/Wow](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) under `typescript/`, versioned with Wow: `@ahoo-wang/wow-client` (was `fetcher-wow`), `@ahoo-wang/wow-react` (the Wow hooks from `fetcher-react`), `@ahoo-wang/wow-view-engine` (was `fetcher-view-engine`) and `@ahoo-wang/wow-generator` (was `fetcher-generator`). `@ahoo-wang/fetcher-viewer` and the data-monitor hooks were not moved; they stay on the `5.x` branch, which keeps the 5.x line.
+The Wow-coupled packages live in [Ahoo-Wang/Wow](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) under `typescript/`, versioned with Wow: `@ahoo-wang/wow-client` (was `fetcher-wow`), `@ahoo-wang/wow-react` (the Wow hooks from `fetcher-react`), `@ahoo-wang/wow-view-engine` (was `fetcher-view-engine`) and `@ahoo-wang/wow-generator` (was `fetcher-generator`). `@ahoo-wang/fetcher-viewer` and the data-monitor hooks were not moved; they stay on the `5.x` branch, which keeps the 5.x line. The new packages are published to npm with Wow's first stable release; until then the 5.x line (`5.x` branch, 5.1.x on npm) keeps `@ahoo-wang/fetcher-wow`, the Wow hooks in `@ahoo-wang/fetcher-react` and `@ahoo-wang/fetcher-generator`. `@ahoo-wang/wow-view-engine` is not published until view-engine is declared stable.
 
 Dependencies run one way, **Wow → fetcher**: no package here may depend on `@ahoo-wang/wow-*` (checked by `.github/scripts/dependency-direction.mjs` in Engineering Quality). `@ahoo-wang/wow-react` imports only the `@ahoo-wang/fetcher-react/core` and `/fetcher` subpaths. `downstream-wow.yml` runs Wow's TypeScript tests against changes to the core packages Wow uses (advisory).
 

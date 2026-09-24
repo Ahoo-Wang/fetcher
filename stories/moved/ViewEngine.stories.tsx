@@ -30,6 +30,8 @@ const meta = {
     summary:
       '数据视图引擎迁到了 Wow 仓（typescript/wow-view-engine），它的故事在 Wow 文档站的 Storybook 里。',
     packages: ['@ahoo-wang/wow-view-engine'],
+    availability:
+      '还没有发布到 npm：View Engine 宣布稳定后，随 Wow 的版本一起发布。它从未以 @ahoo-wang/fetcher-view-engine 的名字发布过。',
     link: { href: WOW_STORYBOOK, label: '打开 Wow Storybook' },
   },
 } satisfies Meta<typeof MovedNotice>;

@@ -89,8 +89,8 @@ versioned with Wow, and depend on the fetcher packages above:
 | `@ahoo-wang/fetcher-view-engine`         | `@ahoo-wang/wow-view-engine`                                                           |
 | `@ahoo-wang/fetcher-viewer` (deprecated) | Not moved: frozen on the [`5.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/5.x) |
 
-The fetcher 5.x line, including these packages, keeps receiving fixes from the
-`5.x` branch.
+The new packages are published to npm with Wow's first stable release; until then the 5.x line (`5.x` branch, 5.1.x on npm) keeps `@ahoo-wang/fetcher-wow`, the Wow hooks in `@ahoo-wang/fetcher-react` and `@ahoo-wang/fetcher-generator`. `@ahoo-wang/wow-view-engine` is not published until view-engine is declared stable.
+The fetcher 5.x line keeps receiving fixes from the `5.x` branch.
 
 ## Learn and build
 

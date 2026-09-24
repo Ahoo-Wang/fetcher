@@ -85,7 +85,8 @@ try {
 | `@ahoo-wang/fetcher-view-engine`      | `@ahoo-wang/wow-view-engine`                                               |
 | `@ahoo-wang/fetcher-viewer`（已弃用） | 未迁移：冻结在 [`5.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/5.x) |
 
-fetcher 5.x 版本线（含上述包）继续从 `5.x` 分支发布修复。
+新包随 Wow 的首个稳定版发布到 npm；在此之前，5.x 版本线（`5.x` 分支，npm 上的 5.1.x）继续提供 `@ahoo-wang/fetcher-wow`、`@ahoo-wang/fetcher-react` 里的 Wow Hook 和 `@ahoo-wang/fetcher-generator`。`@ahoo-wang/wow-view-engine` 要等 view-engine 宣布稳定后才发布。
+fetcher 5.x 版本线继续从 `5.x` 分支发布修复。
 
 ## 学习与构建
 

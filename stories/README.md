@@ -23,11 +23,11 @@ Storybook 是可运行的接入文档，也承载浏览器交互回归。导航�
 
 Wow 相关的包迁到了 [Wow 仓](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（迁移第 3′ 步），它们的故事也随之迁走，在 Wow 文档站的 [Storybook](https://wow.ahoo.me/storybook/) 里维护。`moved/` 为每个迁走的故事分组留一个占位页，旧链接落在去向说明上，而不是空页：
 
-- `View Engine/已迁移`：数据视图引擎的全部场景，现在是 `@ahoo-wang/wow-view-engine`。
-- `React Hooks/Wow Queries`：Wow 查询 Hook，现在是 `@ahoo-wang/wow-react`。
+- `View Engine/已迁移`：数据视图引擎的全部场景，迁往 `@ahoo-wang/wow-view-engine`（View Engine 稳定后才发布到 npm）。
+- `React Hooks/Wow Queries`：Wow 查询 Hook，迁往 `@ahoo-wang/wow-react`（随 Wow 的首个稳定版发布到 npm）。
 - `Viewer/已退役`：`@ahoo-wang/fetcher-viewer` 没有迁移，冻结在 `5.x` 分支，故事也留在那里。
 
-占位页目前链接到 Wow Storybook 的首页；等 Wow 那边的故事 id 稳定后再改成逐个故事的链接。
+新包名在 npm 上还不存在，占位页只写迁往哪个包、什么时候发布，以及在那之前继续用 5.x 版本线（npm 上的 5.1.x，分支 `5.x`）。占位页目前链接到 Wow Storybook 的首页；等 Wow 那边的故事 id 稳定后再改成逐个故事的链接。
 
 ## 本地门禁
 

@@ -20,8 +20,16 @@ interface MovedNoticeProps {
   subject: string;
   /** Where it went, in one sentence. */
   summary: string;
-  /** The package names readers should install now. */
+  /**
+   * The package names after the migration. Names only: they are published to
+   * npm with Wow's first stable release (wow-view-engine once it is stable),
+   * so `availability` must say what to use until then.
+   */
   packages: readonly string[];
+  /** The label before the names; defaults to 「迁移后的包名」. */
+  packagesLabel?: string;
+  /** Whether the packages are on npm yet, and what to use until they are. */
+  availability: string;
   link: { href: string; label: string };
 }
 
@@ -33,6 +41,8 @@ export function MovedNotice({
   subject,
   summary,
   packages,
+  packagesLabel = '迁移后的包名',
+  availability,
   link,
 }: MovedNoticeProps) {
   const headingId = useId();
@@ -46,7 +56,7 @@ export function MovedNotice({
       <div className="story-scene-stage">
         <div className="story-stack">
           <p>
-            现在安装：
+            {packagesLabel}：
             {packages.map((name, index) => (
               <span key={name}>
                 {index > 0 && '、'}
@@ -54,6 +64,7 @@ export function MovedNotice({
               </span>
             ))}
           </p>
+          <p>{availability}</p>
           <a href={link.href} target="_top">
             {link.label}
           </a>
