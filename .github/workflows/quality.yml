@@ -43,7 +43,9 @@ jobs:
         if: needs.changes.outputs.code == 'true' || needs.changes.outputs.storybook == 'true' || needs.changes.outputs.integration == 'true' || needs.changes.outputs.wiki == 'true'
         run: pnpm -r --filter './packages/*' build
       # Packs each published package and resolves its declarations with attw
-      # under node10, node16 (CommonJS and ES modules) and bundler.
+      # under node10, node16 (CommonJS and ES modules) and bundler, then
+      # type-checks an .mts and a .cts consumer of each in one tsc run
+      # (node16, nodenext), so its .d.ts and .d.cts must load together.
       - name: Check published package types
         if: needs.changes.outputs.code == 'true'
         run: pnpm check:package-types
