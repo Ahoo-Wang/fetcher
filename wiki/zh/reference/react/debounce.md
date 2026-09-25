@@ -145,7 +145,7 @@ export function useDebouncedQuery<Q, R, E = FetcherError>(
 ): UseDebouncedQueryReturn<Q, R, E>;
 ```
 
-[packages/react/src/core/debounced/useDebouncedQuery.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedQuery.ts#L140)
+[packages/react/src/core/debounced/useDebouncedQuery.ts:139](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedQuery.ts#L139)
 
 ### UseDebouncedQueryOptions {#api-UseDebouncedQueryOptions}
 
@@ -154,7 +154,7 @@ export interface UseDebouncedQueryOptions<Q, R, E = FetcherError>
   extends UseQueryOptions<Q, R, E>, DebounceCapable {}
 ```
 
-[packages/react/src/core/debounced/useDebouncedQuery.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedQuery.ts#L28)
+[packages/react/src/core/debounced/useDebouncedQuery.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedQuery.ts#L27)
 
 ### UseDebouncedQueryReturn {#api-UseDebouncedQueryReturn}
 
@@ -165,7 +165,7 @@ export interface UseDebouncedQueryReturn<Q, R, E = FetcherError>
     UseDebouncedCallbackReturn<UseQueryReturn<Q, R, E>['execute']> {}
 ```
 
-[packages/react/src/core/debounced/useDebouncedQuery.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedQuery.ts#L37)
+[packages/react/src/core/debounced/useDebouncedQuery.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedQuery.ts#L36)
 
 ### useDebouncedFetcher {#api-useDebouncedFetcher}
 
@@ -205,7 +205,7 @@ export function useDebouncedFetcherQuery<Q, R, E = FetcherError>(
 ): UseDebouncedFetcherQueryReturn<Q, R, E>;
 ```
 
-[packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts#L145)
+[packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts#L150)
 
 ### UseDebouncedFetcherQueryOptions {#api-UseDebouncedFetcherQueryOptions}
 
@@ -214,7 +214,7 @@ export interface UseDebouncedFetcherQueryOptions<Q, R, E = FetcherError>
   extends UseFetcherQueryOptions<Q, R, E>, DebounceCapable {}
 ```
 
-[packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts#L33)
+[packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts#L38)
 
 ### UseDebouncedFetcherQueryReturn {#api-UseDebouncedFetcherQueryReturn}
 
@@ -225,7 +225,7 @@ export interface UseDebouncedFetcherQueryReturn<Q, R, E = FetcherError>
     UseDebouncedCallbackReturn<UseFetcherQueryReturn<Q, R, E>['execute']> {}
 ```
 
-[packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts#L47)
+[packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/debounced/useDebouncedFetcherQuery.ts#L52)
 
 ## 相关专题
 
