@@ -21,7 +21,7 @@ Create a new request object for each call; do not share a mutable request betwee
 
 ## HTTP cancellation and timeout {#http-cancellation}
 
-`useFetcher` assigns the executor's AbortController to the request. With the normal Fetcher transport and no explicit `signal`, that controller participates in the library timeout path. An explicit request `signal` takes precedence in Fetcher and bypasses its built-in timeout; it can also bypass the controller the hook would abort. Compose your own signal/timeout deliberately if supplying a signal. Regardless of physical cancellation, request IDs prevent older work from replacing the hook's current state.
+`useFetcher` assigns the executor's AbortController to the request. With the normal Fetcher transport, that controller, an explicit request `signal`, and the library timeout apply together: whichever fires first aborts the request. Regardless of physical cancellation, request IDs prevent older work from replacing the hook's current state.
 
 Select an extractor before choosing the result generic: `JsonResultExtractor` parses JSON, while ordinary Fetcher defaults can return an exchange or Response. `R` is the extracted value type, `E` is the error-state type; neither validates runtime payloads. [Request lifecycle](../../architecture/request-lifecycle) explains why a JSON parse failure can occur after exchange interception has finished.
 

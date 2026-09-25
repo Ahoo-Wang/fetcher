@@ -210,17 +210,17 @@ const response = await fetcher.get('/users/:id', {
 ```typescript
 interface UrlParams {
   path?: Record<string, any>; // Path parameters {id} or :id (values encoded with encodeURIComponent)
-  query?: Record<string, any>; // Query string params (values encoded via URLSearchParams)
+  query?: Record<string, any>; // Query string params (serialized by toSearchParams)
 }
 ```
 
-- A placeholder with no matching `path` value (value `undefined`) throws `Error('Missing required path parameter: <name>')` during the request phase (surfaces as `ExchangeError`).
-- `query` goes through `new URLSearchParams(query)`, so `undefined` values are sent as the literal string `"undefined"` and arrays are joined with commas. Drop undefined keys before passing them.
+- A placeholder with no `path` value (`undefined`, `null`, or no `path` object at all) throws `Error('Missing required path parameter: <name>')` during the request phase (surfaces as `ExchangeError`). A `Date` path value becomes its ISO 8601 text. Express names are identifiers: `/files/:name.json` is the parameter `name`.
+- `query` is serialized by `toSearchParams`: `undefined`/`null` values are omitted, arrays become one parameter per item (`ids=1&ids=2`, null/undefined items skipped), a `Date` becomes `toISOString()`, anything else `String(value)`. A `URLSearchParams` passed as `query` is used as is.
 
 ## 5. Timeout Configuration
 
 Default timeout is `undefined` (no timeout); `0` also means no timeout. Per-request `timeout` overrides the instance default.
-If the request carries a `signal`, `timeoutFetch` hands it straight to `fetch` and **no timeout is applied**. To combine caller cancellation with a timeout, pass `abortController` instead of `signal`. On timeout the controller is aborted with a `FetchTimeoutError`.
+The timeout applies together with the request's `signal` and `abortController`: whichever fires first aborts. A timeout rejects with `FetchTimeoutError` (the `cause` of the Fetcher's `ExchangeError`); a caller abort rejects with the caller's abort reason. The timeout never aborts the caller's controller and covers only up to the response headers, not body consumption.
 
 ```typescript
 // Instance-level timeout
@@ -371,6 +371,8 @@ import { NamedFetcher, fetcherRegistrar } from '@ahoo-wang/fetcher';
 
 // NamedFetcher auto-registers with fetcherRegistrar on construction;
 // a second NamedFetcher with the same name silently replaces the first.
+// fetcherRegistrar lives on globalThis, so a second copy of the package
+// (ESM + CJS builds, or two versions) shares it and its default fetcher.
 new NamedFetcher('users', {
   baseURL: 'https://api.example.com/users',
   timeout: 5000,
@@ -500,20 +502,20 @@ export const userService = {
 
 ### Constructor Options
 
-| Option             | Type                          | Default                                | Description                                                                                           |
-| ------------------ | ----------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `baseURL`          | `string`                      | `''`                                   | Base URL; **required** in the `FetcherOptions` type whenever you pass options                         |
-| `timeout`          | `number`                      | `undefined`                            | Timeout in ms (undefined = no timeout)                                                                |
-| `headers`          | `RequestHeaders`              | `{'Content-Type': 'application/json'}` | Default headers; passing `headers` **replaces** the default (no `Content-Type` unless you include it) |
-| `urlTemplateStyle` | `UrlTemplateStyle`            | `UriTemplate`                          | Path param style                                                                                      |
-| `validateStatus`   | `(status: number) => boolean` | `status >= 200 && status < 300`        | Status validation¹                                                                                    |
-| `interceptors`     | `InterceptorManager`          | new InterceptorManager()               | Custom interceptor manager                                                                            |
+| Option             | Type                          | Default                                | Description                                                                                                                             |
+| ------------------ | ----------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseURL`          | `string`                      | `''`                                   | Base URL; **required** in the `FetcherOptions` type whenever you pass options                                                           |
+| `timeout`          | `number`                      | `undefined`                            | Timeout in ms (undefined = no timeout)                                                                                                  |
+| `headers`          | `RequestHeaders`              | `{'Content-Type': 'application/json'}` | Default headers; passing `headers` **replaces** the default (no `Content-Type` unless you include it); each instance keeps its own copy |
+| `urlTemplateStyle` | `UrlTemplateStyle`            | `UriTemplate`                          | Path param style                                                                                                                        |
+| `validateStatus`   | `(status: number) => boolean` | `status >= 200 && status < 300`        | Status validation¹                                                                                                                      |
+| `interceptors`     | `InterceptorManager`          | new InterceptorManager()               | Custom interceptor manager                                                                                                              |
 
 ¹ `validateStatus` has no effect when a custom `interceptors` manager is provided — the default `ValidateStatusInterceptor` is only installed by the default manager. Register it yourself in that case.
 
 ### Request Cancellation
 
-Pass an `AbortController` per request via the `abortController` option (its `signal` is forwarded to `fetch`):
+Pass an `AbortController` per request via the `abortController` option (combined with any `signal` and the timeout; whichever fires first aborts):
 
 ```typescript
 const abortController = new AbortController();
@@ -523,7 +525,7 @@ abortController.abort(); // cancels the in-flight request
 
 ### Other Utilities
 
-- `getFetcher(fetcher?: string | Fetcher, defaultFetcher?)` -- resolve a registered fetcher by name or pass an instance through (used by decorator services)
+- `getFetcher(fetcher?: string | Fetcher, defaultFetcher?)` -- a string is resolved as a registered name; anything else is passed through as the fetcher (no `instanceof` check; used by decorator services)
 - `mergeRequest(first, second)` -- merge two request configs (case-insensitive headers, nested `urlParams.path`/`query`)
 - `mergeHeaders(...headers: (RequestHeaders | undefined)[]): RequestHeaders` -- case-insensitive replacement; the last layer and its spelling win, without mutating inputs
 - `getHeader(headers: RequestHeaders | undefined, name: string): string | undefined` -- case-insensitive lookup (last matching key wins)

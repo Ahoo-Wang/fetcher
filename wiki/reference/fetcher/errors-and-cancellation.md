@@ -26,19 +26,18 @@ Validation skips exchanges with no response. An outer pipeline failure is normal
 
 `TimeoutCapable.timeout?: number` uses milliseconds. `resolveTimeout(requestTimeout?, optionsTimeout?)` returns the request value whenever it is not undefined, including zero; otherwise the client value. `timeoutFetch(request): Promise<Response>` behaves as follows:
 
-| Inputs                                         | Behavior                                                                                                    |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `request.signal` exists                        | Delegate directly to native fetch; the library timeout is bypassed.                                         |
-| No signal and timeout is falsy (`0`/undefined) | No timer; use `abortController.signal` if supplied.                                                         |
-| Truthy timeout                                 | Race native fetch with a timer; use caller controller or create one; timer aborts with `FetchTimeoutError`. |
+| Inputs                                          | Behavior                                                                                                                                                                                                  |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Timeout not positive (`0`, negative, undefined) | No timer; native fetch is aborted by `request.signal` or `abortController.signal`, whichever fires first.                                                                                                 |
+| Positive timeout                                | Race native fetch with a timer combined with the caller's `signal` and `abortController`; whichever fires first aborts. The timer rejects with `FetchTimeoutError`, a caller abort with its abort reason. |
 
-There is no positive-number validation: supply a finite positive duration or zero intentionally. The timer stops when fetch resolves its Response, **not when response-body consumption finishes**. Streaming idle/total deadlines require caller-managed cancellation.
+Supply a finite positive duration to enable the timer. The timer stops when fetch resolves its Response, **not when response-body consumption finishes**. Streaming idle/total deadlines require caller-managed cancellation.
 
 ## Ownership and cleanup {#cancellation}
 
-Timers are cleared on success and failure. Signals temporarily written by the timed branch are removed; an internal controller is cleared so reusing that request can create a fresh one. A supplied controller remains owned by the caller, including an already-aborted one. It cannot be reset for a retry. Pass a fresh controller for a new operation.
+Timers are cleared on success and failure. `timeoutFetch` never writes to the request object and the timer never aborts a supplied controller, so the same request can be sent again. A supplied controller remains owned by the caller, including an already-aborted one. It cannot be reset for a retry. Pass a fresh controller for a new operation.
 
-For external cancellation, pass `signal` or `abortController`; the native abort reason is preserved by the failing exchange. A caller signal deliberately takes precedence over Fetcher's timeout. To combine both, let the caller manage the signal deadline or supply an abortController with timeout.
+For external cancellation, pass `signal` or `abortController`; the abort reason is preserved by the failing exchange. Both apply together with Fetcher's timeout: whichever fires first aborts the request.
 
 ## Complete example {#example}
 
@@ -71,10 +70,10 @@ try {
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="fetchererror"></a>`FetcherError`                                           | [fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)                             |
 | <a id="exchangeerror"></a>`ExchangeError`                                         | [fetcherError.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L86)                             |
-| <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33)                                       |
-| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
-| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)                                     |
+| <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
+| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L62)                                       |
+| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L83)                                       |
+| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)                                     |
 | <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
 | <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L62)   |
 | <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L70)   |

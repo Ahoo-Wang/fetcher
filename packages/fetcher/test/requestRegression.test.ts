@@ -132,7 +132,7 @@ it.each([true, false])(
   },
 );
 
-it('retains the caller controller after timeout instead of reviving it on retry', async () => {
+it('leaves the caller controller usable after a timeout, so a retry times out again', async () => {
   server.use(
     http.get('https://review.test/slow', async () => {
       await delay(50);
@@ -147,8 +147,68 @@ it('retains the caller controller after timeout instead of reviving it on retry'
   };
   await expect(timeoutFetch(request)).rejects.toThrow('timeout');
   expect(request.abortController).toBe(abortController);
-  expect(abortController.signal.aborted).toBe(true);
-  await expect(timeoutFetch(request)).rejects.toBe(
-    abortController.signal.reason,
-  );
+  expect(abortController.signal.aborted).toBe(false);
+  await expect(timeoutFetch(request)).rejects.toThrow('timeout');
+});
+
+it('sends a ReadableStream body, which fetch only accepts with duplex half', async () => {
+  // MSW's interception skips fetch's own validation; building the native
+  // Request runs it.
+  vi.stubGlobal('fetch', async (input: string, init: RequestInit) => {
+    const request = new Request(input, init);
+    return new Response(await request.text());
+  });
+  try {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('streamed'));
+        controller.close();
+      },
+    });
+    const fetcher = new Fetcher({ baseURL: 'https://review.test' });
+    const response = await fetcher.post('/upload', { body });
+    expect(await response.text()).toBe('streamed');
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+describe('caller-owned objects', () => {
+  it('gives every Fetcher its own headers record', () => {
+    const first = new Fetcher();
+    const second = new Fetcher();
+    first.headers!['X-Tenant'] = 't1';
+    expect(second.headers).not.toBe(first.headers);
+    expect(second.headers!['X-Tenant']).toBeUndefined();
+  });
+
+  it('does not share the headers passed in options', () => {
+    const headers = { 'X-App': 'a' };
+    const fetcher = new Fetcher({ baseURL: '', headers });
+    fetcher.headers!['X-App'] = 'b';
+    expect(headers['X-App']).toBe('a');
+  });
+
+  it('keeps path and query parameters written by an interceptor out of the caller request', async () => {
+    const fetcher = new Fetcher({ baseURL: 'https://review.test' });
+    fetcher.interceptors.request.use({
+      name: 'TenantInterceptor',
+      order: 0,
+      intercept(exchange) {
+        const urlParams = exchange.ensureRequestUrlParams();
+        urlParams.path.tenantId ??= 'T1';
+        urlParams.query.ts = 'now';
+      },
+    });
+    const shared = {
+      urlParams: { path: {} as Record<string, string>, query: { a: '1' } },
+    };
+    const response = await fetcher.get<any>(
+      '/tenants/{tenantId}',
+      shared,
+      options,
+    );
+    expect(response.url).toBe('https://review.test/tenants/T1?a=1&ts=now');
+    expect(shared.urlParams).toEqual({ path: {}, query: { a: '1' } });
+  });
 });

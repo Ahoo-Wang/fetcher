@@ -26,19 +26,18 @@ Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身
 
 `TimeoutCapable.timeout?: number` 单位为毫秒。`resolveTimeout(requestTimeout?, optionsTimeout?)` 在请求值不是 undefined 时直接返回它（包括零），否则使用客户端值。`timeoutFetch(request): Promise<Response>` 行为如下：
 
-| 输入                                       | 行为                                                                                       |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| 存在 `request.signal`                      | 直接调用原生 fetch，绕过库超时。                                                           |
-| 无 signal，timeout 为假值（`0`/undefined） | 不启用定时器；若传入则使用 `abortController.signal`。                                      |
-| timeout 为真值                             | 原生 fetch 与定时器竞速；复用调用者控制器或新建控制器，定时器以 `FetchTimeoutError` 中止。 |
+| 输入                                     | 行为                                                                                                                                                            |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| timeout 不是正数（`0`、负数、undefined） | 不启用定时器；原生 fetch 由 `request.signal` 或 `abortController.signal` 中先触发者中止。                                                                       |
+| timeout 为正数                           | 原生 fetch 与定时器竞速，定时器与调用者的 `signal`、`abortController` 组合，先触发者中止。定时器以 `FetchTimeoutError` 拒绝，调用者取消以其 abort reason 拒绝。 |
 
-不校验正数范围，应有意传入有限正数或零。fetch 返回 Response 时定时器即结束，**不会等待响应正文消费完成**。流的空闲/总时限需要调用者管理取消。
+传入有限正数才启用定时器。fetch 返回 Response 时定时器即结束，**不会等待响应正文消费完成**。流的空闲/总时限需要调用者管理取消。
 
 ## 所有权与清理 {#cancellation}
 
-成功和失败都会清理定时器。超时分支临时写入的 signal 会移除；内部控制器会清空，让重复使用请求时可创建新控制器。外部控制器仍由调用者拥有，即使它已被中止；它不能复位用于重试，新操作应创建新控制器。
+成功和失败都会清理定时器。`timeoutFetch` 从不写入请求对象，定时器也从不中止外部控制器，因此同一请求可以再次发送。外部控制器仍由调用者拥有，即使它已被中止；它不能复位用于重试，新操作应创建新控制器。
 
-外部取消使用 `signal` 或 `abortController`，失败 exchange 保留原生取消原因。调用者 signal 有意优先于 Fetcher 超时。需要同时控制两者时，由调用者给 signal 设置截止时间，或使用 abortController 配合 timeout。
+外部取消使用 `signal` 或 `abortController`，失败 exchange 保留取消原因。两者都与 Fetcher 超时同时生效：先触发者中止请求。
 
 ## 完整示例 {#example}
 
@@ -71,10 +70,10 @@ try {
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="fetchererror"></a>`FetcherError`                                           | [fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)                             |
 | <a id="exchangeerror"></a>`ExchangeError`                                         | [fetcherError.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L86)                             |
-| <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33)                                       |
-| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
-| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)                                     |
+| <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
+| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L62)                                       |
+| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L83)                                       |
+| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)                                     |
 | <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
 | <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L62)   |
 | <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L70)   |

@@ -19,7 +19,7 @@ description: >
 - DELETE is `@del` (not `@delete`); there is no `@trace` — use `@endpoint(HttpMethod.TRACE, path)`.
 - Decorated methods default to `JsonResultExtractor` and `EndpointReturnType.RESULT`, unlike core `fetcher.get()` which returns a `Response`. Use `{ returnType: EndpointReturnType.EXCHANGE }` or a `resultExtractor` per endpoint to change it.
 - Parameter names are read from the function source when omitted, which minifiers break: always pass names (`@path('id')`). `null`/`undefined` arguments are skipped; object (and array) arguments to `@query`/`@path`/`@header` are spread into keys.
-- An `AbortSignal` or `AbortController` argument is detected automatically; a signal disables the fetcher timeout for that call.
+- An `AbortSignal` or `AbortController` argument is detected automatically; it applies together with the fetcher timeout (whichever fires first aborts).
 - A subclass inherits endpoints but uses its own `@api` base path — inherited paths must still resolve there.
 
 ## Minimal example

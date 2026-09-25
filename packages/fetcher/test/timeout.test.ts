@@ -92,24 +92,115 @@ describe('timeoutFetch', () => {
     expect(text).toBe('test');
   });
 
-  it('should delegate to fetch when request.signal is present', async () => {
-    // Create an AbortController to get a signal
+  it('should not abort the caller signal on success', async () => {
     const controller = new AbortController();
-
     const request: FetchRequest = {
       url: 'https://api.example.com/test',
       method: 'GET',
       signal: controller.signal,
-      timeout: 1000, // Even with timeout, should delegate because signal is present
+      timeout: 1000,
     };
 
     const result = await timeoutFetch(request);
-    expect(result.status).toBe(200);
-
-    const text = await result.text();
-    expect(text).toBe('test');
-    // Should not have called abort on the controller
+    expect(await result.text()).toBe('test');
     expect(controller.signal.aborted).toBe(false);
+  });
+
+  it('should enforce the timeout when the caller also passes a signal', async () => {
+    const controller = new AbortController();
+    const request: FetchRequest = {
+      url: 'https://api.example.com/slow',
+      signal: controller.signal,
+      timeout: 50,
+    };
+
+    await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
+    // The timeout aborts the request, not the caller's signal.
+    expect(controller.signal.aborted).toBe(false);
+  });
+
+  it.each(['signal', 'abortController'] as const)(
+    'should reject with the caller reason when the caller %s aborts before the timeout',
+    async source => {
+      const controller = new AbortController();
+      const request: FetchRequest = {
+        url: 'https://api.example.com/slow',
+        timeout: 1000,
+        ...(source === 'signal'
+          ? { signal: controller.signal }
+          : { abortController: controller }),
+      };
+      const reason = new Error('user cancelled');
+      setTimeout(() => controller.abort(reason), 20);
+
+      await expect(timeoutFetch(request)).rejects.toBe(reason);
+    },
+  );
+
+  describe('without AbortSignal.any', () => {
+    const any = AbortSignal.any;
+    beforeAll(() => {
+      (AbortSignal as any).any = undefined;
+    });
+    afterAll(() => {
+      AbortSignal.any = any;
+    });
+
+    it('should still reject with the caller reason and detach its listener', async () => {
+      const controller = new AbortController();
+      const remove = vi.spyOn(controller.signal, 'removeEventListener');
+      const reason = new Error('user cancelled');
+      setTimeout(() => controller.abort(reason), 20);
+
+      await expect(
+        timeoutFetch({
+          url: 'https://api.example.com/slow',
+          timeout: 1000,
+          signal: controller.signal,
+        }),
+      ).rejects.toBe(reason);
+      expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+    });
+
+    it('should still time out and detach from a caller signal that never aborts', async () => {
+      const controller = new AbortController();
+      const remove = vi.spyOn(controller.signal, 'removeEventListener');
+
+      await expect(
+        timeoutFetch({
+          url: 'https://api.example.com/slow',
+          timeout: 50,
+          signal: controller.signal,
+        }),
+      ).rejects.toThrow(FetchTimeoutError);
+      expect(remove).toHaveBeenCalled();
+    });
+
+    it('should reject with the reason of an already aborted caller signal', async () => {
+      const controller = new AbortController();
+      const reason = new Error('already cancelled');
+      controller.abort(reason);
+
+      await expect(
+        timeoutFetch({
+          url: 'https://api.example.com/test',
+          timeout: 1000,
+          signal: controller.signal,
+        }),
+      ).rejects.toBe(reason);
+    });
+  });
+
+  it('should not write to the request', async () => {
+    const request: FetchRequest = {
+      url: 'https://api.example.com/test',
+      timeout: 1000,
+    };
+    const keys = Object.keys(request);
+
+    await timeoutFetch(request);
+
+    expect(Object.keys(request)).toEqual(keys);
   });
 
   it('should use abortController signal when no timeout is specified but abortController is provided', async () => {
@@ -184,9 +275,7 @@ describe('timeoutFetch', () => {
     // Retry: replace the slow handler with a fast one for the same URL.
     server.resetHandlers();
     server.use(
-      http.get('https://api.example.com/retry', () =>
-        HttpResponse.text('ok'),
-      ),
+      http.get('https://api.example.com/retry', () => HttpResponse.text('ok')),
     );
     // A retry reusing the same request object must succeed — NOT fail due to
     // a controller/signal that was polluted by the prior timeout.
@@ -251,6 +340,19 @@ describe('timeoutFetch', () => {
     // The caller's controller must be reused (not replaced) so external abort
     // still works.
     expect(request.abortController).toBe(userController);
+    expect(userController.signal.aborted).toBe(false);
+  });
+
+  it('should not abort a caller-supplied AbortController on timeout', async () => {
+    const userController = new AbortController();
+    const request: FetchRequest = {
+      url: 'https://api.example.com/slow',
+      timeout: 50,
+      abortController: userController,
+    };
+
+    await expect(timeoutFetch(request)).rejects.toThrow(FetchTimeoutError);
+    // Aborting it would make the caller read a timeout as its own cancel.
     expect(userController.signal.aborted).toBe(false);
   });
 });

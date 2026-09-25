@@ -162,5 +162,23 @@ export class FetcherRegistrar {
  *
  * // Retrieve a fetcher
  * const apiFetcher = fetcherRegistrar.get('api');
+ *
+ * @remarks
+ * One registrar per JavaScript realm, kept on `globalThis`: when a process
+ * loads this package twice (its ES module and CommonJS builds side by side,
+ * or two installed versions), both copies share it, so a fetcher registered
+ * through one is found through the other.
  */
-export const fetcherRegistrar = new FetcherRegistrar();
+export const fetcherRegistrar: FetcherRegistrar = sharedRegistrar();
+
+function sharedRegistrar(): FetcherRegistrar {
+  const key = Symbol.for('@ahoo-wang/fetcher/fetcher-registrar');
+  const shared = globalThis as typeof globalThis & {
+    [key: symbol]: FetcherRegistrar | undefined;
+  };
+  const existing = shared[key];
+  if (existing) return existing;
+  const registrar = new FetcherRegistrar();
+  Object.defineProperty(shared, key, { value: registrar });
+  return registrar;
+}

@@ -94,14 +94,31 @@ describe('UriTemplateResolver', () => {
       expect(result).toBe('/search/hello%20world');
     });
 
-    it('should return original URL when pathParams is null', () => {
-      const result = uriTemplateResolver.resolve('/users/{id}', null);
-      expect(result).toBe('/users/{id}');
+    it.each([null, undefined])(
+      'should throw when a placeholder has no params at all: %s',
+      pathParams => {
+        expect(() =>
+          uriTemplateResolver.resolve('/users/{id}', pathParams),
+        ).toThrow('Missing required path parameter: id');
+      },
+    );
+
+    it('should return a template without placeholders unchanged when there are no params', () => {
+      expect(uriTemplateResolver.resolve('/users', undefined)).toBe('/users');
     });
 
-    it('should return original URL when pathParams is undefined', () => {
-      const result = uriTemplateResolver.resolve('/users/{id}', undefined);
-      expect(result).toBe('/users/{id}');
+    it('should treat a null value as missing', () => {
+      expect(() =>
+        uriTemplateResolver.resolve('/users/{id}', { id: null }),
+      ).toThrow('Missing required path parameter: id');
+    });
+
+    it('should format a Date value as ISO 8601', () => {
+      expect(
+        uriTemplateResolver.resolve('/days/{day}', {
+          day: new Date(Date.UTC(2026, 0, 2)),
+        }),
+      ).toBe('/days/2026-01-02T00%3A00%3A00.000Z');
     });
 
     it('should throw error when required path parameter is missing', () => {
@@ -150,6 +167,17 @@ describe('ExpressUrlTemplateResolver', () => {
   });
 
   describe('resolve', () => {
+    it('should end a parameter name at the first non-identifier character', () => {
+      expect(
+        expressUrlTemplateResolver.resolve('/files/:name.json', {
+          name: 'report',
+        }),
+      ).toBe('/files/report.json');
+      expect(
+        expressUrlTemplateResolver.resolve('/users/:id?x=1', { id: 7 }),
+      ).toBe('/users/7?x=1');
+    });
+
     it('should replace path parameters with values in Express-style templates', () => {
       const result = expressUrlTemplateResolver.resolve(
         '/users/:id/posts/:postId',

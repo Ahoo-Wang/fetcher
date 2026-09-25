@@ -17,15 +17,17 @@ import { FetcherError } from './fetcherError.js';
 /**
  * Exception class thrown when an HTTP request times out.
  *
- * This error is thrown by the timeoutFetch function when a request exceeds its timeout limit.
+ * This error is thrown by the timeoutFetch function when a request exceeds its
+ * timeout limit. A Fetcher rejects with an {@link ExchangeError} whose `cause`
+ * is this error.
  *
  * @example
  * ```typescript
  * try {
- *   const response = await timeoutFetch('https://api.example.com/users', {}, 1000);
+ *   await fetcher.get('/users', { timeout: 1000 });
  * } catch (error) {
- *   if (error instanceof FetchTimeoutError) {
- *     console.log(`Request timed out after ${error.timeout}ms`);
+ *   if (error instanceof ExchangeError && error.cause instanceof FetchTimeoutError) {
+ *     console.log(`Request timed out after ${error.cause.request.timeout}ms`);
  *   }
  * }
  * ```
@@ -89,97 +91,110 @@ export function resolveTimeout(
 }
 
 /**
- * Executes an HTTP request with optional timeout support.
+ * Combines abort signals: the result aborts, with that signal's reason, as
+ * soon as any of them does. `dispose` detaches the listeners the fallback
+ * adds to long-lived caller signals; it is a no-op with `AbortSignal.any`.
+ */
+function anySignal(signals: AbortSignal[]): {
+  signal?: AbortSignal;
+  dispose: () => void;
+} {
+  const noop = () => {};
+  if (signals.length <= 1) {
+    return { signal: signals[0], dispose: noop };
+  }
+  if (typeof AbortSignal.any === 'function') {
+    return { signal: AbortSignal.any(signals), dispose: noop };
+  }
+  const controller = new AbortController();
+  const aborted = signals.find(signal => signal.aborted);
+  if (aborted) {
+    controller.abort(aborted.reason);
+    return { signal: controller.signal, dispose: noop };
+  }
+  const onAbort = (event: Event) => {
+    controller.abort((event.target as AbortSignal).reason);
+    dispose();
+  };
+  const dispose = () => {
+    for (const signal of signals) {
+      signal.removeEventListener('abort', onAbort);
+    }
+  };
+  for (const signal of signals) {
+    signal.addEventListener('abort', onAbort);
+  }
+  return { signal: controller.signal, dispose };
+}
+
+/**
+ * Executes an HTTP request, applying every cancellation source at once.
  *
- * This function provides a wrapper around the native fetch API with added timeout functionality.
- * - If a timeout is specified, it will create an AbortController to cancel the request if it exceeds the timeout.
- * - If the request already has a signal, it will delegate to the native fetch API directly to avoid conflicts.
- * - If the request has an abortController, it will be used instead of creating a new one.
+ * The request is aborted by whichever comes first:
+ * - the caller's `signal`,
+ * - the caller's `abortController`,
+ * - the timeout, when `timeout` is a positive number of milliseconds; it then
+ *   rejects with a {@link FetchTimeoutError}.
+ *
+ * The timeout covers the request up to the response headers; reading the body
+ * afterwards is bounded only by the caller's signal or controller. The
+ * caller's objects are never modified: the request is not written to and the
+ * caller's controller is never aborted by the timeout, so the same request can
+ * be sent again.
  *
  * @param request - The request configuration including URL, method, headers, body, and optional timeout
  * @returns Promise that resolves to the Response object
  * @throws FetchTimeoutError if the request times out
+ * @throws The abort reason of the caller's signal or controller when it aborts
  * @throws TypeError for network errors
  *
  * @example
  * ```typescript
- * // With timeout
  * try {
- *   const response = await timeoutFetch('https://api.example.com/users', { method: 'GET' }, 5000);
- *   console.log('Request completed successfully');
+ *   const response = await timeoutFetch({
+ *     url: 'https://api.example.com/users',
+ *     timeout: 5000,
+ *   });
  * } catch (error) {
  *   if (error instanceof FetchTimeoutError) {
- *     console.log(`Request timed out after ${error.timeout}ms`);
+ *     console.log(`Request timed out after ${error.request.timeout}ms`);
  *   }
  * }
- *
- * // Without timeout (delegates to regular fetch)
- * const response = await timeoutFetch('https://api.example.com/users', { method: 'GET' });
  * ```
  */
 export async function timeoutFetch(request: FetchRequest): Promise<Response> {
-  const url = request.url;
-  const timeout = request.timeout;
-  const requestInit = request as RequestInit;
+  const { url, timeout } = request;
+  const signals: AbortSignal[] = [];
+  if (request.signal) signals.push(request.signal);
+  if (request.abortController) signals.push(request.abortController.signal);
 
-  // If the request already has a signal, delegate to native fetch to avoid conflicts
-  if (request.signal) {
-    return await fetch(url, requestInit);
-  }
-
-  // Extract timeout from request
-  if (!timeout) {
-    // When no timeout is set, but an abortController is provided, use its signal
-    if (request.abortController) {
-      requestInit.signal = request.abortController.signal;
+  if (!timeout || timeout <= 0) {
+    const { signal, dispose } = anySignal(signals);
+    try {
+      return await fetch(url, { ...(request as RequestInit), signal });
+    } finally {
+      dispose();
     }
-    return await fetch(url, requestInit);
   }
 
-  // Caller cancellation is authoritative, including an already-aborted signal.
-  // Internal controllers are cleared below so retries can create a fresh one.
-  const existingController = request.abortController;
-  const reuseExistingController = existingController !== undefined;
-  const controller = existingController ?? new AbortController();
-  request.abortController = controller;
-  requestInit.signal = controller.signal;
-
-  // Timer resource management
-  let timerId: ReturnType<typeof setTimeout> | null = null;
-  let aborted = false;
-  // Create timeout Promise that rejects after specified time
-  const timeoutPromise = new Promise<Response>((_, reject) => {
+  const timeoutController = new AbortController();
+  const { signal, dispose } = anySignal([...signals, timeoutController.signal]);
+  let timerId: ReturnType<typeof setTimeout> | undefined;
+  // Rejects even if a fetch implementation ignores the signal.
+  const timeoutPromise = new Promise<never>((_, reject) => {
     timerId = setTimeout(() => {
-      // If fetch already completed, skip unnecessary work
-      if (aborted) return;
-      aborted = true;
-      if (timerId) {
-        clearTimeout(timerId);
-      }
       const error = new FetchTimeoutError(request);
-      controller.abort(error);
+      timeoutController.abort(error);
       reject(error);
     }, timeout);
   });
-
   try {
-    // Race between fetch request and timeout Promise
-    return await Promise.race([fetch(url, requestInit), timeoutPromise]);
+    return await Promise.race([
+      fetch(url, { ...(request as RequestInit), signal }),
+      timeoutPromise,
+    ]);
   } finally {
-    // Mark as aborted and clean up timer resources
-    aborted = true;
-    if (timerId) {
-      clearTimeout(timerId);
-    }
-    // Remove the controller/signal written onto the caller's request above,
-    // on BOTH the success and failure paths. Otherwise a later call reusing
-    // this same request object would mistake them for caller-provided values
-    // and delegate to plain fetch — silently ignoring the timeout. A
-    // caller-supplied (reused) controller is the caller's own property and
-    // is left in place.
-    delete requestInit.signal;
-    if (!reuseExistingController) {
-      request.abortController = undefined;
-    }
+    clearTimeout(timerId);
+    dispose();
   }
 }

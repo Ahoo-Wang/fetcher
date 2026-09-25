@@ -5,7 +5,7 @@ description: 'Interceptor pipeline — @ahoo-wang/fetcher 5.0.0'
 
 # Interceptor pipeline
 
-Interceptors mutate a shared `FetchExchange`; they return `void | Promise<void>`, not a replacement exchange. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor` are structural specializations of `Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`.
+Interceptors mutate a shared `FetchExchange`; they return `void | Promise<void>`, not a replacement exchange. The exchange's request holds its own copies of the merged headers and of `urlParams.path`/`.query`, so interceptor writes never reach the caller's request object. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor` are structural specializations of `Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`.
 
 ## Registration and ordering {#registry}
 

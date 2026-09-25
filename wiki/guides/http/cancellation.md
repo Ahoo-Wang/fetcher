@@ -32,7 +32,7 @@ Run this instead of the tutorial client body. Immediate cancellation prints `Req
 
 ## Choose a deadline
 
-Set client `timeout` for a default, and request `timeout` for an override, both in milliseconds. Omitted/zero timeout disables the library timer. Passing `abortController` allows caller cancellation to compose with that timer. Passing a native `signal` instead takes the direct fetch path and bypasses the library timer even if timeout is set.
+Set client `timeout` for a default, and request `timeout` for an override, both in milliseconds. Omitted/zero timeout disables the library timer. A caller's `abortController` or native `signal` composes with that timer: whichever fires first aborts the request. The timer never aborts your controller.
 
 To bound the entire request plus body consumption, own the signal and timer around both awaits:
 
@@ -47,10 +47,10 @@ try {
 }
 ```
 
-Place this in an async application function and catch its rejection at the caller. This replaces, rather than adds to, the library deadline. The built-in timer ends when native fetch returns the response; it does not cover later JSON decoding or an entire SSE stream.
+Place this in an async application function and catch its rejection at the caller. A library `timeout`, if set, still applies alongside it. The built-in timer ends when native fetch returns the response; it does not cover later JSON decoding or an entire SSE stream.
 
 ## Observe failure and release ownership
 
-Library timeout is available through `ExchangeError.cause` as `FetchTimeoutError`; native abort and later body reads can surface differently. Check your owned signal when cancellation is an expected action, while still reporting unrelated failures. Stop the fixture after the check. For streaming consumers, also cancel/release the reader in a finally block. Cancellation stops client work where the transport observes the signal; it does not roll back a server-side write.
+Library timeout is available through `ExchangeError.cause` as `FetchTimeoutError`; a caller abort rejects with the signal's abort reason, and later body reads can surface differently. Check your owned signal when cancellation is an expected action, while still reporting unrelated failures. Stop the fixture after the check. For streaming consumers, also cancel/release the reader in a finally block. Cancellation stops client work where the transport observes the signal; it does not roll back a server-side write.
 
 See [errors and cancellation reference](../../reference/fetcher/errors-and-cancellation.md), [SSE cleanup](../streaming/sse.md), and [failure model](../../architecture/failure-model.md).

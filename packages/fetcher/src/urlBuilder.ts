@@ -15,6 +15,7 @@ import { combineURLs } from './urls.js';
 import type { BaseURLCapable, FetchRequest } from './fetchRequest.js';
 import type { UrlTemplateStyle } from './urlTemplateResolver.js';
 import {
+  formatUrlParam,
   getUrlTemplateResolver,
   type UrlTemplateResolver,
 } from './urlTemplateResolver.js';
@@ -41,15 +42,47 @@ export interface UrlParams {
   /**
    * Query parameter object to be added to the URL query string.
    *
-   * These parameters are appended to the URL as a query string.
+   * These parameters are appended to the URL as a query string:
+   * - `undefined` and `null` values are omitted,
+   * - an array becomes one parameter per item (`ids=1&ids=2`),
+   * - a `Date` becomes its ISO 8601 form,
+   * - anything else becomes `String(value)`.
    *
    * @example
    * ```typescript
-   * const query = { filter: 'active', page: 1, limit: 10 };
-   * // Results in query string: ?filter=active&page=1&limit=10
+   * const query = { filter: 'active', page: 1, tag: ['a', 'b'], q: undefined };
+   * // Results in query string: ?filter=active&page=1&tag=a&tag=b
    * ```
    */
   query?: Record<string, any>;
+}
+
+function appendSearchParam(
+  params: URLSearchParams,
+  name: string,
+  value: unknown,
+): void {
+  if (value === undefined || value === null) return;
+  if (Array.isArray(value)) {
+    for (const item of value) appendSearchParam(params, name, item);
+    return;
+  }
+  params.append(name, formatUrlParam(value));
+}
+
+/**
+ * Serializes query parameters as {@link UrlParams.query} describes. A
+ * `URLSearchParams` is taken as is.
+ */
+export function toSearchParams(
+  query: Record<string, unknown> | URLSearchParams,
+): URLSearchParams {
+  if (query instanceof URLSearchParams) return new URLSearchParams(query);
+  const params = new URLSearchParams();
+  for (const [name, value] of Object.entries(query)) {
+    appendSearchParam(params, name, value);
+  }
+  return params;
 }
 
 /**
@@ -124,7 +157,7 @@ export class UrlBuilder implements BaseURLCapable {
     const combinedURL = combineURLs(this.baseURL, url);
     let finalUrl = this.urlTemplateResolver.resolve(combinedURL, path);
     if (query) {
-      const queryString = new URLSearchParams(query).toString();
+      const queryString = toSearchParams(query).toString();
       if (queryString) {
         const fragmentIndex = finalUrl.indexOf('#');
         const fragment = fragmentIndex < 0 ? '' : finalUrl.slice(fragmentIndex);

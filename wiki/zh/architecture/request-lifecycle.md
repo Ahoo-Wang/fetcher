@@ -30,7 +30,7 @@ sequenceDiagram
   Extractor-->>Caller: 返回选择的值或 Promise 拒绝
 ```
 
-图中展示 `request()` 的成功路径，参与者依次为调用方、Fetcher、请求拦截器、原生 Fetch、响应拦截器和提取器。默认请求 registry 包含请求体准备、URL 解析和 Fetch 本身，原生传输位于请求阶段内部。每个 registry 按 `order` 升序串行执行。`exchange()` 执行请求、响应 registry 后返回 exchange；`request()` 随后调用 `extractResult()`。见 [packages/fetcher/src/interceptorManager.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L63)、[packages/fetcher/src/interceptor.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L294) 和 [packages/fetcher/src/fetcher.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L173)。
+图中展示 `request()` 的成功路径，参与者依次为调用方、Fetcher、请求拦截器、原生 Fetch、响应拦截器和提取器。默认请求 registry 包含请求体准备、URL 解析和 Fetch 本身，原生传输位于请求阶段内部。每个 registry 按 `order` 升序串行执行。`exchange()` 执行请求、响应 registry 后返回 exchange；`request()` 随后调用 `extractResult()`。见 [packages/fetcher/src/interceptorManager.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L63)、[packages/fetcher/src/interceptor.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L294) 和 [packages/fetcher/src/fetcher.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L174)。
 
 | 入口                                              | 默认返回值            | 适用需求                           |
 | ------------------------------------------------- | --------------------- | ---------------------------------- |
@@ -39,7 +39,7 @@ sequenceDiagram
 | `fetch()`、`get()`、`post()` 及其他 HTTP 辅助方法 | `Response`            | 状态、响应头或原生响应体读取器     |
 | 显式选择 JSON 提取器的请求                        | 解析值                | 返回数据的服务函数，由应用验证数据 |
 
-默认值依据 [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)、[packages/fetcher/src/fetcher.ts:230](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L230) 和 [packages/fetcher/src/fetcher.ts:256](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L256)。JSON 提取调用 `response.json()`，泛型参数不增加运行时验证。见 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69) 与[选择结果](../guides/http/results.md)。
+默认值依据 [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)、[packages/fetcher/src/fetcher.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L236) 和 [packages/fetcher/src/fetcher.ts:262](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L262)。JSON 提取调用 `response.json()`，泛型参数不增加运行时验证。见 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69) 与[选择结果](../guides/http/results.md)。
 
 ## 恢复不会重跑验证
 

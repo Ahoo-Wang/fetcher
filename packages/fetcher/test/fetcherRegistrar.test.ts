@@ -131,3 +131,31 @@ describe('FetcherRegistrar', () => {
     expect(unregisteredFetcher).toBeUndefined();
   });
 });
+
+describe('fetcherRegistrar across package copies', () => {
+  it('is shared through globalThis, so a second copy finds registered fetchers', async () => {
+    const first = await import('../src/fetcherRegistrar');
+    vi.resetModules();
+    const second = await import('../src/fetcherRegistrar');
+    expect(second.FetcherRegistrar).not.toBe(first.FetcherRegistrar);
+    expect(second.fetcherRegistrar).toBe(first.fetcherRegistrar);
+  });
+
+  it('keeps the default fetcher a first copy registered', async () => {
+    const first = await import('../src/namedFetcher');
+    first.fetcher.headers!['X-Configured'] = 'yes';
+    vi.resetModules();
+    const second = await import('../src/namedFetcher');
+    expect(second.NamedFetcher).not.toBe(first.NamedFetcher);
+    expect(second.fetcher).toBe(first.fetcher);
+    expect(second.fetcher.headers!['X-Configured']).toBe('yes');
+  });
+
+  it('resolves a fetcher instance from another copy as is', async () => {
+    const { getFetcher } = await import('../src/fetcherCapable');
+    vi.resetModules();
+    const other = await import('../src/fetcher');
+    const foreign = new other.Fetcher();
+    expect(getFetcher(foreign)).toBe(foreign);
+  });
+});

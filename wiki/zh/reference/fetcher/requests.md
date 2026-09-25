@@ -5,7 +5,7 @@ description: '请求、请求头与正文 — @ahoo-wang/fetcher 5.0.0'
 
 # 请求、请求头与正文
 
-`FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。
+`FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController` 和 `duplex?: 'half'`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。
 
 普通调用直接把请求对象传给客户端方法；只有自行组合两份配置时才调用 `mergeRequest`。模板值放在 `urlParams.path`，查询串放在 `urlParams.query`。`body` 表示请求载荷；`resultExtractor` 应放在方法的第三个选项参数中，不属于请求对象。
 
@@ -36,9 +36,9 @@ description: '请求、请求头与正文 — @ahoo-wang/fetcher 5.0.0'
 
 ## 正文转换 {#body}
 
-`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。字符串与 nullish 正文原样通过。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不调整请求头。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
+`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。字符串与 nullish 正文原样通过。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不调整请求头；ReadableStream 正文在未设置 `duplex` 时还会得到 Fetch 要求的 `duplex: 'half'`。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
 
-流式上传支持和额外的运行时特有请求字段仍由调用者负责。插入正文转换器前请阅读[管线顺序](./interceptors.md)。
+运行时是否支持流式上传，以及额外的运行时特有请求字段，仍由调用者负责。插入正文转换器前请阅读[管线顺序](./interceptors.md)。
 
 ## 完整示例 {#example}
 
@@ -74,7 +74,7 @@ console.assert(exchange.request.timeout === 0);
 | <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)     |
 | <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
 | <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
-| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L176)   |
+| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
 | <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L65)     |
 | <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [mergeRequest.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L118)   |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |

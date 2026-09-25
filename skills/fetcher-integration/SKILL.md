@@ -17,10 +17,10 @@ description: >
 - `intercept(exchange)` **mutates** the exchange and returns nothing; `use()` returns `false` and ignores an interceptor whose `name` is already registered.
 - `FetchRequest.headers` is optional: write headers with `setHeader(exchange.ensureRequestHeaders(), 'Authorization', value)`, not `exchange.request.headers.X = …`.
 - Built-in order: `REQUEST_BODY_INTERCEPTOR_ORDER` (body → JSON) runs near `Number.MIN_SAFE_INTEGER`, so an object body assigned by a user interceptor (default order 0) is **not** serialized. `URL_RESOLVE_INTERCEPTOR_ORDER` and `FETCH_INTERCEPTOR_ORDER` come last; response-side `VALIDATE_STATUS_INTERCEPTOR_ORDER` runs near `Number.MAX_SAFE_INTEGER`.
-- Non-2xx responses reject with `ExchangeError` (cause `HttpStatusValidationError`); timeouts with `FetchTimeoutError`. An error interceptor that clears `exchange.error` recovers, but the response phase is not re-run. Skip validation per call with `{ attributes: new Map([[IGNORE_VALIDATE_STATUS, true]]) }` in the third argument, or per client with `validateStatus`.
-- `timeout` defaults to none (`0` also means none). Passing a `signal` disables the timeout for that request; pass an `abortController` to keep both.
+- Non-2xx responses reject with `ExchangeError` (cause `HttpStatusValidationError`); timeouts with `ExchangeError` whose `cause` is `FetchTimeoutError`. An error interceptor that clears `exchange.error` recovers, but the response phase is not re-run. Skip validation per call with `{ attributes: new Map([[IGNORE_VALIDATE_STATUS, true]]) }` in the third argument, or per client with `validateStatus`.
+- `timeout` defaults to none (`0` also means none). It applies together with a caller `signal`/`abortController` (whichever fires first aborts) and covers only up to the response headers — bound body reads (`response.json()`, streams) with your own signal.
 - `options.headers` **replaces** the default `Content-Type: application/json` instead of merging.
-- `urlParams.path` fills `{id}` / `:id` templates (missing values throw); `urlParams.query` goes through `URLSearchParams`, so `undefined` becomes the string `"undefined"` — drop it first.
+- `urlParams.path` fills `{id}` / `:id` templates; a placeholder without a value (`undefined`, `null`, or no `path` at all) throws. `urlParams.query` omits `undefined`/`null`, repeats arrays (`ids=1&ids=2`) and sends a `Date` as ISO 8601.
 
 ## Minimal example
 

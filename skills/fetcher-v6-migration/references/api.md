@@ -29,8 +29,10 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   `fetcher-decorator`, `fetcher-eventbus`, `fetcher-eventstream`,
   `fetcher-openai`, `fetcher-openapi`, `fetcher-storage` or `fetcher-cosec`;
   the only removals are in `fetcher-react` and the packages that left. These
-  packages do receive bug fixes — see **Fixed** in the 6.0 release notes
-  (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
+  packages do receive corrections — see **Changed** (e.g. `@ahoo-wang/fetcher`
+  omits `undefined`/`null` query values, repeats array query parameters and
+  keeps the timeout when a `signal` is passed) and **Fixed** in the 6.0 release
+  notes (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
   longer re-running the error phase (#1249).
 
 ## Package mapping

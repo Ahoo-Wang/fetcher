@@ -19,7 +19,7 @@ description: 检查平台能力，并在共享客户端前界定可变身份状�
 
 ## 只在预期身份作用域内共享配置
 
-客户端可以复用稳定的服务默认配置，但 `headers`、`timeout` 和 `urlBuilder` 都可变，registrar 也是模块全局实例。SSR 为每个入站用户请求修改共享客户端授权头，可能使请求使用另一个请求的身份。使用请求作用域客户端，或通过请求选项传入身份而不修改共享默认值；相关 token/存储状态也要限定作用域。见 [packages/fetcher/src/fetcher.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L127) 和 [packages/fetcher/src/fetcherRegistrar.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L166)。
+客户端可以复用稳定的服务默认配置，但 `headers`、`timeout` 和 `urlBuilder` 都可变，registrar 是保存在 `globalThis` 上的进程级单例，第二份包副本也共享它。SSR 为每个入站用户请求修改共享客户端授权头，可能使请求使用另一个请求的身份。使用请求作用域客户端，或通过请求选项传入身份而不修改共享默认值；相关 token/存储状态也要限定作用域。见 [packages/fetcher/src/fetcher.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L127) 和 [packages/fetcher/src/fetcherRegistrar.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L172)。
 
 `getStorage()` 在存在 `window` 时使用浏览器 localStorage，否则创建内存实现。这种回退不会建立服务端请求作用域，也不会跨进程持久化。此路径没有捕获 localStorage 被禁用时的访问异常。涉及这些约束时，应明确选择存储实现和生命周期。见 [packages/storage/src/env.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L20) 与[存储运行环境参考](../reference/storage/serialization-and-runtime.md)。
 

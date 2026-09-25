@@ -5,7 +5,7 @@ description: 'Requests, headers, and bodies — @ahoo-wang/fetcher 5.0.0'
 
 # Requests, headers, and bodies
 
-`FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, and `abortController`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through.
+`FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, `abortController`, and `duplex?: 'half'`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through.
 
 For ordinary calls, pass a request object to the client method; call `mergeRequest` directly only when composing two configurations yourself. Use `urlParams.path` for template values and `urlParams.query` for the query string. `body` selects payload content, while `resultExtractor` belongs in the separate third method argument, not inside the request.
 
@@ -36,9 +36,9 @@ For ordinary calls, pass a request object to the client method; call `mergeReque
 
 ## Body conversion {#body}
 
-`RequestBodyInterceptor` runs before normal order-zero request interceptors. Strings and nullish bodies pass through. Blob, File, FormData, and URLSearchParams pass through after removing **all** Content-Type spellings so Fetch chooses the type/boundary. ArrayBuffer, typed-array/DataView views, and ReadableStream pass through without header adjustment. Other objects (including arrays) use `JSON.stringify`; JSON Content-Type is added only if absent. An explicit non-JSON Content-Type does not prevent JSON serialization. Circular data or BigInt may fail serialization and enter the error pipeline.
+`RequestBodyInterceptor` runs before normal order-zero request interceptors. Strings and nullish bodies pass through. Blob, File, FormData, and URLSearchParams pass through after removing **all** Content-Type spellings so Fetch chooses the type/boundary. ArrayBuffer, typed-array/DataView views, and ReadableStream pass through without header adjustment; a ReadableStream body also gets `duplex: 'half'` unless `duplex` is already set, as Fetch requires. Other objects (including arrays) use `JSON.stringify`; JSON Content-Type is added only if absent. An explicit non-JSON Content-Type does not prevent JSON serialization. Circular data or BigInt may fail serialization and enter the error pipeline.
 
-Streaming upload support and additional runtime-specific request fields remain the caller's responsibility. See [pipeline ordering](./interceptors.md) before inserting a body transformer.
+Whether the runtime supports streaming uploads, and additional runtime-specific request fields, remain the caller's responsibility. See [pipeline ordering](./interceptors.md) before inserting a body transformer.
 
 ## Complete example {#example}
 
@@ -74,7 +74,7 @@ console.assert(exchange.request.timeout === 0);
 | <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)     |
 | <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
 | <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
-| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L176)   |
+| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
 | <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L65)     |
 | <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [mergeRequest.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L118)   |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |

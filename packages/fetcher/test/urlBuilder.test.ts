@@ -112,10 +112,34 @@ describe('UrlBuilder', () => {
       const url = urlBuilder.build('/users', {
         query: { tags: ['important', 'urgent'], status: 'active' },
       });
-      // URLSearchParams will serialize arrays by joining with commas
+      // One parameter per item, as servers read repeated keys as a list.
       expect(url).toBe(
-        'https://api.example.com/users?tags=important%2Curgent&status=active',
+        'https://api.example.com/users?tags=important&tags=urgent&status=active',
       );
+    });
+
+    it('should skip absent array items and format dates', () => {
+      const urlBuilder = new UrlBuilder('https://api.example.com');
+      const url = urlBuilder.build('/users', {
+        query: {
+          ids: [1, null, 2, undefined],
+          since: new Date(Date.UTC(2026, 0, 2)),
+          empty: [],
+        },
+      });
+      expect(url).toBe(
+        'https://api.example.com/users?ids=1&ids=2&since=2026-01-02T00%3A00%3A00.000Z',
+      );
+    });
+
+    it('should take a URLSearchParams query as is', () => {
+      const urlBuilder = new UrlBuilder('https://api.example.com');
+      const query = new URLSearchParams([
+        ['a', '1'],
+        ['a', '2'],
+      ]);
+      const url = urlBuilder.build('/users', { query: query as any });
+      expect(url).toBe('https://api.example.com/users?a=1&a=2');
     });
 
     it('should handle URL with numeric query parameters', () => {
@@ -141,10 +165,8 @@ describe('UrlBuilder', () => {
       const url = urlBuilder.build('/users', {
         query: { name: null, status: undefined, active: 'yes' },
       });
-      // URLSearchParams will convert null to string and include undefined as 'undefined'
-      expect(url).toBe(
-        'https://api.example.com/users?name=null&status=undefined&active=yes',
-      );
+      // Absent values are omitted, not sent as the text "null"/"undefined".
+      expect(url).toBe('https://api.example.com/users?active=yes');
     });
 
     it('should handle URL with empty query parameters object', () => {

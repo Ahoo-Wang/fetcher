@@ -549,7 +549,7 @@ Run this instead of the tutorial client body. Immediate cancellation prints `Req
 
 ## Choose a deadline
 
-Set client `timeout` for a default, and request `timeout` for an override, both in milliseconds. Omitted/zero timeout disables the library timer. Passing `abortController` allows caller cancellation to compose with that timer. Passing a native `signal` instead takes the direct fetch path and bypasses the library timer even if timeout is set.
+Set client `timeout` for a default, and request `timeout` for an override, both in milliseconds. Omitted/zero timeout disables the library timer. A caller's `abortController` or native `signal` composes with that timer: whichever fires first aborts the request. The timer never aborts your controller.
 
 To bound the entire request plus body consumption, own the signal and timer around both awaits:
 
@@ -564,11 +564,11 @@ try {
 }
 ```
 
-Place this in an async application function and catch its rejection at the caller. This replaces, rather than adds to, the library deadline. The built-in timer ends when native fetch returns the response; it does not cover later JSON decoding or an entire SSE stream.
+Place this in an async application function and catch its rejection at the caller. A library `timeout`, if set, still applies alongside it. The built-in timer ends when native fetch returns the response; it does not cover later JSON decoding or an entire SSE stream.
 
 ## Observe failure and release ownership
 
-Library timeout is available through `ExchangeError.cause` as `FetchTimeoutError`; native abort and later body reads can surface differently. Check your owned signal when cancellation is an expected action, while still reporting unrelated failures. Stop the fixture after the check. For streaming consumers, also cancel/release the reader in a finally block. Cancellation stops client work where the transport observes the signal; it does not roll back a server-side write.
+Library timeout is available through `ExchangeError.cause` as `FetchTimeoutError`; a caller abort rejects with the signal's abort reason, and later body reads can surface differently. Check your owned signal when cancellation is an expected action, while still reporting unrelated failures. Stop the fixture after the check. For streaming consumers, also cancel/release the reader in a finally block. Cancellation stops client work where the transport observes the signal; it does not roll back a server-side write.
 
 See [errors and cancellation reference](../../reference/fetcher/errors-and-cancellation.md), [SSE cleanup](../streaming/sse.md), and [failure model](../../architecture/failure-model.md).
 
@@ -2165,7 +2165,7 @@ Requirements come from [packages/fetcher/package.json:31](https://github.com/Aho
 
 ## Share configuration only within its intended identity scope
 
-A client can be reused for stable service defaults, but its `headers`, `timeout`, and `urlBuilder` are mutable. The registrar is a module-global instance. In SSR, changing a shared client's authorization header for each incoming user request can expose one request's identity to another. Use request-scoped clients or pass identity through request options without mutating shared defaults; scope associated token/storage state as well. See [packages/fetcher/src/fetcher.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L127) and [packages/fetcher/src/fetcherRegistrar.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L166).
+A client can be reused for stable service defaults, but its `headers`, `timeout`, and `urlBuilder` are mutable. The registrar is one process-wide instance kept on `globalThis`, shared even by a second copy of the package. In SSR, changing a shared client's authorization header for each incoming user request can expose one request's identity to another. Use request-scoped clients or pass identity through request options without mutating shared defaults; scope associated token/storage state as well. See [packages/fetcher/src/fetcher.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L127) and [packages/fetcher/src/fetcherRegistrar.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L172).
 
 `getStorage()` uses browser localStorage when `window` exists and creates an in-memory implementation otherwise. That fallback does not establish a server request scope or cross-process persistence. Access to disabled localStorage is not caught by this path. Choose an explicit storage implementation and lifetime when those constraints matter. See [packages/storage/src/env.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L20) and [storage runtime reference](../reference/storage/serialization-and-runtime.md).
 
@@ -2209,7 +2209,7 @@ autonumber
   Extractor-->>Caller: Selected value or Promise rejection
 ```
 
-The diagram shows the successful path of `request()`. The default request registry contains body preparation, URL resolution, and Fetch itself; native transport is inside the request phase. Each registry executes sequentially in ascending `order`. `exchange()` runs request then response registries and returns the exchange; `request()` then calls `extractResult()`. See [packages/fetcher/src/interceptorManager.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L63), [packages/fetcher/src/interceptor.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L294), and [packages/fetcher/src/fetcher.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L173).
+The diagram shows the successful path of `request()`. The default request registry contains body preparation, URL resolution, and Fetch itself; native transport is inside the request phase. Each registry executes sequentially in ascending `order`. `exchange()` runs request then response registries and returns the exchange; `request()` then calls `extractResult()`. See [packages/fetcher/src/interceptorManager.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L63), [packages/fetcher/src/interceptor.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L294), and [packages/fetcher/src/fetcher.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L174).
 
 | Entry point                                      | Default returned value      | Choose it for                                                 |
 | ------------------------------------------------ | --------------------------- | ------------------------------------------------------------- |
@@ -2218,7 +2218,7 @@ The diagram shows the successful path of `request()`. The default request regist
 | `fetch()`, `get()`, `post()`, other HTTP helpers | `Response`                  | Status, headers, or native body readers                       |
 | Request with explicit JSON extractor             | Parsed value                | Data-returning service functions, with application validation |
 
-Defaults follow [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98), [packages/fetcher/src/fetcher.ts:230](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L230), and [packages/fetcher/src/fetcher.ts:256](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L256). JSON extraction calls `response.json()`; a generic type argument adds no runtime validation. See [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69) and [choosing results](../guides/http/results.md).
+Defaults follow [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98), [packages/fetcher/src/fetcher.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L236), and [packages/fetcher/src/fetcher.ts:262](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L262). JSON extraction calls `response.json()`; a generic type argument adds no runtime validation. See [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69) and [choosing results](../guides/http/results.md).
 
 ## Recovery does not replay validation
 
@@ -2296,18 +2296,17 @@ Handle failures where the operation completes. Receiving an HTTP response, decod
 | Error interceptor itself throws | Directly out of error handling                                                                         | Do not assume every rejection is `ExchangeError`                                            |
 | SSE read/transform failure      | During asynchronous stream iteration                                                                   | Handle partial output and dispose the reader                                                |
 
-Default status validation: [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170). Wrapping and recovery: [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191). Extraction: [packages/fetcher/src/fetcher.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L234) and [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69). An outer `instanceof HttpStatusValidationError` or `FetchTimeoutError` check alone misses a wrapped cause; inspect the `ExchangeError` context/cause as shown in the [failure guide](../guides/http/failures.md) and [error reference](../reference/fetcher/errors-and-cancellation.md).
+Default status validation: [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170). Wrapping and recovery: [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191). Extraction: [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) and [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69). An outer `instanceof HttpStatusValidationError` or `FetchTimeoutError` check alone misses a wrapped cause; inspect the `ExchangeError` context/cause as shown in the [failure guide](../guides/http/failures.md) and [error reference](../reference/fetcher/errors-and-cancellation.md).
 
 ## Timeout and cancellation are different controls
 
-| Request options                                          | Transport behavior                                             | Deadline owner                                                   |
-| -------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `signal` supplied                                        | Native Fetch receives it directly; library timeout is bypassed | Caller combines cancellation and any desired timeout             |
-| No `signal`, `abortController` supplied, timeout enabled | Library uses the supplied controller plus its timer            | Library clears timer after Fetch settles; caller owns controller |
-| No `signal` or controller, timeout enabled               | Library creates controller and timer                           | Library cleans timer and its temporary request fields            |
-| No `signal`, timeout disabled                            | Native Fetch, using supplied controller if present             | Caller                                                           |
+| Request options                                         | Transport behavior                                                             | Deadline owner                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `signal` or `abortController` supplied, timeout enabled | Library combines them with its timer; whichever fires first aborts the Fetch   | Library clears its timer after Fetch settles; the timer never aborts the caller's controller |
+| Neither supplied, timeout enabled                       | Library aborts the Fetch with its own timer                                    | Library clears its timer; nothing is written to the request                                  |
+| Timeout disabled                                        | Native Fetch, aborted by the supplied `signal` or `abortController` if present | Caller                                                                                       |
 
-This precedence is implemented in [packages/fetcher/src/timeout.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L125). The timer ends when the Fetch race settles, not when subsequent `response.json()` or the whole SSE stream finishes. Supplying `signal` and `timeout` does not combine their deadlines. For a whole-operation deadline, own the signal and the full consumption lifecycle. Follow [cancellation guidance](../guides/http/cancellation.md).
+The combination is implemented in [packages/fetcher/src/timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165). The timer ends when the Fetch race settles, not when subsequent `response.json()` or the whole SSE stream finishes. A timeout rejects with `FetchTimeoutError`; a caller abort rejects with the caller's abort reason. For a whole-operation deadline, own the signal and the full consumption lifecycle. Follow [cancellation guidance](../guides/http/cancellation.md).
 
 Cancellation does not roll back a write already received by the server. Before retrying after a timeout or lost response, use the endpoint's idempotency and result-reconciliation contract.
 
@@ -2337,7 +2336,7 @@ Use the least elaborate layer that matches the service you actually have. Move u
 | Decorator service | Stable methods benefit from a shared service declaration | Metadata/compiler setup, parameter annotations, endpoint accuracy                                | You do not want decorator configuration or the API is mostly ad hoc            |
 | Generated service | An actual OpenAPI document is the maintained contract    | Generation command/configuration, review and compilation of output, regeneration on spec changes | Missing or inaccurate specification; server semantics absent from the document |
 
-These share the runtime request boundary: core implements request/extraction ([packages/fetcher/src/fetcher.ts:230](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L230)), decorator has a metadata runtime dependency ([packages/decorator/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L58)), and the 5.x generator is a CLI ([packages/generator/src/cli.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/cli.ts#L8)). OpenAPI exports type definitions ([packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21)). Neither annotations nor generated types validate response data at runtime or invent missing server semantics.
+These share the runtime request boundary: core implements request/extraction ([packages/fetcher/src/fetcher.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L236)), decorator has a metadata runtime dependency ([packages/decorator/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L58)), and the 5.x generator is a CLI ([packages/generator/src/cli.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/cli.ts#L8)). OpenAPI exports type definitions ([packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21)). Neither annotations nor generated types validate response data at runtime or invent missing server semantics.
 
 Start with [HTTP requests](../guides/http/requests.md), then use [declarative client](../guides/services/declarative-client.md) or the verified workflow in [generated client](../guides/services/generated-client.md). Configuration details live in [decorator reference](../reference/decorator/index.md) and [generator reference](../reference/generator/index.md). The generator is part of the 5.x line; from 6.0 it lives in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript). Check the [peer graph](./package-boundaries.md) separately from the code you expect to execute.
 
@@ -3053,14 +3052,14 @@ Use `get`/`post` for native `Response` results; select `ResultExtractors.Json` f
 
 ## Choose a topic
 
-| Topic                                                            | Use it for                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Client and registration](client.md)                             | Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Requests still use the runtime's global `fetch`; a client does not own a connection pool or require `destroy()`.                                                                                                                                                                    |
-| [Requests, headers, and bodies](requests.md)                     | `FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, and `abortController`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through. |
-| [URL construction and templates](urls.md)                        | `UrlBuilder` combines a base URL, path substitutions, and a query record. It does not send a request and does not perform general RFC URI-template expansion.                                                                                                                                                                                                    |
-| [Exchanges and result extraction](results.md)                    | A result extractor controls the runtime result, independently of the TypeScript generic on `request<R>` or `get<R>`. Choose it in `RequestOptions.resultExtractor`.                                                                                                                                                                                              |
-| [Interceptor pipeline](interceptors.md)                          | Interceptors mutate a shared `FetchExchange`; they return `void \| Promise<void>`, not a replacement exchange. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor`are structural specializations of`Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`.                                                          |
-| [Errors, timeouts, and cancellation](errors-and-cancellation.md) | Fetcher's default pipeline rejects HTTP statuses outside 200–299. Native fetch alone would resolve those responses, so inspect the exchange when handling a failed Fetcher request.                                                                                                                                                                              |
+| Topic                                                            | Use it for                                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Client and registration](client.md)                             | Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Requests still use the runtime's global `fetch`; a client does not own a connection pool or require `destroy()`.                                                                                                                                                                                       |
+| [Requests, headers, and bodies](requests.md)                     | `FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, `abortController`, and `duplex?: 'half'`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through. |
+| [URL construction and templates](urls.md)                        | `UrlBuilder` combines a base URL, path substitutions, and a query record. It does not send a request and does not perform general RFC URI-template expansion.                                                                                                                                                                                                                       |
+| [Exchanges and result extraction](results.md)                    | A result extractor controls the runtime result, independently of the TypeScript generic on `request<R>` or `get<R>`. Choose it in `RequestOptions.resultExtractor`.                                                                                                                                                                                                                 |
+| [Interceptor pipeline](interceptors.md)                          | Interceptors mutate a shared `FetchExchange`; they return `void \| Promise<void>`, not a replacement exchange. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor`are structural specializations of`Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`.                                                                             |
+| [Errors, timeouts, and cancellation](errors-and-cancellation.md) | Fetcher's default pipeline rejects HTTP statuses outside 200–299. Native fetch alone would resolve those responses, so inspect the exchange when handling a failed Fetcher request.                                                                                                                                                                                                 |
 
 ## Minimal complete example
 
@@ -3097,16 +3096,16 @@ Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Req
 
 `new Fetcher(options?: FetcherOptions)` accepts the following options. Supplying an options object requires `baseURL`; omitting the object uses `DEFAULT_OPTIONS`.
 
-| Option                     | Default                                | Contract                                                                                                      |
-| -------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `baseURL: string`          | `''`                                   | Used by the mutable `urlBuilder`; relative URLs still need a runtime that accepts them.                       |
-| `headers?: RequestHeaders` | `{'Content-Type': 'application/json'}` | A supplied object replaces these constructor defaults. Each request gets a defensive, case-insensitive merge. |
-| `timeout?: number`         | `undefined`                            | Milliseconds; no timer until configured. Request `0` disables the inherited timeout.                          |
-| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate`         | `{id}` syntax; `Express` selects `:id`.                                                                       |
-| `interceptors?`            | New `InterceptorManager`               | Supplied manager is used as-is; it can be shared across clients.                                              |
-| `validateStatus?`          | `200 <= status < 300`                  | Used only when constructing the default manager.                                                              |
+| Option                     | Default                                | Contract                                                                                                                                     |
+| -------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseURL: string`          | `''`                                   | Used by the mutable `urlBuilder`; relative URLs still need a runtime that accepts them.                                                      |
+| `headers?: RequestHeaders` | `{'Content-Type': 'application/json'}` | A supplied object replaces these constructor defaults; the client keeps its own copy. Each request gets a defensive, case-insensitive merge. |
+| `timeout?: number`         | `undefined`                            | Milliseconds; no timer until configured. Request `0` disables the inherited timeout.                                                         |
+| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate`         | `{id}` syntax; `Express` selects `:id`.                                                                                                      |
+| `interceptors?`            | New `InterceptorManager`               | Supplied manager is used as-is; it can be shared across clients.                                                                             |
+| `validateStatus?`          | `200 <= status < 300`                  | Used only when constructing the default manager.                                                                                             |
 
-`urlBuilder`, `headers`, and `timeout` can be changed for subsequent requests. `interceptors` is readonly as a property, while its registries remain mutable. Default header objects are shared references: replace `client.headers` or use request headers rather than mutating exported `DEFAULT_OPTIONS.headers` globally.
+`urlBuilder`, `headers`, and `timeout` can be changed for subsequent requests. `interceptors` is readonly as a property, while its registries remain mutable. Each client owns a copy of its headers, so mutating `client.headers` affects only that client; mutating exported `DEFAULT_OPTIONS.headers` still changes every client created afterwards, so use request headers instead.
 
 ## Choosing an entry point {#methods}
 
@@ -3123,11 +3122,11 @@ Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Req
 
 ## Named clients {#registration}
 
-`new NamedFetcher(name, options?)` extends `Fetcher` and immediately registers itself in the singleton `fetcherRegistrar`. `fetcher` is the exported default named instance, with `DEFAULT_FETCHER_NAME = 'default'`. Duplicate registration replaces the prior client.
+`new NamedFetcher(name, options?)` extends `Fetcher` and immediately registers itself in the singleton `fetcherRegistrar`, which lives on `globalThis` so a second copy of the package in the same process (its ESM and CommonJS builds, or two versions) shares it. `fetcher` is the exported default named instance, with `DEFAULT_FETCHER_NAME = 'default'`; a second copy reuses the default already registered instead of replacing it. Duplicate registration replaces the prior client.
 
 `FetcherRegistrar.register(name, client): void`, `unregister(name): boolean`, and `get(name): Fetcher | undefined` manage entries. `requiredGet(name)` and the `default` getter throw `Error` when absent. Assigning `default` registers under `'default'`; `fetchers` returns a new `Map` whose values are the same clients. Unregistering does not abort in-flight requests.
 
-`getFetcher(fetcher?, defaultFetcher?)` accepts a direct instance, a registry name, or no value. An instance wins; a name must exist; a falsy argument chooses the supplied fallback and then the global default. `FetcherCapable` exposes that optional field. `NamedCapable` supplies `name`, and `FetcherConfigurer.applyTo(fetcher): void` is the structural contract used by configurable extensions.
+`getFetcher(fetcher?, defaultFetcher?)` accepts a direct instance, a registry name, or no value. A string is a name and must exist; any other value is used as the fetcher (no `instanceof` check, so a fetcher from another copy of the package works); a falsy argument chooses the supplied fallback and then the global default. `FetcherCapable` exposes that optional field. `NamedCapable` supplies `name`, and `FetcherConfigurer.applyTo(fetcher): void` is the structural contract used by configurable extensions.
 
 ## Complete example {#example}
 
@@ -3166,9 +3165,9 @@ fetcherRegistrar.unregister('reports');
 | <a id="getfetcher"></a>`getFetcher`                           | [fetcherCapable.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherCapable.ts#L37)       |
 | <a id="default_fetcher_name"></a>`DEFAULT_FETCHER_NAME`       | [fetcherRegistrar.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L19)   |
 | <a id="fetcherregistrar"></a>`FetcherRegistrar`               | [fetcherRegistrar.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L41)   |
-| <a id="fetcherregistrar-instance"></a>`fetcherRegistrar`      | [fetcherRegistrar.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L166) |
+| <a id="fetcherregistrar-instance"></a>`fetcherRegistrar`      | [fetcherRegistrar.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L172) |
 | <a id="namedfetcher"></a>`NamedFetcher`                       | [namedFetcher.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L38)           |
-| <a id="fetcher-instance"></a>`fetcher`                        | [namedFetcher.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L89)           |
+| <a id="fetcher-instance"></a>`fetcher`                        | [namedFetcher.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L94)           |
 | <a id="namedcapable"></a>`NamedCapable`                       | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                       |
 | <a id="fetcherconfigurer"></a>`FetcherConfigurer`             | [types.ts:248](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L248)                       |
 
@@ -3180,7 +3179,7 @@ fetcherRegistrar.unregister('reports');
 
 # Requests, headers, and bodies
 
-`FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, and `abortController`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through.
+`FetchRequest` is a `FetchRequestInit` plus required `url: string`. `FetchRequestInit<BODY>` extends native `RequestInit`, replacing headers with `RequestHeaders` and body with `RequestBodyType`; it adds `timeout`, `urlParams`, `abortController`, and `duplex?: 'half'`. Native credentials, cache, mode, redirect, integrity, and other supported Fetch options pass through.
 
 For ordinary calls, pass a request object to the client method; call `mergeRequest` directly only when composing two configurations yourself. Use `urlParams.path` for template values and `urlParams.query` for the query string. `body` selects payload content, while `resultExtractor` belongs in the separate third method argument, not inside the request.
 
@@ -3211,9 +3210,9 @@ For ordinary calls, pass a request object to the client method; call `mergeReque
 
 ## Body conversion {#body}
 
-`RequestBodyInterceptor` runs before normal order-zero request interceptors. Strings and nullish bodies pass through. Blob, File, FormData, and URLSearchParams pass through after removing **all** Content-Type spellings so Fetch chooses the type/boundary. ArrayBuffer, typed-array/DataView views, and ReadableStream pass through without header adjustment. Other objects (including arrays) use `JSON.stringify`; JSON Content-Type is added only if absent. An explicit non-JSON Content-Type does not prevent JSON serialization. Circular data or BigInt may fail serialization and enter the error pipeline.
+`RequestBodyInterceptor` runs before normal order-zero request interceptors. Strings and nullish bodies pass through. Blob, File, FormData, and URLSearchParams pass through after removing **all** Content-Type spellings so Fetch chooses the type/boundary. ArrayBuffer, typed-array/DataView views, and ReadableStream pass through without header adjustment; a ReadableStream body also gets `duplex: 'half'` unless `duplex` is already set, as Fetch requires. Other objects (including arrays) use `JSON.stringify`; JSON Content-Type is added only if absent. An explicit non-JSON Content-Type does not prevent JSON serialization. Circular data or BigInt may fail serialization and enter the error pipeline.
 
-Streaming upload support and additional runtime-specific request fields remain the caller's responsibility. See [pipeline ordering](./interceptors.md) before inserting a body transformer.
+Whether the runtime supports streaming uploads, and additional runtime-specific request fields, remain the caller's responsibility. See [pipeline ordering](./interceptors.md) before inserting a body transformer.
 
 ## Complete example {#example}
 
@@ -3249,7 +3248,7 @@ console.assert(exchange.request.timeout === 0);
 | <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)     |
 | <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
 | <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
-| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L176)   |
+| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
 | <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L65)     |
 | <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [mergeRequest.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L118)   |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |
@@ -3275,23 +3274,23 @@ console.assert(exchange.request.timeout === 0);
 
 `combineURLs(baseURL, relativeURL)` trims trailing/leading slash runs at the join. Empty relative URL returns the base unchanged; an absolute or protocol-relative second URL overrides the base. `isAbsoluteURL` recognizes an optional scheme followed by `//`, not every URI scheme (`data:` is not classified as absolute by this helper).
 
-Query values go directly into `new URLSearchParams(record)`: arrays become comma-separated strings, objects become their string representation, and null/undefined are not omitted. Pre-normalize values if you need repeated keys or omission. Existing query text is preserved and new parameters append before a fragment, choosing `?`, `&`, or no extra separator after a trailing `?`/`&`.
+Query values are serialized by `toSearchParams(query)`: `undefined`/`null` values are omitted, an array becomes one parameter per item (`ids=1&ids=2`, skipping null/undefined items), a `Date` becomes its ISO 8601 text, and anything else becomes `String(value)` (an object becomes its string representation). A `URLSearchParams` passed as `query` is taken as is. `formatUrlParam(value)` is the shared value-to-text rule (`Date` → `toISOString()`, otherwise `String(value)`). Existing query text is preserved and new parameters append before a fragment, choosing `?`, `&`, or no extra separator after a trailing `?`/`&`.
 
 ## Template resolvers {#templates}
 
-| Public API                                                 | Behavior                                                                                                                                 |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `UrlTemplateStyle.UriTemplate`                             | Default enum value 0; `{id}` placeholders.                                                                                               |
-| `UrlTemplateStyle.Express`                                 | Enum value 1; `:id` at the start or after `/`.                                                                                           |
-| `getUrlTemplateResolver(style?)`                           | Express only for the Express enum, otherwise the shared URI resolver.                                                                    |
-| `UriTemplateResolver`, `uriTemplateResolver`               | Class and singleton implementing `UrlTemplateResolver`.                                                                                  |
-| `ExpressUrlTemplateResolver`, `expressUrlTemplateResolver` | Corresponding colon-style implementation.                                                                                                |
-| `extractPathParams(template)`                              | Parameter names in occurrence order, including repetitions.                                                                              |
-| `resolve(template, pathParams?)`                           | `encodeURIComponent` of each value. Without a map/null, leaves template unchanged; with a map, a missing/undefined value throws `Error`. |
-| `urlTemplateRegexResolve(template, regex, params?)`        | Same substitution rule for a caller-supplied capture group naming the key.                                                               |
-| `urlTemplateRegexExtract(template, regex)`                 | Loops through `regex.exec`; use a global regex so matching progresses.                                                                   |
+| Public API                                                 | Behavior                                                                                                                                                                                              |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UrlTemplateStyle.UriTemplate`                             | Default enum value 0; `{id}` placeholders.                                                                                                                                                            |
+| `UrlTemplateStyle.Express`                                 | Enum value 1; `:id` at the start or after `/`. The name is an identifier (`[A-Za-z_$][\w$]*`): `/files/:name.json` is the parameter `name`.                                                           |
+| `getUrlTemplateResolver(style?)`                           | Express only for the Express enum, otherwise the shared URI resolver.                                                                                                                                 |
+| `UriTemplateResolver`, `uriTemplateResolver`               | Class and singleton implementing `UrlTemplateResolver`.                                                                                                                                               |
+| `ExpressUrlTemplateResolver`, `expressUrlTemplateResolver` | Corresponding colon-style implementation.                                                                                                                                                             |
+| `extractPathParams(template)`                              | Parameter names in occurrence order, including repetitions.                                                                                                                                           |
+| `resolve(template, pathParams?)`                           | `encodeURIComponent` of each value's `formatUrlParam` text. A placeholder with no value — absent map, missing key, `undefined` or `null` — throws `Error('Missing required path parameter: <name>')`. |
+| `urlTemplateRegexResolve(template, regex, params?)`        | Same substitution rule for a caller-supplied capture group naming the key.                                                                                                                            |
+| `urlTemplateRegexExtract(template, regex)`                 | Loops through `regex.exec`; use a global regex so matching progresses.                                                                                                                                |
 
-A present null value is encoded as `'null'`; slashes inside values become `%2F`. `UrlResolveInterceptor` applies the client's builder to `exchange.request.url`, then clears `request.urlParams` to avoid resolving twice. Its name/order constants are listed under [interceptors](./interceptors.md). Missing template parameters fail before network I/O when a map is supplied.
+A `Date` value becomes its ISO 8601 text; slashes inside values become `%2F`. `UrlResolveInterceptor` applies the client's builder to `exchange.request.url`, then clears `request.urlParams` to avoid resolving twice. Its name/order constants are listed under [interceptors](./interceptors.md). Missing template parameters fail before network I/O, with or without a map.
 
 ## Complete example {#example}
 
@@ -3316,18 +3315,20 @@ console.assert(
 
 | Symbol                                                                       | Implementation                                                                                                                |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| <a id="urlparams"></a>`UrlParams`                                            | [urlBuilder.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L27)                     |
-| <a id="urlbuilder"></a>`UrlBuilder`                                          | [urlBuilder.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L72)                     |
-| <a id="urlbuildercapable"></a>`UrlBuilderCapable`                            | [urlBuilder.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L166)                   |
+| <a id="urlparams"></a>`UrlParams`                                            | [urlBuilder.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L28)                     |
+| <a id="urlbuilder"></a>`UrlBuilder`                                          | [urlBuilder.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L105)                   |
+| <a id="tosearchparams"></a>`toSearchParams`                                  | [urlBuilder.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L77)                     |
+| <a id="urlbuildercapable"></a>`UrlBuilderCapable`                            | [urlBuilder.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L199)                   |
 | <a id="urltemplatestyle"></a>`UrlTemplateStyle`                              | [urlTemplateResolver.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L20)   |
 | <a id="geturltemplateresolver"></a>`getUrlTemplateResolver`                  | [urlTemplateResolver.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L63)   |
 | <a id="urltemplateresolver"></a>`UrlTemplateResolver`                        | [urlTemplateResolver.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L92)   |
-| <a id="urltemplateregexresolve"></a>`urlTemplateRegexResolve`                | [urlTemplateResolver.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L151) |
-| <a id="urltemplateregexextract"></a>`urlTemplateRegexExtract`                | [urlTemplateResolver.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L174) |
-| <a id="uritemplateresolver"></a>`UriTemplateResolver`                        | [urlTemplateResolver.ts:205](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L205) |
-| <a id="uritemplateresolver-instance"></a>`uriTemplateResolver`               | [urlTemplateResolver.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L297) |
-| <a id="expressurltemplateresolver"></a>`ExpressUrlTemplateResolver`          | [urlTemplateResolver.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316) |
-| <a id="expressurltemplateresolver-instance"></a>`expressUrlTemplateResolver` | [urlTemplateResolver.ts:397](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L397) |
+| <a id="formaturlparam"></a>`formatUrlParam`                                  | [urlTemplateResolver.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L149) |
+| <a id="urltemplateregexresolve"></a>`urlTemplateRegexResolve`                | [urlTemplateResolver.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L165) |
+| <a id="urltemplateregexextract"></a>`urlTemplateRegexExtract`                | [urlTemplateResolver.ts:186](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L186) |
+| <a id="uritemplateresolver"></a>`UriTemplateResolver`                        | [urlTemplateResolver.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L217) |
+| <a id="uritemplateresolver-instance"></a>`uriTemplateResolver`               | [urlTemplateResolver.ts:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L309) |
+| <a id="expressurltemplateresolver"></a>`ExpressUrlTemplateResolver`          | [urlTemplateResolver.ts:328](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L328) |
+| <a id="expressurltemplateresolver-instance"></a>`expressUrlTemplateResolver` | [urlTemplateResolver.ts:411](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L411) |
 | <a id="isabsoluteurl"></a>`isAbsoluteURL`                                    | [urls.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L27)                                 |
 | <a id="combineurls"></a>`combineURLs`                                        | [urls.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L49)                                 |
 
@@ -3425,7 +3426,7 @@ console.assert(first === second && first.name === 'Ada');
 
 # Interceptor pipeline
 
-Interceptors mutate a shared `FetchExchange`; they return `void | Promise<void>`, not a replacement exchange. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor` are structural specializations of `Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`.
+Interceptors mutate a shared `FetchExchange`; they return `void | Promise<void>`, not a replacement exchange. The exchange's request holds its own copies of the merged headers and of `urlParams.path`/`.query`, so interceptor writes never reach the caller's request object. `RequestInterceptor`, `ResponseInterceptor`, and `ErrorInterceptor` are structural specializations of `Interceptor`, whose required fields are `name`, `order`, and `intercept(exchange)`.
 
 ## Registration and ordering {#registry}
 
@@ -3522,19 +3523,18 @@ Validation skips exchanges with no response. An outer pipeline failure is normal
 
 `TimeoutCapable.timeout?: number` uses milliseconds. `resolveTimeout(requestTimeout?, optionsTimeout?)` returns the request value whenever it is not undefined, including zero; otherwise the client value. `timeoutFetch(request): Promise<Response>` behaves as follows:
 
-| Inputs                                         | Behavior                                                                                                    |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `request.signal` exists                        | Delegate directly to native fetch; the library timeout is bypassed.                                         |
-| No signal and timeout is falsy (`0`/undefined) | No timer; use `abortController.signal` if supplied.                                                         |
-| Truthy timeout                                 | Race native fetch with a timer; use caller controller or create one; timer aborts with `FetchTimeoutError`. |
+| Inputs                                          | Behavior                                                                                                                                                                                                  |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Timeout not positive (`0`, negative, undefined) | No timer; native fetch is aborted by `request.signal` or `abortController.signal`, whichever fires first.                                                                                                 |
+| Positive timeout                                | Race native fetch with a timer combined with the caller's `signal` and `abortController`; whichever fires first aborts. The timer rejects with `FetchTimeoutError`, a caller abort with its abort reason. |
 
-There is no positive-number validation: supply a finite positive duration or zero intentionally. The timer stops when fetch resolves its Response, **not when response-body consumption finishes**. Streaming idle/total deadlines require caller-managed cancellation.
+Supply a finite positive duration to enable the timer. The timer stops when fetch resolves its Response, **not when response-body consumption finishes**. Streaming idle/total deadlines require caller-managed cancellation.
 
 ## Ownership and cleanup {#cancellation}
 
-Timers are cleared on success and failure. Signals temporarily written by the timed branch are removed; an internal controller is cleared so reusing that request can create a fresh one. A supplied controller remains owned by the caller, including an already-aborted one. It cannot be reset for a retry. Pass a fresh controller for a new operation.
+Timers are cleared on success and failure. `timeoutFetch` never writes to the request object and the timer never aborts a supplied controller, so the same request can be sent again. A supplied controller remains owned by the caller, including an already-aborted one. It cannot be reset for a retry. Pass a fresh controller for a new operation.
 
-For external cancellation, pass `signal` or `abortController`; the native abort reason is preserved by the failing exchange. A caller signal deliberately takes precedence over Fetcher's timeout. To combine both, let the caller manage the signal deadline or supply an abortController with timeout.
+For external cancellation, pass `signal` or `abortController`; the abort reason is preserved by the failing exchange. Both apply together with Fetcher's timeout: whichever fires first aborts the request.
 
 ## Complete example {#example}
 
@@ -3567,10 +3567,10 @@ try {
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="fetchererror"></a>`FetcherError`                                           | [fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)                             |
 | <a id="exchangeerror"></a>`ExchangeError`                                         | [fetcherError.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L86)                             |
-| <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33)                                       |
-| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
-| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)                                     |
+| <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
+| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L62)                                       |
+| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L83)                                       |
+| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)                                     |
 | <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
 | <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L62)   |
 | <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L70)   |
@@ -3607,7 +3607,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `RequestHeadersCapable`             | [Requests, headers, and bodies](requests.md#requestheaderscapable)                                 | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)                             |
 | `RequestBodyType`                   | [Requests, headers, and bodies](requests.md#requestbodytype)                                       | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)                             |
 | `FetchRequestInit`                  | [Requests, headers, and bodies](requests.md#fetchrequestinit)                                      | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)                           |
-| `FetchRequest`                      | [Requests, headers, and bodies](requests.md#fetchrequest)                                          | [fetchRequest.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L176)                           |
+| `FetchRequest`                      | [Requests, headers, and bodies](requests.md#fetchrequest)                                          | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)                           |
 | `FetcherOptions`                    | [Client and registration](client.md#fetcheroptions)                                                | [fetcher.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L52)                                       |
 | `DEFAULT_OPTIONS`                   | [Client and registration](client.md#default_options)                                               | [fetcher.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L87)                                       |
 | `RequestOptions`                    | [Client and registration](client.md#requestoptions)                                                | [fetcher.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L95)                                       |
@@ -3620,7 +3620,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `ExchangeError`                     | [Errors, timeouts, and cancellation](errors-and-cancellation.md#exchangeerror)                     | [fetcherError.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L86)                             |
 | `DEFAULT_FETCHER_NAME`              | [Client and registration](client.md#default_fetcher_name)                                          | [fetcherRegistrar.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L19)                     |
 | `FetcherRegistrar`                  | [Client and registration](client.md#fetcherregistrar)                                              | [fetcherRegistrar.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L41)                     |
-| `fetcherRegistrar`                  | [Client and registration](client.md#fetcherregistrar-instance)                                     | [fetcherRegistrar.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L166)                   |
+| `fetcherRegistrar`                  | [Client and registration](client.md#fetcherregistrar-instance)                                     | [fetcherRegistrar.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L172)                   |
 | `DEFAULT_INTERCEPTOR_ORDER_STEP`    | [Interceptor pipeline](interceptors.md#default_interceptor_order_step)                             | [interceptor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L18)                               |
 | `BUILT_IN_INTERCEPTOR_ORDER_STEP`   | [Interceptor pipeline](interceptors.md#built_in_interceptor_order_step)                            | [interceptor.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L20)                               |
 | `Interceptor`                       | [Interceptor pipeline](interceptors.md#interceptor)                                                | [interceptor.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L44)                               |
@@ -3632,7 +3632,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `mergeRequest`                      | [Requests, headers, and bodies](requests.md#mergerequest)                                          | [mergeRequest.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L65)                             |
 | `mergeRequestOptions`               | [Requests, headers, and bodies](requests.md#mergerequestoptions)                                   | [mergeRequest.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L118)                           |
 | `NamedFetcher`                      | [Client and registration](client.md#namedfetcher)                                                  | [namedFetcher.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L38)                             |
-| `fetcher`                           | [Client and registration](client.md#fetcher-instance)                                              | [namedFetcher.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L89)                             |
+| `fetcher`                           | [Client and registration](client.md#fetcher-instance)                                              | [namedFetcher.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L94)                             |
 | `OrderedCapable`                    | [Interceptor pipeline](interceptors.md#orderedcapable)                                             | [orderedCapable.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L29)                         |
 | `sortOrder`                         | [Interceptor pipeline](interceptors.md#sortorder)                                                  | [orderedCapable.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L53)                         |
 | `toSorted`                          | [Interceptor pipeline](interceptors.md#tosorted)                                                   | [orderedCapable.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L87)                         |
@@ -3653,30 +3653,32 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `ArrayBufferResultExtractor`        | [Exchanges and result extraction](results.md#arraybufferresultextractor)                           | [resultExtractor.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L106)                     |
 | `BytesResultExtractor`              | [Exchanges and result extraction](results.md#bytesresultextractor)                                 | [resultExtractor.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L120)                     |
 | `ResultExtractors`                  | [Exchanges and result extraction](results.md#resultextractors)                                     | [resultExtractor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L131)                     |
-| `FetchTimeoutError`                 | [Errors, timeouts, and cancellation](errors-and-cancellation.md#fetchtimeouterror)                 | [timeout.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33)                                       |
-| `TimeoutCapable`                    | [Errors, timeouts, and cancellation](errors-and-cancellation.md#timeoutcapable)                    | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
-| `resolveTimeout`                    | [Errors, timeouts, and cancellation](errors-and-cancellation.md#resolvetimeout)                    | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| `timeoutFetch`                      | [Errors, timeouts, and cancellation](errors-and-cancellation.md#timeoutfetch)                      | [timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)                                     |
+| `FetchTimeoutError`                 | [Errors, timeouts, and cancellation](errors-and-cancellation.md#fetchtimeouterror)                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
+| `TimeoutCapable`                    | [Errors, timeouts, and cancellation](errors-and-cancellation.md#timeoutcapable)                    | [timeout.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L62)                                       |
+| `resolveTimeout`                    | [Errors, timeouts, and cancellation](errors-and-cancellation.md#resolvetimeout)                    | [timeout.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L83)                                       |
+| `timeoutFetch`                      | [Errors, timeouts, and cancellation](errors-and-cancellation.md#timeoutfetch)                      | [timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)                                     |
 | `PartialBy`                         | [Exchanges and result extraction](results.md#partialby)                                            | [types.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L33)                                           |
 | `RequiredBy`                        | [Exchanges and result extraction](results.md#requiredby)                                           | [types.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L52)                                           |
 | `RemoveReadonlyFields`              | [Exchanges and result extraction](results.md#removereadonlyfields)                                 | [types.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L85)                                           |
 | `NamedCapable`                      | [Client and registration](client.md#namedcapable)                                                  | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                                         |
 | `FetcherConfigurer`                 | [Client and registration](client.md#fetcherconfigurer)                                             | [types.ts:248](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L248)                                         |
-| `UrlParams`                         | [URL construction and templates](urls.md#urlparams)                                                | [urlBuilder.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L27)                                 |
-| `UrlBuilder`                        | [URL construction and templates](urls.md#urlbuilder)                                               | [urlBuilder.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L72)                                 |
-| `UrlBuilderCapable`                 | [URL construction and templates](urls.md#urlbuildercapable)                                        | [urlBuilder.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L166)                               |
+| `UrlParams`                         | [URL construction and templates](urls.md#urlparams)                                                | [urlBuilder.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L28)                                 |
+| `UrlBuilder`                        | [URL construction and templates](urls.md#urlbuilder)                                               | [urlBuilder.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L105)                               |
+| `toSearchParams`                    | [URL construction and templates](urls.md#tosearchparams)                                           | [urlBuilder.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L77)                                 |
+| `UrlBuilderCapable`                 | [URL construction and templates](urls.md#urlbuildercapable)                                        | [urlBuilder.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L199)                               |
 | `URL_RESOLVE_INTERCEPTOR_NAME`      | [Interceptor pipeline](interceptors.md#url_resolve_interceptor_name)                               | [urlResolveInterceptor.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L24)           |
 | `URL_RESOLVE_INTERCEPTOR_ORDER`     | [Interceptor pipeline](interceptors.md#url_resolve_interceptor_order)                              | [urlResolveInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L29)           |
 | `UrlResolveInterceptor`             | [Interceptor pipeline](interceptors.md#urlresolveinterceptor)                                      | [urlResolveInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L53)           |
 | `UrlTemplateStyle`                  | [URL construction and templates](urls.md#urltemplatestyle)                                         | [urlTemplateResolver.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L20)               |
 | `getUrlTemplateResolver`            | [URL construction and templates](urls.md#geturltemplateresolver)                                   | [urlTemplateResolver.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L63)               |
 | `UrlTemplateResolver`               | [URL construction and templates](urls.md#urltemplateresolver)                                      | [urlTemplateResolver.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L92)               |
-| `urlTemplateRegexResolve`           | [URL construction and templates](urls.md#urltemplateregexresolve)                                  | [urlTemplateResolver.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L151)             |
-| `urlTemplateRegexExtract`           | [URL construction and templates](urls.md#urltemplateregexextract)                                  | [urlTemplateResolver.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L174)             |
-| `UriTemplateResolver`               | [URL construction and templates](urls.md#uritemplateresolver)                                      | [urlTemplateResolver.ts:205](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L205)             |
-| `uriTemplateResolver`               | [URL construction and templates](urls.md#uritemplateresolver-instance)                             | [urlTemplateResolver.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L297)             |
-| `ExpressUrlTemplateResolver`        | [URL construction and templates](urls.md#expressurltemplateresolver)                               | [urlTemplateResolver.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316)             |
-| `expressUrlTemplateResolver`        | [URL construction and templates](urls.md#expressurltemplateresolver-instance)                      | [urlTemplateResolver.ts:397](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L397)             |
+| `formatUrlParam`                    | [URL construction and templates](urls.md#formaturlparam)                                           | [urlTemplateResolver.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L149)             |
+| `urlTemplateRegexResolve`           | [URL construction and templates](urls.md#urltemplateregexresolve)                                  | [urlTemplateResolver.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L165)             |
+| `urlTemplateRegexExtract`           | [URL construction and templates](urls.md#urltemplateregexextract)                                  | [urlTemplateResolver.ts:186](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L186)             |
+| `UriTemplateResolver`               | [URL construction and templates](urls.md#uritemplateresolver)                                      | [urlTemplateResolver.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L217)             |
+| `uriTemplateResolver`               | [URL construction and templates](urls.md#uritemplateresolver-instance)                             | [urlTemplateResolver.ts:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L309)             |
+| `ExpressUrlTemplateResolver`        | [URL construction and templates](urls.md#expressurltemplateresolver)                               | [urlTemplateResolver.ts:328](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L328)             |
+| `expressUrlTemplateResolver`        | [URL construction and templates](urls.md#expressurltemplateresolver-instance)                      | [urlTemplateResolver.ts:411](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L411)             |
 | `isAbsoluteURL`                     | [URL construction and templates](urls.md#isabsoluteurl)                                            | [urls.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L27)                                             |
 | `combineURLs`                       | [URL construction and templates](urls.md#combineurls)                                              | [urls.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L49)                                             |
 | `mergeRecords`                      | [Requests, headers, and bodies](requests.md#mergerecords)                                          | [utils.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L42)                                           |
@@ -3876,7 +3878,7 @@ The replacement method receives only the actual argument list; default parameter
 
 ## Cancellation and inherited metadata {#cancellation}
 
-An `AbortSignal` or `AbortController` argument is recognized before decorator metadata, even without a decorator. If multiple are supplied the last of each kind wins; a request parameter can override them. A signal bypasses the Fetcher timeout as described in [cancellation](../fetcher/errors-and-cancellation.md).
+An `AbortSignal` or `AbortController` argument is recognized before decorator metadata, even without a decorator. If multiple are supplied the last of each kind wins; a request parameter can override them. A signal or controller applies together with the Fetcher timeout, whichever fires first, as described in [cancellation](../fetcher/errors-and-cancellation.md).
 
 Parameter metadata uses copy-on-write when inherited, so decorating an override does not mutate the parent's Map. Class binding walks inherited string-named methods. Symbol-named methods and static methods are not part of that binding traversal. Keep explicit parameter names on inherited/overridden endpoints too.
 
@@ -7370,7 +7372,7 @@ Create a new request object for each call; do not share a mutable request betwee
 
 ## HTTP cancellation and timeout {#http-cancellation}
 
-`useFetcher` assigns the executor's AbortController to the request. With the normal Fetcher transport and no explicit `signal`, that controller participates in the library timeout path. An explicit request `signal` takes precedence in Fetcher and bypasses its built-in timeout; it can also bypass the controller the hook would abort. Compose your own signal/timeout deliberately if supplying a signal. Regardless of physical cancellation, request IDs prevent older work from replacing the hook's current state.
+`useFetcher` assigns the executor's AbortController to the request. With the normal Fetcher transport, that controller, an explicit request `signal`, and the library timeout apply together: whichever fires first aborts the request. Regardless of physical cancellation, request IDs prevent older work from replacing the hook's current state.
 
 Select an extractor before choosing the result generic: `JsonResultExtractor` parses JSON, while ordinary Fetcher defaults can return an exchange or Response. `R` is the extracted value type, `E` is the error-state type; neither validates runtime payloads. [Request lifecycle](../../architecture/request-lifecycle) explains why a JSON parse failure can occur after exchange interception has finished.
 
@@ -18378,7 +18380,7 @@ try {
 
 ## 选择截止时间
 
-客户端 `timeout` 提供默认值，请求 `timeout` 覆盖它，单位均为毫秒。省略或设为零会关闭库计时器。传 `abortController` 可让主动取消与库计时器组合。若改传原生 `signal`，会直接走 fetch 路径，即使设置了 timeout 也跳过库计时器。
+客户端 `timeout` 提供默认值，请求 `timeout` 覆盖它，单位均为毫秒。省略或设为零会关闭库计时器。调用方的 `abortController` 或原生 `signal` 与库计时器组合：先触发者取消请求。库计时器从不取消你的控制器。
 
 若要限制请求和 body 消费的总时长，在两个 await 外共同持有信号和计时器：
 
@@ -18393,11 +18395,11 @@ try {
 }
 ```
 
-将此段放入应用异步函数，并在调用边界捕获拒绝。它替代库截止时间，而不是叠加库计时器。内建计时器在原生 fetch 返回响应时结束，不覆盖之后的 JSON 解码或整段 SSE 消费。
+将此段放入应用异步函数，并在调用边界捕获拒绝。若设置了库 `timeout`，它仍同时生效。内建计时器在原生 fetch 返回响应时结束，不覆盖之后的 JSON 解码或整段 SSE 消费。
 
 ## 观察失败并释放资源
 
-库超时表现为 `ExchangeError.cause` 中的 `FetchTimeoutError`；原生取消与后续 body 读取可能以其他形式抛错。取消是预期动作时检查自己持有的 signal，同时继续报告无关失败。检查结束后停止夹具。流消费者还应在 finally 中取消并释放 reader。传输观察到信号时取消才能停止客户端工作；它不会回滚服务端写入。
+库超时表现为 `ExchangeError.cause` 中的 `FetchTimeoutError`；调用方取消以该 signal 的 abort reason 拒绝，后续 body 读取可能以其他形式抛错。取消是预期动作时检查自己持有的 signal，同时继续报告无关失败。检查结束后停止夹具。流消费者还应在 finally 中取消并释放 reader。传输观察到信号时取消才能停止客户端工作；它不会回滚服务端写入。
 
 参阅[错误与取消参考](../../reference/fetcher/errors-and-cancellation.md)、[SSE 清理](../streaming/sse.md)与[失败模型](../../architecture/failure-model.md)。
 
@@ -19982,7 +19984,7 @@ Wow 仓库的 TypeScript 包随 Wow 首个稳定版发布；视图引擎要等�
 
 ## 只在预期身份作用域内共享配置
 
-客户端可以复用稳定的服务默认配置，但 `headers`、`timeout` 和 `urlBuilder` 都可变，registrar 也是模块全局实例。SSR 为每个入站用户请求修改共享客户端授权头，可能使请求使用另一个请求的身份。使用请求作用域客户端，或通过请求选项传入身份而不修改共享默认值；相关 token/存储状态也要限定作用域。见 [packages/fetcher/src/fetcher.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L127) 和 [packages/fetcher/src/fetcherRegistrar.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L166)。
+客户端可以复用稳定的服务默认配置，但 `headers`、`timeout` 和 `urlBuilder` 都可变，registrar 是保存在 `globalThis` 上的进程级单例，第二份包副本也共享它。SSR 为每个入站用户请求修改共享客户端授权头，可能使请求使用另一个请求的身份。使用请求作用域客户端，或通过请求选项传入身份而不修改共享默认值；相关 token/存储状态也要限定作用域。见 [packages/fetcher/src/fetcher.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L127) 和 [packages/fetcher/src/fetcherRegistrar.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L172)。
 
 `getStorage()` 在存在 `window` 时使用浏览器 localStorage，否则创建内存实现。这种回退不会建立服务端请求作用域，也不会跨进程持久化。此路径没有捕获 localStorage 被禁用时的访问异常。涉及这些约束时，应明确选择存储实现和生命周期。见 [packages/storage/src/env.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L20) 与[存储运行环境参考](../reference/storage/serialization-and-runtime.md)。
 
@@ -20025,7 +20027,7 @@ sequenceDiagram
   Extractor-->>Caller: 返回选择的值或 Promise 拒绝
 ```
 
-图中展示 `request()` 的成功路径，参与者依次为调用方、Fetcher、请求拦截器、原生 Fetch、响应拦截器和提取器。默认请求 registry 包含请求体准备、URL 解析和 Fetch 本身，原生传输位于请求阶段内部。每个 registry 按 `order` 升序串行执行。`exchange()` 执行请求、响应 registry 后返回 exchange；`request()` 随后调用 `extractResult()`。见 [packages/fetcher/src/interceptorManager.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L63)、[packages/fetcher/src/interceptor.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L294) 和 [packages/fetcher/src/fetcher.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L173)。
+图中展示 `request()` 的成功路径，参与者依次为调用方、Fetcher、请求拦截器、原生 Fetch、响应拦截器和提取器。默认请求 registry 包含请求体准备、URL 解析和 Fetch 本身，原生传输位于请求阶段内部。每个 registry 按 `order` 升序串行执行。`exchange()` 执行请求、响应 registry 后返回 exchange；`request()` 随后调用 `extractResult()`。见 [packages/fetcher/src/interceptorManager.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L63)、[packages/fetcher/src/interceptor.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L294) 和 [packages/fetcher/src/fetcher.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L174)。
 
 | 入口                                              | 默认返回值            | 适用需求                           |
 | ------------------------------------------------- | --------------------- | ---------------------------------- |
@@ -20034,7 +20036,7 @@ sequenceDiagram
 | `fetch()`、`get()`、`post()` 及其他 HTTP 辅助方法 | `Response`            | 状态、响应头或原生响应体读取器     |
 | 显式选择 JSON 提取器的请求                        | 解析值                | 返回数据的服务函数，由应用验证数据 |
 
-默认值依据 [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)、[packages/fetcher/src/fetcher.ts:230](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L230) 和 [packages/fetcher/src/fetcher.ts:256](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L256)。JSON 提取调用 `response.json()`，泛型参数不增加运行时验证。见 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69) 与[选择结果](../guides/http/results.md)。
+默认值依据 [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)、[packages/fetcher/src/fetcher.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L236) 和 [packages/fetcher/src/fetcher.ts:262](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L262)。JSON 提取调用 `response.json()`，泛型参数不增加运行时验证。见 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69) 与[选择结果](../guides/http/results.md)。
 
 ## 恢复不会重跑验证
 
@@ -20112,18 +20114,17 @@ Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github
 | 错误拦截器自身抛错 | 从错误处理直接传播                                                       | 不假设所有拒绝都是 `ExchangeError`                |
 | SSE 读取/转换失败  | 异步迭代流期间                                                           | 处理部分输出并释放 reader                         |
 
-默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装与恢复见 [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)；提取见 [packages/fetcher/src/fetcher.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L234) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。仅在外层检查 `instanceof HttpStatusValidationError` 或 `FetchTimeoutError` 会遗漏包装后的原因；应检查 `ExchangeError` 上下文/cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
+默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装与恢复见 [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)；提取见 [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。仅在外层检查 `instanceof HttpStatusValidationError` 或 `FetchTimeoutError` 会遗漏包装后的原因；应检查 `ExchangeError` 上下文/cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
 
 ## 超时与取消是不同控制
 
-| 请求选项                                      | 传输行为                               | 谁管理截止时间                                  |
-| --------------------------------------------- | -------------------------------------- | ----------------------------------------------- |
-| 提供 `signal`                                 | 直接传入原生 Fetch，跳过库超时         | 调用方组合取消与所需超时                        |
-| 无 `signal`，提供 `abortController`，开启超时 | 库使用该 controller 并增加 timer       | Fetch 结束后库清理 timer；调用方拥有 controller |
-| 无 `signal` 和 controller，开启超时           | 库创建 controller 和 timer             | 库清理 timer 和临时请求字段                     |
-| 无 `signal`，关闭超时                         | 原生 Fetch，若提供 controller 则使用它 | 调用方                                          |
+| 请求选项                                     | 传输行为                                                      | 谁管理截止时间                                              |
+| -------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| 提供 `signal` 或 `abortController`，开启超时 | 库把它们与 timer 组合，先触发者取消 Fetch                     | Fetch 结束后库清理 timer；timer 从不取消调用方的 controller |
+| 两者都未提供，开启超时                       | 库用自己的 timer 取消 Fetch                                   | 库清理 timer；不写入请求对象                                |
+| 关闭超时                                     | 原生 Fetch，若提供 `signal` 或 `abortController` 则由它们取消 | 调用方                                                      |
 
-优先级实现见 [packages/fetcher/src/timeout.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L125)。timer 在 Fetch 竞争结束时清除，不等待后续 `response.json()` 或整个 SSE 流完成。同时提供 `signal` 与 `timeout` 不会组合截止时间。需要完整操作截止时间时，应自行管理 signal 和完整消费生命周期。步骤见[取消指南](../guides/http/cancellation.md)。
+组合实现见 [packages/fetcher/src/timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)。timer 在 Fetch 竞争结束时清除，不等待后续 `response.json()` 或整个 SSE 流完成。超时以 `FetchTimeoutError` 拒绝；调用方取消以调用方的 abort reason 拒绝。需要完整操作截止时间时，应自行管理 signal 和完整消费生命周期。步骤见[取消指南](../guides/http/cancellation.md)。
 
 取消不会回滚服务端已接收的写操作。超时或丢失响应后重试前，应依据端点的幂等与结果核对契约。
 
@@ -20153,7 +20154,7 @@ SSE JSON 转换调用 `JSON.parse`，未处理的转换错误成为流错误，�
 | 装饰器服务     | 稳定方法适合集中声明服务      | metadata/编译器配置、参数注解、端点准确性         | 不希望引入装饰器配置，或 API 主要是临时调用 |
 | 生成式服务     | 实际维护的契约是 OpenAPI 文档 | 生成命令/配置、审查和编译产物、规范变化后重新生成 | 规范缺失或不准确；文档没有表达服务语义      |
 
-它们共享运行请求边界：核心实现请求/提取（[packages/fetcher/src/fetcher.ts:230](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L230)），装饰器有 metadata 运行依赖（[packages/decorator/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L58)），5.x 的生成器是 CLI（[packages/generator/src/cli.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/cli.ts#L8)）。OpenAPI 导出类型定义（[packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21)）。注解和生成类型都不会在运行时验证响应，也不会补全缺失的服务端语义。
+它们共享运行请求边界：核心实现请求/提取（[packages/fetcher/src/fetcher.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L236)），装饰器有 metadata 运行依赖（[packages/decorator/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L58)），5.x 的生成器是 CLI（[packages/generator/src/cli.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/cli.ts#L8)）。OpenAPI 导出类型定义（[packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21)）。注解和生成类型都不会在运行时验证响应，也不会补全缺失的服务端语义。
 
 从 [HTTP 请求](../guides/http/requests.md)开始，再使用[声明式客户端](../guides/services/declarative-client.md)或[生成式客户端](../guides/services/generated-client.md)中的已验证工作流。配置细节见[装饰器参考](../reference/decorator/index.md)和[生成器参考](../reference/generator/index.md)。生成器属于 5.x 线；从 6.0 起它位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)。[peer 图](./package-boundaries.md)应与预期执行代码分别检查。
 
@@ -20861,14 +20862,14 @@ pnpm add @ahoo-wang/fetcher
 
 ## 选择专题
 
-| 专题                                           | 用途                                                                                                                                                                                                                                                                                                              |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [客户端与注册](client.md)                      | 创建 `Fetcher` 以共享 URL、请求头、超时和拦截器策略。请求仍调用运行时全局 `fetch`；客户端不管理连接池，也不需要 `destroy()`。                                                                                                                                                                                     |
-| [请求、请求头与正文](requests.md)              | `FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。 |
-| [URL 构建与模板](urls.md)                      | `UrlBuilder` 组合基础 URL、路径替换值和查询记录，不发起请求，也不实现通用 RFC URI-template 展开。                                                                                                                                                                                                                 |
-| [Exchange 与结果提取](results.md)              | 结果提取器决定运行时返回值，与 `request<R>` 或 `get<R>` 的 TypeScript 泛型独立。在 `RequestOptions.resultExtractor` 中选择提取器。                                                                                                                                                                                |
-| [拦截器管线](interceptors.md)                  | 拦截器修改共享 `FetchExchange`，返回 `void \| Promise<void>`，不返回替代 exchange。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor`是`Interceptor`的结构化特例，必填`name`、`order`、`intercept(exchange)`。                                                                                       |
-| [错误、超时与取消](errors-and-cancellation.md) | Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身会正常返回这些响应，因此处理 Fetcher 请求失败时应检查 exchange。                                                                                                                                                                                    |
+| 专题                                           | 用途                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [客户端与注册](client.md)                      | 创建 `Fetcher` 以共享 URL、请求头、超时和拦截器策略。请求仍调用运行时全局 `fetch`；客户端不管理连接池，也不需要 `destroy()`。                                                                                                                                                                                                          |
+| [请求、请求头与正文](requests.md)              | `FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController` 和 `duplex?: 'half'`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。 |
+| [URL 构建与模板](urls.md)                      | `UrlBuilder` 组合基础 URL、路径替换值和查询记录，不发起请求，也不实现通用 RFC URI-template 展开。                                                                                                                                                                                                                                      |
+| [Exchange 与结果提取](results.md)              | 结果提取器决定运行时返回值，与 `request<R>` 或 `get<R>` 的 TypeScript 泛型独立。在 `RequestOptions.resultExtractor` 中选择提取器。                                                                                                                                                                                                     |
+| [拦截器管线](interceptors.md)                  | 拦截器修改共享 `FetchExchange`，返回 `void \| Promise<void>`，不返回替代 exchange。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor`是`Interceptor`的结构化特例，必填`name`、`order`、`intercept(exchange)`。                                                                                                            |
+| [错误、超时与取消](errors-and-cancellation.md) | Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身会正常返回这些响应，因此处理 Fetcher 请求失败时应检查 exchange。                                                                                                                                                                                                         |
 
 ## 最小完整示例
 
@@ -20905,16 +20906,16 @@ export async function loadUser(id: string): Promise<User> {
 
 `new Fetcher(options?: FetcherOptions)` 接受下列选项。传入选项对象时必须包含 `baseURL`；省略整个对象时使用 `DEFAULT_OPTIONS`。
 
-| 选项                       | 默认值                                 | 契约                                                                   |
-| -------------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
-| `baseURL: string`          | `''`                                   | 由可修改的 `urlBuilder` 使用；相对 URL 仍要求运行时支持。              |
-| `headers?: RequestHeaders` | `{'Content-Type': 'application/json'}` | 自定义对象替换构造默认头；每个请求防御性复制并按大小写不敏感规则合并。 |
-| `timeout?: number`         | `undefined`                            | 单位毫秒；未配置不启用定时器。请求级 `0` 禁用继承的超时。              |
-| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate`         | 默认 `{id}`；`Express` 使用 `:id`。                                    |
-| `interceptors?`            | 新建 `InterceptorManager`              | 传入管理器时直接使用，也可在客户端间共享。                             |
-| `validateStatus?`          | `200 <= status < 300`                  | 仅在创建默认管理器时使用。                                             |
+| 选项                       | 默认值                                 | 契约                                                                                         |
+| -------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `baseURL: string`          | `''`                                   | 由可修改的 `urlBuilder` 使用；相对 URL 仍要求运行时支持。                                    |
+| `headers?: RequestHeaders` | `{'Content-Type': 'application/json'}` | 自定义对象替换构造默认头，客户端保存自己的副本；每个请求防御性复制并按大小写不敏感规则合并。 |
+| `timeout?: number`         | `undefined`                            | 单位毫秒；未配置不启用定时器。请求级 `0` 禁用继承的超时。                                    |
+| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate`         | 默认 `{id}`；`Express` 使用 `:id`。                                                          |
+| `interceptors?`            | 新建 `InterceptorManager`              | 传入管理器时直接使用，也可在客户端间共享。                                                   |
+| `validateStatus?`          | `200 <= status < 300`                  | 仅在创建默认管理器时使用。                                                                   |
 
-可修改 `urlBuilder`、`headers`、`timeout`，影响后续请求。`interceptors` 属性只读，但其中的注册表可修改。默认头对象为共享引用；应替换 `client.headers` 或使用请求级头，避免修改导出的 `DEFAULT_OPTIONS.headers` 影响全局。
+可修改 `urlBuilder`、`headers`、`timeout`，影响后续请求。`interceptors` 属性只读，但其中的注册表可修改。每个客户端持有自己的请求头副本，修改 `client.headers` 只影响该客户端；修改导出的 `DEFAULT_OPTIONS.headers` 仍会影响之后创建的所有客户端，应改用请求级头。
 
 ## 选择调用入口 {#methods}
 
@@ -20931,11 +20932,11 @@ export async function loadUser(id: string): Promise<User> {
 
 ## 命名客户端 {#registration}
 
-`new NamedFetcher(name, options?)` 继承 `Fetcher`，并立即注册到单例 `fetcherRegistrar`。导出的 `fetcher` 是默认命名实例，`DEFAULT_FETCHER_NAME = 'default'`。同名注册替换原有客户端。
+`new NamedFetcher(name, options?)` 继承 `Fetcher`，并立即注册到单例 `fetcherRegistrar`；它保存在 `globalThis` 上，同一进程中的第二份包副本（ESM 与 CommonJS 构建，或两个版本）共享它。导出的 `fetcher` 是默认命名实例，`DEFAULT_FETCHER_NAME = 'default'`；第二份副本复用已注册的默认实例，而不替换它。同名注册替换原有客户端。
 
 `FetcherRegistrar.register(name, client): void`、`unregister(name): boolean`、`get(name): Fetcher | undefined` 管理条目。缺失时 `requiredGet(name)` 与 `default` getter 抛出 `Error`。设置 `default` 会注册到 `'default'`；`fetchers` 返回新的 `Map`，值仍是相同客户端。注销不会中止正在进行的请求。
 
-`getFetcher(fetcher?, defaultFetcher?)` 接受实例、注册名或空值。实例直接返回；名称必须已注册；假值优先选择传入的后备客户端，再选择全局默认实例。`FetcherCapable` 声明此可选字段，`NamedCapable` 声明 `name`，`FetcherConfigurer.applyTo(fetcher): void` 是扩展配置器使用的结构契约。
+`getFetcher(fetcher?, defaultFetcher?)` 接受实例、注册名或空值。字符串视为名称，必须已注册；其他值直接作为 fetcher 使用（不做 `instanceof` 检查，另一份包副本创建的 fetcher 也可用）；假值优先选择传入的后备客户端，再选择全局默认实例。`FetcherCapable` 声明此可选字段，`NamedCapable` 声明 `name`，`FetcherConfigurer.applyTo(fetcher): void` 是扩展配置器使用的结构契约。
 
 ## 完整示例 {#example}
 
@@ -20974,9 +20975,9 @@ fetcherRegistrar.unregister('reports');
 | <a id="getfetcher"></a>`getFetcher`                           | [fetcherCapable.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherCapable.ts#L37)       |
 | <a id="default_fetcher_name"></a>`DEFAULT_FETCHER_NAME`       | [fetcherRegistrar.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L19)   |
 | <a id="fetcherregistrar"></a>`FetcherRegistrar`               | [fetcherRegistrar.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L41)   |
-| <a id="fetcherregistrar-instance"></a>`fetcherRegistrar`      | [fetcherRegistrar.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L166) |
+| <a id="fetcherregistrar-instance"></a>`fetcherRegistrar`      | [fetcherRegistrar.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L172) |
 | <a id="namedfetcher"></a>`NamedFetcher`                       | [namedFetcher.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L38)           |
-| <a id="fetcher-instance"></a>`fetcher`                        | [namedFetcher.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L89)           |
+| <a id="fetcher-instance"></a>`fetcher`                        | [namedFetcher.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L94)           |
 | <a id="namedcapable"></a>`NamedCapable`                       | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                       |
 | <a id="fetcherconfigurer"></a>`FetcherConfigurer`             | [types.ts:248](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L248)                       |
 
@@ -20988,7 +20989,7 @@ fetcherRegistrar.unregister('reports');
 
 # 请求、请求头与正文
 
-`FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。
+`FetchRequest` 在 `FetchRequestInit` 上增加必填的 `url: string`。`FetchRequestInit<BODY>` 扩展原生 `RequestInit`，将头替换为 `RequestHeaders`、正文替换为 `RequestBodyType`，并增加 `timeout`、`urlParams`、`abortController` 和 `duplex?: 'half'`。原生 credentials、cache、mode、redirect、integrity 等受支持的 Fetch 选项继续透传。
 
 普通调用直接把请求对象传给客户端方法；只有自行组合两份配置时才调用 `mergeRequest`。模板值放在 `urlParams.path`，查询串放在 `urlParams.query`。`body` 表示请求载荷；`resultExtractor` 应放在方法的第三个选项参数中，不属于请求对象。
 
@@ -21019,9 +21020,9 @@ fetcherRegistrar.unregister('reports');
 
 ## 正文转换 {#body}
 
-`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。字符串与 nullish 正文原样通过。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不调整请求头。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
+`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。字符串与 nullish 正文原样通过。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不调整请求头；ReadableStream 正文在未设置 `duplex` 时还会得到 Fetch 要求的 `duplex: 'half'`。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
 
-流式上传支持和额外的运行时特有请求字段仍由调用者负责。插入正文转换器前请阅读[管线顺序](./interceptors.md)。
+运行时是否支持流式上传，以及额外的运行时特有请求字段，仍由调用者负责。插入正文转换器前请阅读[管线顺序](./interceptors.md)。
 
 ## 完整示例 {#example}
 
@@ -21057,7 +21058,7 @@ console.assert(exchange.request.timeout === 0);
 | <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)     |
 | <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
 | <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
-| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L176)   |
+| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
 | <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L65)     |
 | <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [mergeRequest.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L118)   |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |
@@ -21083,23 +21084,23 @@ console.assert(exchange.request.timeout === 0);
 
 `combineURLs(baseURL, relativeURL)` 去掉拼接处前后多余斜杠。相对 URL 为空时原样返回基础地址；第二个 URL 是绝对地址或协议相对地址时覆盖基础地址。`isAbsoluteURL` 识别可选 scheme 后跟 `//` 的形式，并不识别所有 URI scheme，例如不会把 `data:` 当作绝对地址。
 
-查询值直接交给 `new URLSearchParams(record)`：数组转为逗号分隔字符串，对象转为字符串表示，null/undefined 不会省略。需要重复键或省略空值时先自行规范化。已有查询保留，新参数追加在 fragment 前；根据已有 `?`、结尾 `?`/`&` 选择分隔符。
+查询值由 `toSearchParams(query)` 序列化：`undefined`/`null` 值被省略，数组按每项生成一个参数（`ids=1&ids=2`，跳过 null/undefined 项），`Date` 转为 ISO 8601 文本，其余值转为 `String(value)`（对象为其字符串表示）。作为 `query` 传入的 `URLSearchParams` 原样使用。`formatUrlParam(value)` 是共用的值转文本规则（`Date` → `toISOString()`，其余 `String(value)`）。已有查询保留，新参数追加在 fragment 前；根据已有 `?`、结尾 `?`/`&` 选择分隔符。
 
 ## 模板解析器 {#templates}
 
-| 公开 API                                                   | 行为                                                                                                   |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `UrlTemplateStyle.UriTemplate`                             | 默认枚举值 0，使用 `{id}`。                                                                            |
-| `UrlTemplateStyle.Express`                                 | 枚举值 1，匹配开头或 `/` 后的 `:id`。                                                                  |
-| `getUrlTemplateResolver(style?)`                           | 仅 Express 枚举返回 Express，其余返回共享 URI 解析器。                                                 |
-| `UriTemplateResolver`、`uriTemplateResolver`               | 实现 `UrlTemplateResolver` 的类与单例。                                                                |
-| `ExpressUrlTemplateResolver`、`expressUrlTemplateResolver` | 对应冒号风格实现。                                                                                     |
-| `extractPathParams(template)`                              | 按出现顺序返回参数名，保留重复。                                                                       |
-| `resolve(template, pathParams?)`                           | 对每个值执行 `encodeURIComponent`。未传映射或为 null 时保留模板；传映射后缺失/undefined 值抛 `Error`。 |
-| `urlTemplateRegexResolve(template, regex, params?)`        | 使用调用者提供的正则捕获组确定键名，执行同样的替换规则。                                               |
-| `urlTemplateRegexExtract(template, regex)`                 | 循环调用 `regex.exec`，必须使用 global 正则以推进匹配。                                                |
+| 公开 API                                                   | 行为                                                                                                                                                                        |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UrlTemplateStyle.UriTemplate`                             | 默认枚举值 0，使用 `{id}`。                                                                                                                                                 |
+| `UrlTemplateStyle.Express`                                 | 枚举值 1，匹配开头或 `/` 后的 `:id`。参数名是标识符（`[A-Za-z_$][\w$]*`）：`/files/:name.json` 的参数是 `name`。                                                            |
+| `getUrlTemplateResolver(style?)`                           | 仅 Express 枚举返回 Express，其余返回共享 URI 解析器。                                                                                                                      |
+| `UriTemplateResolver`、`uriTemplateResolver`               | 实现 `UrlTemplateResolver` 的类与单例。                                                                                                                                     |
+| `ExpressUrlTemplateResolver`、`expressUrlTemplateResolver` | 对应冒号风格实现。                                                                                                                                                          |
+| `extractPathParams(template)`                              | 按出现顺序返回参数名，保留重复。                                                                                                                                            |
+| `resolve(template, pathParams?)`                           | 对每个值的 `formatUrlParam` 文本执行 `encodeURIComponent`。占位符没有值——未传映射、缺少键、`undefined` 或 `null`——时抛 `Error('Missing required path parameter: <name>')`。 |
+| `urlTemplateRegexResolve(template, regex, params?)`        | 使用调用者提供的正则捕获组确定键名，执行同样的替换规则。                                                                                                                    |
+| `urlTemplateRegexExtract(template, regex)`                 | 循环调用 `regex.exec`，必须使用 global 正则以推进匹配。                                                                                                                     |
 
-存在的 null 值编码为 `'null'`，值内斜杠编码为 `%2F`。`UrlResolveInterceptor` 使用客户端构建器改写 `exchange.request.url`，随后清空 `request.urlParams` 避免重复解析。名称和顺序常量见[拦截器](./interceptors.md)。传入参数映射时，缺失模板参数在网络 I/O 前失败。
+`Date` 值转为 ISO 8601 文本，值内斜杠编码为 `%2F`。`UrlResolveInterceptor` 使用客户端构建器改写 `exchange.request.url`，随后清空 `request.urlParams` 避免重复解析。名称和顺序常量见[拦截器](./interceptors.md)。无论是否传入参数映射，缺失模板参数都在网络 I/O 前失败。
 
 ## 完整示例 {#example}
 
@@ -21124,18 +21125,20 @@ console.assert(
 
 | 符号                                                                         | 实现                                                                                                                          |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| <a id="urlparams"></a>`UrlParams`                                            | [urlBuilder.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L27)                     |
-| <a id="urlbuilder"></a>`UrlBuilder`                                          | [urlBuilder.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L72)                     |
-| <a id="urlbuildercapable"></a>`UrlBuilderCapable`                            | [urlBuilder.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L166)                   |
+| <a id="urlparams"></a>`UrlParams`                                            | [urlBuilder.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L28)                     |
+| <a id="urlbuilder"></a>`UrlBuilder`                                          | [urlBuilder.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L105)                   |
+| <a id="tosearchparams"></a>`toSearchParams`                                  | [urlBuilder.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L77)                     |
+| <a id="urlbuildercapable"></a>`UrlBuilderCapable`                            | [urlBuilder.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L199)                   |
 | <a id="urltemplatestyle"></a>`UrlTemplateStyle`                              | [urlTemplateResolver.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L20)   |
 | <a id="geturltemplateresolver"></a>`getUrlTemplateResolver`                  | [urlTemplateResolver.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L63)   |
 | <a id="urltemplateresolver"></a>`UrlTemplateResolver`                        | [urlTemplateResolver.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L92)   |
-| <a id="urltemplateregexresolve"></a>`urlTemplateRegexResolve`                | [urlTemplateResolver.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L151) |
-| <a id="urltemplateregexextract"></a>`urlTemplateRegexExtract`                | [urlTemplateResolver.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L174) |
-| <a id="uritemplateresolver"></a>`UriTemplateResolver`                        | [urlTemplateResolver.ts:205](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L205) |
-| <a id="uritemplateresolver-instance"></a>`uriTemplateResolver`               | [urlTemplateResolver.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L297) |
-| <a id="expressurltemplateresolver"></a>`ExpressUrlTemplateResolver`          | [urlTemplateResolver.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316) |
-| <a id="expressurltemplateresolver-instance"></a>`expressUrlTemplateResolver` | [urlTemplateResolver.ts:397](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L397) |
+| <a id="formaturlparam"></a>`formatUrlParam`                                  | [urlTemplateResolver.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L149) |
+| <a id="urltemplateregexresolve"></a>`urlTemplateRegexResolve`                | [urlTemplateResolver.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L165) |
+| <a id="urltemplateregexextract"></a>`urlTemplateRegexExtract`                | [urlTemplateResolver.ts:186](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L186) |
+| <a id="uritemplateresolver"></a>`UriTemplateResolver`                        | [urlTemplateResolver.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L217) |
+| <a id="uritemplateresolver-instance"></a>`uriTemplateResolver`               | [urlTemplateResolver.ts:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L309) |
+| <a id="expressurltemplateresolver"></a>`ExpressUrlTemplateResolver`          | [urlTemplateResolver.ts:328](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L328) |
+| <a id="expressurltemplateresolver-instance"></a>`expressUrlTemplateResolver` | [urlTemplateResolver.ts:411](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L411) |
 | <a id="isabsoluteurl"></a>`isAbsoluteURL`                                    | [urls.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L27)                                 |
 | <a id="combineurls"></a>`combineURLs`                                        | [urls.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L49)                                 |
 
@@ -21233,7 +21236,7 @@ console.assert(first === second && first.name === 'Ada');
 
 # 拦截器管线
 
-拦截器修改共享 `FetchExchange`，返回 `void | Promise<void>`，不返回替代 exchange。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor` 是 `Interceptor` 的结构化特例，必填 `name`、`order`、`intercept(exchange)`。
+拦截器修改共享 `FetchExchange`，返回 `void | Promise<void>`，不返回替代 exchange。exchange 的请求持有合并后请求头及 `urlParams.path`/`.query` 的副本，拦截器的写入不会影响调用方的请求对象。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor` 是 `Interceptor` 的结构化特例，必填 `name`、`order`、`intercept(exchange)`。
 
 ## 注册与排序 {#registry}
 
@@ -21330,19 +21333,18 @@ Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身
 
 `TimeoutCapable.timeout?: number` 单位为毫秒。`resolveTimeout(requestTimeout?, optionsTimeout?)` 在请求值不是 undefined 时直接返回它（包括零），否则使用客户端值。`timeoutFetch(request): Promise<Response>` 行为如下：
 
-| 输入                                       | 行为                                                                                       |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| 存在 `request.signal`                      | 直接调用原生 fetch，绕过库超时。                                                           |
-| 无 signal，timeout 为假值（`0`/undefined） | 不启用定时器；若传入则使用 `abortController.signal`。                                      |
-| timeout 为真值                             | 原生 fetch 与定时器竞速；复用调用者控制器或新建控制器，定时器以 `FetchTimeoutError` 中止。 |
+| 输入                                     | 行为                                                                                                                                                            |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| timeout 不是正数（`0`、负数、undefined） | 不启用定时器；原生 fetch 由 `request.signal` 或 `abortController.signal` 中先触发者中止。                                                                       |
+| timeout 为正数                           | 原生 fetch 与定时器竞速，定时器与调用者的 `signal`、`abortController` 组合，先触发者中止。定时器以 `FetchTimeoutError` 拒绝，调用者取消以其 abort reason 拒绝。 |
 
-不校验正数范围，应有意传入有限正数或零。fetch 返回 Response 时定时器即结束，**不会等待响应正文消费完成**。流的空闲/总时限需要调用者管理取消。
+传入有限正数才启用定时器。fetch 返回 Response 时定时器即结束，**不会等待响应正文消费完成**。流的空闲/总时限需要调用者管理取消。
 
 ## 所有权与清理 {#cancellation}
 
-成功和失败都会清理定时器。超时分支临时写入的 signal 会移除；内部控制器会清空，让重复使用请求时可创建新控制器。外部控制器仍由调用者拥有，即使它已被中止；它不能复位用于重试，新操作应创建新控制器。
+成功和失败都会清理定时器。`timeoutFetch` 从不写入请求对象，定时器也从不中止外部控制器，因此同一请求可以再次发送。外部控制器仍由调用者拥有，即使它已被中止；它不能复位用于重试，新操作应创建新控制器。
 
-外部取消使用 `signal` 或 `abortController`，失败 exchange 保留原生取消原因。调用者 signal 有意优先于 Fetcher 超时。需要同时控制两者时，由调用者给 signal 设置截止时间，或使用 abortController 配合 timeout。
+外部取消使用 `signal` 或 `abortController`，失败 exchange 保留取消原因。两者都与 Fetcher 超时同时生效：先触发者中止请求。
 
 ## 完整示例 {#example}
 
@@ -21375,10 +21377,10 @@ try {
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="fetchererror"></a>`FetcherError`                                           | [fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)                             |
 | <a id="exchangeerror"></a>`ExchangeError`                                         | [fetcherError.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L86)                             |
-| <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33)                                       |
-| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
-| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)                                     |
+| <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
+| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L62)                                       |
+| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L83)                                       |
+| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)                                     |
 | <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
 | <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L62)   |
 | <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L70)   |
@@ -21415,7 +21417,7 @@ try {
 | `RequestHeadersCapable`             | [请求、请求头与正文](requests.md#requestheaderscapable)                          | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)                             |
 | `RequestBodyType`                   | [请求、请求头与正文](requests.md#requestbodytype)                                | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)                             |
 | `FetchRequestInit`                  | [请求、请求头与正文](requests.md#fetchrequestinit)                               | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)                           |
-| `FetchRequest`                      | [请求、请求头与正文](requests.md#fetchrequest)                                   | [fetchRequest.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L176)                           |
+| `FetchRequest`                      | [请求、请求头与正文](requests.md#fetchrequest)                                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)                           |
 | `FetcherOptions`                    | [客户端与注册](client.md#fetcheroptions)                                         | [fetcher.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L52)                                       |
 | `DEFAULT_OPTIONS`                   | [客户端与注册](client.md#default_options)                                        | [fetcher.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L87)                                       |
 | `RequestOptions`                    | [客户端与注册](client.md#requestoptions)                                         | [fetcher.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L95)                                       |
@@ -21428,7 +21430,7 @@ try {
 | `ExchangeError`                     | [错误、超时与取消](errors-and-cancellation.md#exchangeerror)                     | [fetcherError.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L86)                             |
 | `DEFAULT_FETCHER_NAME`              | [客户端与注册](client.md#default_fetcher_name)                                   | [fetcherRegistrar.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L19)                     |
 | `FetcherRegistrar`                  | [客户端与注册](client.md#fetcherregistrar)                                       | [fetcherRegistrar.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L41)                     |
-| `fetcherRegistrar`                  | [客户端与注册](client.md#fetcherregistrar-instance)                              | [fetcherRegistrar.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L166)                   |
+| `fetcherRegistrar`                  | [客户端与注册](client.md#fetcherregistrar-instance)                              | [fetcherRegistrar.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L172)                   |
 | `DEFAULT_INTERCEPTOR_ORDER_STEP`    | [拦截器管线](interceptors.md#default_interceptor_order_step)                     | [interceptor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L18)                               |
 | `BUILT_IN_INTERCEPTOR_ORDER_STEP`   | [拦截器管线](interceptors.md#built_in_interceptor_order_step)                    | [interceptor.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L20)                               |
 | `Interceptor`                       | [拦截器管线](interceptors.md#interceptor)                                        | [interceptor.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L44)                               |
@@ -21440,7 +21442,7 @@ try {
 | `mergeRequest`                      | [请求、请求头与正文](requests.md#mergerequest)                                   | [mergeRequest.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L65)                             |
 | `mergeRequestOptions`               | [请求、请求头与正文](requests.md#mergerequestoptions)                            | [mergeRequest.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L118)                           |
 | `NamedFetcher`                      | [客户端与注册](client.md#namedfetcher)                                           | [namedFetcher.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L38)                             |
-| `fetcher`                           | [客户端与注册](client.md#fetcher-instance)                                       | [namedFetcher.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L89)                             |
+| `fetcher`                           | [客户端与注册](client.md#fetcher-instance)                                       | [namedFetcher.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L94)                             |
 | `OrderedCapable`                    | [拦截器管线](interceptors.md#orderedcapable)                                     | [orderedCapable.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L29)                         |
 | `sortOrder`                         | [拦截器管线](interceptors.md#sortorder)                                          | [orderedCapable.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L53)                         |
 | `toSorted`                          | [拦截器管线](interceptors.md#tosorted)                                           | [orderedCapable.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L87)                         |
@@ -21461,30 +21463,32 @@ try {
 | `ArrayBufferResultExtractor`        | [Exchange 与结果提取](results.md#arraybufferresultextractor)                     | [resultExtractor.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L106)                     |
 | `BytesResultExtractor`              | [Exchange 与结果提取](results.md#bytesresultextractor)                           | [resultExtractor.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L120)                     |
 | `ResultExtractors`                  | [Exchange 与结果提取](results.md#resultextractors)                               | [resultExtractor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L131)                     |
-| `FetchTimeoutError`                 | [错误、超时与取消](errors-and-cancellation.md#fetchtimeouterror)                 | [timeout.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L33)                                       |
-| `TimeoutCapable`                    | [错误、超时与取消](errors-and-cancellation.md#timeoutcapable)                    | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
-| `resolveTimeout`                    | [错误、超时与取消](errors-and-cancellation.md#resolvetimeout)                    | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| `timeoutFetch`                      | [错误、超时与取消](errors-and-cancellation.md#timeoutfetch)                      | [timeout.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L120)                                     |
+| `FetchTimeoutError`                 | [错误、超时与取消](errors-and-cancellation.md#fetchtimeouterror)                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
+| `TimeoutCapable`                    | [错误、超时与取消](errors-and-cancellation.md#timeoutcapable)                    | [timeout.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L62)                                       |
+| `resolveTimeout`                    | [错误、超时与取消](errors-and-cancellation.md#resolvetimeout)                    | [timeout.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L83)                                       |
+| `timeoutFetch`                      | [错误、超时与取消](errors-and-cancellation.md#timeoutfetch)                      | [timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)                                     |
 | `PartialBy`                         | [Exchange 与结果提取](results.md#partialby)                                      | [types.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L33)                                           |
 | `RequiredBy`                        | [Exchange 与结果提取](results.md#requiredby)                                     | [types.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L52)                                           |
 | `RemoveReadonlyFields`              | [Exchange 与结果提取](results.md#removereadonlyfields)                           | [types.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L85)                                           |
 | `NamedCapable`                      | [客户端与注册](client.md#namedcapable)                                           | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                                         |
 | `FetcherConfigurer`                 | [客户端与注册](client.md#fetcherconfigurer)                                      | [types.ts:248](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L248)                                         |
-| `UrlParams`                         | [URL 构建与模板](urls.md#urlparams)                                              | [urlBuilder.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L27)                                 |
-| `UrlBuilder`                        | [URL 构建与模板](urls.md#urlbuilder)                                             | [urlBuilder.ts:72](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L72)                                 |
-| `UrlBuilderCapable`                 | [URL 构建与模板](urls.md#urlbuildercapable)                                      | [urlBuilder.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L166)                               |
+| `UrlParams`                         | [URL 构建与模板](urls.md#urlparams)                                              | [urlBuilder.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L28)                                 |
+| `UrlBuilder`                        | [URL 构建与模板](urls.md#urlbuilder)                                             | [urlBuilder.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L105)                               |
+| `toSearchParams`                    | [URL 构建与模板](urls.md#tosearchparams)                                         | [urlBuilder.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L77)                                 |
+| `UrlBuilderCapable`                 | [URL 构建与模板](urls.md#urlbuildercapable)                                      | [urlBuilder.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L199)                               |
 | `URL_RESOLVE_INTERCEPTOR_NAME`      | [拦截器管线](interceptors.md#url_resolve_interceptor_name)                       | [urlResolveInterceptor.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L24)           |
 | `URL_RESOLVE_INTERCEPTOR_ORDER`     | [拦截器管线](interceptors.md#url_resolve_interceptor_order)                      | [urlResolveInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L29)           |
 | `UrlResolveInterceptor`             | [拦截器管线](interceptors.md#urlresolveinterceptor)                              | [urlResolveInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L53)           |
 | `UrlTemplateStyle`                  | [URL 构建与模板](urls.md#urltemplatestyle)                                       | [urlTemplateResolver.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L20)               |
 | `getUrlTemplateResolver`            | [URL 构建与模板](urls.md#geturltemplateresolver)                                 | [urlTemplateResolver.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L63)               |
 | `UrlTemplateResolver`               | [URL 构建与模板](urls.md#urltemplateresolver)                                    | [urlTemplateResolver.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L92)               |
-| `urlTemplateRegexResolve`           | [URL 构建与模板](urls.md#urltemplateregexresolve)                                | [urlTemplateResolver.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L151)             |
-| `urlTemplateRegexExtract`           | [URL 构建与模板](urls.md#urltemplateregexextract)                                | [urlTemplateResolver.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L174)             |
-| `UriTemplateResolver`               | [URL 构建与模板](urls.md#uritemplateresolver)                                    | [urlTemplateResolver.ts:205](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L205)             |
-| `uriTemplateResolver`               | [URL 构建与模板](urls.md#uritemplateresolver-instance)                           | [urlTemplateResolver.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L297)             |
-| `ExpressUrlTemplateResolver`        | [URL 构建与模板](urls.md#expressurltemplateresolver)                             | [urlTemplateResolver.ts:316](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L316)             |
-| `expressUrlTemplateResolver`        | [URL 构建与模板](urls.md#expressurltemplateresolver-instance)                    | [urlTemplateResolver.ts:397](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L397)             |
+| `formatUrlParam`                    | [URL 构建与模板](urls.md#formaturlparam)                                         | [urlTemplateResolver.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L149)             |
+| `urlTemplateRegexResolve`           | [URL 构建与模板](urls.md#urltemplateregexresolve)                                | [urlTemplateResolver.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L165)             |
+| `urlTemplateRegexExtract`           | [URL 构建与模板](urls.md#urltemplateregexextract)                                | [urlTemplateResolver.ts:186](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L186)             |
+| `UriTemplateResolver`               | [URL 构建与模板](urls.md#uritemplateresolver)                                    | [urlTemplateResolver.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L217)             |
+| `uriTemplateResolver`               | [URL 构建与模板](urls.md#uritemplateresolver-instance)                           | [urlTemplateResolver.ts:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L309)             |
+| `ExpressUrlTemplateResolver`        | [URL 构建与模板](urls.md#expressurltemplateresolver)                             | [urlTemplateResolver.ts:328](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L328)             |
+| `expressUrlTemplateResolver`        | [URL 构建与模板](urls.md#expressurltemplateresolver-instance)                    | [urlTemplateResolver.ts:411](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L411)             |
 | `isAbsoluteURL`                     | [URL 构建与模板](urls.md#isabsoluteurl)                                          | [urls.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L27)                                             |
 | `combineURLs`                       | [URL 构建与模板](urls.md#combineurls)                                            | [urls.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L49)                                             |
 | `mergeRecords`                      | [请求、请求头与正文](requests.md#mergerecords)                                   | [utils.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L42)                                           |
@@ -21684,7 +21688,7 @@ void loadUser;
 
 ## 取消与继承元数据 {#cancellation}
 
-`AbortSignal` 或 `AbortController` 参数在装饰器元数据之前识别，即使没有装饰器也有效。多个同类参数最后一个优先；request 参数还能覆盖。signal 会绕过 Fetcher timeout，详见[取消](../fetcher/errors-and-cancellation.md)。
+`AbortSignal` 或 `AbortController` 参数在装饰器元数据之前识别，即使没有装饰器也有效。多个同类参数最后一个优先；request 参数还能覆盖。signal 或 controller 与 Fetcher timeout 同时生效，先触发者生效，详见[取消](../fetcher/errors-and-cancellation.md)。
 
 继承参数元数据采用写时复制，装饰重写方法不会修改父类 Map。类绑定遍历继承的字符串命名方法，Symbol 命名和静态方法不在该遍历中。继承/重写端点也应显式填写参数名称。
 
@@ -25178,7 +25182,7 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 
 ## HTTP 取消与超时 {#http-cancellation}
 
-`useFetcher` 将执行器的 AbortController 放到请求上。使用普通 Fetcher 传输且未显式传 `signal` 时，该 controller 参与库的超时路径。显式请求 `signal` 在 Fetcher 中优先，并绕过内建超时，也可能绕过 Hook 用于 abort 的 controller。自行传 signal 时，应有意识地组合信号/超时。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
+`useFetcher` 将执行器的 AbortController 放到请求上。使用普通 Fetcher 传输时，该 controller、显式请求 `signal` 与库超时同时生效：先触发者中止请求。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
 
 选择结果泛型前先选提取器：`JsonResultExtractor` 解析 JSON，普通 Fetcher 默认值可能返回 exchange 或 Response。`R` 是提取后的值类型，`E` 是错误状态类型；两者不验证运行时载荷。[请求生命周期](../../architecture/request-lifecycle)解释 JSON 解析为何可能在 exchange 拦截结束后失败。
 

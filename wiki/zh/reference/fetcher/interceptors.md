@@ -5,7 +5,7 @@ description: '拦截器管线 — @ahoo-wang/fetcher 5.0.0'
 
 # 拦截器管线
 
-拦截器修改共享 `FetchExchange`，返回 `void | Promise<void>`，不返回替代 exchange。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor` 是 `Interceptor` 的结构化特例，必填 `name`、`order`、`intercept(exchange)`。
+拦截器修改共享 `FetchExchange`，返回 `void | Promise<void>`，不返回替代 exchange。exchange 的请求持有合并后请求头及 `urlParams.path`/`.query` 的副本，拦截器的写入不会影响调用方的请求对象。`RequestInterceptor`、`ResponseInterceptor`、`ErrorInterceptor` 是 `Interceptor` 的结构化特例，必填 `name`、`order`、`intercept(exchange)`。
 
 ## 注册与排序 {#registry}
 
