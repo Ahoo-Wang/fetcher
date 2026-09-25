@@ -4,7 +4,7 @@
  * you may obtain a copy at http://www.apache.org/licenses/LICENSE-2.0
  */
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
   mergedPullRequestHead,
@@ -112,4 +112,31 @@ test('release admission requires exactly the workflows this repository runs on p
     'build-storybook.yml',
     'integration-test.yml',
   ]);
+});
+
+test('the required integration run reaches no host outside the CI job', () => {
+  const root = new URL('../../', import.meta.url);
+  const read = path => readFileSync(new URL(path, root), 'utf8');
+  // Public-internet cases live in integration-test/test/external/ and run in
+  // the advisory integration-external.yml, which admission must not require.
+  assert.ok(!requiredWorkflows.includes('integration-external.yml'));
+  assert.ok(
+    existsSync(new URL('.github/workflows/integration-external.yml', root)),
+  );
+  const scripts = JSON.parse(read('integration-test/package.json')).scripts;
+  assert.match(scripts.test, /--project required\b/);
+  assert.match(scripts['test:external'], /--project external\b/);
+  assert.match(
+    read('integration-test/vitest.config.ts'),
+    /'test\/external\/\*\*'/,
+  );
+  // The live-provider credentials go only to the advisory run.
+  assert.doesNotMatch(
+    read('.github/workflows/integration-test.yml'),
+    /secrets\./,
+  );
+  assert.match(
+    read('.github/workflows/integration-external.yml'),
+    /pnpm test:it:external/,
+  );
 });
