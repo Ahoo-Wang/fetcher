@@ -192,10 +192,10 @@ Confirmed with the maintainer on 2026-09-25.
 
 2026-09-25: all seven stages merged (#1927, #1930–#1936). Open follow-ups:
 
-- react: pass the abort signal to execute-API methods; re-render
-  `useSecurity` when the token expires. (Done: the debounce scheduler shared
-  by `useDebouncedQuery` and `useDebouncedFetcherQuery`, now
-  `useDebouncedQueryScheduler`.)
+- react: re-render `useSecurity` when the token expires. (Done: the
+  debounce scheduler shared by `useDebouncedQuery` and
+  `useDebouncedFetcherQuery`, now `useDebouncedQueryScheduler`, #1938;
+  `appendAbortController` for execute-API hooks, opt-in as confirmed.)
 - cosec: consider a default clock-skew margin (`earlyPeriod`).
 - Wow: regenerate `golden/client-endpoints.json` when Wow moves to fetcher 6
   (until then `downstream-wow.yml` fails on it, as expected).

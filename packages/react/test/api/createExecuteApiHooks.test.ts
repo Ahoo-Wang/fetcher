@@ -315,3 +315,45 @@ describe('createExecuteApiHooks', () => {
     expect(customApi.getUser).toHaveBeenCalledWith('user123'); // Args unchanged
   });
 });
+
+describe('appendAbortController', () => {
+  it('calls the method with its parameters only by default', async () => {
+    const getUser = vi.fn(async (id: string) => id);
+    const hooks = createExecuteApiHooks({ api: { getUser } });
+    const { result } = renderHook(() => hooks.useGetUser());
+    await act(async () => {
+      await result.current.execute('u-1');
+    });
+    expect(getUser).toHaveBeenCalledWith('u-1');
+  });
+
+  it('appends the execution controller, which a newer execution aborts', async () => {
+    const controllers: AbortController[] = [];
+    const getUser = vi.fn(
+      (id: string, controller?: AbortController) =>
+        new Promise<string>(resolve => {
+          controllers.push(controller!);
+          setTimeout(() => resolve(id), 20);
+        }),
+    );
+    const hooks = createExecuteApiHooks({ api: { getUser } });
+    const { result, unmount } = renderHook(() =>
+      hooks.useGetUser({ appendAbortController: true }),
+    );
+
+    await act(async () => {
+      void result.current.execute('first');
+      await result.current.execute('second');
+    });
+    expect(getUser.mock.calls[0][0]).toBe('first');
+    expect(controllers[0]).toBeInstanceOf(AbortController);
+    expect(controllers[0].signal.aborted).toBe(true);
+    expect(controllers[1].signal.aborted).toBe(false);
+
+    act(() => {
+      void result.current.execute('third');
+    });
+    unmount();
+    expect(controllers[2].signal.aborted).toBe(true);
+  });
+});

@@ -15,7 +15,7 @@ description: 'API Hook 工厂 — @ahoo-wang/fetcher-react 5.0.0'
 | `methodNameToHookName(name)`          | 添加 `use` 并大写首字符；空名称抛错。                                                                 |
 | `collectMethods(obj, onAccessor?)`    | 返回绑定方法的 Map，排除 constructor 和 Object.prototype；可选 accessor visitor 支持延迟读取 getter。 |
 
-执行 Hook 不会自动把 controller 注入任意方法参数。方法支持取消时，用 `onBeforeExecute` 写入对应参数位置，或使用查询工厂的标准签名。查询工厂自动转发 attributes 和 controller。两者都通过 result 状态提供结果，而不是 execute promise。
+只有 Hook 设置 `appendAbortController: true` 时，执行 Hook 才传入 controller：方法以 `method(...params, abortController)` 调用，`@api` 方法无论 controller 落在哪个位置都能识别，因此替换或卸载执行会取消其请求。方法带可选尾参数时不要开启，否则 controller 会占据参数位置；这时可用 `onBeforeExecute` 把它写入指定位置。查询工厂自动转发 attributes 和 controller。两者都通过 result 状态提供结果，而不是 execute promise。
 
 `APIHooks`、`QueryAPIHooks`、`HookName`、`ApiHooksMapping`、`ApiMethod`、`QueryMethod`、`FunctionParameters`、`FunctionReturnType`、`IsPromiseFunction` 描述编译期映射。运行时只检查属性是不是函数，不检查其是否真正返回 Promise。访问器方法可能在首次读取/枚举时才建立，getter 可以抛错；只传入可信服务对象。取消、回调、过期结果和卸载规则见 [共享执行器契约](./promise-and-query-state)。
 
@@ -183,7 +183,7 @@ export function createExecuteApiHooks<
 >(options: CreateExecuteApiHooksOptions<API>): APIHooks<API, E>;
 ```
 
-[packages/react/src/api/createExecuteApiHooks.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L201)
+[packages/react/src/api/createExecuteApiHooks.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L217)
 
 ### CreateExecuteApiHooksOptions {#api-CreateExecuteApiHooksOptions}
 
@@ -204,6 +204,7 @@ export interface UseApiMethodExecuteOptions<
   E = FetcherError,
 > extends UseExecutePromiseOptions<TData, E> {
   onBeforeExecute?: OnBeforeExecuteCallback<TArgs>;
+  appendAbortController?: boolean;
 }
 ```
 
@@ -229,7 +230,7 @@ export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
 };
 ```
 
-[packages/react/src/api/createExecuteApiHooks.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L78)
+[packages/react/src/api/createExecuteApiHooks.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L91)
 
 ### createQueryApiHooks {#api-createQueryApiHooks}
 
