@@ -192,11 +192,10 @@ Confirmed with the maintainer on 2026-09-25.
 
 2026-09-25: all seven stages merged (#1927, #1930–#1936). Open follow-ups:
 
-- react: re-render `useSecurity` when the token expires. (Done: the
-  debounce scheduler shared by `useDebouncedQuery` and
-  `useDebouncedFetcherQuery`, now `useDebouncedQueryScheduler`, #1938;
-  `appendAbortController` for execute-API hooks, opt-in as confirmed.)
-- cosec: consider a default clock-skew margin (`earlyPeriod`).
+- Done since: the shared debounce scheduler (#1938); `appendAbortController`
+  for execute-API hooks (#1939, opt-in); `useSecurity` re-renders at
+  refresh-token expiry (confirmed: not at access-token expiry, which the next
+  request refreshes). Decided: `earlyPeriod` stays 0 by default.
 - Wow: regenerate `golden/client-endpoints.json` when Wow moves to fetcher 6
   (until then `downstream-wow.yml` fails on it, as expected).
 - `.claude/settings.local.json` is tracked with stale viewer permissions;

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { useKeyStorage } from '../storage/index.js';
 import type {
   TokenStorage,
@@ -80,6 +80,9 @@ export interface UseSecurityReturn {
   signOut: () => void;
 }
 
+/** The longest delay setTimeout accepts (2^31 - 1 ms). */
+const MAX_TIMEOUT = 2_147_483_647;
+
 /**
  * Hook for managing authentication state and operations using CoSec tokens.
  *
@@ -95,7 +98,9 @@ export interface UseSecurityReturn {
  * @param options.onSignOut - Callback function invoked when sign out occurs.
  * @returns An object containing:
  *          - currentUser: The current authenticated user's JWT payload, or null if not authenticated.
- *          - authenticated: Boolean indicating whether the user is currently authenticated.
+ *          - authenticated: Boolean indicating whether the user is currently authenticated
+ *            (the access token is unexpired). Computed at render; the hook also
+ *            re-renders when the refresh token expires, so an idle page signs out then.
  *          - signIn: Function to authenticate with a composite token.
  *          - signOut: Function to sign out the current user.
  * @throws {Error} May throw errors if tokenStorage operations fail, such as invalid tokens
@@ -153,6 +158,30 @@ export function useSecurity(
 ): UseSecurityReturn {
   // Use useKeyStorage to get reactive updates when token changes
   const [token, , remove] = useKeyStorage(tokenStorage);
+
+  // `authenticated` is computed at render. Re-render when the session can no
+  // longer be renewed (the refresh token expires), so a page left open signs
+  // out then; an expired access token that can still be refreshed is renewed
+  // by the next request instead of sending the user to sign in.
+  const [, rerender] = useReducer((count: number) => count + 1, 0);
+  const refreshExpiresAt = token?.refresh.payload?.exp;
+  const earlyPeriod = tokenStorage.earlyPeriod;
+  useEffect(() => {
+    if (typeof refreshExpiresAt !== 'number') return;
+    const deadline = (refreshExpiresAt - earlyPeriod) * 1000;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        rerender();
+        return;
+      }
+      // setTimeout overflows past ~24.8 days: wait in steps.
+      timer = setTimeout(arm, Math.min(remaining, MAX_TIMEOUT));
+    };
+    arm();
+    return () => clearTimeout(timer);
+  }, [refreshExpiresAt, earlyPeriod]);
   const optionsRef = useLatest(options);
   const signIn = useCallback(
     async (compositeTokenProvider: CompositeTokenProvider) => {

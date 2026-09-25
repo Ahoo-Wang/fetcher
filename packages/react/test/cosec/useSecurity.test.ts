@@ -533,3 +533,34 @@ describe('useSecurity', () => {
     });
   });
 });
+
+describe('useSecurity at refresh-token expiry', () => {
+  it('re-renders when the refresh token expires, so authenticated turns false', () => {
+    vi.useFakeTimers();
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      const jwt = (exp: number) =>
+        `e30.${btoa(JSON.stringify({ sub: 'u', exp }))}.signature`;
+      const tokenStorage = new TokenStorage({
+        key: 'security-expiry',
+        storage: new InMemoryStorage(),
+      });
+      // Access and refresh both expire in 60 s.
+      tokenStorage.signIn({
+        accessToken: jwt(now + 60),
+        refreshToken: jwt(now + 60),
+      });
+      const { result } = renderHook(() => useSecurity(tokenStorage));
+      expect(result.current.authenticated).toBe(true);
+
+      act(() => {
+        vi.advanceTimersByTime(61_000);
+      });
+
+      expect(result.current.authenticated).toBe(false);
+      tokenStorage.destroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

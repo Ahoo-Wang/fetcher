@@ -421,7 +421,7 @@ const queryHooks = createQueryApiHooks({ api: new UserApi() });
 
 ### SecurityProvider / useSecurityContext / useSecurity / RouteGuard
 
-Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>` (`TokenStorage` from `@ahoo-wang/fetcher-cosec`). `useSecurityContext()` (throws outside the provider) and `useSecurity(tokenStorage, options?)` return `currentUser` (`ANONYMOUS_USER` when signed out), `authenticated`, `signIn(compositeTokenOrAsyncProvider)`, `signOut()`. `RouteGuard` (`children`, `fallback?`, `onUnauthorized?`) renders children only when authenticated and calls `onUnauthorized` in an effect after commit, once each time the user becomes (or starts out) unauthenticated, so it may call `navigate()`; `RefreshableRouteGuard` (`tokenManager: JwtTokenManager`, `fallback?`, `refreshing?`) tries a token refresh first.
+Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>` (`TokenStorage` from `@ahoo-wang/fetcher-cosec`). `useSecurityContext()` (throws outside the provider) and `useSecurity(tokenStorage, options?)` return `currentUser` (`ANONYMOUS_USER` when signed out), `authenticated`, `signIn(compositeTokenOrAsyncProvider)`, `signOut()`. `authenticated` is computed at render; `useSecurity` re-renders when the refresh token expires (not when only the access token does, since the next request refreshes it). `RouteGuard` (`children`, `fallback?`, `onUnauthorized?`) renders children only when authenticated and calls `onUnauthorized` in an effect after commit, once each time the user becomes (or starts out) unauthenticated, so it may call `navigate()`; `RefreshableRouteGuard` (`tokenManager: JwtTokenManager`, `fallback?`, `refreshing?`) tries a token refresh first.
 
 ```tsx
 import {
