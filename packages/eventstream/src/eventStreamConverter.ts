@@ -131,8 +131,11 @@ export function toServerSentEventStream(
     throw new EventStreamConvertError(response, 'Response body is null');
   }
 
-  return response.body
-    .pipeThrough(new TextDecoderStream('utf-8'))
-    .pipeThrough(new TextLineTransformStream())
-    .pipeThrough(new ServerSentEventTransformStream());
+  return (
+    response.body
+      .pipeThrough(new TextDecoderStream('utf-8'))
+      // A final line without its terminator was cut off: not an event.
+      .pipeThrough(new TextLineTransformStream(false))
+      .pipeThrough(new ServerSentEventTransformStream())
+  );
 }

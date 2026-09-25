@@ -18,7 +18,7 @@ description: >
 - `JsonEventStreamResultExtractor` passes no detector; for `[DONE]` endpoints write a `ResultExtractor` that calls `exchange.requiredResponse.requiredJsonEventStream(detector)`.
 - The SSE extractors are standalone exports of this package, not members of `ResultExtractors` from `@ahoo-wang/fetcher`.
 - Items are `JsonServerSentEvent<T>`: the payload is `event.data`; `id` is `''` when the server sent none and `event` defaults to `'message'`.
-- Errors during iteration are `SyntaxError` or network/stream errors, not `EventStreamConvertError` — handle both around the `for await` loop.
+- Errors during iteration are `SyntaxError`, `EventStreamIncompleteError` (a detector was set and the stream ended without the terminating event) or network/stream errors, not `EventStreamConvertError` — handle both around the `for await` loop.
 
 ## Minimal example
 

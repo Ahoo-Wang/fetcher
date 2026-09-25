@@ -14,11 +14,11 @@ Request `stream: true` to receive `JsonServerSentEventStream<ChatResponse>`. Eac
 | `DoneDetector(event: ServerSentEvent): boolean` | True only when raw event.data equals `[DONE]` exactly; no trimming/case folding           |
 | `CompletionStreamResultExtractor(exchange)`     | Requires a FetchResponse and readable body; returns requiredJsonEventStream(DoneDetector) |
 
-The terminal marker is recognized before JSON parsing and is not emitted as a ChatResponse. Other malformed JSON fails stream consumption. A successful request Promise means a stream was obtained; errors can still occur later while reading. The extractor does not assemble choices, execute tool calls, estimate usage, or reconnect.
+The terminal marker is recognized before JSON parsing and is not emitted as a ChatResponse. Other malformed JSON fails stream consumption. A stream that ends before `data: [DONE]` (a lost connection or a server that stopped early) errors during iteration with `EventStreamIncompleteError` from `@ahoo-wang/fetcher-eventstream`, so a partial answer is not mistaken for a complete one. A successful request Promise means a stream was obtained; errors can still occur later while reading. The extractor does not assemble choices, execute tool calls, estimate usage, or reconnect.
 
 ## Complete streaming function
 
-ChatClient does not accept a per-call signal parameter. Use the underlying Fetcher request API with CompletionStreamResultExtractor when you need a per-request signal. An AbortController can stop the pending request; cancel the acquired reader when finishing early, and always release its lock.
+`chat.completions(request, signal)` takes a per-call signal. Without ChatClient, use the underlying Fetcher request API with CompletionStreamResultExtractor, as below. An AbortController can stop the pending request; cancel the acquired reader when finishing early, and always release its lock.
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -77,4 +77,4 @@ The example expects an authenticated same-application proxy or a server-side con
 
 <span id="completionstreamresultextractor"></span>
 
-**`CompletionStreamResultExtractor`** — [packages/openai/src/chat/completionStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88)
+**`CompletionStreamResultExtractor`** — [packages/openai/src/chat/completionStreamResultExtractor.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L75)

@@ -83,9 +83,9 @@ export async function streamAnswer(
 
 ## 4. 本地验证协议
 
-模拟 fetch 返回 content type 为 `text/event-stream` 的 `Response`，正文为 `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`，断言 `onText` 接收到 Hello。同时测试非法 JSON 和取消的请求。隔离测试结束后恢复 fetch。这样无需消耗供应商额度即可检查客户端。
+模拟 fetch 返回 content type 为 `text/event-stream` 的 `Response`，正文为 `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`，断言 `onText` 接收到 Hello。同时测试非法 JSON、在 `[DONE]` 之前结束的正文和取消的请求。隔离测试结束后恢复 fetch。这样无需消耗供应商额度即可检查客户端。
 
-网络或状态错误会拒绝初始请求；非法 SSE/JSON 或传输中断可能拒绝后续读取，两者都需要处理。避免自动重放已显示部分内容的回答，重试会开始一次新的补全。
+网络或状态错误会拒绝初始请求；非法 SSE/JSON、传输中断或在 `[DONE]` 之前结束的流（`EventStreamIncompleteError`）可能拒绝后续读取，两者都需要处理。避免自动重放已显示部分内容的回答，重试会开始一次新的补全。
 
 ## 不需要调用方控制取消时
 
@@ -105,10 +105,10 @@ export async function complete(baseURL: string, model: string) {
 }
 ```
 
-传入 `stream: true` 将返回 `JsonServerSentEventStream<ChatResponse>`。公开的 completions 方法没有单次调用 signal 参数，因此可取消方案直接使用 Fetcher。
+传入 `stream: true` 将返回 `JsonServerSentEventStream<ChatResponse>`。公开的 completions 方法也接受可选的 `AbortSignal` 作为第二个参数；上面的可取消方案直接使用 Fetcher，是为了显式展示 reader 清理。
 
 参见[流式契约](../../reference/openai/streaming)、[ChatClient 和请求类型](../../reference/openai/client-and-completions)及[流消费](../../reference/eventstream/consumption-and-cancellation)。
 
-[completionStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88) 将响应提取连接到终止探测器。
+[completionStreamResultExtractor.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L75) 将响应提取连接到终止探测器。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。

@@ -18,10 +18,20 @@ import { SafeTransformer } from './safeTransformer.js';
  *
  * Accumulates chunks of text and splits them by CR, LF, or CRLF,
  * emitting each complete line as a separate chunk. Handles partial lines
- * that span multiple input chunks by maintaining an internal buffer.
+ * that span multiple input chunks by maintaining an internal buffer; a chunk
+ * without a line terminator is only appended, so a long line costs linear
+ * time however it is chunked.
+ *
+ * At the end of the input, text after the last line terminator is emitted as
+ * a final line, unless `emitUnterminated` is `false`: a server-sent event
+ * stream drops it, since a line cut off by a lost connection is not data.
  */
 export class TextLineTransformer extends SafeTransformer<string, string> {
   private buffer = '';
+
+  constructor(private readonly emitUnterminated: boolean = true) {
+    super();
+  }
 
   private discardLeadingLF = false;
 
@@ -37,6 +47,10 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
     // A CR ends its line immediately; consume a following LF only once,
     // even when the pair is separated by chunks.
     this.discardLeadingLF = chunk.endsWith('\r');
+    if (!/[\r\n]/.test(chunk)) {
+      this.buffer += chunk;
+      return;
+    }
     const lines = (this.buffer + chunk).split(/\r\n|\r|\n/);
     this.buffer = lines.pop() || '';
 
@@ -48,7 +62,7 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
   protected onFlush(
     controller: TransformStreamDefaultController<string>,
   ): void {
-    if (this.buffer) {
+    if (this.buffer && this.emitUnterminated) {
       this.enqueue(controller, this.buffer);
     }
     this.buffer = '';
@@ -69,7 +83,11 @@ export class TextLineTransformer extends SafeTransformer<string, string> {
  * ```
  */
 export class TextLineTransformStream extends TransformStream<string, string> {
-  constructor() {
-    super(new TextLineTransformer());
+  /**
+   * @param emitUnterminated - Whether text after the last line terminator is
+   *   emitted as a final line at the end of the input (default `true`).
+   */
+  constructor(emitUnterminated: boolean = true) {
+    super(new TextLineTransformer(emitUnterminated));
   }
 }

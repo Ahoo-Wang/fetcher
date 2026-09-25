@@ -11,23 +11,23 @@ description: '客户端与聊天补全 — Fetcher 5.0.0'
 
 ## 客户端契约
 
-| API                                      | 输入/默认值                                               | 返回/效果                                                                     |
-| ---------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `OpenAI(options)`                        | 必填 `baseURL: string`、`apiKey: string`，无默认端点      | 持有 readonly fetcher 和 chat；创建带 Authorization: Bearer apiKey 的 Fetcher |
-| `OpenAIOptions`                          | 继承 BaseURLCapable，两字段必填                           | 仅为类型，不校验 key                                                          |
-| `ChatClient(apiMetadata?)`               | 可选装饰器 ApiMetadata，如 `{ fetcher }`                  | 类 basePath 为 `chat`                                                         |
-| `ChatClient.completions<T>(chatRequest)` | 必填 ChatRequest；向 chat basePath 下 `/completions` POST | 根据 stream 标记返回 ChatResponse 或 JSON SSE 流的 Promise                    |
-| `ChatClient.beforeExecute(exchange)`     | FetchExchange，由装饰器运行时调用                         | void；request.body.stream 为真值时选择 CompletionStreamResultExtractor        |
+| API                                               | 输入/默认值                                                                 | 返回/效果                                                                     |
+| ------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `OpenAI(options)`                                 | 必填 `baseURL: string`、`apiKey: string`，无默认端点                        | 持有 readonly fetcher 和 chat；创建带 Authorization: Bearer apiKey 的 Fetcher |
+| `OpenAIOptions`                                   | 继承 BaseURLCapable，两字段必填                                             | 仅为类型，不校验 key                                                          |
+| `ChatClient(apiMetadata?)`                        | 可选装饰器 ApiMetadata，如 `{ fetcher }`                                    | 类 basePath 为 `chat`                                                         |
+| `ChatClient.completions<T>(chatRequest, signal?)` | 必填 ChatRequest，可选 AbortSignal；向 chat basePath 下 `/completions` POST | 根据 stream 标记返回 ChatResponse 或 JSON SSE 流的 Promise                    |
+| `ChatClient.beforeExecute(exchange)`              | FetchExchange，由装饰器运行时调用                                           | void；request.body.stream 为真值时选择 CompletionStreamResultExtractor        |
 
-字面量 `stream: true` 返回流；`false` 或无 stream 属性返回 ChatResponse。boolean 或宽类型 ChatRequest 返回响应/流联合，因此调用处应保留字面量或收窄请求。方法没有用于请求选项的第二个参数。
+字面量 `stream: true` 返回流；`false` 或无 stream 属性返回 ChatResponse。boolean 或宽类型 ChatRequest 返回响应/流联合，因此调用处应保留字面量或收窄请求。可选的第二个参数是 `AbortSignal`：中止它会取消请求，流式时还会取消连接。除此之外没有单次调用的选项参数。
 
 ## 请求与结果类型
 
-`ChatRequest` 必填 model:string、messages:Message[]。可选字段 frequency_penalty、presence_penalty、temperature、top_p、max_tokens、n、seed 为数字；logit_bias 为 Record&lt;string, number&gt; 或 null；response_format 为 Record&lt;string, unknown&gt;；stop 为 string/string[]/null；stream 为 boolean；user 为 string；tools 和 tool_choice 见下文。这些字段直接转发，SDK 不设置供应商默认值，不校验范围或模型能力。
+`ChatRequest` 必填 model:string、messages:Message[]。可选字段 frequency_penalty、presence_penalty、temperature、top_p、max_tokens、n、seed 为数字；logit_bias 为 Record&lt;string, number&gt; 或 null；response_format 为 Record&lt;string, unknown&gt;；stop 为 string/string[]/null；stream 为 boolean；stream_options 为 `{ include_usage?: boolean }`；user 为 string；tools 和 tool_choice 见下文。这些字段直接转发，SDK 不设置供应商默认值，不校验范围或模型能力。
 
 `Message` 有可选 string content、role，并允许任意属性。`ChatToolFunction` 必填 name，可选 description、parameters:Record&lt;string, unknown&gt;。`ChatTool` 必填 type:'function' 和 function。`ChatToolChoice` 允许 'none'、'auto' 或 `{ type: 'function', function: { name } }`，此版本没有声明 'required' 字面量。
 
-`ChatResponse` 必填 choices:Choice[]、created:number、id:string、object:string、usage:Usage。`Choice` 含可选 finish_reason、index、message、delta。`Usage` 声明 completion_tokens、prompt_tokens、total_tokens。Response、Choice、Usage、Message 均允许附加属性。这些是 TypeScript 声明，不是 JSON 校验；供应商流 chunk 可能省略 usage，应只消费实际存在的字段。
+`ChatResponse` 必填 choices:Choice[]、created:number、id:string、object:string；usage?:Usage 可选。`Choice` 含可选 finish_reason、index、message、delta。`Usage` 声明 completion_tokens、prompt_tokens、total_tokens。Response、Choice、Usage、Message 均允许附加属性。这些是 TypeScript 声明，不是 JSON 校验；流式 chunk 不带 usage，只有请求设置 `stream_options: { include_usage: true }` 时最后一个 chunk 才带，应只消费实际存在的字段。
 
 ## 完整请求
 
@@ -64,7 +64,7 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 <span id="chatclient"></span>
 
-**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L78)
+**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L79)
 
 <span id="chatrequest"></span>
 
@@ -72,28 +72,28 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 <span id="chattoolfunction"></span>
 
-**`ChatToolFunction`** — [packages/openai/src/chat/types.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L99)
+**`ChatToolFunction`** — [packages/openai/src/chat/types.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L104)
 
 <span id="chattool"></span>
 
-**`ChatTool`** — [packages/openai/src/chat/types.ts:116](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L116)
+**`ChatTool`** — [packages/openai/src/chat/types.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L121)
 
 <span id="chattoolchoice"></span>
 
-**`ChatToolChoice`** — [packages/openai/src/chat/types.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L131)
+**`ChatToolChoice`** — [packages/openai/src/chat/types.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L136)
 
 <span id="message"></span>
 
-**`Message`** — [packages/openai/src/chat/types.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L136)
+**`Message`** — [packages/openai/src/chat/types.ts:139](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L139)
 
 <span id="chatresponse"></span>
 
-**`ChatResponse`** — [packages/openai/src/chat/types.ts:143](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L143)
+**`ChatResponse`** — [packages/openai/src/chat/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L146)
 
 <span id="choice"></span>
 
-**`Choice`** — [packages/openai/src/chat/types.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L153)
+**`Choice`** — [packages/openai/src/chat/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L160)
 
 <span id="usage"></span>
 
-**`Usage`** — [packages/openai/src/chat/types.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L166)
+**`Usage`** — [packages/openai/src/chat/types.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L173)

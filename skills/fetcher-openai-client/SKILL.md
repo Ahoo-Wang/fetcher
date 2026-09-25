@@ -9,7 +9,7 @@ description: >
 ## Decisions
 
 - **Entry point**: `new OpenAI({ baseURL, apiKey })` builds its own `Fetcher` with `Authorization: Bearer <apiKey>`. Both fields are required and there is no default URL; requests go to `${baseURL}/chat/completions`, so the base URL must include `/v1`. Use `new ChatClient({ fetcher })` directly when you already have a configured (e.g. named) fetcher.
-- **Streaming is chosen by the request**, not by an extractor: `chat.completions(req)` returns a `JsonServerSentEventStream<ChatResponse>` (already terminated by `DoneDetector`) when `stream: true`, otherwise a `ChatResponse`. A `stream` typed as plain `boolean` yields the union.
+- **Streaming is chosen by the request**, not by an extractor: `chat.completions(req, signal?)` returns a `JsonServerSentEventStream<ChatResponse>` (already terminated by `DoneDetector`) when `stream: true`, otherwise a `ChatResponse`. A `stream` typed as plain `boolean` yields the union.
 - **Non-chat endpoints** (embeddings, images, Azure `api-version`) are not covered; build them with `$fetcher-decorator-service` or `$fetcher-llm-streaming`.
 
 ## Gotchas a capable model gets wrong
@@ -17,7 +17,7 @@ description: >
 - `completions` is a method: `openai.chat.completions({...})`, not `openai.chat.completions.create(...)`.
 - Stream chunks: `event.data.choices[0]?.delta?.content`; non-streaming: `response.choices[0].message?.content`.
 - `openai.fetcher` is `readonly`; customize it through `openai.fetcher.interceptors.request.use({ name, order, intercept })` — `order` is required.
-- A non-2xx status rejects with `HttpStatusValidationError` (an `ExchangeError`; status at `error.exchange.response?.status`). Mid-stream failures surface from `for await` as `SyntaxError` or network errors — rethrow what you don't handle.
+- A non-2xx status rejects with `HttpStatusValidationError` (an `ExchangeError`; status at `error.exchange.response?.status`). Mid-stream failures surface from `for await` as `SyntaxError`, `EventStreamIncompleteError` (the stream ended before `[DONE]`) or network errors — rethrow what you don't handle.
 - `ChatRequest` and `Message` are a loose subset of the OpenAI schema with an index signature; don't assume every OpenAI field is typed.
 
 ## Minimal example

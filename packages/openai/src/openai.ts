@@ -84,9 +84,8 @@ export class OpenAI {
    * HTTP client with proper authentication and creating specialized sub-clients
    * for different API features.
    *
-   * @param options - Configuration options for the OpenAI client.
-   * @throws {Error} If the provided options are invalid or missing required fields.
-   * @throws {TypeError} If the apiKey or baseURL are not strings.
+   * @param options - Configuration options for the OpenAI client. They are not
+   *                  validated; a wrong key or URL surfaces on the first request.
    *
    * @example
    * ```typescript

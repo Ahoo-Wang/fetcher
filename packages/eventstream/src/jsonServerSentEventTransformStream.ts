@@ -13,6 +13,7 @@
 
 import { type ServerSentEvent } from './serverSentEventTransformStream.js';
 import type { ServerSentEventStream } from './eventStreamConverter.js';
+import { FetcherError } from '@ahoo-wang/fetcher';
 import { SafeTransformer } from './safeTransformer.js';
 
 /**
@@ -34,6 +35,20 @@ export interface JsonServerSentEvent<DATA> extends Omit<
 > {
   /** The parsed JSON data from the event */
   data: DATA;
+}
+
+/**
+ * The event stream ended without the terminating event its
+ * {@link TerminateDetector} recognizes, such as OpenAI's `data: [DONE]`: the
+ * connection was lost or the server stopped early, so the events read so far
+ * may be only part of the answer.
+ */
+export class EventStreamIncompleteError extends FetcherError {
+  constructor() {
+    super('The event stream ended before its terminating event');
+    this.name = 'EventStreamIncompleteError';
+    Object.setPrototypeOf(this, EventStreamIncompleteError.prototype);
+  }
 }
 
 /**
@@ -69,6 +84,17 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
       id: chunk.id,
       retry: chunk.retry,
     });
+  }
+
+  /**
+   * With a terminate detector, the terminating event is what marks the
+   * stream complete; ending without it errors the stream with an
+   * {@link EventStreamIncompleteError} instead of looking like a full answer.
+   */
+  protected onFlush(): void {
+    if (this.terminateDetector && !this.terminated) {
+      throw new EventStreamIncompleteError();
+    }
   }
 }
 

@@ -116,17 +116,48 @@ describe('ReadableStreamAsyncIterable', () => {
   });
 
   it('should handle throw method', async () => {
-    const stream = new ReadableStream({
+    let cancelReason: unknown;
+    const cancellable = new ReadableStream({
       start(controller) {
         controller.enqueue('test');
       },
+      cancel(reason) {
+        cancelReason = reason;
+      },
     });
 
-    const iterable = new ReadableStreamAsyncIterable(stream);
+    const iterable = new ReadableStreamAsyncIterable(cancellable);
     const iterator = iterable[Symbol.asyncIterator]();
+    const error = new Error('Test error');
 
-    const result = await iterator.throw!(new Error('Test error'));
-    expect(result).toEqual({ done: true, value: undefined });
+    // Rethrows, after cancelling the source with the error as the reason.
+    await expect(iterator.throw!(error)).rejects.toBe(error);
+    expect(cancelReason).toBe(error);
+    expect(iterable.locked).toBe(false);
+    await expect(iterator.next()).resolves.toEqual({
+      done: true,
+      value: undefined,
+    });
+  });
+
+  it('should cancel the source when a for-await loop breaks', async () => {
+    let cancelled = false;
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue('a');
+        controller.enqueue('b');
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+
+    for await (const value of new ReadableStreamAsyncIterable(stream)) {
+      void value;
+      break;
+    }
+
+    expect(cancelled).toBe(true);
   });
 
   it('should release lock when calling releaseLock method', () => {
@@ -235,9 +266,9 @@ describe('ReadableStreamAsyncIterable', () => {
     // Verify it's unlocked
     expect(iterable['locked']).toBe(false);
 
-    // Calling throw should still work
+    // Calling throw still rethrows, with nothing left to cancel
     const iterator = iterable[Symbol.asyncIterator]();
-    const result = await iterator.throw!(new Error('Test error'));
-    expect(result).toEqual({ done: true, value: undefined });
+    const error = new Error('Test error');
+    await expect(iterator.throw!(error)).rejects.toBe(error);
   });
 });

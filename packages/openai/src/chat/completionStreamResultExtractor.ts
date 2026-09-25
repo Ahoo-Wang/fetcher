@@ -52,37 +52,24 @@ export const DoneDetector: TerminateDetector = (event: ServerSentEvent) => {
  *
  * @param exchange - The fetch exchange containing the HTTP response from OpenAI's API
  * @returns A JSON server-sent event stream of ChatResponse objects that terminates on completion
- * @throws {EventStreamConvertError} If the response is not a valid event stream or has incorrect content type
+ * @throws {EventStreamConvertError} If the response is not a valid event stream or has incorrect content type.
+ *   The stream itself errors with EventStreamIncompleteError when it ends before `data: [DONE]`.
  *
  * @example
  * ```typescript
  * import { fetcher } from '@ahoo-wang/fetcher';
  * import { CompletionStreamResultExtractor } from '@ahoo-wang/fetcher-openai';
  *
- * const response = await fetcher.post('/chat/completions', {
- *   model: 'gpt-3.5-turbo',
- *   messages: [{ role: 'user', content: 'Hello!' }],
- *   stream: true
- * });
- *
- * const stream = CompletionStreamResultExtractor(response);
+ * const stream = await fetcher.post(
+ *   '/chat/completions',
+ *   { body: { model: 'gpt-4o-mini', messages, stream: true } },
+ *   { resultExtractor: CompletionStreamResultExtractor },
+ * );
  *
  * for await (const event of stream) {
  *   console.log('Received:', event.data);
- *   // Stream automatically terminates when '[DONE]' is received
+ *   // Ends at 'data: [DONE]'
  * }
- * ```
- *
- * @example
- * ```typescript
- * // Using with fetcher configuration
- * const fetcherWithExtractor = fetcher.extend({
- *   resultExtractor: CompletionStreamResultExtractor
- * });
- *
- * const stream = await fetcherWithExtractor.post('/chat/completions', {
- *   // ... request options
- * });
  * ```
  */
 export const CompletionStreamResultExtractor: ResultExtractor<

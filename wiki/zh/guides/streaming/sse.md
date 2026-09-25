@@ -99,7 +99,7 @@ void consumeEvents('/events', controller.signal, value => {
 
 ## 结果、错误与清理
 
-入口的 catch 同时处理最初 HTTP 获取失败和之后的 JSON／流读取失败；例如把某个 data 改为非法 JSON，应显示 Error。finally 在成功、失败或取消后终止本次控制器，清理用其 signal 注册的按钮与 pagehide 监听器，并禁用已结束的 Stop 按钮。页面离开也会主动 abort。不要在模块顶层 await 整段长流，否则静态导入它的入口会等待模块求值结束。
+入口的 catch 同时处理最初 HTTP 获取失败和之后的 JSON／流读取失败；例如把某个 data 改为非法 JSON，应显示 Error；服务端在 `[DONE]` 之前关闭流（`EventStreamIncompleteError`）也一样。finally 在成功、失败或取消后终止本次控制器，清理用其 signal 注册的按钮与 pagehide 监听器，并禁用已结束的 Stop 按钮。页面离开也会主动 abort。不要在模块顶层 await 整段长流，否则静态导入它的入口会等待模块求值结束。
 
 流停滞时检查服务端是否为每个事件发送了空行。不要对同一已消费 body 再次调用 eventStream。仅用内存 Response 检查 Hello/DONE 可以验证解析，但不能证明网络取消；取消检查需要让受控传输观察传入的 signal，并使等待中的读取结束。这里没有自动重连、去重或通用重试。
 

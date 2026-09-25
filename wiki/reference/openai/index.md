@@ -36,7 +36,7 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 ## Choose an entry point
 
-Use `OpenAI` when the SDK should create a Bearer-authenticated Fetcher; use `ChatClient({ fetcher })` to reuse an application proxy or an existing transport policy. Use `stream: false` (or omit it) for one JSON response and literal `stream: true` for SSE events. Use the underlying Fetcher plus `CompletionStreamResultExtractor` when per-call cancellation is required.
+Use `OpenAI` when the SDK should create a Bearer-authenticated Fetcher; use `ChatClient({ fetcher })` to reuse an application proxy or an existing transport policy. Use `stream: false` (or omit it) for one JSON response and literal `stream: true` for SSE events. For per-call cancellation pass an `AbortSignal` as the second argument of `completions`, or use the underlying Fetcher plus `CompletionStreamResultExtractor`.
 
 ## Topics
 

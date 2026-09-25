@@ -11,7 +11,7 @@ description: 'JSON 事件、Response 辅助方法与提取器 — @ahoo-wang/fet
 
 `toJsonServerSentEventStream<DATA>(stream: ServerSentEventStream, terminateDetector?): JsonServerSentEventStream<DATA>` 使用 `JsonServerSentEventTransformStream<DATA>` 转换 SSE 对象。它包装继承 `SafeTransformer` 的 `JsonServerSentEventTransform<DATA>`，两者构造参数都是可选 `TerminateDetector = (event: ServerSentEvent) => boolean`。
 
-检测器在 JSON.parse 前执行，返回 true 时终止且不输出该帧；否则解析 data，并把 event/id/retry 保留在 `JsonServerSentEvent<DATA>` 中。泛型不校验 JSON 结构。不提供检测器时，`[DONE]` 是无效 JSON，不是内置结束标记。JSON 无效或检测器抛错会使流失败，消费者 read/迭代拒绝。终止关闭可读侧，并通过 Web Streams 传播取消/错误到上游，不会重连。
+检测器在 JSON.parse 前执行，返回 true 时终止且不输出该帧；否则解析 data，并把 event/id/retry 保留在 `JsonServerSentEvent<DATA>` 中。泛型不校验 JSON 结构。不提供检测器时，`[DONE]` 是无效 JSON，不是内置结束标记。JSON 无效或检测器抛错会使流失败，消费者 read/迭代拒绝。有检测器时，输入在结束事件之前结束（连接中断或服务端提前停止）会以继承 FetcherError 的 `EventStreamIncompleteError` 使流失败；没有检测器时流在 EOF 正常结束。终止关闭可读侧，并通过 Web Streams 传播取消/错误到上游，不会重连。
 
 ## Response 扩展 {#response}
 
@@ -64,11 +64,12 @@ console.assert(chunks.join('') === 'hello');
 | <a id="eventstreamconverterror"></a>`EventStreamConvertError`                       | [eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)                               |
 | <a id="eventstreamresultextractor"></a>`EventStreamResultExtractor`                 | [eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)                   |
 | <a id="jsoneventstreamresultextractor"></a>`JsonEventStreamResultExtractor`         | [eventStreamResultExtractor.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L65)                   |
-| <a id="terminatedetector"></a>`TerminateDetector`                                   | [jsonServerSentEventTransformStream.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24)   |
-| <a id="jsonserversentevent"></a>`JsonServerSentEvent`                               | [jsonServerSentEventTransformStream.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31)   |
-| <a id="jsonserversenteventtransform"></a>`JsonServerSentEventTransform`             | [jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)   |
-| <a id="jsonserversenteventtransformstream"></a>`JsonServerSentEventTransformStream` | [jsonServerSentEventTransformStream.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81)   |
-| <a id="jsonserversenteventstream"></a>`JsonServerSentEventStream`                   | [jsonServerSentEventTransformStream.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L95)   |
-| <a id="tojsonserversenteventstream"></a>`toJsonServerSentEventStream`               | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
+| <a id="eventstreamincompleteerror"></a>`EventStreamIncompleteError`                 | [jsonServerSentEventTransformStream.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L46)   |
+| <a id="terminatedetector"></a>`TerminateDetector`                                   | [jsonServerSentEventTransformStream.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L25)   |
+| <a id="jsonserversentevent"></a>`JsonServerSentEvent`                               | [jsonServerSentEventTransformStream.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L32)   |
+| <a id="jsonserversenteventtransform"></a>`JsonServerSentEventTransform`             | [jsonServerSentEventTransformStream.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L62)   |
+| <a id="jsonserversenteventtransformstream"></a>`JsonServerSentEventTransformStream` | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
+| <a id="jsonserversenteventstream"></a>`JsonServerSentEventStream`                   | [jsonServerSentEventTransformStream.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L121) |
+| <a id="tojsonserversenteventstream"></a>`toJsonServerSentEventStream`               | [jsonServerSentEventTransformStream.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L133) |
 
 [包索引](./index.md)
