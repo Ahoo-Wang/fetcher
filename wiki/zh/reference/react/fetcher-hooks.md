@@ -21,7 +21,7 @@ description: 'Fetcher 请求 Hook — @ahoo-wang/fetcher-react 5.0.0'
 
 ## HTTP 取消与超时 {#http-cancellation}
 
-`useFetcher` 将执行器的 AbortController 放到请求上。使用普通 Fetcher 传输且未显式传 `signal` 时，该 controller 参与库的超时路径。显式请求 `signal` 在 Fetcher 中优先，并绕过内建超时，也可能绕过 Hook 用于 abort 的 controller。自行传 signal 时，应有意识地组合信号/超时。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
+`useFetcher` 将执行器的 AbortController 放到请求上。使用普通 Fetcher 传输时，该 controller、显式请求 `signal` 与库超时同时生效：先触发者中止请求。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
 
 选择结果泛型前先选提取器：`JsonResultExtractor` 解析 JSON，普通 Fetcher 默认值可能返回 exchange 或 Response。`R` 是提取后的值类型，`E` 是错误状态类型；两者不验证运行时载荷。[请求生命周期](../../architecture/request-lifecycle)解释 JSON 解析为何可能在 exchange 拦截结束后失败。
 

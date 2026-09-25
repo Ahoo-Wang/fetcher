@@ -32,7 +32,7 @@ try {
 
 ## 选择截止时间
 
-客户端 `timeout` 提供默认值，请求 `timeout` 覆盖它，单位均为毫秒。省略或设为零会关闭库计时器。传 `abortController` 可让主动取消与库计时器组合。若改传原生 `signal`，会直接走 fetch 路径，即使设置了 timeout 也跳过库计时器。
+客户端 `timeout` 提供默认值，请求 `timeout` 覆盖它，单位均为毫秒。省略或设为零会关闭库计时器。调用方的 `abortController` 或原生 `signal` 与库计时器组合：先触发者取消请求。库计时器从不取消你的控制器。
 
 若要限制请求和 body 消费的总时长，在两个 await 外共同持有信号和计时器：
 
@@ -47,10 +47,10 @@ try {
 }
 ```
 
-将此段放入应用异步函数，并在调用边界捕获拒绝。它替代库截止时间，而不是叠加库计时器。内建计时器在原生 fetch 返回响应时结束，不覆盖之后的 JSON 解码或整段 SSE 消费。
+将此段放入应用异步函数，并在调用边界捕获拒绝。若设置了库 `timeout`，它仍同时生效。内建计时器在原生 fetch 返回响应时结束，不覆盖之后的 JSON 解码或整段 SSE 消费。
 
 ## 观察失败并释放资源
 
-库超时表现为 `ExchangeError.cause` 中的 `FetchTimeoutError`；原生取消与后续 body 读取可能以其他形式抛错。取消是预期动作时检查自己持有的 signal，同时继续报告无关失败。检查结束后停止夹具。流消费者还应在 finally 中取消并释放 reader。传输观察到信号时取消才能停止客户端工作；它不会回滚服务端写入。
+库超时表现为 `ExchangeError.cause` 中的 `FetchTimeoutError`；调用方取消以该 signal 的 abort reason 拒绝，后续 body 读取可能以其他形式抛错。取消是预期动作时检查自己持有的 signal，同时继续报告无关失败。检查结束后停止夹具。流消费者还应在 finally 中取消并释放 reader。传输观察到信号时取消才能停止客户端工作；它不会回滚服务端写入。
 
 参阅[错误与取消参考](../../reference/fetcher/errors-and-cancellation.md)、[SSE 清理](../streaming/sse.md)与[失败模型](../../architecture/failure-model.md)。

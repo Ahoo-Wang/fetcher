@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { Fetcher } from './fetcher.js';
+import type { Fetcher } from './fetcher.js';
 import { fetcherRegistrar } from './fetcherRegistrar.js';
 
 /**
@@ -43,9 +43,10 @@ export function getFetcher(
     return defaultFetcher ?? fetcherRegistrar.default;
   }
 
-  // Return the fetcher directly if it's already a Fetcher instance,
-  // otherwise resolve it through the fetcher registrar
-  return fetcher instanceof Fetcher
-    ? fetcher
-    : fetcherRegistrar.requiredGet(fetcher);
+  // A name is resolved through the registrar; anything else is a fetcher.
+  // (Not `instanceof Fetcher`: a fetcher built by another copy of this
+  // package is a different class.)
+  return typeof fetcher === 'string'
+    ? fetcherRegistrar.requiredGet(fetcher)
+    : fetcher;
 }

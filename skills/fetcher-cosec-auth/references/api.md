@@ -435,7 +435,10 @@ fetcher.interceptors.request.use(
 Options: `tokenStorage` (required), `tenantId?` / `ownerId?` rename the
 placeholder keys (defaults `'tenantId'` / `'ownerId'`). A param is filled only
 when the placeholder appears in the URL template and the caller did not supply
-it; nothing happens without a stored token (expiry is not checked).
+it; nothing happens without a stored token (expiry is not checked), and the
+unfilled placeholder then fails URL resolution with `Missing required path
+parameter`. The param is written to the exchange's copy of `urlParams`, so a
+request object the caller reuses is not changed.
 
 ---
 

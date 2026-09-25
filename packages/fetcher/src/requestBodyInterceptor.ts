@@ -166,6 +166,9 @@ export class RequestBodyInterceptor implements RequestInterceptor {
     }
     // Check if it's a supported type
     if (this.isSupportedComplexBodyType(request.body)) {
+      if (this.isInstanceOfBodyType(request.body, 'ReadableStream')) {
+        request.duplex ??= 'half';
+      }
       return;
     }
 

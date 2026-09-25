@@ -15,18 +15,17 @@ description: 在失败实际发生的边界处理传输、HTTP、提取、Hook �
 | 错误拦截器自身抛错 | 从错误处理直接传播                                                       | 不假设所有拒绝都是 `ExchangeError`                |
 | SSE 读取/转换失败  | 异步迭代流期间                                                           | 处理部分输出并释放 reader                         |
 
-默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装与恢复见 [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)；提取见 [packages/fetcher/src/fetcher.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L234) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。仅在外层检查 `instanceof HttpStatusValidationError` 或 `FetchTimeoutError` 会遗漏包装后的原因；应检查 `ExchangeError` 上下文/cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
+默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装与恢复见 [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)；提取见 [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。仅在外层检查 `instanceof HttpStatusValidationError` 或 `FetchTimeoutError` 会遗漏包装后的原因；应检查 `ExchangeError` 上下文/cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
 
 ## 超时与取消是不同控制
 
-| 请求选项                                      | 传输行为                               | 谁管理截止时间                                  |
-| --------------------------------------------- | -------------------------------------- | ----------------------------------------------- |
-| 提供 `signal`                                 | 直接传入原生 Fetch，跳过库超时         | 调用方组合取消与所需超时                        |
-| 无 `signal`，提供 `abortController`，开启超时 | 库使用该 controller 并增加 timer       | Fetch 结束后库清理 timer；调用方拥有 controller |
-| 无 `signal` 和 controller，开启超时           | 库创建 controller 和 timer             | 库清理 timer 和临时请求字段                     |
-| 无 `signal`，关闭超时                         | 原生 Fetch，若提供 controller 则使用它 | 调用方                                          |
+| 请求选项                                     | 传输行为                                                      | 谁管理截止时间                                              |
+| -------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| 提供 `signal` 或 `abortController`，开启超时 | 库把它们与 timer 组合，先触发者取消 Fetch                     | Fetch 结束后库清理 timer；timer 从不取消调用方的 controller |
+| 两者都未提供，开启超时                       | 库用自己的 timer 取消 Fetch                                   | 库清理 timer；不写入请求对象                                |
+| 关闭超时                                     | 原生 Fetch，若提供 `signal` 或 `abortController` 则由它们取消 | 调用方                                                      |
 
-优先级实现见 [packages/fetcher/src/timeout.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L125)。timer 在 Fetch 竞争结束时清除，不等待后续 `response.json()` 或整个 SSE 流完成。同时提供 `signal` 与 `timeout` 不会组合截止时间。需要完整操作截止时间时，应自行管理 signal 和完整消费生命周期。步骤见[取消指南](../guides/http/cancellation.md)。
+组合实现见 [packages/fetcher/src/timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)。timer 在 Fetch 竞争结束时清除，不等待后续 `response.json()` 或整个 SSE 流完成。超时以 `FetchTimeoutError` 拒绝；调用方取消以调用方的 abort reason 拒绝。需要完整操作截止时间时，应自行管理 signal 和完整消费生命周期。步骤见[取消指南](../guides/http/cancellation.md)。
 
 取消不会回滚服务端已接收的写操作。超时或丢失响应后重试前，应依据端点的幂等与结果核对契约。
 

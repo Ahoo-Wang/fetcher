@@ -34,7 +34,7 @@ The replacement method receives only the actual argument list; default parameter
 
 ## Cancellation and inherited metadata {#cancellation}
 
-An `AbortSignal` or `AbortController` argument is recognized before decorator metadata, even without a decorator. If multiple are supplied the last of each kind wins; a request parameter can override them. A signal bypasses the Fetcher timeout as described in [cancellation](../fetcher/errors-and-cancellation.md).
+An `AbortSignal` or `AbortController` argument is recognized before decorator metadata, even without a decorator. If multiple are supplied the last of each kind wins; a request parameter can override them. A signal or controller applies together with the Fetcher timeout, whichever fires first, as described in [cancellation](../fetcher/errors-and-cancellation.md).
 
 Parameter metadata uses copy-on-write when inherited, so decorating an override does not mutate the parent's Map. Class binding walks inherited string-named methods. Symbol-named methods and static methods are not part of that binding traversal. Keep explicit parameter names on inherited/overridden endpoints too.
 

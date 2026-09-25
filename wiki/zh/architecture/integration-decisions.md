@@ -16,7 +16,7 @@ description: 按契约与维护责任比较客户端风格和服务集成。
 | 装饰器服务     | 稳定方法适合集中声明服务      | metadata/编译器配置、参数注解、端点准确性         | 不希望引入装饰器配置，或 API 主要是临时调用 |
 | 生成式服务     | 实际维护的契约是 OpenAPI 文档 | 生成命令/配置、审查和编译产物、规范变化后重新生成 | 规范缺失或不准确；文档没有表达服务语义      |
 
-它们共享运行请求边界：核心实现请求/提取（[packages/fetcher/src/fetcher.ts:230](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L230)），装饰器有 metadata 运行依赖（[packages/decorator/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L58)），5.x 的生成器是 CLI（[packages/generator/src/cli.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/cli.ts#L8)）。OpenAPI 导出类型定义（[packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21)）。注解和生成类型都不会在运行时验证响应，也不会补全缺失的服务端语义。
+它们共享运行请求边界：核心实现请求/提取（[packages/fetcher/src/fetcher.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L236)），装饰器有 metadata 运行依赖（[packages/decorator/package.json:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L58)），5.x 的生成器是 CLI（[packages/generator/src/cli.ts:8](https://github.com/Ahoo-Wang/fetcher/blob/5.x/packages/generator/src/cli.ts#L8)）。OpenAPI 导出类型定义（[packages/openapi/src/index.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L21)）。注解和生成类型都不会在运行时验证响应，也不会补全缺失的服务端语义。
 
 从 [HTTP 请求](../guides/http/requests.md)开始，再使用[声明式客户端](../guides/services/declarative-client.md)或[生成式客户端](../guides/services/generated-client.md)中的已验证工作流。配置细节见[装饰器参考](../reference/decorator/index.md)和[生成器参考](../reference/generator/index.md)。生成器属于 5.x 线；从 6.0 起它位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)。[peer 图](./package-boundaries.md)应与预期执行代码分别检查。
 

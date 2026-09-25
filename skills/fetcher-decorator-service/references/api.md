@@ -159,7 +159,7 @@ batchOperation(@request() request: ParameterRequest): Promise<Response> { throw 
 
 ### 4. AbortSignal / AbortController Auto-Detection
 
-If a method argument is an `AbortSignal` or `AbortController`, it is automatically used for request cancellation -- no decorator needed. Passing an `AbortSignal` disables the fetcher timeout for that call (core `timeoutFetch` hands a caller `signal` straight to `fetch`); pass an `AbortController` to keep both cancellation and timeout.
+If a method argument is an `AbortSignal` or `AbortController`, it is automatically used for request cancellation -- no decorator needed. Either one applies together with the fetcher timeout: core `timeoutFetch` combines the caller's signal or controller with its timer, and whichever fires first aborts the call.
 
 ```text
 @get('/{id}')

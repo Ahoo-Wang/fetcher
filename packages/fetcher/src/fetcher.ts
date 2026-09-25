@@ -125,7 +125,7 @@ export class Fetcher
   implements UrlBuilderCapable, RequestHeadersCapable, TimeoutCapable
 {
   urlBuilder: UrlBuilder;
-  headers?: RequestHeaders = DEFAULT_HEADERS;
+  headers?: RequestHeaders;
   timeout?: number;
   readonly interceptors: InterceptorManager;
 
@@ -144,7 +144,8 @@ export class Fetcher
    */
   constructor(options: FetcherOptions = DEFAULT_OPTIONS) {
     this.urlBuilder = new UrlBuilder(options.baseURL, options.urlTemplateStyle);
-    this.headers = options.headers ?? DEFAULT_HEADERS;
+    // Each instance owns its headers: mutating one never reaches another.
+    this.headers = mergeHeaders(options.headers ?? DEFAULT_HEADERS);
     this.timeout = options.timeout;
     this.interceptors =
       options.interceptors ?? new InterceptorManager(options.validateStatus);
@@ -171,12 +172,17 @@ export class Fetcher
    *           be called directly by external consumers.
    */
   resolveExchange(request: FetchRequest, options?: RequestOptions) {
-    // Merge default headers and request-level headers. defensive copy
+    // The exchange owns copies of everything interceptors may write to, so
+    // the caller's request (often reused across calls) is never changed.
     const mergedHeaders = mergeHeaders(this.headers, request.headers);
-    // Merge request options
+    const urlParams = request.urlParams && {
+      path: request.urlParams.path && { ...request.urlParams.path },
+      query: request.urlParams.query && { ...request.urlParams.query },
+    };
     const fetchRequest: FetchRequest = {
       ...request,
       headers: mergedHeaders,
+      urlParams,
       timeout: resolveTimeout(request.timeout, this.timeout),
     };
     const { resultExtractor, attributes } = mergeRequestOptions(

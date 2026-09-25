@@ -140,27 +140,39 @@ export interface UrlTemplateResolver {
 }
 
 /**
+ * The text a path or query parameter value stands for in a URL: a `Date` as
+ * its ISO 8601 form, anything else as `String(value)`.
+ *
+ * Absent values (`undefined`, `null`) have no text; callers decide what an
+ * absent value means (a missing path parameter, an omitted query parameter).
+ */
+export function formatUrlParam(value: unknown): string {
+  return value instanceof Date ? value.toISOString() : String(value);
+}
+
+/**
  * Replaces placeholders in a URL template with actual parameter values.
+ *
+ * Every placeholder must have a value: a template sent with its placeholder
+ * still in it is never what the caller meant.
  *
  * @param urlTemplate - The URL template string containing parameter placeholders
  * @param pathParamRegex - Regular expression to match parameter placeholders
  * @param pathParams - Object containing parameter values to replace placeholders
  * @returns The URL with placeholders replaced by actual values
- * @throws Error when required path parameters are missing
+ * @throws Error when a placeholder has no value (`undefined` or `null`, or no `pathParams` at all)
  */
 export function urlTemplateRegexResolve(
   urlTemplate: string,
   pathParamRegex: RegExp,
   pathParams?: Record<string, any> | null,
 ) {
-  if (!pathParams) return urlTemplate;
   return urlTemplate.replace(pathParamRegex, (_, key) => {
-    const value = pathParams[key];
-    // If path parameter is undefined, throw an error instead of preserving the placeholder
-    if (value === undefined) {
+    const value = pathParams?.[key];
+    if (value === undefined || value === null) {
       throw new Error(`Missing required path parameter: ${key}`);
     }
-    return encodeURIComponent(value);
+    return encodeURIComponent(formatUrlParam(value));
   });
 }
 
@@ -320,9 +332,11 @@ export class ExpressUrlTemplateResolver implements UrlTemplateResolver {
    * The lookbehind restricts matches to parameter placeholders that start a
    * path segment (at the beginning of the template or right after `/`), so
    * colons belonging to the URL itself — the scheme (`http:`) or an authority
-   * port (`host:8080`) — are never mistaken for parameters.
+   * port (`host:8080`) — are never mistaken for parameters. A name is an
+   * identifier, as in Express, so `/files/:name.json` and `/users/:id?x=1`
+   * keep their suffix.
    */
-  private static PATH_PARAM_REGEX = /(?<=^|\/):([^/]+)/g;
+  private static PATH_PARAM_REGEX = /(?<=^|\/):([A-Za-z_$][\w$]*)/g;
 
   /**
    * Extracts path parameters from an Express-style URL string.

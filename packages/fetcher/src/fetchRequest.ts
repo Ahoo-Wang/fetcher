@@ -168,6 +168,13 @@ export interface FetchRequestInit<
    * ```
    */
   abortController?: AbortController;
+
+  /**
+   * Request body streaming mode. Fetch requires `'half'` when the body is a
+   * `ReadableStream`; the {@link RequestBodyInterceptor} sets it for such
+   * bodies, so it rarely needs to be given.
+   */
+  duplex?: 'half';
 }
 
 /**

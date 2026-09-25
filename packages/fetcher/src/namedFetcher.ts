@@ -85,5 +85,12 @@ export class NamedFetcher extends Fetcher implements NamedCapable {
  * defaultFetcher.get('/users')
  *   .then(response => response.json())
  *   .then(data => console.log(data));
+ *
+ * @remarks
+ * A second copy of this package in the same process (see
+ * {@link fetcherRegistrar}) reuses the default fetcher the first copy
+ * registered instead of replacing it, so its configuration is kept.
  */
-export const fetcher = new NamedFetcher(DEFAULT_FETCHER_NAME);
+export const fetcher: NamedFetcher =
+  (fetcherRegistrar.get(DEFAULT_FETCHER_NAME) as NamedFetcher | undefined) ??
+  new NamedFetcher(DEFAULT_FETCHER_NAME);
