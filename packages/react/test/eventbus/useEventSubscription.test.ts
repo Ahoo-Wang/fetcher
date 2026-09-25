@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, type Mocked } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useEventSubscription } from '../../src/eventbus/useEventSubscription';
 import type { TypedEventBus, EventHandler } from '@ahoo-wang/fetcher-eventbus';
+import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 describe('useEventSubscription', () => {
   let mockBus: any;
@@ -191,6 +192,7 @@ describe('useEventSubscription', () => {
   });
 
   it('should handle unsubscription failure gracefully', () => {
+    mockBus.on.mockReturnValue(true);
     mockBus.off.mockReturnValue(false);
 
     const { result, unmount } = renderHook(() =>
@@ -206,5 +208,30 @@ describe('useEventSubscription', () => {
 
     // Should not throw, just return false
     expect(mockBus.off).toHaveBeenCalledWith('testHandler');
+  });
+});
+
+describe('useEventSubscription with a name already taken', () => {
+  it('leaves the other subscription in place on unmount', () => {
+    const bus = new SerialTypedEventBus<string>('shared-name');
+    const received: string[] = [];
+    const first = {
+      name: 'myEvent',
+      handle: (e: string) => void received.push(`first:${e}`),
+    };
+    const second = {
+      name: 'myEvent',
+      handle: (e: string) => void received.push(`second:${e}`),
+    };
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    renderHook(() => useEventSubscription({ bus, handler: first }));
+    const { unmount } = renderHook(() =>
+      useEventSubscription({ bus, handler: second }),
+    );
+    unmount();
+
+    void bus.emit('ping');
+    expect(received).toEqual(['first:ping']);
   });
 });

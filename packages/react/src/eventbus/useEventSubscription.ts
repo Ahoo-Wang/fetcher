@@ -107,6 +107,8 @@ export function useEventSubscription<EVENT = unknown>(
       console.warn(
         `Failed to subscribe to event bus with handler: ${handler.name}`,
       );
+      // The name belongs to another subscription: leave it on unmount.
+      return;
     }
     return () => {
       bus.off(handler.name);

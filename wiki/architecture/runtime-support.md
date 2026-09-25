@@ -25,7 +25,7 @@ A client can be reused for stable service defaults, but its `headers`, `timeout`
 
 ## Scope React state to one user
 
-React hooks keep their state inside the mounted component; they do not cache responses across components or requests. On a server, a hook that renders during SSR still uses whatever client and storage it is given, so the identity rules above apply to the clients you pass in. Remounting a subtree when the tenant or user changes separates UI state; the server must still enforce access control. A particular SSR framework still needs import, render, and hydration validation; this chapter does not certify all frameworks.
+React hooks keep their state inside the mounted component; they do not cache responses across components or requests. On a server, a hook that renders during SSR still uses whatever client and storage it is given, so the identity rules above apply to the clients you pass in. `useKeyStorage` (and so `useSecurity` and `SecurityProvider`) does not read storage on the server: it renders its default there and during hydration, then the stored value, so the hydrated HTML matches the server's. Remounting a subtree when the tenant or user changes separates UI state; the server must still enforce access control. A particular SSR framework still needs import, render, and hydration validation; this chapter does not certify all frameworks.
 
 The 5.x Viewer (`@ahoo-wang/fetcher-viewer`) reads `window` during render and must be mounted behind a client-only boundary; see the 5.x [Viewer guides](../guides/viewer/index.md).
 

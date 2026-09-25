@@ -138,13 +138,15 @@ export function useKeyStorage<T>(
   // This function is called by useSyncExternalStore to get the current value
   const getSnapshot = useCallback((): T | null => {
     const storedValue = keyStorage.get();
-    const current =
-      storedValue !== null ? storedValue : (defaultValue ?? null);
+    const current = storedValue !== null ? storedValue : (defaultValue ?? null);
 
     // First call, or a genuine content change: adopt the new reference.
     // dequal also handles primitives (via ===), so the cached branch below is
     // safe for all value types.
-    if (snapshotRef.current === undefined || !dequal(current, snapshotRef.current)) {
+    if (
+      snapshotRef.current === undefined ||
+      !dequal(current, snapshotRef.current)
+    ) {
       snapshotRef.current = current;
     }
     // Return the (possibly cached, stable) reference.
@@ -153,7 +155,21 @@ export function useKeyStorage<T>(
 
   // Use React's useSyncExternalStore for reactive external store connection
   // This ensures proper subscription management and SSR compatibility
-  const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  // The server has no browser storage: it renders the default, so hydration
+  // must start from the same value; the stored value follows right after.
+  const serverSnapshotRef = useRef<T | null | undefined>(undefined);
+  const getServerSnapshot = useCallback((): T | null => {
+    const current = defaultValue ?? null;
+    if (
+      serverSnapshotRef.current === undefined ||
+      !dequal(current, serverSnapshotRef.current)
+    ) {
+      serverSnapshotRef.current = current;
+    }
+    return serverSnapshotRef.current as T | null;
+  }, [defaultValue]);
+
+  const value = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   // Create stable setter function reference
   // This function updates the storage and triggers re-renders in subscribed components

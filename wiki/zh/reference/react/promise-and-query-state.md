@@ -23,11 +23,11 @@ supplier 必须把 signal 传给 I/O 才能停止实际工作；即使忽略取�
 
 ## 查询所有权
 
-`useQuery<Q,R,E>` 增加 `initialQuery`、`query`、`attributes`、`autoExecute`、`getQuery()`、`setQuery(Q)`；执行器接收 `(query, attributes, abortController)`。`autoExecute` 默认为 true。初始化时 `query` 和 `initialQuery` 均为 undefined 才没有查询可执行；`isValidateQuery` 只检查 `query !== undefined`，不进行 schema 校验。`query` 覆盖初始化；内容深相等而仅引用变化不会重新查询，执行配置变化则可能触发。`initialQuery` 只用于初始化，不是响应式替换参数。
+`useQuery<Q,R,E>` 增加 `initialQuery`、`query`、`attributes`、`autoExecute`、`getQuery()`、`setQuery(Q)`；执行器接收 `(query, attributes, abortController)`。`autoExecute` 默认为 true。初始化时 `query` 和 `initialQuery` 均为 undefined 才没有查询可执行；`isValidateQuery` 只检查 `query !== undefined`，不进行 schema 校验。`query` 覆盖初始化；内容深相等而仅引用变化不会重新查询。开启 `autoExecute` 会再次执行；仅 `execute` 函数变化不会触发，下次执行时使用最新的函数。`initialQuery` 只用于初始化，不是响应式替换参数。
 
 将已定义的 `query` 属性改为 `undefined` 不会清空保存的查询，还可能再次自动执行旧值。暂停自动执行应设置 `autoExecute: false`，但这不会取消已经运行的操作；需要作废并取消当前执行时，另外调用 `abort()`。
 
-`setQuery` 更新 ref，启用自动执行时立即执行；它本身不是 React 状态通知，也不会去重显式 setter 调用。`autoExecute: false` 时可先 `setQuery` 再 `execute()`。自动执行不会等待调用者 catch，因此无人等待的请求应通过错误状态/onError 处理，而不要设 `propagateError: true`。`useQueryState` 只提供查询 ref 行为，不负责取消；应保持其 `execute` 回调稳定。
+`setQuery` 更新 ref，启用自动执行时立即执行；它本身不是 React 状态通知，也不会去重显式 setter 调用。`autoExecute: false` 时可先 `setQuery` 再 `execute()`。自动执行不会等待调用者 catch，因此无人等待的请求应通过错误状态/onError 处理，而不要设 `propagateError: true`。`useQueryState` 只提供查询 ref 行为，不负责取消；其 `execute` 可以内联：查询内容变化或 `autoExecute` 开启时重新执行，仅 `execute` 变化不会，且总是调用最新的 `execute`。
 
 ## 选择状态、执行与查询所有权 {#ownership}
 
@@ -230,7 +230,7 @@ export interface QueryOptions<Q> {
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18)
+[packages/react/src/core/useQueryState.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L19)
 
 ### UseQueryOptions {#api-UseQueryOptions}
 
@@ -272,7 +272,7 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q>;
 ```
 
-[packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113)
+[packages/react/src/core/useQueryState.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L114)
 
 ### isValidateQuery {#api-isValidateQuery}
 
@@ -280,7 +280,7 @@ export function useQueryState<Q>(
 export function isValidateQuery<Q>(query: Q | undefined): query is Q;
 ```
 
-[packages/react/src/core/useQueryState.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L195)
+[packages/react/src/core/useQueryState.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L200)
 
 ### UseQueryStateOptions {#api-UseQueryStateOptions}
 
@@ -291,7 +291,7 @@ export interface UseQueryStateOptions<Q>
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L29)
+[packages/react/src/core/useQueryState.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L30)
 
 ### UseQueryStateReturn {#api-UseQueryStateReturn}
 
@@ -302,7 +302,7 @@ export interface UseQueryStateReturn<Q> {
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L39)
+[packages/react/src/core/useQueryState.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L40)
 
 ## 相关专题
 

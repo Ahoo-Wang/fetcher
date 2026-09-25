@@ -9,7 +9,7 @@ description: 'ref、请求 ID 与全屏 — @ahoo-wang/fetcher-react'
 
 | API                | 返回与生命周期                                                                                                        |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| useLatest(value)   | 每次 render 更新 RefObject，不触发重渲染。                                                                            |
+| useLatest(value)   | 每次 render 提交后（insertion effect）更新 RefObject；render 中读取得到上次提交的值。不触发重渲染。                   |
 | useMounted()       | 返回稳定函数，报告 effect 挂载状态；挂载前/清理后为 false。                                                           |
 | useForceUpdate()   | 通过 reducer 递增强制重渲染的回调。                                                                                   |
 | useRequestId()     | 计数器从 0 开始；generate/invalidate 递增、current 读取、isLatest 比较、reset 归零，本身不取消操作。                  |
@@ -17,7 +17,7 @@ description: 'ref、请求 ID 与全屏 — @ahoo-wang/fetcher-react'
 
 ## 全屏
 
-`useFullscreen({ target? } = {})` 返回 fullscreen/getTarget/enter/exit/toggle。目标优先级为动态传入元素、target.current、document.documentElement。null 清除动态覆盖，undefined 保留。`FullscreenProvider` 未传 target 时创建 div 包装；`useFullscreenContext()` 在外部返回 undefined。Hook 监听 document 全屏事件并在清理时解绑，但卸载不自动退出全屏。DOM 工具需要浏览器及原生全屏权限/用户激活。不支持的进入/退出 API 会抛错，enter/exit/toggle 返回可能拒绝的 Promise&lt;void&gt;。手动 addFullscreenChangeListener 必须用相同回调配对 removeFullscreenChangeListener。
+`useFullscreen({ target? } = {})` 返回 fullscreen/getTarget/enter/exit/toggle。目标优先级为动态传入元素、target.current、document.documentElement。null 清除动态覆盖，undefined 保留。全屏结束时也会丢弃动态覆盖，重新使用配置的目标。`FullscreenProvider` 未传 target 时创建 div 包装；`useFullscreenContext()` 在外部返回 undefined。Hook 监听 document 全屏事件并在清理时解绑，但卸载不自动退出全屏。DOM 工具需要浏览器及原生全屏权限/用户激活。不支持的进入/退出 API 会抛错，enter/exit/toggle 返回可能拒绝的 Promise&lt;void&gt;。手动 addFullscreenChangeListener 必须用相同回调配对 removeFullscreenChangeListener。
 
 ## 完整示例
 

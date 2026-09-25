@@ -13,10 +13,10 @@ description: 'Security hooks and route guards — @ahoo-wang/fetcher-react 5.0.0
 | `signIn(tokenOrAsyncProvider)`            | Await provider if supplied, store token, invoke onSignIn. Returns Promise&lt;void&gt;; provider/storage/callback failures propagate.                                                    |
 | `signOut()`                               | Remove token and invoke onSignOut; synchronous exceptions propagate.                                                                                                                    |
 | `useSecurityContext()`                    | Returns context; throws outside SecurityProvider.                                                                                                                                       |
-| `RouteGuard`                              | Authenticated: children. Otherwise calls onUnauthorized and returns fallback (omitted renders nothing).                                                                                 |
+| `RouteGuard`                              | Authenticated: children. Otherwise returns fallback (omitted renders nothing) and calls onUnauthorized after commit.                                                                    |
 | `RefreshableRouteGuard`                   | Requires tokenManager. Refreshes when isRefreshNeeded and isRefreshable; authenticated children win, otherwise refreshing node or fallback. Default refreshing text is `Refreshing...`. |
 
-`RouteGuard.onUnauthorized` runs during render and can run repeatedly; it is not an effect-based navigation callback. Avoid setting unrelated React state or sending requests from it. `RefreshableRouteGuard` logs refresh errors; it does not expose a local error state or cancel the token manager on unmount. The manager and storage remain application-owned. Context updates follow storage subscriptions, not an independent timer that recomputes authentication every second. Switching tokenStorage changes subscription and action targets; callbacks read latest options.
+`RouteGuard.onUnauthorized` runs in an effect after the render commits, once each time `authenticated` becomes (or starts out) false, so it can call `navigate()`; StrictMode in development may run it twice, as it does any effect. The latest callback is used; changing it alone does not call it again. `RefreshableRouteGuard` logs refresh errors; it does not expose a local error state or cancel the token manager on unmount. The manager and storage remain application-owned. Context updates follow storage subscriptions, not an independent timer that recomputes authentication every second. Switching tokenStorage changes subscription and action targets; callbacks read latest options.
 
 ## Complete example
 
@@ -172,7 +172,7 @@ export function RouteGuard(
 
 :::
 
-[packages/react/src/cosec/RouteGuard.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L66)
+[packages/react/src/cosec/RouteGuard.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L69)
 
 ### RouteGuardProps {#api-RouteGuardProps}
 
@@ -184,7 +184,7 @@ export interface RouteGuardProps {
 }
 ```
 
-[packages/react/src/cosec/RouteGuard.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L20)
+[packages/react/src/cosec/RouteGuard.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L21)
 
 ### RefreshableRouteGuard {#api-RefreshableRouteGuard}
 

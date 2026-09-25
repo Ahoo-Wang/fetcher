@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { dequal } from 'dequal';
 import type { AutoExecuteCapable } from '../types.js';
+import { useLatest } from './useLatest.js';
 
 export interface QueryOptions<Q> {
   /** The initial query parameters to be stored and managed */
@@ -135,12 +136,16 @@ function useQueryStateInternal<Q>(
     return queryRef.current;
   }, []);
 
+  // The latest execute, not a dependency: an inline execute is a new function
+  // every render, and re-running on each one loops when it sets state.
+  const latestExecute = useLatest(execute);
+
   const executeWrapper = useCallback(() => {
     const currentQuery = getQuery();
     if (autoExecute && isValidateQuery(currentQuery)) {
-      execute(currentQuery);
+      latestExecute.current(currentQuery);
     }
-  }, [autoExecute, execute, getQuery]);
+  }, [autoExecute, latestExecute, getQuery]);
   const setQuery = useCallback(
     (query: Q) => {
       queryRef.current = query;

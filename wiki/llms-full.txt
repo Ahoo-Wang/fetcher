@@ -2164,7 +2164,7 @@ A client can be reused for stable service defaults, but its `headers`, `timeout`
 
 ## Scope React state to one user
 
-React hooks keep their state inside the mounted component; they do not cache responses across components or requests. On a server, a hook that renders during SSR still uses whatever client and storage it is given, so the identity rules above apply to the clients you pass in. Remounting a subtree when the tenant or user changes separates UI state; the server must still enforce access control. A particular SSR framework still needs import, render, and hydration validation; this chapter does not certify all frameworks.
+React hooks keep their state inside the mounted component; they do not cache responses across components or requests. On a server, a hook that renders during SSR still uses whatever client and storage it is given, so the identity rules above apply to the clients you pass in. `useKeyStorage` (and so `useSecurity` and `SecurityProvider`) does not read storage on the server: it renders its default there and during hydration, then the stored value, so the hydrated HTML matches the server's. Remounting a subtree when the tenant or user changes separates UI state; the server must still enforce access control. A particular SSR framework still needs import, render, and hydration validation; this chapter does not certify all frameworks.
 
 The 5.x Viewer (`@ahoo-wang/fetcher-viewer`) reads `window` during render and must be mounted behind a client-only boundary; see the 5.x [Viewer guides](../guides/viewer/index.md).
 
@@ -2247,13 +2247,13 @@ flowchart LR
   classDef default fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
 
-| State or resource                  | Owner and update path                                                   | Cleanup or limit                                                                                                 |
-| ---------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Hook `loading/result/error/status` | `useExecutePromise` commits only the latest request while mounted       | New execution aborts the previous controller; unmount aborts; executor must use the controller to stop real work |
-| Hook exchange                      | `useFetcher` retains exchange and selects explicit or registered client | Shared client state has its own lifetime                                                                         |
-| Query input                        | `useQuery` / `useFetcherQuery` hold the query and re-execute on change  | The Hook does not cache responses across components; share data through your own state or service                |
-| Debounce timer                     | Debounced Hooks own their timer                                         | Timer `cancel()` and active request `abort()` are separate                                                       |
-| Rows, totals and view preferences  | The application and its service                                         | Filtering, sorting, pagination and persistence are application decisions                                         |
+| State or resource                  | Owner and update path                                                                                  | Cleanup or limit                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Hook `loading/result/error/status` | `useExecutePromise` commits only the latest request while mounted                                      | New execution aborts the previous controller; unmount aborts; executor must use the controller to stop real work |
+| Hook exchange                      | `useFetcher` retains exchange (cleared when a request fails) and selects explicit or registered client | Shared client state has its own lifetime                                                                         |
+| Query input                        | `useQuery` / `useFetcherQuery` hold the query and re-execute on change                                 | The Hook does not cache responses across components; share data through your own state or service                |
+| Debounce timer                     | Debounced Hooks own their timer                                                                        | Timer `cancel()` and active request `abort()` are separate                                                       |
+| Rows, totals and view preferences  | The application and its service                                                                        | Filtering, sorting, pagination and persistence are application decisions                                         |
 
 Hook behavior: [packages/react/src/core/useExecutePromise.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L210), [packages/react/src/core/useExecutePromise.ts:320](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L320), and [packages/react/src/fetcher/useFetcher.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L162). `reset()` only sets idle state; it does not abort or invalidate an active execution ([packages/react/src/core/useExecutePromise.ts:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L309)).
 
@@ -2263,11 +2263,11 @@ Stale-result protection keeps an old response from overwriting newer UI state. I
 
 Remount the subtree that owns request state when the tenant or user changes, so no Hook result crosses identities. Scope storage keys and event buses to the same identity.
 
-| Resource                 | What disposal does                                                      | What its creator still owns                                                                                        |
-| ------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| React event subscription | Effect cleanup removes that subscription                                | Shared bus lifetime                                                                                                |
-| KeyStorage               | `destroy()` removes its own event handler and closes the bus it created | Persistent data and any event bus passed in `eventBus`; default serial bus is local, not cross-tab synchronization |
-| BroadcastTypedEventBus   | `destroy()` closes its messenger                                        | Appropriate lifetime of shared users before closing it                                                             |
+| Resource                 | What disposal does                                                                                   | What its creator still owns                                                                                        |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| React event subscription | Effect cleanup removes the subscription it made, never another subscriber's handler of the same name | Shared bus lifetime                                                                                                |
+| KeyStorage               | `destroy()` removes its own event handler and closes the bus it created                              | Persistent data and any event bus passed in `eventBus`; default serial bus is local, not cross-tab synchronization |
+| BroadcastTypedEventBus   | `destroy()` closes its messenger                                                                     | Appropriate lifetime of shared users before closing it                                                             |
 
 See [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94), [packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242), [packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527), and [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236). Follow [React cleanup](../guides/react/cleanup.md), [storage and events](../guides/integrations/storage-and-events.md), and [SSR scope](./runtime-support.md).
 
@@ -7403,11 +7403,11 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 
 Create a new request object for each call; do not share a mutable request between hook instances. Fetcher registration is resolved during render, so a missing named registration fails there. `useFetcher` does not default to JSON independently of the selected Fetcher/options: select the extractor explicitly when you need typed JSON. HTTP status, timeout and extraction failures follow the selected Fetcher's interceptor pipeline.
 
-`useFetcherQuery`'s declared return extends the exchange-capable type, but the current implementation does not include `exchange` in its returned object. Use `useFetcher` directly when inspecting exchanges. `reset()` clears exchange/state; it does not cancel pending work. `abort()` clears exchange, invalidates the local request ID and aborts the executor. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state). Changing `url` or other options updates what the next execution reads; it is not itself a promise that a new request is triggered.
+`useFetcherQuery`'s declared return extends the exchange-capable type, but the current implementation does not include `exchange` in its returned object. Use `useFetcher` directly when inspecting exchanges. A failed request clears `exchange` (undefined) instead of keeping the previous request's. `reset()` clears exchange/state; it does not cancel pending work. `abort()` clears exchange, invalidates the local request ID and aborts the executor. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state). Changing `url` or other options updates what the next execution reads; it is not itself a promise that a new request is triggered.
 
 ## HTTP cancellation and timeout {#http-cancellation}
 
-`useFetcher` assigns the executor's AbortController to the request. With the normal Fetcher transport, that controller, an explicit request `signal`, and the library timeout apply together: whichever fires first aborts the request. Regardless of physical cancellation, request IDs prevent older work from replacing the hook's current state.
+`useFetcher` assigns the executor's AbortController to the request (`request.abortController`); that is how the caller cancels this execution. With the normal Fetcher transport, that controller, an explicit request `signal`, and the library timeout apply together: whichever fires first aborts the request. Regardless of physical cancellation, request IDs prevent older work from replacing the hook's current state.
 
 Select an extractor before choosing the result generic: `JsonResultExtractor` parses JSON, while ordinary Fetcher defaults can return an exchange or Response. `R` is the extracted value type, `E` is the error-state type; neither validates runtime payloads. [Request lifecycle](../../architecture/request-lifecycle) explains why a JSON parse failure can occur after exchange interception has finished.
 
@@ -7534,11 +7534,11 @@ The supplier must pass the signal to its I/O to stop the actual work. The hook c
 
 ## Query ownership
 
-`useQuery<Q,R,E>` adds `initialQuery`, `query`, `attributes`, `autoExecute`, `getQuery()` and `setQuery(Q)`. The executor receives `(query, attributes, abortController)`. `autoExecute` defaults to true. If both `query` and `initialQuery` are undefined at initialization, there is no request; `isValidateQuery` checks only `query !== undefined`, not a schema. `query` overrides initialization; deep-equal changes to its object identity alone do not refetch. Changing execution configuration can trigger another execution. `initialQuery` is initialization, not a reactive replacement prop.
+`useQuery<Q,R,E>` adds `initialQuery`, `query`, `attributes`, `autoExecute`, `getQuery()` and `setQuery(Q)`. The executor receives `(query, attributes, abortController)`. `autoExecute` defaults to true. If both `query` and `initialQuery` are undefined at initialization, there is no request; `isValidateQuery` checks only `query !== undefined`, not a schema. `query` overrides initialization; deep-equal changes to its object identity alone do not refetch. Turning `autoExecute` on triggers another execution; a new `execute` function alone does not, and the latest one is used on the next execution. `initialQuery` is initialization, not a reactive replacement prop.
 
 Changing a previously defined `query` prop to `undefined` does not clear the stored query and can automatically execute that previous value again. To pause automatic execution, set `autoExecute: false`; this does not cancel work already running. Call `abort()` separately to invalidate and cancel the current execution.
 
-`setQuery` updates a ref and executes immediately when automatic execution is enabled; it is not an independent React state notification and does not deduplicate explicit setter calls. With `autoExecute: false`, call `setQuery` then `execute()` to run the latest value. Automatic execution does not await a consumer's catch handler, so use error state/onError instead of `propagateError: true` for unattended requests. `useQueryState` exposes the query-ref behavior without cancellation ownership; keep its `execute` callback stable.
+`setQuery` updates a ref and executes immediately when automatic execution is enabled; it is not an independent React state notification and does not deduplicate explicit setter calls. With `autoExecute: false`, call `setQuery` then `execute()` to run the latest value. Automatic execution does not await a consumer's catch handler, so use error state/onError instead of `propagateError: true` for unattended requests. `useQueryState` exposes the query-ref behavior without cancellation ownership; its `execute` may be inline: it re-runs on query content changes or when `autoExecute` turns on, not when only `execute` changes, and always calls the latest `execute`.
 
 ## Choosing state, execution and query ownership {#ownership}
 
@@ -7741,7 +7741,7 @@ export interface QueryOptions<Q> {
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18)
+[packages/react/src/core/useQueryState.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L19)
 
 ### UseQueryOptions {#api-UseQueryOptions}
 
@@ -7783,7 +7783,7 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q>;
 ```
 
-[packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113)
+[packages/react/src/core/useQueryState.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L114)
 
 ### isValidateQuery {#api-isValidateQuery}
 
@@ -7791,7 +7791,7 @@ export function useQueryState<Q>(
 export function isValidateQuery<Q>(query: Q | undefined): query is Q;
 ```
 
-[packages/react/src/core/useQueryState.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L195)
+[packages/react/src/core/useQueryState.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L200)
 
 ### UseQueryStateOptions {#api-UseQueryStateOptions}
 
@@ -7802,7 +7802,7 @@ export interface UseQueryStateOptions<Q>
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L29)
+[packages/react/src/core/useQueryState.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L30)
 
 ### UseQueryStateReturn {#api-UseQueryStateReturn}
 
@@ -7813,7 +7813,7 @@ export interface UseQueryStateReturn<Q> {
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L39)
+[packages/react/src/core/useQueryState.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L40)
 
 ## Related topics
 
@@ -8344,16 +8344,16 @@ export interface UseDebouncedFetcherQueryReturn<Q, R, E = FetcherError>
 
 These hooks adapt shared external resources to a component. Keep `KeyStorage` and bus instances stable, and let their creator own destruction. Component unmount unsubscribes listeners; it does not destroy shared storage or the bus.
 
-| API                                          | Input / return / default                                                                                                        |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                               |
-| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                 |
-| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                          |
-| `useEventSubscription({ bus, handler })`     | Automatically calls `bus.on(handler)`; returns boolean-valued subscribe/unsubscribe functions. Cleanup calls off(handler.name). |
+| API                                          | Input / return / default                                                                                                                                    |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                           |
+| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                             |
+| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                      |
+| `useEventSubscription({ bus, handler })`     | Automatically calls `bus.on(handler)`; returns boolean-valued subscribe/unsubscribe functions. Cleanup calls off(handler.name) only if that `on` succeeded. |
 
-Storage uses `useSyncExternalStore`, caches deep-equal snapshots, and resubscribes when the storage instance changes. SSR uses the same snapshot getter, so the storage you provide must be usable in that runtime. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
+Storage uses `useSyncExternalStore`, caches deep-equal snapshots, and resubscribes when the storage instance changes. The server snapshot is `defaultValue ?? null`, so the server render does not read storage: on the server and during hydration the hook renders the default (so `useSecurity` and `SecurityProvider` start unauthenticated), then the stored value. Client-only rendering reads storage from the first render. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
 
-Event handlers have names; use a distinct name per subscriber. Duplicate names can reject registration, which logs a warning, and cleanup still unsubscribes by that name. Stabilize handler identity to avoid unnecessary unsubscribe/resubscribe. The bus controls handler failure propagation and delivery order; this hook neither changes those policies nor awaits delivery on behalf of publishers.
+Event handlers have names; use a distinct name per subscriber. Duplicate names can reject registration, which logs a warning; cleanup then leaves the name alone, so the other subscriber's handler stays registered. Stabilize handler identity to avoid unnecessary unsubscribe/resubscribe. The bus controls handler failure propagation and delivery order; this hook neither changes those policies nor awaits delivery on behalf of publishers.
 
 ## Complete example
 
@@ -8479,10 +8479,10 @@ export interface UseEventSubscriptionReturn {
 | `signIn(tokenOrAsyncProvider)`            | Await provider if supplied, store token, invoke onSignIn. Returns Promise&lt;void&gt;; provider/storage/callback failures propagate.                                                    |
 | `signOut()`                               | Remove token and invoke onSignOut; synchronous exceptions propagate.                                                                                                                    |
 | `useSecurityContext()`                    | Returns context; throws outside SecurityProvider.                                                                                                                                       |
-| `RouteGuard`                              | Authenticated: children. Otherwise calls onUnauthorized and returns fallback (omitted renders nothing).                                                                                 |
+| `RouteGuard`                              | Authenticated: children. Otherwise returns fallback (omitted renders nothing) and calls onUnauthorized after commit.                                                                    |
 | `RefreshableRouteGuard`                   | Requires tokenManager. Refreshes when isRefreshNeeded and isRefreshable; authenticated children win, otherwise refreshing node or fallback. Default refreshing text is `Refreshing...`. |
 
-`RouteGuard.onUnauthorized` runs during render and can run repeatedly; it is not an effect-based navigation callback. Avoid setting unrelated React state or sending requests from it. `RefreshableRouteGuard` logs refresh errors; it does not expose a local error state or cancel the token manager on unmount. The manager and storage remain application-owned. Context updates follow storage subscriptions, not an independent timer that recomputes authentication every second. Switching tokenStorage changes subscription and action targets; callbacks read latest options.
+`RouteGuard.onUnauthorized` runs in an effect after the render commits, once each time `authenticated` becomes (or starts out) false, so it can call `navigate()`; StrictMode in development may run it twice, as it does any effect. The latest callback is used; changing it alone does not call it again. `RefreshableRouteGuard` logs refresh errors; it does not expose a local error state or cancel the token manager on unmount. The manager and storage remain application-owned. Context updates follow storage subscriptions, not an independent timer that recomputes authentication every second. Switching tokenStorage changes subscription and action targets; callbacks read latest options.
 
 ## Complete example
 
@@ -8638,7 +8638,7 @@ export function RouteGuard(
 
 :::
 
-[packages/react/src/cosec/RouteGuard.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L66)
+[packages/react/src/cosec/RouteGuard.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L69)
 
 ### RouteGuardProps {#api-RouteGuardProps}
 
@@ -8650,7 +8650,7 @@ export interface RouteGuardProps {
 }
 ```
 
-[packages/react/src/cosec/RouteGuard.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L20)
+[packages/react/src/cosec/RouteGuard.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L21)
 
 ### RefreshableRouteGuard {#api-RefreshableRouteGuard}
 
@@ -8690,7 +8690,7 @@ export interface RefreshableRouteGuardProps extends Omit<
 
 | API                | Return and lifecycle                                                                                                                                                 |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| useLatest(value)   | RefObject updated every render; no rerender notification.                                                                                                            |
+| useLatest(value)   | RefObject updated after each render commits (insertion effect); read in render it holds the last committed value. No rerender notification.                          |
 | useMounted()       | Stable function reporting effect-mounted state; false before mount/after cleanup.                                                                                    |
 | useForceUpdate()   | Callback forcing a render with a reducer increment.                                                                                                                  |
 | useRequestId()     | Counter initially 0; generate/invalidate increment, current reads, isLatest compares, reset sets 0. No cancellation by itself.                                       |
@@ -8698,7 +8698,7 @@ export interface RefreshableRouteGuardProps extends Omit<
 
 ## Fullscreen
 
-`useFullscreen({ target? } = {})` returns fullscreen/getTarget/enter/exit/toggle. Target priority is a dynamically supplied element, target.current, then document.documentElement. Null resets the dynamic override; undefined keeps it. `FullscreenProvider` creates a wrapper div when target is absent; `useFullscreenContext()` returns undefined outside it. The hook tracks document fullscreen-change events and removes listeners on cleanup; it does not automatically exit fullscreen on unmount. DOM utilities require a browser and native fullscreen permission/user activation. Unsupported entry/exit APIs throw; enter/exit/toggle return rejecting Promise&lt;void&gt;. Manual addFullscreenChangeListener must be paired with removeFullscreenChangeListener using the same callback.
+`useFullscreen({ target? } = {})` returns fullscreen/getTarget/enter/exit/toggle. Target priority is a dynamically supplied element, target.current, then document.documentElement. Null resets the dynamic override; undefined keeps it. The override is also dropped when fullscreen ends, so the configured target applies again. `FullscreenProvider` creates a wrapper div when target is absent; `useFullscreenContext()` returns undefined outside it. The hook tracks document fullscreen-change events and removes listeners on cleanup; it does not automatically exit fullscreen on unmount. DOM utilities require a browser and native fullscreen permission/user activation. Unsupported entry/exit APIs throw; enter/exit/toggle return rejecting Promise&lt;void&gt;. Manual addFullscreenChangeListener must be paired with removeFullscreenChangeListener using the same callback.
 
 ## Complete example
 
@@ -20018,7 +20018,7 @@ Wow 仓库的 TypeScript 包随 Wow 首个稳定版发布；视图引擎要等�
 
 ## 按用户隔离 React 状态
 
-React Hook 把状态保存在挂载的组件内部，不在组件或请求之间缓存响应。在服务端渲染时，Hook 仍使用传给它的客户端与存储，因此上面的身份规则同样适用于你传入的客户端。租户或用户变化时重新挂载子树，可以分隔 UI 状态；服务端仍须实施访问控制。具体 SSR 框架仍需要导入、渲染和水合验证，本章不代表所有框架已通过认证。
+React Hook 把状态保存在挂载的组件内部，不在组件或请求之间缓存响应。在服务端渲染时，Hook 仍使用传给它的客户端与存储，因此上面的身份规则同样适用于你传入的客户端。`useKeyStorage`（以及基于它的 `useSecurity` 与 `SecurityProvider`）在服务端不读取存储：服务端与水合期间渲染默认值，随后渲染存储值，因此水合结果与服务端 HTML 一致。租户或用户变化时重新挂载子树，可以分隔 UI 状态；服务端仍须实施访问控制。具体 SSR 框架仍需要导入、渲染和水合验证，本章不代表所有框架已通过认证。
 
 5.x 的 Viewer（`@ahoo-wang/fetcher-viewer`）在渲染时读取 `window`，必须挂在仅客户端渲染的边界内，见 5.x 的 [Viewer 指南](../guides/viewer/index.md)。
 
@@ -20100,13 +20100,13 @@ flowchart LR
   classDef default fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
 
-| 状态或资源                         | 所有者与更新路径                                          | 清理或限制                                                                      |
-| ---------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Hook `loading/result/error/status` | `useExecutePromise` 仅在挂载且请求最新时提交状态          | 新执行取消前一个 controller；卸载时取消；执行器必须使用 controller 停止实际工作 |
-| Hook exchange                      | `useFetcher` 保存 exchange，选择显式或注册客户端          | 共享客户端状态有独立生命周期                                                    |
-| 查询输入                           | `useQuery` / `useFetcherQuery` 保存 query，变化时重新执行 | Hook 不在组件之间缓存响应；共享数据请通过自己的状态或服务                       |
-| 防抖定时器                         | 防抖 Hook 管理自己的定时器                                | 定时器 `cancel()` 与活动请求 `abort()` 相互独立                                 |
-| 行数据、总数与视图偏好             | 应用及其服务                                              | 筛选、排序、分页和持久化由应用决定                                              |
+| 状态或资源                         | 所有者与更新路径                                                   | 清理或限制                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Hook `loading/result/error/status` | `useExecutePromise` 仅在挂载且请求最新时提交状态                   | 新执行取消前一个 controller；卸载时取消；执行器必须使用 controller 停止实际工作 |
+| Hook exchange                      | `useFetcher` 保存 exchange（请求失败时清除），选择显式或注册客户端 | 共享客户端状态有独立生命周期                                                    |
+| 查询输入                           | `useQuery` / `useFetcherQuery` 保存 query，变化时重新执行          | Hook 不在组件之间缓存响应；共享数据请通过自己的状态或服务                       |
+| 防抖定时器                         | 防抖 Hook 管理自己的定时器                                         | 定时器 `cancel()` 与活动请求 `abort()` 相互独立                                 |
+| 行数据、总数与视图偏好             | 应用及其服务                                                       | 筛选、排序、分页和持久化由应用决定                                              |
 
 Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L210)、[packages/react/src/core/useExecutePromise.ts:320](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L320) 和 [packages/react/src/fetcher/useFetcher.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L162)。`reset()` 仅设置空闲状态，不取消也不使当前执行失效（[packages/react/src/core/useExecutePromise.ts:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L309)）。
 
@@ -20116,11 +20116,11 @@ Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github
 
 租户或用户变化时，重新挂载持有请求状态的子树，避免 Hook 结果跨身份残留。存储键和事件总线也按同一身份划分。
 
-| 资源                   | 释放做什么                                         | 创建者仍需管理什么                                                             |
-| ---------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
-| React 事件订阅         | effect 清理移除该订阅                              | 共享总线生命周期                                                               |
-| KeyStorage             | `destroy()` 移除自身事件处理器并关闭自己创建的总线 | 持久化数据及通过 `eventBus` 传入的总线；默认串行总线是本地事件，不是跨标签同步 |
-| BroadcastTypedEventBus | `destroy()` 关闭其 messenger                       | 关闭前确保共享使用者的生命周期合适                                             |
+| 资源                   | 释放做什么                                                      | 创建者仍需管理什么                                                             |
+| ---------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| React 事件订阅         | effect 清理移除它自己建立的订阅，不会移除同名的其他订阅者处理器 | 共享总线生命周期                                                               |
+| KeyStorage             | `destroy()` 移除自身事件处理器并关闭自己创建的总线              | 持久化数据及通过 `eventBus` 传入的总线；默认串行总线是本地事件，不是跨标签同步 |
+| BroadcastTypedEventBus | `destroy()` 关闭其 messenger                                    | 关闭前确保共享使用者的生命周期合适                                             |
 
 见 [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)、[packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242)、[packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
 
@@ -25248,11 +25248,11 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 
 每次调用创建新的 request，不要在多个 Hook 之间共享可变请求。Fetcher 注册在渲染时解析，缺失的命名注册在该阶段失败。`useFetcher` 本身不会独立于选定的 Fetcher/options 默认使用 JSON；需要 JSON 时显式选提取器。HTTP 状态、超时和提取失败遵循该 Fetcher 的拦截器管线。
 
-`useFetcherQuery` 的返回类型继承了可带 exchange 的类型，但当前实现返回对象没有 `exchange`；需要检查 exchange 时直接用 `useFetcher`。`reset()` 清除 exchange/状态，不会取消在途工作；`abort()` 清除 exchange、作废本地请求 ID 并取消执行器。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。`url` 或其他选项变化只更新下次执行读取的值，本身不保证触发新请求。
+`useFetcherQuery` 的返回类型继承了可带 exchange 的类型，但当前实现返回对象没有 `exchange`；需要检查 exchange 时直接用 `useFetcher`。请求失败时 `exchange` 被清除（undefined），不会保留上一个请求的。`reset()` 清除 exchange/状态，不会取消在途工作；`abort()` 清除 exchange、作废本地请求 ID 并取消执行器。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。`url` 或其他选项变化只更新下次执行读取的值，本身不保证触发新请求。
 
 ## HTTP 取消与超时 {#http-cancellation}
 
-`useFetcher` 将执行器的 AbortController 放到请求上。使用普通 Fetcher 传输时，该 controller、显式请求 `signal` 与库超时同时生效：先触发者中止请求。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
+`useFetcher` 将执行器的 AbortController 放到请求上（`request.abortController`），调用者据此取消本次执行。使用普通 Fetcher 传输时，该 controller、显式请求 `signal` 与库超时同时生效：先触发者中止请求。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
 
 选择结果泛型前先选提取器：`JsonResultExtractor` 解析 JSON，普通 Fetcher 默认值可能返回 exchange 或 Response。`R` 是提取后的值类型，`E` 是错误状态类型；两者不验证运行时载荷。[请求生命周期](../../architecture/request-lifecycle)解释 JSON 解析为何可能在 exchange 拦截结束后失败。
 
@@ -25379,11 +25379,11 @@ supplier 必须把 signal 传给 I/O 才能停止实际工作；即使忽略取�
 
 ## 查询所有权
 
-`useQuery<Q,R,E>` 增加 `initialQuery`、`query`、`attributes`、`autoExecute`、`getQuery()`、`setQuery(Q)`；执行器接收 `(query, attributes, abortController)`。`autoExecute` 默认为 true。初始化时 `query` 和 `initialQuery` 均为 undefined 才没有查询可执行；`isValidateQuery` 只检查 `query !== undefined`，不进行 schema 校验。`query` 覆盖初始化；内容深相等而仅引用变化不会重新查询，执行配置变化则可能触发。`initialQuery` 只用于初始化，不是响应式替换参数。
+`useQuery<Q,R,E>` 增加 `initialQuery`、`query`、`attributes`、`autoExecute`、`getQuery()`、`setQuery(Q)`；执行器接收 `(query, attributes, abortController)`。`autoExecute` 默认为 true。初始化时 `query` 和 `initialQuery` 均为 undefined 才没有查询可执行；`isValidateQuery` 只检查 `query !== undefined`，不进行 schema 校验。`query` 覆盖初始化；内容深相等而仅引用变化不会重新查询。开启 `autoExecute` 会再次执行；仅 `execute` 函数变化不会触发，下次执行时使用最新的函数。`initialQuery` 只用于初始化，不是响应式替换参数。
 
 将已定义的 `query` 属性改为 `undefined` 不会清空保存的查询，还可能再次自动执行旧值。暂停自动执行应设置 `autoExecute: false`，但这不会取消已经运行的操作；需要作废并取消当前执行时，另外调用 `abort()`。
 
-`setQuery` 更新 ref，启用自动执行时立即执行；它本身不是 React 状态通知，也不会去重显式 setter 调用。`autoExecute: false` 时可先 `setQuery` 再 `execute()`。自动执行不会等待调用者 catch，因此无人等待的请求应通过错误状态/onError 处理，而不要设 `propagateError: true`。`useQueryState` 只提供查询 ref 行为，不负责取消；应保持其 `execute` 回调稳定。
+`setQuery` 更新 ref，启用自动执行时立即执行；它本身不是 React 状态通知，也不会去重显式 setter 调用。`autoExecute: false` 时可先 `setQuery` 再 `execute()`。自动执行不会等待调用者 catch，因此无人等待的请求应通过错误状态/onError 处理，而不要设 `propagateError: true`。`useQueryState` 只提供查询 ref 行为，不负责取消；其 `execute` 可以内联：查询内容变化或 `autoExecute` 开启时重新执行，仅 `execute` 变化不会，且总是调用最新的 `execute`。
 
 ## 选择状态、执行与查询所有权 {#ownership}
 
@@ -25586,7 +25586,7 @@ export interface QueryOptions<Q> {
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18)
+[packages/react/src/core/useQueryState.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L19)
 
 ### UseQueryOptions {#api-UseQueryOptions}
 
@@ -25628,7 +25628,7 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q>;
 ```
 
-[packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113)
+[packages/react/src/core/useQueryState.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L114)
 
 ### isValidateQuery {#api-isValidateQuery}
 
@@ -25636,7 +25636,7 @@ export function useQueryState<Q>(
 export function isValidateQuery<Q>(query: Q | undefined): query is Q;
 ```
 
-[packages/react/src/core/useQueryState.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L195)
+[packages/react/src/core/useQueryState.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L200)
 
 ### UseQueryStateOptions {#api-UseQueryStateOptions}
 
@@ -25647,7 +25647,7 @@ export interface UseQueryStateOptions<Q>
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L29)
+[packages/react/src/core/useQueryState.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L30)
 
 ### UseQueryStateReturn {#api-UseQueryStateReturn}
 
@@ -25658,7 +25658,7 @@ export interface UseQueryStateReturn<Q> {
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L39)
+[packages/react/src/core/useQueryState.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L40)
 
 ## 相关专题
 
@@ -26189,16 +26189,16 @@ export interface UseDebouncedFetcherQueryReturn<Q, R, E = FetcherError>
 
 这些 Hook 将共享外部资源接入组件。保持 `KeyStorage` 和事件总线实例稳定，由创建者负责销毁。组件卸载只退订监听，不销毁共享存储或总线。
 
-| API                                          | 输入 / 返回 / 默认值                                                                                |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                           |
-| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                      |
-| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                    |
-| `useEventSubscription({ bus, handler })`     | 自动调用 `bus.on(handler)`；返回值为 boolean 的 subscribe/unsubscribe；清理调用 off(handler.name)。 |
+| API                                          | 输入 / 返回 / 默认值                                                                                                      |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                                                 |
+| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                                            |
+| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                                          |
+| `useEventSubscription({ bus, handler })`     | 自动调用 `bus.on(handler)`；返回值为 boolean 的 subscribe/unsubscribe；仅当该次 `on` 成功时清理才调用 off(handler.name)。 |
 
-存储使用 `useSyncExternalStore`，缓存内容深相等的快照，实例变化时重订阅。SSR 使用同一个 snapshot getter，因此调用者提供的存储必须适用于该运行环境。序列化/存储异常直接传播，不会转换成 Promise 错误状态。Immer updater 调用时读取当前存储，连续更新不依赖某次渲染的旧快照。保留的回调继续操作其捕获的存储。
+存储使用 `useSyncExternalStore`，缓存内容深相等的快照，实例变化时重订阅。服务端快照为 `defaultValue ?? null`，因此服务端渲染不读取存储：在服务端和 hydration 期间 Hook 先渲染默认值（因此 `useSecurity` 与 `SecurityProvider` 以未认证开始），随后渲染存储值。纯客户端渲染从首次渲染起读取存储。序列化/存储异常直接传播，不会转换成 Promise 错误状态。Immer updater 调用时读取当前存储，连续更新不依赖某次渲染的旧快照。保留的回调继续操作其捕获的存储。
 
-事件处理器带名称，应为每个订阅者使用唯一名称。重复名称可能导致注册失败并记录警告，而清理仍按名称退订。保持 handler 身份稳定以避免无谓重订阅。处理器失败传播与投递顺序由总线决定，本 Hook 不改变这些策略，也不代发布者等待投递。
+事件处理器带名称，应为每个订阅者使用唯一名称。重复名称可能导致注册失败并记录警告；此时清理不动该名称，另一订阅者的处理器保持注册。保持 handler 身份稳定以避免无谓重订阅。处理器失败传播与投递顺序由总线决定，本 Hook 不改变这些策略，也不代发布者等待投递。
 
 ## 完整示例
 
@@ -26324,10 +26324,10 @@ export interface UseEventSubscriptionReturn {
 | `signIn(tokenOrAsyncProvider)`            | 如有 provider 则等待，存储令牌，再调用 onSignIn；返回 Promise&lt;void&gt;，provider/存储/回调失败会传播。                                                    |
 | `signOut()`                               | 删除令牌并调用 onSignOut；同步异常传播。                                                                                                                     |
 | `useSecurityContext()`                    | 返回上下文，在 SecurityProvider 外抛错。                                                                                                                     |
-| `RouteGuard`                              | 已认证渲染 children；否则调用 onUnauthorized 并返回 fallback，省略则无内容。                                                                                 |
+| `RouteGuard`                              | 已认证渲染 children；否则返回 fallback（省略则无内容），并在提交后调用 onUnauthorized。                                                                      |
 | `RefreshableRouteGuard`                   | 必填 tokenManager；isRefreshNeeded 和 isRefreshable 同时成立时刷新。已认证优先渲染 children，否则显示 refreshing 节点或 fallback，默认文字 `Refreshing...`。 |
 
-`RouteGuard.onUnauthorized` 在 render 中运行且可能重复，不是基于 effect 的导航回调；不要用它更新其他 React 状态或发请求。`RefreshableRouteGuard` 仅记录刷新失败，不暴露本地错误状态，也不在卸载时取消 token manager；manager 和 storage 仍归应用所有。context 随存储订阅更新，没有独立每秒重算认证状态的定时器。切换 tokenStorage 会更换订阅和操作目标；回调读取最新 options。
+`RouteGuard.onUnauthorized` 在 render 提交后的 effect 中运行，每次 `authenticated` 变为（或初始即为）false 时调用一次，因此可以在其中调用 `navigate()`；开发环境的 StrictMode 可能像对待任何 effect 一样运行两次。使用的是最新的回调；仅回调变化不会再次调用。`RefreshableRouteGuard` 仅记录刷新失败，不暴露本地错误状态，也不在卸载时取消 token manager；manager 和 storage 仍归应用所有。context 随存储订阅更新，没有独立每秒重算认证状态的定时器。切换 tokenStorage 会更换订阅和操作目标；回调读取最新 options。
 
 ## 完整示例
 
@@ -26483,7 +26483,7 @@ export function RouteGuard(
 
 :::
 
-[packages/react/src/cosec/RouteGuard.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L66)
+[packages/react/src/cosec/RouteGuard.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L69)
 
 ### RouteGuardProps {#api-RouteGuardProps}
 
@@ -26495,7 +26495,7 @@ export interface RouteGuardProps {
 }
 ```
 
-[packages/react/src/cosec/RouteGuard.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L20)
+[packages/react/src/cosec/RouteGuard.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L21)
 
 ### RefreshableRouteGuard {#api-RefreshableRouteGuard}
 
@@ -26535,7 +26535,7 @@ export interface RefreshableRouteGuardProps extends Omit<
 
 | API                | 返回与生命周期                                                                                                        |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| useLatest(value)   | 每次 render 更新 RefObject，不触发重渲染。                                                                            |
+| useLatest(value)   | 每次 render 提交后（insertion effect）更新 RefObject；render 中读取得到上次提交的值。不触发重渲染。                   |
 | useMounted()       | 返回稳定函数，报告 effect 挂载状态；挂载前/清理后为 false。                                                           |
 | useForceUpdate()   | 通过 reducer 递增强制重渲染的回调。                                                                                   |
 | useRequestId()     | 计数器从 0 开始；generate/invalidate 递增、current 读取、isLatest 比较、reset 归零，本身不取消操作。                  |
@@ -26543,7 +26543,7 @@ export interface RefreshableRouteGuardProps extends Omit<
 
 ## 全屏
 
-`useFullscreen({ target? } = {})` 返回 fullscreen/getTarget/enter/exit/toggle。目标优先级为动态传入元素、target.current、document.documentElement。null 清除动态覆盖，undefined 保留。`FullscreenProvider` 未传 target 时创建 div 包装；`useFullscreenContext()` 在外部返回 undefined。Hook 监听 document 全屏事件并在清理时解绑，但卸载不自动退出全屏。DOM 工具需要浏览器及原生全屏权限/用户激活。不支持的进入/退出 API 会抛错，enter/exit/toggle 返回可能拒绝的 Promise&lt;void&gt;。手动 addFullscreenChangeListener 必须用相同回调配对 removeFullscreenChangeListener。
+`useFullscreen({ target? } = {})` 返回 fullscreen/getTarget/enter/exit/toggle。目标优先级为动态传入元素、target.current、document.documentElement。null 清除动态覆盖，undefined 保留。全屏结束时也会丢弃动态覆盖，重新使用配置的目标。`FullscreenProvider` 未传 target 时创建 div 包装；`useFullscreenContext()` 在外部返回 undefined。Hook 监听 document 全屏事件并在清理时解绑，但卸载不自动退出全屏。DOM 工具需要浏览器及原生全屏权限/用户激活。不支持的进入/退出 API 会抛错，enter/exit/toggle 返回可能拒绝的 Promise&lt;void&gt;。手动 addFullscreenChangeListener 必须用相同回调配对 removeFullscreenChangeListener。
 
 ## 完整示例
 

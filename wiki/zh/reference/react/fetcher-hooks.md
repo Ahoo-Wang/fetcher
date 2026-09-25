@@ -17,11 +17,11 @@ description: 'Fetcher 请求 Hook — @ahoo-wang/fetcher-react 5.0.0'
 
 每次调用创建新的 request，不要在多个 Hook 之间共享可变请求。Fetcher 注册在渲染时解析，缺失的命名注册在该阶段失败。`useFetcher` 本身不会独立于选定的 Fetcher/options 默认使用 JSON；需要 JSON 时显式选提取器。HTTP 状态、超时和提取失败遵循该 Fetcher 的拦截器管线。
 
-`useFetcherQuery` 的返回类型继承了可带 exchange 的类型，但当前实现返回对象没有 `exchange`；需要检查 exchange 时直接用 `useFetcher`。`reset()` 清除 exchange/状态，不会取消在途工作；`abort()` 清除 exchange、作废本地请求 ID 并取消执行器。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。`url` 或其他选项变化只更新下次执行读取的值，本身不保证触发新请求。
+`useFetcherQuery` 的返回类型继承了可带 exchange 的类型，但当前实现返回对象没有 `exchange`；需要检查 exchange 时直接用 `useFetcher`。请求失败时 `exchange` 被清除（undefined），不会保留上一个请求的。`reset()` 清除 exchange/状态，不会取消在途工作；`abort()` 清除 exchange、作废本地请求 ID 并取消执行器。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。`url` 或其他选项变化只更新下次执行读取的值，本身不保证触发新请求。
 
 ## HTTP 取消与超时 {#http-cancellation}
 
-`useFetcher` 将执行器的 AbortController 放到请求上。使用普通 Fetcher 传输时，该 controller、显式请求 `signal` 与库超时同时生效：先触发者中止请求。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
+`useFetcher` 将执行器的 AbortController 放到请求上（`request.abortController`），调用者据此取消本次执行。使用普通 Fetcher 传输时，该 controller、显式请求 `signal` 与库超时同时生效：先触发者中止请求。无论实际 I/O 是否取消，请求序号都会阻止旧工作覆盖 Hook 当前状态。
 
 选择结果泛型前先选提取器：`JsonResultExtractor` 解析 JSON，普通 Fetcher 默认值可能返回 exchange 或 Response。`R` 是提取后的值类型，`E` 是错误状态类型；两者不验证运行时载荷。[请求生命周期](../../architecture/request-lifecycle)解释 JSON 解析为何可能在 exchange 拦截结束后失败。
 

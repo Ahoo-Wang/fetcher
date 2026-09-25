@@ -9,7 +9,7 @@ description: 'Refs, request IDs and fullscreen — @ahoo-wang/fetcher-react'
 
 | API                | Return and lifecycle                                                                                                                                                 |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| useLatest(value)   | RefObject updated every render; no rerender notification.                                                                                                            |
+| useLatest(value)   | RefObject updated after each render commits (insertion effect); read in render it holds the last committed value. No rerender notification.                          |
 | useMounted()       | Stable function reporting effect-mounted state; false before mount/after cleanup.                                                                                    |
 | useForceUpdate()   | Callback forcing a render with a reducer increment.                                                                                                                  |
 | useRequestId()     | Counter initially 0; generate/invalidate increment, current reads, isLatest compares, reset sets 0. No cancellation by itself.                                       |
@@ -17,7 +17,7 @@ description: 'Refs, request IDs and fullscreen — @ahoo-wang/fetcher-react'
 
 ## Fullscreen
 
-`useFullscreen({ target? } = {})` returns fullscreen/getTarget/enter/exit/toggle. Target priority is a dynamically supplied element, target.current, then document.documentElement. Null resets the dynamic override; undefined keeps it. `FullscreenProvider` creates a wrapper div when target is absent; `useFullscreenContext()` returns undefined outside it. The hook tracks document fullscreen-change events and removes listeners on cleanup; it does not automatically exit fullscreen on unmount. DOM utilities require a browser and native fullscreen permission/user activation. Unsupported entry/exit APIs throw; enter/exit/toggle return rejecting Promise&lt;void&gt;. Manual addFullscreenChangeListener must be paired with removeFullscreenChangeListener using the same callback.
+`useFullscreen({ target? } = {})` returns fullscreen/getTarget/enter/exit/toggle. Target priority is a dynamically supplied element, target.current, then document.documentElement. Null resets the dynamic override; undefined keeps it. The override is also dropped when fullscreen ends, so the configured target applies again. `FullscreenProvider` creates a wrapper div when target is absent; `useFullscreenContext()` returns undefined outside it. The hook tracks document fullscreen-change events and removes listeners on cleanup; it does not automatically exit fullscreen on unmount. DOM utilities require a browser and native fullscreen permission/user activation. Unsupported entry/exit APIs throw; enter/exit/toggle return rejecting Promise&lt;void&gt;. Manual addFullscreenChangeListener must be paired with removeFullscreenChangeListener using the same callback.
 
 ## Complete example
 

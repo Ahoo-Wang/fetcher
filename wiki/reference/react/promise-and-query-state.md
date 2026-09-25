@@ -23,11 +23,11 @@ The supplier must pass the signal to its I/O to stop the actual work. The hook c
 
 ## Query ownership
 
-`useQuery<Q,R,E>` adds `initialQuery`, `query`, `attributes`, `autoExecute`, `getQuery()` and `setQuery(Q)`. The executor receives `(query, attributes, abortController)`. `autoExecute` defaults to true. If both `query` and `initialQuery` are undefined at initialization, there is no request; `isValidateQuery` checks only `query !== undefined`, not a schema. `query` overrides initialization; deep-equal changes to its object identity alone do not refetch. Changing execution configuration can trigger another execution. `initialQuery` is initialization, not a reactive replacement prop.
+`useQuery<Q,R,E>` adds `initialQuery`, `query`, `attributes`, `autoExecute`, `getQuery()` and `setQuery(Q)`. The executor receives `(query, attributes, abortController)`. `autoExecute` defaults to true. If both `query` and `initialQuery` are undefined at initialization, there is no request; `isValidateQuery` checks only `query !== undefined`, not a schema. `query` overrides initialization; deep-equal changes to its object identity alone do not refetch. Turning `autoExecute` on triggers another execution; a new `execute` function alone does not, and the latest one is used on the next execution. `initialQuery` is initialization, not a reactive replacement prop.
 
 Changing a previously defined `query` prop to `undefined` does not clear the stored query and can automatically execute that previous value again. To pause automatic execution, set `autoExecute: false`; this does not cancel work already running. Call `abort()` separately to invalidate and cancel the current execution.
 
-`setQuery` updates a ref and executes immediately when automatic execution is enabled; it is not an independent React state notification and does not deduplicate explicit setter calls. With `autoExecute: false`, call `setQuery` then `execute()` to run the latest value. Automatic execution does not await a consumer's catch handler, so use error state/onError instead of `propagateError: true` for unattended requests. `useQueryState` exposes the query-ref behavior without cancellation ownership; keep its `execute` callback stable.
+`setQuery` updates a ref and executes immediately when automatic execution is enabled; it is not an independent React state notification and does not deduplicate explicit setter calls. With `autoExecute: false`, call `setQuery` then `execute()` to run the latest value. Automatic execution does not await a consumer's catch handler, so use error state/onError instead of `propagateError: true` for unattended requests. `useQueryState` exposes the query-ref behavior without cancellation ownership; its `execute` may be inline: it re-runs on query content changes or when `autoExecute` turns on, not when only `execute` changes, and always calls the latest `execute`.
 
 ## Choosing state, execution and query ownership {#ownership}
 
@@ -230,7 +230,7 @@ export interface QueryOptions<Q> {
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L18)
+[packages/react/src/core/useQueryState.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L19)
 
 ### UseQueryOptions {#api-UseQueryOptions}
 
@@ -272,7 +272,7 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q>;
 ```
 
-[packages/react/src/core/useQueryState.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L113)
+[packages/react/src/core/useQueryState.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L114)
 
 ### isValidateQuery {#api-isValidateQuery}
 
@@ -280,7 +280,7 @@ export function useQueryState<Q>(
 export function isValidateQuery<Q>(query: Q | undefined): query is Q;
 ```
 
-[packages/react/src/core/useQueryState.ts:195](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L195)
+[packages/react/src/core/useQueryState.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L200)
 
 ### UseQueryStateOptions {#api-UseQueryStateOptions}
 
@@ -291,7 +291,7 @@ export interface UseQueryStateOptions<Q>
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L29)
+[packages/react/src/core/useQueryState.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L30)
 
 ### UseQueryStateReturn {#api-UseQueryStateReturn}
 
@@ -302,7 +302,7 @@ export interface UseQueryStateReturn<Q> {
 }
 ```
 
-[packages/react/src/core/useQueryState.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L39)
+[packages/react/src/core/useQueryState.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L40)
 
 ## Related topics
 

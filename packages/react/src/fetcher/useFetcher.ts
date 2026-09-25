@@ -191,11 +191,26 @@ export function useFetcher<R, E = FetcherError>(
       try {
         await promiseExecutor(async abortController => {
           signal = abortController.signal;
+          // Attached to the caller's request on purpose: callers cancel this
+          // execution through `request.abortController`.
           request.abortController = abortController;
-          const exchange = await currentFetcher.exchange(
-            request,
-            latestOptions.current,
-          );
+          let exchange;
+          try {
+            exchange = await currentFetcher.exchange(
+              request,
+              latestOptions.current,
+            );
+          } catch (error) {
+            // The previous request's exchange does not describe this failure.
+            if (
+              isMounted() &&
+              !abortController.signal.aborted &&
+              requestId.isLatest(currentRequestId)
+            ) {
+              setExchange(undefined);
+            }
+            throw error;
+          }
           if (
             isMounted() &&
             !abortController.signal.aborted &&

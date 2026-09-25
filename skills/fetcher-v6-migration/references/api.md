@@ -48,7 +48,11 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   JWT whose payload is not a JSON object as expired; `destroy()` of
   `KeyStorage`, `TokenStorage`, `DeviceIdStorage` and `SpaceIdStorage` also
   closes the event bus the storage created, while a bus passed in `eventBus`
-  stays open) and **Fixed** in the 6.0 release
+  stays open; in `fetcher-react`, `RouteGuard` calls `onUnauthorized` in an
+  effect after commit, `useKeyStorage` (and so `useSecurity` and
+  `SecurityProvider`) renders the default during SSR and hydration,
+  `useQueryState` no longer re-runs when only `execute` changes, and
+  `useLatest` updates its ref after commit) and **Fixed** in the 6.0 release
   notes (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
   longer re-running the error phase (#1249), or a tab reusing the token another
   tab refreshed instead of signing out (`KeyStorage.reload()`).
@@ -190,6 +194,24 @@ receives the access token and the device ID. A JWT whose payload is not a JSON
 object now reads as expired. `destroy()` now closes the event bus the storage
 created itself, so a following `storage.eventBus.destroy()` on that default
 bus is redundant (drop it); keep it for a bus you passed in `eventBus`.
+
+For projects on `@ahoo-wang/fetcher-react`:
+
+```sh
+# 9. React hooks whose timing changed
+grep -rnE 'onUnauthorized=|useLatest\(|use(Cancellable)?QueryState\(|useKeyStorage\(|useSecurity\(|<SecurityProvider' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+```
+
+`RouteGuard`'s `onUnauthorized` now runs once after commit each time the user
+becomes (or starts out) unauthenticated, not on every render; a `navigate()`
+there is now safe, and code that relied on a call per render must not.
+`useKeyStorage`, `useSecurity` and `SecurityProvider` render the default (the
+anonymous user) on the server and during hydration, then the stored value; an
+SSR page that expected the stored value in the first client render sees it one
+render later. `useQueryState` calls the latest `execute` but no longer re-runs
+when only `execute` changes; change the query or toggle `autoExecute` to run
+again. `useLatest(value).current` read during render now holds the last
+committed value, not the one being rendered; read the value itself there.
 
 ## Rewrites
 

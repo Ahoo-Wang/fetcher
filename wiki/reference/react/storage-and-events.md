@@ -7,16 +7,16 @@ description: 'Storage and event subscriptions — @ahoo-wang/fetcher-react 5.0.0
 
 These hooks adapt shared external resources to a component. Keep `KeyStorage` and bus instances stable, and let their creator own destruction. Component unmount unsubscribes listeners; it does not destroy shared storage or the bus.
 
-| API                                          | Input / return / default                                                                                                        |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                               |
-| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                 |
-| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                          |
-| `useEventSubscription({ bus, handler })`     | Automatically calls `bus.on(handler)`; returns boolean-valued subscribe/unsubscribe functions. Cleanup calls off(handler.name). |
+| API                                          | Input / return / default                                                                                                                                    |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                           |
+| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                             |
+| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                      |
+| `useEventSubscription({ bus, handler })`     | Automatically calls `bus.on(handler)`; returns boolean-valued subscribe/unsubscribe functions. Cleanup calls off(handler.name) only if that `on` succeeded. |
 
-Storage uses `useSyncExternalStore`, caches deep-equal snapshots, and resubscribes when the storage instance changes. SSR uses the same snapshot getter, so the storage you provide must be usable in that runtime. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
+Storage uses `useSyncExternalStore`, caches deep-equal snapshots, and resubscribes when the storage instance changes. The server snapshot is `defaultValue ?? null`, so the server render does not read storage: on the server and during hydration the hook renders the default (so `useSecurity` and `SecurityProvider` start unauthenticated), then the stored value. Client-only rendering reads storage from the first render. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
 
-Event handlers have names; use a distinct name per subscriber. Duplicate names can reject registration, which logs a warning, and cleanup still unsubscribes by that name. Stabilize handler identity to avoid unnecessary unsubscribe/resubscribe. The bus controls handler failure propagation and delivery order; this hook neither changes those policies nor awaits delivery on behalf of publishers.
+Event handlers have names; use a distinct name per subscriber. Duplicate names can reject registration, which logs a warning; cleanup then leaves the name alone, so the other subscriber's handler stays registered. Stabilize handler identity to avoid unnecessary unsubscribe/resubscribe. The bus controls handler failure propagation and delivery order; this hook neither changes those policies nor awaits delivery on behalf of publishers.
 
 ## Complete example
 

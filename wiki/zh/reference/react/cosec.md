@@ -13,10 +13,10 @@ description: '安全 Hook 与路由守卫 — @ahoo-wang/fetcher-react 5.0.0'
 | `signIn(tokenOrAsyncProvider)`            | 如有 provider 则等待，存储令牌，再调用 onSignIn；返回 Promise&lt;void&gt;，provider/存储/回调失败会传播。                                                    |
 | `signOut()`                               | 删除令牌并调用 onSignOut；同步异常传播。                                                                                                                     |
 | `useSecurityContext()`                    | 返回上下文，在 SecurityProvider 外抛错。                                                                                                                     |
-| `RouteGuard`                              | 已认证渲染 children；否则调用 onUnauthorized 并返回 fallback，省略则无内容。                                                                                 |
+| `RouteGuard`                              | 已认证渲染 children；否则返回 fallback（省略则无内容），并在提交后调用 onUnauthorized。                                                                      |
 | `RefreshableRouteGuard`                   | 必填 tokenManager；isRefreshNeeded 和 isRefreshable 同时成立时刷新。已认证优先渲染 children，否则显示 refreshing 节点或 fallback，默认文字 `Refreshing...`。 |
 
-`RouteGuard.onUnauthorized` 在 render 中运行且可能重复，不是基于 effect 的导航回调；不要用它更新其他 React 状态或发请求。`RefreshableRouteGuard` 仅记录刷新失败，不暴露本地错误状态，也不在卸载时取消 token manager；manager 和 storage 仍归应用所有。context 随存储订阅更新，没有独立每秒重算认证状态的定时器。切换 tokenStorage 会更换订阅和操作目标；回调读取最新 options。
+`RouteGuard.onUnauthorized` 在 render 提交后的 effect 中运行，每次 `authenticated` 变为（或初始即为）false 时调用一次，因此可以在其中调用 `navigate()`；开发环境的 StrictMode 可能像对待任何 effect 一样运行两次。使用的是最新的回调；仅回调变化不会再次调用。`RefreshableRouteGuard` 仅记录刷新失败，不暴露本地错误状态，也不在卸载时取消 token manager；manager 和 storage 仍归应用所有。context 随存储订阅更新，没有独立每秒重算认证状态的定时器。切换 tokenStorage 会更换订阅和操作目标；回调读取最新 options。
 
 ## 完整示例
 
@@ -172,7 +172,7 @@ export function RouteGuard(
 
 :::
 
-[packages/react/src/cosec/RouteGuard.tsx:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L66)
+[packages/react/src/cosec/RouteGuard.tsx:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L69)
 
 ### RouteGuardProps {#api-RouteGuardProps}
 
@@ -184,7 +184,7 @@ export interface RouteGuardProps {
 }
 ```
 
-[packages/react/src/cosec/RouteGuard.tsx:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L20)
+[packages/react/src/cosec/RouteGuard.tsx:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/RouteGuard.tsx#L21)
 
 ### RefreshableRouteGuard {#api-RefreshableRouteGuard}
 
