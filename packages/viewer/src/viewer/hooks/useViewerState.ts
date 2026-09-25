@@ -1,5 +1,4 @@
 import type { ViewColumn, ViewDefinition, ViewState } from '../types';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import type { Key } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { ActiveFilter } from '../../';
@@ -7,7 +6,7 @@ import { deepEqual, useActiveViewState } from '../../';
 import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import type { FilterState } from '../../filter/types';
 import { all } from '@ahoo-wang/fetcher-wow';
-import type { SortOrder } from 'antd/es/table/interface';
+import type { SizeType, SortOrder } from '../../antdTypes';
 
 /**
  * Merges fields from definition that are not present in columns.

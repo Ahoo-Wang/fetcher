@@ -15,9 +15,9 @@ import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import type { Key } from 'react';
 import type { FilterState } from '../../filter/types';
 import { useState } from 'react';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import type { ActiveFilter, ViewColumn } from '../../index';
 import { DEFAULT_CONDITION, useActiveViewState } from '../../index';
+import type { SizeType } from '../../antdTypes';
 
 /**
  * Callback type for view state changes.

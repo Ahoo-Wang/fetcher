@@ -13,7 +13,7 @@
 
 import type { CellProps } from './types';
 import { Empty, Image } from 'antd';
-import type { ImageProps } from 'antd/es/image';
+import type { ImageProps } from 'antd';
 
 /**
  * Constant representing the type identifier for image cells.

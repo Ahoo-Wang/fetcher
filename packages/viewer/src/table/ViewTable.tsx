@@ -24,7 +24,6 @@ import { SettingOutlined } from '@ant-design/icons';
 import styles from './ViewTable.module.css';
 
 import type { TableColumnsType, TableProps } from 'antd';
-import type { SorterResult } from 'antd/es/table/interface';
 import type { RefAttributes } from 'react';
 import { useImperativeHandle, useMemo, useCallback } from 'react';
 import type {
@@ -37,6 +36,7 @@ import type {
 import type { FieldDefinition, ViewColumn } from '../viewer';
 import { mapToTableRecord } from '../utils';
 import { PrimaryKeyCell } from './cell';
+import type { SorterResult } from '../antdTypes';
 /**
  * Ref interface for exposing ViewTable imperative methods to parent components.
  * Enables external control of table state without prop drilling.

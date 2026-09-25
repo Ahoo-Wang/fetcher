@@ -336,7 +336,7 @@ test('diagnostics are described by package file and line', () => {
   );
 });
 
-test('only the known viewer and third-party dual consumer errors are ignored', () => {
+test('only third-party dual consumer errors are ignored for the viewer', () => {
   const [getter] = parseDiagnostics(duplicateGetters);
   const deepAntd = {
     file: 'node_modules/@ahoo-wang/fetcher-viewer/dist/types.d.ts',
@@ -357,20 +357,14 @@ test('only the known viewer and third-party dual consumer errors are ignored', (
     [getter, deepAntd, rcComponent],
     '@ahoo-wang/fetcher-viewer',
   );
-  // The .d.ts/.d.cts clash is never accepted, not even for the viewer.
-  assert.deepEqual(viewer.unexpected, [getter]);
-  assert.deepEqual(viewer.accepted, [deepAntd, rcComponent]);
+  // The .d.ts/.d.cts clash is never accepted, not even for the viewer; nor is
+  // a published declaration importing antd by deep path.
+  assert.deepEqual(viewer.unexpected, [getter, deepAntd]);
+  assert.deepEqual(viewer.accepted, [rcComponent]);
   // Nor are the viewer's rules accepted for another package.
   assert.deepEqual(
-    classifyDiagnostics([deepAntd, rcComponent], '@ahoo-wang/fetcher-react')
-      .unexpected,
-    [deepAntd, rcComponent],
-  );
-  // A missing module that is not an antd internal still fails.
-  const missing = { ...deepAntd, message: "Cannot find module 'dayjs'." };
-  assert.deepEqual(
-    classifyDiagnostics([missing], '@ahoo-wang/fetcher-viewer').unexpected,
-    [missing],
+    classifyDiagnostics([rcComponent], '@ahoo-wang/fetcher-react').unexpected,
+    [rcComponent],
   );
   for (const rule of CONSUMER_IGNORED)
     assert.ok(rule.reason?.length > 20, rule.package);

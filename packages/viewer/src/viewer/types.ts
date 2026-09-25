@@ -6,11 +6,10 @@ import type {
   AttributesCapable,
   KeyCapable,
 } from '../';
-import type { SortOrder } from 'antd/es/table/interface';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import type React from 'react';
 import type { NamedCapable } from '@ahoo-wang/fetcher';
+import type { SizeType, SortOrder } from '../antdTypes';
 
 export interface ViewDefinition {
   id: string;

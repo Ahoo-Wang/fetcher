@@ -13,7 +13,7 @@
 
 import type { CellProps } from './types';
 import { Typography } from 'antd';
-import type { LinkProps } from 'antd/es/typography/Link';
+import type { LinkProps } from '../../antdTypes';
 
 const { Link } = Typography;
 

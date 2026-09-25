@@ -3,9 +3,9 @@ import { BarItem } from './BarItem';
 import type { MenuProps } from 'antd';
 import { Dropdown, Tooltip } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useState } from 'react';
 import { useLocale } from '../locale';
+import type { SizeType } from '../antdTypes';
 
 export interface ColumnHeightBarItemProps extends TopBarItemProps {
   defaultTableSize: SizeType;
