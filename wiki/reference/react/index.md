@@ -32,10 +32,10 @@ The subpaths are ESM-only; the root entry also ships a UMD build. They share one
 ## Installation prerequisites
 
 ```sh
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
+pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
 ```
 
-The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers (React → CoSec → storage → event bus). Direct runtime dependencies (`dequal`, `immer`) are installed automatically. The external peer range is React/ReactDOM ^19.3.0. Peers are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
+The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers (React → CoSec → storage → event bus). Direct runtime dependencies (`dequal`, `immer`) are installed automatically. The external peer is React ^19.0.0; install the renderer your app uses (`react-dom` in the browser). Peers are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
 
 ::: info Wow query hooks and data monitoring
 The Wow query hooks (`useListQuery`, `usePagedQuery`, `useFetcherListQuery` and the rest) and the data-monitor hooks (`useDataMonitor`, `DataMonitorService`) remain only in the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/react)). From 6.0 the Wow hooks live in `@ahoo-wang/wow-react` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [documentation](https://wow.ahoo.me)), built on the `/fetcher` entry above; it is not on npm yet and ships with Wow's first stable release. The data-monitor hooks were retired together with `@ahoo-wang/fetcher-viewer`.

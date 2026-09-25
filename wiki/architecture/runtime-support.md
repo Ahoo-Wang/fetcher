@@ -7,13 +7,13 @@ description: Check platform capabilities and scope mutable identity state before
 
 Choose the environment before deciding which client objects to share. The core delegates transport to native Fetch; storage and React layers introduce additional platform and lifecycle assumptions.
 
-| Environment            | Prerequisite                                                                 | Application responsibility                                                                                         |
-| ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Browser HTTP           | Fetch and the native request/response APIs used by the endpoint              | Configure origin, CORS, cookies, and response validation with the server                                           |
-| Browser SSE            | A readable response body and the stream APIs used by the pipeline            | Own stream consumption and cancellation                                                                            |
-| Node consumer          | Library manifests declare Node `>=18.20.8`                                   | Check the selected package and its actual dependency chain; this declaration is not a tested matrix for every tool |
-| Repository development | Node `>=22.12.0`, pnpm `10.34.5`                                             | Use the repository toolchain for building and tests                                                                |
-| React                  | Matching peer dependencies; repository catalog uses React/ReactDOM `^19.3.0` | Validate your framework and SSR import/render/hydration path; do not infer React 18 support                        |
+| Environment            | Prerequisite                                                                        | Application responsibility                                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Browser HTTP           | Fetch and the native request/response APIs used by the endpoint                     | Configure origin, CORS, cookies, and response validation with the server                                           |
+| Browser SSE            | A readable response body and the stream APIs used by the pipeline                   | Own stream consumption and cancellation                                                                            |
+| Node consumer          | Library manifests declare Node `>=18.20.8`                                          | Check the selected package and its actual dependency chain; this declaration is not a tested matrix for every tool |
+| Repository development | Node `>=22.12.0`, pnpm `10.34.5`                                                    | Use the repository toolchain for building and tests                                                                |
+| React                  | Peer React `^19.0.0`; repository development and tests use React/ReactDOM `^19.3.0` | Validate your framework and SSR import/render/hydration path; do not infer React 18 support                        |
 
 Requirements come from [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31), [package.json:41](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L41), [pnpm-workspace.yaml:31](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L31), and the [package manifests](./package-boundaries.md). Stream extraction checks the body in [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38).
 

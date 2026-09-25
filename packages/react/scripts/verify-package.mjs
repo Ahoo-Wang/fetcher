@@ -84,9 +84,10 @@ for (const file of coreModules) {
       assert.ok(target.href.startsWith(new URL('dist/', packageRoot).href));
       coreModules.add(target.href);
     } else {
+      // React itself, or dequal: a declared dependency, no integration.
       assert.match(
         fileName,
-        /^react(?:\/|$)/,
+        /^(?:react(?:\/|$)|dequal$)/,
         `Core imports an integration dependency from ${fileURLToPath(file)}`,
       );
       usesCompiler ||= fileName === 'react/compiler-runtime';

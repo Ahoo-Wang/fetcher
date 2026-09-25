@@ -76,13 +76,11 @@
     "immer": "catalog:"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-eventstream": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-eventbus": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-storage": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-cosec": "workspace:^5.0.0",
-    "react": "catalog:",
-    "react-dom": "catalog:"
+    "@ahoo-wang/fetcher": "workspace:^",
+    "@ahoo-wang/fetcher-eventbus": "workspace:^",
+    "@ahoo-wang/fetcher-storage": "workspace:^",
+    "@ahoo-wang/fetcher-cosec": "workspace:^",
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
@@ -106,6 +104,8 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "jsdom": "catalog:",
-    "@vitejs/plugin-react": "catalog:"
+    "@vitejs/plugin-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   }
 }

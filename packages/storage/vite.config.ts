@@ -19,7 +19,7 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: 'src/index.ts',
-      name: 'Fetcher',
+      name: 'FetcherStorage',
       fileName: format =>
         format === 'es' ? 'index.es.js' : `index.${format}.cjs`,
     },
