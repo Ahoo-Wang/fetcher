@@ -93,6 +93,15 @@ skills) and release notes updated in the same PR.
 FetchError`, "ResponseResultExtractor returns the exchange",
       axios-style `FetcherConfigurer` example).
 
+## Downstream follow-ups
+
+- Wow `typescript/wow-client/test/clients/endpointTable.test.ts` records the
+  wire headers in `golden/client-endpoints.json`, including the old default
+  `content-type: application/json` on every GET. Since PR 2 the advisory
+  `downstream-wow.yml` check fails on that snapshot, as intended. Regenerate
+  the golden in the Wow change that moves Wow to fetcher 6 (not before: Wow's
+  own CI still runs against 5.x until then).
+
 ## Pause point
 
 2026-09-25: stage 1 code complete in two PRs — PR 1 (#1927) and PR 2
