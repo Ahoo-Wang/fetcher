@@ -1,6 +1,7 @@
 import { HttpMethod, type ResultExtractorCapable } from '@ahoo-wang/fetcher';
 import { type ApiMetadata } from './apiDecorator.js';
 import 'reflect-metadata';
+import { assertLegacyDecorator } from './legacyDecorators.js';
 
 export interface PathCapable {
   /**
@@ -62,6 +63,10 @@ export function endpoint(
   metadata: MethodEndpointMetadata = {},
 ) {
   return function (target: object, propertyKey: string | symbol): void {
+    assertLegacyDecorator(
+      propertyKey,
+      `@${method?.toLowerCase() ?? 'endpoint'}`,
+    );
     // Store metadata directly on the method
     const endpointMetadata = {
       method: method,

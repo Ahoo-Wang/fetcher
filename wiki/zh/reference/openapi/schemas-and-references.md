@@ -27,7 +27,7 @@ description: 'Schema 与引用 — Fetcher 5.0.0'
 
 `Reference` 仅含 `$ref: string`。它不检查目标存在，也不解析本地/远程指针。`IsReference<T>` 是分配式条件类型，筛选联合中可赋给 `{ $ref: string }` 的成员，不是运行时类型守卫。
 
-`Components` 含 schemas、responses、parameters、examples、requestBodies、headers、securitySchemes、links、callbacks 的可选命名映射，各映射值也接受 Reference。`ComponentTypeMap` 为泛型代码把相同键映射到对应的非引用对象类型。
+`Components` 含 schemas、responses、parameters、examples、requestBodies、headers、securitySchemes、links、callbacks、pathItems（3.1）的可选命名映射，各映射值也接受 Reference。`ComponentTypeMap` 为泛型代码把相同键映射到对应的非引用对象类型。
 
 `Discriminator.propertyName` 必填，mapping 为可选字符串映射。XML 所有属性都可选：name、namespace、prefix、attribute、wrapped。它们本身不改变序列化过程。
 
@@ -172,7 +172,7 @@ export type IsReference<T> = T extends { $ref: string } ? T : never;
 
 ### Components {#components}
 
-[packages/openapi/src/components.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/components.ts#L42)
+[packages/openapi/src/components.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/components.ts#L43)
 
 ```ts
 export interface Components extends Extensible {
@@ -185,12 +185,13 @@ export interface Components extends Extensible {
   securitySchemes?: Record<string, SecurityScheme | Reference>;
   links?: Record<string, Link | Reference>;
   callbacks?: Record<string, Callback | Reference>;
+  pathItems?: Record<string, PathItem | Reference>;
 }
 ```
 
 ### ComponentTypeMap {#componenttypemap}
 
-[packages/openapi/src/components.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/components.ts#L57)
+[packages/openapi/src/components.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/components.ts#L60)
 
 ```ts
 export type ComponentTypeMap = {
@@ -203,5 +204,6 @@ export type ComponentTypeMap = {
   securitySchemes: SecurityScheme;
   links: Link;
   callbacks: Callback;
+  pathItems: PathItem;
 };
 ```

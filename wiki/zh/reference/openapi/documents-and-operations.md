@@ -9,21 +9,21 @@ description: '文档与操作 — Fetcher 5.0.0'
 
 ## 文档契约
 
-| 类型                              | 必填字段与行为                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `OpenAPI`                         | 必填 `openapi: string`、`info: Info`、`paths: Paths`；可选 servers、components、security、tags、externalDocs |
-| `Info`                            | 本包所有字段均可选，包括 title/version；约束弱于规范校验器                                                   |
-| `Contact`、`License`              | Contact 字段均可选；License 必填 name                                                                        |
-| `Server`、`ServerVariable`        | Server 必填 url；变量必填 default；这里不执行 URL 插值                                                       |
-| `Tag`、`ExternalDocumentation`    | 分别必填 name、url；仅描述元数据                                                                             |
-| `Paths`、`PathItem`、`HTTPMethod` | Paths 将字符串映射到路径项；支持八种小写方法键、共享参数/servers、可选 `$ref`                                |
-| `Operation`                       | 必填 responses；可选 operationId、tags、parameters、body、callbacks、security、servers                       |
+| 类型                              | 必填字段与行为                                                                                                                                     |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OpenAPI`                         | 必填 `openapi: string`、`info: Info`、`paths: Paths`；可选 servers、webhooks 与 jsonSchemaDialect（3.1）、components、security、tags、externalDocs |
+| `Info`                            | 必填 title 与 version；可选 summary（3.1）、description、termsOfService、contact、license                                                          |
+| `Contact`、`License`              | Contact 字段均可选；License 必填 name，可选 SPDX identifier（3.1）或 url                                                                           |
+| `Server`、`ServerVariable`        | Server 必填 url；变量必填 default；这里不执行 URL 插值                                                                                             |
+| `Tag`、`ExternalDocumentation`    | 分别必填 name、url；仅描述元数据                                                                                                                   |
+| `Paths`、`PathItem`、`HTTPMethod` | Paths 将字符串映射到路径项；支持八种小写方法键、共享参数/servers、可选 `$ref`                                                                      |
+| `Operation`                       | 必填 responses；可选 operationId、tags、parameters、body、callbacks、security、servers                                                             |
 
 ## 参数与响应
 
 `Parameter` 必填 `name` 和 `in`（`query`、`header`、`path`、`cookie`）。序列化提示（`style`、`explode`、`allowReserved`、`allowEmptyValue`）均可选，本包不提供运行时默认值。不强制路径参数设置 `required: true`，也不强制 schema/content 或 example/examples 互斥。
 
-`RequestBody` 必填媒体类型到 `MediaType` 的 content 映射。`MediaType` 可含 Schema/Reference、示例和按属性配置的 `Encoding`。`Header` 类似 Parameter，但没有 name/in。`Responses` 将状态字符串映射到 `Response | Reference | undefined`，可配置 default。这些声明中的 Response.description 可选。`Link` 以 ID/ref 描述另一操作；`Callback` 将运行时表达式字符串映射到 PathItem。它们不跟随链接、发送回调、协商媒体类型或校验响应状态。
+`RequestBody` 必填媒体类型到 `MediaType` 的 content 映射。`MediaType` 可含 Schema/Reference、示例和按属性配置的 `Encoding`。`Header` 类似 Parameter，但没有 name/in。`Responses` 将状态字符串映射到 `Response | Reference | undefined`，可配置 default。Response 必填 description。`Link` 以 ID/ref 描述另一操作；`Callback` 将运行时表达式字符串映射到 PathItem。它们不跟随链接、发送回调、协商媒体类型或校验响应状态。
 
 ## 完整文档
 
@@ -72,7 +72,7 @@ console.log(document.paths['/items/{id}'].get?.operationId);
 
 ### OpenAPI {#openapi}
 
-[packages/openapi/src/openAPI.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L41)
+[packages/openapi/src/openAPI.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L42)
 
 ```ts
 export interface OpenAPI extends Extensible {
@@ -80,6 +80,8 @@ export interface OpenAPI extends Extensible {
   info: Info;
   servers?: Server[];
   paths: Paths;
+  webhooks?: Record<string, PathItem | Reference>;
+  jsonSchemaDialect?: string;
   components?: Components;
   security?: SecurityRequirement[];
   tags?: Tag[];
@@ -106,22 +108,24 @@ export interface Contact extends Extensible {
 ```ts
 export interface License extends Extensible {
   name: string;
+  identifier?: string;
   url?: string;
 }
 ```
 
 ### Info {#info}
 
-[packages/openapi/src/info.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/info.ts#L54)
+[packages/openapi/src/info.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/info.ts#L56)
 
 ```ts
 export interface Info extends Extensible {
-  title?: string;
+  title: string;
+  summary?: string;
   description?: string;
   termsOfService?: string;
   contact?: Contact;
   license?: License;
-  version?: string;
+  version: string;
 }
 ```
 
@@ -284,7 +288,7 @@ export interface Link extends Extensible {
 
 ```ts
 export interface Response extends Extensible {
-  description?: string;
+  description: string;
   headers?: Record<string, Header | Reference>;
   content?: Record<string, MediaType>;
   links?: Record<string, Link | Reference>;

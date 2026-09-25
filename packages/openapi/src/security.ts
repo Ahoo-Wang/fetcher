@@ -61,10 +61,12 @@ export interface OAuthFlows extends Extensible {
  * @property openIdConnectUrl - OpenId Connect URL to discover OAuth2 configuration values
  */
 export interface SecurityScheme extends Extensible {
-  type: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
+  /** `mutualTLS` is OpenAPI 3.1. */
+  type: 'apiKey' | 'http' | 'mutualTLS' | 'oauth2' | 'openIdConnect';
   description?: string;
   name?: string;
-  in?: ParameterLocation;
+  /** Where an `apiKey` is sent; `path` is not allowed. */
+  in?: Exclude<ParameterLocation, 'path'>;
   scheme?: string;
   bearerFormat?: string;
   flows?: OAuthFlows;
@@ -74,6 +76,7 @@ export interface SecurityScheme extends Extensible {
 /**
  * Lists the required security schemes to execute this operation
  */
-export interface SecurityRequirement extends Extensible {
+/** Scheme name → required scopes. Not extensible: every key is a scheme name. */
+export interface SecurityRequirement {
   [name: string]: string[];
 }

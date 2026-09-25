@@ -36,8 +36,9 @@ Dependency order, so each package is refactored on top of settled foundations.
 Each stage: deep review → plan the stage here → PRs (fix + regression test) →
 update this file.
 
-- [ ] **1. `fetcher`** — detailed below.
-- [ ] **2. Release contract** — storage UMD global name (`Fetcher`, clashes
+- [x] **1. `fetcher`** — detailed below. #1927, #1930.
+- [x] **2. Release contract** (#1931, with `.github/scripts/package-contract.mjs`
+      guarding it) — storage UMD global name (`Fetcher`, clashes
       with the core package); peer ranges `workspace:^`; unused react peers,
       react peer floor, `dequal` external. (`openai`/`openapi` import without
       `.js` in source, but unplugin-dts adds it: the declarations resolve —
@@ -60,9 +61,7 @@ update this file.
 
 Review findings, grouped by principle. ✅ = fixed.
 
-**PR 1 — correctness (no API change)** — branch
-`refactor/fetcher-core-correctness`, PR opened 2026-09-24; docs (wiki en/zh,
-skills) and release notes updated in the same PR.
+**PR 1 — correctness (no API change)** — #1927.
 
 - [x] Callers own their objects: every `Fetcher` gets its own headers record
       (all instances shared one `DEFAULT_HEADERS` object); `resolveExchange`
@@ -81,7 +80,7 @@ skills) and release notes updated in the same PR.
 - [x] Singletons survive two copies: `fetcherRegistrar` on `globalThis`;
       `getFetcher` resolves names by type, not `instanceof Fetcher`.
 
-**PR 2 — contracts** — branch `refactor/fetcher-contracts`.
+**PR 2 — contracts** — #1930.
 
 - [x] `Content-Type` describes the body: no default header on bodyless
       requests (every cross-origin GET was preflighted); JSON for plain
@@ -89,9 +88,33 @@ skills) and release notes updated in the same PR.
 - [x] Errors: an `ExchangeError` thrown for the same exchange (e.g.
       `HttpStatusValidationError`) is rethrown as is instead of wrapped, so
       `instanceof HttpStatusValidationError` works.
-- [x] JSDoc that contradicts the code (`timeoutFetch` examples, `@throws
-FetchError`, "ResponseResultExtractor returns the exchange",
+- [x] JSDoc that contradicts the code (`timeoutFetch` examples,
+      `@throws FetchError`, "ResponseResultExtractor returns the exchange",
       axios-style `FetcherConfigurer` example).
+
+## Stage 3: `decorator` + `openapi`
+
+One PR, branch `refactor/decorator-binding`.
+
+- [x] Binding by value shape (principle 2): a plain object is spread (as
+      before — Wow's `@attribute() attributes` relies on it); arrays, dates and
+      other values bind to the parameter name and fetcher serializes them. An
+      explicitly named `@attribute('x')` stores under `x` (new
+      `ParameterMetadata.explicit`; an inferred name does not count).
+- [x] A subclass override of an inherited endpoint without its own decorator
+      is kept.
+- [x] Parameter-name inference with a scanner (strings, comments, nested
+      brackets); destructured parameters have no name. Not a parser library: a
+      full JS parser as a runtime dependency of a decorator package costs more
+      than the 40-line scanner, and names only need identifiers.
+- [x] Executor cache in a WeakMap, rebuilt when `apiMetadata` is replaced;
+      unbound calls and standard (TC39) decorators fail with a clear error.
+- [x] Placeholder warning uses the fetcher's template style and the merged
+      path parameters.
+- [x] OpenAPI types: required fields, 3.1 additions, `in` without `path`,
+      `SecurityRequirement` not extensible. Kept as a 3.0 ∪ 3.1 superset for
+      readers; `paths` stays required (optional in 3.1) so readers need no
+      `?.` everywhere.
 
 ## Downstream follow-ups
 
@@ -104,7 +127,6 @@ FetchError`, "ResponseResultExtractor returns the exchange",
 
 ## Pause point
 
-2026-09-25: stage 1 code complete in two PRs — PR 1 (#1927) and PR 2
-(`refactor/fetcher-contracts`, stacked on PR 1; rebase onto `main` after PR 1
-merges). Next: merge both, tick stage 1 in **Order**, then stage 2 (release
-contract) — review, plan it here, PRs.
+2026-09-25: stages 1–2 merged (#1927, #1930, #1931). Stage 3 PR in flight
+(`refactor/decorator-binding`). Next: merge it, then stage 4 (`eventstream` +
+`openai`) — deep review, plan it here, PRs.

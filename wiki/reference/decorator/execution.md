@@ -29,21 +29,21 @@ Both hooks return `void | Promise<void>`. Before runs before body/URL intercepto
 
 `new FunctionMetadata(name, api, endpoint, parameters: Map<number, ParameterMetadata>)` retains these public fields. Its methods expose the same resolution used by decorated calls:
 
-| Member                        | Return / precedence                                                                                                         |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `fetcher`                     | Required Fetcher resolved from endpoint, API, global registry. Missing registration throws.                                 |
-| `resolvePath(parameterPath?)` | Combine endpoint/API basePath and parameter/endpoint path using truthy fallback. Absolute endpoint paths override the base. |
-| `resolveTimeout()`            | Endpoint defined timeout, then API; client fallback is applied later.                                                       |
-| `resolveResultExtractor()`    | Endpoint, API, JSON default.                                                                                                |
-| `resolveAttributes()`         | New Map; API then endpoint entries.                                                                                         |
-| `resolveEndpointReturnType()` | Endpoint, API, RESULT default.                                                                                              |
-| `resolveExchangeInit(args)`   | Required request and attributes fields only, with binding/request merge applied; does not send HTTP.                        |
+| Member                        | Return / precedence                                                                                                                                        |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fetcher`                     | Required Fetcher resolved from endpoint, API, global registry. Missing registration throws.                                                                |
+| `resolvePath(parameterPath?)` | Combine endpoint/API basePath and parameter/endpoint path using truthy fallback. Absolute endpoint paths override the base.                                |
+| `resolveTimeout()`            | Endpoint defined timeout, then API; client fallback is applied later.                                                                                      |
+| `resolveResultExtractor()`    | Endpoint, API, JSON default.                                                                                                                               |
+| `resolveAttributes()`         | New Map; API then endpoint entries.                                                                                                                        |
+| `resolveEndpointReturnType()` | Endpoint, API, RESULT default.                                                                                                                             |
+| `resolveExchangeInit(args)`   | Required request and attributes fields only, with binding/request merge applied (a request `path` selects the URL and is not carried); does not send HTTP. |
 
 ## Reflection and caching {#reflection}
 
 `API_METADATA_KEY` stores class metadata on the constructor. `ENDPOINT_METADATA_KEY` and `PARAMETER_METADATA_KEY` store method and parameter metadata on prototype/property. These are exported Symbols, not stable string keys to recreate with `Symbol(...)`.
 
-`buildRequestExecutor(target, defaultFunctionMetadata): RequestExecutor` creates/uses `target.requestExecutors: Map<string, RequestExecutor>` and shallow-merges instance `apiMetadata` on first use. It is public for generators/extensions; normal users call decorated methods. `api` walks the prototype chain and binds the closest string-named function once per name, preserving inherited metadata lookup while installing executors on the decorated class. Avoid using `requestExecutors` as your own instance field.
+`buildRequestExecutor(target, defaultFunctionMetadata): RequestExecutor` caches one executor per instance and method in a module-level WeakMap, so no field is added to the instance, and shallow-merges the instance's `apiMetadata` over the class metadata. Replacing `target.apiMetadata` with a new object rebuilds the executor on the next call. It is public for generators/extensions; normal users call decorated methods. `api` walks the prototype chain and binds the closest string-named function once per name, preserving inherited metadata lookup while installing executors on the decorated class. A method the decorated class overrides without its own endpoint decorator keeps its implementation. Calling a bound method without its instance (`const { list } = service; list()`) throws a `TypeError` that names the class and method; bind it or call it on the service.
 
 The following example records resolved calls without a server by replacing the network interceptor on an isolated client. This is a test arrangement, not a production retry mechanism.
 
@@ -92,13 +92,13 @@ console.assert((await new Health().check()).ok);
 
 | Symbol                                                                          | Implementation                                                                                                                            |
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="api_metadata_key"></a>`API_METADATA_KEY`                                 | [apiDecorator.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L90)                           |
-| <a id="buildrequestexecutor"></a>`buildRequestExecutor`                         | [apiDecorator.ts:164](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L164)                         |
-| <a id="endpoint_metadata_key"></a>`ENDPOINT_METADATA_KEY`                       | [endpointDecorator.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L31)                 |
+| <a id="api_metadata_key"></a>`API_METADATA_KEY`                                 | [apiDecorator.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L91)                           |
+| <a id="buildrequestexecutor"></a>`buildRequestExecutor`                         | [apiDecorator.ts:193](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L193)                         |
+| <a id="endpoint_metadata_key"></a>`ENDPOINT_METADATA_KEY`                       | [endpointDecorator.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L32)                 |
 | <a id="endpointreturntype"></a>`EndpointReturnType`                             | [endpointReturnTypeCapable.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts#L14) |
 | <a id="endpointreturntypecapable"></a>`EndpointReturnTypeCapable`               | [endpointReturnTypeCapable.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts#L19) |
 | <a id="executelifecycle"></a>`ExecuteLifeCycle`                                 | [executeLifeCycle.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/executeLifeCycle.ts#L23)                   |
-| <a id="functionmetadata"></a>`FunctionMetadata`                                 | [functionMetadata.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L100)                 |
+| <a id="functionmetadata"></a>`FunctionMetadata`                                 | [functionMetadata.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L88)                   |
 | <a id="decorator_target_attribute_key"></a>`DECORATOR_TARGET_ATTRIBUTE_KEY`     | [requestExecutor.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L17)                     |
 | <a id="decorator_metadata_attribute_key"></a>`DECORATOR_METADATA_ATTRIBUTE_KEY` | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | <a id="requestexecutor"></a>`RequestExecutor`                                   | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |

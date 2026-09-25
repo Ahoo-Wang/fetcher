@@ -24,6 +24,7 @@ import type { SecurityScheme } from './security';
 import type { Link } from './responses';
 import type { Callback } from './responses';
 import type { Example, Header } from './base-types';
+import type { PathItem } from './paths';
 import type { Extensible } from './extensions';
 
 /**
@@ -49,6 +50,8 @@ export interface Components extends Extensible {
   securitySchemes?: Record<string, SecurityScheme | Reference>;
   links?: Record<string, Link | Reference>;
   callbacks?: Record<string, Callback | Reference>;
+  /** Reusable Path Item Objects (3.1). */
+  pathItems?: Record<string, PathItem | Reference>;
 }
 
 /**
@@ -64,4 +67,5 @@ export type ComponentTypeMap = {
   securitySchemes: SecurityScheme;
   links: Link;
   callbacks: Callback;
+  pathItems: PathItem;
 };

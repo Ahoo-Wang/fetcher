@@ -50,7 +50,7 @@ export interface Link extends Extensible {
  * @property links - A map of operations links that can be followed from the response
  */
 export interface Response extends Extensible {
-  description?: string;
+  description: string;
   headers?: Record<string, Header | Reference>;
   content?: Record<string, MediaType>;
   links?: Record<string, Link | Reference>;

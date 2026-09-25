@@ -5,7 +5,7 @@ description: '服务与端点 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 # 服务与端点
 
-使用 TypeScript 传统装饰器把服务方法替换成 Fetcher 请求。启用 `experimentalDecorators`、`emitDecoratorMetadata`，与本包 tsconfig 一致；stage-3 装饰器不支持此参数装饰器契约。包自身会导入 reflect-metadata。
+使用 TypeScript 传统装饰器把服务方法替换成 Fetcher 请求。启用 `experimentalDecorators`，不需要 `emitDecoratorMetadata`。标准（stage-3）装饰器不支持此参数装饰器契约：按标准装饰器编译时，`@api` 与方法装饰器会抛出说明原因的 TypeError。包自身会导入 reflect-metadata。
 
 ## 类与方法装饰器 {#decorators}
 
@@ -31,7 +31,7 @@ description: '服务与端点 — @ahoo-wang/fetcher-decorator 5.0.0'
 | `returnType?`                 | 端点、API、`EndpointReturnType.RESULT`。                                   |
 | `attributes?`                 | API 条目、端点条目、参数属性依次覆盖。                                     |
 
-`ApiMetadataCapable.apiMetadata` 支持实例配置。在**每个方法首次调用时**，`buildRequestExecutor` 将实例元数据浅展开覆盖装饰器元数据，并按方法名在实例缓存执行器。必须在调用前设置实例元数据，后续替换不是受支持的动态重配置机制；端点元数据仍优先。浅合并意味着实例 headers 对象先整体替换类 headers，再参与端点/请求合并。
+`ApiMetadataCapable.apiMetadata` 支持实例配置。`buildRequestExecutor` 将实例元数据浅展开覆盖装饰器元数据，并按实例与方法名缓存执行器（缓存不在实例上）。把 `apiMetadata` 替换为新对象后，下次调用即生效；原地修改已缓存的对象不会生效。端点元数据仍优先。浅合并意味着实例 headers 对象先整体替换类 headers，再参与端点/请求合并。
 
 装饰器默认返回已解析 JSON，而 `Fetcher.get` 默认返回 Response。HEAD/204 或原始响应选择 `ResultExtractors.Response`；诊断场景使用 `returnType: EndpointReturnType.EXCHANGE` 并声明 `Promise<FetchExchange>`。钩子及失败见[执行过程](./execution.md)。
 
@@ -70,20 +70,20 @@ void loadUser;
 
 | 符号                                                        | 实现                                                                                                                        |
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="apimetadata"></a>`ApiMetadata`                       | [apiDecorator.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L40)             |
-| <a id="apimetadatacapable"></a>`ApiMetadataCapable`         | [apiDecorator.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L83)             |
-| <a id="api"></a>`api`                                       | [apiDecorator.ts:228](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L228)           |
-| <a id="pathcapable"></a>`PathCapable`                       | [endpointDecorator.ts:5](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L5)     |
-| <a id="endpointmetadata"></a>`EndpointMetadata`             | [endpointDecorator.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L21)   |
-| <a id="methodendpointmetadata"></a>`MethodEndpointMetadata` | [endpointDecorator.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L33)   |
-| <a id="endpoint"></a>`endpoint`                             | [endpointDecorator.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L59)   |
-| <a id="get"></a>`get`                                       | [endpointDecorator.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L101) |
-| <a id="post"></a>`post`                                     | [endpointDecorator.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L126) |
-| <a id="put"></a>`put`                                       | [endpointDecorator.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L151) |
-| <a id="del"></a>`del`                                       | [endpointDecorator.ts:176](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L176) |
-| <a id="patch"></a>`patch`                                   | [endpointDecorator.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L201) |
-| <a id="head"></a>`head`                                     | [endpointDecorator.ts:229](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L229) |
-| <a id="options"></a>`options`                               | [endpointDecorator.ts:254](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L254) |
+| <a id="apimetadata"></a>`ApiMetadata`                       | [apiDecorator.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L41)             |
+| <a id="apimetadatacapable"></a>`ApiMetadataCapable`         | [apiDecorator.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L84)             |
+| <a id="api"></a>`api`                                       | [apiDecorator.ts:259](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L259)           |
+| <a id="pathcapable"></a>`PathCapable`                       | [endpointDecorator.ts:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L6)     |
+| <a id="endpointmetadata"></a>`EndpointMetadata`             | [endpointDecorator.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L22)   |
+| <a id="methodendpointmetadata"></a>`MethodEndpointMetadata` | [endpointDecorator.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L34)   |
+| <a id="endpoint"></a>`endpoint`                             | [endpointDecorator.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L60)   |
+| <a id="get"></a>`get`                                       | [endpointDecorator.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L103) |
+| <a id="post"></a>`post`                                     | [endpointDecorator.ts:128](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L128) |
+| <a id="put"></a>`put`                                       | [endpointDecorator.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L153) |
+| <a id="del"></a>`del`                                       | [endpointDecorator.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L178) |
+| <a id="patch"></a>`patch`                                   | [endpointDecorator.ts:203](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L203) |
+| <a id="head"></a>`head`                                     | [endpointDecorator.ts:231](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L231) |
+| <a id="options"></a>`options`                               | [endpointDecorator.ts:256](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L256) |
 | <a id="autogenerated"></a>`AutoGenerated`                   | [generated.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts#L25)                   |
 | <a id="autogeneratederror"></a>`autoGeneratedError`         | [generated.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/generated.ts#L41)                   |
 

@@ -6,16 +6,16 @@ Use it when a stable service interface is clearer than repeated request assembly
 ## Install
 
 ```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator reflect-metadata
+pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator
 ```
 
-Peer dependency: `@ahoo-wang/fetcher`. Enable `experimentalDecorators` and
-`emitDecoratorMetadata`, then import `reflect-metadata` once at startup.
+Peer dependency: `@ahoo-wang/fetcher`. Enable `experimentalDecorators`
+(`emitDecoratorMetadata` is not needed). The package depends on and imports
+`reflect-metadata` itself.
 
 ## Example
 
 ```ts
-import 'reflect-metadata';
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { api, get, path } from '@ahoo-wang/fetcher-decorator';
 

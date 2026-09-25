@@ -608,10 +608,8 @@ describe('apiDecorator', () => {
       });
     });
 
-    it('should create a requestExecutors map on the target when none exists', () => {
+    it('should cache executors off the instance and rebuild them when apiMetadata is replaced', () => {
       const testApi: any = new TestApi();
-      delete testApi.requestExecutors;
-
       const functionMetadata = new FunctionMetadata(
         'newMethod',
         {},
@@ -621,8 +619,12 @@ describe('apiDecorator', () => {
 
       const executor = buildRequestExecutor(testApi, functionMetadata);
 
-      expect(testApi.requestExecutors).toBeInstanceOf(Map);
-      expect(testApi.requestExecutors.get('newMethod')).toBe(executor);
+      expect(Object.keys(testApi)).not.toContain('requestExecutors');
+      expect(buildRequestExecutor(testApi, functionMetadata)).toBe(executor);
+      testApi.apiMetadata = { basePath: '/replaced' };
+      expect(buildRequestExecutor(testApi, functionMetadata)).not.toBe(
+        executor,
+      );
     });
   });
 });

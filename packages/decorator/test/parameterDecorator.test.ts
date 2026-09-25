@@ -337,12 +337,11 @@ describe('parameterDecorator', () => {
       // Base: single path parameter at index 0
       parameter(ParameterType.PATH, 'id')(BaseClass.prototype, 'getUser', 0);
 
-      const baseBefore: Map<number, ParameterMetadata> =
-        Reflect.getOwnMetadata(
-          PARAMETER_METADATA_KEY,
-          BaseClass.prototype,
-          'getUser',
-        );
+      const baseBefore: Map<number, ParameterMetadata> = Reflect.getOwnMetadata(
+        PARAMETER_METADATA_KEY,
+        BaseClass.prototype,
+        'getUser',
+      );
       expect(baseBefore.size).toBe(1);
 
       // Child re-decorates the SAME inherited method with an extra parameter
@@ -363,6 +362,7 @@ describe('parameterDecorator', () => {
         type: ParameterType.PATH,
         name: 'id',
         index: 0,
+        explicit: true,
       });
       expect(baseAfter.has(1)).toBe(false);
 

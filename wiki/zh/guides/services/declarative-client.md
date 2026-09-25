@@ -10,11 +10,11 @@ description: 定义、调用并验证带显式请求绑定的装饰器服务。
 ## 1. 准备编译器和服务端
 
 ```bash
-pnpm add @ahoo-wang/fetcher@^5.0.0 @ahoo-wang/fetcher-decorator@^5.0.0 reflect-metadata
+pnpm add @ahoo-wang/fetcher@^5.0.0 @ahoo-wang/fetcher-decorator@^5.0.0
 pnpm add -D typescript@6.0.3
 ```
 
-使用 TypeScript 旧式装饰器编译；仅剥离类型的工具链不能执行参数装饰器。在定义服务前导入 `reflect-metadata`，并将这些选项合并到应用 tsconfig：
+使用 TypeScript 旧式装饰器编译；仅剥离类型的工具链不能执行参数装饰器。本包自身会导入 `reflect-metadata`，也不需要 `emitDecoratorMetadata`。将这些选项合并到应用 tsconfig：
 
 ```json
 {
@@ -23,7 +23,6 @@ pnpm add -D typescript@6.0.3
     "module": "ESNext",
     "moduleResolution": "bundler",
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "strict": true
   }
 }
@@ -34,7 +33,6 @@ pnpm add -D typescript@6.0.3
 ## 2. 定义并调用两个操作
 
 ```ts
-import 'reflect-metadata';
 import { Fetcher, ExchangeError } from '@ahoo-wang/fetcher';
 import {
   api,
@@ -92,10 +90,10 @@ export async function runUsers() {
 
 ## 失败与生命周期
 
-缺少元数据时检查编译选项和导入顺序；绑定为 undefined 时检查参数顺序与参数装饰器。非 2xx 响应默认以 exchange 错误拒绝，JSON 解析也可能失败。返回类型 `User` 不会验证服务端 JSON。本例完整消费两个响应，没有需要销毁的监听器或流。
+出现提到 `experimentalDecorators` 的 TypeError 时，说明服务按标准装饰器编译，请启用该选项；绑定为 undefined 时检查参数顺序与参数装饰器。非 2xx 响应默认以 exchange 错误拒绝，JSON 解析也可能失败。返回类型 `User` 不会验证服务端 JSON。本例完整消费两个响应，没有需要销毁的监听器或流。
 
 继续查阅[服务与端点元数据](../../reference/decorator/services-and-endpoints)、[参数绑定](../../reference/decorator/parameters)及[执行与取消](../../reference/decorator/execution)。
 
-[apiDecorator.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L140) 实现了方法替换。
+[apiDecorator.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L154) 实现了方法替换。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。

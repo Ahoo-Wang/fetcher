@@ -38,6 +38,8 @@ export interface Contact extends Extensible {
  */
 export interface License extends Extensible {
   name: string;
+  /** An SPDX license expression (3.1); exclusive with `url`. */
+  identifier?: string;
   url?: string;
 }
 
@@ -52,10 +54,12 @@ export interface License extends Extensible {
  * @property version - The version of the OpenAPI document
  */
 export interface Info extends Extensible {
-  title?: string;
+  title: string;
+  /** A short summary of the API (3.1). */
+  summary?: string;
   description?: string;
   termsOfService?: string;
   contact?: Contact;
   license?: License;
-  version?: string;
+  version: string;
 }

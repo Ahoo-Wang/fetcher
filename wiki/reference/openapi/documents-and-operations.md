@@ -9,21 +9,21 @@ Use these types to author an OpenAPI document or describe input to the [generato
 
 ## Document contract
 
-| Type                              | Required fields and behavior                                                                                     |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `OpenAPI`                         | `openapi: string`, `info: Info`, `paths: Paths`; optional servers, components, security, tags and externalDocs   |
-| `Info`                            | All fields optional in this package, including title/version; this is less strict than a specification validator |
-| `Contact`, `License`              | Contact fields optional; License requires name                                                                   |
-| `Server`, `ServerVariable`        | Server requires url; variable requires default; no URL interpolation happens here                                |
-| `Tag`, `ExternalDocumentation`    | Require name and url respectively; metadata only                                                                 |
-| `Paths`, `PathItem`, `HTTPMethod` | Paths maps strings to items; eight lowercase method keys, shared parameters/servers, optional `$ref`             |
-| `Operation`                       | Requires responses; optional operationId, tags, parameters, body, callbacks, security and servers                |
+| Type                              | Required fields and behavior                                                                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OpenAPI`                         | `openapi: string`, `info: Info`, `paths: Paths`; optional servers, webhooks and jsonSchemaDialect (3.1), components, security, tags and externalDocs |
+| `Info`                            | Requires title and version; optional summary (3.1), description, termsOfService, contact and license                                                 |
+| `Contact`, `License`              | Contact fields optional; License requires name, with an optional SPDX identifier (3.1) or url                                                        |
+| `Server`, `ServerVariable`        | Server requires url; variable requires default; no URL interpolation happens here                                                                    |
+| `Tag`, `ExternalDocumentation`    | Require name and url respectively; metadata only                                                                                                     |
+| `Paths`, `PathItem`, `HTTPMethod` | Paths maps strings to items; eight lowercase method keys, shared parameters/servers, optional `$ref`                                                 |
+| `Operation`                       | Requires responses; optional operationId, tags, parameters, body, callbacks, security and servers                                                    |
 
 ## Parameters and responses
 
 `Parameter` requires `name` and `in` (`query`, `header`, `path`, `cookie`). All serialization hints (`style`, `explode`, `allowReserved`, `allowEmptyValue`) are optional; the package supplies no runtime defaults. It does not enforce path-parameter `required: true`, or mutual exclusion of schema/content and example/examples.
 
-`RequestBody` requires a media-type-to-`MediaType` content map. `MediaType` can contain a Schema/Reference, examples, and per-property `Encoding`. `Header` has parameter-like fields without name/in. `Responses` maps string status keys to `Response | Reference | undefined`, with optional default. A Response's description is optional in these declarations. `Link` describes another operation by ID/ref; `Callback` maps runtime-expression strings to PathItem. None follows links, sends callbacks, negotiates content, or validates response status.
+`RequestBody` requires a media-type-to-`MediaType` content map. `MediaType` can contain a Schema/Reference, examples, and per-property `Encoding`. `Header` has parameter-like fields without name/in. `Responses` maps string status keys to `Response | Reference | undefined`, with optional default. A Response requires description. `Link` describes another operation by ID/ref; `Callback` maps runtime-expression strings to PathItem. None follows links, sends callbacks, negotiates content, or validates response status.
 
 ## Complete document
 
@@ -72,7 +72,7 @@ console.log(document.paths['/items/{id}'].get?.operationId);
 
 ### OpenAPI {#openapi}
 
-[packages/openapi/src/openAPI.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L41)
+[packages/openapi/src/openAPI.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/openAPI.ts#L42)
 
 ```ts
 export interface OpenAPI extends Extensible {
@@ -80,6 +80,8 @@ export interface OpenAPI extends Extensible {
   info: Info;
   servers?: Server[];
   paths: Paths;
+  webhooks?: Record<string, PathItem | Reference>;
+  jsonSchemaDialect?: string;
   components?: Components;
   security?: SecurityRequirement[];
   tags?: Tag[];
@@ -106,22 +108,24 @@ export interface Contact extends Extensible {
 ```ts
 export interface License extends Extensible {
   name: string;
+  identifier?: string;
   url?: string;
 }
 ```
 
 ### Info {#info}
 
-[packages/openapi/src/info.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/info.ts#L54)
+[packages/openapi/src/info.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/info.ts#L56)
 
 ```ts
 export interface Info extends Extensible {
-  title?: string;
+  title: string;
+  summary?: string;
   description?: string;
   termsOfService?: string;
   contact?: Contact;
   license?: License;
-  version?: string;
+  version: string;
 }
 ```
 
@@ -284,7 +288,7 @@ export interface Link extends Extensible {
 
 ```ts
 export interface Response extends Extensible {
-  description?: string;
+  description: string;
   headers?: Record<string, Header | Reference>;
   content?: Record<string, MediaType>;
   links?: Record<string, Link | Reference>;

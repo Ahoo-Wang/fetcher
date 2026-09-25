@@ -9,18 +9,18 @@ These types describe security requirements and vendor metadata. They do not auth
 
 ## Security objects
 
-| Type                  | Contract                                                                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `SecurityScheme`      | Required type: apiKey/http/oauth2/openIdConnect; optional description, name, in, scheme, bearerFormat, flows, openIdConnectUrl |
-| `OAuthFlow`           | Required scopes map (`scope → description`); optional authorizationUrl, tokenUrl, refreshUrl                                   |
-| `OAuthFlows`          | Optional implicit, password, clientCredentials, authorizationCode flow objects                                                 |
-| `SecurityRequirement` | Scheme-name keys mapped to string[] scope names                                                                                |
+| Type                  | Contract                                                                                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SecurityScheme`      | Required type: apiKey/http/mutualTLS (3.1)/oauth2/openIdConnect; optional description, name, in (query/header/cookie), scheme, bearerFormat, flows, openIdConnectUrl |
+| `OAuthFlow`           | Required scopes map (`scope → description`); optional authorizationUrl, tokenUrl, refreshUrl                                                                         |
+| `OAuthFlows`          | Optional implicit, password, clientCredentials, authorizationCode flow objects                                                                                       |
+| `SecurityRequirement` | Scheme-name keys mapped to string[] scope names; not Extensible, since every key is a scheme name                                                                    |
 
 The declaration does not make fields conditionally required for each scheme or flow. For example, TypeScript does not reject an apiKey scheme missing name/in. Arrays and scope maps are passed through as data; there are no defaults, return values, network effects, or cleanup methods.
 
 ## Extensions
 
-`Extensible` permits only the template-key family `x-${string}`, with any values. Most document objects extend it. `CommonExtensions` separately names `x-internal`, `x-deprecated` (message/since/removedIn/replacement), `x-tags`, `x-examples`, `x-order`, and `x-group`. It is not automatically merged into every Extensible object and does not implement generator behavior. Generator-specific Wow extensions are documented in [discovery](../generator/wow-discovery).
+`Extensible` permits only the template-key family `x-${string}`, with any values. Most document objects extend it; `Reference` and `SecurityRequirement` do not. `CommonExtensions` separately names `x-internal`, `x-deprecated` (message/since/removedIn/replacement), `x-tags`, `x-examples`, `x-order`, and `x-group`. It is not automatically merged into every Extensible object and does not implement generator behavior. Generator-specific Wow extensions are documented in [discovery](../generator/wow-discovery).
 
 ## Complete example
 
@@ -74,10 +74,10 @@ export interface OAuthFlows extends Extensible {
 
 ```ts
 export interface SecurityScheme extends Extensible {
-  type: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
+  type: 'apiKey' | 'http' | 'mutualTLS' | 'oauth2' | 'openIdConnect';
   description?: string;
   name?: string;
-  in?: ParameterLocation;
+  in?: Exclude<ParameterLocation, 'path'>;
   scheme?: string;
   bearerFormat?: string;
   flows?: OAuthFlows;
@@ -87,10 +87,10 @@ export interface SecurityScheme extends Extensible {
 
 ### SecurityRequirement {#securityrequirement}
 
-[packages/openapi/src/security.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L77)
+[packages/openapi/src/security.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L80)
 
 ```ts
-export interface SecurityRequirement extends Extensible {
+export interface SecurityRequirement {
   [name: string]: string[];
 }
 ```

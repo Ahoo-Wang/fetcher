@@ -9,16 +9,20 @@ description: '参数绑定 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 ## 绑定矩阵 {#bindings}
 
-`parameter(type: ParameterType, name = '')` 返回传统方法参数装饰器。`ParameterMetadata` 保存 `type`、可选 `name`、`index`；`PARAMETER_METADATA_KEY` 是目标/属性上的元数据 Symbol。
+`parameter(type: ParameterType, name = '')` 返回传统方法参数装饰器。`ParameterMetadata` 保存 `type`、可选 `name`、`index` 和可选 `explicit`（名称是否由装饰器给出而非推断）；`PARAMETER_METADATA_KEY` 是目标/属性上的元数据 Symbol。
 
-| 工厂 / ParameterType               | 标量参数                      | 对象参数                           | Nullish 行为                                                    |
-| ---------------------------------- | ----------------------------- | ---------------------------------- | --------------------------------------------------------------- |
-| `path(name = '')` / PATH           | 绑定具名路径字段              | 合并可枚举条目，忽略显式 name      | 跳过 null/undefined                                             |
-| `query(name = '')` / QUERY         | 绑定具名查询字段              | 合并条目                           | 跳过 null/undefined                                             |
-| `header(name = '')` / HEADER       | 设置具名请求头                | 大小写不敏感合并条目               | 整个参数 null/undefined 时跳过，对象字段为 undefined 时删除该头 |
-| `body()` / BODY                    | 整个请求正文                  | 整个请求正文                       | 按原值赋值，再参与 request 合并                                 |
-| `request()` / REQUEST              | 应为 `ParameterRequest`       | 最后合并到已解析请求               | 假值变为空请求                                                  |
-| `attribute(name = '')` / ATTRIBUTE | 具名 Map 条目，跳过 undefined | 合并记录/Map 条目，null 不增加条目 | 记录合并忽略 null                                               |
+参数按形状绑定。只有普通对象（对象字面量或 `Object.create(null)`）会展开为键；其他值，包括数组、`Date` 和类实例，都绑定到参数名（显式名称，否则推断名称，否则 `param${index}`），由 fetcher 序列化。
+
+| 工厂 / ParameterType               | 其他参数（标量、数组、`Date`、实例）                                 | 普通对象参数                               | Nullish 行为                                                     |
+| ---------------------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------- |
+| `path(name = '')` / PATH           | 绑定到参数名                                                         | 展开条目，忽略显式 name                    | 跳过 null/undefined 参数或条目                                   |
+| `query(name = '')` / QUERY         | 绑定到参数名；数组重复该键（`ids=1&ids=2`），`Date` 以 ISO 8601 发送 | 展开条目                                   | 跳过 null/undefined 参数或条目                                   |
+| `header(name = '')` / HEADER       | 设置以参数名命名的请求头；数组以 `, ` 连接，`Date` 以 ISO 8601 发送  | 每个条目设置一个请求头，大小写不敏感       | 整个参数 null/undefined 时跳过，条目为 null/undefined 时删除该头 |
+| `body()` / BODY                    | 整个请求正文                                                         | 整个请求正文                               | 按原值赋值，再参与 request 合并                                  |
+| `request()` / REQUEST              | 应为 `ParameterRequest`                                              | 最后合并到已解析请求                       | 假值变为空请求                                                   |
+| `attribute(name = '')` / ATTRIBUTE | 存入参数名下                                                         | 显式名称：整体存入该名下；未命名：合并条目 | 跳过 undefined；null 与其他值一样存入                            |
+
+显式命名的 `@attribute('user')` 无论值是什么都存入 `user` 名下。未命名的 `@attribute()` 逐条合并 `Map` 或普通对象，其他值存入推断名称下。
 
 参数从左到右处理，后绑定优先。body/request 每种只选择一个值，因此最后一个此类参数获胜，并非合并多个 request 参数。普通未注解参数被忽略。
 
@@ -28,15 +32,15 @@ description: '参数绑定 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 ## 名称与反射 {#names}
 
-`getParameterNames(func): string[]` 解析 `Function.toString()`，以函数为键在 WeakMap 缓存；解析失败返回空数组，非函数在解析前抛 TypeError。实现使用简单逗号分割并去掉类型/默认值，复杂语法及压缩后的名称不是稳定契约。
+`getParameterNames(func): string[]` 解析 `Function.toString()`，以函数为键在 WeakMap 缓存；解析失败返回空数组，非函数在解析前抛 TypeError。实现按顶层逗号分割（默认值、字符串和注释中的逗号与括号不会分割），并去掉类型与默认值。解构参数得到 `''`，使后续名称保持原索引；剩余参数得到去掉 `...` 的名称。压缩后的名称不是稳定契约。
 
-`getParameterName(target, propertyKey, index, providedName?)` 优先返回真值显式名称，再尝试推断，否则 undefined。没有解析名称的标量绑定回退到 `param${index}`。缺失路径绑定可产生诊断警告，但随后 URL 解析器可能因缺值抛错，不能把警告视为执行成功。
+`getParameterName(target, propertyKey, index, providedName?)` 优先返回真值显式名称，再尝试推断，否则 undefined（解构参数没有推断名称）。没有解析名称的绑定值回退到 `param${index}`。按 fetcher 的 `urlTemplateStyle` 读取路径模板，若合并所有层（含 `@request`）后某占位符没有路径参数，会输出警告；除非拦截器补上该值，解析 URL 会以 `Missing required path parameter` 失败。
 
 ## 取消与继承元数据 {#cancellation}
 
 `AbortSignal` 或 `AbortController` 参数在装饰器元数据之前识别，即使没有装饰器也有效。多个同类参数最后一个优先；request 参数还能覆盖。signal 或 controller 与 Fetcher timeout 同时生效，先触发者生效，详见[取消](../fetcher/errors-and-cancellation.md)。
 
-继承参数元数据采用写时复制，装饰重写方法不会修改父类 Map。类绑定遍历继承的字符串命名方法，Symbol 命名和静态方法不在该遍历中。继承/重写端点也应显式填写参数名称。
+继承参数元数据采用写时复制，装饰重写方法不会修改父类 Map。未加自身端点装饰器的重写方法保留自己的实现，`@api` 不会用父类的请求替换它。类绑定遍历继承的字符串命名方法，Symbol 命名和静态方法不在该遍历中。继承/重写端点也应显式填写参数名称。
 
 ## 完整示例 {#example}
 
@@ -86,16 +90,16 @@ void updateUser;
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | <a id="parametertype"></a>`ParameterType`                   | [parameterDecorator.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L19)   |
 | <a id="parametermetadata"></a>`ParameterMetadata`           | [parameterDecorator.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L136) |
-| <a id="parameter_metadata_key"></a>`PARAMETER_METADATA_KEY` | [parameterDecorator.ts:161](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L161) |
-| <a id="parameter"></a>`parameter`                           | [parameterDecorator.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L199) |
-| <a id="path"></a>`path`                                     | [parameterDecorator.ts:265](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L265) |
-| <a id="query"></a>`query`                                   | [parameterDecorator.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L297) |
-| <a id="header"></a>`header`                                 | [parameterDecorator.ts:329](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L329) |
-| <a id="body"></a>`body`                                     | [parameterDecorator.ts:347](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L347) |
-| <a id="parameterrequest"></a>`ParameterRequest`             | [parameterDecorator.ts:359](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L359) |
-| <a id="request"></a>`request`                               | [parameterDecorator.ts:379](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L379) |
-| <a id="attribute"></a>`attribute`                           | [parameterDecorator.ts:415](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L415) |
-| <a id="getparameternames"></a>`getParameterNames`           | [reflection.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L46)                   |
-| <a id="getparametername"></a>`getParameterName`             | [reflection.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L92)                   |
+| <a id="parameter_metadata_key"></a>`PARAMETER_METADATA_KEY` | [parameterDecorator.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L168) |
+| <a id="parameter"></a>`parameter`                           | [parameterDecorator.ts:206](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L206) |
+| <a id="path"></a>`path`                                     | [parameterDecorator.ts:273](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L273) |
+| <a id="query"></a>`query`                                   | [parameterDecorator.ts:305](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L305) |
+| <a id="header"></a>`header`                                 | [parameterDecorator.ts:337](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L337) |
+| <a id="body"></a>`body`                                     | [parameterDecorator.ts:355](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L355) |
+| <a id="parameterrequest"></a>`ParameterRequest`             | [parameterDecorator.ts:367](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L367) |
+| <a id="request"></a>`request`                               | [parameterDecorator.ts:387](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L387) |
+| <a id="attribute"></a>`attribute`                           | [parameterDecorator.ts:423](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L423) |
+| <a id="getparameternames"></a>`getParameterNames`           | [reflection.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L51)                   |
+| <a id="getparametername"></a>`getParameterName`             | [reflection.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L97)                   |
 
 [包索引](./index.md)

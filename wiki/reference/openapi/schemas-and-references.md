@@ -27,7 +27,7 @@ Use `Schema` for payload shape and `Components` to name reusable definitions. Op
 
 `Reference` contains only `$ref: string`. It neither verifies target existence nor resolves local/remote pointers. `IsReference<T>` is a distributive conditional type selecting union members assignable to `{ $ref: string }`; it is not a runtime type guard.
 
-`Components` holds optional named maps of schemas, responses, parameters, examples, requestBodies, headers, securitySchemes, links and callbacks. Each map value also accepts Reference. `ComponentTypeMap` maps those same keys to the corresponding non-reference object type for generic code.
+`Components` holds optional named maps of schemas, responses, parameters, examples, requestBodies, headers, securitySchemes, links, callbacks and pathItems (3.1). Each map value also accepts Reference. `ComponentTypeMap` maps those same keys to the corresponding non-reference object type for generic code.
 
 `Discriminator.propertyName` is required; mapping is optional string-to-string. All XML properties are optional: name, namespace, prefix, attribute, wrapped. They do not change serialization themselves.
 
@@ -172,7 +172,7 @@ export type IsReference<T> = T extends { $ref: string } ? T : never;
 
 ### Components {#components}
 
-[packages/openapi/src/components.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/components.ts#L42)
+[packages/openapi/src/components.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/components.ts#L43)
 
 ```ts
 export interface Components extends Extensible {
@@ -185,12 +185,13 @@ export interface Components extends Extensible {
   securitySchemes?: Record<string, SecurityScheme | Reference>;
   links?: Record<string, Link | Reference>;
   callbacks?: Record<string, Callback | Reference>;
+  pathItems?: Record<string, PathItem | Reference>;
 }
 ```
 
 ### ComponentTypeMap {#componenttypemap}
 
-[packages/openapi/src/components.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/components.ts#L57)
+[packages/openapi/src/components.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/components.ts#L60)
 
 ```ts
 export type ComponentTypeMap = {
@@ -203,5 +204,6 @@ export type ComponentTypeMap = {
   securitySchemes: SecurityScheme;
   links: Link;
   callbacks: Callback;
+  pathItems: PathItem;
 };
 ```
