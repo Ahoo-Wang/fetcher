@@ -23,13 +23,13 @@ description: 'KeyStorage 与变更监听 — @ahoo-wang/fetcher-storage 5.0.0'
 
 ## 读写与生命周期 {#operations}
 
-| 方法                   | 返回值                               | 行为                                                                             |
-| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。                         |
-| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。           |
-| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。 |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。     |
-| `destroy()`            | `void`                               | 只移除此实例的内部缓存监听器，不删除键，不关闭/销毁总线。                        |
+| 方法                   | 返回值                               | 行为                                                                                                     |
+| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。无法反序列化的值会被删除并告警，按缺失处理。     |
+| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。 |
+| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                         |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。                             |
+| `destroy()`            | `void`                               | 只移除此实例的内部缓存监听器，不删除键，不关闭/销毁总线。                                                |
 
 `StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，但返回的移除函数仍指向该名称。销毁拥有的总线前自行解绑外部监听器。
 
@@ -74,6 +74,6 @@ settings.eventBus.destroy();
 | <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
 | <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
 | <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L215) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217) |
 
 [包索引](./index.md)

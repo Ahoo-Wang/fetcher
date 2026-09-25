@@ -21,6 +21,9 @@ export class BroadcastChannelMessenger implements CrossTabMessenger {
 
   constructor(channelName: string) {
     this.broadcastChannel = new BroadcastChannel(channelName);
+    // Node's BroadcastChannel keeps the process alive while it has a
+    // listener; a messenger must not stop a script or server from exiting.
+    (this.broadcastChannel as { unref?: () => void }).unref?.();
   }
 
   postMessage(message: any): void {
