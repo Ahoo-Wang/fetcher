@@ -107,23 +107,9 @@ if (
   const checks = pages(
     `repos/${repo}/commits/${sha}/check-runs?filter=all&per_page=100`,
   ).flatMap(page => page.check_runs);
-  if (checks.some(check => check.name === CODACY_CHECK)) {
-    requireSuccessfulCheck(checks, CODACY_CHECK, CODACY_APP);
-  } else {
-    const pulls = pages(
-      `repos/${repo}/commits/${sha}/pulls?per_page=100`,
-    ).flat();
-    const head = mergedPullRequestHead(sha, pulls);
-    assert.ok(
-      head,
-      `${CODACY_CHECK}: absent on ${sha}, and no single pull request was merged as that commit`,
-    );
-    const headChecks = pages(
-      `repos/${repo}/commits/${head}/check-runs?filter=all&per_page=100`,
-    ).flatMap(page => page.check_runs);
-    requireSuccessfulCheck(headChecks, CODACY_CHECK, CODACY_APP);
-    console.log(`${CODACY_CHECK}: admitted from pull request head ${head}`);
-  }
+  // The 5.x maintenance line is not analysed by Codacy (the branch is not
+  // enabled there), so its releases are admitted on the workflows above and
+  // Codecov only. `main` keeps requiring Codacy.
   const statuses = pages(
     `repos/${repo}/commits/${sha}/statuses?per_page=100`,
   ).flat();
