@@ -253,6 +253,7 @@ export class SpaceIdStorage extends KeyStorage<SpaceId> {
       ...reset,
       serializer: typedIdentitySerializer(),
     });
+    if (!eventBus) this.ownEventBus();
   }
 }
 

@@ -41,10 +41,12 @@ preferences.destroy();
 ## Core capabilities
 
 - Browser `localStorage` with an in-memory fallback.
-- One cached, typed value per `KeyStorage` instance.
+- One cached, typed value per `KeyStorage` instance; `reload()` re-reads it
+  from storage.
 - JSON serialization by default and custom serializers when needed.
 - Typed `{ oldValue, newValue }` notifications.
-- Explicit listener removal and owner cleanup.
+- Explicit listener removal and owner cleanup; `destroy()` closes the event
+  bus the storage created.
 
 ## Documentation
 

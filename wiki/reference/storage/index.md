@@ -51,7 +51,6 @@ settings.remove();
 console.assert(settings.get()?.theme === 'system');
 removeListener();
 settings.destroy();
-settings.eventBus.destroy();
 ```
 
 [Complete public symbol index](./symbols.md)

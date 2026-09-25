@@ -16,12 +16,13 @@ Peer 依赖：`fetcher`、`fetcher-eventbus` 和 `fetcher-storage`。
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { CoSecConfigurer } from '@ahoo-wang/fetcher-cosec';
+import { CoSecConfigurer, sameOriginTrust } from '@ahoo-wang/fetcher-cosec';
 
 const api = new Fetcher({ baseURL: 'https://api.example.com' });
 
 const cosec = new CoSecConfigurer({
   appId: 'developer-console',
+  isTrusted: sameOriginTrust,
   onUnauthorized: () => window.location.assign('/login'),
   onForbidden: async () => console.error('Access denied'),
 });
@@ -32,12 +33,16 @@ cosec.applyTo(api);
 该最小配置只添加归属请求头，不启用认证。提供 `TokenRefresher` 后会启用令牌存储、
 Bearer 注入与自动刷新。刷新请求使用独立、未配置 CoSec 的 Fetcher。
 
+`isTrusted: sameOriginTrust` 让令牌与 CoSec 请求头（含设备 ID）只发往 `baseURL`
+所在源与页面自身的源。不设 `isTrusted` 时，发往任意源绝对 URL 的请求都会收到访问令牌。
+
 ## 核心能力
 
 - 应用、设备、请求、空间、租户与所有者归属。
 - JWT 解析、持久化、登录、退出与当前用户读取。
 - 合并并发自动刷新，并防止递归刷新。
 - 可配置 401 与 403 回调。
+- 用 `isTrusted` / `sameOriginTrust` 按源决定是否携带凭据。
 - 为自定义管线提供独立拦截器。
 
 切勿记录、嵌入或提交真实令牌。

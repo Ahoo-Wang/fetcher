@@ -14,10 +14,10 @@ description: >
 
 ## Gotchas a capable model gets wrong
 
-- `get()` caches. Writes that bypass this instance or its bus (direct `localStorage.setItem`) are not seen once a value is cached.
+- `get()` caches. Writes that bypass this instance or its bus (direct `localStorage.setItem`) are not seen once a value is cached; `reload()` re-reads the backend (keeping the cached object when the stored text is unchanged).
 - `defaultValue` is returned when nothing is stored but is never written or cached.
 - `addListener(handler)` returns a remover function; a duplicate handler `name` is ignored silently, and its remover then deletes the handler registered first under that name.
-- `destroy()` only detaches the internal cache handler; listeners and the bus stay alive.
+- `destroy()` detaches the internal cache handler and closes the bus the storage created (the default one); listeners and a bus passed in `eventBus` stay alive.
 - One broadcast bus serves one key (and one serializer instance); sharing it across keys throws.
 - Installing needs the peers: `@ahoo-wang/fetcher-eventbus`, which itself needs `@ahoo-wang/fetcher`.
 

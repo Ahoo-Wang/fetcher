@@ -17,12 +17,13 @@ Peer dependencies: `fetcher`, `fetcher-eventbus`, and `fetcher-storage`.
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
-import { CoSecConfigurer } from '@ahoo-wang/fetcher-cosec';
+import { CoSecConfigurer, sameOriginTrust } from '@ahoo-wang/fetcher-cosec';
 
 const api = new Fetcher({ baseURL: 'https://api.example.com' });
 
 const cosec = new CoSecConfigurer({
   appId: 'developer-console',
+  isTrusted: sameOriginTrust,
   onUnauthorized: () => window.location.assign('/login'),
   onForbidden: async () => console.error('Access denied'),
 });
@@ -34,12 +35,17 @@ This minimal configuration adds attribution headers without authentication.
 Provide a `TokenRefresher` to enable token storage, Bearer injection, and
 automatic refresh. Keep refresh requests on a separate unconfigured Fetcher.
 
+`isTrusted: sameOriginTrust` keeps the token and the CoSec headers, device ID
+included, on the origin of the `baseURL` and the page. Without `isTrusted`, a
+request to an absolute URL on any origin receives the access token.
+
 ## Core capabilities
 
 - Application, device, request, space, tenant, and owner attribution.
 - JWT token parsing, persistence, sign-in, sign-out, and current-user access.
 - Deduplicated automatic refresh with recursive-refresh protection.
 - Configurable 401 and 403 callbacks.
+- Per-origin credential trust with `isTrusted` / `sameOriginTrust`.
 - Individual interceptors for applications with a custom pipeline.
 
 Never log, embed, or commit real tokens.

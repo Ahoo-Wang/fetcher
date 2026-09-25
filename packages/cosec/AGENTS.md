@@ -46,6 +46,7 @@ src/
   idGenerator.ts                            — Unique ID generation
   spaceIdProvider.ts                        — Multi-tenant space ID provider
   resourceAttributionRequestInterceptor.ts  — Resource attribution interceptor
+  requestTrust.ts                           — Which request URLs may carry credentials (isTrusted, sameOriginTrust)
   types.ts                                  — Type definitions
   index.ts                                  — Barrel export
   stories/                                  — Storybook stories
@@ -55,7 +56,7 @@ src/
 
 - **CoSecConfigurer**: Main entry point that wires up all interceptors onto a Fetcher instance
 - **JWT Token Management**: Parse, validate, refresh, and store JWT tokens
-- **Authorization Interceptors**: Automatically attach Bearer tokens to requests
+- **Authorization Interceptors**: Automatically attach Bearer tokens to requests; with `isTrusted` only trusted absolute URLs receive the token and CoSec headers (default: every request)
 - **Error Handling**: 401 triggers token refresh + retry; 403 is surfaced as ForbiddenError
 - **Device ID**: Persistent device identification for security tracking
 - **Multi-tenant**: Space ID provider for tenant-scoped authentication

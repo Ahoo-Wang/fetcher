@@ -59,3 +59,17 @@ describe('persisted state heals', () => {
     expect(storage.getItem('n')).toBe('1');
   });
 });
+
+describe('event bus ownership', () => {
+  it('closes the bus it created, and leaves a bus it was given', () => {
+    const own = new KeyStorage<string>({ key: 'own' });
+    const destroyOwn = vi.spyOn(own.eventBus, 'destroy');
+    own.destroy();
+    expect(destroyOwn).toHaveBeenCalled();
+
+    const given = new KeyStorage<string>({ key: 'given' }).eventBus;
+    const destroyGiven = vi.spyOn(given, 'destroy');
+    new KeyStorage<string>({ key: 'given', eventBus: given }).destroy();
+    expect(destroyGiven).not.toHaveBeenCalled();
+  });
+});

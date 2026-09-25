@@ -100,6 +100,7 @@ export class TokenStorage
       serializer,
     });
     sharedTokenSerializers.set(this.eventBus, serializer);
+    if (!eventBus) this.ownEventBus();
     this.earlyPeriod = earlyPeriod;
   }
 

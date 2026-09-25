@@ -63,7 +63,6 @@ export async function checkStateAndEvents() {
   } finally {
     remove();
     preferences.destroy();
-    preferences.eventBus.destroy();
     saved.destroy();
   }
 }
@@ -121,10 +120,10 @@ export function watchTheme(onTheme: (theme: string) => void) {
 
 ## 失败与清理检查
 
-处理器名称唯一，同名重复注册返回 false。处理器错误会被记录，不会阻止其他处理器。只有消费者相互独立时才使用 `ParallelTypedEventBus`，其 emit 等待本地处理器，不等待远端确认。KeyStorage 的 destroy 只移除内部监听器；应用监听器和独占总线需分别清理。销毁不会删除存储值。
+处理器名称唯一，同名重复注册返回 false。处理器错误会被记录，不会阻止其他处理器。只有消费者相互独立时才使用 `ParallelTypedEventBus`，其 emit 等待本地处理器，不等待远端确认。KeyStorage 的 destroy 移除内部监听器，并关闭它自己创建的总线；应用监听器和通过 `eventBus` 传入的总线需分别清理。销毁不会删除存储值。
 
 参见[存储生命周期](../../reference/storage/key-storage)、[序列化与环境](../../reference/storage/serialization-and-runtime)、[事件投递](../../reference/eventbus/events-and-delivery)及[广播 messenger](../../reference/eventbus/broadcast-and-messengers)。
 
-[keyStorage.ts:244](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L244) 选择默认本地总线。
+[keyStorage.ts:247](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L247) 选择默认本地总线，`destroy()` 会关闭它。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。

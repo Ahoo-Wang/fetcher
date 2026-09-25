@@ -9,8 +9,8 @@ description: '拦截器与资源归属 — Fetcher 5.0.0'
 
 ## 实际执行流程
 
-1. CoSecRequestInterceptor 设置应用/设备/请求头，以及解析得到的真值空间 ID。
-2. AuthorizationRequestInterceptor 保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。
+1. CoSecRequestInterceptor 跳过被 [`isTrusted`](#request-trust) 拒绝的请求；否则设置应用/设备/请求头，以及解析得到的真值空间 ID。
+2. AuthorizationRequestInterceptor 跳过不受信任的请求（不注入 Authorization、不刷新），并保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。
 3. ResourceAttributionRequestInterceptor 在 URL 解析前填充租户/所有者路径参数，随后核心传输发送请求。
 4. AuthorizationResponseInterceptor 在正常状态校验前处理受管理凭据的 401。刷新后仅删除自己注入的陈旧凭据，并完整重跑 exchange 管线，最多一次。
 5. 剩余失败进入错误拦截器。Unauthorized 通过通知所有权守卫处理 401/RefreshTokenError；Forbidden 处理 403。回调都不会自动恢复失败请求。
@@ -43,20 +43,28 @@ sequenceDiagram
 
 ## 拦截器参数与结果
 
-| 导出                                                                   | 构造选项                                                                   | intercept(exchange)                                                                     |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider      | Promise&lt;void&gt;；覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播 |
-| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）                                | Promise&lt;void&gt;；保留显式 Authorization，需要时刷新受管理 token                     |
-| `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                         | Promise&lt;void&gt;；仅 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1    |
-| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称** | void；从解码的 access payload 取 tenantId/sub；仅匹配模板且当前路径值为假值时填充       |
-| `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                      | Promise&lt;void&gt;；跳过 RefreshSessionChangedError 及重复/过时通知；回调错误传播      |
-| `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误传播                    |
+| 导出                                                                   | 构造选项                                                                              | intercept(exchange)                                                                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider；可选 isTrusted | Promise&lt;void&gt;；不受信任的请求什么都不做；否则覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播 |
+| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）；可选 isTrusted                           | Promise&lt;void&gt;；不受信任的请求什么都不做；保留显式 Authorization，需要时刷新受管理 token                         |
+| `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                                    | Promise&lt;void&gt;；仅 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1                                  |
+| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅匹配模板且当前路径值为假值时填充                                     |
+| `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；跳过 RefreshSessionChangedError 及重复/过时通知；回调错误传播                                    |
+| `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                            | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误传播                                                  |
 
 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` 为 `Ignore-Refresh-Token`。只要属性**存在**（即使值为 false），就禁用主动/401 自动刷新。它不阻止 Authorization 注入，也不禁用普通 HTTP 状态错误。
 
+## 请求信任 {#request-trust}
+
+`RequestTrust` 为 `(url: string, exchange: FetchExchange) => boolean`；`RequestTrustCapable` 为 `CoSecConfig`、`CoSecRequestOptions` 与 `AuthorizationInterceptorOptions` 增加可选的 `isTrusted`。`isTrustedRequest(exchange, isTrusted?)` 为两个请求拦截器做判断：没有 `isTrusted` 时信任所有请求；有它时，相对请求 URL 始终受信任（它相对 `baseURL` 解析），绝对 URL 仅在 `isTrusted(url, exchange)` 返回 true 时受信任。`sameOriginTrust` 信任 fetcher `baseURL` 所在源或页面自身源上的绝对 URL；其他源以及无法解析的 URL 都不受信任。
+
+::: warning 默认信任所有源
+默认情况下，任意源上的绝对请求 URL 都会收到访问 token 与 CoSec 请求头（含设备 ID）。客户端会请求不受你控制的 URL（如分页链接、下载地址、回调）时，请配置 `isTrusted: sameOriginTrust`（或自己的判断函数）。
+:::
+
 ## 设备与空间选择
 
-`DeviceIdStorage(options={})` 和 `SpaceIdStorage(options={})` 继承 KeyStorage&lt;string&gt;。选项为部分 KeyStorageOptions，每个类都强制使用自己的 identity serializer。默认键分别是 `cosec-device-id`、`cosec-space-id`，默认广播总线的 serial delegate 名称取实际 key。存储选择继承自 KeyStorage，可注入事件总线/存储；清理遵循 [KeyStorage](../storage/key-storage)。
+`DeviceIdStorage(options={})` 和 `SpaceIdStorage(options={})` 继承 KeyStorage&lt;string&gt;。选项为部分 KeyStorageOptions，每个类都强制使用自己的 identity serializer。默认键分别是 `cosec-device-id`、`cosec-space-id`，默认广播总线的 serial delegate 名称取实际 key，`destroy()` 会关闭这种默认总线；通过 `eventBus` 传入的总线保持打开。存储选择继承自 KeyStorage，可注入事件总线/存储；清理遵循 [KeyStorage](../storage/key-storage)。
 
 `DeviceIdStorage.generateDeviceId(): string` 调用导出的 `idGenerator`，但不存储结果。`getOrCreate(): string` 返回已有真值 ID，否则生成并存储。`IdGenerator.generateId(): string` 由 `NanoIdGenerator` 使用 nanoid 实现，`idGenerator` 是共享实例。
 
@@ -125,19 +133,19 @@ cosec.deviceIdStorage.destroy();
 
 <span id="authorizationinterceptoroptions"></span>
 
-**`AuthorizationInterceptorOptions`** — [packages/cosec/src/authorizationRequestInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L29)
+**`AuthorizationInterceptorOptions`** — [packages/cosec/src/authorizationRequestInterceptor.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L33)
 
 <span id="authorization_request_interceptor_name"></span>
 
-**`AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationRequestInterceptor.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L31)
+**`AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationRequestInterceptor.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L36)
 
 <span id="authorization_request_interceptor_order"></span>
 
-**`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationRequestInterceptor.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L33)
+**`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationRequestInterceptor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L38)
 
 <span id="authorizationrequestinterceptor"></span>
 
-**`AuthorizationRequestInterceptor`** — [packages/cosec/src/authorizationRequestInterceptor.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L46)
+**`AuthorizationRequestInterceptor`** — [packages/cosec/src/authorizationRequestInterceptor.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L51)
 
 <span id="authorization_response_interceptor_name"></span>
 
@@ -157,23 +165,39 @@ cosec.deviceIdStorage.destroy();
 
 <span id="cosecrequestoptions"></span>
 
-**`CoSecRequestOptions`** — [packages/cosec/src/cosecRequestInterceptor.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L57)
+**`CoSecRequestOptions`** — [packages/cosec/src/cosecRequestInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L62)
 
 <span id="cosec_request_interceptor_name"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/cosecRequestInterceptor.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L83)
+**`COSEC_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/cosecRequestInterceptor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L88)
 
 <span id="cosec_request_interceptor_order"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L104)
+**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L109)
 
 <span id="ignore_refresh_token_attribute_key"></span>
 
-**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L131)
+**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L136)
 
 <span id="cosecrequestinterceptor"></span>
 
-**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L215)
+**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:220](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L220)
+
+<span id="requesttrust"></span>
+
+**`RequestTrust`** — [packages/cosec/src/requestTrust.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L23)
+
+<span id="requesttrustcapable"></span>
+
+**`RequestTrustCapable`** — [packages/cosec/src/requestTrust.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L25)
+
+<span id="sameorigintrust"></span>
+
+**`sameOriginTrust`** — [packages/cosec/src/requestTrust.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L54)
+
+<span id="istrustedrequest"></span>
+
+**`isTrustedRequest`** — [packages/cosec/src/requestTrust.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L70)
 
 <span id="default_cosec_device_id_key"></span>
 
@@ -237,15 +261,15 @@ cosec.deviceIdStorage.destroy();
 
 <span id="spacedresourcepredicate"></span>
 
-**`SpacedResourcePredicate`** — [packages/cosec/src/spaceIdProvider.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L297)
+**`SpacedResourcePredicate`** — [packages/cosec/src/spaceIdProvider.ts:298](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L298)
 
 <span id="spaceidprovideroptions"></span>
 
-**`SpaceIdProviderOptions`** — [packages/cosec/src/spaceIdProvider.ts:326](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L326)
+**`SpaceIdProviderOptions`** — [packages/cosec/src/spaceIdProvider.ts:327](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L327)
 
 <span id="defaultspaceidprovider"></span>
 
-**`DefaultSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:383](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L383)
+**`DefaultSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:384](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L384)
 
 <span id="cosecheaders"></span>
 

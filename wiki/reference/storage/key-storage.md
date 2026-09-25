@@ -13,27 +13,28 @@ Choose the backend and event bus independently: sharing a backend does not share
 
 `new KeyStorage<T>(options: KeyStorageOptions<T>)`:
 
-| Option                                      | Default                                        | Meaning                                                             |
-| ------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------- |
-| `key: string`                               | Required                                       | Backend storage key.                                                |
-| `storage?: Storage`                         | `getStorage()`                                 | Browser localStorage or a fresh memory store outside browsers.      |
-| `serializer?: Serializer<string, T>`        | `jsonSerializer`                               | String codec for reads, writes, and automatic broadcast snapshots.  |
-| `eventBus?: TypedEventBus<StorageEvent<T>>` | New `SerialTypedEventBus('KeyStorage:' + key)` | The same name alone does not share instances.                       |
-| `defaultValue?: T`                          | `null`                                         | Returned when backend value is absent; not automatically persisted. |
+| Option                                      | Default                                        | Meaning                                                                                                    |
+| ------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `key: string`                               | Required                                       | Backend storage key.                                                                                       |
+| `storage?: Storage`                         | `getStorage()`                                 | Browser localStorage or a fresh memory store outside browsers.                                             |
+| `serializer?: Serializer<string, T>`        | `jsonSerializer`                               | String codec for reads, writes, and automatic broadcast snapshots.                                         |
+| `eventBus?: TypedEventBus<StorageEvent<T>>` | New `SerialTypedEventBus('KeyStorage:' + key)` | The same name alone does not share instances. A created bus is closed by `destroy()`; a passed bus is not. |
+| `defaultValue?: T`                          | `null`                                         | Returned when backend value is absent; not automatically persisted.                                        |
 
 ## Reads, writes, and lifetime {#operations}
 
-| Method                 | Return                               | Behavior                                                                                                                                                 |
-| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default. An undeserializable value is removed with a warning and read as absent. |
-| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                            |
-| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.                                                             |
-| `destroy()`            | `void`                               | Remove only this instance's internal cache listener. Does not delete the key or close/destroy the bus.                                                   |
+| Method                 | Return                               | Behavior                                                                                                                                                                                                                           |
+| ---------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default. An undeserializable value is removed with a warning and read as absent.                                                                           |
+| `reload()`             | `T \| null`                          | Read the backend again, bypassing the cache (for a value another tab may have written before its event arrived). Keeps the cached object when the stored text is unchanged; returns the default when the key is absent.            |
+| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                                                                                                      |
+| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                                                                                          |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.                                                                                                                                       |
+| `destroy()`            | `void`                               | Remove this instance's internal cache listener and close the bus this instance created (the default bus, or one a subclass marks with the protected `ownEventBus()`). Does not delete the key or close a bus passed in `eventBus`. |
 
 `StorageEvent<T>` has optional `newValue` and `oldValue`, each allowing null. `StorageListenable<T>` exposes `addListener`. Use unique handler names: duplicate names are rejected by the underlying bus, while the returned remover still targets that name. Unsubscribe external listeners yourself before destroying the owning bus.
 
-Backend read/write, JSON parsing, and serialization failures propagate synchronously; writes are not rolled back after notification failures. Emit rejections are caught and logged with `console.warn`, while ordinary serial handler failures are already isolated by the bus. A cached non-null value is not refreshed after direct backend mutations. `get()` returns object references; mutating one does not automatically persist it.
+Backend read/write, JSON parsing, and serialization failures propagate synchronously; writes are not rolled back after notification failures. Emit rejections are caught and logged with `console.warn`, while ordinary serial handler failures are already isolated by the bus. A cached non-null value is not refreshed after direct backend mutations; call `reload()` to re-read it. `get()` returns object references; mutating one does not automatically persist it.
 
 ## Sharing and broadcasting {#broadcast}
 
@@ -63,7 +64,6 @@ settings.remove();
 console.assert(settings.get()?.theme === 'system');
 removeListener();
 settings.destroy();
-settings.eventBus.destroy();
 ```
 
 ## Public symbols and source {#symbols}
@@ -74,6 +74,6 @@ settings.eventBus.destroy();
 | <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
 | <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
 | <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:218](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L218) |
 
 [Package index](./index.md)

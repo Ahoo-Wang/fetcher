@@ -50,6 +50,7 @@ export class DeviceIdStorage extends KeyStorage<string> {
       ...reset,
       serializer: typedIdentitySerializer(),
     });
+    if (!eventBus) this.ownEventBus();
   }
 
   /**

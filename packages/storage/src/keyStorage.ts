@@ -225,6 +225,8 @@ export class KeyStorage<
   private readonly defaultValue: Deserialized | null = null;
   private cacheValue: Deserialized | null = null;
   private readonly serializedEvents?: WeakMap<object, SerializedStorageEvent>;
+  /** Whether this instance created its event bus, and so closes it. */
+  private ownsEventBus: boolean;
   private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> =
     {
       name: nameGenerator.generate('KeyStorage'),
@@ -241,6 +243,7 @@ export class KeyStorage<
     this.key = options.key;
     this.serializer = options.serializer ?? jsonSerializer;
     this.storage = options.storage ?? getStorage();
+    this.ownsEventBus = options.eventBus === undefined;
     this.eventBus =
       options.eventBus ??
       new SerialTypedEventBus<StorageEvent<Deserialized>>(
@@ -403,6 +406,33 @@ export class KeyStorage<
   }
 
   /**
+   * Reads the stored value again, bypassing the cache: for when another tab
+   * may have written it and its change event has not arrived yet. The cached
+   * object is kept when the stored text is unchanged, so identity checks on
+   * it still hold.
+   *
+   * @returns The stored value, or the default value if none is stored
+   */
+  reload(): Deserialized | null {
+    const value = this.storage.getItem(this.key);
+    if (value === null || value === undefined) {
+      this.cacheValue = null;
+      return this.defaultValue;
+    }
+    if (this.cacheValue !== null && this.cacheValue !== undefined) {
+      try {
+        if (this.serializer.serialize(this.cacheValue) === value) {
+          return this.cacheValue;
+        }
+      } catch {
+        // Fall through and read the stored text.
+      }
+    }
+    this.cacheValue = null;
+    return this.get();
+  }
+
+  /**
    * Stores a value in storage and notifies all listeners.
    *
    * Serializes the value, stores it in the underlying storage, updates the cache,
@@ -473,10 +503,18 @@ export class KeyStorage<
   }
 
   /**
+   * Marks the event bus a subclass created for this instance (and passed in
+   * `eventBus`) as owned: destroy() then closes it too.
+   */
+  protected ownEventBus(): void {
+    this.ownsEventBus = true;
+  }
+
+  /**
    * Cleans up resources used by the KeyStorage instance.
    *
-   * Removes the internal event handler from the event bus.
-   * Should be called when the KeyStorage instance is no longer needed
+   * Removes the internal event handler from the event bus, and closes the
+   * bus if this instance created it. Should be called when the KeyStorage instance is no longer needed
    * to prevent memory leaks.
    *
    * @example
@@ -488,5 +526,10 @@ export class KeyStorage<
    */
   destroy() {
     this.eventBus.off(this.keyStorageHandler.name);
+    // A bus this instance created (a broadcast channel, say) has no other
+    // user: close it rather than leak it.
+    if (this.ownsEventBus) {
+      this.eventBus.destroy();
+    }
   }
 }

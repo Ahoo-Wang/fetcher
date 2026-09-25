@@ -9,15 +9,15 @@ Token 解析只进行本地解码与过期管理，不验证签名、issuer、au
 
 ## JWT 值与序列化
 
-| API                                                         | 输入/默认值                                               | 返回/行为                                                                                                       |
-| ----------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `parseJwtPayload<T extends JwtPayload>(token)`              | 三段点号分隔字符串                                        | T 或 null；base64url/UTF-8 JSON payload 解码；解析错误记录日志并返回 null，不验证 claim 形状                    |
-| `isTokenExpired(token, earlyPeriod=0)`                      | 字符串或 CoSecJwtPayload；earlyPeriod 单位秒              | 无法解析、exp 非法/非有限值或 now >= exp-earlyPeriod 为 true；exp 缺失/null 不过期                              |
-| `JwtToken<Payload>(token, earlyPeriod=0)`                   | 原始字符串                                                | readonly token/payload/earlyPeriod；isExpired 按当前时钟计算                                                    |
-| `JwtCompositeToken(token, earlyPeriod=0, sessionId=随机值)` | CompositeToken                                            | access、refresh 为 JwtToken；isRefreshNeeded=access 过期，isRefreshable=refresh 有效，authenticated=access 有效 |
-| `JwtCompositeTokenSerializer(earlyPeriod=0)`                | 提前过期量                                                | serialize→原始 token 加 sessionId 的 JSON；deserialize→使用指定提前量的 JwtCompositeToken                       |
-| `deserializeLegacy(value)`                                  | 含 token.accessToken 和 token.refreshToken 字符串的旧对象 | 重建可用类实例；旧形状无效时抛 TypeError                                                                        |
-| `jwtCompositeTokenSerializer`                               | 单例，提前量 0                                            | 默认独立序列化器                                                                                                |
+| API                                                         | 输入/默认值                                               | 返回/行为                                                                                                                                                   |
+| ----------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parseJwtPayload<T extends JwtPayload>(token)`              | 三段点号分隔字符串                                        | T 或 null；base64url/UTF-8 JSON payload 解码；解析错误记录日志并返回 null；payload 不是 JSON 对象（数字、字符串、数组、null）时返回 null；不验证 claim 形状 |
+| `isTokenExpired(token, earlyPeriod=0)`                      | 字符串或 CoSecJwtPayload；earlyPeriod 单位秒              | 无法解析（含非对象 payload）、exp 非法/非有限值或 now >= exp-earlyPeriod 为 true；exp 缺失/null 不过期                                                      |
+| `JwtToken<Payload>(token, earlyPeriod=0)`                   | 原始字符串                                                | readonly token/payload/earlyPeriod；isExpired 按当前时钟计算                                                                                                |
+| `JwtCompositeToken(token, earlyPeriod=0, sessionId=随机值)` | CompositeToken                                            | access、refresh 为 JwtToken；isRefreshNeeded=access 过期，isRefreshable=refresh 有效，authenticated=access 有效                                             |
+| `JwtCompositeTokenSerializer(earlyPeriod=0)`                | 提前过期量                                                | serialize→原始 token 加 sessionId 的 JSON；deserialize→使用指定提前量的 JwtCompositeToken                                                                   |
+| `deserializeLegacy(value)`                                  | 含 token.accessToken 和 token.refreshToken 字符串的旧对象 | 重建可用类实例；旧形状无效时抛 TypeError                                                                                                                    |
+| `jwtCompositeTokenSerializer`                               | 单例，提前量 0                                            | 默认独立序列化器                                                                                                                                            |
 
 `JwtPayload` 声明必填 jti/sub/exp/iat，可选 iss/aud/nbf。`CoSecJwtPayload` 添加 tenantId、policies、roles、attributes。`IJwtToken<Payload>` 将 token/payload/isExpired 与 `EarlyPeriodCapable` 合并。`RefreshTokenStatusCapable` 提供 readonly isRefreshNeeded/isRefreshable。`AccessToken`、`RefreshToken` 各有一个字符串字段，`CompositeToken` 合并二者。
 
@@ -25,7 +25,7 @@ deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；�
 
 ## TokenStorage
 
-`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、广播总线（serial delegate 名称取实际 key）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
+`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、广播总线（serial delegate 名称取实际 key；由 `destroy()` 关闭，通过 `eventBus` 传入的总线保持打开）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
 
 | 成员                                | 结果                                     |
 | ----------------------------------- | ---------------------------------------- |
@@ -42,7 +42,7 @@ deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；�
 
 `new JwtTokenManager(tokenStorage, tokenRefresher)` 暴露两个依赖、currentToken（token/null）及状态 getter（无 token 时为 false）。`refresh(exchange?): Promise<void>` 在无 token 时拒绝并抛 Error('No token found')。同一 manager 对同一当前 token 的并发刷新共用 Promise，不是跨标签页分布式锁。同会话较新 token 优先于迟到的刷新结果。退出登录或切换会话会阻止陈旧回写，并抛出 `RefreshSessionChangedError(cause?)`。
 
-刷新仍属于当前会话且失败时，删除该会话 token 并抛 `RefreshTokenError(token, cause?)`。错误暴露旧 JwtCompositeToken，日志应避免输出原始凭据。重试业务请求失败保持原错误传播，不移除已经刷新成功的凭据。finally 会清理待完成 Promise。未授权通知所有权与 exchange 错误处理器协调，不是通用事件队列。
+刷新失败时，manager 用 `tokenStorage.reload()` 重新读取存储：如果另一个标签页已刷新同一会话（因此一次性 refresh token 在这里失败）并存入了新 token，就复用该 token，请求继续。刷新仍属于当前会话且失败时，删除该会话 token 并抛 `RefreshTokenError(token, cause?)`。错误暴露旧 JwtCompositeToken，日志应避免输出原始凭据。重试业务请求失败保持原错误传播，不移除已经刷新成功的凭据。finally 会清理待完成 Promise。未授权通知所有权与 exchange 错误处理器协调，不是通用事件队列。
 
 `TokenRefresher.refresh(token): Promise<CompositeToken>` 是自定义传输契约。`CoSecTokenRefresher({fetcher, endpoint})` 两字段必填，以 POST 发送 token 对象并提取 JSON。具体类的 refresh 还接受 `shouldNotifyUnauthorized?: () => boolean`。它设置 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` 防止递归刷新；自定义传输若使用已配置 Fetcher，需要自行提供该属性。
 
@@ -89,11 +89,11 @@ try {
 
 <span id="earlyperiodcapable"></span>
 
-**`EarlyPeriodCapable`** — [packages/cosec/src/jwts.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L122)
+**`EarlyPeriodCapable`** — [packages/cosec/src/jwts.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L132)
 
 <span id="istokenexpired"></span>
 
-**`isTokenExpired`** — [packages/cosec/src/jwts.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L145)
+**`isTokenExpired`** — [packages/cosec/src/jwts.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L155)
 
 <span id="ijwttoken"></span>
 
@@ -121,15 +121,15 @@ try {
 
 <span id="refreshtokenerror"></span>
 
-**`RefreshTokenError`** — [packages/cosec/src/jwtTokenManager.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L25)
+**`RefreshTokenError`** — [packages/cosec/src/jwtTokenManager.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L28)
 
 <span id="refreshsessionchangederror"></span>
 
-**`RefreshSessionChangedError`** — [packages/cosec/src/jwtTokenManager.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L37)
+**`RefreshSessionChangedError`** — [packages/cosec/src/jwtTokenManager.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L40)
 
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L48)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L51)
 
 <span id="default_cosec_token_key"></span>
 

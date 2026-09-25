@@ -65,6 +65,8 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `RefreshToken`                                   | [Tokens and refresh](tokens-and-refresh#refreshtoken)                                                       |
 | `RefreshTokenError`                              | [Tokens and refresh](tokens-and-refresh#refreshtokenerror)                                                  |
 | `RefreshTokenStatusCapable`                      | [Tokens and refresh](tokens-and-refresh#refreshtokenstatuscapable)                                          |
+| `RequestTrust`                                   | [Interceptors and attribution](interceptors-and-attribution#requesttrust)                                   |
+| `RequestTrustCapable`                            | [Interceptors and attribution](interceptors-and-attribution#requesttrustcapable)                            |
 | `ResourceAttributionOptions`                     | [Interceptors and attribution](interceptors-and-attribution#resourceattributionoptions)                     |
 | `ResourceAttributionRequestInterceptor`          | [Interceptors and attribution](interceptors-and-attribution#resourceattributionrequestinterceptor)          |
 | `ResponseCodes`                                  | [Interceptors and attribution](interceptors-and-attribution#responsecodes)                                  |
@@ -82,7 +84,9 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `UnauthorizedErrorInterceptorOptions`            | [Interceptors and attribution](interceptors-and-attribution#unauthorizederrorinterceptoroptions)            |
 | `idGenerator`                                    | [Interceptors and attribution](interceptors-and-attribution#idgenerator-instance)                           |
 | `isTokenExpired`                                 | [Tokens and refresh](tokens-and-refresh#istokenexpired)                                                     |
+| `isTrustedRequest`                               | [Interceptors and attribution](interceptors-and-attribution#istrustedrequest)                               |
 | `jwtCompositeTokenSerializer`                    | [Tokens and refresh](tokens-and-refresh#jwtcompositetokenserializer-instance)                               |
 | `parseJwtPayload`                                | [Tokens and refresh](tokens-and-refresh#parsejwtpayload)                                                    |
+| `sameOriginTrust`                                | [Interceptors and attribution](interceptors-and-attribution#sameorigintrust)                                |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)

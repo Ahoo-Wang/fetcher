@@ -32,7 +32,7 @@ CoSec without a tokenRefresher installs metadata/attribution only. Read configur
 
 ## Choose an entry point
 
-Use `CoSecConfigurer` for a complete interceptor setup against a CoSec-compatible service. Supply `tokenRefresher` to enable managed Authorization and refresh; without it, the setup only adds metadata/resource attribution plus explicitly configured error callbacks. Use individual interceptors only when the application owns their order and dependencies.
+Use `CoSecConfigurer` for a complete interceptor setup against a CoSec-compatible service. Supply `tokenRefresher` to enable managed Authorization and refresh; without it, the setup only adds metadata/resource attribution plus explicitly configured error callbacks. By default every request, including one to an absolute URL on another origin, carries the token and the CoSec headers; pass `isTrusted: sameOriginTrust` to keep them to the `baseURL` origin and the page origin ([request trust](./interceptors-and-attribution.md#request-trust)). Use individual interceptors only when the application owns their order and dependencies.
 
 ## Topics
 

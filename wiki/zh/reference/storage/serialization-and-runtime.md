@@ -73,8 +73,6 @@ token.set('demo-token');
 console.assert(storage.getItem('token') === 'demo-token');
 updatedAt.destroy();
 token.destroy();
-updatedAt.eventBus.destroy();
-token.eventBus.destroy();
 ```
 
 ## 公开符号与源码 {#symbols}

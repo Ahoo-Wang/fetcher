@@ -47,6 +47,8 @@ describe('AuthorizationResponseInterceptor', () => {
         mockTokenStorage.get = vi.fn().mockReturnValue(token);
       }),
       remove: vi.fn(),
+      // The stored value is whatever `get` currently answers.
+      reload: vi.fn(() => mockTokenStorage.get()),
     } as unknown as TokenStorage;
 
     mockTokenRefresher = {
