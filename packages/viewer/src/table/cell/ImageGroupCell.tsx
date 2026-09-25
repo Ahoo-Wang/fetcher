@@ -14,7 +14,7 @@
 import type { CellProps } from './types';
 import { Empty, Image, Badge } from 'antd';
 import type { ImageProps } from 'antd';
-import type { PreviewGroupProps } from 'antd/es/image/PreviewGroup';
+import type { PreviewGroupProps } from '../../antdTypes';
 
 /**
  * Constant representing the type identifier for image group cells.

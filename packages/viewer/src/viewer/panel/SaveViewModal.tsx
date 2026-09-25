@@ -1,8 +1,8 @@
 import { Modal, Form, Radio, Input } from 'antd';
 import type { ViewState, ViewType } from '../types';
 import { useEffect, useRef } from 'react';
-import type { FormInstance } from 'antd/es/form/hooks/useForm';
 import { useLocale } from '../../locale';
+import type { FormInstance } from 'antd';
 
 export interface SaveViewModalProps {
   mode: 'Create' | 'SaveAs';

@@ -16,11 +16,11 @@ import type {
   ConditionCapable,
   ConditionOptions,
 } from '@ahoo-wang/fetcher-wow';
-import type { SelectProps } from 'antd/es/select';
 import type { RefAttributes } from 'react';
 import type React from 'react';
 import type { Optional, StyleCapable } from '../types';
 import type { SelectOperator, SelectOperatorLocale } from './operator';
+import type { SelectProps } from 'antd';
 
 /**
  * @see {@link Schema}

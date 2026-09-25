@@ -16,7 +16,6 @@ import {
 } from '@ant-design/icons';
 import type { RefObject } from 'react';
 import React, { useCallback, useState } from 'react';
-import type { ItemType } from 'antd/es/menu/interface';
 import {
   AutoRefreshBarItem,
   BarItem,
@@ -28,9 +27,9 @@ import {
   ShareLinkBarItem,
   FullscreenBarItem,
 } from './';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import type { Condition } from '@ahoo-wang/fetcher-wow';
 import type { DataMonitorNotificationConfig } from '@ahoo-wang/fetcher-react';
+import type { ItemType, SizeType } from '../antdTypes';
 
 export interface TopBarProps<
   RecordType,

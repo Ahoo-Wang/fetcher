@@ -192,18 +192,6 @@ export const CONSUMER_MODULES = ['node16', 'nodenext'];
 export const CONSUMER_IGNORED = [
   {
     package: '@ahoo-wang/fetcher-viewer',
-    code: 'TS2307',
-    file: /^node_modules\/@ahoo-wang\/fetcher-viewer\/dist\//,
-    message: /^Cannot find module 'antd\/(?:es|lib)\//,
-    reason:
-      'The 5.x viewer declarations import antd internals by deep path ' +
-      "without an extension ('antd/es/config-provider/SizeContext'); antd " +
-      'has no `exports`, so an ES module consumer under node16/nodenext ' +
-      'cannot resolve them. Known and separate from the .d.ts/.d.cts merge; ' +
-      'the fix is importing those types from the antd root.',
-  },
-  {
-    package: '@ahoo-wang/fetcher-viewer',
     file: /^node_modules\/(?:antd|@rc-component\/[^/]+)\//,
     reason:
       "Errors inside antd's and @rc-component's own declarations, which " +

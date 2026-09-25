@@ -1,9 +1,9 @@
 import type { ViewColumn } from '../viewer';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import type { ActiveFilter } from '../filter';
 import { useState } from 'react';
 import type { Condition, FieldSort } from '@ahoo-wang/fetcher-wow';
 import { all } from '@ahoo-wang/fetcher-wow';
+import type { SizeType } from '../antdTypes';
 
 export const DEFAULT_CONDITION: Condition = all();
 

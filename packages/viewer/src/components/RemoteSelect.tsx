@@ -18,7 +18,7 @@ import { useDebouncedExecutePromise } from '@ahoo-wang/fetcher-react';
 import type { StyleCapable } from '../types';
 import type { RefAttributes } from 'react';
 import { useMemo } from 'react';
-import type { BaseOptionType, DefaultOptionType } from 'antd/lib/select';
+import type { BaseOptionType, DefaultOptionType } from '../antdTypes';
 
 /**
  * Props for the RemoteSelect component.

@@ -14,7 +14,7 @@
 import type { Key } from 'react';
 import type React from 'react';
 import type { ButtonProps } from 'antd';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { SizeType } from './antdTypes';
 
 export type Optional<T = any> = T | undefined;
 

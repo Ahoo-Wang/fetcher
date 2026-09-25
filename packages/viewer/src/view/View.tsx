@@ -33,12 +33,11 @@ import type {
   PrimaryKeyClickHandlerCapable,
   ViewTableSettingCapable,
 } from '../types';
-import type { SorterResult } from 'antd/es/table/interface';
 import type { ViewChangeAction } from './';
 import { useViewState } from './';
-import type { SizeType } from 'antd/es/config-provider/SizeContext';
 import { useLocale } from '../locale';
 import { format } from '../utils';
+import type { SizeType, SorterResult } from '../antdTypes';
 
 /**
  * Ref interface for exposing View component imperative methods to parent components.

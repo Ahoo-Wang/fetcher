@@ -13,8 +13,8 @@
 
 import type { CellProps } from './types';
 import { Avatar } from 'antd';
-import type { AvatarProps } from 'antd/es/avatar';
 import { isValidImageSrc } from './utils';
+import type { AvatarProps } from 'antd';
 
 /**
  * Constant representing the type identifier for avatar cells.

@@ -18,12 +18,11 @@ import type { FilterRef } from '../types';
 import type { Condition } from '@ahoo-wang/fetcher-wow';
 import type { FilterState } from '../types';
 import { and } from '@ahoo-wang/fetcher-wow';
-import type { ColProps, ButtonProps } from 'antd';
+import type { ColProps, ButtonProps, RowProps } from 'antd';
 import { Button, Col, Row, Space } from 'antd';
 import { ClearOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRefs } from '@ahoo-wang/fetcher-react';
 import { RemovableTypedFilter } from './RemovableTypedFilter';
-import type { RowProps } from 'antd/es/grid/row';
 import { useLocale } from '../../locale';
 
 export interface ActiveFilter extends Omit<

@@ -12,10 +12,9 @@
  */
 
 import type { CellProps } from './types';
-import type { TagProps } from 'antd';
+import type { SpaceProps, TagProps } from 'antd';
 import { Space } from 'antd';
 import { TagCell } from './TagCell';
-import type { SpaceProps } from 'antd/es/space';
 
 /**
  * Constant representing the type identifier for tags cells.
