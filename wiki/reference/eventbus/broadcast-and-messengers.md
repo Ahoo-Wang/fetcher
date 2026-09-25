@@ -30,7 +30,7 @@ The contract is `postMessage(message: any): void`, a setter `onmessage: CrossTab
 
 `isBroadcastChannelSupported()` checks the global and prototype postMessage. `isStorageEventSupported()` checks StorageEvent, window.addEventListener, and localStorage or sessionStorage availability. These are feature probes, not permission tests. `createCrossTabMessenger(channelName)` prefers `BroadcastChannelMessenger`, then `StorageMessenger`, otherwise returns undefined. Construction errors are not silently converted to fallback.
 
-`new BroadcastChannelMessenger(channelName)` wraps native BroadcastChannel, forwards `MessageEvent.data`, and uses structured cloning; unsupported data can throw DataCloneError. `close()` closes its channel.
+`new BroadcastChannelMessenger(channelName)` wraps native BroadcastChannel, forwards `MessageEvent.data`, and uses structured cloning; unsupported data can throw DataCloneError. Where the channel has `unref()` (Node), it is unrefed, so an open messenger does not keep the process alive. `close()` closes its channel.
 
 ## StorageMessenger {#storage}
 
@@ -38,7 +38,7 @@ The contract is `postMessage(message: any): void`, a setter `onmessage: CrossTab
 
 Each post JSON-encodes `StorageMessage {data: any, timestamp: number}` under a unique channel-prefixed storage key, then schedules key deletion after ttl. Periodic cleanup removes expired/invalid messages matching that channel. Receiving filters by storageArea and key format; invalid JSON warns. TTL controls cleanup, not reliable replay or a receive-age filter. Native storage events do not notify their originating document.
 
-`close()` removes the storage listener and clears interval/pending deletion timers; already-written keys are not all removed immediately. JSON stringify, quota, or access failures can throw on posting. A sessionStorage backend has that platform's restricted sharing scope. The sender's local delegate still handles local delivery independently.
+`close()` removes the storage listener, clears the interval and pending deletion timers, and removes the message keys this messenger wrote that were still waiting for deletion. JSON stringify, quota, or access failures can throw on posting. A sessionStorage backend has that platform's restricted sharing scope. The sender's local delegate still handles local delivery independently.
 
 ## Complete example {#example}
 

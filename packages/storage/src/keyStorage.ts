@@ -195,7 +195,9 @@ export interface KeyStorageOptions<Deserialized> {
   storage?: Storage;
 
   /**
-   * Optional event bus for cross-tab communication. Defaults to SerialTypedEventBus.
+   * Optional event bus for change events. Defaults to a SerialTypedEventBus,
+   * which notifies this tab only; pass a BroadcastTypedEventBus to hear other
+   * tabs too.
    * A shared bus must represent one storage key. An automatic broadcast codec is
    * bound to the same serializer instance for the bus lifetime, including after destroy().
    * Caller-configured or replaced codecs remain the caller's responsibility.
@@ -331,8 +333,9 @@ export class KeyStorage<
   /**
    * Adds a listener for storage changes.
    *
-   * The listener will be called whenever the storage value changes,
-   * either locally or from other tabs/windows.
+   * The listener will be called whenever the storage value changes through
+   * this key's event bus: this tab's changes, and other tabs' changes when the
+   * bus is a BroadcastTypedEventBus.
    *
    * @param listener - The event handler to be called when storage changes
    * @returns A function that can be called to remove the listener
@@ -364,7 +367,12 @@ export class KeyStorage<
    * Uses caching to avoid repeated deserialization. If the value is not in cache,
    * it retrieves it from the underlying storage and deserializes it.
    *
-   * @returns The deserialized value, or null if no value exists in storage
+   * A stored value that cannot be deserialized (corrupted, or written by
+   * another version or program) is removed with a warning and treated as
+   * absent, so a bad value never makes every later read, write or removal
+   * throw.
+   *
+   * @returns The deserialized value, or the default value (null unless set) if none is stored
    *
    * @example
    * ```typescript
@@ -381,7 +389,16 @@ export class KeyStorage<
     if (value === null || value === undefined) {
       return this.defaultValue;
     }
-    this.cacheValue = this.serializer.deserialize(value);
+    try {
+      this.cacheValue = this.serializer.deserialize(value);
+    } catch (error) {
+      console.warn(
+        `Removing the unreadable stored value of ${this.key}:`,
+        error,
+      );
+      this.storage.removeItem(this.key);
+      return this.defaultValue;
+    }
     return this.cacheValue;
   }
 
@@ -389,7 +406,8 @@ export class KeyStorage<
    * Stores a value in storage and notifies all listeners.
    *
    * Serializes the value, stores it in the underlying storage, updates the cache,
-   * and emits a change event to all registered listeners.
+   * and emits a change event to all registered listeners. Storing `undefined`
+   * removes the value (see remove()): it has no serialized form.
    *
    * @param value - The value to store (will be serialized before storage)
    *
@@ -400,6 +418,10 @@ export class KeyStorage<
    * ```
    */
   set(value: Deserialized): void {
+    if (value === undefined) {
+      this.remove();
+      return;
+    }
     const oldValue = this.get();
     const serialized = this.serializer.serialize(value);
     const event = this.snapshotEvent({ newValue: value, oldValue }, serialized);

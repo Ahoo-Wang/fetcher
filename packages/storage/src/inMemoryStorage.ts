@@ -62,6 +62,7 @@ export class InMemoryStorage implements Storage {
    * @param value - The value to set
    */
   setItem(key: string, value: string): void {
-    this.store.set(key, value);
+    // Web Storage stores text: a non-string becomes String(value).
+    this.store.set(key, String(value));
   }
 }

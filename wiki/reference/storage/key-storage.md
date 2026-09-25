@@ -23,13 +23,13 @@ Choose the backend and event bus independently: sharing a backend does not share
 
 ## Reads, writes, and lifetime {#operations}
 
-| Method                 | Return                               | Behavior                                                                                                  |
-| ---------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default.                          |
-| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`.             |
-| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default. |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.              |
-| `destroy()`            | `void`                               | Remove only this instance's internal cache listener. Does not delete the key or close/destroy the bus.    |
+| Method                 | Return                               | Behavior                                                                                                                                                 |
+| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default. An undeserializable value is removed with a warning and read as absent. |
+| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                            |
+| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.                                                             |
+| `destroy()`            | `void`                               | Remove only this instance's internal cache listener. Does not delete the key or close/destroy the bus.                                                   |
 
 `StorageEvent<T>` has optional `newValue` and `oldValue`, each allowing null. `StorageListenable<T>` exposes `addListener`. Use unique handler names: duplicate names are rejected by the underlying bus, while the returned remover still targets that name. Unsubscribe external listeners yourself before destroying the owning bus.
 
@@ -74,6 +74,6 @@ settings.eventBus.destroy();
 | <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
 | <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
 | <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L215) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217) |
 
 [Package index](./index.md)

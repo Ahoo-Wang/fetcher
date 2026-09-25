@@ -144,8 +144,11 @@ export class StorageMessenger implements CrossTabMessenger {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
     }
-    for (const timeoutId of this.pendingTimeouts.values()) {
+    // The messages this messenger wrote are removed now, since their timers
+    // no longer will.
+    for (const [key, timeoutId] of this.pendingTimeouts) {
       clearTimeout(timeoutId);
+      this.storage.removeItem(key);
     }
     this.pendingTimeouts.clear();
     window.removeEventListener('storage', this.storageEventHandler);

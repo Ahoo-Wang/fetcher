@@ -30,7 +30,7 @@ description: '广播总线与消息传输 — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 `isBroadcastChannelSupported()` 检查全局及原型 postMessage；`isStorageEventSupported()` 检查 StorageEvent、window.addEventListener 和 localStorage 或 sessionStorage。这些只是功能探测，不验证访问权限。`createCrossTabMessenger(channelName)` 优先 BroadcastChannelMessenger，其次 StorageMessenger，否则返回 undefined。构造错误不会被静默转换为回退。
 
-`new BroadcastChannelMessenger(channelName)` 包装原生 BroadcastChannel，转发 `MessageEvent.data`，使用结构化克隆；不支持的数据可能抛 DataCloneError。`close()` 关闭其通道。
+`new BroadcastChannelMessenger(channelName)` 包装原生 BroadcastChannel，转发 `MessageEvent.data`，使用结构化克隆；不支持的数据可能抛 DataCloneError。通道支持 `unref()`（Node）时会调用它，打开的消息器不会阻止进程退出。`close()` 关闭其通道。
 
 ## StorageMessenger {#storage}
 
@@ -38,7 +38,7 @@ description: '广播总线与消息传输 — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 每次发布将 `StorageMessage {data: any, timestamp: number}` JSON 编码到带唯一通道前缀的存储键，并安排 ttl 后删除。定期清理仅删除匹配通道的过期/无效消息。接收时检查 storageArea 和键格式，无效 JSON 会警告。TTL 控制清理，不提供可靠重放，也不是接收时的年龄过滤。原生 storage 事件不通知写入来源文档。
 
-`close()` 移除 storage 监听并清理周期/待删除定时器，不会立即删除所有已写键。发布时 JSON stringify、配额、访问失败可抛错。sessionStorage 后端遵循平台受限的共享范围。发送者的本地 delegate 独立负责本地投递。
+`close()` 移除 storage 监听，清理周期与待删除定时器，并删除本消息器写入且仍待删除的消息键。发布时 JSON stringify、配额、访问失败可抛错。sessionStorage 后端遵循平台受限的共享范围。发送者的本地 delegate 独立负责本地投递。
 
 ## 完整示例 {#example}
 

@@ -91,8 +91,8 @@ const userStorage = new KeyStorage<{ name: string; age: number }>({
 
 ### Methods
 
-- `get(): T | null` — Returns the in-memory cache if non-null; otherwise reads and deserializes the key (and caches it). Returns `defaultValue` (or `null`) if the key is missing; the default is neither cached nor written. The cache is updated only by this instance's `set`/`remove` and by events on its bus; writes that bypass the bus (another code path calling `storage.setItem`, or the native `storage` event from other tabs) are not seen once a value is cached.
-- `set(value: T): void` — Store value with caching and emit change event.
+- `get(): T | null` — Returns the in-memory cache if non-null; otherwise reads and deserializes the key (and caches it). Returns `defaultValue` (or `null`) if the key is missing; the default is neither cached nor written. A stored value that fails to deserialize is removed with a `console.warn` and read as missing, so it cannot make every later `get`/`set`/`remove` throw. The cache is updated only by this instance's `set`/`remove` and by events on its bus; writes that bypass the bus (another code path calling `storage.setItem`, or the native `storage` event from other tabs) are not seen once a value is cached.
+- `set(value: T): void` — Store value with caching and emit change event. `set(undefined)` removes the value (same as `remove()`).
 - `remove(): void` — Remove value, clear cache, emit change event.
 - `destroy(): void` — Only removes this instance's internal cache handler from the bus. It does not destroy the bus, does not remove listeners added with `addListener`, and leaves any automatic codec installed on a broadcast bus.
 - `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener` — Registers on `eventBus` via `on()`. A duplicate `name` is silently ignored, yet the returned remover still calls `off(name)` and so removes the handler that was registered first.

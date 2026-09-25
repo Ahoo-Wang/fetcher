@@ -203,7 +203,11 @@ describe('KeyStorage', () => {
         storage: mockStorage,
       });
       mockStorage.getItem.mockReturnValue('bad data');
-      expect(() => ks.get()).toThrow('Deserialize error');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // Treated as absent and removed, so it cannot fail every later call.
+      expect(ks.get()).toBeNull();
+      expect(mockStorage.removeItem).toHaveBeenCalledWith('badKey');
+      expect(warn).toHaveBeenCalled();
     });
 
     it('should handle storage getItem error', () => {

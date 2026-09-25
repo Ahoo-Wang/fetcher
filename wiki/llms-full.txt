@@ -2050,7 +2050,7 @@ Handler names are unique; a second registration with the same name returns false
 
 See [storage lifecycle](../../reference/storage/key-storage), [serialization and environment](../../reference/storage/serialization-and-runtime), [event delivery](../../reference/eventbus/events-and-delivery), and [broadcast messengers](../../reference/eventbus/broadcast-and-messengers).
 
-[keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242) selects the default local bus.
+[keyStorage.ts:244](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L244) selects the default local bus.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).
 
@@ -2270,7 +2270,7 @@ Remount the subtree that owns request state when the tenant or user changes, so 
 | KeyStorage               | `destroy()` removes its own event handler | Persistent data and any shared event bus; default serial bus is local, not cross-tab synchronization |
 | BroadcastTypedEventBus   | `destroy()` closes its messenger          | Appropriate lifetime of shared users before closing it                                               |
 
-See [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94), [packages/storage/src/keyStorage.ts:237](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L237), [packages/storage/src/keyStorage.ts:466](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L466), and [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236). Follow [React cleanup](../guides/react/cleanup.md), [storage and events](../guides/integrations/storage-and-events.md), and [SSR scope](./runtime-support.md).
+See [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94), [packages/storage/src/keyStorage.ts:239](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L239), [packages/storage/src/keyStorage.ts:446](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L446), and [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236). Follow [React cleanup](../guides/react/cleanup.md), [storage and events](../guides/integrations/storage-and-events.md), and [SSR scope](./runtime-support.md).
 
 The saved-view confirmation rules of the 5.x Viewer and FetcherViewer are documented with that line in the [saved-view guide](../guides/viewer/saved-views.md) and the [FetcherViewer reference](../reference/viewer/fetcher-viewer.md).
 
@@ -4260,7 +4260,7 @@ The contract is `postMessage(message: any): void`, a setter `onmessage: CrossTab
 
 `isBroadcastChannelSupported()` checks the global and prototype postMessage. `isStorageEventSupported()` checks StorageEvent, window.addEventListener, and localStorage or sessionStorage availability. These are feature probes, not permission tests. `createCrossTabMessenger(channelName)` prefers `BroadcastChannelMessenger`, then `StorageMessenger`, otherwise returns undefined. Construction errors are not silently converted to fallback.
 
-`new BroadcastChannelMessenger(channelName)` wraps native BroadcastChannel, forwards `MessageEvent.data`, and uses structured cloning; unsupported data can throw DataCloneError. `close()` closes its channel.
+`new BroadcastChannelMessenger(channelName)` wraps native BroadcastChannel, forwards `MessageEvent.data`, and uses structured cloning; unsupported data can throw DataCloneError. Where the channel has `unref()` (Node), it is unrefed, so an open messenger does not keep the process alive. `close()` closes its channel.
 
 ## StorageMessenger {#storage}
 
@@ -4268,7 +4268,7 @@ The contract is `postMessage(message: any): void`, a setter `onmessage: CrossTab
 
 Each post JSON-encodes `StorageMessage {data: any, timestamp: number}` under a unique channel-prefixed storage key, then schedules key deletion after ttl. Periodic cleanup removes expired/invalid messages matching that channel. Receiving filters by storageArea and key format; invalid JSON warns. TTL controls cleanup, not reliable replay or a receive-age filter. Native storage events do not notify their originating document.
 
-`close()` removes the storage listener and clears interval/pending deletion timers; already-written keys are not all removed immediately. JSON stringify, quota, or access failures can throw on posting. A sessionStorage backend has that platform's restricted sharing scope. The sender's local delegate still handles local delivery independently.
+`close()` removes the storage listener, clears the interval and pending deletion timers, and removes the message keys this messenger wrote that were still waiting for deletion. JSON stringify, quota, or access failures can throw on posting. A sessionStorage backend has that platform's restricted sharing scope. The sender's local delegate still handles local delivery independently.
 
 ## Complete example {#example}
 
@@ -4767,13 +4767,13 @@ Choose the backend and event bus independently: sharing a backend does not share
 
 ## Reads, writes, and lifetime {#operations}
 
-| Method                 | Return                               | Behavior                                                                                                  |
-| ---------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default.                          |
-| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`.             |
-| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default. |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.              |
-| `destroy()`            | `void`                               | Remove only this instance's internal cache listener. Does not delete the key or close/destroy the bus.    |
+| Method                 | Return                               | Behavior                                                                                                                                                 |
+| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default. An undeserializable value is removed with a warning and read as absent. |
+| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                            |
+| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.                                                             |
+| `destroy()`            | `void`                               | Remove only this instance's internal cache listener. Does not delete the key or close/destroy the bus.                                                   |
 
 `StorageEvent<T>` has optional `newValue` and `oldValue`, each allowing null. `StorageListenable<T>` exposes `addListener`. Use unique handler names: duplicate names are rejected by the underlying bus, while the returned remover still targets that name. Unsubscribe external listeners yourself before destroying the owning bus.
 
@@ -4818,7 +4818,7 @@ settings.eventBus.destroy();
 | <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
 | <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
 | <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L215) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217) |
 
 [Package index](./index.md)
 
@@ -4935,7 +4935,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `RemoveStorageListener`   | [KeyStorage and change listeners](key-storage.md#removestoragelistener)                       | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163)         |
 | `StorageListenable`       | [KeyStorage and change listeners](key-storage.md#storagelistenable)                           | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165)         |
 | `KeyStorageOptions`       | [KeyStorage and change listeners](key-storage.md#keystorageoptions)                           | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179)         |
-| `KeyStorage`              | [KeyStorage and change listeners](key-storage.md#keystorage)                                  | [keyStorage.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L215)         |
+| `KeyStorage`              | [KeyStorage and change listeners](key-storage.md#keystorage)                                  | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217)         |
 | `Serializer`              | [Serialization and runtime storage](serialization-and-runtime.md#serializer)                  | [serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)           |
 | `JsonSerializer`          | [Serialization and runtime storage](serialization-and-runtime.md#jsonserializer)              | [serializer.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L41)           |
 | `IdentitySerializer`      | [Serialization and runtime storage](serialization-and-runtime.md#identityserializer)          | [serializer.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L65)           |
@@ -19875,7 +19875,7 @@ export function watchTheme(onTheme: (theme: string) => void) {
 
 参见[存储生命周期](../../reference/storage/key-storage)、[序列化与环境](../../reference/storage/serialization-and-runtime)、[事件投递](../../reference/eventbus/events-and-delivery)及[广播 messenger](../../reference/eventbus/broadcast-and-messengers)。
 
-[keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242) 选择默认本地总线。
+[keyStorage.ts:244](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L244) 选择默认本地总线。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。
 
@@ -20092,7 +20092,7 @@ Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github
 | KeyStorage             | `destroy()` 移除自身事件处理器 | 持久化数据及共享总线；默认串行总线是本地事件，不是跨标签同步 |
 | BroadcastTypedEventBus | `destroy()` 关闭其 messenger   | 关闭前确保共享使用者的生命周期合适                           |
 
-见 [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)、[packages/storage/src/keyStorage.ts:237](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L237)、[packages/storage/src/keyStorage.ts:466](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L466) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
+见 [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)、[packages/storage/src/keyStorage.ts:239](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L239)、[packages/storage/src/keyStorage.ts:446](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L446) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
 
 5.x Viewer 与 FetcherViewer 的保存视图确认规则随 5.x 线记录在[保存视图指南](../guides/viewer/saved-views.md)与 [FetcherViewer 参考](../reference/viewer/fetcher-viewer.md)中。
 
@@ -22074,7 +22074,7 @@ bus.destroy();
 
 `isBroadcastChannelSupported()` 检查全局及原型 postMessage；`isStorageEventSupported()` 检查 StorageEvent、window.addEventListener 和 localStorage 或 sessionStorage。这些只是功能探测，不验证访问权限。`createCrossTabMessenger(channelName)` 优先 BroadcastChannelMessenger，其次 StorageMessenger，否则返回 undefined。构造错误不会被静默转换为回退。
 
-`new BroadcastChannelMessenger(channelName)` 包装原生 BroadcastChannel，转发 `MessageEvent.data`，使用结构化克隆；不支持的数据可能抛 DataCloneError。`close()` 关闭其通道。
+`new BroadcastChannelMessenger(channelName)` 包装原生 BroadcastChannel，转发 `MessageEvent.data`，使用结构化克隆；不支持的数据可能抛 DataCloneError。通道支持 `unref()`（Node）时会调用它，打开的消息器不会阻止进程退出。`close()` 关闭其通道。
 
 ## StorageMessenger {#storage}
 
@@ -22082,7 +22082,7 @@ bus.destroy();
 
 每次发布将 `StorageMessage {data: any, timestamp: number}` JSON 编码到带唯一通道前缀的存储键，并安排 ttl 后删除。定期清理仅删除匹配通道的过期/无效消息。接收时检查 storageArea 和键格式，无效 JSON 会警告。TTL 控制清理，不提供可靠重放，也不是接收时的年龄过滤。原生 storage 事件不通知写入来源文档。
 
-`close()` 移除 storage 监听并清理周期/待删除定时器，不会立即删除所有已写键。发布时 JSON stringify、配额、访问失败可抛错。sessionStorage 后端遵循平台受限的共享范围。发送者的本地 delegate 独立负责本地投递。
+`close()` 移除 storage 监听，清理周期与待删除定时器，并删除本消息器写入且仍待删除的消息键。发布时 JSON stringify、配额、访问失败可抛错。sessionStorage 后端遵循平台受限的共享范围。发送者的本地 delegate 独立负责本地投递。
 
 ## 完整示例 {#example}
 
@@ -22581,13 +22581,13 @@ settings.eventBus.destroy();
 
 ## 读写与生命周期 {#operations}
 
-| 方法                   | 返回值                               | 行为                                                                             |
-| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。                         |
-| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。           |
-| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。 |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。     |
-| `destroy()`            | `void`                               | 只移除此实例的内部缓存监听器，不删除键，不关闭/销毁总线。                        |
+| 方法                   | 返回值                               | 行为                                                                                                     |
+| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。无法反序列化的值会被删除并告警，按缺失处理。     |
+| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。 |
+| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                         |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。                             |
+| `destroy()`            | `void`                               | 只移除此实例的内部缓存监听器，不删除键，不关闭/销毁总线。                                                |
 
 `StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，但返回的移除函数仍指向该名称。销毁拥有的总线前自行解绑外部监听器。
 
@@ -22632,7 +22632,7 @@ settings.eventBus.destroy();
 | <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
 | <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
 | <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L215) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217) |
 
 [包索引](./index.md)
 
@@ -22749,7 +22749,7 @@ token.eventBus.destroy();
 | `RemoveStorageListener`   | [KeyStorage 与变更监听](key-storage.md#removestoragelistener)                  | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163)         |
 | `StorageListenable`       | [KeyStorage 与变更监听](key-storage.md#storagelistenable)                      | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165)         |
 | `KeyStorageOptions`       | [KeyStorage 与变更监听](key-storage.md#keystorageoptions)                      | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179)         |
-| `KeyStorage`              | [KeyStorage 与变更监听](key-storage.md#keystorage)                             | [keyStorage.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L215)         |
+| `KeyStorage`              | [KeyStorage 与变更监听](key-storage.md#keystorage)                             | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217)         |
 | `Serializer`              | [序列化与运行时存储](serialization-and-runtime.md#serializer)                  | [serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)           |
 | `JsonSerializer`          | [序列化与运行时存储](serialization-and-runtime.md#jsonserializer)              | [serializer.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L41)           |
 | `IdentitySerializer`      | [序列化与运行时存储](serialization-and-runtime.md#identityserializer)          | [serializer.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L65)           |
