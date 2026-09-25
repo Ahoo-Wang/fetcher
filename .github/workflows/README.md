@@ -12,7 +12,8 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                                                                                                                                                                                                         |
 | `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                                                                                                                                                                                                                 |
 | `build-storybook.yml`            | Package build, story type check, one Storybook production build with its static index check, and Chromium interaction tests in two shards on separate runners, run from source without a package build. `STORYBOOK_BROWSERS` widens the matrix; see below.                                                                                                                                    |
-| `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run integration tests.                                                                                                                                                                                                                                                                             |
+| `integration-test.yml`           | Build the integration workspace and dependencies, invoke the built generator directly, and run the `required` integration project: the cases that reach only the job's MongoDB and Wow example-server containers. Required, and part of release admission.                                                                                                                                    |
+| `integration-external.yml`       | Advisory, not required and not in release admission: the `external` integration project (`integration-test/test/external/`), the cases that call public-internet hosts (JSONPlaceholder, the OpenAI-compatible provider behind the `FETCHER_LLM_*` secrets). Runs on pull requests touching the packages they exercise, on every push to `main`/`5.x` and on dispatch. See below.             |
 | `generator-test.yml`             | Verify generation against both supported Wow versions.                                                                                                                                                                                                                                                                                                                                        |
 | `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                                                                                                                                                                                                      |
 | `deploy-wiki.yml`                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                                                                                                                                                                                                            |
@@ -26,7 +27,8 @@ verification scopes. Only known independent paths narrow the work:
 
 - `wiki/**`: documentation build.
 - `stories/**`, `.storybook/**`: Storybook acceptance and documentation build.
-- `integration-test/**`: integration tests and static checks.
+- `integration-test/**`: integration tests and static checks (the advisory
+  `integration-external.yml` uses its own `paths` filter instead).
 - Markdown anywhere under `packages/<name>/`: only the tests that read it, via
   each package's `test:docs` script (view-engine's design pages, `AGENTS.md`
   and README checks). A regression test requires every package test that
@@ -117,6 +119,8 @@ uses a fake publisher and never sends packages to npm.
 Admission reads `git rev-parse HEAD` after checkout (including release tags), then
 requires the latest successful `push` or `workflow_dispatch` run for that SHA of
 CI, Engineering Quality, Build Storybook, Integration Test and Generator Test.
+The advisory Integration External is deliberately absent: a third-party outage
+must not hold a release.
 PR runs are excluded because they may test a synthetic merge. Main pushes now
 also run Storybook delivery verification. Missing/pending/failed checks block;
 manual dispatch of the verification workflows can validate another release SHA.
@@ -134,6 +138,22 @@ Default `pnpm test:unit` still collects coverage. `test:no-coverage` scripts ret
 all existing commands and generator timeouts; a regression check prevents the
 compatibility suite from drifting away from the default suite. Coverage thresholds
 remain unchanged and enforced by Node 24.
+
+## Advisory external integration
+
+The integration cases that call a host on the public internet live in
+`integration-test/test/external/` (Vitest project `external`, `pnpm
+test:it:external`) and run only in `integration-external.yml`. That workflow is
+not a required check and `release-admission.mjs` does not list it, so a
+third-party timeout (the LLM provider's connect timeouts forced repeated reruns
+of required runs) blocks neither a merge nor a release. It has no
+`continue-on-error`: a failure still shows as a red run, to be read as "a live
+service disagreed" first and a regression second. The same packages keep their
+deterministic coverage in the unit tests (MSW). The `FETCHER_LLM_*` secrets go
+only to this workflow; without them the LLM cases skip. The Wow cases stay in
+the required run: they reach only the job's own service containers. A
+regression test in `release-admission.test.mjs` requires that the required run
+keeps excluding `test/external/` and receives no secrets.
 
 ## Critical-path follow-up
 

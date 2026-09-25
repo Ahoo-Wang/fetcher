@@ -6,12 +6,34 @@ unit tests.
 
 ## What runs
 
-- Core Fetcher and decorator requests against JSONPlaceholder.
+The cases are split by whether they leave the machine.
+
+| Project    | Location                  | Command                 | CI                                       |
+| ---------- | ------------------------- | ----------------------- | ---------------------------------------- |
+| `required` | `test/` (not `external/`) | `pnpm test:it`          | `integration-test.yml`, a required check |
+| `external` | `test/external/`          | `pnpm test:it:external` | `integration-external.yml`, advisory     |
+
+`required` (`test/wow/`) needs only services started next to the tests:
+
 - Wow commands, snapshots, load-state, and event streams against the Wow example
-  server.
+  server on `localhost:8080`.
 - Generated Wow clients under `src/generated/`.
-- OpenAI-compatible streaming and non-streaming calls when LLM test variables
-  are available.
+
+`test/external/` holds every case that reaches a host on the public internet:
+
+- Core Fetcher and decorator requests against JSONPlaceholder
+  (`jsonplaceholder.typicode.com`).
+- OpenAI-compatible streaming and non-streaming calls against the provider in
+  `FETCHER_LLM_BASE_URL`, when the LLM test variables are available.
+
+A third-party timeout says nothing about this repository, so the external cases
+do not block merges or releases: the advisory workflow runs them on pull
+requests that touch the packages they exercise and on every push to `main` and
+`5.x`. A red advisory run is still worth a look. The deterministic behaviour of
+the same packages is covered by their unit tests (MSW mocks).
+
+A new case that needs only local resources goes under `test/`; one that talks
+to a host outside the CI job goes under `test/external/`.
 
 ## Prerequisites
 
@@ -30,7 +52,8 @@ From the repository root:
 pnpm install --frozen-lockfile
 pnpm build
 pnpm --dir integration-test generate
-pnpm test:it
+pnpm test:it            # required cases (needs the Wow example server)
+pnpm test:it:external   # public-internet cases
 ```
 
 `generate` reads `http://localhost:8080/v3/api-docs` and replaces

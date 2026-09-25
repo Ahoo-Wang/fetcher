@@ -18,8 +18,11 @@ pnpm build
 # Run unit tests (all packages)
 pnpm test:unit
 
-# Run integration tests
+# Run integration tests (required cases; needs the Wow example server on :8080)
 pnpm test:it
+
+# Run the advisory integration cases that reach public-internet hosts
+pnpm test:it:external
 
 # Run tests for a single package
 pnpm --filter @ahoo-wang/fetcher test
