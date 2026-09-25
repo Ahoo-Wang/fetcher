@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, expectTypeOf, it, beforeEach, vi } from 'vitest';
 import {
   EventStreamConvertError,
   toServerSentEventStream,
@@ -101,6 +101,40 @@ describe('responses.ts', () => {
       const response = new Response('test', { headers });
 
       expect(response.isEventStream).toBe(false);
+    });
+  });
+
+  describe('readonly properties', () => {
+    // Declared as readonly properties, not getters: getters in `declare
+    // global` do not merge when a program loads both the .d.ts and the
+    // .d.cts. At runtime they stay accessors without a setter.
+    it('are getters without a setter on Response.prototype', () => {
+      for (const name of ['contentType', 'isEventStream']) {
+        const descriptor = Object.getOwnPropertyDescriptor(
+          Response.prototype,
+          name,
+        );
+        expect(typeof descriptor?.get).toBe('function');
+        expect(descriptor?.set).toBeUndefined();
+      }
+    });
+
+    it('are typed as readonly and reject assignment', () => {
+      const response = new Response('test', {
+        headers: { [CONTENT_TYPE_HEADER]: 'text/event-stream' },
+      });
+      expectTypeOf(response.contentType).toEqualTypeOf<string | null>();
+      expectTypeOf(response.isEventStream).toEqualTypeOf<boolean>();
+      expect(() => {
+        // @ts-expect-error contentType is readonly
+        response.contentType = 'application/json';
+      }).toThrow(TypeError);
+      expect(() => {
+        // @ts-expect-error isEventStream is readonly
+        response.isEventStream = false;
+      }).toThrow(TypeError);
+      expect(response.contentType).toBe('text/event-stream');
+      expect(response.isEventStream).toBe(true);
     });
   });
 
