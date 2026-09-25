@@ -52,7 +52,7 @@ export const HttpError: Story = {
   ...DisplayHttpError,
   tags: ['!dev', '!autodocs', 'test'],
   play: ({ canvasElement }) =>
-    loadAndExpect(canvasElement, 'Error · ExchangeError'),
+    loadAndExpect(canvasElement, 'Error · HttpStatusValidationError'),
 };
 
 export const ManualRefetch: Story = {

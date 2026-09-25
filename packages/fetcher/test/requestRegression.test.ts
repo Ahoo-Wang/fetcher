@@ -236,7 +236,11 @@ describe('Content-Type follows the body', () => {
   it.each([
     ['a plain object', { a: 1 }, 'application/json'],
     ['a string', '{"a":1}', 'application/json'],
-    ['URLSearchParams', new URLSearchParams({ a: '1' }), 'application/x-www-form-urlencoded;charset=UTF-8'],
+    [
+      'URLSearchParams',
+      new URLSearchParams({ a: '1' }),
+      'application/x-www-form-urlencoded;charset=UTF-8',
+    ],
     ['a typed Blob', new Blob(['x'], { type: 'image/png' }), 'image/png'],
     ['an ArrayBuffer', new ArrayBuffer(2), undefined],
   ])('labels %s as %s', async (_, body, expected) => {
@@ -245,7 +249,10 @@ describe('Content-Type follows the body', () => {
 
   it('keeps a Content-Type the caller set for a string', async () => {
     expect(
-      await contentType({ body: 'plain', headers: { 'content-type': 'text/plain' } }),
+      await contentType({
+        body: 'plain',
+        headers: { 'content-type': 'text/plain' },
+      }),
     ).toBe('text/plain');
   });
 });
@@ -294,15 +301,18 @@ describe('rejections', () => {
     expect(error.cause).toBe(foreign);
   });
 
-  it.each([0, '', false])('treats a thrown falsy value (%s) as an error', async thrown => {
-    const fetcher = new Fetcher({ baseURL: 'https://review.test' });
-    fetcher.interceptors.request.use({
-      name: 'Thrower',
-      order: 0,
-      intercept() {
-        throw thrown;
-      },
-    });
-    await expect(fetcher.get('/x')).rejects.toBeInstanceOf(ExchangeError);
-  });
+  it.each([0, '', false])(
+    'treats a thrown falsy value (%s) as an error',
+    async thrown => {
+      const fetcher = new Fetcher({ baseURL: 'https://review.test' });
+      fetcher.interceptors.request.use({
+        name: 'Thrower',
+        order: 0,
+        intercept() {
+          throw thrown;
+        },
+      });
+      await expect(fetcher.get('/x')).rejects.toBeInstanceOf(ExchangeError);
+    },
+  );
 });

@@ -40,10 +40,12 @@ export const Failure: Story = {
   ...DisplayFailure,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.queryByText('Error · ExchangeError')).not.toBeInTheDocument();
+    expect(
+      canvas.queryByText('Error · HttpStatusValidationError'),
+    ).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole('button', { name: 'Fail' }));
     await expect(
-      await canvas.findByText('Error · ExchangeError'),
+      await canvas.findByText('Error · HttpStatusValidationError'),
     ).toBeVisible();
   },
 };
