@@ -110,6 +110,8 @@ jobs:
         working-directory: wow
         run: pnpm typecheck
 
+      # Wow's `pnpm test` stops at the first failing package; an advisory check
+      # should report every package, so run the same filter without bailing.
       - name: Run Wow TypeScript unit tests
         working-directory: wow
-        run: pnpm test
+        run: pnpm -r --no-bail --filter './typescript/*' --filter '!wow-integration-test' --filter '!wow-storybook' test

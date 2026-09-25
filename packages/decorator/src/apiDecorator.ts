@@ -260,7 +260,7 @@ export function api(
   basePath: string = '',
   metadata: Omit<ApiMetadata, 'basePath'> = {},
 ) {
-  return function <T extends new (...args: any[]) => any>(
+  return function <T extends new (...args: never[]) => unknown>(
     constructor: T,
     context?: unknown,
   ): T {
