@@ -43,13 +43,13 @@ update this file.
       react peer floor, `dequal` external. (`openai`/`openapi` import without
       `.js` in source, but unplugin-dts adds it: the declarations resolve —
       verified by `check:package-types` on a clean build. Style only.)
-- [ ] **3. `decorator` + `openapi`** — parameter binding delegates
+- [x] **3. `decorator` + `openapi`** (#1932) — parameter binding delegates
       serialization to fetcher (principle 2); subclass overrides; parameter
       name reflection; executor cache off the instance; OpenAPI 3.1 accuracy.
-- [ ] **4. `eventstream` + `openai`** — EOF semantics per WHATWG, incomplete
+- [ ] **4. `eventstream` + `openai`** (#1933) — EOF semantics per WHATWG, incomplete
       stream detection, linear line splitting, polyfill iterator cleanup,
       openai chunk types and `signal`.
-- [ ] **5. `eventbus` + `storage`** — corrupt value recovery, `set(undefined)`,
+- [x] **5. `eventbus` + `storage`** (this PR) — corrupt value recovery, `set(undefined)`,
       channel ownership and close, SSR.
 - [ ] **6. `cosec`** — trusted origins (principle 1), cross-tab single-flight
       refresh, JWT payload validation, clock skew.
@@ -94,7 +94,7 @@ Review findings, grouped by principle. ✅ = fixed.
 
 ## Stage 3: `decorator` + `openapi`
 
-One PR, branch `refactor/decorator-binding`.
+One PR, #1932.
 
 - [x] Binding by value shape (principle 2): a plain object is spread (as
       before — Wow's `@attribute() attributes` relies on it); arrays, dates and
@@ -116,6 +116,30 @@ One PR, branch `refactor/decorator-binding`.
       readers; `paths` stays required (optional in 3.1) so readers need no
       `?.` everywhere.
 
+## Stage 4: `eventstream` + `openai`
+
+One PR, #1933.
+
+- [x] End of stream reported truthfully: a cut final line is dropped;
+      complete lines missing only the blank line still dispatch (deliberate
+      deviation from WHATWG, which drops them: some servers end that way); a
+      stream with a terminate detector that ends without the terminating event
+      errors with `EventStreamIncompleteError` (openai: before `[DONE]`).
+- [x] `retry` only on the event whose block set it; linear line splitting;
+      polyfill iterator `throw`/`next`/`return` semantics.
+- [x] openai: `completions(request, signal?)`, `usage?`, `stream_options`,
+      JSDoc.
+
+## Stage 5: `eventbus` + `storage`
+
+- [x] Corrupt stored value → removed with a warning, read as absent (it made
+      `get`/`set`/`remove` all throw); `set(undefined)` → `remove()`;
+      `InMemoryStorage` stores text.
+- [x] `BroadcastChannelMessenger` unrefs its channel in Node;
+      `StorageMessenger.close()` removes its pending keys.
+- Deferred to stage 6 (they belong to cosec's ownership of buses): closing a
+  broadcast bus a `TokenStorage` creates, and cross-tab refresh ordering.
+
 ## Downstream follow-ups
 
 - Wow `typescript/wow-client/test/clients/endpointTable.test.ts` records the
@@ -127,6 +151,8 @@ One PR, branch `refactor/decorator-binding`.
 
 ## Pause point
 
-2026-09-25: stages 1–2 merged (#1927, #1930, #1931). Stage 3 PR in flight
-(`refactor/decorator-binding`). Next: merge it, then stage 4 (`eventstream` +
-`openai`) — deep review, plan it here, PRs.
+2026-09-25: stages 1–3 merged (#1927, #1930, #1931, #1932); stage 4 (#1933)
+and stage 5 PRs in flight. `downstream-wow.yml` now runs every Wow package
+(`--no-bail`); with stage 3 all of them pass except the expected
+`content-type` golden. Next: merge 4 and 5, then stage 6 (`cosec`) — deep
+review, plan it here, PRs.
