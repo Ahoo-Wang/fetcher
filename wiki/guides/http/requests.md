@@ -41,7 +41,7 @@ const created = await api.post<{ id: number; name: string }>(
 console.log(created.id);
 ```
 
-This POST is an integration step: the local tutorial server has no create route. Implement that route or use your real API. Object bodies are JSON serialized by the body interceptor. For `FormData`, `Blob`, or `URLSearchParams`, pass the native value as `body`; the interceptor removes an explicit Content-Type so the native transport can supply the correct format or boundary. Strings and binary bodies are not converted to JSON objects.
+This POST is an integration step: the local tutorial server has no create route. Implement that route or use your real API. Object bodies are JSON serialized by the body interceptor and sent as `application/json`; the client sets no Content-Type of its own, so bodyless requests carry none. For `FormData`, `Blob`, or `URLSearchParams`, pass the native value as `body`; the interceptor removes an explicit Content-Type so the native transport can supply the correct format or boundary. A string is sent as is, as `application/json` unless you set another Content-Type; binary bodies get no Content-Type unless you set one.
 
 ## Inspect results and handle failures
 

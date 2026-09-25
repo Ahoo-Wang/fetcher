@@ -135,7 +135,10 @@ export class InterceptorManager {
    * Error Handling:
    * - If any interceptor throws an error, the error phase is triggered
    * - Error interceptors can "fix" errors by clearing the error property on the exchange
-   * - If errors remain after error interceptors run, they are wrapped in ExchangeError
+   * - If errors remain after error interceptors run, the rejection is an ExchangeError:
+   *   an ExchangeError raised for this same exchange (such as
+   *   HttpStatusValidationError) is rethrown as is, so `instanceof` on its own
+   *   class works; any other error is wrapped, with the original as `cause`
    *
    * Order of Execution:
    * 1. Request interceptors (sorted by order property, ascending)
@@ -184,8 +187,8 @@ export class InterceptorManager {
    *   url: '/api/users',
    *   method: HttpMethod.GET
    * };
-   * const exchange = new FetchExchange(fetcher, request);
-   * const result = await fetcher.exchange(exchange);
+   * const exchange = fetcher.resolveExchange(request);
+   * const result = await fetcher.interceptors.exchange(exchange);
    * ```
    */
   async exchange(fetchExchange: FetchExchange): Promise<FetchExchange> {
@@ -210,7 +213,15 @@ export class InterceptorManager {
         return fetchExchange;
       }
 
-      // Otherwise, wrap the error in ExchangeError
+      // An ExchangeError already describing this exchange is the answer;
+      // wrapping it again would hide its class behind `cause`.
+      const remaining = fetchExchange.error;
+      if (
+        remaining instanceof ExchangeError &&
+        remaining.exchange === fetchExchange
+      ) {
+        throw remaining;
+      }
       throw new ExchangeError(fetchExchange);
     }
   }

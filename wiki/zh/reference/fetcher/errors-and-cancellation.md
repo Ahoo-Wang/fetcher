@@ -11,16 +11,16 @@ Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身
 
 ## 错误类型与状态策略 {#errors}
 
-| API                                   | 契约                                                                                            |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `FetcherError(message?, cause?)`      | 消息回退到 Error cause 的消息，再回退到通用消息；保存 cause，并复制 Error cause 的 stack。      |
-| `ExchangeError(exchange, message?)`   | 保存 exchange，cause 取自 `exchange.error`；消息依次回退到错误消息、响应 statusText、请求 URL。 |
-| `HttpStatusValidationError(exchange)` | 状态校验创建，包含状态码与 URL；通常从外层 `ExchangeError.cause` / `.exchange.error` 获取。     |
-| `FetchTimeoutError(request)`          | 保存超时请求，消息包含超时、方法（默认 GET）和 URL。                                            |
-| `ValidateStatus`                      | `(status: number) => boolean`，用于构造选项或 `new ValidateStatusInterceptor(predicate)`。      |
-| `IGNORE_VALIDATE_STATUS`              | 属性键 `'__ignoreValidateStatus__'`，仅字面量 `true` 绕过校验。                                 |
+| API                                   | 契约                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `FetcherError(message?, cause?)`      | 消息回退到 Error cause 的消息，再回退到通用消息；保存 cause，并复制 Error cause 的 stack。        |
+| `ExchangeError(exchange, message?)`   | 保存 exchange，cause 取自 `exchange.error`；消息依次回退到错误消息、响应 statusText、请求 URL。   |
+| `HttpStatusValidationError(exchange)` | 状态校验创建，包含状态码与 URL；exchange 以它本身拒绝（不包装），`.exchange.error` 是同一个错误。 |
+| `FetchTimeoutError(request)`          | 保存超时请求，消息包含超时、方法（默认 GET）和 URL。                                              |
+| `ValidateStatus`                      | `(status: number) => boolean`，用于构造选项或 `new ValidateStatusInterceptor(predicate)`。        |
+| `IGNORE_VALIDATE_STATUS`              | 属性键 `'__ignoreValidateStatus__'`，仅字面量 `true` 绕过校验。                                   |
 
-没有响应时状态校验直接跳过。管线失败通常为 `ExchangeError`，但错误拦截器自身抛错及后续提取器失败可以不经过此包装。不要假定每个失败都有响应，也不要假定所有拒绝值都是 Error。
+没有响应时状态校验直接跳过。管线失败通常为 `ExchangeError`：状态失败就是 `HttpStatusValidationError` 本身，其他错误（超时、网络、abort reason、拦截器抛错）被包装，原错误作为 `cause`。错误拦截器自身抛错及后续提取器失败可以不经过此包装。不要假定每个失败都有响应，也不要假定所有拒绝值都是 Error。
 
 ## 超时优先级 {#timeout}
 

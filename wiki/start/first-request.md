@@ -17,7 +17,7 @@ Complete [installation](./installation.md), then create these files in the `fetc
 
 The generic describes the expected TypeScript shape; it does not validate server data. The explicit id and name check provides this example's runtime boundary. `ResultExtractors.Json` is passed in the third argument to `get`, where request options belong.
 
-The 404 is exposed as an `ExchangeError`. Its `cause` is `HttpStatusValidationError`, and `exchange.response.status` retains `404`. Transport and parsing failures do not match that branch and are rethrown.
+The 404 rejects with `HttpStatusValidationError`, a subclass of `ExchangeError`, and its `exchange.response.status` retains `404`. Transport and parsing failures do not match that branch and are rethrown.
 
 ## Create `tsconfig.json`
 

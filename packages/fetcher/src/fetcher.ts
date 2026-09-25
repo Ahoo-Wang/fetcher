@@ -22,7 +22,6 @@ import type {
   RequestHeaders,
   RequestHeadersCapable,
 } from './fetchRequest.js';
-import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest.js';
 import { HttpMethod } from './fetchRequest.js';
 import { InterceptorManager } from './interceptorManager.js';
 import type { UrlTemplateStyle } from './urlTemplateResolver.js';
@@ -80,9 +79,10 @@ export interface FetcherOptions
   validateStatus?: ValidateStatus;
 }
 
-const DEFAULT_HEADERS: RequestHeaders = {
-  [CONTENT_TYPE_HEADER]: ContentTypeValues.APPLICATION_JSON,
-};
+// No default Content-Type: it describes a body, so the RequestBodyInterceptor
+// sets it per request. A default one made every bodyless cross-origin request
+// non-simple (a CORS preflight each) and mislabeled binary bodies.
+const DEFAULT_HEADERS: RequestHeaders = {};
 
 export const DEFAULT_OPTIONS: FetcherOptions = {
   baseURL: '',
@@ -137,7 +137,7 @@ export class Fetcher
    *
    * @param options - Configuration options for the Fetcher instance
    * @param options.baseURL - The base URL to prepend to all requests. Defaults to empty string.
-   * @param options.headers - Default headers to include in all requests. Defaults to JSON content type.
+   * @param options.headers - Default headers to include in all requests. Defaults to none; the Content-Type follows the body.
    * @param options.timeout - Default timeout for requests in milliseconds. No timeout by default.
    * @param options.urlTemplateStyle - Style for URL template parameter interpolation.
    * @param options.interceptors - Interceptor manager for processing requests and responses.
@@ -226,12 +226,12 @@ export class Fetcher
    * @param request - Complete request configuration object
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ExchangeResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ExchangeResultExtractor, which returns the FetchExchange.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
    * @returns Promise that resolves to the extracted result based on resultExtractor
-   * @throws Error if an unhandled error occurs during request processing
+   * @throws ExchangeError if the request fails; see InterceptorManager.exchange
    */
   async request<R = FetchExchange>(
     request: FetchRequest,
@@ -252,12 +252,12 @@ export class Fetcher
    * @param request - Request configuration including headers, body, parameters, etc.
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
-   * @throws FetchError if the request fails and no response is generated
+   * @throws ExchangeError if the request fails; see InterceptorManager.exchange
    */
   async fetch<R = Response>(
     url: string,
@@ -286,7 +286,7 @@ export class Fetcher
    * @param request - Additional request options
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -320,7 +320,7 @@ export class Fetcher
    * @param request - Request options excluding method and body
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -344,7 +344,7 @@ export class Fetcher
    * @param request - Request options including body and other parameters
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -368,7 +368,7 @@ export class Fetcher
    * @param request - Request options including body and other parameters
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -392,7 +392,7 @@ export class Fetcher
    * @param request - Request options including body and other parameters
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -416,7 +416,7 @@ export class Fetcher
    * @param request - Request options excluding method and body
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -441,7 +441,7 @@ export class Fetcher
    * @param request - Request options excluding method and body
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
@@ -466,7 +466,7 @@ export class Fetcher
    * @param request - Request options excluding method and body
    * @param options - Request options including result extractor and attributes
    * @param options.resultExtractor - Function to extract the desired result from the exchange.
-   *                                  Defaults to ResponseResultExtractor which returns the entire exchange object.
+   *                                  Defaults to ResponseResultExtractor, which returns the Response.
    * @param options.attributes - Optional shared attributes that can be accessed by interceptors
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.

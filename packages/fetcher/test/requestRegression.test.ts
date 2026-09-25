@@ -13,7 +13,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse, delay } from 'msw';
-import { Fetcher, ResultExtractors, mergeRequest, timeoutFetch } from '../src';
+import {
+  ExchangeError,
+  FetchTimeoutError,
+  Fetcher,
+  HttpStatusValidationError,
+  ResultExtractors,
+  mergeRequest,
+  timeoutFetch,
+} from '../src';
 
 const server = setupServer(
   http.all('https://review.test/*', async ({ request }) =>
@@ -211,4 +219,100 @@ describe('caller-owned objects', () => {
     expect(response.url).toBe('https://review.test/tenants/T1?a=1&ts=now');
     expect(shared.urlParams).toEqual({ path: {}, query: { a: '1' } });
   });
+});
+
+describe('Content-Type follows the body', () => {
+  const fetcher = new Fetcher({ baseURL: 'https://review.test' });
+  const contentType = async (request: Parameters<Fetcher['post']>[1]) => {
+    const echoed = await fetcher.post<any>('/echo', request, options);
+    return echoed.headers['content-type'];
+  };
+
+  it('sends no Content-Type without a body, so a cross-origin GET stays simple', async () => {
+    const echoed = await fetcher.get<any>('/echo', {}, options);
+    expect(echoed.headers['content-type']).toBeUndefined();
+  });
+
+  it.each([
+    ['a plain object', { a: 1 }, 'application/json'],
+    ['a string', '{"a":1}', 'application/json'],
+    [
+      'URLSearchParams',
+      new URLSearchParams({ a: '1' }),
+      'application/x-www-form-urlencoded;charset=UTF-8',
+    ],
+    ['a typed Blob', new Blob(['x'], { type: 'image/png' }), 'image/png'],
+    ['an ArrayBuffer', new ArrayBuffer(2), undefined],
+  ])('labels %s as %s', async (_, body, expected) => {
+    expect(await contentType({ body: body as any })).toBe(expected);
+  });
+
+  it('keeps a Content-Type the caller set for a string', async () => {
+    expect(
+      await contentType({
+        body: 'plain',
+        headers: { 'content-type': 'text/plain' },
+      }),
+    ).toBe('text/plain');
+  });
+});
+
+describe('rejections', () => {
+  it('rejects with the HttpStatusValidationError itself, carrying the exchange', async () => {
+    server.use(
+      http.get('https://review.test/missing', () =>
+        HttpResponse.text('no', { status: 404 }),
+      ),
+    );
+    const fetcher = new Fetcher({ baseURL: 'https://review.test' });
+    const error = await fetcher.get('/missing').catch(e => e);
+    expect(error).toBeInstanceOf(HttpStatusValidationError);
+    expect(error).toBeInstanceOf(ExchangeError);
+    expect(error.exchange.response.status).toBe(404);
+    expect(error.exchange.error).toBe(error);
+  });
+
+  it('wraps an error that is not an ExchangeError, keeping it as cause', async () => {
+    server.use(
+      http.get('https://review.test/slow', async () => {
+        await delay(50);
+        return HttpResponse.text('late');
+      }),
+    );
+    const fetcher = new Fetcher({ baseURL: 'https://review.test' });
+    const error = await fetcher.get('/slow', { timeout: 5 }).catch(e => e);
+    expect(error).toBeInstanceOf(ExchangeError);
+    expect(error.cause).toBeInstanceOf(FetchTimeoutError);
+  });
+
+  it('wraps an ExchangeError raised for another exchange', async () => {
+    const fetcher = new Fetcher({ baseURL: 'https://review.test' });
+    const other = fetcher.resolveExchange({ url: '/other' });
+    const foreign = new ExchangeError(other, 'from another exchange');
+    fetcher.interceptors.request.use({
+      name: 'Thrower',
+      order: 0,
+      intercept() {
+        throw foreign;
+      },
+    });
+    const error = await fetcher.get('/x').catch(e => e);
+    expect(error).not.toBe(foreign);
+    expect(error.cause).toBe(foreign);
+  });
+
+  it.each([0, '', false])(
+    'treats a thrown falsy value (%s) as an error',
+    async thrown => {
+      const fetcher = new Fetcher({ baseURL: 'https://review.test' });
+      fetcher.interceptors.request.use({
+        name: 'Thrower',
+        order: 0,
+        intercept() {
+          throw thrown;
+        },
+      });
+      await expect(fetcher.get('/x')).rejects.toBeInstanceOf(ExchangeError);
+    },
+  );
 });

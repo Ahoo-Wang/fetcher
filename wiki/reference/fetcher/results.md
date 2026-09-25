@@ -27,14 +27,14 @@ JSON types are compile-time promises, not runtime validation. The package augmen
 
 `new FetchExchange(init: FetchExchangeInit)` requires `fetcher` and `request`; it accepts optional `resultExtractor`, `response`, `error`, and `attributes`. `AttributesCapable.attributes` accepts a record or Map; the constructor copies entries into a new Map. The extractor defaults to Exchange. The request and response are references, not clones.
 
-| Member                           | Contract                                                                     |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| `ensureRequestHeaders()`         | Returns existing headers or assigns/returns `{}`.                            |
-| `ensureRequestUrlParams()`       | Ensures both `.path` and `.query` records and returns `Required<UrlParams>`. |
-| `hasError()`, `hasResponse()`    | Boolean truthiness checks.                                                   |
-| `requiredResponse`               | Returns response; throws `ExchangeError` if absent.                          |
-| `extractResult<R>(): Promise<R>` | Computes once and caches the value or promise; concurrent calls reuse it.    |
-| `response = value`               | Replaces response and invalidates the cached result.                         |
+| Member                           | Contract                                                                                                                         |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `ensureRequestHeaders()`         | Returns existing headers or assigns/returns `{}`.                                                                                |
+| `ensureRequestUrlParams()`       | Ensures both `.path` and `.query` records and returns `Required<UrlParams>`.                                                     |
+| `hasError()`, `hasResponse()`    | `hasError()` is true unless `error` is `undefined` or `null`, so a thrown `0` or `''` counts; `hasResponse()` checks truthiness. |
+| `requiredResponse`               | Returns response; throws `ExchangeError` if absent.                                                                              |
+| `extractResult<R>(): Promise<R>` | Computes once and caches the value or promise; concurrent calls reuse it.                                                        |
+| `response = value`               | Replaces response and invalidates the cached result.                                                                             |
 
 An asynchronous extraction rejection remains cached. A synchronous throw before a value/promise is returned leaves the cache unpopulated, so another call can retry. Changing only `resultExtractor` does not reset an already-populated cache. Body-reading operations consume the response once; the cache avoids repeated parsing through `extractResult`, not direct repeated `response.json()` calls.
 

@@ -64,38 +64,47 @@ Review findings, grouped by principle. ✅ = fixed.
 `refactor/fetcher-core-correctness`, PR opened 2026-09-24; docs (wiki en/zh,
 skills) and release notes updated in the same PR.
 
-- [ ] Callers own their objects: every `Fetcher` gets its own headers record
+- [x] Callers own their objects: every `Fetcher` gets its own headers record
       (all instances shared one `DEFAULT_HEADERS` object); `resolveExchange`
       copies `urlParams.path`/`query`, so an interceptor writing a path
       parameter no longer leaks it into the caller's reused request (cosec's
       `ResourceAttributionRequestInterceptor` could pin a tenant that way).
-- [ ] Cancellation composes: `timeoutFetch` combines the timeout with the
+- [x] Cancellation composes: `timeoutFetch` combines the timeout with the
       caller's `signal` and `abortController` (a `signal` used to disable the
       timeout), never aborts the caller's controller, and never writes to the
       request.
-- [ ] `ReadableStream` bodies send `duplex: 'half'`.
-- [ ] URL semantics owned by `UrlBuilder`: query values `undefined`/`null`
+- [x] `ReadableStream` bodies send `duplex: 'half'`.
+- [x] URL semantics owned by `UrlBuilder`: query values `undefined`/`null`
       are omitted, arrays become repeated keys, `Date` becomes ISO text; a
       path placeholder with no value (including `null`, or no `path` at all)
       throws; Express placeholders are identifiers (`/files/:name.json`).
-- [ ] Singletons survive two copies: `fetcherRegistrar` on `globalThis`;
+- [x] Singletons survive two copies: `fetcherRegistrar` on `globalThis`;
       `getFetcher` resolves names by type, not `instanceof Fetcher`.
 
-**PR 2 — contracts**
+**PR 2 — contracts** — branch `refactor/fetcher-contracts`.
 
-- [ ] `Content-Type` describes the body: no default header on bodyless
+- [x] `Content-Type` describes the body: no default header on bodyless
       requests (every cross-origin GET was preflighted); JSON for plain
       objects and strings only; binary bodies keep the type fetch derives.
-- [ ] Errors: an `ExchangeError` thrown for the same exchange (e.g.
+- [x] Errors: an `ExchangeError` thrown for the same exchange (e.g.
       `HttpStatusValidationError`) is rethrown as is instead of wrapped, so
       `instanceof HttpStatusValidationError` works.
-- [ ] JSDoc that contradicts the code (`timeoutFetch` examples, `@throws
+- [x] JSDoc that contradicts the code (`timeoutFetch` examples, `@throws
 FetchError`, "ResponseResultExtractor returns the exchange",
       axios-style `FetcherConfigurer` example).
 
+## Downstream follow-ups
+
+- Wow `typescript/wow-client/test/clients/endpointTable.test.ts` records the
+  wire headers in `golden/client-endpoints.json`, including the old default
+  `content-type: application/json` on every GET. Since PR 2 the advisory
+  `downstream-wow.yml` check fails on that snapshot, as intended. Regenerate
+  the golden in the Wow change that moves Wow to fetcher 6 (not before: Wow's
+  own CI still runs against 5.x until then).
+
 ## Pause point
 
-2026-09-24: paused for quota after opening PR 1. Next: land PR 1 (CI,
-self-review, Codex), then PR 2 on a branch from the merged `main`. Stages 2–7
-not started. Findings for every stage are in this file's **Order** list; the
-full review lives in the session that wrote this plan and is summarized there.
+2026-09-25: stage 1 code complete in two PRs — PR 1 (#1927) and PR 2
+(`refactor/fetcher-contracts`, stacked on PR 1; rebase onto `main` after PR 1
+merges). Next: merge both, tick stage 1 in **Order**, then stage 2 (release
+contract) — review, plan it here, PRs.

@@ -17,7 +17,7 @@ description: 运行类型化 JSON 请求，并验证 HTTP 404 失败分支。
 
 泛型描述预期的 TypeScript 结构，但不校验服务端数据。本例通过明确检查 id 与 name 建立运行时边界。`ResultExtractors.Json` 放在 `get` 的第三个参数中，这里才是请求选项的位置。
 
-404 对外表现为 `ExchangeError`，其 `cause` 是 `HttpStatusValidationError`，`exchange.response.status` 保留 `404`。传输和解析失败不会命中该分支，因此会继续抛出。
+404 以 `HttpStatusValidationError`（`ExchangeError` 的子类）拒绝，其 `exchange.response.status` 保留 `404`。传输和解析失败不会命中该分支，因此会继续抛出。
 
 ## 创建 `tsconfig.json`
 

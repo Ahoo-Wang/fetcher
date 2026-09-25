@@ -21,25 +21,23 @@ const api = new Fetcher({ baseURL: 'http://127.0.0.1:8787' });
 try {
   await api.get('/missing');
 } catch (error) {
-  if (error instanceof ExchangeError) {
-    if (error.cause instanceof HttpStatusValidationError) {
-      console.error('HTTP', error.exchange.response?.status);
-    } else {
-      console.error('Transport or pipeline failure', error.cause);
-    }
+  if (error instanceof HttpStatusValidationError) {
+    console.error('HTTP', error.exchange.response?.status);
+  } else if (error instanceof ExchangeError) {
+    console.error('Transport or pipeline failure', error.cause);
   } else {
     throw error;
   }
 }
 ```
 
-Save this in the first-request client's file and run the same compile/run commands. Expect `HTTP 404`. Default status validation accepts 200–299; native fetch resolving a response does not make every status successful in Fetcher.
+Save this in the first-request client's file and run the same compile/run commands. Expect `HTTP 404`. Test for `HttpStatusValidationError` before `ExchangeError`: it is a subclass, and it is thrown as is, not as the `cause` of another error. Default status validation accepts 200–299; native fetch resolving a response does not make every status successful in Fetcher.
 
 ## Diagnose the failed layer
 
 | Observation                                 | Next action                                                                                 |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `ExchangeError` with an HTTP status cause   | Inspect status and the service contract; report 401/403/404 or server failure appropriately |
+| `HttpStatusValidationError`                 | Inspect status and the service contract; report 401/403/404 or server failure appropriately |
 | `ExchangeError` without a response          | Check network access, DNS, TLS, CORS, or cancellation; inspect `cause`                      |
 | `FetchTimeoutError` inside `cause`          | Check the request deadline and [timeout ownership](./cancellation.md)                       |
 | Rejection while JSON/custom extraction runs | Check actual response content and extractor logic; it need not be an `ExchangeError`        |

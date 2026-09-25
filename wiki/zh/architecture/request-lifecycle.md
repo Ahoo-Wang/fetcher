@@ -43,7 +43,7 @@ sequenceDiagram
 
 ## 恢复不会重跑验证
 
-请求或响应拦截器抛错时，管理器将错误存入 exchange 并执行错误拦截器。如果错误被清除，exchange 立即返回，不再执行响应拦截器。因此恢复拦截器应负责替代响应的有效性。剩余错误包装为 `ExchangeError`；错误拦截器自身抛出的错误则直接传播。见 [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)。
+请求或响应拦截器抛错时，管理器将错误存入 exchange 并执行错误拦截器。如果错误被清除，exchange 立即返回，不再执行响应拦截器。因此恢复拦截器应负责替代响应的有效性。剩余错误以 `ExchangeError` 拒绝：已为该 exchange 创建的（如 `HttpStatusValidationError`）原样抛出，其他错误被包装，原错误作为 `cause`。错误拦截器自身抛出的错误则直接传播。见 [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194)。
 
 结果提取在这之后发生。JSON 解码或自定义提取器可以失败，且不会重新进入错误 registry。应在消费结果的代码旁处理解码失败，详见[失败模型](./failure-model.md)。
 

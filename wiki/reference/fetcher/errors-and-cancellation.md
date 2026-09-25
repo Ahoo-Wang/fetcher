@@ -11,16 +11,16 @@ Choose `validateStatus` for a reusable HTTP acceptance policy, a request attribu
 
 ## Error types and status policy {#errors}
 
-| API                                   | Contract                                                                                                                               |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `FetcherError(message?, cause?)`      | Message falls back to an Error cause's message, then a generic message; stores cause and copies an Error cause's stack.                |
-| `ExchangeError(exchange, message?)`   | Stores the exchange, with cause taken from `exchange.error`; message falls back to its error, response statusText, then request URL.   |
-| `HttpStatusValidationError(exchange)` | Created by status validation; includes status and URL. Normally available through the outer `ExchangeError.cause` / `.exchange.error`. |
-| `FetchTimeoutError(request)`          | Stores the timed-out request and a message including timeout, method (GET fallback), and URL.                                          |
-| `ValidateStatus`                      | `(status: number) => boolean`; constructor option or `new ValidateStatusInterceptor(predicate)`.                                       |
-| `IGNORE_VALIDATE_STATUS`              | Attribute key `'__ignoreValidateStatus__'`; only literal `true` bypasses validation.                                                   |
+| API                                   | Contract                                                                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FetcherError(message?, cause?)`      | Message falls back to an Error cause's message, then a generic message; stores cause and copies an Error cause's stack.                           |
+| `ExchangeError(exchange, message?)`   | Stores the exchange, with cause taken from `exchange.error`; message falls back to its error, response statusText, then request URL.              |
+| `HttpStatusValidationError(exchange)` | Created by status validation; includes status and URL. The exchange rejects with it as is (not wrapped), and `.exchange.error` is the same error. |
+| `FetchTimeoutError(request)`          | Stores the timed-out request and a message including timeout, method (GET fallback), and URL.                                                     |
+| `ValidateStatus`                      | `(status: number) => boolean`; constructor option or `new ValidateStatusInterceptor(predicate)`.                                                  |
+| `IGNORE_VALIDATE_STATUS`              | Attribute key `'__ignoreValidateStatus__'`; only literal `true` bypasses validation.                                                              |
 
-Validation skips exchanges with no response. An outer pipeline failure is normally `ExchangeError`, but an error interceptor's own throw or later extractor failure can escape without that wrapper. Do not assume every failure has a response or every rejection is an Error object.
+Validation skips exchanges with no response. An outer pipeline failure is normally `ExchangeError`: a status failure is the `HttpStatusValidationError` itself, any other error (timeout, network, abort reason, an interceptor's throw) is wrapped with the original as `cause`. An error interceptor's own throw or later extractor failure can escape without that wrapper. Do not assume every failure has a response or every rejection is an Error object.
 
 ## Timeout precedence {#timeout}
 

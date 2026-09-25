@@ -15,7 +15,7 @@ This repository example has no external network dependency. The fixture returns 
 
 <<< @/examples/http/client.ts
 
-The client selects JSON extraction in the third argument to `get`. It also confirms that `/missing` becomes an `ExchangeError` whose cause is `HttpStatusValidationError` and whose response status is `404`; any other error is rethrown.
+The client selects JSON extraction in the third argument to `get`. It also confirms that `/missing` rejects with `HttpStatusValidationError` (a subclass of `ExchangeError`) whose response status is `404`; any other error is rethrown.
 
 ## Run in this repository
 
