@@ -414,8 +414,6 @@ export class CoSecConfigurer implements FetcherConfigurer {
    *
    * @param config - CoSec configuration object containing all settings
    *
-   * @throws Error if appId is not provided
-   * @throws Error if provided dependencies are invalid
    *
    * @example
    * ```typescript

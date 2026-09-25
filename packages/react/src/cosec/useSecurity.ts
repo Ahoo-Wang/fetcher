@@ -55,8 +55,8 @@ export interface UseSecurityOptions {
  */
 export interface UseSecurityReturn {
   /**
-   * The current authenticated user's JWT payload, or ANONYMOUS_USER if not authenticated.
-   * Contains user information extracted from the access token.
+   * The stored access token's JWT payload, even once it has expired (check
+   * `authenticated`), or ANONYMOUS_USER when no token is stored.
    */
   currentUser: CoSecJwtPayload;
 
@@ -97,7 +97,7 @@ const MAX_TIMEOUT = 2_147_483_647;
  * @param options.onSignIn - Callback function invoked when sign in is successful.
  * @param options.onSignOut - Callback function invoked when sign out occurs.
  * @returns An object containing:
- *          - currentUser: The current authenticated user's JWT payload, or null if not authenticated.
+ *          - currentUser: The stored access token's JWT payload (even if expired), or ANONYMOUS_USER when no token is stored.
  *          - authenticated: Boolean indicating whether the user is currently authenticated
  *            (the access token is unexpired). Computed at render; the hook also
  *            re-renders when the refresh token expires, so an idle page signs out then.

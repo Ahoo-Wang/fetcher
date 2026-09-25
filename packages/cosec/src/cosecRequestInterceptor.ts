@@ -90,13 +90,14 @@ export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 /**
  * The execution order for the CoSecRequestInterceptor.
  *
- * This value is calculated to ensure the interceptor runs after request body
- * processing but before the actual HTTP request is made. The order is set
- * to Number.MIN_SAFE_INTEGER + DEFAULT_INTERCEPTOR_ORDER_STEP to guarantee
- * early execution while maintaining safe integer boundaries.
+ * The order is Number.MIN_SAFE_INTEGER + DEFAULT_INTERCEPTOR_ORDER_STEP, so
+ * the interceptor runs among the first request interceptors: before
+ * AuthorizationRequestInterceptor (one step later), RequestBodyInterceptor
+ * (Number.MIN_SAFE_INTEGER + BUILT_IN_INTERCEPTOR_ORDER_STEP), URL resolution
+ * and the actual HTTP request.
  *
  * @remarks
- * - Position: After RequestBodyInterceptor
+ * - Position: Before RequestBodyInterceptor
  * - Position: Before FetchInterceptor
  * - Value: Number.MIN_SAFE_INTEGER + 1000
  *
@@ -265,9 +266,8 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * @param options.appId - The application identifier for CoSec authentication
    * @param options.deviceIdStorage - Storage for device identifier management
    * @param options.spaceIdProvider - Optional provider for space identification
+   * @param options.isTrusted - Optional predicate for which absolute URLs get the CoSec headers (default: all)
    *
-   * @throws Error if appId is empty or not provided
-   * @throws Error if deviceIdStorage is not provided
    *
    * @example
    * ```typescript

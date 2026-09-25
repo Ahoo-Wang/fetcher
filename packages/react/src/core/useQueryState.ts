@@ -108,8 +108,9 @@ export interface UseQueryStateReturn<Q> {
  * setQuery({ id: '2' });
  * executeQuery(getQuery());
  *
- * @throws {Error} Throws an error if neither initialQuery nor query is provided in the options.
- * @throws Exceptions may also be thrown by the execute function if it encounters errors during query execution.
+ * Without `initialQuery` or `query` nothing runs until setQuery is called. The
+ * hook does not await `execute`: handle its errors inside `execute` (useQuery
+ * does, as error state).
  */
 export function useQueryState<Q>(
   options: UseQueryStateOptions<Q>,
