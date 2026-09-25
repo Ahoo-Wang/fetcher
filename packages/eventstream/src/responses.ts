@@ -33,7 +33,7 @@ declare global {
      *
      * @returns The content type header value as a string, or null if the header is not set
      */
-    get contentType(): string | null;
+    readonly contentType: string | null;
 
     /**
      * Checks if the response is an event stream.
@@ -43,7 +43,7 @@ declare global {
      *
      * @returns true if the response is an event stream, false otherwise
      */
-    get isEventStream(): boolean;
+    readonly isEventStream: boolean;
 
     /**
      * Returns a ServerSentEventStream for consuming server-sent events.

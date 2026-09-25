@@ -33,14 +33,14 @@ This also polyfills `ReadableStream.prototype[Symbol.asyncIterator]` when not na
 
 After the side-effect import, Response objects gain these members:
 
-| Member                              | Kind   | Returns                                   | Description                                    |
-| ----------------------------------- | ------ | ----------------------------------------- | ---------------------------------------------- |
-| `contentType`                       | getter | `string \| null`                          | Content-Type header value                      |
-| `isEventStream`                     | getter | `boolean`                                 | True if media type is `text/event-stream`      |
-| `eventStream()`                     | method | `ServerSentEventStream \| null`           | Converts to SSE stream (null if not SSE)       |
-| `requiredEventStream()`             | method | `ServerSentEventStream`                   | Same, throws `EventStreamConvertError` on fail |
-| `jsonEventStream<DATA>(terminate?)` | method | `JsonServerSentEventStream<DATA> \| null` | Typed JSON stream with optional termination    |
-| `requiredJsonEventStream<DATA>(t?)` | method | `JsonServerSentEventStream<DATA>`         | Same, throws `EventStreamConvertError` on fail |
+| Member                              | Kind              | Returns                                   | Description                                    |
+| ----------------------------------- | ----------------- | ----------------------------------------- | ---------------------------------------------- |
+| `contentType`                       | readonly property | `string \| null`                          | Content-Type header value                      |
+| `isEventStream`                     | readonly property | `boolean`                                 | True if media type is `text/event-stream`      |
+| `eventStream()`                     | method            | `ServerSentEventStream \| null`           | Converts to SSE stream (null if not SSE)       |
+| `requiredEventStream()`             | method            | `ServerSentEventStream`                   | Same, throws `EventStreamConvertError` on fail |
+| `jsonEventStream<DATA>(terminate?)` | method            | `JsonServerSentEventStream<DATA> \| null` | Typed JSON stream with optional termination    |
+| `requiredJsonEventStream<DATA>(t?)` | method            | `JsonServerSentEventStream<DATA>`         | Same, throws `EventStreamConvertError` on fail |
 
 ## EventStreamConvertError
 

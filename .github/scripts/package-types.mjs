@@ -7,21 +7,35 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import {
   closeSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   openSync,
   readdirSync,
   readFileSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /**
  * Checks the declarations of every published package the way consumers
- * resolve them: each package is packed as npm would publish it and handed to
- * `@arethetypeswrong/cli` (attw), which resolves every `exports` entry under
- * node10, node16 from CommonJS, node16 from ES modules and bundler.
+ * resolve them. Each package is packed as npm would publish it, then:
+ *
+ * 1. `@arethetypeswrong/cli` (attw) resolves every `exports` entry under
+ *    node10, node16 from CommonJS, node16 from ES modules and bundler.
+ * 2. The dual consumer check covers what attw cannot see, since it resolves
+ *    each entry on its own: declarations that clash when one compilation
+ *    loads both the ES module (`.d.ts`) and the CommonJS (`.d.cts`)
+ *    declarations of a package, as a project with `.mts` and `.cts` files or
+ *    a dual-mode dependency graph does. A global augmentation with an
+ *    accessor, for one, is then declared twice and does not merge (TS2300).
+ *    Every tarball is installed into one project and, for each package, an
+ *    `.mts` and a `.cts` file that both import it — every entry with a
+ *    `require` condition from both, ES-module-only entries from the `.mts`
+ *    only — are type-checked in one `tsc` run under node16 and nodenext,
+ *    strict, without `skipLibCheck`.
  *
  * Run after `pnpm build`. Any problem fails the check unless {@link IGNORED}
  * names it, with the reason.
@@ -114,6 +128,149 @@ export function publishedPackages(root) {
     });
 }
 
+/** The module modes the dual consumer is compiled under. */
+export const CONSUMER_MODULES = ['node16', 'nodenext'];
+
+/**
+ * The entries a consumer imports, from a manifest's `exports`: the specifier
+ * and whether it resolves from ES modules (`import`) and from CommonJS
+ * (`require`). `./package.json` is left out; a manifest without `exports`
+ * has one entry, the package root, resolving from both.
+ */
+export function consumerEntries(manifest) {
+  const exports = manifest.exports ?? { '.': manifest.main ?? './index.js' };
+  const entries = [];
+  for (const [subpath, target] of Object.entries(exports)) {
+    if (subpath === './package.json' || !subpath.startsWith('.')) continue;
+    const conditional = typeof target === 'object' && target !== null;
+    entries.push({
+      specifier:
+        subpath === '.'
+          ? manifest.name
+          : `${manifest.name}/${subpath.slice(2)}`,
+      import: !conditional || 'import' in target || 'default' in target,
+      require: !conditional || 'require' in target || 'default' in target,
+    });
+  }
+  return entries;
+}
+
+/**
+ * The two consumer sources for one package: `consumer.mts` imports every
+ * entry that resolves from ES modules, `consumer.cts` every entry that
+ * resolves from CommonJS. Type-only namespace imports load each declaration
+ * file, global augmentations included, without needing a runtime.
+ */
+export function consumerSources(entries) {
+  const source = side =>
+    entries
+      .filter(entry => entry[side])
+      .map(
+        (entry, index) =>
+          `import type * as entry${index} from '${entry.specifier}';\n` +
+          `export type Entry${index} = typeof entry${index};\n`,
+      )
+      .join('') || 'export {};\n';
+  return {
+    'consumer.mts': source('import'),
+    'consumer.cts': source('require'),
+  };
+}
+
+/** The dual consumer's tsconfig for one module mode. */
+export function consumerConfig(module) {
+  return {
+    compilerOptions: {
+      module,
+      moduleResolution: module,
+      target: 'es2022',
+      lib: ['es2022', 'dom', 'dom.iterable'],
+      types: [],
+      strict: true,
+      skipLibCheck: false,
+      noEmit: true,
+    },
+    files: ['consumer.mts', 'consumer.cts'],
+  };
+}
+
+/**
+ * The errors in `tsc --pretty false` output:
+ * `{ file, line, column, code, message }`, `file` as tsc printed it (empty
+ * for a global error). Continuation lines of a message are dropped.
+ */
+export function parseDiagnostics(output) {
+  const diagnostics = [];
+  for (const line of output.split(/\r?\n/)) {
+    const located = /^(.+?)\((\d+),(\d+)\): error (TS\d+): (.*)$/.exec(line);
+    const global = /^error (TS\d+): (.*)$/.exec(line);
+    if (located) {
+      const [, file, row, column, code, message] = located;
+      diagnostics.push({
+        file,
+        line: Number(row),
+        column: Number(column),
+        code,
+        message,
+      });
+    } else if (global) {
+      const [, code, message] = global;
+      diagnostics.push({ file: '', code, message });
+    }
+  }
+  return diagnostics;
+}
+
+/**
+ * One line per diagnostic, the path shortened to the package, e.g.
+ * `TS2300 fetcher-eventstream/dist/responses.d.ts:12 Duplicate identifier …`.
+ */
+export function describeDiagnostic(diagnostic) {
+  const file = diagnostic.file
+    .replaceAll('\\', '/')
+    .replace(/^(?:.*\/)?node_modules\/(?:@ahoo-wang\/)?/, '');
+  const where = file
+    ? `${file}${diagnostic.line ? `:${diagnostic.line}` : ''} `
+    : '';
+  return `${diagnostic.code} ${where}${diagnostic.message}`;
+}
+
+function packedSpecifiers(tarballs) {
+  return Object.fromEntries(
+    Object.entries(tarballs).map(([name, tarball]) => [
+      name,
+      `file:${tarball}`,
+    ]),
+  );
+}
+
+/**
+ * The dual consumer project's manifest: every tarball as a dependency, plus
+ * the given type packages.
+ */
+export function consumerManifest(tarballs, typings = {}) {
+  return {
+    name: 'dual-consumer',
+    private: true,
+    dependencies: { ...packedSpecifiers(tarballs), ...typings },
+  };
+}
+
+/**
+ * The dual consumer project's pnpm settings: every tarball also as an
+ * override, so peers resolve to the packed packages rather than the registry,
+ * and laid out as npm does, one copy of each package, so a clash is between a
+ * package's .d.ts and .d.cts, not between two installed copies.
+ */
+export function consumerWorkspace(tarballs) {
+  return {
+    nodeLinker: 'hoisted',
+    autoInstallPeers: true,
+    strictPeerDependencies: false,
+    overrides: packedSpecifiers(tarballs),
+  };
+}
+
 function pack(directory, destination) {
   const before = new Set(readdirSync(destination));
   // pnpm pack rewrites workspace: and catalog: ranges as publishing does.
@@ -148,6 +305,72 @@ function analyze(root, tarball) {
   return JSON.parse(readFileSync(report, 'utf8')).analysis;
 }
 
+function installConsumer(root, tarballs, destination) {
+  const project = join(destination, 'dual-consumer');
+  mkdirSync(project);
+  // Declarations that import react need its types, at the workspace's version.
+  const typings = {};
+  for (const name of ['@types/react', '@types/react-dom']) {
+    const manifest = join(root, 'node_modules', name, 'package.json');
+    if (existsSync(manifest))
+      typings[name] = JSON.parse(readFileSync(manifest, 'utf8')).version;
+  }
+  writeFileSync(
+    join(project, 'package.json'),
+    JSON.stringify(consumerManifest(tarballs, typings), null, 2),
+  );
+  // JSON is YAML.
+  writeFileSync(
+    join(project, 'pnpm-workspace.yaml'),
+    JSON.stringify(consumerWorkspace(tarballs), null, 2),
+  );
+  execFileSync(
+    'pnpm',
+    ['install', '--prefer-offline', '--ignore-scripts', '--reporter=silent'],
+    { cwd: project, stdio: ['ignore', 'ignore', 'inherit'] },
+  );
+  return project;
+}
+
+/** Type-checks the dual consumer of one package; diagnostics by mode. */
+function checkConsumer(root, project, manifest) {
+  const directory = mkdtempSync(join(project, 'check-'));
+  const sources = consumerSources(consumerEntries(manifest));
+  for (const [file, source] of Object.entries(sources))
+    writeFileSync(join(directory, file), source);
+  const tsc = join(root, 'node_modules', 'typescript', 'bin', 'tsc');
+  const results = {};
+  for (const module of CONSUMER_MODULES) {
+    const config = `tsconfig.${module}.json`;
+    writeFileSync(
+      join(directory, config),
+      JSON.stringify(consumerConfig(module), null, 2),
+    );
+    const result = spawnSync(
+      process.execPath,
+      [tsc, '-p', config, '--pretty', 'false'],
+      { cwd: directory, encoding: 'utf8' },
+    );
+    if (result.error) throw result.error;
+    const diagnostics = parseDiagnostics(
+      `${result.stdout}\n${result.stderr}`,
+    ).map(diagnostic => ({
+      ...diagnostic,
+      file: diagnostic.file
+        ? relative(project, join(directory, diagnostic.file))
+        : '',
+    }));
+    if (result.status !== 0 && diagnostics.length === 0)
+      throw new Error(
+        `tsc exited with ${result.status} for ${manifest.name} (${module}):\n` +
+          result.stdout +
+          result.stderr,
+      );
+    results[module] = diagnostics;
+  }
+  return results;
+}
+
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
@@ -156,11 +379,19 @@ if (
   const destination = mkdtempSync(join(tmpdir(), 'package-types-'));
   let failed = false;
   try {
+    const manifests = {};
+    const tarballs = {};
     for (const directory of publishedPackages(root)) {
-      const name = JSON.parse(
+      const manifest = JSON.parse(
         readFileSync(join(directory, 'package.json'), 'utf8'),
-      ).name;
-      const analysis = analyze(root, pack(directory, destination));
+      );
+      manifests[manifest.name] = manifest;
+      tarballs[manifest.name] = pack(directory, destination);
+    }
+
+    console.log('attw: every entry under node10, node16 and bundler');
+    for (const [name, tarball] of Object.entries(tarballs)) {
+      const analysis = analyze(root, tarball);
       const { unexpected, accepted } = classify({
         packageName: name,
         ...analysis,
@@ -173,16 +404,39 @@ if (
       for (const problem of unexpected)
         console.log(`       ${describe(problem)}`);
     }
+
+    console.log(
+      '\nDual consumer: .mts and .cts importing the package in one tsc run ' +
+        `(${CONSUMER_MODULES.join(', ')})`,
+    );
+    const project = installConsumer(root, tarballs, destination);
+    for (const [name, manifest] of Object.entries(manifests)) {
+      const problems = Object.entries(
+        checkConsumer(root, project, manifest),
+      ).filter(([, diagnostics]) => diagnostics.length > 0);
+      failed ||= problems.length > 0;
+      console.log(`${problems.length > 0 ? 'FAIL' : 'ok  '} ${name}`);
+      for (const [module, diagnostics] of problems) {
+        console.log(`       ${module}: ${diagnostics.length} error(s)`);
+        for (const diagnostic of diagnostics)
+          console.log(`         ${describeDiagnostic(diagnostic)}`);
+      }
+    }
   } finally {
     rmSync(destination, { recursive: true, force: true });
   }
   if (failed) {
     console.error(
       '\nPublished declarations must resolve under node10, node16 (CommonJS ' +
-        'and ES modules) and bundler. Fix the build output, or add a rule ' +
-        'with its reason to IGNORED in .github/scripts/package-types.mjs.',
+        'and ES modules) and bundler, and must type-check when one program ' +
+        'loads both their .d.ts and .d.cts. Fix the build output or the ' +
+        'declarations, or add an attw rule with its reason to IGNORED in ' +
+        '.github/scripts/package-types.mjs.',
     );
     process.exit(1);
   }
-  console.log('Package types: every published entry point resolves.');
+  console.log(
+    '\nPackage types: every published entry point resolves, and the ES ' +
+      'module and CommonJS declarations load together.',
+  );
 }
