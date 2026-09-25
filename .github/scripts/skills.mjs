@@ -74,6 +74,7 @@ export const REMOVED_REACT_EXPORTS = [
 const PLATFORM_NAMES = new Set([
   'AbortController',
   'Authorization',
+  'Date',
   'DOMException',
   'Number',
   'Storage',

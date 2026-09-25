@@ -75,7 +75,7 @@ function appendSearchParam(
  * `URLSearchParams` is taken as is.
  */
 export function toSearchParams(
-  query: Record<string, any> | URLSearchParams,
+  query: Record<string, unknown> | URLSearchParams,
 ): URLSearchParams {
   if (query instanceof URLSearchParams) return new URLSearchParams(query);
   const params = new URLSearchParams();
