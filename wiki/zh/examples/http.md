@@ -15,7 +15,7 @@ description: 运行本地确定性服务，验证 Fetcher 的成功结果与 HTT
 
 <<< @/examples/http/client.ts
 
-客户端在 `get` 的第三个参数中选择 JSON 提取器，并确认 `/missing` 会产生 `ExchangeError`：其 cause 为 `HttpStatusValidationError`，响应状态为 `404`；其他错误继续抛出。
+客户端在 `get` 的第三个参数中选择 JSON 提取器，并确认 `/missing` 会以 `HttpStatusValidationError`（`ExchangeError` 的子类）拒绝，响应状态为 `404`；其他错误继续抛出。
 
 ## 在本仓库运行
 

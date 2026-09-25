@@ -27,14 +27,14 @@ JSON 类型仅为编译期约定，不提供运行时校验。包对 `Response.j
 
 `new FetchExchange(init: FetchExchangeInit)` 要求 `fetcher` 和 `request`，可选 `resultExtractor`、`response`、`error`、`attributes`。`AttributesCapable.attributes` 接受记录或 Map，构造时把条目复制到新 Map。提取器默认 Exchange；请求与响应均保留引用，不复制。
 
-| 成员                             | 契约                                                          |
-| -------------------------------- | ------------------------------------------------------------- |
-| `ensureRequestHeaders()`         | 返回已有头，或创建并返回 `{}`。                               |
-| `ensureRequestUrlParams()`       | 确保 `.path`、`.query` 记录存在，返回 `Required<UrlParams>`。 |
-| `hasError()`、`hasResponse()`    | 按真值判断。                                                  |
-| `requiredResponse`               | 返回响应，缺失时抛 `ExchangeError`。                          |
-| `extractResult<R>(): Promise<R>` | 计算一次并缓存值或 Promise，并发调用复用。                    |
-| `response = value`               | 替换响应并清空结果缓存。                                      |
+| 成员                             | 契约                                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `ensureRequestHeaders()`         | 返回已有头，或创建并返回 `{}`。                                                                                      |
+| `ensureRequestUrlParams()`       | 确保 `.path`、`.query` 记录存在，返回 `Required<UrlParams>`。                                                        |
+| `hasError()`、`hasResponse()`    | `hasError()` 在 `error` 不是 `undefined` 或 `null` 时为真，抛出的 `0` 或 `''` 也算错误；`hasResponse()` 按真值判断。 |
+| `requiredResponse`               | 返回响应，缺失时抛 `ExchangeError`。                                                                                 |
+| `extractResult<R>(): Promise<R>` | 计算一次并缓存值或 Promise，并发调用复用。                                                                           |
+| `response = value`               | 替换响应并清空结果缓存。                                                                                             |
 
 异步提取被拒绝时保留被拒绝的 Promise 缓存；若提取器尚未返回值/Promise 就同步抛错，则不填充缓存，下次调用可以重试。只修改 `resultExtractor` 不清除已有缓存。正文只能读取一次；缓存仅避免经 `extractResult` 重复解析，无法保护直接重复调用 `response.json()`。
 

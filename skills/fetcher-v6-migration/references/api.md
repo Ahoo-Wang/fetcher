@@ -30,8 +30,9 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   `fetcher-openai`, `fetcher-openapi`, `fetcher-storage` or `fetcher-cosec`;
   the only removals are in `fetcher-react` and the packages that left. These
   packages do receive corrections — see **Changed** (e.g. `@ahoo-wang/fetcher`
-  omits `undefined`/`null` query values, repeats array query parameters and
-  keeps the timeout when a `signal` is passed) and **Fixed** in the 6.0 release
+  omits `undefined`/`null` query values, repeats array query parameters,
+  keeps the timeout when a `signal` is passed, sends no default `Content-Type`
+  and rejects a status failure with the `HttpStatusValidationError` itself) and **Fixed** in the 6.0 release
   notes (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
   longer re-running the error phase (#1249).
 
@@ -114,6 +115,22 @@ grep -rnE '\bfetcher-generator\b' package.json .github scripts Makefile 2>/dev/n
 Pattern 3 deliberately does not match `useFetcherQuery` or `useQuery`, which
 stay in `@ahoo-wang/fetcher-react`. Confirm each hit's import source before
 rewriting: a project may already import these names from `@ahoo-wang/wow-react`.
+
+Behavior checks from **Changed**, for every project that upgrades
+`@ahoo-wang/fetcher`:
+
+```sh
+# 6. Status errors read from `cause`; HttpStatusValidationError is now thrown as is
+grep -rnE 'cause\s+instanceof\s+HttpStatusValidationError' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' . | grep -v node_modules
+```
+
+Rewrite `error.cause instanceof HttpStatusValidationError` to
+`error instanceof HttpStatusValidationError`, tested before `ExchangeError`, its
+superclass; `error.exchange.error` still returns it. A timeout is still
+`error.cause instanceof FetchTimeoutError`. The fetcher no longer sends
+`Content-Type: application/json` by default: a plain-object or string body
+still gets it, but a server that expects it on bodyless requests or on binary
+bodies needs it set on those requests.
 
 ## Rewrites
 

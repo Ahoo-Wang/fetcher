@@ -12,7 +12,6 @@
  */
 
 import {
-  ExchangeError,
   Fetcher,
   HttpStatusValidationError,
   ResultExtractors,
@@ -39,8 +38,7 @@ try {
   throw new Error('Expected /missing to fail with HTTP 404');
 } catch (error) {
   if (
-    !(error instanceof ExchangeError) ||
-    !(error.cause instanceof HttpStatusValidationError) ||
+    !(error instanceof HttpStatusValidationError) ||
     error.exchange.response?.status !== 404
   ) {
     throw error;

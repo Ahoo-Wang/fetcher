@@ -144,7 +144,6 @@ process.on('SIGINT', () => server.close());
  */
 
 import {
-  ExchangeError,
   Fetcher,
   HttpStatusValidationError,
   ResultExtractors,
@@ -171,8 +170,7 @@ try {
   throw new Error('Expected /missing to fail with HTTP 404');
 } catch (error) {
   if (
-    !(error instanceof ExchangeError) ||
-    !(error.cause instanceof HttpStatusValidationError) ||
+    !(error instanceof HttpStatusValidationError) ||
     error.exchange.response?.status !== 404
   ) {
     throw error;
@@ -184,7 +182,7 @@ console.log(user.name);
 
 The generic describes the expected TypeScript shape; it does not validate server data. The explicit id and name check provides this example's runtime boundary. `ResultExtractors.Json` is passed in the third argument to `get`, where request options belong.
 
-The 404 is exposed as an `ExchangeError`. Its `cause` is `HttpStatusValidationError`, and `exchange.response.status` retains `404`. Transport and parsing failures do not match that branch and are rethrown.
+The 404 rejects with `HttpStatusValidationError`, a subclass of `ExchangeError`, and its `exchange.response.status` retains `404`. Transport and parsing failures do not match that branch and are rethrown.
 
 ## Create `tsconfig.json`
 
@@ -400,7 +398,7 @@ const created = await api.post<{ id: number; name: string }>(
 console.log(created.id);
 ```
 
-This POST is an integration step: the local tutorial server has no create route. Implement that route or use your real API. Object bodies are JSON serialized by the body interceptor. For `FormData`, `Blob`, or `URLSearchParams`, pass the native value as `body`; the interceptor removes an explicit Content-Type so the native transport can supply the correct format or boundary. Strings and binary bodies are not converted to JSON objects.
+This POST is an integration step: the local tutorial server has no create route. Implement that route or use your real API. Object bodies are JSON serialized by the body interceptor and sent as `application/json`; the client sets no Content-Type of its own, so bodyless requests carry none. For `FormData`, `Blob`, or `URLSearchParams`, pass the native value as `body`; the interceptor removes an explicit Content-Type so the native transport can supply the correct format or boundary. A string is sent as is, as `application/json` unless you set another Content-Type; binary bodies get no Content-Type unless you set one.
 
 ## Inspect results and handle failures
 
@@ -482,25 +480,23 @@ const api = new Fetcher({ baseURL: 'http://127.0.0.1:8787' });
 try {
   await api.get('/missing');
 } catch (error) {
-  if (error instanceof ExchangeError) {
-    if (error.cause instanceof HttpStatusValidationError) {
-      console.error('HTTP', error.exchange.response?.status);
-    } else {
-      console.error('Transport or pipeline failure', error.cause);
-    }
+  if (error instanceof HttpStatusValidationError) {
+    console.error('HTTP', error.exchange.response?.status);
+  } else if (error instanceof ExchangeError) {
+    console.error('Transport or pipeline failure', error.cause);
   } else {
     throw error;
   }
 }
 ```
 
-Save this in the first-request client's file and run the same compile/run commands. Expect `HTTP 404`. Default status validation accepts 200–299; native fetch resolving a response does not make every status successful in Fetcher.
+Save this in the first-request client's file and run the same compile/run commands. Expect `HTTP 404`. Test for `HttpStatusValidationError` before `ExchangeError`: it is a subclass, and it is thrown as is, not as the `cause` of another error. Default status validation accepts 200–299; native fetch resolving a response does not make every status successful in Fetcher.
 
 ## Diagnose the failed layer
 
 | Observation                                 | Next action                                                                                 |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `ExchangeError` with an HTTP status cause   | Inspect status and the service contract; report 401/403/404 or server failure appropriately |
+| `HttpStatusValidationError`                 | Inspect status and the service contract; report 401/403/404 or server failure appropriately |
 | `ExchangeError` without a response          | Check network access, DNS, TLS, CORS, or cancellation; inspect `cause`                      |
 | `FetchTimeoutError` inside `cause`          | Check the request deadline and [timeout ownership](./cancellation.md)                       |
 | Rejection while JSON/custom extraction runs | Check actual response content and extractor logic; it need not be an `ExchangeError`        |
@@ -2222,7 +2218,7 @@ Defaults follow [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wan
 
 ## Recovery does not replay validation
 
-If a request or response interceptor throws, the manager stores the error on the exchange and runs error interceptors. If they clear it, the exchange returns immediately; response interceptors do not run again. A recovery interceptor therefore owns the validity of any replacement response. A remaining error becomes `ExchangeError`; an error thrown by an error interceptor itself escapes directly. See [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191).
+If a request or response interceptor throws, the manager stores the error on the exchange and runs error interceptors. If they clear it, the exchange returns immediately; response interceptors do not run again. A recovery interceptor therefore owns the validity of any replacement response. A remaining error rejects as an `ExchangeError`: one already raised for this exchange, such as `HttpStatusValidationError`, is rethrown as is, any other is wrapped with the original as `cause`. An error thrown by an error interceptor itself escapes directly. See [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194).
 
 Extraction happens afterward. JSON decoding or a custom extractor can fail without returning to that error registry. Keep decoding handling next to the code consuming the result, as described in the [failure model](./failure-model.md).
 
@@ -2288,15 +2284,15 @@ The saved-view confirmation rules of the 5.x Viewer and FetcherViewer are docume
 
 Handle failures where the operation completes. Receiving an HTTP response, decoding JSON, and consuming an event stream are separate operations; a successful earlier stage does not guarantee the next one.
 
-| Failure                         | Where it appears                                                                                       | Application decision                                                                        |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| Network rejection               | Request interceptor pipeline, normally wrapped in `ExchangeError`                                      | Inspect the underlying cause and decide whether replay is safe                              |
-| Non-2xx HTTP status             | Default status validation throws `HttpStatusValidationError`, normally wrapped by the exchange manager | Handle the service's error response and status; HTTP 2xx still needs business-result checks |
-| JSON or custom extraction       | After the exchange pipeline; rejects directly to `request()` caller                                    | Catch around result consumption and validate the fields you use                             |
-| Error interceptor itself throws | Directly out of error handling                                                                         | Do not assume every rejection is `ExchangeError`                                            |
-| SSE read/transform failure      | During asynchronous stream iteration                                                                   | Handle partial output and dispose the reader                                                |
+| Failure                         | Where it appears                                                                                                    | Application decision                                                                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Network rejection               | Request interceptor pipeline, normally wrapped in `ExchangeError`                                                   | Inspect the underlying cause and decide whether replay is safe                              |
+| Non-2xx HTTP status             | Default status validation rejects with `HttpStatusValidationError` itself, an `ExchangeError` carrying the exchange | Handle the service's error response and status; HTTP 2xx still needs business-result checks |
+| JSON or custom extraction       | After the exchange pipeline; rejects directly to `request()` caller                                                 | Catch around result consumption and validate the fields you use                             |
+| Error interceptor itself throws | Directly out of error handling                                                                                      | Do not assume every rejection is `ExchangeError`                                            |
+| SSE read/transform failure      | During asynchronous stream iteration                                                                                | Handle partial output and dispose the reader                                                |
 
-Default status validation: [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170). Wrapping and recovery: [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191). Extraction: [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) and [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69). An outer `instanceof HttpStatusValidationError` or `FetchTimeoutError` check alone misses a wrapped cause; inspect the `ExchangeError` context/cause as shown in the [failure guide](../guides/http/failures.md) and [error reference](../reference/fetcher/errors-and-cancellation.md).
+Default status validation: [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170). Wrapping, rethrow and recovery: [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194). Extraction: [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) and [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69). A status failure matches `instanceof HttpStatusValidationError` directly. A timeout or network failure is wrapped, so an outer `instanceof FetchTimeoutError` check misses it; inspect the `ExchangeError` cause as shown in the [failure guide](../guides/http/failures.md) and [error reference](../reference/fetcher/errors-and-cancellation.md).
 
 ## Timeout and cancellation are different controls
 
@@ -2436,7 +2432,6 @@ process.on('SIGINT', () => server.close());
  */
 
 import {
-  ExchangeError,
   Fetcher,
   HttpStatusValidationError,
   ResultExtractors,
@@ -2463,8 +2458,7 @@ try {
   throw new Error('Expected /missing to fail with HTTP 404');
 } catch (error) {
   if (
-    !(error instanceof ExchangeError) ||
-    !(error.cause instanceof HttpStatusValidationError) ||
+    !(error instanceof HttpStatusValidationError) ||
     error.exchange.response?.status !== 404
   ) {
     throw error;
@@ -2474,7 +2468,7 @@ try {
 console.log(user.name);
 ```
 
-The client selects JSON extraction in the third argument to `get`. It also confirms that `/missing` becomes an `ExchangeError` whose cause is `HttpStatusValidationError` and whose response status is `404`; any other error is rethrown.
+The client selects JSON extraction in the third argument to `get`. It also confirms that `/missing` rejects with `HttpStatusValidationError` (a subclass of `ExchangeError`) whose response status is `404`; any other error is rethrown.
 
 ## Run in this repository
 
@@ -3096,14 +3090,14 @@ Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Req
 
 `new Fetcher(options?: FetcherOptions)` accepts the following options. Supplying an options object requires `baseURL`; omitting the object uses `DEFAULT_OPTIONS`.
 
-| Option                     | Default                                | Contract                                                                                                                                     |
-| -------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `baseURL: string`          | `''`                                   | Used by the mutable `urlBuilder`; relative URLs still need a runtime that accepts them.                                                      |
-| `headers?: RequestHeaders` | `{'Content-Type': 'application/json'}` | A supplied object replaces these constructor defaults; the client keeps its own copy. Each request gets a defensive, case-insensitive merge. |
-| `timeout?: number`         | `undefined`                            | Milliseconds; no timer until configured. Request `0` disables the inherited timeout.                                                         |
-| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate`         | `{id}` syntax; `Express` selects `:id`.                                                                                                      |
-| `interceptors?`            | New `InterceptorManager`               | Supplied manager is used as-is; it can be shared across clients.                                                                             |
-| `validateStatus?`          | `200 <= status < 300`                  | Used only when constructing the default manager.                                                                                             |
+| Option                     | Default                        | Contract                                                                                                                                                                                                   |
+| -------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseURL: string`          | `''`                           | Used by the mutable `urlBuilder`; relative URLs still need a runtime that accepts them.                                                                                                                    |
+| `headers?: RequestHeaders` | `{}`                           | No `Content-Type` by default; the [body interceptor](./requests.md#body) sets it from the body. The client keeps its own copy of a supplied object. Each request gets a defensive, case-insensitive merge. |
+| `timeout?: number`         | `undefined`                    | Milliseconds; no timer until configured. Request `0` disables the inherited timeout.                                                                                                                       |
+| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate` | `{id}` syntax; `Express` selects `:id`.                                                                                                                                                                    |
+| `interceptors?`            | New `InterceptorManager`       | Supplied manager is used as-is; it can be shared across clients.                                                                                                                                           |
+| `validateStatus?`          | `200 <= status < 300`          | Used only when constructing the default manager.                                                                                                                                                           |
 
 `urlBuilder`, `headers`, and `timeout` can be changed for subsequent requests. `interceptors` is readonly as a property, while its registries remain mutable. Each client owns a copy of its headers, so mutating `client.headers` affects only that client; mutating exported `DEFAULT_OPTIONS.headers` still changes every client created afterwards, so use request headers instead.
 
@@ -3155,7 +3149,7 @@ fetcherRegistrar.unregister('reports');
 
 | Symbol                                                        | Implementation                                                                                                          |
 | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="fetcheroptions"></a>`FetcherOptions`                   | [fetcher.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L52)                     |
+| <a id="fetcheroptions"></a>`FetcherOptions`                   | [fetcher.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L51)                     |
 | <a id="default_options"></a>`DEFAULT_OPTIONS`                 | [fetcher.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L87)                     |
 | <a id="requestoptions"></a>`RequestOptions`                   | [fetcher.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L95)                     |
 | <a id="default_request_options"></a>`DEFAULT_REQUEST_OPTIONS` | [fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)                     |
@@ -3169,7 +3163,7 @@ fetcherRegistrar.unregister('reports');
 | <a id="namedfetcher"></a>`NamedFetcher`                       | [namedFetcher.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L38)           |
 | <a id="fetcher-instance"></a>`fetcher`                        | [namedFetcher.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L94)           |
 | <a id="namedcapable"></a>`NamedCapable`                       | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                       |
-| <a id="fetcherconfigurer"></a>`FetcherConfigurer`             | [types.ts:248](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L248)                       |
+| <a id="fetcherconfigurer"></a>`FetcherConfigurer`             | [types.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L234)                       |
 
 [Package index](./index.md)
 
@@ -3210,7 +3204,7 @@ For ordinary calls, pass a request object to the client method; call `mergeReque
 
 ## Body conversion {#body}
 
-`RequestBodyInterceptor` runs before normal order-zero request interceptors. Strings and nullish bodies pass through. Blob, File, FormData, and URLSearchParams pass through after removing **all** Content-Type spellings so Fetch chooses the type/boundary. ArrayBuffer, typed-array/DataView views, and ReadableStream pass through without header adjustment; a ReadableStream body also gets `duplex: 'half'` unless `duplex` is already set, as Fetch requires. Other objects (including arrays) use `JSON.stringify`; JSON Content-Type is added only if absent. An explicit non-JSON Content-Type does not prevent JSON serialization. Circular data or BigInt may fail serialization and enter the error pipeline.
+`RequestBodyInterceptor` runs before normal order-zero request interceptors. The client has no default Content-Type; the body decides it, and one set on the client or request is kept except where noted. Nullish bodies pass through, so a bodyless request (GET and the like) carries no Content-Type and a cross-origin one needs no CORS preflight because of it. A string is sent as is and gets `application/json` only if no Content-Type is set. Blob, File, FormData, and URLSearchParams pass through after removing **all** Content-Type spellings so Fetch chooses the type/boundary. ArrayBuffer, typed-array/DataView views, and ReadableStream pass through with no Content-Type added; a ReadableStream body also gets `duplex: 'half'` unless `duplex` is already set, as Fetch requires. Other objects (including arrays) use `JSON.stringify`; JSON Content-Type is added only if absent. An explicit non-JSON Content-Type does not prevent JSON serialization. Circular data or BigInt may fail serialization and enter the error pipeline.
 
 Whether the runtime supports streaming uploads, and additional runtime-specific request fields, remain the caller's responsibility. See [pipeline ordering](./interceptors.md) before inserting a body transformer.
 
@@ -3362,14 +3356,14 @@ JSON types are compile-time promises, not runtime validation. The package augmen
 
 `new FetchExchange(init: FetchExchangeInit)` requires `fetcher` and `request`; it accepts optional `resultExtractor`, `response`, `error`, and `attributes`. `AttributesCapable.attributes` accepts a record or Map; the constructor copies entries into a new Map. The extractor defaults to Exchange. The request and response are references, not clones.
 
-| Member                           | Contract                                                                     |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| `ensureRequestHeaders()`         | Returns existing headers or assigns/returns `{}`.                            |
-| `ensureRequestUrlParams()`       | Ensures both `.path` and `.query` records and returns `Required<UrlParams>`. |
-| `hasError()`, `hasResponse()`    | Boolean truthiness checks.                                                   |
-| `requiredResponse`               | Returns response; throws `ExchangeError` if absent.                          |
-| `extractResult<R>(): Promise<R>` | Computes once and caches the value or promise; concurrent calls reuse it.    |
-| `response = value`               | Replaces response and invalidates the cached result.                         |
+| Member                           | Contract                                                                                                                         |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `ensureRequestHeaders()`         | Returns existing headers or assigns/returns `{}`.                                                                                |
+| `ensureRequestUrlParams()`       | Ensures both `.path` and `.query` records and returns `Required<UrlParams>`.                                                     |
+| `hasError()`, `hasResponse()`    | `hasError()` is true unless `error` is `undefined` or `null`, so a thrown `0` or `''` counts; `hasResponse()` checks truthiness. |
+| `requiredResponse`               | Returns response; throws `ExchangeError` if absent.                                                                              |
+| `extractResult<R>(): Promise<R>` | Computes once and caches the value or promise; concurrent calls reuse it.                                                        |
+| `response = value`               | Replaces response and invalidates the cached result.                                                                             |
 
 An asynchronous extraction rejection remains cached. A synchronous throw before a value/promise is returned leaves the cache unpopulated, so another call can retry. Changing only `resultExtractor` does not reset an already-populated cache. Body-reading operations consume the response once; the cache avoids repeated parsing through `extractResult`, not direct repeated `response.json()` calls.
 
@@ -3447,7 +3441,7 @@ Each corresponding `*_INTERCEPTOR_NAME` equals the implementation's class name. 
 
 ## Failure and recovery {#recovery}
 
-`new InterceptorManager(validateStatus?)` constructs these request/response registries and an empty error registry. `exchange(exchange)` runs request then response. On rejection it stores the thrown value in `exchange.error`, runs the error registry, then throws an `ExchangeError` if `hasError()` remains true.
+`new InterceptorManager(validateStatus?)` constructs these request/response registries and an empty error registry. `exchange(exchange)` runs request then response. On rejection it stores the thrown value in `exchange.error`, runs the error registry, then, if `hasError()` remains true, rejects with an `ExchangeError`: an `ExchangeError` for this same exchange (such as `HttpStatusValidationError`) is rethrown as is, anything else is wrapped with the original as `cause`. To recover, set `exchange.error` to `undefined` or `null`.
 
 An error interceptor recovers by supplying any needed response/result state and clearing `exchange.error`. The response chain is **not rerun** after recovery, so recovered responses must already meet the application's policy. A throw from the error chain escapes directly and prevents later error interceptors. Error interceptors are not automatic retries, and extractor failures occur outside this manager.
 
@@ -3508,16 +3502,16 @@ Choose `validateStatus` for a reusable HTTP acceptance policy, a request attribu
 
 ## Error types and status policy {#errors}
 
-| API                                   | Contract                                                                                                                               |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `FetcherError(message?, cause?)`      | Message falls back to an Error cause's message, then a generic message; stores cause and copies an Error cause's stack.                |
-| `ExchangeError(exchange, message?)`   | Stores the exchange, with cause taken from `exchange.error`; message falls back to its error, response statusText, then request URL.   |
-| `HttpStatusValidationError(exchange)` | Created by status validation; includes status and URL. Normally available through the outer `ExchangeError.cause` / `.exchange.error`. |
-| `FetchTimeoutError(request)`          | Stores the timed-out request and a message including timeout, method (GET fallback), and URL.                                          |
-| `ValidateStatus`                      | `(status: number) => boolean`; constructor option or `new ValidateStatusInterceptor(predicate)`.                                       |
-| `IGNORE_VALIDATE_STATUS`              | Attribute key `'__ignoreValidateStatus__'`; only literal `true` bypasses validation.                                                   |
+| API                                   | Contract                                                                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FetcherError(message?, cause?)`      | Message falls back to an Error cause's message, then a generic message; stores cause and copies an Error cause's stack.                           |
+| `ExchangeError(exchange, message?)`   | Stores the exchange, with cause taken from `exchange.error`; message falls back to its error, response statusText, then request URL.              |
+| `HttpStatusValidationError(exchange)` | Created by status validation; includes status and URL. The exchange rejects with it as is (not wrapped), and `.exchange.error` is the same error. |
+| `FetchTimeoutError(request)`          | Stores the timed-out request and a message including timeout, method (GET fallback), and URL.                                                     |
+| `ValidateStatus`                      | `(status: number) => boolean`; constructor option or `new ValidateStatusInterceptor(predicate)`.                                                  |
+| `IGNORE_VALIDATE_STATUS`              | Attribute key `'__ignoreValidateStatus__'`; only literal `true` bypasses validation.                                                              |
 
-Validation skips exchanges with no response. An outer pipeline failure is normally `ExchangeError`, but an error interceptor's own throw or later extractor failure can escape without that wrapper. Do not assume every failure has a response or every rejection is an Error object.
+Validation skips exchanges with no response. An outer pipeline failure is normally `ExchangeError`: a status failure is the `HttpStatusValidationError` itself, any other error (timeout, network, abort reason, an interceptor's throw) is wrapped with the original as `cause`. An error interceptor's own throw or later extractor failure can escape without that wrapper. Do not assume every failure has a response or every rejection is an Error object.
 
 ## Timeout precedence {#timeout}
 
@@ -3608,7 +3602,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `RequestBodyType`                   | [Requests, headers, and bodies](requests.md#requestbodytype)                                       | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)                             |
 | `FetchRequestInit`                  | [Requests, headers, and bodies](requests.md#fetchrequestinit)                                      | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)                           |
 | `FetchRequest`                      | [Requests, headers, and bodies](requests.md#fetchrequest)                                          | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)                           |
-| `FetcherOptions`                    | [Client and registration](client.md#fetcheroptions)                                                | [fetcher.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L52)                                       |
+| `FetcherOptions`                    | [Client and registration](client.md#fetcheroptions)                                                | [fetcher.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L51)                                       |
 | `DEFAULT_OPTIONS`                   | [Client and registration](client.md#default_options)                                               | [fetcher.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L87)                                       |
 | `RequestOptions`                    | [Client and registration](client.md#requestoptions)                                                | [fetcher.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L95)                                       |
 | `DEFAULT_REQUEST_OPTIONS`           | [Client and registration](client.md#default_request_options)                                       | [fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)                                       |
@@ -3661,7 +3655,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `RequiredBy`                        | [Exchanges and result extraction](results.md#requiredby)                                           | [types.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L52)                                           |
 | `RemoveReadonlyFields`              | [Exchanges and result extraction](results.md#removereadonlyfields)                                 | [types.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L85)                                           |
 | `NamedCapable`                      | [Client and registration](client.md#namedcapable)                                                  | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                                         |
-| `FetcherConfigurer`                 | [Client and registration](client.md#fetcherconfigurer)                                             | [types.ts:248](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L248)                                         |
+| `FetcherConfigurer`                 | [Client and registration](client.md#fetcherconfigurer)                                             | [types.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L234)                                         |
 | `UrlParams`                         | [URL construction and templates](urls.md#urlparams)                                                | [urlBuilder.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L28)                                 |
 | `UrlBuilder`                        | [URL construction and templates](urls.md#urlbuilder)                                               | [urlBuilder.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L105)                               |
 | `toSearchParams`                    | [URL construction and templates](urls.md#tosearchparams)                                           | [urlBuilder.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L77)                                 |
@@ -17979,7 +17973,6 @@ process.on('SIGINT', () => server.close());
  */
 
 import {
-  ExchangeError,
   Fetcher,
   HttpStatusValidationError,
   ResultExtractors,
@@ -18006,8 +17999,7 @@ try {
   throw new Error('Expected /missing to fail with HTTP 404');
 } catch (error) {
   if (
-    !(error instanceof ExchangeError) ||
-    !(error.cause instanceof HttpStatusValidationError) ||
+    !(error instanceof HttpStatusValidationError) ||
     error.exchange.response?.status !== 404
   ) {
     throw error;
@@ -18019,7 +18011,7 @@ console.log(user.name);
 
 泛型描述预期的 TypeScript 结构，但不校验服务端数据。本例通过明确检查 id 与 name 建立运行时边界。`ResultExtractors.Json` 放在 `get` 的第三个参数中，这里才是请求选项的位置。
 
-404 对外表现为 `ExchangeError`，其 `cause` 是 `HttpStatusValidationError`，`exchange.response.status` 保留 `404`。传输和解析失败不会命中该分支，因此会继续抛出。
+404 以 `HttpStatusValidationError`（`ExchangeError` 的子类）拒绝，其 `exchange.response.status` 保留 `404`。传输和解析失败不会命中该分支，因此会继续抛出。
 
 ## 创建 `tsconfig.json`
 
@@ -18231,7 +18223,7 @@ const created = await api.post<{ id: number; name: string }>(
 console.log(created.id);
 ```
 
-这一步需要集成服务：本地教程服务没有创建路由。请实现该路由或使用真实 API。请求体拦截器将对象序列化为 JSON。使用 `FormData`、`Blob` 或 `URLSearchParams` 时直接作为 `body` 传入；拦截器移除显式 Content-Type，让原生传输设置正确格式或 boundary。字符串与二进制请求体不会被转换成 JSON 对象。
+这一步需要集成服务：本地教程服务没有创建路由。请实现该路由或使用真实 API。请求体拦截器将对象序列化为 JSON，并以 `application/json` 发送；客户端自身不设 Content-Type，因此无正文请求不带它。使用 `FormData`、`Blob` 或 `URLSearchParams` 时直接作为 `body` 传入；拦截器移除显式 Content-Type，让原生传输设置正确格式或 boundary。字符串原样发送，未设置其他 Content-Type 时为 `application/json`；二进制请求体除非自行设置，否则不带 Content-Type。
 
 ## 检查结果与处理失败
 
@@ -18313,29 +18305,27 @@ const api = new Fetcher({ baseURL: 'http://127.0.0.1:8787' });
 try {
   await api.get('/missing');
 } catch (error) {
-  if (error instanceof ExchangeError) {
-    if (error.cause instanceof HttpStatusValidationError) {
-      console.error('HTTP', error.exchange.response?.status);
-    } else {
-      console.error('Transport or pipeline failure', error.cause);
-    }
+  if (error instanceof HttpStatusValidationError) {
+    console.error('HTTP', error.exchange.response?.status);
+  } else if (error instanceof ExchangeError) {
+    console.error('Transport or pipeline failure', error.cause);
   } else {
     throw error;
   }
 }
 ```
 
-将代码保存到首次请求的客户端文件，执行相同编译和运行命令。预期输出 `HTTP 404`。默认状态校验接受 200–299；原生 fetch 返回了响应，不代表 Fetcher 将所有状态视为成功。
+将代码保存到首次请求的客户端文件，执行相同编译和运行命令。预期输出 `HTTP 404`。先判断 `HttpStatusValidationError` 再判断 `ExchangeError`：它是子类，且原样抛出，不是另一个错误的 `cause`。默认状态校验接受 200–299；原生 fetch 返回了响应，不代表 Fetcher 将所有状态视为成功。
 
 ## 判断失败所属层
 
-| 观察                                      | 下一步                                                 |
-| ----------------------------------------- | ------------------------------------------------------ |
-| `ExchangeError` 的 cause 是 HTTP 状态错误 | 检查状态与服务契约，区分认证、权限、资源缺失与服务故障 |
-| `ExchangeError` 没有响应                  | 检查网络、DNS、TLS、CORS 或取消，查看 `cause`          |
-| `cause` 是 `FetchTimeoutError`            | 检查请求截止时间与[超时归属](./cancellation.md)        |
-| JSON 或自定义提取期间拒绝                 | 检查实际响应内容与提取逻辑，不一定是 `ExchangeError`   |
-| HTTP 成功但业务结果失败                   | 按应用业务结果规则处理                                 |
+| 观察                           | 下一步                                                 |
+| ------------------------------ | ------------------------------------------------------ |
+| `HttpStatusValidationError`    | 检查状态与服务契约，区分认证、权限、资源缺失与服务故障 |
+| `ExchangeError` 没有响应       | 检查网络、DNS、TLS、CORS 或取消，查看 `cause`          |
+| `cause` 是 `FetchTimeoutError` | 检查请求截止时间与[超时归属](./cancellation.md)        |
+| JSON 或自定义提取期间拒绝      | 检查实际响应内容与提取逻辑，不一定是 `ExchangeError`   |
+| HTTP 成功但业务结果失败        | 按应用业务结果规则处理                                 |
 
 复现传输失败时，停止本地服务再请求 `/users/1`；应得到没有 HTTP 响应的拒绝。解析失败需要受控服务返回 HTTP 200 和非法 JSON，再选择 Json；教程夹具没有该路由。围绕提取 await 捕获，因为解析在错误拦截器阶段之外。
 
@@ -20040,7 +20030,7 @@ sequenceDiagram
 
 ## 恢复不会重跑验证
 
-请求或响应拦截器抛错时，管理器将错误存入 exchange 并执行错误拦截器。如果错误被清除，exchange 立即返回，不再执行响应拦截器。因此恢复拦截器应负责替代响应的有效性。剩余错误包装为 `ExchangeError`；错误拦截器自身抛出的错误则直接传播。见 [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)。
+请求或响应拦截器抛错时，管理器将错误存入 exchange 并执行错误拦截器。如果错误被清除，exchange 立即返回，不再执行响应拦截器。因此恢复拦截器应负责替代响应的有效性。剩余错误以 `ExchangeError` 拒绝：已为该 exchange 创建的（如 `HttpStatusValidationError`）原样抛出，其他错误被包装，原错误作为 `cause`。错误拦截器自身抛出的错误则直接传播。见 [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194)。
 
 结果提取在这之后发生。JSON 解码或自定义提取器可以失败，且不会重新进入错误 registry。应在消费结果的代码旁处理解码失败，详见[失败模型](./failure-model.md)。
 
@@ -20106,15 +20096,15 @@ Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github
 
 在操作完成的边界处理失败。收到 HTTP 响应、解码 JSON 和消费事件流是不同操作；前一阶段成功不保证下一阶段成功。
 
-| 失败               | 出现位置                                                                 | 应用决策                                          |
-| ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------- |
-| 网络拒绝           | 请求拦截管线，通常包装为 `ExchangeError`                                 | 检查底层原因，决定重放是否安全                    |
-| 非 2xx HTTP 状态   | 默认状态验证抛出 `HttpStatusValidationError`，通常由 exchange 管理器包装 | 处理服务错误响应和状态；HTTP 2xx 仍需业务结果检查 |
-| JSON 或自定义提取  | exchange 管线之后，直接拒绝给 `request()` 调用方                         | 在消费结果处捕获，并验证使用的字段                |
-| 错误拦截器自身抛错 | 从错误处理直接传播                                                       | 不假设所有拒绝都是 `ExchangeError`                |
-| SSE 读取/转换失败  | 异步迭代流期间                                                           | 处理部分输出并释放 reader                         |
+| 失败               | 出现位置                                                                                  | 应用决策                                          |
+| ------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| 网络拒绝           | 请求拦截管线，通常包装为 `ExchangeError`                                                  | 检查底层原因，决定重放是否安全                    |
+| 非 2xx HTTP 状态   | 默认状态验证以 `HttpStatusValidationError` 本身拒绝，它是携带 exchange 的 `ExchangeError` | 处理服务错误响应和状态；HTTP 2xx 仍需业务结果检查 |
+| JSON 或自定义提取  | exchange 管线之后，直接拒绝给 `request()` 调用方                                          | 在消费结果处捕获，并验证使用的字段                |
+| 错误拦截器自身抛错 | 从错误处理直接传播                                                                        | 不假设所有拒绝都是 `ExchangeError`                |
+| SSE 读取/转换失败  | 异步迭代流期间                                                                            | 处理部分输出并释放 reader                         |
 
-默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装与恢复见 [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)；提取见 [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。仅在外层检查 `instanceof HttpStatusValidationError` 或 `FetchTimeoutError` 会遗漏包装后的原因；应检查 `ExchangeError` 上下文/cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
+默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装、原样抛出与恢复见 [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194)；提取见 [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。状态失败直接满足 `instanceof HttpStatusValidationError`。超时或网络失败会被包装，仅在外层检查 `instanceof FetchTimeoutError` 会遗漏；应检查 `ExchangeError` 的 cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
 
 ## 超时与取消是不同控制
 
@@ -20252,7 +20242,6 @@ process.on('SIGINT', () => server.close());
  */
 
 import {
-  ExchangeError,
   Fetcher,
   HttpStatusValidationError,
   ResultExtractors,
@@ -20279,8 +20268,7 @@ try {
   throw new Error('Expected /missing to fail with HTTP 404');
 } catch (error) {
   if (
-    !(error instanceof ExchangeError) ||
-    !(error.cause instanceof HttpStatusValidationError) ||
+    !(error instanceof HttpStatusValidationError) ||
     error.exchange.response?.status !== 404
   ) {
     throw error;
@@ -20290,7 +20278,7 @@ try {
 console.log(user.name);
 ```
 
-客户端在 `get` 的第三个参数中选择 JSON 提取器，并确认 `/missing` 会产生 `ExchangeError`：其 cause 为 `HttpStatusValidationError`，响应状态为 `404`；其他错误继续抛出。
+客户端在 `get` 的第三个参数中选择 JSON 提取器，并确认 `/missing` 会以 `HttpStatusValidationError`（`ExchangeError` 的子类）拒绝，响应状态为 `404`；其他错误继续抛出。
 
 ## 在本仓库运行
 
@@ -20906,14 +20894,14 @@ export async function loadUser(id: string): Promise<User> {
 
 `new Fetcher(options?: FetcherOptions)` 接受下列选项。传入选项对象时必须包含 `baseURL`；省略整个对象时使用 `DEFAULT_OPTIONS`。
 
-| 选项                       | 默认值                                 | 契约                                                                                         |
-| -------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `baseURL: string`          | `''`                                   | 由可修改的 `urlBuilder` 使用；相对 URL 仍要求运行时支持。                                    |
-| `headers?: RequestHeaders` | `{'Content-Type': 'application/json'}` | 自定义对象替换构造默认头，客户端保存自己的副本；每个请求防御性复制并按大小写不敏感规则合并。 |
-| `timeout?: number`         | `undefined`                            | 单位毫秒；未配置不启用定时器。请求级 `0` 禁用继承的超时。                                    |
-| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate`         | 默认 `{id}`；`Express` 使用 `:id`。                                                          |
-| `interceptors?`            | 新建 `InterceptorManager`              | 传入管理器时直接使用，也可在客户端间共享。                                                   |
-| `validateStatus?`          | `200 <= status < 300`                  | 仅在创建默认管理器时使用。                                                                   |
+| 选项                       | 默认值                         | 契约                                                                                                                                          |
+| -------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseURL: string`          | `''`                           | 由可修改的 `urlBuilder` 使用；相对 URL 仍要求运行时支持。                                                                                     |
+| `headers?: RequestHeaders` | `{}`                           | 默认没有 `Content-Type`，由[正文拦截器](./requests.md#body)按正文设置；客户端保存传入对象的副本；每个请求防御性复制并按大小写不敏感规则合并。 |
+| `timeout?: number`         | `undefined`                    | 单位毫秒；未配置不启用定时器。请求级 `0` 禁用继承的超时。                                                                                     |
+| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate` | 默认 `{id}`；`Express` 使用 `:id`。                                                                                                           |
+| `interceptors?`            | 新建 `InterceptorManager`      | 传入管理器时直接使用，也可在客户端间共享。                                                                                                    |
+| `validateStatus?`          | `200 <= status < 300`          | 仅在创建默认管理器时使用。                                                                                                                    |
 
 可修改 `urlBuilder`、`headers`、`timeout`，影响后续请求。`interceptors` 属性只读，但其中的注册表可修改。每个客户端持有自己的请求头副本，修改 `client.headers` 只影响该客户端；修改导出的 `DEFAULT_OPTIONS.headers` 仍会影响之后创建的所有客户端，应改用请求级头。
 
@@ -20965,7 +20953,7 @@ fetcherRegistrar.unregister('reports');
 
 | 符号                                                          | 实现                                                                                                                    |
 | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="fetcheroptions"></a>`FetcherOptions`                   | [fetcher.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L52)                     |
+| <a id="fetcheroptions"></a>`FetcherOptions`                   | [fetcher.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L51)                     |
 | <a id="default_options"></a>`DEFAULT_OPTIONS`                 | [fetcher.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L87)                     |
 | <a id="requestoptions"></a>`RequestOptions`                   | [fetcher.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L95)                     |
 | <a id="default_request_options"></a>`DEFAULT_REQUEST_OPTIONS` | [fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)                     |
@@ -20979,7 +20967,7 @@ fetcherRegistrar.unregister('reports');
 | <a id="namedfetcher"></a>`NamedFetcher`                       | [namedFetcher.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L38)           |
 | <a id="fetcher-instance"></a>`fetcher`                        | [namedFetcher.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L94)           |
 | <a id="namedcapable"></a>`NamedCapable`                       | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                       |
-| <a id="fetcherconfigurer"></a>`FetcherConfigurer`             | [types.ts:248](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L248)                       |
+| <a id="fetcherconfigurer"></a>`FetcherConfigurer`             | [types.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L234)                       |
 
 [包索引](./index.md)
 
@@ -21020,7 +21008,7 @@ fetcherRegistrar.unregister('reports');
 
 ## 正文转换 {#body}
 
-`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。字符串与 nullish 正文原样通过。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不调整请求头；ReadableStream 正文在未设置 `duplex` 时还会得到 Fetch 要求的 `duplex: 'half'`。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
+`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。客户端没有默认 Content-Type，由正文决定；客户端或请求上设置的 Content-Type 会保留，下文另有说明的除外。nullish 正文原样通过，因此无正文请求（GET 等）不带 Content-Type，跨域时也不会因此触发 CORS 预检。字符串原样发送，仅在未设置 Content-Type 时补 `application/json`。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不添加 Content-Type；ReadableStream 正文在未设置 `duplex` 时还会得到 Fetch 要求的 `duplex: 'half'`。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
 
 运行时是否支持流式上传，以及额外的运行时特有请求字段，仍由调用者负责。插入正文转换器前请阅读[管线顺序](./interceptors.md)。
 
@@ -21172,14 +21160,14 @@ JSON 类型仅为编译期约定，不提供运行时校验。包对 `Response.j
 
 `new FetchExchange(init: FetchExchangeInit)` 要求 `fetcher` 和 `request`，可选 `resultExtractor`、`response`、`error`、`attributes`。`AttributesCapable.attributes` 接受记录或 Map，构造时把条目复制到新 Map。提取器默认 Exchange；请求与响应均保留引用，不复制。
 
-| 成员                             | 契约                                                          |
-| -------------------------------- | ------------------------------------------------------------- |
-| `ensureRequestHeaders()`         | 返回已有头，或创建并返回 `{}`。                               |
-| `ensureRequestUrlParams()`       | 确保 `.path`、`.query` 记录存在，返回 `Required<UrlParams>`。 |
-| `hasError()`、`hasResponse()`    | 按真值判断。                                                  |
-| `requiredResponse`               | 返回响应，缺失时抛 `ExchangeError`。                          |
-| `extractResult<R>(): Promise<R>` | 计算一次并缓存值或 Promise，并发调用复用。                    |
-| `response = value`               | 替换响应并清空结果缓存。                                      |
+| 成员                             | 契约                                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `ensureRequestHeaders()`         | 返回已有头，或创建并返回 `{}`。                                                                                      |
+| `ensureRequestUrlParams()`       | 确保 `.path`、`.query` 记录存在，返回 `Required<UrlParams>`。                                                        |
+| `hasError()`、`hasResponse()`    | `hasError()` 在 `error` 不是 `undefined` 或 `null` 时为真，抛出的 `0` 或 `''` 也算错误；`hasResponse()` 按真值判断。 |
+| `requiredResponse`               | 返回响应，缺失时抛 `ExchangeError`。                                                                                 |
+| `extractResult<R>(): Promise<R>` | 计算一次并缓存值或 Promise，并发调用复用。                                                                           |
+| `response = value`               | 替换响应并清空结果缓存。                                                                                             |
 
 异步提取被拒绝时保留被拒绝的 Promise 缓存；若提取器尚未返回值/Promise 就同步抛错，则不填充缓存，下次调用可以重试。只修改 `resultExtractor` 不清除已有缓存。正文只能读取一次；缓存仅避免经 `extractResult` 重复解析，无法保护直接重复调用 `response.json()`。
 
@@ -21257,7 +21245,7 @@ console.assert(first === second && first.name === 'Ada');
 
 ## 失败与恢复 {#recovery}
 
-`new InterceptorManager(validateStatus?)` 创建上述请求/响应注册表和空错误注册表。`exchange(exchange)` 先运行 request，再运行 response。拒绝时将抛出的值放到 `exchange.error`，运行 error 注册表；若 `hasError()` 仍为真，则抛 `ExchangeError`。
+`new InterceptorManager(validateStatus?)` 创建上述请求/响应注册表和空错误注册表。`exchange(exchange)` 先运行 request，再运行 response。拒绝时将抛出的值放到 `exchange.error`，运行 error 注册表；若 `hasError()` 仍为真，则以 `ExchangeError` 拒绝：属于同一 exchange 的 `ExchangeError`（如 `HttpStatusValidationError`）原样抛出，其他值被包装，原值作为 `cause`。恢复时将 `exchange.error` 设为 `undefined` 或 `null`。
 
 错误拦截器通过补齐所需响应/结果状态并清空 `exchange.error` 完成恢复。恢复后**不会重跑响应链**，因此恢复响应必须已满足应用策略。错误链自身抛错会直接传出，后续错误拦截器不再执行。错误拦截器不自动重试，提取器失败发生在此管理器之外。
 
@@ -21318,16 +21306,16 @@ Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身
 
 ## 错误类型与状态策略 {#errors}
 
-| API                                   | 契约                                                                                            |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `FetcherError(message?, cause?)`      | 消息回退到 Error cause 的消息，再回退到通用消息；保存 cause，并复制 Error cause 的 stack。      |
-| `ExchangeError(exchange, message?)`   | 保存 exchange，cause 取自 `exchange.error`；消息依次回退到错误消息、响应 statusText、请求 URL。 |
-| `HttpStatusValidationError(exchange)` | 状态校验创建，包含状态码与 URL；通常从外层 `ExchangeError.cause` / `.exchange.error` 获取。     |
-| `FetchTimeoutError(request)`          | 保存超时请求，消息包含超时、方法（默认 GET）和 URL。                                            |
-| `ValidateStatus`                      | `(status: number) => boolean`，用于构造选项或 `new ValidateStatusInterceptor(predicate)`。      |
-| `IGNORE_VALIDATE_STATUS`              | 属性键 `'__ignoreValidateStatus__'`，仅字面量 `true` 绕过校验。                                 |
+| API                                   | 契约                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `FetcherError(message?, cause?)`      | 消息回退到 Error cause 的消息，再回退到通用消息；保存 cause，并复制 Error cause 的 stack。        |
+| `ExchangeError(exchange, message?)`   | 保存 exchange，cause 取自 `exchange.error`；消息依次回退到错误消息、响应 statusText、请求 URL。   |
+| `HttpStatusValidationError(exchange)` | 状态校验创建，包含状态码与 URL；exchange 以它本身拒绝（不包装），`.exchange.error` 是同一个错误。 |
+| `FetchTimeoutError(request)`          | 保存超时请求，消息包含超时、方法（默认 GET）和 URL。                                              |
+| `ValidateStatus`                      | `(status: number) => boolean`，用于构造选项或 `new ValidateStatusInterceptor(predicate)`。        |
+| `IGNORE_VALIDATE_STATUS`              | 属性键 `'__ignoreValidateStatus__'`，仅字面量 `true` 绕过校验。                                   |
 
-没有响应时状态校验直接跳过。管线失败通常为 `ExchangeError`，但错误拦截器自身抛错及后续提取器失败可以不经过此包装。不要假定每个失败都有响应，也不要假定所有拒绝值都是 Error。
+没有响应时状态校验直接跳过。管线失败通常为 `ExchangeError`：状态失败就是 `HttpStatusValidationError` 本身，其他错误（超时、网络、abort reason、拦截器抛错）被包装，原错误作为 `cause`。错误拦截器自身抛错及后续提取器失败可以不经过此包装。不要假定每个失败都有响应，也不要假定所有拒绝值都是 Error。
 
 ## 超时优先级 {#timeout}
 
@@ -21418,7 +21406,7 @@ try {
 | `RequestBodyType`                   | [请求、请求头与正文](requests.md#requestbodytype)                                | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)                             |
 | `FetchRequestInit`                  | [请求、请求头与正文](requests.md#fetchrequestinit)                               | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)                           |
 | `FetchRequest`                      | [请求、请求头与正文](requests.md#fetchrequest)                                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)                           |
-| `FetcherOptions`                    | [客户端与注册](client.md#fetcheroptions)                                         | [fetcher.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L52)                                       |
+| `FetcherOptions`                    | [客户端与注册](client.md#fetcheroptions)                                         | [fetcher.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L51)                                       |
 | `DEFAULT_OPTIONS`                   | [客户端与注册](client.md#default_options)                                        | [fetcher.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L87)                                       |
 | `RequestOptions`                    | [客户端与注册](client.md#requestoptions)                                         | [fetcher.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L95)                                       |
 | `DEFAULT_REQUEST_OPTIONS`           | [客户端与注册](client.md#default_request_options)                                | [fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)                                       |
@@ -21471,7 +21459,7 @@ try {
 | `RequiredBy`                        | [Exchange 与结果提取](results.md#requiredby)                                     | [types.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L52)                                           |
 | `RemoveReadonlyFields`              | [Exchange 与结果提取](results.md#removereadonlyfields)                           | [types.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L85)                                           |
 | `NamedCapable`                      | [客户端与注册](client.md#namedcapable)                                           | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                                         |
-| `FetcherConfigurer`                 | [客户端与注册](client.md#fetcherconfigurer)                                      | [types.ts:248](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L248)                                         |
+| `FetcherConfigurer`                 | [客户端与注册](client.md#fetcherconfigurer)                                      | [types.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L234)                                         |
 | `UrlParams`                         | [URL 构建与模板](urls.md#urlparams)                                              | [urlBuilder.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L28)                                 |
 | `UrlBuilder`                        | [URL 构建与模板](urls.md#urlbuilder)                                             | [urlBuilder.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L105)                               |
 | `toSearchParams`                    | [URL 构建与模板](urls.md#tosearchparams)                                         | [urlBuilder.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L77)                                 |

@@ -41,7 +41,7 @@ const created = await api.post<{ id: number; name: string }>(
 console.log(created.id);
 ```
 
-这一步需要集成服务：本地教程服务没有创建路由。请实现该路由或使用真实 API。请求体拦截器将对象序列化为 JSON。使用 `FormData`、`Blob` 或 `URLSearchParams` 时直接作为 `body` 传入；拦截器移除显式 Content-Type，让原生传输设置正确格式或 boundary。字符串与二进制请求体不会被转换成 JSON 对象。
+这一步需要集成服务：本地教程服务没有创建路由。请实现该路由或使用真实 API。请求体拦截器将对象序列化为 JSON，并以 `application/json` 发送；客户端自身不设 Content-Type，因此无正文请求不带它。使用 `FormData`、`Blob` 或 `URLSearchParams` 时直接作为 `body` 传入；拦截器移除显式 Content-Type，让原生传输设置正确格式或 boundary。字符串原样发送，未设置其他 Content-Type 时为 `application/json`；二进制请求体除非自行设置，否则不带 Content-Type。
 
 ## 检查结果与处理失败
 

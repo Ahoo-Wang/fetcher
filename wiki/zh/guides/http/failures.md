@@ -21,29 +21,27 @@ const api = new Fetcher({ baseURL: 'http://127.0.0.1:8787' });
 try {
   await api.get('/missing');
 } catch (error) {
-  if (error instanceof ExchangeError) {
-    if (error.cause instanceof HttpStatusValidationError) {
-      console.error('HTTP', error.exchange.response?.status);
-    } else {
-      console.error('Transport or pipeline failure', error.cause);
-    }
+  if (error instanceof HttpStatusValidationError) {
+    console.error('HTTP', error.exchange.response?.status);
+  } else if (error instanceof ExchangeError) {
+    console.error('Transport or pipeline failure', error.cause);
   } else {
     throw error;
   }
 }
 ```
 
-将代码保存到首次请求的客户端文件，执行相同编译和运行命令。预期输出 `HTTP 404`。默认状态校验接受 200–299；原生 fetch 返回了响应，不代表 Fetcher 将所有状态视为成功。
+将代码保存到首次请求的客户端文件，执行相同编译和运行命令。预期输出 `HTTP 404`。先判断 `HttpStatusValidationError` 再判断 `ExchangeError`：它是子类，且原样抛出，不是另一个错误的 `cause`。默认状态校验接受 200–299；原生 fetch 返回了响应，不代表 Fetcher 将所有状态视为成功。
 
 ## 判断失败所属层
 
-| 观察                                      | 下一步                                                 |
-| ----------------------------------------- | ------------------------------------------------------ |
-| `ExchangeError` 的 cause 是 HTTP 状态错误 | 检查状态与服务契约，区分认证、权限、资源缺失与服务故障 |
-| `ExchangeError` 没有响应                  | 检查网络、DNS、TLS、CORS 或取消，查看 `cause`          |
-| `cause` 是 `FetchTimeoutError`            | 检查请求截止时间与[超时归属](./cancellation.md)        |
-| JSON 或自定义提取期间拒绝                 | 检查实际响应内容与提取逻辑，不一定是 `ExchangeError`   |
-| HTTP 成功但业务结果失败                   | 按应用业务结果规则处理                                 |
+| 观察                           | 下一步                                                 |
+| ------------------------------ | ------------------------------------------------------ |
+| `HttpStatusValidationError`    | 检查状态与服务契约，区分认证、权限、资源缺失与服务故障 |
+| `ExchangeError` 没有响应       | 检查网络、DNS、TLS、CORS 或取消，查看 `cause`          |
+| `cause` 是 `FetchTimeoutError` | 检查请求截止时间与[超时归属](./cancellation.md)        |
+| JSON 或自定义提取期间拒绝      | 检查实际响应内容与提取逻辑，不一定是 `ExchangeError`   |
+| HTTP 成功但业务结果失败        | 按应用业务结果规则处理                                 |
 
 复现传输失败时，停止本地服务再请求 `/users/1`；应得到没有 HTTP 响应的拒绝。解析失败需要受控服务返回 HTTP 200 和非法 JSON，再选择 Json；教程夹具没有该路由。围绕提取 await 捕获，因为解析在错误拦截器阶段之外。
 

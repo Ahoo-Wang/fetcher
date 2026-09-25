@@ -36,7 +36,7 @@ description: '请求、请求头与正文 — @ahoo-wang/fetcher 5.0.0'
 
 ## 正文转换 {#body}
 
-`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。字符串与 nullish 正文原样通过。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不调整请求头；ReadableStream 正文在未设置 `duplex` 时还会得到 Fetch 要求的 `duplex: 'half'`。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
+`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。客户端没有默认 Content-Type，由正文决定；客户端或请求上设置的 Content-Type 会保留，下文另有说明的除外。nullish 正文原样通过，因此无正文请求（GET 等）不带 Content-Type，跨域时也不会因此触发 CORS 预检。字符串原样发送，仅在未设置 Content-Type 时补 `application/json`。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不添加 Content-Type；ReadableStream 正文在未设置 `duplex` 时还会得到 Fetch 要求的 `duplex: 'half'`。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
 
 运行时是否支持流式上传，以及额外的运行时特有请求字段，仍由调用者负责。插入正文转换器前请阅读[管线顺序](./interceptors.md)。
 

@@ -133,17 +133,23 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    * For unsupported object types (like plain objects), they will be automatically
    * converted to JSON strings.
    *
+   * The Content-Type follows the body; one the caller set is kept, except for
+   * the types fetch labels itself:
+   *   - a plain object: serialized as JSON, `application/json`;
+   *   - a string: sent as is, `application/json`;
+   *   - Blob, File, FormData, URLSearchParams: any Content-Type is removed so
+   *     fetch sets the right one (the multipart boundary, the blob's type);
+   *   - ArrayBuffer, typed arrays, DataView, ReadableStream: no Content-Type
+   *     is added.
+   *
    * @param exchange - The exchange object containing the request to process
    *
    * @example
    * // Plain object body will be converted to JSON
-   * const fetcher = new Fetcher();
-   * const exchange = new FetchExchange(
-   *   fetcher,
-   *   {
-   *     body: { name: 'John', age: 30 }
-   *   }
-   * );
+   * const exchange = new FetchExchange({
+   *   fetcher: new Fetcher(),
+   *   request: { url: '/users', body: { name: 'John', age: 30 } },
+   * });
    * interceptor.intercept(exchange);
    * // exchange.request.body will be '{"name":"John","age":30}'
    * // exchange.request.headers will include 'Content-Type: application/json'
@@ -155,7 +161,21 @@ export class RequestBodyInterceptor implements RequestInterceptor {
       return;
     }
 
-    // If request body is not an object, return unchanged
+    // A string is sent as is. Without a Content-Type fetch would label it
+    // text/plain; a pre-serialized JSON string is the common case.
+    if (typeof request.body === 'string') {
+      const headers = exchange.ensureRequestHeaders();
+      if (!getHeader(headers, CONTENT_TYPE_HEADER)) {
+        setHeader(
+          headers,
+          CONTENT_TYPE_HEADER,
+          ContentTypeValues.APPLICATION_JSON,
+        );
+      }
+      return;
+    }
+
+    // Any other non-object body is left to fetch
     if (typeof request.body !== 'object') {
       return;
     }

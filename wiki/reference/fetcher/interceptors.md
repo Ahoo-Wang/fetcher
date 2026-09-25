@@ -26,7 +26,7 @@ Each corresponding `*_INTERCEPTOR_NAME` equals the implementation's class name. 
 
 ## Failure and recovery {#recovery}
 
-`new InterceptorManager(validateStatus?)` constructs these request/response registries and an empty error registry. `exchange(exchange)` runs request then response. On rejection it stores the thrown value in `exchange.error`, runs the error registry, then throws an `ExchangeError` if `hasError()` remains true.
+`new InterceptorManager(validateStatus?)` constructs these request/response registries and an empty error registry. `exchange(exchange)` runs request then response. On rejection it stores the thrown value in `exchange.error`, runs the error registry, then, if `hasError()` remains true, rejects with an `ExchangeError`: an `ExchangeError` for this same exchange (such as `HttpStatusValidationError`) is rethrown as is, anything else is wrapped with the original as `cause`. To recover, set `exchange.error` to `undefined` or `null`.
 
 An error interceptor recovers by supplying any needed response/result state and clearing `exchange.error`. The response chain is **not rerun** after recovery, so recovered responses must already meet the application's policy. A throw from the error chain escapes directly and prevents later error interceptors. Error interceptors are not automatic retries, and extractor failures occur outside this manager.
 

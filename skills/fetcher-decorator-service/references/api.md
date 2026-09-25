@@ -270,7 +270,7 @@ export class UserService implements ExecuteLifeCycle {
 2. `FetchExchange` created with `fetcher.resolveExchange()` (fetcher default headers/timeout merged in); attributes also carry the service instance under `DECORATOR_TARGET_ATTRIBUTE_KEY` and the `FunctionMetadata` under `DECORATOR_METADATA_ATTRIBUTE_KEY`
 3. `beforeExecute` hook called -- before any request interceptor, so `request.url` is still the unresolved template and `urlParams` are editable
 4. `fetcher.interceptors.exchange()` runs request, response and error phases
-5. `afterExecute` hook called -- **skipped when step 4 throws** (e.g. `ExchangeError` wrapping `HttpStatusValidationError` for a 401 under the default `validateStatus`); handle failures in an error interceptor or a `try/catch` at the call site
+5. `afterExecute` hook called -- **skipped when step 4 throws** (e.g. `HttpStatusValidationError`, an `ExchangeError`, for a 401 under the default `validateStatus`); handle failures in an error interceptor or a `try/catch` at the call site
 6. `EXCHANGE` return type returns the exchange; otherwise `exchange.extractResult()` is returned
 
 ### 8. Service Inheritance

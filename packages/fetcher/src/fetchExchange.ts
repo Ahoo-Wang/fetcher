@@ -211,7 +211,7 @@ export class FetchExchange implements RequiredBy<
    * @returns true if an error is present, false otherwise
    */
   hasError(): boolean {
-    return !!this.error;
+    return this.error !== undefined && this.error !== null;
   }
 
   /**

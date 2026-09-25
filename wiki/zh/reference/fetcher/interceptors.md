@@ -26,7 +26,7 @@ description: '拦截器管线 — @ahoo-wang/fetcher 5.0.0'
 
 ## 失败与恢复 {#recovery}
 
-`new InterceptorManager(validateStatus?)` 创建上述请求/响应注册表和空错误注册表。`exchange(exchange)` 先运行 request，再运行 response。拒绝时将抛出的值放到 `exchange.error`，运行 error 注册表；若 `hasError()` 仍为真，则抛 `ExchangeError`。
+`new InterceptorManager(validateStatus?)` 创建上述请求/响应注册表和空错误注册表。`exchange(exchange)` 先运行 request，再运行 response。拒绝时将抛出的值放到 `exchange.error`，运行 error 注册表；若 `hasError()` 仍为真，则以 `ExchangeError` 拒绝：属于同一 exchange 的 `ExchangeError`（如 `HttpStatusValidationError`）原样抛出，其他值被包装，原值作为 `cause`。恢复时将 `exchange.error` 设为 `undefined` 或 `null`。
 
 错误拦截器通过补齐所需响应/结果状态并清空 `exchange.error` 完成恢复。恢复后**不会重跑响应链**，因此恢复响应必须已满足应用策略。错误链自身抛错会直接传出，后续错误拦截器不再执行。错误拦截器不自动重试，提取器失败发生在此管理器之外。
 

@@ -7,15 +7,15 @@ description: 在失败实际发生的边界处理传输、HTTP、提取、Hook �
 
 在操作完成的边界处理失败。收到 HTTP 响应、解码 JSON 和消费事件流是不同操作；前一阶段成功不保证下一阶段成功。
 
-| 失败               | 出现位置                                                                 | 应用决策                                          |
-| ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------- |
-| 网络拒绝           | 请求拦截管线，通常包装为 `ExchangeError`                                 | 检查底层原因，决定重放是否安全                    |
-| 非 2xx HTTP 状态   | 默认状态验证抛出 `HttpStatusValidationError`，通常由 exchange 管理器包装 | 处理服务错误响应和状态；HTTP 2xx 仍需业务结果检查 |
-| JSON 或自定义提取  | exchange 管线之后，直接拒绝给 `request()` 调用方                         | 在消费结果处捕获，并验证使用的字段                |
-| 错误拦截器自身抛错 | 从错误处理直接传播                                                       | 不假设所有拒绝都是 `ExchangeError`                |
-| SSE 读取/转换失败  | 异步迭代流期间                                                           | 处理部分输出并释放 reader                         |
+| 失败               | 出现位置                                                                                  | 应用决策                                          |
+| ------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| 网络拒绝           | 请求拦截管线，通常包装为 `ExchangeError`                                                  | 检查底层原因，决定重放是否安全                    |
+| 非 2xx HTTP 状态   | 默认状态验证以 `HttpStatusValidationError` 本身拒绝，它是携带 exchange 的 `ExchangeError` | 处理服务错误响应和状态；HTTP 2xx 仍需业务结果检查 |
+| JSON 或自定义提取  | exchange 管线之后，直接拒绝给 `request()` 调用方                                          | 在消费结果处捕获，并验证使用的字段                |
+| 错误拦截器自身抛错 | 从错误处理直接传播                                                                        | 不假设所有拒绝都是 `ExchangeError`                |
+| SSE 读取/转换失败  | 异步迭代流期间                                                                            | 处理部分输出并释放 reader                         |
 
-默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装与恢复见 [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191)；提取见 [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。仅在外层检查 `instanceof HttpStatusValidationError` 或 `FetchTimeoutError` 会遗漏包装后的原因；应检查 `ExchangeError` 上下文/cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
+默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装、原样抛出与恢复见 [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194)；提取见 [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。状态失败直接满足 `instanceof HttpStatusValidationError`。超时或网络失败会被包装，仅在外层检查 `instanceof FetchTimeoutError` 会遗漏；应检查 `ExchangeError` 的 cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
 
 ## 超时与取消是不同控制
 

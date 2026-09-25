@@ -44,7 +44,7 @@ Defaults follow [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wan
 
 ## Recovery does not replay validation
 
-If a request or response interceptor throws, the manager stores the error on the exchange and runs error interceptors. If they clear it, the exchange returns immediately; response interceptors do not run again. A recovery interceptor therefore owns the validity of any replacement response. A remaining error becomes `ExchangeError`; an error thrown by an error interceptor itself escapes directly. See [packages/fetcher/src/interceptorManager.ts:191](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L191).
+If a request or response interceptor throws, the manager stores the error on the exchange and runs error interceptors. If they clear it, the exchange returns immediately; response interceptors do not run again. A recovery interceptor therefore owns the validity of any replacement response. A remaining error rejects as an `ExchangeError`: one already raised for this exchange, such as `HttpStatusValidationError`, is rethrown as is, any other is wrapped with the original as `cause`. An error thrown by an error interceptor itself escapes directly. See [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194).
 
 Extraction happens afterward. JSON decoding or a custom extractor can fail without returning to that error registry. Keep decoding handling next to the code consuming the result, as described in the [failure model](./failure-model.md).
 
