@@ -126,9 +126,24 @@ test('the required integration run reaches no host outside the CI job', () => {
   const scripts = JSON.parse(read('integration-test/package.json')).scripts;
   assert.match(scripts.test, /--project required\b/);
   assert.match(scripts['test:external'], /--project external\b/);
-  assert.match(
-    read('integration-test/vitest.config.ts'),
-    /'test\/external\/\*\*'/,
+  // The required run has cases again (the JSONPlaceholder suites, against a
+  // local server), so an empty run must fail rather than pass.
+  assert.doesNotMatch(scripts.test, /--passWithNoTests/);
+  const vitestConfig = read('integration-test/vitest.config.ts');
+  assert.match(vitestConfig, /'test\/external\/\*\*'/);
+  assert.match(vitestConfig, /'test\/jsonplaceholder\/globalSetup\.ts'/);
+  for (const suite of [
+    'fetcher/typicodeFetcher.test.ts',
+    'decorator/typicodePostService.test.ts',
+    'decorator/typicodeUserService.test.ts',
+    'decorator/resultExtractorService.test.ts',
+  ]) {
+    assert.ok(existsSync(new URL(`integration-test/test/${suite}`, root)));
+  }
+  // Only the external workflow points them at the live site.
+  assert.doesNotMatch(
+    read('.github/workflows/integration-test.yml'),
+    /JSONPLACEHOLDER_BASE_URL/,
   );
   // The live-provider credentials go only to the advisory run.
   assert.doesNotMatch(

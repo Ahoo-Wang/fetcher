@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { Post, typicodePostService } from '../../../src';
+import { Post, typicodePostService } from '../../src';
 
 describe('TypicodePostService Integration Test', () => {
   it('should get posts from typicode API', async () => {

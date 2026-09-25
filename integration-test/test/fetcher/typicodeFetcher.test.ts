@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { typicodeFetcher } from '../../../src';
+import { typicodeFetcher } from '../../src';
 import { HttpMethod, ResultExtractors } from '@ahoo-wang/fetcher';
 
 describe('typicodeFetcher Integration Test', () => {

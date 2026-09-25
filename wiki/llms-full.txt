@@ -2933,7 +2933,7 @@ Get approval before adding packages or changing root TypeScript/build configurat
 | ---------------------- | ---------------------------------------------- | ------------------------------------------------ |
 | Package behavior       | `pnpm --filter @ahoo-wang/fetcher test`        | Focused Vitest suite                             |
 | All package behavior   | `pnpm test:unit`                               | Package tests, coverage and declared type checks |
-| Service integration    | `pnpm test:it`                                 | Requires the integration README service setup    |
+| Service integration    | `pnpm test:it`                                 | Starts its own local JSONPlaceholder server      |
 | Live third-party APIs  | `pnpm test:it:external`                        | Advisory; needs outbound network (see README)    |
 | Storybook interactions | `pnpm test:storybook`                          | Browser interaction assertions                   |
 | Documentation          | `pnpm --dir wiki build`                        | Build and internal links                         |
@@ -20739,15 +20739,15 @@ pnpm --filter @ahoo-wang/fetcher exec vitest run test/fetcher.test.ts
 
 ## 让证据对应变更
 
-| 变更           | 命令                                           | 验证内容                             |
-| -------------- | ---------------------------------------------- | ------------------------------------ |
-| 包行为         | `pnpm --filter @ahoo-wang/fetcher test`        | 聚焦 Vitest 套件                     |
-| 全部包行为     | `pnpm test:unit`                               | 包测试、覆盖率及声明的类型检查       |
-| 服务集成       | `pnpm test:it`                                 | 需要 integration README 中的服务准备 |
-| 外部实时服务   | `pnpm test:it:external`                        | 非门禁；需要外网（见 README）        |
-| Storybook 交互 | `pnpm test:storybook`                          | 浏览器交互断言                       |
-| 文档           | `pnpm --dir wiki build`                        | 构建和内部链接                       |
-| 参考覆盖       | `node --test wiki/test/documentation.test.mjs` | 双语页面元数据与生成语料             |
+| 变更           | 命令                                           | 验证内容                       |
+| -------------- | ---------------------------------------------- | ------------------------------ |
+| 包行为         | `pnpm --filter @ahoo-wang/fetcher test`        | 聚焦 Vitest 套件               |
+| 全部包行为     | `pnpm test:unit`                               | 包测试、覆盖率及声明的类型检查 |
+| 服务集成       | `pnpm test:it`                                 | 自带本地 JSONPlaceholder 服务  |
+| 外部实时服务   | `pnpm test:it:external`                        | 非门禁；需要外网（见 README）  |
+| Storybook 交互 | `pnpm test:storybook`                          | 浏览器交互断言                 |
+| 文档           | `pnpm --dir wiki build`                        | 构建和内部链接                 |
+| 参考覆盖       | `node --test wiki/test/documentation.test.mjs` | 双语页面元数据与生成语料       |
 
 测试遵循各包已有布局。React 和 Viewer 使用 jsdom，Viewer 加载 test/setup.ts。Storybook 浏览器测试独立于 test:unit。
 

@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { typicodeUserService } from '../../../src';
+import { typicodeUserService } from '../../src';
 
 describe('TypicodeUserService Integration Test', () => {
   it('should get user albums', async () => {

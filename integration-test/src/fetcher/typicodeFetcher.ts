@@ -19,8 +19,13 @@ import {
   cosecResourceAttributionInterceptor,
 } from '../cosec';
 
+// A JSONPlaceholder-compatible host. The `required` test project starts a
+// local one (test/jsonplaceholder/globalSetup.ts) and sets
+// JSONPLACEHOLDER_BASE_URL to it; set the variable yourself to point the same
+// suites at another host, e.g. https://jsonplaceholder.typicode.com.
+// Unset, it falls back to json-server's default address.
 export const typicodeFetcher = new NamedFetcher('typicode', {
-  baseURL: 'https://jsonplaceholder.typicode.com',
+  baseURL: process.env.JSONPLACEHOLDER_BASE_URL || 'http://localhost:3000',
 });
 
 typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);

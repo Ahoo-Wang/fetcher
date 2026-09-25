@@ -11,7 +11,7 @@ description: Choose the verification boundary — Fetcher
 | ---------------------- | ---------------------------------------------- | ------------------------------------------------ |
 | Package behavior       | `pnpm --filter @ahoo-wang/fetcher test`        | Focused Vitest suite                             |
 | All package behavior   | `pnpm test:unit`                               | Package tests, coverage and declared type checks |
-| Service integration    | `pnpm test:it`                                 | Requires the integration README service setup    |
+| Service integration    | `pnpm test:it`                                 | Starts its own local JSONPlaceholder server      |
 | Live third-party APIs  | `pnpm test:it:external`                        | Advisory; needs outbound network (see README)    |
 | Storybook interactions | `pnpm test:storybook`                          | Browser interaction assertions                   |
 | Documentation          | `pnpm --dir wiki build`                        | Build and internal links                         |
