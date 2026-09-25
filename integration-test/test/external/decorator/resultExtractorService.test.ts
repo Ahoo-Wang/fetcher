@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ResultExtractorService } from '../../src';
+import { ResultExtractorService } from '../../../src';
 
 describe('ResultExtractorService Integration Test', () => {
   const service = new ResultExtractorService();

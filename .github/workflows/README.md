@@ -12,7 +12,8 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                                                                                                                                                                                                                                                                                                                                                       |
 | `build-storybook.yml`            | Package build, story type check, one Storybook production build with its static index check, and Chromium interaction tests in two shards on separate runners, run from source without a package build. `STORYBOOK_BROWSERS` widens the matrix; see below.                                                                                                                                                                                                                                                                          |
-| `integration-test.yml`           | Build the integration workspace and dependencies, type-check it, and run the core integration tests against real HTTP services.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `integration-test.yml`           | Build the integration workspace and dependencies, type-check it, and run its `required` project: the integration cases that reach nothing outside the job. Required, and part of release admission.                                                                                                                                                                                                                                                                                                                                 |
+| `integration-external.yml`       | Advisory, not required and not in release admission: the `external` integration project (`integration-test/test/external/`), the cases that call public-internet hosts (JSONPlaceholder, the OpenAI-compatible provider behind the `FETCHER_LLM_*` secrets). Runs on pull requests touching the packages they exercise, on every push to `main`/`5.x`, daily and on dispatch. See below.                                                                                                                                            |
 | `downstream-wow.yml`             | Advisory, not required: on changes to the core packages Wow consumes, build them, link them into a checkout of Ahoo-Wang/Wow through `pnpm.overrides`, and run Wow's TypeScript unit tests and type checks.                                                                                                                                                                                                                                                                                                                         |
 | `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `deploy-wiki.yml`                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -26,7 +27,8 @@ verification scopes. Only known independent paths narrow the work:
 
 - `wiki/**`: documentation build.
 - `stories/**`, `.storybook/**`: Storybook acceptance and documentation build.
-- `integration-test/**`: integration tests and static checks.
+- `integration-test/**`: integration tests and static checks (the advisory
+  `integration-external.yml` uses its own `paths` filter instead).
 - Root README/license, Markdown in `docs/**`, `skills/**` and anywhere under
   `packages/<name>/`, and PR/issue templates: formatting and metadata checks.
   A regression test requires that no package test reads a `.md` file, so
@@ -118,7 +120,8 @@ Admission reads `git rev-parse HEAD` after checkout (including release tags), th
 requires the latest successful `push` or `workflow_dispatch` run for that SHA of
 CI, Engineering Quality, Build Storybook and Integration Test (Generator Test
 moved to the Wow repository with the generator; a regression test requires
-every listed workflow to exist).
+every listed workflow to exist). The advisory Integration External is
+deliberately absent: a third-party outage must not hold a release.
 PR runs are excluded because they may test a synthetic merge. Main pushes now
 also run Storybook delivery verification. Missing/pending/failed checks block;
 manual dispatch of the verification workflows can validate another release SHA.
@@ -175,6 +178,22 @@ Node 24 (`node24`) is split from the Node 22 compatibility matrix
 (`build-and-test`), so the combined coverage job waits for the Node 24 job only.
 Compatibility jobs still gate CI. The coverage job requires a valid JSON report
 from every package before uploading once.
+
+## Advisory external integration
+
+The integration cases that call a host on the public internet live in
+`integration-test/test/external/` (Vitest project `external`, `pnpm
+test:it:external`) and run only in `integration-external.yml`. That workflow is
+not a required check and `release-admission.mjs` does not list it, so a
+third-party timeout (the LLM provider's connect timeouts forced repeated reruns
+of required runs) blocks neither a merge nor a release. It has no
+`continue-on-error`: a failure still shows as a red run, to be read as "a live
+service disagreed" first and a regression second. The same packages keep their
+deterministic coverage in the unit tests (MSW). The `FETCHER_LLM_*` secrets go
+only to this workflow; without them the LLM cases skip. The daily schedule runs
+on the default branch only. A regression test in `release-admission.test.mjs`
+requires that the required run keeps excluding `test/external/` and receives no
+secrets.
 
 ## Downstream Wow check
 

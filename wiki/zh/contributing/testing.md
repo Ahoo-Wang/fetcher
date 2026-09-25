@@ -12,6 +12,7 @@ description: 选择验证边界 — Fetcher
 | 包行为         | `pnpm --filter @ahoo-wang/fetcher test`        | 聚焦 Vitest 套件                     |
 | 全部包行为     | `pnpm test:unit`                               | 包测试、覆盖率及声明的类型检查       |
 | 服务集成       | `pnpm test:it`                                 | 需要 integration README 中的服务准备 |
+| 外部实时服务   | `pnpm test:it:external`                        | 非门禁；需要外网（见 README）        |
 | Storybook 交互 | `pnpm test:storybook`                          | 浏览器交互断言                       |
 | 文档           | `pnpm --dir wiki build`                        | 构建和内部链接                       |
 | 参考覆盖       | `node --test wiki/test/documentation.test.mjs` | 双语页面元数据与生成语料             |

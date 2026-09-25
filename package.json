@@ -13,6 +13,7 @@
     "test": "pnpm -r test",
     "test:unit": "pnpm -r --filter=./packages/* test",
     "test:it": "pnpm -r --filter=./integration-test test",
+    "test:it:external": "pnpm -r --filter=./integration-test test:external",
     "lint": "pnpm -r lint && pnpm lint:stories",
     "lint:stories": "eslint stories .storybook scripts/verify-storybook*.mjs --max-warnings 0",
     "typecheck:stories": "tsc -p stories/tsconfig.json",

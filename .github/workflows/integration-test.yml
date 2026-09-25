@@ -1,6 +1,10 @@
-# Integration Test Workflow
-# Core packages against real HTTP services (JSONPlaceholder, an optional LLM
-# provider). The Wow client and generated-code cases run in the Wow repository.
+# Integration Test Workflow (required; listed in release admission)
+# Builds and type-checks the integration workspace against the built packages
+# and runs its `required` cases: those that need nothing outside the CI job.
+# Cases that reach the public internet (JSONPlaceholder, an OpenAI-compatible
+# provider) run in the advisory integration-external.yml instead, so a
+# third-party outage cannot block a merge or a release. The Wow client and
+# generated-code cases run in the Wow repository.
 name: Integration Test
 
 on:
@@ -52,7 +56,3 @@ jobs:
 
       - name: Test
         run: pnpm test:it
-        env:
-          FETCHER_LLM_BASE_URL: ${{ secrets.FETCHER_LLM_BASE_URL }}
-          FETCHER_LLM_API_KEY: ${{ secrets.FETCHER_LLM_API_KEY }}
-          FETCHER_LLM_MODEL: ${{ secrets.FETCHER_LLM_MODEL }}

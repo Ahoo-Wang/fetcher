@@ -1,0 +1,72 @@
+# Advisory: the integration cases that reach the public internet
+# (integration-test/test/external/: JSONPlaceholder, and an OpenAI-compatible
+# provider when the FETCHER_LLM_* secrets are set). They prove the built
+# packages work against real third-party services, but those services time out
+# on their own schedule, so this workflow is not a required check and is not
+# in release admission (.github/scripts/release-admission.mjs). A red run is
+# reported, not hidden (no continue-on-error): read it as "a live service
+# disagreed", check whether the host is reachable, and only then suspect the
+# change. The deterministic behaviour is covered by the package unit tests.
+name: Integration External
+
+on:
+  pull_request:
+    branches: [main, 5.x]
+    paths:
+      - 'packages/fetcher/**'
+      - 'packages/decorator/**'
+      - 'packages/eventstream/**'
+      - 'packages/openai/**'
+      - 'packages/cosec/**'
+      - 'integration-test/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/integration-external.yml'
+  push:
+    branches: [main, 5.x]
+  schedule:
+    # Daily on the default branch, so drift in a live service shows up even
+    # on days without a push.
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  integration-external:
+    name: Integration external (advisory)
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10.34.5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter @ahoo-wang/fetcher-integration-test... build
+
+      - name: Test
+        run: pnpm test:it:external
+        env:
+          FETCHER_LLM_BASE_URL: ${{ secrets.FETCHER_LLM_BASE_URL }}
+          FETCHER_LLM_API_KEY: ${{ secrets.FETCHER_LLM_API_KEY }}
+          FETCHER_LLM_MODEL: ${{ secrets.FETCHER_LLM_MODEL }}
