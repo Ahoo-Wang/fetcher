@@ -32,10 +32,10 @@ React Hook 将异步操作连接到一个挂载组件：状态、执行、查询
 ## 完整安装前提
 
 ```sh
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
+pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
 ```
 
-库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含全部递归内部 peer（React → CoSec → 存储 → 事件总线）；直接运行依赖（`dequal`、`immer`）自动安装。外部 peer 范围为 React/ReactDOM ^19.3.0；即使不使用某项功能，peer 仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
+库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含全部递归内部 peer（React → CoSec → 存储 → 事件总线）；直接运行依赖（`dequal`、`immer`）自动安装。外部 peer 为 React ^19.0.0；渲染器按应用需要安装（浏览器用 `react-dom`）。即使不使用某项功能，peer 仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
 
 ::: info Wow 查询 Hook 与数据监控
 Wow 查询 Hook（`useListQuery`、`usePagedQuery`、`useFetcherListQuery` 等）与数据监控 Hook（`useDataMonitor`、`DataMonitorService`）只保留在 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/react)）。从 6.0 起，Wow Hook 位于 Wow 仓库的 `@ahoo-wang/wow-react`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[文档](https://wow.ahoo.me)），基于上面的 `/fetcher` 入口构建；它尚未发布到 npm，随 Wow 首个稳定版发布。数据监控 Hook 随 `@ahoo-wang/fetcher-viewer` 一同退役。

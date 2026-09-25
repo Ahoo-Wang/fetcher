@@ -60,7 +60,7 @@
     "test:no-coverage": "vitest run --coverage.enabled=false"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher-eventbus": "workspace:^5.0.0"
+    "@ahoo-wang/fetcher-eventbus": "workspace:^"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

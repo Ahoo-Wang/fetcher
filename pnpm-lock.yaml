@@ -292,13 +292,13 @@ importers:
   packages/cosec:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../fetcher
       '@ahoo-wang/fetcher-eventbus':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../eventbus
       '@ahoo-wang/fetcher-storage':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../storage
       nanoid:
         specifier: 'catalog:'
@@ -344,7 +344,7 @@ importers:
   packages/decorator:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../fetcher
       reflect-metadata:
         specifier: 'catalog:'
@@ -393,7 +393,7 @@ importers:
   packages/eventbus:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../fetcher
     devDependencies:
       '@eslint/js':
@@ -436,7 +436,7 @@ importers:
   packages/eventstream:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../fetcher
     devDependencies:
       '@eslint/js':
@@ -521,13 +521,13 @@ importers:
   packages/openai:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../fetcher
       '@ahoo-wang/fetcher-decorator':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../decorator
       '@ahoo-wang/fetcher-eventstream':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../eventstream
     devDependencies:
       '@ahoo-wang/fetcher-eventbus':
@@ -621,19 +621,16 @@ importers:
   packages/react:
     dependencies:
       '@ahoo-wang/fetcher':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../fetcher
       '@ahoo-wang/fetcher-cosec':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../cosec
       '@ahoo-wang/fetcher-eventbus':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../eventbus
-      '@ahoo-wang/fetcher-eventstream':
-        specifier: workspace:^5.0.0
-        version: link:../eventstream
       '@ahoo-wang/fetcher-storage':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../storage
       dequal:
         specifier: 'catalog:'
@@ -641,12 +638,6 @@ importers:
       immer:
         specifier: 'catalog:'
         version: 11.1.18
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
     devDependencies:
       '@eslint/js':
         specifier: 'catalog:'
@@ -693,9 +684,15 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.9
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
       react-compiler-runtime:
         specifier: 'catalog:'
         version: 1.0.0(react@19.3.0)
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -718,7 +715,7 @@ importers:
   packages/storage:
     dependencies:
       '@ahoo-wang/fetcher-eventbus':
-        specifier: workspace:^5.0.0
+        specifier: workspace:^
         version: link:../eventbus
     devDependencies:
       '@eslint/js':

@@ -2149,13 +2149,13 @@ The Wow repository publishes its TypeScript packages with Wow's first stable rel
 
 Choose the environment before deciding which client objects to share. The core delegates transport to native Fetch; storage and React layers introduce additional platform and lifecycle assumptions.
 
-| Environment            | Prerequisite                                                                 | Application responsibility                                                                                         |
-| ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Browser HTTP           | Fetch and the native request/response APIs used by the endpoint              | Configure origin, CORS, cookies, and response validation with the server                                           |
-| Browser SSE            | A readable response body and the stream APIs used by the pipeline            | Own stream consumption and cancellation                                                                            |
-| Node consumer          | Library manifests declare Node `>=18.20.8`                                   | Check the selected package and its actual dependency chain; this declaration is not a tested matrix for every tool |
-| Repository development | Node `>=22.12.0`, pnpm `10.34.5`                                             | Use the repository toolchain for building and tests                                                                |
-| React                  | Matching peer dependencies; repository catalog uses React/ReactDOM `^19.3.0` | Validate your framework and SSR import/render/hydration path; do not infer React 18 support                        |
+| Environment            | Prerequisite                                                                        | Application responsibility                                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Browser HTTP           | Fetch and the native request/response APIs used by the endpoint                     | Configure origin, CORS, cookies, and response validation with the server                                           |
+| Browser SSE            | A readable response body and the stream APIs used by the pipeline                   | Own stream consumption and cancellation                                                                            |
+| Node consumer          | Library manifests declare Node `>=18.20.8`                                          | Check the selected package and its actual dependency chain; this declaration is not a tested matrix for every tool |
+| Repository development | Node `>=22.12.0`, pnpm `10.34.5`                                                    | Use the repository toolchain for building and tests                                                                |
+| React                  | Peer React `^19.0.0`; repository development and tests use React/ReactDOM `^19.3.0` | Validate your framework and SSR import/render/hydration path; do not infer React 18 support                        |
 
 Requirements come from [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31), [package.json:41](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L41), [pnpm-workspace.yaml:31](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L31), and the [package manifests](./package-boundaries.md). Stream extraction checks the body in [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38).
 
@@ -7253,10 +7253,10 @@ The subpaths are ESM-only; the root entry also ships a UMD build. They share one
 ## Installation prerequisites
 
 ```sh
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
+pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
 ```
 
-The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers (React → CoSec → storage → event bus). Direct runtime dependencies (`dequal`, `immer`) are installed automatically. The external peer range is React/ReactDOM ^19.3.0. Peers are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
+The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers (React → CoSec → storage → event bus). Direct runtime dependencies (`dequal`, `immer`) are installed automatically. The external peer is React ^19.0.0; install the renderer your app uses (`react-dom` in the browser). Peers are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
 
 ::: info Wow query hooks and data monitoring
 The Wow query hooks (`useListQuery`, `usePagedQuery`, `useFetcherListQuery` and the rest) and the data-monitor hooks (`useDataMonitor`, `DataMonitorService`) remain only in the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/react)). From 6.0 the Wow hooks live in `@ahoo-wang/wow-react` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [documentation](https://wow.ahoo.me)), built on the `/fetcher` entry above; it is not on npm yet and ships with Wow's first stable release. The data-monitor hooks were retired together with `@ahoo-wang/fetcher-viewer`.
@@ -19962,13 +19962,13 @@ Wow 仓库的 TypeScript 包随 Wow 首个稳定版发布；视图引擎要等�
 
 先确定运行环境，再决定共享哪些客户端对象。核心将传输委托给原生 Fetch；存储和 React 层还引入平台与生命周期前提。
 
-| 环境        | 前提                                                | 应用责任                                                     |
-| ----------- | --------------------------------------------------- | ------------------------------------------------------------ |
-| 浏览器 HTTP | Fetch 及端点所用的原生请求/响应 API                 | 与服务端一起配置来源、CORS、Cookie 和响应验证                |
-| 浏览器 SSE  | 可读响应体及管线所用的流 API                        | 管理流消费与取消                                             |
-| Node 消费者 | 库清单声明 Node `>=18.20.8`                         | 检查所选包及实际依赖链；声明不等于每个工具的实测矩阵         |
-| 仓库开发    | Node `>=22.12.0`、pnpm `10.34.5`                    | 使用仓库工具链构建和测试                                     |
-| React       | 匹配 peer；仓库 catalog 为 React/ReactDOM `^19.3.0` | 验证框架的 SSR 导入/渲染/水合路径；不能据此推断支持 React 18 |
+| 环境        | 前提                                                                 | 应用责任                                                     |
+| ----------- | -------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 浏览器 HTTP | Fetch 及端点所用的原生请求/响应 API                                  | 与服务端一起配置来源、CORS、Cookie 和响应验证                |
+| 浏览器 SSE  | 可读响应体及管线所用的流 API                                         | 管理流消费与取消                                             |
+| Node 消费者 | 库清单声明 Node `>=18.20.8`                                          | 检查所选包及实际依赖链；声明不等于每个工具的实测矩阵         |
+| 仓库开发    | Node `>=22.12.0`、pnpm `10.34.5`                                     | 使用仓库工具链构建和测试                                     |
+| React       | peer 为 React `^19.0.0`；仓库开发与测试使用 React/ReactDOM `^19.3.0` | 验证框架的 SSR 导入/渲染/水合路径；不能据此推断支持 React 18 |
 
 要求来源为 [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)、[package.json:41](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L41)、[pnpm-workspace.yaml:31](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L31) 及[包清单](./package-boundaries.md)。流提取检查响应体的实现见 [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)。
 
@@ -25057,10 +25057,10 @@ React Hook 将异步操作连接到一个挂载组件：状态、执行、查询
 ## 完整安装前提
 
 ```sh
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-eventstream @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
+pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
 ```
 
-库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含全部递归内部 peer（React → CoSec → 存储 → 事件总线）；直接运行依赖（`dequal`、`immer`）自动安装。外部 peer 范围为 React/ReactDOM ^19.3.0；即使不使用某项功能，peer 仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
+库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含全部递归内部 peer（React → CoSec → 存储 → 事件总线）；直接运行依赖（`dequal`、`immer`）自动安装。外部 peer 为 React ^19.0.0；渲染器按应用需要安装（浏览器用 `react-dom`）。即使不使用某项功能，peer 仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
 
 ::: info Wow 查询 Hook 与数据监控
 Wow 查询 Hook（`useListQuery`、`usePagedQuery`、`useFetcherListQuery` 等）与数据监控 Hook（`useDataMonitor`、`DataMonitorService`）只保留在 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/react)）。从 6.0 起，Wow Hook 位于 Wow 仓库的 `@ahoo-wang/wow-react`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[文档](https://wow.ahoo.me)），基于上面的 `/fetcher` 入口构建；它尚未发布到 npm，随 Wow 首个稳定版发布。数据监控 Hook 随 `@ahoo-wang/fetcher-viewer` 一同退役。

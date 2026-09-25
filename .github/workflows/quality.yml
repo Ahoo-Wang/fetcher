@@ -36,6 +36,10 @@ jobs:
       # Wow → fetcher only: no workspace may depend on @ahoo-wang/wow-*.
       - name: Check dependency direction
         run: node .github/scripts/dependency-direction.mjs
+      # Manifests match the source and the builds: imports declared, no unused
+      # peers, sibling peers on workspace:^, deps external, UMD globals agree.
+      - name: Check package contract
+        run: node .github/scripts/package-contract.mjs
       - run: pnpm install --frozen-lockfile
       - name: Check changed-file formatting
         env:

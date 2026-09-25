@@ -63,9 +63,9 @@
     "test:no-coverage": "vitest run --coverage.enabled=false"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-eventstream": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-decorator": "workspace:^5.0.0"
+    "@ahoo-wang/fetcher": "workspace:^",
+    "@ahoo-wang/fetcher-eventstream": "workspace:^",
+    "@ahoo-wang/fetcher-decorator": "workspace:^"
   },
   "devDependencies": {
     "@ahoo-wang/fetcher-storage": "workspace:^",

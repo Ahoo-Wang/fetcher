@@ -58,9 +58,9 @@
     "test:no-coverage": "vitest run --coverage.enabled=false"
   },
   "peerDependencies": {
-    "@ahoo-wang/fetcher": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-eventbus": "workspace:^5.0.0",
-    "@ahoo-wang/fetcher-storage": "workspace:^5.0.0"
+    "@ahoo-wang/fetcher": "workspace:^",
+    "@ahoo-wang/fetcher-eventbus": "workspace:^",
+    "@ahoo-wang/fetcher-storage": "workspace:^"
   },
   "dependencies": {
     "nanoid": "catalog:"
