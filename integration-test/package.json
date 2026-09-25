@@ -38,7 +38,8 @@
   ],
   "scripts": {
     "build": "vite build",
-    "test": "vitest run --coverage",
+    "test": "vitest run --project required --coverage",
+    "test:external": "vitest run --project external --coverage",
     "lint": "eslint . --fix",
     "clean": "rm -rf dist",
     "generate": "pnpm exec fetcher-generator generate -i http://localhost:8080/v3/api-docs"

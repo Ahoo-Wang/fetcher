@@ -33,7 +33,8 @@ Run from the repository root unless noted:
 pnpm install
 pnpm build                # Recursive workspace build, including wiki
 pnpm test:unit            # Package tests, coverage, and declared type checks
-pnpm test:it              # Integration tests; requires service configuration
+pnpm test:it              # Required integration cases; needs the Wow example server
+pnpm test:it:external     # Advisory: cases against JSONPlaceholder and an LLM provider
 pnpm test:storybook       # Storybook browser interaction tests (Playwright)
 pnpm storybook            # Shared Storybook on port 6006
 pnpm --dir wiki build     # Validate and build the documentation site
