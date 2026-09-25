@@ -58,7 +58,7 @@ update this file.
       channel ownership and close, SSR.
 - [x] **6. `cosec`** (#1935) — trusted origins (principle 1), cross-tab single-flight
       refresh, JWT payload validation, clock skew.
-- [x] **7. `react`** (this PR) — render purity, SSR snapshots, `useQueryState`
+- [x] **7. `react`** (#1936) — render purity, SSR snapshots, `useQueryState`
       dependencies, subscription identity, `useLatest`, shared debounce
       scheduler.
 
@@ -190,6 +190,16 @@ Confirmed with the maintainer on 2026-09-25.
 
 ## Pause point
 
-2026-09-25: stages 1–6 merged (#1927, #1930–#1935); stage 7 PR in flight. After
-it: the follow-ups listed under stages 6–7, and the Wow golden when Wow moves
-to fetcher 6.
+2026-09-25: all seven stages merged (#1927, #1930–#1936). Open follow-ups:
+
+- react: share the debounce scheduler duplicated between
+  `useDebouncedQuery` and `useDebouncedFetcherQuery`; pass the abort signal to
+  execute-API methods; re-render `useSecurity` when the token expires.
+- cosec: consider a default clock-skew margin (`earlyPeriod`).
+- Wow: regenerate `golden/client-endpoints.json` when Wow moves to fetcher 6
+  (until then `downstream-wow.yml` fails on it, as expected).
+- `.claude/settings.local.json` is tracked with stale viewer permissions;
+  untracking it would delete it from every checkout on the next pull, so it
+  is left to the maintainer.
+
+Every public behavior change goes to the maintainer before merging.
