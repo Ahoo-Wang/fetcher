@@ -56,7 +56,7 @@ update this file.
       openai chunk types and `signal`.
 - [x] **5. `eventbus` + `storage`** (#1934) — corrupt value recovery, `set(undefined)`,
       channel ownership and close, SSR.
-- [ ] **6. `cosec`** — trusted origins (principle 1), cross-tab single-flight
+- [x] **6. `cosec`** (this PR) — trusted origins (principle 1), cross-tab single-flight
       refresh, JWT payload validation, clock skew.
 - [ ] **7. `react`** — render purity, SSR snapshots, `useQueryState`
       dependencies, subscription identity, `useLatest`, shared debounce
@@ -145,6 +145,22 @@ One PR, #1933.
 - Deferred to stage 6 (they belong to cosec's ownership of buses): closing a
   broadcast bus a `TokenStorage` creates, and cross-tab refresh ordering.
 
+## Stage 6: `cosec`
+
+Each change below was confirmed with the maintainer on 2026-09-25.
+
+- [x] Trust boundary as an option: `isTrusted` (default: trust every
+      request, as before — maintainer's choice); `sameOriginTrust` exported for
+      apps that want credentials kept to their own origins.
+- [x] Cross-tab refresh race: on a failed refresh the manager re-reads
+      storage (`KeyStorage.reload()`) and reuses a token another tab stored for
+      the same session instead of removing it.
+- [x] JWT payload must be an object.
+- [x] Storages close the event bus they created (`ownEventBus()`).
+- Not done: a default clock-skew margin (`earlyPeriod` stays 0; the 401
+  retry covers a slow clock) and `navigator.locks` single-flight across tabs
+  (the re-read fixes the observed race; locks would add a browser-only path).
+
 ## Downstream follow-ups
 
 - Wow `typescript/wow-client/test/clients/endpointTable.test.ts` records the
@@ -156,9 +172,6 @@ One PR, #1933.
 
 ## Pause point
 
-2026-09-25: stages 1–5 merged (#1927, #1930–#1934). Stage 6 (`cosec`) draft
-on local branch `refactor/cosec-trust`: rework the trust boundary to trust
-everything by default (confirmed), then cross-tab refresh (`KeyStorage.reload`
-so the losing tab re-reads storage before removing), JWT payload must be an
-object, storages close the broadcast bus they created. Each public behavior
-change goes to the maintainer before merging.
+2026-09-25: stages 1–5 merged (#1927, #1930–#1934); stage 6 PR in flight.
+Next: stage 7 (`react`) — deep review, plan here, confirm each public
+behavior change with the maintainer before merging.

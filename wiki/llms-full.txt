@@ -1847,7 +1847,7 @@ Installation must also resolve every declared peer dependency; see the [package 
 
 ## 1. Confirm the authentication contract
 
-Install `@ahoo-wang/fetcher` and `@ahoo-wang/fetcher-cosec`. The application must already have a login flow returning JWT `accessToken` and `refreshToken` strings. In this example `POST /auth/refresh` accepts that token pair as JSON and returns a new pair, and `GET /profile` returns `{ id, name }`. These routes and the app ID must match your backend. Only use the configured client for that trusted origin.
+Install `@ahoo-wang/fetcher` and `@ahoo-wang/fetcher-cosec`. The application must already have a login flow returning JWT `accessToken` and `refreshToken` strings. In this example `POST /auth/refresh` accepts that token pair as JSON and returns a new pair, and `GET /profile` returns `{ id, name }`. These routes and the app ID must match your backend. Only use the configured client for that trusted origin. `isTrusted: sameOriginTrust` below keeps the token and the device ID on the `baseURL` origin and the page origin; without it, a request to an absolute URL on any other origin — a pagination link, a download URL — receives the access token.
 
 ## 2. Create one session per application owner
 
@@ -1856,6 +1856,7 @@ import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 import {
   CoSecConfigurer,
   CoSecTokenRefresher,
+  sameOriginTrust,
   type CompositeToken,
 } from '@ahoo-wang/fetcher-cosec';
 
@@ -1864,6 +1865,7 @@ export function createSession(baseURL: string) {
   const refreshApi = new Fetcher({ baseURL });
   const cosec = new CoSecConfigurer({
     appId: 'developer-console',
+    isTrusted: sameOriginTrust,
     tokenRefresher: new CoSecTokenRefresher({
       fetcher: refreshApi,
       endpoint: '/auth/refresh',
@@ -1893,9 +1895,7 @@ export function createSession(baseURL: string) {
     },
     dispose() {
       cosec.tokenStorage.destroy();
-      cosec.tokenStorage.eventBus.destroy();
       cosec.deviceIdStorage.destroy();
-      cosec.deviceIdStorage.eventBus.destroy();
     },
   };
 }
@@ -1911,13 +1911,13 @@ Token parsing is not signature verification; the backend remains responsible for
 
 ## 4. Check refresh and failure behavior
 
-Use in-memory token/device storage and mocked fetch in a test. Cover a valid token, an expired access token with a valid refresh token, concurrent requests, refresh failure, and 401/403 responses. Refresh concurrency is shared by a token manager, not a cross-tab distributed lock. Refresh failure can clear the current session; callbacks do not turn failed requests into successful results. Catch the request rejection as well as showing a login/error screen.
+Use in-memory token/device storage and mocked fetch in a test. Cover a valid token, an expired access token with a valid refresh token, concurrent requests, refresh failure, and 401/403 responses. Refresh concurrency is shared by a token manager, not a cross-tab distributed lock. When a refresh fails because another tab already used the one-time refresh token, the tab re-reads storage and continues with the token that tab stored; any other refresh failure can clear the current session; callbacks do not turn failed requests into successful results. Catch the request rejection as well as showing a login/error screen.
 
 ## 5. Dispose the owner
 
 The current `TokenStorage` defaults to a broadcast bus named from its storage key. Other contexts must use the matching channel and a supported messenger. This differs from plain `KeyStorage`, whose default bus is local. Broadcast delivery is notification, not transactional cross-tab refresh coordination.
 
-On application shutdown, stop pending application work and call `session.dispose()`. This releases this example's owned storage handlers and buses; it does not erase tokens. Logout is a separate `signOut()` operation. Storage notifications are asynchronous: do not dispose the session immediately after sign-out while notifications are still being delivered. Closing a bus during delivery can interrupt the broadcast and log an error. Do not destroy buses shared with another owner. The configurer has no dispose method; this example retires its private Fetchers along with the session.
+On application shutdown, stop pending application work and call `session.dispose()`. Each storage's `destroy()` releases its handler and closes the broadcast bus it created; it does not erase tokens. Logout is a separate `signOut()` operation. Storage notifications are asynchronous: do not dispose the session immediately after sign-out while notifications are still being delivered. Closing a bus during delivery can interrupt the broadcast and log an error. Do not destroy buses shared with another owner. The configurer has no dispose method; this example retires its private Fetchers along with the session.
 
 See [configuration](../../reference/cosec/configuration) and [token refresh and storage](../../reference/cosec/tokens-and-refresh).
 
@@ -1988,7 +1988,6 @@ export async function checkStateAndEvents() {
   } finally {
     remove();
     preferences.destroy();
-    preferences.eventBus.destroy();
     saved.destroy();
   }
 }
@@ -2046,11 +2045,11 @@ Use the same key and channel in both tabs. The storage adapter installs a serial
 
 ## Failure and cleanup checklist
 
-Handler names are unique; a second registration with the same name returns false. Handler errors are logged and do not stop other handlers. Use `ParallelTypedEventBus` only for independent consumers; its emit waits for local handlers, not remote acknowledgements. `destroy()` on KeyStorage only removes its internal listener; remove application listeners and close the owned bus separately. It does not delete stored values.
+Handler names are unique; a second registration with the same name returns false. Handler errors are logged and do not stop other handlers. Use `ParallelTypedEventBus` only for independent consumers; its emit waits for local handlers, not remote acknowledgements. `destroy()` on KeyStorage removes its internal listener and closes the bus it created itself; remove application listeners, and close a bus you passed in `eventBus`, separately. It does not delete stored values.
 
 See [storage lifecycle](../../reference/storage/key-storage), [serialization and environment](../../reference/storage/serialization-and-runtime), [event delivery](../../reference/eventbus/events-and-delivery), and [broadcast messengers](../../reference/eventbus/broadcast-and-messengers).
 
-[keyStorage.ts:244](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L244) selects the default local bus.
+[keyStorage.ts:247](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L247) selects the default local bus, which `destroy()` closes.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).
 
@@ -2264,13 +2263,13 @@ Stale-result protection keeps an old response from overwriting newer UI state. I
 
 Remount the subtree that owns request state when the tenant or user changes, so no Hook result crosses identities. Scope storage keys and event buses to the same identity.
 
-| Resource                 | What disposal does                        | What its creator still owns                                                                          |
-| ------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| React event subscription | Effect cleanup removes that subscription  | Shared bus lifetime                                                                                  |
-| KeyStorage               | `destroy()` removes its own event handler | Persistent data and any shared event bus; default serial bus is local, not cross-tab synchronization |
-| BroadcastTypedEventBus   | `destroy()` closes its messenger          | Appropriate lifetime of shared users before closing it                                               |
+| Resource                 | What disposal does                                                      | What its creator still owns                                                                                        |
+| ------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| React event subscription | Effect cleanup removes that subscription                                | Shared bus lifetime                                                                                                |
+| KeyStorage               | `destroy()` removes its own event handler and closes the bus it created | Persistent data and any event bus passed in `eventBus`; default serial bus is local, not cross-tab synchronization |
+| BroadcastTypedEventBus   | `destroy()` closes its messenger                                        | Appropriate lifetime of shared users before closing it                                                             |
 
-See [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94), [packages/storage/src/keyStorage.ts:239](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L239), [packages/storage/src/keyStorage.ts:446](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L446), and [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236). Follow [React cleanup](../guides/react/cleanup.md), [storage and events](../guides/integrations/storage-and-events.md), and [SSR scope](./runtime-support.md).
+See [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94), [packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242), [packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527), and [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236). Follow [React cleanup](../guides/react/cleanup.md), [storage and events](../guides/integrations/storage-and-events.md), and [SSR scope](./runtime-support.md).
 
 The saved-view confirmation rules of the 5.x Viewer and FetcherViewer are documented with that line in the [saved-view guide](../guides/viewer/saved-views.md) and the [FetcherViewer reference](../reference/viewer/fetcher-viewer.md).
 
@@ -2340,11 +2339,11 @@ Fetcher main ships no table or data-view component. `@ahoo-wang/fetcher-viewer` 
 
 ## Service-specific integrations
 
-| Integration            | Required contract                                                   | Responsibility retained by the service/application                 |
-| ---------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Wow (5.x client)       | Command results/stages and supported query DSL                      | Authorization, tenant isolation, idempotency, projection freshness |
-| CoSec                  | Token storage, attribution headers, refresh endpoints/session rules | Identity lifetime, replay safety, server authorization             |
-| SSE / OpenAI streaming | Compatible event stream and payload format                          | Partial-result UX, cancellation, reconnect policy if required      |
+| Integration            | Required contract                                                   | Responsibility retained by the service/application                                                      |
+| ---------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Wow (5.x client)       | Command results/stages and supported query DSL                      | Authorization, tenant isolation, idempotency, projection freshness                                      |
+| CoSec                  | Token storage, attribution headers, refresh endpoints/session rules | Identity lifetime, replay safety, server authorization, which origins receive credentials (`isTrusted`) |
+| SSE / OpenAI streaming | Compatible event stream and payload format                          | Partial-result UX, cancellation, reconnect policy if required                                           |
 
 Client-side conditions describe the query sent; they are not access control. Command stages describe protocol progress; they are not a universal consistency guarantee. CoSec's guarded refresh implementation is specific to its authentication exchange ([packages/cosec/src/authorizationResponseInterceptor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L80)), while SSE extraction requires a readable body ([packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)).
 
@@ -4738,7 +4737,6 @@ settings.remove();
 console.assert(settings.get()?.theme === 'system');
 removeListener();
 settings.destroy();
-settings.eventBus.destroy();
 ```
 
 [Complete public symbol index](./symbols.md)
@@ -4757,27 +4755,28 @@ Choose the backend and event bus independently: sharing a backend does not share
 
 `new KeyStorage<T>(options: KeyStorageOptions<T>)`:
 
-| Option                                      | Default                                        | Meaning                                                             |
-| ------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------- |
-| `key: string`                               | Required                                       | Backend storage key.                                                |
-| `storage?: Storage`                         | `getStorage()`                                 | Browser localStorage or a fresh memory store outside browsers.      |
-| `serializer?: Serializer<string, T>`        | `jsonSerializer`                               | String codec for reads, writes, and automatic broadcast snapshots.  |
-| `eventBus?: TypedEventBus<StorageEvent<T>>` | New `SerialTypedEventBus('KeyStorage:' + key)` | The same name alone does not share instances.                       |
-| `defaultValue?: T`                          | `null`                                         | Returned when backend value is absent; not automatically persisted. |
+| Option                                      | Default                                        | Meaning                                                                                                    |
+| ------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `key: string`                               | Required                                       | Backend storage key.                                                                                       |
+| `storage?: Storage`                         | `getStorage()`                                 | Browser localStorage or a fresh memory store outside browsers.                                             |
+| `serializer?: Serializer<string, T>`        | `jsonSerializer`                               | String codec for reads, writes, and automatic broadcast snapshots.                                         |
+| `eventBus?: TypedEventBus<StorageEvent<T>>` | New `SerialTypedEventBus('KeyStorage:' + key)` | The same name alone does not share instances. A created bus is closed by `destroy()`; a passed bus is not. |
+| `defaultValue?: T`                          | `null`                                         | Returned when backend value is absent; not automatically persisted.                                        |
 
 ## Reads, writes, and lifetime {#operations}
 
-| Method                 | Return                               | Behavior                                                                                                                                                 |
-| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default. An undeserializable value is removed with a warning and read as absent. |
-| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                            |
-| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.                                                             |
-| `destroy()`            | `void`                               | Remove only this instance's internal cache listener. Does not delete the key or close/destroy the bus.                                                   |
+| Method                 | Return                               | Behavior                                                                                                                                                                                                                           |
+| ---------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default. An undeserializable value is removed with a warning and read as absent.                                                                           |
+| `reload()`             | `T \| null`                          | Read the backend again, bypassing the cache (for a value another tab may have written before its event arrived). Keeps the cached object when the stored text is unchanged; returns the default when the key is absent.            |
+| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                                                                                                      |
+| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                                                                                          |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.                                                                                                                                       |
+| `destroy()`            | `void`                               | Remove this instance's internal cache listener and close the bus this instance created (the default bus, or one a subclass marks with the protected `ownEventBus()`). Does not delete the key or close a bus passed in `eventBus`. |
 
 `StorageEvent<T>` has optional `newValue` and `oldValue`, each allowing null. `StorageListenable<T>` exposes `addListener`. Use unique handler names: duplicate names are rejected by the underlying bus, while the returned remover still targets that name. Unsubscribe external listeners yourself before destroying the owning bus.
 
-Backend read/write, JSON parsing, and serialization failures propagate synchronously; writes are not rolled back after notification failures. Emit rejections are caught and logged with `console.warn`, while ordinary serial handler failures are already isolated by the bus. A cached non-null value is not refreshed after direct backend mutations. `get()` returns object references; mutating one does not automatically persist it.
+Backend read/write, JSON parsing, and serialization failures propagate synchronously; writes are not rolled back after notification failures. Emit rejections are caught and logged with `console.warn`, while ordinary serial handler failures are already isolated by the bus. A cached non-null value is not refreshed after direct backend mutations; call `reload()` to re-read it. `get()` returns object references; mutating one does not automatically persist it.
 
 ## Sharing and broadcasting {#broadcast}
 
@@ -4807,7 +4806,6 @@ settings.remove();
 console.assert(settings.get()?.theme === 'system');
 removeListener();
 settings.destroy();
-settings.eventBus.destroy();
 ```
 
 ## Public symbols and source {#symbols}
@@ -4818,7 +4816,7 @@ settings.eventBus.destroy();
 | <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
 | <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
 | <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:218](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L218) |
 
 [Package index](./index.md)
 
@@ -4896,8 +4894,6 @@ token.set('demo-token');
 console.assert(storage.getItem('token') === 'demo-token');
 updatedAt.destroy();
 token.destroy();
-updatedAt.eventBus.destroy();
-token.eventBus.destroy();
 ```
 
 ## Public symbols and source {#symbols}
@@ -4935,7 +4931,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `RemoveStorageListener`   | [KeyStorage and change listeners](key-storage.md#removestoragelistener)                       | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163)         |
 | `StorageListenable`       | [KeyStorage and change listeners](key-storage.md#storagelistenable)                           | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165)         |
 | `KeyStorageOptions`       | [KeyStorage and change listeners](key-storage.md#keystorageoptions)                           | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179)         |
-| `KeyStorage`              | [KeyStorage and change listeners](key-storage.md#keystorage)                                  | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217)         |
+| `KeyStorage`              | [KeyStorage and change listeners](key-storage.md#keystorage)                                  | [keyStorage.ts:218](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L218)         |
 | `Serializer`              | [Serialization and runtime storage](serialization-and-runtime.md#serializer)                  | [serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)           |
 | `JsonSerializer`          | [Serialization and runtime storage](serialization-and-runtime.md#jsonserializer)              | [serializer.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L41)           |
 | `IdentitySerializer`      | [Serialization and runtime storage](serialization-and-runtime.md#identityserializer)          | [serializer.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L65)           |
@@ -6579,7 +6575,7 @@ CoSec without a tokenRefresher installs metadata/attribution only. Read configur
 
 ## Choose an entry point
 
-Use `CoSecConfigurer` for a complete interceptor setup against a CoSec-compatible service. Supply `tokenRefresher` to enable managed Authorization and refresh; without it, the setup only adds metadata/resource attribution plus explicitly configured error callbacks. Use individual interceptors only when the application owns their order and dependencies.
+Use `CoSecConfigurer` for a complete interceptor setup against a CoSec-compatible service. Supply `tokenRefresher` to enable managed Authorization and refresh; without it, the setup only adds metadata/resource attribution plus explicitly configured error callbacks. By default every request, including one to an absolute URL on another origin, carries the token and the CoSec headers; pass `isTrusted: sameOriginTrust` to keep them to the `baseURL` origin and the page origin ([request trust](./interceptors-and-attribution.md#request-trust)). Use individual interceptors only when the application owns their order and dependencies.
 
 ## Topics
 
@@ -6601,17 +6597,22 @@ Apply a setup once to a client. Interceptor registration rejects duplicate names
 
 ## CoSecConfig and construction
 
-| Field                           | Default               | Contract                                                                                           |
-| ------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------- |
-| appId:string                    | Required              | Application identifier sent in headers                                                             |
-| tokenStorage:TokenStorage       | new TokenStorage()    | Exposed as configurer.tokenStorage                                                                 |
-| deviceIdStorage:DeviceIdStorage | new DeviceIdStorage() | Exposed as configurer.deviceIdStorage                                                              |
-| tokenRefresher:TokenRefresher   | Absent                | Only when present creates JwtTokenManager and installs Authorization request/response interceptors |
-| spaceIdProvider:SpaceIdProvider | NoneSpaceIdProvider   | Resolves optional CoSec-Space-Id                                                                   |
-| onUnauthorized(exchange)        | Absent                | Optional void/Promise&lt;void&gt; callback in error pipeline                                       |
-| onForbidden(exchange)           | Absent                | Optional Promise&lt;void&gt; callback in error pipeline                                            |
+| Field                           | Default                        | Contract                                                                                                                                                                                                         |
+| ------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| appId:string                    | Required                       | Application identifier sent in headers                                                                                                                                                                           |
+| tokenStorage:TokenStorage       | new TokenStorage()             | Exposed as configurer.tokenStorage                                                                                                                                                                               |
+| deviceIdStorage:DeviceIdStorage | new DeviceIdStorage()          | Exposed as configurer.deviceIdStorage                                                                                                                                                                            |
+| tokenRefresher:TokenRefresher   | Absent                         | Only when present creates JwtTokenManager and installs Authorization request/response interceptors                                                                                                               |
+| spaceIdProvider:SpaceIdProvider | NoneSpaceIdProvider            | Resolves optional CoSec-Space-Id                                                                                                                                                                                 |
+| isTrusted:RequestTrust          | Absent (every request trusted) | Which absolute request URLs carry the Authorization token and the CoSec headers (device ID included); `sameOriginTrust` keeps them to the `baseURL` origin and the page origin. Relative URLs are always trusted |
+| onUnauthorized(exchange)        | Absent                         | Optional void/Promise&lt;void&gt; callback in error pipeline                                                                                                                                                     |
+| onForbidden(exchange)           | Absent                         | Optional Promise&lt;void&gt; callback in error pipeline                                                                                                                                                          |
 
-`new CoSecConfigurer(config)` initializes storage immediately. `applyTo(fetcher): void` installs CoSecRequestInterceptor and ResourceAttributionRequestInterceptor unconditionally; authorization only with tokenManager; error callbacks only when configured. Merely placing tokens in tokenStorage does **not** enable Authorization injection without tokenRefresher. `tokenManager` and `spaceIdProvider` are exposed readonly (declared optional); config is readonly as a reference, not deeply immutable.
+`new CoSecConfigurer(config)` initializes storage immediately. `applyTo(fetcher): void` installs CoSecRequestInterceptor and ResourceAttributionRequestInterceptor unconditionally; authorization only with tokenManager; error callbacks only when configured. Merely placing tokens in tokenStorage does **not** enable Authorization injection without tokenRefresher. `isTrusted` is passed to both CoSecRequestInterceptor and AuthorizationRequestInterceptor: an untrusted request gets no CoSec headers, no Authorization and no refresh. `tokenManager` and `spaceIdProvider` are exposed readonly (declared optional); config is readonly as a reference, not deeply immutable.
+
+::: warning Absolute URLs on other origins
+Without `isTrusted`, a request to an absolute URL on any origin — a pagination link, a download URL, a callback — receives the access token and the device ID. Pass `isTrusted: sameOriginTrust` (or your own `RequestTrust`) unless every absolute URL the client requests is yours.
+:::
 
 `AppIdCapable`, `DeviceIdStorageCapable`, `JwtTokenManagerCapable` require their corresponding property; `CoSecOptions` combines all three, while CoSecConfig permits omitted storage/refresher. They are dependency shapes, not additional setup functions.
 
@@ -6624,6 +6625,7 @@ import { Fetcher } from '@ahoo-wang/fetcher';
 import {
   CoSecConfigurer,
   CoSecTokenRefresher,
+  sameOriginTrust,
   type CompositeToken,
 } from '@ahoo-wang/fetcher-cosec';
 
@@ -6631,6 +6633,7 @@ export function createSecureClient(baseURL: string) {
   const fetcher = new Fetcher({ baseURL });
   const cosec = new CoSecConfigurer({
     appId: 'example-app',
+    isTrusted: sameOriginTrust,
     tokenRefresher: new CoSecTokenRefresher({
       fetcher,
       endpoint: '/auth/refresh',
@@ -6654,15 +6657,15 @@ export function createSecureClient(baseURL: string) {
 
 ## Ownership and cleanup
 
-Keep the configured client/storages for the application/session lifetime. CoSecConfigurer has no dispose/unapply method. To dismantle an owned setup, stop requests, remove installed interceptor names from their request/response/error managers with `eject(name)`, and call `destroy()` on the owned KeyStorage instances. `destroy()` detaches the storage's internal handler; it neither signs out nor destroys an externally shared event bus. Dispose owned broadcast buses separately when no other storage uses them. Do not destroy shared storages from one consumer. See [storage lifecycle](../storage/key-storage) and [interceptor behavior](./interceptors-and-attribution).
+Keep the configured client/storages for the application/session lifetime. CoSecConfigurer has no dispose/unapply method. To dismantle an owned setup, stop requests, remove installed interceptor names from their request/response/error managers with `eject(name)`, and call `destroy()` on the owned KeyStorage instances. `destroy()` detaches the storage's internal handler and closes the broadcast bus the storage created for itself (the default of `TokenStorage` and `DeviceIdStorage`); it neither signs out nor destroys a bus passed in `eventBus`. Dispose such a shared bus separately when no other storage uses it. Do not destroy shared storages from one consumer. See [storage lifecycle](../storage/key-storage) and [interceptor behavior](./interceptors-and-attribution).
 
 <span id="cosecconfig"></span>
 
-**`CoSecConfig`** — [packages/cosec/src/cosecConfigurer.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L86)
+**`CoSecConfig`** — [packages/cosec/src/cosecConfigurer.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L87)
 
 <span id="cosecconfigurer"></span>
 
-**`CoSecConfigurer`** — [packages/cosec/src/cosecConfigurer.ts:373](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L373)
+**`CoSecConfigurer`** — [packages/cosec/src/cosecConfigurer.ts:374](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L374)
 
 <span id="appidcapable"></span>
 
@@ -6690,15 +6693,15 @@ Token parsing is local decoding and expiration bookkeeping. It does not verify s
 
 ## JWT values and serialization
 
-| API                                                         | Input/default                                                            | Return/behavior                                                                                                      |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `parseJwtPayload<T extends JwtPayload>(token)`              | Three dot-separated parts                                                | T or null; base64url/UTF-8 JSON payload decoding; parse errors logged and return null; no claim-shape validation     |
-| `isTokenExpired(token, earlyPeriod=0)`                      | String or CoSecJwtPayload; earlyPeriod in seconds                        | true for unparseable token, invalid/nonfinite exp, or now >= exp-earlyPeriod; absent/null exp is not expired         |
-| `JwtToken<Payload>(token, earlyPeriod=0)`                   | Raw string                                                               | readonly token/payload/earlyPeriod; isExpired computed against current clock                                         |
-| `JwtCompositeToken(token, earlyPeriod=0, sessionId=random)` | CompositeToken                                                           | access and refresh JwtToken; isRefreshNeeded=access expired, isRefreshable=refresh valid, authenticated=access valid |
-| `JwtCompositeTokenSerializer(earlyPeriod=0)`                | Expiry margin                                                            | serialize→JSON of raw tokens plus sessionId; deserialize→JwtCompositeToken using configured margin                   |
-| `deserializeLegacy(value)`                                  | Older object containing token.accessToken and token.refreshToken strings | Rebuilds live class; throws TypeError for invalid legacy shape                                                       |
-| `jwtCompositeTokenSerializer`                               | Singleton, margin 0                                                      | Default standalone serializer                                                                                        |
+| API                                                         | Input/default                                                            | Return/behavior                                                                                                                                                                                  |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `parseJwtPayload<T extends JwtPayload>(token)`              | Three dot-separated parts                                                | T or null; base64url/UTF-8 JSON payload decoding; parse errors logged and return null; a payload that is not a JSON object (number, string, array, null) returns null; no claim-shape validation |
+| `isTokenExpired(token, earlyPeriod=0)`                      | String or CoSecJwtPayload; earlyPeriod in seconds                        | true for unparseable token (including a non-object payload), invalid/nonfinite exp, or now >= exp-earlyPeriod; absent/null exp is not expired                                                    |
+| `JwtToken<Payload>(token, earlyPeriod=0)`                   | Raw string                                                               | readonly token/payload/earlyPeriod; isExpired computed against current clock                                                                                                                     |
+| `JwtCompositeToken(token, earlyPeriod=0, sessionId=random)` | CompositeToken                                                           | access and refresh JwtToken; isRefreshNeeded=access expired, isRefreshable=refresh valid, authenticated=access valid                                                                             |
+| `JwtCompositeTokenSerializer(earlyPeriod=0)`                | Expiry margin                                                            | serialize→JSON of raw tokens plus sessionId; deserialize→JwtCompositeToken using configured margin                                                                                               |
+| `deserializeLegacy(value)`                                  | Older object containing token.accessToken and token.refreshToken strings | Rebuilds live class; throws TypeError for invalid legacy shape                                                                                                                                   |
+| `jwtCompositeTokenSerializer`                               | Singleton, margin 0                                                      | Default standalone serializer                                                                                                                                                                    |
 
 `JwtPayload` declares required jti/sub/exp/iat and optional iss/aud/nbf. `CoSecJwtPayload` adds tenantId, policies, roles, attributes. `IJwtToken<Payload>` combines token/payload/isExpired with `EarlyPeriodCapable`. `RefreshTokenStatusCapable` supplies readonly isRefreshNeeded/isRefreshable. `AccessToken` and `RefreshToken` are one-string-field shapes; `CompositeToken` combines them.
 
@@ -6706,7 +6709,7 @@ JSON parse failures from deserialize propagate. New sign-ins receive a random se
 
 ## TokenStorage
 
-`TokenStorage(options={})` extends KeyStorage&lt;JwtCompositeToken&gt;. Options are partial KeyStorageOptions excluding serializer, plus earlyPeriod. Defaults: key=`DEFAULT_COSEC_TOKEN_KEY` (`cosec-token`), earlyPeriod=0, a broadcast bus with serial delegate named for the actual key, and inherited environment storage. Serialization is selected internally. Instances sharing an event bus must use the same earlyPeriod or construction throws.
+`TokenStorage(options={})` extends KeyStorage&lt;JwtCompositeToken&gt;. Options are partial KeyStorageOptions excluding serializer, plus earlyPeriod. Defaults: key=`DEFAULT_COSEC_TOKEN_KEY` (`cosec-token`), earlyPeriod=0, a broadcast bus with serial delegate named for the actual key (closed by `destroy()`; a bus passed in `eventBus` stays open), and inherited environment storage. Serialization is selected internally. Instances sharing an event bus must use the same earlyPeriod or construction throws.
 
 | Member                              | Result                                                       |
 | ----------------------------------- | ------------------------------------------------------------ |
@@ -6723,7 +6726,7 @@ Expiration alone does not schedule events or automatically refresh; status gette
 
 `new JwtTokenManager(tokenStorage, tokenRefresher)` exposes both dependencies, currentToken (token/null), and status getters (false with no token). `refresh(exchange?): Promise<void>` rejects with Error('No token found') without a token. Concurrent refreshes for the same current token on this manager share a promise; this is not a cross-tab distributed lock. A same-session newer token wins over late refresh results. Sign-out or a different session prevents stale writeback and raises `RefreshSessionChangedError(cause?)`.
 
-An unsuccessful refresh of the still-current session removes that session's token and raises `RefreshTokenError(token, cause?)`. The error exposes the old JwtCompositeToken; avoid logging its raw credentials. A failure of the retried business request propagates unchanged and does not remove successfully refreshed credentials. The pending promise is cleared in finally. Unauthorized notification ownership is coordinated with exchange error handlers, not a general event queue.
+When a refresh fails, the manager re-reads storage with `tokenStorage.reload()`: if another tab has already refreshed the same session (so a one-time refresh token failed here) and stored its token, that token is reused and the request continues. An unsuccessful refresh of the still-current session removes that session's token and raises `RefreshTokenError(token, cause?)`. The error exposes the old JwtCompositeToken; avoid logging its raw credentials. A failure of the retried business request propagates unchanged and does not remove successfully refreshed credentials. The pending promise is cleared in finally. Unauthorized notification ownership is coordinated with exchange error handlers, not a general event queue.
 
 `TokenRefresher.refresh(token): Promise<CompositeToken>` is the custom transport contract. `CoSecTokenRefresher({fetcher, endpoint})` requires both fields and POSTs the token object with JSON result extraction. Its concrete refresh method additionally accepts `shouldNotifyUnauthorized?: () => boolean`. It sets `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` to prevent recursive refresh; custom transports using a configured Fetcher must supply that attribute themselves.
 
@@ -6770,11 +6773,11 @@ try {
 
 <span id="earlyperiodcapable"></span>
 
-**`EarlyPeriodCapable`** — [packages/cosec/src/jwts.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L122)
+**`EarlyPeriodCapable`** — [packages/cosec/src/jwts.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L132)
 
 <span id="istokenexpired"></span>
 
-**`isTokenExpired`** — [packages/cosec/src/jwts.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L145)
+**`isTokenExpired`** — [packages/cosec/src/jwts.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L155)
 
 <span id="ijwttoken"></span>
 
@@ -6802,15 +6805,15 @@ try {
 
 <span id="refreshtokenerror"></span>
 
-**`RefreshTokenError`** — [packages/cosec/src/jwtTokenManager.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L25)
+**`RefreshTokenError`** — [packages/cosec/src/jwtTokenManager.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L28)
 
 <span id="refreshsessionchangederror"></span>
 
-**`RefreshSessionChangedError`** — [packages/cosec/src/jwtTokenManager.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L37)
+**`RefreshSessionChangedError`** — [packages/cosec/src/jwtTokenManager.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L40)
 
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L48)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L51)
 
 <span id="default_cosec_token_key"></span>
 
@@ -6858,8 +6861,8 @@ These interceptors enrich or retry a FetchExchange. Register each with the match
 
 ## Actual execution flow
 
-1. CoSecRequestInterceptor sets application/device/request headers and a truthy resolved space ID.
-2. AuthorizationRequestInterceptor preserves an existing Authorization header; otherwise checks session ownership, refreshes when access is expired and refresh is valid, then injects the managed Bearer token.
+1. CoSecRequestInterceptor skips a request that [`isTrusted`](#request-trust) rejects; otherwise it sets application/device/request headers and a truthy resolved space ID.
+2. AuthorizationRequestInterceptor skips an untrusted request (no Authorization, no refresh) and preserves an existing Authorization header; otherwise it checks session ownership, refreshes when access is expired and refresh is valid, then injects the managed Bearer token.
 3. ResourceAttributionRequestInterceptor fills tenant/owner URL path parameters before URL resolution. The core transport sends the request.
 4. AuthorizationResponseInterceptor handles a managed-credential 401 before normal status validation. It refreshes, deletes only its injected stale credential, and re-executes the full exchange pipeline at most once.
 5. Remaining failures reach error interceptors. Unauthorized handles 401/RefreshTokenError with notification ownership guards; Forbidden handles 403. Neither callback automatically recovers the failed request.
@@ -6892,20 +6895,28 @@ sequenceDiagram
 
 ## Interceptor parameters and results
 
-| Export                                                                 | Constructor options                                                                     | intercept(exchange)                                                                                                                |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | appId, deviceIdStorage required; spaceIdProvider defaults NoneSpaceIdProvider           | Promise&lt;void&gt;; overwrites app/device/request headers; writes space only for a truthy ID; storage/provider failures propagate |
-| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | tokenManager required (JwtTokenManagerCapable)                                          | Promise&lt;void&gt;; preserves explicit Authorization, refreshes managed token when needed                                         |
-| `AuthorizationResponseInterceptor`                                     | Same AuthorizationInterceptorOptions                                                    | Promise&lt;void&gt;; only 401, only matching managed credential, at most AUTHORIZATION_RESPONSE_MAX_RETRY=1                        |
-| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | tokenStorage required; tenantId='tenantId', ownerId='ownerId' are **placeholder names** | void; takes tenantId/sub from decoded access payload; fills matching template fields only when current path value is falsy         |
-| `UnauthorizedErrorInterceptor` / options                               | onUnauthorized required, returns void or Promise&lt;void&gt;                            | Promise&lt;void&gt;; skips RefreshSessionChangedError and duplicate/obsolete notifications; callback error propagates              |
-| `ForbiddenErrorInterceptor` / options                                  | onForbidden required, returns Promise&lt;void&gt;                                       | Promise&lt;void&gt;; callback runs only for response.status=403; callback error propagates                                         |
+| Export                                                                 | Constructor options                                                                               | intercept(exchange)                                                                                                                                                            |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | appId, deviceIdStorage required; spaceIdProvider defaults NoneSpaceIdProvider; optional isTrusted | Promise&lt;void&gt;; nothing for an untrusted request; otherwise overwrites app/device/request headers; writes space only for a truthy ID; storage/provider failures propagate |
+| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | tokenManager required (JwtTokenManagerCapable); optional isTrusted                                | Promise&lt;void&gt;; nothing for an untrusted request; preserves explicit Authorization, refreshes managed token when needed                                                   |
+| `AuthorizationResponseInterceptor`                                     | Same AuthorizationInterceptorOptions                                                              | Promise&lt;void&gt;; only 401, only matching managed credential, at most AUTHORIZATION_RESPONSE_MAX_RETRY=1                                                                    |
+| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | tokenStorage required; tenantId='tenantId', ownerId='ownerId' are **placeholder names**           | void; takes tenantId/sub from decoded access payload; fills matching template fields only when current path value is falsy                                                     |
+| `UnauthorizedErrorInterceptor` / options                               | onUnauthorized required, returns void or Promise&lt;void&gt;                                      | Promise&lt;void&gt;; skips RefreshSessionChangedError and duplicate/obsolete notifications; callback error propagates                                                          |
+| `ForbiddenErrorInterceptor` / options                                  | onForbidden required, returns Promise&lt;void&gt;                                                 | Promise&lt;void&gt;; callback runs only for response.status=403; callback error propagates                                                                                     |
 
 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` is `Ignore-Refresh-Token`. **Presence**, even with false, disables automatic proactive/401 refresh. It does not suppress Authorization injection or disable ordinary HTTP status errors.
 
+## Request trust {#request-trust}
+
+`RequestTrust` is `(url: string, exchange: FetchExchange) => boolean`; `RequestTrustCapable` adds the optional `isTrusted` to `CoSecConfig`, `CoSecRequestOptions` and `AuthorizationInterceptorOptions`. `isTrustedRequest(exchange, isTrusted?)` decides for both request interceptors: without `isTrusted` every request is trusted; with it a relative request URL is always trusted (it resolves against the `baseURL`) and an absolute one only when `isTrusted(url, exchange)` returns true. `sameOriginTrust` trusts an absolute URL on the origin of the fetcher's `baseURL` or on the page's own origin; every other origin, and a URL that does not parse, is untrusted.
+
+::: warning Default trusts every origin
+By default an absolute request URL on any origin receives the access token and the CoSec headers, device ID included. Configure `isTrusted: sameOriginTrust` (or your own predicate) when the client requests URLs it does not control, such as pagination links, download URLs or callbacks.
+:::
+
 ## Device and space selection
 
-`DeviceIdStorage(options={})` and `SpaceIdStorage(options={})` extend KeyStorage&lt;string&gt;. Options are partial KeyStorageOptions; each forces its identity serializer. Their default keys are `cosec-device-id` and `cosec-space-id`; default buses broadcast with a serial delegate named for the actual key. Storage selection is inherited from KeyStorage. Custom event buses/storage can be injected; cleanup follows [KeyStorage](../storage/key-storage).
+`DeviceIdStorage(options={})` and `SpaceIdStorage(options={})` extend KeyStorage&lt;string&gt;. Options are partial KeyStorageOptions; each forces its identity serializer. Their default keys are `cosec-device-id` and `cosec-space-id`; default buses broadcast with a serial delegate named for the actual key, and `destroy()` closes such a default bus; a bus passed in `eventBus` stays open. Storage selection is inherited from KeyStorage. Custom event buses/storage can be injected; cleanup follows [KeyStorage](../storage/key-storage).
 
 `DeviceIdStorage.generateDeviceId(): string` calls the exported `idGenerator`, but does not store the result. `getOrCreate(): string` returns a truthy stored ID or generates/stores a new one. `IdGenerator.generateId(): string` is implemented by `NanoIdGenerator` with nanoid; `idGenerator` is its shared instance.
 
@@ -6974,19 +6985,19 @@ cosec.deviceIdStorage.destroy();
 
 <span id="authorizationinterceptoroptions"></span>
 
-**`AuthorizationInterceptorOptions`** — [packages/cosec/src/authorizationRequestInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L29)
+**`AuthorizationInterceptorOptions`** — [packages/cosec/src/authorizationRequestInterceptor.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L33)
 
 <span id="authorization_request_interceptor_name"></span>
 
-**`AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationRequestInterceptor.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L31)
+**`AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationRequestInterceptor.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L36)
 
 <span id="authorization_request_interceptor_order"></span>
 
-**`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationRequestInterceptor.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L33)
+**`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationRequestInterceptor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L38)
 
 <span id="authorizationrequestinterceptor"></span>
 
-**`AuthorizationRequestInterceptor`** — [packages/cosec/src/authorizationRequestInterceptor.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L46)
+**`AuthorizationRequestInterceptor`** — [packages/cosec/src/authorizationRequestInterceptor.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L51)
 
 <span id="authorization_response_interceptor_name"></span>
 
@@ -7006,23 +7017,39 @@ cosec.deviceIdStorage.destroy();
 
 <span id="cosecrequestoptions"></span>
 
-**`CoSecRequestOptions`** — [packages/cosec/src/cosecRequestInterceptor.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L57)
+**`CoSecRequestOptions`** — [packages/cosec/src/cosecRequestInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L62)
 
 <span id="cosec_request_interceptor_name"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/cosecRequestInterceptor.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L83)
+**`COSEC_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/cosecRequestInterceptor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L88)
 
 <span id="cosec_request_interceptor_order"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L104)
+**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L109)
 
 <span id="ignore_refresh_token_attribute_key"></span>
 
-**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L131)
+**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L136)
 
 <span id="cosecrequestinterceptor"></span>
 
-**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L215)
+**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:220](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L220)
+
+<span id="requesttrust"></span>
+
+**`RequestTrust`** — [packages/cosec/src/requestTrust.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L23)
+
+<span id="requesttrustcapable"></span>
+
+**`RequestTrustCapable`** — [packages/cosec/src/requestTrust.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L25)
+
+<span id="sameorigintrust"></span>
+
+**`sameOriginTrust`** — [packages/cosec/src/requestTrust.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L54)
+
+<span id="istrustedrequest"></span>
+
+**`isTrustedRequest`** — [packages/cosec/src/requestTrust.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L70)
 
 <span id="default_cosec_device_id_key"></span>
 
@@ -7086,15 +7113,15 @@ cosec.deviceIdStorage.destroy();
 
 <span id="spacedresourcepredicate"></span>
 
-**`SpacedResourcePredicate`** — [packages/cosec/src/spaceIdProvider.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L297)
+**`SpacedResourcePredicate`** — [packages/cosec/src/spaceIdProvider.ts:298](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L298)
 
 <span id="spaceidprovideroptions"></span>
 
-**`SpaceIdProviderOptions`** — [packages/cosec/src/spaceIdProvider.ts:326](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L326)
+**`SpaceIdProviderOptions`** — [packages/cosec/src/spaceIdProvider.ts:327](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L327)
 
 <span id="defaultspaceidprovider"></span>
 
-**`DefaultSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:383](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L383)
+**`DefaultSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:384](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L384)
 
 <span id="cosecheaders"></span>
 
@@ -7209,6 +7236,8 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `RefreshToken`                                   | [Tokens and refresh](tokens-and-refresh#refreshtoken)                                                       |
 | `RefreshTokenError`                              | [Tokens and refresh](tokens-and-refresh#refreshtokenerror)                                                  |
 | `RefreshTokenStatusCapable`                      | [Tokens and refresh](tokens-and-refresh#refreshtokenstatuscapable)                                          |
+| `RequestTrust`                                   | [Interceptors and attribution](interceptors-and-attribution#requesttrust)                                   |
+| `RequestTrustCapable`                            | [Interceptors and attribution](interceptors-and-attribution#requesttrustcapable)                            |
 | `ResourceAttributionOptions`                     | [Interceptors and attribution](interceptors-and-attribution#resourceattributionoptions)                     |
 | `ResourceAttributionRequestInterceptor`          | [Interceptors and attribution](interceptors-and-attribution#resourceattributionrequestinterceptor)          |
 | `ResponseCodes`                                  | [Interceptors and attribution](interceptors-and-attribution#responsecodes)                                  |
@@ -7226,8 +7255,10 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `UnauthorizedErrorInterceptorOptions`            | [Interceptors and attribution](interceptors-and-attribution#unauthorizederrorinterceptoroptions)            |
 | `idGenerator`                                    | [Interceptors and attribution](interceptors-and-attribution#idgenerator-instance)                           |
 | `isTokenExpired`                                 | [Tokens and refresh](tokens-and-refresh#istokenexpired)                                                     |
+| `isTrustedRequest`                               | [Interceptors and attribution](interceptors-and-attribution#istrustedrequest)                               |
 | `jwtCompositeTokenSerializer`                    | [Tokens and refresh](tokens-and-refresh#jwtcompositetokenserializer-instance)                               |
 | `parseJwtPayload`                                | [Tokens and refresh](tokens-and-refresh#parsejwtpayload)                                                    |
+| `sameOriginTrust`                                | [Interceptors and attribution](interceptors-and-attribution#sameorigintrust)                                |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)
 
@@ -19672,7 +19703,7 @@ export async function printActiveStates(
 
 ## 1. 确认认证契约
 
-安装 `@ahoo-wang/fetcher` 和 `@ahoo-wang/fetcher-cosec`。应用须已有登录流程，返回 JWT 字符串 `accessToken` 和 `refreshToken`。本例的 `POST /auth/refresh` 接收该令牌对的 JSON 并返回新令牌对，`GET /profile` 返回 `{ id, name }`。这些路由和 app ID 必须与后端一致。仅对该可信来源使用此客户端。
+安装 `@ahoo-wang/fetcher` 和 `@ahoo-wang/fetcher-cosec`。应用须已有登录流程，返回 JWT 字符串 `accessToken` 和 `refreshToken`。本例的 `POST /auth/refresh` 接收该令牌对的 JSON 并返回新令牌对，`GET /profile` 返回 `{ id, name }`。这些路由和 app ID 必须与后端一致。仅对该可信来源使用此客户端。下面的 `isTrusted: sameOriginTrust` 让令牌和设备 ID 只发往 `baseURL` 所在源与页面自身的源；不设它时，发往其他任意源绝对 URL 的请求（分页链接、下载地址）会收到访问令牌。
 
 ## 2. 为应用所有者创建一个会话
 
@@ -19681,6 +19712,7 @@ import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 import {
   CoSecConfigurer,
   CoSecTokenRefresher,
+  sameOriginTrust,
   type CompositeToken,
 } from '@ahoo-wang/fetcher-cosec';
 
@@ -19689,6 +19721,7 @@ export function createSession(baseURL: string) {
   const refreshApi = new Fetcher({ baseURL });
   const cosec = new CoSecConfigurer({
     appId: 'developer-console',
+    isTrusted: sameOriginTrust,
     tokenRefresher: new CoSecTokenRefresher({
       fetcher: refreshApi,
       endpoint: '/auth/refresh',
@@ -19718,9 +19751,7 @@ export function createSession(baseURL: string) {
     },
     dispose() {
       cosec.tokenStorage.destroy();
-      cosec.tokenStorage.eventBus.destroy();
       cosec.deviceIdStorage.destroy();
-      cosec.deviceIdStorage.eventBus.destroy();
     },
   };
 }
@@ -19736,13 +19767,13 @@ export function createSession(baseURL: string) {
 
 ## 4. 验证刷新与失败行为
 
-在测试中使用内存令牌/设备存储和模拟 fetch，覆盖有效令牌、访问令牌过期但刷新令牌有效、并发请求、刷新失败及 401/403 响应。刷新并发在单个 token manager 内共享，不是跨标签页的分布式锁。刷新失败可能清除当前会话；回调不会将失败请求变成成功结果。除了显示登录或错误界面，也要捕获请求拒绝。
+在测试中使用内存令牌/设备存储和模拟 fetch，覆盖有效令牌、访问令牌过期但刷新令牌有效、并发请求、刷新失败及 401/403 响应。刷新并发在单个 token manager 内共享，不是跨标签页的分布式锁。刷新因另一个标签页已用掉一次性刷新令牌而失败时，本标签页会重新读取存储，并用那个标签页存入的令牌继续；其他刷新失败可能清除当前会话；回调不会将失败请求变成成功结果。除了显示登录或错误界面，也要捕获请求拒绝。
 
 ## 5. 清理所有者
 
 当前 `TokenStorage` 默认使用按存储 key 命名的广播总线；其他上下文需要匹配通道和支持的 messenger。这与默认只使用本地总线的普通 `KeyStorage` 不同。广播是变更通知，不是跨标签页的事务性刷新协调。
 
-应用关闭时停止尚未完成的应用任务，并调用 `session.dispose()`。它释放本例拥有的存储处理器和总线，不删除令牌；退出登录需另外调用 `signOut()`。 存储通知是异步的：退出登录后通知仍在投递时，不要立即销毁会话。投递中关闭总线可能中断广播并记录错误。不要销毁其他所有者仍在共享的总线。配置器没有 dispose 方法；本例随会话一起停止使用私有 Fetcher。
+应用关闭时停止尚未完成的应用任务，并调用 `session.dispose()`。每个存储的 `destroy()` 释放自己的处理器并关闭自己创建的广播总线，不删除令牌；退出登录需另外调用 `signOut()`。 存储通知是异步的：退出登录后通知仍在投递时，不要立即销毁会话。投递中关闭总线可能中断广播并记录错误。不要销毁其他所有者仍在共享的总线。配置器没有 dispose 方法；本例随会话一起停止使用私有 Fetcher。
 
 查阅[配置](../../reference/cosec/configuration)和[令牌刷新与存储](../../reference/cosec/tokens-and-refresh)。
 
@@ -19813,7 +19844,6 @@ export async function checkStateAndEvents() {
   } finally {
     remove();
     preferences.destroy();
-    preferences.eventBus.destroy();
     saved.destroy();
   }
 }
@@ -19871,11 +19901,11 @@ export function watchTheme(onTheme: (theme: string) => void) {
 
 ## 失败与清理检查
 
-处理器名称唯一，同名重复注册返回 false。处理器错误会被记录，不会阻止其他处理器。只有消费者相互独立时才使用 `ParallelTypedEventBus`，其 emit 等待本地处理器，不等待远端确认。KeyStorage 的 destroy 只移除内部监听器；应用监听器和独占总线需分别清理。销毁不会删除存储值。
+处理器名称唯一，同名重复注册返回 false。处理器错误会被记录，不会阻止其他处理器。只有消费者相互独立时才使用 `ParallelTypedEventBus`，其 emit 等待本地处理器，不等待远端确认。KeyStorage 的 destroy 移除内部监听器，并关闭它自己创建的总线；应用监听器和通过 `eventBus` 传入的总线需分别清理。销毁不会删除存储值。
 
 参见[存储生命周期](../../reference/storage/key-storage)、[序列化与环境](../../reference/storage/serialization-and-runtime)、[事件投递](../../reference/eventbus/events-and-delivery)及[广播 messenger](../../reference/eventbus/broadcast-and-messengers)。
 
-[keyStorage.ts:244](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L244) 选择默认本地总线。
+[keyStorage.ts:247](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L247) 选择默认本地总线，`destroy()` 会关闭它。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。
 
@@ -20086,13 +20116,13 @@ Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github
 
 租户或用户变化时，重新挂载持有请求状态的子树，避免 Hook 结果跨身份残留。存储键和事件总线也按同一身份划分。
 
-| 资源                   | 释放做什么                     | 创建者仍需管理什么                                           |
-| ---------------------- | ------------------------------ | ------------------------------------------------------------ |
-| React 事件订阅         | effect 清理移除该订阅          | 共享总线生命周期                                             |
-| KeyStorage             | `destroy()` 移除自身事件处理器 | 持久化数据及共享总线；默认串行总线是本地事件，不是跨标签同步 |
-| BroadcastTypedEventBus | `destroy()` 关闭其 messenger   | 关闭前确保共享使用者的生命周期合适                           |
+| 资源                   | 释放做什么                                         | 创建者仍需管理什么                                                             |
+| ---------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
+| React 事件订阅         | effect 清理移除该订阅                              | 共享总线生命周期                                                               |
+| KeyStorage             | `destroy()` 移除自身事件处理器并关闭自己创建的总线 | 持久化数据及通过 `eventBus` 传入的总线；默认串行总线是本地事件，不是跨标签同步 |
+| BroadcastTypedEventBus | `destroy()` 关闭其 messenger                       | 关闭前确保共享使用者的生命周期合适                                             |
 
-见 [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)、[packages/storage/src/keyStorage.ts:239](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L239)、[packages/storage/src/keyStorage.ts:446](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L446) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
+见 [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)、[packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242)、[packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
 
 5.x Viewer 与 FetcherViewer 的保存视图确认规则随 5.x 线记录在[保存视图指南](../guides/viewer/saved-views.md)与 [FetcherViewer 参考](../reference/viewer/fetcher-viewer.md)中。
 
@@ -20162,11 +20192,11 @@ Fetcher main 不提供表格或数据视图组件。`@ahoo-wang/fetcher-viewer`�
 
 ## 服务专用集成
 
-| 集成              | 所需契约                              | 服务/应用保留的责任                 |
-| ----------------- | ------------------------------------- | ----------------------------------- |
-| Wow（5.x 客户端） | 命令结果/阶段及支持的查询 DSL         | 授权、租户隔离、幂等、投影新鲜度    |
-| CoSec             | token 存储、归属头、刷新端点/会话规则 | 身份生命周期、重放安全、服务端授权  |
-| SSE / OpenAI 流   | 兼容事件流和载荷格式                  | 部分结果 UX、取消及必要时的重连策略 |
+| 集成              | 所需契约                              | 服务/应用保留的责任                                               |
+| ----------------- | ------------------------------------- | ----------------------------------------------------------------- |
+| Wow（5.x 客户端） | 命令结果/阶段及支持的查询 DSL         | 授权、租户隔离、幂等、投影新鲜度                                  |
+| CoSec             | token 存储、归属头、刷新端点/会话规则 | 身份生命周期、重放安全、服务端授权、哪些源接收凭据（`isTrusted`） |
+| SSE / OpenAI 流   | 兼容事件流和载荷格式                  | 部分结果 UX、取消及必要时的重连策略                               |
 
 客户端条件描述发送的查询，不是访问控制。命令阶段描述协议进度，不是通用一致性保证。CoSec 带保护的刷新实现专用于其认证 exchange（[packages/cosec/src/authorizationResponseInterceptor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L80)），SSE 提取则要求可读响应体（[packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)）。
 
@@ -22552,7 +22582,6 @@ settings.remove();
 console.assert(settings.get()?.theme === 'system');
 removeListener();
 settings.destroy();
-settings.eventBus.destroy();
 ```
 
 [完整公开符号索引](./symbols.md)
@@ -22571,27 +22600,28 @@ settings.eventBus.destroy();
 
 `new KeyStorage<T>(options: KeyStorageOptions<T>)`：
 
-| 选项                                        | 默认值                                          | 含义                                        |
-| ------------------------------------------- | ----------------------------------------------- | ------------------------------------------- |
-| `key: string`                               | 必填                                            | 后端存储键。                                |
-| `storage?: Storage`                         | `getStorage()`                                  | 浏览器 localStorage，非浏览器新建内存存储。 |
-| `serializer?: Serializer<string, T>`        | `jsonSerializer`                                | 读写及自动广播快照使用的字符串编解码器。    |
-| `eventBus?: TypedEventBus<StorageEvent<T>>` | 新建 `SerialTypedEventBus('KeyStorage:' + key)` | 仅名称相同不会共享实例。                    |
-| `defaultValue?: T`                          | `null`                                          | 后端缺值时返回，不会自动持久化。            |
+| 选项                                        | 默认值                                          | 含义                                                                    |
+| ------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------- |
+| `key: string`                               | 必填                                            | 后端存储键。                                                            |
+| `storage?: Storage`                         | `getStorage()`                                  | 浏览器 localStorage，非浏览器新建内存存储。                             |
+| `serializer?: Serializer<string, T>`        | `jsonSerializer`                                | 读写及自动广播快照使用的字符串编解码器。                                |
+| `eventBus?: TypedEventBus<StorageEvent<T>>` | 新建 `SerialTypedEventBus('KeyStorage:' + key)` | 仅名称相同不会共享实例。新建的总线由 `destroy()` 关闭，传入的总线不会。 |
+| `defaultValue?: T`                          | `null`                                          | 后端缺值时返回，不会自动持久化。                                        |
 
 ## 读写与生命周期 {#operations}
 
-| 方法                   | 返回值                               | 行为                                                                                                     |
-| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。无法反序列化的值会被删除并告警，按缺失处理。     |
-| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。 |
-| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                         |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。                             |
-| `destroy()`            | `void`                               | 只移除此实例的内部缓存监听器，不删除键，不关闭/销毁总线。                                                |
+| 方法                   | 返回值                               | 行为                                                                                                                                                        |
+| ---------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。无法反序列化的值会被删除并告警，按缺失处理。                                                        |
+| `reload()`             | `T \| null`                          | 绕过缓存重新读取后端（用于另一个标签页可能已写入、但其事件尚未到达的值）。存储文本未变时保留缓存对象；键不存在时返回默认值。                                |
+| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。                                                    |
+| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                                                                            |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。                                                                                |
+| `destroy()`            | `void`                               | 移除此实例的内部缓存监听器，并关闭此实例创建的总线（默认总线，或子类用受保护的 `ownEventBus()` 标记的总线）。不删除键，也不关闭通过 `eventBus` 传入的总线。 |
 
 `StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，但返回的移除函数仍指向该名称。销毁拥有的总线前自行解绑外部监听器。
 
-后端读写、JSON 解析、序列化失败同步传出；通知失败后不会回滚写入。emit 拒绝会被捕获并 `console.warn`，普通串行处理器失败则已由总线隔离。非空缓存不会因直接修改后端而刷新。`get()` 返回对象引用，修改引用不会自动持久化。
+后端读写、JSON 解析、序列化失败同步传出；通知失败后不会回滚写入。emit 拒绝会被捕获并 `console.warn`，普通串行处理器失败则已由总线隔离。非空缓存不会因直接修改后端而刷新；调用 `reload()` 重新读取。`get()` 返回对象引用，修改引用不会自动持久化。
 
 ## 共享与广播 {#broadcast}
 
@@ -22621,7 +22651,6 @@ settings.remove();
 console.assert(settings.get()?.theme === 'system');
 removeListener();
 settings.destroy();
-settings.eventBus.destroy();
 ```
 
 ## 公开符号与源码 {#symbols}
@@ -22632,7 +22661,7 @@ settings.eventBus.destroy();
 | <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
 | <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
 | <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:218](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L218) |
 
 [包索引](./index.md)
 
@@ -22710,8 +22739,6 @@ token.set('demo-token');
 console.assert(storage.getItem('token') === 'demo-token');
 updatedAt.destroy();
 token.destroy();
-updatedAt.eventBus.destroy();
-token.eventBus.destroy();
 ```
 
 ## 公开符号与源码 {#symbols}
@@ -22749,7 +22776,7 @@ token.eventBus.destroy();
 | `RemoveStorageListener`   | [KeyStorage 与变更监听](key-storage.md#removestoragelistener)                  | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163)         |
 | `StorageListenable`       | [KeyStorage 与变更监听](key-storage.md#storagelistenable)                      | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165)         |
 | `KeyStorageOptions`       | [KeyStorage 与变更监听](key-storage.md#keystorageoptions)                      | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179)         |
-| `KeyStorage`              | [KeyStorage 与变更监听](key-storage.md#keystorage)                             | [keyStorage.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L217)         |
+| `KeyStorage`              | [KeyStorage 与变更监听](key-storage.md#keystorage)                             | [keyStorage.ts:218](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L218)         |
 | `Serializer`              | [序列化与运行时存储](serialization-and-runtime.md#serializer)                  | [serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)           |
 | `JsonSerializer`          | [序列化与运行时存储](serialization-and-runtime.md#jsonserializer)              | [serializer.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L41)           |
 | `IdentitySerializer`      | [序列化与运行时存储](serialization-and-runtime.md#identityserializer)          | [serializer.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L65)           |
@@ -24393,7 +24420,7 @@ cosec.applyTo(fetcher);
 
 ## 选择入口
 
-对接兼容 CoSec 的服务时用 `CoSecConfigurer` 完成拦截器配置。提供 `tokenRefresher` 才启用托管 Authorization 与刷新；没有它时，只配置元数据、资源归属和显式设置的错误回调。只有应用自行管理顺序与依赖时才单独使用拦截器。
+对接兼容 CoSec 的服务时用 `CoSecConfigurer` 完成拦截器配置。提供 `tokenRefresher` 才启用托管 Authorization 与刷新；没有它时，只配置元数据、资源归属和显式设置的错误回调。默认情况下每个请求（包括发往其他源绝对 URL 的请求）都携带 token 与 CoSec 请求头；传 `isTrusted: sameOriginTrust` 可只发给 `baseURL` 所在源与页面自身的源（见[请求信任](./interceptors-and-attribution.md#request-trust)）。只有应用自行管理顺序与依赖时才单独使用拦截器。
 
 ## 专题
 
@@ -24415,17 +24442,22 @@ cosec.applyTo(fetcher);
 
 ## CoSecConfig 与构造
 
-| 字段                            | 默认值                | 契约                                                              |
-| ------------------------------- | --------------------- | ----------------------------------------------------------------- |
-| appId:string                    | 必填                  | 在请求头发送的应用标识                                            |
-| tokenStorage:TokenStorage       | new TokenStorage()    | 通过 configurer.tokenStorage 暴露                                 |
-| deviceIdStorage:DeviceIdStorage | new DeviceIdStorage() | 通过 configurer.deviceIdStorage 暴露                              |
-| tokenRefresher:TokenRefresher   | 缺省                  | 仅存在时创建 JwtTokenManager 并安装 Authorization 请求/响应拦截器 |
-| spaceIdProvider:SpaceIdProvider | NoneSpaceIdProvider   | 解析可选 CoSec-Space-Id                                           |
-| onUnauthorized(exchange)        | 缺省                  | 错误管线中的可选 void/Promise&lt;void&gt; 回调                    |
-| onForbidden(exchange)           | 缺省                  | 错误管线中的可选 Promise&lt;void&gt; 回调                         |
+| 字段                            | 默认值                | 契约                                                                                                                                                     |
+| ------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| appId:string                    | 必填                  | 在请求头发送的应用标识                                                                                                                                   |
+| tokenStorage:TokenStorage       | new TokenStorage()    | 通过 configurer.tokenStorage 暴露                                                                                                                        |
+| deviceIdStorage:DeviceIdStorage | new DeviceIdStorage() | 通过 configurer.deviceIdStorage 暴露                                                                                                                     |
+| tokenRefresher:TokenRefresher   | 缺省                  | 仅存在时创建 JwtTokenManager 并安装 Authorization 请求/响应拦截器                                                                                        |
+| spaceIdProvider:SpaceIdProvider | NoneSpaceIdProvider   | 解析可选 CoSec-Space-Id                                                                                                                                  |
+| isTrusted:RequestTrust          | 缺省（信任所有请求）  | 决定哪些绝对请求 URL 携带 Authorization token 与 CoSec 请求头（含设备 ID）；`sameOriginTrust` 只放行 `baseURL` 所在源与页面自身的源。相对 URL 始终受信任 |
+| onUnauthorized(exchange)        | 缺省                  | 错误管线中的可选 void/Promise&lt;void&gt; 回调                                                                                                           |
+| onForbidden(exchange)           | 缺省                  | 错误管线中的可选 Promise&lt;void&gt; 回调                                                                                                                |
 
-`new CoSecConfigurer(config)` 立即初始化存储。`applyTo(fetcher): void` 始终安装 CoSecRequestInterceptor 和 ResourceAttributionRequestInterceptor；仅有 tokenManager 时安装鉴权；仅配置回调时安装错误处理。没有 tokenRefresher 时，仅将 token 放入 tokenStorage **不会**启用 Authorization 注入。`tokenManager`、`spaceIdProvider` 以 readonly 暴露（声明为可选）；config 引用 readonly，不代表深度不可变。
+`new CoSecConfigurer(config)` 立即初始化存储。`applyTo(fetcher): void` 始终安装 CoSecRequestInterceptor 和 ResourceAttributionRequestInterceptor；仅有 tokenManager 时安装鉴权；仅配置回调时安装错误处理。没有 tokenRefresher 时，仅将 token 放入 tokenStorage **不会**启用 Authorization 注入。`isTrusted` 同时传给 CoSecRequestInterceptor 与 AuthorizationRequestInterceptor：不受信任的请求不带 CoSec 请求头、不带 Authorization，也不触发刷新。`tokenManager`、`spaceIdProvider` 以 readonly 暴露（声明为可选）；config 引用 readonly，不代表深度不可变。
+
+::: warning 其他源上的绝对 URL
+不设 `isTrusted` 时，发往任意源绝对 URL 的请求（分页链接、下载地址、回调）都会收到访问 token 与设备 ID。除非客户端请求的每个绝对 URL 都属于你，否则请传 `isTrusted: sameOriginTrust`（或自己的 `RequestTrust`）。
+:::
 
 `AppIdCapable`、`DeviceIdStorageCapable`、`JwtTokenManagerCapable` 要求各自对应属性；`CoSecOptions` 合并三者，而 CoSecConfig 允许省略存储/refresher。它们是依赖形状，不是额外配置函数。
 
@@ -24438,6 +24470,7 @@ import { Fetcher } from '@ahoo-wang/fetcher';
 import {
   CoSecConfigurer,
   CoSecTokenRefresher,
+  sameOriginTrust,
   type CompositeToken,
 } from '@ahoo-wang/fetcher-cosec';
 
@@ -24445,6 +24478,7 @@ export function createSecureClient(baseURL: string) {
   const fetcher = new Fetcher({ baseURL });
   const cosec = new CoSecConfigurer({
     appId: 'example-app',
+    isTrusted: sameOriginTrust,
     tokenRefresher: new CoSecTokenRefresher({
       fetcher,
       endpoint: '/auth/refresh',
@@ -24468,15 +24502,15 @@ export function createSecureClient(baseURL: string) {
 
 ## 所有权与清理
 
-在应用/会话生命周期内复用已配置客户端和存储。CoSecConfigurer 没有 dispose/unapply 方法。拆除自己拥有的配置时，先停止请求，用 `eject(name)` 从相应 request/response/error manager 移除已安装拦截器，再对自己拥有的 KeyStorage 实例调用 `destroy()`。`destroy()` 只解绑存储内部处理器，不退出登录，也不销毁外部共享事件总线。不再有存储使用时，另行销毁自己拥有的广播总线。单个消费者不应销毁共享存储。参见[存储生命周期](../storage/key-storage)及[拦截器行为](./interceptors-and-attribution)。
+在应用/会话生命周期内复用已配置客户端和存储。CoSecConfigurer 没有 dispose/unapply 方法。拆除自己拥有的配置时，先停止请求，用 `eject(name)` 从相应 request/response/error manager 移除已安装拦截器，再对自己拥有的 KeyStorage 实例调用 `destroy()`。`destroy()` 解绑存储内部处理器，并关闭存储为自己创建的广播总线（`TokenStorage` 与 `DeviceIdStorage` 的默认总线）；它不退出登录，也不销毁通过 `eventBus` 传入的总线。不再有存储使用时，另行销毁这类共享总线。单个消费者不应销毁共享存储。参见[存储生命周期](../storage/key-storage)及[拦截器行为](./interceptors-and-attribution)。
 
 <span id="cosecconfig"></span>
 
-**`CoSecConfig`** — [packages/cosec/src/cosecConfigurer.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L86)
+**`CoSecConfig`** — [packages/cosec/src/cosecConfigurer.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L87)
 
 <span id="cosecconfigurer"></span>
 
-**`CoSecConfigurer`** — [packages/cosec/src/cosecConfigurer.ts:373](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L373)
+**`CoSecConfigurer`** — [packages/cosec/src/cosecConfigurer.ts:374](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L374)
 
 <span id="appidcapable"></span>
 
@@ -24504,15 +24538,15 @@ Token 解析只进行本地解码与过期管理，不验证签名、issuer、au
 
 ## JWT 值与序列化
 
-| API                                                         | 输入/默认值                                               | 返回/行为                                                                                                       |
-| ----------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `parseJwtPayload<T extends JwtPayload>(token)`              | 三段点号分隔字符串                                        | T 或 null；base64url/UTF-8 JSON payload 解码；解析错误记录日志并返回 null，不验证 claim 形状                    |
-| `isTokenExpired(token, earlyPeriod=0)`                      | 字符串或 CoSecJwtPayload；earlyPeriod 单位秒              | 无法解析、exp 非法/非有限值或 now >= exp-earlyPeriod 为 true；exp 缺失/null 不过期                              |
-| `JwtToken<Payload>(token, earlyPeriod=0)`                   | 原始字符串                                                | readonly token/payload/earlyPeriod；isExpired 按当前时钟计算                                                    |
-| `JwtCompositeToken(token, earlyPeriod=0, sessionId=随机值)` | CompositeToken                                            | access、refresh 为 JwtToken；isRefreshNeeded=access 过期，isRefreshable=refresh 有效，authenticated=access 有效 |
-| `JwtCompositeTokenSerializer(earlyPeriod=0)`                | 提前过期量                                                | serialize→原始 token 加 sessionId 的 JSON；deserialize→使用指定提前量的 JwtCompositeToken                       |
-| `deserializeLegacy(value)`                                  | 含 token.accessToken 和 token.refreshToken 字符串的旧对象 | 重建可用类实例；旧形状无效时抛 TypeError                                                                        |
-| `jwtCompositeTokenSerializer`                               | 单例，提前量 0                                            | 默认独立序列化器                                                                                                |
+| API                                                         | 输入/默认值                                               | 返回/行为                                                                                                                                                   |
+| ----------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parseJwtPayload<T extends JwtPayload>(token)`              | 三段点号分隔字符串                                        | T 或 null；base64url/UTF-8 JSON payload 解码；解析错误记录日志并返回 null；payload 不是 JSON 对象（数字、字符串、数组、null）时返回 null；不验证 claim 形状 |
+| `isTokenExpired(token, earlyPeriod=0)`                      | 字符串或 CoSecJwtPayload；earlyPeriod 单位秒              | 无法解析（含非对象 payload）、exp 非法/非有限值或 now >= exp-earlyPeriod 为 true；exp 缺失/null 不过期                                                      |
+| `JwtToken<Payload>(token, earlyPeriod=0)`                   | 原始字符串                                                | readonly token/payload/earlyPeriod；isExpired 按当前时钟计算                                                                                                |
+| `JwtCompositeToken(token, earlyPeriod=0, sessionId=随机值)` | CompositeToken                                            | access、refresh 为 JwtToken；isRefreshNeeded=access 过期，isRefreshable=refresh 有效，authenticated=access 有效                                             |
+| `JwtCompositeTokenSerializer(earlyPeriod=0)`                | 提前过期量                                                | serialize→原始 token 加 sessionId 的 JSON；deserialize→使用指定提前量的 JwtCompositeToken                                                                   |
+| `deserializeLegacy(value)`                                  | 含 token.accessToken 和 token.refreshToken 字符串的旧对象 | 重建可用类实例；旧形状无效时抛 TypeError                                                                                                                    |
+| `jwtCompositeTokenSerializer`                               | 单例，提前量 0                                            | 默认独立序列化器                                                                                                                                            |
 
 `JwtPayload` 声明必填 jti/sub/exp/iat，可选 iss/aud/nbf。`CoSecJwtPayload` 添加 tenantId、policies、roles、attributes。`IJwtToken<Payload>` 将 token/payload/isExpired 与 `EarlyPeriodCapable` 合并。`RefreshTokenStatusCapable` 提供 readonly isRefreshNeeded/isRefreshable。`AccessToken`、`RefreshToken` 各有一个字符串字段，`CompositeToken` 合并二者。
 
@@ -24520,7 +24554,7 @@ deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；�
 
 ## TokenStorage
 
-`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、广播总线（serial delegate 名称取实际 key）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
+`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、广播总线（serial delegate 名称取实际 key；由 `destroy()` 关闭，通过 `eventBus` 传入的总线保持打开）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
 
 | 成员                                | 结果                                     |
 | ----------------------------------- | ---------------------------------------- |
@@ -24537,7 +24571,7 @@ deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；�
 
 `new JwtTokenManager(tokenStorage, tokenRefresher)` 暴露两个依赖、currentToken（token/null）及状态 getter（无 token 时为 false）。`refresh(exchange?): Promise<void>` 在无 token 时拒绝并抛 Error('No token found')。同一 manager 对同一当前 token 的并发刷新共用 Promise，不是跨标签页分布式锁。同会话较新 token 优先于迟到的刷新结果。退出登录或切换会话会阻止陈旧回写，并抛出 `RefreshSessionChangedError(cause?)`。
 
-刷新仍属于当前会话且失败时，删除该会话 token 并抛 `RefreshTokenError(token, cause?)`。错误暴露旧 JwtCompositeToken，日志应避免输出原始凭据。重试业务请求失败保持原错误传播，不移除已经刷新成功的凭据。finally 会清理待完成 Promise。未授权通知所有权与 exchange 错误处理器协调，不是通用事件队列。
+刷新失败时，manager 用 `tokenStorage.reload()` 重新读取存储：如果另一个标签页已刷新同一会话（因此一次性 refresh token 在这里失败）并存入了新 token，就复用该 token，请求继续。刷新仍属于当前会话且失败时，删除该会话 token 并抛 `RefreshTokenError(token, cause?)`。错误暴露旧 JwtCompositeToken，日志应避免输出原始凭据。重试业务请求失败保持原错误传播，不移除已经刷新成功的凭据。finally 会清理待完成 Promise。未授权通知所有权与 exchange 错误处理器协调，不是通用事件队列。
 
 `TokenRefresher.refresh(token): Promise<CompositeToken>` 是自定义传输契约。`CoSecTokenRefresher({fetcher, endpoint})` 两字段必填，以 POST 发送 token 对象并提取 JSON。具体类的 refresh 还接受 `shouldNotifyUnauthorized?: () => boolean`。它设置 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` 防止递归刷新；自定义传输若使用已配置 Fetcher，需要自行提供该属性。
 
@@ -24584,11 +24618,11 @@ try {
 
 <span id="earlyperiodcapable"></span>
 
-**`EarlyPeriodCapable`** — [packages/cosec/src/jwts.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L122)
+**`EarlyPeriodCapable`** — [packages/cosec/src/jwts.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L132)
 
 <span id="istokenexpired"></span>
 
-**`isTokenExpired`** — [packages/cosec/src/jwts.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L145)
+**`isTokenExpired`** — [packages/cosec/src/jwts.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwts.ts#L155)
 
 <span id="ijwttoken"></span>
 
@@ -24616,15 +24650,15 @@ try {
 
 <span id="refreshtokenerror"></span>
 
-**`RefreshTokenError`** — [packages/cosec/src/jwtTokenManager.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L25)
+**`RefreshTokenError`** — [packages/cosec/src/jwtTokenManager.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L28)
 
 <span id="refreshsessionchangederror"></span>
 
-**`RefreshSessionChangedError`** — [packages/cosec/src/jwtTokenManager.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L37)
+**`RefreshSessionChangedError`** — [packages/cosec/src/jwtTokenManager.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L40)
 
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L48)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L51)
 
 <span id="default_cosec_token_key"></span>
 
@@ -24672,8 +24706,8 @@ try {
 
 ## 实际执行流程
 
-1. CoSecRequestInterceptor 设置应用/设备/请求头，以及解析得到的真值空间 ID。
-2. AuthorizationRequestInterceptor 保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。
+1. CoSecRequestInterceptor 跳过被 [`isTrusted`](#request-trust) 拒绝的请求；否则设置应用/设备/请求头，以及解析得到的真值空间 ID。
+2. AuthorizationRequestInterceptor 跳过不受信任的请求（不注入 Authorization、不刷新），并保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。
 3. ResourceAttributionRequestInterceptor 在 URL 解析前填充租户/所有者路径参数，随后核心传输发送请求。
 4. AuthorizationResponseInterceptor 在正常状态校验前处理受管理凭据的 401。刷新后仅删除自己注入的陈旧凭据，并完整重跑 exchange 管线，最多一次。
 5. 剩余失败进入错误拦截器。Unauthorized 通过通知所有权守卫处理 401/RefreshTokenError；Forbidden 处理 403。回调都不会自动恢复失败请求。
@@ -24706,20 +24740,28 @@ sequenceDiagram
 
 ## 拦截器参数与结果
 
-| 导出                                                                   | 构造选项                                                                   | intercept(exchange)                                                                     |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider      | Promise&lt;void&gt;；覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播 |
-| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）                                | Promise&lt;void&gt;；保留显式 Authorization，需要时刷新受管理 token                     |
-| `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                         | Promise&lt;void&gt;；仅 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1    |
-| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称** | void；从解码的 access payload 取 tenantId/sub；仅匹配模板且当前路径值为假值时填充       |
-| `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                      | Promise&lt;void&gt;；跳过 RefreshSessionChangedError 及重复/过时通知；回调错误传播      |
-| `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误传播                    |
+| 导出                                                                   | 构造选项                                                                              | intercept(exchange)                                                                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider；可选 isTrusted | Promise&lt;void&gt;；不受信任的请求什么都不做；否则覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播 |
+| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）；可选 isTrusted                           | Promise&lt;void&gt;；不受信任的请求什么都不做；保留显式 Authorization，需要时刷新受管理 token                         |
+| `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                                    | Promise&lt;void&gt;；仅 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1                                  |
+| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅匹配模板且当前路径值为假值时填充                                     |
+| `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；跳过 RefreshSessionChangedError 及重复/过时通知；回调错误传播                                    |
+| `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                            | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误传播                                                  |
 
 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` 为 `Ignore-Refresh-Token`。只要属性**存在**（即使值为 false），就禁用主动/401 自动刷新。它不阻止 Authorization 注入，也不禁用普通 HTTP 状态错误。
 
+## 请求信任 {#request-trust}
+
+`RequestTrust` 为 `(url: string, exchange: FetchExchange) => boolean`；`RequestTrustCapable` 为 `CoSecConfig`、`CoSecRequestOptions` 与 `AuthorizationInterceptorOptions` 增加可选的 `isTrusted`。`isTrustedRequest(exchange, isTrusted?)` 为两个请求拦截器做判断：没有 `isTrusted` 时信任所有请求；有它时，相对请求 URL 始终受信任（它相对 `baseURL` 解析），绝对 URL 仅在 `isTrusted(url, exchange)` 返回 true 时受信任。`sameOriginTrust` 信任 fetcher `baseURL` 所在源或页面自身源上的绝对 URL；其他源以及无法解析的 URL 都不受信任。
+
+::: warning 默认信任所有源
+默认情况下，任意源上的绝对请求 URL 都会收到访问 token 与 CoSec 请求头（含设备 ID）。客户端会请求不受你控制的 URL（如分页链接、下载地址、回调）时，请配置 `isTrusted: sameOriginTrust`（或自己的判断函数）。
+:::
+
 ## 设备与空间选择
 
-`DeviceIdStorage(options={})` 和 `SpaceIdStorage(options={})` 继承 KeyStorage&lt;string&gt;。选项为部分 KeyStorageOptions，每个类都强制使用自己的 identity serializer。默认键分别是 `cosec-device-id`、`cosec-space-id`，默认广播总线的 serial delegate 名称取实际 key。存储选择继承自 KeyStorage，可注入事件总线/存储；清理遵循 [KeyStorage](../storage/key-storage)。
+`DeviceIdStorage(options={})` 和 `SpaceIdStorage(options={})` 继承 KeyStorage&lt;string&gt;。选项为部分 KeyStorageOptions，每个类都强制使用自己的 identity serializer。默认键分别是 `cosec-device-id`、`cosec-space-id`，默认广播总线的 serial delegate 名称取实际 key，`destroy()` 会关闭这种默认总线；通过 `eventBus` 传入的总线保持打开。存储选择继承自 KeyStorage，可注入事件总线/存储；清理遵循 [KeyStorage](../storage/key-storage)。
 
 `DeviceIdStorage.generateDeviceId(): string` 调用导出的 `idGenerator`，但不存储结果。`getOrCreate(): string` 返回已有真值 ID，否则生成并存储。`IdGenerator.generateId(): string` 由 `NanoIdGenerator` 使用 nanoid 实现，`idGenerator` 是共享实例。
 
@@ -24788,19 +24830,19 @@ cosec.deviceIdStorage.destroy();
 
 <span id="authorizationinterceptoroptions"></span>
 
-**`AuthorizationInterceptorOptions`** — [packages/cosec/src/authorizationRequestInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L29)
+**`AuthorizationInterceptorOptions`** — [packages/cosec/src/authorizationRequestInterceptor.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L33)
 
 <span id="authorization_request_interceptor_name"></span>
 
-**`AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationRequestInterceptor.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L31)
+**`AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationRequestInterceptor.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L36)
 
 <span id="authorization_request_interceptor_order"></span>
 
-**`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationRequestInterceptor.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L33)
+**`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationRequestInterceptor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L38)
 
 <span id="authorizationrequestinterceptor"></span>
 
-**`AuthorizationRequestInterceptor`** — [packages/cosec/src/authorizationRequestInterceptor.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L46)
+**`AuthorizationRequestInterceptor`** — [packages/cosec/src/authorizationRequestInterceptor.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L51)
 
 <span id="authorization_response_interceptor_name"></span>
 
@@ -24820,23 +24862,39 @@ cosec.deviceIdStorage.destroy();
 
 <span id="cosecrequestoptions"></span>
 
-**`CoSecRequestOptions`** — [packages/cosec/src/cosecRequestInterceptor.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L57)
+**`CoSecRequestOptions`** — [packages/cosec/src/cosecRequestInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L62)
 
 <span id="cosec_request_interceptor_name"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/cosecRequestInterceptor.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L83)
+**`COSEC_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/cosecRequestInterceptor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L88)
 
 <span id="cosec_request_interceptor_order"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L104)
+**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L109)
 
 <span id="ignore_refresh_token_attribute_key"></span>
 
-**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L131)
+**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L136)
 
 <span id="cosecrequestinterceptor"></span>
 
-**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:215](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L215)
+**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:220](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L220)
+
+<span id="requesttrust"></span>
+
+**`RequestTrust`** — [packages/cosec/src/requestTrust.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L23)
+
+<span id="requesttrustcapable"></span>
+
+**`RequestTrustCapable`** — [packages/cosec/src/requestTrust.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L25)
+
+<span id="sameorigintrust"></span>
+
+**`sameOriginTrust`** — [packages/cosec/src/requestTrust.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L54)
+
+<span id="istrustedrequest"></span>
+
+**`isTrustedRequest`** — [packages/cosec/src/requestTrust.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L70)
 
 <span id="default_cosec_device_id_key"></span>
 
@@ -24900,15 +24958,15 @@ cosec.deviceIdStorage.destroy();
 
 <span id="spacedresourcepredicate"></span>
 
-**`SpacedResourcePredicate`** — [packages/cosec/src/spaceIdProvider.ts:297](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L297)
+**`SpacedResourcePredicate`** — [packages/cosec/src/spaceIdProvider.ts:298](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L298)
 
 <span id="spaceidprovideroptions"></span>
 
-**`SpaceIdProviderOptions`** — [packages/cosec/src/spaceIdProvider.ts:326](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L326)
+**`SpaceIdProviderOptions`** — [packages/cosec/src/spaceIdProvider.ts:327](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L327)
 
 <span id="defaultspaceidprovider"></span>
 
-**`DefaultSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:383](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L383)
+**`DefaultSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:384](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L384)
 
 <span id="cosecheaders"></span>
 
@@ -25023,6 +25081,8 @@ cosec.deviceIdStorage.destroy();
 | `RefreshToken`                                   | [Token 与刷新](tokens-and-refresh#refreshtoken)                                                 |
 | `RefreshTokenError`                              | [Token 与刷新](tokens-and-refresh#refreshtokenerror)                                            |
 | `RefreshTokenStatusCapable`                      | [Token 与刷新](tokens-and-refresh#refreshtokenstatuscapable)                                    |
+| `RequestTrust`                                   | [拦截器与资源归属](interceptors-and-attribution#requesttrust)                                   |
+| `RequestTrustCapable`                            | [拦截器与资源归属](interceptors-and-attribution#requesttrustcapable)                            |
 | `ResourceAttributionOptions`                     | [拦截器与资源归属](interceptors-and-attribution#resourceattributionoptions)                     |
 | `ResourceAttributionRequestInterceptor`          | [拦截器与资源归属](interceptors-and-attribution#resourceattributionrequestinterceptor)          |
 | `ResponseCodes`                                  | [拦截器与资源归属](interceptors-and-attribution#responsecodes)                                  |
@@ -25040,8 +25100,10 @@ cosec.deviceIdStorage.destroy();
 | `UnauthorizedErrorInterceptorOptions`            | [拦截器与资源归属](interceptors-and-attribution#unauthorizederrorinterceptoroptions)            |
 | `idGenerator`                                    | [拦截器与资源归属](interceptors-and-attribution#idgenerator-instance)                           |
 | `isTokenExpired`                                 | [Token 与刷新](tokens-and-refresh#istokenexpired)                                               |
+| `isTrustedRequest`                               | [拦截器与资源归属](interceptors-and-attribution#istrustedrequest)                               |
 | `jwtCompositeTokenSerializer`                    | [Token 与刷新](tokens-and-refresh#jwtcompositetokenserializer-instance)                         |
 | `parseJwtPayload`                                | [Token 与刷新](tokens-and-refresh#parsejwtpayload)                                              |
+| `sameOriginTrust`                                | [拦截器与资源归属](interceptors-and-attribution#sameorigintrust)                                |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)
 

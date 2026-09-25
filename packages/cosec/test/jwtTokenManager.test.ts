@@ -11,10 +11,17 @@ describe('JwtTokenManager', () => {
   let mockStorage: Storage;
 
   beforeEach(() => {
+    // Remembers what it stores, as Web Storage does: the manager re-reads
+    // storage when a refresh fails.
+    const stored = new Map<string, string>();
     mockStorage = {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
+      getItem: vi.fn((key: string) => stored.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        stored.set(key, value);
+      }),
+      removeItem: vi.fn((key: string) => {
+        stored.delete(key);
+      }),
       clear: vi.fn(),
       key: vi.fn(),
       length: 0,

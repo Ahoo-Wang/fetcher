@@ -42,9 +42,16 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   terminator and, with a terminate detector, errors a stream that ends without
   the terminating event with `EventStreamIncompleteError` — for
   `@ahoo-wang/fetcher-openai`, a completion stream that ends before
-  `data: [DONE]`) and **Fixed** in the 6.0 release
+  `data: [DONE]`; `fetcher-cosec` adds the `isTrusted` option — by default
+  every request, an absolute URL on another origin included, still carries the
+  token and CoSec headers, so set `isTrusted: sameOriginTrust` — and reads a
+  JWT whose payload is not a JSON object as expired; `destroy()` of
+  `KeyStorage`, `TokenStorage`, `DeviceIdStorage` and `SpaceIdStorage` also
+  closes the event bus the storage created, while a bus passed in `eventBus`
+  stays open) and **Fixed** in the 6.0 release
   notes (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
-  longer re-running the error phase (#1249).
+  longer re-running the error phase (#1249), or a tab reusing the token another
+  tab refreshed instead of signing out (`KeyStorage.reload()`).
 
 ## Package mapping
 
@@ -169,6 +176,20 @@ now rejects the `for await` loop with `EventStreamIncompleteError` instead of
 ending as if complete; handle it where mid-stream errors are handled, and do
 not treat the partial answer as final. `ChatResponse.usage` is now optional:
 read it with `?.`.
+
+For projects on `@ahoo-wang/fetcher-cosec` or `@ahoo-wang/fetcher-storage`:
+
+```sh
+# 8. CoSec setups and storage cleanup to review
+grep -rnE 'new CoSecConfigurer\(|new (CoSecRequest|AuthorizationRequest)Interceptor\(|\.eventBus\.destroy\(' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+```
+
+Add `isTrusted: sameOriginTrust` to each CoSec setup unless every absolute URL
+the client requests is yours: by default an absolute URL on any origin still
+receives the access token and the device ID. A JWT whose payload is not a JSON
+object now reads as expired. `destroy()` now closes the event bus the storage
+created itself, so a following `storage.eventBus.destroy()` on that default
+bus is redundant (drop it); keep it for a bus you passed in `eventBus`.
 
 ## Rewrites
 

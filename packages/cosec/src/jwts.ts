@@ -111,7 +111,17 @@ export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
       c.charCodeAt(0),
     );
     const jsonPayload = new TextDecoder('utf-8').decode(binaryBytes);
-    return JSON.parse(jsonPayload) as T;
+    const payload: unknown = JSON.parse(jsonPayload);
+    // A JWT claims set is a JSON object; `123` or `"x"` has no `exp`, and
+    // would otherwise read as a token that never expires.
+    if (
+      typeof payload !== 'object' ||
+      payload === null ||
+      Array.isArray(payload)
+    ) {
+      return null;
+    }
+    return payload as T;
   } catch (error) {
     // Avoid exposing sensitive information in error logs
     console.error('Failed to parse JWT token', error);

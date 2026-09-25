@@ -40,10 +40,10 @@ preferences.destroy();
 ## 核心能力
 
 - 浏览器 `localStorage` 与内存回退。
-- 每个 `KeyStorage` 实例缓存一个类型化值。
+- 每个 `KeyStorage` 实例缓存一个类型化值；`reload()` 从存储重新读取。
 - 默认 JSON 序列化，并支持按需自定义序列化器。
 - 类型化 `{ oldValue, newValue }` 通知。
-- 显式移除监听并清理所有者生命周期。
+- 显式移除监听并清理所有者生命周期；`destroy()` 关闭存储自己创建的事件总线。
 
 ## 文档
 

@@ -65,6 +65,8 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `RefreshToken`                                   | [Token 与刷新](tokens-and-refresh#refreshtoken)                                                 |
 | `RefreshTokenError`                              | [Token 与刷新](tokens-and-refresh#refreshtokenerror)                                            |
 | `RefreshTokenStatusCapable`                      | [Token 与刷新](tokens-and-refresh#refreshtokenstatuscapable)                                    |
+| `RequestTrust`                                   | [拦截器与资源归属](interceptors-and-attribution#requesttrust)                                   |
+| `RequestTrustCapable`                            | [拦截器与资源归属](interceptors-and-attribution#requesttrustcapable)                            |
 | `ResourceAttributionOptions`                     | [拦截器与资源归属](interceptors-and-attribution#resourceattributionoptions)                     |
 | `ResourceAttributionRequestInterceptor`          | [拦截器与资源归属](interceptors-and-attribution#resourceattributionrequestinterceptor)          |
 | `ResponseCodes`                                  | [拦截器与资源归属](interceptors-and-attribution#responsecodes)                                  |
@@ -82,7 +84,9 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `UnauthorizedErrorInterceptorOptions`            | [拦截器与资源归属](interceptors-and-attribution#unauthorizederrorinterceptoroptions)            |
 | `idGenerator`                                    | [拦截器与资源归属](interceptors-and-attribution#idgenerator-instance)                           |
 | `isTokenExpired`                                 | [Token 与刷新](tokens-and-refresh#istokenexpired)                                               |
+| `isTrustedRequest`                               | [拦截器与资源归属](interceptors-and-attribution#istrustedrequest)                               |
 | `jwtCompositeTokenSerializer`                    | [Token 与刷新](tokens-and-refresh#jwtcompositetokenserializer-instance)                         |
 | `parseJwtPayload`                                | [Token 与刷新](tokens-and-refresh#parsejwtpayload)                                              |
+| `sameOriginTrust`                                | [拦截器与资源归属](interceptors-and-attribution#sameorigintrust)                                |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)

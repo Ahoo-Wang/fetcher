@@ -23,6 +23,11 @@ import { idGenerator } from './idGenerator.js';
 import type { SpaceIdProvider } from './spaceIdProvider.js';
 import { NoneSpaceIdProvider } from './spaceIdProvider.js';
 import type { DeviceIdStorage } from './deviceIdStorage.js';
+import {
+  isTrustedRequest,
+  type RequestTrust,
+  type RequestTrustCapable,
+} from './requestTrust.js';
 
 /**
  * Configuration options for CoSecRequestInterceptor.
@@ -55,7 +60,7 @@ import type { DeviceIdStorage } from './deviceIdStorage.js';
  * ```
  */
 export interface CoSecRequestOptions
-  extends AppIdCapable, DeviceIdStorageCapable {
+  extends AppIdCapable, DeviceIdStorageCapable, RequestTrustCapable {
   /**
    * Optional provider for resolving space identifiers from requests.
    *
@@ -251,6 +256,7 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * multi-tenant, multi-space applications.
    */
   private readonly spaceIdProvider: SpaceIdProvider;
+  private readonly isTrusted?: RequestTrust;
 
   /**
    * Creates a new CoSecRequestInterceptor instance.
@@ -298,10 +304,12 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     appId,
     deviceIdStorage,
     spaceIdProvider,
+    isTrusted,
   }: CoSecRequestOptions) {
     this.appId = appId;
     this.deviceIdStorage = deviceIdStorage;
     this.spaceIdProvider = spaceIdProvider ?? NoneSpaceIdProvider;
+    this.isTrusted = isTrusted;
   }
 
   /**
@@ -360,6 +368,11 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * ```
    */
   async intercept(exchange: FetchExchange) {
+    // The device ID and the other CoSec headers identify this client: only
+    // trusted origins receive them.
+    if (!isTrustedRequest(exchange, this.isTrusted)) {
+      return;
+    }
     // Generate a unique request ID for this request
     const requestId = idGenerator.generateId();
 

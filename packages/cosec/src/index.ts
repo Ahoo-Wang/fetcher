@@ -20,6 +20,7 @@ export * from './idGenerator.js';
 export * from './jwts.js';
 export * from './jwtToken.js';
 export * from './jwtTokenManager.js';
+export * from './requestTrust.js';
 export * from './resourceAttributionRequestInterceptor.js';
 export * from './spaceIdProvider.js';
 export * from './tokenRefresher.js';

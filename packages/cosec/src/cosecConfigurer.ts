@@ -27,6 +27,7 @@ import type { TokenRefresher } from './tokenRefresher.js';
 import { TokenStorage } from './tokenStorage.js';
 import { UnauthorizedErrorInterceptor } from './unauthorizedErrorInterceptor.js';
 import type { AppIdCapable, DeviceIdStorageCapable } from './types.js';
+import type { RequestTrustCapable } from './requestTrust.js';
 import type { SpaceIdProvider } from './spaceIdProvider.js';
 import { NoneSpaceIdProvider } from './spaceIdProvider.js';
 
@@ -84,7 +85,7 @@ import { NoneSpaceIdProvider } from './spaceIdProvider.js';
  * ```
  */
 export interface CoSecConfig
-  extends AppIdCapable, Partial<DeviceIdStorageCapable> {
+  extends AppIdCapable, Partial<DeviceIdStorageCapable>, RequestTrustCapable {
   /**
    * Your application's unique identifier in the CoSec authentication system.
    *
@@ -520,6 +521,7 @@ export class CoSecConfigurer implements FetcherConfigurer {
         appId: this.config.appId,
         deviceIdStorage: this.deviceIdStorage,
         spaceIdProvider: this.spaceIdProvider,
+        isTrusted: this.config.isTrusted,
       }),
     );
 
@@ -536,6 +538,7 @@ export class CoSecConfigurer implements FetcherConfigurer {
       fetcher.interceptors.request.use(
         new AuthorizationRequestInterceptor({
           tokenManager: this.tokenManager,
+          isTrusted: this.config.isTrusted,
         }),
       );
 

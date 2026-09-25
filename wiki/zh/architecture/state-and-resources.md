@@ -37,12 +37,12 @@ Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github
 
 租户或用户变化时，重新挂载持有请求状态的子树，避免 Hook 结果跨身份残留。存储键和事件总线也按同一身份划分。
 
-| 资源                   | 释放做什么                     | 创建者仍需管理什么                                           |
-| ---------------------- | ------------------------------ | ------------------------------------------------------------ |
-| React 事件订阅         | effect 清理移除该订阅          | 共享总线生命周期                                             |
-| KeyStorage             | `destroy()` 移除自身事件处理器 | 持久化数据及共享总线；默认串行总线是本地事件，不是跨标签同步 |
-| BroadcastTypedEventBus | `destroy()` 关闭其 messenger   | 关闭前确保共享使用者的生命周期合适                           |
+| 资源                   | 释放做什么                                         | 创建者仍需管理什么                                                             |
+| ---------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
+| React 事件订阅         | effect 清理移除该订阅                              | 共享总线生命周期                                                               |
+| KeyStorage             | `destroy()` 移除自身事件处理器并关闭自己创建的总线 | 持久化数据及通过 `eventBus` 传入的总线；默认串行总线是本地事件，不是跨标签同步 |
+| BroadcastTypedEventBus | `destroy()` 关闭其 messenger                       | 关闭前确保共享使用者的生命周期合适                                             |
 
-见 [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)、[packages/storage/src/keyStorage.ts:239](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L239)、[packages/storage/src/keyStorage.ts:446](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L446) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
+见 [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)、[packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242)、[packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
 
 5.x Viewer 与 FetcherViewer 的保存视图确认规则随 5.x 线记录在[保存视图指南](../guides/viewer/saved-views.md)与 [FetcherViewer 参考](../reference/viewer/fetcher-viewer.md)中。

@@ -51,7 +51,6 @@ settings.remove();
 console.assert(settings.get()?.theme === 'system');
 removeListener();
 settings.destroy();
-settings.eventBus.destroy();
 ```
 
 [完整公开符号索引](./symbols.md)

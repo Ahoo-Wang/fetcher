@@ -22,6 +22,7 @@ import {
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
 } from './cosecRequestInterceptor.js';
 import type { JwtTokenManagerCapable } from './types.js';
+import { isTrustedRequest, type RequestTrustCapable } from './requestTrust.js';
 import { CoSecHeaders } from './types.js';
 import {
   assertTokenSession,
@@ -29,7 +30,8 @@ import {
 } from './refreshSession.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface AuthorizationInterceptorOptions extends JwtTokenManagerCapable {}
+export interface AuthorizationInterceptorOptions
+  extends JwtTokenManagerCapable, RequestTrustCapable {}
 
 export const AUTHORIZATION_REQUEST_INTERCEPTOR_NAME =
   'AuthorizationRequestInterceptor';
@@ -69,6 +71,11 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
    * @returns Promise that resolves when the interception is complete
    */
   async intercept(exchange: FetchExchange): Promise<void> {
+    // The token goes only where the configuration trusts, never to an origin
+    // just because a request URL happened to be absolute.
+    if (!isTrustedRequest(exchange, this.options.isTrusted)) {
+      return;
+    }
     // Get the current token from token manager
     let currentToken = this.options.tokenManager.currentToken;
     assertTokenSession(exchange, currentToken);

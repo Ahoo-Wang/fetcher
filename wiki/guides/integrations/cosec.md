@@ -11,7 +11,7 @@ Installation must also resolve every declared peer dependency; see the [package 
 
 ## 1. Confirm the authentication contract
 
-Install `@ahoo-wang/fetcher` and `@ahoo-wang/fetcher-cosec`. The application must already have a login flow returning JWT `accessToken` and `refreshToken` strings. In this example `POST /auth/refresh` accepts that token pair as JSON and returns a new pair, and `GET /profile` returns `{ id, name }`. These routes and the app ID must match your backend. Only use the configured client for that trusted origin.
+Install `@ahoo-wang/fetcher` and `@ahoo-wang/fetcher-cosec`. The application must already have a login flow returning JWT `accessToken` and `refreshToken` strings. In this example `POST /auth/refresh` accepts that token pair as JSON and returns a new pair, and `GET /profile` returns `{ id, name }`. These routes and the app ID must match your backend. Only use the configured client for that trusted origin. `isTrusted: sameOriginTrust` below keeps the token and the device ID on the `baseURL` origin and the page origin; without it, a request to an absolute URL on any other origin — a pagination link, a download URL — receives the access token.
 
 ## 2. Create one session per application owner
 
@@ -20,6 +20,7 @@ import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
 import {
   CoSecConfigurer,
   CoSecTokenRefresher,
+  sameOriginTrust,
   type CompositeToken,
 } from '@ahoo-wang/fetcher-cosec';
 
@@ -28,6 +29,7 @@ export function createSession(baseURL: string) {
   const refreshApi = new Fetcher({ baseURL });
   const cosec = new CoSecConfigurer({
     appId: 'developer-console',
+    isTrusted: sameOriginTrust,
     tokenRefresher: new CoSecTokenRefresher({
       fetcher: refreshApi,
       endpoint: '/auth/refresh',
@@ -57,9 +59,7 @@ export function createSession(baseURL: string) {
     },
     dispose() {
       cosec.tokenStorage.destroy();
-      cosec.tokenStorage.eventBus.destroy();
       cosec.deviceIdStorage.destroy();
-      cosec.deviceIdStorage.eventBus.destroy();
     },
   };
 }
@@ -75,13 +75,13 @@ Token parsing is not signature verification; the backend remains responsible for
 
 ## 4. Check refresh and failure behavior
 
-Use in-memory token/device storage and mocked fetch in a test. Cover a valid token, an expired access token with a valid refresh token, concurrent requests, refresh failure, and 401/403 responses. Refresh concurrency is shared by a token manager, not a cross-tab distributed lock. Refresh failure can clear the current session; callbacks do not turn failed requests into successful results. Catch the request rejection as well as showing a login/error screen.
+Use in-memory token/device storage and mocked fetch in a test. Cover a valid token, an expired access token with a valid refresh token, concurrent requests, refresh failure, and 401/403 responses. Refresh concurrency is shared by a token manager, not a cross-tab distributed lock. When a refresh fails because another tab already used the one-time refresh token, the tab re-reads storage and continues with the token that tab stored; any other refresh failure can clear the current session; callbacks do not turn failed requests into successful results. Catch the request rejection as well as showing a login/error screen.
 
 ## 5. Dispose the owner
 
 The current `TokenStorage` defaults to a broadcast bus named from its storage key. Other contexts must use the matching channel and a supported messenger. This differs from plain `KeyStorage`, whose default bus is local. Broadcast delivery is notification, not transactional cross-tab refresh coordination.
 
-On application shutdown, stop pending application work and call `session.dispose()`. This releases this example's owned storage handlers and buses; it does not erase tokens. Logout is a separate `signOut()` operation. Storage notifications are asynchronous: do not dispose the session immediately after sign-out while notifications are still being delivered. Closing a bus during delivery can interrupt the broadcast and log an error. Do not destroy buses shared with another owner. The configurer has no dispose method; this example retires its private Fetchers along with the session.
+On application shutdown, stop pending application work and call `session.dispose()`. Each storage's `destroy()` releases its handler and closes the broadcast bus it created; it does not erase tokens. Logout is a separate `signOut()` operation. Storage notifications are asynchronous: do not dispose the session immediately after sign-out while notifications are still being delivered. Closing a bus during delivery can interrupt the broadcast and log an error. Do not destroy buses shared with another owner. The configurer has no dispose method; this example retires its private Fetchers along with the session.
 
 See [configuration](../../reference/cosec/configuration) and [token refresh and storage](../../reference/cosec/tokens-and-refresh).
 

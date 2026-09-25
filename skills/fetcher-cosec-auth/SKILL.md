@@ -10,6 +10,7 @@ description: >
 
 - **`CoSecConfigurer` first**: `new CoSecConfigurer(config).applyTo(fetcher)` registers every interceptor in the right order; register the interceptors by hand only to customize one of them.
 - **No `tokenRefresher`, no auth**: the Authorization request/response interceptors are registered only when `config.tokenRefresher` is set. Without it only the `CoSec-*` headers and resource attribution apply — no Bearer token is sent even if one is stored.
+- **Trust only your origins**: by default every request, including an absolute URL on another origin (a pagination link, a download URL), receives the access token and the `CoSec-*` headers with the device ID. Pass `isTrusted: sameOriginTrust` to keep them to the `baseURL` origin and the page origin, or your own `RequestTrust`; relative URLs are always trusted, and an untrusted request is neither authorized nor refreshed.
 - **401 vs 403**: `AuthorizationResponseInterceptor` refreshes and retries a 401 once (`AUTHORIZATION_RESPONSE_MAX_RETRY`); `onUnauthorized` fires when that fails. `onForbidden` fires on 403 and never refreshes. Neither callback clears the error — the call still rejects with `ExchangeError`, so redirects/UI go in the callbacks and callers still handle the rejection.
 
 ## Gotchas a capable model gets wrong
@@ -19,7 +20,9 @@ description: >
 - A custom `TokenRefresher` that calls through a CoSec-configured fetcher must pass `attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]])` to avoid a refresh loop; `CoSecTokenRefresher` already does.
 - Ordering: CoSec headers and Authorization run near `Number.MIN_SAFE_INTEGER` (`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`), so your own interceptor that reads the Bearer header needs a larger `order`.
 - Attribution fills `{tenantId}` / `{ownerId}` URL placeholders from the JWT (`tenantId`, `sub`) only when the caller did not supply them — write placeholders, don't interpolate the values.
-- Default storage keys are `cosec-token`, `cosec-device-id` and `cosec-space-id`, synced across tabs; `TokenStorage`s sharing one `eventBus` must use the same `earlyPeriod` or the constructor throws.
+- When a refresh fails because another tab already spent the one-time refresh token, the manager re-reads storage (`KeyStorage.reload()`) and continues with that tab's token for the same session instead of signing out.
+- A JWT whose payload is not a JSON object makes `parseJwtPayload` return `null`, so the token reads as expired.
+- Default storage keys are `cosec-token`, `cosec-device-id` and `cosec-space-id`, synced across tabs; `destroy()` closes the broadcast bus a storage created (not one passed in `eventBus`); `TokenStorage`s sharing one `eventBus` must use the same `earlyPeriod` or the constructor throws.
 
 ## Minimal example
 
@@ -29,12 +32,14 @@ import {
   CoSecConfigurer,
   CoSecTokenRefresher,
   TokenStorage,
+  sameOriginTrust,
 } from '@ahoo-wang/fetcher-cosec';
 
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 const tokenStorage = new TokenStorage({ earlyPeriod: 60 }); // seconds
 new CoSecConfigurer({
   appId: 'my-app',
+  isTrusted: sameOriginTrust,
   tokenStorage,
   tokenRefresher: new CoSecTokenRefresher({
     fetcher,
@@ -49,7 +54,7 @@ tokenStorage.signIn({ accessToken, refreshToken });
 
 ## References
 
-- `references/api.md`: `CoSecConfig` options, JWT token classes, `TokenStorage`/`DeviceIdStorage`, `JwtTokenManager`, `TokenRefresher`, headers, interceptor order table, space providers and complete examples. Load it for anything beyond the setup above.
+- `references/api.md`: `CoSecConfig` options (including `isTrusted`), JWT token classes, `TokenStorage`/`DeviceIdStorage`, `JwtTokenManager`, `TokenRefresher`, headers, interceptor order table, space providers and complete examples. Load it for anything beyond the setup above.
 
 ## Related Skills
 

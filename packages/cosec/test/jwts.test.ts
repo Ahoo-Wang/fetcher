@@ -198,9 +198,7 @@ describe('jwts', () => {
     });
 
     it('should return true for invalid exp claim', () => {
-      expect(
-        isTokenExpired({ exp: Number.NaN } as CoSecJwtPayload),
-      ).toBe(true);
+      expect(isTokenExpired({ exp: Number.NaN } as CoSecJwtPayload)).toBe(true);
     });
 
     it('should return false for a payload without exp claim', () => {
@@ -220,5 +218,15 @@ describe('jwts', () => {
 
       expect(isExpired).toBe(true);
     });
+  });
+});
+
+describe('parseJwtPayload rejects a claims set that is not an object', () => {
+  it.each(['123', '"text"', '[1]', 'null'])('payload %s', json => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const token = `e30.${btoa(json)}.signature`;
+    expect(parseJwtPayload(token)).toBeNull();
+    // So it reads as expired, not as a token that never expires.
+    expect(isTokenExpired(token)).toBe(true);
   });
 });

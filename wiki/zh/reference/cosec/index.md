@@ -32,7 +32,7 @@ cosec.applyTo(fetcher);
 
 ## 选择入口
 
-对接兼容 CoSec 的服务时用 `CoSecConfigurer` 完成拦截器配置。提供 `tokenRefresher` 才启用托管 Authorization 与刷新；没有它时，只配置元数据、资源归属和显式设置的错误回调。只有应用自行管理顺序与依赖时才单独使用拦截器。
+对接兼容 CoSec 的服务时用 `CoSecConfigurer` 完成拦截器配置。提供 `tokenRefresher` 才启用托管 Authorization 与刷新；没有它时，只配置元数据、资源归属和显式设置的错误回调。默认情况下每个请求（包括发往其他源绝对 URL 的请求）都携带 token 与 CoSec 请求头；传 `isTrusted: sameOriginTrust` 可只发给 `baseURL` 所在源与页面自身的源（见[请求信任](./interceptors-and-attribution.md#request-trust)）。只有应用自行管理顺序与依赖时才单独使用拦截器。
 
 ## 专题
 

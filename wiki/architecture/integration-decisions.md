@@ -26,11 +26,11 @@ Fetcher main ships no table or data-view component. `@ahoo-wang/fetcher-viewer` 
 
 ## Service-specific integrations
 
-| Integration            | Required contract                                                   | Responsibility retained by the service/application                 |
-| ---------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Wow (5.x client)       | Command results/stages and supported query DSL                      | Authorization, tenant isolation, idempotency, projection freshness |
-| CoSec                  | Token storage, attribution headers, refresh endpoints/session rules | Identity lifetime, replay safety, server authorization             |
-| SSE / OpenAI streaming | Compatible event stream and payload format                          | Partial-result UX, cancellation, reconnect policy if required      |
+| Integration            | Required contract                                                   | Responsibility retained by the service/application                                                      |
+| ---------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Wow (5.x client)       | Command results/stages and supported query DSL                      | Authorization, tenant isolation, idempotency, projection freshness                                      |
+| CoSec                  | Token storage, attribution headers, refresh endpoints/session rules | Identity lifetime, replay safety, server authorization, which origins receive credentials (`isTrusted`) |
+| SSE / OpenAI streaming | Compatible event stream and payload format                          | Partial-result UX, cancellation, reconnect policy if required                                           |
 
 Client-side conditions describe the query sent; they are not access control. Command stages describe protocol progress; they are not a universal consistency guarantee. CoSec's guarded refresh implementation is specific to its authentication exchange ([packages/cosec/src/authorizationResponseInterceptor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L80)), while SSE extraction requires a readable body ([packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)).
 

@@ -147,7 +147,11 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
           if (error instanceof RefreshSessionChangedError) {
             throw error;
           }
-          const currentToken = this.currentToken;
+          // Another tab may already have refreshed this session with a
+          // one-time refresh token (so ours failed) and written the new
+          // token, before its change event reached this tab: read storage,
+          // not the cache, so its token is reused instead of removed.
+          const currentToken = this.tokenStorage.reload();
           if (
             currentToken &&
             currentToken !== jwtToken &&
