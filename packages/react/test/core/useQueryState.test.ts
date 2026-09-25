@@ -12,7 +12,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react';
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { useQueryState } from '../../src';
 
@@ -448,9 +448,27 @@ describe('useQueryState', () => {
       });
 
       await vi.waitFor(() => {
-        expect(callCount).toBe(3); // 1 initial + 1 on rerender + 1 on setQuery
+        // 1 initial + 1 on setQuery: a new execute alone does not re-run
+        // (an inline execute is new every render), but the latest is used.
+        expect(callCount).toBe(2);
         expect(execute2).toHaveBeenCalledWith({ id: 'updated' });
       });
+    });
+
+    it('should not loop on an inline execute that sets state', async () => {
+      let calls = 0;
+      renderHook(() => {
+        const [, setTick] = useState(0);
+        useQueryState({
+          initialQuery: { id: 'x' },
+          execute: async () => {
+            calls++;
+            if (calls < 20) setTick(tick => tick + 1);
+          },
+        });
+      });
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(calls).toBe(1);
     });
 
     it('should handle autoExecute change from false to true', async () => {

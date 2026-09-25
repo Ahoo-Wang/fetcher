@@ -7,16 +7,16 @@ description: '存储与事件订阅 — @ahoo-wang/fetcher-react 5.0.0'
 
 这些 Hook 将共享外部资源接入组件。保持 `KeyStorage` 和事件总线实例稳定，由创建者负责销毁。组件卸载只退订监听，不销毁共享存储或总线。
 
-| API                                          | 输入 / 返回 / 默认值                                                                                |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                           |
-| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                      |
-| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                    |
-| `useEventSubscription({ bus, handler })`     | 自动调用 `bus.on(handler)`；返回值为 boolean 的 subscribe/unsubscribe；清理调用 off(handler.name)。 |
+| API                                          | 输入 / 返回 / 默认值                                                                                                      |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                                                 |
+| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                                            |
+| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                                          |
+| `useEventSubscription({ bus, handler })`     | 自动调用 `bus.on(handler)`；返回值为 boolean 的 subscribe/unsubscribe；仅当该次 `on` 成功时清理才调用 off(handler.name)。 |
 
-存储使用 `useSyncExternalStore`，缓存内容深相等的快照，实例变化时重订阅。SSR 使用同一个 snapshot getter，因此调用者提供的存储必须适用于该运行环境。序列化/存储异常直接传播，不会转换成 Promise 错误状态。Immer updater 调用时读取当前存储，连续更新不依赖某次渲染的旧快照。保留的回调继续操作其捕获的存储。
+存储使用 `useSyncExternalStore`，缓存内容深相等的快照，实例变化时重订阅。服务端快照为 `defaultValue ?? null`，因此服务端渲染不读取存储：在服务端和 hydration 期间 Hook 先渲染默认值（因此 `useSecurity` 与 `SecurityProvider` 以未认证开始），随后渲染存储值。纯客户端渲染从首次渲染起读取存储。序列化/存储异常直接传播，不会转换成 Promise 错误状态。Immer updater 调用时读取当前存储，连续更新不依赖某次渲染的旧快照。保留的回调继续操作其捕获的存储。
 
-事件处理器带名称，应为每个订阅者使用唯一名称。重复名称可能导致注册失败并记录警告，而清理仍按名称退订。保持 handler 身份稳定以避免无谓重订阅。处理器失败传播与投递顺序由总线决定，本 Hook 不改变这些策略，也不代发布者等待投递。
+事件处理器带名称，应为每个订阅者使用唯一名称。重复名称可能导致注册失败并记录警告；此时清理不动该名称，另一订阅者的处理器保持注册。保持 handler 身份稳定以避免无谓重订阅。处理器失败传播与投递顺序由总线决定，本 Hook 不改变这些策略，也不代发布者等待投递。
 
 ## 完整示例
 

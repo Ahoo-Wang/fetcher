@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { useLatest } from '../core/useLatest.js';
 import { useSecurityContext } from './SecurityContext.js';
 
 /**
@@ -31,7 +32,9 @@ export interface RouteGuardProps {
 
   /**
    * Optional redirect function to call when user is not authenticated.
-   * This can be used to programmatically navigate to a login page.
+   * This can be used to programmatically navigate to a login page. It runs
+   * after the render commits, once each time the user becomes (or starts
+   * out) unauthenticated — not during rendering.
    */
   onUnauthorized?: () => void;
 }
@@ -69,14 +72,17 @@ export function RouteGuard({
   onUnauthorized,
 }: RouteGuardProps) {
   const { authenticated } = useSecurityContext();
+  const latestOnUnauthorized = useLatest(onUnauthorized);
+
+  // A side effect such as navigate() belongs after commit, not in render.
+  useEffect(() => {
+    if (!authenticated) {
+      latestOnUnauthorized.current?.();
+    }
+  }, [authenticated, latestOnUnauthorized]);
 
   if (authenticated) {
     return <>{children}</>;
-  }
-
-  // Call onUnauthorized callback if provided
-  if (onUnauthorized) {
-    onUnauthorized();
   }
 
   // Return fallback if provided, otherwise return null

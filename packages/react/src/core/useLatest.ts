@@ -12,7 +12,7 @@
  */
 
 import type { RefObject } from 'react';
-import { useRef } from 'react';
+import { useInsertionEffect, useRef } from 'react';
 
 /**
  * A React hook that returns a ref containing the latest value, useful for accessing the current value in async callbacks.
@@ -46,7 +46,12 @@ import { useRef } from 'react';
  */
 export function useLatest<T>(value: T): RefObject<T> {
   const ref = useRef(value);
-  /* eslint-disable react-hooks/refs */
-  ref.current = value;
+  // Updated once the render commits, not during it: a render React discards
+  // (a concurrent or suspended one) must not leave its props in the ref.
+  // Insertion effects run before every layout effect and effect, so those
+  // already read the new value.
+  useInsertionEffect(() => {
+    ref.current = value;
+  });
   return ref;
 }

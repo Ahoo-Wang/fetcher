@@ -73,7 +73,13 @@ export function useFullscreen(
   const [fullscreen, setFullscreen] = useState(false);
 
   const handleFullscreenChange = useCallback(() => {
-    const fullscreen = getFullscreenElement() === getTarget();
+    const element = getFullscreenElement();
+    const fullscreen = element !== null && element === getTarget();
+    // A target passed to enter() lasts until fullscreen ends; afterwards the
+    // configured target applies again.
+    if (!element) {
+      dynamicTargetRef.current = null;
+    }
     setFullscreen(fullscreen);
   }, [getTarget, setFullscreen]);
 

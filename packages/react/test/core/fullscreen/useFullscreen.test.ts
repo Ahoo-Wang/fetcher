@@ -57,6 +57,29 @@ describe('useFullscreen hook', () => {
     document.body.removeChild(mockElement);
   });
 
+  it('returns to the configured target once a dynamic target leaves fullscreen', async () => {
+    let onChange!: () => void;
+    (addFullscreenChangeListener as any).mockImplementation(
+      (handler: () => void) => {
+        onChange = handler;
+      },
+    );
+    const other = document.createElement('section');
+    const { result } = renderHook(() =>
+      useFullscreen({ target: mockTargetRef }),
+    );
+
+    await act(async () => {
+      await result.current.enter(other);
+    });
+    expect(result.current.getTarget()).toBe(other);
+
+    (getFullscreenElement as any).mockReturnValue(null);
+    act(() => onChange());
+
+    expect(result.current.getTarget()).toBe(mockElement);
+  });
+
   describe('initialization', () => {
     it('should initialize with isFullscreen false', () => {
       const { result } = renderHook(() => useFullscreen());

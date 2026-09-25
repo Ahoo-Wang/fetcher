@@ -136,7 +136,8 @@ reset(); // reset to IDLE
 HTTP-specific hook wrapping Fetcher with `FetchExchange` support. Options are
 `RequestOptions` (`resultExtractor`, `attributes`) + `fetcher` (name or instance,
 default `fetcherRegistrar.default`) + the `useExecutePromise` options.
-`execute(request: FetchRequest)` sets `request.abortController` itself.
+`execute(request: FetchRequest)` sets `request.abortController` itself; callers
+cancel that execution through it.
 **The default `resultExtractor` is the Fetcher default (`ResultExtractors.Exchange`),
 so `result` is the `FetchExchange` unless you pass `ResultExtractors.Json`.** Exchange
 snapshots follow the same cancellation and stale-request rules as result state.
@@ -144,7 +145,8 @@ An exchange remains visible while its result is being extracted. When the curren
 execution settles after its controller was externally aborted, the exchange is
 cleared together with result/error state, including cancellation during extraction
 or an async callback. Completion of a superseded request preserves the newer
-request's exchange.
+request's exchange. A failed request clears `exchange` (undefined) instead of
+keeping the previous request's.
 
 ```tsx
 import { useFetcher } from '@ahoo-wang/fetcher-react';
@@ -212,6 +214,8 @@ When `query` is supplied, equal committed values stay deduplicated during
 StrictMode replay; this hook does not cancel `execute`. `useQuery` and
 `useFetcherQuery` restart their cancelled automatic requests during replay.
 Late results from those cancelled requests remain ignored.
+`execute` may be inline: the latest one is always called, and a new `execute`
+alone does not re-run; a change in query content or `autoExecute` turning on does.
 
 ```tsx
 const { getQuery, setQuery } = useQueryState<UserQuery>({
@@ -249,11 +253,13 @@ useEffect(() => {
 
 ### useLatest
 
-Returns a ref that always holds the latest value. Useful in async callbacks.
+Returns a ref holding the latest committed value, updated after each render
+commits (in an insertion effect). Effects and async callbacks see the new value;
+reading `.current` during render gives the last committed one.
 
 ```tsx
 const latestCount = useLatest(count);
-// latestCount.current always reflects the latest count
+// latestCount.current reflects the latest committed count
 ```
 
 ### useForceUpdate
@@ -276,7 +282,7 @@ const el = refs.get('myDiv');
 
 ### useFullscreen
 
-Fullscreen toggle hook returning `fullscreen`, `getTarget`, `enter(target?)`, `exit`, `toggle(target?)`; the target defaults to `document.documentElement`. `FullscreenProvider` / `useFullscreenContext` share one instance through context.
+Fullscreen toggle hook returning `fullscreen`, `getTarget`, `enter(target?)`, `exit`, `toggle(target?)`; the target defaults to `document.documentElement`. A target passed to `enter(el)` lasts until fullscreen ends; then the configured `target` applies again. `FullscreenProvider` / `useFullscreenContext` share one instance through context.
 
 ```tsx
 const { fullscreen, toggle, enter, exit } = useFullscreen({
@@ -290,7 +296,7 @@ const { fullscreen, toggle, enter, exit } = useFullscreen({
 
 ### useKeyStorage
 
-Reactive state for `KeyStorage` with automatic subscription. Returns `[value, set, remove]`; `value` is `T | null` without a default.
+Reactive state for `KeyStorage` with automatic subscription. Returns `[value, set, remove]`; `value` is `T | null` without a default. On the server and during hydration it renders the default (`defaultValue ?? null`), then the stored value, so SSR markup matches; client-only rendering reads storage immediately. `useSecurity` / `SecurityProvider` inherit this.
 
 ```tsx
 const [theme, setTheme, removeTheme] = useKeyStorage(themeStorage); // theme: T | null
@@ -328,7 +334,8 @@ updatePrefs(draft => {
 Subscribe to a `TypedEventBus` with automatic lifecycle management. The effect
 re-subscribes whenever `bus` or `handler` identity changes, so keep the handler
 stable (module constant or `useMemo`). `bus.on` rejects a duplicate handler
-`name` (returns `false`, logged as a warning). Returns `{ subscribe, unsubscribe }`
+`name` (returns `false`, logged as a warning); unmount then leaves that name
+alone, so the other subscriber keeps its handler. Returns `{ subscribe, unsubscribe }`
 for manual control.
 
 ```tsx
@@ -337,7 +344,7 @@ const handler = useMemo(
   [],
 );
 useEventSubscription({ bus: eventBus, handler });
-// auto-subscribes on mount, unsubscribes (by handler.name) on unmount
+// auto-subscribes on mount; on unmount unsubscribes (by handler.name) if it subscribed
 ```
 
 ---
@@ -411,7 +418,7 @@ const queryHooks = createQueryApiHooks({ api: new UserApi() });
 
 ### SecurityProvider / useSecurityContext / useSecurity / RouteGuard
 
-Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>` (`TokenStorage` from `@ahoo-wang/fetcher-cosec`). `useSecurityContext()` (throws outside the provider) and `useSecurity(tokenStorage, options?)` return `currentUser` (`ANONYMOUS_USER` when signed out), `authenticated`, `signIn(compositeTokenOrAsyncProvider)`, `signOut()`. `RouteGuard` (`children`, `fallback?`, `onUnauthorized?`) renders children only when authenticated; `RefreshableRouteGuard` (`tokenManager: JwtTokenManager`, `fallback?`, `refreshing?`) tries a token refresh first.
+Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>` (`TokenStorage` from `@ahoo-wang/fetcher-cosec`). `useSecurityContext()` (throws outside the provider) and `useSecurity(tokenStorage, options?)` return `currentUser` (`ANONYMOUS_USER` when signed out), `authenticated`, `signIn(compositeTokenOrAsyncProvider)`, `signOut()`. `RouteGuard` (`children`, `fallback?`, `onUnauthorized?`) renders children only when authenticated and calls `onUnauthorized` in an effect after commit, once each time the user becomes (or starts out) unauthenticated, so it may call `navigate()`; `RefreshableRouteGuard` (`tokenManager: JwtTokenManager`, `fallback?`, `refreshing?`) tries a token refresh first.
 
 ```tsx
 import {

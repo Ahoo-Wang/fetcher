@@ -56,9 +56,9 @@ update this file.
       openai chunk types and `signal`.
 - [x] **5. `eventbus` + `storage`** (#1934) — corrupt value recovery, `set(undefined)`,
       channel ownership and close, SSR.
-- [x] **6. `cosec`** (this PR) — trusted origins (principle 1), cross-tab single-flight
+- [x] **6. `cosec`** (#1935) — trusted origins (principle 1), cross-tab single-flight
       refresh, JWT payload validation, clock skew.
-- [ ] **7. `react`** — render purity, SSR snapshots, `useQueryState`
+- [x] **7. `react`** (this PR) — render purity, SSR snapshots, `useQueryState`
       dependencies, subscription identity, `useLatest`, shared debounce
       scheduler.
 
@@ -161,6 +161,24 @@ Each change below was confirmed with the maintainer on 2026-09-25.
   retry covers a slow clock) and `navigator.locks` single-flight across tabs
   (the re-read fixes the observed race; locks would add a browser-only path).
 
+## Stage 7: `react`
+
+Confirmed with the maintainer on 2026-09-25.
+
+- [x] `RouteGuard.onUnauthorized` in an effect.
+- [x] `useKeyStorage` server snapshot = default value.
+- [x] `useQueryState` keeps the latest `execute` without depending on it.
+- [x] `useLatest` assigns in `useInsertionEffect`.
+- [x] `useEventSubscription` unsubscribes only what it subscribed;
+      `useFetcher` clears `exchange` on failure; `useFullscreen` resets its
+      dynamic target.
+- Kept: `useFetcher` still attaches its `AbortController` to the caller's
+  request. The review called it a mutation, but callers cancel through
+  `request.abortController` (tested); it is the contract.
+- Not done (follow-ups): share the duplicated debounce scheduler of
+  `useDebouncedQuery` / `useDebouncedFetcherQuery`; pass the abort signal to
+  execute-API methods; re-render `useSecurity` when the token expires.
+
 ## Downstream follow-ups
 
 - Wow `typescript/wow-client/test/clients/endpointTable.test.ts` records the
@@ -172,6 +190,6 @@ Each change below was confirmed with the maintainer on 2026-09-25.
 
 ## Pause point
 
-2026-09-25: stages 1–5 merged (#1927, #1930–#1934); stage 6 PR in flight.
-Next: stage 7 (`react`) — deep review, plan here, confirm each public
-behavior change with the maintainer before merging.
+2026-09-25: stages 1–6 merged (#1927, #1930–#1935); stage 7 PR in flight. After
+it: the follow-ups listed under stages 6–7, and the Wow golden when Wow moves
+to fetcher 6.
